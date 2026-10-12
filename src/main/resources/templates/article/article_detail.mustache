@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>트리플에스 커뮤니티- {{categoryName}} 게시판</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="/js/tailwind.config.js"></script>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+{{>layout/header}}
+<meta name="_csrf" content="{{_csrf.token}}">
+<meta name="_csrf_header" content="{{_csrf.headerName}}">
+<div class="container mt-4 mb-5" >
+    <div class="card shadow-sm" style="min-height: 500px;">
+        <div class="card-body {{category}}-article" id="{{category}}-article" >
+            <div class="article-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div><strong>닉네임:</strong> {{article.userId}}</div>
+                    <div class="article-meta">{{formattedDate}}</div>
+                </div>
+            </div>
+            <div class="article-body">
+                <div class="detail-title">
+                        <h2>{{article.title}}</h2>
+                </div>
+
+                <hr class="content-divider" />
+
+                <div class="detail-content">
+                    {{{article.content}}}
+                </div>
+            </div>
+            <div class="article-foot" style="margin-top: 300px;">
+                {{#isLikeAllowed}}
+                <div class="d-flex justify-content-center mt-5">
+                    <form action="/{{article.category}}/{{article.id}}/like" method="post">
+                        <button class="btn btn-outline-danger" type="button" id="likeButton"> 추천(<span id="likeCount">{{likeCount}}</span>)</button>
+                    </form>
+                </div>
+                {{/isLikeAllowed}}
+                <div class="btn-group-custom mt-3">
+                    {{#isLoggedIn}}
+                        {{#isOwner}}
+                            <form method="get" action="/article/{{category}}/{{article.id}}/edit" style="display:inline;">
+                                <button type="submit" class="btn btn-primary">수정하기</button>
+                            </form>
+                            <form method="post" action="/article/{{category}}/{{article.id}}/delete" style="display:inline;"
+                                  onsubmit="return confirm('정말 삭제하시겠습니까?')">
+                                <input type="hidden" name="_csrf" value="{{_csrf.token}}">
+                                <button type="submit" class="btn btn-danger">삭제하기</button>
+                            </form>
+                        {{/isOwner}}
+                    {{/isLoggedIn}}
+                    <a href="/article/{{category}}" class="btn btn-secondary btn-toList">목록으로</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="mt-5">
+        {{>comment/_comments}}
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+<script>
+    const CSRF_TOKEN = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+const CSRF_HEADER = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content') || 'X-CSRF-TOKEN';
+
+const likeBtn = document.getElementById('likeButton');
+const likeCountElem = document.getElementById('likeCount');
+
+  likeBtn.addEventListener('click', function() {
+      fetch('/article/{{category}}/{{article.id}}/like', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json',
+            [CSRF_HEADER]: CSRF_TOKEN
+        }
+    })
+    .then(res => res.json())
+    .then(liked => {
+    if (liked) {
+        likeCountElem.textContent =
+            parseInt(likeCountElem.textContent) + 1;
+    } else {
+        likeCountElem.textContent =
+            parseInt(likeCountElem.textContent) - 1;
+    }
+})
+    .catch(error => {
+        console.error('Error:', error);
+        alert('오류가 발생했습니다');
+    });
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link
+            href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css"
+            rel="stylesheet"
+    />
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+            crossorigin="anonymous"
+    />
+
+
+    <style>
+        body {
+          margin: 40px 10px;
+          padding: 0;
+          font-family: "Segoe UI", sans-serif;
+        }
+        #calendar {
+          max-width: 800px;
+          margin: 0 auto;
+          z-index: 1;
+        }
+        .dropdown-menu {
+          z-index: 1050;
+        }
+        .fc .fc-daygrid-day-number {
+        color: white !important;
+        font-weight: normal;
+        text-decoration: none !important;
+        }
+        .fc .fc-daygrid-day-top a {
+        color: inherit !important;
+        text-decoration: none !important;
+        }
+        .fc-col-header-cell-cushion {
+        font-weight: bold;
+        text-decoration: none !important;
+        cursor: default !important;
+        color: white;
+        }
+
+       .fc-col-header-cell:nth-child(1) .fc-col-header-cell-cushion {
+        color: red !important;
+        }
+
+       .fc-col-header-cell:nth-child(7) .fc-col-header-cell-cushion {
+        color: blue !important;
+        }
+        .modal-content {
+             color: black !important;
+        }
+    </style>
+    <title>트리플에스 커뮤니티 - 스케줄</title>
+</head>
+<body class="other-page">
+{{>layout/header}}
+
+<div id="calendar"></div>
+{{#isAdmin}}
+<div class="my-3" style="max-width: 900px; margin: 0 auto;" >
+    <button class="btn btn-primary" onclick="showAddModal()">스케줄 추가</button>
+</div>
+{{/isAdmin}}
+<div class="modal fade" id="scheduleListModal" tabindex="-1" aria-labelledby="scheduleListLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="scheduleListLabel">일정 목록</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                    <tr>
+                        <th>제목</th>
+                        <th>시작일</th>
+                        <th>종료일</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {{#schedules}}
+                        <tr>
+                            <td>{{title}}</td>
+                            <td>{{startStr}}</td>
+                            <td>{{endStr}}</td>
+                        </tr>
+                    {{/schedules}}
+                    {{^schedules}}
+                        <tr>
+                            <td colspan="3" class="text-center">등록된 일정이 없습니다.</td>
+                        </tr>
+                    {{/schedules}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- ✅ FullCalendar JS 다음! -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/ko.global.min.js"></script>
+
+
+
+<script>
+    function showAddModal() {
+    const viewModal = new bootstrap.Modal(document.getElementById('addScheduleModal'));
+    viewModal.show();
+}
+    function adjustEndDate(endStr) {
+    if (!endStr) return null;
+    const date = new Date(endStr);
+    date.setDate(date.getDate() + 1);
+    return date.toISOString().substring(0, 10);
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    var calendarEl = document.getElementById("calendar");
+    window.calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: "dayGridMonth",
+      locale: "ko",
+      headerToolbar: {
+        left: "prev,next today",
+        center: "title",
+        right: "dayGridMonth"
+      },
+      buttonText: {
+      today: '오늘 날짜로',
+      month: '월간'
+  },
+
+      eventClick: function(info) {
+      const event = info.event;
+
+      document.getElementById("modalScheduleTitle").textContent = event.title;
+      document.getElementById("modalScheduleStart").textContent = event.startStr;
+      document.getElementById("modalScheduleEnd").textContent = event.extendedProps.rawEnd || '-';
+
+
+      const deleteForm = document.getElementById("deleteForm");
+        if (deleteForm) {
+        deleteForm.action = `/delete/${event.id}`;
+      }
+
+      const editBtn = document.getElementById("editBtn");
+      if (editBtn) {
+      editBtn.onclick = function () {
+      const viewModal = bootstrap.Modal.getInstance(document.getElementById("viewScheduleModal"));
+      viewModal.hide();
+    // 수정 모달에 현재 스케줄 정보 세팅
+      document.getElementById("editScheduleId").value = event.id;
+      document.getElementById("editTitleInput").value = event.title;
+      document.getElementById("editStartInput").value = event.startStr;
+      document.getElementById("editEndInput").value = event.extendedProps.rawEnd ? event.extendedProps.rawEnd.substring(0,10) : ''; // 날짜 형식 맞춰서 넣기
+
+    // 수정 모달 열기
+      const editModal = new bootstrap.Modal(document.getElementById("editScheduleModal"));
+      editModal.show();
+    };
+  }
+  const viewModal = new bootstrap.Modal(document.getElementById("viewScheduleModal"));
+  viewModal.show();
+  },
+  events: {{{schedulesJson}}}
+    });
+    calendar.render();
+
+      const addForm = document.getElementById("addScheduleForm");
+      if (addForm) {
+      addForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+      const title = document.getElementById("titleInput").value;
+      const start = document.getElementById("startInput").value;
+      const end = document.getElementById("endInput").value;
+
+      fetch("/schedule/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: `title=${encodeURIComponent(title)}&start=${start}&end=${end}`
+      }).then(response => {
+        if (response.ok) {
+          calendar.addEvent({
+            title: title,
+            start: start,
+            end: end ? adjustEndDate(end) : null,
+            extendedProps: {
+            rawEnd: end
+          }
+          });
+          const modalEl = document.getElementById('addScheduleModal');
+          const modalInstance = bootstrap.Modal.getInstance(modalEl);
+          modalInstance.hide();
+
+          document.getElementById("addScheduleForm").reset();
+        } else {
+          alert("추가에 실패했습니다.");
+        }
+        });
+       });
+      }
+
+    const editForm = document.getElementById("editScheduleForm");
+    if(editForm) {
+      editForm.addEventListener("submit", function(e) {
+      e.preventDefault();
+
+      const id = document.getElementById("editScheduleId").value;
+      const title = document.getElementById("editTitleInput").value;
+      const start = document.getElementById("editStartInput").value;
+      const end = document.getElementById("editEndInput").value;
+
+    fetch(`/edit/${id}`, {
+      method: "POST",  // 또는 PATCH (서버 컨트롤러에 맞게)
+      headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: `title=${encodeURIComponent(title)}&startDate=${start}&endDate=${end}`
+  }).then(response => {
+    if (response.ok) {
+      // 성공 시 수정 모달 닫고 일정 업데이트
+      const editModalEl = document.getElementById("editScheduleModal");
+      const editModalInstance = bootstrap.Modal.getInstance(editModalEl);
+      editModalInstance.hide();
+
+      // FullCalendar에서 이벤트 찾기 및 업데이트
+      const event = calendar.getEventById(id);
+      if (event) {
+        event.setProp("title", title);
+        event.setStart(start);
+        event.setEnd(end ? adjustEndDate(end) : null);
+        event.setExtendedProp("rawEnd", end);
+      }
+    } else {
+      alert("수정에 실패했습니다.");
+    }
+  }).catch(() => alert("서버와 통신 실패"));
+  });
+  }
+ });
+
+</script>
+    <div class="modal fade" id="viewScheduleModal" tabindex="-1" aria-labelledby="viewScheduleLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="viewScheduleLabel">스케줄 상세</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>제목:</strong> <span id="modalScheduleTitle"></span></p>
+                    <p><strong>시작일:</strong> <span id="modalScheduleStart"></span></p>
+                    <p><strong>종료일:</strong> <span id="modalScheduleEnd"></span></p>
+                </div>
+
+                <div class="modal-footer">
+                    {{#isAdmin}}
+                    <form id="deleteForm" method="post">
+                        <button type="submit" class="btn btn-danger">삭제</button>
+                    </form>
+                    <a id="editBtn" class="btn btn-primary">수정</a>
+                    {{/isAdmin}}
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="addScheduleModal" tabindex="-1" aria-labelledby="addScheduleLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form id="addScheduleForm" method="post" action="/schedule/add">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addScheduleLabel">스케줄 추가</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="titleInput" class="form-label">제목</label>
+                            <input type="text" class="form-control" id="titleInput" name="title" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="startInput" class="form-label">시작 날짜</label>
+                            <input type="date" class="form-control" id="startInput" name="start" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="endInput" class="form-label">종료 날짜</label>
+                            <input type="date" class="form-control" id="endInput" name="end" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                        <button type="submit" class="btn btn-primary">추가</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="modal fade" id="editScheduleModal" tabindex="-1" aria-labelledby="editScheduleLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form id="editScheduleForm">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editScheduleLabel">스케줄 수정</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="editScheduleId" name="id" />
+                        <div class="mb-3">
+                            <label for="editTitleInput" class="form-label">제목</label>
+                            <input type="text" class="form-control" id="editTitleInput" name="title" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="editStartInput" class="form-label">시작 날짜</label>
+                            <input type="date" class="form-control" id="editStartInput" name="start" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="editEndInput" class="form-label">종료 날짜</label>
+                            <input type="date" class="form-control" id="editEndInput" name="end" />
+                            <small class="form-text text-muted">종료 날짜는 선택 사항입니다.</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                        <button type="submit" class="btn btn-primary">수정 저장</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

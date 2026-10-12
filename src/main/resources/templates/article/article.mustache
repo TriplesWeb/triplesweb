@@ -1,0 +1,57 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>트리플에스 커뮤니티- {{categoryName}} 게시판</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="/js/tailwind.config.js"></script>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+{{>layout/header}}
+
+<div class="article-{{categoryName}} rounded-xl overflow-hidden my-4 h-96" >
+    <h5 class="article-name text-lg-center">{{categoryName}} 게시판</h5>
+    <div class="table-title flex items-center font-bold p-3 border border-b border-white-200 text-center text-lg justify-between">
+        <h2>글 순서</h2>
+        <h2>제목</h2>
+        <h2>닉네임</h2>
+        <h2>날짜</h2>
+    </div>
+    <div class="table-article flex items-center font-bold p-3 border-b border-white-200 text-center text-sm transiton-colors">
+    {{#articleList}}
+        <h2>{{id}}</h2>
+        <h2><a href="/article/{{#category}}{{category}}{{/category}}{{^category}}free{{/category}}/{{id}}" class="article-title">{{title}}</a></h2>
+        <h2>{{userId}}</h2>
+        <h2>{{formattedCreatedAt}}</h2>
+        <h2>{{likesCount}}</h2>
+    {{/articleList}}
+
+    {{^articleList}}
+        <h1>
+            <span class="text-lg-center">등록된 게시글이 없습니다.</span>
+        </h1>
+    {{/articleList}}
+    </div>
+        {{#isNotice}}
+            {{#isAdmin}}
+                <a href="/article/{{category}}/new" class="btn btn-secondary new-article" id="new-article">글 쓰기</a>
+            {{/isAdmin}}
+        {{/isNotice}}
+        {{^isNotice}}
+            {{#isLoggedIn}}
+                <a href="/article/{{category}}/new" class="btn btn-secondary new-article" id="new-article">글 쓰기</a>
+            {{/isLoggedIn}}
+        {{/isNotice}}
+</div>
+{{>layout/footer}}
+</body>
+</html>

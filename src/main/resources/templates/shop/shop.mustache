@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>트리플에스 커뮤니티 - 굿즈샵</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <style>
+        .shop-banner img {
+         border-radius:12px;
+         max-height:500px;
+         }
+        .category-tabs a {
+          border-radius:20px; padding:6px 16px; font-weight:600;
+          color:white !important;
+          text-decoration:none;
+          border:1px solid #ddd; margin-right:8px;
+        }
+        .category-tabs a.active {
+          background:#000; color:#fff;
+        }
+        .product-card img { border-radius:10px; }
+        .product-name { font-size:.95rem; font-weight:600; margin-top:8px; color: white !important; text-decoration:none; }
+        .product-price { color:#0d6efd; font-weight:700; font-size:.9rem; }
+        .notice-box { background:#fafafa; border-radius:12px; padding:15px; }
+        .notice-item { font-size:.85rem; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:6px; }
+        .btn-add-goods {
+         z-index: 1050;
+         border-radius: 12px;
+         padding: .6rem 1.2rem;
+        }
+    </style>
+</head>
+<body class="other-page">
+{{>layout/header}}
+
+<div class="container py-4">
+
+    <!-- 배너 캐러셀 -->
+    <div id="shopCarousel" class="carousel slide mb-5" data-bs-ride="carousel">
+        <div class="carousel-inner shop-banner">
+            <div class="carousel-item active">
+                <img src="/uploads/images/lightstick.png" class="d-block w-100">
+            </div>
+            <div class="carousel-item">
+                <img src="/uploads/images/banner2.jpg" class="d-block w-100">
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#shopCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#shopCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon"></span>
+        </button>
+    </div>
+
+    <div class="row">
+        <!-- 왼쪽: 상품 목록 -->
+        <div class="col-lg-9">
+
+            <!-- 카테고리 탭 -->
+            <div class="category-tabs mb-3">
+                <a href="?category=album" class="{{#isAlbum}}active{{/isAlbum}}">ALBUM</a>
+                <a href="?category=merch" class="{{#isMerch}}active{{/isMerch}}">MERCH</a>
+                <a href="?category=photobook" class="{{#isPhotobook}}active{{/isPhotobook}}">PHOTOBOOK</a>
+                <a href="?category=magazine" class="{{#isMagazine}}active{{/isMagazine}}">MAGAZINE</a>
+                <a href="?category=tour" class="{{#isTour}}active{{/isTour}}">TOUR MERCH</a>
+            </div>
+            <div class="row g-4">
+               {{#items}}
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <div class="product-card">
+                            <a href="/shop/item/{{category}}/{{id}}">
+                                <img src="{{mainImageUrl}}" class="w-100 mb-2" alt="{{name}}">
+                            <div class="product-name">{{name}}</div>
+                            </a>
+                            {{#soldout}}<div class="text-danger">품절</div>{{/soldout}}
+                            <div class="product-price">{{price}}원</div>
+                        </div>
+                    </div>
+                {{/items}}
+                {{^items}}
+                    <div class="text-muted">상품이 없습니다.</div>
+                {{/items}}
+        </div>
+    </div>
+</div>
+    {{#isAdmin}}
+        <div class="mb-3 text-end">
+            <a href="/shop/shop_new" class="btn-add-goods">새 상품 등록</a>
+        </div>
+    {{/isAdmin}}
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

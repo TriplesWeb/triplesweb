@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html class="dark" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>triples 커뮤</title>
+
+    <!-- Google Material Symbols & Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+
+    <!-- FullCalendar -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/ko.global.min.js"></script>
+
+    <!-- Tailwind CSS Engine & Custom Theme Config -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="/js/tailwind.config.js"></script>
+
+    <!-- Custom Style Overrides -->
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        /* FullCalendar Dark Customization */
+        .fc { --fc-border-color: rgba(45, 49, 62, 0.6); --fc-page-bg-color: transparent; }
+        .fc .fc-toolbar-title { font-size: 0.9rem !important; font-weight: bold; color: #e3e2e8; }
+        .fc .fc-button-primary { background-color: #1a1b22 !important; border-color: #2d313e !important; color: #b9cac4 !important; }
+        .fc .fc-button-primary:hover { background-color: #23242e !important; color: #00f5d4 !important; }
+        .fc-theme-standard td, .fc-theme-standard th { border-color: rgba(45, 49, 62, 0.4) !important; }
+        .fc .fc-col-header-cell-cushion { color: #b9cac4; font-size: 0.75rem; font-family: monospace; }
+        .fc .fc-daygrid-day-number { color: #e3e2e8; font-size: 0.75rem; font-family: monospace; }
+        .fc-col-header-cell:nth-child(1) .fc-col-header-cell-cushion { color: #f87171 !important; }
+        .fc-col-header-cell:nth-child(7) .fc-col-header-cell-cushion { color: #60a5fa !important; }
+    </style>
+</head>
+
+<body class="main-page min-h-screen flex flex-col bg-background text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
+
+<!-- 엠비언트 배경 은은한 빛 효과 -->
+<div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-secondary-container/10 blur-[120px]"></div>
+    <div class="absolute top-1/3 -right-32 w-[30rem] h-[30rem] rounded-full bg-primary-container/5 blur-[140px]"></div>
+    <div class="absolute -bottom-32 left-1/3 w-[36rem] h-[36rem] rounded-full bg-primary-container/5 blur-[160px]"></div>
+</div>
+
+<!-- 헤더 레이아웃 포함 -->
+{{>layout/header}}
+
+<!-- 메인 레이아웃 컨테이너 -->
+<main class="relative z-10 max-w-7xl w-full mx-auto px-4 py-6 flex flex-col gap-6">
+
+    <!-- 1. 미디어 & 비디오 배너 섹션 -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+        <!-- 비디오 영역 -->
+        <div class="lg:col-span-7 bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-4 backdrop-blur-md shadow-xl flex flex-col justify-between">
+            <div class="flex items-center justify-between pb-3 mb-2 border-b border-outline-variant/30">
+                <div class="flex items-center gap-2">
+                    <span class="font-mono text-xs text-on-surface font-semibold tracking-wider">OFFICIAL MEDIA</span>
+                </div>
+                <span class="text-xs text-on-surface-variant font-mono">tripleS (트리플에스) '깨어' MV</span>
+            </div>
+            <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-outline-variant/30">
+                <iframe class="w-full h-full" src="https://www.youtube.com/embed/pTycfmVzdl8?si=7dkoH5SQxslMoyNy" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+            </div>
+        </div>
+
+        <!-- 메인 이미지 캐러셀 배너 -->
+        <div class="lg:col-span-5 bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-4 backdrop-blur-md shadow-xl flex flex-col relative overflow-hidden group">
+            <div class="relative w-full h-full min-h-[240px] rounded-xl overflow-hidden flex flex-col justify-end p-5 bg-cover bg-center" style="background-image: url('../../../uploads/images/loveandpop1.jpg');">
+                <div class="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent"></div>
+
+                <div class="relative z-10 space-y-1.5">
+                    <span class="inline-block px-2.5 py-0.5 rounded-full bg-primary-container/20 border border-primary-container text-primary-container text-[11px] font-semibold">컴백</span>
+                    <h3 class="text-xl font-bold text-on-surface">ASSEMBLE26 : Baby Flower</h3>
+                    <p class="text-xs text-on-surface-variant line-clamp-2">암흑에서 벗어나 다시 뛰기 시작한 24명의 소녀들</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. 아티스트 소개 섹션 -->
+    <section class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-6 backdrop-blur-md shadow-xl">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+            <div class="md:col-span-4 rounded-xl overflow-hidden border border-outline-variant/30 aspect-video md:aspect-[4/3]">
+                <img src="/uploads/images/tripleS.jpg" alt="tripleS" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+            </div>
+            <div class="md:col-span-8 space-y-3">
+                <div class="flex items-center gap-3">
+                    <span class="w-1.5 h-6 bg-primary-container rounded-full"></span>
+                    <a href="/artist" class="text-2xl font-bold text-on-surface hover:text-primary-container transition-colors">Who is TripleS?</a>
+                </div>
+                <p class="text-sm text-on-surface-variant leading-relaxed text-justify">
+                    tripleS(트리플에스)는 모드하우스가 결성한 대한민국의 24인조 걸그룹이다. 팬들이 직접 멤버 조합과 활동을 결정하는 팬 참여형 투표 시스템 '디멘션(Dimension)'을 바탕으로 국내 최다 인원 걸그룹으로 활동하고 있다.
+                </p>
+                <div>
+                    <a href="/triples/artist" class="inline-flex items-center gap-1 text-xs text-primary-container hover:underline font-medium">
+                        트리플에스에 대해 더 알고 싶다면 <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. 메인 그리드 (게시판 / 스케줄 / 아카이브) -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- 좌측 컬럼 -->
+        <div class="flex flex-col gap-6">
+
+            <!-- 자유게시판 -->
+            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
+                <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary-container text-xl">forum</span>
+                        <h3 class="text-base font-bold text-on-surface">자유게시판</h3>
+                    </div>
+                    <a href="/free" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
+                        더보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
+                    </a>
+                </div>
+                <ul class="divide-y divide-outline-variant/20 text-xs">
+                    {{#freePosts}}
+                        <li class="py-2.5 flex items-center justify-between gap-4 hover:bg-surface-container-high/40 px-2 rounded-lg transition-colors">
+                            <a href="/free/{{id}}" class="truncate text-on-surface hover:text-primary-container font-medium flex-1">{{title}}</a>
+                            <div class="text-on-surface-variant/80 font-mono text-[11px] shrink-0">{{userId}} · {{formattedDate}}</div>
+                        </li>
+                    {{/freePosts}}
+                    {{^freePosts}}
+                        <li class="py-4 text-center text-on-surface-variant/60">등록된 게시물이 없습니다.</li>
+                    {{/freePosts}}
+                </ul>
+            </div>
+
+            <!-- 공지사항 -->
+            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
+                <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-secondary text-xl">campaign</span>
+                        <h3 class="text-base font-bold text-on-surface">공지사항</h3>
+                    </div>
+                    <a href="/notice" class="text-xs text-on-surface-variant hover:text-secondary flex items-center gap-0.5 transition-colors">
+                        더보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
+                    </a>
+                </div>
+                <ul class="divide-y divide-outline-variant/20 text-xs">
+                    {{#noticePosts}}
+                        <li class="py-2.5 flex items-center justify-between gap-4 hover:bg-surface-container-high/40 px-2 rounded-lg transition-colors">
+                            <a href="/notice/{{id}}" class="truncate text-on-surface hover:text-secondary font-medium flex-1">{{title}}</a>
+                            <div class="text-on-surface-variant/80 font-mono text-[11px] shrink-0">{{userId}} · {{formattedDate}}</div>
+                        </li>
+                    {{/noticePosts}}
+                    {{^noticePosts}}
+                        <li class="py-4 text-center text-on-surface-variant/60">등록된 공지사항이 없습니다.</li>
+                    {{/noticePosts}}
+                </ul>
+            </div>
+
+            <!-- 아카이브 -->
+            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
+                <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary-container text-xl">photo_library</span>
+                        <h3 class="text-base font-bold text-on-surface">아카이브</h3>
+                    </div>
+                    <a href="/archive" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
+                        전체보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
+                    </a>
+                </div>
+                <div id="MainArchive"></div>
+            </div>
+
+        </div>
+
+        <!-- 우측 컬럼 -->
+        <div class="flex flex-col gap-6">
+
+            <!-- 인기글 -->
+            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
+                <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-red-400 text-xl">local_fire_department</span>
+                        <h3 class="text-base font-bold text-on-surface">인기글</h3>
+                    </div>
+                    <a href="/popular" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
+                        더보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
+                    </a>
+                </div>
+                <ul class="divide-y divide-outline-variant/20 text-xs">
+                    {{#popularPosts}}
+                        <li class="py-2.5 flex items-center justify-between gap-4 hover:bg-surface-container-high/40 px-2 rounded-lg transition-colors">
+                            <a href="/{{category}}/{{id}}" class="truncate text-on-surface hover:text-primary-container font-medium flex-1">{{title}}</a>
+                            <div class="text-on-surface-variant/80 font-mono text-[11px] shrink-0">{{userId}} · {{formattedDate}}</div>
+                        </li>
+                    {{/popularPosts}}
+                    {{^popularPosts}}
+                        <li class="py-4 text-center text-on-surface-variant/60">인기글이 없습니다.</li>
+                    {{/popularPosts}}
+                </ul>
+            </div>
+
+            <!-- 스케줄 (미니 달력) -->
+            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
+                <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary-container text-xl">calendar_month</span>
+                        <h3 class="text-base font-bold text-on-surface">스케줄</h3>
+                    </div>
+                    <a href="/schedule" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
+                        전체 달력 <span class="material-symbols-outlined text-sm">chevron_right</span>
+                    </a>
+                </div>
+                <div id="miniCalendar" class="w-full"></div>
+            </div>
+
+            <!-- 굿즈샵 -->
+            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
+                <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary-container text-xl">shopping_bag</span>
+                        <h3 class="text-base font-bold text-on-surface">굿즈샵</h3>
+                    </div>
+                    <a href="/shop" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
+                        공식샵 이동 <span class="material-symbols-outlined text-sm">chevron_right</span>
+                    </a>
+                </div>
+                <ul class="divide-y divide-outline-variant/20 text-xs">
+                    {{#freePosts}}
+                        <li class="py-2.5 flex items-center justify-between gap-4 hover:bg-surface-container-high/40 px-2 rounded-lg transition-colors">
+                            <a href="/shop/{{id}}" class="truncate text-on-surface hover:text-primary-container font-medium flex-1">{{title}}</a>
+                            <div class="text-on-surface-variant/80 font-mono text-[11px] shrink-0">{{userId}}</div>
+                        </li>
+                    {{/freePosts}}
+                </ul>
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+<!-- 푸터 레이아웃 포함 -->
+{{>layout/footer}}
+
+<!-- JS 스크립트 -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const calendarEl = document.getElementById("miniCalendar");
+        const schedules = {{{schedulesJson}}} || [];
+
+        const miniCalendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: "dayGridMonth",
+            locale: "ko",
+            height: 280,
+            headerToolbar: {
+                left: "",
+                center: "title",
+                right: "prev,next"
+            },
+            events: schedules,
+            eventClick: function(info) {
+                window.location.href = '/schedule';
+            }
+        });
+        miniCalendar.render();
+    });
+</script>
+</body>
+</html>

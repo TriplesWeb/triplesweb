@@ -1,0 +1,130 @@
+@CHARSET "UTF-8";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&family=Sora:wght@600;700;800&display=swap');
+
+/* ==========================================================================
+   1. Global Base Styles & Material Icons
+   ========================================================================== */
+body {
+    background-color: #0d0e12;
+    color: #e3e2e8;
+    font-family: 'Inter', 'Noto Sans KR', -apple-system, sans-serif !important;
+    overflow-x: hidden;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+::selection {
+    background-color: #00f5d4;
+    color: #00382f;
+}
+
+/* Material Symbols 아이콘 폰트 오버라이드 방지 */
+.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined' !important;
+    font-weight: normal;
+    font-style: normal;
+    font-size: 16px;
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    display: inline-block;
+    vertical-align: middle;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #0d0e12;
+}
+::-webkit-scrollbar-thumb {
+    background: #23242e;
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #00f5d4;
+}
+
+/* ==========================================================================
+   2. Header & Navigation (아이콘 제외 폰트 적용)
+   ========================================================================== */
+#navbar,
+#navbar a:not(.material-symbols-outlined),
+#navbar button:not(.material-symbols-outlined),
+.nav-dropdown-btn,
+.nav-item-link {
+    font-family: 'Inter', 'Noto Sans KR', -apple-system, sans-serif !important;
+}
+
+/* 드롭다운 메뉴 활성화 CSS */
+.nav-dropdown-group {
+    position: relative;
+}
+
+.dropdown-menu-box {
+    position: absolute;
+    left: 0;
+    top: 100%;
+    display: none;
+    padding-top: 0.5rem;
+    z-index: 50;
+}
+
+.nav-dropdown-group:hover .dropdown-menu-box {
+    display: block;
+}
+
+.dropdown-link {
+    font-family: 'Inter', 'Noto Sans KR', -apple-system, sans-serif !important;
+}
+
+/* ==========================================================================
+   3. FullCalendar Custom Style Override (메인페이지 미니 달력 전용)
+   ========================================================================== */
+.fc {
+    --fc-border-color: rgba(45, 49, 62, 0.6);
+    --fc-page-bg-color: transparent;
+}
+.fc .fc-toolbar-title {
+    font-size: 0.875rem !important;
+    font-weight: 700;
+    color: #e3e2e8;
+    font-family: 'Inter', 'Noto Sans KR', sans-serif;
+}
+.fc .fc-button-primary {
+    background-color: #1a1b22 !important;
+    border-color: #2d313e !important;
+    color: #b9cac4 !important;
+    box-shadow: none !important;
+    padding: 0.2rem 0.5rem !important;
+}
+.fc .fc-button-primary:hover {
+    background-color: #23242e !important;
+    color: #00f5d4 !important;
+}
+.fc-theme-standard td,
+.fc-theme-standard th {
+    border-color: rgba(45, 49, 62, 0.4) !important;
+}
+.fc .fc-col-header-cell-cushion {
+    color: #b9cac4;
+    font-size: 0.75rem;
+}
+.fc .fc-daygrid-day-number {
+    color: #e3e2e8;
+    font-size: 0.75rem;
+}
+.fc-col-header-cell:nth-child(1) .fc-col-header-cell-cushion {
+    color: #f87171 !important; /* 일요일 빨간색 */
+}
+.fc-col-header-cell:nth-child(7) .fc-col-header-cell-cushion {
+    color: #60a5fa !important; /* 토요일 파란색 */
+}

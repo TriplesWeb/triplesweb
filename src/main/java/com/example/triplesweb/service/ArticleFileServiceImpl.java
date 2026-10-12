@@ -1,0 +1,209 @@
+// src/main/java/com/example/triplesweb/service/ArticleFileServiceImpl.java
+package com.example.triplesweb.service;
+
+import com.example.triplesweb.entity.Article;
+import com.example.triplesweb.entity.ArticleFile;
+import com.example.triplesweb.entity.MediaType;
+import com.example.triplesweb.entity.SavedMeta;
+import com.example.triplesweb.repository.ArticleFileRepository;
+import com.example.triplesweb.util.HtmlMediaParser;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class ArticleFileServiceImpl implements ArticleFileService {
+
+    private final FileStorageService fileStorageService;
+    private final ArticleFileRepository articleFileRepository;
+
+    @Override
+    public void uploadFile(MultipartFile mf, Article article) throws IOException {
+        if (mf == null || mf.isEmpty() || article == null) return;
+
+        String category = StringUtils.hasText(article.getCategory()) ? article.getCategory() : "free";
+
+        // 파일 저장 (저장소가 SavedMeta 리턴)
+        SavedMeta saved = fileStorageService.saveWithMeta(mf, category);
+
+        ArticleFile af = ArticleFile.builder()
+                .article(article)
+                .category(category)
+                .file(saved)
+                .build();
+
+        articleFileRepository.save(af);
+        if (article.getFiles() != null) article.getFiles().add(af);
+    }
+
+    @SneakyThrows
+    @Override
+    public void attachUploadedFiles(List<String> uploadedFiles, Article article) {
+        if (uploadedFiles == null || uploadedFiles.isEmpty() || article == null) return;
+        String category = StringUtils.hasText(article.getCategory()) ? article.getCategory() : "free";
+
+        // 해당 게시글에 이미 연결된 savedName 집합 (중복 방지)
+        Set<String> existing = Optional.ofNullable(article.getFiles())
+                .orElseGet(List::of).stream()
+                .filter(f -> f.getFile() != null && StringUtils.hasText(f.getFile().getSavedName()))
+                .map(f -> f.getFile().getSavedName())
+                .collect(Collectors.toSet());
+
+        for (String token : uploadedFiles) {
+            if (!StringUtils.hasText(token)) continue;
+
+            String url = toUploadsUrl(token);
+            String relative = fileStorageService.toRelativePath(url);
+            Path path = fileStorageService.resolvePhysicalPath(relative);
+
+            String savedName = path.getFileName().toString();
+            if (!StringUtils.hasText(savedName) || existing.contains(savedName)) continue;
+
+            long size = Files.size(path);
+            String contentType = Files.probeContentType(path);
+            if (!StringUtils.hasText(contentType)) {
+                contentType = guessContentTypeByExt(savedName); // 확장자 기반 fallback
+            }
+
+            MediaType mt = contentType.startsWith("video/") ? MediaType.VIDEO
+                    : contentType.startsWith("image/") ? MediaType.IMAGE
+                    : MediaType.OTHER;
+
+            String originalName = fileStorageService.readOriginalName(url);
+            if (!StringUtils.hasText(originalName)) originalName = savedName;
+
+            SavedMeta meta = SavedMeta.builder()
+                    .originalName(originalName)
+                    .savedName(savedName)
+                    .url("/uploads/" + relative)
+                    .size(size)
+                    .fileType(contentType)
+                    .mediaType(mt)
+                    .build();
+            ArticleFile af = ArticleFile.builder()
+                    .article(article)
+                    .category(category)
+                    .file(meta)
+                    .build();
+
+            articleFileRepository.save(af);
+            if (article.getFiles() != null) article.getFiles().add(af);
+            existing.add(savedName);
+        }
+    }
+
+    private String guessContentTypeByExt(String savedName) {
+        String lower = savedName.toLowerCase(Locale.ROOT);
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+        if (lower.endsWith(".png"))  return "image/png";
+        if (lower.endsWith(".gif"))  return "image/gif";
+        if (lower.endsWith(".webp")) return "image/webp";
+        if (lower.endsWith(".mp4"))  return "video/mp4";
+        if (lower.endsWith(".webm")) return "video/webm";
+        if (lower.endsWith(".mov"))  return "video/quicktime";
+        return "application/octet-stream";
+    }
+
+    @Override
+    public void extractAndSaveFilesFromContent(Article article) {
+        if (article == null || !StringUtils.hasText(article.getContent())) return;
+
+        Set<String> urls = HtmlMediaParser.extractUploadUrls(article.getContent());
+        if (urls.isEmpty()) return;
+
+        String category = StringUtils.hasText(article.getCategory()) ? article.getCategory() : "free";
+
+        Set<String> existing = Optional.ofNullable(article.getFiles())
+                .orElseGet(List::of).stream()
+                .filter(f -> f.getFile() != null && StringUtils.hasText(f.getFile().getSavedName()))
+                .map(f -> f.getFile().getSavedName())
+                .collect(Collectors.toSet());
+
+        for (String url : urls) {
+            String relative = fileStorageService.toRelativePath(url);
+            Path path = fileStorageService.resolvePhysicalPath(relative);
+            String fileName = path.getFileName().toString();
+
+            if (!StringUtils.hasText(fileName) || existing.contains(fileName)) continue;
+
+            String originalName = fileStorageService.readOriginalName(url);
+            if (!StringUtils.hasText(originalName)) originalName = fileName;
+
+            long size;
+            String contentType;
+            try {
+                size = Files.size(path);
+                contentType = Files.probeContentType(path);
+            } catch (IOException e) {
+                throw new RuntimeException("파일 메타 추출 실패: " + url, e);
+            }
+            if (!StringUtils.hasText(contentType)) contentType = guessContentTypeByExt(fileName);
+
+            MediaType mt = contentType.startsWith("video/") ? MediaType.VIDEO
+                    : contentType.startsWith("image/") ? MediaType.IMAGE
+                    : MediaType.OTHER;
+
+            SavedMeta meta = SavedMeta.builder()
+                    .originalName(originalName)
+                    .savedName(fileName)
+                    .url("/uploads/" + relative)
+                    .size(size)
+                    .fileType(contentType)
+                    .mediaType(mt)
+                    .build();
+
+            ArticleFile af = ArticleFile.builder()
+                    .article(article)
+                    .category(category)
+                    .file(meta)
+                    .build();
+
+            articleFileRepository.save(af);
+            if (article.getFiles() != null) article.getFiles().add(af);
+            existing.add(fileName);
+        }
+    }
+
+    @Override
+    public void deleteFileById(Long id) {
+        articleFileRepository.findById(id).ifPresent(af -> {
+            fileStorageService.deleteFile(af.getFile().getUrl());
+            articleFileRepository.deleteById(id);
+        });
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> findFileIdsByArticleId(Long articleId) {
+        return articleFileRepository.findFileIdsByArticleId(articleId);
+    }
+
+    // -------------------- helpers --------------------
+    private static String toUploadsUrl(String input) {
+        if (!StringUtils.hasText(input)) return null;
+        String s = input.trim();
+        if (s.startsWith("/uploads/")) return s;
+        if (s.startsWith("http")) {
+            int idx = s.indexOf("/uploads/");
+            return (idx >= 0) ? s.substring(idx) : s;
+        }
+        return "/uploads/" + s.replaceFirst("^/+", "");
+    }
+
+    private static String extractRelativePath(String uploadsUrl) {
+        if (!StringUtils.hasText(uploadsUrl)) return null;
+        String path = uploadsUrl.replaceFirst("^https?://[^/]+", "");
+        int idx = path.indexOf("/uploads/");
+        return (idx >= 0) ? path.substring(idx + "/uploads/".length()) : path.replaceFirst("^/+", "");
+    }
+}

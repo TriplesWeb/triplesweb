@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="/js/tailwind.config.js"></script>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        /* 에디터 내부 영역 스타일 및 미디어 미리보기 서식 정리 */
+        #content {
+            min-height: 250px;
+            max-height: 500px;
+            overflow-y: auto;
+            outline: none;
+        }
+        .content-media {
+            position: relative;
+            display: inline-block;
+            margin: 0.5rem 0;
+            max-width: 100%;
+        }
+        .content-media img, .content-media video {
+            max-width: 100%;
+            border-radius: 0.75rem;
+            display: block;
+        }
+        .content-media .remove-btn, .preview-item .remove-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            border: none;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .preview-item {
+            position: relative;
+            width: 90px;
+            height: 90px;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #111;
+        }
+        .preview-item img, .preview-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+{{>layout/header}}
+<meta name="_csrf" content="{{_csrf.token}}">
+<meta name="_csrf_header" content="{{_csrf.headerName}}">
+<div id="editorRoot" data-category="{{category}}"></div>
+<main class="flex-1 flex items-center justify-center px-4 sm:px-6 py-12 z-10 relative">
+    <div class="w-full max-w-2xl relative">
+        <div class="absolute -inset-1 rounded-3xl bg-gradient-to-b from-primary-container/20 via-transparent to-secondary-container/30 blur-xl opacity-75 pointer-events-none"></div>
+        <div class="relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
+        {{#errorMessage}}
+            <div class="mb-6 p-3.5 rounded-xl bg-error-container/20 border border-error/40 flex items-start gap-3">
+                <span class="material-symbols-outlined text-error text-[20px] flex-shrink-0 mt-0.5" data-icon="error">error</span>
+                <div class="flex-1">
+                    <p class="font-body-sm text-body-sm text-error font-medium">{{errorMessage}}</p>
+                </div>
+            </div>
+        {{/errorMessage}}
+            <form id="articleForm" action="/article/{{category}}/new" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit(this)" class="space-y-5">
+                <div class="space-y-2">
+                    <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">작성자</label>
+                    <div class="relative group">
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-outline">
+                            <span class="material-symbols-outlined text-[20px]" data-icon="person">person</span>
+                        </div>
+                        </div>
+                    {{#isLoggedIn}}
+            <input type="text" class="form-control w-full pl-11 pr-4 py-3 bg-surface-container-lowest/50 border border-outline-variant/40 rounded-xl font-body-md text-body-md text-on-surface/80 focus:outline-none" name="userid" value="{{userId}}" readonly>
+                    {{/isLoggedIn}}
+                    {{^isLoggedIn}}
+                        <input type="text" class="form-control w-full pl-11 pr-4 py-3 bg-surface-container-lowest/50 border border-outline-variant/40 rounded-xl font-body-md text-body-md text-on-surface/80 focus:outline-none" name="userid" value="로그인 필요" readonly>
+                    {{/isLoggedIn}}
+                </div>
+                <div class="space-y-2">
+                    <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">제목</label>
+                    <input type="text" class="form-control w-full pl-11 pr-4 py-3 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md text-on-surface placeholder:text-outline/60 focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" name="title" required>
+                </div>
+        <div class="mb-3">
+        <label class="form-label">내용</label>
+        <div id="content" contenteditable="true" class="form-control" aria-multiline="true"></div>
+        <input type="hidden" name="content" id="hiddenContent" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">첨부 파일 (이미지 또는 영상)</label>
+        <input type="file" name="uploadFiles" id="fileInput" multiple accept="image/*,video/*" class="form-control" />
+    </div>
+
+    <div>
+        <label class="form-label">미리보기</label>
+        <div id="previewArea" class="d-flex flex-wrap"> </div>
+    </div>
+    {{#_csrf}} <input type="hidden" name="{{parameterName}}" value="{{token}}"> {{/_csrf}}
+
+    <button type="submit" class="btn btn-primary">작성하기</button>
+    <a href="/article/{{category}}" class="btn btn-secondary">목록으로</a>
+        </form>
+    </div>
+    </div>
+</main>
+<script>
+    window.beforeSubmit = function(form) {
+    const titleInput    = form.querySelector('input[name="title"]');
+    const contentDiv    = document.getElementById('content');
+    const hiddenContent = document.getElementById('hiddenContent');
+    const rawContent = (contentDiv?.innerHTML || '').trim();
+
+    // 본문 HTML을 hidden으로 동기화
+    hiddenContent.value = rawContent;
+    const titleOk = !!(titleInput && titleInput.value.trim());
+
+    const hasText  = rawContent.replace(/<br\s*\/?>/gi, '').replace(/\s/g, '') !== '';
+    const hasImg   = /<img\s[^>]*src=['"][^'"]+['"][^>]*>/i.test(rawContent);
+    const hasVideo = /<video\s[^>]*>.*?<\/video>/i.test(rawContent) || /<source\s[^>]*src=['"][^'"]+['"][^>]*>/i.test(rawContent);
+
+    if (!titleOk) {
+            alert('제목을 입력해 주세요.');
+            return false;
+        }
+    if (!hasText && !hasImg && !hasVideo) {
+            alert('내용을 입력해 주세요.');
+            return false;
+        }
+
+        return true;
+
+    // 추가로 업로드된 파일 hidden 값 유효성 검사 등을 하려면 여기서 수행
+    return true; // true를 반환하면 submit 진행
+  };
+
+   document.addEventListener('DOMContentLoaded', () => {
+     const form          = document.getElementById('articleForm');       // ← id 일치 필수
+     const contentDiv    = document.getElementById('content');
+     const hiddenContent = document.getElementById('hiddenContent');
+     const fileInput     = document.getElementById('fileInput');
+     const previewArea   = document.getElementById('previewArea');
+     const category = document.getElementById('editorRoot')?.dataset.category || 'category';
+
+     if (!form || !contentDiv || !fileInput || !previewArea) {
+       console.error('필수 엘리먼트(id) 누락: articleForm/content/fileInput/previewArea 확인');
+       return;
+     }
+
+     const UPLOAD_ENDPOINT = `/api/article/${category}/uploadFile`;
+     const FALLBACK_IMG    = '/images/no-image.png';
+
+     // CSRF (있는 경우에만 헤더 세팅)
+     const _csrf  = document.querySelector('meta[name="_csrf"]')?.content;
+     const _ch    = document.querySelector('meta[name="_csrf_header"]')?.content;
+     const buildHeaders = () => (_csrf && _ch) ? { [_ch]: _csrf } : {};
+
+     // ---- helpers ----
+     const pick = (o, ks) => ks.find(k => o && o[k]) ? o[ks.find(k => o && o[k])] : null;
+
+     function toUploadsUrl(pathLike) {
+       if (!pathLike) return null;
+       try {
+         const u = new URL(pathLike, location.origin);
+         const p = u.pathname.startsWith('/uploads/') ? u.pathname : '/uploads' + (u.pathname.startsWith('/') ? '' : '/') + u.pathname;
+         return p.replace(/\/{2,}/g, '/');
+       } catch {
+         const p = pathLike.startsWith('/uploads/') ? pathLike : '/uploads/' + pathLike.replace(/^\/+/, '');
+         return p.replace(/\/{2,}/g, '/');
+       }
+     }
+
+     function normalizeUploadResponse(payload, mime) {
+       const rawUrl  = pick(payload, ['url','path','publicUrl','location','href']);
+       const rawName = pick(payload, ['savedName','storedName','name','filename']);
+       const url = toUploadsUrl(rawUrl || rawName);
+       const storedName = (url || '').replace(/^\/uploads\//,'');
+       const fileType = payload.fileType || (mime?.startsWith('video') ? 'video/mp4' : 'image/jpeg');
+       return { url, storedName, fileType };
+     }
+
+     function insertNodeAtCaret(container, node) {
+       const sel = window.getSelection?.();
+       if (sel && sel.rangeCount) {
+         let range = sel.getRangeAt(0);
+         if (!container.contains(range.commonAncestorContainer)) container.appendChild(node);
+         else { range.deleteContents(); range.insertNode(node); }
+         const r = document.createRange(); r.setStartAfter(node); r.collapse(true);
+         sel.removeAllRanges(); sel.addRange(r);
+       } else container.appendChild(node);
+     }
+
+     function insertMediaAtCaret(url, mime, key) {
+       // 본문
+       const wrap = document.createElement('div'); wrap.className='content-media'; wrap.dataset.key=key;
+       let media;
+       if (mime?.startsWith('video')) {
+         media = document.createElement('video'); media.controls = true;
+         const src = document.createElement('source'); src.src=url; src.type=mime; media.appendChild(src);
+       } else {
+         media = document.createElement('img'); media.src=url; media.alt='image';
+         media.onerror = function(){ this.onerror=null; this.src=FALLBACK_IMG; };
+       }
+       const removeBtn = document.createElement('button');
+       removeBtn.type='button'; removeBtn.className='remove-btn';
+       removeBtn.innerHTML='<i class="bi bi-x-circle-fill" style="font-size:20px;color:#dc3545;"></i>';
+       removeBtn.addEventListener('click', () => {
+         wrap.remove();
+         previewArea.querySelector(`[data-key="${key}"]`)?.remove();
+         form.querySelector(`input[name="uploadedFiles"][data-key="${key}"]`)?.remove();
+       });
+       wrap.appendChild(media); wrap.appendChild(removeBtn);
+       insertNodeAtCaret(contentDiv, wrap);
+
+       // 미리보기
+       const thumbBox = document.createElement('div'); thumbBox.className='preview-item'; thumbBox.dataset.key=key;
+       const thumb = mime?.startsWith('video') ? document.createElement('video') : document.createElement('img');
+       thumb.src=url; if (thumb.tagName==='VIDEO') thumb.controls=true;
+       thumb.onerror=function(){ this.onerror=null; this.src=FALLBACK_IMG; };
+       const tr = document.createElement('button');
+       tr.type='button'; tr.className='remove-btn';
+       tr.innerHTML='<i class="bi bi-x-circle-fill" style="font-size:18px;color:#dc3545;"></i>';
+       tr.addEventListener('click', () => removeBtn.click());
+       thumbBox.appendChild(thumb); thumbBox.appendChild(tr);
+       previewArea.appendChild(thumbBox);
+     }
+
+     function addHiddenUploadedFile(storedName, key) {
+       const hidden = document.createElement('input');
+       hidden.type='hidden'; hidden.name='uploadedFiles'; hidden.value=storedName; hidden.dataset.key=key;
+       form.appendChild(hidden);
+     }
+
+     async function uploadOne(file) {
+       const fd = new FormData(); fd.append('file', file);
+       const res = await fetch(UPLOAD_ENDPOINT, { method:'POST', body:fd, headers:buildHeaders() });
+
+       // 🔴 여기! 응답 실패면 바로 중단(중요)
+       if (!res.ok) {
+         const txt = await res.text().catch(()=>String(res.status));
+         throw new Error(`HTTP ${res.status} - ${txt.substring(0,200)}`);
+       }
+
+       const ct = res.headers.get('content-type') || '';
+       const payload = ct.includes('application/json') ? await res.json() : { url: await res.text() };
+       const { url, storedName } = normalizeUploadResponse(payload, file.type);
+       if (!url) throw new Error('업로드 응답에 url이 없습니다.');
+
+       const key = storedName || url;
+       insertMediaAtCaret(url, file.type, key);
+       addHiddenUploadedFile(storedName, key);
+     }
+
+     fileInput.addEventListener('change', async (e) => {
+       const files = Array.from(e.target.files || []);
+       for (const f of files) {
+         try { await uploadOne(f); }
+         catch (err) { console.error(err); alert('업로드 실패: ' + (err.message || err)); }
+       }
+       fileInput.value = '';
+     });
+   });
+</script>
+
+
+</body>
+</html>

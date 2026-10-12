@@ -1,0 +1,165 @@
+<!-- 헤더 고정 상단 영역 -->
+<header class="sticky top-0 z-50 w-full bg-[#16181f]/80 backdrop-blur-md border-b border-[#3a4a46]/30 transition-transform duration-300" id="top-header">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+
+    <div class="flex items-center gap-8">
+
+    <!-- 1. 브랜드 로고 -->
+    <a href="/main" class="flex items-center gap-2 group text-decoration-none">
+        <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4] shadow-[0_0_8px_#00f5d4]"></span>
+        <span class="font-bold text-xl text-[#00f5d4]" style="font-family: 'Sora', sans-serif;">tripleS</span>
+    </a>
+
+    <!-- 2. 네비게이션 메뉴 (데스크톱) -->
+    <nav id="navbar" class="hidden lg:flex items-center gap-6 text-xs tracking-wider" style="font-family: 'JetBrains Mono', monospace;">
+        <!-- ABOUT 트리플에스 드롭다운 -->
+        <div class="relative group py-4">
+            <button class="text-[#b9cac4] hover:text-[#00f5d4] flex items-center gap-1 bg-transparent border-0 cursor-pointer">
+                ABOUT 트리플에스
+                <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-180">expand_more</span>
+            </button>
+            <div class="absolute left-0 top-full pt-1 hidden group-hover:block w-48 z-50">
+                <div class="bg-[#191b22]/95 border border-[#3a4a46]/50 rounded-xl shadow-2xl backdrop-blur-lg p-1.5 flex flex-col gap-0.5">
+                    <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none transition-colors" href="/triples/artist">그룹 소개</a>
+                    <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none transition-colors" href="/triples/album">발매 앨범</a>
+                    <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none transition-colors" href="/triples/unit">역대 유닛</a>
+                    <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none transition-colors" href="/triples/chemistry">멤버간 케미</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 게시판 드롭다운 -->
+        <div class="relative group py-4">
+            <button class="text-[#b9cac4] hover:text-[#00f5d4] flex items-center gap-1 bg-transparent border-0 cursor-pointer">
+                게시판
+                <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-180">expand_more</span>
+            </button>
+            <div class="absolute left-0 top-full pt-1 hidden group-hover:block w-48 z-50">
+                <div class="bg-[#191b22]/95 border border-[#3a4a46]/50 rounded-xl shadow-2xl p-1.5 backdrop-blur-lg flex flex-col gap-0.5">
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/article/chat">잡담</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/article/trade">교환</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/article/sell">거래</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/article/info">정보</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/article/notice">공지</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 코스모 드롭다운 -->
+        <div class="relative group py-4">
+            <button class="text-[#b9cac4] hover:text-[#00f5d4] flex items-center gap-1 bg-transparent border-0 cursor-pointer">
+                코스모
+                <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-180">expand_more</span>
+            </button>
+            <div class="absolute left-0 top-full pt-1 hidden group-hover:block w-48 z-50">
+                <div class="bg-[#191b22]/95 border border-[#3a4a46]/50 rounded-xl shadow-2xl p-1.5 backdrop-blur-lg flex flex-col gap-0.5">
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/cosmo/objekt">오브젝트</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/cosmo/gravity">역대 그래비티</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/cosmo/event">역대 이벤트</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/cosmo/update">코스모 업데이트 현황</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 미디어 드롭다운 -->
+        <div class="relative group py-4">
+            <button class="text-[#b9cac4] hover:text-[#00f5d4] flex items-center gap-1 bg-transparent border-0 cursor-pointer">
+                미디어
+                <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-180">expand_more</span>
+            </button>
+            <div class="absolute left-0 top-full pt-1 hidden group-hover:block w-48 z-50">
+                <div class="bg-surface-container-high/95 border border-outline-variant/50 rounded-xl shadow-2xl p-1.5 backdrop-blur-lg flex flex-col gap-0.5">
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/archive/image_archive">사진 아카이브</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/archive/video_archive">영상 아카이브</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/media">공식 미디어</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/sns">소셜 미디어</a>
+                </div>
+            </div>
+        </div>
+
+        <a class="text-[#b9cac4] hover:text-[#00f5d4] transition-colors text-decoration-none" href="/schedule">일정</a>
+        <a class="text-[#b9cac4] hover:text-[#00f5d4] transition-colors text-decoration-none" href="/shop">굿즈샵</a>
+        <a class="text-[#b9cac4] hover:text-[#00f5d4] transition-colors text-decoration-none" href="/sitemap">전체 게시판</a>
+    </nav>
+    </div>
+
+    <!-- 3. 검색바 & 유저 프로필 섹션 -->
+<div class="flex items-center gap-3">
+    <!-- 검색창 -->
+    <div class="relative hidden sm:flex items-center">
+        <input class="w-40 lg:w-52 bg-[#0d0e12]/80 border border-[#3a4a46]/50 rounded-full px-3 py-1.5 text-xs text-[#e3e2e8] placeholder-[#b9cac4]/50 focus:outline-none focus:border-[#00f5d4] transition-all" type="text" placeholder="검색어를 입력하세요" />
+        <button class="absolute right-1 p-1 bg-[#00f5d4] hover:bg-[#00f5d4]/80 text-[#0d0e12] rounded-full flex items-center justify-center transition-colors border-0 cursor-pointer" title="검색">
+            <span class="material-symbols-outlined text-sm">search</span>
+        </button>
+    </div>
+
+    <!-- 로그인한 회원 메뉴 -->
+{{#member}}
+        <div class="relative group">
+            <button class="flex items-center gap-2 px-3 py-1.5 bg-[#191b22] border border-[#3a4a46]/50 rounded-xl hover:border-[#00f5d4] transition-all bg-transparent cursor-pointer">
+                <div class="flex flex-col text-left">
+                    <span class="text-xs font-semibold text-[#e3e2e8] leading-tight">{{userId}}님</span>
+                    <span class="text-[10px] text-[#00f5d4] font-mono leading-none">Lv.{{level}} {{points}}P</span>
+                </div>
+                <span class="material-symbols-outlined text-sm text-[#b9cac4] group-hover:rotate-180 transition-transform">arrow_drop_down</span>
+            </button>
+
+            <div class="absolute right-0 top-full pt-1 hidden group-hover:block w-48 z-50">
+                <div class="bg-[#191b22]/95 border border-[#3a4a46]/50 rounded-xl shadow-2xl p-1.5 backdrop-blur-lg flex flex-col gap-0.5">
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2 text-decoration-none" href="/mypage">
+                        <span class="material-symbols-outlined text-[16px]">account_circle</span> 마이페이지
+                    </a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2 text-decoration-none" href="/myposts">
+                        <span class="material-symbols-outlined text-[16px]">edit_note</span> 작성한 글
+                    </a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2 text-decoration-none" href="/mycomments">
+                        <span class="material-symbols-outlined text-[16px]">chat_bubble_outline</span> 작성한 댓글
+                    </a>
+                    <div class="h-px bg-[#3a4a46]/30 my-1"></div>
+                    <a href="/logout" class="px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex items-center gap-2 text-decoration-none">
+                        <span class="material-symbols-outlined text-sm">logout</span> 로그아웃
+                    </a>
+                </div>
+            </div>
+        </div>
+{{/member}}
+
+    <!-- 비로그인 시 메뉴 -->
+{{^member}}
+        <div class="flex items-center gap-2">
+            <a href="/login" class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] font-medium text-decoration-none transition-colors">로그인</a>
+            <a href="/signup" class="px-3 py-1.5 text-xs bg-[#00f5d4] text-[#0d0e12] hover:bg-[#00f5d4]/80 rounded-full font-semibold text-decoration-none transition-all shadow-md">회원가입</a>
+        </div>
+    {{/member}}
+        </div>
+    </div>
+</header>
+
+        <!-- Flash Message 알림 메시지 영역 -->
+        {{#msg}}
+            <div class="max-w-7xl mx-auto px-4 mt-4">
+                <div class="bg-primary-container/10 border border-primary-container/30 text-primary-container px-4 py-3 rounded-xl flex items-center justify-between text-xs">
+                    <span>{{msg}}</span>
+                    <button type="button" class="bg-transparent border-0 text-primary-container cursor-pointer font-bold text-base" onclick="this.parentElement.remove();">&times;</button>
+                </div>
+            </div>
+        {{/msg}}
+
+        <!-- 스크롤 시 상단 헤더 보이기/숨기기 스크립트 -->
+        <script>
+            let lastScrollTop = 0;
+            const header = document.getElementById("top-header");
+
+            window.addEventListener("scroll", function () {
+                let currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+
+                if (currentScroll > lastScrollTop && currentScroll > 100) {
+                    // 아래로 스크롤 시 헤더 올리기
+                    header.style.transform = "translateY(-100%)";
+                } else {
+                    // 위로 스크롤 시 헤더 다시 내리기
+                    header.style.transform = "translateY(0)";
+                }
+                lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
+            }, false);
+        </script>

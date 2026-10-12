@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>트리플에스 커뮤니티- 내 정보</title>
+</head>
+<body>
+{{>layout/header}}
+<div class="my-page">
+<h2>내 정보</h2>
+    <p><strong>아이디:</strong> {{member.userId}}</p>
+    <p><strong>이메일:</strong> {{member.email}}</p>
+    <p><strong>주소:</strong> {{member.address}}</p>
+    <p><strong>레벨:</strong> {{member.level}}</p>
+    <p><strong>포인트:</strong> {{member.points}}</p>
+
+</div>
+
+<a href="/mypage_edit">정보 수정</a>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+</body>
+</html>

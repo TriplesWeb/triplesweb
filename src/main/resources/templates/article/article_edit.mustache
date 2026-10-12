@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
+    <style>
+        #content {
+          min-height: 150px;
+          font-family: inherit;
+          border: 1px solid #ccc;
+          padding: 10px;
+          border-radius: 5px;
+        }
+        .content-media {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .content-media img,
+        .content-media video {
+          max-width: 1200px;
+          max-height: 1000px;
+          height: auto;
+          display: block;
+          border-radius: 5px;
+        }
+        #previewArea img, #previewArea video {
+          width: 100px; height: 100px;
+          border-radius: 5px;
+          margin-right: 10px; margin-bottom: 10px;
+          object-fit: cover;
+          border: 2px solid #ddd;
+        }
+        #previewArea { display:flex; flex-wrap:wrap; }
+        .remove-btn {
+          position: absolute;
+          top: 8px; right: 8px;
+          width: 28px; height: 28px; border-radius: 50%;
+          background: rgba(255,255,255,.85);
+          display:flex; align-items:center; justify-content:center;
+          cursor:pointer; z-index: 9999;
+          box-shadow: 0 2px 4px rgba(0,0,0,.2);
+        }
+        .remove-btn i { font-size: 18px; color: #dc3545; pointer-events:none; }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+</head>
+<body class="other-page">
+{{>layout/header}}
+
+<div id="editorRoot" data-category="{{article.category}}"></div>
+
+{{#errorMessage}}
+    <div class="alert alert-danger mt-2">{{errorMessage}}</div>
+{{/errorMessage}}
+
+<form id="editForm" class="container" action="/article/{{article.category}}/{{article.id}}" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit(this)">
+    <input type="hidden" name="id" value="{{article.id}}">
+
+    <div class="mb-3">
+        <label class="form-label">작성자</label>
+        <input type="text" class="form-control" name="userid" value="{{article.userId}}" readonly>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">제목</label>
+        <input type="text" class="form-control" name="title" value="{{article.title}}" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">내용</label>
+        <div id="content" contenteditable="true" class="form-control" aria-multiline="true">
+            {{{article.content}}}
+        </div>
+        <input type="hidden" name="content" id="hiddenContent">
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">첨부 파일 (이미지 또는 영상)</label>
+        <!-- ⚠ Article.files 바인딩 충돌 방지를 위해 name을 __fileChooser 로 사용 -->
+        <input type="file" id="fileInput" name="__fileChooser" multiple accept="image/*,video/*" class="form-control" />
+    </div>
+
+    <div class="mb-2">
+        <label class="form-label">미리보기</label>
+        <div id="previewArea"></div>
+    </div>
+
+    {{#_csrf}} <input type="hidden" name="{{parameterName}}" value="{{token}}"> {{/_csrf}}
+
+    <button type="submit" class="btn btn-primary mt-3">수정하기</button>
+    <a href="/article/{{category}}" class="btn btn-secondary mt-3">목록으로</a>
+</form>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    /* -------------------- helpers -------------------- */
+    function savedFromUrl(u) {
+      if (!u) return null;
+      try {
+        const s = u.replace(/^"(.*)"$/, '$1');
+        const url = s.startsWith('http') ? s : new URL(s, location.origin).href;
+        const i = url.indexOf('/uploads/');
+        return i >= 0 ? url.substring(i + '/uploads/'.length) : null;
+      } catch { return null; }
+    }
+    function makeAbsoluteUrl(url) {
+      let u = (url || '').trim().replace(/^"(.*)"$/, '$1');
+      if (!u.startsWith('/')) u = '/' + u;
+      return new URL(u, location.origin).href;
+    }
+    function isVideoType(mimeOrUrl) {
+      if (!mimeOrUrl) return false;
+      if (typeof mimeOrUrl === 'string' && mimeOrUrl.includes('/')) return mimeOrUrl.startsWith('video');
+      const u = String(mimeOrUrl).toLowerCase();
+      return /\.(mp4|mov|m4v|avi|mkv|webm)(\?|#|$)/.test(u);
+    }
+
+    /* -------------------- main -------------------- */
+    document.addEventListener('DOMContentLoaded', () => {
+      const category = document.getElementById('editorRoot')?.dataset.category || 'category';
+      const UPLOAD_ENDPOINT = `/api/article/${category}/uploadFile`;
+
+      const editForm      = document.getElementById('editForm');
+      const contentDiv    = document.getElementById('content');
+      const hiddenContent = document.getElementById('hiddenContent');
+      const fileInput     = document.getElementById('fileInput');
+      const previewArea   = document.getElementById('previewArea');
+
+      // 서버가 내려준 파일(id ↔ savedName) 매핑 (삭제 시 hidden 세팅용)
+      const fileIdMap = {
+    {{#files}}
+        "{{savedName}}": {{id}},
+    {{/files}}
+    };
+
+    // CSRF (메타 태그가 레이아웃에 있으면 자동 세팅)
+    const _csrf  = document.querySelector('meta[name="_csrf"]')?.content;
+    const _ch    = document.querySelector('meta[name="_csrf_header"]')?.content;
+    const buildHeaders = () => (_csrf && _ch) ? { [_ch]: _csrf } : {};
+
+    // 초기화: 본문에 있는 미디어에 remove 버튼/데이터셋 부여 + 프리뷰 동기화
+    enhanceContentMediaFromDOM();
+    syncPreviewFromContent();
+
+    // 본문 변경을 감지해서 미리보기 갱신 (수동 편집 대응)
+    const mo = new MutationObserver(() => syncPreviewFromContent());
+    mo.observe(contentDiv, { childList:true, subtree:true, attributes:true });
+
+    // 전역 삭제 핸들러
+    document.body.addEventListener('click', (e) => {
+      const btn = e.target.closest('.remove-btn');
+      if (!btn) return;
+
+      const wrapper = btn.closest('.content-media');
+      const media = wrapper?.querySelector('img, video, source');
+
+      let fileId = btn.dataset.fileId || media?.dataset.fileId || null;
+      let saved = btn.dataset.savedName || media?.dataset.savedName || null;
+
+      if (!saved) {
+        const src = media?.src || media?.querySelector?.('source')?.src;
+        saved = savedFromUrl(src);
+      }
+      if (!fileId && saved && fileIdMap[saved]) {
+        fileId = String(fileIdMap[saved]);
+      }
+
+      // 본문과 프리뷰에서 해당 미디어 제거
+      removeMediaEverywhere(saved);
+
+      // hidden 처리
+      if (fileId) {
+        if (!editForm.querySelector(`input[name="deletedFiles"][value="${fileId}"]`)) {
+          const hid = document.createElement('input');
+          hid.type = 'hidden';
+          hid.name = 'deletedFiles';
+          hid.value = fileId;
+          editForm.appendChild(hid);
+        }
+      } else if (saved) {
+        const up = editForm.querySelector(`input[name="uploadedFiles"][value="${saved}"]`);
+        if (up) up.remove();
+      }
+    });
+
+    // 파일 선택 → AJAX 업로드 → 본문 삽입 + hidden uploadedFiles 추가
+    fileInput.addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files || []);
+      for (const f of files) {
+        try {
+          const fd = new FormData(); fd.append('file', f);
+          const res = await fetch(UPLOAD_ENDPOINT, { method:'POST', body: fd, headers: buildHeaders() });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const ct = res.headers.get('content-type') || '';
+          const payload = ct.includes('application/json') ? await res.json() : { url: await res.text() };
+          const url = payload.url || payload.path || payload.location || payload.href;
+          if (!url) throw new Error('업로드 응답에 url 없음');
+
+          const { saved } = insertMedia(url, f.type);
+
+          const hi = document.createElement('input');
+          hi.type = 'hidden';
+          hi.name = 'uploadedFiles';
+          hi.value = saved;
+          editForm.appendChild(hi);
+        } catch (err) {
+          console.error(err);
+          alert('업로드 실패: ' + (err.message || err));
+        }
+      }
+      fileInput.value = '';
+    });
+
+    // 제출 직전 검증/동기화
+    window.beforeSubmit = function(form) {
+      hiddenContent.value = contentDiv.innerHTML.trim();
+
+      const title = form.querySelector('input[name="title"]')?.value?.trim() || '';
+      if (!title) { alert('제목을 입력해주세요.'); return false; }
+
+      const body = hiddenContent.value;
+      const hasText  = body.replace(/<br\s*\/?>/gi, '').replace(/\s/g, '') !== '';
+      const hasImg   = /<img\s[^>]*src=['"][^'"]+['"][^>]*>/i.test(body);
+      const hasVideo = /<video\s[^>]*>.*?<\/video>/i.test(body) || /<source\s[^>]*src=['"][^'"]+['"][^>]*>/i.test(body);
+
+      if (!hasText && !hasImg && !hasVideo) {
+        alert('내용을 입력해주세요.');
+        return false;
+      }
+      return true;
+    };
+
+    /* ---------- functions ---------- */
+    function enhanceContentMediaFromDOM() {
+      contentDiv.querySelectorAll('img, video').forEach(el => {
+        const src = el.src || el.querySelector('source')?.src || '';
+        const saved = savedFromUrl(src);
+        if (!saved) return;
+
+        // wrapper 보장
+        let wrapper = el.closest('.content-media');
+        if (!wrapper) {
+          wrapper = document.createElement('div');
+          wrapper.className = 'content-media';
+          el.parentNode.insertBefore(wrapper, el);
+          wrapper.appendChild(el);
+        }
+        // remove 버튼 보장
+        if (!wrapper.querySelector('.remove-btn')) {
+          const btn = document.createElement('span');
+          btn.className = 'remove-btn';
+          btn.dataset.savedName = saved;
+          btn.innerHTML = `<i class="bi bi-x-circle-fill"></i>`;
+          wrapper.appendChild(btn);
+        }
+        // dataset 세팅
+        el.dataset.savedName = saved;
+        const id = fileIdMap[saved];
+        if (id) {
+          el.dataset.fileId = String(id);
+          wrapper.querySelector('.remove-btn').dataset.fileId = String(id);
+        } else {
+          wrapper.querySelector('.remove-btn').dataset.savedName = saved;
+        }
+      });
+    }
+
+    function syncPreviewFromContent() {
+      previewArea.innerHTML = '';
+      contentDiv.querySelectorAll('img, video').forEach(el => {
+        const isImg = el.tagName.toLowerCase() === 'img';
+        const src = isImg ? el.src : (el.src || el.querySelector('source')?.src || '');
+        let pv;
+        if (isImg) {
+          pv = document.createElement('img'); pv.src = src;
+        } else {
+          pv = document.createElement('video'); pv.controls = true; pv.src = src;
+        }
+        previewArea.appendChild(pv);
+      });
+    }
+
+    function removeMediaEverywhere(saved) {
+      if (!saved) return;
+      // 본문
+      contentDiv.querySelectorAll(`img[src*="/uploads/${saved}"], video source[src*="/uploads/${saved}"], video[src*="/uploads/${saved}"]`)
+        .forEach(node => {
+          const v = node.tagName.toLowerCase() === 'source' ? node.parentElement : node;
+          (v.closest('.content-media') || v).remove();
+        });
+      // 프리뷰
+      previewArea.querySelectorAll(`img[src*="/uploads/${saved}"], video[src*="/uploads/${saved}"]`)
+        .forEach(node => node.remove());
+    }
+
+    function insertMedia(url, mimeOrType) {
+      const absUrl = makeAbsoluteUrl(url);
+      const saved = savedFromUrl(absUrl) || (absUrl.split('/uploads/')[1] || '');
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'content-media';
+
+      let media;
+      const treatAsVideo = isVideoType(mimeOrType || absUrl);
+      if (treatAsVideo) {
+        media = document.createElement('video'); media.controls = true;
+        const src = document.createElement('source'); src.src = absUrl; src.type = (typeof mimeOrType === 'string' && mimeOrType.includes('/')) ? mimeOrType : '';
+        media.appendChild(src);
+      } else {
+        media = document.createElement('img'); media.src = absUrl;
+      }
+      media.dataset.savedName = saved;
+      wrapper.appendChild(media);
+
+      const removeBtn = document.createElement('span');
+      removeBtn.className = 'remove-btn';
+      removeBtn.dataset.savedName = saved;
+      removeBtn.innerHTML = `<i class="bi bi-x-circle-fill"></i>`;
+      wrapper.appendChild(removeBtn);
+
+      contentDiv.appendChild(wrapper);
+
+      // 프리뷰 반영
+      const pv = treatAsVideo ? document.createElement('video') : document.createElement('img');
+      if (treatAsVideo) pv.controls = true;
+      pv.src = absUrl;
+      previewArea.appendChild(pv);
+
+      return { saved, wrapper, preview: pv };
+    }
+  });
+</script>
+</body>
+</html>

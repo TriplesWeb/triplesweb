@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>검색 결과</title>
+    <style>
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .board-tag {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 6px;
+        }
+    </style>
+</head>
+<body>
+{{>layout/header}}
+
+<div class="container mt-5">
+    <h3 class="mb-3">'{{keyword}}'에 대한 검색 결과</h3>
+
+    {{#errorMessage}}
+        <div class="alert alert-warning">{{errorMessage}}</div>
+    {{/errorMessage}}
+
+    {{#resultList}}
+    <div class="card mb-3">
+    <div class="card-body">
+    <div class="board-tag">
+        <span class="badge bg-primary">
+        {{#category}}
+            {{boardName}}
+        {{/category}}
+        </span>
+
+    </div>
+        <div class="board-tag">
+
+        </div>
+        <h5 class="card-title">
+            <a href="/{{category}}/{{id}}" class="text-decoration-none text-dark">
+                {{{title}}}
+            </a>
+        </h5>
+        <p class="card-text">
+            {{{content}}}
+        </p>
+        <p class="text-end text-muted" style="font-size: 0.9rem;">
+            작성자: {{userId}}
+        </p>
+    </div>
+    </div>
+    {{/resultList}}
+
+    {{^resultList}}
+        <p class="text-muted">검색 결과가 없습니다.</p>
+    {{/resultList}}
+</div>
+
+</body>
+</html>

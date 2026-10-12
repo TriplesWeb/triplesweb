@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous" />
+    <title>트리플에스 커뮤니티- 트리플에스 영상 아카이브</title>
+    <style>
+    .media-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 10px;
+}
+
+.video-container {
+position: relative;
+width: 100%;
+padding-bottom: 56.25%;
+height: 0;
+}
+.video-container iframe {
+position: absolute;
+width: 100%;
+height: 100%;
+border: 0;
+}
+  .btn-add-video {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 1050;
+  border-radius: 12px;
+  padding: .6rem 1.2rem;
+}
+    </style>
+</head>
+<body class="other-page">
+{{>layout/header}}
+<div class="container mt-5">
+    <h2 class="mb-4">영상 아카이브</h2>
+    <div class="media-section">
+        {{#archives}}
+            <div class="media-card-wrapper">
+                <div class="small text-truncate" title="{{title}}">{{title}}</div>
+                <div class="media-card video-card">
+                    <video controls>
+                        <source src="{{url}}" type="video/mp4">
+                    </video>
+                </div>
+            </div>
+        {{/archives}}
+        {{^archives}}
+            <p>등록된 영상이 없습니다.</p>
+        {{/archives}}
+    </div>
+    <div class="button-zone">
+        {{#isAdmin}}
+            <button class="btn btn-primary btn-add-video" onclick="showAddModal()">동영상 추가</button>
+        {{/isAdmin}}
+    </div>
+</div>
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="uploadModalLabel">아카이브 업로드</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- 제목 -->
+                    <div class="mb-3">
+                        <label for="title" class="form-label">제목</label>
+                        <input type="text" class="form-control" id="title" name="title" required />
+                    </div>
+
+                    <!-- 파일 -->
+                    <div class="mb-3">
+                        <label for="file" class="form-label">파일 선택</label>
+                        <input type="file" class="form-control" id="file" name="file"
+                               accept=" video/*" required onchange="previewFile()" />
+                    </div>
+
+                    <!-- 미리보기 -->
+                    <div id="previewArea" class="mt-3"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" class="btn btn-primary">추가</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+    // 모달 열기
+    function showAddModal() {
+      const modal = new bootstrap.Modal(document.getElementById('uploadModal'));
+      document.getElementById('uploadForm').reset();
+      document.getElementById('previewArea').innerHTML = "";
+      modal.show();
+    }
+
+    // 파일 미리보기
+    function previewFile() {
+      const previewArea = document.getElementById("previewArea");
+      const fileInput = document.getElementById("file");
+      const file = fileInput.files[0];
+      previewArea.innerHTML = "";
+
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+         if (file.type.startsWith("video/")) {
+            const video = document.createElement("video");
+            video.src = e.target.result;
+            video.controls = true;
+            video.style.maxWidth = "300px";
+            previewArea.appendChild(video);
+          }
+          else {
+            alert("동영상이 아닙니다!");
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+    // 업로드 요청
+    document.getElementById("uploadForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+
+      const formData = new FormData(this);
+
+      fetch("/archive/video/upload", {
+        method: "POST",
+        body: formData
+      })
+      .then(res => {
+        if (res.ok) {
+          alert("업로드 완료!");
+          location.reload();
+        } else {
+          alert("업로드 실패!");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("업로드 중 오류 발생");
+      });
+    });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

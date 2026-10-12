@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <title>굿즈샵 작성폼</title>
+    <style>
+    #content {
+    min-height: 150px;
+    font-family: inherit;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+    }
+    .content-media {
+    position: relative;
+    display: inline-block;
+    margin: 5px 0;
+    width: auto;
+    }
+    .content-media img,
+    .content-media video {
+    max-width: 100%;
+    display: block;
+    border-radius: 5px;
+    height: auto;
+    }
+</style>
+</head>
+<body class="other_page">
+<form id="editForm" class="container" action="/shop/shop_new" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit()">
+    <div class="col-md-3">
+        <label class="form-label">탭</label>
+        <label>
+            <select class="form-select bg-dark text-light" name="category">
+                <option value="album" {{#category_album}}selected{{/category_album}}>앨범</option>
+                <option value="merch" {{#category_merch}}selected{{/category_merch}}>상품(MERCH)</option>
+                <option value="photobook" {{#category_photobook}}selected{{/category_photobook}}>포토북</option>
+                <option value="magazine" {{#category_magazine}}selected{{/category_magazine}}>매거진</option>
+                <option value="tour" {{#category_tour}}selected{{/category_tour}}>콘서트 굿즈</option>
+            </select>
+        </label>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">제목</label>
+        <input type="text" class="form-control" name="name" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">가격</label>
+        <input type="text" class="form-control" name="price" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">내용 (상세 정보)</label>
+        <div id="content" contenteditable="true" class="form-control" aria-multiline="true"></div>
+        <input type="hidden" name="description" id="hiddenContent" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">첨부 파일 (이미지 또는 영상)</label>
+        <input type="file" name="files" id="imageUpload" multiple accept="image/*,video/*" class="form-control" />
+    </div>
+    <button type="submit" class="btn btn-primary">작성하기</button>
+</form>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.getElementById("imageUpload").addEventListener("change", function () {
+        let file = this.files[0];
+        if (!file) return;
+
+        let formData = new FormData();
+        formData.append("file", file);
+
+        fetch("/shop/uploadFile", {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+         let contentDiv = document.getElementById("content");
+         contentDiv.innerHTML += `<div class="content-media"><img src="${data.url}" alt="상품 이미지"></div>`;
+            })     .catch(err => {
+        console.error(err);
+        alert("이미지 업로드 실패!");
+    });
+        });
+    function beforeSubmit() {
+    document.getElementById("hiddenContent").value = document.getElementById("content").innerHTML;
+    return true;
+}
+</script>
+
+</body>
+</html>
