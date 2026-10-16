@@ -3,154 +3,196 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
-          integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous" />
-    <title>트리플에스 커뮤니티- 트리플에스 영상 아카이브</title>
-    <style>
-    .media-section {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 16px;
-    margin-top: 10px;
-}
+    <title>트리플에스 커뮤니티 - 영상 아카이브</title>
 
-.video-container {
-position: relative;
-width: 100%;
-padding-bottom: 56.25%;
-height: 0;
-}
-.video-container iframe {
-position: absolute;
-width: 100%;
-height: 100%;
-border: 0;
-}
-  .btn-add-video {
-  position: fixed;
-  bottom: 20px;
-  left: 20px;
-  z-index: 1050;
-  border-radius: 12px;
-  padding: .6rem 1.2rem;
-}
+    <!-- 폰트 및 아이콘 연결 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+    <!-- Tailwind CSS 스크립트 -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="/js/tailwind.config.js"></script>
+    <link rel="stylesheet" href="/css/style.css">
+
+    <style>
+        /* 영상 그리드 레이아웃 스타일 */
+        .media-section {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        }
+        @media (min-width: 768px) {
+            .media-section { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (min-width: 1024px) {
+            .media-section { grid-template-columns: repeat(3, 1fr); }
+        }
     </style>
 </head>
-<body class="other-page">
+<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+
 {{>layout/header}}
-<div class="container mt-5">
-    <h2 class="mb-4">영상 아카이브</h2>
-    <div class="media-section">
-        {{#archives}}
-            <div class="media-card-wrapper">
-                <div class="small text-truncate" title="{{title}}">{{title}}</div>
-                <div class="media-card video-card">
-                    <video controls>
-                        <source src="{{url}}" type="video/mp4">
-                    </video>
+
+<main class="flex-1 flex items-start justify-center px-4 sm:px-6 py-8 z-10 relative">
+    <div class="w-full max-w-6xl relative">
+        <!-- 배경 글로우 효과 -->
+        <div class="absolute -inset-1 rounded-3xl bg-gradient-to-b from-primary-container/20 via-transparent to-secondary-container/30 blur-xl opacity-75 pointer-events-none"></div>
+
+        <!-- 메인 컨테이너 카드 -->
+        <div class="relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
+
+            <!-- 상단 헤더 타이틀 -->
+            <div class="flex items-center justify-between mb-8 pb-4 border-b border-outline-variant/30">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary-container text-3xl" data-icon="play_circle">play_circle</span>
+                    <h1 class="font-headline-lg text-headline-md font-bold text-on-surface tracking-tight">
+                        영상 아카이브
+                    </h1>
                 </div>
             </div>
-        {{/archives}}
-        {{^archives}}
-            <p>등록된 영상이 없습니다.</p>
-        {{/archives}}
+
+            <!-- 영상 갤러리 그리드 영역 -->
+            <div class="media-section">
+                {{#archives}}
+                    <div class="group bg-surface-container-lowest/50 border border-outline-variant/30 rounded-2xl overflow-hidden shadow-lg hover:border-primary-container/60 transition-all duration-200 flex flex-col">
+                        <div class="w-full bg-black aspect-video overflow-hidden relative flex items-center justify-center">
+                            <video controls class="w-full h-full object-contain">
+                                <source src="{{file.url}}" type="video/mp4">
+                                브라우저가 비디오 태그를 지원하지 않습니다.
+                            </video>
+                        </div>
+                        <div class="p-4 bg-surface-container-high/40 flex-1 flex items-center">
+                            <p class="text-sm font-medium text-on-surface truncate w-full" title="{{title}}">{{title}}</p>
+                        </div>
+                    </div>
+                {{/archives}}
+
+                {{^archives}}
+                    <div class="col-span-full py-20 text-center">
+                        <span class="material-symbols-outlined text-outline text-5xl mb-3" data-icon="videocam_off">videocam_off</span>
+                        <p class="text-on-surface-variant font-medium text-base">등록된 영상이 없습니다.</p>
+                    </div>
+                {{/archives}}
+            </div>
+
+        </div>
     </div>
-    <div class="button-zone">
-        {{#isAdmin}}
-            <button class="btn btn-primary btn-add-video" onclick="showAddModal()">동영상 추가</button>
-        {{/isAdmin}}
+</main>
+
+<!-- 하단 고정 동영상 추가 버튼 (관리자만 노출) -->
+{{#isAdmin}}
+    <div class="fixed bottom-6 right-6 z-50">
+        <button type="button" onclick="showAddModal()" class="py-3 px-6 rounded-full bg-primary-container text-on-primary font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-2 shadow-2xl">
+            <span class="material-symbols-outlined text-[20px]" data-icon="add_box">add_box</span>
+            <span>동영상 추가</span>
+        </button>
     </div>
-</div>
+{{/isAdmin}}
+
+<!-- 업로드 모달 창 (Tailwind 스타일 적용) -->
+{{#isAdmin}}
 <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-surface-container border border-outline-variant/50 rounded-3xl shadow-2xl text-on-surface overflow-hidden">
             <form id="uploadForm" enctype="multipart/form-data">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="uploadModalLabel">아카이브 업로드</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                <div class="modal-header border-b border-outline-variant/30 px-6 py-4">
+                    <h5 class="font-headline-md font-bold text-on-surface" id="uploadModalLabel">영상 아카이브 업로드</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="닫기"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body px-6 py-6 space-y-4">
                     <!-- 제목 -->
-                    <div class="mb-3">
-                        <label for="title" class="form-label">제목</label>
-                        <input type="text" class="form-control" id="title" name="title" required />
+                    <div class="space-y-1.5">
+                        <label for="title" class="block font-label-md text-sm text-on-surface-variant font-medium">제목</label>
+                        <input type="text" class="w-full px-4 py-2.5 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl text-sm text-black placeholder:text-outline/60 focus:outline-none focus:border-primary-container" id="title" name="title" placeholder="영상 제목을 입력하세요" required />
                     </div>
 
                     <!-- 파일 -->
-                    <div class="mb-3">
-                        <label for="file" class="form-label">파일 선택</label>
-                        <input type="file" class="form-control" id="file" name="file"
-                               accept=" video/*" required onchange="previewFile()" />
+                    <div class="space-y-1.5">
+                        <label for="file" class="block font-label-md text-sm text-on-surface-variant font-medium">동영상 파일 선택</label>
+                        <input type="file" class="w-full py-2 px-3 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl text-sm text-on-surface-variant file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-container file:text-on-primary hover:file:opacity-90 cursor-pointer" id="file" name="file" accept="video/*" required onchange="previewFile()" />
                     </div>
 
                     <!-- 미리보기 -->
-                    <div id="previewArea" class="mt-3"></div>
+                    <div id="previewArea" class="mt-2"></div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                    <button type="submit" class="btn btn-primary">추가</button>
+                <div class="modal-footer border-t border-outline-variant/30 px-6 py-4 flex items-center justify-end gap-2">
+                    <button type="button" class="px-5 py-2.5 rounded-xl bg-surface-container-high/40 hover:bg-surface-container-high border border-outline-variant/40 text-on-surface text-sm font-medium transition-all" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" class="px-6 py-2.5 rounded-full bg-primary-container text-on-primary font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow">추가하기</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+{{/isAdmin}}
+
+{{>layout/footer}}
+
 <script>
     // 모달 열기
     function showAddModal() {
-      const modal = new bootstrap.Modal(document.getElementById('uploadModal'));
-      document.getElementById('uploadForm').reset();
-      document.getElementById('previewArea').innerHTML = "";
-      modal.show();
+        const modal = new bootstrap.Modal(document.getElementById('uploadModal'));
+        document.getElementById('uploadForm').reset();
+        document.getElementById('previewArea').innerHTML = "";
+        modal.show();
     }
 
     // 파일 미리보기
     function previewFile() {
-      const previewArea = document.getElementById("previewArea");
-      const fileInput = document.getElementById("file");
-      const file = fileInput.files[0];
-      previewArea.innerHTML = "";
+        const previewArea = document.getElementById("previewArea");
+        const fileInput = document.getElementById("file");
+        const file = fileInput.files[0];
+        previewArea.innerHTML = "";
 
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-         if (file.type.startsWith("video/")) {
-            const video = document.createElement("video");
-            video.src = e.target.result;
-            video.controls = true;
-            video.style.maxWidth = "300px";
-            previewArea.appendChild(video);
-          }
-          else {
-            alert("동영상이 아닙니다!");
-          }
-        };
-        reader.readAsDataURL(file);
-      }
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                if (file.type.startsWith("video/")) {
+                    const thumbBox = document.createElement("div");
+                    thumbBox.className = "w-full rounded-xl overflow-hidden border border-outline-variant/30 bg-black max-h-48 flex items-center justify-center";
+
+                    const video = document.createElement("video");
+                    video.src = e.target.result;
+                    video.controls = true;
+                    video.className = "w-full max-h-48 object-contain";
+
+                    thumbBox.appendChild(video);
+                    previewArea.appendChild(thumbBox);
+                } else {
+                    alert("동영상 파일만 선택 가능합니다.");
+                    fileInput.value = "";
+                }
+            };
+            reader.readAsDataURL(file);
+        }
     }
+
     // 업로드 요청
     document.getElementById("uploadForm").addEventListener("submit", function(e) {
-      e.preventDefault();
+        e.preventDefault();
 
-      const formData = new FormData(this);
+        const formData = new FormData(this);
 
-      fetch("/archive/video/upload", {
-        method: "POST",
-        body: formData
-      })
-      .then(res => {
-        if (res.ok) {
-          alert("업로드 완료!");
-          location.reload();
-        } else {
-          alert("업로드 실패!");
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        alert("업로드 중 오류 발생");
-      });
+        fetch("/archive/upload/video", {
+            method: "POST",
+            body: formData
+        })
+                .then(res => {
+                    if (res.ok) {
+                        alert("업로드 완료!");
+                        location.reload();
+                    } else {
+                        alert("업로드 실패!");
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("업로드 중 오류 발생");
+                });
     });
 </script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

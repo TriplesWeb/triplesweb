@@ -1,14 +1,19 @@
 package com.example.triplesweb.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
 @Getter @Setter
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class ArticleViewDto {
     private Long id;
     private String title;
+    private Long displayId;
+    private int likesCount;
     private String content;
     private String userId;
     private String category;

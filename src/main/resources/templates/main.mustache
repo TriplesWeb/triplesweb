@@ -59,10 +59,10 @@
                 <div class="flex items-center gap-2">
                     <span class="font-mono text-xs text-on-surface font-semibold tracking-wider">OFFICIAL MEDIA</span>
                 </div>
-                <span class="text-xs text-on-surface-variant font-mono">tripleS (트리플에스) '깨어' MV</span>
+                <span class="text-xs text-on-surface-variant font-mono">tripleS (트리플에스) 'baby flower' MV</span>
             </div>
             <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-outline-variant/30">
-                <iframe class="w-full h-full" src="https://www.youtube.com/embed/pTycfmVzdl8?si=7dkoH5SQxslMoyNy" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                <iframe class="w-full h-full" src="https://www.youtube.com/embed/6q8UMVXhXsE?si=yT7hzf3ua0zwXnO-" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
             </div>
         </div>
 
@@ -108,31 +108,6 @@
 
         <!-- 좌측 컬럼 -->
         <div class="flex flex-col gap-6">
-
-            <!-- 자유게시판 -->
-            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
-                <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary-container text-xl">forum</span>
-                        <h3 class="text-base font-bold text-on-surface">자유게시판</h3>
-                    </div>
-                    <a href="/free" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
-                        더보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
-                    </a>
-                </div>
-                <ul class="divide-y divide-outline-variant/20 text-xs">
-                    {{#freePosts}}
-                        <li class="py-2.5 flex items-center justify-between gap-4 hover:bg-surface-container-high/40 px-2 rounded-lg transition-colors">
-                            <a href="/free/{{id}}" class="truncate text-on-surface hover:text-primary-container font-medium flex-1">{{title}}</a>
-                            <div class="text-on-surface-variant/80 font-mono text-[11px] shrink-0">{{userId}} · {{formattedDate}}</div>
-                        </li>
-                    {{/freePosts}}
-                    {{^freePosts}}
-                        <li class="py-4 text-center text-on-surface-variant/60">등록된 게시물이 없습니다.</li>
-                    {{/freePosts}}
-                </ul>
-            </div>
-
             <!-- 공지사항 -->
             <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
                 <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
@@ -140,14 +115,14 @@
                         <span class="material-symbols-outlined text-secondary text-xl">campaign</span>
                         <h3 class="text-base font-bold text-on-surface">공지사항</h3>
                     </div>
-                    <a href="/notice" class="text-xs text-on-surface-variant hover:text-secondary flex items-center gap-0.5 transition-colors">
+                    <a href="/article/notice" class="text-xs text-on-surface-variant hover:text-secondary flex items-center gap-0.5 transition-colors">
                         더보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
                     </a>
                 </div>
                 <ul class="divide-y divide-outline-variant/20 text-xs">
                     {{#noticePosts}}
                         <li class="py-2.5 flex items-center justify-between gap-4 hover:bg-surface-container-high/40 px-2 rounded-lg transition-colors">
-                            <a href="/notice/{{id}}" class="truncate text-on-surface hover:text-secondary font-medium flex-1">{{title}}</a>
+                            <a href="/article/notice/{{id}}" class="truncate text-on-surface hover:text-secondary font-medium flex-1">{{title}}</a>
                             <div class="text-on-surface-variant/80 font-mono text-[11px] shrink-0">{{userId}} · {{formattedDate}}</div>
                         </li>
                     {{/noticePosts}}
@@ -162,13 +137,25 @@
                 <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
                     <div class="flex items-center gap-2">
                         <span class="material-symbols-outlined text-primary-container text-xl">photo_library</span>
-                        <h3 class="text-base font-bold text-on-surface">아카이브</h3>
+                        <h3 class="text-base font-bold text-on-surface">사진 아카이브</h3>
                     </div>
-                    <a href="/archive" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
+                    <a href="/archive/image_archive" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
                         전체보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
                     </a>
                 </div>
                 <div id="MainArchive"></div>
+            </div>
+            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
+                <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary-container text-xl">video_library</span>
+                        <h3 class="text-base font-bold text-on-surface">영상 아카이브</h3>
+                    </div>
+                    <a href="/archive/video_archive" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
+                        전체보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
+                    </a>
+                </div>
+                <div id="MainArchive2"></div>
             </div>
 
         </div>

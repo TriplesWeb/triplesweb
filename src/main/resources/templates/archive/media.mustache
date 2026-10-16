@@ -6,128 +6,188 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
           integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous" />
-    <title>트리플에스 커뮤니티- 트리플에스 미디어</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="/js/tailwind.config.js"></script>
+    <link rel="stylesheet" href="/css/style.css">
+
+    <title>트리플에스 커뮤니티 - 트리플에스 미디어</title>
+
     <style>
+        .container {
+            max-width: 80rem;
+            background: transparent;
+        }
+
+        /* 탭 스타일 */
         .media-tab {
             display: flex;
             gap: 10px;
             justify-content: center;
-            margin-bottom: 20px;
-            }
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
         .media-tab a {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 6px 16px;
+            padding: 8px 20px;
             height: 42px;
             border-radius: 9999px;
-            border: 1px solid #ddd;
-            color: #fff;
+            border: 1px solid rgba(58, 74, 70, 0.4);
+            background-color: rgba(26, 27, 32, 0.7);
+            color: #b9cac4;
             text-decoration: none;
             font-size: 0.9rem;
-            transition:.2s;
+            font-weight: 500;
+            backdrop-filter: blur(12px);
+            transition: all 0.2s ease;
         }
         .media-tab a:hover {
-            border-color: #aaa;
-            background-color: #222;
+            border-color: rgba(0, 245, 212, 0.5);
+            color: #00f5d4;
+            background-color: rgba(26, 27, 32, 0.9);
         }
         .media-tab a.active {
-           border-color:#0d6efd; color:#0d6efd;
+            border-color: #00f5d4;
+            background-color: rgba(0, 245, 212, 0.1);
+            color: #00f5d4;
+            font-weight: 700;
         }
-    .video-card { display:block;
-    position:relative;
-    overflow:hidden;
-    border-radius:10px;
-    text-decoration:none;
-    }
-    .video-thumb {
-    width:100%;
-    height:0;
-    padding-top:56.25%;
-    position:relative;
-    background:#000;
-    }
-    .video-thumb img {
-    position:absolute;
-    inset:0;
-    width:100%;
-    height:100%;
-    object-fit:cover; }
 
-    .badge-duration {
-      position:absolute;
-      right:8px;
-      bottom:8px;
-      background:rgba(0,0,0,.7); color:#fff;
-      padding:2px 6px; border-radius:6px; font-size:.8rem;
-    }
-    .video-title {
-    font-size:.95rem;
-    margin-top:8px;
-    color:#fff;
-    }
-    .video-meta {
-    font-size:.8rem;
-    color:#aaa;
-    }
-    .grid-gap {
-    row-gap:18px;
-    }
+        /* 카드 박스 스타일 */
+        .video-card-box {
+            background-color: rgba(26, 27, 32, 0.7);
+            border: 1px solid rgba(58, 74, 70, 0.3);
+            border-radius: 1rem;
+            padding: 0.75rem;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .video-card-box:hover {
+            border-color: rgba(0, 245, 212, 0.4);
+            transform: translateY(-2px);
+        }
 
-.container {
-    background: transparent;
-}
+        .video-thumb {
+            width: 100%;
+            padding-top: 56.25%;
+            position: relative;
+            background: #0d0e12;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            border: 1px solid rgba(58, 74, 70, 0.2);
+        }
+        .video-thumb img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
 
-.pagination {
-    background: transparent;
-}
+        .badge-duration {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            background: rgba(13, 14, 18, 0.8);
+            border: 1px solid rgba(58, 74, 70, 0.4);
+            color: #00f5d4;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+        }
 
-.pagination .page-link {
-    background-color: transparent;
-    border: none;
-    color: #fff;
-}
+        .video-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-top: 0.75rem;
+            color: #e3e2e8;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
 
-.pagination .page-item.active .page-link {
-    background-color: #0d6efd;
-    border-radius: 6px;
-}
-</style>
+        .video-meta {
+            font-size: 0.8rem;
+            color: #b9cac4;
+            margin-top: 0.25rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
 
+        .grid-gap {
+            row-gap: 1.5rem;
+        }
+
+        /* 페이지네이션 스타일 */
+        .pagination {
+            background: transparent;
+        }
+        .pagination .page-link {
+            background-color: rgba(26, 27, 32, 0.7);
+            border: 1px solid rgba(58, 74, 70, 0.3);
+            color: #b9cac4;
+            margin: 0 3px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        .pagination .page-link:hover {
+            background-color: rgba(0, 245, 212, 0.1);
+            color: #00f5d4;
+            border-color: rgba(0, 245, 212, 0.3);
+        }
+        .pagination .page-item.active .page-link {
+            background-color: #00f5d4;
+            border-color: #00f5d4;
+            color: #0d0e12;
+            font-weight: bold;
+        }
+    </style>
 </head>
-<body class="other-page">
+<body>
+
 {{>layout/header}}
-<div class="container py-3">
-<h2 class="mb-4">공식 미디어</h2>
 
-<div class="media-tab">
-    <a class="media-mv {{#isMV}}active{{/isMV}}" href="/media?tab=mv">
-        MV
-    </a>
-    <a class="media-signal {{#isSIGNAL}}active{{/isSIGNAL}}" href="/media?tab=signal">
-        SIGNAL
-    </a>
-    <a class="media-behind {{#isBehind}}active{{/isBehind}}" href="/media?tab=behind">
-        비하인드
-    </a>
-    <a class="media-secret {{#isSecret}}active{{/isSecret}}" href="/media?tab=secret">
-        시크릿베이스
-    </a>
-    <a class="media-contents {{#isContents}}active{{/isContents}}" href="/media?tab=contents">
-        기타 컨텐츠
-    </a>
-</div>
-    {{#isAdmin}}
-        <div class="mb-3 text-end">
-            <a href="/media_new" class="btn btn-sm btn-outline-light">새 영상 등록</a>
-        </div>
-    {{/isAdmin}}
+<div class="container py-4 flex-1">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold tracking-tight text-[#e3e2e8] m-0">공식 미디어</h2>
+        {{#isAdmin}}
+            <a href="/media_new" class="px-4 py-2 rounded-xl bg-[#00f5d4]/10 border border-[#00f5d4]/40 text-[#00f5d4] hover:bg-[#00f5d4]/20 text-xs font-bold transition-all no-underline flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-sm">add_box</span>
+                <span>새 영상 등록</span>
+            </a>
+        {{/isAdmin}}
+    </div>
 
-        <div class="row grid-gap">
-            {{#videos}}
-                <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+    <!-- 미디어 카테고리 탭 -->
+    <div class="media-tab">
+        <a class="media-mv {{#isMV}}active{{/isMV}}" href="/media?tab=mv">MV</a>
+        <a class="media-signal {{#isSIGNAL}}active{{/isSIGNAL}}" href="/media?tab=signal">SIGNAL</a>
+        <a class="media-behind {{#isBehind}}active{{/isBehind}}" href="/media?tab=behind">비하인드</a>
+        <a class="media-secret {{#isSecret}}active{{/isSecret}}" href="/media?tab=secret">시크릿베이스</a>
+        <a class="media-contents {{#isContents}}active{{/isContents}}" href="/media?tab=contents">기타 컨텐츠</a>
+    </div>
+
+    <!-- 영상 그리드 리스트 -->
+    <div class="row grid-gap">
+        {{#videos}}
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="video-card-box">
                     <a class="video-card text-decoration-none"
                        href="/media/{{currentTab}}/{{youtubeId}}"
+                       data-bs-toggle="modal"
+                       data-bs-target="#ytModal"
                        data-ytid="{{youtubeId}}"
                        title="{{title}}">
                         <div class="video-thumb">
@@ -137,22 +197,29 @@
                         <div class="video-title">{{title}}</div>
                         <div class="video-meta">조회수 {{viewCountFmt}}</div>
                     </a>
+
                     {{#isAdmin}}
-                        <form method="post" action="/media_delete" class="mt-2">
+                        <form method="post" action="/media_delete" class="mt-3">
                             <input type="hidden" name="tab" value="{{currentTab}}">
                             <input type="hidden" name="youtubeId" value="{{youtubeId}}">
-                            <button type="submit" class="btn btn-sm btn-danger w-100">삭제</button>
+                            <button type="submit" class="w-full py-1.5 px-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-xs font-semibold transition-all">삭제</button>
                         </form>
                     {{/isAdmin}}
                 </div>
-            {{/videos}}
-        </div>
+            </div>
+        {{/videos}}
+    </div>
+
     {{^videos}}
-        <div class="text-center text-muted py-5">등록된 영상이 없습니다.</div>
+        <div class="text-center text-[#b9cac4] py-20">
+            <span class="material-symbols-outlined text-5xl mb-3 text-[#3a4a46]">videocam_off</span>
+            <p class="font-medium">등록된 영상이 없습니다.</p>
+        </div>
     {{/videos}}
 
+    <!-- 페이지네이션 -->
     {{#totalPages}}
-        <nav class="mt-4 d-flex justify-content-center">
+        <nav class="mt-5 d-flex justify-content-center">
             <ul class="pagination mb-0">
                 {{#hasPrev}}
                     <li class="page-item">
@@ -161,9 +228,7 @@
                 {{/hasPrev}}
                 {{#pages}}
                     <li class="page-item {{#active}}active{{/active}}">
-                        <a class="page-link" href="/media?tab={{currentTab}}&page={{num}}">
-                        {{num}}
-                        </a>
+                        <a class="page-link" href="/media?tab={{currentTab}}&page={{num}}">{{num}}</a>
                     </li>
                 {{/pages}}
                 {{#hasNext}}
@@ -176,15 +241,16 @@
     {{/totalPages}}
 </div>
 
+<!-- 유튜브 재생 모달 창 -->
 <div class="modal fade" id="ytModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content bg-dark">
-            <div class="modal-header border-0">
-                <h5 class="modal-title text-light">재생</h5>
+        <div class="modal-content bg-[#16181f] border border-[#3a4a46]/40 rounded-2xl overflow-hidden shadow-2xl">
+            <div class="modal-header border-b border-[#3a4a46]/30 px-6 py-4">
+                <h5 class="modal-title font-bold text-[#e3e2e8] text-base">영상 재생</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body pt-0">
-                <div class="ratio ratio-16x9">
+            <div class="modal-body p-0">
+                <div class="ratio ratio-16x9 bg-black">
                     <iframe id="ytPlayer" src="" title="YouTube video player"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowfullscreen></iframe>
@@ -193,6 +259,7 @@
         </div>
     </div>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
         crossorigin="anonymous"></script>
@@ -201,14 +268,14 @@
     const ytPlayer = document.getElementById('ytPlayer');
 
     ytModal.addEventListener('show.bs.modal', function (e) {
-      const card = e.relatedTarget;
-      const id = card?.getAttribute('data-ytid');
-      if (!id) return;
-      ytPlayer.src = 'https://www.youtube.com/embed/' + id + '?autoplay=1&rel=0';
+        const card = e.relatedTarget;
+        const id = card?.getAttribute('data-ytid');
+        if (!id) return;
+        ytPlayer.src = 'https://www.youtube.com/embed/' + id + '?autoplay=1&rel=0';
     });
 
     ytModal.addEventListener('hidden.bs.modal', function () {
-      ytPlayer.src = ''; // 닫을 때 재생 중지
+        ytPlayer.src = ''; // 닫을 때 재생 중지
     });
 </script>
 </body>

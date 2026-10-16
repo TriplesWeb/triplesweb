@@ -49,10 +49,18 @@
                 </div>
             {{/unit}}
             {{^unit}}
+                {{#isAlbum2}}
+                    <div class="inline-flex items-center gap-2 bg-[#00f5d4]/10 text-[#00f5d4] border border-[#00f5d4]/30 px-3 py-1.5 rounded-xl text-xs font-bold">
+                        <span class="material-symbols-outlined text-base">groups</span>
+                        <span>10인 완전체 앨범</span>
+                    </div>
+                {{/isAlbum2}}
+                {{^isAlbum2}}
                 <div class="inline-flex items-center gap-2 bg-[#00f5d4]/10 text-[#00f5d4] border border-[#00f5d4]/30 px-3 py-1.5 rounded-xl text-xs font-bold">
                     <span class="material-symbols-outlined text-base">groups</span>
                     <span>24명 완전체 앨범</span>
                 </div>
+                {{/isAlbum2}}
             {{/unit}}
         </div>
     </div>

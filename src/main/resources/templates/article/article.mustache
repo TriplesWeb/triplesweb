@@ -1,57 +1,139 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
 
-    <title>트리플에스 커뮤니티- {{categoryName}} 게시판</title>
-
+    <!-- 폰트 및 아이콘 연결 -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+    <!-- Tailwind CSS 스크립트 -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col">
 {{>layout/header}}
 
-<div class="article-{{categoryName}} rounded-xl overflow-hidden my-4 h-96" >
-    <h5 class="article-name text-lg-center">{{categoryName}} 게시판</h5>
-    <div class="table-title flex items-center font-bold p-3 border border-b border-white-200 text-center text-lg justify-between">
-        <h2>글 순서</h2>
-        <h2>제목</h2>
-        <h2>닉네임</h2>
-        <h2>날짜</h2>
-    </div>
-    <div class="table-article flex items-center font-bold p-3 border-b border-white-200 text-center text-sm transiton-colors">
-    {{#articleList}}
-        <h2>{{id}}</h2>
-        <h2><a href="/article/{{#category}}{{category}}{{/category}}{{^category}}free{{/category}}/{{id}}" class="article-title">{{title}}</a></h2>
-        <h2>{{userId}}</h2>
-        <h2>{{formattedCreatedAt}}</h2>
-        <h2>{{likesCount}}</h2>
-    {{/articleList}}
+<main class="flex-1 flex items-start justify-center px-4 sm:px-6 py-6 z-10 relative">
+    <div class="w-full max-w-4xl relative">
+        <!-- 배경 글로우 효과 -->
+        <div class="absolute -inset-1 rounded-3xl bg-gradient-to-b from-primary-container/20 via-transparent to-secondary-container/30 blur-xl opacity-75 pointer-events-none"></div>
 
-    {{^articleList}}
-        <h1>
-            <span class="text-lg-center">등록된 게시글이 없습니다.</span>
-        </h1>
-    {{/articleList}}
+        <!-- 메인 컨테이너 카드 -->
+        <div class="relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
+
+            <!-- 상단 헤더 타이틀 -->
+            <div class="flex items-center justify-between mb-8 pb-4 border-b border-outline-variant/30">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary-container text-3xl" data-icon="forum">forum</span>
+                    <h1 class="font-headline-lg text-headline-md font-bold text-on-surface tracking-tight">
+                        {{categoryName}} 게시판
+                    </h1>
+                </div>
+            </div>
+
+            <!-- 게시판 테이블 영역 -->
+            <div class="w-full overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface-container-lowest/40 mb-8">
+
+                <!-- 테이블 헤더 -->
+                <div class="grid grid-cols-12 gap-4 px-6 py-3.5 bg-surface-container-high/60 border-b border-outline-variant/40 text-on-surface-variant font-semibold text-sm text-center">
+                    <div class="col-span-1">번호</div>
+                    <div class="col-span-6 text-left">제목</div>
+                    <div class="col-span-2">작성자</div>
+                    <div class="col-span-2">날짜</div>
+                    <div class="col-span-1">추천</div>
+                </div>
+
+                <!-- 테이블 바디 (게시글 목록 루프) -->
+                <div class="divide-y divide-outline-variant/20">
+                    {{#articleList}}
+                        <div class="grid grid-cols-12 gap-4 px-6 py-4 items-center text-center text-sm text-on-surface hover:bg-surface-container-highest/30 transition-colors">
+                            <div class="col-span-1 text-outline font-mono">{{displayId}}</div>
+                            <div class="col-span-6 text-left font-medium truncate">
+                                <a href="/article/{{#category}}{{category}}{{/category}}{{^category}}free{{/category}}/{{id}}" class="hover:text-primary-container transition-colors">
+                                    {{title}}
+                                </a>
+                            </div>
+                            <div class="col-span-2 text-on-surface-variant truncate">{{userId}}</div>
+                            <div class="col-span-2 text-xs text-outline">{{formattedDate}}</div>
+                            <div class="col-span-1 text-primary-container font-semibold">{{likesCount}}</div>
+                        </div>
+                    {{/articleList}}
+
+                    <!-- 게시글이 없을 경우 -->
+                    {{^articleList}}
+                        <div class="py-16 text-center">
+                            <span class="material-symbols-outlined text-outline text-4xl mb-2" data-icon="inbox">inbox</span>
+                            <p class="text-on-surface-variant font-medium">등록된 게시글이 없습니다.</p>
+                        </div>
+                    {{/articleList}}
+                </div>
+            </div>
+
+            <!-- 하단 컨트롤 영역 (왼쪽: 검색 기능 / 오른쪽: 글쓰기 버튼) -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+
+                <!-- 왼쪽: 게시글 검색 폼 -->
+                <form action="/article/{{category}}" method="get" class="flex items-center gap-2 w-full sm:w-auto">
+                    <select name="type" class="py-2.5 px-3 text-black bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl text-sm focus:outline-none focus:border-primary-container">
+                        <option value="title">제목</option>
+                        <option value="content">내용</option>
+                        <option value="writer">작성자</option>
+                    </select>
+                    <div class="relative flex-1 sm:w-60">
+                        <input type="text" name="keyword" placeholder="검색어를 입력하세요" class="w-full py-2.5 pl-3 pr-10 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl text-sm placeholder:text-outline/60 focus:outline-none focus:border-primary-container" />
+                        <button type="submit" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-outline">
+                            <span class="material-symbols-outlined text-[18px]" data-icon="search">search</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- 오른쪽: 권한별 글쓰기 버튼 -->
+                <div class="flex items-center justify-end w-full sm:w-auto">
+                    {{#isNotice}}
+                        {{#isAdmin}}
+                            <a href="/article/{{category}}/new" class="py-2.5 px-5 rounded-full bg-primary-container text-on-primary font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
+                                <span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+                                <span>공지 작성</span>
+                            </a>
+                        {{/isAdmin}}
+                    {{/isNotice}}
+                    {{^isNotice}}
+                        {{#isLoggedIn}}
+                            <a href="/article/{{category}}/new" class="py-2.5 px-5 rounded-full bg-primary-container text-on-primary font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
+                                <span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+                                <span>글 쓰기</span>
+                            </a>
+                        {{/isLoggedIn}}
+                    {{/isNotice}}
+                </div>
+            </div>
+
+        </div>
     </div>
-        {{#isNotice}}
-            {{#isAdmin}}
-                <a href="/article/{{category}}/new" class="btn btn-secondary new-article" id="new-article">글 쓰기</a>
-            {{/isAdmin}}
-        {{/isNotice}}
-        {{^isNotice}}
-            {{#isLoggedIn}}
-                <a href="/article/{{category}}/new" class="btn btn-secondary new-article" id="new-article">글 쓰기</a>
-            {{/isLoggedIn}}
-        {{/isNotice}}
-</div>
+</main>
+
 {{>layout/footer}}
 </body>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // 테이블의 tbody 안에 있는 모든 행(tr)을 가져옵니다.
+        const rows = document.querySelectorAll(".table-article tr");
+
+        // 행들을 순회하면서 첫 번째 칸(글 순서 칸)의 텍스트를 1부터 차례대로 다시 적어줍니다.
+        rows.forEach((row, index) => {
+            const seqCell = row.querySelector("th"); // 혹은 번호가 들어있는 th/td 셀
+            if (seqCell && !row.querySelector(".text-center")) { // "게시글이 없습니다" 행은 제외
+                // 위에서부터 1, 2, 3... 으로 매기고 싶다면 index + 1
+                // 최신 글이 1번이 되게 하고 싶다면 (전체 개수 - index) 등 응용 가능
+                seqCell.innerText = index + 1;
+            }
+        });
+    });
+</script>
 </html>

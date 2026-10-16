@@ -3,62 +3,137 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="/js/tailwind.config.js"></script>
+    <link rel="stylesheet" href="/css/style.css">
+
+    <title>트리플에스 커뮤니티 - 새 미디어 등록</title>
+
+    <style>
+        body.other-page {
+            background-color: #0d0e12;
+            color: #e3e2e8;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .container {
+            max-width: 48rem;
+        }
+        .form-control, .form-select {
+            background-color: rgba(26, 27, 32, 0.7);
+            border: 1px solid rgba(58, 74, 70, 0.4);
+            color: #e3e2e8;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: rgba(26, 27, 32, 0.9);
+            border-color: #00f5d4;
+            color: #e3e2e8;
+            box-shadow: 0 0 0 3px rgba(0, 245, 212, 0.15);
+        }
+        .form-control[readonly] {
+            background-color: rgba(16, 17, 22, 0.5);
+            color: #8b9b95;
+        }
+        .form-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #b9cac4;
+            margin-bottom: 0.5rem;
+        }
+    </style>
 </head>
-<body class="bg-dark text-light">
-<div class="container py-4">
-    <form method="post" action="/media_new" class="row g-3">
-        <div class="col-md-3">
-            <label class="form-label">탭</label>
-            <select class="form-select bg-dark text-light" name="tab">
-                <option value="mv" {{#tab_mv}}selected{{/tab_mv}}>MV</option>
-                <option value="signal" {{#tab_signal}}selected{{/tab_signal}}>SIGNAL</option>
-                <option value="behind" {{#tab_behind}}selected{{/tab_behind}}>비하인드</option>
-                <option value="secret" {{#tab_secret}}selected{{/tab_secret}}>시크릿베이스</option>
-                <option value="contents" {{#tab_contents}}selected{{/tab_contents}}>기타 컨텐츠</option>
-            </select>
-        </div>
-        <div class="col-md-6">
-            <label class="form-label">YouTube ID</label>
-            <input class="form-control bg-dark text-light" name="youtubeId" readonly>
-        </div>
-        <div class="col-md-6">
-            <label class="form-label">제목</label>
-            <input class="form-control bg-dark text-light" name="title" readonly>
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">길이</label>
-                <input class="form-control bg-dark text-light" name="duration" readonly>
-        </div>
-        <div class="col-12">
-            <label class="form-label">유튜브 URL 또는 ID 입력</label>
-            <div class="input-group">
-                <input id="ytUrl" class="form-control bg-dark text-light" placeholder="https://youtu.be/… 또는 dQw4w9WgXcQ">
-                <button class="btn btn-outline-light" type="button" id="btnFetch">영상 정보 보기</button>
+<body>
+
+{{>layout/header}}
+
+<div class="container py-5 flex-1">
+    <div class="bg-[rgba(26,27,32,0.7)] border border-[rgba(58,74,70,0.3)] rounded-2xl p-6 lg:p-8 backdrop-blur-xl shadow-2xl">
+        <h2 class="text-2xl font-bold tracking-tight text-[#e3e2e8] mb-6 flex items-center gap-2">
+            <span class="material-symbols-outlined text-[#00f5d4]">add_box</span> 새 미디어 등록
+        </h2>
+
+        <form method="post" action="/media_new" class="row g-4">
+            <div class="col-md-4">
+                <label class="form-label">탭 분류</label>
+                <select class="form-select" name="tab">
+                    <option value="mv" {{#tab_mv}}selected{{/tab_mv}}>MV</option>
+                    <option value="signal" {{#tab_signal}}selected{{/tab_signal}}>SIGNAL</option>
+                    <option value="behind" {{#tab_behind}}selected{{/tab_behind}}>비하인드</option>
+                    <option value="secret" {{#tab_secret}}selected{{/tab_secret}}>시크릿베이스</option>
+                    <option value="contents" {{#tab_contents}}selected{{/tab_contents}}>기타 컨텐츠</option>
+                </select>
             </div>
-            <input type="hidden" name="views">
-            <div id="ytThumb" class="mt-2"></div>
-        </div>
-        <div class="col-12">
-            <button type="submit" class="btn btn-success">저장</button>
-        </div>
-    </form>
+
+            <div class="col-md-8">
+                <label class="form-label">유튜브 URL 또는 ID 입력</label>
+                <div class="input-group">
+                    <input id="ytUrl" name="youtubeId" class="form-control" placeholder="https://youtu.be/... 또는 ID 입력">
+                    <button class="px-4 bg-[#00f5d4]/10 border border-[#00f5d4]/40 text-[#00f5d4] hover:bg-[#00f5d4]/20 font-bold text-sm rounded-r-xl transition-all" type="button" id="btnFetch">정보 가져오기</button>
+                </div>
+                {{#errors}}
+                    <div class="text-danger text-xs mt-1" style="color: #ff6b6b; font-size: 0.8rem; margin-top: 4px;">
+                        ❌ 올바른 유튜브 ID 혹은 주소 형식이 아닙니다. 다시 확인해 주세요.
+                    </div>
+                {{/errors}}
+            </div>
+            <!-- 💡 name="duration" 속성 추가 -->
+            <div class="col-md-6">
+                <label class="form-label">영상 길이</label>
+                <input class="form-control font-mono" name="duration" readonly value="{{form.duration}}">
+            </div>
+
+            <!-- 💡 name="title" 속성 추가 -->
+            <div class="col-12">
+                <label class="form-label">제목</label>
+                <input class="form-control" name="title" value="{{form.title}}" readonly>
+            </div>
+
+            <div class="col-12">
+                <input type="hidden" name="views" value="{{form.views}}">
+                <div id="ytThumb" class="mt-2"></div>
+            </div>
+
+            <div class="col-12 flex items-center justify-end gap-3 pt-4 border-t border-[rgba(58,74,70,0.3)]">
+                <a href="/media" class="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-[rgba(58,74,70,0.4)] text-[#b9cac4] text-sm font-medium transition-all no-underline">취소</a>
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-[#00f5d4] text-[#0d0e12] font-bold text-sm hover:opacity-90 transition-all shadow-lg">저장하기</button>
+            </div>
+        </form>
+    </div>
 </div>
+
 <script>
     document.getElementById('btnFetch').addEventListener('click', async () => {
-      const url = document.getElementById('ytUrl').value.trim();
-      if (!url) return;
-      const res = await fetch('/api/media/resolve?urlOrId=' + encodeURIComponent(url));
-      if (!res.ok) { alert('가져오기 실패'); return; }
-      const d = await res.json();
-      const set = (sel, val)=>{ const el=document.querySelector(sel); if(el && val!=null) el.value = val; };
+        const url = document.getElementById('ytUrl').value.trim();
+        if (!url) { alert('URL 또는 ID를 입력해주세요.'); return; }
 
-      set('input[name="youtubeId"]', d.youtubeId);
-      set('input[name="title"]', d.title);
-      set('input[name="duration"]', d.duration);
-      set('input[name="views"]', d.views);
-      if (d.thumbnail) document.getElementById('ytThumb').innerHTML =
-          `<img src="${d.thumbnail}" style="max-width:240px;border-radius:8px;border:1px solid #333">`;
+        const res = await fetch('/api/media/resolve?urlOrId=' + encodeURIComponent(url));
+        if (!res.ok) { alert('영상 정보를 가져오지 못했습니다.'); return; }
+
+        const d = await res.json();
+        const set = (sel, val)=>{ const el=document.querySelector(sel); if(el && val!=null) el.value = val; };
+
+        set('input[name="youtubeId"]', d.youtubeId);
+        set('input[name="title"]', d.title);
+        set('input[name="duration"]', d.duration);
+        set('input[name="views"]', d.views);
+
+        if (d.thumbnail) {
+            document.getElementById('ytThumb').innerHTML = `
+              <div class="p-3 bg-[rgba(13,14,18,0.5)] border border-[rgba(58,74,70,0.3)] rounded-xl inline-block">
+                  <p class="text-xs text-[#b9cac4] mb-2 font-medium">썸네일 미리보기</p>
+                  <img src="${d.thumbnail}" style="max-width:240px;border-radius:8px;border:1px solid rgba(58,74,70,0.4)" alt="썸네일">
+              </div>`;
+        }
     });
 </script>
 </body>

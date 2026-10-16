@@ -64,6 +64,7 @@ public class TriplesController {
         }
 
         model.addAttribute("album", album);
+        model.addAttribute("isAlbum2", (albumId == 2L));
         return "triples/album_detail";
     }
     @GetMapping("/unit/{id:[0-9]+}")

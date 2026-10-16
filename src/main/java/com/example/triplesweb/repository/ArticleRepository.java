@@ -29,4 +29,10 @@ public interface ArticleRepository extends JpaRepository<Article,Long> {
     List<Article> findByCategoryIgnoreCaseOrderByIdDesc(String category, Pageable pageable);
 
     List<Article> findPopularByCategory(@Param("category") String category, Pageable pageable);
+
+    @Query("SELECT MAX(a.displayId) FROM Article a WHERE a.category = :category")
+    Long findMaxDisplayIdByCategory(@Param("category") String category);
+
+    List<Article> findByCategoryOrderByDisplayIdDesc(String category);
+
 }

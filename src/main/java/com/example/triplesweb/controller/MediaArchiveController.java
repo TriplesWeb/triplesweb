@@ -3,6 +3,7 @@ package com.example.triplesweb.controller;
 import com.example.triplesweb.dto.MediaDto;
 import com.example.triplesweb.media.MediaTab;
 import com.example.triplesweb.service.MediaService;
+import com.example.triplesweb.util.YoutubeIdExtractor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -41,8 +43,8 @@ public class MediaArchiveController {
         boolean isAdmin = auth != null && auth.isAuthenticated()
                 && !(auth instanceof AnonymousAuthenticationToken)
                 && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-        
-        model.addAttribute("isAdmin",isAdmin);
+
+        model.addAttribute("isAdmin", isAdmin);
         model.addAttribute("currentTab", tab);
         model.addAttribute("isMV", "mv".equals(tab));
         model.addAttribute("isSIGNAL", "signal".equals(tab));
@@ -61,26 +63,32 @@ public class MediaArchiveController {
 
         boolean hasPrev = page > 1;
         boolean hasNext = page < totalPages;
-        model.addAttribute("hasPrev");
-        model.addAttribute("hasNext");
+        model.addAttribute("hasPrev", hasPrev);
+        model.addAttribute("hasNext", hasNext);
 
         model.addAttribute("prevPage", hasPrev ? page - 1 : 1);
         model.addAttribute("nextPage", hasNext ? page + 1 : totalPages);
 
         List<Map<String,Object>> pages = new ArrayList<>();
         int start = Math.max(1, page - 3);
-        int end   = Math.min(Math.max(totalPages,1), start + 6);
-        for (int i = start; i <= end; i++) pages.add(Map.of("num", i, "active", i == page));
+        int end   = Math.min(Math.max(totalPages, 1), start + 6);
+        for (int i = start; i <= end; i++) {
+            pages.add(Map.of("num", i, "active", i == page));
+        }
         model.addAttribute("pages", pages);
 
         return "archive/media";
     }
+
     private String normalizeTab(String tab) {
         switch (tab.toLowerCase()) {
-            case "mv": case "signal": case "behind": case"secret": case "contents": return tab.toLowerCase();
-            default: return "mv";
+            case "mv": case "signal": case "behind": case "secret": case "contents":
+                return tab.toLowerCase();
+            default:
+                return "mv";
         }
     }
+
     @GetMapping("/media/{tab}/{youtubeId}")
     public String mediaDetail(@PathVariable String tab,
                               @PathVariable String youtubeId,
@@ -96,6 +104,7 @@ public class MediaArchiveController {
         model.addAttribute("related", media.related(t, youtubeId, 8)); // 같은 탭의 다른 영상
         return "archive/media_detail";
     }
+
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/media_new")
     public String newMediaForm(@RequestParam(defaultValue = "mv") String tab,
@@ -110,55 +119,48 @@ public class MediaArchiveController {
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/media_new")
     public String CreateNewMedia (
-            @org.springframework.validation.annotation.Validated @org.springframework.web.bind.annotation.ModelAttribute("form")MediaDto form,
+            @org.springframework.validation.annotation.Validated @ModelAttribute("form") MediaDto form,
             BindingResult binding,
             Model model,
             Authentication auth) throws Exception {
+
         String tab = form != null ? form.normalizedTab() : "mv";
         if (!isAdmin(auth)) return "redirect:/media?tab=" + tab + "&error=forbidden";
 
-        String rawId   = blankToEmpty(form.getYoutubeId());
-        String ytId    = com.example.triplesweb.util.YoutubeIdExtractor.extract(rawId);
-        String title   = blankToEmpty(form.getTitle());
-        String dur     = blankToEmpty(form.getDuration());
+        String rawId = form != null ? form.getYoutubeId() : "";
 
-        if (ytId.isBlank()) {
-            binding.rejectValue("youtubeId", "invalid", "유효한 유튜브 ID/URL을 입력하세요.");
-        }
-        if (title.isBlank()) {
-            binding.rejectValue("title", "required", "제목은 필수입니다.");
-        }
+        String ytId = YoutubeIdExtractor.extract(rawId);
 
+        // 2. 만약 추출에 실패했거나 정확히 11자리가 아니라면 입력 폼에 에러를 바인딩합니다.
+        if (ytId == null || ytId.isBlank() || !ytId.matches("^[a-zA-Z0-9_-]{11}$")) {
+            binding.rejectValue("youtubeId", "invalid", "유효한 유튜브 ID 또는 URL을 입력하세요.");
+        } else {
+            // 추출 성공 시 폼 데이터의 youtubeId를 정제된 11자리 ID로 업데이트해 줍니다.
+            form.setYoutubeId(ytId);
+        }
 
         if (binding.hasErrors()) {
-            form.setYoutubeId(ytId);
-            form.setTitle(title);
-            form.setDuration(dur);
             bindTabFlags(model, tab);
-            model.addAttribute("form",form);
+            model.addAttribute("form", form);
             return "archive/media_new";
         }
-        MediaDto dto = MediaDto.builder()
-                .youtubeId(ytId)
-                .title(title)
-                .duration(dur)
-                .views(form.getViews())
-                .description(form.getDescription())
-                .build();
 
-        media.add(tab, dto, form.isAddFirst());
+        // 3. 안전하게 가공된 폼을 서비스단에 전달
+        media.registerMedia(tab, form);
+
         return "redirect:/media?tab=" + tab;
+
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/media_delete")
     public String deleteMedia(@RequestParam String tab,
-                         @RequestParam String youtubeId,
-                         Authentication auth) throws Exception {
+                              @RequestParam String youtubeId,
+                              Authentication auth) throws Exception {
         String t = MediaTab.from(tab).getKey();
         if (!isAdmin(auth)) return "redirect:/media?tab=" + t + "&error=forbidden";
         media.remove(t, youtubeId);
-        return "redirect:/media";
+        return "redirect:/media?tab=" + t;
     }
 
     private boolean isAdmin(Authentication auth) {
@@ -166,6 +168,7 @@ public class MediaArchiveController {
                 && !(auth instanceof AnonymousAuthenticationToken)
                 && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
+
     private void bindTabFlags(Model model, String t) {
         model.addAttribute("tab", t);
         model.addAttribute("tab_mv", "mv".equals(t));
@@ -174,7 +177,8 @@ public class MediaArchiveController {
         model.addAttribute("tab_secret", "secret".equals(t));
         model.addAttribute("tab_contents", "contents".equals(t));
     }
-    private String blankToEmpty(String s) { return (s == null) ? "" : s.trim(); }
 
+    private String blankToEmpty(String s) {
+        return (s == null) ? "" : s.trim();
+    }
 }
-

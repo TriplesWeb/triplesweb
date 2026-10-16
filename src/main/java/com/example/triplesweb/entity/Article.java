@@ -21,6 +21,9 @@ public class Article {
     private Long id;
 
     @Column(nullable = false)
+    private Long displayId;
+
+    @Column(nullable = false)
     private String userId;
 
     @Column(nullable = false)

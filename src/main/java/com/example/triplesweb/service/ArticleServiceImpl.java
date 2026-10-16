@@ -23,6 +23,9 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public Article create(Article article) {
+        Long maxDisplayId = articleRepository.findMaxDisplayIdByCategory(article.getCategory());
+        long nextDisplayId = (maxDisplayId == null) ? 1L : maxDisplayId + 1;
+        article.setDisplayId(nextDisplayId);
         return articleRepository.save(article);
     }
 

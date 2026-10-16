@@ -1,7 +1,6 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.dto.ScheduleForm;
-import com.example.triplesweb.entity.Article;
 import com.example.triplesweb.entity.Members;
 import com.example.triplesweb.entity.Schedule;
 import com.example.triplesweb.repository.ScheduleRepository;
@@ -36,14 +35,11 @@ public class MainController {
             model.addAttribute("userId", loginMember.getUserId());
             model.addAttribute("member", loginMember);
 
-            Integer lvl = loginMember.getLevel();
-            Integer pt  = loginMember.getPoints();
-            model.addAttribute("level",  lvl != null ? lvl : 0);
-            model.addAttribute("points",  pt  != null ? pt  : 0);
+            Integer level = loginMember.getLevel();
+            Integer points = loginMember.getPoints();
+            model.addAttribute("level", level);
+            model.addAttribute("points", points);
         }
-        List<Article> freePosts = articleService.findRecentByCategory("free", limit);
-        List<Article> noticePosts = articleService.findRecentByCategory("notice", limit);
-        List<Article> popularPosts = articleService.findPopularArticles(null, limit);
 
         List<Schedule> scheduleList = scheduleRepository.findAll();
 

@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -79,6 +80,7 @@ public class ArticleController {
     public String createArticle(@PathVariable("category") String category,
                                 @Valid @ModelAttribute("articleForm") ArticleForm form,
                                 BindingResult bindingResult,// 제목/내용/기타 바인딩
+                                RedirectAttributes redirectAttributes,
                                 @RequestParam(value = "uploadFiles", required = false) List<MultipartFile> files, // 파일 input (multiple)
                                 @RequestParam(value = "uploadedFiles", required = false) List<String> uploadedFiles, // 에디터 AJAX 업로드
                                 HttpSession session,
@@ -89,17 +91,21 @@ public class ArticleController {
         if (userId == null) {
             return "redirect:/login";
         }
-        if (bindingResult.hasErrors()) {
-            bindLogin(model, session);
+        if (bindingResult.hasErrors() || form.getTitle() == null || form.getTitle().trim().isEmpty() || form.getContent() == null || form.getContent().trim().isEmpty()) {
             model.addAttribute("userId", userId);
             model.addAttribute("category", category);
+            model.addAttribute("categoryName", getCategoryName(category));
+            model.addAttribute("errorMessage", "제목과 내용을 모두 입력해주세요.");
+            model.addAttribute("articleForm", form);
             return "article/article_new";
         }
 
         Article article = new Article();
         article.setTitle(form.getTitle());
+        article.setContent(form.getContent());
         article.setCategory(category);
         article.setUserId(userId);
+
 
         // 1) 게시글 생성
         Article savedArticle = articleService.create(article);
@@ -121,7 +127,7 @@ public class ArticleController {
         // 4) 본문에 삽입된 <img>/<video> 태그에서 파일 추출해 매핑(사용 중이면 유지)
         articleFileService.extractAndSaveFilesFromContent(savedArticle);
 
-        return "redirect:/article/" + category + "/" + article.getId();
+        return "redirect:/article/" + category + "/" + savedArticle.getId();
     }
     private String getCategoryName(String category) {
         return switch (category) {
@@ -148,12 +154,36 @@ public class ArticleController {
 
         boolean isAdmin = isAdmin(session);
         boolean isNotice = "notice".equals(category);
+        List<Article> articles = articleService.findRecentByCategory(category, limit);
+
+        List<ArticleViewDto> articleViewList = new ArrayList<>();
+        int totalSize = articles.size();
+        for (int i = 0; i < totalSize; i++) {
+            Article art = articles.get(i);
+
+            // 위에서부터 차례대로 1, 2, 3... 증가하는 번호 부여
+            long displayNo = i + 1;
+
+            // 기본 엔티티 정보를 담고 displayId를 추가로 세팅하는 변환 로직
+            ArticleViewDto dto = ArticleViewDto.builder()
+                    .id(art.getId())           // 상세페이지 이동용 실제 DB PK
+                    .displayId(displayNo)      // 화면 표출용 카테고리별 독립 순번
+                    .title(art.getTitle())
+                    .userId(art.getUserId())
+                    .category(art.getCategory())
+                    .formattedDate(dateTimeFormatService.formatKst(art.getFormattedCreatedAt())) // 날짜 포맷팅 서비스 활용 예시
+                    .likesCount(art.getLikes() != null ? art.getLikes().size() : 0)
+                    .build();
+
+            articleViewList.add(dto);
+        }
+
         model.addAttribute("userId", userId);
         model.addAttribute("category", category);
         model.addAttribute("categoryName", getCategoryName(category));
         model.addAttribute("isAdmin", isAdmin);
         model.addAttribute("isNotice", isNotice);
-        model.addAttribute("articleList", articleService.findRecentByCategory(category, limit));
+        model.addAttribute("articleList", articleViewList);
         model.addAttribute("popularList", articleService.findPopularArticles(category, 5));
         return "article/article";
     }
@@ -178,7 +208,7 @@ public class ArticleController {
         model.addAttribute("article", article);
         model.addAttribute("category", category);
         model.addAttribute("commentDtos", commentService.show(id));
-
+        model.addAttribute("categoryName", getCategoryName(category));
         model.addAttribute("isOwner", isOwner);
         model.addAttribute("likeCount", articleService.getLikesCount(id));
 
@@ -244,6 +274,7 @@ public class ArticleController {
         model.addAttribute("userId", sessionUserid);
         model.addAttribute("article", article);
         model.addAttribute("category", category);
+        model.addAttribute("categoryName", getCategoryName(category));
 
         List<ArticleFileDto> fileDtos = article.getFiles().stream().map(af -> {
             var m = af.getFile(); // SavedMeta

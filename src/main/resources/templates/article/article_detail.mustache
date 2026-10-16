@@ -3,104 +3,156 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
 
-    <title>트리플에스 커뮤니티- {{categoryName}} 게시판</title>
-
+    <!-- 폰트 및 아이콘 연결 -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+    <!-- Tailwind CSS 스크립트 -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
+
+    <style>
+        /* 본문 내용(HTML) 내부 이미지/영상 반응형 스타일 정돈 */
+        .detail-content img {
+            max-width: 100%;
+            border-radius: 0.75rem;
+            margin: 1rem 0;
+        }
+        .detail-content video {
+            max-width: 100%;
+            border-radius: 0.75rem;
+            margin: 1rem 0;
+        }
+    </style>
 </head>
-<body>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+
 {{>layout/header}}
+
+<!-- CSRF 메타 데이터 -->
 <meta name="_csrf" content="{{_csrf.token}}">
 <meta name="_csrf_header" content="{{_csrf.headerName}}">
-<div class="container mt-4 mb-5" >
-    <div class="card shadow-sm" style="min-height: 500px;">
-        <div class="card-body {{category}}-article" id="{{category}}-article" >
-            <div class="article-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div><strong>닉네임:</strong> {{article.userId}}</div>
-                    <div class="article-meta">{{formattedDate}}</div>
+
+<main class="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-12 z-10 relative">
+    <div class="w-full max-w-3xl relative">
+        <!-- 배경 글로우 효과 -->
+        <div class="absolute -inset-1 rounded-3xl bg-gradient-to-b from-primary-container/20 via-transparent to-secondary-container/30 blur-xl opacity-75 pointer-events-none"></div>
+
+        <!-- 메인 게시글 컨테이너 카드 -->
+        <div class="relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
+
+            <!-- 게시글 헤더 (작성자 및 날짜) -->
+            <div class="flex items-center justify-between pb-6 mb-6 border-b border-outline-variant/30">
+                <div class="flex items-center gap-2 text-on-surface-variant font-medium">
+                    <span class="material-symbols-outlined text-[20px]" data-icon="person">person</span>
+                    <span>작성자: <strong class="text-on-surface">{{article.userId}}</strong></span>
+                </div>
+                <div class="text-xs text-outline font-mono">
+                    {{formattedDate}}
                 </div>
             </div>
-            <div class="article-body">
-                <div class="detail-title">
-                        <h2>{{article.title}}</h2>
-                </div>
 
-                <hr class="content-divider" />
-
-                <div class="detail-content">
-                    {{{article.content}}}
-                </div>
+            <!-- 게시글 제목 -->
+            <div class="mb-6">
+                <h1 class="text-2xl sm:text-3xl font-bold text-on-surface tracking-tight leading-snug">
+                    {{article.title}}
+                </h1>
             </div>
-            <div class="article-foot" style="margin-top: 300px;">
+
+            <!-- 구분선 -->
+            <hr class="border-outline-variant/30 my-6" />
+
+            <!-- 게시글 본문 내용 -->
+            <div class="detail-content text-on-surface/90 font-body-md text-base leading-relaxed min-h-[200px]">
+                {{{article.content}}}
+            </div>
+
+            <!-- 하단 푸터 (추천 및 수정/삭제/목록 버튼) -->
+            <div class="mt-10 pt-6 border-t border-outline-variant/35 flex flex-col gap-6">
+
+                <!-- 추천 버튼 영역 -->
                 {{#isLikeAllowed}}
-                <div class="d-flex justify-content-center mt-5">
-                    <form action="/{{article.category}}/{{article.id}}/like" method="post">
-                        <button class="btn btn-outline-danger" type="button" id="likeButton"> 추천(<span id="likeCount">{{likeCount}}</span>)</button>
-                    </form>
-                </div>
+                    <div class="flex justify-center">
+                        <button class="py-2.5 px-6 rounded-full border border-error/50 bg-error-container/10 hover:bg-error-container/20 text-error font-medium text-sm transition-all flex items-center gap-2 active:scale-95" type="button" id="likeButton">
+                            <span class="material-symbols-outlined text-[18px]" data-icon="favorite">favorite</span>
+                            <span>추천</span>
+                            <span id="likeCount" class="font-bold">{{likeCount}}</span>
+                        </button>
+                    </div>
                 {{/isLikeAllowed}}
-                <div class="btn-group-custom mt-3">
-                    {{#isLoggedIn}}
-                        {{#isOwner}}
-                            <form method="get" action="/article/{{category}}/{{article.id}}/edit" style="display:inline;">
-                                <button type="submit" class="btn btn-primary">수정하기</button>
-                            </form>
-                            <form method="post" action="/article/{{category}}/{{article.id}}/delete" style="display:inline;"
-                                  onsubmit="return confirm('정말 삭제하시겠습니까?')">
-                                <input type="hidden" name="_csrf" value="{{_csrf.token}}">
-                                <button type="submit" class="btn btn-danger">삭제하기</button>
-                            </form>
-                        {{/isOwner}}
-                    {{/isLoggedIn}}
-                    <a href="/article/{{category}}" class="btn btn-secondary btn-toList">목록으로</a>
+
+                <!-- 버튼 그룹 (수정, 삭제, 목록으로) -->
+                <div class="flex items-center justify-between pt-2">
+                    <div class="flex items-center gap-2">
+                        {{#isLoggedIn}}
+                            {{#isOwner}}
+                                <a href="/article/{{category}}/{{article.id}}/edit" class="py-2 px-4 rounded-xl bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/40 text-on-surface text-sm font-medium transition-all">
+                                    수정하기
+                                </a>
+                                <form method="post" action="/article/{{category}}/{{article.id}}/delete" onsubmit="return confirm('정말 삭제하시겠습니까?')" class="inline">
+                                    <input type="hidden" name="_csrf" value="{{_csrf.token}}">
+                                    <button type="submit" class="py-2 px-4 rounded-xl bg-error-container/20 hover:bg-error-container/30 border border-error/30 text-error text-sm font-medium transition-all">
+                                        삭제하기
+                                    </button>
+                                </form>
+                            {{/isOwner}}
+                        {{/isLoggedIn}}
+                    </div>
+
+                    <a href="/article/{{category}}" class="py-2 px-5 rounded-xl bg-surface-container-high/40 hover:bg-surface-container-high border border-outline-variant/40 text-on-surface-variant hover:text-on-surface text-sm font-medium transition-all">
+                        목록으로
+                    </a>
                 </div>
+
             </div>
         </div>
     </div>
-    <div class="mt-5">
+
+    <!-- 댓글 영역 컨테이너 -->
+    <div class="w-full max-w-3xl mt-6">
         {{>comment/_comments}}
     </div>
-</div>
+</main>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+{{>layout/footer}}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const CSRF_TOKEN = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
-const CSRF_HEADER = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content') || 'X-CSRF-TOKEN';
+    const CSRF_HEADER = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content') || 'X-CSRF-TOKEN';
 
-const likeBtn = document.getElementById('likeButton');
-const likeCountElem = document.getElementById('likeCount');
+    const likeBtn = document.getElementById('likeButton');
+    const likeCountElem = document.getElementById('likeCount');
 
-  likeBtn.addEventListener('click', function() {
-      fetch('/article/{{category}}/{{article.id}}/like', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-            'Content-Type': 'application/json',
-            [CSRF_HEADER]: CSRF_TOKEN
-        }
-    })
-    .then(res => res.json())
-    .then(liked => {
-    if (liked) {
-        likeCountElem.textContent =
-            parseInt(likeCountElem.textContent) + 1;
-    } else {
-        likeCountElem.textContent =
-            parseInt(likeCountElem.textContent) - 1;
+    if (likeBtn) {
+        likeBtn.addEventListener('click', function() {
+            fetch('/article/{{category}}/{{article.id}}/like', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    [CSRF_HEADER]: CSRF_TOKEN
+                }
+            })
+                    .then(res => res.json())
+                    .then(liked => {
+                        if (liked) {
+                            likeCountElem.textContent = parseInt(likeCountElem.textContent) + 1;
+                        } else {
+                            likeCountElem.textContent = parseInt(likeCountElem.textContent) - 1;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('오류가 발생했습니다');
+                    });
+        });
     }
-})
-    .catch(error => {
-        console.error('Error:', error);
-        alert('오류가 발생했습니다');
-    });
-});
 </script>
 
 </body>
