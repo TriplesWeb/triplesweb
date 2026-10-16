@@ -21,7 +21,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
+/**
+ * Spring Security 설정: URL 권한, 폼 로그인·로그아웃, BCrypt, 로그인 성공 시 세션 회원 정보 저장.
+ */
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -49,41 +53,57 @@ public class SecurityConfig {
                 .headers(h -> h.frameOptions(f -> f.sameOrigin()))
 
                 .authorizeHttpRequests(auth -> auth
+                        // AntPath: "/" 등 MVC 핸들러 유무와 무관하게 공개 경로를 확실히 허용
                         .requestMatchers(
-                                "/", "/main", "/login", "/signup",
-                                "/css/**", "/js/**",
-                                "/h2-console/**","/api/**","/uploads/**",
-                                "/images/**","/media/**", "/css/**",
-                                "/js/**"
+                                AntPathRequestMatcher.antMatcher("/"),
+                                AntPathRequestMatcher.antMatcher("/main"),
+                                AntPathRequestMatcher.antMatcher("/login"),
+                                AntPathRequestMatcher.antMatcher("/signup"),
+                                AntPathRequestMatcher.antMatcher("/css/**"),
+                                AntPathRequestMatcher.antMatcher("/js/**"),
+                                AntPathRequestMatcher.antMatcher("/h2-console/**"),
+                                AntPathRequestMatcher.antMatcher("/api/**"),
+                                AntPathRequestMatcher.antMatcher("/uploads/**"),
+                                AntPathRequestMatcher.antMatcher("/images/**"),
+                                AntPathRequestMatcher.antMatcher("/media/**")
                         ).permitAll()
                         // ✅ 게시판/미디어/샵: GET은 모두 열람 가능 (목록/상세 뷰)
-                        .requestMatchers(HttpMethod.GET,
-                                "/article/**","/artist/**",
-                                "/album/**",
-                                "/popular/**",
-                                "/triples/**",
-                                "/objekt/**","/archive/**","/schedule/**"
+                        .requestMatchers(
+                                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/article/**"),
+                                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/artist/**"),
+                                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/album/**"),
+                                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/popular/**"),
+                                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/triples/**"),
+                                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/objekt/**"),
+                                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/archive/**"),
+                                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/schedule/**")
                         ).permitAll()
-                        .requestMatchers(HttpMethod.POST,   "/article/**").authenticated()
-                        .requestMatchers(HttpMethod.PUT,    "/article/**").authenticated()
-                        .requestMatchers(HttpMethod.PATCH,  "/article/**").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/article/**").authenticated()
-                        .requestMatchers("/admin/**", "/media_new/**","/media_delete/**",
-                                "/shop/shop_new/**","/notice_delete/**","/shop/uploadFile").hasRole("ADMIN")
-                        .anyRequest().authenticated() // ✅ 안전하게 권한 확인
+                        .requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/article/**")).authenticated()
+                        .requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.PUT, "/article/**")).authenticated()
+                        .requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.PATCH, "/article/**")).authenticated()
+                        .requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.DELETE, "/article/**")).authenticated()
+                        .requestMatchers(
+                                AntPathRequestMatcher.antMatcher("/admin/**"),
+                                AntPathRequestMatcher.antMatcher("/media_new/**"),
+                                AntPathRequestMatcher.antMatcher("/media_delete/**"),
+                                AntPathRequestMatcher.antMatcher("/shop/shop_new/**"),
+                                AntPathRequestMatcher.antMatcher("/notice_delete/**"),
+                                AntPathRequestMatcher.antMatcher("/shop/uploadFile")
+                        ).hasRole("ADMIN")
+                        .anyRequest().authenticated()
                 )
-                .formLogin (login -> login
+                .formLogin(login -> login
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
-                .usernameParameter("userId")
-                .passwordParameter("password")
-                .successHandler(successHandler())
-                .failureHandler(failureHandler)
-                .permitAll()
-        )
+                        .usernameParameter("userId")
+                        .passwordParameter("password")
+                        .successHandler(successHandler())
+                        .failureHandler(failureHandler)
+                        .permitAll()
+                )
                 .logout(logout -> logout
                 .logoutUrl("/logout")
-                .logoutSuccessUrl("/main")
+                .logoutSuccessUrl("/")
         );
         return http.build();
     }
@@ -109,7 +129,7 @@ public class SecurityConfig {
                 session.setAttribute("role", member.getRole());
             }
 
-            response.sendRedirect("/main");
+            response.sendRedirect("/");
         };
     }
     @Bean

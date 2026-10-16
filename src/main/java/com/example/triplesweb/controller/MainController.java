@@ -19,6 +19,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 메인 홈 — 최근·인기 게시글과 일정 요약을 한 화면에 노출한다.
+ * URL: {@code GET /}
+ * 레이어: Optional — ArticleServiceImpl과 ScheduleRepository 혼용, 일정 조회 Service 통일 검토.
+ */
 @RequiredArgsConstructor
 @Controller
 @Slf4j
@@ -27,8 +32,13 @@ public class MainController {
     private final ArticleServiceImpl articleService;
     private final ScheduleRepository scheduleRepository;
 
-
+    /** 이전 URL 호환: {@code /main} → {@code /} */
     @GetMapping("/main")
+    public String redirectMain() {
+        return "redirect:/";
+    }
+
+    @GetMapping("/")
     public String mainPage(Model model, HttpSession session, @RequestParam(defaultValue = "5") Integer limit) {
         Members loginMember = (Members) session.getAttribute("loginMember");
         if (loginMember != null) {

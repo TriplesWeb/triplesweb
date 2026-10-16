@@ -18,6 +18,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.lang.reflect.Member;
 import java.util.Optional;
 
+/**
+ * 로그인·로그아웃·회원가입 폼 및 세션 기반 인증.
+ * URL: {@code /login}, {@code /logout}, {@code /signup}
+ * 레이어: Should — MemberRepository·PasswordEncoder 직접 사용, MemberService 도입 검토.
+ */
 @Slf4j
 @RequiredArgsConstructor
 @Controller
@@ -59,7 +64,7 @@ public class LoginController {
         HttpSession session = request.getSession();
         session.setAttribute("user", member);
 
-        return "redirect:/main";
+        return "redirect:/";
     };
 
 
@@ -69,7 +74,7 @@ public class LoginController {
         if (session != null) {
             session.invalidate();
         }
-        return "redirect:/main";
+        return "redirect:/";
     }
 
     @GetMapping("/signup")
@@ -113,6 +118,6 @@ public class LoginController {
 
         newMember.setRole("ROLE_USER");
         memberRepository.save(newMember);
-        return "redirect:/main";
+        return "redirect:/";
     }
 }
