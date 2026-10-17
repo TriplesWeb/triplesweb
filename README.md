@@ -46,7 +46,8 @@ push → Actions (buildx arm64) → ghcr.io → Tailscale join → SSH → compo
 | `PI_SSH_KEY` | deploy 전용 **private** SSH 키 전체 |
 | `PI_DEPLOY_PATH` | Pi의 compose 디렉터리 (`/opt/stacks/triplesweb`) |
 
-Packages 쓰기는 워크플로의 `GITHUB_TOKEN` + `packages: write`로 처리합니다. GHCR 패키지가 private이면 Pi에서 한 번 `docker login ghcr.io`가 필요합니다.
+Packages 쓰기는 워크플로의 `GITHUB_TOKEN` + `packages: write`로 처리합니다.  
+Pi pull이 `unauthorized`면 (1) GHCR 패키지 visibility를 **Public**으로 바꾸거나 (2) Secret `GHCR_TOKEN`(PAT, `read:packages`)을 추가하세요. 배포 스텝이 Pi에서 `docker login` 후 pull합니다.
 
 ### 2. Tailscale ACL
 

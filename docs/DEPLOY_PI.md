@@ -15,5 +15,6 @@
 3. [ ] deploy SSH 키 → `PI_SSH_KEY` / Pi `authorized_keys`
 4. [ ] `PI_HOST` / `PI_USER` / `PI_DEPLOY_PATH`
 5. [ ] `/opt/stacks/triplesweb`에 `.env` + `uploads/` + `data/` (`APP_PORT=8090`)
-6. [ ] (private GHCR) `docker login ghcr.io`
+6. [ ] GHCR: 패키지를 Public으로 두거나, Secret `GHCR_TOKEN`(PAT `read:packages`) 등록  
+       (워크플로가 배포 직전에 Pi에서 `docker login` 수행)
 7. [ ] `main` 푸시 후 Actions 성공, Pi에서 `docker compose ps` 확인

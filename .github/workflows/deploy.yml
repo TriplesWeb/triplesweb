@@ -81,10 +81,18 @@ jobs:
         env:
           PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
           IMAGE: ${{ steps.image.outputs.name }}:latest
+          GHCR_USER: ${{ github.actor }}
+          # Prefer a PAT with read:packages (GHCR_TOKEN); fall back to job token
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           scp docker-compose.yml "pi:${PI_DEPLOY_PATH}/docker-compose.yml"
-          ssh pi bash -s <<EOF
+          ssh pi env \
+            PI_DEPLOY_PATH="$PI_DEPLOY_PATH" \
+            IMAGE="$IMAGE" \
+            GHCR_USER="$GHCR_USER" \
+            GHCR_TOKEN="$GHCR_TOKEN" \
+            bash -s <<'EOF'
           set -euo pipefail
           cd "${PI_DEPLOY_PATH}"
           touch .env
@@ -93,7 +101,9 @@ jobs:
           else
             echo "IMAGE=${IMAGE}" >> .env
           fi
+          echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
           docker compose pull app
           docker compose up -d
           docker image prune -f
+          docker logout ghcr.io >/dev/null 2>&1 || true
           EOF
