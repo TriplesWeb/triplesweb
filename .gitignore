@@ -36,8 +36,10 @@ out/
 ### VS Code ###
 .vscode/
 
+### macOS ###
+.DS_Store
+
 ### Local / deploy secrets ###
 .env
 .env.local
 !.env.example
-
