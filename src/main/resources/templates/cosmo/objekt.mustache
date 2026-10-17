@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>트리플에스 커뮤니티 - 오브젝트</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+    <!-- Tailwind CSS 스크립트 -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="/js/tailwind.config.js"></script>
+    <link rel="stylesheet" href="/../static/css/style.css">
+</head>
+<body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screenbg-surface text-on-surface min-h-screen flex flex-col">
+{{>layout/header}}
+<main class="main-content max-w-7xl w-full mx-auto px-4 py-8">
+    <div class="card-box bg-[#16181f]/80 backdrop-blur-md border border-[#3a4a46]/30 rounded-2xl p-6 shadow-xl">
+        <h2 class="text-2xl font-bold text-[#e3e2e8] mb-6 flex items-center gap-2">오브젝트</h2>
+    </div>
+    <div class="bg-[#12141c] border border-[#222634] rounded-xl p-3 mb-8 flex flex-wrap items-center gap-3 shadow-lg">
+        <div class="flex items-center bg-[#1a1d28] border border-[#2c3144] rounded-lg px-3 py-1.5 hover:border-[#404863] transition-colors cursor-pointer">
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+                <div class="flex gap-3 items-center bg-[#1a1d28] border border-[#2c3144] rounded-lg px-3 py-1.5 hover:border-[#404863] transition-colors cursor-pointer">
+                    <span class="objekt-season">시즌</span>
+                    <label>
+                        <select class="bg-[#00f5d4] text-black font-medium focus:outline-none cursor-pointer pr-1 rounded-xl">
+                            <option value="all">all</option>
+                            <option value="atom01">Atom 01</option>
+                            <option value="binary01">Binary 01</option>
+                            <option value="cream01">Cream 01</option>
+                            <option value="Divine01">Divine 01</option>
+                            <option value="ever01">Ever 01</option>
+                            <option value="atom02">Atom 02</option>
+                            <option value="binary02">Binary 02</option>
+                            <option value="cream02">Cream 02</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="flex gap-3 items-center bg-[#1a1d28] border border-[#2c3144] rounded-lg px-3 py-1.5 hover:border-[#404863] transition-colors cursor-pointer">
+                    <span class="objekt-collection">종류</span>
+                    <label>
+                        <select class="bg-[#00f5d4] text-black font-medium rounded-xl focus:outline-none cursor-pointer pr-1">
+                            <option value="all">all</option>
+                            <option value="example">example1</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="flex gap-3 items-center bg-[#1a1d28] border border-[#2c3144] rounded-lg px-3 py-1.5 hover:border-[#404863] transition-colors cursor-pointer">
+                <span class="objekt-class">클래스</span>
+                    <label>
+                        <select class="bg-[#00f5d4] text-black rounded-xl font-medium focus:outline-none cursor-pointer pr-1">
+                            <option value="all">all</option>
+                            <option value="welcome">Welcome</option>
+                            <option value="first">First</option>
+                            <option value="special">Special</option>
+                            <option value="double">Double</option>
+                            <option value="premier">Premier</option>
+                            <option value="motion">Motion</option>
+                            <option value="unit">Unit</option>
+                            <option value="zero">Zero</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="flex gap-3 items-center bg-[#1a1d28] border border-[#2c3144] rounded-lg px-3 py-1.5 hover:border-[#404863] transition-colors cursor-pointer">
+                    <span class="objekt-sort">정렬</span>
+                    <label>
+                        <select class="bg-[#00f5d4] text-black rounded-xl font-medium focus:outline-none cursor-pointer pr-1">
+                            <option value="latest">최신순</option>
+                            <option value="oldest">오래된순</option>
+                            <option value="number_low">번호 낮은순</option>
+                            <option value="number_high">번호 높은순</option>
+                            <option value="first_member">첫 멤버</option>
+                            <option value="last_member">마지막 멤버</option>
+                            <option value="mint_low">민팅 적은순</option>
+                            <option value="mint_high">민팅 많은순</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div class="group relative bg-[#151722] border border-[#252838] rounded-2xl overflow-hidden hover:border-[#404868] transition-all duration-300 shadow-lg hover:-translate-y-1">
+            <!-- 이미지 & 세로 텍스트 바 -->
+            <div class="relative aspect-[2/3] w-full overflow-hidden bg-[#1c1f2e]">
+                <img src="/../../uploads/images/objekts/jiyeoncc364.jpg" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

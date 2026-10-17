@@ -65,7 +65,8 @@ public class SecurityConfig {
                                 AntPathRequestMatcher.antMatcher("/api/**"),
                                 AntPathRequestMatcher.antMatcher("/uploads/**"),
                                 AntPathRequestMatcher.antMatcher("/images/**"),
-                                AntPathRequestMatcher.antMatcher("/media/**")
+                                AntPathRequestMatcher.antMatcher("/media/**"),
+                                AntPathRequestMatcher.antMatcher("/cosmo/**")
                         ).permitAll()
                         // ✅ 게시판/미디어/샵: GET은 모두 열람 가능 (목록/상세 뷰)
                         .requestMatchers(
