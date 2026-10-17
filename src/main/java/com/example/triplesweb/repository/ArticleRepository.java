@@ -29,7 +29,7 @@ public interface ArticleRepository extends JpaRepository<Article,Long> {
        """)
     Optional<Article> findByIdWithFiles(@Param("id") Long id);
 
-
+    @Query("SELECT a FROM Article a WHERE LOWER(TRIM(a.category)) = LOWER(TRIM(:category)) ORDER BY a.id DESC")
     List<Article> findByCategoryIgnoreCaseOrderByIdDesc(String category, Pageable pageable);
 
     List<Article> findPopularByCategory(@Param("category") String category, Pageable pageable);
