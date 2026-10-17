@@ -1,83 +1,336 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="dark">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>트리플에스 커뮤니티 스케줄</title>
 
-    <link
-            href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css"
-            rel="stylesheet"
-    />
-    <link
-            href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
-            rel="stylesheet"
-            integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
-            crossorigin="anonymous"
-    />
+    <!-- Google Fonts & Tailwind CSS & Material Symbols -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
 
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            DEFAULT: '#00f5d4',
+                            dark: '#006c5c',
+                        },
+                        darkbg: '#07080b',
+                        cardbg: 'rgba(26, 27, 32, 0.7)',
+                        bordercol: 'rgba(58, 74, 70, 0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- 외부 공통 스타일 및 라이브러리 -->
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous" />
 
     <style>
         body {
-          margin: 40px 10px;
-          padding: 0;
-          font-family: "Segoe UI", sans-serif;
+            background-color: #07080b;
+            color: #e3e2e8;
+            font-family: 'Inter', sans-serif !important;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
+
+        /* 아이콘 폰트가 일반 텍스트 폰트에 오염되지 않도록 철저히 예외 처리 */
+        #top-header *:not(.material-symbols-outlined),
+        #navbar *:not(.material-symbols-outlined),
+        .nav-dropdown-btn,
+        .nav-item-link {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        }
+
+        /* Material Symbols 아이콘 폰트 강제 고정 */
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined' !important;
+            font-weight: normal;
+            font-style: normal;
+            font-size: 16px;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+
+        /* 배경 은은한 빛 효과 (Ambient Glow) */
+        .ambient-glow-container {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .glow-accent-1 {
+            position: absolute;
+            top: -8rem;
+            left: -8rem;
+            width: 24rem;
+            height: 24rem;
+            border-radius: 9999px;
+            background-color: rgba(104, 7, 186, 0.1);
+            filter: blur(120px);
+        }
+        .glow-accent-2 {
+            position: absolute;
+            top: 33.33%;
+            right: -8rem;
+            width: 30rem;
+            height: 30rem;
+            border-radius: 9999px;
+            background-color: rgba(0, 245, 212, 0.05);
+            filter: blur(140px);
+        }
+
+        .main-content {
+            flex: 1;
+            max-width: 80rem;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            z-index: 10;
+        }
+
         #calendar {
-          max-width: 800px;
-          margin: 0 auto;
-          z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(26, 27, 32, 0.7);
+            border: 1px solid rgba(58, 74, 70, 0.3);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            z-index: 1;
         }
-        .dropdown-menu {
-          z-index: 1050;
+
+        /* FullCalendar 다크 테마 커스텀 */
+        .fc {
+            --fc-page-bg-color: transparent;
+            --fc-neutral-bg-color: rgba(41, 42, 46, 0.5);
+            --fc-neutral-border-color: rgba(58, 74, 70, 0.3);
+            --fc-border-color: rgba(58, 74, 70, 0.3);
+            --fc-list-event-hover-bg-color: rgba(0, 245, 212, 0.1);
+            --fc-today-bg-color: rgba(0, 245, 212, 0.08);
+            color: #e3e2e8;
         }
+
+        .fc .fc-toolbar-title {
+            font-family: 'Sora', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #00f5d4;
+        }
+
+        /* FullCalendar 버튼 ("오늘 날짜로", "월간" 등) 폰트 및 스타일 정상화 */
+        .fc .fc-button {
+            background-color: rgba(41, 42, 46, 0.8) !important;
+            border: 1px solid rgba(58, 74, 70, 0.4) !important;
+            color: #e3e2e8 !important;
+            font-family: 'Inter', sans-serif !important;
+            font-size: 12px !important;
+            border-radius: 0.5rem !important;
+            transition: all 0.2s;
+            box-shadow: none !important;
+        }
+
+        .fc .fc-button:hover {
+            background-color: rgba(0, 245, 212, 0.2) !important;
+            border-color: #00f5d4 !important;
+            color: #00f5d4 !important;
+        }
+
+        .fc .fc-button-primary:not(:disabled).fc-button-active,
+        .fc .fc-button-primary:not(:disabled):active {
+            background-color: #00f5d4 !important;
+            border-color: #00f5d4 !important;
+            color: #07080b !important;
+            font-weight: 600;
+        }
+
         .fc .fc-daygrid-day-number {
-        color: white !important;
-        font-weight: normal;
-        text-decoration: none !important;
+            color: #e3e2e8 !important;
+            font-weight: 500;
+            text-decoration: none !important;
         }
+
         .fc .fc-daygrid-day-top a {
-        color: inherit !important;
-        text-decoration: none !important;
+            color: inherit !important;
+            text-decoration: none !important;
         }
+
         .fc-col-header-cell-cushion {
-        font-weight: bold;
-        text-decoration: none !important;
-        cursor: default !important;
-        color: white;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            text-decoration: none !important;
+            cursor: default !important;
+            color: #e3e2e8;
         }
 
-       .fc-col-header-cell:nth-child(1) .fc-col-header-cell-cushion {
-        color: red !important;
+        .fc-col-header-cell:nth-child(1) .fc-col-header-cell-cushion {
+            color: #ffb4ab !important;
         }
 
-       .fc-col-header-cell:nth-child(7) .fc-col-header-cell-cushion {
-        color: blue !important;
+        .fc-col-header-cell:nth-child(7) .fc-col-header-cell-cushion {
+            color: #8ab4f8 !important;
         }
+
+        .fc-event {
+            background-color: rgba(0, 245, 212, 0.2);
+            border: 1px solid rgba(0, 245, 212, 0.5);
+            color: #00f5d4;
+            border-radius: 0.375rem;
+            padding: 2px 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .fc-event:hover {
+            background-color: rgba(0, 245, 212, 0.35);
+            border-color: #00f5d4;
+        }
+
+        /* 모달 다크 테마 커스텀 */
         .modal-content {
-             color: black !important;
+            background-color: #1a1b20 !important;
+            color: #e3e2e8 !important;
+            border: 1px solid rgba(58, 74, 70, 0.4) !important;
+            border-radius: 1rem !important;
+            backdrop-filter: blur(24px);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid rgba(58, 74, 70, 0.3) !important;
+        }
+
+        .modal-footer {
+            border-top: 1px solid rgba(58, 74, 70, 0.3) !important;
+        }
+
+        .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+
+        .form-control {
+            background-color: rgba(13, 14, 18, 0.8) !important;
+            border: 1px solid rgba(58, 74, 70, 0.4) !important;
+            color: #e3e2e8 !important;
+            border-radius: 0.5rem !important;
+        }
+
+        .form-control:focus {
+            border-color: #00f5d4 !important;
+            box-shadow: 0 0 0 2px rgba(0, 245, 212, 0.2) !important;
+        }
+
+        .form-label {
+            color: #b9cac4;
+            font-size: 0.9rem;
+        }
+
+        .table-dark-custom {
+            background-color: rgba(26, 27, 32, 0.8);
+            color: #e3e2e8;
+            border-color: rgba(58, 74, 70, 0.3);
+        }
+
+        /* 버튼 디자인 통일 */
+        .btn-custom-primary {
+            background-color: #00f5d4;
+            border: none;
+            color: #07080b;
+            font-weight: 600;
+            border-radius: 9999px;
+            padding: 0.5rem 1.25rem;
+            transition: all 0.2s;
+        }
+        .btn-custom-primary:hover {
+            background-color: #00dabf;
+            color: #07080b;
+        }
+
+        .btn-custom-secondary {
+            background-color: rgba(41, 42, 46, 0.8);
+            border: 1px solid rgba(58, 74, 70, 0.4);
+            color: #e3e2e8;
+            border-radius: 9999px;
+            padding: 0.5rem 1.25rem;
+            transition: all 0.2s;
+        }
+        .btn-custom-secondary:hover {
+            background-color: rgba(58, 74, 70, 0.8);
+            color: #ffffff;
+        }
+
+        .btn-custom-danger {
+            background-color: rgba(255, 180, 171, 0.2);
+            border: 1px solid rgba(255, 180, 171, 0.4);
+            color: #ffb4ab;
+            border-radius: 9999px;
+            padding: 0.5rem 1.25rem;
+            transition: all 0.2s;
+        }
+        .btn-custom-danger:hover {
+            background-color: rgba(255, 180, 171, 0.35);
+            color: #ffffff;
         }
     </style>
-    <title>트리플에스 커뮤니티 - 스케줄</title>
 </head>
-<body class="other-page">
+<body class="dark">
+<div class="ambient-glow-container">
+    <div class="glow-accent-1"></div>
+    <div class="glow-accent-2"></div>
+</div>
+
 {{>layout/header}}
 
-<div id="calendar"></div>
-{{#isAdmin}}
-<div class="my-3" style="max-width: 900px; margin: 0 auto;" >
-    <button class="btn btn-primary" onclick="showAddModal()">스케줄 추가</button>
+<div class="main-content">
+    <div class="mb-6 flex justify-between items-center" style="max-width: 900px; margin: 0 auto 1.5rem auto;">
+        <div>
+            <h1 class="text-2xl font-bold font-['Sora'] text-white flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4] shadow-[0_0_8px_#00f5d4]"></span>
+                스케줄 캘린더
+            </h1>
+            <p class="text-sm text-[#b9cac4] mt-1 font-['JetBrains_Mono']">트리플에스의 주요 일정 및 활동 정보를 확인하세요.</p>
+        </div>
+        {{#isAdmin}}
+            <button class="btn-custom-primary flex items-center gap-1.5" onclick="showAddModal()">
+                <span class="material-symbols-outlined text-sm">add</span> 스케줄 추가
+            </button>
+        {{/isAdmin}}
+    </div>
+
+    <div id="calendar"></div>
 </div>
-{{/isAdmin}}
+
+<!-- 일정 목록 모달 -->
 <div class="modal fade" id="scheduleListModal" tabindex="-1" aria-labelledby="scheduleListLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="scheduleListLabel">일정 목록</h5>
+                <h5 class="modal-title font-['Sora'] text-[#00f5d4]" id="scheduleListLabel">일정 목록</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
             </div>
             <div class="modal-body">
-                <table class="table table-bordered">
-                    <thead class="table-light">
+                <table class="table table-dark table-bordered table-dark-custom">
+                    <thead>
                     <tr>
                         <th>제목</th>
                         <th>시작일</th>
@@ -94,7 +347,7 @@
                     {{/schedules}}
                     {{^schedules}}
                         <tr>
-                            <td colspan="3" class="text-center">등록된 일정이 없습니다.</td>
+                            <td colspan="3" class="text-center text-[#b9cac4]">등록된 일정이 없습니다.</td>
                         </tr>
                     {{/schedules}}
                     </tbody>
@@ -104,239 +357,235 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
-
-<!-- ✅ FullCalendar JS 다음! -->
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/ko.global.min.js"></script>
-
-
-
-<script>
-    function showAddModal() {
-    const viewModal = new bootstrap.Modal(document.getElementById('addScheduleModal'));
-    viewModal.show();
-}
-    function adjustEndDate(endStr) {
-    if (!endStr) return null;
-    const date = new Date(endStr);
-    date.setDate(date.getDate() + 1);
-    return date.toISOString().substring(0, 10);
-  }
-
-  document.addEventListener("DOMContentLoaded", function() {
-    var calendarEl = document.getElementById("calendar");
-    window.calendar = new FullCalendar.Calendar(calendarEl, {
-      initialView: "dayGridMonth",
-      locale: "ko",
-      headerToolbar: {
-        left: "prev,next today",
-        center: "title",
-        right: "dayGridMonth"
-      },
-      buttonText: {
-      today: '오늘 날짜로',
-      month: '월간'
-  },
-
-      eventClick: function(info) {
-      const event = info.event;
-
-      document.getElementById("modalScheduleTitle").textContent = event.title;
-      document.getElementById("modalScheduleStart").textContent = event.startStr;
-      document.getElementById("modalScheduleEnd").textContent = event.extendedProps.rawEnd || '-';
-
-
-      const deleteForm = document.getElementById("deleteForm");
-        if (deleteForm) {
-        deleteForm.action = `/delete/${event.id}`;
-      }
-
-      const editBtn = document.getElementById("editBtn");
-      if (editBtn) {
-      editBtn.onclick = function () {
-      const viewModal = bootstrap.Modal.getInstance(document.getElementById("viewScheduleModal"));
-      viewModal.hide();
-    // 수정 모달에 현재 스케줄 정보 세팅
-      document.getElementById("editScheduleId").value = event.id;
-      document.getElementById("editTitleInput").value = event.title;
-      document.getElementById("editStartInput").value = event.startStr;
-      document.getElementById("editEndInput").value = event.extendedProps.rawEnd ? event.extendedProps.rawEnd.substring(0,10) : ''; // 날짜 형식 맞춰서 넣기
-
-    // 수정 모달 열기
-      const editModal = new bootstrap.Modal(document.getElementById("editScheduleModal"));
-      editModal.show();
-    };
-  }
-  const viewModal = new bootstrap.Modal(document.getElementById("viewScheduleModal"));
-  viewModal.show();
-  },
-  events: {{{schedulesJson}}}
-    });
-    calendar.render();
-
-      const addForm = document.getElementById("addScheduleForm");
-      if (addForm) {
-      addForm.addEventListener("submit", function (e) {
-        e.preventDefault();
-      const title = document.getElementById("titleInput").value;
-      const start = document.getElementById("startInput").value;
-      const end = document.getElementById("endInput").value;
-
-      fetch("/schedule/add", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: `title=${encodeURIComponent(title)}&start=${start}&end=${end}`
-      }).then(response => {
-        if (response.ok) {
-          calendar.addEvent({
-            title: title,
-            start: start,
-            end: end ? adjustEndDate(end) : null,
-            extendedProps: {
-            rawEnd: end
-          }
-          });
-          const modalEl = document.getElementById('addScheduleModal');
-          const modalInstance = bootstrap.Modal.getInstance(modalEl);
-          modalInstance.hide();
-
-          document.getElementById("addScheduleForm").reset();
-        } else {
-          alert("추가에 실패했습니다.");
-        }
-        });
-       });
-      }
-
-    const editForm = document.getElementById("editScheduleForm");
-    if(editForm) {
-      editForm.addEventListener("submit", function(e) {
-      e.preventDefault();
-
-      const id = document.getElementById("editScheduleId").value;
-      const title = document.getElementById("editTitleInput").value;
-      const start = document.getElementById("editStartInput").value;
-      const end = document.getElementById("editEndInput").value;
-
-    fetch(`/edit/${id}`, {
-      method: "POST",  // 또는 PATCH (서버 컨트롤러에 맞게)
-      headers: {
-      "Content-Type": "application/x-www-form-urlencoded"
-    },
-    body: `title=${encodeURIComponent(title)}&startDate=${start}&endDate=${end}`
-  }).then(response => {
-    if (response.ok) {
-      // 성공 시 수정 모달 닫고 일정 업데이트
-      const editModalEl = document.getElementById("editScheduleModal");
-      const editModalInstance = bootstrap.Modal.getInstance(editModalEl);
-      editModalInstance.hide();
-
-      // FullCalendar에서 이벤트 찾기 및 업데이트
-      const event = calendar.getEventById(id);
-      if (event) {
-        event.setProp("title", title);
-        event.setStart(start);
-        event.setEnd(end ? adjustEndDate(end) : null);
-        event.setExtendedProp("rawEnd", end);
-      }
-    } else {
-      alert("수정에 실패했습니다.");
-    }
-  }).catch(() => alert("서버와 통신 실패"));
-  });
-  }
- });
-
-</script>
-    <div class="modal fade" id="viewScheduleModal" tabindex="-1" aria-labelledby="viewScheduleLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="viewScheduleLabel">스케줄 상세</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-                </div>
-                <div class="modal-body">
-                    <p><strong>제목:</strong> <span id="modalScheduleTitle"></span></p>
-                    <p><strong>시작일:</strong> <span id="modalScheduleStart"></span></p>
-                    <p><strong>종료일:</strong> <span id="modalScheduleEnd"></span></p>
-                </div>
-
-                <div class="modal-footer">
-                    {{#isAdmin}}
-                    <form id="deleteForm" method="post">
-                        <button type="submit" class="btn btn-danger">삭제</button>
+<!-- 상세 조회 모달 -->
+<div class="modal fade" id="viewScheduleModal" tabindex="-1" aria-labelledby="viewScheduleLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title font-['Sora'] text-[#00f5d4]" id="viewScheduleLabel">스케줄 상세</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+            </div>
+            <div class="modal-body space-y-2">
+                <p><strong>제목:</strong> <span id="modalScheduleTitle" class="text-white"></span></p>
+                <p><strong>시작일:</strong> <span id="modalScheduleStart" class="text-[#b9cac4]"></span></p>
+                <p><strong>종료일:</strong> <span id="modalScheduleEnd" class="text-[#b9cac4]"></span></p>
+            </div>
+            <div class="modal-footer">
+                {{#isAdmin}}
+                    <form id="deleteForm" method="post" class="m-0">
+                        <button type="submit" class="btn-custom-danger">삭제</button>
                     </form>
-                    <a id="editBtn" class="btn btn-primary">수정</a>
-                    {{/isAdmin}}
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
-                </div>
+                    <a id="editBtn" class="btn-custom-primary cursor-pointer">수정</a>
+                {{/isAdmin}}
+                <button type="button" class="btn-custom-secondary" data-bs-dismiss="modal">닫기</button>
             </div>
         </div>
     </div>
-    <div class="modal fade" id="addScheduleModal" tabindex="-1" aria-labelledby="addScheduleLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <form id="addScheduleForm" method="post" action="/schedule/add">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="addScheduleLabel">스케줄 추가</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+</div>
+
+<!-- 추가 모달 -->
+<div class="modal fade" id="addScheduleModal" tabindex="-1" aria-labelledby="addScheduleLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="addScheduleForm" method="post" action="/schedule/add">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title font-['Sora'] text-[#00f5d4]" id="addScheduleLabel">스케줄 추가</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                </div>
+                <div class="modal-body space-y-3">
+                    <div class="mb-3">
+                        <label for="titleInput" class="form-label">제목</label>
+                        <input type="text" class="form-control" id="titleInput" name="title" required />
                     </div>
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="titleInput" class="form-label">제목</label>
-                            <input type="text" class="form-control" id="titleInput" name="title" required />
-                        </div>
-                        <div class="mb-3">
-                            <label for="startInput" class="form-label">시작 날짜</label>
-                            <input type="date" class="form-control" id="startInput" name="start" required />
-                        </div>
-                        <div class="mb-3">
-                            <label for="endInput" class="form-label">종료 날짜</label>
-                            <input type="date" class="form-control" id="endInput" name="end" />
-                        </div>
+                    <div class="mb-3">
+                        <label for="startInput" class="form-label">시작 날짜</label>
+                        <input type="date" class="form-control" id="startInput" name="start" required />
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                        <button type="submit" class="btn btn-primary">추가</button>
+                    <div class="mb-3">
+                        <label for="endInput" class="form-label">종료 날짜</label>
+                        <input type="date" class="form-control" id="endInput" name="end" />
                     </div>
                 </div>
-            </form>
-        </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-custom-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" class="btn-custom-primary">추가</button>
+                </div>
+            </div>
+        </form>
     </div>
-    <div class="modal fade" id="editScheduleModal" tabindex="-1" aria-labelledby="editScheduleLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <form id="editScheduleForm">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="editScheduleLabel">스케줄 수정</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+</div>
+
+<!-- 수정 모달 -->
+<div class="modal fade" id="editScheduleModal" tabindex="-1" aria-labelledby="editScheduleLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="editScheduleForm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title font-['Sora'] text-[#00f5d4]" id="editScheduleLabel">스케줄 수정</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                </div>
+                <div class="modal-body space-y-3">
+                    <input type="hidden" id="editScheduleId" name="id" />
+                    <div class="mb-3">
+                        <label for="editTitleInput" class="form-label">제목</label>
+                        <input type="text" class="form-control" id="editTitleInput" name="title" required />
                     </div>
-                    <div class="modal-body">
-                        <input type="hidden" id="editScheduleId" name="id" />
-                        <div class="mb-3">
-                            <label for="editTitleInput" class="form-label">제목</label>
-                            <input type="text" class="form-control" id="editTitleInput" name="title" required />
-                        </div>
-                        <div class="mb-3">
-                            <label for="editStartInput" class="form-label">시작 날짜</label>
-                            <input type="date" class="form-control" id="editStartInput" name="start" required />
-                        </div>
-                        <div class="mb-3">
-                            <label for="editEndInput" class="form-label">종료 날짜</label>
-                            <input type="date" class="form-control" id="editEndInput" name="end" />
-                            <small class="form-text text-muted">종료 날짜는 선택 사항입니다.</small>
-                        </div>
+                    <div class="mb-3">
+                        <label for="editStartInput" class="form-label">시작 날짜</label>
+                        <input type="date" class="form-control" id="editStartInput" name="start" required />
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                        <button type="submit" class="btn btn-primary">수정 저장</button>
+                    <div class="mb-3">
+                        <label for="editEndInput" class="form-label">종료 날짜</label>
+                        <input type="date" class="form-control" id="editEndInput" name="end" />
+                        <small class="form-text text-[#b9cac4]">종료 날짜는 선택 사항입니다.</small>
                     </div>
                 </div>
-            </form>
-        </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-custom-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" class="btn-custom-primary">수정 저장</button>
+                </div>
+            </div>
+        </form>
     </div>
+</div>
+
+<!-- JS 스크립트 영역 -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/ko.global.min.js"></script>
+
+<script>
+    function showAddModal() {
+        const viewModal = new bootstrap.Modal(document.getElementById('addScheduleModal'));
+        viewModal.show();
+    }
+
+    function adjustEndDate(endStr) {
+        if (!endStr) return null;
+        const date = new Date(endStr);
+        date.setDate(date.getDate() + 1);
+        return date.toISOString().substring(0, 10);
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        var calendarEl = document.getElementById("calendar");
+        window.calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: "dayGridMonth",
+            locale: "ko",
+            headerToolbar: {
+                left: "prev,next today",
+                center: "title",
+                right: "dayGridMonth"
+            },
+            buttonText: {
+                today: '오늘 날짜로',
+                month: '월간'
+            },
+            eventClick: function(info) {
+                const event = info.event;
+
+                document.getElementById("modalScheduleTitle").textContent = event.title;
+                document.getElementById("modalScheduleStart").textContent = event.startStr;
+                document.getElementById("modalScheduleEnd").textContent = event.extendedProps.rawEnd || '-';
+
+                const deleteForm = document.getElementById("deleteForm");
+                if (deleteForm) {
+                    deleteForm.action = `/delete/${event.id}`;
+                }
+
+                const editBtn = document.getElementById("editBtn");
+                if (editBtn) {
+                    editBtn.onclick = function () {
+                        const viewModal = bootstrap.Modal.getInstance(document.getElementById("viewScheduleModal"));
+                        viewModal.hide();
+
+                        document.getElementById("editScheduleId").value = event.id;
+                        document.getElementById("editTitleInput").value = event.title;
+                        document.getElementById("editStartInput").value = event.startStr;
+                        document.getElementById("editEndInput").value = event.extendedProps.rawEnd ? event.extendedProps.rawEnd.substring(0,10) : '';
+
+                        const editModal = new bootstrap.Modal(document.getElementById("editScheduleModal"));
+                        editModal.show();
+                    };
+                }
+                const viewModal = new bootstrap.Modal(document.getElementById("viewScheduleModal"));
+                viewModal.show();
+            },
+            events: {{{schedulesJson}}}
+        });
+        calendar.render();
+
+        const addForm = document.getElementById("addScheduleForm");
+        if (addForm) {
+            addForm.addEventListener("submit", function (e) {
+                e.preventDefault();
+                const title = document.getElementById("titleInput").value;
+                const start = document.getElementById("startInput").value;
+                const end = document.getElementById("endInput").value;
+
+                fetch("/schedule/add", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: `title=${encodeURIComponent(title)}&start=${start}&end=${end}`
+                }).then(response => {
+                    if (response.ok) {
+                        calendar.addEvent({
+                            title: title,
+                            start: start,
+                            end: end ? adjustEndDate(end) : null,
+                            extendedProps: {
+                                rawEnd: end
+                            }
+                        });
+                        const modalEl = document.getElementById('addScheduleModal');
+                        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                        modalInstance.hide();
+                        document.getElementById("addScheduleForm").reset();
+                    } else {
+                        alert("추가에 실패했습니다.");
+                    }
+                });
+            });
+        }
+
+        const editForm = document.getElementById("editScheduleForm");
+        if(editForm) {
+            editForm.addEventListener("submit", function(e) {
+                e.preventDefault();
+
+                const id = document.getElementById("editScheduleId").value;
+                const title = document.getElementById("editTitleInput").value;
+                const start = document.getElementById("editStartInput").value;
+                const end = document.getElementById("editEndInput").value;
+
+                fetch(`/edit/${id}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: `title=${encodeURIComponent(title)}&startDate=${start}&endDate=${end}`
+                }).then(response => {
+                    if (response.ok) {
+                        const editModalEl = document.getElementById("editScheduleModal");
+                        const editModalInstance = bootstrap.Modal.getInstance(editModalEl);
+                        editModalInstance.hide();
+
+                        const event = calendar.getEventById(id);
+                        if (event) {
+                            event.setProp("title", title);
+                            event.setStart(start);
+                            event.setEnd(end ? adjustEndDate(end) : null);
+                            event.setExtendedProp("rawEnd", end);
+                        }
+                    } else {
+                        alert("수정에 실패했습니다.");
+                    }
+                }).catch(() => alert("서버와 통신 실패"));
+            });
+        }
+    });
+</script>
 </body>
 </html>

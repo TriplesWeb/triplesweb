@@ -5,7 +5,7 @@
    1. Global Base Styles & Material Icons
    ========================================================================== */
 body {
-    background-color: #0d0e12;
+    background-color: #07080b;
     color: #e3e2e8;
     font-family: 'Inter', 'Noto Sans KR', -apple-system, sans-serif !important;
     overflow-x: hidden;
@@ -21,7 +21,7 @@ body {
 
 /* Material Symbols 아이콘 폰트 오버라이드 방지 */
 .material-symbols-outlined {
-    font-family: 'Material Symbols Outlined' !important;
+    font-family: 'Material Symbols Outlined', serif !important;
     font-weight: normal;
     font-style: normal;
     font-size: 16px;
@@ -43,7 +43,7 @@ body {
     height: 6px;
 }
 ::-webkit-scrollbar-track {
-    background: #0d0e12;
+    background: #07080b;
 }
 ::-webkit-scrollbar-thumb {
     background: #23242e;
@@ -54,14 +54,19 @@ body {
 }
 
 /* ==========================================================================
-   2. Header & Navigation (아이콘 제외 폰트 적용)
+   2. Header & Navigation (헤더 및 드롭다운 메뉴 폰트 강제 고정)
    ========================================================================== */
-#navbar,
-#navbar a:not(.material-symbols-outlined),
-#navbar button:not(.material-symbols-outlined),
+#top-header *:not(.material-symbols-outlined),
+#navbar *:not(.material-symbols-outlined),
 .nav-dropdown-btn,
 .nav-item-link {
     font-family: 'Inter', 'Noto Sans KR', -apple-system, sans-serif !important;
+}
+
+/* 브랜드 로고는 Sora 폰트 유지 */
+#top-header a.text-2xl,
+.navbar-brand {
+    font-family: 'Sora', sans-serif !important;
 }
 
 /* 드롭다운 메뉴 활성화 CSS */
@@ -87,44 +92,92 @@ body {
 }
 
 /* ==========================================================================
-   3. FullCalendar Custom Style Override (메인페이지 미니 달력 전용)
+   3. FullCalendar Custom Style Override (스케줄 페이지 전용)
    ========================================================================== */
 .fc {
-    --fc-border-color: rgba(45, 49, 62, 0.6);
     --fc-page-bg-color: transparent;
+    --fc-neutral-bg-color: rgba(41, 42, 46, 0.5);
+    --fc-neutral-border-color: rgba(58, 74, 70, 0.3);
+    --fc-border-color: rgba(58, 74, 70, 0.3);
+    --fc-list-event-hover-bg-color: rgba(0, 245, 212, 0.1);
+    --fc-today-bg-color: rgba(0, 245, 212, 0.08);
+    color: #e3e2e8;
 }
+
 .fc .fc-toolbar-title {
-    font-size: 0.875rem !important;
+    font-family: 'Sora', sans-serif;
+    font-size: 1.25rem;
     font-weight: 700;
+    color: #00f5d4;
+}
+
+.fc .fc-button {
+    background-color: rgba(41, 42, 46, 0.8);
+    border: 1px solid rgba(58, 74, 70, 0.4);
     color: #e3e2e8;
-    font-family: 'Inter', 'Noto Sans KR', sans-serif;
+    font-family: 'Inter', 'Noto Sans KR', sans-serif !important;
+    font-size: 12px;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
 }
-.fc .fc-button-primary {
-    background-color: #1a1b22 !important;
-    border-color: #2d313e !important;
-    color: #b9cac4 !important;
-    box-shadow: none !important;
-    padding: 0.2rem 0.5rem !important;
+
+.fc .fc-button:hover {
+    background-color: rgba(0, 245, 212, 0.2) !important;
+    border-color: #00f5d4;
+    color: #00f5d4;
 }
-.fc .fc-button-primary:hover {
-    background-color: #23242e !important;
-    color: #00f5d4 !important;
+
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+    background-color: #00f5d4;
+    border-color: #00f5d4;
+    color: #07080b;
+    font-weight: 600;
 }
-.fc-theme-standard td,
-.fc-theme-standard th {
-    border-color: rgba(45, 49, 62, 0.4) !important;
-}
-.fc .fc-col-header-cell-cushion {
-    color: #b9cac4;
-    font-size: 0.75rem;
-}
+
 .fc .fc-daygrid-day-number {
+    color: #e3e2e8 !important;
+    font-weight: 500;
+    text-decoration: none !important;
+}
+
+.fc .fc-daygrid-day-top a {
+    color: inherit !important;
+    text-decoration: none !important;
+}
+
+.fc-col-header-cell-cushion {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    text-decoration: none !important;
+    cursor: default !important;
     color: #e3e2e8;
-    font-size: 0.75rem;
 }
+
 .fc-col-header-cell:nth-child(1) .fc-col-header-cell-cushion {
-    color: #f87171 !important; /* 일요일 빨간색 */
+    color: #ffb4ab !important;
 }
+
 .fc-col-header-cell:nth-child(7) .fc-col-header-cell-cushion {
-    color: #60a5fa !important; /* 토요일 파란색 */
+    color: #8ab4f8 !important;
+}
+
+.fc-event {
+    background-color: rgba(0, 245, 212, 0.2);
+    border: 1px solid rgba(0, 245, 212, 0.5);
+    color: #00f5d4;
+    border-radius: 0.375rem;
+    padding: 2px 4px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.fc-event:hover {
+    background-color: rgba(0, 245, 212, 0.35);
+    border-color: #00f5d4;
+}
+
+#navbar button,
+#navbar a {
+    font-family: 'Inter', 'Noto Sans KR', -apple-system, sans-serif !important;
 }
