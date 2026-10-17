@@ -51,6 +51,11 @@ public class TriplesController {
         return "triples/unit";
     }
 
+    @GetMapping("/chemistry")
+    public String indexTriplesChemistry() {
+        return "triples/chemistry";
+    }
+
     @GetMapping("/artist/{id:[0-9]+}")
     @Transactional(readOnly = true)
     public String TriplesArtistDetail(@PathVariable("id") long artistId, Model model) {

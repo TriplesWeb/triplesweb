@@ -18,4 +18,16 @@ public class CosmoController {
     public String indexCosmoObjekt(Model model) {
         return "/cosmo/objekt";
     }
+    @GetMapping("/gravity")
+    public String indexGravity(Model model) {
+        return "/cosmo/gravity";
+    }
+    @GetMapping("/event")
+    public String indexCosmo(Model model) {
+        return "/cosmo/event";
+    }
+    @GetMapping("/update")
+    public String indexCosmoUpdate(Model model) {
+        return "/cosmo/update";
+    }
 }

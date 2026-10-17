@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.lang.reflect.Member;
 import java.util.Optional;
 
 /**
@@ -65,7 +64,7 @@ public class LoginController {
         session.setAttribute("user", member);
 
         return "redirect:/";
-    };
+    }
 
 
     @GetMapping("/logout")
