@@ -10,6 +10,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+/**
+ * 아이디 존재 여부와 BCrypt 비밀번호 일치를 검증하는 {@link AuthenticationProvider}.
+ */
 @Component
 public class CustomAuthenticationProvider implements AuthenticationProvider {
     private final CustomUserDetailsService userDetailService;

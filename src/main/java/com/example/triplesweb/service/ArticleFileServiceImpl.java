@@ -20,6 +20,10 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * {@link ArticleFileService} 구현체. 멀티파트·토큰·본문 파싱 경로로 첨부를 게시글에 연결한다.
+ * 저장소 메타 구성, 중복 savedName 방지, ID 기준 파일·DB 삭제를 처리한다.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional

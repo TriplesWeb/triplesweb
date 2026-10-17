@@ -3,6 +3,9 @@ package com.example.triplesweb.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * 회원(사이트 사용자) 엔티티. 인증·역할·레벨·포인트.
+ */
 @Entity
 @Getter
 @Setter

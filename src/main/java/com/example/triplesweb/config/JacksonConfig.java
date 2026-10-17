@@ -6,6 +6,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * JSON 직렬화용 {@link ObjectMapper} 빈({@code JavaTimeModule}, ISO-8601 날짜).
+ */
 @Configuration
 public class JacksonConfig {
 

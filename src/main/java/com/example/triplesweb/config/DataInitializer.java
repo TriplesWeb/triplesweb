@@ -13,7 +13,9 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-
+/**
+ * DB에 앨범이 없을 때 아티스트·유닛·앨범·수록곡 시드 데이터를 한 번 적재한다.
+ */
 @Component
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {

@@ -6,6 +6,10 @@ import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 유닛(그룹/서브유닛) 엔티티.
+ * 상위 {@link Unit}과 자기참조, {@link UnitMember}·{@link Album} 1:N.
+ */
 @Entity
 @Getter
 @Setter

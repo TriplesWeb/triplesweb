@@ -7,6 +7,9 @@ import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 굿즈 상품 엔티티. {@link ShopImage} 1:N.
+ */
 @Entity
 @Getter
 @Setter

@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
+/** 미디어(유튜브) 관리 폼/API 바인딩. 탭·영상 ID·제목 등 입력·표시. */
 @Getter
 @Setter
 @Builder

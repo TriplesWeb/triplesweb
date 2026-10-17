@@ -14,6 +14,11 @@ import org.springframework.security.core.userdetails.User;
 
 import java.util.Optional;
 
+/**
+ * 마이페이지 조회 및 프로필(이메일·주소·비밀번호) 수정.
+ * URL: {@code /mypage}, {@code /mypage_edit}
+ * 레이어: Should — MemberRepository·BCrypt 직접 사용, MemberService 후보.
+ */
 @Controller
 public class MyPageController {
 

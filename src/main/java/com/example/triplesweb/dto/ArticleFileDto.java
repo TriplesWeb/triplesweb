@@ -3,6 +3,7 @@ package com.example.triplesweb.dto;
 import com.example.triplesweb.entity.MediaType;
 import lombok.*;
 
+/** 게시글 첨부 파일 뷰 DTO. Mustache 분기(isImage/isVideo) 및 MIME 힌트용. */
 @Builder
 @Getter
 @Setter

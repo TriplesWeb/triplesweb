@@ -2,6 +2,9 @@ package com.example.triplesweb.util;
 
 import lombok.Getter;
 
+/**
+ * 샵 상품 카테고리 키와 문자열 파싱({@link #from(String)}).
+ */
 @Getter
 public enum ShopCategory {
     ALBUM("album"),

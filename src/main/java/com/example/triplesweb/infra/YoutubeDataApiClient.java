@@ -8,6 +8,9 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 
+/**
+ * YouTube Data API v3로 동영상 snippet·재생시간·조회수를 조회한다(외부 API, DB 미사용).
+ */
 @Component
 public class YoutubeDataApiClient {
     private final RestTemplate rest = new RestTemplate();

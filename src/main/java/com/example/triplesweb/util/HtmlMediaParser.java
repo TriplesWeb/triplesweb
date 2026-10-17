@@ -6,6 +6,9 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * HTML 본문의 {@code src} 속성에서 {@code /uploads/} 경로 URL 집합을 추출한다.
+ */
 public final class HtmlMediaParser {
 
     // src=".../uploads/...."

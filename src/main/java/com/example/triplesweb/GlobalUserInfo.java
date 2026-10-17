@@ -9,6 +9,9 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+/**
+ * 인증된 사용자의 회원 엔티티와 관리자 여부를 모든 뷰 모델에 주입한다.
+ */
 @ControllerAdvice
 public class GlobalUserInfo {
     private final MemberRepository memberRepository;

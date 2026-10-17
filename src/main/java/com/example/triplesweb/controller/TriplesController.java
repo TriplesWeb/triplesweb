@@ -17,6 +17,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * TRIPLES 아티스트·앨범·유닛 소개 및 상세(지연 로딩·유닛 트리 통합 표시 포함).
+ * URL: {@code /triples/artist}, {@code /triples/album}, {@code /triples/unit}, 각 {@code /{id}}
+ * 레이어: Optional — Album·Artist·Unit Repository 직접 사용(Repository 단독 허용).
+ */
 @Controller
 @RequestMapping("/triples")
 @RequiredArgsConstructor

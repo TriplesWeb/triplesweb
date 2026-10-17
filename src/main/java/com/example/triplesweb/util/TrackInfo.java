@@ -4,7 +4,9 @@ import lombok.Getter;
 
 import java.util.List;
 
-
+/**
+ * {@link com.example.triplesweb.config.DataInitializer} 시드용 앨범별 수록곡·재생시간·타이틀곡 메타데이터.
+ */
 @Getter
 public enum TrackInfo {
 

@@ -26,6 +26,10 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
 
+/**
+ * JSON 파일 기반 미디어 카탈로그(mv, signal 등 탭) 읽기·쓰기를 담당한다.
+ * 탭별 페이징 조회, YouTube ID 기준 단건·연관 영상, 추가·삭제를 처리한다.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional

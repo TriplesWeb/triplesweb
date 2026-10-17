@@ -13,6 +13,10 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 게시글({@link Article}) 댓글 조회·생성·수정·삭제를 담당한다.
+ * {@link CommentRepository}와 연동해 {@link CommentDto}로 변환해 반환한다.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional

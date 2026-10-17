@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * 게시글 좋아요 엔티티({@code article_like}). {@link Article} N:1, (article_id, userId) 유일.
+ */
 @Entity
 @Getter
 @Setter

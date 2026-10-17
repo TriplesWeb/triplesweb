@@ -13,6 +13,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 로그인 사용자 본인 게시글 목록.
+ * URL: {@code GET /myposts}
+ * 레이어: Optional — ArticleRepository 직접 사용(Repository 단독 허용).
+ */
 @Controller
 public class MyPostController {
     @Autowired

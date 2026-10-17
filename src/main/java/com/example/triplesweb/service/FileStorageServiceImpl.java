@@ -22,6 +22,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * {@link FileStorageService} 구현체. 업로드 루트 아래 이미지·영상·기타 파일을 날짜/하위폴더로 저장한다.
+ * UUID 파일명, 공개 {@code /uploads/} URL, 경로 탈출 방지, 삭제 시 사이드카 정리를 수행한다.
+ */
 @Service
 @Transactional
 public class FileStorageServiceImpl implements FileStorageService {

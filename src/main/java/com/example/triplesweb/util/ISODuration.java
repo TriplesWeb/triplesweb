@@ -1,5 +1,8 @@
 package com.example.triplesweb.util;
 
+/**
+ * ISO 8601 duration({@code PT#H#M#S})을 {@code m:ss} 또는 {@code h:mm:ss} 시계 형식으로 변환한다.
+ */
 public class ISODuration {
     public static String toClock(String iso){
         if (iso==null||iso.isBlank()) return "";

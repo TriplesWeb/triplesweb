@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 
+/** 일정 등록·수정 폼 바인딩 및 캘린더 API(JSON) 입출력. */
 @Getter
 @Setter
 @ToString

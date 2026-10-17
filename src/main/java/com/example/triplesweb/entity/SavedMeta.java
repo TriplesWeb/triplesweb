@@ -3,6 +3,9 @@ package com.example.triplesweb.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * 업로드 파일 메타데이터 임베드 타입. 원본명·저장명·URL·크기·{@link MediaType}.
+ */
 @Embeddable
 @Data
 @NoArgsConstructor

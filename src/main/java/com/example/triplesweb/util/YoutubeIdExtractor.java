@@ -3,6 +3,9 @@ package com.example.triplesweb.util;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * YouTube URL(youtu.be, watch, embed, shorts) 또는 순수 video ID에서 동영상 ID를 추출한다.
+ */
 public class YoutubeIdExtractor {
 
     // 11자리 유튜브 비디오 ID만 정확하게 낚아채는 정규식

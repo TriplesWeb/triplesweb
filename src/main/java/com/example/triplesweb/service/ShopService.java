@@ -14,6 +14,10 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
 
+/**
+ * 쇼핑(굿즈) 상품 등록 및 목록 조회를 담당한다.
+ * 이미지 업로드와 {@link Shop} 저장, 카테고리별 카드 DTO 변환을 처리한다.
+ */
 @Service
 @RequiredArgsConstructor
 public class ShopService {

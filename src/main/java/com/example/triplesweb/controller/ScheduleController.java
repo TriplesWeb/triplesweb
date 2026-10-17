@@ -22,6 +22,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * 스케줄 캘린더 표시 및 관리자 일정 CRUD.
+ * URL: {@code /schedule}, {@code /schedule/add}, {@code /edit/{id}`, {@code /delete/{id}`, …
+ * 레이어: Optional — ScheduleService와 ScheduleRepository 혼용, Service로 통일 검토.
+ */
 @Controller
 public class ScheduleController {
 

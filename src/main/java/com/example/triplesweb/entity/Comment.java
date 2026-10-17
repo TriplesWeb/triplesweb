@@ -7,6 +7,9 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.util.Date;
 
+/**
+ * 게시글 댓글 엔티티. {@link Article} N:1.
+ */
 @Entity
 @Getter
 @Setter

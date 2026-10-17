@@ -4,6 +4,9 @@ import com.samskivert.mustache.Mustache;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Mustache 컴파일러 빈: 누락·null 템플릿 변수는 빈 문자열로 렌더링한다.
+ */
 @Configuration
 public class MustacheConfig {
     @Bean

@@ -3,6 +3,9 @@ package com.example.triplesweb.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * 게시글 첨부 파일 엔티티({@code article_file}). {@link Article} N:1, {@link SavedMeta} 임베드.
+ */
 @Builder
 @Table(name = "article_file")
 @Entity

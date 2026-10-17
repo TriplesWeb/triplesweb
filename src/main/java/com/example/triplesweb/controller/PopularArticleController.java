@@ -18,6 +18,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * 전역 인기 게시글 목록 및 like POST({@link ArticleController}와 로직·경로 중복 주의).
+ * URL: {@code GET /popular}, {@code POST /{category}/{id}/like}
+ * 레이어: Must — Repository 직접 사용, like·popular을 ArticleService로 통일 필요.
+ */
 @Controller
 public class PopularArticleController {
     @Autowired
@@ -33,6 +38,7 @@ public class PopularArticleController {
         return "article/popular";  // popular.html 뷰 페이지로
     }
 
+    /** ArticleController의 toggleLike와 별도 구현 — ArticleService 통일 전까지 유지 */
     @PostMapping("/{category}/{id}/like")
     @ResponseBody
     public String likeArticle(@PathVariable String category, @PathVariable Long id, HttpSession session) {

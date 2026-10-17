@@ -24,6 +24,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 유튜브 탭별(MV·SIGNAL 등) 미디어 아카이브 목록·상세·관리자 등록·삭제.
+ * URL: {@code /media}, {@code /media/{tab}/{youtubeId}}, {@code /media_new}, …
+ * 레이어: OK — MediaService 사용.
+ */
 @Controller
 @RequiredArgsConstructor
 public class MediaArchiveController {

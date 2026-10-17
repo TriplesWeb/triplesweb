@@ -8,6 +8,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+/**
+ * 로그인 userId로 {@link com.example.triplesweb.entity.Members}를 조회해 {@link UserDetails}를 반환한다.
+ */
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 

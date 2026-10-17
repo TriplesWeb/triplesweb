@@ -5,6 +5,9 @@ import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+/**
+ * Spring Security CSRF 토큰을 {@code _csrf} 모델 속성으로 Mustache 등 뷰에 전달한다.
+ */
 @ControllerAdvice
 public class CsrfModelAdvice {
     @ModelAttribute("_csrf")

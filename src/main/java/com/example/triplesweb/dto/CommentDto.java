@@ -7,6 +7,7 @@ import lombok.*;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
+/** 댓글 목록·API용 뷰 DTO. 게시판명·포맷 날짜 등 {@link com.example.triplesweb.entity.Comment} 확장 필드. */
 @Getter
 @Setter
 @AllArgsConstructor

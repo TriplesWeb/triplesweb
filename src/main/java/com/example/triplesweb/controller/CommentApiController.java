@@ -11,6 +11,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 게시글 댓글 REST API(조회·생성·수정·삭제).
+ * URL: {@code /api/articles/{articleId}/comments}
+ * 레이어: OK — CommentService 사용.
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/articles/{articleId}/comments")

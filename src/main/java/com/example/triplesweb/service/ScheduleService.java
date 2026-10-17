@@ -8,6 +8,10 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * 아티스트 일정({@link Schedule}) CRUD를 담당한다.
+ * 제목·기간 저장, 전체/단건 조회, 수정·삭제를 제공한다.
+ */
 @Service
 @RequiredArgsConstructor
 public class ScheduleService {

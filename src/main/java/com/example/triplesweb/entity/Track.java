@@ -4,6 +4,9 @@ import com.example.triplesweb.util.TrackInfo;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * 앨범 수록곡 엔티티. {@link Album} N:1.
+ */
 @Entity
 @Getter
 @Setter

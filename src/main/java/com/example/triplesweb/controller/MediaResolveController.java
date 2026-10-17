@@ -10,6 +10,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+/**
+ * 유튜브 URL/ID로 제목·썸네일·재생시간 등 메타데이터 조회 API.
+ * URL: {@code GET /api/media/resolve?urlOrId=}
+ * 레이어: Optional — OEmbed·Data API 클라이언트 직접 조합, Facade/Service 분리 검토.
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/media")
@@ -17,6 +22,7 @@ public class MediaResolveController {
 
     private final MediaService mediaService;
 
+    /** OEmbed 우선, Data API로 제목·길이·조회수 등 보강(실패 시 부분 응답) */
     @GetMapping("/resolve")
     public ResponseEntity<?> resolveYoutube(@RequestParam(required = false) String urlOrId) {
 

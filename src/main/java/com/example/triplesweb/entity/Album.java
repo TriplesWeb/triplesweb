@@ -7,6 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 앨범 엔티티. {@link Unit} N:1, {@link Track} 1:N.
+ */
 @Entity
 @Getter
 @Setter

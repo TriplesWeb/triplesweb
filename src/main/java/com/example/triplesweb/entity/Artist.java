@@ -6,6 +6,9 @@ import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 아티스트(멤버) 프로필 엔티티. {@link UnitMember}로 유닛 소속 1:N.
+ */
 @Entity
 @Getter
 @Setter

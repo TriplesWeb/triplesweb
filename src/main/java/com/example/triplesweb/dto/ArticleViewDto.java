@@ -4,6 +4,7 @@ import lombok.*;
 
 import java.util.List;
 
+/** 게시글 상세 페이지 뷰 DTO. 본문·카테고리·KST 날짜·첨부 목록. */
 @Getter @Setter
 @Data
 @Builder

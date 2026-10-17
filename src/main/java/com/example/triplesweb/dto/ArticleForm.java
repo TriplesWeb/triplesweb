@@ -6,7 +6,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-
+/** 게시글 작성·수정 폼 바인딩. Multipart 첨부·좋아요 UI 상태 포함. */
 @Getter
 @Setter
 @AllArgsConstructor

@@ -6,6 +6,9 @@ import jakarta.persistence.Id;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+/**
+ * 상품 이미지 엔티티. {@link Shop} N:1, 파일 메타는 {@link SavedMeta} 임베드.
+ */
 @Entity
 @Getter
 @Setter

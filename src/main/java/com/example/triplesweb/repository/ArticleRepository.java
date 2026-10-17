@@ -9,6 +9,10 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * 게시글({@link Article}) JPA 저장소.
+ * 첨부 fetch 조회({@link #findByIdWithFiles}), 카테고리 최신·인기, 제목/본문/작성자 검색을 지원한다.
+ */
 public interface ArticleRepository extends JpaRepository<Article,Long> {
 
     List<Article> findByLikesCountGreaterThanEqualOrderByLikesCountDesc(int minLikes, Pageable pageable);

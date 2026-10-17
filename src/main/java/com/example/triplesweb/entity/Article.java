@@ -8,6 +8,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 커뮤니티 게시글 엔티티. {@link Comment}·{@link ArticleLike}·{@link ArticleFile} 1:N.
+ */
 @Entity
 @Getter
 @Setter

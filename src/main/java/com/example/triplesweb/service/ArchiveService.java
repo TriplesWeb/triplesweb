@@ -16,6 +16,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * 아카이브({@link Archive}) 미디어 목록·상세·업로드·삭제를 담당한다.
+ * {@link MediaType}별 페이징·키워드 검색, 이미지/영상 전용 업로드 검증을 수행한다.
+ */
 @Service
 @RequiredArgsConstructor
 public class ArchiveService {

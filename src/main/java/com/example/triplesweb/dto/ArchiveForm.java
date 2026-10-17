@@ -5,6 +5,7 @@ import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.SavedMeta;
 import lombok.*;
 
+/** 아카이브 목록·편집용 DTO. {@link com.example.triplesweb.entity.Archive} ↔ 폼/화면 변환. */
 @Builder
 @Getter
 @Setter

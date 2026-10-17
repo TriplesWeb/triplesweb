@@ -5,6 +5,9 @@ import lombok.*;
 
 import java.time.LocalDate;
 
+/**
+ * 일정(캘린더) 엔티티. 제목과 시작·종료일만 보관.
+ */
 @Entity
 @Getter
 @Setter

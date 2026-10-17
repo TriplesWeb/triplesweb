@@ -8,6 +8,10 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
+/**
+ * 게시글 좋아요({@link ArticleLike}) JPA 저장소.
+ * 사용자·게시글 쌍 존재/조회 및 게시글별 좋아요 건수 집계 쿼리를 제공한다.
+ */
 public interface ArticleLikeRepository extends JpaRepository<ArticleLike, Long> {
     boolean existsByArticleIdAndUserId(Long articleId, String userId);
 

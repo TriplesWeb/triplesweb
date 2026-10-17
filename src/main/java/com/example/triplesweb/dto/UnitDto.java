@@ -8,7 +8,7 @@ import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
 
-
+/** 유닛 상세·목록 화면용 DTO. 멤버·앨범 엔티티를 함께 노출. */
 @Getter
 @Setter
 @ToString

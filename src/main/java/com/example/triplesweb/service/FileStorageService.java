@@ -8,6 +8,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.Path;
 
+/**
+ * 멀티파트 업로드 파일의 디스크 저장·삭제 및 공개 URL/물리 경로 해석 계약.
+ * {@link SavedMeta} 반환, 원본 파일명 사이드카 읽기·삭제를 포함한다.
+ */
 public interface FileStorageService {
 
     String save(MultipartFile file) throws IOException;

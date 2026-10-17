@@ -3,6 +3,7 @@ package com.example.triplesweb.dto;
 import com.example.triplesweb.entity.Article;
 import com.example.triplesweb.service.DateTimeFormatService;
 
+/** {@link com.example.triplesweb.entity.Article}와 첨부 DTO를 {@link ArticleViewDto}로 변환. */
 public final class ArticleViewMapper {
     private ArticleViewMapper() {}
 

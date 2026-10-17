@@ -25,6 +25,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * 카테고리 게시판(자유·공지·교환 등) 목록·상세·작성·수정·삭제·좋아요를 처리한다.
+ * URL: {@code /article/{category}} — free, chat, trade, sell, info, notice
+ * 레이어: OK — ArticleService·CommentService·ArticleFileService 위임.
+ */
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/article/{category}")
@@ -44,6 +49,7 @@ public class ArticleController {
         return !ALLOWED_CATEGORIES.contains(category);
     }
 
+    /** multipart 파일 필드가 ArticleForm에 바인딩되지 않도록 제외 */
     @InitBinder("article")
     public void disallowFilesBinding(WebDataBinder binder) {
         binder.setDisallowedFields("files");

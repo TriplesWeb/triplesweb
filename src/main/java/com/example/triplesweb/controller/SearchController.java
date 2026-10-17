@@ -16,6 +16,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+/**
+ * 게시글 제목·내용·작성자 키워드 검색 및 결과 하이라이트.
+ * URL: {@code GET /search?keyword=}
+ * 레이어: Optional — ArticleRepository 직접 사용(Repository 단독 허용).
+ */
 @Controller
 public class SearchController {
     @Autowired
@@ -56,6 +61,7 @@ public class SearchController {
         model.addAttribute("resultList", mappedResult);
         return "search";
     }
+    /** HTML 이스케이프 후 검색어를 {@code <b>}로 감싼다 */
     private String highlight(String text, String keyword) {
         if (text == null || keyword == null) return text;
         String escaped = HtmlUtils.htmlEscape(text);

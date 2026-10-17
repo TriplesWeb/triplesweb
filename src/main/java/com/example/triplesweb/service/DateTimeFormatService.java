@@ -5,6 +5,10 @@ import org.springframework.stereotype.Service;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * 화면 표시용 날짜·시간 포맷(KST, {@code yyyy.MM.dd HH:mm})을 담당한다.
+ * {@link LocalDateTime}, {@link Instant} 등 다양한 타입을 통일된 문자열로 변환한다.
+ */
 @Service
 public class DateTimeFormatService {
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");

@@ -4,6 +4,7 @@ import com.example.triplesweb.entity.Members;
 import lombok.*;
 import jakarta.validation.constraints.*;
 
+/** 회원가입 폼 바인딩. 검증 후 {@link com.example.triplesweb.entity.Members}로 변환. */
 @Getter
 @Setter
 @ToString

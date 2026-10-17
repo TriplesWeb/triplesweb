@@ -3,6 +3,7 @@ package com.example.triplesweb.dto;
 import com.example.triplesweb.entity.Members;
 import lombok.*;
 
+/** 로그인 폼 바인딩. userId·password만 수신. */
 @Getter
 @Setter
 @ToString

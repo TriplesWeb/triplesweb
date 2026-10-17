@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/** 샵 목록 카드 UI용 DTO. 대표 이미지 URL 등 요약 정보만 포함. */
 @Getter
 @Setter
 @AllArgsConstructor

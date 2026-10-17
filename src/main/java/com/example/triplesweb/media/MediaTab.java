@@ -2,7 +2,9 @@ package com.example.triplesweb.media;
 
 import lombok.Getter;
 
-
+/**
+ * 미디어 아카이브 UI 탭(MV, SIGNAL 등)의 URL 키와 한글 표시명.
+ */
 @Getter
 public enum MediaTab {
     MV("mv","MV"),

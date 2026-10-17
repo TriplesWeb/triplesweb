@@ -16,6 +16,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
+/**
+ * 이미지·영상 아카이브 목록과 관리자 업로드·삭제.
+ * URL: {@code /archive/**} — {@code /archive/{type}_archive}, {@code /archive/upload}, …
+ * 레이어: OK — ArchiveService 사용.
+ */
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/archive")
@@ -36,8 +41,9 @@ public class ArchiveController {
         boolean isAdmin = isAuthenticated
                 && auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        // slug(image-archive 등)를 MediaType enum 키로 정규화
         String key = typeSlug.trim().toUpperCase()
-                .replace('-', '_');                         // image-archive → IMAGE_ARCHIVE
+                .replace('-', '_');
         if (key.endsWith("_ARCHIVE")) key = key.substring(0, key.length() - "_ARCHIVE".length());
 
         MediaType type = MediaType.valueOf(key);

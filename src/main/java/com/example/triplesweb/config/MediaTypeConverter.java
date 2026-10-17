@@ -5,6 +5,9 @@ import org.springframework.core.convert.converter.Converter;
 
 import java.util.Locale;
 
+/**
+ * 요청 경로의 미디어 타입 문자열을 {@link MediaType} enum으로 변환한다(레거시 슬러그 호환 포함).
+ */
 public class MediaTypeConverter implements Converter<String, MediaType> {
     @Override
     public MediaType convert(String source) {

@@ -9,6 +9,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
+/**
+ * 게시글 작성·수정 폼/에디터용 파일 업로드 REST API.
+ * URL: {@code POST /api/article/{category}/uploadFile}
+ * 레이어: OK — FileStorageService만 사용한다.
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/article")

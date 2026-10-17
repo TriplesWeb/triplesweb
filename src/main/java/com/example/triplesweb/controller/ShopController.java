@@ -24,6 +24,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 굿즈·앨범 등 쇼핑 목록·상세·세션 장바구니·관리자 상품 등록.
+ * URL: {@code /shop}, {@code /shop/item/{category}/{id}}, {@code /shop/cart}, …
+ * 레이어: Optional — ShopService와 ShopItemRepository·FileStorageService 혼용, 조회 계층 통일 검토.
+ */
 @RequiredArgsConstructor
 @Controller
 @RequestMapping("/shop")

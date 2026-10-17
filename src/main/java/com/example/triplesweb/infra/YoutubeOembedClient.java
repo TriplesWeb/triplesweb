@@ -9,6 +9,9 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * YouTube oEmbed HTTP API로 제목·썸네일 등 메타데이터를 조회한다(외부 API, DB 미사용).
+ */
 @Component
 public class YoutubeOembedClient {
     private final RestTemplate rest = new RestTemplate();

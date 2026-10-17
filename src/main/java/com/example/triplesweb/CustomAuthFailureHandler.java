@@ -11,6 +11,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+/**
+ * 로그인 실패 시 원인별 메시지를 쿼리스트링에 담아 {@code /login}으로 리다이렉트한다.
+ */
 @Component
 public class CustomAuthFailureHandler implements AuthenticationFailureHandler {
 

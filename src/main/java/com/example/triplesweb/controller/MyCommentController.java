@@ -14,6 +14,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 로그인 사용자가 작성한 댓글 목록(마이 활동).
+ * URL: {@code GET /mycomments}
+ * 레이어: Optional — CommentRepository 직접 사용(Repository 단독 허용).
+ */
 @Controller
 public class MyCommentController {
     @Autowired

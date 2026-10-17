@@ -6,6 +6,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.*;
 
+/** 아티스트 프로필 화면용 DTO. 소속 유닛명 등 표시 전용 문자열 포함. */
 @Getter
 @Setter
 @AllArgsConstructor

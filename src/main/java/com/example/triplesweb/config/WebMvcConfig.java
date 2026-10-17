@@ -9,6 +9,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/**
+ * {@code file.upload-dir} 업로드 경로를 {@code /uploads/**} 정적 리소스로 매핑한다.
+ */
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
 

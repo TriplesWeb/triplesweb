@@ -13,6 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * {@link ArticleService} 구현체. 게시글 CRUD와 카테고리별 최신·인기 조회를 수행한다.
+ * {@link ArticleLikeRepository}로 좋아요 존재 여부, 토글, 건수 조회를 처리한다.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional
