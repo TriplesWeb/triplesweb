@@ -1,67 +1,103 @@
-<div class="card">
-    <div class="card-body comment-form" id="comment-form">
+<!-- 전체 감싸는 카드를 다크 글래스모피즘 스타일로 구성 -->
+<div class="card mt-4 shadow-lg" style="background: rgba(26, 27, 32, 0.7); border: 1px solid rgba(58, 74, 70, 0.3); border-radius: 1rem; backdrop-filter: blur(12px);">
+    <div class="card-body comment-form" id="comment-form" style="padding: 1.75rem;">
         <form onsubmit="return false;">
 
+            <!-- 1. [변경됨] 내용(textarea) 영역을 위쪽으로 배치 -->
             <div class="mb-3">
-                <label class="form-label">작성자</label>
+                <label class="form-label block mb-2" style="color: #b9cac4; font-size: 0.9rem; font-weight: 500; display: block;">댓글 내용</label>
                 {{#isLoggedIn}}
-                    <p>{{userId}}</p>
-
-                    <input type="hidden"
-                           id="new-comment-userId"
-                           value="{{userId}}"
-                           class="form-control" />
+                    <textarea class="form-control w-full"
+                              rows="3"
+                              id="new-comment-body"
+                              style=" width: 100%; !important; background-color: rgba(13, 14, 18, 0.8) !important; border: 1px solid rgba(58, 74, 70, 0.4) !important; color: #e3e2e8 !important; border-radius: 0.75rem !important; padding: 0.75rem 1rem !important; font-size: 0.95rem; transition: all 0.2s;"></textarea>
                 {{/isLoggedIn}}
 
                 {{^isLoggedIn}}
-                <input type="text"
-                       class="form-control"
-                       placeholder="로그인 필요"
-                       readonly />
+                    <textarea class="form-control w-full"
+                              rows="3"
+                              id="new-comment-body"
+                              placeholder="로그인 후 작성 가능합니다."
+                              readonly
+                              style="width: 100% !important; background-color: rgba(13, 14, 18, 0.8) !important; border: 1px solid rgba(58, 74, 70, 0.4) !important; color: #b9cac4 !important; border-radius: 0.75rem !important; padding: 0.75rem 1rem !important; font-size: 0.95rem;"></textarea>
                 {{/isLoggedIn}}
-
             </div>
 
-                <div class="mb-3">
-                    <label class="form-label">내용</label>
-
+            <!-- 2. [변경됨] 작성자 영역을 아래쪽으로 배치 (플렉스로 좌우 정렬 구성) -->
+            <div class="mb-2 flex items-center justify-between flex-wrap gap-3">
+                <div>
+                    <label class="form-label inline-block mr-2 mb-0" style="color: #b9cac4; font-size: 0.85rem; font-weight: 500; margin-right: 0.5rem;">작성자:</label>
                     {{#isLoggedIn}}
-                        <textarea
-                                  class="form-control"
-                                  rows="3"
-                                  id="new-comment-body"></textarea>
+                        <span class="text-white font-medium" style="font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: #00f5d4 !important;">{{userId}}</span>
+                        <input type="hidden"
+                               id="new-comment-userId"
+                               value="{{userId}}"
+                               class="form-control" />
                     {{/isLoggedIn}}
 
                     {{^isLoggedIn}}
-                        <textarea class="form-control"
-                                  rows="3"
-                                  id="new-comment-body"
-                                  placeholder="로그인 후 작성 가능합니다"
-                                  readonly></textarea>
+                        <span class="text-[#b9cac4]" style="font-size: 0.9rem;">로그인 필요</span>
                     {{/isLoggedIn}}
                 </div>
+            </div>
 
-                <input type="hidden" id="new-comment-article-id" value="{{#article}}{{id}}{{/article}}
-{{^article}}{{article.id}}{{/article}}">
+            <!-- 게시글 고유 ID 바인딩 유지 -->
+            <input type="hidden" id="new-comment-article-id" value="{{#article}}{{id}}{{/article}}{{^article}}{{article.id}}{{/article}}">
+
+            <!-- 에러 메시지 영역 -->
             <div id="comment-error-message"
-                 class="text-danger mb-2"
-                 style="display: none;"></div>
+                 class="text-danger mb-3"
+                 style="display: none; font-size: 0.85rem; font-family: 'JetBrains Mono', monospace;"></div>
 
             {{#isLoggedIn}}
-            <button type="button" class="btn btn-primary" id="comment-create-btn">작성하기</button>
+                <div class="flex justify-end">
+                    <!-- 작성하기 버튼 -->
+                    <button type="button" class="btn btn-custom-primary" id="comment-create-btn">
+                        <span class="material-symbols-outlined" style="font-size: 15px; vertical-align: -2px; margin-right: 2px;">send</span> 작성하기
+                    </button>
+                </div>
             {{/isLoggedIn}}
         </form>
     </div>
 </div>
+
+<!-- 포커스 시 네온 테두리 효과 및 버튼 스타일 -->
+<style>
+    #new-comment-body:focus {
+        border-color: #00f5d4 !important;
+        box-shadow: 0 0 0 3px rgba(0, 245, 212, 0.2) !important;
+        outline: none !important;
+    }
+
+    .btn-custom-primary {
+        background-color: #00f5d4 !important;
+        border: none !important;
+        color: #07080b !important;
+        font-weight: 600 !important;
+        border-radius: 9999px !important;
+        padding: 0.5rem 1.5rem !important;
+        font-size: 0.9rem !important;
+        transition: all 0.2s ease-in-out;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+    .btn-custom-primary:hover {
+        background-color: #00dabf !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 245, 212, 0.3);
+    }
+</style>
+
+<!-- 댓글 등록 비동기 통신 자바스크립트 로직 -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-    const commentCreateBtn = document.querySelector("#comment-create-btn");
-    const errorMessageDiv = document.querySelector("#comment-error-message");
-    if(!commentCreateBtn) return;
-
+        const commentCreateBtn = document.querySelector("#comment-create-btn");
+        const errorMessageDiv = document.querySelector("#comment-error-message");
+        if (!commentCreateBtn) return;
 
         commentCreateBtn.addEventListener("click", function () {
-
             const userIdInput = document.querySelector("#new-comment-userId");
             const bodyInput = document.querySelector("#new-comment-body");
             const articleIdInput = document.querySelector("#new-comment-article-id");
@@ -73,49 +109,54 @@
             const body = bodyInput ? bodyInput.value.trim() : "";
             const articleId = articleIdInput ? articleIdInput.value.trim() : "";
 
-       if (!userId) {
-           errorMessageDiv.textContent = "로그인 후 댓글을 작성할 수 있습니다.";
-           errorMessageDiv.style.display = "block"; return;
-        }
-        if (!body) {
-            errorMessageDiv.textContent = "내용을 입력해주세요.";
-            errorMessageDiv.style.display = "block"; return; }
+            if (!userId) {
+                errorMessageDiv.textContent = "로그인 후 댓글을 작성할 수 있습니다.";
+                errorMessageDiv.style.display = "block";
+                return;
+            }
+            if (!body) {
+                errorMessageDiv.textContent = "내용을 입력해주세요.";
+                errorMessageDiv.style.display = "block";
+                return;
+            }
+            if (!articleId) {
+                errorMessageDiv.textContent = "게시글 정보를 찾을 수 없습니다.";
+                errorMessageDiv.style.display = "block";
+                return;
+            }
 
-        if (!articleId) {
-            errorMessageDiv.textContent = "게시글 정보를 찾을 수 없습니다.";
-            errorMessageDiv.style.display = "block"; return; }
-        const comment = {
-            userId: userId,
-            body: body,
-            articleId: Number(articleId)
-        };
+            const comment = {
+                userId: userId,
+                body: body,
+                articleId: Number(articleId)
+            };
 
-    const url = "/api/articles/" + articleId + "/comments";
+            const url = "/api/articles/" + articleId + "/comments";
 
-    fetch(url, {
-     method: "POST",
-     headers: {
-       "Content-Type": "application/json"
-       },
-       body: JSON.stringify(comment)
-       })
-       .then(function (response) {
-       if (!response.ok) {
-          return response.text().then(function(text) {
-          errorMessageDiv.textContent = text || "댓글 등록 실패..!";
-          errorMessageDiv.style.display = 'block';
-          throw new Error(text);
-       });
-     }
-     return response.json();
-   }).then(function (data) {
-     alert("댓글이 등록되었습니다.");
-     window.location.reload();
-    })
-            .catch(function (error) {
-     console.error("댓글 등록 중 오류 발생:", error
-     );
-    });
-    });
+            fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(comment)
+            })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            return response.text().then(function(text) {
+                                errorMessageDiv.textContent = text || "댓글 등록 실패..!";
+                                errorMessageDiv.style.display = 'block';
+                                throw new Error(text);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        alert("댓글이 등록되었습니다.");
+                        window.location.reload();
+                    })
+                    .catch(function (error) {
+                        console.error("댓글 등록 중 오류 발생:", error);
+                    });
+        });
     });
 </script>

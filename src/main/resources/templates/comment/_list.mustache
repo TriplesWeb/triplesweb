@@ -1,94 +1,201 @@
-<div id="comments-list">
+<div id="comments-list" class="mt-4">
+    <h4 class="text-white font-['Sora'] mb-3 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-[#00f5d4] shadow-[0_0_6px_#00f5d4]"></span>
+        댓글 목록
+    </h4>
+
     {{#commentDtos}}
-            <div class="card m-2" id="comments-{{id}}">
-                <div class="card-header">
-                    {{userId}}
-                    {{#isOwner}}
-                    <button type="button"
-                            class="btn btn-sm btn-outline-primary"
-                            data-bs-toggle="modal"
-                            data-bs-target="#commentEditModal-{{id}}">수정하기
-                    </button>
+        <!-- 댓글 카드 영역 -->
+        <div class="card m-0 mb-3 shadow-sm comment-card" id="comments-{{id}}" style="background: rgba(26, 27, 32, 0.7); border: 1px solid rgba(58, 74, 70, 0.3); border-radius: 1rem; backdrop-filter: blur(12px);">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background: transparent; border-bottom: 1px solid rgba(58, 74, 70, 0.3); padding: 1rem 1.25rem;">
+                <span class="text-[#00f5d4] font-semibold text-sm font-['JetBrains_Mono']">{{userId}}</span>
+
+                {{#isOwner}}
+                    <!-- 수정/삭제 버튼 바깥 노출 -->
+                    <div class="flex items-center gap-2">
                         <button type="button"
-                                class="btn btn-sm btn-outline-danger"
-                                data-bs-toggle="modal"
-                                data-bs-target="#commentDeleteModal-{{id}}">삭제하기
+                                class="btn btn-sm btn-custom-secondary comment-toggle-edit-btn text-xs py-1.5 px-3 flex items-center gap-1 cursor-pointer"
+                                data-comment-id="{{id}}">
+                            <span class="material-symbols-outlined text-[14px]">edit</span> 수정
                         </button>
-                    {{/isOwner}}
-                </div>
-                <div class="card-body">
+                        <button type="button"
+                                class="btn btn-sm btn-custom-danger comment-toggle-delete-btn text-xs py-1.5 px-3 flex items-center gap-1 cursor-pointer"
+                                data-comment-id="{{id}}">
+                            <span class="material-symbols-outlined text-[14px]">delete</span> 삭제
+                        </button>
+                    </div>
+                {{/isOwner}}
+            </div>
+
+            <div class="card-body" style="padding: 1.25rem;">
+                <!-- 1. 평소에 보이는 댓글 내용 뷰 영역 -->
+                <div class="comment-body-view text-[#e3e2e8]" id="comment-view-{{id}}" style="word-break: break-all;">
                     {{body}}
                 </div>
-            </div>
-            <div class="modal fade" id="commentEditModal-{{id}}" tabindex="-1">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h1 class="modal-title fs-5"
-                                id="exampleModalLabel">댓글 수정</h1>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-                        </div>
-                        <div class="modal-body">
-                            <form>
-                                <div class="mb-3">
-                                    <label class="form-label">닉네임</label>
-                                    <p>{{userId}}</p>
-                                    <input type="hidden" id="new-comment-userId" value="{{userId}}" class="form-control" />
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">내용</label>
-                                    <textarea class="form-control" rows="3" id="edit-comment-body-{{id}}" data-original-body="{{body}}">{{body}}</textarea>
-                                </div>
-                                <button type="button" class="btn btn-primary comment-edit-btn" data-comment-id="{{id}}" data-article-id="{{articleId}}" {{^isLoggedIn}}disabled{{/isLoggedIn}}>수정하기</button>
-                            </form>
-                        </div>
+
+                <!-- 2. 수정 버튼을 누르면 나타나는 인라인 수정 폼 영역 (초기 숨김) -->
+                <div class="comment-edit-form-area hidden mt-2" id="comment-edit-area-{{id}}">
+                    <div class="mb-3">
+                        <textarea class="form-control w-full edit-comment-textarea"
+                                  rows="3"
+                                  data-original-body="{{body}}"
+                                  style="width: 100% !important; background-color: rgba(13, 14, 18, 0.8) !important; border: 1px solid rgba(58, 74, 70, 0.4) !important; color: #e3e2e8 !important; border-radius: 0.5rem !important; padding: 0.75rem !important;">{{body}}</textarea>
+                    </div>
+                    <div class="text-end pt-1 flex justify-end gap-2">
+                        <button type="button" class="btn btn-custom-secondary comment-cancel-edit-btn text-xs" data-comment-id="{{id}}">취소</button>
+                        <button type="button" class="btn btn-custom-primary comment-submit-edit-btn text-xs" data-comment-id="{{id}}" data-article-id="{{articleId}}" {{^isLoggedIn}}disabled{{/isLoggedIn}}>수정 완료</button>
                     </div>
                 </div>
-            </div>
-        <div class="modal fade" id="commentDeleteModal-{{id}}" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">댓글 삭제</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>댓글을 정말 삭제하시겠습니까?</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                        <button type="button" class="btn btn-danger comment-delete-btn" data-comment-id="{{id}}" data-article-id="{{articleId}}">삭제</button>
+
+                <!-- 3. 삭제 버튼을 누르면 나타나는 인라인 삭제 확인 영역 (초기 숨김) -->
+                <div class="comment-delete-form-area hidden mt-2 p-3 rounded-xl" id="comment-delete-area-{{id}}" style="background-color: rgba(13, 14, 18, 0.6); border: 1px solid rgba(255, 180, 171, 0.3);">
+                    <p class="text-[#b9cac4] text-sm mb-3">댓글을 정말 삭제하시겠습니까?</p>
+                    <div class="text-end flex justify-end gap-2">
+                        <button type="button" class="btn btn-custom-secondary comment-cancel-delete-btn text-xs" data-comment-id="{{id}}">취소</button>
+                        <button type="button" class="btn btn-custom-danger comment-delete-btn text-xs" data-comment-id="{{id}}" data-article-id="{{articleId}}">삭제 확인</button>
                     </div>
                 </div>
             </div>
         </div>
+    {{/commentDtos}}
 
+    {{^commentDtos}}
+        <div class="card p-4 text-center" style="background: rgba(26, 27, 32, 0.7); border: 1px solid rgba(58, 74, 70, 0.3); border-radius: 1rem;">
+            <p class="text-[#b9cac4] m-0">등록된 댓글이 없습니다.</p>
+        </div>
     {{/commentDtos}}
 </div>
+
+<!-- 커스텀 버튼 및 스타일 -->
+<style>
+    .btn-custom-primary {
+        background-color: #00f5d4 !important;
+        border: none !important;
+        color: #07080b !important;
+        font-weight: 600 !important;
+        border-radius: 9999px !important;
+        padding: 0.4rem 1.2rem !important;
+        transition: all 0.2s;
+    }
+    .btn-custom-primary:hover {
+        background-color: #00dabf !important;
+    }
+
+    .btn-custom-secondary {
+        background-color: rgba(41, 42, 46, 0.8) !important;
+        border: 1px solid rgba(58, 74, 70, 0.4) !important;
+        color: #e3e2e8 !important;
+        border-radius: 9999px !important;
+        padding: 0.4rem 1.2rem !important;
+        transition: all 0.2s;
+    }
+    .btn-custom-secondary:hover {
+        background-color: rgba(58, 74, 70, 0.8) !important;
+        color: #ffffff !important;
+    }
+
+    .btn-custom-danger {
+        background-color: rgba(255, 180, 171, 0.2) !important;
+        border: 1px solid rgba(255, 180, 171, 0.4) !important;
+        color: #ffb4ab !important;
+        border-radius: 9999px !important;
+        padding: 0.4rem 1.2rem !important;
+        transition: all 0.2s;
+    }
+    .btn-custom-danger:hover {
+        background-color: rgba(255, 180, 171, 0.35) !important;
+        color: #ffffff !important;
+    }
+
+    .edit-comment-textarea:focus {
+        border-color: #00f5d4 !important;
+        box-shadow: 0 0 0 3px rgba(0, 245, 212, 0.2) !important;
+        outline: none !important;
+    }
+</style>
+
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+        // 1. 수정 버튼 클릭 시 인라인 수정 폼 토글
+        const toggleEditBtns = document.querySelectorAll(".comment-toggle-edit-btn");
+        toggleEditBtns.forEach(btn => {
+            btn.addEventListener("click", function () {
+                const commentId = this.getAttribute("data-comment-id");
+                const viewArea = document.querySelector(`#comment-view-${commentId}`);
+                const editArea = document.querySelector(`#comment-edit-area-${commentId}`);
+                const deleteArea = document.querySelector(`#comment-delete-area-${commentId}`);
 
-        const editButtons = document.querySelectorAll(".comment-edit-btn");
+                // 삭제 폼이 열려있다면 닫기
+                deleteArea.classList.add("hidden");
+                viewArea.classList.remove("hidden");
 
-        editButtons.forEach(btn => {
+                // 수정 폼 토글
+                viewArea.classList.toggle("hidden");
+                editArea.classList.toggle("hidden");
+            });
+        });
+
+        // 2. 수정 취소 버튼
+        const cancelEditBtns = document.querySelectorAll(".comment-cancel-edit-btn");
+        cancelEditBtns.forEach(btn => {
+            btn.addEventListener("click", function () {
+                const commentId = this.getAttribute("data-comment-id");
+                document.querySelector(`#comment-view-${commentId}`).classList.remove("hidden");
+                document.querySelector(`#comment-edit-area-${commentId}`).classList.add("hidden");
+            });
+        });
+
+        // 3. 삭제 버튼 클릭 시 인라인 삭제 확인 영역 토글
+        const toggleDeleteBtns = document.querySelectorAll(".comment-toggle-delete-btn");
+        toggleDeleteBtns.forEach(btn => {
+            btn.addEventListener("click", function () {
+                const commentId = this.getAttribute("data-comment-id");
+                const viewArea = document.querySelector(`#comment-view-${commentId}`);
+                const editArea = document.querySelector(`#comment-edit-area-${commentId}`);
+                const deleteArea = document.querySelector(`#comment-delete-area-${commentId}`);
+
+                // 수정 폼이 열려있다면 닫기
+                editArea.classList.add("hidden");
+                viewArea.classList.remove("hidden");
+
+                // 삭제 확인 영역 토글
+                viewArea.classList.toggle("hidden");
+                deleteArea.classList.toggle("hidden");
+            });
+        });
+
+        // 4. 삭제 취소 버튼
+        const cancelDeleteBtns = document.querySelectorAll(".comment-cancel-delete-btn");
+        cancelDeleteBtns.forEach(btn => {
+            btn.addEventListener("click", function () {
+                const commentId = this.getAttribute("data-comment-id");
+                document.querySelector(`#comment-view-${commentId}`).classList.remove("hidden");
+                document.querySelector(`#comment-delete-area-${commentId}`).classList.add("hidden");
+            });
+        });
+
+        // 5. 수정 완료 비동기 통신 (PUT)
+        const submitEditBtns = document.querySelectorAll(".comment-submit-edit-btn");
+        submitEditBtns.forEach(btn => {
             btn.addEventListener("click", function () {
                 const commentId = this.getAttribute("data-comment-id");
                 const articleId = this.getAttribute("data-article-id");
 
-                const textarea = document.querySelector(`#edit-comment-body-${commentId}`);
+                const editArea = document.querySelector(`#comment-edit-area-${commentId}`);
+                const textarea = editArea.querySelector(".edit-comment-textarea");
                 const newBody = textarea.value.trim();
                 const originalBody = textarea.getAttribute("data-original-body").trim();
 
-        if (!newBody) {
-            alert("내용을 입력해주세요.");
-        return;
-        }
+                if (!newBody) {
+                    alert("내용을 입력해주세요.");
+                    return;
+                }
 
-            // ✅ 내용이 바뀌지 않았으면 경고
-        if (newBody === originalBody) {
-            alert("내용이 변경되지 않았습니다.");
-        return;
-        }
+                if (newBody === originalBody) {
+                    alert("내용이 변경되지 않았습니다.");
+                    return;
+                }
+
                 const url = `/api/articles/${articleId}/comments/${commentId}`;
 
                 fetch(url, {
@@ -101,12 +208,12 @@
                         body: newBody
                     })
                 })
-                .then(res => {
-                    if (!res.ok) {
-                        return res.text().then(text => { throw new Error(text || "댓글 수정 실패"); });
-                    }
-                    return res.json();
-                })
+                        .then(res => {
+                            if (!res.ok) {
+                                return res.text().then(text => { throw new Error(text || "댓글 수정 실패"); });
+                            }
+                            return res.json();
+                        })
                         .then(data => {
                             alert("댓글이 수정되었습니다.");
                             window.location.reload();
@@ -114,34 +221,34 @@
                         .catch(err => {
                             alert(err.message || "오류가 발생했습니다.");
                             console.error("수정 에러", err);
-                });
+                        });
             });
         });
+
+        // 6. 삭제 최종 확인 비동기 통신 (DELETE)
         const deleteButtons = document.querySelectorAll(".comment-delete-btn");
         deleteButtons.forEach(btn => {
-        btn.addEventListener("click", function () {
+            btn.addEventListener("click", function () {
+                const commentId = this.getAttribute("data-comment-id");
+                const articleId = this.getAttribute("data-article-id");
 
-            const commentId = this.getAttribute("data-comment-id");
-            const articleId = this.getAttribute("data-article-id");
+                const url = `/api/articles/${articleId}/comments/${commentId}`;
 
-            const url = `/api/articles/${articleId}/comments/${commentId}`;
-
-            fetch(url, {
-                method: "DELETE"
-            })
-                    .then(res => {
-                        if (!res.ok) {
-                            throw new Error("댓글 삭제 실패");
-                        }
-                        const msg = `댓글을 삭제했습니다.`
-                        alert(msg);
-                        window.location.reload();
-                    })
-                    .catch(err => {
-                        alert("댓글 삭제 중 오류 발생");
-                        console.error(err);
-                    });
+                fetch(url, {
+                    method: "DELETE"
+                })
+                        .then(res => {
+                            if (!res.ok) {
+                                throw new Error("댓글 삭제 실패");
+                            }
+                            alert("댓글을 삭제했습니다.");
+                            window.location.reload();
+                        })
+                        .catch(err => {
+                            alert("댓글 삭제 중 오류 발생");
+                            console.error(err);
+                        });
+            });
         });
     });
-});
 </script>
