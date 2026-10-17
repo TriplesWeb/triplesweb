@@ -17,7 +17,7 @@ services:
       - triples
 
   app:
-    image: ${IMAGE:-ghcr.io/sungdo0508/triplesweb:latest}
+    image: ${IMAGE:-ghcr.io/triplesweb/triplesweb:latest}
     restart: unless-stopped
     depends_on:
       mariadb:
