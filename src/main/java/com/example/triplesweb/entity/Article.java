@@ -8,16 +8,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 커뮤니티 게시글 엔티티. {@link Comment}·{@link ArticleLike}·{@link ArticleFile} 1:N.
- */
 @Entity
 @Getter
 @Setter
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class Article {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,13 +46,12 @@ public class Article {
 
     @ToString.Exclude
     @OneToMany(mappedBy = "article", cascade = CascadeType.ALL, orphanRemoval = true)
-    private java.util.List<ArticleFile> files = new java.util.ArrayList<>();
+    private List<ArticleFile> files = new ArrayList<>();
 
+    // DB 컬럼 매핑용 LocalDateTime 필드
     @Column(name = "formatted_created_at", updatable = false)
     private LocalDateTime formattedCreatedAt;
 
-    @Transient
-    private String formattedDate;
     @Transient
     private String categoryName;
 
@@ -66,6 +61,7 @@ public class Article {
         if (article.content != null && !article.content.isBlank())
             this.content = article.content;
     }
+
     @PrePersist
     public void prePersist() {
         if (this.formattedCreatedAt == null) {
@@ -73,29 +69,26 @@ public class Article {
         }
     }
 
+    // 뷰(HTML)에서 호출할 포맷된 날짜 문자열 메서드 이름 변경 (getFormattedDate 사용)
     public String getFormattedDate() {
         if (formattedCreatedAt != null) {
             return formattedCreatedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
         }
         return "";
     }
-    @Transient
-    public String getFormattedCreatedAt() {
-        return getFormattedDate();
-    }
 
     public String getCategoryName() {
         if (category == null) return "기타";
 
-        switch (category) {
-            case "free": return "자유게시판";
-            case "chat": return "잡담게시판";
-            case "notice": return "공지사항";
-            case "trade": return "교환게시판";
-            case "sell": return "거래게시판";
-            case "info": return "정보게시판";
-            case "popular": return "인기글";
-            default: return "기타";
-        }
+        return switch (category) {
+            case "free" -> "자유게시판";
+            case "chat" -> "잡담게시판";
+            case "notice" -> "공지사항";
+            case "trade" -> "교환게시판";
+            case "sell" -> "거래게시판";
+            case "info" -> "정보게시판";
+            case "popular" -> "인기글";
+            default -> "기타";
+        };
     }
 }
