@@ -2,7 +2,6 @@ package com.example.triplesweb.controller;
 
 import com.example.triplesweb.entity.Article;
 import com.example.triplesweb.repository.ArticleRepository;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
@@ -16,20 +15,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-/**
- * 게시글 제목·내용·작성자 키워드 검색 및 결과 하이라이트.
- * URL: {@code GET /search?keyword=}
- * 레이어: Optional — ArticleRepository 직접 사용(Repository 단독 허용).
- */
 @Controller
 public class SearchController {
     @Autowired
     private ArticleRepository articleRepository;
 
     @GetMapping("/search")
-    public String Search (@RequestParam("keyword") String keyword, HttpSession session, Model model) {
-        String userId = (String) session.getAttribute("userId");
-        model.addAttribute("userId", userId);
+    public String Search(@RequestParam("keyword") String keyword, Model model) {
+        // [수정] HttpSession 세션 체크 및 userId 속성 주입 코드 제거
         model.addAttribute("keyword", keyword);
 
         if (keyword == null || keyword.trim().isEmpty()) {
@@ -61,7 +54,7 @@ public class SearchController {
         model.addAttribute("resultList", mappedResult);
         return "search";
     }
-    /** HTML 이스케이프 후 검색어를 {@code <b>}로 감싼다 */
+
     private String highlight(String text, String keyword) {
         if (text == null || keyword == null) return text;
         String escaped = HtmlUtils.htmlEscape(text);

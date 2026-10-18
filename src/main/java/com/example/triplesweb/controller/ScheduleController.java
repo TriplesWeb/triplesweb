@@ -10,8 +10,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,11 +20,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * 스케줄 캘린더 표시 및 관리자 일정 CRUD.
- * URL: {@code /schedule}, {@code /schedule/add}, {@code /edit/{id}`, {@code /delete/{id}`, …
- * 레이어: Optional — ScheduleService와 ScheduleRepository 혼용, Service로 통일 검토.
- */
 @Controller
 public class ScheduleController {
 
@@ -40,7 +33,7 @@ public class ScheduleController {
     }
 
     @GetMapping("/schedule")
-    public String showSchedulePage(Model model, Authentication authentication) throws Exception {
+    public String showSchedulePage(Model model) throws Exception { // [주석] Authentication 파라미터 제거
         List<Schedule> schedules = scheduleService.findAll();
 
         List<ScheduleForm> dtoList = schedules.stream()
@@ -52,9 +45,9 @@ public class ScheduleController {
                         s.getEnd()
                 ))
                 .toList();
-        boolean isAdmin = authentication != null &&
-                authentication.getAuthorities().stream()
-                        .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+
+        // [주석] 로그인 기능 삭제로 인해 관리자 여부를 항상 true로 설정하여 캘린더 관리 버튼 노출
+        boolean isAdmin = true;
 
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
@@ -67,54 +60,54 @@ public class ScheduleController {
         model.addAttribute("isAdmin", isAdmin);
         return "schedule";
     }
+
     @GetMapping("/schedule/{id}")
     public String getScheduleDetail(@PathVariable Long id, Model model) {
         Schedule schedule = scheduleRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("잘못된 스케줄 ID: " + id));
 
         model.addAttribute("schedule", schedule);
-
-        return "schedule"; // schedule.mustache 뷰 반환
+        return "schedule";
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    // [주석] @PreAuthorize("hasRole('ADMIN')") 삭제
     @GetMapping("/add")
     public String addScheduleForm() {
-        return "schedule-add";  // 스케줄 추가 폼 뷰
+        return "schedule-add";
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    // [주석] @PreAuthorize("hasRole('ADMIN')") 삭제
     @PostMapping("/schedule/add")
     public ResponseEntity<ScheduleForm> addSchedule(@RequestParam String title,
                                                     @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
                                                     @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
                                                     Model model) {
-        // 스케줄 저장 로직
         scheduleService.save(title, start, end);
         return ResponseEntity.ok().build();
     }
-    @PreAuthorize("hasRole('ADMIN')")
+
+    // [주석] @PreAuthorize("hasRole('ADMIN')") 삭제
     @GetMapping("/edit/{id}")
     public String editScheduleForm(@PathVariable Long id, Model model) {
         Schedule schedule = scheduleService.findById(String.valueOf(id));
         model.addAttribute("schedule", schedule);
-        return "schedule-edit";  // 수정 폼 뷰
+        return "schedule-edit";
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    // [주석] @PreAuthorize("hasRole('ADMIN')") 삭제
     @PostMapping("/edit/{id}")
     public ResponseEntity<?> editSchedule(@PathVariable Long id,
-                               @RequestParam String title,
-                               @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-                               @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+                                          @RequestParam String title,
+                                          @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+                                          @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         scheduleService.update(String.valueOf(id), title, startDate, endDate);
         return ResponseEntity.ok().build();
     }
-    @PreAuthorize("hasRole('ADMIN')")
+
+    // [주석] @PreAuthorize("hasRole('ADMIN')") 삭제
     @PostMapping("/delete/{id}")
     public String deleteSchedule(@PathVariable Long id) {
         scheduleService.deleteById(id);
         return "redirect:/schedule";
     }
-
 }

@@ -10,7 +10,6 @@ tripleS 팬 커뮤니티를 **도메인(관심사)** 단위로 나눈 설명입�
 ```mermaid
 flowchart TB
   subgraph community [커뮤니티]
-    Member[회원·인증]
     Board[게시판·댓글·검색]
   end
   subgraph content [공식 콘텐츠]
@@ -63,13 +62,7 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-  Browser --> LC[LoginController]
-  Browser --> MPC[MyPageController]
-  LC --> MR[MemberRepository]
   MPC --> MR
-  MR --> Members[(Members)]
-  Sec[SecurityConfig] --> MR
-  Sec --> Session[HttpSession]
 ```
 
 ```mermaid

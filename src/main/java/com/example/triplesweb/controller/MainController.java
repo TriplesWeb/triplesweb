@@ -1,14 +1,12 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.dto.ScheduleForm;
-import com.example.triplesweb.entity.Members;
 import com.example.triplesweb.entity.Schedule;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.ArticleServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -19,11 +17,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * 메인 홈 — 최근·인기 게시글과 일정 요약을 한 화면에 노출한다.
- * URL: {@code GET /}
- * 레이어: Optional — ArticleServiceImpl과 ScheduleRepository 혼용, 일정 조회 Service 통일 검토.
- */
 @RequiredArgsConstructor
 @Controller
 @Slf4j
@@ -39,17 +32,8 @@ public class MainController {
     }
 
     @GetMapping("/")
-    public String mainPage(Model model, HttpSession session, @RequestParam(defaultValue = "5") Integer limit) {
-        Members loginMember = (Members) session.getAttribute("loginMember");
-        if (loginMember != null) {
-            model.addAttribute("userId", loginMember.getUserId());
-            model.addAttribute("member", loginMember);
-
-            Integer level = loginMember.getLevel();
-            Integer points = loginMember.getPoints();
-            model.addAttribute("level", level);
-            model.addAttribute("points", points);
-        }
+    public String mainPage(Model model, @RequestParam(defaultValue = "5") Integer limit) {
+        // [수정 완료] 로그인 세션(loginMember) 체크 로직 및 관련 모델 속성(userId, level, points 등) 제거
 
         List<Schedule> scheduleList = scheduleRepository.findAll();
 
@@ -62,14 +46,13 @@ public class MainController {
                 .collect(Collectors.toList());
 
         ObjectMapper mapper = new ObjectMapper()
-        .registerModule(new JavaTimeModule())
-        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
         String schedulesJson = "";
         try {
             schedulesJson = mapper.writeValueAsString(scheduleForms);
         } catch (Exception ignored) {}
-
 
         model.addAttribute("freePosts",   articleService.findRecentByCategory("free",   limit));
         model.addAttribute("noticePosts", articleService.findRecentByCategory("notice", limit));
