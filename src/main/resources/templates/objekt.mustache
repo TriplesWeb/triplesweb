@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>트리플에스 커뮤니티 오브젝트</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+    <!-- Tailwind CSS 스크립트 -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="/js/tailwind.config.js"></script>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        /* 오브젝트 페이지 전용 스타일: 기존 필터/스크립트 동작은 유지 */
+        .objekt-filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(18,20,28,.96), rgba(20,23,33,.92));
+            border: 1px solid rgba(83, 95, 122, .28);
+            border-radius: 16px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 12px 30px rgba(0,0,0,.16);
+        }
+        .objekt-filter {
+            display: flex;
+            flex: 0 0 auto;
+            min-height: 52px;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border: 1px solid #2c3144;
+            border-radius: 12px;
+            background: rgba(26,29,40,.9);
+            transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
+        }
+        .objekt-filter:focus-within,
+        .objekt-filter:hover {
+            border-color: rgba(0,245,212,.45);
+            box-shadow: 0 0 0 1px rgba(0,245,212,.06);
+        }
+        .objekt-filter-label {
+            flex: 0 0 auto;
+            color: #a4adbf;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: .01em;
+        }
+        .objekt-filter-control {
+            min-width: 76px;
+            min-height: 38px;
+            border: 1px solid rgba(0,0,0,.08);
+            border-radius: 9px;
+            background-color: #00e8cb;
+            padding: 7px 12px;
+            color: #071513;
+            font-size: 13px;
+            font-weight: 650;
+            transition: background-color .2s ease, box-shadow .2s ease;
+        }
+        .objekt-filter-control:hover { background-color: #39f7df; }
+
+        /* select 텍스트가 잘리지 않도록 종류/정렬 너비만 소폭 확장 */
+        .objekt-filter select.objekt-filter-control {
+            width: auto;
+            flex: 0 0 auto;
+            min-width: 112px;
+            padding-left: 14px;
+            padding-right: 28px;
+            white-space: nowrap;
+        }
+        .objekt-filter select.objekt-sort-select {
+            min-width: 142px;
+        }
+        .objekt-filter-control:focus-visible,
+        .objekt-search-input:focus-visible {
+            outline: 2px solid #00f5d4;
+            outline-offset: 2px;
+        }
+        .objekt-search {
+            display: flex;
+            flex: 1 1 280px;
+            min-width: 220px;
+            max-width: 440px;
+            min-height: 52px;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+            padding: 0 14px;
+            border: 1px solid #30364a;
+            border-radius: 12px;
+            background: rgba(10,12,18,.72);
+            transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+        }
+        .objekt-search:focus-within {
+            border-color: #00d9bd;
+            background: rgba(10,12,18,.95);
+            box-shadow: 0 0 0 3px rgba(0,245,212,.09);
+        }
+        .objekt-search-input {
+            width: 100%;
+            min-width: 0;
+            border: 0 !important;
+            outline: 0 !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            color: #f1f5f9 !important;
+            font-size: 14px;
+        }
+        .objekt-search-input::placeholder { color: #70798d; }
+        .objekt-dropdown-menu {
+            min-width: 100%;
+            border-color: #343b51;
+            background: #171a24;
+            box-shadow: 0 18px 40px rgba(0,0,0,.42);
+        }
+        .objekt-card-grid { gap: 16px; }
+        .objekt-card {
+            border-color: rgba(67,75,100,.52);
+            background: linear-gradient(160deg, #191c27, #11131b);
+            box-shadow: 0 8px 22px rgba(0,0,0,.2);
+        }
+        .objekt-card:hover {
+            border-color: rgba(0,245,212,.58);
+            box-shadow: 0 14px 32px rgba(0,0,0,.34), 0 0 0 1px rgba(0,245,212,.06);
+        }
+        @media (max-width: 760px) {
+            .objekt-filter-bar { gap: 9px; padding: 12px; }
+            .objekt-filter { flex: 1 1 calc(50% - 9px); min-width: 0; justify-content: space-between; }
+            .objekt-filter-control { min-width: 0; max-width: 62%; }
+            .objekt-filter select.objekt-filter-control { min-width: 104px; max-width: none; }
+            .objekt-filter select.objekt-sort-select { min-width: 132px; }
+            .objekt-search { flex: 1 1 100%; max-width: none; margin-left: 0; }
+            .objekt-card-grid { gap: 10px; }
+        }
+        @media (max-width: 420px) {
+            .objekt-filter { flex-basis: 100%; }
+            .objekt-filter-control { max-width: 72%; }
+            .objekt-filter select.objekt-filter-control { min-width: 112px; }
+            .objekt-filter select.objekt-sort-select { min-width: 142px; }
+        }
+    </style>
+</head>
+<body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen flex flex-col gap-3">
+{{>layout/header}}
+<main class="main-content w-full max-w-[1440px] mx-auto px-4 sm:px-6 py-6 mb-auto">
+    <section class="card-box w-full bg-[#16181f]/85 backdrop-blur-xl border border-[#303646]/80 rounded-2xl p-4 sm:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)] relative z-30">
+        <div class="mb-5 flex items-center justify-between gap-4 border-b border-white/[0.06] pb-4">
+            <div>
+                <p class="mb-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#00d9bd]">COLLECTION</p>
+                <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-[#f0f1f6]">오브젝트</h2>
+            </div>
+            <span class="hidden sm:inline-flex items-center gap-2 rounded-full border border-[#00f5d4]/20 bg-[#00f5d4]/[0.06] px-3 py-1.5 text-xs font-medium text-[#7df9e8]">
+                <span class="h-1.5 w-1.5 rounded-full bg-[#00f5d4] shadow-[0_0_8px_#00f5d4]"></span>
+                Objekt Archive
+            </span>
+        </div>
+        <div class="objekt-filter-bar relative">
+
+            <!-- 1. 시즌 다중 선택 필터 (너비 확장 및 독립 스크립트 연동) -->
+            <div class="objekt-filter relative" id="season-dropdown">
+                <span class="objekt-filter-label">시즌</span>
+                <!-- 드롭다운 토글 버튼 -->
+                <button type="button" onclick="toggleDropdown('season-menu')" class="objekt-filter-control flex items-center justify-between gap-3 cursor-pointer">
+                    <span id="season-label" class="truncate">all</span>
+                    <span class="material-symbols-outlined text-xs text-black">arrow_drop_down</span>
+                </button>
+
+                <!-- 체크박스 목록 메뉴 -->
+                <div id="season-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 w-full rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
+                    <label class="flex items-center gap-2 px-2.5 py-2 hover:bg-[#1a1d28] rounded-md cursor-pointer text-sm text-white">
+                        <input type="checkbox" value="all" class="rounded season-checkbox" checked onchange="handleSeasonAll(this)"><span>전체 시즌</span>
+                    </label>
+                    <div id="season-options"></div>
+                </div>
+            </div>
+
+            <!-- 2. 종류 필터 -->
+            <div class="objekt-filter">
+                <span class="objekt-filter-label">종류</span>
+                <label class="w-full">
+                    <select class="objekt-filter-control objekt-kind-select cursor-pointer" aria-label="옵젝 종류 필터">
+                        <option value="all">all</option>
+                        {{#objektNumbers}}
+                        <option value="{{.}}">{{.}}</option>
+                        {{/objektNumbers}}
+                    </select>
+                </label>
+            </div>
+
+            <!-- 3. 클래스 다중 선택 필터 (너비 확장 및 독립 스크립트 연동) -->
+            <div class="objekt-filter relative" id="class-dropdown">
+                <span class="objekt-filter-label">클래스</span>
+                <!-- 드롭다운 토글 버튼 -->
+                <button type="button" onclick="toggleDropdown('class-menu')" class="objekt-filter-control flex items-center justify-between gap-3 cursor-pointer">
+                    <span id="class-label" class="truncate">all</span>
+                    <span class="material-symbols-outlined text-xs text-black">arrow_drop_down</span>
+                </button>
+
+                <!-- 체크박스 목록 메뉴 -->
+                <div id="class-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 w-full rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
+                    <label class="flex items-center gap-2 px-2.5 py-2 hover:bg-[#1a1d28] rounded-md cursor-pointer text-sm text-white">
+                        <input type="checkbox" value="all" class="rounded class-checkbox" checked onchange="handleClassAll(this)"><span>전체 클래스</span>
+                    </label>
+                    <div id="class-options"></div>
+                </div>
+            </div>
+
+            <!-- 4. 정렬 필터 -->
+            <div class="objekt-filter">
+                <span class="objekt-filter-label">정렬</span>
+                <label class="w-full">
+                    <select class="objekt-filter-control objekt-sort-select cursor-pointer">
+                        <option value="latest">최신순</option>
+                        <option value="oldest">오래된순</option>
+                        <option value="number_low">번호 낮은순</option>
+                        <option value="number_high">번호 높은순</option>
+                        <option value="first_member">첫 멤버</option>
+                        <option value="last_member">마지막 멤버</option>
+                        <option value="mint_low">민팅 적은순</option>
+                        <option value="mint_high">민팅 많은순</option>
+                    </select>
+                </label>
+            </div>
+
+            <!-- 5. 검색 입력창 -->
+            <div class="objekt-search">
+                <span class="material-symbols-outlined text-[#00d9bd] text-xl pointer-events-none" aria-hidden="true">search</span>
+                <label class="w-full min-w-0">
+                    <input type="search" placeholder="멤버, 시즌, 오브젝트 검색..." aria-label="오브젝트 검색" class="objekt-search-input">
+                </label>
+                <span class="hidden lg:inline-flex shrink-0 rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] text-slate-500">SEARCH</span>
+            </div>
+
+        </div>
+    </section>
+
+    <div class="mt-5 flex items-center justify-between gap-3 px-1">
+        <p class="text-sm text-slate-400">총 <strong id="objekt-visible-count" class="text-[#00f5d4]">{{objektCount}}</strong>개 오브젝트</p>
+        <button type="button" id="objekt-reset" class="text-xs text-slate-400 hover:text-[#00f5d4] transition">필터 초기화</button>
+    </div>
+    {{#objektError}}
+    <div class="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{{objektError}}</div>
+    {{/objektError}}
+    <div id="objekt-empty" class="hidden mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-10 text-center text-slate-400">검색 조건에 맞는 오브젝트가 없습니다.</div>
+    <div id="objekt-card-grid" class="objekt-card-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 py-2 mt-3">
+        {{#objekts}}
+        <article class="objekt-card objekt-item group relative border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
+                 data-season="{{seasonKey}}" data-class="{{classKey}}" data-artist="{{artist}}" data-collection-no="{{collectionNo}}"
+                 data-number="{{numberValue}}" data-date="{{createdAt}}" data-member="{{member}}" data-search="{{searchText}}">
+            <button type="button" class="objekt-image-button relative block aspect-[2/3] w-full overflow-hidden bg-[#1c1f2e] text-left" aria-label="{{collectionId}} 앞면/뒷면 전환">
+                <img src="{{thumbnailImage}}" data-front="{{frontImage}}" data-back="{{backImage}}" alt="{{collectionId}}" loading="lazy" class="objekt-image h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null;this.src='{{frontImage}}';">
+                <span class="absolute left-2 top-2 rounded-md border border-white/15 bg-black/65 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur">{{class}}</span>
+                <span class="absolute right-2 top-2 rounded-md bg-[#00e8cb] px-2 py-1 text-[10px] font-bold text-[#071513]">{{season}}</span>
+                <span class="objekt-flip-hint absolute bottom-2 right-2 rounded-full bg-black/65 px-2 py-1 text-[10px] text-white">앞면</span>
+            </button>
+            <div class="p-3">
+                <p class="truncate text-sm font-semibold text-slate-100" title="{{collectionId}}">{{collectionId}}</p>
+                <div class="mt-1 flex items-center justify-between gap-2 text-xs text-slate-400">
+                    <span class="truncate">{{member}}</span><span class="shrink-0 font-mono">{{collectionNo}}</span>
+                </div>
+            </div>
+        </article>
+        {{/objekts}}
+    </div>
+</main>
+</body>
+<script>
+(() => {
+    const cards = Array.from(document.querySelectorAll('.objekt-item'));
+    const searchInput = document.querySelector('.objekt-search-input');
+    const kindSelect = document.querySelector('.objekt-kind-select');
+    const sortSelect = document.querySelector('.objekt-sort-select');
+    const grid = document.getElementById('objekt-card-grid');
+    const count = document.getElementById('objekt-visible-count');
+    const empty = document.getElementById('objekt-empty');
+
+    function normalize(value) { return (value || '').toString().trim().toLowerCase(); }
+    function uniqueSorted(values) { return [...new Set(values.filter(Boolean))].sort((a,b) => a.localeCompare(b, 'en', {numeric:true})); }
+    function optionLabel(value) { return value.replace(/(\d+)/g, ' $1').replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim(); }
+
+    function buildOptions(containerId, values, className, handlerName) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        values.forEach(value => {
+            const label = document.createElement('label');
+            label.className = 'flex items-center gap-2 px-2.5 py-2 hover:bg-[#1a1d28] rounded-md cursor-pointer text-sm text-white';
+            const input = document.createElement('input');
+            input.type = 'checkbox'; input.value = normalize(value); input.className = `rounded ${className}`;
+            input.addEventListener('change', () => window[handlerName]());
+            const span = document.createElement('span'); span.textContent = optionLabel(value);
+            label.append(input, span); container.appendChild(label);
+        });
+    }
+
+    buildOptions('season-options', uniqueSorted(cards.map(c => c.dataset.season)), 'season-checkbox', 'handleSeasonItem');
+    buildOptions('class-options', uniqueSorted(cards.map(c => c.dataset.class)), 'class-checkbox', 'handleClassItem');
+
+    window.toggleDropdown = function(id) {
+        document.querySelectorAll('[id$="-menu"]').forEach(menu => { if (menu.id !== id) menu.classList.add('hidden'); });
+        const menu = document.getElementById(id); if (menu) menu.classList.toggle('hidden');
+    };
+    window.handleSeasonAll = function(all) {
+        document.querySelectorAll('.season-checkbox').forEach(cb => { if (cb !== all) cb.checked = false; });
+        updateLabel('season'); applyFilters();
+    };
+    window.handleSeasonItem = function() {
+        const all = document.querySelector('.season-checkbox[value="all"]');
+        const chosen = [...document.querySelectorAll('.season-checkbox:not([value="all"]):checked')];
+        all.checked = chosen.length === 0; updateLabel('season'); applyFilters();
+    };
+    window.handleClassAll = function(all) {
+        document.querySelectorAll('.class-checkbox').forEach(cb => { if (cb !== all) cb.checked = false; });
+        updateLabel('class'); applyFilters();
+    };
+    window.handleClassItem = function() {
+        const all = document.querySelector('.class-checkbox[value="all"]');
+        const chosen = [...document.querySelectorAll('.class-checkbox:not([value="all"]):checked')];
+        all.checked = chosen.length === 0; updateLabel('class'); applyFilters();
+    };
+    function updateLabel(type) {
+        const checks = [...document.querySelectorAll(`.${type}-checkbox:checked`)];
+        const all = document.querySelector(`.${type}-checkbox[value="all"]`);
+        const target = document.getElementById(`${type}-label`);
+        const chosen = checks.filter(cb => cb !== all);
+        if (!chosen.length || all.checked) target.textContent = 'all';
+        else if (chosen.length === 1) target.textContent = chosen[0].nextElementSibling.textContent.trim();
+        else target.textContent = `${chosen[0].nextElementSibling.textContent.trim()} 외 ${chosen.length - 1}개`;
+    }
+    window.addEventListener('click', e => {
+        if (!e.target.closest('#season-dropdown') && !e.target.closest('#class-dropdown')) {
+            document.getElementById('season-menu')?.classList.add('hidden');
+            document.getElementById('class-menu')?.classList.add('hidden');
+        }
+    });
+
+    function applyFilters() {
+        const query = normalize(searchInput.value);
+        const seasons = [...document.querySelectorAll('.season-checkbox:not([value="all"]):checked')].map(x => x.value);
+        const classes = [...document.querySelectorAll('.class-checkbox:not([value="all"]):checked')].map(x => x.value);
+        const selectedNumber = normalize(kindSelect.value);
+
+        let visible = cards.filter(card => {
+            const seasonOk =
+                    !seasons.length ||
+                    seasons.includes(normalize(card.dataset.season));
+
+            const classOk =
+                    !classes.length ||
+                    classes.includes(normalize(card.dataset.class));
+
+            const numberOk =
+                    selectedNumber === 'all' ||
+                    normalize(card.dataset.collectionNo) === selectedNumber;
+
+            const searchOk =
+                    !query ||
+                    normalize(card.dataset.search).includes(query);
+
+            return seasonOk && classOk && numberOk && searchOk;
+        });
+
+        const sort = sortSelect.value;
+        visible.sort((a,b) => {
+            if (sort === 'oldest') return (a.dataset.date || '').localeCompare(b.dataset.date || '');
+            if (sort === 'number_low') return Number(a.dataset.number) - Number(b.dataset.number);
+            if (sort === 'number_high') return Number(b.dataset.number) - Number(a.dataset.number);
+            if (sort === 'first_member') return (a.dataset.member || '').localeCompare(b.dataset.member || '');
+            if (sort === 'last_member') return (b.dataset.member || '').localeCompare(a.dataset.member || '');
+            if (sort === 'mint_low') return Number(a.dataset.number) - Number(b.dataset.number);
+            if (sort === 'mint_high') return Number(b.dataset.number) - Number(a.dataset.number);
+            return (b.dataset.date || '').localeCompare(a.dataset.date || '');
+        });
+        visible.forEach(card => grid.appendChild(card));
+        cards.filter(card => !visible.includes(card)).forEach(card => card.hidden = true);
+        visible.forEach(card => card.hidden = false);
+        count.textContent = visible.length.toLocaleString();
+        empty.classList.toggle('hidden', visible.length > 0);
+    }
+
+    searchInput.addEventListener('input', applyFilters);
+    kindSelect.addEventListener('change', applyFilters);
+    sortSelect.addEventListener('change', applyFilters);
+    document.getElementById('objekt-reset').addEventListener('click', () => {
+        searchInput.value = ''; kindSelect.value = 'all'; sortSelect.value = 'latest';
+        document.querySelectorAll('.season-checkbox,.class-checkbox').forEach(cb => cb.checked = cb.value === 'all');
+        updateLabel('season'); updateLabel('class'); applyFilters();
+    });
+
+    // 카드 이미지를 클릭하면 앞면/뒷면을 전환한다.
+    document.querySelectorAll('.objekt-image-button').forEach(button => button.addEventListener('click', () => {
+        const image = button.querySelector('img');
+        const hint = button.querySelector('.objekt-flip-hint');
+        const showingBack = image.dataset.showingBack === 'true';
+        const next = showingBack ? image.dataset.front : image.dataset.back;
+        if (next) image.src = next;
+        image.dataset.showingBack = showingBack ? 'false' : 'true';
+        hint.textContent = showingBack ? '앞면' : '뒷면';
+    }));
+    applyFilters();
+})();
+</script>
+</html>
