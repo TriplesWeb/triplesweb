@@ -918,6 +918,26 @@ a.chem-highlight:hover {
     color: #b9cac4;
 }
 
+.chem-edit-image-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.chem-edit-image-preview.hidden {
+    display: none;
+}
+
+.chem-edit-image-preview img {
+    max-width: 100%;
+    max-height: 180px;
+    width: auto;
+    object-fit: contain;
+    border-radius: 0.65rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #0d0e12;
+}
+
 .chem-edit-check {
     display: flex;
     align-items: center;

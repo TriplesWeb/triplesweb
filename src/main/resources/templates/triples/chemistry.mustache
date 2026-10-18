@@ -150,9 +150,13 @@
             <label class="chem-edit-label">사진
                 <input type="file" id="chemEditImage" name="image" accept="image/*">
             </label>
+            <div id="chemEditImagePreviewWrap" class="chem-edit-image-preview hidden">
+                <img id="chemEditImagePreview" alt="현재 사진 미리보기">
+                <p class="chem-edit-field-hint">새 파일을 고르지 않으면 이 사진이 유지됩니다.</p>
+            </div>
             <p class="chem-edit-field-hint">출처는 사진 칸이 아니라 설명 맨 끝 <code>photo by. @계정</code>으로 적습니다. 이미지 아래 캡션으로 표시됩니다.</p>
             <label class="chem-edit-check">
-                <input type="checkbox" id="chemEditClearImage" name="clearImage"> 사진 제거
+                <input type="checkbox" id="chemEditClearImage" name="clearImage"> 사진 제거 (체크 시에만 삭제)
             </label>
             <p id="chemEditError" class="chem-edit-error" hidden></p>
             <div class="chem-edit-actions">

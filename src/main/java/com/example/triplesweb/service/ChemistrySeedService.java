@@ -25,7 +25,8 @@ import java.util.Map;
 
 /**
  * classpath {@code data/chemistry-seed.json}의 페어를 DB에 넣는다.
- * 이미 있는 (memberA, memberB) 행은 덮어쓰지 않는다.
+ * 없는 페어만 insert하고, 이미 있는 행의 라벨·설명은 덮어쓰지 않는다.
+ * 다만 imageUrl이 비어 있고 시드에 사진이 있으면 사진만 채운다(예전 수정 버그 복구).
  * 기본은 비활성 — {@code chemistry.seed.enabled=true} 일 때만 실행한다.
  */
 @Slf4j
@@ -62,6 +63,7 @@ public class ChemistrySeedService implements ApplicationRunner {
                 return;
             }
             int inserted = 0;
+            int backfilledImages = 0;
             for (SeedPair pair : seed.getPairs()) {
                 if (!StringUtils.hasText(pair.getMemberA())
                         || !StringUtils.hasText(pair.getMemberB())
@@ -70,7 +72,16 @@ public class ChemistrySeedService implements ApplicationRunner {
                 }
                 String a = pair.getMemberA().trim();
                 String b = pair.getMemberB().trim();
-                if (chemistryRepository.findByMemberAAndMemberB(a, b).isPresent()) {
+                String seedImage = StringUtils.hasText(pair.getImageUrl()) ? pair.getImageUrl().trim() : null;
+                var existing = chemistryRepository.findByMemberAAndMemberB(a, b);
+                if (existing.isPresent()) {
+                    // 예전 오버레이 수정으로 imageUrl만 비어 있는 행 복구 (라벨·설명은 건드리지 않음)
+                    Chemistry row = existing.get();
+                    if (!StringUtils.hasText(row.getImageUrl()) && seedImage != null) {
+                        row.setImageUrl(seedImage);
+                        chemistryRepository.save(row);
+                        backfilledImages++;
+                    }
                     continue;
                 }
                 Chemistry entity = Chemistry.builder()
@@ -78,15 +89,15 @@ public class ChemistrySeedService implements ApplicationRunner {
                         .memberB(b)
                         .label(pair.getLabel())
                         .description(pair.getDescription() != null ? pair.getDescription() : "")
-                        .imageUrl(StringUtils.hasText(pair.getImageUrl()) ? pair.getImageUrl().trim() : null)
+                        .imageUrl(seedImage)
                         .linksJson(toLinksJson(pair.getLinks()))
                         .crossFlag(pair.isCrossFlag())
                         .build();
                 chemistryRepository.save(entity);
                 inserted++;
             }
-            if (inserted > 0) {
-                log.info("Seeded {} chemistry pairs from data/chemistry-seed.json", inserted);
+            if (inserted > 0 || backfilledImages > 0) {
+                log.info("Chemistry seed: inserted={}, backfilledImages={}", inserted, backfilledImages);
             } else {
                 log.info("Chemistry seed enabled but no new pairs to insert");
             }

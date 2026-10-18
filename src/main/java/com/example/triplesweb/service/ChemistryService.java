@@ -62,6 +62,7 @@ public class ChemistryService {
         entity.setDescription(description);
         entity.setLinksJson(normalizeLinksJson(linksJson));
 
+        // 새 파일이 없고 clearImage도 아니면 기존 imageUrl을 그대로 둔다.
         if (image != null && !image.isEmpty()) {
             try {
                 String previousUrl = entity.getImageUrl();

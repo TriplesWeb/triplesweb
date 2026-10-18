@@ -743,6 +743,20 @@
     }
   }
 
+  function setEditImagePreview(url) {
+    const wrap = document.getElementById("chemEditImagePreviewWrap");
+    const img = document.getElementById("chemEditImagePreview");
+    if (!wrap || !img) return;
+    const src = (url || "").trim();
+    if (!src) {
+      img.removeAttribute("src");
+      wrap.classList.add("hidden");
+      return;
+    }
+    img.src = src;
+    wrap.classList.remove("hidden");
+  }
+
   function openEditForm(member1, member2, label, description, imageUrl, links) {
     editingPair = { member1, member2 };
     closeModal();
@@ -756,7 +770,9 @@
     document.getElementById("chemEditLabel").value = label || "";
     if (editor) editor.innerHTML = descriptionToEditorHtml(description || "");
     document.getElementById("chemEditImage").value = "";
-    document.getElementById("chemEditClearImage").checked = false;
+    const clearCb = document.getElementById("chemEditClearImage");
+    if (clearCb) clearCb.checked = false;
+    setEditImagePreview(imageUrl || "");
     renderLinkRows(links || {});
     if (title) title.textContent = member1 + " × " + member2;
     if (err) {
@@ -936,6 +952,7 @@
         swatch.dataset.s = String(index + 1);
         const rgb = hexToRgb(color);
         if (rgb) {
+          // 밝은 배경은 어두운 숫자, 어두운 배경은 밝은 숫자
           const luma = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
           swatch.classList.toggle("is-dark", luma < 0.55);
         }
@@ -1031,6 +1048,28 @@
       });
     }
 
+    const editImageInput = document.getElementById("chemEditImage");
+    if (editImageInput) {
+      editImageInput.addEventListener("change", () => {
+        const clearCb = document.getElementById("chemEditClearImage");
+        const file = editImageInput.files && editImageInput.files[0];
+        if (file) {
+          if (clearCb) clearCb.checked = false;
+          setEditImagePreview(URL.createObjectURL(file));
+        }
+      });
+    }
+    const clearImageCb = document.getElementById("chemEditClearImage");
+    if (clearImageCb) {
+      clearImageCb.addEventListener("change", () => {
+        if (clearImageCb.checked) {
+          const input = document.getElementById("chemEditImage");
+          if (input) input.value = "";
+          setEditImagePreview("");
+        }
+      });
+    }
+
     const editForm = document.getElementById("chemistryEditForm");
     if (editForm) {
       editForm.addEventListener("submit", async (e) => {
@@ -1041,10 +1080,12 @@
         fd.append("member2", document.getElementById("chemEditMember2").value);
         fd.append("label", document.getElementById("chemEditLabel").value);
         fd.append("description", getEditorDescriptionHtml());
-        fd.append("clearImage", document.getElementById("chemEditClearImage").checked ? "true" : "false");
+        // 체크했을 때만 true — 미전송 시 서버 기본값 false로 기존 사진 유지
+        const clearChecked = Boolean(document.getElementById("chemEditClearImage")?.checked);
+        fd.append("clearImage", clearChecked ? "true" : "false");
         fd.append("linksJson", collectLinksJson());
         const file = document.getElementById("chemEditImage").files[0];
-        if (file) fd.append("image", file);
+        if (file && !clearChecked) fd.append("image", file);
         try {
           const res = await chemFetch("/api/chemistry", { method: "POST", body: fd });
           if (!res.ok) {
