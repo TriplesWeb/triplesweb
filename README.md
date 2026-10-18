@@ -136,6 +136,12 @@ cp .env.example .env   # 최초 1회 — DB/API 값 채우기 (.gitignore)
 
 `bootRun`은 프로젝트 루트 `.env`를 로드하고, `MYSQL_*`를 `SPRING_DATASOURCE_*`로 매핑합니다. Docker Compose도 같은 `.env`를 씁니다.
 
+로컬에서 올린 케미 사진(`uploads/images/chemistry/`)은 **커밋에 포함 → `main` 푸시 시 Actions가 서버로 rsync**합니다. 최초 한 번:
+
+```bash
+./scripts/setup-git-hooks.sh   # pre-commit이 업로드 파일을 자동 git add
+```
+
 자세한 실행·권한·체크리스트는 [프로젝트 구조 문서](docs/PROJECT_STRUCTURE.md)의 **§11 로컬 개발 빠른 시작**을 참고하세요.
 
 ---
