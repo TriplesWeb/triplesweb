@@ -31,8 +31,14 @@ import java.util.UUID;
 public class FileStorageServiceImpl implements FileStorageService {
 
     private final String uploadRoot;
-    public FileStorageServiceImpl(@Value("${file.upload-dir}") String uploadRoot) {
+    private final UploadSyncService uploadSyncService;
+
+    public FileStorageServiceImpl(
+            @Value("${file.upload-dir}") String uploadRoot,
+            UploadSyncService uploadSyncService
+    ) {
         this.uploadRoot = uploadRoot;
+        this.uploadSyncService = uploadSyncService;
     }
 
     private static final Set<String> IMAGE_EXT = Set.of("jpg","jpeg","png","gif","webp","bmp");
@@ -105,6 +111,8 @@ public class FileStorageServiceImpl implements FileStorageService {
         }
         writeOriginalNameSidecar(newPath, originalName);
         String url = toPublicUrl(newPath);
+        // 공유 DB ↔ 공유 파일: 로컬 저장분을 원격 uploads에도 맞춤
+        uploadSyncService.pushRelative(normalizeSavedName(url));
 
         return SavedMeta.builder()
                 .originalName(originalName)
@@ -128,7 +136,9 @@ public class FileStorageServiceImpl implements FileStorageService {
         if (!target.startsWith(root)) throw new FileStorageException("잘못된 경로: " + relative);
         try {
             Files.deleteIfExists(sidecar);
-            return Files.deleteIfExists(target);
+            boolean deleted = Files.deleteIfExists(target);
+            uploadSyncService.deleteRelative(relative);
+            return deleted;
         } catch (IOException e) {
             throw new FileStorageException("파일 삭제 실패: " + relative, e);
         }

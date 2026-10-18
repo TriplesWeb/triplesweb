@@ -37,6 +37,8 @@ services:
       CHEMISTRY_ADMIN_PASSWORD: ${CHEMISTRY_ADMIN_PASSWORD:-}
       FILE_UPLOAD_DIR: /app/uploads
       MEDIA_CATALOG_PATH: /app/data/videos.json
+      # 서버는 uploads 마운트가 곧 원본 — 자기 자신으로 SSH sync 하지 않음
+      UPLOAD_SYNC_ENABLED: "false"
     volumes:
       - ./uploads:/app/uploads
       - ./data:/app/data
