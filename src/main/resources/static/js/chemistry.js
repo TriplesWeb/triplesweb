@@ -1246,6 +1246,43 @@
       .replace(/"/g, "&quot;");
   }
 
+  function escapeRegExp(str) {
+    return String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  /** "윤서연과 김채연의 케미명" → 멤버명에 상세 페이지 링크 (긴 이름 우선) */
+  function formatChemistryTitle(chemistryName) {
+    const byLength = MEMBERS.map((name, index) => ({ name, index }))
+      .sort((a, b) => b.name.length - a.name.length);
+    const nameMeta = Object.create(null);
+    byLength.forEach(({ name, index }) => {
+      nameMeta[name] = { index, color: MEMBER_COLORS[index] || "#00f5d4" };
+    });
+    const pattern = new RegExp(
+      "(" + byLength.map(({ name }) => escapeRegExp(name)).join("|") + ")",
+      "g"
+    );
+    return String(chemistryName)
+      .split(pattern)
+      .map((part) => {
+        const meta = nameMeta[part];
+        if (!meta) return escapeHtml(part);
+        const escaped = escapeHtml(part);
+        return (
+          '<a href="' +
+          memberHref(meta.index) +
+          '" title="' +
+          escaped +
+          '" class="chem-title-member" style="--member-color:' +
+          meta.color +
+          '">' +
+          escaped +
+          "</a>"
+        );
+      })
+      .join("");
+  }
+
   function formatLabel(label) {
     return escapeHtml(label).replace(/\n/g, "<br>");
   }
@@ -1342,7 +1379,7 @@
         return open + '<span class="chem-quote">' + inner + "</span>" + close;
       });
 
-    document.getElementById("chemistryTitle").textContent = chemistryName;
+    document.getElementById("chemistryTitle").innerHTML = formatChemistryTitle(chemistryName);
     const img = document.getElementById("chemistryImage");
     img.src = data.image || "";
     img.alt = chemistryName;
