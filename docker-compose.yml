@@ -5,6 +5,9 @@ services:
     environment:
       MARIADB_DATABASE: ${MYSQL_DATABASE:-triples}
       MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+    ports:
+      # Tailscale(100.x)에서 local bootRun 접속용
+      - "${MYSQL_PUBLISH_PORT:-3306}:3306"
     volumes:
       - mariadb_data:/var/lib/mysql
     healthcheck:
@@ -31,6 +34,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
       SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
       YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+      CHEMISTRY_ADMIN_PASSWORD: ${CHEMISTRY_ADMIN_PASSWORD:-}
       FILE_UPLOAD_DIR: /app/uploads
       MEDIA_CATALOG_PATH: /app/data/videos.json
     volumes:

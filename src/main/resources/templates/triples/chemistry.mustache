@@ -12,7 +12,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/chemistry.css?v=24">
+    <link rel="stylesheet" href="/css/chemistry.css?v=29">
 </head>
 <body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
 {{>layout/header}}
@@ -24,12 +24,16 @@
                 <h2 class="text-xl sm:text-2xl font-bold text-[#e3e2e8] flex items-center gap-2">
                     <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4]"></span> 트리플에스 케미명
                 </h2>
-                <div class="chem-mode-toggle" role="group" aria-label="케미 인원 선택">
-                    <button type="button" class="chem-mode-btn is-active" data-mode="pair" aria-pressed="true" onclick="window.__chemSetMode&&window.__chemSetMode('pair')">2인</button>
-                    <button type="button" class="chem-mode-btn" data-mode="trio" aria-pressed="false" onclick="window.__chemSetMode&&window.__chemSetMode('trio')">3인</button>
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="chem-mode-toggle" role="group" aria-label="케미 인원 선택">
+                        <button type="button" class="chem-mode-btn is-active" data-mode="pair" aria-pressed="true" onclick="window.__chemSetMode&&window.__chemSetMode('pair')">2인</button>
+                        <button type="button" class="chem-mode-btn" data-mode="trio" aria-pressed="false" onclick="window.__chemSetMode&&window.__chemSetMode('trio')">3인</button>
+                    </div>
+                    <button type="button" id="chemAdminBtn" class="chem-admin-btn hidden" aria-pressed="false">관리자</button>
                 </div>
             </div>
             <p class="text-base font-semibold text-[#e3e2e8]">셀을 클릭하면 케미 설명과 이미지를 볼 수 있어요. 멤버 이름은 프로필로 이동합니다.</p>
+            <p id="chemAdminHint" class="chem-admin-hint hidden">관리자 모드: 빈 칸을 눌러 추가하고, 케미를 연 뒤 수정할 수 있어요.</p>
         </div>
 
         <div class="chem-table-wrap" id="chemPairView">
@@ -63,9 +67,104 @@
         </figure>
         <p id="chemistryDescription" class="chem-modal-desc"></p>
         <div id="chemistryLinks" class="chem-modal-links"></div>
+        <div id="chemistryAdminActions" class="chem-admin-actions hidden">
+            <button type="button" id="chemEditBtn" class="chem-mode-btn is-active">수정</button>
+            <button type="button" id="chemDeleteBtn" class="chem-mode-btn chem-btn-danger">삭제</button>
+        </div>
     </div>
 </div>
 
-<script src="/js/chemistry.js?v=11"></script>
+<div id="chemistryEditModal" class="chem-modal hidden" role="dialog" aria-modal="true" aria-labelledby="chemistryEditTitle">
+    <div class="chem-modal-panel chem-edit-panel">
+        <button type="button" class="chem-close chem-edit-close" aria-label="닫기">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        <h3 id="chemistryEditTitle" class="chem-modal-title">케미 편집</h3>
+        <form id="chemistryEditForm" class="chem-edit-form">
+            <input type="hidden" id="chemEditMember1" name="member1">
+            <input type="hidden" id="chemEditMember2" name="member2">
+            <label class="chem-edit-label">케미명
+                <input type="text" id="chemEditLabel" name="label" required maxlength="120" autocomplete="off">
+            </label>
+            <div class="chem-edit-label">설명
+                <div class="chem-fmt-toolbar" role="toolbar" aria-label="글꼴 서식">
+                    <button type="button" class="chem-fmt-btn" data-fmt="bold" title="굵게"><b>B</b></button>
+                    <button type="button" class="chem-fmt-btn" data-fmt="italic" title="기울임"><i>I</i></button>
+                    <button type="button" class="chem-fmt-btn" data-fmt="underline" title="밑줄"><u>U</u></button>
+                    <div class="chem-color-wrap">
+                        <button type="button" class="chem-fmt-btn chem-color-toggle" id="chemColorToggle" title="글자 색" aria-expanded="false" aria-haspopup="true">
+                            <span class="chem-color-toggle-label">A</span>
+                            <span class="chem-color-toggle-bar" id="chemColorBar"></span>
+                        </button>
+                        <div id="chemColorPalette" class="chem-color-palette hidden" role="dialog" aria-label="색상 팔레트">
+                            <div class="chem-color-palette-title">색상 팔레트</div>
+                            <div id="chemColorSwatches" class="chem-color-swatches" role="listbox" aria-label="기본 색상"></div>
+                            <div class="chem-color-custom">
+                                <label class="chem-color-custom-row">
+                                    <span>피커</span>
+                                    <input type="color" id="chemColorPicker" value="#00f5d4">
+                                </label>
+                                <label class="chem-color-custom-row">
+                                    <span>HEX</span>
+                                    <input type="text" id="chemColorHex" value="#00f5d4" maxlength="7" spellcheck="false" placeholder="#00f5d4">
+                                </label>
+                                <div class="chem-color-rgb-row">
+                                    <label>R <input type="number" id="chemColorR" min="0" max="255" value="0"></label>
+                                    <label>G <input type="number" id="chemColorG" min="0" max="255" value="245"></label>
+                                    <label>B <input type="number" id="chemColorB" min="0" max="255" value="212"></label>
+                                </div>
+                                <div class="chem-color-custom-actions">
+                                    <button type="button" id="chemColorReset" class="chem-mode-btn">기본</button>
+                                    <button type="button" id="chemColorApply" class="chem-mode-btn is-active">적용</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="chemEditDescription" class="chem-edit-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="본문에서 링크로 만들 문구는 **문구** 로 감싸세요"></div>
+            </div>
+            <div class="chem-edit-links-block">
+                <div class="chem-edit-links-head">
+                    <span>하이퍼링크</span>
+                    <button type="button" id="chemAddLinkBtn" class="chem-mode-btn">링크 추가</button>
+                </div>
+                <p class="chem-edit-links-hint">표시 텍스트와 URL을 넣고, 설명에 <code>**표시 텍스트**</code>를 쓰면 본문에 링크로 표시됩니다.</p>
+                <div id="chemEditLinks" class="chem-edit-links"></div>
+            </div>
+            <label class="chem-edit-label">사진
+                <input type="file" id="chemEditImage" name="image" accept="image/*">
+            </label>
+            <label class="chem-edit-check">
+                <input type="checkbox" id="chemEditClearImage" name="clearImage"> 사진 제거
+            </label>
+            <p id="chemEditError" class="chem-edit-error" hidden></p>
+            <div class="chem-edit-actions">
+                <button type="button" id="chemEditDeleteBtn" class="chem-mode-btn chem-btn-danger">삭제</button>
+                <button type="submit" class="chem-mode-btn is-active">저장</button>
+                <button type="button" class="chem-mode-btn chem-edit-cancel">취소</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="chemistryLoginModal" class="chem-modal hidden" role="dialog" aria-modal="true" aria-labelledby="chemistryLoginTitle">
+    <div class="chem-modal-panel chem-login-panel">
+        <button type="button" class="chem-close chem-login-close" aria-label="닫기">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        <h3 id="chemistryLoginTitle" class="chem-modal-title">관리자 로그인</h3>
+        <form id="chemistryLoginForm" class="chem-edit-form">
+            <label class="chem-edit-label">비밀번호
+                <input type="password" id="chemLoginPassword" name="password" required autocomplete="current-password">
+            </label>
+            <p id="chemLoginError" class="chem-edit-error" hidden></p>
+            <div class="chem-edit-actions">
+                <button type="submit" class="chem-mode-btn is-active">로그인</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/js/chemistry.js?v=16"></script>
 </body>
 </html>
