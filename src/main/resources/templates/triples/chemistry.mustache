@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html class="dark" lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,29 +12,57 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-
+    <link rel="stylesheet" href="/css/chemistry.css?v=19">
 </head>
 <body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
 {{>layout/header}}
 
-<main class="main-content max-w-7xl mx-auto px-4 py-8">
-    <div class="card-box bg-[#16181f]/80 backdrop-blur-md rounded-2xl p-6 shadow-xl">
-        <h2 class="text-2xl font-bold text-[#e3e2e8] mb-6 flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4]"></span> 트리플에스 케미명
-        </h2>
-        <table id="chemistryTable" class="w-full">
-            <tr>
-                <td class="flex flex-wrap gap-6 justify-start">
-                        <a class="text-decoration-none text-center w-48">
-                            <div>
-                                <img width="200" height="200" class="w-full h-44 object-cover rounded-lg mb-2">
-                                <div class="caption text-lg text-[#e3e2e8] font-semibold" >test</div>
-                            </div>
-                        </a>
-                </td>
-            </tr>
-        </table>
+<main class="main-content chem-page-main">
+    <div class="card-box chem-page-card bg-[#16181f]/80 backdrop-blur-md border border-[#3a4a46]/30 rounded-2xl p-3 sm:p-4 shadow-xl">
+        <div class="chem-page-head flex flex-col gap-2">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <h2 class="text-xl sm:text-2xl font-bold text-[#e3e2e8] flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4]"></span> 트리플에스 케미명
+                </h2>
+                <div class="chem-mode-toggle" role="group" aria-label="케미 인원 선택">
+                    <button type="button" class="chem-mode-btn is-active" data-mode="pair" aria-pressed="true" onclick="window.__chemSetMode&&window.__chemSetMode('pair')">2인</button>
+                    <button type="button" class="chem-mode-btn" data-mode="trio" aria-pressed="false" onclick="window.__chemSetMode&&window.__chemSetMode('trio')">3인</button>
+                </div>
+            </div>
+            <p class="text-base font-semibold text-[#e3e2e8]">셀을 클릭하면 케미 설명과 이미지를 볼 수 있어요. 멤버 이름은 프로필로 이동합니다.</p>
+        </div>
+
+        <div class="chem-table-wrap" id="chemPairView">
+            <table id="chemistryTable" class="chem-table" aria-label="멤버 간 케미명 표">
+                <thead id="chemThead"></thead>
+                <tbody id="chemTbody">
+                    <tr>
+                        <td colspan="25" class="text-center text-[#b9cac4] py-10 text-sm">케미 표 불러오는 중…</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="chem-trio-placeholder hidden" id="chemTrioView" aria-live="polite">
+            <p class="chem-trio-title">3인 케미 준비 중</p>
+            <p class="chem-trio-desc">3인 케미 데이터가 아직 없어요. 2인 모드로 돌아가 페어 케미를 볼 수 있어요.</p>
+            <button type="button" class="chem-mode-btn chem-trio-back" data-mode="pair" onclick="window.__chemSetMode&&window.__chemSetMode('pair')">2인으로 보기</button>
+        </div>
     </div>
 </main>
+
+<div id="chemistryModal" class="chem-modal hidden" role="dialog" aria-modal="true" aria-labelledby="chemistryTitle">
+    <div class="chem-modal-panel">
+        <button type="button" class="chem-close" aria-label="닫기">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        <h3 id="chemistryTitle" class="chem-modal-title"></h3>
+        <img id="chemistryImage" class="chem-modal-img" src="" alt="">
+        <p id="chemistryDescription" class="chem-modal-desc"></p>
+        <div id="chemistryLinks" class="chem-modal-links"></div>
+    </div>
+</div>
+
+<script src="/js/chemistry.js?v=6"></script>
 </body>
 </html>

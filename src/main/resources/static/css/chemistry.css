@@ -1,0 +1,456 @@
+/* ==========================================================================
+   Chemistry matrix (/triples/chemistry)
+   뷰포트에 맞춰 표 전체 노출 → 스크롤 최소화
+   ========================================================================== */
+
+.chem-page-main {
+    width: 100%;
+    max-width: none;
+    margin: 0 auto;
+    padding: 0.75rem 0.75rem 1rem;
+}
+
+.chem-page-card {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 5.5rem);
+}
+
+.chem-page-card .chem-page-head {
+    flex-shrink: 0;
+    margin-bottom: 0.75rem;
+}
+
+.chem-mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px;
+    border-radius: 9999px;
+    background: rgba(13, 14, 18, 0.85);
+    border: 1px solid rgba(58, 74, 70, 0.45);
+    gap: 2px;
+}
+
+.chem-mode-btn {
+    appearance: none;
+    border: 0;
+    cursor: pointer;
+    border-radius: 9999px;
+    padding: 0.4rem 1rem;
+    font-size: clamp(14px, 0.9vw, 16px);
+    font-weight: 800;
+    line-height: 1.2;
+    color: #b9cac4;
+    background: transparent;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.chem-mode-btn:hover {
+    color: #e3e2e8;
+}
+
+.chem-mode-btn.is-active {
+    background: #00f5d4;
+    color: #0d0e12;
+}
+
+.chem-mode-btn.is-active:hover {
+    color: #0d0e12;
+}
+
+.chem-trio-placeholder {
+    flex: 1 1 auto;
+    min-height: calc(100vh - 9.5rem);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(58, 74, 70, 0.35);
+    background: #0a0b0f;
+    text-align: center;
+    padding: 2rem 1.25rem;
+}
+
+.chem-trio-placeholder.hidden {
+    display: none;
+}
+
+.chem-trio-title {
+    margin: 0;
+    font-size: clamp(1.15rem, 1.5vw, 1.4rem);
+    font-weight: 800;
+    color: #e3e2e8;
+}
+
+.chem-trio-desc {
+    margin: 0;
+    max-width: 28rem;
+    font-size: clamp(15px, 0.95vw, 18px);
+    font-weight: 600;
+    line-height: 1.65;
+    color: #d7ddd9;
+}
+
+.chem-trio-back {
+    margin-top: 0.35rem;
+    background: #00f5d4;
+    color: #0d0e12;
+}
+
+.chem-trio-back:hover {
+    color: #0d0e12;
+    filter: brightness(1.05);
+}
+
+.chem-table-wrap {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    height: calc(100vh - 9.5rem);
+    overflow: auto;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(58, 74, 70, 0.35);
+    background: #0a0b0f;
+}
+
+.chem-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    font-size: clamp(13px, 0.85vw, 18px);
+    font-family: 'Noto Sans KR', 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+.chem-table th,
+.chem-table td {
+    border-right: 1px solid rgba(70, 82, 90, 0.4);
+    border-bottom: 1px solid rgba(70, 82, 90, 0.4);
+    text-align: center;
+    vertical-align: middle;
+    width: 4%;
+    min-width: 0;
+    height: calc((100vh - 9.5rem) / 25);
+    padding: 2px 1px;
+    overflow: hidden;
+}
+
+.chem-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: #14161e;
+}
+
+.chem-corner,
+.chem-row-head {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: #14161e;
+    width: 4.2%;
+}
+
+.chem-corner {
+    top: 0;
+    z-index: 5 !important;
+}
+
+.chem-corner img,
+.chem-self img {
+    width: 100%;
+    height: 100%;
+    max-width: min(100%, 52px);
+    max-height: min(100%, 48px);
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
+
+.chem-col-head a.chem-member-link,
+.chem-row-head a.chem-member-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    text-decoration: none;
+    padding: 2px;
+}
+
+.chem-member-name {
+    color: #ffffff;
+    font-weight: 900;
+    font-size: clamp(15px, 0.95vw, 25px);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    word-break: keep-all;
+    text-align: center;
+    transition: color 0.15s ease;
+}
+
+.chem-col-head a.chem-member-link:hover .chem-member-name,
+.chem-col-head a.chem-member-link:focus-visible .chem-member-name,
+.chem-row-head a.chem-member-link:hover .chem-member-name,
+.chem-row-head a.chem-member-link:focus-visible .chem-member-name {
+    color: var(--member-color, #00f5d4);
+}
+
+.chem-table td.chem-self {
+    background: #3a4254;
+}
+
+.chem-table td.chem-empty {
+    background: #323a4a;
+}
+
+.chem-table td.chem-cell {
+    cursor: pointer;
+    font-weight: 800;
+    font-size: clamp(13px, 0.85vw, 18px);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    color: #ffffff !important;
+    background: #3a4254;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
+.chem-table td.chem-cell:hover,
+.chem-table td.chem-cell:focus-visible {
+    background: #00c4ab;
+    color: #0d0e12 !important;
+    text-shadow: none;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.25);
+    outline: none;
+    z-index: 1;
+    position: relative;
+}
+
+.chem-table td.chem-cell.chem-cross {
+    /* 일반 chem-cell과 동일 — 별도 강조 없음 */
+    color: #ffffff !important;
+    background: #3a4254;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+    font-weight: 900;
+}
+
+/* Modal — 데스크톱 약 2.5배 스케일 (기존 680px → ~1700px) */
+.chem-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(7, 8, 11, 0.72);
+    backdrop-filter: blur(6px);
+}
+
+.chem-modal-panel {
+    position: relative;
+    background: #16181f;
+    border: 1px solid rgba(58, 74, 70, 0.45);
+    border-radius: 1.25rem;
+    padding: 2.5rem 2.5rem 2.25rem;
+    max-width: min(92vw, 1700px);
+    width: min(92vw, 1700px);
+    max-height: min(94vh, 1200px);
+    overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+    text-align: center;
+    -webkit-overflow-scrolling: touch;
+}
+
+.chem-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: 0;
+    color: #d0d8d4;
+    cursor: pointer;
+    padding: 0.45rem;
+    border-radius: 0.5rem;
+    line-height: 0;
+}
+
+.chem-close:hover {
+    color: #00f5d4;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.chem-close .material-symbols-outlined {
+    font-size: 28px;
+}
+
+.chem-modal-title {
+    font-family: 'Sora', 'Inter', sans-serif;
+    font-size: clamp(1.5rem, 2.2vw, 2.15rem);
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0.5rem 2.5rem 1.5rem;
+    line-height: 1.35;
+}
+
+.chem-modal-img {
+    max-width: 72%;
+    max-height: min(58vh, 720px);
+    margin: 0 auto 1.75rem;
+    display: block;
+    border-radius: 1rem;
+    border: 1px solid rgba(58, 74, 70, 0.35);
+    object-fit: contain;
+    background: rgba(13, 14, 18, 0.6);
+}
+
+.chem-modal-desc {
+    text-align: left;
+    font-size: clamp(19px, 1.45vw, 26px);
+    font-weight: 600;
+    line-height: 1.9;
+    color: #e8ecea;
+    margin: 0;
+    max-width: 56rem;
+    margin-left: auto;
+    margin-right: auto;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+}
+
+.chem-highlight {
+    color: #5dffea;
+    font-weight: 800;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1.5px;
+}
+
+a.chem-highlight:hover {
+    color: #9bfff3;
+    text-decoration-thickness: 2px;
+}
+
+/* 따옴표 강조 — 링크(시안+밑줄)와 구분: 따뜻한 앰버 + bold, 밑줄 없음 */
+.chem-quote {
+    color: #ffc857;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.chem-modal-links {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    align-items: flex-start;
+}
+
+.chem-extra-link {
+    font-size: clamp(16px, 1.1vw, 20px);
+    font-weight: 700;
+    color: #5dffea;
+    text-decoration: none;
+}
+
+.chem-extra-link:hover {
+    text-decoration: underline;
+}
+
+/* 모바일: 화면 안에 맞춰 읽기 쉽게 (2.5배 스케일 완화) */
+@media screen and (max-width: 900px) {
+    .chem-modal {
+        padding: 0.75rem;
+        align-items: flex-end;
+    }
+
+    .chem-modal-panel {
+        width: 100%;
+        max-width: none;
+        max-height: min(90vh, 800px);
+        padding: 1.5rem 1.2rem 1.35rem;
+        border-radius: 1rem 1rem 0.75rem 0.75rem;
+    }
+
+    .chem-modal-title {
+        font-size: clamp(1.2rem, 5vw, 1.45rem);
+        margin: 0.25rem 1.75rem 1rem;
+    }
+
+    .chem-modal-img {
+        max-width: 100%;
+        max-height: min(40vh, 320px);
+        margin-bottom: 1.1rem;
+    }
+
+    .chem-modal-desc {
+        font-size: clamp(16px, 4.4vw, 19px);
+        line-height: 1.75;
+        max-width: none;
+    }
+
+    .chem-extra-link {
+        font-size: 15px;
+        padding: 0.15rem 0;
+    }
+
+    .chem-close {
+        top: 0.55rem;
+        right: 0.55rem;
+        padding: 0.45rem;
+    }
+
+    .chem-close .material-symbols-outlined {
+        font-size: 24px;
+    }
+}
+
+@media screen and (max-width: 900px) {
+    .chem-table-wrap {
+        height: calc(100vh - 10.5rem);
+        overflow: auto;
+    }
+
+    .chem-table {
+        width: max(100%, 1100px);
+        height: auto;
+        font-size: clamp(12px, 2.6vw, 15px);
+    }
+
+    .chem-table th,
+    .chem-table td {
+        width: 52px;
+        min-width: 52px;
+        height: 52px;
+        padding: 2px;
+    }
+
+    .chem-table td.chem-cell {
+        font-size: clamp(12px, 2.6vw, 15px);
+        font-weight: 800;
+    }
+
+    .chem-corner,
+    .chem-row-head {
+        width: 48px;
+        min-width: 48px;
+    }
+
+    .chem-corner img,
+    .chem-self img {
+        max-width: 40px;
+        max-height: 38px;
+    }
+
+    .chem-member-name {
+        font-size: clamp(13px, 2.8vw, 16px);
+        font-weight: 900;
+    }
+}
