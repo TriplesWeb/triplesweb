@@ -1295,6 +1295,53 @@
   let baseMatrix = null;
   let baseDescriptions = null;
 
+  const ADMIN_TOKEN_KEY = "chemistryAdminToken";
+
+  function getAdminToken() {
+    try {
+      return sessionStorage.getItem(ADMIN_TOKEN_KEY) || "";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function setAdminToken(token) {
+    try {
+      if (token) sessionStorage.setItem(ADMIN_TOKEN_KEY, token);
+      else sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+    } catch (_) {
+      /* private mode 등 */
+    }
+  }
+
+  /** 쿠키가 막혀도 동작하도록 관리자 토큰 헤더를 붙인다. */
+  function chemFetch(url, options) {
+    const opts = Object.assign({ credentials: "same-origin" }, options || {});
+    const headers = new Headers(opts.headers || {});
+    const token = getAdminToken();
+    if (token) headers.set("X-Chemistry-Admin-Token", token);
+    opts.headers = headers;
+    return fetch(url, opts);
+  }
+
+  async function readChemError(res, fallback) {
+    try {
+      const text = await res.text();
+      if (!text) return fallback;
+      try {
+        const json = JSON.parse(text);
+        if (json && json.message) return json.message;
+        if (res.status === 403) return "관리자 로그인이 필요합니다. 다시 로그인해 주세요.";
+        if (json && json.error) return json.error + (json.message ? ": " + json.message : "");
+      } catch (_) {
+        return text.length > 180 ? fallback : text;
+      }
+      return fallback;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
   function chemKey(a, b) {
     return a + "과 " + b + "의 케미명";
   }
@@ -1916,7 +1963,7 @@
 
   async function refreshOverlaysAndTable() {
     try {
-      const res = await fetch("/api/chemistry");
+      const res = await chemFetch("/api/chemistry");
       if (res.ok) dbOverlays = await res.json();
     } catch (_) {
       dbOverlays = [];
@@ -1940,9 +1987,14 @@
     if (!confirm(member1 + " × " + member2 + " 케미를 삭제할까요?")) return;
     try {
       const qs = new URLSearchParams({ member1, member2 });
-      const res = await fetch("/api/chemistry?" + qs.toString(), { method: "DELETE" });
+      const res = await chemFetch("/api/chemistry?" + qs.toString(), { method: "DELETE" });
       if (!res.ok) {
-        alert("삭제에 실패했습니다.");
+        alert(await readChemError(res, "삭제에 실패했습니다."));
+        if (res.status === 403) {
+          isAdmin = false;
+          setAdminToken("");
+          setAdminUi();
+        }
         return;
       }
       closeEditModal();
@@ -1959,8 +2011,9 @@
     if (adminBtn) {
       adminBtn.addEventListener("click", async () => {
         if (isAdmin) {
-          await fetch("/api/chemistry/admin/logout", { method: "POST" });
+          await chemFetch("/api/chemistry/admin/logout", { method: "POST" });
           isAdmin = false;
+          setAdminToken("");
           setAdminUi();
           return;
         }
@@ -1975,18 +2028,20 @@
         const err = document.getElementById("chemLoginError");
         const password = document.getElementById("chemLoginPassword").value;
         try {
-          const res = await fetch("/api/chemistry/admin/login", {
+          const res = await chemFetch("/api/chemistry/admin/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ password })
           });
           if (!res.ok) {
             if (err) {
-              err.textContent = "비밀번호가 올바르지 않습니다.";
+              err.textContent = await readChemError(res, "비밀번호가 올바르지 않습니다.");
               err.hidden = false;
             }
             return;
           }
+          const data = await res.json();
+          setAdminToken(data && data.token ? data.token : "");
           isAdmin = true;
           closeLoginModal();
           setAdminUi();
@@ -2168,12 +2223,17 @@
         const file = document.getElementById("chemEditImage").files[0];
         if (file) fd.append("image", file);
         try {
-          const res = await fetch("/api/chemistry", { method: "POST", body: fd });
+          const res = await chemFetch("/api/chemistry", { method: "POST", body: fd });
           if (!res.ok) {
-            const msg = (await res.text()) || "저장에 실패했습니다.";
+            const msg = await readChemError(res, "저장에 실패했습니다.");
             if (err) {
               err.textContent = msg;
               err.hidden = false;
+            }
+            if (res.status === 403) {
+              isAdmin = false;
+              setAdminToken("");
+              setAdminUi();
             }
             return;
           }
@@ -2274,11 +2334,12 @@
     bindAdminUi();
 
     try {
-      const statusRes = await fetch("/api/chemistry/admin/status");
+      const statusRes = await chemFetch("/api/chemistry/admin/status");
       if (statusRes.ok) {
         const status = await statusRes.json();
         adminConfigured = Boolean(status.configured);
         isAdmin = Boolean(status.admin);
+        if (!isAdmin) setAdminToken("");
       }
     } catch (_) {
       adminConfigured = false;
@@ -2288,7 +2349,7 @@
     try {
       const [matrixRes, overlayRes] = await Promise.all([
         fetch("/js/chemistry-matrix.json"),
-        fetch("/api/chemistry")
+        chemFetch("/api/chemistry")
       ]);
       const data = await matrixRes.json();
       snapshotBaseDescriptions();
