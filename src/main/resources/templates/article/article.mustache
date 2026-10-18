@@ -104,12 +104,10 @@
                         {{/isAdmin}}
                     {{/isNotice}}
                     {{^isNotice}}
-                        {{#isLoggedIn}}
                             <a href="/article/{{category}}/new" class="py-2.5 px-5 rounded-full bg-primary-container text-on-primary font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
                                 <span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
                                 <span>글 쓰기</span>
                             </a>
-                        {{/isLoggedIn}}
                     {{/isNotice}}
                 </div>
             </div>
