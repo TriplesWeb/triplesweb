@@ -561,6 +561,65 @@ a.chem-highlight:hover {
     text-align: left;
 }
 
+.chem-edit-help {
+    margin: 0.35rem 0 0.15rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: 0.65rem;
+    border: 1px solid rgba(0, 245, 212, 0.28);
+    background: rgba(0, 245, 212, 0.06);
+    color: #c5d0cc;
+    font-size: 0.82rem;
+    line-height: 1.45;
+}
+
+.chem-edit-help summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: #00f5d4;
+    list-style: none;
+}
+
+.chem-edit-help summary::-webkit-details-marker {
+    display: none;
+}
+
+.chem-edit-help summary::before {
+    content: "▸ ";
+    display: inline-block;
+    transition: transform 0.15s ease;
+}
+
+.chem-edit-help[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.chem-edit-help-list {
+    margin: 0.55rem 0 0;
+    padding-left: 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.chem-edit-help-list code {
+    color: #00f5d4;
+    font-size: 0.78rem;
+    word-break: break-all;
+}
+
+.chem-edit-field-hint {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #8a9a94;
+    line-height: 1.4;
+}
+
+.chem-edit-field-hint code {
+    color: #00f5d4;
+    font-size: 0.75rem;
+}
+
 .chem-edit-form {
     display: flex;
     flex-direction: column;
