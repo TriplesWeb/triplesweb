@@ -123,12 +123,8 @@
         </div>
 {{/member}}
 
-    <!-- 비로그인 시 메뉴 -->
+    <!-- 로그인 기능 비활성화 — 비로그인 메뉴 숨김 -->
 {{^member}}
-        <div class="flex items-center gap-2">
-            <a href="/login" class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] font-medium text-decoration-none transition-colors">로그인</a>
-            <a href="/signup" class="px-3 py-1.5 text-xs bg-[#00f5d4] text-[#0d0e12] hover:bg-[#00f5d4]/80 rounded-full font-semibold text-decoration-none transition-all shadow-md">회원가입</a>
-        </div>
     {{/member}}
         </div>
     </div>
