@@ -79,7 +79,7 @@ tasks.named('bootRun') {
 		loaded[key] = value
 		environment key, value
 	}
-	// Docker .env uses MYSQL_*; map to Spring datasource vars for local MariaDB
+	// Docker .env uses MYSQL_*; map to Spring datasource vars
 	if (loaded.MYSQL_PASSWORD && !loaded.SPRING_DATASOURCE_PASSWORD) {
 		environment 'SPRING_DATASOURCE_PASSWORD', loaded.MYSQL_PASSWORD
 	}
@@ -87,7 +87,9 @@ tasks.named('bootRun') {
 		environment 'SPRING_DATASOURCE_USERNAME', loaded.MYSQL_USER
 	}
 	if (loaded.MYSQL_DATABASE && !loaded.SPRING_DATASOURCE_URL) {
+		def host = loaded.MYSQL_HOST ?: 'localhost'
+		def port = loaded.MYSQL_PORT ?: '3306'
 		environment 'SPRING_DATASOURCE_URL',
-				"jdbc:mariadb://localhost:3306/${loaded.MYSQL_DATABASE}?useSSL=false"
+				"jdbc:mariadb://${host}:${port}/${loaded.MYSQL_DATABASE}?useSSL=false"
 	}
 }
