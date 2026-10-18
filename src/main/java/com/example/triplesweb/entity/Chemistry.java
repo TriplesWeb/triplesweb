@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * 멤버 페어 케미(이름·설명·이미지). 정적 JSON/JS 위에 덮어쓰는 DB 오버레이.
+ * 멤버 페어 케미(이름·설명·이미지). 케미명 페이지의 단일 데이터 소스.
  * memberA/memberB는 멤버 인덱스 기준 오름차순으로 정규화한다.
  */
 @Entity
@@ -46,7 +46,7 @@ public class Chemistry {
     @Column(columnDefinition = "TEXT")
     private String linksJson;
 
-    /** true면 표에서 해당 페어 칸을 비움(정적 데이터 포함 숨김) */
+    /** true면 표에서 해당 페어 칸을 비움(소프트 삭제) */
     @Column(nullable = false)
     @Builder.Default
     private boolean deleted = false;

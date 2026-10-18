@@ -12,118 +12,29 @@ tripleS 팬 커뮤니티 웹사이트 (Spring Boot 3.5 + Mustache + MariaDB).
 
 ---
 
-## 케미명 데이터 추가 (GitHub 웹만으로)
+## 케미명 데이터
 
 페이지: `/triples/chemistry`  
-로컬 프로그램·터미널 없이 **GitHub 웹사이트**에서 이미지 업로드 + 두 파일 수정으로 추가할 수 있습니다.  
-`main`에 머지되면 Actions가 배포하며, 케미 이미지도 Pi `uploads/chemistry`로 동기화됩니다.
-
-### 관련 파일
+**데이터 소스는 MariaDB `Chemistry` 테이블**입니다. 프론트는 `GET /api/chemistry`만 사용합니다.
 
 | 역할 | 경로 |
 |------|------|
-| 표(매트릭스) 셀 | [`src/main/resources/static/js/chemistry-matrix.json`](src/main/resources/static/js/chemistry-matrix.json) |
-| 모달 설명·이미지·링크 | [`src/main/resources/static/js/chemistry.js`](src/main/resources/static/js/chemistry.js) 안의 `chemistryDescriptions` |
-| 케미 이미지 | [`uploads/chemistry/chem/S{번호}/케미명.png`](uploads/chemistry/chem/) |
+| 초기 시드(기존 정적 데이터) | [`src/main/resources/data/chemistry-seed.json`](src/main/resources/data/chemistry-seed.json) |
+| API | `/api/chemistry` (`ChemistryApiController`) |
+| 정적 케미 이미지 | [`uploads/chemistry/chem/`](uploads/chemistry/chem/) |
+| 관리자 업로드 이미지 | `uploads/images/chemistry/` |
 
-멤버 순서(행·열 인덱스, 0부터)는 다음과 같습니다.
+앱 기동 시 `ChemistrySeedService`가 시드 파일의 페어 중 **DB에 아직 없는 것만** 삽입합니다.  
+이미 있는 행(관리자 수정·소프트 삭제 포함)은 덮어쓰지 않습니다.
 
-| 인덱스 | S | 이름 | 인덱스 | S | 이름 |
-|--------|---|------|--------|---|------|
-| 0 | S1 | 윤서연 | 12 | S13 | 니엔 |
-| 1 | S2 | 정혜린 | 13 | S14 | 박소현 |
-| 2 | S3 | 이지우 | 14 | S15 | 신위 |
-| 3 | S4 | 김채연 | 15 | S16 | 마유 |
-| 4 | S5 | 김유연 | 16 | S17 | 린 |
-| 5 | S6 | 김수민 | 17 | S18 | 주빈 |
-| 6 | S7 | 김나경 | 18 | S19 | 정하연 |
-| 7 | S8 | 공유빈 | 19 | S20 | 박시온 |
-| 8 | S9 | 카에데 | 20 | S21 | 김채원 |
-| 9 | S10 | 서다현 | 21 | S22 | 설린 |
-| 10 | S11 | 코토네 | 22 | S23 | 서아 |
-| 11 | S12 | 곽연지 | 23 | S24 | 지연 |
+### 추가·수정 방법 (권장)
 
-예: **윤서연 × 정혜린** → 행 `0`, 열 `1` (그리고 대칭으로 행 `1`, 열 `0`).
+1. `.env`에 `CHEMISTRY_ADMIN_PASSWORD`를 설정합니다.
+2. `/triples/chemistry`에서 **관리자** 로그인합니다.
+3. 빈 칸(+)으로 추가하거나, 기존 셀을 열어 수정·삭제합니다.
+4. 이미지는 편집 폼에서 업로드하거나, 기존처럼 `uploads/chemistry/chem/...` 경로를 쓸 수 있습니다.
 
-### 1. 이미지 올리기 (GitHub)
-
-1. 레포에서 [`uploads/chemistry/chem/`](uploads/chemistry/chem/) 로 이동합니다.
-2. 이미지가 들어갈 **S 폴더**를 엽니다.  
-   - 관례: **S 번호가 더 작은 멤버** 폴더에 둡니다. (예: 윤서연·정혜린 → `S1/`)
-3. **Add file → Upload files** 로 PNG를 올립니다.
-4. 파일명은 **케미명과 동일**하게 맞춥니다. (예: `꼬꼬마즈.png`)
-5. Commit 메시지 예: `케미 이미지 추가: 꼬꼬마즈`
-
-폴더가 없으면 **Create new file**로 `uploads/chemistry/chem/S1/.gitkeep` 같은 파일을 만들어 폴더를 만든 뒤, 다시 Upload files를 쓰면 됩니다.
-
-### 2. 표 셀 수정 (`chemistry-matrix.json`)
-
-1. [`chemistry-matrix.json`](src/main/resources/static/js/chemistry-matrix.json) 을 연 뒤 **Edit this file**(연필 아이콘)을 누릅니다.
-2. `matrix`는 `24 × 24` 배열입니다. `matrix[행][열]`을 찾아 `empty`를 케미 셀로 바꿉니다.
-
-```json
-{
-  "type": "chem",
-  "label": "꼬꼬마즈",
-  "person": "윤서연",
-  "key": "윤서연과 정혜린의 케미명",
-  "cross": false
-}
-```
-
-| 필드 | 설명 |
-|------|------|
-| `label` | 표에 보이는 이름. 두 줄이면 `"열일즈\\n햄햄다즈"` |
-| `person` | 모달 데이터를 찾을 때 쓰는 **기준 멤버** (보통 행 쪽 이름) |
-| `key` | `chemistry.js` 설명 객체의 키. 형식: `"멤버A과 멤버B의 케미명"` / `"멤버A와 멤버B의 케미명"` (조사 과/와는 기존 항목과 맞출 것) |
-| `cross` | 특별한 강조가 필요하면 `true`, 보통은 `false` |
-
-3. **대칭 셀**도 같이 채웁니다. (A×B와 B×A)  
-   - B행 셀의 `person`은 B, `key`는 `"B과 A의 케미명"` 형태로 맞춥니다.
-4. Commit 합니다.
-
-대각선(`type: "self"`)은 건드리지 마세요.
-
-### 3. 모달 설명 수정 (`chemistry.js`)
-
-1. [`chemistry.js`](src/main/resources/static/js/chemistry.js) 를 **Edit** 합니다.
-2. `chemistryDescriptions` 안에서 **기준 멤버** 객체에 항목을 추가합니다.
-
-```js
-"윤서연": {
-  // ...기존 항목...
-  "윤서연과 정혜린의 케미명": {
-    description: "케미가 생긴 배경을 적습니다. 강조할 말은 **이렇게** 감싸면 링크/하이라이트가 됩니다. 따옴표 '강조어'도 별도 강조됩니다.",
-    image: "/uploads/chemistry/chem/S1/꼬꼬마즈.png",
-    links: {
-      "이렇게": "https://youtu.be/예시"
-    }
-  }
-}
-```
-
-| 필드 | 설명 |
-|------|------|
-| `description` | 본문. `<br>`은 넣지 않아도 됩니다(화면에서 자동으로 자연 줄바꿈). |
-| `image` | `/uploads/chemistry/chem/S{n}/파일명.png` |
-| `links` | (선택) `description`의 `**텍스트**`와 키가 같으면 하이퍼링크 |
-
-3. 대칭 쪽(예: `"정혜린"` → `"정혜린과 윤서연의 케미명"`)에도 같은 `description` / `image`를 넣거나, 한쪽만 넣고 표를 한쪽 `person`만 쓰도록 통일해도 됩니다. **표 셀의 `person` + `key`가 가리키는 경로에 반드시 데이터가 있어야** 모달이 열립니다.
-4. Commit 합니다. JSON 문법처럼 **쉼표**에 주의하세요(마지막 항목 뒤 쉼표, 중괄호 짝).
-
-### 4. 저장·배포
-
-- **Commit directly to `main`**: 푸시와 함께 Actions 배포가 돌아갑니다.
-- 또는 **Create a new branch → Propose changes → Pull request** 로 리뷰 후 머지해도 됩니다.
-
-배포 후 `/triples/chemistry`에서 셀을 눌러 이미지·설명이 나오는지 확인합니다.
-
-### 자주 하는 실수
-
-- 이미지 경로/파일명과 `image:` 문자열이 다름 (대소문자·확장자·S 폴더 번호)
-- 표 `key`와 `chemistryDescriptions` 키가 一字라도 다름
-- 대칭 셀만 채우고 설명 객체를 안 넣음 → 클릭 시 모달 데이터 없음
-- `chemistry-matrix.json`을 깨진 JSON으로 저장 → 표 전체가 안 뜸 (GitHub에서 Commit 전에 괄호·쉼표 재확인)
+DB에 활성 케미가 하나도 없으면 표 위에 **「등록된 케미명이 없어요」** 안내가 표시됩니다. (멤버 격자·대각선 S 심볼은 그대로 보입니다.)
 
 ## 빠른 시작 (로컬)
 

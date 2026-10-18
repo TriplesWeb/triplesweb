@@ -1,0 +1,129 @@
+package com.example.triplesweb.service;
+
+import com.example.triplesweb.entity.Chemistry;
+import com.example.triplesweb.repository.ChemistryRepository;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import java.io.InputStream;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * classpath {@code data/chemistry-seed.json}의 페어를 DB에 한 번 넣는다.
+ * 이미 있는 (memberA, memberB) 행은 덮어쓰지 않아 관리자 수정·삭제를 보존한다.
+ * {@code chemistry.seed.enabled=false} 이면 건너뛴다.
+ */
+@Slf4j
+@Component
+@Order(50)
+@RequiredArgsConstructor
+public class ChemistrySeedService implements ApplicationRunner {
+
+    private final ChemistryRepository chemistryRepository;
+    private final ObjectMapper objectMapper;
+
+    @Value("${chemistry.seed.enabled:true}")
+    private boolean seedEnabled;
+
+    @Override
+    @Transactional
+    public void run(ApplicationArguments args) {
+        if (!seedEnabled) {
+            log.info("Chemistry seed disabled (chemistry.seed.enabled=false)");
+            return;
+        }
+        ClassPathResource resource = new ClassPathResource("data/chemistry-seed.json");
+        if (!resource.exists()) {
+            log.debug("chemistry seed file missing — skip");
+            return;
+        }
+        try (InputStream in = resource.getInputStream()) {
+            SeedFile seed = objectMapper.readValue(in, SeedFile.class);
+            if (seed == null || seed.getPairs() == null || seed.getPairs().isEmpty()) {
+                return;
+            }
+            int inserted = 0;
+            for (SeedPair pair : seed.getPairs()) {
+                if (!StringUtils.hasText(pair.getMemberA())
+                        || !StringUtils.hasText(pair.getMemberB())
+                        || !StringUtils.hasText(pair.getLabel())) {
+                    continue;
+                }
+                String a = pair.getMemberA().trim();
+                String b = pair.getMemberB().trim();
+                if (chemistryRepository.findByMemberAAndMemberB(a, b).isPresent()) {
+                    continue;
+                }
+                Chemistry entity = Chemistry.builder()
+                        .memberA(a)
+                        .memberB(b)
+                        .label(pair.getLabel())
+                        .description(pair.getDescription() != null ? pair.getDescription() : "")
+                        .imageUrl(StringUtils.hasText(pair.getImageUrl()) ? pair.getImageUrl().trim() : null)
+                        .linksJson(toLinksJson(pair.getLinks()))
+                        .crossFlag(pair.isCrossFlag())
+                        .deleted(false)
+                        .build();
+                chemistryRepository.save(entity);
+                inserted++;
+            }
+            if (inserted > 0) {
+                log.info("Seeded {} chemistry pairs from data/chemistry-seed.json", inserted);
+            }
+        } catch (Exception e) {
+            log.warn("Chemistry seed skipped: {}", e.getMessage());
+        }
+    }
+
+    private String toLinksJson(Map<String, String> links) {
+        if (links == null || links.isEmpty()) {
+            return null;
+        }
+        Map<String, String> cleaned = new LinkedHashMap<>();
+        links.forEach((k, v) -> {
+            if (StringUtils.hasText(k) && StringUtils.hasText(v)) {
+                cleaned.put(k.trim(), v.trim());
+            }
+        });
+        if (cleaned.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(cleaned);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    static class SeedFile {
+        private List<String> members;
+        private List<SeedPair> pairs;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    static class SeedPair {
+        private String memberA;
+        private String memberB;
+        private String label;
+        private String description;
+        private String imageUrl;
+        private Map<String, String> links;
+        private boolean crossFlag;
+    }
+}

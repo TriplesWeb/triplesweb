@@ -12,7 +12,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/chemistry.css?v=30">
+    <link rel="stylesheet" href="/css/chemistry.css?v=31">
 </head>
 <body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
 {{>layout/header}}
@@ -34,6 +34,10 @@
             </div>
             <p class="text-base font-semibold text-[#e3e2e8]">셀을 클릭하면 케미 설명과 이미지를 볼 수 있어요. 멤버 이름은 프로필로 이동합니다.</p>
             <p id="chemAdminHint" class="chem-admin-hint hidden">관리자 모드: 빈 칸을 눌러 추가하고, 케미를 연 뒤 수정할 수 있어요.</p>
+            <div id="chemEmptyState" class="chem-empty-state hidden" role="status" aria-hidden="true">
+                <p class="chem-empty-title">등록된 케미명이 없어요</p>
+                <p class="chem-empty-desc" data-chem-empty-hint>아직 등록된 케미명이 없습니다.</p>
+            </div>
         </div>
 
         <div class="chem-table-wrap" id="chemPairView">
@@ -178,6 +182,6 @@
     </div>
 </div>
 
-<script src="/js/chemistry.js?v=17"></script>
+<script src="/js/chemistry.js?v=18"></script>
 </body>
 </html>

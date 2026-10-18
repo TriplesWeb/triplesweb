@@ -35,6 +35,7 @@ public class ChemistryService {
     @Transactional(readOnly = true)
     public List<ChemistryDto> findAll() {
         return chemistryRepository.findAll().stream()
+                .filter(c -> !c.isDeleted())
                 .sorted(Comparator.comparing(Chemistry::getMemberA).thenComparing(Chemistry::getMemberB))
                 .map(this::toDto)
                 .toList();
