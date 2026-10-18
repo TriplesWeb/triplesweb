@@ -14,6 +14,8 @@ if [ -d "${BUNDLE}" ]; then
   if [ "${BUNDLE_VER}" != "${CURRENT_VER}" ]; then
     echo "[entrypoint] Syncing chemistry assets (${BUNDLE_VER})..."
     cp -a "${BUNDLE}/." "${TARGET}/"
+    # bind-mount 호스트에서도 CI rsync가 덮어쓸 수 있게 쓰기 허용
+    chmod -R a+rwX "${TARGET}"
     echo "${BUNDLE_VER}" > "${MARKER}"
     echo "[entrypoint] Chemistry assets ready."
   fi

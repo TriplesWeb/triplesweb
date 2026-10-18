@@ -96,9 +96,15 @@ jobs:
           set -euo pipefail
           scp docker-compose.yml "pi:${PI_DEPLOY_PATH}/docker-compose.yml"
           # 호스트 볼륨(./uploads)에 정적 에셋 동기화 — 이미지 시드와 이중 보장
-          ssh pi "mkdir -p \"${PI_DEPLOY_PATH}/uploads/chemistry\" \"${PI_DEPLOY_PATH}/uploads/images/objekts\""
-          rsync -az --delete -e ssh uploads/chemistry/ "pi:${PI_DEPLOY_PATH}/uploads/chemistry/"
-          rsync -az -e ssh uploads/images/objekts/ "pi:${PI_DEPLOY_PATH}/uploads/images/objekts/"
+          # 컨테이너(root)가 시드한 파일은 배포 유저가 못 쓰므로, rsync 전에 소유권을 맞춘다.
+          ssh pi "set -euo pipefail
+            mkdir -p \"${PI_DEPLOY_PATH}/uploads/chemistry\" \"${PI_DEPLOY_PATH}/uploads/images/objekts\"
+            docker run --rm -v \"${PI_DEPLOY_PATH}/uploads:/uploads\" alpine:3.20 \
+              chown -R \"\$(id -u):\$(id -g)\" /uploads
+          "
+          # 그룹/소유자 동기화는 건너뜀 (chgrp Operation not permitted 방지)
+          rsync -az --delete --no-owner --no-group -e ssh uploads/chemistry/ "pi:${PI_DEPLOY_PATH}/uploads/chemistry/"
+          rsync -az --no-owner --no-group -e ssh uploads/images/objekts/ "pi:${PI_DEPLOY_PATH}/uploads/images/objekts/"
           ssh pi env \
             PI_DEPLOY_PATH="$PI_DEPLOY_PATH" \
             IMAGE="$IMAGE" \
