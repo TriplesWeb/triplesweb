@@ -35,7 +35,6 @@ public class ChemistryService {
     @Transactional(readOnly = true)
     public List<ChemistryDto> findAll() {
         return chemistryRepository.findAll().stream()
-                .filter(c -> !c.isDeleted())
                 .sorted(Comparator.comparing(Chemistry::getMemberA).thenComparing(Chemistry::getMemberB))
                 .map(this::toDto)
                 .toList();
@@ -57,13 +56,11 @@ public class ChemistryService {
                         .memberA(pair[0])
                         .memberB(pair[1])
                         .crossFlag(false)
-                        .deleted(false)
                         .build());
 
         entity.setLabel(label.trim());
         entity.setDescription(description);
         entity.setLinksJson(normalizeLinksJson(linksJson));
-        entity.setDeleted(false);
 
         if (image != null && !image.isEmpty()) {
             try {
@@ -84,31 +81,19 @@ public class ChemistryService {
 
     @Transactional
     public void delete(Long id) {
-        chemistryRepository.findById(id).ifPresent(this::softDelete);
+        chemistryRepository.findById(id).ifPresent(this::hardDelete);
     }
 
     @Transactional
     public void deleteByMembers(String member1, String member2) {
         String[] pair = normalizePair(member1, member2);
-        Chemistry entity = chemistryRepository.findByMemberAAndMemberB(pair[0], pair[1])
-                .orElseGet(() -> Chemistry.builder()
-                        .memberA(pair[0])
-                        .memberB(pair[1])
-                        .label("")
-                        .description("")
-                        .crossFlag(false)
-                        .build());
-        softDelete(entity);
+        chemistryRepository.findByMemberAAndMemberB(pair[0], pair[1])
+                .ifPresent(this::hardDelete);
     }
 
-    private void softDelete(Chemistry entity) {
+    private void hardDelete(Chemistry entity) {
         deleteManagedImage(entity.getImageUrl());
-        entity.setDeleted(true);
-        entity.setLabel("");
-        entity.setDescription("");
-        entity.setImageUrl(null);
-        entity.setLinksJson(null);
-        chemistryRepository.save(entity);
+        chemistryRepository.delete(entity);
     }
 
     /**
@@ -194,7 +179,6 @@ public class ChemistryService {
                 .description(c.getDescription())
                 .imageUrl(c.getImageUrl())
                 .links(parseLinks(c.getLinksJson()))
-                .deleted(c.isDeleted())
                 .crossFlag(c.isCrossFlag())
                 .build();
     }

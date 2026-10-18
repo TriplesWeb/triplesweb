@@ -19,6 +19,5 @@ public class ChemistryDto {
     private String imageUrl;
     @Builder.Default
     private Map<String, String> links = new LinkedHashMap<>();
-    private boolean deleted;
     private boolean crossFlag;
 }

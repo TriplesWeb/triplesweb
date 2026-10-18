@@ -46,11 +46,6 @@ public class Chemistry {
     @Column(columnDefinition = "TEXT")
     private String linksJson;
 
-    /** true면 표에서 해당 페어 칸을 비움(소프트 삭제) */
-    @Column(nullable = false)
-    @Builder.Default
-    private boolean deleted = false;
-
     @Column(nullable = false)
     @Builder.Default
     private boolean crossFlag = false;

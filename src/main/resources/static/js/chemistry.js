@@ -180,7 +180,7 @@
     }
   }
 
-  /** DB 목록으로 매트릭스·설명 맵을 구성한다. deleted 항목은 무시. */
+  /** DB 목록으로 매트릭스·설명 맵을 구성한다. */
   function buildFromDb(entries) {
     clearDescriptions();
     const matrix = createEmptyMatrix();
@@ -188,7 +188,7 @@
       return matrix;
     }
     entries.forEach((entry) => {
-      if (!entry || entry.deleted) return;
+      if (!entry) return;
       const ia = memberIndex(entry.memberA);
       const ib = memberIndex(entry.memberB);
       if (ia < 0 || ib < 0 || ia === ib) return;

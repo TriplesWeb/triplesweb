@@ -24,8 +24,8 @@ tripleS 팬 커뮤니티 웹사이트 (Spring Boot 3.5 + Mustache + MariaDB).
 | 정적 케미 이미지 | [`uploads/chemistry/chem/`](uploads/chemistry/chem/) |
 | 관리자 업로드 이미지 | `uploads/images/chemistry/` |
 
-앱 기동 시 `ChemistrySeedService`가 시드 파일의 페어 중 **DB에 아직 없는 것만** 삽입합니다.  
-이미 있는 행(관리자 수정·소프트 삭제 포함)은 덮어쓰지 않습니다.
+시드는 기본 비활성입니다. `CHEMISTRY_SEED_ENABLED=true`(또는 `chemistry.seed.enabled=true`)로 기동할 때만  
+없는 페어를 삽입하며, 이미 있는 행은 덮어쓰지 않습니다. 삭제는 DB에서 **하드 삭제**합니다.
 
 ### 추가·수정 방법 (권장)
 
