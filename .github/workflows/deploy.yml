@@ -85,7 +85,7 @@ jobs:
             StrictHostKeyChecking accept-new
           EOF
 
-      - name: Sync compose and deploy
+      - name: Sync compose, chemistry assets, and deploy
         env:
           PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
           IMAGE: ${{ steps.image.outputs.name }}:latest
@@ -95,6 +95,9 @@ jobs:
         run: |
           set -euo pipefail
           scp docker-compose.yml "pi:${PI_DEPLOY_PATH}/docker-compose.yml"
+          # 호스트 볼륨(./uploads)에 케미 에셋 동기화 — 이미지 시드와 이중 보장
+          ssh pi "mkdir -p \"${PI_DEPLOY_PATH}/uploads/chemistry\""
+          rsync -az --delete -e ssh uploads/chemistry/ "pi:${PI_DEPLOY_PATH}/uploads/chemistry/"
           ssh pi env \
             PI_DEPLOY_PATH="$PI_DEPLOY_PATH" \
             IMAGE="$IMAGE" \

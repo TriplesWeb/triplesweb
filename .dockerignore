@@ -5,7 +5,10 @@ build
 .idea
 .vscode
 *.iml
-uploads
+# 업로드 전체는 제외하되, 앱에 번들할 chemistry 정적 자산만 포함
+uploads/**
+!uploads/chemistry/
+!uploads/chemistry/**
 data
 docs
 **/bin
