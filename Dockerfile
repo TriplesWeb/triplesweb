@@ -3,12 +3,14 @@
 FROM eclipse-temurin:17-jdk-jammy AS build
 WORKDIR /workspace
 
+# Dependency layer — rebuilt only when Gradle files change
 COPY gradlew settings.gradle build.gradle ./
 COPY gradle ./gradle
-COPY src ./src
-
 RUN chmod +x gradlew \
-    && ./gradlew bootWar -x test --no-daemon
+    && ./gradlew dependencies --no-daemon || true
+
+COPY src ./src
+RUN ./gradlew bootWar -x test --no-daemon
 
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app

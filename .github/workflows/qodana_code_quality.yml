@@ -7,9 +7,15 @@ name: Qodana
 on:
   workflow_dispatch:
   pull_request:
-  push:
-    branches:
-      - main
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+  # Full scan on main only via workflow_dispatch / schedule if needed
+  # (avoid competing with deploy on every main push)
+
+concurrency:
+  group: qodana-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   qodana:
@@ -28,12 +34,10 @@ jobs:
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
-          # When pr-mode is set to true, Qodana analyzes only the files that have been changed
-          pr-mode: false
+          # Analyze only changed files on PRs
+          pr-mode: true
           use-caches: true
           post-pr-comment: true
           use-annotations: true
-          # Upload Qodana results (SARIF, other artifacts, logs) as an artifact to the job
           upload-result: false
-          # quick-fixes available in Ultimate and Ultimate Plus plans
           push-fixes: 'none'

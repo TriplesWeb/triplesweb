@@ -3,7 +3,16 @@ name: Build and deploy to Raspberry Pi
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - 'qodana.yaml'
+      - '.github/workflows/qodana_code_quality.yml'
   workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -14,7 +23,8 @@ env:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    # Native arm64 — avoids QEMU emulation (largest speedup)
+    runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,9 +32,6 @@ jobs:
       - name: Image name (lowercase)
         id: image
         run: echo "name=${REGISTRY}/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -55,6 +62,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          provenance: false
 
       - name: Connect Tailscale
         uses: tailscale/github-action@v4
