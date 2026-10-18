@@ -12,7 +12,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/chemistry.css?v=20">
+    <link rel="stylesheet" href="/css/chemistry.css?v=24">
 </head>
 <body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
 {{>layout/header}}
@@ -57,12 +57,15 @@
             <span class="material-symbols-outlined">close</span>
         </button>
         <h3 id="chemistryTitle" class="chem-modal-title"></h3>
-        <img id="chemistryImage" class="chem-modal-img" src="" alt="">
+        <figure class="chem-modal-media">
+            <img id="chemistryImage" class="chem-modal-img" src="" alt="">
+            <figcaption id="chemistryCredit" class="chem-modal-credit" hidden></figcaption>
+        </figure>
         <p id="chemistryDescription" class="chem-modal-desc"></p>
         <div id="chemistryLinks" class="chem-modal-links"></div>
     </div>
 </div>
 
-<script src="/js/chemistry.js?v=7"></script>
+<script src="/js/chemistry.js?v=11"></script>
 </body>
 </html>

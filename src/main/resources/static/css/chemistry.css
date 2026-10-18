@@ -313,15 +313,36 @@
     outline: none;
 }
 
-.chem-modal-img {
-    max-width: 72%;
-    max-height: min(58vh, 720px);
+.chem-modal-media {
+    display: block;
+    width: fit-content;
+    max-width: min(72%, 100%);
     margin: 0 auto 1.75rem;
+    padding: 0;
+}
+
+.chem-modal-img {
+    max-width: 100%;
+    max-height: min(58vh, 720px);
+    width: auto;
+    height: auto;
+    margin: 0;
     display: block;
     border-radius: 1rem;
     border: 1px solid rgba(58, 74, 70, 0.35);
     object-fit: contain;
     background: rgba(13, 14, 18, 0.6);
+}
+
+.chem-modal-credit {
+    margin: 0.45rem 0 0;
+    padding: 0;
+    font-size: clamp(12px, 0.95vw, 14px);
+    font-weight: 500;
+    line-height: 1.4;
+    color: #8a9690;
+    letter-spacing: 0.01em;
+    text-align: right;
 }
 
 .chem-modal-desc {
@@ -330,10 +351,9 @@
     font-weight: 600;
     line-height: 1.9;
     color: #e8ecea;
-    margin: 0;
-    max-width: 56rem;
-    margin-left: auto;
-    margin-right: auto;
+    margin: 0 auto;
+    max-width: 100%;
+    box-sizing: border-box;
     word-break: keep-all;
     overflow-wrap: break-word;
 }
@@ -344,6 +364,7 @@
     text-decoration: underline;
     text-underline-offset: 3px;
     text-decoration-thickness: 1.5px;
+    white-space: nowrap;
 }
 
 a.chem-highlight:hover {
@@ -356,14 +377,18 @@ a.chem-highlight:hover {
     color: #ffc857;
     font-weight: 800;
     text-decoration: none;
+    /* '뽀얀즈, 토끼즈'처럼 따옴표 안이 중간에서 끊기지 않게 */
+    white-space: nowrap;
 }
 
 .chem-modal-links {
-    margin-top: 1rem;
+    margin: 1rem auto 0;
     display: flex;
     flex-direction: column;
     gap: 0.45rem;
     align-items: flex-start;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .chem-extra-link {
@@ -397,16 +422,24 @@ a.chem-highlight:hover {
         margin: 0.25rem 1.75rem 1rem;
     }
 
+    .chem-modal-media {
+        max-width: 100%;
+        margin-bottom: 1.1rem;
+    }
+
     .chem-modal-img {
         max-width: 100%;
         max-height: min(40vh, 320px);
-        margin-bottom: 1.1rem;
+    }
+
+    .chem-modal-credit {
+        font-size: 12px;
+        text-align: right;
     }
 
     .chem-modal-desc {
         font-size: clamp(16px, 4.4vw, 19px);
         line-height: 1.75;
-        max-width: none;
     }
 
     .chem-extra-link {

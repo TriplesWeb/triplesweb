@@ -35,7 +35,7 @@
       image: "/uploads/chemistry/chem/S1/뭉망즈.png"
     },
      "윤서연과 김유연의 케미명": {
-      description: "**220901 라이브** 에서 케미명 후보로 '뽀얀즈, 토끼즈'등등이 언급되다가 서연이가 자기도 토끼 하고 싶다고 해서 둘 다 피부가 뽀얗고 토끼니까 두 개를 합쳐 '뽀토즈'를 하자고 하였다.",
+      description: "**220901 라이브**에서 케미명 후보로 '뽀얀즈, 토끼즈' 등등이 언급되다가 서연이가 자기도 토끼하고 싶다고 해서 둘 다 피부가 뽀얗고 토끼니까 두 개를 합쳐 '뽀토즈'를 하자고 하였다.",
       image: "/uploads/chemistry/chem/S1/뽀토즈.png",
       links:{
        "220901 라이브":"https://youtu.be/cCAHv6vLW9Q?si=i2GoDuyXxxv5AuUV"
@@ -247,7 +247,7 @@
 },
 "김유연":{
   "김유연과 윤서연의 케미명": {
-      description: "**220901 라이브** 에서 케미명 후보로 '뽀얀즈, 토끼즈'등등이 언급되다가 서연이가 자기도 토끼 하고 싶다고 해서 둘 다 피부가 뽀얗고 토끼니까 두 개를 합쳐 '뽀토즈'를 하자고 하였다.",
+      description: "**220901 라이브**에서 케미명 후보로 '뽀얀즈, 토끼즈' 등등이 언급되다가 서연이가 자기도 토끼하고 싶다고 해서 둘 다 피부가 뽀얗고 토끼니까 두 개를 합쳐 '뽀토즈'를 하자고 하였다.",
       image: "/uploads/chemistry/chem/S1/뽀토즈.png",
       links:{
        "220901 라이브":"https://youtu.be/cCAHv6vLW9Q?si=i2GoDuyXxxv5AuUV"
@@ -1355,6 +1355,35 @@
     });
   }
 
+  /** description에서 "photo by …" 출처를 분리 (줄바꿈/<br> 정규화 후) */
+  function splitPhotoCredit(rawDescription) {
+    let text = String(rawDescription || "")
+      .replace(/<br\s*\/?>/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const match = text.match(/\s*photo\s+by\.?\s*(@?[^\s]+)\s*$/i);
+    if (!match) {
+      return { description: text, credit: "" };
+    }
+    return {
+      description: text.slice(0, match.index).trim(),
+      credit: match[1].replace(/[.,;]+$/, "").trim(),
+    };
+  }
+
+  /** 설명·링크 가로폭을 렌더된 이미지 너비에 맞춤 */
+  function syncModalContentWidth() {
+    const img = document.getElementById("chemistryImage");
+    const desc = document.getElementById("chemistryDescription");
+    const links = document.getElementById("chemistryLinks");
+    const width =
+      img && img.style.display !== "none" && img.offsetWidth > 0
+        ? Math.round(img.getBoundingClientRect().width) + "px"
+        : "";
+    if (desc) desc.style.width = width;
+    if (links) links.style.width = width;
+  }
+
   function openChemistryName(person, chemistryName) {
     const personData = chemistryDescriptions[person];
     if (!personData || !personData[chemistryName]) {
@@ -1362,29 +1391,45 @@
       return;
     }
     const data = personData[chemistryName];
+    const { description, credit } = splitPhotoCredit(data.description);
 
     // 원본 데이터의 강제 <br> 줄바꿈을 제거해 자연스럽게 줄바꿈
-    let formattedDescription = String(data.description)
-      .replace(/<br\s*\/?>/gi, " ")
-      .replace(/\s+/g, " ")
-      .trim()
+    let formattedDescription = description
       .replace(/\*\*(.*?)\*\*/g, (match, p1) => {
         if (data.links && data.links[p1]) {
           return '<a href="' + data.links[p1] + '" target="_blank" rel="noopener" class="chem-highlight">' + p1 + "</a>";
         }
         return '<span class="chem-highlight">' + p1 + "</span>";
       })
-      // 따옴표('…' / ‘…’)로 감싼 표현 강조
+      // 따옴표('…' / ‘…’)로 감싼 표현 강조 — 따옴표 포함 전체를 한 덩어리로
       .replace(/(['‘])([^'’]+)(['’])/g, (match, open, inner, close) => {
-        return open + '<span class="chem-quote">' + inner + "</span>" + close;
+        return '<span class="chem-quote">' + open + inner + close + "</span>";
       });
 
     document.getElementById("chemistryTitle").innerHTML = formatChemistryTitle(chemistryName);
     const img = document.getElementById("chemistryImage");
-    img.src = data.image || "";
-    img.alt = chemistryName;
-    img.style.display = data.image ? "block" : "none";
+    const media = img && img.closest(".chem-modal-media");
+    const creditEl = document.getElementById("chemistryCredit");
+    const hasImage = Boolean(data.image);
+    if (img) {
+      img.onload = () => syncModalContentWidth();
+      img.src = data.image || "";
+      img.alt = chemistryName;
+      img.style.display = hasImage ? "block" : "none";
+      if (hasImage && img.complete) syncModalContentWidth();
+    }
+    if (media) media.style.display = hasImage ? "block" : "none";
+    if (creditEl) {
+      if (credit && hasImage) {
+        creditEl.textContent = "photo by. " + credit;
+        creditEl.hidden = false;
+      } else {
+        creditEl.textContent = "";
+        creditEl.hidden = true;
+      }
+    }
     document.getElementById("chemistryDescription").innerHTML = formattedDescription;
+    if (!hasImage) syncModalContentWidth();
 
     const linkDiv = document.getElementById("chemistryLinks");
     linkDiv.innerHTML = "";
@@ -1406,6 +1451,7 @@
     modal.classList.remove("hidden");
     modal.classList.add("flex");
     document.body.style.overflow = "hidden";
+    requestAnimationFrame(syncModalContentWidth);
   }
 
   function closeModal() {
@@ -1413,7 +1459,18 @@
     modal.classList.add("hidden");
     modal.classList.remove("flex");
     document.body.style.overflow = "";
+    const desc = document.getElementById("chemistryDescription");
+    const links = document.getElementById("chemistryLinks");
+    if (desc) desc.style.width = "";
+    if (links) links.style.width = "";
   }
+
+  window.addEventListener("resize", () => {
+    const modal = document.getElementById("chemistryModal");
+    if (modal && !modal.classList.contains("hidden")) {
+      syncModalContentWidth();
+    }
+  });
 
   let pairMatrix = null;
   let currentMode = "pair";
