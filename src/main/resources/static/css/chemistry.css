@@ -398,15 +398,6 @@ a.chem-highlight:hover {
     text-decoration-thickness: 2px;
 }
 
-/* 따옴표 강조 — 링크(시안+밑줄)와 구분: 따뜻한 앰버 + bold, 밑줄 없음 */
-.chem-quote {
-    color: #ffc857;
-    font-weight: 800;
-    text-decoration: none;
-    /* '뽀얀즈, 토끼즈'처럼 따옴표 안이 중간에서 끊기지 않게 */
-    white-space: nowrap;
-}
-
 .chem-modal-links {
     margin: 1rem auto 0;
     display: flex;

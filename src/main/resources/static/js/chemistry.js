@@ -571,9 +571,6 @@
         }
         return '<span class="chem-highlight">' + p1 + "</span>";
       })
-      .replace(/(['‘])([^'’]+)(['’])/g, (match, open, inner, close) => {
-        return '<span class="chem-quote">' + open + inner + close + "</span>";
-      })
       .replace(/\n/g, "<br>");
 
     document.getElementById("chemistryTitle").innerHTML = formatChemistryTitle(chemistryName);
@@ -888,12 +885,6 @@
     document.querySelectorAll(".chem-login-close").forEach((btn) => {
       btn.addEventListener("click", closeLoginModal);
     });
-    const loginModal = document.getElementById("chemistryLoginModal");
-    if (loginModal) {
-      loginModal.addEventListener("click", (e) => {
-        if (e.target === loginModal) closeLoginModal();
-      });
-    }
 
     const editBtn = document.getElementById("chemEditBtn");
     if (editBtn) {
@@ -1038,15 +1029,6 @@
         closeEditModal();
       });
     });
-    const editModal = document.getElementById("chemistryEditModal");
-    if (editModal) {
-      editModal.addEventListener("click", (e) => {
-        if (e.target === editModal) {
-          closeColorPalette();
-          closeEditModal();
-        }
-      });
-    }
 
     const editImageInput = document.getElementById("chemEditImage");
     if (editImageInput) {
@@ -1181,12 +1163,6 @@
     const closeBtn = document.querySelector("#chemistryModal .chem-close");
     if (closeBtn) closeBtn.addEventListener("click", closeModal);
 
-    const modal = document.getElementById("chemistryModal");
-    if (modal) {
-      modal.addEventListener("click", (e) => {
-        if (e.target === modal) closeModal();
-      });
-    }
     document.addEventListener("keydown", (e) => {
       if (e.key !== "Escape") return;
       closeEditModal();
