@@ -162,6 +162,23 @@
         </div>
         <div class="objekt-filter-bar relative">
 
+            <div class="objekt-filter relative" id="member-dropdown">
+                <span class="objekt-filter-label">멤버</span>
+                <!-- 드롭다운 토글 버튼 -->
+                <button type="button" onclick="toggleDropdown('member-menu')" class="objekt-filter-control flex items-center justify-between gap-3 cursor-pointer">
+                    <span id="member-label" class="truncate">전체 멤버</span>
+                    <span class="material-symbols-outlined text-xs text-black">arrow_drop_down</span>
+                </button>
+
+                <!-- 체크박스 목록 메뉴 -->
+                <div id="member-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 w-full rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
+                    <label class="flex items-center gap-2 px-2.5 py-2 hover:bg-[#1a1d28] rounded-md cursor-pointer text-sm text-white">
+                        <input type="checkbox" value="all" class="rounded member-checkbox" checked onchange="handleMemberAll(this)"><span>전체 멤버</span>
+                    </label>
+                    <div id="member-options"></div>
+                </div>
+            </div>
+
             <!-- 1. 시즌 다중 선택 필터 (너비 확장 및 독립 스크립트 연동) -->
             <div class="objekt-filter relative" id="season-dropdown">
                 <span class="objekt-filter-label">시즌</span>
@@ -192,6 +209,7 @@
                     </select>
                 </label>
             </div>
+
 
             <!-- 3. 클래스 다중 선택 필터 (너비 확장 및 독립 스크립트 연동) -->
             <div class="objekt-filter relative" id="class-dropdown">
@@ -299,6 +317,7 @@
     }
 
     buildOptions('season-options', uniqueSorted(cards.map(c => c.dataset.season)), 'season-checkbox', 'handleSeasonItem');
+    buildOptions('member-options', uniqueSorted(cards.map(c => c.dataset.member)), 'member-checkbox', 'handleMemberItem');
     buildOptions('class-options', uniqueSorted(cards.map(c => c.dataset.class)), 'class-checkbox', 'handleClassItem');
 
     window.toggleDropdown = function(id) {
@@ -313,6 +332,15 @@
         const all = document.querySelector('.season-checkbox[value="all"]');
         const chosen = [...document.querySelectorAll('.season-checkbox:not([value="all"]):checked')];
         all.checked = chosen.length === 0; updateLabel('season'); applyFilters();
+    };
+    window.handleMemberAll = function(all) {
+        document.querySelectorAll('.member-checkbox').forEach(cb => { if (cb !== all) cb.checked = false; });
+        updateLabel('member'); applyFilters();
+    };
+    window.handleMemberItem = function() {
+        const all = document.querySelector('.member-checkbox[value="all"]');
+        const chosen = [...document.querySelectorAll('.member-checkbox:not([value="all"]):checked')];
+        all.checked = chosen.length === 0; updateLabel('member'); applyFilters();
     };
     window.handleClassAll = function(all) {
         document.querySelectorAll('.class-checkbox').forEach(cb => { if (cb !== all) cb.checked = false; });
@@ -333,8 +361,9 @@
         else target.textContent = `${chosen[0].nextElementSibling.textContent.trim()} 외 ${chosen.length - 1}개`;
     }
     window.addEventListener('click', e => {
-        if (!e.target.closest('#season-dropdown') && !e.target.closest('#class-dropdown')) {
+        if (!e.target.closest('#season-dropdown') && !e.target.closest('#class-dropdown') && !e.target.closest('#member-dropdown') ) {
             document.getElementById('season-menu')?.classList.add('hidden');
+            document.getElementById('member-menu')?.classList.add('hidden');
             document.getElementById('class-menu')?.classList.add('hidden');
         }
     });
@@ -342,6 +371,7 @@
     function applyFilters() {
         const query = normalize(searchInput.value);
         const seasons = [...document.querySelectorAll('.season-checkbox:not([value="all"]):checked')].map(x => x.value);
+        const members = [...document.querySelectorAll('.member-checkbox:not([value="all"]):checked')].map(x => x.value);
         const classes = [...document.querySelectorAll('.class-checkbox:not([value="all"]):checked')].map(x => x.value);
         const selectedNumber = normalize(kindSelect.value);
 
@@ -349,6 +379,10 @@
             const seasonOk =
                     !seasons.length ||
                     seasons.includes(normalize(card.dataset.season));
+
+            const memberOk =
+                    !members.length ||
+                    members.includes(normalize(card.dataset.member));
 
             const classOk =
                     !classes.length ||
@@ -362,7 +396,7 @@
                     !query ||
                     normalize(card.dataset.search).includes(query);
 
-            return seasonOk && classOk && numberOk && searchOk;
+            return seasonOk && memberOk && classOk && numberOk && searchOk;
         });
 
         const sort = sortSelect.value;
@@ -388,8 +422,8 @@
     sortSelect.addEventListener('change', applyFilters);
     document.getElementById('objekt-reset').addEventListener('click', () => {
         searchInput.value = ''; kindSelect.value = 'all'; sortSelect.value = 'latest';
-        document.querySelectorAll('.season-checkbox,.class-checkbox').forEach(cb => cb.checked = cb.value === 'all');
-        updateLabel('season'); updateLabel('class'); applyFilters();
+        document.querySelectorAll('.season-checkbox,.member-checkbox,.class-checkbox').forEach(cb => cb.checked = cb.value === 'all');
+        updateLabel('season'); updateLabel('member'); updateLabel('class'); applyFilters();
     });
 
     // 카드 이미지를 클릭하면 앞면/뒷면을 전환한다.
