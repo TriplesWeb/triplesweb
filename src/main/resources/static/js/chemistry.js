@@ -455,11 +455,8 @@
     return sanitizeChemistryHtml(editor.innerHTML);
   }
 
-  const CHEM_COLOR_PALETTE = [
-    "#ffffff", "#e3e2e8", "#b9cac4", "#00f5d4", "#22aeff",
-    "#9200ff", "#fff800", "#98f21d", "#db0c74", "#ff428a",
-    "#ff953f", "#ff6b6b", "#ac62b7", "#52d9bb", "#ffab62"
-  ];
+  /** 편집기 기본 색상 = S1~S24 멤버 상징색 (MEMBER_COLORS 순서) */
+  const CHEM_COLOR_PALETTE = MEMBER_COLORS;
 
   function clampColorChannel(n) {
     const v = Number(n);
@@ -927,13 +924,21 @@
     const swatchBox = document.getElementById("chemColorSwatches");
     if (swatchBox && !swatchBox.dataset.ready) {
       swatchBox.dataset.ready = "1";
-      CHEM_COLOR_PALETTE.forEach((color) => {
+      CHEM_COLOR_PALETTE.forEach((color, index) => {
+        const sLabel = "S" + (index + 1);
+        const memberName = MEMBERS[index] || "";
         const swatch = document.createElement("button");
         swatch.type = "button";
         swatch.className = "chem-color-swatch";
         swatch.style.background = color;
-        swatch.title = color;
-        swatch.setAttribute("aria-label", color);
+        swatch.title = sLabel + (memberName ? " " + memberName : "") + " (" + color + ")";
+        swatch.setAttribute("aria-label", sLabel + (memberName ? " " + memberName : "") + " 상징색");
+        swatch.dataset.s = String(index + 1);
+        const rgb = hexToRgb(color);
+        if (rgb) {
+          const luma = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
+          swatch.classList.toggle("is-dark", luma < 0.55);
+        }
         swatch.addEventListener("click", () => applyTextColor(color));
         swatchBox.appendChild(swatch);
       });
