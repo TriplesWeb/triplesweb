@@ -46,3 +46,6 @@ out/
 
 ### Upload sidecars (원본 파일명만 기록, 배포 불필요) ###
 uploads/**/*.orig
+
+### Docker entrypoint chemistry bundle marker ###
+uploads/**/.bundle-version

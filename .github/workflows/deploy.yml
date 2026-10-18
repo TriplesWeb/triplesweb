@@ -95,22 +95,23 @@ jobs:
         run: |
           set -euo pipefail
           scp docker-compose.yml "pi:${PI_DEPLOY_PATH}/docker-compose.yml"
-          # 호스트 볼륨(./uploads)에 정적 에셋 동기화 — 이미지 시드와 이중 보장
-          # 컨테이너(root)가 시드한 파일은 배포 유저가 못 쓰므로, rsync 전에 소유권을 맞춘다.
+          # uploads/ 전체 동기화
+          # 1) 컨테이너(root)가 만든 파일은 배포 유저가 못 지우므로 rsync 전 chown
+          # 2) rsync는 소유자/그룹을 보내지 않음 (--no-owner --no-group) → 권한 충돌 방지
+          # 3) rsync 후 a+rwX 로 열어 컨테이너·다음 배포가 모두 쓸 수 있게 함
           ssh pi "set -euo pipefail
-            mkdir -p \"${PI_DEPLOY_PATH}/uploads/chemistry\" \
-              \"${PI_DEPLOY_PATH}/uploads/images/objekts\" \
-              \"${PI_DEPLOY_PATH}/uploads/images/chemistry\"
+            mkdir -p \"${PI_DEPLOY_PATH}/uploads\"
             docker run --rm -v \"${PI_DEPLOY_PATH}/uploads:/uploads\" alpine:3.20 \
               chown -R \"\$(id -u):\$(id -g)\" /uploads
           "
-          # 그룹/소유자 동기화는 건너뜀 (chgrp Operation not permitted 방지)
-          rsync -az --delete --no-owner --no-group -e ssh uploads/chemistry/ "pi:${PI_DEPLOY_PATH}/uploads/chemistry/"
-          rsync -az --no-owner --no-group -e ssh uploads/images/objekts/ "pi:${PI_DEPLOY_PATH}/uploads/images/objekts/"
-          # 로컬에서 올린 케미 관리 이미지 → 서버 볼륨 (git에 포함된 파일 기준)
-          if [ -d uploads/images/chemistry ]; then
-            rsync -az --no-owner --no-group -e ssh uploads/images/chemistry/ "pi:${PI_DEPLOY_PATH}/uploads/images/chemistry/"
-          fi
+          rsync -az --delete --no-owner --no-group \
+            --exclude '.DS_Store' \
+            --exclude '*.orig' \
+            --exclude '**/.DS_Store' \
+            --exclude '**/*.orig' \
+            -e ssh \
+            uploads/ "pi:${PI_DEPLOY_PATH}/uploads/"
+          ssh pi "chmod -R a+rwX \"${PI_DEPLOY_PATH}/uploads\""
           ssh pi env \
             PI_DEPLOY_PATH="$PI_DEPLOY_PATH" \
             IMAGE="$IMAGE" \

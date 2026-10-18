@@ -1,7 +1,7 @@
 #!/bin/sh
-# 로컬 bootRun으로 올린 케미 이미지를 커밋에 자동 포함 → push/deploy 시 서버로 rsync됨
+# 로컬 uploads 변경분을 커밋에 자동 포함 → push 시 Actions가 서버 uploads/ 전체 rsync
 set -e
-CHEM_DIR="uploads/images/chemistry"
-if [ -d "$CHEM_DIR" ]; then
-  git add -A -- "$CHEM_DIR"
+UPLOADS_DIR="uploads"
+if [ -d "$UPLOADS_DIR" ]; then
+  git add -A -- "$UPLOADS_DIR"
 fi

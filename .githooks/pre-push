@@ -1,15 +1,15 @@
 #!/bin/sh
-# push 전에 커밋되지 않은 케미 업로드가 있으면 막아서, 서버에 파일만 빠지는 일을 방지한다.
+# push 전에 커밋되지 않은 uploads가 있으면 막아서, 서버에 파일만 빠지는 일을 방지한다.
 set -e
-CHEM_DIR="uploads/images/chemistry"
-if [ ! -d "$CHEM_DIR" ]; then
+UPLOADS_DIR="uploads"
+if [ ! -d "$UPLOADS_DIR" ]; then
   exit 0
 fi
 
-untracked="$(git ls-files --others --exclude-standard -- "$CHEM_DIR" || true)"
+untracked="$(git ls-files --others --exclude-standard -- "$UPLOADS_DIR" || true)"
 if [ -n "$untracked" ]; then
-  echo "error: 커밋되지 않은 케미 업로드 파일이 있습니다. 커밋 후 다시 push 하세요:" >&2
+  echo "error: 커밋되지 않은 uploads 파일이 있습니다. 커밋 후 다시 push 하세요:" >&2
   echo "$untracked" >&2
-  echo "(pre-commit 훅이 켜져 있으면 다음 커밋 때 자동으로 포함됩니다: git config core.hooksPath .githooks)" >&2
+  echo "(hooks: ./scripts/setup-git-hooks.sh → pre-commit이 자동 git add)" >&2
   exit 1
 fi
