@@ -178,6 +178,14 @@ body {
 }
 
 #navbar button,
-#navbar a {
+#navbar a,
+#mobile-menu button,
+#mobile-menu a {
     font-family: 'Inter', 'Noto Sans KR', -apple-system, sans-serif !important;
+}
+
+/* 모바일 메뉴 열린 상태에서도 sticky 헤더 아래에 자연스럽게 붙도록 */
+#mobile-menu {
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
 }

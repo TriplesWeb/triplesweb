@@ -126,7 +126,80 @@
     <!-- 로그인 기능 비활성화 — 비로그인 메뉴 숨김 -->
 {{^member}}
     {{/member}}
+
+    <!-- 모바일 햄버거 버튼 -->
+    <button type="button" id="mobile-menu-btn" class="lg:hidden flex items-center justify-center w-10 h-10 rounded-xl border border-[#3a4a46]/50 bg-[#191b22] text-[#e3e2e8] hover:border-[#00f5d4] hover:text-[#00f5d4] transition-colors cursor-pointer" aria-label="메뉴 열기" aria-expanded="false" aria-controls="mobile-menu">
+        <span class="material-symbols-outlined text-xl" id="mobile-menu-icon">menu</span>
+    </button>
         </div>
+    </div>
+
+    <!-- 모바일 메뉴 패널 -->
+    <div id="mobile-menu" class="lg:hidden hidden border-t border-[#3a4a46]/30 bg-[#16181f]/95 backdrop-blur-md">
+        <nav class="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-1 text-sm">
+            <div class="relative flex items-center mb-2 sm:hidden">
+                <input class="w-full bg-[#0d0e12]/80 border border-[#3a4a46]/50 rounded-full px-3 py-2 pr-10 text-xs text-[#e3e2e8] placeholder-[#b9cac4]/50 focus:outline-none focus:border-[#00f5d4]" type="text" placeholder="검색어를 입력하세요" />
+                <button type="button" class="absolute right-1 p-1 bg-[#00f5d4] text-[#0d0e12] rounded-full flex items-center justify-center border-0 cursor-pointer" title="검색">
+                    <span class="material-symbols-outlined text-sm">search</span>
+                </button>
+            </div>
+
+            <div class="mobile-nav-group">
+                <button type="button" class="mobile-nav-toggle w-full flex items-center justify-between px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] bg-transparent border-0 cursor-pointer rounded-lg hover:bg-white/5">
+                    <span>ABOUT 트리플에스</span>
+                    <span class="material-symbols-outlined text-sm transition-transform">expand_more</span>
+                </button>
+                <div class="mobile-nav-panel hidden pl-3 pb-1 flex flex-col gap-0.5">
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/triples/artist">그룹 소개</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/triples/album">발매 앨범</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/triples/unit">역대 유닛</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/triples/chemistry">멤버간 케미</a>
+                </div>
+            </div>
+
+            <div class="mobile-nav-group">
+                <button type="button" class="mobile-nav-toggle w-full flex items-center justify-between px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] bg-transparent border-0 cursor-pointer rounded-lg hover:bg-white/5">
+                    <span>게시판</span>
+                    <span class="material-symbols-outlined text-sm transition-transform">expand_more</span>
+                </button>
+                <div class="mobile-nav-panel hidden pl-3 pb-1 flex flex-col gap-0.5">
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/article/trade">교환</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/article/sell">거래</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/article/info">정보</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/article/notice">공지</a>
+                </div>
+            </div>
+
+            <div class="mobile-nav-group">
+                <button type="button" class="mobile-nav-toggle w-full flex items-center justify-between px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] bg-transparent border-0 cursor-pointer rounded-lg hover:bg-white/5">
+                    <span>코스모</span>
+                    <span class="material-symbols-outlined text-sm transition-transform">expand_more</span>
+                </button>
+                <div class="mobile-nav-panel hidden pl-3 pb-1 flex flex-col gap-0.5">
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/cosmo/objekt">오브젝트</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/cosmo/gravity">역대 그래비티</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/cosmo/event">역대 공연 및 이벤트</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/cosmo/update">코스모 업데이트 현황</a>
+                </div>
+            </div>
+
+            <div class="mobile-nav-group">
+                <button type="button" class="mobile-nav-toggle w-full flex items-center justify-between px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] bg-transparent border-0 cursor-pointer rounded-lg hover:bg-white/5">
+                    <span>미디어</span>
+                    <span class="material-symbols-outlined text-sm transition-transform">expand_more</span>
+                </button>
+                <div class="mobile-nav-panel hidden pl-3 pb-1 flex flex-col gap-0.5">
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/archive/image_archive">사진 아카이브</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/archive/video_archive">영상 아카이브</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/media">공식 미디어</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/sns">소셜 미디어</a>
+                </div>
+            </div>
+
+            <a class="px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/schedule">일정</a>
+            <a class="px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/shop">굿즈샵</a>
+            <a class="px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/sitemap">전체 게시판</a>
+        </nav>
     </div>
 </header>
 
@@ -140,10 +213,44 @@
             </div>
         {{/msg}}
 
-        <!-- 스크롤 시 상단 헤더 보이기/숨기기 스크립트 -->
+        <!-- 스크롤 시 상단 헤더 보이기/숨기기 + 모바일 메뉴 스크립트 -->
         <script>
             let lastScrollTop = 0;
             const header = document.getElementById("top-header");
+            const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+            const mobileMenu = document.getElementById("mobile-menu");
+            const mobileMenuIcon = document.getElementById("mobile-menu-icon");
+
+            function setMobileMenuOpen(open) {
+                if (!mobileMenu || !mobileMenuBtn || !mobileMenuIcon) return;
+                mobileMenu.classList.toggle("hidden", !open);
+                mobileMenuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+                mobileMenuBtn.setAttribute("aria-label", open ? "메뉴 닫기" : "메뉴 열기");
+                mobileMenuIcon.textContent = open ? "close" : "menu";
+            }
+
+            if (mobileMenuBtn && mobileMenu) {
+                mobileMenuBtn.addEventListener("click", function () {
+                    const willOpen = mobileMenu.classList.contains("hidden");
+                    setMobileMenuOpen(willOpen);
+                });
+
+                mobileMenu.querySelectorAll(".mobile-nav-toggle").forEach(function (btn) {
+                    btn.addEventListener("click", function () {
+                        const group = btn.closest(".mobile-nav-group");
+                        const panel = group && group.querySelector(".mobile-nav-panel");
+                        const icon = btn.querySelector(".material-symbols-outlined");
+                        if (!panel) return;
+                        const willOpen = panel.classList.contains("hidden");
+                        panel.classList.toggle("hidden", !willOpen);
+                        if (icon) icon.style.transform = willOpen ? "rotate(180deg)" : "";
+                    });
+                });
+            }
+
+            window.addEventListener("resize", function () {
+                if (window.innerWidth >= 1024) setMobileMenuOpen(false);
+            });
 
             window.addEventListener("scroll", function () {
                 let currentScroll = window.pageYOffset || document.documentElement.scrollTop;
@@ -151,6 +258,7 @@
                 if (currentScroll > lastScrollTop && currentScroll > 100) {
                     // 아래로 스크롤 시 헤더 올리기
                     header.style.transform = "translateY(-100%)";
+                    setMobileMenuOpen(false);
                 } else {
                     // 위로 스크롤 시 헤더 다시 내리기
                     header.style.transform = "translateY(0)";
