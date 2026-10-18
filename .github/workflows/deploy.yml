@@ -95,9 +95,10 @@ jobs:
         run: |
           set -euo pipefail
           scp docker-compose.yml "pi:${PI_DEPLOY_PATH}/docker-compose.yml"
-          # 호스트 볼륨(./uploads)에 케미 에셋 동기화 — 이미지 시드와 이중 보장
-          ssh pi "mkdir -p \"${PI_DEPLOY_PATH}/uploads/chemistry\""
+          # 호스트 볼륨(./uploads)에 정적 에셋 동기화 — 이미지 시드와 이중 보장
+          ssh pi "mkdir -p \"${PI_DEPLOY_PATH}/uploads/chemistry\" \"${PI_DEPLOY_PATH}/uploads/images/objekts\""
           rsync -az --delete -e ssh uploads/chemistry/ "pi:${PI_DEPLOY_PATH}/uploads/chemistry/"
+          rsync -az -e ssh uploads/images/objekts/ "pi:${PI_DEPLOY_PATH}/uploads/images/objekts/"
           ssh pi env \
             PI_DEPLOY_PATH="$PI_DEPLOY_PATH" \
             IMAGE="$IMAGE" \
