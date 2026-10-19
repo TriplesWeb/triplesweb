@@ -114,20 +114,81 @@ public class SchemaImproveRunner implements ApplicationRunner {
         }
     }
 
-    private void ensureChemistryFk(String chemTable, String artistTable, String artistPk,
-                                   String name, String column) {
-        if (constraintExists(chemTable, name)) {
+    private void ensureChemistryFk(
+            String chemTable,
+            String artistTable,
+            String artistPk,
+            String baseName,
+            String column
+    ) {
+        // 이미 동일한 컬럼에 올바른 외래 키가 있다면 추가하지 않는다.
+        if (foreignKeyExists(chemTable, column, artistTable, artistPk)) {
+            log.info(
+                    "Chemistry FK already exists: {}.{} -> {}.{}",
+                    chemTable, column, artistTable, artistPk
+            );
             return;
         }
-        try {
-            em.createNativeQuery(
-                    "ALTER TABLE " + chemTable + " ADD CONSTRAINT " + name
-                            + " FOREIGN KEY (" + column + ") REFERENCES " + artistTable + " (" + artistPk + ")"
-            ).executeUpdate();
-        } catch (RuntimeException e) {
-            log.debug("Chemistry FK {}: {}", name, e.getMessage());
+
+        // MariaDB 스키마 전체에서 사용되지 않는 제약 조건 이름을 찾는다.
+        String constraintName = baseName;
+        int suffix = 2;
+
+        while (constraintNameExists(constraintName)) {
+            constraintName = baseName + "_" + suffix++;
         }
+
+        // 이름 충돌을 피한 후 외래 키를 추가한다.
+        em.createNativeQuery(
+                "ALTER TABLE `" + chemTable + "` ADD CONSTRAINT `" + constraintName + "`"
+                        + " FOREIGN KEY (`" + column + "`)"
+                        + " REFERENCES `" + artistTable + "` (`" + artistPk + "`)"
+        ).executeUpdate();
+
+        log.info(
+                "Added Chemistry FK: {} on {}.{} -> {}.{}",
+                constraintName, chemTable, column, artistTable, artistPk
+        );
     }
+
+    private boolean constraintNameExists(String name) {
+        Number count = (Number) em.createNativeQuery("""
+            SELECT COUNT(*)
+            FROM information_schema.TABLE_CONSTRAINTS
+            WHERE CONSTRAINT_SCHEMA = DATABASE()
+              AND CONSTRAINT_NAME = :name
+            """)
+                .setParameter("name", name)
+                .getSingleResult();
+
+        return count.longValue() > 0;
+    }
+
+    private boolean foreignKeyExists(
+            String table,
+            String column,
+            String referencedTable,
+            String referencedColumn
+    ) {
+        Number count = (Number) em.createNativeQuery("""
+            SELECT COUNT(*)
+            FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = :tableName
+              AND COLUMN_NAME = :columnName
+              AND REFERENCED_TABLE_SCHEMA = DATABASE()
+              AND REFERENCED_TABLE_NAME = :referencedTable
+              AND REFERENCED_COLUMN_NAME = :referencedColumn
+            """)
+                .setParameter("tableName", table)
+                .setParameter("columnName", column)
+                .setParameter("referencedTable", referencedTable)
+                .setParameter("referencedColumn", referencedColumn)
+                .getSingleResult();
+
+        return count.longValue() > 0;
+    }
+
 
     private void ensureUnitMemberUnique() {
         String um = firstExistingTable("unit_member", "UnitMember");
