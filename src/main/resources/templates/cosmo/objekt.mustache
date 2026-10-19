@@ -84,9 +84,9 @@
         }
         .objekt-search {
             display: flex;
-            flex: 1 1 280px;
+            flex: 1 1 250px;
             min-width: 220px;
-            max-width: 440px;
+            max-width: none;
             min-height: 52px;
             align-items: center;
             gap: 10px;
@@ -96,6 +96,35 @@
             border-radius: 12px;
             background: rgba(10,12,18,.72);
             transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+        }
+        .objekt-search-button {
+            display: inline-flex;
+            flex: 0 0 auto;
+            min-height: 52px;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 0 20px;
+            border: 1px solid rgba(0,245,212,.42);
+            border-radius: 12px;
+            background: #00e8cb;
+            color: #071513;
+            font-size: 13px;
+            font-weight: 750;
+            letter-spacing: .01em;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0,232,203,.12);
+            transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+        }
+        .objekt-search-button:hover {
+            background: #39f7df;
+            box-shadow: 0 6px 20px rgba(0,232,203,.2);
+            transform: translateY(-1px);
+        }
+        .objekt-search-button:active { transform: translateY(0); }
+        .objekt-search-button:focus-visible {
+            outline: 2px solid #00f5d4;
+            outline-offset: 3px;
         }
         .objekt-search:focus-within {
             border-color: #00d9bd;
@@ -136,6 +165,7 @@
             .objekt-filter select.objekt-filter-control { min-width: 104px; max-width: none; }
             .objekt-filter select.objekt-sort-select { min-width: 132px; }
             .objekt-search { flex: 1 1 100%; max-width: none; margin-left: 0; }
+            .objekt-search-button { flex: 1 1 100%; }
             .objekt-card-grid { gap: 10px; }
         }
         @media (max-width: 420px) {
@@ -160,6 +190,8 @@
                 Objekt Archive
             </span>
         </div>
+        <form id="objekt-search-form" action="/cosmo/objekt" method="get">
+        <input type="hidden" name="page" value="0">
         <div class="objekt-filter-bar relative">
 
             <div class="objekt-filter relative" id="member-dropdown">
@@ -173,9 +205,15 @@
                 <!-- 체크박스 목록 메뉴 -->
                 <div id="member-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 w-full rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
                     <label class="flex items-center gap-2 px-2.5 py-2 hover:bg-[#1a1d28] rounded-md cursor-pointer text-sm text-white">
-                        <input type="checkbox" value="all" class="rounded member-checkbox" checked onchange="handleMemberAll(this)"><span>전체 멤버</span>
+                        <input type="checkbox" value="all" class="rounded member-checkbox" checked><span>전체 멤버</span>
                     </label>
-                    <div id="member-options"></div>
+                    <div id="member-options">
+                        {{#memberOptions}}
+                        <label class="flex items-center gap-2 px-2.5 py-2 hover:bg-[#1a1d28] rounded-md cursor-pointer text-sm text-white">
+                            <input type="checkbox" name="member" value="{{.}}" class="rounded member-checkbox"><span>{{.}}</span>
+                        </label>
+                        {{/memberOptions}}
+                    </div>
                 </div>
             </div>
 
@@ -191,9 +229,15 @@
                 <!-- 체크박스 목록 메뉴 -->
                 <div id="season-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 w-full rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
                     <label class="flex items-center gap-2 px-2.5 py-2 hover:bg-[#1a1d28] rounded-md cursor-pointer text-sm text-white">
-                        <input type="checkbox" value="all" class="rounded season-checkbox" checked onchange="handleSeasonAll(this)"><span>전체 시즌</span>
+                        <input type="checkbox" value="all" class="rounded season-checkbox" checked><span>전체 시즌</span>
                     </label>
-                    <div id="season-options"></div>
+                    <div id="season-options">
+                        {{#seasonOptions}}
+                        <label class="flex items-center gap-2 px-2.5 py-2 hover:bg-[#1a1d28] rounded-md cursor-pointer text-sm text-white">
+                            <input type="checkbox" name="season" value="{{.}}" class="rounded season-checkbox"><span>{{.}}</span>
+                        </label>
+                        {{/seasonOptions}}
+                    </div>
                 </div>
             </div>
 
@@ -201,7 +245,7 @@
             <div class="objekt-filter">
                 <span class="objekt-filter-label">종류</span>
                 <label class="w-full">
-                    <select class="objekt-filter-control objekt-kind-select cursor-pointer" aria-label="옵젝 종류 필터">
+                    <select name="kind" class="objekt-filter-control objekt-kind-select cursor-pointer" aria-label="옵젝 종류 필터">
                         <option value="all">all</option>
                         {{#objektNumbers}}
                         <option value="{{.}}">{{.}}</option>
@@ -223,9 +267,15 @@
                 <!-- 체크박스 목록 메뉴 -->
                 <div id="class-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 w-full rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
                     <label class="flex items-center gap-2 px-2.5 py-2 hover:bg-[#1a1d28] rounded-md cursor-pointer text-sm text-white">
-                        <input type="checkbox" value="all" class="rounded class-checkbox" checked onchange="handleClassAll(this)"><span>전체 클래스</span>
+                        <input type="checkbox" value="all" class="rounded class-checkbox" checked><span>전체 클래스</span>
                     </label>
-                    <div id="class-options"></div>
+                    <div id="class-options">
+                        {{#classOptions}}
+                        <label class="flex items-center gap-2 px-2.5 py-2 hover:bg-[#1a1d28] rounded-md cursor-pointer text-sm text-white">
+                            <input type="checkbox" name="class" value="{{.}}" class="rounded class-checkbox"><span>{{.}}</span>
+                        </label>
+                        {{/classOptions}}
+                    </div>
                 </div>
             </div>
 
@@ -233,7 +283,7 @@
             <div class="objekt-filter">
                 <span class="objekt-filter-label">정렬</span>
                 <label class="w-full">
-                    <select class="objekt-filter-control objekt-sort-select cursor-pointer">
+                    <select name="sort" class="objekt-filter-control objekt-sort-select cursor-pointer">
                         <option value="latest">최신순</option>
                         <option value="oldest">오래된순</option>
                         <option value="number_low">번호 낮은순</option>
@@ -250,16 +300,20 @@
             <div class="objekt-search">
                 <span class="material-symbols-outlined text-[#00d9bd] text-xl pointer-events-none" aria-hidden="true">search</span>
                 <label class="w-full min-w-0">
-                    <input type="search" placeholder="멤버, 시즌, 오브젝트 검색..." aria-label="오브젝트 검색" class="objekt-search-input">
+                    <input type="search" name="search" value="{{searchQuery}}" placeholder="전체 오브젝트에서 검색..." aria-label="전체 오브젝트 검색" autocomplete="off" class="objekt-search-input">
                 </label>
-                <span class="hidden lg:inline-flex shrink-0 rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] text-slate-500">SEARCH</span>
             </div>
+            <button type="submit" id="objekt-search-submit" class="objekt-search-button">
+                <span class="material-symbols-outlined text-lg" aria-hidden="true">search</span>
+                검색하기
+            </button>
 
         </div>
+        </form>
     </section>
 
     <div class="mt-5 flex items-center justify-between gap-3 px-1">
-        <p class="text-sm text-slate-400">총 <strong id="objekt-visible-count" class="text-[#00f5d4]">{{objektCount}}</strong>개 오브젝트</p>
+        <p class="text-sm text-slate-400">검색 결과 <strong class="text-[#00f5d4]">{{objektCount}}</strong>개 <span class="text-slate-500">(전체 {{objektAllCount}}개 중 · 현재 페이지 {{objektPageCount}}개 표시)</span></p>
         <button type="button" id="objekt-reset" class="text-xs text-slate-400 hover:text-[#00f5d4] transition">필터 초기화</button>
     </div>
     {{#objektError}}
@@ -287,149 +341,84 @@
         {{/objekts}}
     </div>
     <nav class="flex items-center justify-center gap-4 py-6" aria-label="Objekt 페이지 탐색">
-        {{#hasPreviousPage}}<a class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-white hover:border-teal-400" href="/cosmo/objekt?page={{previousPage}}">이전</a>{{/hasPreviousPage}}
-        <span class="text-sm text-slate-400">{{objektPageDisplay}} / {{objektTotalPages}} 페이지 · 총 {{objektCount}}개</span>
-        {{#hasNextPage}}<a class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-white hover:border-teal-400" href="/cosmo/objekt?page={{nextPage}}">다음</a>{{/hasNextPage}}
+        {{#hasPreviousPage}}<a class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-white hover:border-teal-400" href="{{previousPageUrl}}">이전</a>{{/hasPreviousPage}}
+        <span class="text-sm text-slate-400">{{objektPageDisplay}} / {{objektTotalPages}} 페이지 · 검색 결과 {{objektCount}}개 / 전체 {{objektAllCount}}개</span>
+        {{#hasNextPage}}<a class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-white hover:border-teal-400" href="{{nextPageUrl}}">다음</a>{{/hasNextPage}}
     </nav>
 </main>
 </body>
 <script>
 (() => {
-    const cards = Array.from(document.querySelectorAll('.objekt-item'));
+    const form = document.getElementById('objekt-search-form');
     const searchInput = document.querySelector('.objekt-search-input');
     const kindSelect = document.querySelector('.objekt-kind-select');
     const sortSelect = document.querySelector('.objekt-sort-select');
-    const grid = document.getElementById('objekt-card-grid');
-    const count = document.getElementById('objekt-visible-count');
+    const cards = Array.from(document.querySelectorAll('.objekt-item'));
     const empty = document.getElementById('objekt-empty');
 
-    function normalize(value) { return (value || '').toString().trim().toLowerCase(); }
-    function uniqueSorted(values) { return [...new Set(values.filter(Boolean))].sort((a,b) => a.localeCompare(b, 'en', {numeric:true})); }
-    function optionLabel(value) { return value.replace(/(\d+)/g, ' $1').replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim(); }
+    // 필터 옵션은 현재 50개 카드가 아니라 서버가 전달한 전체 데이터 기준이다.
+    // URL의 선택값을 복원해 페이지 이동 후에도 검색 조건을 유지한다.
+    const params = new URLSearchParams(window.location.search);
+    kindSelect.value = params.get('kind') || 'all';
+    sortSelect.value = params.get('sort') || 'latest';
 
-    function buildOptions(containerId, values, className, handlerName) {
-        const container = document.getElementById(containerId);
-        container.innerHTML = '';
-        values.forEach(value => {
-            const label = document.createElement('label');
-            label.className = 'flex items-center gap-2 px-2.5 py-2 hover:bg-[#1a1d28] rounded-md cursor-pointer text-sm text-white';
-            const input = document.createElement('input');
-            input.type = 'checkbox'; input.value = normalize(value); input.className = `rounded ${className}`;
-            input.addEventListener('change', () => window[handlerName]());
-            const span = document.createElement('span'); span.textContent = optionLabel(value);
-            label.append(input, span); container.appendChild(label);
-        });
-    }
-
-    buildOptions('season-options', uniqueSorted(cards.map(c => c.dataset.season)), 'season-checkbox', 'handleSeasonItem');
-    buildOptions('member-options', uniqueSorted(cards.map(c => c.dataset.member)), 'member-checkbox', 'handleMemberItem');
-    buildOptions('class-options', uniqueSorted(cards.map(c => c.dataset.class)), 'class-checkbox', 'handleClassItem');
-
-    window.toggleDropdown = function(id) {
-        document.querySelectorAll('[id$="-menu"]').forEach(menu => { if (menu.id !== id) menu.classList.add('hidden'); });
-        const menu = document.getElementById(id); if (menu) menu.classList.toggle('hidden');
-    };
-    window.handleSeasonAll = function(all) {
-        document.querySelectorAll('.season-checkbox').forEach(cb => { if (cb !== all) cb.checked = false; });
-        updateLabel('season'); applyFilters();
-    };
-    window.handleSeasonItem = function() {
-        const all = document.querySelector('.season-checkbox[value="all"]');
-        const chosen = [...document.querySelectorAll('.season-checkbox:not([value="all"]):checked')];
-        all.checked = chosen.length === 0; updateLabel('season'); applyFilters();
-    };
-    window.handleMemberAll = function(all) {
-        document.querySelectorAll('.member-checkbox').forEach(cb => { if (cb !== all) cb.checked = false; });
-        updateLabel('member'); applyFilters();
-    };
-    window.handleMemberItem = function() {
-        const all = document.querySelector('.member-checkbox[value="all"]');
-        const chosen = [...document.querySelectorAll('.member-checkbox:not([value="all"]):checked')];
-        all.checked = chosen.length === 0; updateLabel('member'); applyFilters();
-    };
-    window.handleClassAll = function(all) {
-        document.querySelectorAll('.class-checkbox').forEach(cb => { if (cb !== all) cb.checked = false; });
-        updateLabel('class'); applyFilters();
-    };
-    window.handleClassItem = function() {
-        const all = document.querySelector('.class-checkbox[value="all"]');
-        const chosen = [...document.querySelectorAll('.class-checkbox:not([value="all"]):checked')];
-        all.checked = chosen.length === 0; updateLabel('class'); applyFilters();
-    };
     function updateLabel(type) {
         const checks = [...document.querySelectorAll(`.${type}-checkbox:checked`)];
         const all = document.querySelector(`.${type}-checkbox[value="all"]`);
         const target = document.getElementById(`${type}-label`);
         const chosen = checks.filter(cb => cb !== all);
-        if (!chosen.length || all.checked) target.textContent = 'all';
+        if (!chosen.length || (all && all.checked)) target.textContent = type === 'member' ? '전체 멤버' : 'all';
         else if (chosen.length === 1) target.textContent = chosen[0].nextElementSibling.textContent.trim();
         else target.textContent = `${chosen[0].nextElementSibling.textContent.trim()} 외 ${chosen.length - 1}개`;
     }
+
+    ['member', 'season', 'class'].forEach(type => {
+        const selected = params.getAll(type).map(v => v.toLocaleLowerCase());
+        const boxes = [...document.querySelectorAll(`.${type}-checkbox`)];
+        boxes.forEach(cb => {
+            if (cb.value === 'all') return;
+            cb.checked = selected.includes(cb.value.toLocaleLowerCase());
+        });
+        const all = document.querySelector(`.${type}-checkbox[value="all"]`);
+        if (all) all.checked = selected.length === 0;
+        boxes.forEach(cb => cb.addEventListener('change', () => {
+            if (cb.value === 'all' && cb.checked) {
+                boxes.forEach(other => { if (other !== cb) other.checked = false; });
+            } else if (cb.value !== 'all' && cb.checked && all) {
+                all.checked = false;
+            }
+            const chosen = boxes.some(other => other.value !== 'all' && other.checked);
+            if (all && !chosen) all.checked = true;
+            updateLabel(type);
+        }));
+        updateLabel(type);
+    });
+
+    window.toggleDropdown = function(id) {
+        document.querySelectorAll('[id$="-menu"]').forEach(menu => {
+            if (menu.id !== id) menu.classList.add('hidden');
+        });
+        document.getElementById(id)?.classList.toggle('hidden');
+    };
+
     window.addEventListener('click', e => {
-        if (!e.target.closest('#season-dropdown') && !e.target.closest('#class-dropdown') && !e.target.closest('#member-dropdown') ) {
-            document.getElementById('season-menu')?.classList.add('hidden');
-            document.getElementById('member-menu')?.classList.add('hidden');
-            document.getElementById('class-menu')?.classList.add('hidden');
+        if (!e.target.closest('#season-dropdown') && !e.target.closest('#class-dropdown') && !e.target.closest('#member-dropdown')) {
+            ['season-menu', 'member-menu', 'class-menu'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
         }
     });
 
-    function applyFilters() {
-        const query = normalize(searchInput.value);
-        const seasons = [...document.querySelectorAll('.season-checkbox:not([value="all"]):checked')].map(x => x.value);
-        const members = [...document.querySelectorAll('.member-checkbox:not([value="all"]):checked')].map(x => x.value);
-        const classes = [...document.querySelectorAll('.class-checkbox:not([value="all"]):checked')].map(x => x.value);
-        const selectedNumber = normalize(kindSelect.value);
-
-        let visible = cards.filter(card => {
-            const seasonOk =
-                    !seasons.length ||
-                    seasons.includes(normalize(card.dataset.season));
-
-            const memberOk =
-                    !members.length ||
-                    members.includes(normalize(card.dataset.member));
-
-            const classOk =
-                    !classes.length ||
-                    classes.includes(normalize(card.dataset.class));
-
-            const numberOk =
-                    selectedNumber === 'all' ||
-                    normalize(card.dataset.collectionNo) === selectedNumber;
-
-            const searchOk =
-                    !query ||
-                    normalize(card.dataset.search).includes(query);
-
-            return seasonOk && memberOk && classOk && numberOk && searchOk;
-        });
-
-        const sort = sortSelect.value;
-        visible.sort((a,b) => {
-            if (sort === 'oldest') return (a.dataset.date || '').localeCompare(b.dataset.date || '');
-            if (sort === 'number_low') return Number(a.dataset.number) - Number(b.dataset.number);
-            if (sort === 'number_high') return Number(b.dataset.number) - Number(a.dataset.number);
-            if (sort === 'first_member') return (a.dataset.member || '').localeCompare(b.dataset.member || '');
-            if (sort === 'last_member') return (b.dataset.member || '').localeCompare(a.dataset.member || '');
-            if (sort === 'mint_low') return Number(a.dataset.number) - Number(b.dataset.number);
-            if (sort === 'mint_high') return Number(b.dataset.number) - Number(a.dataset.number);
-            return (b.dataset.date || '').localeCompare(a.dataset.date || '');
-        });
-        visible.forEach(card => grid.appendChild(card));
-        cards.filter(card => !visible.includes(card)).forEach(card => card.hidden = true);
-        visible.forEach(card => card.hidden = false);
-        count.textContent = visible.length.toLocaleString();
-        empty.classList.toggle('hidden', visible.length > 0);
-    }
-
-    searchInput.addEventListener('input', applyFilters);
-    kindSelect.addEventListener('change', applyFilters);
-    sortSelect.addEventListener('change', applyFilters);
-    document.getElementById('objekt-reset').addEventListener('click', () => {
-        searchInput.value = ''; kindSelect.value = 'all'; sortSelect.value = 'latest';
-        document.querySelectorAll('.season-checkbox,.member-checkbox,.class-checkbox').forEach(cb => cb.checked = cb.value === 'all');
-        updateLabel('season'); updateLabel('member'); updateLabel('class'); applyFilters();
+    // 버튼을 눌렀을 때만 서버로 검색한다. 페이지 이동 시 필터 조건은 URL에 유지된다.
+    form.addEventListener('submit', () => {
+        const page = form.querySelector('input[name="page"]');
+        if (page) page.value = '0';
     });
+
+    document.getElementById('objekt-reset').addEventListener('click', () => {
+        window.location.href = '/cosmo/objekt?page=0';
+    });
+
+    // 현재 페이지에 카드가 없으면 서버 검색 결과가 0개인 상태다.
+    if (empty) empty.classList.toggle('hidden', cards.length > 0);
 
     // 카드 이미지를 클릭하면 앞면/뒷면을 전환한다.
     document.querySelectorAll('.objekt-image-button').forEach(button => button.addEventListener('click', () => {
@@ -441,7 +430,6 @@
         image.dataset.showingBack = showingBack ? 'false' : 'true';
         hint.textContent = showingBack ? '앞면' : '뒷면';
     }));
-    applyFilters();
 })();
 </script>
 </html>
