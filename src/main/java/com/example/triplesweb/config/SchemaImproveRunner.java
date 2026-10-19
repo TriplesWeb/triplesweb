@@ -100,8 +100,8 @@ public class SchemaImproveRunner implements ApplicationRunner {
                                 + " ADD CONSTRAINT uk_chemistry_pair UNIQUE (artist_a_id, artist_b_id)"
                 ).executeUpdate();
             }
-            ensureChemistryFk("fk_chemistry_artist_a", "artist_a_id");
-            ensureChemistryFk("fk_chemistry_artist_b", "artist_b_id");
+            ensureChemistryFk("chemistry", "artist", "artist_id", "fk_chemistry_artist_a", "artist_a_id");
+            ensureChemistryFk("chemistry", "artist", "artist_id", "fk_chemistry_artist_b", "artist_b_id");
         }
     }
 
