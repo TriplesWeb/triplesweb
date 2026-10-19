@@ -11,6 +11,7 @@ import java.util.List;
  * 앨범 엔티티. {@link Unit} N:1, {@link Track} 1:N.
  */
 @Entity
+@Table(name = "`Album`")
 @Getter
 @Setter
 @ToString(exclude = {"unit","tracks"})

@@ -7,7 +7,8 @@ import com.example.triplesweb.repository.UnitRepository;
 import com.example.triplesweb.util.TrackInfo;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -18,15 +19,15 @@ import java.util.List;
  */
 @Component
 @RequiredArgsConstructor
-public class DataInitializer implements CommandLineRunner {
+public class DataInitializer implements ApplicationRunner {
 
     private final ArtistRepository artistrepository;
     private final AlbumRepository albumrepository;
     private final UnitRepository unitrepository;
 
-    @Override
+
     @Transactional // 지연 로딩 및 Cascade 연관관계 저장을 위해 트랜잭션 보장
-    public void run(String... args) throws Exception {
+    public void run(ApplicationArguments args) throws Exception {
 
         if (albumrepository.count() > 0) {
             return;
