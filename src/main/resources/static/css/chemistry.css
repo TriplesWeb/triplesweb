@@ -3,6 +3,10 @@
    뷰포트에 맞춰 표 전체 노출 → 스크롤 최소화
    ========================================================================== */
 
+:root {
+    --chem-white: #ffffff;
+}
+
 .chem-page-main {
     width: 100%;
     max-width: none;
@@ -43,7 +47,7 @@
     border: none;
     border-radius: 9999px;
     background: transparent;
-    color: #e8e8ec;
+    color: var(--chem-white);
     cursor: pointer;
     line-height: 0;
     flex-shrink: 0;
@@ -98,7 +102,7 @@
     gap: 0.4rem;
     font-size: 0.82rem;
     font-weight: 600;
-    color: #e3e2e8;
+    color: var(--chem-white);
 }
 
 .chem-legend-list li {
@@ -116,7 +120,7 @@
 }
 
 .chem-legend-swatch--none {
-    background: #ffffff;
+    background: var(--chem-white);
 }
 
 .chem-legend-swatch--undecided {
@@ -156,7 +160,7 @@
 }
 
 .chem-mode-btn:hover {
-    color: #e3e2e8;
+    color: var(--chem-white);
 }
 
 .chem-mode-btn.is-active {
@@ -217,7 +221,7 @@
     margin: 0;
     font-size: clamp(1.15rem, 1.5vw, 1.4rem);
     font-weight: 800;
-    color: #e3e2e8;
+    color: var(--chem-white);
 }
 
 .chem-trio-desc {
@@ -320,7 +324,7 @@
 }
 
 .chem-member-name {
-    color: #ffffff;
+    color: var(--chem-white);
     font-weight: 900;
     font-size: clamp(15px, 0.95vw, 25px);
     line-height: 1.2;
@@ -354,7 +358,7 @@
     word-break: keep-all;
     overflow-wrap: anywhere;
     transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
-    color: #ffffff !important;
+    color: var(--chem-white) !important;
     background: #3a4254;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
@@ -372,7 +376,7 @@
 
 .chem-table td.chem-cell.chem-cross {
     /* 레거시 — labelTone 우선 */
-    color: #ffffff !important;
+    color: var(--chem-white) !important;
     background: #3a4254;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
     font-weight: 900;
@@ -453,7 +457,7 @@
     font-family: 'Sora', 'Inter', sans-serif;
     font-size: clamp(1.5rem, 2.2vw, 2.15rem);
     font-weight: 800;
-    color: #ffffff;
+    color: var(--chem-white);
     margin: 0.5rem 2.5rem 1.5rem;
     line-height: 1.35;
 }
@@ -508,7 +512,7 @@
     font-size: clamp(19px, 1.45vw, 26px);
     font-weight: 600;
     line-height: 1.9;
-    color: #e8ecea;
+    color: var(--chem-white);
     margin: 0 auto;
     max-width: 100%;
     box-sizing: border-box;
@@ -665,7 +669,7 @@ a.chem-highlight:hover {
 }
 
 .chem-admin-btn:hover {
-    color: #e3e2e8;
+    color: var(--chem-white);
     border-color: rgba(0, 245, 212, 0.45);
 }
 
@@ -828,7 +832,7 @@ a.chem-highlight:hover {
 }
 
 .chem-tone-option--none {
-    color: #ffffff;
+    color: var(--chem-white);
 }
 
 .chem-tone-option--undecided {
@@ -845,7 +849,7 @@ a.chem-highlight:hover {
 
 .chem-tone-option:has(input:checked),
 .chem-tone-option:focus-within {
-    border-color: #fff;
+    border-color: var(--chem-white);
     box-shadow: 0 0 0 2px rgba(0, 245, 212, 0.45);
 }
 
@@ -866,7 +870,7 @@ a.chem-highlight:hover {
     border-radius: 0.65rem;
     border: 1px solid rgba(58, 74, 70, 0.55);
     background: #0d0e12;
-    color: #e3e2e8;
+    color: var(--chem-white);
     padding: 0.65rem 0.75rem;
     font-size: 0.95rem;
 }
@@ -925,7 +929,7 @@ a.chem-highlight:hover {
     border-radius: 0.45rem;
     border: 1px solid rgba(58, 74, 70, 0.55);
     background: #12141a;
-    color: #e3e2e8;
+    color: var(--chem-white);
     cursor: pointer;
     font-size: 0.9rem;
     line-height: 1;
@@ -998,11 +1002,75 @@ a.chem-highlight:hover {
     color: #b9cac4;
 }
 
+.chem-color-pages {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.chem-color-page-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+}
+
+.chem-color-page-head .chem-color-palette-title {
+    margin: 0;
+    min-width: 0;
+}
+
+.chem-color-page-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    flex-shrink: 0;
+}
+
+.chem-color-page-btn {
+    appearance: none;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border-radius: 0.35rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #0d0e12;
+    color: var(--chem-white);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.chem-color-page-btn:hover:not(:disabled) {
+    border-color: rgba(0, 245, 212, 0.45);
+    color: #00f5d4;
+}
+
+.chem-color-page-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.chem-color-page-indicator {
+    min-width: 2.4rem;
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    color: #8a9a94;
+}
+
+.chem-color-page.hidden,
+.chem-color-page[hidden] {
+    display: none;
+}
+
 .chem-color-swatches {
     display: grid;
     grid-template-columns: repeat(6, 1.85rem);
     gap: 0.4rem;
     justify-content: space-between;
+    min-height: 8.2rem;
 }
 
 .chem-color-swatch {
@@ -1039,44 +1107,26 @@ a.chem-highlight:hover {
 .chem-color-swatch:hover,
 .chem-color-swatch:focus-visible {
     outline: none;
-    border-color: #fff;
+    border-color: var(--chem-white);
     transform: scale(1.08);
 }
 
-.chem-color-recent-block {
-    display: flex;
-    flex-direction: column;
-    gap: 0.45rem;
-    padding-top: 0.45rem;
-    border-top: 1px solid rgba(58, 74, 70, 0.4);
+.chem-color-recent-empty {
+    margin: 0;
+    padding: 1.4rem 0.4rem;
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #8a9a94;
+    line-height: 1.4;
 }
 
-.chem-color-recent-block.hidden {
+.chem-color-recent-empty.hidden {
     display: none;
 }
 
-.chem-color-recent {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-}
-
-.chem-color-recent-swatch {
-    appearance: none;
-    width: 1.55rem;
-    height: 1.55rem;
-    border-radius: 9999px;
-    border: 2px solid rgba(255, 255, 255, 0.18);
-    cursor: pointer;
-    padding: 0;
-    flex-shrink: 0;
-}
-
-.chem-color-recent-swatch:hover,
-.chem-color-recent-swatch:focus-visible {
-    outline: none;
-    border-color: #fff;
-    transform: scale(1.08);
+.chem-color-recent .chem-color-swatch::after {
+    content: none;
 }
 
 .chem-color-custom {
@@ -1112,7 +1162,7 @@ a.chem-highlight:hover {
     border-radius: 0.45rem;
     border: 1px solid rgba(58, 74, 70, 0.55);
     background: #0d0e12;
-    color: #e3e2e8;
+    color: var(--chem-white);
     padding: 0 0.55rem;
     font-family: "JetBrains Mono", ui-monospace, monospace;
     font-size: 0.82rem;
@@ -1139,7 +1189,7 @@ a.chem-highlight:hover {
     border-radius: 0.4rem;
     border: 1px solid rgba(58, 74, 70, 0.55);
     background: #0d0e12;
-    color: #e3e2e8;
+    color: var(--chem-white);
     padding: 0 0.35rem;
     font-size: 0.8rem;
 }
@@ -1237,7 +1287,7 @@ a.chem-highlight:hover {
 }
 
 .chem-btn-danger:hover {
-    color: #fff !important;
+    color: var(--chem-white) !important;
     background: rgba(255, 80, 80, 0.28) !important;
 }
 
@@ -1287,7 +1337,7 @@ a.chem-highlight:hover {
     border-radius: 0.55rem;
     border: 1px solid rgba(58, 74, 70, 0.55);
     background: #0d0e12;
-    color: #e3e2e8;
+    color: var(--chem-white);
     padding: 0.5rem 0.65rem;
     font-size: 0.875rem;
 }
@@ -1305,7 +1355,7 @@ a.chem-highlight:hover {
 
 .chem-edit-link-remove:hover {
     background: rgba(255, 80, 80, 0.28);
-    color: #fff;
+    color: var(--chem-white);
 }
 
 @media (max-width: 640px) {

@@ -521,7 +521,12 @@
   /** 편집기 기본 색상 = S1~S24 멤버 상징색 (MEMBER_COLORS 순서) */
   const CHEM_COLOR_PALETTE = MEMBER_COLORS;
   const CHEM_RECENT_COLORS_KEY = "chemRecentTextColors";
-  const CHEM_RECENT_COLORS_MAX = 8;
+  const CHEM_RECENT_COLORS_MAX = 24;
+  const CHEM_COLOR_PAGE_TITLES = {
+    1: "멤버 상징색 (S1–S24)",
+    2: "최근 사용"
+  };
+  let chemColorPage = 1;
 
   function clampColorChannel(n) {
     const v = Number(n);
@@ -619,24 +624,55 @@
     renderRecentColors();
   }
 
+  function setColorPalettePage(page) {
+    const next = page === 2 ? 2 : 1;
+    chemColorPage = next;
+    const page1 = document.getElementById("chemColorPage1");
+    const page2 = document.getElementById("chemColorPage2");
+    const title = document.getElementById("chemColorPageTitle");
+    const indicator = document.getElementById("chemColorPageIndicator");
+    const prev = document.getElementById("chemColorPagePrev");
+    const nextBtn = document.getElementById("chemColorPageNext");
+    if (page1) {
+      page1.classList.toggle("hidden", next !== 1);
+      page1.hidden = next !== 1;
+    }
+    if (page2) {
+      page2.classList.toggle("hidden", next !== 2);
+      page2.hidden = next !== 2;
+    }
+    if (title) title.textContent = CHEM_COLOR_PAGE_TITLES[next] || "";
+    if (indicator) indicator.textContent = next + " / 2";
+    if (prev) prev.disabled = next === 1;
+    if (nextBtn) nextBtn.disabled = next === 2;
+    if (next === 2) renderRecentColors();
+  }
+
   function renderRecentColors() {
-    const block = document.getElementById("chemColorRecentBlock");
     const box = document.getElementById("chemColorRecent");
-    if (!block || !box) return;
+    const empty = document.getElementById("chemColorRecentEmpty");
+    if (!box) return;
     const colors = loadRecentColors();
     box.innerHTML = "";
     if (!colors.length) {
-      block.classList.add("hidden");
+      box.classList.add("hidden");
+      if (empty) empty.classList.remove("hidden");
       return;
     }
-    block.classList.remove("hidden");
+    box.classList.remove("hidden");
+    if (empty) empty.classList.add("hidden");
     colors.forEach((color) => {
       const swatch = document.createElement("button");
       swatch.type = "button";
-      swatch.className = "chem-color-recent-swatch";
+      swatch.className = "chem-color-swatch";
       swatch.style.background = color;
       swatch.title = color;
       swatch.setAttribute("aria-label", "최근 색상 " + color);
+      const rgb = hexToRgb(color);
+      if (rgb) {
+        const luma = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
+        swatch.classList.toggle("is-dark", luma < 0.55);
+      }
       swatch.addEventListener("click", () => applyTextColor(color));
       box.appendChild(swatch);
     });
@@ -1115,7 +1151,25 @@
     }
 
     syncColorInputs("#00f5d4");
+    setColorPalettePage(1);
     renderRecentColors();
+
+    const pagePrev = document.getElementById("chemColorPagePrev");
+    const pageNext = document.getElementById("chemColorPageNext");
+    if (pagePrev) {
+      pagePrev.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setColorPalettePage(chemColorPage - 1);
+      });
+    }
+    if (pageNext) {
+      pageNext.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setColorPalettePage(chemColorPage + 1);
+      });
+    }
 
     const colorPicker = document.getElementById("chemColorPicker");
     if (colorPicker) {
@@ -1187,6 +1241,7 @@
         colorToggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
         if (willOpen) {
           syncColorInputs((document.getElementById("chemColorBar") || {}).style.background || "#00f5d4");
+          setColorPalettePage(1);
           renderRecentColors();
         }
       });
