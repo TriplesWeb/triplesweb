@@ -1,0 +1,19 @@
+[33mcommit fc5732f28864983867ea61962676d04584ca4d0f[m
+Author: 룬룬 <ww998686@gmail.com>
+Date:   Mon Oct 19 01:06:58 2026 +0900
+
+    케미 데이터를 정적 JSON/JS 대신 DB 시드로 단일화한다.
+    
+    Co-authored-by: Cursor <cursoragent@cursor.com>
+
+ README.md                                          |  117 [32m+[m[31m-[m
+ .../com/example/triplesweb/entity/Chemistry.java   |    4 [32m+[m[31m-[m
+ .../triplesweb/service/ChemistrySeedService.java   |  129 [32m++[m
+ .../triplesweb/service/ChemistryService.java       |    1 [32m+[m
+ src/main/resources/data/chemistry-seed.json        | 1246 [32m++++++++++++++++++[m
+ src/main/resources/static/css/chemistry.css        |   26 [32m+[m
+ src/main/resources/static/js/chemistry-matrix.json |    1 [31m-[m
+ src/main/resources/static/js/chemistry.js          | 1343 [32m++[m[31m------------------[m
+ .../resources/templates/triples/chemistry.mustache |    8 [32m+[m[31m-[m
+ .../2dd42f755a394d7682d3337c19dac823.png           |  Bin [31m0[m -> [32m511677[m bytes
+ 10 files changed, 1504 insertions(+), 1371 deletions(-)
