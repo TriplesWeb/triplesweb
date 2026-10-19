@@ -661,6 +661,17 @@
     }
   }
 
+  function setLoginPasswordVisible(visible) {
+    const input = document.getElementById("chemLoginPassword");
+    const toggle = document.getElementById("chemLoginPasswordToggle");
+    if (!input || !toggle) return;
+    input.type = visible ? "text" : "password";
+    toggle.setAttribute("aria-pressed", visible ? "true" : "false");
+    toggle.setAttribute("aria-label", visible ? "비밀번호 숨기기" : "비밀번호 보기");
+    const icon = toggle.querySelector(".material-symbols-outlined");
+    if (icon) icon.textContent = visible ? "visibility_off" : "visibility";
+  }
+
   function openLoginModal() {
     const modal = document.getElementById("chemistryLoginModal");
     const err = document.getElementById("chemLoginError");
@@ -670,6 +681,7 @@
       err.textContent = "";
     }
     if (input) input.value = "";
+    setLoginPasswordVisible(false);
     if (modal) {
       modal.classList.remove("hidden");
       modal.classList.add("flex");
@@ -894,6 +906,15 @@
             err.hidden = false;
           }
         }
+      });
+    }
+
+    const passwordToggle = document.getElementById("chemLoginPasswordToggle");
+    if (passwordToggle) {
+      passwordToggle.addEventListener("click", () => {
+        const input = document.getElementById("chemLoginPassword");
+        const visible = input && input.type === "password";
+        setLoginPasswordVisible(Boolean(visible));
       });
     }
 
