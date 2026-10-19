@@ -115,20 +115,54 @@ public class SchemaImproveRunner implements ApplicationRunner {
         return null;
     }
 
-    private void ensureChemistryFk(String name, String column) {
-        if (foreignKeyExistsOnColumn("chemistry", column)) {
+    private void ensureChemistryFk(
+            String chemTable,
+            String artistTable,
+            String artistPk,
+            String baseName,
+            String column
+    ) {
+        if (foreignKeyExists(chemTable, column, artistTable, artistPk)) {
+            log.info("Chemistry FK already exists: {}.{} -> {}.{}", chemTable, column, artistTable, artistPk);
             return;
         }
-        String constraintName = name;
+
+        String constraintName = baseName;
         int suffix = 2;
-        while (constraintExists("chemistry", constraintName) || constraintNameExists(constraintName)) {
-            constraintName = name + "_" + suffix++;
+        while (constraintNameExists(constraintName)) {
+            constraintName = baseName + "_" + suffix++;
         }
+
         em.createNativeQuery(
-                "ALTER TABLE chemistry ADD CONSTRAINT `" + constraintName + "`"
-                        + " FOREIGN KEY (`" + column + "`) REFERENCES artist (artist_id)"
+                "ALTER TABLE `" + chemTable + "` ADD CONSTRAINT `" + constraintName + "`"
+                        + " FOREIGN KEY (`" + column + "`)"
+                        + " REFERENCES `" + artistTable + "` (`" + artistPk + "`)"
         ).executeUpdate();
-        log.info("Added FK {} on chemistry.{}", constraintName, column);
+        log.info("Added Chemistry FK: {} on {}.{} -> {}.{}", constraintName, chemTable, column, artistTable, artistPk);
+    }
+
+    private boolean foreignKeyExists(
+            String table,
+            String column,
+            String referencedTable,
+            String referencedColumn
+    ) {
+        Number count = (Number) em.createNativeQuery("""
+                SELECT COUNT(*)
+                FROM information_schema.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = :tableName
+                  AND COLUMN_NAME = :columnName
+                  AND REFERENCED_TABLE_SCHEMA = DATABASE()
+                  AND REFERENCED_TABLE_NAME = :referencedTable
+                  AND REFERENCED_COLUMN_NAME = :referencedColumn
+                """)
+                .setParameter("tableName", table)
+                .setParameter("columnName", column)
+                .setParameter("referencedTable", referencedTable)
+                .setParameter("referencedColumn", referencedColumn)
+                .getSingleResult();
+        return count.longValue() > 0;
     }
 
     private boolean constraintNameExists(String name) {
