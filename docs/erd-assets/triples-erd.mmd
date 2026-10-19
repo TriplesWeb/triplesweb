@@ -1,0 +1,149 @@
+%%{init: {"theme": "neutral", "er": {"fontSize": 12}} }%%
+erDiagram
+    artist ||--o{ unit_member : "artist_id"
+    unit ||--o{ unit_member : "unit_id"
+    unit ||--o{ unit : "parent_unit_id"
+    unit ||--o{ album : "unit_id"
+    album ||--o{ track : "album_id"
+    artist ||--o{ chemistry : "artist_a_id"
+    artist ||--o{ chemistry : "artist_b_id"
+
+    article ||--o{ comment : "article_id"
+    article ||--o{ article_file : "article_id"
+    shop ||--o{ shop_image : "shop_id"
+
+    artist {
+        bigint artist_id PK
+        varchar name UK
+        varchar eng_name UK
+        varchar nationality
+        varchar birth_date
+        varchar birth_place
+        varchar debut_date
+        varchar profile_image
+        varchar color
+    }
+
+    unit {
+        bigint unit_id PK
+        varchar unit_name
+        varchar small_name
+        varchar unit_image
+        varchar formation_date
+        varchar debut_date
+        bigint parent_unit_id FK
+    }
+
+    unit_member {
+        bigint id PK
+        bigint artist_id FK
+        bigint unit_id FK
+    }
+
+    chemistry {
+        bigint id PK
+        bigint artist_a_id FK
+        bigint artist_b_id FK
+        varchar label
+        text description
+        varchar image_url
+        text links_json
+        bit cross_flag
+    }
+
+    album {
+        bigint album_id PK
+        varchar album_name UK
+        varchar album_image
+        varchar release_date
+        longtext album_info
+        bigint unit_id FK
+    }
+
+    track {
+        bigint track_id PK
+        int track_num
+        varchar title
+        varchar duration
+        bit is_title
+        bigint album_id FK
+    }
+
+    article {
+        bigint id PK
+        bigint display_id
+        varchar user_id
+        varchar title
+        longtext content
+        varchar category
+        int likes_count
+        datetime formatted_created_at
+    }
+
+    comment {
+        bigint id PK
+        bigint article_id FK
+        varchar user_id
+        varchar body
+        datetime formatted_created_at
+    }
+
+    article_file {
+        bigint id PK
+        bigint article_id FK
+        varchar original_name
+        varchar saved_name
+        varchar url
+        bigint size
+        varchar file_type
+        varchar media_type
+    }
+
+    shop {
+        bigint id PK
+        varchar name
+        int price
+        text description
+        bit soldout
+        varchar category
+    }
+
+    shop_image {
+        bigint id PK
+        bigint shop_id FK
+        varchar original_name
+        varchar saved_name
+        varchar url
+        bigint size
+        varchar file_type
+        varchar media_type
+    }
+
+    media {
+        bigint id PK
+        varchar youtube_id UK
+        varchar tab
+        varchar media_title
+        varchar media_dur
+        bigint view_count
+        text description
+        bigint sort_order
+    }
+
+    schedule {
+        bigint id PK
+        varchar title
+        date start_date
+        date end_date
+    }
+
+    archive {
+        bigint id PK
+        varchar title
+        varchar original_name
+        varchar saved_name
+        varchar url
+        bigint size
+        varchar file_type
+        varchar media_type
+    }
