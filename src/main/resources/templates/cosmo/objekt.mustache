@@ -250,7 +250,7 @@
             <div class="objekt-search">
                 <span class="material-symbols-outlined text-[#00d9bd] text-xl pointer-events-none" aria-hidden="true">search</span>
                 <label class="w-full min-w-0">
-                    <input type="search" placeholder="멤버, 시즌, 오브젝트 검색..." aria-label="오브젝트 검색" class="objekt-search-input">
+                    <input type="search" name="search" value="{{searchQuery}}" placeholder="전체 오브젝트에서 검색..." aria-label="전체 오브젝트 검색" autocomplete="off" class="objekt-search-input">
                 </label>
                 <span class="hidden lg:inline-flex shrink-0 rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] text-slate-500">SEARCH</span>
             </div>
@@ -287,9 +287,9 @@
         {{/objekts}}
     </div>
     <nav class="flex items-center justify-center gap-4 py-6" aria-label="Objekt 페이지 탐색">
-        {{#hasPreviousPage}}<a class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-white hover:border-teal-400" href="/cosmo/objekt?page={{previousPage}}">이전</a>{{/hasPreviousPage}}
-        <span class="text-sm text-slate-400">{{objektPageDisplay}} / {{objektTotalPages}} 페이지 · 총 {{objektCount}}개</span>
-        {{#hasNextPage}}<a class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-white hover:border-teal-400" href="/cosmo/objekt?page={{nextPage}}">다음</a>{{/hasNextPage}}
+        {{#hasPreviousPage}}<a data-objekt-page="{{previousPage}}" class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-white hover:border-teal-400" href="/cosmo/objekt?page={{previousPage}}">이전</a>{{/hasPreviousPage}}
+        <span class="text-sm text-slate-400">{{objektPageDisplay}} / {{objektTotalPages}} 페이지 · 검색 결과 {{objektCount}}개 / 전체 {{objektAllCount}}개</span>
+        {{#hasNextPage}}<a data-objekt-page="{{nextPage}}" class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-white hover:border-teal-400" href="/cosmo/objekt?page={{nextPage}}">다음</a>{{/hasNextPage}}
     </nav>
 </main>
 </body>
@@ -422,13 +422,52 @@
         empty.classList.toggle('hidden', visible.length > 0);
     }
 
-    searchInput.addEventListener('input', applyFilters);
+    // 전체 오브젝트 검색은 서버에서 처리한다. 타이핑이 멈춘 뒤 검색어를 전송한다.
+    let searchTimer;
+    searchInput.addEventListener('input', () => {
+        applyFilters();
+
+        window.clearTimeout(searchTimer);
+        searchTimer = window.setTimeout(() => {
+            const url = new URL(window.location.href);
+            const query = searchInput.value.trim();
+
+            url.searchParams.set('page', '0');
+            if (query) url.searchParams.set('search', query);
+            else url.searchParams.delete('search');
+
+            window.location.href = url.toString();
+        }, 350);
+    });
+
+    // 페이지를 이동해도 검색어를 유지한다.
+    document.querySelectorAll('[data-objekt-page]').forEach(link => {
+        link.addEventListener('click', event => {
+            event.preventDefault();
+            const url = new URL(window.location.href);
+            const query = searchInput.value.trim();
+
+            url.searchParams.set('page', link.dataset.objektPage);
+            if (query) url.searchParams.set('search', query);
+            else url.searchParams.delete('search');
+
+            window.location.href = url.toString();
+        });
+    });
+
     kindSelect.addEventListener('change', applyFilters);
     sortSelect.addEventListener('change', applyFilters);
     document.getElementById('objekt-reset').addEventListener('click', () => {
-        searchInput.value = ''; kindSelect.value = 'all'; sortSelect.value = 'latest';
+        searchInput.value = '';
+        kindSelect.value = 'all';
+        sortSelect.value = 'latest';
         document.querySelectorAll('.season-checkbox,.member-checkbox,.class-checkbox').forEach(cb => cb.checked = cb.value === 'all');
-        updateLabel('season'); updateLabel('member'); updateLabel('class'); applyFilters();
+
+        // 서버 검색어를 제거하고 전체 오브젝트 첫 페이지로 돌아간다.
+        const url = new URL(window.location.href);
+        url.searchParams.delete('search');
+        url.searchParams.set('page', '0');
+        window.location.href = url.toString();
     });
 
     // 카드 이미지를 클릭하면 앞면/뒷면을 전환한다.
