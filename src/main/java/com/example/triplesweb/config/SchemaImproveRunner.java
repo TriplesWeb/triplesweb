@@ -116,14 +116,27 @@ public class SchemaImproveRunner implements ApplicationRunner {
     }
 
     private void ensureChemistryFk(String name, String column) {
-        if (foreignKeyExistsOnColumn("chemistry", column) || constraintExists("chemistry", name)) {
+        if (foreignKeyExistsOnColumn("chemistry", column)) {
             return;
         }
+        String constraintName = name;
+        int suffix = 2;
+        while (constraintExists("chemistry", constraintName) || constraintNameExists(constraintName)) {
+            constraintName = name + "_" + suffix++;
+        }
         em.createNativeQuery(
-                "ALTER TABLE chemistry ADD CONSTRAINT " + name
-                        + " FOREIGN KEY (" + column + ") REFERENCES artist (artist_id)"
+                "ALTER TABLE chemistry ADD CONSTRAINT `" + constraintName + "`"
+                        + " FOREIGN KEY (`" + column + "`) REFERENCES artist (artist_id)"
         ).executeUpdate();
-        log.info("Added FK {} on chemistry.{}", name, column);
+        log.info("Added FK {} on chemistry.{}", constraintName, column);
+    }
+
+    private boolean constraintNameExists(String name) {
+        Number n = (Number) em.createNativeQuery("""
+                SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+                WHERE CONSTRAINT_SCHEMA = DATABASE() AND CONSTRAINT_NAME = :n
+                """).setParameter("n", name).getSingleResult();
+        return n.longValue() > 0;
     }
 
     private void ensureUnitMemberUnique() {
