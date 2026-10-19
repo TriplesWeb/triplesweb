@@ -33,14 +33,11 @@ public class SchemaImproveRunner implements ApplicationRunner {
     }
 
     private void dropArticleFileCategoryIfPresent() {
-        if (!columnExists("article_file", "category")) {
-            return;
-        }
-        try {
-            em.createNativeQuery("ALTER TABLE article_file DROP COLUMN category").executeUpdate();
-            log.info("Dropped article_file.category");
-        } catch (RuntimeException e) {
-            log.warn("Drop article_file.category failed: {}", e.getMessage());
+        // article_file.category는 기존 DB에 남아 있을 수 있지만,
+        // 다른 브랜치/환경에서 해당 컬럼을 사용하는 코드가 있을 수 있으므로
+        // 런타임 자동 삭제는 하지 않는다. 스키마 변경은 별도 마이그레이션으로 관리한다.
+        if (columnExists("article_file", "category")) {
+            log.info("article_file.category exists; keeping it to avoid breaking existing queries");
         }
     }
 
