@@ -12,9 +12,9 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/chemistry.css?v=39">
+    <link rel="stylesheet" href="/css/chemistry.css?v=41">
 </head>
-<body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
+<body class="bg-[#0d0e12] text-[#ffffff] min-h-screen">
 {{>layout/header}}
 
 <main class="main-content chem-page-main">
@@ -22,7 +22,7 @@
         <div class="chem-page-head flex flex-col gap-2">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div class="chem-title-row">
-                    <h2 class="text-xl sm:text-2xl font-bold text-[#e3e2e8] flex items-center gap-2">
+                    <h2 class="text-xl sm:text-2xl font-bold text-[#ffffff] flex items-center gap-2">
                         <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4]"></span> 트리플에스 케미명
                     </h2>
                     <div class="chem-legend-wrap">
@@ -56,7 +56,7 @@
                     <button type="button" id="chemAdminBtn" class="chem-admin-btn hidden" aria-pressed="false">관리자</button>
                 </div>
             </div>
-            <p class="text-base font-semibold text-[#e3e2e8]">셀을 클릭하면 케미 설명과 이미지를 볼 수 있어요. 멤버 이름은 프로필로 이동합니다.</p>
+            <p class="text-base font-semibold text-[#ffffff]">셀을 클릭하면 케미 설명과 이미지를 볼 수 있어요. 멤버 이름은 프로필로 이동합니다.</p>
             <p id="chemAdminHint" class="chem-admin-hint hidden">관리자 모드: 빈 칸을 눌러 추가하고, 케미를 연 뒤 수정할 수 있어요.</p>
             <div id="chemEmptyState" class="chem-empty-state hidden" role="status" aria-hidden="true">
                 <p class="chem-empty-title">등록된 케미명이 없어요</p>
@@ -159,11 +159,22 @@
                             <span class="chem-color-toggle-bar" id="chemColorBar"></span>
                         </button>
                         <div id="chemColorPalette" class="chem-color-palette hidden" role="dialog" aria-label="색상 팔레트">
-                            <div class="chem-color-palette-title">멤버 상징색 (S1–S24)</div>
-                            <div id="chemColorSwatches" class="chem-color-swatches" role="listbox" aria-label="멤버 상징색 S1부터 S24"></div>
-                            <div id="chemColorRecentBlock" class="chem-color-recent-block hidden">
-                                <div class="chem-color-palette-title">최근 사용</div>
-                                <div id="chemColorRecent" class="chem-color-recent" role="listbox" aria-label="최근 사용 색상"></div>
+                            <div class="chem-color-pages">
+                                <div class="chem-color-page-head">
+                                    <div id="chemColorPageTitle" class="chem-color-palette-title">멤버 상징색 (S1–S24)</div>
+                                    <div class="chem-color-page-nav" role="group" aria-label="팔레트 페이지">
+                                        <button type="button" id="chemColorPagePrev" class="chem-color-page-btn" aria-label="이전 페이지" disabled>‹</button>
+                                        <span id="chemColorPageIndicator" class="chem-color-page-indicator" aria-live="polite">1 / 2</span>
+                                        <button type="button" id="chemColorPageNext" class="chem-color-page-btn" aria-label="다음 페이지">›</button>
+                                    </div>
+                                </div>
+                                <div id="chemColorPage1" class="chem-color-page" data-page="1">
+                                    <div id="chemColorSwatches" class="chem-color-swatches" role="listbox" aria-label="멤버 상징색 S1부터 S24"></div>
+                                </div>
+                                <div id="chemColorPage2" class="chem-color-page hidden" data-page="2" hidden>
+                                    <div id="chemColorRecent" class="chem-color-swatches chem-color-recent" role="listbox" aria-label="최근 사용 색상"></div>
+                                    <p id="chemColorRecentEmpty" class="chem-color-recent-empty">최근 사용한 색이 없습니다</p>
+                                </div>
                             </div>
                             <div class="chem-color-custom">
                                 <label class="chem-color-custom-row">
@@ -242,6 +253,6 @@
     </div>
 </div>
 
-<script src="/js/chemistry.js?v=27"></script>
+<script src="/js/chemistry.js?v=29"></script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 package com.example.triplesweb.service;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
@@ -17,6 +18,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -24,6 +27,8 @@ import java.util.stream.Collectors;
  * 공유 DB를 쓰는 로컬·서버 간 uploads 파일을 맞춘다.
  * 로컬 업로드 → 원격 push, 기동 시 원격 → 로컬 pull.
  * 서버(Docker)에서는 {@code upload.sync.enabled=false}로 끈다.
+ * <p>
+ * Tailscale이 끊긴 경우 SSH가 요청 스레드를 붙잡지 않도록 push/delete는 비동기로 실행한다.
  */
 @Service
 @Slf4j
@@ -37,6 +42,7 @@ public class UploadSyncService implements ApplicationRunner {
     private final Path sshKey;
     private final Path uploadRoot;
     private final boolean pullOnStartup;
+    private final ExecutorService syncExecutor;
 
     public UploadSyncService(
             @Value("${upload.sync.enabled:false}") boolean enabled,
@@ -54,6 +60,11 @@ public class UploadSyncService implements ApplicationRunner {
         this.sshKey = Paths.get(sshKey).toAbsolutePath().normalize();
         this.uploadRoot = Paths.get(uploadRoot).toAbsolutePath().normalize();
         this.pullOnStartup = pullOnStartup;
+        this.syncExecutor = Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "upload-sync");
+            t.setDaemon(true);
+            return t;
+        });
     }
 
     @PostConstruct
@@ -66,14 +77,19 @@ public class UploadSyncService implements ApplicationRunner {
             log.warn("Upload sync enabled but upload.sync.host is empty — sync skipped");
             return;
         }
-        log.info("Upload sync enabled → {}@{}:{} (key={})", user, host, remoteDir, sshKey);
+        log.info("Upload sync enabled (async) → {}@{}:{} (key={})", user, host, remoteDir, sshKey);
+    }
+
+    @PreDestroy
+    void shutdown() {
+        syncExecutor.shutdownNow();
     }
 
     public boolean isActive() {
         return enabled && StringUtils.hasText(host) && Files.isRegularFile(sshKey);
     }
 
-    /** 로컬에 저장된 상대 경로(uploads 루트 기준)를 원격으로 올린다. */
+    /** 로컬에 저장된 상대 경로(uploads 루트 기준)를 원격으로 올린다. HTTP 요청을 막지 않는다. */
     public void pushRelative(String relativePath) {
         if (!isActive() || !StringUtils.hasText(relativePath)) return;
         String relative = normalizeRelative(relativePath);
@@ -81,6 +97,10 @@ public class UploadSyncService implements ApplicationRunner {
         if (!local.startsWith(uploadRoot) || !Files.isRegularFile(local)) {
             return;
         }
+        syncExecutor.execute(() -> doPush(relative, local));
+    }
+
+    private void doPush(String relative, Path local) {
         try {
             ensureRemoteParent(relative);
             rsyncToRemote(local, relative);
@@ -90,21 +110,23 @@ public class UploadSyncService implements ApplicationRunner {
             }
             chmodRemote(relative);
         } catch (Exception e) {
-            log.warn("Upload sync push failed for {}: {}", relative, e.toString());
+            log.warn("Upload sync push failed for {} (Tailscale/SSH?): {}", relative, e.toString());
         }
     }
 
-    /** 원격에서도 같은 상대 경로 파일을 지운다. */
+    /** 원격에서도 같은 상대 경로 파일을 지운다. HTTP 요청을 막지 않는다. */
     public void deleteRelative(String relativePath) {
         if (!isActive() || !StringUtils.hasText(relativePath)) return;
         String relative = normalizeRelative(relativePath);
-        try {
-            runSsh("rm -f "
-                    + shellQuote(remoteDir + "/" + relative) + " "
-                    + shellQuote(remoteDir + "/" + relative + ".orig"));
-        } catch (Exception e) {
-            log.warn("Upload sync delete failed for {}: {}", relative, e.toString());
-        }
+        syncExecutor.execute(() -> {
+            try {
+                runSsh("rm -f "
+                        + shellQuote(remoteDir + "/" + relative) + " "
+                        + shellQuote(remoteDir + "/" + relative + ".orig"));
+            } catch (Exception e) {
+                log.warn("Upload sync delete failed for {} (Tailscale/SSH?): {}", relative, e.toString());
+            }
+        });
     }
 
     /** 원격 uploads → 로컬 (서버에서 올린 파일을 로컬에서도 보이게). */
@@ -126,14 +148,15 @@ public class UploadSyncService implements ApplicationRunner {
             run(cmd, 600);
             log.info("Upload sync pull completed from {}@{}:{}", user, host, remoteDir);
         } catch (Exception e) {
-            log.warn("Upload sync pull failed: {}", e.toString());
+            log.warn("Upload sync pull failed (Tailscale/SSH?): {}", e.toString());
         }
     }
 
     @Override
     public void run(ApplicationArguments args) {
         if (pullOnStartup && isActive()) {
-            pullAll();
+            // 기동도 Tailscale 끊김에 막히지 않도록 비동기 pull
+            syncExecutor.execute(this::pullAll);
         }
     }
 
@@ -166,7 +189,7 @@ public class UploadSyncService implements ApplicationRunner {
         cmd.add(sshCommandString());
         cmd.add(localFile.toString());
         cmd.add(user + "@" + host + ":" + remoteDir + "/" + relative);
-        run(cmd, 120);
+        run(cmd, 60);
     }
 
     private void runSsh(String remoteCommand) throws Exception {
@@ -175,7 +198,7 @@ public class UploadSyncService implements ApplicationRunner {
         cmd.addAll(sshBaseArgs());
         cmd.add(user + "@" + host);
         cmd.add(remoteCommand);
-        run(cmd, 60);
+        run(cmd, 20);
     }
 
     private List<String> sshBaseArgs() {
@@ -183,14 +206,14 @@ public class UploadSyncService implements ApplicationRunner {
                 "-i", sshKey.toString(),
                 "-o", "IdentitiesOnly=yes",
                 "-o", "BatchMode=yes",
-                "-o", "ConnectTimeout=10",
+                "-o", "ConnectTimeout=5",
                 "-o", "StrictHostKeyChecking=accept-new"
         );
     }
 
     private String sshCommandString() {
         return "ssh -i " + sshKey
-                + " -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new";
+                + " -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new";
     }
 
     private void run(List<String> cmd, long timeoutSec) throws Exception {

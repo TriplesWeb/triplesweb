@@ -104,11 +104,24 @@ jobs:
             docker run --rm -v \"${PI_DEPLOY_PATH}/uploads:/uploads\" alpine:3.20 \
               chown -R \"\$(id -u):\$(id -g)\" /uploads
           "
+          # --delete 로 레포에 없는 런타임 업로드(images/chemistry 등)를 지우지 않도록 protect
           rsync -az --delete --no-owner --no-group \
             --exclude '.DS_Store' \
             --exclude '*.orig' \
             --exclude '**/.DS_Store' \
             --exclude '**/*.orig' \
+            --filter 'P images/chemistry/' \
+            --filter 'P images/chemistry/**' \
+            --filter 'P images/free/' \
+            --filter 'P images/free/**' \
+            --filter 'P images/trade/' \
+            --filter 'P images/trade/**' \
+            --filter 'P images/notice/' \
+            --filter 'P images/notice/**' \
+            --filter 'P videos/' \
+            --filter 'P videos/**' \
+            --filter 'P files/' \
+            --filter 'P files/**' \
             -e ssh \
             uploads/ "pi:${PI_DEPLOY_PATH}/uploads/"
           ssh pi "chmod -R a+rwX \"${PI_DEPLOY_PATH}/uploads\""

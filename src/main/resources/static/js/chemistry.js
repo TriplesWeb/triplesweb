@@ -521,7 +521,12 @@
   /** 편집기 기본 색상 = S1~S24 멤버 상징색 (MEMBER_COLORS 순서) */
   const CHEM_COLOR_PALETTE = MEMBER_COLORS;
   const CHEM_RECENT_COLORS_KEY = "chemRecentTextColors";
-  const CHEM_RECENT_COLORS_MAX = 8;
+  const CHEM_RECENT_COLORS_MAX = 24;
+  const CHEM_COLOR_PAGE_TITLES = {
+    1: "멤버 상징색 (S1–S24)",
+    2: "최근 사용"
+  };
+  let chemColorPage = 1;
 
   function clampColorChannel(n) {
     const v = Number(n);
@@ -619,24 +624,55 @@
     renderRecentColors();
   }
 
+  function setColorPalettePage(page) {
+    const next = page === 2 ? 2 : 1;
+    chemColorPage = next;
+    const page1 = document.getElementById("chemColorPage1");
+    const page2 = document.getElementById("chemColorPage2");
+    const title = document.getElementById("chemColorPageTitle");
+    const indicator = document.getElementById("chemColorPageIndicator");
+    const prev = document.getElementById("chemColorPagePrev");
+    const nextBtn = document.getElementById("chemColorPageNext");
+    if (page1) {
+      page1.classList.toggle("hidden", next !== 1);
+      page1.hidden = next !== 1;
+    }
+    if (page2) {
+      page2.classList.toggle("hidden", next !== 2);
+      page2.hidden = next !== 2;
+    }
+    if (title) title.textContent = CHEM_COLOR_PAGE_TITLES[next] || "";
+    if (indicator) indicator.textContent = next + " / 2";
+    if (prev) prev.disabled = next === 1;
+    if (nextBtn) nextBtn.disabled = next === 2;
+    if (next === 2) renderRecentColors();
+  }
+
   function renderRecentColors() {
-    const block = document.getElementById("chemColorRecentBlock");
     const box = document.getElementById("chemColorRecent");
-    if (!block || !box) return;
+    const empty = document.getElementById("chemColorRecentEmpty");
+    if (!box) return;
     const colors = loadRecentColors();
     box.innerHTML = "";
     if (!colors.length) {
-      block.classList.add("hidden");
+      box.classList.add("hidden");
+      if (empty) empty.classList.remove("hidden");
       return;
     }
-    block.classList.remove("hidden");
+    box.classList.remove("hidden");
+    if (empty) empty.classList.add("hidden");
     colors.forEach((color) => {
       const swatch = document.createElement("button");
       swatch.type = "button";
-      swatch.className = "chem-color-recent-swatch";
+      swatch.className = "chem-color-swatch";
       swatch.style.background = color;
       swatch.title = color;
       swatch.setAttribute("aria-label", "최근 색상 " + color);
+      const rgb = hexToRgb(color);
+      if (rgb) {
+        const luma = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
+        swatch.classList.toggle("is-dark", luma < 0.55);
+      }
       swatch.addEventListener("click", () => applyTextColor(color));
       box.appendChild(swatch);
     });
@@ -661,13 +697,74 @@
     return normalizeHexColor(picker && picker.value) || "#00f5d4";
   }
 
+  /** /uploads/... 경로의 한글·공백 세그먼트를 안전하게 인코딩 */
+  function encodeUploadUrl(url) {
+    const raw = String(url || "").trim();
+    if (!raw) return "";
+    if (/^https?:\/\//i.test(raw) || raw.startsWith("blob:") || raw.startsWith("data:")) {
+      return raw;
+    }
+    return raw
+      .split("/")
+      .map((seg, idx) => {
+        if (idx === 0 && seg === "") return "";
+        try {
+          return encodeURIComponent(decodeURIComponent(seg));
+        } catch (_) {
+          return encodeURIComponent(seg);
+        }
+      })
+      .join("/");
+  }
+
+  function setChemistryDetailImage(url) {
+    const img = document.getElementById("chemistryImage");
+    const media = img && img.closest(".chem-modal-media");
+    if (!img) return;
+    const src = encodeUploadUrl(url);
+    const show = Boolean(src);
+    img.onload = () => {
+      if (img.naturalWidth > 0) syncModalContentWidth();
+      else hideChemistryDetailImage();
+    };
+    img.onerror = () => hideChemistryDetailImage();
+    if (!show) {
+      hideChemistryDetailImage();
+      return;
+    }
+    img.style.display = "block";
+    if (media) media.style.display = "block";
+    if (img.getAttribute("src") === src && img.complete) {
+      if (img.naturalWidth > 0) syncModalContentWidth();
+      else hideChemistryDetailImage();
+      return;
+    }
+    img.src = src;
+  }
+
+  function hideChemistryDetailImage() {
+    const img = document.getElementById("chemistryImage");
+    const media = img && img.closest(".chem-modal-media");
+    const creditEl = document.getElementById("chemistryCredit");
+    if (img) {
+      img.removeAttribute("src");
+      img.style.display = "none";
+    }
+    if (media) media.style.display = "none";
+    if (creditEl) {
+      creditEl.textContent = "";
+      creditEl.hidden = true;
+    }
+    syncModalContentWidth();
+  }
+
   /** 설명·링크 가로폭을 렌더된 이미지 너비에 맞춤 */
   function syncModalContentWidth() {
     const img = document.getElementById("chemistryImage");
     const desc = document.getElementById("chemistryDescription");
     const links = document.getElementById("chemistryLinks");
     const width =
-      img && img.style.display !== "none" && img.offsetWidth > 0
+      img && img.style.display !== "none" && img.naturalWidth > 0 && img.offsetWidth > 0
         ? Math.round(img.getBoundingClientRect().width) + "px"
         : "";
     if (desc) desc.style.width = width;
@@ -705,20 +802,12 @@
       titleMember1,
       titleMember2
     );
-    const img = document.getElementById("chemistryImage");
-    const media = img && img.closest(".chem-modal-media");
     const creditEl = document.getElementById("chemistryCredit");
-    const hasImage = Boolean(data.image);
-    if (img) {
-      img.onload = () => syncModalContentWidth();
-      img.src = data.image || "";
-      img.alt = pairTitleText(titleMember1, titleMember2);
-      img.style.display = hasImage ? "block" : "none";
-      if (hasImage && img.complete) syncModalContentWidth();
-    }
-    if (media) media.style.display = hasImage ? "block" : "none";
+    const img = document.getElementById("chemistryImage");
+    if (img) img.alt = pairTitleText(titleMember1, titleMember2);
+    setChemistryDetailImage(data.image || "");
     if (creditEl) {
-      if (credit && hasImage) {
+      if (credit && data.image) {
         creditEl.textContent = "photo by. " + credit;
         creditEl.hidden = false;
       } else {
@@ -727,7 +816,6 @@
       }
     }
     document.getElementById("chemistryDescription").innerHTML = formattedDescription;
-    if (!hasImage) syncModalContentWidth();
 
     const linkDiv = document.getElementById("chemistryLinks");
     linkDiv.innerHTML = "";
@@ -887,12 +975,16 @@
     const wrap = document.getElementById("chemEditImagePreviewWrap");
     const img = document.getElementById("chemEditImagePreview");
     if (!wrap || !img) return;
-    const src = (url || "").trim();
+    const src = encodeUploadUrl(url);
     if (!src) {
       img.removeAttribute("src");
       wrap.classList.add("hidden");
       return;
     }
+    img.onerror = () => {
+      img.removeAttribute("src");
+      wrap.classList.add("hidden");
+    };
     img.src = src;
     wrap.classList.remove("hidden");
   }
@@ -1115,7 +1207,25 @@
     }
 
     syncColorInputs("#00f5d4");
+    setColorPalettePage(1);
     renderRecentColors();
+
+    const pagePrev = document.getElementById("chemColorPagePrev");
+    const pageNext = document.getElementById("chemColorPageNext");
+    if (pagePrev) {
+      pagePrev.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setColorPalettePage(chemColorPage - 1);
+      });
+    }
+    if (pageNext) {
+      pageNext.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setColorPalettePage(chemColorPage + 1);
+      });
+    }
 
     const colorPicker = document.getElementById("chemColorPicker");
     if (colorPicker) {
@@ -1187,6 +1297,7 @@
         colorToggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
         if (willOpen) {
           syncColorInputs((document.getElementById("chemColorBar") || {}).style.background || "#00f5d4");
+          setColorPalettePage(1);
           renderRecentColors();
         }
       });
