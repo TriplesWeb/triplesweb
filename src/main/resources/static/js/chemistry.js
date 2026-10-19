@@ -697,13 +697,74 @@
     return normalizeHexColor(picker && picker.value) || "#00f5d4";
   }
 
+  /** /uploads/... 경로의 한글·공백 세그먼트를 안전하게 인코딩 */
+  function encodeUploadUrl(url) {
+    const raw = String(url || "").trim();
+    if (!raw) return "";
+    if (/^https?:\/\//i.test(raw) || raw.startsWith("blob:") || raw.startsWith("data:")) {
+      return raw;
+    }
+    return raw
+      .split("/")
+      .map((seg, idx) => {
+        if (idx === 0 && seg === "") return "";
+        try {
+          return encodeURIComponent(decodeURIComponent(seg));
+        } catch (_) {
+          return encodeURIComponent(seg);
+        }
+      })
+      .join("/");
+  }
+
+  function setChemistryDetailImage(url) {
+    const img = document.getElementById("chemistryImage");
+    const media = img && img.closest(".chem-modal-media");
+    if (!img) return;
+    const src = encodeUploadUrl(url);
+    const show = Boolean(src);
+    img.onload = () => {
+      if (img.naturalWidth > 0) syncModalContentWidth();
+      else hideChemistryDetailImage();
+    };
+    img.onerror = () => hideChemistryDetailImage();
+    if (!show) {
+      hideChemistryDetailImage();
+      return;
+    }
+    img.style.display = "block";
+    if (media) media.style.display = "block";
+    if (img.getAttribute("src") === src && img.complete) {
+      if (img.naturalWidth > 0) syncModalContentWidth();
+      else hideChemistryDetailImage();
+      return;
+    }
+    img.src = src;
+  }
+
+  function hideChemistryDetailImage() {
+    const img = document.getElementById("chemistryImage");
+    const media = img && img.closest(".chem-modal-media");
+    const creditEl = document.getElementById("chemistryCredit");
+    if (img) {
+      img.removeAttribute("src");
+      img.style.display = "none";
+    }
+    if (media) media.style.display = "none";
+    if (creditEl) {
+      creditEl.textContent = "";
+      creditEl.hidden = true;
+    }
+    syncModalContentWidth();
+  }
+
   /** 설명·링크 가로폭을 렌더된 이미지 너비에 맞춤 */
   function syncModalContentWidth() {
     const img = document.getElementById("chemistryImage");
     const desc = document.getElementById("chemistryDescription");
     const links = document.getElementById("chemistryLinks");
     const width =
-      img && img.style.display !== "none" && img.offsetWidth > 0
+      img && img.style.display !== "none" && img.naturalWidth > 0 && img.offsetWidth > 0
         ? Math.round(img.getBoundingClientRect().width) + "px"
         : "";
     if (desc) desc.style.width = width;
@@ -741,20 +802,12 @@
       titleMember1,
       titleMember2
     );
-    const img = document.getElementById("chemistryImage");
-    const media = img && img.closest(".chem-modal-media");
     const creditEl = document.getElementById("chemistryCredit");
-    const hasImage = Boolean(data.image);
-    if (img) {
-      img.onload = () => syncModalContentWidth();
-      img.src = data.image || "";
-      img.alt = pairTitleText(titleMember1, titleMember2);
-      img.style.display = hasImage ? "block" : "none";
-      if (hasImage && img.complete) syncModalContentWidth();
-    }
-    if (media) media.style.display = hasImage ? "block" : "none";
+    const img = document.getElementById("chemistryImage");
+    if (img) img.alt = pairTitleText(titleMember1, titleMember2);
+    setChemistryDetailImage(data.image || "");
     if (creditEl) {
-      if (credit && hasImage) {
+      if (credit && data.image) {
         creditEl.textContent = "photo by. " + credit;
         creditEl.hidden = false;
       } else {
@@ -763,7 +816,6 @@
       }
     }
     document.getElementById("chemistryDescription").innerHTML = formattedDescription;
-    if (!hasImage) syncModalContentWidth();
 
     const linkDiv = document.getElementById("chemistryLinks");
     linkDiv.innerHTML = "";
@@ -923,12 +975,16 @@
     const wrap = document.getElementById("chemEditImagePreviewWrap");
     const img = document.getElementById("chemEditImagePreview");
     if (!wrap || !img) return;
-    const src = (url || "").trim();
+    const src = encodeUploadUrl(url);
     if (!src) {
       img.removeAttribute("src");
       wrap.classList.add("hidden");
       return;
     }
+    img.onerror = () => {
+      img.removeAttribute("src");
+      wrap.classList.add("hidden");
+    };
     img.src = src;
     wrap.classList.remove("hidden");
   }
