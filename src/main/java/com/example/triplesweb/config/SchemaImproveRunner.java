@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Flyway 이후 남은 스키마 정리.
- * Chemistry memberA/B → Artist FK, article_file.category 제거, unit_member UNIQUE.
+ * Chemistry memberA/B → Artist FK, unit_member UNIQUE.
  * {@link com.example.triplesweb.config.DataInitializer} 이후,
  * {@link com.example.triplesweb.service.ChemistrySeedService} 이전에 실행되어야 한다.
  * 테이블/컬럼명은 CamelCaseToUnderscores snake_case만 사용한다.
@@ -27,18 +27,8 @@ public class SchemaImproveRunner implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        dropArticleFileCategoryIfPresent();
         migrateChemistryToArtistFk();
         ensureUnitMemberUnique();
-    }
-
-    private void dropArticleFileCategoryIfPresent() {
-        // article_file.category는 기존 DB에 남아 있을 수 있지만,
-        // 다른 브랜치/환경에서 해당 컬럼을 사용하는 코드가 있을 수 있으므로
-        // 런타임 자동 삭제는 하지 않는다. 스키마 변경은 별도 마이그레이션으로 관리한다.
-        if (columnExists("article_file", "category")) {
-            log.info("article_file.category exists; keeping it to avoid breaking existing queries");
-        }
     }
 
     private void migrateChemistryToArtistFk() {
