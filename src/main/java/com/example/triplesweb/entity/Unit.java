@@ -11,6 +11,7 @@ import java.util.List;
  * 상위 {@link Unit}과 자기참조, {@link UnitMember}·{@link Album} 1:N.
  */
 @Entity
+@Table(name = "unit")
 @Getter
 @Setter
 @ToString(exclude = {"unitMembers", "albums"})

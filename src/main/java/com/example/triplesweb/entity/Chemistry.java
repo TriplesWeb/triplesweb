@@ -9,7 +9,7 @@ import lombok.*;
  */
 @Entity
 @Table(
-        name = "Chemistry",
+        name = "chemistry",
         uniqueConstraints = @UniqueConstraint(name = "uk_chemistry_pair", columnNames = {"memberA", "memberB"})
 )
 @Getter
