@@ -6,6 +6,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestClientException;
 
 import java.util.Collections;
@@ -21,7 +22,7 @@ public class CosmoController {
 
     // 기존 헤더 링크를 유지하면서 실제 도감 페이지로 이동
     @GetMapping("/objekt")
-    public String indexCosmoObjekt(Model model) {
+    public String indexCosmoObjekt(@RequestParam(defaultValue = "0") int page, Model model) {
 
             List<Map<String, Object>> objekts;
             String error = "";
@@ -45,6 +46,14 @@ public class CosmoController {
                 ex.printStackTrace();
             }
 
+            int pageSize = 50;
+            int totalCount = objekts.size();
+            int totalPages = Math.max(1, (int) Math.ceil(totalCount / (double) pageSize));
+            int safePage = Math.max(0, Math.min(page, totalPages - 1));
+            int fromIndex = Math.min(safePage * pageSize, totalCount);
+            int toIndex = Math.min(fromIndex + pageSize, totalCount);
+            List<Map<String, Object>> pageObjekts = objekts.subList(fromIndex, toIndex);
+
             List<String> objektNumbers = objekts.stream()
                     .map(objekt -> String.valueOf(objekt.getOrDefault("collectionNo", "")))
                     .filter(number -> !number.isBlank() && !"null".equals(number))
@@ -52,8 +61,14 @@ public class CosmoController {
                     .sorted()
                     .toList();
 
-            model.addAttribute("objekts", objekts);
-            model.addAttribute("objektCount", objekts.size());
+            model.addAttribute("objekts", pageObjekts);
+            model.addAttribute("objektCount", totalCount);
+            model.addAttribute("objektPageDisplay", safePage + 1);
+            model.addAttribute("objektTotalPages", totalPages);
+            model.addAttribute("hasPreviousPage", safePage > 0);
+            model.addAttribute("hasNextPage", safePage + 1 < totalPages);
+            model.addAttribute("previousPage", Math.max(0, safePage - 1));
+            model.addAttribute("nextPage", Math.min(totalPages - 1, safePage + 1));
             model.addAttribute("objektError", error);
             model.addAttribute("objektNumbers", objektNumbers);
 

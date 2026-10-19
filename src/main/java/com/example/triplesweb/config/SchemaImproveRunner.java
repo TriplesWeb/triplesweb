@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Flyway 이후 남은 스키마 정리.
- * Chemistry memberA/B → Artist FK, article_file.category 제거, unit_member UNIQUE.
+ * Chemistry memberA/B → Artist FK, unit_member UNIQUE.
  * {@link com.example.triplesweb.config.DataInitializer} 이후,
  * {@link com.example.triplesweb.service.ChemistrySeedService} 이전에 실행되어야 한다.
  * 테이블/컬럼명은 CamelCaseToUnderscores snake_case만 사용한다.
@@ -27,21 +27,8 @@ public class SchemaImproveRunner implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        dropArticleFileCategoryIfPresent();
         migrateChemistryToArtistFk();
         ensureUnitMemberUnique();
-    }
-
-    private void dropArticleFileCategoryIfPresent() {
-        if (!columnExists("article_file", "category")) {
-            return;
-        }
-        try {
-            em.createNativeQuery("ALTER TABLE article_file DROP COLUMN category").executeUpdate();
-            log.info("Dropped article_file.category");
-        } catch (RuntimeException e) {
-            log.warn("Drop article_file.category failed: {}", e.getMessage());
-        }
     }
 
     private void migrateChemistryToArtistFk() {
@@ -100,8 +87,8 @@ public class SchemaImproveRunner implements ApplicationRunner {
                                 + " ADD CONSTRAINT uk_chemistry_pair UNIQUE (artist_a_id, artist_b_id)"
                 ).executeUpdate();
             }
-            ensureChemistryFk("fk_chemistry_artist_a", "artist_a_id");
-            ensureChemistryFk("fk_chemistry_artist_b", "artist_b_id");
+            ensureChemistryFk("chemistry", "artist", "artist_id", "fk_chemistry_artist_a", "artist_a_id");
+            ensureChemistryFk("chemistry", "artist", "artist_id", "fk_chemistry_artist_b", "artist_b_id");
         }
     }
 
@@ -115,15 +102,62 @@ public class SchemaImproveRunner implements ApplicationRunner {
         return null;
     }
 
-    private void ensureChemistryFk(String name, String column) {
-        if (foreignKeyExistsOnColumn("chemistry", column) || constraintExists("chemistry", name)) {
+    private void ensureChemistryFk(
+            String chemTable,
+            String artistTable,
+            String artistPk,
+            String baseName,
+            String column
+    ) {
+        if (foreignKeyExists(chemTable, column, artistTable, artistPk)) {
+            log.info("Chemistry FK already exists: {}.{} -> {}.{}", chemTable, column, artistTable, artistPk);
             return;
         }
+
+        String constraintName = baseName;
+        int suffix = 2;
+        while (constraintNameExists(constraintName)) {
+            constraintName = baseName + "_" + suffix++;
+        }
+
         em.createNativeQuery(
-                "ALTER TABLE chemistry ADD CONSTRAINT " + name
-                        + " FOREIGN KEY (" + column + ") REFERENCES artist (artist_id)"
+                "ALTER TABLE `" + chemTable + "` ADD CONSTRAINT `" + constraintName + "`"
+                        + " FOREIGN KEY (`" + column + "`)"
+                        + " REFERENCES `" + artistTable + "` (`" + artistPk + "`)"
         ).executeUpdate();
-        log.info("Added FK {} on chemistry.{}", name, column);
+        log.info("Added Chemistry FK: {} on {}.{} -> {}.{}", constraintName, chemTable, column, artistTable, artistPk);
+    }
+
+    private boolean foreignKeyExists(
+            String table,
+            String column,
+            String referencedTable,
+            String referencedColumn
+    ) {
+        Number count = (Number) em.createNativeQuery("""
+                SELECT COUNT(*)
+                FROM information_schema.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = :tableName
+                  AND COLUMN_NAME = :columnName
+                  AND REFERENCED_TABLE_SCHEMA = DATABASE()
+                  AND REFERENCED_TABLE_NAME = :referencedTable
+                  AND REFERENCED_COLUMN_NAME = :referencedColumn
+                """)
+                .setParameter("tableName", table)
+                .setParameter("columnName", column)
+                .setParameter("referencedTable", referencedTable)
+                .setParameter("referencedColumn", referencedColumn)
+                .getSingleResult();
+        return count.longValue() > 0;
+    }
+
+    private boolean constraintNameExists(String name) {
+        Number n = (Number) em.createNativeQuery("""
+                SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+                WHERE CONSTRAINT_SCHEMA = DATABASE() AND CONSTRAINT_NAME = :n
+                """).setParameter("n", name).getSingleResult();
+        return n.longValue() > 0;
     }
 
     private void ensureUnitMemberUnique() {
