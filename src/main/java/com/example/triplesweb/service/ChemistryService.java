@@ -1,8 +1,10 @@
 package com.example.triplesweb.service;
 
 import com.example.triplesweb.dto.ChemistryDto;
+import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.Chemistry;
 import com.example.triplesweb.entity.SavedMeta;
+import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ChemistryRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +24,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ChemistryService {
 
+    /** 케미 매트릭스 표시 순서(한글 이름). 페어 정규화에 사용. */
     private static final List<String> MEMBERS = List.of(
             "윤서연", "정혜린", "이지우", "김채연", "김유연", "김수민", "김나경", "공유빈",
             "카에데", "서다현", "코토네", "곽연지", "니엔", "박소현", "신위", "마유",
@@ -29,13 +32,16 @@ public class ChemistryService {
     );
 
     private final ChemistryRepository chemistryRepository;
+    private final ArtistRepository artistRepository;
     private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
     public List<ChemistryDto> findAll() {
-        return chemistryRepository.findAll().stream()
-                .sorted(Comparator.comparing(Chemistry::getMemberA).thenComparing(Chemistry::getMemberB))
+        return chemistryRepository.findAllWithArtists().stream()
+                .sorted(Comparator
+                        .comparing((Chemistry c) -> indexOf(c.getArtistA().getName()))
+                        .thenComparing(c -> indexOf(c.getArtistB().getName())))
                 .map(this::toDto)
                 .toList();
     }
@@ -43,7 +49,7 @@ public class ChemistryService {
     @Transactional
     public ChemistryDto upsert(String member1, String member2, String label, String description,
                                MultipartFile image, boolean clearImage, String linksJson) {
-        String[] pair = normalizePair(member1, member2);
+        Artist[] pair = normalizePair(member1, member2);
         if (!StringUtils.hasText(label)) {
             throw new IllegalArgumentException("케미명은 필수입니다.");
         }
@@ -51,10 +57,11 @@ public class ChemistryService {
             description = "";
         }
 
-        Chemistry entity = chemistryRepository.findByMemberAAndMemberB(pair[0], pair[1])
+        Chemistry entity = chemistryRepository
+                .findByArtistPair(pair[0].getArtistId(), pair[1].getArtistId())
                 .orElseGet(() -> Chemistry.builder()
-                        .memberA(pair[0])
-                        .memberB(pair[1])
+                        .artistA(pair[0])
+                        .artistB(pair[1])
                         .crossFlag(false)
                         .build());
 
@@ -62,7 +69,6 @@ public class ChemistryService {
         entity.setDescription(description);
         entity.setLinksJson(normalizeLinksJson(linksJson));
 
-        // 새 파일이 없고 clearImage도 아니면 기존 imageUrl을 그대로 둔다.
         if (image != null && !image.isEmpty()) {
             try {
                 String previousUrl = entity.getImageUrl();
@@ -87,8 +93,8 @@ public class ChemistryService {
 
     @Transactional
     public void deleteByMembers(String member1, String member2) {
-        String[] pair = normalizePair(member1, member2);
-        chemistryRepository.findByMemberAAndMemberB(pair[0], pair[1])
+        Artist[] pair = normalizePair(member1, member2);
+        chemistryRepository.findByArtistPair(pair[0].getArtistId(), pair[1].getArtistId())
                 .ifPresent(this::hardDelete);
     }
 
@@ -97,10 +103,6 @@ public class ChemistryService {
         chemistryRepository.delete(entity);
     }
 
-    /**
-     * 관리자 업로드분({@code /uploads/images/chemistry/...})만 디스크에서 삭제.
-     * 정적 시드 경로({@code /uploads/chemistry/chem/...})는 건드리지 않는다.
-     */
     private void deleteManagedImage(String imageUrl) {
         if (!StringUtils.hasText(imageUrl)) {
             return;
@@ -112,7 +114,6 @@ public class ChemistryService {
         try {
             fileStorageService.deleteFile(imageUrl);
         } catch (RuntimeException ignored) {
-            // DB 갱신은 계속 진행 — 없는 파일이거나 이미 지워진 경우
         }
     }
 
@@ -124,7 +125,15 @@ public class ChemistryService {
         return idx;
     }
 
-    private String[] normalizePair(String member1, String member2) {
+    public List<String> memberNames() {
+        return List.copyOf(MEMBERS);
+    }
+
+    /**
+     * 표시 순서 기준으로 (앞 멤버, 뒤 멤버) Artist 쌍을 반환한다.
+     * 시드·API upsert/delete가 동일 규칙을 쓴다.
+     */
+    public Artist[] resolveArtistPair(String member1, String member2) {
         if (!StringUtils.hasText(member1) || !StringUtils.hasText(member2)) {
             throw new IllegalArgumentException("멤버 두 명이 필요합니다.");
         }
@@ -135,7 +144,17 @@ public class ChemistryService {
         }
         int ia = indexOf(a);
         int ib = indexOf(b);
-        return ia < ib ? new String[]{a, b} : new String[]{b, a};
+        String first = ia < ib ? a : b;
+        String second = ia < ib ? b : a;
+        Artist artistA = artistRepository.findByName(first)
+                .orElseThrow(() -> new IllegalArgumentException("아티스트 없음: " + first));
+        Artist artistB = artistRepository.findByName(second)
+                .orElseThrow(() -> new IllegalArgumentException("아티스트 없음: " + second));
+        return new Artist[]{artistA, artistB};
+    }
+
+    private Artist[] normalizePair(String member1, String member2) {
+        return resolveArtistPair(member1, member2);
     }
 
     private String normalizeLinksJson(String linksJson) {
@@ -172,10 +191,15 @@ public class ChemistryService {
     }
 
     private ChemistryDto toDto(Chemistry c) {
+        if (c.getArtistA() == null || c.getArtistB() == null) {
+            throw new IllegalStateException("Chemistry#" + c.getId() + "에 Artist FK가 없습니다. 시드/마이그레이션을 확인하세요.");
+        }
         return ChemistryDto.builder()
                 .id(c.getId())
-                .memberA(c.getMemberA())
-                .memberB(c.getMemberB())
+                .memberA(c.getArtistA().getName())
+                .memberB(c.getArtistB().getName())
+                .artistAId(c.getArtistA().getArtistId())
+                .artistBId(c.getArtistB().getArtistId())
                 .label(c.getLabel())
                 .description(c.getDescription())
                 .imageUrl(c.getImageUrl())

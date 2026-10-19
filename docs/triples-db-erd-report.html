@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>triplesweb 데이터베이스 ERD 및 개선 제안</title>
+  <style>
+    @page { size: A4; margin: 18mm 16mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Apple SD Gothic Neo", "AppleGothic", "Noto Sans KR", sans-serif;
+      color: #1a1a1a;
+      line-height: 1.55;
+      font-size: 10.5pt;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      font-size: 20pt;
+      font-weight: 700;
+      margin: 0 0 6pt;
+      border-bottom: 2.5px solid #222;
+      padding-bottom: 8pt;
+    }
+    h2 {
+      font-size: 14pt;
+      font-weight: 700;
+      margin: 22pt 0 8pt;
+      padding: 4pt 0 4pt 8pt;
+      border-left: 4px solid #2c5aa0;
+      page-break-after: avoid;
+    }
+    h3 {
+      font-size: 11.5pt;
+      font-weight: 650;
+      margin: 14pt 0 6pt;
+      color: #1e3a5f;
+      page-break-after: avoid;
+    }
+    h4 {
+      font-size: 10.5pt;
+      margin: 10pt 0 4pt;
+      page-break-after: avoid;
+    }
+    p { margin: 0 0 8pt; }
+    .meta {
+      color: #555;
+      font-size: 9.5pt;
+      margin-bottom: 16pt;
+    }
+    .lead {
+      background: #f4f7fb;
+      border: 1px solid #d5e0ef;
+      padding: 10pt 12pt;
+      margin: 0 0 14pt;
+      border-radius: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 0 12pt;
+      font-size: 9pt;
+      page-break-inside: auto;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 4pt 6pt;
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      background: #eef2f7;
+      font-weight: 650;
+    }
+    tr { page-break-inside: avoid; }
+    .role {
+      background: #fafafa;
+      border-left: 3px solid #888;
+      padding: 6pt 10pt;
+      margin: 0 0 10pt;
+      font-size: 9.5pt;
+    }
+    .improve {
+      background: #fff8f0;
+      border: 1px solid #f0d9b5;
+      padding: 8pt 10pt;
+      margin: 0 0 8pt;
+      border-radius: 4px;
+      page-break-inside: avoid;
+    }
+    .improve strong { color: #8a4b00; }
+    .keep {
+      background: #f3faf3;
+      border: 1px solid #c5e0c5;
+      padding: 8pt 10pt;
+      margin: 0 0 8pt;
+      border-radius: 4px;
+    }
+    ul, ol { margin: 0 0 10pt; padding-left: 18pt; }
+    li { margin-bottom: 3pt; }
+    .toc a { color: #1e3a5f; text-decoration: none; }
+    .toc li { margin-bottom: 4pt; }
+    .erd-wrap {
+      border: 1px solid #bbb;
+      padding: 8pt;
+      margin: 8pt 0 10pt;
+      background: #fcfcfc;
+      overflow: hidden;
+    }
+    .erd-wrap svg { width: 100%; height: auto; display: block; }
+    .erd-board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8pt;
+      margin: 0 0 8pt;
+    }
+    .erd-board.cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .erd-board.cols-4 { grid-template-columns: repeat(4, 1fr); }
+    .entity {
+      border: 1.4px solid #2c5aa0;
+      border-radius: 3px;
+      background: #fff;
+      font-size: 7.8pt;
+      page-break-inside: avoid;
+      overflow: hidden;
+    }
+    .entity.board { border-color: #2c5aa0; }
+    .entity.artist { border-color: #6b4ca0; }
+    .entity.shop { border-color: #b06a20; }
+    .entity.media { border-color: #2a7a45; }
+    .entity.gone { border-color: #999; border-style: dashed; opacity: 0.75; }
+    .entity-title {
+      background: #2c5aa0;
+      color: #fff;
+      font-weight: 700;
+      font-size: 8.5pt;
+      padding: 3pt 5pt;
+      line-height: 1.3;
+    }
+    .entity.artist .entity-title { background: #6b4ca0; }
+    .entity.shop .entity-title { background: #b06a20; }
+    .entity.media .entity-title { background: #2a7a45; }
+    .entity.gone .entity-title { background: #888; }
+    .entity-sub {
+      display: block;
+      font-weight: 400;
+      font-size: 7pt;
+      opacity: 0.92;
+    }
+    .entity-cols {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .entity-cols li {
+      margin: 0;
+      padding: 2pt 5pt;
+      border-top: 1px solid #e6eaf0;
+      display: flex;
+      gap: 4pt;
+      align-items: baseline;
+      line-height: 1.35;
+    }
+    .entity-cols li:first-child { border-top: none; }
+    .entity-cols .key {
+      flex: 0 0 auto;
+      font-family: ui-monospace, Menlo, monospace;
+      font-size: 7.2pt;
+      font-weight: 650;
+      color: #1a1a1a;
+      min-width: 42%;
+    }
+    .entity-cols .desc {
+      flex: 1;
+      color: #444;
+      font-size: 7pt;
+    }
+    .tag {
+      display: inline-block;
+      font-size: 6.5pt;
+      font-weight: 700;
+      padding: 0 3pt;
+      border-radius: 2px;
+      margin-right: 2pt;
+      vertical-align: middle;
+    }
+    .tag.pk { background: #ffe08a; color: #5a4200; }
+    .tag.fk { background: #cfe4ff; color: #1e3a5f; }
+    .tag.uk { background: #d8f0d8; color: #1a5a1a; }
+    .rels {
+      background: #fff;
+      border: 1px solid #ccd6e4;
+      padding: 6pt 10pt;
+      margin: 0 0 12pt;
+      font-size: 8.5pt;
+      page-break-inside: avoid;
+    }
+    .rels strong { color: #1e3a5f; }
+    .caption {
+      font-size: 8.5pt;
+      color: #666;
+      margin: 0 0 12pt;
+      text-align: center;
+    }
+    .domain-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8pt;
+      margin-bottom: 12pt;
+    }
+    .domain-card {
+      border: 1px solid #ccd6e4;
+      border-radius: 4px;
+      padding: 8pt;
+      background: #fff;
+      page-break-inside: avoid;
+    }
+    .domain-card h4 { margin-top: 0; color: #2c5aa0; }
+    .badge {
+      display: inline-block;
+      font-size: 8pt;
+      padding: 1pt 5pt;
+      border-radius: 3px;
+      background: #e8eef8;
+      color: #2c5aa0;
+      margin-right: 4pt;
+    }
+    .badge.warn { background: #fff0e0; color: #8a4b00; }
+    .badge.ok { background: #e6f5e6; color: #1a6b1a; }
+    .badge.del { background: #fde8e8; color: #8b1a1a; }
+    .page-break { page-break-before: always; }
+    footer {
+      margin-top: 24pt;
+      padding-top: 8pt;
+      border-top: 1px solid #ccc;
+      font-size: 8.5pt;
+      color: #777;
+    }
+    code { font-family: ui-monospace, Menlo, monospace; font-size: 8.5pt; }
+  </style>
+</head>
+<body>
+
+  <h1>triplesweb 데이터베이스 구조 분석 및 ERD</h1>
+  <p class="meta">
+    프로젝트: <strong>triplesweb</strong> &nbsp;|&nbsp;
+    DBMS: MariaDB (<code>triples</code>) &nbsp;|&nbsp;
+    ORM: Spring Data JPA / Hibernate (<code>ddl-auto=update</code>) &nbsp;|&nbsp;
+    작성일: 2026-10-19
+  </p>
+
+  <div class="lead">
+    본 문서는 <strong>현재(As-Is)</strong> DB 구조의 ERD·테이블/컬럼 역할 설명,
+    <strong>개선점</strong>, 그리고 이를 반영한 <strong>목표(To-Be)</strong> ERD와 설명을 정리한 자료입니다.
+  </div>
+
+  <h2>목차</h2>
+  <ol class="toc">
+    <li>현재 구조 개요</li>
+    <li>현재 ERD (As-Is)</li>
+    <li>테이블·컬럼·역할 상세</li>
+    <li>개선점</li>
+    <li>개선 반영 ERD (To-Be)</li>
+    <li>개선 ERD 설명</li>
+  </ol>
+
+  <!-- ========== 1. 개요 ========== -->
+  <h2>1. 현재 구조 개요</h2>
+  <p>
+    스키마는 JPA 엔티티(<code>com.example.triplesweb.entity</code>)로 관리되며,
+    물리 네이밍은 <code>PhysicalNamingStrategyStandardImpl</code>을 사용해
+    클래스명·필드명이 테이블·컬럼에 거의 그대로 반영됩니다.
+    (<code>article_file</code>, <code>article_like</code>, <code>Chemistry</code> 등 일부만 <code>@Table</code>로 명시)
+  </p>
+
+  <div class="domain-grid">
+    <div class="domain-card">
+      <h4>게시판·회원</h4>
+      <p>Members, Article, Comment, article_like, article_file</p>
+    </div>
+    <div class="domain-card">
+      <h4>아티스트·유닛</h4>
+      <p>Artist, Unit, UnitMember, Album, Track, Chemistry</p>
+    </div>
+    <div class="domain-card">
+      <h4>쇼핑</h4>
+      <p>Shop, ShopImage</p>
+    </div>
+    <div class="domain-card">
+      <h4>미디어·일정</h4>
+      <p>Media, Archive, Schedule (+ Media는 JSON 카탈로그와 병행)</p>
+    </div>
+  </div>
+
+  <!-- ========== 2. As-Is ERD ========== -->
+  <h2>2. 현재 ERD (As-Is)</h2>
+  <p>
+    각 박스 = 테이블. <span class="tag pk">PK</span> 기본키,
+    <span class="tag fk">FK</span> 외래키,
+    <span class="tag uk">UK</span> 유니크.
+    점선 관계는 DB FK 없이 문자열만 연결.
+  </p>
+
+  <h3>2.1 게시판·회원</h3>
+  <div class="erd-board">
+    <div class="entity board">
+      <div class="entity-title">Members<span class="entity-sub">회원</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key"><span class="tag uk">UK</span> userId</span><span class="desc">로그인 ID</span></li>
+        <li><span class="key">password</span><span class="desc">비밀번호</span></li>
+        <li><span class="key">email</span><span class="desc">이메일</span></li>
+        <li><span class="key">address</span><span class="desc">주소</span></li>
+        <li><span class="key">role</span><span class="desc">권한</span></li>
+        <li><span class="key">level</span><span class="desc">레벨</span></li>
+        <li><span class="key">points</span><span class="desc">포인트</span></li>
+      </ul>
+    </div>
+    <div class="entity board">
+      <div class="entity-title">Article<span class="entity-sub">게시글</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key">displayId</span><span class="desc">표시 번호</span></li>
+        <li><span class="key">userId</span><span class="desc">작성자(논리→Members)</span></li>
+        <li><span class="key">title</span><span class="desc">제목</span></li>
+        <li><span class="key">content</span><span class="desc">본문 HTML</span></li>
+        <li><span class="key">category</span><span class="desc">게시판 구분</span></li>
+        <li><span class="key">likesCount</span><span class="desc">좋아요 수 캐시</span></li>
+        <li><span class="key">formatted_created_at</span><span class="desc">작성 시각</span></li>
+      </ul>
+    </div>
+    <div class="entity board">
+      <div class="entity-title">Comment<span class="entity-sub">댓글</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key"><span class="tag fk">FK</span> article_id</span><span class="desc">→ Article</span></li>
+        <li><span class="key">userId</span><span class="desc">작성자(논리)</span></li>
+        <li><span class="key">body</span><span class="desc">댓글 내용</span></li>
+        <li><span class="key">formattedCreatedAt</span><span class="desc">작성 시각</span></li>
+      </ul>
+    </div>
+    <div class="entity board">
+      <div class="entity-title">article_like<span class="entity-sub">좋아요</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key"><span class="tag fk">FK</span> article_id</span><span class="desc">→ Article</span></li>
+        <li><span class="key">userId</span><span class="desc">좋아요 사용자</span></li>
+        <li><span class="key"><span class="tag uk">UK</span> (article_id, userId)</span><span class="desc">복합 유니크</span></li>
+      </ul>
+    </div>
+    <div class="entity board">
+      <div class="entity-title">article_file<span class="entity-sub">게시글 첨부</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key"><span class="tag fk">FK</span> article_id</span><span class="desc">→ Article (nullable)</span></li>
+        <li><span class="key">category</span><span class="desc">게시판 카테고리 복사</span></li>
+        <li><span class="key">originalName</span><span class="desc">원본 파일명 *</span></li>
+        <li><span class="key">savedName</span><span class="desc">저장 파일명 *</span></li>
+        <li><span class="key">url</span><span class="desc">접근 URL *</span></li>
+        <li><span class="key">size</span><span class="desc">크기(byte) *</span></li>
+        <li><span class="key">fileType</span><span class="desc">MIME *</span></li>
+        <li><span class="key">mediaType</span><span class="desc">IMAGE/VIDEO/OTHER *</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="rels">
+    <strong>관계:</strong>
+    Article 1—N Comment · Article 1—N article_like · Article 1—N article_file ·
+    Members ··· Article/Comment/article_like (<code>userId</code> 문자열, FK 없음)<br/>
+    <em>* SavedMeta Embeddable</em>
+  </div>
+
+  <h3>2.2 아티스트·유닛·앨범·케미</h3>
+  <div class="erd-board">
+    <div class="entity artist">
+      <div class="entity-title">Artist<span class="entity-sub">아티스트</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> artistId</span><span class="desc">기본키</span></li>
+        <li><span class="key"><span class="tag uk">UK</span> name</span><span class="desc">한글 이름</span></li>
+        <li><span class="key"><span class="tag uk">UK</span> engName</span><span class="desc">영문 이름</span></li>
+        <li><span class="key">nationality</span><span class="desc">국적</span></li>
+        <li><span class="key">birthDate</span><span class="desc">생년월일</span></li>
+        <li><span class="key">birthPlace</span><span class="desc">출생지</span></li>
+        <li><span class="key">debutDate</span><span class="desc">데뷔일</span></li>
+        <li><span class="key">profileImage</span><span class="desc">프로필 이미지</span></li>
+        <li><span class="key">color</span><span class="desc">대표 색</span></li>
+      </ul>
+    </div>
+    <div class="entity artist">
+      <div class="entity-title">Unit<span class="entity-sub">유닛</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> unitId</span><span class="desc">기본키</span></li>
+        <li><span class="key">unitName</span><span class="desc">유닛명</span></li>
+        <li><span class="key">smallName</span><span class="desc">약칭</span></li>
+        <li><span class="key">unitImage</span><span class="desc">유닛 이미지</span></li>
+        <li><span class="key">formationDate</span><span class="desc">결성일</span></li>
+        <li><span class="key">debutDate</span><span class="desc">데뷔일</span></li>
+        <li><span class="key"><span class="tag fk">FK</span> parent_unit_id</span><span class="desc">→ Unit (자기참조)</span></li>
+      </ul>
+    </div>
+    <div class="entity artist">
+      <div class="entity-title">UnitMember<span class="entity-sub">유닛 소속</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key"><span class="tag fk">FK</span> artist_Id</span><span class="desc">→ Artist</span></li>
+        <li><span class="key"><span class="tag fk">FK</span> unit_id</span><span class="desc">→ Unit</span></li>
+      </ul>
+    </div>
+    <div class="entity artist">
+      <div class="entity-title">Album<span class="entity-sub">앨범</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> albumId</span><span class="desc">기본키</span></li>
+        <li><span class="key"><span class="tag uk">UK</span> albumName</span><span class="desc">앨범명</span></li>
+        <li><span class="key">albumImage</span><span class="desc">앨범 커버</span></li>
+        <li><span class="key">releaseDate</span><span class="desc">발매일</span></li>
+        <li><span class="key">albumInfo</span><span class="desc">앨범 소개</span></li>
+        <li><span class="key"><span class="tag fk">FK</span> unit_id</span><span class="desc">→ Unit</span></li>
+      </ul>
+    </div>
+    <div class="entity artist">
+      <div class="entity-title">Track<span class="entity-sub">수록곡</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> trackId</span><span class="desc">기본키</span></li>
+        <li><span class="key">trackNum</span><span class="desc">트랙 번호</span></li>
+        <li><span class="key">title</span><span class="desc">곡 제목</span></li>
+        <li><span class="key">duration</span><span class="desc">재생 시간</span></li>
+        <li><span class="key">isTitle</span><span class="desc">타이틀곡 여부</span></li>
+        <li><span class="key"><span class="tag fk">FK</span> album_id</span><span class="desc">→ Album</span></li>
+      </ul>
+    </div>
+    <div class="entity artist">
+      <div class="entity-title">Chemistry<span class="entity-sub">멤버 케미</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key">memberA</span><span class="desc">멤버A 이름(문자열)</span></li>
+        <li><span class="key">memberB</span><span class="desc">멤버B 이름(문자열)</span></li>
+        <li><span class="key">label</span><span class="desc">짧은 케미명</span></li>
+        <li><span class="key">description</span><span class="desc">케미 설명</span></li>
+        <li><span class="key">imageUrl</span><span class="desc">이미지 URL</span></li>
+        <li><span class="key">linksJson</span><span class="desc">링크 JSON</span></li>
+        <li><span class="key">crossFlag</span><span class="desc">크로스 케미</span></li>
+        <li><span class="key"><span class="tag uk">UK</span> (memberA, memberB)</span><span class="desc">페어 유니크</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="rels">
+    <strong>관계:</strong>
+    Artist N—M Unit (via UnitMember) · Unit 1—N Unit(parent) · Unit 1—N Album · Album 1—N Track ·
+    Chemistry는 Artist와 <em>관계 없음</em>(이름 문자열만)
+  </div>
+
+  <h3>2.3 쇼핑 · 미디어 · 자료 · 일정</h3>
+  <div class="erd-board">
+    <div class="entity shop">
+      <div class="entity-title">Shop<span class="entity-sub">상품</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key">name</span><span class="desc">상품명</span></li>
+        <li><span class="key">price</span><span class="desc">가격</span></li>
+        <li><span class="key">description</span><span class="desc">상품 설명</span></li>
+        <li><span class="key">soldout</span><span class="desc">품절 여부</span></li>
+        <li><span class="key">category</span><span class="desc">상품 카테고리</span></li>
+      </ul>
+    </div>
+    <div class="entity shop">
+      <div class="entity-title">ShopImage<span class="entity-sub">상품 이미지</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key"><span class="tag fk">FK</span> shop_id</span><span class="desc">→ Shop</span></li>
+        <li><span class="key">originalName</span><span class="desc">원본 파일명 *</span></li>
+        <li><span class="key">savedName</span><span class="desc">저장 파일명 *</span></li>
+        <li><span class="key">url</span><span class="desc">접근 URL *</span></li>
+        <li><span class="key">size</span><span class="desc">크기 *</span></li>
+        <li><span class="key">fileType</span><span class="desc">MIME *</span></li>
+        <li><span class="key">mediaType</span><span class="desc">미디어 타입 *</span></li>
+      </ul>
+    </div>
+    <div class="entity media">
+      <div class="entity-title">Media<span class="entity-sub">유튜브(엔티티·미사용)</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">문자열 PK</span></li>
+        <li><span class="key">tab</span><span class="desc">탭</span></li>
+        <li><span class="key">mediaTitle</span><span class="desc">영상 제목</span></li>
+        <li><span class="key">mediaDur</span><span class="desc">재생 시간</span></li>
+        <li><span class="key">youtubeId</span><span class="desc">유튜브 ID</span></li>
+        <li><span class="key">viewCount</span><span class="desc">조회수(VARCHAR)</span></li>
+        <li><span class="key">description</span><span class="desc">설명</span></li>
+      </ul>
+    </div>
+    <div class="entity media">
+      <div class="entity-title">Archive<span class="entity-sub">자료실</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key">title</span><span class="desc">자료 제목</span></li>
+        <li><span class="key">originalName</span><span class="desc">원본 파일명 *</span></li>
+        <li><span class="key">savedName</span><span class="desc">저장 파일명 *</span></li>
+        <li><span class="key">url</span><span class="desc">접근 URL *</span></li>
+        <li><span class="key">size</span><span class="desc">크기 *</span></li>
+        <li><span class="key">fileType</span><span class="desc">MIME *</span></li>
+        <li><span class="key">mediaType</span><span class="desc">미디어 타입 *</span></li>
+      </ul>
+    </div>
+    <div class="entity media">
+      <div class="entity-title">Schedule<span class="entity-sub">일정</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key">title</span><span class="desc">일정 제목</span></li>
+        <li><span class="key">start_date</span><span class="desc">시작일</span></li>
+        <li><span class="key">end_date</span><span class="desc">종료일</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="rels">
+    <strong>관계:</strong> Shop 1—N ShopImage · Media/Archive/Schedule는 독립.
+    Media는 엔티티만 있고 실제 저장은 JSON 파일.
+  </div>
+  <p class="caption">그림 1. 현재(As-Is) ERD — 테이블별 전체 컬럼</p>
+
+  <!-- ========== 3. 상세 ========== -->
+  <h2 class="page-break">3. 테이블·컬럼·역할 상세 (As-Is)</h2>
+
+  <h3>3.1 Members — 사이트 회원</h3>
+  <div class="role">역할: 로그인·권한·레벨·포인트 보관. 현재 로그인/회원가입은 비활성(리다이렉트)이며 Repository도 없어 사실상 미사용.</div>
+  <table>
+    <tr><th>컬럼</th><th>타입·제약</th><th>설명</th></tr>
+    <tr><td>id</td><td>BIGINT PK</td><td>기본키</td></tr>
+    <tr><td>userId</td><td>VARCHAR UK</td><td>로그인 ID</td></tr>
+    <tr><td>password</td><td>VARCHAR</td><td>비밀번호</td></tr>
+    <tr><td>email</td><td>VARCHAR</td><td>이메일</td></tr>
+    <tr><td>address</td><td>VARCHAR</td><td>주소</td></tr>
+    <tr><td>role</td><td>VARCHAR</td><td>권한 (기본 ROLE_USER)</td></tr>
+    <tr><td>level</td><td>INT</td><td>레벨</td></tr>
+    <tr><td>points</td><td>INT</td><td>포인트</td></tr>
+  </table>
+
+  <h3>3.2 Article — 게시글</h3>
+  <div class="role">역할: 커뮤니티 게시글. Comment / article_like / article_file과 1:N. userId는 Members와 논리만 연결.</div>
+  <table>
+    <tr><th>컬럼</th><th>타입·제약</th><th>설명</th></tr>
+    <tr><td>id</td><td>BIGINT PK</td><td>기본키</td></tr>
+    <tr><td>displayId</td><td>BIGINT</td><td>게시판별 표시 번호</td></tr>
+    <tr><td>userId</td><td>VARCHAR</td><td>작성자 ID (문자열)</td></tr>
+    <tr><td>title</td><td>VARCHAR</td><td>제목</td></tr>
+    <tr><td>content</td><td>LONGTEXT</td><td>본문 HTML</td></tr>
+    <tr><td>category</td><td>VARCHAR</td><td>free/chat/notice/trade 등</td></tr>
+    <tr><td>likesCount</td><td>INT</td><td>좋아요 수 캐시</td></tr>
+    <tr><td>formatted_created_at</td><td>DATETIME</td><td>작성 시각</td></tr>
+  </table>
+
+  <h3>3.3 Comment — 댓글</h3>
+  <div class="role">역할: 게시글 댓글. article_id → Article (FK).</div>
+  <table>
+    <tr><th>컬럼</th><th>타입·제약</th><th>설명</th></tr>
+    <tr><td>id</td><td>BIGINT PK</td><td>기본키</td></tr>
+    <tr><td>article_id</td><td>BIGINT FK</td><td>게시글</td></tr>
+    <tr><td>userId</td><td>VARCHAR</td><td>작성자</td></tr>
+    <tr><td>body</td><td>VARCHAR</td><td>내용</td></tr>
+    <tr><td>formattedCreatedAt</td><td>TIMESTAMP</td><td>작성 시각</td></tr>
+  </table>
+
+  <h3>3.4 article_like — 게시글 좋아요</h3>
+  <div class="role">역할: (게시글, 사용자) 단위 좋아요. UNIQUE(article_id, userid). Article.likesCount와 이중 관리.</div>
+  <table>
+    <tr><th>컬럼</th><th>타입·제약</th><th>설명</th></tr>
+    <tr><td>id</td><td>BIGINT PK</td><td>기본키</td></tr>
+    <tr><td>article_id</td><td>BIGINT FK</td><td>게시글</td></tr>
+    <tr><td>userId</td><td>VARCHAR</td><td>좋아요한 사용자</td></tr>
+  </table>
+
+  <h3>3.5 article_file — 게시글 첨부</h3>
+  <div class="role">역할: 업로드 파일 메타. SavedMeta 임베드. category는 Article과 동기화되는 중복 컬럼.</div>
+  <table>
+    <tr><th>컬럼</th><th>타입·제약</th><th>설명</th></tr>
+    <tr><td>id</td><td>BIGINT PK</td><td>기본키</td></tr>
+    <tr><td>article_id</td><td>BIGINT FK (nullable)</td><td>게시글</td></tr>
+    <tr><td>category</td><td>VARCHAR(20)</td><td>게시판 카테고리 복사</td></tr>
+    <tr><td>originalName 등</td><td>SavedMeta</td><td>원본명·저장명·url·size·fileType·mediaType</td></tr>
+  </table>
+
+  <h3>3.6 Artist — 아티스트</h3>
+  <div class="role">역할: 멤버 프로필. UnitMember로 유닛 소속.</div>
+  <table>
+    <tr><th>컬럼</th><th>설명</th></tr>
+    <tr><td>artistId</td><td>PK</td></tr>
+    <tr><td>name / engName</td><td>한글·영문 이름 (UK)</td></tr>
+    <tr><td>nationality, birthDate, birthPlace, debutDate</td><td>프로필 정보</td></tr>
+    <tr><td>profileImage, color</td><td>이미지·대표색</td></tr>
+  </table>
+
+  <h3>3.7 Unit — 유닛</h3>
+  <div class="role">역할: 그룹/서브유닛. parent_unit_id로 자기참조 (예: MSNZ → Moon).</div>
+  <table>
+    <tr><th>컬럼</th><th>설명</th></tr>
+    <tr><td>unitId</td><td>PK</td></tr>
+    <tr><td>unitName, smallName, unitImage</td><td>명칭·이미지</td></tr>
+    <tr><td>formationDate, debutDate</td><td>결성·데뷔</td></tr>
+    <tr><td>parent_unit_id</td><td>상위 유닛 FK</td></tr>
+  </table>
+
+  <h3>3.8 UnitMember — 유닛 소속 조인</h3>
+  <div class="role">역할: Artist ↔ Unit M:N. (artist_Id, unit_id) UNIQUE 제약은 없음.</div>
+
+  <h3>3.9 Album / Track</h3>
+  <div class="role">역할: 앨범(Unit N:1)과 수록곡(Album 1:N). 앨범 상세 트랙리스트에 사용.</div>
+  <table>
+    <tr><th>테이블</th><th>주요 컬럼</th></tr>
+    <tr><td>Album</td><td>albumId, albumName(UK), albumImage, releaseDate, albumInfo, unit_id</td></tr>
+    <tr><td>Track</td><td>trackId, trackNum, title, duration, isTitle, album_id</td></tr>
+  </table>
+
+  <h3>3.10 Chemistry — 멤버 케미</h3>
+  <div class="role">역할: 멤버 페어별 케미명·설명·이미지. memberA/B는 한글 이름 문자열(Artist FK 없음). UK(memberA, memberB).</div>
+  <table>
+    <tr><th>컬럼</th><th>설명</th></tr>
+    <tr><td>id</td><td>PK</td></tr>
+    <tr><td>memberA, memberB</td><td>멤버 한글 이름</td></tr>
+    <tr><td>label, description</td><td>짧은 이름·설명</td></tr>
+    <tr><td>imageUrl, linksJson, crossFlag</td><td>이미지·링크·크로스 여부</td></tr>
+  </table>
+
+  <h3>3.11 Shop / ShopImage</h3>
+  <div class="role">역할: 굿즈 상품과 이미지(1:N). 상세 페이지 슬라이드에 다장 사용.</div>
+
+  <h3>3.12 Media — 유튜브 미디어</h3>
+  <div class="role">
+    역할(의도): 탭별(mv/signal 등) 유튜브 카탈로그.
+    <strong>실제:</strong> MediaService는 JSON 파일만 사용. MediaRepository 호출 0회. 엔티티 PK(String)와 Repository 제네릭(Long) 불일치.
+  </div>
+  <table>
+    <tr><th>컬럼</th><th>설명</th></tr>
+    <tr><td>id</td><td>문자열 PK</td></tr>
+    <tr><td>tab, mediaTitle, mediaDur, youtubeId, viewCount, description</td><td>탭·제목·길이·YT ID·조회수(문자열)·설명</td></tr>
+  </table>
+
+  <h3>3.13 Archive — 자료실</h3>
+  <div class="role">역할: 독립 업로드 자료. SavedMeta 임베드. article_file과 역할이 다름(자료실 vs 게시 첨부).</div>
+
+  <h3>3.14 Schedule — 일정</h3>
+  <div class="role">역할: 캘린더 일정(제목·시작·종료일).</div>
+
+  <h3>3.15 SavedMeta / MediaType (테이블 아님)</h3>
+  <div class="role">
+    SavedMeta는 Embeddable(원본명·저장명·url·size·fileType·mediaType).
+    MediaType은 IMAGE/VIDEO/OTHER enum.
+  </div>
+
+  <!-- ========== 4. 개선점 ========== -->
+  <h2 class="page-break">4. 개선점</h2>
+
+  <div class="improve">
+    <strong>1) article_like → Article로 합치기</strong><br/>
+    “누가 눌렀는지”보다 “몇 개”만 필요하면 별도 테이블이 과함.
+    현재도 좋아요가 anonymous 고정. <span class="badge del">제거</span>
+    <code>Article.likesCount</code>만 유지. (1인 1좋아요·유저별 목록이 필요해지면 조인 테이블 복구)
+  </div>
+
+  <div class="improve">
+    <strong>2) Members 제거 (또는 회원 복구 시 FK 연결)</strong><br/>
+    로그인 미사용·Repo 없음. 유지할 가치 낮음. <span class="badge del">제거</span>
+    회원 기능을 살릴 경우 Article/Comment에 members.id FK를 추가.
+  </div>
+
+  <div class="improve">
+    <strong>3) Media는 JSON 대신 DB 유지·정비</strong><br/>
+    탭 페이징·youtubeId 중복·다중 인스턴스·백업 측면에서 DB가 유리.
+    JSON 카탈로그를 버리고 JPA로 이전. <span class="badge ok">유지·강화</span>
+    PK를 surrogate id + youtubeId UNIQUE, viewCount를 BIGINT로.
+  </div>
+
+  <div class="improve">
+    <strong>4) Chemistry → Artist FK</strong><br/>
+    memberA/B 문자열·서비스 하드코딩 멤버 리스트 제거.
+    <code>artist_a_id</code>, <code>artist_b_id</code> + UNIQUE(pair). <span class="badge">관계 추가</span>
+  </div>
+
+  <div class="improve">
+    <strong>5) 중복·타입 정리</strong><br/>
+    article_file.category 제거 · 날짜 VARCHAR→DATE · PK 네이밍 통일(id) ·
+    UnitMember (artist_id, unit_id) UNIQUE · 테이블명 snake_case 통일 권장.
+  </div>
+
+  <div class="keep">
+    <strong>합치지 않는 것</strong><br/>
+    Comment, article_file, Track, ShopImage, Archive vs Media(유튜브) —
+    생명주기·카디널리티·도메인이 달라 분리 유지.
+  </div>
+
+  <!-- ========== 5. To-Be ERD ========== -->
+  <h2>5. 개선 반영 ERD (To-Be)</h2>
+  <p>
+    제거: <code>Members</code>, <code>article_like</code> /
+    유지·강화: <code>Media</code>(DB) /
+    관계 추가: Chemistry → Artist FK /
+    중복 제거: <code>article_file.category</code>
+  </p>
+
+  <h3>5.1 게시판</h3>
+  <div class="erd-board">
+    <div class="entity board">
+      <div class="entity-title">Article<span class="entity-sub">게시글</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key">displayId</span><span class="desc">게시판별 표시 번호</span></li>
+        <li><span class="key">userId</span><span class="desc">작성자 ID(표시용)</span></li>
+        <li><span class="key">title</span><span class="desc">제목</span></li>
+        <li><span class="key">content</span><span class="desc">본문 HTML</span></li>
+        <li><span class="key">category</span><span class="desc">게시판 구분</span></li>
+        <li><span class="key">likesCount</span><span class="desc">좋아요 수(단일)</span></li>
+        <li><span class="key">createdAt</span><span class="desc">작성 시각</span></li>
+      </ul>
+    </div>
+    <div class="entity board">
+      <div class="entity-title">Comment<span class="entity-sub">댓글</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key"><span class="tag fk">FK</span> article_id</span><span class="desc">→ Article</span></li>
+        <li><span class="key">userId</span><span class="desc">작성자 ID</span></li>
+        <li><span class="key">body</span><span class="desc">댓글 내용</span></li>
+        <li><span class="key">createdAt</span><span class="desc">작성 시각</span></li>
+      </ul>
+    </div>
+    <div class="entity board">
+      <div class="entity-title">article_file<span class="entity-sub">게시글 첨부</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key"><span class="tag fk">FK</span> article_id</span><span class="desc">→ Article</span></li>
+        <li><span class="key">originalName</span><span class="desc">원본 파일명</span></li>
+        <li><span class="key">savedName</span><span class="desc">저장 파일명</span></li>
+        <li><span class="key">url</span><span class="desc">접근 URL</span></li>
+        <li><span class="key">size</span><span class="desc">파일 크기</span></li>
+        <li><span class="key">fileType</span><span class="desc">MIME</span></li>
+        <li><span class="key">mediaType</span><span class="desc">IMAGE/VIDEO/OTHER</span></li>
+      </ul>
+    </div>
+    <div class="entity gone">
+      <div class="entity-title">제거됨<span class="entity-sub">Members / article_like</span></div>
+      <ul class="entity-cols">
+        <li><span class="key">Members</span><span class="desc">미사용 회원 테이블</span></li>
+        <li><span class="key">article_like</span><span class="desc">likesCount로 합침</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="rels"><strong>관계:</strong> Article 1—N Comment · Article 1—N article_file</div>
+
+  <h3>5.2 아티스트·유닛·앨범·케미</h3>
+  <div class="erd-board">
+    <div class="entity artist">
+      <div class="entity-title">Artist<span class="entity-sub">아티스트</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키(통일)</span></li>
+        <li><span class="key"><span class="tag uk">UK</span> name</span><span class="desc">한글 이름</span></li>
+        <li><span class="key"><span class="tag uk">UK</span> engName</span><span class="desc">영문 이름</span></li>
+        <li><span class="key">nationality</span><span class="desc">국적</span></li>
+        <li><span class="key">birthDate</span><span class="desc">생년월일 DATE</span></li>
+        <li><span class="key">birthPlace</span><span class="desc">출생지</span></li>
+        <li><span class="key">debutDate</span><span class="desc">데뷔일 DATE</span></li>
+        <li><span class="key">profileImage</span><span class="desc">프로필 이미지</span></li>
+        <li><span class="key">color</span><span class="desc">대표 색</span></li>
+      </ul>
+    </div>
+    <div class="entity artist">
+      <div class="entity-title">Unit<span class="entity-sub">유닛</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key">unitName</span><span class="desc">유닛명</span></li>
+        <li><span class="key">smallName</span><span class="desc">약칭</span></li>
+        <li><span class="key">unitImage</span><span class="desc">유닛 이미지</span></li>
+        <li><span class="key">formationDate</span><span class="desc">결성일 DATE</span></li>
+        <li><span class="key">debutDate</span><span class="desc">데뷔일 DATE</span></li>
+        <li><span class="key"><span class="tag fk">FK</span> parent_unit_id</span><span class="desc">→ Unit</span></li>
+      </ul>
+    </div>
+    <div class="entity artist">
+      <div class="entity-title">unit_member<span class="entity-sub">유닛 소속</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag fk">FK</span> artist_id</span><span class="desc">→ Artist</span></li>
+        <li><span class="key"><span class="tag fk">FK</span> unit_id</span><span class="desc">→ Unit</span></li>
+        <li><span class="key"><span class="tag uk">UK</span> (artist_id, unit_id)</span><span class="desc">복합 PK/UK</span></li>
+      </ul>
+    </div>
+    <div class="entity artist">
+      <div class="entity-title">Album<span class="entity-sub">앨범</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key"><span class="tag uk">UK</span> albumName</span><span class="desc">앨범명</span></li>
+        <li><span class="key">albumImage</span><span class="desc">앨범 커버</span></li>
+        <li><span class="key">releaseDate</span><span class="desc">발매일 DATE</span></li>
+        <li><span class="key">albumInfo</span><span class="desc">앨범 소개</span></li>
+        <li><span class="key"><span class="tag fk">FK</span> unit_id</span><span class="desc">→ Unit</span></li>
+      </ul>
+    </div>
+    <div class="entity artist">
+      <div class="entity-title">Track<span class="entity-sub">수록곡</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key">trackNum</span><span class="desc">트랙 번호</span></li>
+        <li><span class="key">title</span><span class="desc">곡 제목</span></li>
+        <li><span class="key">duration</span><span class="desc">재생 시간</span></li>
+        <li><span class="key">isTitle</span><span class="desc">타이틀곡 여부</span></li>
+        <li><span class="key"><span class="tag fk">FK</span> album_id</span><span class="desc">→ Album</span></li>
+      </ul>
+    </div>
+    <div class="entity artist">
+      <div class="entity-title">Chemistry<span class="entity-sub">멤버 케미</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key"><span class="tag fk">FK</span> artist_a_id</span><span class="desc">→ Artist (멤버A)</span></li>
+        <li><span class="key"><span class="tag fk">FK</span> artist_b_id</span><span class="desc">→ Artist (멤버B)</span></li>
+        <li><span class="key">label</span><span class="desc">짧은 케미명</span></li>
+        <li><span class="key">description</span><span class="desc">케미 설명</span></li>
+        <li><span class="key">imageUrl</span><span class="desc">이미지 URL</span></li>
+        <li><span class="key">linksJson</span><span class="desc">링크 JSON</span></li>
+        <li><span class="key">crossFlag</span><span class="desc">크로스 케미</span></li>
+        <li><span class="key"><span class="tag uk">UK</span> (artist_a_id, artist_b_id)</span><span class="desc">페어 유니크</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="rels">
+    <strong>관계:</strong>
+    Artist N—M Unit · Unit 자기참조 · Unit 1—N Album · Album 1—N Track ·
+    Artist 1—N Chemistry (a/b)
+  </div>
+
+  <h3>5.3 쇼핑 · 미디어 · 자료 · 일정</h3>
+  <div class="erd-board">
+    <div class="entity shop">
+      <div class="entity-title">Shop<span class="entity-sub">상품</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key">name</span><span class="desc">상품명</span></li>
+        <li><span class="key">price</span><span class="desc">가격</span></li>
+        <li><span class="key">description</span><span class="desc">상품 설명</span></li>
+        <li><span class="key">soldout</span><span class="desc">품절 여부</span></li>
+        <li><span class="key">category</span><span class="desc">상품 카테고리</span></li>
+      </ul>
+    </div>
+    <div class="entity shop">
+      <div class="entity-title">ShopImage<span class="entity-sub">상품 이미지</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key"><span class="tag fk">FK</span> shop_id</span><span class="desc">→ Shop</span></li>
+        <li><span class="key">originalName</span><span class="desc">원본 파일명</span></li>
+        <li><span class="key">savedName</span><span class="desc">저장 파일명</span></li>
+        <li><span class="key">url</span><span class="desc">접근 URL</span></li>
+        <li><span class="key">size</span><span class="desc">파일 크기</span></li>
+        <li><span class="key">fileType</span><span class="desc">MIME</span></li>
+        <li><span class="key">mediaType</span><span class="desc">미디어 타입</span></li>
+      </ul>
+    </div>
+    <div class="entity media">
+      <div class="entity-title">Media<span class="entity-sub">유튜브 (DB 유지)</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키 BIGINT</span></li>
+        <li><span class="key"><span class="tag uk">UK</span> youtubeId</span><span class="desc">유튜브 영상 ID</span></li>
+        <li><span class="key">tab</span><span class="desc">탭(mv/signal 등)</span></li>
+        <li><span class="key">mediaTitle</span><span class="desc">영상 제목</span></li>
+        <li><span class="key">mediaDur</span><span class="desc">재생 시간</span></li>
+        <li><span class="key">viewCount</span><span class="desc">조회수 BIGINT</span></li>
+        <li><span class="key">description</span><span class="desc">설명</span></li>
+      </ul>
+    </div>
+    <div class="entity media">
+      <div class="entity-title">Archive<span class="entity-sub">자료실</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key">title</span><span class="desc">자료 제목</span></li>
+        <li><span class="key">originalName</span><span class="desc">원본 파일명</span></li>
+        <li><span class="key">savedName</span><span class="desc">저장 파일명</span></li>
+        <li><span class="key">url</span><span class="desc">접근 URL</span></li>
+        <li><span class="key">size</span><span class="desc">파일 크기</span></li>
+        <li><span class="key">fileType</span><span class="desc">MIME</span></li>
+        <li><span class="key">mediaType</span><span class="desc">미디어 타입</span></li>
+      </ul>
+    </div>
+    <div class="entity media">
+      <div class="entity-title">Schedule<span class="entity-sub">일정</span></div>
+      <ul class="entity-cols">
+        <li><span class="key"><span class="tag pk">PK</span> id</span><span class="desc">기본키</span></li>
+        <li><span class="key">title</span><span class="desc">일정 제목</span></li>
+        <li><span class="key">start_date</span><span class="desc">시작일</span></li>
+        <li><span class="key">end_date</span><span class="desc">종료일</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="rels"><strong>관계:</strong> Shop 1—N ShopImage · Media/Archive/Schedule 독립 · Media는 JSON 대신 DB 단일 소스</div>
+  <p class="caption">그림 2. 개선(To-Be) ERD — 테이블별 전체 컬럼</p>
+
+
+  <h3>To-Be 테이블·컬럼 요약</h3>
+  <table>
+    <tr><th>테이블 (한글)</th><th>주요 컬럼</th><th>비고</th></tr>
+    <tr><td>Article 게시글</td><td>id, displayId, userId, title, content, category, likesCount, createdAt</td><td>like 테이블 없음</td></tr>
+    <tr><td>Comment 댓글</td><td>id, article_id, userId, body, createdAt</td><td>Article 1:N</td></tr>
+    <tr><td>article_file 첨부</td><td>id, article_id, SavedMeta 필드들</td><td>category 제거</td></tr>
+    <tr><td>Artist 아티스트</td><td>id, name, engName, nationality, birthDate, birthPlace, debutDate, profileImage, color</td><td>PK명 id 통일</td></tr>
+    <tr><td>Unit 유닛</td><td>id, unitName, smallName, unitImage, formationDate, debutDate, parent_unit_id</td><td>자기참조</td></tr>
+    <tr><td>unit_member 소속</td><td>artist_id, unit_id</td><td>복합 UK</td></tr>
+    <tr><td>Album / Track</td><td>(기존과 동일 의미) DATE 타입</td><td>1:N 유지</td></tr>
+    <tr><td>Chemistry 케미</td><td>id, artist_a_id, artist_b_id, label, description, imageUrl, linksJson, crossFlag</td><td>Artist FK</td></tr>
+    <tr><td>Shop / ShopImage</td><td>(기존과 동일)</td><td>유지</td></tr>
+    <tr><td>Media 유튜브</td><td>id, youtubeId(UK), tab, mediaTitle, mediaDur, viewCount(BIGINT), description</td><td>JSON→DB</td></tr>
+    <tr><td>Archive / Schedule</td><td>(기존과 동일)</td><td>유지</td></tr>
+  </table>
+
+  <!-- ========== 6. To-Be 설명 ========== -->
+  <h2>6. 개선 ERD 설명</h2>
+
+  <h3>6.1 게시판 영역</h3>
+  <p>
+    게시글(<code>Article</code>)이 중심이며 댓글·첨부만 1:N으로 연결합니다.
+    좋아요는 카운터 컬럼만 두어 쓰기/조회가 단순해집니다.
+    작성자 <code>userId</code>는 표시용이며, 회원 테이블이 없으므로 FK는 두지 않습니다.
+  </p>
+
+  <h3>6.2 아티스트·유닛·앨범</h3>
+  <p>
+    Artist–Unit은 <code>unit_member</code>로 M:N, Unit은 상위·하위 자기참조,
+    Unit–Album–Track은 발매·수록 계층을 그대로 유지합니다.
+    Chemistry만 Artist에 FK로 묶어 이름 변경·하드코딩 문제를 제거합니다.
+  </p>
+
+  <h3>6.3 쇼핑·자료·일정·미디어</h3>
+  <ul>
+    <li><strong>Shop–ShopImage</strong>: 다장 갤러리용 1:N 유지</li>
+    <li><strong>Archive</strong>: 독립 자료실 (게시 첨부와 분리)</li>
+    <li><strong>Schedule</strong>: 독립 일정</li>
+    <li><strong>Media</strong>: 유튜브 카탈로그의 단일 소스. JSON 파일 저장을 폐기하고 DB만 사용</li>
+  </ul>
+
+  <h3>6.4 As-Is 대비 변경 요약</h3>
+  <table>
+    <tr><th>구분</th><th>As-Is</th><th>To-Be</th></tr>
+    <tr><td>좋아요</td><td>article_like + likesCount</td><td>likesCount만</td></tr>
+    <tr><td>회원</td><td>Members (미사용)</td><td>제거</td></tr>
+    <tr><td>미디어</td><td>JSON + 미사용 엔티티</td><td>DB Media만</td></tr>
+    <tr><td>케미</td><td>이름 문자열</td><td>Artist FK</td></tr>
+    <tr><td>첨부 category</td><td>중복 컬럼</td><td>제거</td></tr>
+    <tr><td>UnitMember</td><td>UNIQUE 없음</td><td>복합 UK</td></tr>
+  </table>
+
+  <h3>6.5 적용 권장 순서</h3>
+  <ol>
+    <li>Flyway/Liquibase 도입 후 <code>ddl-auto</code>를 validate로</li>
+    <li>article_like 제거 + likesCount 단일화</li>
+    <li>MediaService를 JPA로 이전, JSON 폐기</li>
+    <li>Chemistry를 Artist FK로 마이그레이션</li>
+    <li>Members·중복 컬럼·타입/네이밍 정리</li>
+  </ol>
+
+  <footer>
+    triplesweb DB ERD Report · MariaDB / Spring JPA 기준 ·
+    As-Is는 코드 엔티티 분석, To-Be는 합의된 개선안 반영.
+    SavedMeta는 Embeddable로 독립 테이블이 아닙니다.
+  </footer>
+
+</body>
+</html>

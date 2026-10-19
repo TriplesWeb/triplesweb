@@ -1,6 +1,7 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.dto.ChemistryDto;
+import com.example.triplesweb.service.ChemistrySeedService;
 import com.example.triplesweb.service.ChemistryService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -31,6 +32,7 @@ public class ChemistryApiController {
     private static final Duration TOKEN_TTL = Duration.ofHours(12);
 
     private final ChemistryService chemistryService;
+    private final ChemistrySeedService chemistrySeedService;
     private final ConcurrentHashMap<String, Instant> adminTokens = new ConcurrentHashMap<>();
 
     @Value("${chemistry.admin.password:}")
@@ -119,6 +121,17 @@ public class ChemistryApiController {
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
+    }
+
+    /** 시드 JSON의 누락 페어를 Artist FK로 재적재 (기존 행은 유지). */
+    @PostMapping("/admin/reseed")
+    public Map<String, Object> reseed(HttpServletRequest request, HttpSession session) {
+        requireAdmin(request, session);
+        int inserted = chemistrySeedService.reseedMissingPairs();
+        return Map.of(
+                "inserted", inserted,
+                "total", chemistryService.findAll().size()
+        );
     }
 
     private void requireAdmin(HttpServletRequest request, HttpSession session) {

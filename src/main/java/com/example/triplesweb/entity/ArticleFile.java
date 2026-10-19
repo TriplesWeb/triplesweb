@@ -21,9 +21,6 @@ public class ArticleFile {
     @Embedded
     private SavedMeta file;
 
-    @Column(nullable = false, length = 20)
-    private String category;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "article_id", nullable = true)
     private Article article;
@@ -44,16 +41,9 @@ public class ArticleFile {
     public boolean isImage() {
         return file != null && file.getMediaType() == MediaType.IMAGE;
     }
+
     @Transient
     public boolean isVideo() {
         return file != null && file.getMediaType() == MediaType.VIDEO;
-    }
-
-    @PrePersist
-    @PreUpdate
-    public void syncCategory() {
-        if (this.article != null) {
-            this.category = this.article.getCategory();
-        }
     }
 }

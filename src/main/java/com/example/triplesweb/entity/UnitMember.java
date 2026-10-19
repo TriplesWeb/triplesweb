@@ -5,9 +5,13 @@ import lombok.*;
 
 /**
  * 아티스트와 유닛의 소속 관계를 나타내는 조인 엔티티.
- * {@link Artist}·{@link Unit} 각각 N:1.
+ * {@link Artist}·{@link Unit} 각각 N:1. (artist, unit) 유니크.
  */
 @Entity
+@Table(uniqueConstraints = @UniqueConstraint(
+        name = "uk_unit_member",
+        columnNames = {"artist_Id", "unit_id"}
+))
 @Getter
 @Setter
 @NoArgsConstructor

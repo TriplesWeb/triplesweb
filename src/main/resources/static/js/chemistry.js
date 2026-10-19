@@ -1,6 +1,7 @@
 /**
  * tripleS 케미명 매트릭스
- * 데이터 소스: GET /api/chemistry (DB). 멤버 목록·색만 프론트 상수.
+ * 데이터 소스: GET /api/chemistry (DB, Artist FK). 멤버 목록·색만 프론트 상수.
+ * 프로필 링크는 API의 artistAId/artistBId를 우선 사용한다.
  */
 (function () {
   const BASE = "/uploads/chemistry";
@@ -19,9 +20,21 @@
 
   /** DB 응답으로 채우는 설명 맵. person -> { chemKey -> {description,image,links} } */
   let chemistryDescriptions = {};
+  /** 한글 이름 → Artist.artistId (API artistAId/artistBId로 채움) */
+  let artistIdByName = Object.create(null);
 
-  function memberHref(index) {
-    return "/triples/artist/" + (index + 1);
+  function memberHref(indexOrName) {
+    const name = typeof indexOrName === "number" ? MEMBERS[indexOrName] : indexOrName;
+    const id = name ? artistIdByName[name] : null;
+    if (id != null) return "/triples/artist/" + id;
+    const idx = typeof indexOrName === "number" ? indexOrName : memberIndex(name);
+    return idx >= 0 ? "/triples/artist/" + (idx + 1) : "#";
+  }
+
+  function rememberArtistIds(entry) {
+    if (!entry) return;
+    if (entry.memberA && entry.artistAId != null) artistIdByName[entry.memberA] = entry.artistAId;
+    if (entry.memberB && entry.artistBId != null) artistIdByName[entry.memberB] = entry.artistBId;
   }
 
   function escapeHtml(str) {
@@ -56,7 +69,7 @@
         const escaped = escapeHtml(part);
         return (
           '<a href="' +
-          memberHref(meta.index) +
+          memberHref(part) +
           '" title="' +
           escaped +
           '" class="chem-title-member" style="--member-color:' +
@@ -183,12 +196,14 @@
   /** DB 목록으로 매트릭스·설명 맵을 구성한다. */
   function buildFromDb(entries) {
     clearDescriptions();
+    artistIdByName = Object.create(null);
     const matrix = createEmptyMatrix();
     if (!Array.isArray(entries)) {
       return matrix;
     }
     entries.forEach((entry) => {
       if (!entry) return;
+      rememberArtistIds(entry);
       const ia = memberIndex(entry.memberA);
       const ib = memberIndex(entry.memberB);
       if (ia < 0 || ib < 0 || ia === ib) return;

@@ -38,12 +38,11 @@ public class ArticleFileServiceImpl implements ArticleFileService {
 
         String category = StringUtils.hasText(article.getCategory()) ? article.getCategory() : "free";
 
-        // 파일 저장 (저장소가 SavedMeta 리턴)
+        // 파일 저장 (저장소가 SavedMeta 리턴) — category는 저장 경로용, DB 컬럼 아님
         SavedMeta saved = fileStorageService.saveWithMeta(mf, category);
 
         ArticleFile af = ArticleFile.builder()
                 .article(article)
-                .category(category)
                 .file(saved)
                 .build();
 
@@ -55,7 +54,6 @@ public class ArticleFileServiceImpl implements ArticleFileService {
     @Override
     public void attachUploadedFiles(List<String> uploadedFiles, Article article) {
         if (uploadedFiles == null || uploadedFiles.isEmpty() || article == null) return;
-        String category = StringUtils.hasText(article.getCategory()) ? article.getCategory() : "free";
 
         // 해당 게시글에 이미 연결된 savedName 집합 (중복 방지)
         Set<String> existing = Optional.ofNullable(article.getFiles())
@@ -97,7 +95,6 @@ public class ArticleFileServiceImpl implements ArticleFileService {
                     .build();
             ArticleFile af = ArticleFile.builder()
                     .article(article)
-                    .category(category)
                     .file(meta)
                     .build();
 
@@ -125,8 +122,6 @@ public class ArticleFileServiceImpl implements ArticleFileService {
 
         Set<String> urls = HtmlMediaParser.extractUploadUrls(article.getContent());
         if (urls.isEmpty()) return;
-
-        String category = StringUtils.hasText(article.getCategory()) ? article.getCategory() : "free";
 
         Set<String> existing = Optional.ofNullable(article.getFiles())
                 .orElseGet(List::of).stream()
@@ -169,7 +164,6 @@ public class ArticleFileServiceImpl implements ArticleFileService {
 
             ArticleFile af = ArticleFile.builder()
                     .article(article)
-                    .category(category)
                     .file(meta)
                     .build();
 

@@ -1,8 +1,6 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.entity.Article;
-import com.example.triplesweb.entity.ArticleLike;
-import com.example.triplesweb.repository.ArticleLikeRepository;
 import com.example.triplesweb.repository.ArticleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -21,9 +19,6 @@ public class PopularArticleController {
     @Autowired
     private ArticleRepository articleRepository;
 
-    @Autowired
-    private ArticleLikeRepository articleLikeRepository;
-
     @GetMapping("/popular")
     public String showPopularArticles(Model model) {
         List<Article> popularArticles = articleRepository.findByLikesCountGreaterThanEqualOrderByLikesCountDesc(5, PageRequest.of(0, 10));
@@ -31,32 +26,20 @@ public class PopularArticleController {
         return "article/popular";
     }
 
-    /** [수정] 로그인 세션 체크 제거 및 익명 좋아요 처리 */
+    /** 좋아요는 Article.likesCount만 증가 (사용자별 이력 없음) */
     @PostMapping("/{category}/{id}/like")
     @ResponseBody
     public String likeArticle(@PathVariable String category, @PathVariable Long id) {
-        String userId = "anonymous"; // 로그인 기능 삭제로 고정 익명 처리
-
         Optional<Article> optional = articleRepository.findById(id);
         if (optional.isEmpty()) return "fail";
-
-        if (articleLikeRepository.existsByArticleIdAndUserId(id, userId)) {
-            return "already"; // 이미 추천했음
-        }
 
         Article article = optional.get();
         if (!article.getCategory().equalsIgnoreCase(category)) {
             return "fail";
         }
 
-        ArticleLike like = new ArticleLike();
-        like.setArticle(article);
-        like.setUserId(userId);
-        articleLikeRepository.save(like);
-
-        article.setLikesCount(article.getLikesCount() + 1);
+        article.incrementLikes();
         articleRepository.save(article);
-
         return "ok";
     }
 }

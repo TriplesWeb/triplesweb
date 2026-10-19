@@ -141,7 +141,7 @@ public class ArticleController {
                     .userId(art.getUserId())
                     .category(art.getCategory())
                     .formattedDate(dateTimeFormatService.formatKst(art.getFormattedCreatedAt()))
-                    .likesCount(art.getLikes() != null ? art.getLikes().size() : 0)
+                    .likesCount(art.getLikesCount())
                     .build();
 
             articleViewList.add(dto);
@@ -188,7 +188,7 @@ public class ArticleController {
             dto.setSavedName(m.getSavedName());
             dto.setSize(m.getSize());
             dto.setArticleId(article.getId());
-            dto.setCategory(af.getCategory());
+            dto.setCategory(article.getCategory());
             return dto;
         }).toList();
 
@@ -232,7 +232,7 @@ public class ArticleController {
             dto.setSavedName(m.getSavedName());
             dto.setSize(m.getSize());
             dto.setArticleId(article.getId());
-            dto.setCategory(af.getCategory());
+            dto.setCategory(article.getCategory());
             return dto;
         }).toList();
 
@@ -316,7 +316,7 @@ public class ArticleController {
             dto.setId(f.getId());
             dto.setOriginalName(f.getFile().getOriginalName());
             dto.setType(f.getFile().getMediaType());
-            dto.setCategory(f.getCategory());
+            dto.setCategory(article.getCategory());
             dto.setArticleId(article.getId());
             return dto;
         }).toList();
