@@ -8,6 +8,7 @@ import lombok.*;
  * 앨범 수록곡 엔티티. {@link Album} N:1.
  */
 @Entity
+@Table(name = "track")
 @Getter
 @Setter
 @NoArgsConstructor

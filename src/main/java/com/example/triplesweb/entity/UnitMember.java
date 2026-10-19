@@ -8,10 +8,13 @@ import lombok.*;
  * {@link Artist}·{@link Unit} 각각 N:1. (artist, unit) 유니크.
  */
 @Entity
-@Table(uniqueConstraints = @UniqueConstraint(
-        name = "uk_unit_member",
-        columnNames = {"artist_Id", "unit_id"}
-))
+@Table(
+        name = "unit_member",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_unit_member",
+                columnNames = {"artist_id", "unit_id"}
+        )
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,7 +26,7 @@ public class UnitMember {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "artist_Id")
+    @JoinColumn(name = "artist_id")
     private Artist artist;
 
     @ManyToOne(fetch = FetchType.LAZY)
