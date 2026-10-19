@@ -1,4 +1,4 @@
-package com.example.illitweb;
+package com.example.triplesweb;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
