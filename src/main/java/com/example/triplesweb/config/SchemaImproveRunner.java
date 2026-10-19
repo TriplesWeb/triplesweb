@@ -12,11 +12,13 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Flyway 이후 남은 스키마 정리.
  * Chemistry memberA/B → Artist FK, article_file.category 제거, unit_member UNIQUE.
- * 테이블/컬럼명은 CamelCaseToUnderscores 및 구 StandardImpl 둘 다 시도한다.
+ * {@link com.example.triplesweb.config.DataInitializer} 이후,
+ * {@link com.example.triplesweb.service.ChemistrySeedService} 이전에 실행되어야 한다.
+ * 테이블/컬럼명은 CamelCaseToUnderscores snake_case만 사용한다.
  */
 @Slf4j
 @Component
-@Order(30)
+@Order(2)
 public class SchemaImproveRunner implements ApplicationRunner {
 
     @PersistenceContext
@@ -43,74 +45,63 @@ public class SchemaImproveRunner implements ApplicationRunner {
     }
 
     private void migrateChemistryToArtistFk() {
-        String chemTable = firstExistingTable("chemistry", "Chemistry");
-        String artistTable = firstExistingTable("artist", "Artist");
-        if (chemTable == null || artistTable == null) {
+        if (!tableExists("chemistry") || !tableExists("artist")) {
             return;
         }
 
-        String artistPk = columnExists(artistTable, "artist_id") ? "artist_id"
-                : columnExists(artistTable, "artistId") ? "artistId" : null;
-        if (artistPk == null) {
-            log.warn("Artist PK column not found on {}", artistTable);
+        if (!columnExists("artist", "artist_id")) {
+            log.warn("Artist PK column artist_id not found");
             return;
         }
 
-        boolean hasMemberA = columnExists(chemTable, "member_a") || columnExists(chemTable, "memberA");
-        String memberACol = columnExists(chemTable, "member_a") ? "member_a" : "memberA";
-        String memberBCol = columnExists(chemTable, "member_b") ? "member_b" : "memberB";
-        boolean hasArtistA = columnExists(chemTable, "artist_a_id");
+        String memberACol = firstExistingColumn("chemistry", "member_a", "memberA", "membera");
+        String memberBCol = firstExistingColumn("chemistry", "member_b", "memberB", "memberb");
+        boolean hasMemberA = memberACol != null && memberBCol != null;
+        boolean hasArtistA = columnExists("chemistry", "artist_a_id");
 
         if (hasMemberA) {
             if (!hasArtistA) {
                 em.createNativeQuery(
-                        "ALTER TABLE " + chemTable
+                        "ALTER TABLE chemistry"
                                 + " ADD COLUMN artist_a_id BIGINT NULL, ADD COLUMN artist_b_id BIGINT NULL"
                 ).executeUpdate();
             }
             em.createNativeQuery(
-                    "UPDATE " + chemTable + " c"
-                            + " INNER JOIN " + artistTable + " a ON a.name = c." + memberACol
-                            + " INNER JOIN " + artistTable + " b ON b.name = c." + memberBCol
-                            + " SET c.artist_a_id = a." + artistPk + ", c.artist_b_id = b." + artistPk
+                    "UPDATE chemistry c"
+                            + " INNER JOIN artist a ON a.name = c." + memberACol
+                            + " INNER JOIN artist b ON b.name = c." + memberBCol
+                            + " SET c.artist_a_id = a.artist_id, c.artist_b_id = b.artist_id"
                             + " WHERE c.artist_a_id IS NULL OR c.artist_b_id IS NULL"
             ).executeUpdate();
             em.createNativeQuery(
-                    "DELETE FROM " + chemTable + " WHERE artist_a_id IS NULL OR artist_b_id IS NULL"
+                    "DELETE FROM chemistry WHERE artist_a_id IS NULL OR artist_b_id IS NULL"
             ).executeUpdate();
-            try {
-                em.createNativeQuery("ALTER TABLE " + chemTable + " DROP INDEX uk_chemistry_pair").executeUpdate();
-            } catch (RuntimeException ignored) {
+            if (indexExists("chemistry", "uk_chemistry_pair")) {
+                em.createNativeQuery("ALTER TABLE chemistry DROP INDEX uk_chemistry_pair").executeUpdate();
             }
             em.createNativeQuery(
-                    "ALTER TABLE " + chemTable + " DROP COLUMN " + memberACol + ", DROP COLUMN " + memberBCol
+                    "ALTER TABLE chemistry DROP COLUMN " + memberACol + ", DROP COLUMN " + memberBCol
             ).executeUpdate();
-            log.info("Migrated {}.{} → artist_a_id/artist_b_id", chemTable, memberACol);
+            log.info("Migrated chemistry.{} → artist_a_id/artist_b_id", memberACol);
             hasArtistA = true;
             hasMemberA = false;
         }
 
         if (hasArtistA && !hasMemberA) {
-            try {
+            if (columnIsNullable("chemistry", "artist_a_id") || columnIsNullable("chemistry", "artist_b_id")) {
                 em.createNativeQuery(
-                        "ALTER TABLE " + chemTable
+                        "ALTER TABLE chemistry"
                                 + " MODIFY COLUMN artist_a_id BIGINT NOT NULL, MODIFY COLUMN artist_b_id BIGINT NOT NULL"
                 ).executeUpdate();
-            } catch (RuntimeException e) {
-                log.debug("Chemistry NOT NULL already applied: {}", e.getMessage());
             }
-            if (!indexExists(chemTable, "uk_chemistry_pair")) {
-                try {
-                    em.createNativeQuery(
-                            "ALTER TABLE " + chemTable
-                                    + " ADD CONSTRAINT uk_chemistry_pair UNIQUE (artist_a_id, artist_b_id)"
-                    ).executeUpdate();
-                } catch (RuntimeException e) {
-                    log.debug("Chemistry UK: {}", e.getMessage());
-                }
+            if (!indexExists("chemistry", "uk_chemistry_pair")) {
+                em.createNativeQuery(
+                        "ALTER TABLE chemistry"
+                                + " ADD CONSTRAINT uk_chemistry_pair UNIQUE (artist_a_id, artist_b_id)"
+                ).executeUpdate();
             }
-            ensureChemistryFk(chemTable, artistTable, artistPk, "fk_chemistry_artist_a", "artist_a_id");
-            ensureChemistryFk(chemTable, artistTable, artistPk, "fk_chemistry_artist_b", "artist_b_id");
+            ensureChemistryFk("fk_chemistry_artist_a", "artist_a_id");
+            ensureChemistryFk("fk_chemistry_artist_b", "artist_b_id");
         }
     }
 
@@ -191,33 +182,16 @@ public class SchemaImproveRunner implements ApplicationRunner {
 
 
     private void ensureUnitMemberUnique() {
-        String um = firstExistingTable("unit_member", "UnitMember");
-        if (um == null || indexExists(um, "uk_unit_member")) {
+        if (!tableExists("unit_member") || indexExists("unit_member", "uk_unit_member")) {
             return;
         }
-        String artistCol = columnExists(um, "artist_Id") ? "artist_Id"
-                : columnExists(um, "artist_id") ? "artist_id" : null;
-        String unitCol = columnExists(um, "unit_id") ? "unit_id" : null;
-        if (artistCol == null || unitCol == null) {
+        if (!columnExists("unit_member", "artist_id") || !columnExists("unit_member", "unit_id")) {
             return;
         }
-        try {
-            em.createNativeQuery(
-                    "ALTER TABLE " + um + " ADD CONSTRAINT uk_unit_member UNIQUE (" + artistCol + ", " + unitCol + ")"
-            ).executeUpdate();
-            log.info("Added uk_unit_member on {}", um);
-        } catch (RuntimeException e) {
-            log.warn("UnitMember UNIQUE skipped: {}", e.getMessage());
-        }
-    }
-
-    private String firstExistingTable(String... names) {
-        for (String n : names) {
-            if (tableExists(n)) {
-                return n;
-            }
-        }
-        return null;
+        em.createNativeQuery(
+                "ALTER TABLE unit_member ADD CONSTRAINT uk_unit_member UNIQUE (artist_id, unit_id)"
+        ).executeUpdate();
+        log.info("Added uk_unit_member on unit_member");
     }
 
     private boolean tableExists(String table) {
@@ -231,15 +205,35 @@ public class SchemaImproveRunner implements ApplicationRunner {
     private boolean columnExists(String table, String column) {
         Number n = (Number) em.createNativeQuery("""
                 SELECT COUNT(*) FROM information_schema.COLUMNS
-                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t AND COLUMN_NAME = :c
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = :t
+                  AND COLUMN_NAME = :c
                 """).setParameter("t", table).setParameter("c", column).getSingleResult();
         return n.longValue() > 0;
+    }
+
+    /** information_schema에 실제 저장된 컬럼명(대소문자 포함)을 반환한다. */
+    private String resolveColumnName(String table, String column) {
+        try {
+            Object name = em.createNativeQuery("""
+                    SELECT COLUMN_NAME FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = :t
+                      AND LOWER(COLUMN_NAME) = LOWER(:c)
+                    LIMIT 1
+                    """).setParameter("t", table).setParameter("c", column).getSingleResult();
+            return name != null ? name.toString() : null;
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 
     private boolean indexExists(String table, String index) {
         Number n = (Number) em.createNativeQuery("""
                 SELECT COUNT(*) FROM information_schema.STATISTICS
-                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t AND INDEX_NAME = :i
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = :t
+                  AND INDEX_NAME = :i
                 """).setParameter("t", table).setParameter("i", index).getSingleResult();
         return n.longValue() > 0;
     }
@@ -247,8 +241,36 @@ public class SchemaImproveRunner implements ApplicationRunner {
     private boolean constraintExists(String table, String name) {
         Number n = (Number) em.createNativeQuery("""
                 SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
-                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t AND CONSTRAINT_NAME = :n
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = :t
+                  AND CONSTRAINT_NAME = :n
                 """).setParameter("t", table).setParameter("n", name).getSingleResult();
         return n.longValue() > 0;
+    }
+
+    private boolean foreignKeyExistsOnColumn(String table, String column) {
+        Number n = (Number) em.createNativeQuery("""
+                SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = :t
+                  AND COLUMN_NAME = :c
+                  AND REFERENCED_TABLE_NAME IS NOT NULL
+                """).setParameter("t", table).setParameter("c", column).getSingleResult();
+        return n.longValue() > 0;
+    }
+
+    private boolean columnIsNullable(String table, String column) {
+        try {
+            Object nullable = em.createNativeQuery("""
+                    SELECT IS_NULLABLE FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = :t
+                      AND COLUMN_NAME = :c
+                    LIMIT 1
+                    """).setParameter("t", table).setParameter("c", column).getSingleResult();
+            return nullable != null && "YES".equalsIgnoreCase(nullable.toString());
+        } catch (RuntimeException e) {
+            return false;
+        }
     }
 }

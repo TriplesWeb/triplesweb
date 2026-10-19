@@ -11,6 +11,7 @@ import java.util.Date;
  * 게시글 댓글 엔티티. {@link Article} N:1.
  */
 @Entity
+@Table(name = "comment")
 @Getter
 @Setter
 @ToString

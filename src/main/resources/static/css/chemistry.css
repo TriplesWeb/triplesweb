@@ -666,6 +666,45 @@ a.chem-highlight:hover {
     font-size: 0.95rem;
 }
 
+.chem-password-field {
+    position: relative;
+    display: block;
+}
+
+.chem-edit-label .chem-password-field input {
+    padding-right: 2.75rem;
+}
+
+.chem-password-toggle {
+    appearance: none;
+    position: absolute;
+    top: 50%;
+    right: 0.35rem;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    padding: 0;
+    border: none;
+    border-radius: 0.45rem;
+    background: transparent;
+    color: #8a9a94;
+    cursor: pointer;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+.chem-password-toggle:hover {
+    color: #00f5d4;
+    background: rgba(0, 245, 212, 0.08);
+}
+
+.chem-password-toggle .material-symbols-outlined {
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
 .chem-fmt-toolbar {
     display: flex;
     align-items: center;

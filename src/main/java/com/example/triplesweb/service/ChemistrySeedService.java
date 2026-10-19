@@ -24,12 +24,13 @@ import java.util.Map;
 
 /**
  * classpath {@code data/chemistry-seed.json} 페어를 Artist FK 스키마로 적재한다.
- * {@link com.example.triplesweb.config.DataInitializer}(@Order 1) 이후 실행.
+ * {@link com.example.triplesweb.config.DataInitializer}(@Order 1),
+ * {@link com.example.triplesweb.config.SchemaImproveRunner}(@Order 2) 이후 실행.
  * 없는 페어만 insert — 기존 라벨·설명은 덮어쓰지 않는다.
  */
 @Slf4j
 @Component
-@Order(2)
+@Order(3)
 @RequiredArgsConstructor
 public class ChemistrySeedService implements CommandLineRunner {
 
@@ -44,14 +45,18 @@ public class ChemistrySeedService implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
+        if (!seedEnabled) {
+            log.debug("Chemistry seed skipped (enabled=false)");
+            return;
+        }
         long existing = chemistryRepository.count();
-        boolean empty = existing == 0;
-        if (!empty && !seedEnabled) {
-            log.debug("Chemistry seed skipped (count={}, enabled=false)", existing);
+        // 이미 데이터가 있으면 기동 시 시드하지 않는다. 누락 보완은 관리자 reseed API만.
+        if (existing > 0) {
+            log.debug("Chemistry seed skipped (already has {} rows)", existing);
             return;
         }
         int inserted = reseedMissingPairs();
-        if (inserted == 0 && empty) {
+        if (inserted == 0) {
             log.warn("Chemistry table still empty after seed — Artist 이름/시드 JSON을 확인하세요.");
         }
     }
@@ -122,9 +127,13 @@ public class ChemistrySeedService implements CommandLineRunner {
             log.info("Chemistry seed: inserted={}, backfilledImages={}, skipped={}, totalNow={}",
                     inserted, backfilledImages, skipped, chemistryRepository.count());
             return inserted;
+        } catch (RuntimeException e) {
+            // 트랜잭션이 rollback-only면 삼키면 UnexpectedRollbackException으로 기동이 죽는다.
+            log.error("Chemistry seed failed: {}", e.getMessage(), e);
+            throw e;
         } catch (Exception e) {
             log.error("Chemistry seed failed: {}", e.getMessage(), e);
-            return 0;
+            throw new IllegalStateException("Chemistry seed failed", e);
         }
     }
 

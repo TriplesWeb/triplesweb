@@ -12,7 +12,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/chemistry.css?v=34">
+    <link rel="stylesheet" href="/css/chemistry.css?v=35">
 </head>
 <body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
 {{>layout/header}}
@@ -176,7 +176,12 @@
         <h3 id="chemistryLoginTitle" class="chem-modal-title">관리자 로그인</h3>
         <form id="chemistryLoginForm" class="chem-edit-form">
             <label class="chem-edit-label">비밀번호
-                <input type="password" id="chemLoginPassword" name="password" required autocomplete="current-password">
+                <span class="chem-password-field">
+                    <input type="password" id="chemLoginPassword" name="password" required autocomplete="current-password">
+                    <button type="button" id="chemLoginPasswordToggle" class="chem-password-toggle" aria-label="비밀번호 보기" aria-pressed="false">
+                        <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+                    </button>
+                </span>
             </label>
             <p id="chemLoginError" class="chem-edit-error" hidden></p>
             <div class="chem-edit-actions">
@@ -186,6 +191,6 @@
     </div>
 </div>
 
-<script src="/js/chemistry.js?v=24"></script>
+<script src="/js/chemistry.js?v=25"></script>
 </body>
 </html>
