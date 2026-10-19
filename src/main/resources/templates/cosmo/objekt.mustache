@@ -286,6 +286,11 @@
         </article>
         {{/objekts}}
     </div>
+    <nav class="flex items-center justify-center gap-4 py-6" aria-label="Objekt 페이지 탐색">
+        {{#hasPreviousPage}}<a class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-white hover:border-teal-400" href="/cosmo/objekt?page={{previousPage}}">이전</a>{{/hasPreviousPage}}
+        <span class="text-sm text-slate-400">{{objektPageDisplay}} / {{objektTotalPages}} 페이지 · 총 {{objektCount}}개</span>
+        {{#hasNextPage}}<a class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-white hover:border-teal-400" href="/cosmo/objekt?page={{nextPage}}">다음</a>{{/hasNextPage}}
+    </nav>
 </main>
 </body>
 <script>
