@@ -53,4 +53,10 @@ public class Chemistry {
     @Column(nullable = false)
     @Builder.Default
     private boolean crossFlag = false;
+
+    /** 표 칸 케미명 글자색: 미선택 / 미정 / 최근 / 팬 */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "label_tone", nullable = false, length = 20)
+    @Builder.Default
+    private ChemistryLabelTone labelTone = ChemistryLabelTone.NONE;
 }

@@ -45,41 +45,50 @@
       .replace(/"/g, "&quot;");
   }
 
-  function escapeRegExp(str) {
-    return String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  /** Artist.artistId 기준 정렬 키 (없으면 MEMBERS 순번+1) */
+  function artistSortKey(name) {
+    const id = name ? artistIdByName[name] : null;
+    if (id != null && Number.isFinite(Number(id))) return Number(id);
+    const idx = memberIndex(name);
+    return idx >= 0 ? idx + 1 : Number.MAX_SAFE_INTEGER;
   }
 
-  /** "윤서연과 김채연의 케미명" → 멤버명에 상세 페이지 링크 (긴 이름 우선) */
-  function formatChemistryTitle(chemistryName) {
-    const byLength = MEMBERS.map((name, index) => ({ name, index }))
-      .sort((a, b) => b.name.length - a.name.length);
-    const nameMeta = Object.create(null);
-    byLength.forEach(({ name, index }) => {
-      nameMeta[name] = { index, color: MEMBER_COLORS[index] || "#00f5d4" };
-    });
-    const pattern = new RegExp(
-      "(" + byLength.map(({ name }) => escapeRegExp(name)).join("|") + ")",
-      "g"
+  /** 아티스트 ID가 빠른 순으로 [A, B] */
+  function orderedPairNames(a, b) {
+    const ka = artistSortKey(a);
+    const kb = artistSortKey(b);
+    if (ka !== kb) return ka < kb ? [a, b] : [b, a];
+    const ia = memberIndex(a);
+    const ib = memberIndex(b);
+    return ia <= ib ? [a, b] : [b, a];
+  }
+
+  function formatMemberTitleLink(name) {
+    const index = memberIndex(name);
+    const color = MEMBER_COLORS[index] || "#00f5d4";
+    const escaped = escapeHtml(name);
+    return (
+      '<a href="' +
+      memberHref(name) +
+      '" title="' +
+      escaped +
+      '" class="chem-title-member" style="--member-color:' +
+      color +
+      '">' +
+      escaped +
+      "</a>"
     );
-    return String(chemistryName)
-      .split(pattern)
-      .map((part) => {
-        const meta = nameMeta[part];
-        if (!meta) return escapeHtml(part);
-        const escaped = escapeHtml(part);
-        return (
-          '<a href="' +
-          memberHref(part) +
-          '" title="' +
-          escaped +
-          '" class="chem-title-member" style="--member-color:' +
-          meta.color +
-          '">' +
-          escaped +
-          "</a>"
-        );
-      })
-      .join("");
+  }
+
+  /** 모달 타이틀: 아티스트 ID 오름차순 "A x B" */
+  function formatChemistryTitle(memberA, memberB) {
+    const [a, b] = orderedPairNames(memberA, memberB);
+    return formatMemberTitleLink(a) + " x " + formatMemberTitleLink(b);
+  }
+
+  function pairTitleText(memberA, memberB) {
+    const [a, b] = orderedPairNames(memberA, memberB);
+    return a + " x " + b;
   }
 
   function formatLabel(label) {
@@ -214,6 +223,7 @@
       const desc = entry.description || "";
       const image = entry.imageUrl || "";
       const cross = Boolean(entry.crossFlag);
+      const labelTone = normalizeLabelTone(entry.labelTone);
       const links = entry.links && typeof entry.links === "object" ? entry.links : {};
 
       [[ia, ib], [ib, ia]].forEach(([ri, ci]) => {
@@ -226,11 +236,13 @@
           person: person,
           key: key,
           cross: cross,
+          labelTone: labelTone,
           dbId: entry.id
         };
         const payload = {
           description: desc,
-          image: image
+          image: image,
+          labelTone: labelTone
         };
         if (links && Object.keys(links).length) {
           payload.links = links;
@@ -285,10 +297,10 @@
             cell.s +
             '"></td>';
         } else if (cell.type === "chem" && cell.key) {
-          const cross = cell.cross ? " chem-cross" : "";
+          const toneCls = toneClass(cell.labelTone);
           bodyHtml +=
             '<td class="chem-cell' +
-            cross +
+            (toneCls ? " " + toneCls : "") +
             '" data-person="' +
             escapeHtml(cell.person) +
             '" data-key="' +
@@ -297,6 +309,8 @@
             escapeHtml(MEMBERS[ri]) +
             '" data-m2="' +
             escapeHtml(MEMBERS[ci]) +
+            '" data-tone="' +
+            escapeHtml(normalizeLabelTone(cell.labelTone)) +
             '" tabindex="0" role="button">' +
             formatLabel(cell.label) +
             "</td>";
@@ -327,6 +341,7 @@
           member1: el.dataset.m1,
           member2: el.dataset.m2,
           label: (el.textContent || "").replace(/\s+/g, " ").trim(),
+          labelTone: (cell && cell.labelTone) || el.dataset.tone || "NONE",
           dbId: cell && cell.dbId ? cell.dbId : null
         };
         openChemistryName(el.dataset.person, el.dataset.key);
@@ -470,8 +485,43 @@
     return sanitizeChemistryHtml(editor.innerHTML);
   }
 
+  /** 표 칸 케미명 글자색 (NONE=기본 흰) */
+  const LABEL_TONES = ["NONE", "UNDECIDED", "RECENT", "FAN"];
+
+  function normalizeLabelTone(value) {
+    const v = String(value || "").trim().toUpperCase();
+    return LABEL_TONES.includes(v) ? v : "NONE";
+  }
+
+  function toneClass(tone) {
+    switch (normalizeLabelTone(tone)) {
+      case "UNDECIDED":
+        return "chem-tone-undecided";
+      case "RECENT":
+        return "chem-tone-recent";
+      case "FAN":
+        return "chem-tone-fan";
+      default:
+        return "";
+    }
+  }
+
+  function selectedLabelTone() {
+    const checked = document.querySelector('input[name="labelTone"]:checked');
+    return normalizeLabelTone(checked && checked.value);
+  }
+
+  function setLabelToneInputs(tone) {
+    const target = normalizeLabelTone(tone);
+    document.querySelectorAll('input[name="labelTone"]').forEach((el) => {
+      el.checked = el.value === target;
+    });
+  }
+
   /** 편집기 기본 색상 = S1~S24 멤버 상징색 (MEMBER_COLORS 순서) */
   const CHEM_COLOR_PALETTE = MEMBER_COLORS;
+  const CHEM_RECENT_COLORS_KEY = "chemRecentTextColors";
+  const CHEM_RECENT_COLORS_MAX = 8;
 
   function clampColorChannel(n) {
     const v = Number(n);
@@ -539,9 +589,63 @@
     return normalized;
   }
 
+  function loadRecentColors() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(CHEM_RECENT_COLORS_KEY) || "[]");
+      if (!Array.isArray(raw)) return [];
+      const seen = new Set();
+      const out = [];
+      raw.forEach((item) => {
+        const hex = normalizeHexColor(item);
+        if (!hex || seen.has(hex)) return;
+        seen.add(hex);
+        out.push(hex);
+      });
+      return out.slice(0, CHEM_RECENT_COLORS_MAX);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function rememberRecentColor(color) {
+    const hex = normalizeHexColor(color);
+    if (!hex) return;
+    const next = [hex, ...loadRecentColors().filter((c) => c !== hex)].slice(0, CHEM_RECENT_COLORS_MAX);
+    try {
+      localStorage.setItem(CHEM_RECENT_COLORS_KEY, JSON.stringify(next));
+    } catch (_) {
+      /* quota / private mode */
+    }
+    renderRecentColors();
+  }
+
+  function renderRecentColors() {
+    const block = document.getElementById("chemColorRecentBlock");
+    const box = document.getElementById("chemColorRecent");
+    if (!block || !box) return;
+    const colors = loadRecentColors();
+    box.innerHTML = "";
+    if (!colors.length) {
+      block.classList.add("hidden");
+      return;
+    }
+    block.classList.remove("hidden");
+    colors.forEach((color) => {
+      const swatch = document.createElement("button");
+      swatch.type = "button";
+      swatch.className = "chem-color-recent-swatch";
+      swatch.style.background = color;
+      swatch.title = color;
+      swatch.setAttribute("aria-label", "최근 색상 " + color);
+      swatch.addEventListener("click", () => applyTextColor(color));
+      box.appendChild(swatch);
+    });
+  }
+
   function applyTextColor(color) {
     const hex = syncColorInputs(color);
     applyEditorFormat("foreColor", hex);
+    rememberRecentColor(hex);
     closeColorPalette();
   }
 
@@ -588,7 +692,19 @@
       })
       .replace(/\n/g, "<br>");
 
-    document.getElementById("chemistryTitle").innerHTML = formatChemistryTitle(chemistryName);
+    const titleMember1 =
+      (currentView && currentView.member1) || person;
+    const titleMember2 =
+      (currentView && currentView.member2) ||
+      (() => {
+        const m = String(chemistryName || "").match(/^(.+)과 (.+)의 케미명$/);
+        if (!m) return person;
+        return m[1] === person ? m[2] : m[1];
+      })();
+    document.getElementById("chemistryTitle").innerHTML = formatChemistryTitle(
+      titleMember1,
+      titleMember2
+    );
     const img = document.getElementById("chemistryImage");
     const media = img && img.closest(".chem-modal-media");
     const creditEl = document.getElementById("chemistryCredit");
@@ -596,7 +712,7 @@
     if (img) {
       img.onload = () => syncModalContentWidth();
       img.src = data.image || "";
-      img.alt = chemistryName;
+      img.alt = pairTitleText(titleMember1, titleMember2);
       img.style.display = hasImage ? "block" : "none";
       if (hasImage && img.complete) syncModalContentWidth();
     }
@@ -781,7 +897,7 @@
     wrap.classList.remove("hidden");
   }
 
-  function openEditForm(member1, member2, label, description, imageUrl, links) {
+  function openEditForm(member1, member2, label, description, imageUrl, links, labelTone) {
     editingPair = { member1, member2 };
     closeModal();
     closeColorPalette();
@@ -792,13 +908,14 @@
     document.getElementById("chemEditMember1").value = member1;
     document.getElementById("chemEditMember2").value = member2;
     document.getElementById("chemEditLabel").value = label || "";
+    setLabelToneInputs(labelTone);
     if (editor) editor.innerHTML = descriptionToEditorHtml(description || "");
     document.getElementById("chemEditImage").value = "";
     const clearCb = document.getElementById("chemEditClearImage");
     if (clearCb) clearCb.checked = false;
     setEditImagePreview(imageUrl || "");
     renderLinkRows(links || {});
-    if (title) title.textContent = member1 + " × " + member2;
+    if (title) title.textContent = pairTitleText(member1, member2);
     if (err) {
       err.hidden = true;
       err.textContent = "";
@@ -839,7 +956,7 @@
       || document.getElementById("chemEditMember2")?.value
       || (editingPair && editingPair.member2);
     if (!member1 || !member2) return;
-    if (!confirm(member1 + " × " + member2 + " 케미를 삭제할까요?")) return;
+    if (!confirm(pairTitleText(member1, member2) + " 케미를 삭제할까요?")) return;
     try {
       const qs = new URLSearchParams({ member1, member2 });
       const res = await chemFetch("/api/chemistry?" + qs.toString(), { method: "DELETE" });
@@ -939,13 +1056,22 @@
           const cell = pairMatrix[ri] && pairMatrix[ri][ci];
           if (cell && cell.label) cellLabel = String(cell.label).replace(/\n/g, " ");
         }
+        let labelTone =
+          (currentView && currentView.labelTone) || data.labelTone || "NONE";
+        if ((!currentView || !currentView.labelTone) && pairMatrix) {
+          const ri = memberIndex(member1);
+          const ci = memberIndex(member2);
+          const cell = pairMatrix[ri] && pairMatrix[ri][ci];
+          if (cell && cell.labelTone) labelTone = cell.labelTone;
+        }
         openEditForm(
           member1,
           member2,
           cellLabel,
           data.description || "",
           data.image || "",
-          data.links || {}
+          data.links || {},
+          labelTone
         );
       });
     }
@@ -989,15 +1115,21 @@
     }
 
     syncColorInputs("#00f5d4");
+    renderRecentColors();
 
     const colorPicker = document.getElementById("chemColorPicker");
     if (colorPicker) {
+      // 피커는 미리보기만 — 확인 버튼으로 적용
       colorPicker.addEventListener("input", () => syncColorInputs(colorPicker.value));
-      colorPicker.addEventListener("change", () => applyTextColor(colorPicker.value));
+      colorPicker.addEventListener("change", () => syncColorInputs(colorPicker.value));
     }
 
     const hexInput = document.getElementById("chemColorHex");
     if (hexInput) {
+      hexInput.addEventListener("input", () => {
+        const hex = normalizeHexColor(hexInput.value);
+        if (hex) syncColorInputs(hex);
+      });
       hexInput.addEventListener("change", () => {
         const hex = normalizeHexColor(hexInput.value);
         if (hex) syncColorInputs(hex);
@@ -1005,7 +1137,8 @@
       hexInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
           e.preventDefault();
-          applyTextColor(hexInput.value);
+          const hex = normalizeHexColor(hexInput.value);
+          if (hex) syncColorInputs(hex);
         }
       });
     }
@@ -1013,12 +1146,14 @@
     ["chemColorR", "chemColorG", "chemColorB"].forEach((id) => {
       const el = document.getElementById(id);
       if (!el) return;
-      el.addEventListener("change", () => {
+      const syncRgb = () => {
         const r = document.getElementById("chemColorR");
         const g = document.getElementById("chemColorG");
         const b = document.getElementById("chemColorB");
         syncColorInputs(rgbToHex(r && r.value, g && g.value, b && b.value));
-      });
+      };
+      el.addEventListener("input", syncRgb);
+      el.addEventListener("change", syncRgb);
     });
 
     const colorApply = document.getElementById("chemColorApply");
@@ -1050,7 +1185,10 @@
         const willOpen = palette.classList.contains("hidden");
         palette.classList.toggle("hidden", !willOpen);
         colorToggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
-        if (willOpen) syncColorInputs((document.getElementById("chemColorBar") || {}).style.background || "#00f5d4");
+        if (willOpen) {
+          syncColorInputs((document.getElementById("chemColorBar") || {}).style.background || "#00f5d4");
+          renderRecentColors();
+        }
       });
     }
 
@@ -1098,6 +1236,7 @@
         fd.append("member2", document.getElementById("chemEditMember2").value);
         fd.append("label", document.getElementById("chemEditLabel").value);
         fd.append("description", getEditorDescriptionHtml());
+        fd.append("labelTone", selectedLabelTone());
         // 체크했을 때만 true — 미전송 시 서버 기본값 false로 기존 사진 유지
         const clearChecked = Boolean(document.getElementById("chemEditClearImage")?.checked);
         fd.append("clearImage", clearChecked ? "true" : "false");
@@ -1195,18 +1334,43 @@
     });
   }
 
+  function closeLegendPanel() {
+    const panel = document.getElementById("chemLegendPanel");
+    const toggle = document.getElementById("chemLegendToggle");
+    if (panel) panel.classList.add("hidden");
+    if (toggle) toggle.setAttribute("aria-expanded", "false");
+  }
+
+  function bindLegendToggle() {
+    const toggle = document.getElementById("chemLegendToggle");
+    const panel = document.getElementById("chemLegendPanel");
+    if (!toggle || !panel) return;
+    toggle.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const willOpen = panel.classList.contains("hidden");
+      panel.classList.toggle("hidden", !willOpen);
+      toggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
+    });
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".chem-legend-wrap")) closeLegendPanel();
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", async () => {
     const closeBtn = document.querySelector("#chemistryModal .chem-close");
     if (closeBtn) closeBtn.addEventListener("click", closeModal);
 
     document.addEventListener("keydown", (e) => {
       if (e.key !== "Escape") return;
+      closeLegendPanel();
       closeEditModal();
       closeLoginModal();
       closeModal();
     });
 
     bindModeToggle();
+    bindLegendToggle();
     bindAdminUi();
 
     try {

@@ -21,6 +21,116 @@
     margin-bottom: 0.75rem;
 }
 
+.chem-title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.65rem;
+}
+
+.chem-legend-wrap {
+    position: relative;
+}
+
+.chem-legend-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.7rem;
+    height: 1.7rem;
+    padding: 0;
+    margin: 0;
+    border: none;
+    border-radius: 9999px;
+    background: transparent;
+    color: #e8e8ec;
+    cursor: pointer;
+    line-height: 0;
+    flex-shrink: 0;
+}
+
+.chem-legend-btn .chem-legend-icon {
+    display: block;
+    width: 1.35rem;
+    height: 1.35rem;
+}
+
+.chem-legend-btn:hover,
+.chem-legend-btn[aria-expanded="true"] {
+    color: #00f5d4;
+}
+
+.chem-legend-btn:focus-visible {
+    outline: 2px solid rgba(0, 245, 212, 0.55);
+    outline-offset: 2px;
+}
+
+.chem-legend-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 40;
+    min-width: 11.5rem;
+    padding: 0.7rem 0.8rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #16181f;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+}
+
+.chem-legend-panel.hidden {
+    display: none;
+}
+
+.chem-legend-title {
+    margin: 0 0 0.45rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #8a9a94;
+}
+
+.chem-legend-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #e3e2e8;
+}
+
+.chem-legend-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.chem-legend-swatch {
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: 9999px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.chem-legend-swatch--none {
+    background: #ffffff;
+}
+
+.chem-legend-swatch--undecided {
+    background: #c9a8ff;
+}
+
+.chem-legend-swatch--recent {
+    background: #ff9ec8;
+}
+
+.chem-legend-swatch--fan {
+    background: #8fd6f5;
+}
+
 .chem-mode-toggle {
     display: inline-flex;
     align-items: center;
@@ -261,11 +371,33 @@
 }
 
 .chem-table td.chem-cell.chem-cross {
-    /* 일반 chem-cell과 동일 — 별도 강조 없음 */
+    /* 레거시 — labelTone 우선 */
     color: #ffffff !important;
     background: #3a4254;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
     font-weight: 900;
+}
+
+/* 케미명 글자색만: 기본 흰 / 미정 보라 / 최근 분홍 / 팬 하늘 (배경은 chem-cell 유지) */
+.chem-table td.chem-cell.chem-tone-undecided {
+    color: #c9a8ff !important;
+}
+
+.chem-table td.chem-cell.chem-tone-recent {
+    color: #ff9ec8 !important;
+}
+
+.chem-table td.chem-cell.chem-tone-fan {
+    color: #8fd6f5 !important;
+}
+
+.chem-table td.chem-cell.chem-tone-undecided:hover,
+.chem-table td.chem-cell.chem-tone-undecided:focus-visible,
+.chem-table td.chem-cell.chem-tone-recent:hover,
+.chem-table td.chem-cell.chem-tone-recent:focus-visible,
+.chem-table td.chem-cell.chem-tone-fan:hover,
+.chem-table td.chem-cell.chem-tone-fan:focus-visible {
+    color: #0d0e12 !important;
 }
 
 /* Modal — 데스크톱 약 2.5배 스케일 (기존 680px → ~1700px) */
@@ -644,6 +776,79 @@ a.chem-highlight:hover {
     margin-top: 0.5rem;
 }
 
+.chem-tone-picker {
+    margin: 0;
+    padding: 0;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.chem-tone-picker legend {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #b9cac4;
+    padding: 0;
+    margin-bottom: 0.15rem;
+}
+
+.chem-tone-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.4rem;
+}
+
+@media (min-width: 420px) {
+    .chem-tone-options {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.chem-tone-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-height: 2.35rem;
+    padding: 0.4rem 0.5rem;
+    border-radius: 0.55rem;
+    border: 2px solid rgba(58, 74, 70, 0.55);
+    background: #0d0e12;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 700;
+    user-select: none;
+}
+
+.chem-tone-option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.chem-tone-option--none {
+    color: #ffffff;
+}
+
+.chem-tone-option--undecided {
+    color: #c9a8ff;
+}
+
+.chem-tone-option--recent {
+    color: #ff9ec8;
+}
+
+.chem-tone-option--fan {
+    color: #8fd6f5;
+}
+
+.chem-tone-option:has(input:checked),
+.chem-tone-option:focus-within {
+    border-color: #fff;
+    box-shadow: 0 0 0 2px rgba(0, 245, 212, 0.45);
+}
+
 .chem-edit-label {
     display: flex;
     flex-direction: column;
@@ -833,6 +1038,42 @@ a.chem-highlight:hover {
 
 .chem-color-swatch:hover,
 .chem-color-swatch:focus-visible {
+    outline: none;
+    border-color: #fff;
+    transform: scale(1.08);
+}
+
+.chem-color-recent-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding-top: 0.45rem;
+    border-top: 1px solid rgba(58, 74, 70, 0.4);
+}
+
+.chem-color-recent-block.hidden {
+    display: none;
+}
+
+.chem-color-recent {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.chem-color-recent-swatch {
+    appearance: none;
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 9999px;
+    border: 2px solid rgba(255, 255, 255, 0.18);
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.chem-color-recent-swatch:hover,
+.chem-color-recent-swatch:focus-visible {
     outline: none;
     border-color: #fff;
     transform: scale(1.08);

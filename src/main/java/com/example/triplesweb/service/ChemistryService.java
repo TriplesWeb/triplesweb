@@ -3,6 +3,7 @@ package com.example.triplesweb.service;
 import com.example.triplesweb.dto.ChemistryDto;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.Chemistry;
+import com.example.triplesweb.entity.ChemistryLabelTone;
 import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ChemistryRepository;
@@ -48,7 +49,7 @@ public class ChemistryService {
 
     @Transactional
     public ChemistryDto upsert(String member1, String member2, String label, String description,
-                               MultipartFile image, boolean clearImage, String linksJson) {
+                               MultipartFile image, boolean clearImage, String linksJson, String labelTone) {
         Artist[] pair = normalizePair(member1, member2);
         if (!StringUtils.hasText(label)) {
             throw new IllegalArgumentException("케미명은 필수입니다.");
@@ -56,6 +57,7 @@ public class ChemistryService {
         if (description == null) {
             description = "";
         }
+        ChemistryLabelTone tone = ChemistryLabelTone.fromParam(labelTone);
 
         Chemistry entity = chemistryRepository
                 .findByArtistPair(pair[0].getArtistId(), pair[1].getArtistId())
@@ -63,11 +65,13 @@ public class ChemistryService {
                         .artistA(pair[0])
                         .artistB(pair[1])
                         .crossFlag(false)
+                        .labelTone(ChemistryLabelTone.NONE)
                         .build());
 
         entity.setLabel(label.trim());
         entity.setDescription(description);
         entity.setLinksJson(normalizeLinksJson(linksJson));
+        entity.setLabelTone(tone);
 
         if (image != null && !image.isEmpty()) {
             try {
@@ -205,6 +209,7 @@ public class ChemistryService {
                 .imageUrl(c.getImageUrl())
                 .links(parseLinks(c.getLinksJson()))
                 .crossFlag(c.isCrossFlag())
+                .labelTone(c.getLabelTone() != null ? c.getLabelTone() : ChemistryLabelTone.NONE)
                 .build();
     }
 }

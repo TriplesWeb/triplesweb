@@ -2,6 +2,7 @@ package com.example.triplesweb.service;
 
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.Chemistry;
+import com.example.triplesweb.entity.ChemistryLabelTone;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ChemistryRepository;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -120,6 +121,7 @@ public class ChemistrySeedService implements CommandLineRunner {
                         .imageUrl(seedImage)
                         .linksJson(toLinksJson(pair.getLinks()))
                         .crossFlag(pair.isCrossFlag())
+                        .labelTone(ChemistryLabelTone.NONE)
                         .build();
                 chemistryRepository.save(entity);
                 inserted++;

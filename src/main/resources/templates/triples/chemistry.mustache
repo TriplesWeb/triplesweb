@@ -12,7 +12,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/chemistry.css?v=35">
+    <link rel="stylesheet" href="/css/chemistry.css?v=39">
 </head>
 <body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
 {{>layout/header}}
@@ -21,9 +21,33 @@
     <div class="card-box chem-page-card bg-[#16181f]/80 backdrop-blur-md border border-[#3a4a46]/30 rounded-2xl p-3 sm:p-4 shadow-xl">
         <div class="chem-page-head flex flex-col gap-2">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <h2 class="text-xl sm:text-2xl font-bold text-[#e3e2e8] flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4]"></span> 트리플에스 케미명
-                </h2>
+                <div class="chem-title-row">
+                    <h2 class="text-xl sm:text-2xl font-bold text-[#e3e2e8] flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4]"></span> 트리플에스 케미명
+                    </h2>
+                    <div class="chem-legend-wrap">
+                        <button type="button" id="chemLegendToggle" class="chem-legend-btn" aria-expanded="false" aria-controls="chemLegendPanel" title="색상 범례" aria-label="색상 범례">
+                            <svg class="chem-legend-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+                                <circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                                <path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"
+                                      d="M9.15 13.35c-.55-.7-.9-1.55-.9-2.5A3.75 3.75 0 0 1 12 7.1a3.75 3.75 0 0 1 3.75 3.75c0 .95-.35 1.8-.9 2.5"/>
+                                <path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"
+                                      d="M10.15 13.55h3.7v1.35c0 .55-.35.95-.85 1.15v.75h-2v-.75c-.5-.2-.85-.6-.85-1.15z"/>
+                                <path fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"
+                                      d="M10.55 11.05h2.9M11.05 9.55h1.9"/>
+                            </svg>
+                        </button>
+                        <div id="chemLegendPanel" class="chem-legend-panel hidden" role="dialog" aria-label="케미명 색상 범례">
+                            <p class="chem-legend-title">글자 색상</p>
+                            <ul class="chem-legend-list">
+                                <li><span class="chem-legend-swatch chem-legend-swatch--none" aria-hidden="true"></span> 기본 (흰색)</li>
+                                <li><span class="chem-legend-swatch chem-legend-swatch--undecided" aria-hidden="true"></span> 미정 (보라)</li>
+                                <li><span class="chem-legend-swatch chem-legend-swatch--recent" aria-hidden="true"></span> 최근 확정 (분홍)</li>
+                                <li><span class="chem-legend-swatch chem-legend-swatch--fan" aria-hidden="true"></span> 팬 선정 (하늘)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <div class="chem-mode-toggle" role="group" aria-label="케미 인원 선택">
                         <button type="button" class="chem-mode-btn is-active" data-mode="pair" aria-pressed="true" onclick="window.__chemSetMode&&window.__chemSetMode('pair')">2인</button>
@@ -88,6 +112,7 @@
             <summary>입력 방법 안내</summary>
             <ul class="chem-edit-help-list">
                 <li><strong>케미명</strong> — 표 칸에 보이는 짧은 이름입니다. 두 줄이면 줄바꿈 대신 공백으로 적어도 됩니다.</li>
+                <li><strong>글자 색상</strong> — 기본(흰색) 또는 미정(보라) / 최근(분홍) / 팬(하늘). 표 칸 글자색만 바뀝니다.</li>
                 <li><strong>설명 서식</strong> — 글자를 드래그한 뒤 <b>B</b>(굵게) / <i>I</i>(기울임) / <u>U</u>(밑줄) / <b>A</b>(색상)를 누르세요. 색상은 팔레트·HEX·RGB로 지정할 수 있습니다.</li>
                 <li><strong>하이퍼링크</strong> — 아래에 표시 텍스트와 URL을 추가한 뒤, 설명 본문에서 같은 문구를 <code>**표시 텍스트**</code>처럼 감싸면 클릭 가능한 링크가 됩니다.</li>
                 <li><strong>사진 출처</strong> — 설명 <em>맨 끝</em>에 <code>photo by. @계정</code> 형식으로 적으면, 본문에서는 빠지고 이미지 아래에 출처로만 표시됩니다.<br>
@@ -101,6 +126,28 @@
             <label class="chem-edit-label">케미명
                 <input type="text" id="chemEditLabel" name="label" required maxlength="120" autocomplete="off" placeholder="예: 꼬꼬마즈">
             </label>
+            <fieldset class="chem-tone-picker">
+                <legend>글자 색상</legend>
+                <div class="chem-tone-options" role="radiogroup" aria-label="케미명 글자 색상">
+                    <label class="chem-tone-option chem-tone-option--none">
+                        <input type="radio" name="labelTone" value="NONE" checked>
+                        <span>기본</span>
+                    </label>
+                    <label class="chem-tone-option chem-tone-option--undecided">
+                        <input type="radio" name="labelTone" value="UNDECIDED">
+                        <span>미정</span>
+                    </label>
+                    <label class="chem-tone-option chem-tone-option--recent">
+                        <input type="radio" name="labelTone" value="RECENT">
+                        <span>최근</span>
+                    </label>
+                    <label class="chem-tone-option chem-tone-option--fan">
+                        <input type="radio" name="labelTone" value="FAN">
+                        <span>팬</span>
+                    </label>
+                </div>
+                <p class="chem-edit-field-hint">기본은 흰색. 미정·최근·팬을 고르면 표에서 글자색만 바뀝니다.</p>
+            </fieldset>
             <div class="chem-edit-label">설명
                 <div class="chem-fmt-toolbar" role="toolbar" aria-label="글꼴 서식">
                     <button type="button" class="chem-fmt-btn" data-fmt="bold" title="굵게"><b>B</b></button>
@@ -114,10 +161,14 @@
                         <div id="chemColorPalette" class="chem-color-palette hidden" role="dialog" aria-label="색상 팔레트">
                             <div class="chem-color-palette-title">멤버 상징색 (S1–S24)</div>
                             <div id="chemColorSwatches" class="chem-color-swatches" role="listbox" aria-label="멤버 상징색 S1부터 S24"></div>
+                            <div id="chemColorRecentBlock" class="chem-color-recent-block hidden">
+                                <div class="chem-color-palette-title">최근 사용</div>
+                                <div id="chemColorRecent" class="chem-color-recent" role="listbox" aria-label="최근 사용 색상"></div>
+                            </div>
                             <div class="chem-color-custom">
                                 <label class="chem-color-custom-row">
                                     <span>피커</span>
-                                    <input type="color" id="chemColorPicker" value="#00f5d4">
+                                    <input type="color" id="chemColorPicker" value="#00f5d4" title="색을 고른 뒤 확인을 누르세요">
                                 </label>
                                 <label class="chem-color-custom-row">
                                     <span>HEX</span>
@@ -130,7 +181,7 @@
                                 </div>
                                 <div class="chem-color-custom-actions">
                                     <button type="button" id="chemColorReset" class="chem-mode-btn">기본</button>
-                                    <button type="button" id="chemColorApply" class="chem-mode-btn is-active">적용</button>
+                                    <button type="button" id="chemColorApply" class="chem-mode-btn is-active">확인</button>
                                 </div>
                             </div>
                         </div>
@@ -191,6 +242,6 @@
     </div>
 </div>
 
-<script src="/js/chemistry.js?v=25"></script>
+<script src="/js/chemistry.js?v=27"></script>
 </body>
 </html>

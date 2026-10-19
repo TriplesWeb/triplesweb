@@ -1,5 +1,6 @@
 package com.example.triplesweb.dto;
 
+import com.example.triplesweb.entity.ChemistryLabelTone;
 import lombok.*;
 
 import java.util.LinkedHashMap;
@@ -24,4 +25,7 @@ public class ChemistryDto {
     @Builder.Default
     private Map<String, String> links = new LinkedHashMap<>();
     private boolean crossFlag;
+    /** 표 칸 글자색: NONE / UNDECIDED / RECENT / FAN */
+    @Builder.Default
+    private ChemistryLabelTone labelTone = ChemistryLabelTone.NONE;
 }
