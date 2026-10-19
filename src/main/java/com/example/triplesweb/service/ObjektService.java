@@ -51,10 +51,6 @@ public class ObjektService {
      */
     public List<Map<String, Object>> findCollections(String artist) {
         List<Map<String, Object>> snapshot = cachedCollections;
-        if (snapshot == null) {
-            refreshCache();
-            snapshot = cachedCollections;
-        }
         return snapshot == null ? List.of() : new ArrayList<>(snapshot);
     }
 
@@ -62,7 +58,7 @@ public class ObjektService {
      * 캐시를 15분마다 갱신한다. 페이지 요청과 별도로 실행된다.
      * 외부 API 호출 실패 시 기존 캐시를 보존한다.
      */
-    @Scheduled(fixedDelayString = "${objekt.cache.refresh-ms:900000}", initialDelay = 10000)
+    @Scheduled(fixedDelayString = "${objekt.cache.refresh-ms:900000}", initialDelay = 0)
     public synchronized void refreshCache() {
         try {
             JsonNode response = restClient.get()
