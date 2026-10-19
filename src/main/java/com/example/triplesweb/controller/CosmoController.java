@@ -72,6 +72,7 @@ public class CosmoController {
         model.addAttribute("objekts", pageObjekts);
         model.addAttribute("objektCount", totalCount);
         model.addAttribute("objektAllCount", allObjekts.size());
+        model.addAttribute("objektPageCount", pageObjekts.size());
         model.addAttribute("searchQuery", search == null ? "" : search);
         model.addAttribute("objektPageDisplay", safePage + 1);
         model.addAttribute("objektTotalPages", totalPages);
