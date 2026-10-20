@@ -399,19 +399,39 @@
     return "";
   }
 
+  function isTransparentColor(value) {
+    const raw = String(value || "").trim().toLowerCase();
+    if (!raw || raw === "transparent") return true;
+    if (raw === "rgba(0, 0, 0, 0)" || raw === "rgba(0,0,0,0)") return true;
+    return false;
+  }
+
+  function extractElementBackground(el) {
+    if (!el || el.nodeType !== Node.ELEMENT_NODE || !el.style) return "";
+    const bg = el.style.backgroundColor || "";
+    if (bg && !isTransparentColor(bg)) return bg;
+    return "";
+  }
+
+  function applySpanColors(span, color, background) {
+    if (color) span.style.color = color;
+    if (background && !isTransparentColor(background)) {
+      span.style.backgroundColor = background;
+    }
+  }
+
   function normalizeFontColorsIn(root) {
     if (!root) return;
     root.querySelectorAll("font").forEach((font) => {
       const span = document.createElement("span");
-      const color = extractElementColor(font);
-      if (color) span.style.color = color;
+      applySpanColors(span, extractElementColor(font), extractElementBackground(font));
       while (font.firstChild) span.appendChild(font.firstChild);
       font.replaceWith(span);
     });
   }
 
   function sanitizeChemistryHtml(html) {
-    const allowed = new Set(["B", "STRONG", "I", "EM", "U", "SPAN", "BR", "A", "DIV", "P", "FONT"]);
+    const allowed = new Set(["B", "STRONG", "I", "EM", "U", "SPAN", "BR", "A", "DIV", "P", "FONT", "MARK"]);
     const wrap = document.createElement("div");
     wrap.innerHTML = String(html || "");
     normalizeFontColorsIn(wrap);
@@ -423,10 +443,12 @@
           child.remove();
           return;
         }
-        if (child.tagName === "FONT") {
+        if (child.tagName === "FONT" || child.tagName === "MARK") {
           const span = document.createElement("span");
           const color = extractElementColor(child);
-          if (color) span.style.color = color;
+          const background =
+            extractElementBackground(child) || (child.tagName === "MARK" ? "#ffe566" : "");
+          applySpanColors(span, color, background);
           while (child.firstChild) span.appendChild(child.firstChild);
           node.insertBefore(span, child);
           child.remove();
@@ -440,8 +462,9 @@
         }
         if (child.tagName === "SPAN") {
           const color = extractElementColor(child);
+          const background = extractElementBackground(child);
           Array.from(child.attributes).forEach((attr) => child.removeAttribute(attr.name));
-          if (color) child.style.color = color;
+          applySpanColors(child, color, background);
         } else if (child.tagName === "A") {
           const href = child.getAttribute("href") || "";
           Array.from(child.attributes).forEach((attr) => child.removeAttribute(attr.name));
@@ -472,7 +495,7 @@
 
   function descriptionToEditorHtml(description) {
     const raw = String(description || "");
-    if (/<(b|strong|i|em|u|span|br|a|font)\b/i.test(raw)) {
+    if (/<(b|strong|i|em|u|span|br|a|font|mark)\b/i.test(raw)) {
       return sanitizeChemistryHtml(raw.replace(/\n/g, "<br>"));
     }
     return escapeHtml(raw).replace(/\n/g, "<br>");
@@ -522,11 +545,15 @@
   const CHEM_COLOR_PALETTE = MEMBER_COLORS;
   const CHEM_RECENT_COLORS_KEY = "chemRecentTextColors";
   const CHEM_RECENT_COLORS_MAX = 24;
+  const CHEM_DEFAULT_TEXT_COLOR = "#00f5d4";
+  const CHEM_DEFAULT_HIGHLIGHT_COLOR = "#ffe566";
   const CHEM_COLOR_PAGE_TITLES = {
     1: "멤버 상징색 (S1–S24)",
     2: "최근 사용"
   };
   let chemColorPage = 1;
+  /** foreColor | hiliteColor — 공유 팔레트가 글자색/형광펜 중 어디에 적용될지 */
+  let chemColorMode = "foreColor";
 
   function clampColorChannel(n) {
     const v = Number(n);
@@ -574,15 +601,23 @@
     return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw.toLowerCase() : null;
   }
 
+  function activeColorBarId() {
+    return chemColorMode === "hiliteColor" ? "chemHighlightBar" : "chemColorBar";
+  }
+
+  function defaultColorForMode(mode) {
+    return mode === "hiliteColor" ? CHEM_DEFAULT_HIGHLIGHT_COLOR : CHEM_DEFAULT_TEXT_COLOR;
+  }
+
   function syncColorInputs(hex) {
-    const normalized = normalizeHexColor(hex) || "#00f5d4";
+    const normalized = normalizeHexColor(hex) || defaultColorForMode(chemColorMode);
     const rgb = hexToRgb(normalized);
     const picker = document.getElementById("chemColorPicker");
     const hexInput = document.getElementById("chemColorHex");
     const r = document.getElementById("chemColorR");
     const g = document.getElementById("chemColorG");
     const b = document.getElementById("chemColorB");
-    const bar = document.getElementById("chemColorBar");
+    const bar = document.getElementById(activeColorBarId());
     if (picker) picker.value = normalized;
     if (hexInput) hexInput.value = normalized;
     if (rgb) {
@@ -673,14 +708,14 @@
         const luma = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
         swatch.classList.toggle("is-dark", luma < 0.55);
       }
-      swatch.addEventListener("click", () => applyTextColor(color));
+      swatch.addEventListener("click", () => applyPaletteColor(color));
       box.appendChild(swatch);
     });
   }
 
-  function applyTextColor(color) {
+  function applyPaletteColor(color) {
     const hex = syncColorInputs(color);
-    applyEditorFormat("foreColor", hex);
+    applyEditorFormat(chemColorMode === "hiliteColor" ? "hiliteColor" : "foreColor", hex);
     rememberRecentColor(hex);
     closeColorPalette();
   }
@@ -694,7 +729,7 @@
     const b = document.getElementById("chemColorB");
     if (r && g && b) return rgbToHex(r.value, g.value, b.value);
     const picker = document.getElementById("chemColorPicker");
-    return normalizeHexColor(picker && picker.value) || "#00f5d4";
+    return normalizeHexColor(picker && picker.value) || defaultColorForMode(chemColorMode);
   }
 
   /** /uploads/... 경로의 한글·공백 세그먼트를 안전하게 인코딩 */
@@ -946,8 +981,38 @@
   function closeColorPalette() {
     const palette = document.getElementById("chemColorPalette");
     const toggle = document.getElementById("chemColorToggle");
+    const highlightToggle = document.getElementById("chemHighlightToggle");
     if (palette) palette.classList.add("hidden");
     if (toggle) toggle.setAttribute("aria-expanded", "false");
+    if (highlightToggle) highlightToggle.setAttribute("aria-expanded", "false");
+  }
+
+  function openColorPalette(mode) {
+    const palette = document.getElementById("chemColorPalette");
+    const toggle = document.getElementById("chemColorToggle");
+    const highlightToggle = document.getElementById("chemHighlightToggle");
+    if (!palette) return;
+    chemColorMode = mode === "hiliteColor" ? "hiliteColor" : "foreColor";
+    palette.classList.remove("hidden");
+    if (toggle) toggle.setAttribute("aria-expanded", chemColorMode === "foreColor" ? "true" : "false");
+    if (highlightToggle) {
+      highlightToggle.setAttribute("aria-expanded", chemColorMode === "hiliteColor" ? "true" : "false");
+    }
+    const bar = document.getElementById(activeColorBarId());
+    syncColorInputs((bar && bar.style.background) || defaultColorForMode(chemColorMode));
+    setColorPalettePage(1);
+    renderRecentColors();
+  }
+
+  function toggleColorPalette(mode) {
+    const palette = document.getElementById("chemColorPalette");
+    if (!palette) return;
+    const sameModeOpen = !palette.classList.contains("hidden") && chemColorMode === mode;
+    if (sameModeOpen) {
+      closeColorPalette();
+      return;
+    }
+    openColorPalette(mode);
   }
 
   function applyEditorFormat(command, value) {
@@ -955,14 +1020,20 @@
     if (!editor) return;
     editor.focus();
     try {
-      if (command === "foreColor") {
+      if (command === "foreColor" || command === "hiliteColor" || command === "backColor") {
         try {
           document.execCommand("styleWithCSS", false, true);
         } catch (_) {
           /* older browsers */
         }
-        document.execCommand("foreColor", false, value || "#00f5d4");
-        normalizeFontColorsIn(editor);
+        if (command === "foreColor") {
+          document.execCommand("foreColor", false, value || CHEM_DEFAULT_TEXT_COLOR);
+          normalizeFontColorsIn(editor);
+          return;
+        }
+        const highlight = value || CHEM_DEFAULT_HIGHLIGHT_COLOR;
+        const applied = document.execCommand("hiliteColor", false, highlight);
+        if (!applied) document.execCommand("backColor", false, highlight);
         return;
       }
       document.execCommand(command, false, value || null);
@@ -1201,12 +1272,15 @@
           const luma = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
           swatch.classList.toggle("is-dark", luma < 0.55);
         }
-        swatch.addEventListener("click", () => applyTextColor(color));
+        swatch.addEventListener("click", () => applyPaletteColor(color));
         swatchBox.appendChild(swatch);
       });
     }
 
-    syncColorInputs("#00f5d4");
+    chemColorMode = "foreColor";
+    syncColorInputs(CHEM_DEFAULT_TEXT_COLOR);
+    const highlightBar = document.getElementById("chemHighlightBar");
+    if (highlightBar) highlightBar.style.background = CHEM_DEFAULT_HIGHLIGHT_COLOR;
     setColorPalettePage(1);
     renderRecentColors();
 
@@ -1268,13 +1342,18 @@
 
     const colorApply = document.getElementById("chemColorApply");
     if (colorApply) {
-      colorApply.addEventListener("click", () => applyTextColor(readCustomColor()));
+      colorApply.addEventListener("click", () => applyPaletteColor(readCustomColor()));
     }
     const colorReset = document.getElementById("chemColorReset");
     if (colorReset) {
       colorReset.addEventListener("click", () => {
-        applyEditorFormat("removeFormat");
-        syncColorInputs("#00f5d4");
+        if (chemColorMode === "hiliteColor") {
+          applyEditorFormat("hiliteColor", "transparent");
+          syncColorInputs(CHEM_DEFAULT_HIGHLIGHT_COLOR);
+        } else {
+          applyEditorFormat("removeFormat");
+          syncColorInputs(CHEM_DEFAULT_TEXT_COLOR);
+        }
         closeColorPalette();
       });
     }
@@ -1292,14 +1371,15 @@
       colorToggle.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const willOpen = palette.classList.contains("hidden");
-        palette.classList.toggle("hidden", !willOpen);
-        colorToggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
-        if (willOpen) {
-          syncColorInputs((document.getElementById("chemColorBar") || {}).style.background || "#00f5d4");
-          setColorPalettePage(1);
-          renderRecentColors();
-        }
+        toggleColorPalette("foreColor");
+      });
+    }
+    const highlightToggle = document.getElementById("chemHighlightToggle");
+    if (highlightToggle && palette) {
+      highlightToggle.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleColorPalette("hiliteColor");
       });
     }
 
