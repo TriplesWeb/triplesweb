@@ -1,11 +1,13 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.entity.Album;
+import com.example.triplesweb.dto.GroupIntroDto;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.Unit;
 import com.example.triplesweb.repository.AlbumRepository;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.UnitRepository;
+import com.example.triplesweb.service.ArtistAdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,12 +32,19 @@ public class TriplesController {
     private final AlbumRepository albumrepository;
     private final ArtistRepository artistrepository;
     private final UnitRepository unitrepository;
+    private final ArtistAdminService artistAdminService;
 
     @GetMapping("/artist")
     @Transactional(readOnly = true)
     public String indexTriples(Model model) {
         List<Artist> artistList = artistrepository.findAllWithUnits();
+        GroupIntroDto group = artistAdminService.getGroupIntro();
         model.addAttribute("artist", artistList);
+        model.addAttribute("allUnits", artistAdminService.listUnitOptions());
+        model.addAttribute("groupTitle", group.getTitle());
+        model.addAttribute("groupBody", group.getBody());
+        model.addAttribute("groupImage", group.getImageUrl());
+        model.addAttribute("groupTabImage", group.getTabImageUrl());
         return "triples/artist";
     }
 

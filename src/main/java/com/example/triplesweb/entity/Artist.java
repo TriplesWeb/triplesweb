@@ -1,10 +1,12 @@
 package com.example.triplesweb.entity;
 
+import com.example.triplesweb.util.ContentLinks;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 아티스트(멤버) 프로필 엔티티. {@link UnitMember}로 유닛 소속 1:N.
@@ -48,4 +50,32 @@ public class Artist {
 
     @Column(nullable = false)
     private String color;
+
+    /** 멤버 단독 컨텐츠 영상 링크 JSON. [{"title","url"}, ...] */
+    @Column(columnDefinition = "TEXT")
+    private String soloContent;
+
+    /** 출연한 방송 영상 링크 JSON */
+    @Column(columnDefinition = "TEXT")
+    private String broadcastContent;
+
+    @Transient
+    public List<Map<String, String>> getSoloLinks() {
+        return ContentLinks.parse(soloContent);
+    }
+
+    @Transient
+    public boolean isHasSoloLinks() {
+        return !getSoloLinks().isEmpty();
+    }
+
+    @Transient
+    public List<Map<String, String>> getBroadcastLinks() {
+        return ContentLinks.parse(broadcastContent);
+    }
+
+    @Transient
+    public boolean isHasBroadcastLinks() {
+        return !getBroadcastLinks().isEmpty();
+    }
 }

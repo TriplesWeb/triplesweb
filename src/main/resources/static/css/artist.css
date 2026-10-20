@@ -1,0 +1,338 @@
+/* About 트리플에스 — 관리자 모달 (케미 편집 UI와 톤 맞춤) */
+.artist-admin-btn {
+    appearance: none;
+    padding: 0.4rem 0.85rem;
+    border-radius: 0.55rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #12141a;
+    color: #b9cac4;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.artist-admin-btn:hover {
+    border-color: rgba(0, 245, 212, 0.5);
+    color: #00f5d4;
+}
+
+.artist-admin-btn.is-active {
+    border-color: rgba(0, 245, 212, 0.65);
+    color: #0d0e12;
+    background: #00f5d4;
+}
+
+.artist-admin-hint {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #00f5d4;
+}
+
+.artist-edit-inline {
+    display: none;
+    margin-top: 0.75rem;
+}
+
+.artist-page.is-admin .artist-edit-inline {
+    display: inline-flex;
+}
+
+.artist-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.62);
+}
+
+.artist-modal.flex {
+    display: flex;
+}
+
+.artist-modal-panel {
+    position: relative;
+    width: min(92vw, 520px);
+    max-height: min(90vh, 820px);
+    overflow: auto;
+    border-radius: 1rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #16181f;
+    padding: 1.25rem 1.25rem 1rem;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+.artist-modal-panel.artist-edit-panel {
+    width: min(96vw, 640px);
+}
+
+.artist-modal-title {
+    margin: 0 2rem 1rem 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #e3e2e8;
+}
+
+.artist-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: #b9cac4;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 0.4rem;
+}
+
+.artist-close:hover {
+    color: #00f5d4;
+}
+
+.artist-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.artist-edit-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #b9cac4;
+}
+
+.artist-edit-label > input:not([type="checkbox"]):not([type="radio"]),
+.artist-edit-label > textarea,
+.artist-edit-label > select,
+.artist-edit-label > .artist-password-field > input {
+    appearance: none;
+    width: 100%;
+    border-radius: 0.55rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #0d0e12;
+    color: #e3e2e8;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.9rem;
+}
+
+.artist-edit-label textarea {
+    min-height: 5rem;
+    resize: vertical;
+}
+
+.artist-edit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+}
+
+@media (max-width: 640px) {
+    .artist-edit-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.artist-unit-checks {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.45rem;
+    max-height: 10rem;
+    overflow: auto;
+    padding: 0.55rem;
+    border-radius: 0.55rem;
+    border: 1px solid rgba(58, 74, 70, 0.4);
+    background: #0d0e12;
+}
+
+.artist-unit-checks .artist-unit-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    max-width: 100%;
+    padding: 0.35rem 0.65rem;
+    border-radius: 999px;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #16181f;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: #e3e2e8;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.artist-unit-checks .artist-unit-chip:has(input:checked) {
+    border-color: rgba(0, 245, 212, 0.65);
+    color: #00f5d4;
+    background: rgba(0, 245, 212, 0.08);
+}
+
+.artist-unit-checks .artist-unit-chip input {
+    appearance: auto;
+    -webkit-appearance: checkbox;
+    width: 0.9rem;
+    height: 0.9rem;
+    margin: 0;
+    flex: 0 0 auto;
+    accent-color: #00f5d4;
+    cursor: pointer;
+}
+
+.artist-unit-checks .artist-unit-chip span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.artist-edit-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    margin-top: 0.35rem;
+}
+
+.artist-mode-btn {
+    appearance: none;
+    padding: 0.45rem 0.9rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #12141a;
+    color: #b9cac4;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.artist-mode-btn.is-active {
+    background: #00f5d4;
+    color: #0d0e12;
+    border-color: #00f5d4;
+}
+
+.artist-edit-error {
+    margin: 0;
+    color: #ffb4ab;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.artist-password-field {
+    position: relative;
+    display: block;
+}
+
+.artist-password-field input {
+    padding-right: 2.6rem;
+}
+
+.artist-password-toggle {
+    position: absolute;
+    right: 0.35rem;
+    top: 50%;
+    transform: translateY(-50%);
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: #8a9a94;
+    cursor: pointer;
+    padding: 0.2rem;
+}
+
+.artist-edit-check {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.82rem;
+    color: #b9cac4;
+}
+
+.artist-preview {
+    max-width: 8rem;
+    border-radius: 0.6rem;
+    border: 1px solid rgba(58, 74, 70, 0.45);
+}
+
+.artist-edit-field-hint {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #8a9a94;
+}
+
+.artist-link-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.artist-link-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.artist-link-row input {
+    appearance: none;
+    width: 100%;
+    border-radius: 0.55rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #0d0e12;
+    color: #e3e2e8;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.artist-link-remove {
+    appearance: none;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.45rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #12141a;
+    color: #b9cac4;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.artist-link-remove:hover {
+    border-color: rgba(255, 180, 171, 0.55);
+    color: #ffb4ab;
+}
+
+.artist-link-list {
+    list-style: none;
+    margin: 0.55rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.artist-video-link {
+    color: #00f5d4;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.artist-video-link:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+    .artist-link-row {
+        grid-template-columns: 1fr;
+    }
+}
