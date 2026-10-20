@@ -2,7 +2,9 @@ package com.example.triplesweb.repository;
 
 import com.example.triplesweb.entity.Artist;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -17,4 +19,12 @@ public interface ArtistRepository extends JpaRepository<Artist, Long> {
     Optional<Artist> findByEngName(String engName);
 
     Optional<Artist> findByName(String name);
+
+    @Query("""
+            SELECT DISTINCT a FROM Artist a
+            LEFT JOIN FETCH a.affiliatedUnit au
+            LEFT JOIN FETCH au.unit
+            ORDER BY a.artistId
+            """)
+    List<Artist> findAllWithUnits();
 }

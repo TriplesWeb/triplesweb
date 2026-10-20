@@ -32,8 +32,9 @@ public class TriplesController {
     private final UnitRepository unitrepository;
 
     @GetMapping("/artist")
+    @Transactional(readOnly = true)
     public String indexTriples(Model model) {
-        List<Artist> artistList = artistrepository.findAll();
+        List<Artist> artistList = artistrepository.findAllWithUnits();
         model.addAttribute("artist", artistList);
         return "triples/artist";
     }
@@ -56,13 +57,14 @@ public class TriplesController {
         return "triples/chemistry";
     }
 
+    /** 상세는 그룹 소개 탭에 통합. 케미/유닛 등 기존 링크는 해당 멤버 탭으로 보낸다. */
     @GetMapping("/artist/{id:[0-9]+}")
-    @Transactional(readOnly = true)
-    public String TriplesArtistDetail(@PathVariable("id") long artistId, Model model) {
-        Artist artist = artistrepository.findById(artistId)
-        .orElseThrow(() -> new IllegalArgumentException("해당 아티스트가 존재하지 않습니다. id=" + artistId));
-        model.addAttribute("artist", artist);
-        return "triples/artist_detail";
+    public String TriplesArtistDetail(@PathVariable("id") long artistId) {
+        if (!artistrepository.existsByArtistId(artistId)) {
+            throw new IllegalArgumentException("해당 아티스트가 존재하지 않습니다. id=" + artistId);
+        }
+        // redirect: 는 #fragment를 버리므로 tab 쿼리로 전달
+        return "redirect:/triples/artist?tab=member-" + artistId;
     }
     @GetMapping("/album/{id:[0-9]+}")
     @Transactional(readOnly = true)
