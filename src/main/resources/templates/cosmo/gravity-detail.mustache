@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{gravity.title}} - 트리플에스 커뮤니티</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="/js/tailwind.config.js"></script>
+    <link rel="stylesheet" href="/../static/css/style.css">
+    <style>
+        .gravity-detail-card { background: linear-gradient(145deg, rgba(26,27,32,.98), rgba(18,19,23,.98)); }
+        .gravity-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+        @media (max-width: 768px) { .gravity-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 420px) { .gravity-grid { grid-template-columns: minmax(0, 1fr); } }
+    </style>
+</head>
+<body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen flex flex-col">
+{{>layout/header}}
+
+<main class="flex-1 bg-[#0d0e12] text-white pt-6 pb-20 font-sans selection:bg-[#00f5d4] selection:text-black">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <div class="flex items-center justify-between gap-4">
+            <a href="/cosmo/gravity" class="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-[#00f5d4] transition">
+                <span class="material-symbols-outlined text-lg">arrow_back</span>
+                그래비티 목록으로
+            </a>
+            <div class="flex items-center gap-2 text-[10px] sm:text-xs font-mono text-gray-500">
+                <span>COSMO</span><span>/</span><span>GRAVITY</span><span>/</span><span>{{gravity.id}}</span>
+            </div>
+        </div>
+
+        <section class="gravity-detail-card relative overflow-hidden rounded-3xl border border-white/10 p-5 sm:p-8 shadow-2xl">
+            <div class="absolute -right-16 -top-20 w-64 h-64 rounded-full bg-[#00f5d4]/10 blur-3xl pointer-events-none"></div>
+            <div class="absolute -left-16 -bottom-24 w-64 h-64 rounded-full bg-purple-500/10 blur-3xl pointer-events-none"></div>
+            <div class="relative flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+                <div class="max-w-3xl space-y-4">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="px-2.5 py-1 rounded-md text-[10px] font-bold tracking-widest bg-[#00f5d4]/10 text-[#00f5d4] border border-[#00f5d4]/30">{{gravity.category}}</span>
+                        <span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">{{gravity.status}}</span>
+                    </div>
+                    <div>
+                        <p class="text-xs font-mono tracking-[.25em] text-gray-500 mb-2">GRAVITY ARCHIVE · #{{gravity.id}}</p>
+                        <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">{{gravity.title}}</h1>
+                        <p class="text-sm sm:text-base text-gray-300 leading-7 mt-4">{{gravity.description}}</p>
+                    </div>
+                    <div class="flex flex-wrap gap-3 pt-1">
+                        <a href="/cosmo/gravity" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00f5d4] text-black text-sm font-bold hover:bg-[#7dffeb] transition">
+                            <span class="material-symbols-outlined text-lg">list</span> 전체 그래비티 보기
+                        </a>
+                        <span class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-gray-300">
+                            <span class="material-symbols-outlined text-lg">history</span> 아카이브 기록
+                        </span>
+                    </div>
+                </div>
+                <div class="w-full lg:max-w-xs rounded-2xl border border-white/10 bg-black/25 p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-xs text-gray-400">총 스테이킹 COMO</span>
+                        <span class="material-symbols-outlined text-[#00f5d4]">token</span>
+                    </div>
+                    <p class="text-2xl sm:text-3xl font-extrabold font-mono text-[#00f5d4]">{{gravity.como}}</p>
+                    <div class="mt-5 pt-4 border-t border-white/10 flex items-start gap-3">
+                        <span class="material-symbols-outlined text-gray-500">calendar_month</span>
+                        <div>
+                            <p class="text-xs text-gray-500 mb-1">투표 진행 기간</p>
+                            <p class="text-sm text-gray-200 font-mono">{{gravity.period}}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {{#isKnownGravity}}
+        <section class="gravity-grid">
+            <div class="rounded-2xl border border-white/10 bg-[#16181f] p-4 sm:p-5">
+                <span class="material-symbols-outlined text-[#00f5d4]">fingerprint</span>
+                <p class="text-xs text-gray-500 mt-3">Gravity ID</p>
+                <p class="text-xl font-bold font-mono mt-1">#{{gravity.id}}</p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-[#16181f] p-4 sm:p-5">
+                <span class="material-symbols-outlined text-purple-400">how_to_vote</span>
+                <p class="text-xs text-gray-500 mt-3">진행 상태</p>
+                <p class="text-lg font-bold mt-1">{{gravity.status}}</p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-[#16181f] p-4 sm:p-5">
+                <span class="material-symbols-outlined text-amber-300">groups</span>
+                <p class="text-xs text-gray-500 mt-3">기록된 항목 수</p>
+                <p class="text-xl font-bold font-mono mt-1">{{gravity.candidateCount}}</p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-[#16181f] p-4 sm:p-5">
+                <span class="material-symbols-outlined text-pink-400">database</span>
+                <p class="text-xs text-gray-500 mt-3">결과 데이터</p>
+                <p class="text-lg font-bold mt-1">아카이브 요약</p>
+            </div>
+        </section>
+        {{/isKnownGravity}}
+
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 rounded-2xl border border-white/10 bg-[#16181f] p-5 sm:p-6">
+                <div class="flex items-center justify-between gap-3 mb-5">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1"><span class="w-1.5 h-5 rounded-full bg-[#00f5d4]"></span><h2 class="text-lg font-bold">후보 및 선택 항목</h2></div>
+                        <p class="text-xs text-gray-500">목록 페이지에 기록된 항목을 정리했습니다.</p>
+                    </div>
+                    <span class="material-symbols-outlined text-gray-500">ballot</span>
+                </div>
+                {{#gravity.hasCandidates}}
+                <div class="space-y-3">
+                    {{#gravity.candidates}}
+                    <div class="flex items-center gap-4 rounded-xl border border-white/10 bg-black/20 p-4 hover:border-[#00f5d4]/30 transition">
+                        <div class="flex items-center justify-center w-11 h-11 rounded-xl bg-white/5 border border-white/10 font-mono text-sm text-[#00f5d4]">{{number}}</div>
+                        <div class="min-w-0 flex-1">
+                            <p class="font-bold text-white break-words">{{name}}</p>
+                            <p class="text-xs text-gray-500 mt-1">{{type}}</p>
+                        </div>
+                        <span class="material-symbols-outlined text-gray-600">chevron_right</span>
+                    </div>
+                    {{/gravity.candidates}}
+                </div>
+                {{/gravity.hasCandidates}}
+                {{^gravity.hasCandidates}}
+                <div class="rounded-xl border border-dashed border-white/15 p-8 text-center">
+                    <span class="material-symbols-outlined text-3xl text-gray-600">hourglass_empty</span>
+                    <p class="text-sm text-gray-400 mt-3">등록된 후보 정보가 없습니다.</p>
+                </div>
+                {{/gravity.hasCandidates}}
+            </div>
+
+            <aside class="rounded-2xl border border-white/10 bg-[#16181f] p-5 sm:p-6 h-fit">
+                <div class="flex items-center gap-2 mb-4"><span class="w-1.5 h-5 rounded-full bg-purple-400"></span><h2 class="text-lg font-bold">결과 데이터 안내</h2></div>
+                <div class="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4">
+                    <div class="flex items-center gap-2 text-amber-300 text-sm font-bold"><span class="material-symbols-outlined">info</span> 실시간 집계 미연동</div>
+                    <p class="text-sm text-gray-300 leading-6 mt-3">{{gravity.resultNote}}</p>
+                </div>
+                <div class="mt-5 space-y-3 text-xs text-gray-500 leading-5">
+                    <p class="flex gap-2"><span class="material-symbols-outlined text-base text-gray-600">verified_user</span><span>후보별 COMO, 투표 수, 최종 순위는 검증된 COSMO/Apollo 응답을 연결한 뒤 표시합니다.</span></p>
+                    <p class="flex gap-2"><span class="material-symbols-outlined text-base text-gray-600">update</span><span>이 화면의 제목과 요약 수치는 현재 그래비티 목록 템플릿에 있는 아카이브 내용을 사용합니다.</span></p>
+                </div>
+            </aside>
+        </section>
+
+        <div class="flex justify-center pt-2">
+            <a href="/cosmo/gravity" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-gray-200 font-semibold transition">
+                <span class="material-symbols-outlined">arrow_back</span> 그래비티 목록으로 돌아가기
+            </a>
+        </div>
+    </div>
+</main>
+{{>layout/footer}}
+</body>
+</html>
