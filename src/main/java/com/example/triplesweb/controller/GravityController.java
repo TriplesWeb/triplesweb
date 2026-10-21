@@ -13,10 +13,9 @@ import java.util.Map;
 
 @Controller
 public class GravityController {
+    // This community page intentionally exposes tripleS Gravity only.
     private static final List<Map<String, Object>> ARTISTS = List.of(
-            artistOption("tripleS", "tripleS"),
-            artistOption("artms", "ARTMS"),
-            artistOption("idntt", "idntt")
+            artistOption("tripleS", "tripleS")
     );
 
     private final GravityService gravityService;
@@ -62,8 +61,7 @@ public class GravityController {
     }
 
     private static String normalizeArtist(String artistId) {
-        if ("artms".equalsIgnoreCase(artistId)) return "artms";
-        if ("idntt".equalsIgnoreCase(artistId)) return "idntt";
+        // Ignore arbitrary query parameters so this page can never switch to another artist.
         return "tripleS";
     }
 
