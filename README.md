@@ -17,14 +17,12 @@ tripleS 팬 커뮤니티 웹사이트 (Spring Boot 3.5 + Mustache + MariaDB).
 
 - 목록: `/cosmo/gravity` (기존 `/gravity` 경로도 호환)
 - 상세: `/cosmo/gravity/{gravityId}`
-- 로컬 `.env`에 본인 계정의 유효한 `COSMO_ACCESS_TOKEN`을 설정하면 서버가 COSMO API에서 목록·상세·후보 정보를 조회합니다.
-- 그래비티 페이지는 tripleS 전용입니다. 공개 집계 목록은 `GRAVITY_APOLLO_TRIPLES_POLL_IDS` 또는 `gravity.apollo-triples-poll-ids`에 등록된 Poll ID만 허용합니다. Apollo 네트워크 화면에서 tripleS `<ANDLESS>` Seoul Encore Gravity의 집계 ID `267`을 확인했고, Gravity 페이지 ID `262`를 집계 ID `267`로 매핑했습니다.
-- 공개 집계 API 프록시: `GET /api/cosmo/gravity/aggregate?pollId={pollId}`. Apollo가 공개한 집계만 조회하며 투표/COMO 전송은 하지 않습니다. 목록에서는 tripleS의 Gravity ID 또는 Apollo 집계 ID를 입력할 수 있습니다. 확인된 Gravity ID `262`는 Apollo 집계 ID `267`로 자동 변환되며, 허용되지 않은 ID는 거부합니다.
-- 그래비티 상세 페이지(`/cosmo/gravity/{gravityId}`)는 tripleS 소속이 확인된 ID만 조회합니다. COSMO 토큰 없이 상세 페이지 집계를 연결하려면 `.env`의 `GRAVITY_APOLLO_TRIPLES_POLL_MAP` 또는 `gravity.apollo-triples-poll-map`에 검증된 `GravityID:PollID` 쌍을 쉼표로 구분해 등록해야 합니다. 기존 `233:274`(IDNTT 그래비티) 매핑은 제거했습니다. COSMO 토큰이 있으면 tripleS Gravity 목록에서 Poll ID 소속을 검증합니다.
-- 후보별 득표/순위는 Apollo 응답의 `finalized.comoPerCandidate`가 있고 전체 투표가 공개된 경우에만 표시합니다. 최종 공개 전에는 개별 상위 투표 기록의 후보 ID도 화면에서 숨깁니다. 이 규칙은 tripleS 그래비티에만 적용됩니다.
-- 후보별 최종 COMO 합계는 Apollo가 모든 투표 공개를 확인한 뒤에만 표시됩니다. 토큰이 없으면 후보명 대신 후보 번호를 표시합니다.
+- `COSMO_ACCESS_TOKEN`이 설정되면 서버가 COSMO API에서 tripleS 그래비티 목록과 상세·후보·공개 결과를 조회합니다.
+- 그래비티 목록은 COSMO API의 페이지를 끝까지 순회해 tripleS 그래비티를 모두 불러오고, Gravity ID 기준으로 중복을 제거합니다. 목록 결과는 서버에서 10분간 캐시합니다.
+- 목록 페이지에는 Poll ID 입력, 자동 탐색, Apollo 실시간 집계 UI를 두지 않습니다. API에서 받은 그래비티 항목을 목록에 추가하며, 각 상세 페이지에서 COSMO API가 공개한 후보와 투표 결과를 표시합니다.
+- 실시간 Apollo 집계는 현재 웹 UI에서 사용하지 않습니다. 공개 Apollo 집계 프록시 코드는 남아 있지만, 페이지에서 30초마다 조회하거나 Poll ID를 수동 연결하지 않습니다.
+- 상세 페이지는 tripleS 소속이 확인된 Gravity ID만 조회합니다. COSMO API에서 결과가 제공되지 않으면 후보별 득표 수치를 임의로 만들지 않습니다. COSMO 토큰이 없거나 API 호출이 실패하면 저장된 아카이브 참고 정보를 표시할 수 있으며, 이 정보는 실제 API 결과가 아닐 수 있습니다.
 - 토큰은 만료될 수 있으므로 실제 값을 GitHub 저장소나 `.env.example`에 넣지 마세요. 현재 구성은 액세스 토큰 자동 갱신을 구현하지 않았습니다.
-- 공개되지 않은 후보별 COMO 집계는 임의의 숫자로 채우지 않습니다. 토큰이 없거나 외부 API 요청이 실패하면 기존 아카이브 요약과 안내 메시지를 표시합니다.
 - 이 연동은 조회 전용이며, 실제 투표나 COMO 전송을 실행하지 않습니다.
 
 ## 케미명 데이터
