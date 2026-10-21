@@ -1,7 +1,6 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.service.GravityService;
-import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -53,42 +52,12 @@ public class GravityController {
                     "Gravity 목록과 후보명을 보려면 본인 계정의 유효한 토큰을 서버 환경 변수로 설정해야 합니다.");
         }
 
-        if (pollId != null) {
-            if (pollId <= 0) {
-                model.addAttribute("aggregationError", "투표 ID는 1 이상의 숫자여야 합니다.");
-                return "cosmo/gravity";
-            }
-
-            JsonNode aggregateNode = null;
-            try {
-                aggregateNode = gravityService.fetchAggregatedData(pollId);
-                model.addAttribute("aggregation", gravityService.toMap(aggregateNode));
-            } catch (Exception exception) {
-                model.addAttribute("aggregationError", GravityService.describeApiError(exception));
-            }
-
-            if (gravityService.hasCosmoToken() && aggregateNode != null) {
-                try {
-                    JsonNode pollDetails = gravityService.fetchPollDetails(pollId);
-                    model.addAttribute("candidateResults",
-                            gravityService.buildCandidateResults(pollDetails, aggregateNode));
-                    if (pollDetails != null) {
-                        model.addAttribute("pollDetails", gravityService.toMap(pollDetails));
-                    } else {
-                        model.addAttribute("candidateNotice",
-                                "COSMO API에서 후보 정보를 반환하지 않았습니다.");
-                    }
-                } catch (Exception exception) {
-                    model.addAttribute("candidateNotice",
-                            "집계 데이터는 조회했지만 후보 정보를 가져오지 못했습니다. " +
-                            GravityService.describeApiError(exception));
-                }
-            } else if (aggregateNode != null) {
-                model.addAttribute("candidateNotice",
-                        "후보명은 COSMO 토큰이 설정되면 표시됩니다. 현재는 집계 API가 반환한 후보 ID만 확인할 수 있습니다.");
-            }
+        if (pollId != null && pollId <= 0) {
+            model.addAttribute("aggregationError", "투표 ID는 1 이상의 숫자여야 합니다.");
         }
 
+        // The browser queries the public Apollo aggregate endpoint through
+        // GravityAggregateApiController and refreshes it every 30 seconds.
         return "cosmo/gravity";
     }
 
