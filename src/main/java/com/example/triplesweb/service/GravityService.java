@@ -20,10 +20,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Service
 public class GravityService {
@@ -40,13 +36,8 @@ public class GravityService {
     private volatile List<Map<String, Object>> tripleSGravityListCache = List.of();
     private volatile long tripleSPollMappingsCachedAt;
     private volatile List<Map<String, Object>> tripleSPollMappingsCache = List.of();
-    private volatile long tripleSPollDiscoveryCachedAt;
-    private volatile List<Map<String, Object>> tripleSPollDiscoveryCache = List.of();
-
     private static final long GRAVITY_LIST_CACHE_MILLIS = 10L * 60L * 1000L;
     private static final long POLL_MAPPING_CACHE_MILLIS = 60L * 60L * 1000L;
-    private static final long POLL_DISCOVERY_CACHE_MILLIS = 10L * 60L * 1000L;
-    private static final int APOLLO_DISCOVERY_RANGE_END = 264;
 
     public GravityService(
             RestClient.Builder restClientBuilder,
@@ -321,106 +312,6 @@ public class GravityService {
             }
         }
         return null;
-    }
-
-    /**
-     * Scans API Poll IDs 1..264 and also includes any higher Poll IDs found in
-     * tripleS Gravity metadata (for example, when Poll IDs and Gravity IDs diverge).
-     * Only IDs mapped to tripleS by COSMO are displayed.
-     */
-    public List<Map<String, Object>> discoverTripleSPollAggregates() {
-        requireCosmoToken();
-        long now = System.currentTimeMillis();
-        if (tripleSPollDiscoveryCachedAt > 0
-                && now - tripleSPollDiscoveryCachedAt < POLL_DISCOVERY_CACHE_MILLIS) {
-            return copyMaps(tripleSPollDiscoveryCache);
-        }
-
-        synchronized (this) {
-            now = System.currentTimeMillis();
-            if (now - tripleSPollDiscoveryCachedAt < POLL_DISCOVERY_CACHE_MILLIS
-                    && !tripleSPollDiscoveryCache.isEmpty()) {
-                return copyMaps(tripleSPollDiscoveryCache);
-            }
-
-            List<Map<String, Object>> mappings = fetchAllTripleSPollMappings();
-            Map<Long, Map<String, Object>> mappingByPollId = new LinkedHashMap<>();
-            for (Map<String, Object> mapping : mappings) {
-                mappingByPollId.put(((Number) mapping.get("pollId")).longValue(), mapping);
-            }
-
-            Set<Long> idsToScan = new TreeSet<>();
-            for (long id = 1; id <= APOLLO_DISCOVERY_RANGE_END; id++) {
-                idsToScan.add(id);
-            }
-            // Do not miss a newer COSMO Poll ID that is already linked to a tripleS Gravity.
-            idsToScan.addAll(mappingByPollId.keySet());
-
-            ExecutorService executor = Executors.newFixedThreadPool(6);
-            List<Map<String, Object>> discovered = new ArrayList<>();
-            try {
-                List<CompletableFuture<Map<String, Object>>> futures = new ArrayList<>();
-                for (Long pollId : idsToScan) {
-                    futures.add(CompletableFuture.supplyAsync(() -> {
-                        JsonNode aggregate;
-                        try {
-                            aggregate = fetchAggregatedData(pollId);
-                        } catch (Exception ignored) {
-                            // Missing IDs, non-tripleS IDs, and upstream failures are not listed.
-                            return null;
-                        }
-
-                        Map<String, Object> mapping = mappingByPollId.get(pollId);
-                        if (mapping == null) return null;
-
-                        Map<String, Object> item = new LinkedHashMap<>(mapping);
-                        long totalVotes = aggregate.path("totalVoteCount").asLong(0);
-                        long totalComo = aggregate.path("totalComoCount").asLong(0);
-                        long revealedVotes = aggregate.path("revealedVoteCount").asLong(0);
-                        item.put("totalVoteCount", totalVotes);
-                        item.put("totalComoCount", totalComo);
-                        item.put("totalComoFormatted",
-                                NumberFormat.getNumberInstance(Locale.US).format(totalComo));
-                        item.put("revealedVoteCount", revealedVotes);
-                        item.put("isFinalized", aggregate.path("finalized").isObject()
-                                && !aggregate.path("finalized").isNull());
-                        item.put("startDate", firstNonBlank(
-                                item.get("startDate") == null ? "" : String.valueOf(item.get("startDate")),
-                                displayDate(aggregate.path("startDate").asText("")),
-                                ""));
-                        item.put("endDate", firstNonBlank(
-                                item.get("endDate") == null ? "" : String.valueOf(item.get("endDate")),
-                                displayDate(aggregate.path("endDate").asText("")),
-                                ""));
-                        return item;
-                    }, executor));
-                }
-
-                for (CompletableFuture<Map<String, Object>> future : futures) {
-                    try {
-                        Map<String, Object> item = future.join();
-                        if (item != null) discovered.add(item);
-                    } catch (RuntimeException ignored) {
-                        // One failed lookup must not prevent the remaining IDs from rendering.
-                    }
-                }
-            } finally {
-                executor.shutdownNow();
-            }
-
-            discovered.sort(Comparator.comparingLong(row -> ((Number) row.get("pollId")).longValue()));
-            tripleSPollDiscoveryCache = copyMaps(discovered);
-            tripleSPollDiscoveryCachedAt = System.currentTimeMillis();
-            return copyMaps(discovered);
-        }
-    }
-
-    private static List<Map<String, Object>> copyMaps(List<Map<String, Object>> source) {
-        List<Map<String, Object>> copy = new ArrayList<>(source.size());
-        for (Map<String, Object> row : source) {
-            copy.add(new LinkedHashMap<>(row));
-        }
-        return copy;
     }
 
     /**
