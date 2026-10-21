@@ -1788,7 +1788,7 @@
     currentMode = mode === "trio" ? "trio" : "pair";
     setModeButtons(currentMode);
     if (currentMode === "trio") {
-      // 3인 케미 구조화 데이터 없음(이미지 몇 장만) → 플레이스홀더
+      // 3인 이상 케미 구조화 데이터 없음(이미지 몇 장만) → 플레이스홀더
       showTrioPlaceholder();
       return;
     }

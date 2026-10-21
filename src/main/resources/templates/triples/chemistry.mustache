@@ -51,7 +51,7 @@
                 <div class="flex flex-wrap items-center gap-2 chem-page-actions">
                     <div class="chem-mode-toggle" role="group" aria-label="케미 인원 선택">
                         <button type="button" class="chem-mode-btn is-active" data-mode="pair" aria-pressed="true" onclick="window.__chemSetMode&&window.__chemSetMode('pair')">2인</button>
-                        <button type="button" class="chem-mode-btn" data-mode="trio" aria-pressed="false" onclick="window.__chemSetMode&&window.__chemSetMode('trio')">3인</button>
+                        <button type="button" class="chem-mode-btn" data-mode="trio" aria-pressed="false" onclick="window.__chemSetMode&&window.__chemSetMode('trio')">3인 이상</button>
                     </div>
                     <a href="/triples/chemistry-en" class="chem-lang-btn" hreflang="en" lang="en" title="View in English">EN</a>
                     <button type="button" id="chemAdminBtn" class="chem-admin-btn hidden" aria-pressed="false">관리자</button>
@@ -77,8 +77,8 @@
         </div>
 
         <div class="chem-trio-placeholder hidden" id="chemTrioView" aria-live="polite">
-            <p class="chem-trio-title">3인 케미 준비 중</p>
-            <p class="chem-trio-desc">3인 케미 데이터가 아직 없어요. 2인 모드로 돌아가 페어 케미를 볼 수 있어요.</p>
+            <p class="chem-trio-title">3인 이상 케미 준비 중</p>
+            <p class="chem-trio-desc">3인 이상 케미 데이터가 아직 없어요. 2인 모드로 돌아가 페어 케미를 볼 수 있어요.</p>
             <button type="button" class="chem-mode-btn chem-trio-back" data-mode="pair" onclick="window.__chemSetMode&&window.__chemSetMode('pair')">2인으로 보기</button>
         </div>
     </div>

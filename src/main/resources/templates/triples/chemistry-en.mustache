@@ -51,7 +51,7 @@
                 <div class="flex flex-wrap items-center gap-2 chem-page-actions">
                     <div class="chem-mode-toggle" role="group" aria-label="Chemistry group size">
                         <button type="button" class="chem-mode-btn is-active" data-mode="pair" aria-pressed="true" onclick="window.__chemSetMode&&window.__chemSetMode('pair')">Pair</button>
-                        <button type="button" class="chem-mode-btn" data-mode="trio" aria-pressed="false" onclick="window.__chemSetMode&&window.__chemSetMode('trio')">Trio</button>
+                        <button type="button" class="chem-mode-btn" data-mode="trio" aria-pressed="false" onclick="window.__chemSetMode&&window.__chemSetMode('trio')">3+</button>
                     </div>
                     <a href="/triples/chemistry" class="chem-lang-btn" hreflang="ko" lang="ko" title="한국어로 보기">한국어</a>
                 </div>
@@ -76,8 +76,8 @@
         </div>
 
         <div class="chem-trio-placeholder hidden" id="chemTrioView" aria-live="polite">
-            <p class="chem-trio-title">Trio chemistry coming soon</p>
-            <p class="chem-trio-desc">Trio chemistry data isn’t available yet. Switch back to Pair mode to browse duo chemistries.</p>
+            <p class="chem-trio-title">3+ chemistry coming soon</p>
+            <p class="chem-trio-desc">Chemistry for three or more members isn’t available yet. Switch back to Pair mode to browse duo chemistries.</p>
             <button type="button" class="chem-mode-btn chem-trio-back" data-mode="pair" onclick="window.__chemSetMode&&window.__chemSetMode('pair')">View pairs</button>
         </div>
     </div>
