@@ -95,6 +95,15 @@
     return escapeHtml(label).replace(/\n/g, "<br>");
   }
 
+  /** 모달 제목용 — 줄바꿈·여분 공백을 한 줄로 정리 */
+  function formatModalChemLabel(label) {
+    const text = String(label || "")
+      .replace(/\s*\n\s*/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    return escapeHtml(text);
+  }
+
   let isAdmin = false;
   let adminConfigured = false;
   let dbEntries = [];
@@ -242,6 +251,7 @@
         const payload = {
           description: desc,
           image: image,
+          label: label,
           labelTone: labelTone
         };
         if (links && Object.keys(links).length) {
@@ -912,13 +922,30 @@
         if (!m) return person;
         return m[1] === person ? m[2] : m[1];
       })();
-    document.getElementById("chemistryTitle").innerHTML = formatChemistryTitle(
-      titleMember1,
-      titleMember2
-    );
+    const chemLabel =
+      (currentView && currentView.label) ||
+      data.label ||
+      "";
+    const titleEl = document.getElementById("chemistryTitle");
+    const pairEl = document.getElementById("chemistryPair");
+    if (titleEl) {
+      titleEl.innerHTML = chemLabel
+        ? formatModalChemLabel(chemLabel)
+        : formatChemistryTitle(titleMember1, titleMember2);
+    }
+    if (pairEl) {
+      pairEl.innerHTML = formatChemistryTitle(titleMember1, titleMember2);
+      pairEl.hidden = !chemLabel;
+    }
     const creditEl = document.getElementById("chemistryCredit");
     const img = document.getElementById("chemistryImage");
-    if (img) img.alt = pairTitleText(titleMember1, titleMember2);
+    if (img) {
+      img.alt = chemLabel
+        ? String(chemLabel).replace(/\s+/g, " ").trim() +
+          " — " +
+          pairTitleText(titleMember1, titleMember2)
+        : pairTitleText(titleMember1, titleMember2);
+    }
     setChemistryDetailImage(data.image || "");
     if (creditEl) {
       if (credit && data.image) {
