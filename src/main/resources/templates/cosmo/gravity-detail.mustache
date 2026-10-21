@@ -34,6 +34,20 @@
             </div>
         </div>
 
+        {{#isLiveGravity}}
+        <div class="rounded-xl border border-[#00f5d4]/25 bg-[#00f5d4]/5 px-4 py-3 text-sm text-[#a4fff2]">
+            COSMO API에서 조회한 그래비티 상세 정보입니다. 공개되지 않은 투표 수치는 임의로 표시하지 않습니다.
+        </div>
+        {{/isLiveGravity}}
+        {{#archiveNotice}}
+        <div class="rounded-xl border border-amber-400/25 bg-amber-400/5 px-4 py-3 text-sm text-amber-100">{{archiveNotice}}</div>
+        {{/archiveNotice}}
+        {{#apiError}}
+        <div class="rounded-xl border border-rose-400/25 bg-rose-400/5 px-4 py-3 text-sm text-rose-100">
+            실시간 정보를 불러오지 못해 저장된 아카이브를 표시합니다. {{apiError}}
+        </div>
+        {{/apiError}}
+
         <section class="gravity-detail-card relative overflow-hidden rounded-3xl border border-white/10 p-5 sm:p-8 shadow-2xl">
             <div class="absolute -right-16 -top-20 w-64 h-64 rounded-full bg-[#00f5d4]/10 blur-3xl pointer-events-none"></div>
             <div class="absolute -left-16 -bottom-24 w-64 h-64 rounded-full bg-purple-500/10 blur-3xl pointer-events-none"></div>
@@ -47,6 +61,9 @@
                         <p class="text-xs font-mono tracking-[.25em] text-gray-500 mb-2">GRAVITY ARCHIVE · #{{gravity.id}}</p>
                         <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">{{gravity.title}}</h1>
                         <p class="text-sm sm:text-base text-gray-300 leading-7 mt-4">{{gravity.description}}</p>
+                        {{#gravity.bannerImageUrl}}
+                        <img src="{{gravity.bannerImageUrl}}" alt="{{gravity.title}} 배너" loading="lazy" class="mt-4 w-full max-h-64 object-cover rounded-xl border border-white/10" />
+                        {{/gravity.bannerImageUrl}}
                     </div>
                     <div class="flex flex-wrap gap-3 pt-1">
                         <a href="/cosmo/gravity" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00f5d4] text-black text-sm font-bold hover:bg-[#7dffeb] transition">
@@ -94,7 +111,8 @@
             <div class="rounded-2xl border border-white/10 bg-[#16181f] p-4 sm:p-5">
                 <span class="material-symbols-outlined text-pink-400">database</span>
                 <p class="text-xs text-gray-500 mt-3">결과 데이터</p>
-                <p class="text-lg font-bold mt-1">아카이브 요약</p>
+                {{#isLiveGravity}}<p class="text-lg font-bold mt-1">COSMO API 결과</p>{{/isLiveGravity}}
+                {{^isLiveGravity}}<p class="text-lg font-bold mt-1">아카이브 요약</p>{{/isLiveGravity}}
             </div>
         </section>
         {{/isKnownGravity}}
@@ -104,7 +122,8 @@
                 <div class="flex items-center justify-between gap-3 mb-5">
                     <div>
                         <div class="flex items-center gap-2 mb-1"><span class="w-1.5 h-5 rounded-full bg-[#00f5d4]"></span><h2 class="text-lg font-bold">후보 및 선택 항목</h2></div>
-                        <p class="text-xs text-gray-500">목록 페이지에 기록된 항목을 정리했습니다.</p>
+                        {{#isLiveGravity}}<p class="text-xs text-gray-500">COSMO API에서 확인한 후보 및 공개된 결과입니다.</p>{{/isLiveGravity}}
+                        {{^isLiveGravity}}<p class="text-xs text-gray-500">목록 페이지에 기록된 아카이브 항목입니다.</p>{{/isLiveGravity}}
                     </div>
                     <span class="material-symbols-outlined text-gray-500">ballot</span>
                 </div>
@@ -116,6 +135,7 @@
                         <div class="min-w-0 flex-1">
                             <p class="font-bold text-white break-words">{{name}}</p>
                             <p class="text-xs text-gray-500 mt-1">{{type}}</p>
+                            {{#amount}}<p class="text-sm font-semibold text-[#00f5d4] mt-1">{{amount}}</p>{{/amount}}
                         </div>
                         <span class="material-symbols-outlined text-gray-600">chevron_right</span>
                     </div>
@@ -142,6 +162,27 @@
                 </div>
             </aside>
         </section>
+
+        {{#gravity.hasLeaderboard}}
+        <section class="rounded-2xl border border-white/10 bg-[#16181f] p-5 sm:p-6">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="w-1.5 h-5 rounded-full bg-purple-400"></span>
+                <h2 class="text-lg font-bold">COMO 참여 순위</h2>
+                <span class="text-xs text-gray-500">COSMO 공개 데이터</span>
+            </div>
+            <div class="space-y-2">
+                {{#gravity.leaderboard}}
+                <div class="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <span class="font-mono text-[#00f5d4]">#{{rank}}</span>
+                        <span class="text-sm font-semibold truncate">{{nickname}}</span>
+                    </div>
+                    <span class="text-sm font-mono text-gray-300">{{como}}</span>
+                </div>
+                {{/gravity.leaderboard}}
+            </div>
+        </section>
+        {{/gravity.hasLeaderboard}}
 
         <div class="flex justify-center pt-2">
             <a href="/cosmo/gravity" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-gray-200 font-semibold transition">
