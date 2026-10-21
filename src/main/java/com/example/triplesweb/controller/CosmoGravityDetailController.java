@@ -122,8 +122,8 @@ public class CosmoGravityDetailController {
     }
 
     /**
-     * Resolve a Poll ID without requiring a COSMO token. Configure multiple entries as
-     * comma-separated GravityID:PollID pairs, for example 233:274,234:275.
+     * Allow only tripleS archive IDs, explicitly verified tripleS mappings,
+     * or Gravity IDs returned by COSMO's tripleS-only list.
      */
     private boolean isKnownTripleSGravity(String gravityId) {
         if (ARCHIVE.containsKey(gravityId) || resolveMappedPollId(gravityId) != null) {
