@@ -114,7 +114,7 @@
         <details class="chem-edit-help" open>
             <summary>입력 방법 안내</summary>
             <ul class="chem-edit-help-list">
-                <li><strong>케미명</strong> — 표 칸에 보이는 짧은 이름입니다. 두 줄이면 줄바꿈 대신 공백으로 적어도 됩니다.</li>
+                <li><strong>케미명</strong> — 표 칸에 보이는 짧은 이름입니다. 케미명이 둘 이상이면 줄바꿈으로 나누면 표·제목에 함께 표시됩니다.</li>
                 <li><strong>글자 색상</strong> — 기본(흰색) 또는 미정(보라) / 최근(분홍) / WAV(하늘). 표 칸 글자색만 바뀝니다.</li>
                 <li><strong>설명 서식</strong> — 글자를 드래그한 뒤 <b>B</b>(굵게) / <i>I</i>(기울임) / <u>U</u>(밑줄) / <b>A</b>(색상)를 누르세요. 색상은 팔레트·HEX·RGB로 지정할 수 있습니다.</li>
                 <li><strong>하이퍼링크</strong> — 아래에 표시 텍스트와 URL을 추가한 뒤, 설명 본문에서 같은 문구를 <code>**표시 텍스트**</code>처럼 감싸면 클릭 가능한 링크가 됩니다.</li>
@@ -127,7 +127,7 @@
             <input type="hidden" id="chemEditMember1" name="member1">
             <input type="hidden" id="chemEditMember2" name="member2">
             <label class="chem-edit-label">케미명
-                <input type="text" id="chemEditLabel" name="label" required maxlength="120" autocomplete="off" placeholder="예: 꼬꼬마즈">
+                <textarea id="chemEditLabel" name="label" required maxlength="120" rows="2" autocomplete="off" placeholder="예: 꼬꼬마즈&#10;복수면 줄바꿈으로 구분"></textarea>
             </label>
             <fieldset class="chem-tone-picker">
                 <legend>글자 색상</legend>
@@ -269,6 +269,6 @@
     </div>
 </div>
 
-<script src="/js/chemistry.js?v=34"></script>
+<script src="/js/chemistry.js?v=35"></script>
 </body>
 </html>

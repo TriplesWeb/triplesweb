@@ -95,13 +95,37 @@
     return escapeHtml(label).replace(/\n/g, "<br>");
   }
 
-  /** 모달 제목용 — 줄바꿈·여분 공백을 한 줄로 정리 */
+  /** 케미명 여러 개(줄바꿈)를 배열로 */
+  function splitChemLabels(label) {
+    return String(label || "")
+      .split(/\n+/)
+      .map((s) => s.replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+  }
+
+  function chemLabelPlain(label) {
+    return splitChemLabels(label).join(" · ");
+  }
+
+  /** 모달 제목 — 복수 케미명은 · 로 나란히 */
   function formatModalChemLabel(label) {
-    const text = String(label || "")
-      .replace(/\s*\n\s*/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-    return escapeHtml(text);
+    const names = splitChemLabels(label);
+    if (!names.length) return "";
+    if (names.length === 1) return escapeHtml(names[0]);
+    return names
+      .map((n) => '<span class="chem-title-name">' + escapeHtml(n) + "</span>")
+      .join('<span class="chem-title-sep" aria-hidden="true"> · </span>');
+  }
+
+  /**
+   * 문장 중간 <br>은 공백으로, 문장 끝(.!?) 다음 <br>은 문단 구분으로 유지.
+   * 복수 케미명 설명처럼 의도된 문단 나눔은 살리고, 어색한 강제 개행은 완화한다.
+   */
+  function softenDescriptionBreaks(html) {
+    return String(html || "").replace(/([^<\s])(?:\s*<br\s*\/?>\s*)+/gi, (full, prev) => {
+      if (/[.!?…]/.test(prev)) return prev + "<br>";
+      return prev + " ";
+    });
   }
 
   let isAdmin = false;
@@ -350,7 +374,9 @@
           key: el.dataset.key,
           member1: el.dataset.m1,
           member2: el.dataset.m2,
-          label: (el.textContent || "").replace(/\s+/g, " ").trim(),
+          label:
+            (cell && cell.label) ||
+            (el.textContent || "").replace(/\s+/g, " ").trim(),
           labelTone: (cell && cell.labelTone) || el.dataset.tone || "NONE",
           dbId: cell && cell.dbId ? cell.dbId : null
         };
@@ -904,14 +930,16 @@
     const data = personData[chemistryName];
     const { description, credit } = splitPhotoCredit(data.description);
 
-    let formattedDescription = sanitizeChemistryHtml(description)
-      .replace(/\*\*(.*?)\*\*/g, (match, p1) => {
-        if (data.links && data.links[p1]) {
-          return '<a href="' + data.links[p1] + '" target="_blank" rel="noopener" class="chem-highlight">' + p1 + "</a>";
-        }
-        return '<span class="chem-highlight">' + p1 + "</span>";
-      })
-      .replace(/\n/g, "<br>");
+    let formattedDescription = softenDescriptionBreaks(
+      sanitizeChemistryHtml(description)
+        .replace(/\*\*(.*?)\*\*/g, (match, p1) => {
+          if (data.links && data.links[p1]) {
+            return '<a href="' + data.links[p1] + '" target="_blank" rel="noopener" class="chem-highlight">' + p1 + "</a>";
+          }
+          return '<span class="chem-highlight">' + p1 + "</span>";
+        })
+        .replace(/\n/g, "<br>")
+    );
 
     const titleMember1 =
       (currentView && currentView.member1) || person;
@@ -932,6 +960,7 @@
       titleEl.innerHTML = chemLabel
         ? formatModalChemLabel(chemLabel)
         : formatChemistryTitle(titleMember1, titleMember2);
+      titleEl.classList.toggle("is-multi", splitChemLabels(chemLabel).length > 1);
     }
     if (pairEl) {
       pairEl.innerHTML = formatChemistryTitle(titleMember1, titleMember2);
@@ -941,9 +970,7 @@
     const img = document.getElementById("chemistryImage");
     if (img) {
       img.alt = chemLabel
-        ? String(chemLabel).replace(/\s+/g, " ").trim() +
-          " — " +
-          pairTitleText(titleMember1, titleMember2)
+        ? chemLabelPlain(chemLabel) + " — " + pairTitleText(titleMember1, titleMember2)
         : pairTitleText(titleMember1, titleMember2);
     }
     setChemistryDetailImage(data.image || "");
@@ -1323,7 +1350,7 @@
           const ri = memberIndex(member1);
           const ci = memberIndex(member2);
           const cell = pairMatrix[ri] && pairMatrix[ri][ci];
-          if (cell && cell.label) cellLabel = String(cell.label).replace(/\n/g, " ");
+          if (cell && cell.label) cellLabel = String(cell.label);
         }
         let labelTone =
           (currentView && currentView.labelTone) || data.labelTone || "NONE";

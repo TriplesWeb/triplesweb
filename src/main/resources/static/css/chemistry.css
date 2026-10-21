@@ -475,6 +475,15 @@
     margin: 0;
 }
 
+.chem-modal-title.is-multi {
+    font-size: clamp(1.35rem, 2vw, 1.95rem);
+}
+
+.chem-modal-title .chem-title-sep {
+    color: #8a9a94;
+    font-weight: 700;
+}
+
 .chem-modal-pair {
     margin: 0;
     font-family: 'Noto Sans KR', 'Inter', sans-serif;
@@ -912,6 +921,13 @@ a.chem-highlight:hover {
     color: var(--chem-white);
     padding: 0.65rem 0.75rem;
     font-size: 0.95rem;
+}
+
+.chem-edit-label textarea#chemEditLabel {
+    min-height: 3.4rem;
+    resize: vertical;
+    line-height: 1.45;
+    font-family: inherit;
 }
 
 .chem-password-field {
