@@ -994,7 +994,7 @@ a.chem-highlight:hover {
     top: calc(100% + 6px);
     left: 0;
     z-index: 30;
-    width: min(92vw, 240px);
+    width: min(92vw, 260px);
     display: flex;
     flex-direction: column;
     gap: 0.65rem;
@@ -1030,7 +1030,8 @@ a.chem-highlight:hover {
 
 .chem-color-page-head .chem-color-palette-title {
     margin: 0;
-    min-width: 0;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .chem-color-page-nav {
@@ -1124,11 +1125,34 @@ a.chem-highlight:hover {
     transform: scale(1.08);
 }
 
+.chem-color-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.chem-color-section + .chem-color-section {
+    margin-top: 0.55rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid rgba(58, 74, 70, 0.35);
+}
+
+.chem-color-section-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #8a9a94;
+    letter-spacing: 0.02em;
+}
+
+.chem-color-page[data-page="2"] .chem-color-swatches {
+    min-height: 0;
+}
+
 .chem-color-recent-empty {
     margin: 0;
-    padding: 1.4rem 0.4rem;
+    padding: 0.55rem 0.2rem;
     text-align: center;
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     font-weight: 600;
     color: #8a9a94;
     line-height: 1.4;
@@ -1138,8 +1162,19 @@ a.chem-highlight:hover {
     display: none;
 }
 
-.chem-color-recent .chem-color-swatch::after {
+.chem-color-recent .chem-color-swatch::after,
+.chem-color-pinned .chem-color-swatch::after {
     content: none;
+}
+
+.chem-color-pinned .chem-color-swatch {
+    box-shadow: inset 0 0 0 1px rgba(0, 245, 212, 0.35);
+}
+
+.chem-color-custom-actions .chem-mode-btn {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.75rem;
+    border-radius: 0.45rem;
 }
 
 .chem-color-custom {

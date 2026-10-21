@@ -176,8 +176,16 @@
                                     <div id="chemColorSwatches" class="chem-color-swatches" role="listbox" aria-label="멤버 상징색 S1부터 S24"></div>
                                 </div>
                                 <div id="chemColorPage2" class="chem-color-page hidden" data-page="2" hidden>
-                                    <div id="chemColorRecent" class="chem-color-swatches chem-color-recent" role="listbox" aria-label="최근 사용 색상"></div>
-                                    <p id="chemColorRecentEmpty" class="chem-color-recent-empty">최근 사용한 색이 없습니다</p>
+                                    <div class="chem-color-section">
+                                        <div class="chem-color-section-label">고정</div>
+                                        <div id="chemColorPinned" class="chem-color-swatches chem-color-pinned" role="listbox" aria-label="고정 색상"></div>
+                                        <p id="chemColorPinnedEmpty" class="chem-color-recent-empty">고정한 색이 없습니다</p>
+                                    </div>
+                                    <div class="chem-color-section">
+                                        <div class="chem-color-section-label">최근</div>
+                                        <div id="chemColorRecent" class="chem-color-swatches chem-color-recent" role="listbox" aria-label="최근 사용 색상"></div>
+                                        <p id="chemColorRecentEmpty" class="chem-color-recent-empty">최근 사용한 색이 없습니다</p>
+                                    </div>
                                 </div>
                             </div>
                             <div class="chem-color-custom">
@@ -195,6 +203,7 @@
                                     <label>B <input type="number" id="chemColorB" min="0" max="255" value="212"></label>
                                 </div>
                                 <div class="chem-color-custom-actions">
+                                    <button type="button" id="chemColorPin" class="chem-mode-btn" title="현재 색을 2페이지 고정에 저장">고정</button>
                                     <button type="button" id="chemColorReset" class="chem-mode-btn">기본</button>
                                     <button type="button" id="chemColorApply" class="chem-mode-btn is-active">확인</button>
                                 </div>
@@ -257,6 +266,6 @@
     </div>
 </div>
 
-<script src="/js/chemistry.js?v=30"></script>
+<script src="/js/chemistry.js?v=32"></script>
 </body>
 </html>

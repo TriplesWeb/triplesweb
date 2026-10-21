@@ -545,11 +545,13 @@
   const CHEM_COLOR_PALETTE = MEMBER_COLORS;
   const CHEM_RECENT_COLORS_KEY = "chemRecentTextColors";
   const CHEM_RECENT_COLORS_MAX = 24;
+  const CHEM_PINNED_COLORS_KEY = "chemPinnedTextColors";
+  const CHEM_PINNED_COLORS_MAX = 12;
   const CHEM_DEFAULT_TEXT_COLOR = "#00f5d4";
   const CHEM_DEFAULT_HIGHLIGHT_COLOR = "#ffe566";
   const CHEM_COLOR_PAGE_TITLES = {
     1: "멤버 상징색 (S1–S24)",
-    2: "최근 사용"
+    2: "고정 · 최근"
   };
   let chemColorPage = 1;
   /** foreColor | hiliteColor — 공유 팔레트가 글자색/형광펜 중 어디에 적용될지 */
@@ -656,7 +658,49 @@
     } catch (_) {
       /* quota / private mode */
     }
-    renderRecentColors();
+    renderPage2Colors();
+  }
+
+  function loadPinnedColors() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(CHEM_PINNED_COLORS_KEY) || "[]");
+      if (!Array.isArray(raw)) return [];
+      const seen = new Set();
+      const out = [];
+      raw.forEach((item) => {
+        const hex = normalizeHexColor(item);
+        if (!hex || seen.has(hex)) return;
+        seen.add(hex);
+        out.push(hex);
+      });
+      return out.slice(0, CHEM_PINNED_COLORS_MAX);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function savePinnedColors(colors) {
+    try {
+      localStorage.setItem(CHEM_PINNED_COLORS_KEY, JSON.stringify(colors.slice(0, CHEM_PINNED_COLORS_MAX)));
+    } catch (_) {
+      /* quota / private mode */
+    }
+  }
+
+  function pinCustomColor(color) {
+    const hex = normalizeHexColor(color);
+    if (!hex) return false;
+    const next = [hex, ...loadPinnedColors().filter((c) => c !== hex)].slice(0, CHEM_PINNED_COLORS_MAX);
+    savePinnedColors(next);
+    renderPage2Colors();
+    return true;
+  }
+
+  function unpinColor(color) {
+    const hex = normalizeHexColor(color);
+    if (!hex) return;
+    savePinnedColors(loadPinnedColors().filter((c) => c !== hex));
+    renderPage2Colors();
   }
 
   function setColorPalettePage(page) {
@@ -680,14 +724,43 @@
     if (indicator) indicator.textContent = next + " / 2";
     if (prev) prev.disabled = next === 1;
     if (nextBtn) nextBtn.disabled = next === 2;
-    if (next === 2) renderRecentColors();
+    if (next === 2) renderPage2Colors();
   }
 
-  function renderRecentColors() {
-    const box = document.getElementById("chemColorRecent");
-    const empty = document.getElementById("chemColorRecentEmpty");
+  function resolveSwatchText(value, color, fallback) {
+    if (typeof value === "function") return value(color);
+    if (value != null && value !== "") return String(value);
+    return fallback;
+  }
+
+  function createColorSwatch(color, opts) {
+    const options = opts || {};
+    const swatch = document.createElement("button");
+    swatch.type = "button";
+    swatch.className = "chem-color-swatch";
+    swatch.style.background = color;
+    swatch.title = resolveSwatchText(options.title, color, color);
+    swatch.setAttribute("aria-label", resolveSwatchText(options.ariaLabel, color, color));
+    const rgb = hexToRgb(color);
+    if (rgb) {
+      const luma = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
+      swatch.classList.toggle("is-dark", luma < 0.55);
+    }
+    swatch.addEventListener("click", () => applyPaletteColor(color));
+    if (typeof options.onContextMenu === "function") {
+      swatch.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        options.onContextMenu(color);
+      });
+    }
+    return swatch;
+  }
+
+  function renderSwatchList(boxId, emptyId, colors, opts) {
+    const box = document.getElementById(boxId);
+    const empty = document.getElementById(emptyId);
     if (!box) return;
-    const colors = loadRecentColors();
     box.innerHTML = "";
     if (!colors.length) {
       box.classList.add("hidden");
@@ -696,21 +769,27 @@
     }
     box.classList.remove("hidden");
     if (empty) empty.classList.add("hidden");
-    colors.forEach((color) => {
-      const swatch = document.createElement("button");
-      swatch.type = "button";
-      swatch.className = "chem-color-swatch";
-      swatch.style.background = color;
-      swatch.title = color;
-      swatch.setAttribute("aria-label", "최근 색상 " + color);
-      const rgb = hexToRgb(color);
-      if (rgb) {
-        const luma = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
-        swatch.classList.toggle("is-dark", luma < 0.55);
-      }
-      swatch.addEventListener("click", () => applyPaletteColor(color));
-      box.appendChild(swatch);
+    colors.forEach((color) => box.appendChild(createColorSwatch(color, opts)));
+  }
+
+  function renderPinnedColors() {
+    renderSwatchList("chemColorPinned", "chemColorPinnedEmpty", loadPinnedColors(), {
+      title: (c) => c + " (우클릭: 고정 해제)",
+      ariaLabel: (c) => "고정 색상 " + c,
+      onContextMenu: unpinColor
     });
+  }
+
+  function renderRecentColors() {
+    renderSwatchList("chemColorRecent", "chemColorRecentEmpty", loadRecentColors(), {
+      title: (c) => c,
+      ariaLabel: (c) => "최근 색상 " + c
+    });
+  }
+
+  function renderPage2Colors() {
+    renderPinnedColors();
+    renderRecentColors();
   }
 
   function applyPaletteColor(color) {
@@ -1001,7 +1080,7 @@
     const bar = document.getElementById(activeColorBarId());
     syncColorInputs((bar && bar.style.background) || defaultColorForMode(chemColorMode));
     setColorPalettePage(1);
-    renderRecentColors();
+    renderPage2Colors();
   }
 
   function toggleColorPalette(mode) {
@@ -1282,7 +1361,7 @@
     const highlightBar = document.getElementById("chemHighlightBar");
     if (highlightBar) highlightBar.style.background = CHEM_DEFAULT_HIGHLIGHT_COLOR;
     setColorPalettePage(1);
-    renderRecentColors();
+    renderPage2Colors();
 
     const pagePrev = document.getElementById("chemColorPagePrev");
     const pageNext = document.getElementById("chemColorPageNext");
@@ -1340,6 +1419,15 @@
       el.addEventListener("change", syncRgb);
     });
 
+    const colorPin = document.getElementById("chemColorPin");
+    if (colorPin) {
+      colorPin.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!pinCustomColor(readCustomColor())) return;
+        setColorPalettePage(2);
+      });
+    }
     const colorApply = document.getElementById("chemColorApply");
     if (colorApply) {
       colorApply.addEventListener("click", () => applyPaletteColor(readCustomColor()));
