@@ -29,7 +29,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	// 로컬 bootRun만 — Java 저장 후 컴파일되면 컨텍스트 자동 재시작 (war/Docker에는 미포함)
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
-	//runtimeOnly 'com.h2database:h2'
+	testRuntimeOnly 'com.h2database:h2'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	compileOnly 'org.projectlombok:lombok:1.18.30'
@@ -53,6 +53,8 @@ war {
 
 tasks.named('bootWar') {
 	archiveFileName = 'triples.war'
+	// Docker/CI에서 -x test 로 건너뛸 수 있음. 로컬 bootWar는 검사 후 패키징.
+	dependsOn test
 }
 
 

@@ -10,6 +10,7 @@ RUN chmod +x gradlew \
     && ./gradlew dependencies --no-daemon || true
 
 COPY src ./src
+# 검증은 CI verify job에서 수행. 이미지 빌드는 패키징만 (arm 빌드 시간 단축).
 RUN ./gradlew bootWar -x test --no-daemon
 
 FROM eclipse-temurin:17-jre-jammy
