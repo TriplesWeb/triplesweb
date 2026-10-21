@@ -36,22 +36,6 @@ public class GravityAggregateApiController {
         this.tripleSPollIds = tripleSPollIds == null ? "" : tripleSPollIds;
     }
 
-    @GetMapping("/discover")
-    public ResponseEntity<?> discoverTripleSPolls() {
-        try {
-            List<Map<String, Object>> polls = gravityService.discoverTripleSPollAggregates();
-            return ResponseEntity.ok(Map.of(
-                    "scannedRange", "1-264",
-                    "count", polls.size(),
-                    "polls", polls
-            ));
-        } catch (Exception exception) {
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of(
-                    "error", GravityService.describeApiError(exception)
-            ));
-        }
-    }
-
     @GetMapping("/aggregate")
     public ResponseEntity<?> aggregate(
             @RequestParam long pollId,
