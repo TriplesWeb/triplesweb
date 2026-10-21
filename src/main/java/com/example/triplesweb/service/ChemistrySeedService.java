@@ -52,13 +52,60 @@ public class ChemistrySeedService implements CommandLineRunner {
         }
         long existing = chemistryRepository.count();
         // 이미 데이터가 있으면 기동 시 시드하지 않는다. 누락 보완은 관리자 reseed API만.
-        if (existing > 0) {
+        if (existing == 0) {
+            int inserted = reseedMissingPairs();
+            if (inserted == 0) {
+                log.warn("Chemistry table still empty after seed — Artist 이름/시드 JSON을 확인하세요.");
+            }
+        } else {
             log.debug("Chemistry seed skipped (already has {} rows)", existing);
-            return;
         }
-        int inserted = reseedMissingPairs();
-        if (inserted == 0) {
-            log.warn("Chemistry table still empty after seed — Artist 이름/시드 JSON을 확인하세요.");
+        int enFilled = applyEnglishDescriptionsIfBlank();
+        if (enFilled > 0) {
+            log.info("Chemistry English descriptions filled: {}", enFilled);
+        }
+    }
+
+    /**
+     * classpath {@code data/chemistry-descriptions-en.json}으로
+     * description_en이 비어 있는 행만 채운다 (기존 영문 덮어쓰지 않음).
+     */
+    @Transactional
+    public int applyEnglishDescriptionsIfBlank() {
+        ClassPathResource resource = new ClassPathResource("data/chemistry-descriptions-en.json");
+        if (!resource.exists()) {
+            log.warn("chemistry-descriptions-en.json missing — skip English fill");
+            return 0;
+        }
+        try (InputStream in = resource.getInputStream()) {
+            List<EnDescriptionRow> rows = objectMapper.readValue(
+                    in,
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, EnDescriptionRow.class)
+            );
+            if (rows == null || rows.isEmpty()) {
+                return 0;
+            }
+            int updated = 0;
+            for (EnDescriptionRow row : rows) {
+                if (row == null || row.getId() == null || !StringUtils.hasText(row.getDescriptionEn())) {
+                    continue;
+                }
+                var opt = chemistryRepository.findById(row.getId());
+                if (opt.isEmpty()) {
+                    continue;
+                }
+                Chemistry entity = opt.get();
+                if (StringUtils.hasText(entity.getDescriptionEn())) {
+                    continue;
+                }
+                entity.setDescriptionEn(row.getDescriptionEn());
+                chemistryRepository.save(entity);
+                updated++;
+            }
+            return updated;
+        } catch (Exception e) {
+            log.error("Chemistry English description fill failed: {}", e.getMessage(), e);
+            return 0;
         }
     }
 
@@ -176,5 +223,12 @@ public class ChemistrySeedService implements CommandLineRunner {
         private String imageUrl;
         private Map<String, String> links;
         private boolean crossFlag;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    static class EnDescriptionRow {
+        private Long id;
+        private String descriptionEn;
     }
 }

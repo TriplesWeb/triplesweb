@@ -36,12 +36,19 @@ public class Chemistry {
     @JoinColumn(name = "artist_b_id")
     private Artist artistB;
 
-    /** 표 셀에 표시되는 짧은 케미명 (줄바꿈은 \\n) */
+    /** 표 셀에 표시되는 짧은 케미명 (줄바꿈은 \\n) — 한국어 */
     @Column(nullable = false, length = 120)
     private String label;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
+
+    /** 영문 케미명 (없으면 한국어 페이지·폴백용 label 사용) */
+    @Column(name = "label_en", length = 120)
+    private String labelEn;
+
+    @Column(name = "description_en", columnDefinition = "TEXT")
+    private String descriptionEn;
 
     @Column(length = 512)
     private String imageUrl;

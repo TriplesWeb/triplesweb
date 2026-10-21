@@ -12,16 +12,88 @@
     "린","주빈","정하연","박시온","김채원","설린","서아","지연"
   ];
 
+  /** 표·모달 표시용 영문명 (키는 한글 MEMBERS와 동일) */
+  const MEMBER_EN = {
+    "윤서연": "SeoYeon",
+    "정혜린": "HyeRin",
+    "이지우": "JiWoo",
+    "김채연": "ChaeYeon",
+    "김유연": "YooYeon",
+    "김수민": "SooMin",
+    "김나경": "NaKyoung",
+    "공유빈": "YuBin",
+    "카에데": "Kaede",
+    "서다현": "DaHyun",
+    "코토네": "Kotone",
+    "곽연지": "YeonJi",
+    "니엔": "Nien",
+    "박소현": "SoHyun",
+    "신위": "XinYu",
+    "마유": "Mayu",
+    "린": "Lynn",
+    "주빈": "JooBin",
+    "정하연": "HaYeon",
+    "박시온": "ShiOn",
+    "김채원": "ChaeWon",
+    "설린": "Sullin",
+    "서아": "SeoAh",
+    "지연": "JiYeon"
+  };
+
   const MEMBER_COLORS = [
     "#22aeff","#9200ff","#fff800","#98f21d","#db0c74","#fc83a4","#6799a0","#ffe3e2",
     "#ffc935","#ff9ad6","#ffde00","#5974ff","#ff953f","#1222b5","#d51313","#fe8e76",
     "#ac62b7","#b7f54c","#52d9bb","#ff428a","#c7a3e0","#7bba8d","#cff3ff","#ffab62"
   ];
 
+  const CHEM_LANG =
+    (document.documentElement.getAttribute("data-chem-lang") ||
+      document.documentElement.lang ||
+      "ko")
+      .toLowerCase()
+      .startsWith("en")
+      ? "en"
+      : "ko";
+  const IS_EN = CHEM_LANG === "en";
+
+  const I18N = IS_EN
+    ? {
+        emptyHint: "No chemistry names have been registered.",
+        emptyAdminHint: "Admin: tap + to add. Purple-tint cells still need an English description.",
+        addChemTitle: "Add chemistry",
+        loadFailed: "Couldn't load chemistry data. Please try again shortly.",
+        noChemData: "No chemistry data:",
+        adminNeeded: "Admin login required. Please sign in again.",
+        adminLogout: "Logout",
+        admin: "Admin",
+        needsEnTitle: "Missing English description — open to edit",
+        editTitle: "Edit chemistry",
+        editTitleNew: "Add chemistry"
+      }
+    : {
+        emptyHint: "아직 등록된 케미명이 없습니다.",
+        emptyAdminHint: "관리자 모드에서 빈 칸(+)을 눌러 케미를 추가할 수 있어요.",
+        addChemTitle: "케미 추가",
+        loadFailed: "케미 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        noChemData: "케미 데이터 없음:",
+        adminNeeded: "관리자 로그인이 필요합니다. 다시 로그인해 주세요.",
+        adminLogout: "로그아웃",
+        admin: "관리자",
+        needsEnTitle: "영문 설명 없음 — 열어 편집",
+        editTitle: "케미 편집",
+        editTitleNew: "케미 추가"
+      };
+
   /** DB 응답으로 채우는 설명 맵. person -> { chemKey -> {description,image,links} } */
   let chemistryDescriptions = {};
   /** 한글 이름 → Artist.artistId (API artistAId/artistBId로 채움) */
   let artistIdByName = Object.create(null);
+
+  function memberLabel(name) {
+    if (!name) return "";
+    if (IS_EN && MEMBER_EN[name]) return MEMBER_EN[name];
+    return name;
+  }
 
   function memberHref(indexOrName) {
     const name = typeof indexOrName === "number" ? MEMBERS[indexOrName] : indexOrName;
@@ -66,7 +138,8 @@
   function formatMemberTitleLink(name) {
     const index = memberIndex(name);
     const color = MEMBER_COLORS[index] || "#00f5d4";
-    const escaped = escapeHtml(name);
+    const label = memberLabel(name);
+    const escaped = escapeHtml(label);
     return (
       '<a href="' +
       memberHref(name) +
@@ -88,7 +161,7 @@
 
   function pairTitleText(memberA, memberB) {
     const [a, b] = orderedPairNames(memberA, memberB);
-    return a + " x " + b;
+    return memberLabel(a) + " x " + memberLabel(b);
   }
 
   function formatLabel(label) {
@@ -136,9 +209,18 @@
 
   const ADMIN_TOKEN_KEY = "chemistryAdminToken";
 
+  /** localStorage — 한/영 페이지·탭 간 관리자 로그인 유지 */
   function getAdminToken() {
     try {
-      return sessionStorage.getItem(ADMIN_TOKEN_KEY) || "";
+      const local = localStorage.getItem(ADMIN_TOKEN_KEY) || "";
+      if (local) return local;
+      // 이전 sessionStorage 토큰 마이그레이션
+      const legacy = sessionStorage.getItem(ADMIN_TOKEN_KEY) || "";
+      if (legacy) {
+        localStorage.setItem(ADMIN_TOKEN_KEY, legacy);
+        sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+      }
+      return legacy;
     } catch (_) {
       return "";
     }
@@ -146,8 +228,13 @@
 
   function setAdminToken(token) {
     try {
-      if (token) sessionStorage.setItem(ADMIN_TOKEN_KEY, token);
-      else sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+      if (token) {
+        localStorage.setItem(ADMIN_TOKEN_KEY, token);
+        sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+      } else {
+        localStorage.removeItem(ADMIN_TOKEN_KEY);
+        sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+      }
     } catch (_) {
       /* private mode 등 */
     }
@@ -170,7 +257,7 @@
       try {
         const json = JSON.parse(text);
         if (json && json.message) return json.message;
-        if (res.status === 403) return "관리자 로그인이 필요합니다. 다시 로그인해 주세요.";
+        if (res.status === 403) return I18N.adminNeeded;
         if (json && json.error) return json.error + (json.message ? ": " + json.message : "");
       } catch (_) {
         return text.length > 180 ? fallback : text;
@@ -229,9 +316,7 @@
     el.setAttribute("aria-hidden", empty ? "false" : "true");
     const hint = el.querySelector("[data-chem-empty-hint]");
     if (hint) {
-      hint.textContent = isAdmin
-        ? "관리자 모드에서 빈 칸(+)을 눌러 케미를 추가할 수 있어요."
-        : "아직 등록된 케미명이 없습니다.";
+      hint.textContent = isAdmin ? I18N.emptyAdminHint : I18N.emptyHint;
     }
   }
 
@@ -250,10 +335,15 @@
       const ib = memberIndex(entry.memberB);
       if (ia < 0 || ib < 0 || ia === ib) return;
 
-      const label = entry.label || "";
-      if (!String(label).trim()) return;
+      const labelKo = String(entry.label || "").trim();
+      if (!labelKo) return;
 
-      const desc = entry.description || "";
+      // 케미명은 고유명사 — 한/영 페이지 모두 한국어 라벨 표시
+      const displayLabel = entry.label;
+      const descKo = entry.description || "";
+      const descEn = entry.descriptionEn || "";
+      const needsEn = IS_EN && isAdmin && !String(descEn).trim();
+
       const image = entry.imageUrl || "";
       const cross = Boolean(entry.crossFlag);
       const labelTone = normalizeLabelTone(entry.labelTone);
@@ -265,17 +355,19 @@
         const key = chemKey(person, other);
         matrix[ri][ci] = {
           type: "chem",
-          label: label,
+          label: displayLabel,
           person: person,
           key: key,
           cross: cross,
           labelTone: labelTone,
+          needsEn: needsEn,
           dbId: entry.id
         };
         const payload = {
-          description: desc,
+          description: descKo,
+          descriptionEn: descEn,
           image: image,
-          label: label,
+          label: entry.label || "",
           labelTone: labelTone
         };
         if (links && Object.keys(links).length) {
@@ -302,10 +394,11 @@
     let headHtml = '<tr><th class="chem-corner"><img src="' + BASE + '/logo.png" alt="tripleS"></th>';
     MEMBERS.forEach((name, i) => {
       const color = MEMBER_COLORS[i] || "#00f5d4";
+      const label = memberLabel(name);
       headHtml +=
         '<th class="chem-col-head" style="--member-color:' + color + '">' +
-        '<a href="' + memberHref(i) + '" title="' + escapeHtml(name) + '" class="chem-member-link">' +
-        '<span class="chem-member-name">' + escapeHtml(name) + "</span>" +
+        '<a href="' + memberHref(i) + '" title="' + escapeHtml(label) + '" class="chem-member-link">' +
+        '<span class="chem-member-name">' + escapeHtml(label) + "</span>" +
         "</a></th>";
     });
     headHtml += "</tr>";
@@ -314,10 +407,11 @@
     let bodyHtml = "";
     matrix.forEach((row, ri) => {
       const color = MEMBER_COLORS[ri] || "#00f5d4";
+      const rowLabel = memberLabel(MEMBERS[ri]);
       bodyHtml +=
         '<tr><th class="chem-row-head" style="--member-color:' + color + '">' +
-        '<a href="' + memberHref(ri) + '" title="' + escapeHtml(MEMBERS[ri]) + '" class="chem-member-link">' +
-        '<span class="chem-member-name">' + escapeHtml(MEMBERS[ri]) + "</span>" +
+        '<a href="' + memberHref(ri) + '" title="' + escapeHtml(rowLabel) + '" class="chem-member-link">' +
+        '<span class="chem-member-name">' + escapeHtml(rowLabel) + "</span>" +
         "</a></th>";
 
       row.forEach((cell, ci) => {
@@ -332,9 +426,11 @@
             '"></td>';
         } else if (cell.type === "chem" && cell.key) {
           const toneCls = toneClass(cell.labelTone);
+          const needsEnCls = cell.needsEn ? " chem-cell--needs-en" : "";
           bodyHtml +=
             '<td class="chem-cell' +
             (toneCls ? " " + toneCls : "") +
+            needsEnCls +
             '" data-person="' +
             escapeHtml(cell.person) +
             '" data-key="' +
@@ -345,7 +441,9 @@
             escapeHtml(MEMBERS[ci]) +
             '" data-tone="' +
             escapeHtml(normalizeLabelTone(cell.labelTone)) +
-            '" tabindex="0" role="button">' +
+            '" tabindex="0" role="button"' +
+            (cell.needsEn ? ' title="' + escapeHtml(I18N.needsEnTitle) + '"' : "") +
+            ">" +
             formatLabel(cell.label) +
             "</td>";
         } else if (isAdmin) {
@@ -354,7 +452,9 @@
             escapeHtml(MEMBERS[ri]) +
             '" data-m2="' +
             escapeHtml(MEMBERS[ci]) +
-            '" tabindex="0" role="button" title="케미 추가">+</td>';
+            '" tabindex="0" role="button" title="' +
+            escapeHtml(I18N.addChemTitle) +
+            '">+</td>';
         } else {
           bodyHtml += '<td class="chem-empty"></td>';
         }
@@ -378,6 +478,7 @@
             (cell && cell.label) ||
             (el.textContent || "").replace(/\s+/g, " ").trim(),
           labelTone: (cell && cell.labelTone) || el.dataset.tone || "NONE",
+          needsEn: Boolean(cell && cell.needsEn),
           dbId: cell && cell.dbId ? cell.dbId : null
         };
         openChemistryName(el.dataset.person, el.dataset.key);
@@ -392,7 +493,7 @@
     });
 
     tbody.querySelectorAll(".chem-addable").forEach((el) => {
-      const open = () => openEditForm(el.dataset.m1, el.dataset.m2, "", "", "", {});
+      const open = () => openEditForm(el.dataset.m1, el.dataset.m2, "", "", "", "", {}, "NONE");
       el.addEventListener("click", open);
       el.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -537,11 +638,23 @@
     return escapeHtml(raw).replace(/\n/g, "<br>");
   }
 
-  function getEditorDescriptionHtml() {
-    const editor = document.getElementById("chemEditDescription");
+  function getEditorDescriptionHtml(editorId) {
+    const editor = document.getElementById(editorId || "chemEditDescription");
     if (!editor) return "";
     normalizeFontColorsIn(editor);
     return sanitizeChemistryHtml(editor.innerHTML);
+  }
+
+  function activeDescriptionEditor() {
+    const active = document.activeElement;
+    if (active && active.id === "chemEditDescriptionEn") return active;
+    if (active && active.id === "chemEditDescription") return active;
+    const ko = document.getElementById("chemEditDescription");
+    const en = document.getElementById("chemEditDescriptionEn");
+    if (en && document.getElementById("chemistryEditModal")?.contains(active)) {
+      /* keep last focused if possible — default KO */
+    }
+    return ko || en;
   }
 
   /** 표 칸 케미명 글자색 (NONE=기본 흰) */
@@ -585,10 +698,9 @@
   const CHEM_PINNED_COLORS_MAX = 12;
   const CHEM_DEFAULT_TEXT_COLOR = "#00f5d4";
   const CHEM_DEFAULT_HIGHLIGHT_COLOR = "#ffe566";
-  const CHEM_COLOR_PAGE_TITLES = {
-    1: "멤버 상징색 (S1–S24)",
-    2: "고정 · 최근"
-  };
+  const CHEM_COLOR_PAGE_TITLES = IS_EN
+    ? { 1: "Member colors (S1–S24)", 2: "Pinned · Recent" }
+    : { 1: "멤버 상징색 (S1–S24)", 2: "고정 · 최근" };
   let chemColorPage = 1;
   /** foreColor | hiliteColor — 공유 팔레트가 글자색/형광펜 중 어디에 적용될지 */
   let chemColorMode = "foreColor";
@@ -921,14 +1033,25 @@
     if (links) links.style.width = width;
   }
 
+  function pickViewDescription(data) {
+    if (!data) return "";
+    if (IS_EN) {
+      const en = data.descriptionEn;
+      if (en != null && String(en).trim() !== "") return en;
+      // 영문 없으면 관리자만 한국어 폴백 (일반 사용자는 빈 설명)
+      return isAdmin ? data.description || "" : "";
+    }
+    return data.description || "";
+  }
+
   function openChemistryName(person, chemistryName) {
     const personData = chemistryDescriptions[person];
     if (!personData || !personData[chemistryName]) {
-      console.warn("케미 데이터 없음:", person, chemistryName);
+      console.warn(I18N.noChemData, person, chemistryName);
       return;
     }
     const data = personData[chemistryName];
-    const { description, credit } = splitPhotoCredit(data.description);
+    const { description, credit } = splitPhotoCredit(pickViewDescription(data));
 
     let formattedDescription = softenDescriptionBreaks(
       sanitizeChemistryHtml(description)
@@ -951,9 +1074,7 @@
         return m[1] === person ? m[2] : m[1];
       })();
     const chemLabel =
-      (currentView && currentView.label) ||
-      data.label ||
-      "";
+      (currentView && currentView.label) || data.label || "";
     const titleEl = document.getElementById("chemistryTitle");
     const pairEl = document.getElementById("chemistryPair");
     if (titleEl) {
@@ -1021,13 +1142,16 @@
         btn.classList.add("hidden");
       } else {
         btn.classList.remove("hidden");
-        btn.textContent = isAdmin ? "관리자 로그아웃" : "관리자";
+        btn.textContent = isAdmin ? I18N.adminLogout : I18N.admin;
         btn.setAttribute("aria-pressed", isAdmin ? "true" : "false");
         btn.classList.toggle("is-active", isAdmin);
       }
     }
     if (hint) hint.classList.toggle("hidden", !isAdmin);
-    if (pairMatrix && currentMode === "pair") {
+    // 관리자 on/off 시 영문 미번역 폴백 칸 포함 여부가 바뀌므로 매트릭스를 다시 만든다
+    if (dbEntries) {
+      applyDbToTable(dbEntries);
+    } else if (pairMatrix && currentMode === "pair") {
       updateEmptyState(countChemCells(pairMatrix));
       buildTable(pairMatrix);
     }
@@ -1039,7 +1163,16 @@
     if (!input || !toggle) return;
     input.type = visible ? "text" : "password";
     toggle.setAttribute("aria-pressed", visible ? "true" : "false");
-    toggle.setAttribute("aria-label", visible ? "비밀번호 숨기기" : "비밀번호 보기");
+    toggle.setAttribute(
+      "aria-label",
+      visible
+        ? IS_EN
+          ? "Hide password"
+          : "비밀번호 숨기기"
+        : IS_EN
+          ? "Show password"
+          : "비밀번호 보기"
+    );
     const icon = toggle.querySelector(".material-symbols-outlined");
     if (icon) icon.textContent = visible ? "visibility_off" : "visibility";
   }
@@ -1149,7 +1282,7 @@
   }
 
   function applyEditorFormat(command, value) {
-    const editor = document.getElementById("chemEditDescription");
+    const editor = activeDescriptionEditor();
     if (!editor) return;
     editor.focus();
     try {
@@ -1193,25 +1326,30 @@
     wrap.classList.remove("hidden");
   }
 
-  function openEditForm(member1, member2, label, description, imageUrl, links, labelTone) {
+  function openEditForm(member1, member2, label, description, descriptionEn, imageUrl, links, labelTone) {
     editingPair = { member1, member2 };
     closeModal();
     closeColorPalette();
     const modal = document.getElementById("chemistryEditModal");
     const title = document.getElementById("chemistryEditTitle");
     const err = document.getElementById("chemEditError");
-    const editor = document.getElementById("chemEditDescription");
+    const editorKo = document.getElementById("chemEditDescription");
+    const editorEn = document.getElementById("chemEditDescriptionEn");
     document.getElementById("chemEditMember1").value = member1;
     document.getElementById("chemEditMember2").value = member2;
     document.getElementById("chemEditLabel").value = label || "";
     setLabelToneInputs(labelTone);
-    if (editor) editor.innerHTML = descriptionToEditorHtml(description || "");
+    if (editorKo) editorKo.innerHTML = descriptionToEditorHtml(description || "");
+    if (editorEn) editorEn.innerHTML = descriptionToEditorHtml(descriptionEn || "");
     document.getElementById("chemEditImage").value = "";
     const clearCb = document.getElementById("chemEditClearImage");
     if (clearCb) clearCb.checked = false;
     setEditImagePreview(imageUrl || "");
     renderLinkRows(links || {});
-    if (title) title.textContent = pairTitleText(member1, member2);
+    if (title) {
+      title.textContent =
+        (label ? I18N.editTitle : I18N.editTitleNew) + " · " + pairTitleText(member1, member2);
+    }
     if (err) {
       err.hidden = true;
       err.textContent = "";
@@ -1345,26 +1483,25 @@
         const key = (currentView && currentView.key) || chemKey(member1, member2);
         const bucket = chemistryDescriptions[person] || {};
         const data = bucket[key] || {};
-        let cellLabel = (currentView && currentView.label) || "";
-        if (!cellLabel && pairMatrix) {
+        let cell = null;
+        if (pairMatrix) {
           const ri = memberIndex(member1);
           const ci = memberIndex(member2);
-          const cell = pairMatrix[ri] && pairMatrix[ri][ci];
-          if (cell && cell.label) cellLabel = String(cell.label);
+          cell = pairMatrix[ri] && pairMatrix[ri][ci];
         }
         let labelTone =
           (currentView && currentView.labelTone) || data.labelTone || "NONE";
-        if ((!currentView || !currentView.labelTone) && pairMatrix) {
-          const ri = memberIndex(member1);
-          const ci = memberIndex(member2);
-          const cell = pairMatrix[ri] && pairMatrix[ri][ci];
-          if (cell && cell.labelTone) labelTone = cell.labelTone;
+        if ((!currentView || !currentView.labelTone) && cell && cell.labelTone) {
+          labelTone = cell.labelTone;
         }
+        const editLabel =
+          (data && data.label) || (cell && cell.label) || "";
         openEditForm(
           member1,
           member2,
-          cellLabel,
-          data.description || "",
+          editLabel,
+          (data && data.description) || "",
+          (data && data.descriptionEn) || "",
           data.image || "",
           data.links || {},
           labelTone
@@ -1568,7 +1705,8 @@
         fd.append("member1", document.getElementById("chemEditMember1").value);
         fd.append("member2", document.getElementById("chemEditMember2").value);
         fd.append("label", document.getElementById("chemEditLabel").value);
-        fd.append("description", getEditorDescriptionHtml());
+        fd.append("description", getEditorDescriptionHtml("chemEditDescription"));
+        fd.append("descriptionEn", getEditorDescriptionHtml("chemEditDescriptionEn"));
         fd.append("labelTone", selectedLabelTone());
         // 체크했을 때만 true — 미전송 시 서버 기본값 false로 기존 사진 유지
         const clearChecked = Boolean(document.getElementById("chemEditClearImage")?.checked);
@@ -1731,7 +1869,9 @@
       const tbody = document.getElementById("chemTbody");
       if (tbody) {
         tbody.innerHTML =
-          '<tr><td colspan="25" class="text-center text-[#b9cac4] py-8">케미 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</td></tr>';
+          '<tr><td colspan="25" class="text-center text-[#b9cac4] py-8">' +
+          escapeHtml(I18N.loadFailed) +
+          "</td></tr>";
       }
       const empty = document.getElementById("chemEmptyState");
       if (empty) empty.classList.add("hidden");

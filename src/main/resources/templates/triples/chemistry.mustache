@@ -12,7 +12,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/chemistry.css?v=42">
+    <link rel="stylesheet" href="/css/chemistry.css?v=46">
 </head>
 <body class="bg-[#0d0e12] text-[#ffffff] min-h-screen">
 {{>layout/header}}
@@ -48,11 +48,12 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex flex-wrap items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2 chem-page-actions">
                     <div class="chem-mode-toggle" role="group" aria-label="케미 인원 선택">
                         <button type="button" class="chem-mode-btn is-active" data-mode="pair" aria-pressed="true" onclick="window.__chemSetMode&&window.__chemSetMode('pair')">2인</button>
                         <button type="button" class="chem-mode-btn" data-mode="trio" aria-pressed="false" onclick="window.__chemSetMode&&window.__chemSetMode('trio')">3인</button>
                     </div>
+                    <a href="/triples/chemistry-en" class="chem-lang-btn" hreflang="en" lang="en" title="View in English">EN</a>
                     <button type="button" id="chemAdminBtn" class="chem-admin-btn hidden" aria-pressed="false">관리자</button>
                 </div>
             </div>
@@ -116,7 +117,8 @@
             <ul class="chem-edit-help-list">
                 <li><strong>케미명</strong> — 표 칸에 보이는 짧은 이름입니다. 케미명이 둘 이상이면 줄바꿈으로 나누면 표·제목에 함께 표시됩니다.</li>
                 <li><strong>글자 색상</strong> — 기본(흰색) 또는 미정(보라) / 최근(분홍) / WAV(하늘). 표 칸 글자색만 바뀝니다.</li>
-                <li><strong>설명 서식</strong> — 글자를 드래그한 뒤 <b>B</b>(굵게) / <i>I</i>(기울임) / <u>U</u>(밑줄) / <b>A</b>(색상)를 누르세요. 색상은 팔레트·HEX·RGB로 지정할 수 있습니다.</li>
+                <li><strong>설명(한/영)</strong> — 한국어·영어 설명을 한 화면에서 함께 저장합니다. 케미명은 고유명사라 한국어로 유지하고, 영어 페이지는 영문 설명을 보여 줍니다.</li>
+                <li><strong>설명 서식</strong> — 편집 칸을 클릭한 뒤 글자를 드래그하고 <b>B</b>(굵게) / <i>I</i>(기울임) / <u>U</u>(밑줄) / <b>A</b>(색상)를 누르세요.</li>
                 <li><strong>하이퍼링크</strong> — 아래에 표시 텍스트와 URL을 추가한 뒤, 설명 본문에서 같은 문구를 <code>**표시 텍스트**</code>처럼 감싸면 클릭 가능한 링크가 됩니다.</li>
                 <li><strong>사진 출처</strong> — 설명 <em>맨 끝</em>에 <code>photo by. @계정</code> 형식으로 적으면, 본문에서는 빠지고 이미지 아래에 출처로만 표시됩니다.<br>
                     예: <code>…귀여운 케미명이다. photo by. @posh1204</code></li>
@@ -151,7 +153,7 @@
                 </div>
                 <p class="chem-edit-field-hint">기본은 흰색. 미정·최근·WAV를 고르면 표에서 글자색만 바뀝니다.</p>
             </fieldset>
-            <div class="chem-edit-label">설명
+            <div class="chem-edit-label">설명 (한국어 / English)
                 <div class="chem-fmt-toolbar" role="toolbar" aria-label="글꼴 서식">
                     <button type="button" class="chem-fmt-btn" data-fmt="bold" title="굵게"><b>B</b></button>
                     <button type="button" class="chem-fmt-btn" data-fmt="italic" title="기울임"><i>I</i></button>
@@ -214,8 +216,11 @@
                         </div>
                     </div>
                 </div>
-                <p class="chem-edit-field-hint">글자 선택 → 서식 버튼. 출처는 맨 끝에 <code>photo by. @계정</code></p>
-                <div id="chemEditDescription" class="chem-edit-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="설명을 입력하세요. 끝예: photo by. @username"></div>
+                <p class="chem-edit-field-hint">편집할 칸을 클릭 → 글자 선택 → 서식. 출처는 각 설명 맨 끝 <code>photo by. @계정</code></p>
+                <p class="chem-edit-lang-label">한국어</p>
+                <div id="chemEditDescription" class="chem-edit-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="한국어 설명을 입력하세요. 끝예: photo by. @username"></div>
+                <p class="chem-edit-lang-label">English</p>
+                <div id="chemEditDescriptionEn" class="chem-edit-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="English description. End with: photo by. @username"></div>
             </div>
             <div class="chem-edit-links-block">
                 <div class="chem-edit-links-head">
@@ -269,6 +274,6 @@
     </div>
 </div>
 
-<script src="/js/chemistry.js?v=35"></script>
+<script src="/js/chemistry.js?v=39"></script>
 </body>
 </html>

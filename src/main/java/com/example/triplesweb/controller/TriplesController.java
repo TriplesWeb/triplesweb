@@ -66,6 +66,11 @@ public class TriplesController {
         return "triples/chemistry";
     }
 
+    @GetMapping("/chemistry-en")
+    public String indexTriplesChemistryEn() {
+        return "triples/chemistry-en";
+    }
+
     /** 상세는 그룹 소개 탭에 통합. 케미/유닛 등 기존 링크는 해당 멤버 탭으로 보낸다. */
     @GetMapping("/artist/{id:[0-9]+}")
     public String TriplesArtistDetail(@PathVariable("id") long artistId) {

@@ -86,6 +86,7 @@ public class ChemistryApiController {
             @RequestParam String member2,
             @RequestParam String label,
             @RequestParam(required = false, defaultValue = "") String description,
+            @RequestParam(required = false, defaultValue = "") String descriptionEn,
             @RequestParam(required = false) MultipartFile image,
             @RequestParam(required = false, defaultValue = "false") boolean clearImage,
             @RequestParam(required = false, defaultValue = "") String linksJson,
@@ -95,7 +96,8 @@ public class ChemistryApiController {
     ) {
         requireAdmin(request, session);
         try {
-            return chemistryService.upsert(member1, member2, label, description, image, clearImage, linksJson, labelTone);
+            return chemistryService.upsert(
+                    member1, member2, label, description, descriptionEn, image, clearImage, linksJson, labelTone);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
@@ -129,8 +131,10 @@ public class ChemistryApiController {
     public Map<String, Object> reseed(HttpServletRequest request, HttpSession session) {
         requireAdmin(request, session);
         int inserted = chemistrySeedService.reseedMissingPairs();
+        int enFilled = chemistrySeedService.applyEnglishDescriptionsIfBlank();
         return Map.of(
                 "inserted", inserted,
+                "enFilled", enFilled,
                 "total", chemistryService.findAll().size()
         );
     }

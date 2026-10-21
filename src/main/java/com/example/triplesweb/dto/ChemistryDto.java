@@ -21,6 +21,9 @@ public class ChemistryDto {
     private Long artistBId;
     private String label;
     private String description;
+    /** 영문 케미명·설명 (미입력 시 null/빈 문자열) */
+    private String labelEn;
+    private String descriptionEn;
     private String imageUrl;
     @Builder.Default
     private Map<String, String> links = new LinkedHashMap<>();
