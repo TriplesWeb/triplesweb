@@ -246,7 +246,8 @@
 
                 status.textContent = 'Apollo 공개 집계를 조회하고 있습니다…';
                 try {
-                    const response = await fetch('/api/cosmo/gravity/aggregate?pollId=' + encodeURIComponent(pollId), {
+                    const response = await fetch('/api/cosmo/gravity/aggregate?pollId=' + encodeURIComponent(pollId) +
+                        '&gravityId=' + encodeURIComponent('{{gravity.id}}'), {
                         headers: { 'Accept': 'application/json' },
                         cache: 'no-store'
                     });
