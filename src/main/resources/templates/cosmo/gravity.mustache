@@ -145,7 +145,7 @@
 
             async function refreshAggregate() {
                 const pollId = input.value.trim();
-                if (!/^\\d+$/.test(pollId) || Number(pollId) <= 0) return;
+                if (!/^\d+$/.test(pollId) || Number(pollId) <= 0) return;
                 status.textContent = 'Apollo 공개 집계를 조회하고 있습니다…';
                 try {
                     const response = await fetch('/api/cosmo/gravity/aggregate?pollId=' + encodeURIComponent(pollId), {
