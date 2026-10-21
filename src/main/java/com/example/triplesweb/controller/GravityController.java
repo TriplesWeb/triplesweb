@@ -27,14 +27,12 @@ public class GravityController {
     @GetMapping({"/gravity", "/cosmo/gravity"})
     public String gravity(
             @RequestParam(defaultValue = "tripleS") String artistId,
-            @RequestParam(required = false) Long pollId,
             Model model
     ) {
         String selectedArtist = normalizeArtist(artistId);
         model.addAttribute("artistId", selectedArtist);
         model.addAttribute("artistOptions", artistOptions(selectedArtist));
         model.addAttribute("cosmoConfigured", gravityService.hasCosmoToken());
-        model.addAttribute("selectedPollId", pollId);
         model.addAttribute("gravityCount", 0);
 
         if (gravityService.hasCosmoToken()) {
@@ -47,16 +45,10 @@ public class GravityController {
             }
         } else {
             model.addAttribute("cosmoNotice",
-                    "COSMO 액세스 토큰이 설정되지 않아 실시간 Gravity 목록은 조회할 수 없습니다. " +
-                    "Apollo 집계는 tripleS 소속이 확인된 GravityID:PollID 매핑이 등록된 경우에만 조회됩니다.");
+                    "COSMO_ACCESS_TOKEN이 설정되지 않아 실시간 그래비티 목록을 불러올 수 없습니다. .env 또는 실행 환경변수에 토큰을 설정해 주세요.");
         }
 
-        if (pollId != null && pollId <= 0) {
-            model.addAttribute("aggregationError", "투표 ID는 1 이상의 숫자여야 합니다.");
-        }
-
-        // The browser queries the public Apollo aggregate endpoint through
-        // GravityAggregateApiController and refreshes it every 30 seconds.
+        // Vote results are shown on the selected Gravity detail page, not in this list.
         return "cosmo/gravity";
     }
 
