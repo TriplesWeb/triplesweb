@@ -196,7 +196,14 @@ public class GravityService {
 
         JsonNode response = cosmoGet("/bff/v3/polls/" + pollId);
         JsonNode details = response.path("pollDetail");
-        return details.isMissingNode() || details.isNull() ? null : details;
+        if (details.isObject()) return details;
+
+        JsonNode data = response.path("data");
+        details = data.path("pollDetail");
+        if (details.isObject()) return details;
+        if (data.path("choices").isArray()) return data;
+        if (response.path("choices").isArray()) return response;
+        return null;
     }
 
     /**
@@ -280,7 +287,11 @@ public class GravityService {
                 if (hasPollResult) publishedResult = true;
                 long pollComo = pollResult.path("totalComoUsed").asLong(0);
                 if (pollComo > 0) {
-                    totalComo += pollComo;
+                    // Prefer the aggregate total from the Gravity record when present.
+                    // Otherwise sum the published totals across its polls.
+                    if (gravity.path("result").path("totalComoUsed").asLong(0) <= 0) {
+                        totalComo += pollComo;
+                    }
                     hasComoTotal = true;
                 }
 
