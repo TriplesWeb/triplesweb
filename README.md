@@ -19,7 +19,7 @@ tripleS 팬 커뮤니티 웹사이트 (Spring Boot 3.5 + Mustache + MariaDB).
 - 상세: `/cosmo/gravity/{gravityId}`
 - 로컬 `.env`에 본인 계정의 유효한 `COSMO_ACCESS_TOKEN`을 설정하면 서버가 COSMO API에서 목록·상세·후보 정보를 조회합니다.
 - 그래비티 페이지는 tripleS 전용입니다. 공개 집계 목록은 `GRAVITY_APOLLO_TRIPLES_POLL_IDS` 또는 `gravity.apollo-triples-poll-ids`에 등록된 Poll ID만 허용합니다. Apollo 네트워크 화면에서 tripleS `<ANDLESS>` Seoul Encore Gravity의 집계 ID `267`을 확인했고, Gravity 페이지 ID `262`를 집계 ID `267`로 매핑했습니다.
-- 공개 집계 API 프록시: `GET /api/cosmo/gravity/aggregate?pollId={pollId}`. Apollo가 공개한 집계만 조회하며 투표/COMO 전송은 하지 않습니다. 목록에서 입력한 Poll ID는 tripleS 허용 목록과 대조하고, 허용되지 않은 ID는 거부합니다.
+- 공개 집계 API 프록시: `GET /api/cosmo/gravity/aggregate?pollId={pollId}`. Apollo가 공개한 집계만 조회하며 투표/COMO 전송은 하지 않습니다. 목록에서는 tripleS의 Gravity ID 또는 Apollo 집계 ID를 입력할 수 있습니다. 확인된 Gravity ID `262`는 Apollo 집계 ID `267`로 자동 변환되며, 허용되지 않은 ID는 거부합니다.
 - 그래비티 상세 페이지(`/cosmo/gravity/{gravityId}`)는 tripleS 소속이 확인된 ID만 조회합니다. COSMO 토큰 없이 상세 페이지 집계를 연결하려면 `.env`의 `GRAVITY_APOLLO_TRIPLES_POLL_MAP` 또는 `gravity.apollo-triples-poll-map`에 검증된 `GravityID:PollID` 쌍을 쉼표로 구분해 등록해야 합니다. 기존 `233:274`(IDNTT 그래비티) 매핑은 제거했습니다. COSMO 토큰이 있으면 tripleS Gravity 목록에서 Poll ID 소속을 검증합니다.
 - 후보별 득표/순위는 Apollo 응답의 `finalized.comoPerCandidate`가 있고 전체 투표가 공개된 경우에만 표시합니다. 최종 공개 전에는 개별 상위 투표 기록의 후보 ID도 화면에서 숨깁니다. 이 규칙은 tripleS 그래비티에만 적용됩니다.
 - 후보별 최종 COMO 합계는 Apollo가 모든 투표 공개를 확인한 뒤에만 표시됩니다. 토큰이 없으면 후보명 대신 후보 번호를 표시합니다.
