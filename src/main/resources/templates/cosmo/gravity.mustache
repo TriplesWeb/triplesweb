@@ -208,7 +208,9 @@
                     if (!topVotes.length) topVotes.push(element('p', 'text-xs text-gray-500', '공개된 상위 투표 기록이 없습니다.'));
                     clearAndAppend('apollo-top-votes', topVotes);
 
-                    status.textContent = 'Poll #' + pollId + ' · 마지막 조회 ' + new Date().toLocaleTimeString('ko-KR') +
+                    status.textContent = (String(resolvedPollId) !== String(pollId)
+                        ? '입력 ID #' + pollId + ' → Apollo 집계 #' + resolvedPollId
+                        : 'Apollo 집계 #' + resolvedPollId) + ' · 마지막 조회 ' + new Date().toLocaleTimeString('ko-KR') +
                         ' · ' + (isFinalized ? '최종 결과 공개' : '후보별 결과 비공개') +
                         ' · 30초마다 갱신';
                 } catch (error) {
