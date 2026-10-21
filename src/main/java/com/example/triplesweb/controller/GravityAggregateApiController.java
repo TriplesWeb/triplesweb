@@ -108,22 +108,29 @@ public class GravityAggregateApiController {
             return null;
         }
 
-        // Keep known manual aliases working, then use COSMO's complete tripleS mapping.
-        Long configuredPollId = configuredPollForGravityId(requestedId);
-        if (configuredPollId != null) return configuredPollId;
+        // Treat a verified API Poll ID as a Poll ID first. This avoids confusing
+        // a Poll ID with a different Gravity ID that happens to have the same number.
         if (isConfiguredTripleSPollId(requestedId) || isConfiguredPollId(requestedId)) return requestedId;
 
         if (gravityService.hasCosmoToken()) {
             try {
-                Long pollForGravity = gravityService.findTripleSPollIdForGravity(requestedId);
-                if (pollForGravity != null) return pollForGravity;
-
                 if (gravityService.findTripleSPollMapping(requestedId) != null) {
                     return requestedId;
                 }
+
+                // Only fall back to Gravity ID translation when the number is not a Poll ID.
+                Long configuredPollId = configuredPollForGravityId(requestedId);
+                if (configuredPollId != null) return configuredPollId;
+
+                Long pollForGravity = gravityService.findTripleSPollIdForGravity(requestedId);
+                if (pollForGravity != null) return pollForGravity;
             } catch (RuntimeException ignored) {
                 // Fail closed if COSMO cannot confirm that this belongs to tripleS.
             }
+        } else {
+            // Without COSMO metadata, retain only explicitly configured aliases.
+            Long configuredPollId = configuredPollForGravityId(requestedId);
+            if (configuredPollId != null) return configuredPollId;
         }
         return null;
     }
