@@ -55,7 +55,11 @@ public class GravityService {
         requireCosmoToken();
 
         String encodedArtist = UriUtils.encodeQueryParam(artistId, StandardCharsets.UTF_8);
-        JsonNode root = cosmoGet("/bff/v3/gravities?artistId=" + encodedArtist);
+        // cosmo-tui documents /v4/gravities?category=all for the grouped list.
+        // Request a page of recent history while retaining upcoming and ongoing groups.
+        JsonNode response = cosmoGet("/v4/gravities?category=all&artistId=" + encodedArtist
+                + "&skip=0&take=12&sortBy=endDate&sort=desc");
+        JsonNode root = response.path("data").isObject() ? response.path("data") : response;
         List<Map<String, Object>> result = new ArrayList<>();
 
         appendGravityGroup(result, root.path("ongoing"), "진행 중", artistId, false);
