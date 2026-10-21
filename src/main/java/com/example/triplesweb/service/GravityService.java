@@ -13,10 +13,17 @@ import org.springframework.web.util.UriUtils;
 import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Service
 public class GravityService {
@@ -28,6 +35,15 @@ public class GravityService {
     private final String apolloBaseUrl;
     private final String cosmoApiBaseUrl;
     private final String cosmoAccessToken;
+
+    private volatile long tripleSPollMappingsCachedAt;
+    private volatile List<Map<String, Object>> tripleSPollMappingsCache = List.of();
+    private volatile long tripleSPollDiscoveryCachedAt;
+    private volatile List<Map<String, Object>> tripleSPollDiscoveryCache = List.of();
+
+    private static final long POLL_MAPPING_CACHE_MILLIS = 60L * 60L * 1000L;
+    private static final long POLL_DISCOVERY_CACHE_MILLIS = 10L * 60L * 1000L;
+    private static final int APOLLO_DISCOVERY_RANGE_END = 264;
 
     public GravityService(
             RestClient.Builder restClientBuilder,
@@ -141,6 +157,233 @@ public class GravityService {
                 pastCount++;
             }
         }
+    }
+
+    /**
+     * Loads every known tripleS Gravity/Poll relationship from COSMO.
+     * The API Poll ID is the COSMO poll ID; it is not necessarily the parent Gravity ID
+     * and is not necessarily the on-chain poll ID.
+     */
+    public List<Map<String, Object>> fetchAllTripleSPollMappings() {
+        requireCosmoToken();
+        long now = System.currentTimeMillis();
+        if (now - tripleSPollMappingsCachedAt < POLL_MAPPING_CACHE_MILLIS
+                && !tripleSPollMappingsCache.isEmpty()) {
+            return copyMaps(tripleSPollMappingsCache);
+        }
+
+        synchronized (this) {
+            now = System.currentTimeMillis();
+            if (now - tripleSPollMappingsCachedAt < POLL_MAPPING_CACHE_MILLIS
+                    && !tripleSPollMappingsCache.isEmpty()) {
+                return copyMaps(tripleSPollMappingsCache);
+            }
+
+            List<Map<String, Object>> loaded = loadAllTripleSPollMappings("tripleS");
+            tripleSPollMappingsCache = copyMaps(loaded);
+            tripleSPollMappingsCachedAt = System.currentTimeMillis();
+            return copyMaps(loaded);
+        }
+    }
+
+    private List<Map<String, Object>> loadAllTripleSPollMappings(String artistId) {
+        String encodedArtist = UriUtils.encodeQueryParam(artistId, StandardCharsets.UTF_8);
+        final int pageSize = 12;
+        int skip = 0;
+        Set<String> seenGravityIds = new HashSet<>();
+        Map<Long, Map<String, Object>> pollsById = new LinkedHashMap<>();
+
+        // COSMO returns ongoing/upcoming/past groups. Page through the past group
+        // instead of stopping at the 12 recent entries used by the compact page.
+        for (int page = 0; page < 100; page++) {
+            JsonNode response = cosmoGet("/v4/gravities?category=all&artistId=" + encodedArtist
+                    + "&skip=" + skip + "&take=" + pageSize + "&sortBy=endDate&sort=desc");
+            JsonNode root = response.path("data").isObject() ? response.path("data") : response;
+            int pastCount = root.path("past").isArray() ? root.path("past").size() : 0;
+            int newGravityCount = 0;
+
+            for (String groupName : List.of("ongoing", "upcoming", "past")) {
+                JsonNode group = root.path(groupName);
+                if (!group.isArray()) continue;
+
+                for (JsonNode gravityNode : group) {
+                    String gravityId = firstNonBlank(
+                            gravityNode.path("id").asText(""),
+                            gravityNode.path("gravityId").asText(""),
+                            "");
+                    if (gravityId.isBlank()) continue;
+                    if (seenGravityIds.add(gravityId)) newGravityCount++;
+
+                    String gravityTitle = firstNonBlank(
+                            gravityNode.path("title").asText(""),
+                            gravityNode.path("name").asText(""),
+                            "Gravity #" + gravityId);
+                    JsonNode pollNodes = gravityNode.path("polls");
+                    if (!pollNodes.isArray()) continue;
+
+                    for (JsonNode pollNode : pollNodes) {
+                        long pollId = pollNode.path("id").asLong(
+                                pollNode.path("cosmoId").asLong(0));
+                        if (pollId <= 0) continue;
+
+                        Map<String, Object> mapping = new LinkedHashMap<>();
+                        mapping.put("pollId", pollId);
+                        mapping.put("gravityId", Long.parseLong(gravityId));
+                        mapping.put("pollTitle", firstNonBlank(
+                                pollNode.path("title").asText(""),
+                                pollNode.path("titleKo").asText(""),
+                                gravityTitle));
+                        mapping.put("gravityTitle", gravityTitle);
+                        mapping.put("artistId", artistId);
+                        mapping.put("startDate", displayDate(firstNonBlank(
+                                pollNode.path("startDate").asText(""),
+                                gravityNode.path("entireStartDate").asText(""),
+                                "")));
+                        mapping.put("endDate", displayDate(firstNonBlank(
+                                pollNode.path("endDate").asText(""),
+                                gravityNode.path("entireEndDate").asText(""),
+                                "")));
+                        mapping.put("apolloUrl", apolloBaseUrl + "/gravity/triples/" + gravityId
+                                + "?poll=" + pollId);
+                        pollsById.put(pollId, mapping);
+                    }
+                }
+            }
+
+            // No more historical entries, or the upstream ignored the offset.
+            if (pastCount == 0 || newGravityCount == 0) break;
+            if (pastCount < pageSize) break;
+            skip += pageSize;
+        }
+
+        List<Map<String, Object>> result = new ArrayList<>(pollsById.values());
+        result.sort(Comparator.comparingLong(row -> ((Number) row.get("pollId")).longValue()));
+        return result;
+    }
+
+    /**
+     * Returns the tripleS mapping for an API Poll ID, if COSMO confirms ownership.
+     */
+    public Map<String, Object> findTripleSPollMapping(long pollId) {
+        for (Map<String, Object> mapping : fetchAllTripleSPollMappings()) {
+            if (((Number) mapping.get("pollId")).longValue() == pollId) {
+                return new LinkedHashMap<>(mapping);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Returns one API Poll ID belonging to a Gravity ID. For multi-poll gravities,
+     * the first poll in COSMO's poll order is used.
+     */
+    public Long findTripleSPollIdForGravity(long gravityId) {
+        for (Map<String, Object> mapping : fetchAllTripleSPollMappings()) {
+            if (((Number) mapping.get("gravityId")).longValue() == gravityId) {
+                return ((Number) mapping.get("pollId")).longValue();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Scans API Poll IDs 1..264 and also includes any higher Poll IDs found in
+     * tripleS Gravity metadata (for example, when Poll IDs and Gravity IDs diverge).
+     * Only IDs mapped to tripleS by COSMO are displayed.
+     */
+    public List<Map<String, Object>> discoverTripleSPollAggregates() {
+        requireCosmoToken();
+        long now = System.currentTimeMillis();
+        if (now - tripleSPollDiscoveryCachedAt < POLL_DISCOVERY_CACHE_MILLIS
+                && !tripleSPollDiscoveryCache.isEmpty()) {
+            return copyMaps(tripleSPollDiscoveryCache);
+        }
+
+        synchronized (this) {
+            now = System.currentTimeMillis();
+            if (now - tripleSPollDiscoveryCachedAt < POLL_DISCOVERY_CACHE_MILLIS
+                    && !tripleSPollDiscoveryCache.isEmpty()) {
+                return copyMaps(tripleSPollDiscoveryCache);
+            }
+
+            List<Map<String, Object>> mappings = fetchAllTripleSPollMappings();
+            Map<Long, Map<String, Object>> mappingByPollId = new LinkedHashMap<>();
+            for (Map<String, Object> mapping : mappings) {
+                mappingByPollId.put(((Number) mapping.get("pollId")).longValue(), mapping);
+            }
+
+            Set<Long> idsToScan = new TreeSet<>();
+            for (long id = 1; id <= APOLLO_DISCOVERY_RANGE_END; id++) {
+                idsToScan.add(id);
+            }
+            // Do not miss a newer COSMO Poll ID that is already linked to a tripleS Gravity.
+            idsToScan.addAll(mappingByPollId.keySet());
+
+            ExecutorService executor = Executors.newFixedThreadPool(6);
+            List<Map<String, Object>> discovered = new ArrayList<>();
+            try {
+                List<CompletableFuture<Map<String, Object>>> futures = new ArrayList<>();
+                for (Long pollId : idsToScan) {
+                    futures.add(CompletableFuture.supplyAsync(() -> {
+                        JsonNode aggregate;
+                        try {
+                            aggregate = fetchAggregatedData(pollId);
+                        } catch (Exception ignored) {
+                            // Missing IDs, non-tripleS IDs, and upstream failures are not listed.
+                            return null;
+                        }
+
+                        Map<String, Object> mapping = mappingByPollId.get(pollId);
+                        if (mapping == null) return null;
+
+                        Map<String, Object> item = new LinkedHashMap<>(mapping);
+                        long totalVotes = aggregate.path("totalVoteCount").asLong(0);
+                        long totalComo = aggregate.path("totalComoCount").asLong(0);
+                        long revealedVotes = aggregate.path("revealedVoteCount").asLong(0);
+                        item.put("totalVoteCount", totalVotes);
+                        item.put("totalComoCount", totalComo);
+                        item.put("totalComoFormatted",
+                                NumberFormat.getNumberInstance(Locale.US).format(totalComo));
+                        item.put("revealedVoteCount", revealedVotes);
+                        item.put("isFinalized", aggregate.path("finalized").isObject()
+                                && !aggregate.path("finalized").isNull());
+                        item.put("startDate", firstNonBlank(
+                                item.get("startDate") == null ? "" : String.valueOf(item.get("startDate")),
+                                displayDate(aggregate.path("startDate").asText("")),
+                                ""));
+                        item.put("endDate", firstNonBlank(
+                                item.get("endDate") == null ? "" : String.valueOf(item.get("endDate")),
+                                displayDate(aggregate.path("endDate").asText("")),
+                                ""));
+                        return item;
+                    }, executor));
+                }
+
+                for (CompletableFuture<Map<String, Object>> future : futures) {
+                    try {
+                        Map<String, Object> item = future.join();
+                        if (item != null) discovered.add(item);
+                    } catch (RuntimeException ignored) {
+                        // One failed lookup must not prevent the remaining IDs from rendering.
+                    }
+                }
+            } finally {
+                executor.shutdownNow();
+            }
+
+            discovered.sort(Comparator.comparingLong(row -> ((Number) row.get("pollId")).longValue()));
+            tripleSPollDiscoveryCache = copyMaps(discovered);
+            tripleSPollDiscoveryCachedAt = System.currentTimeMillis();
+            return copyMaps(discovered);
+        }
+    }
+
+    private static List<Map<String, Object>> copyMaps(List<Map<String, Object>> source) {
+        List<Map<String, Object>> copy = new ArrayList<>(source.size());
+        for (Map<String, Object> row : source) {
+            copy.add(new LinkedHashMap<>(row));
+        }
+        return copy;
     }
 
     /**
