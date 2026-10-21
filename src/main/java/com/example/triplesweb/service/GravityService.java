@@ -167,8 +167,8 @@ public class GravityService {
     public List<Map<String, Object>> fetchAllTripleSPollMappings() {
         requireCosmoToken();
         long now = System.currentTimeMillis();
-        if (now - tripleSPollMappingsCachedAt < POLL_MAPPING_CACHE_MILLIS
-                && !tripleSPollMappingsCache.isEmpty()) {
+        if (tripleSPollMappingsCachedAt > 0
+                && now - tripleSPollMappingsCachedAt < POLL_MAPPING_CACHE_MILLIS) {
             return copyMaps(tripleSPollMappingsCache);
         }
 
@@ -293,8 +293,8 @@ public class GravityService {
     public List<Map<String, Object>> discoverTripleSPollAggregates() {
         requireCosmoToken();
         long now = System.currentTimeMillis();
-        if (now - tripleSPollDiscoveryCachedAt < POLL_DISCOVERY_CACHE_MILLIS
-                && !tripleSPollDiscoveryCache.isEmpty()) {
+        if (tripleSPollDiscoveryCachedAt > 0
+                && now - tripleSPollDiscoveryCachedAt < POLL_DISCOVERY_CACHE_MILLIS) {
             return copyMaps(tripleSPollDiscoveryCache);
         }
 
