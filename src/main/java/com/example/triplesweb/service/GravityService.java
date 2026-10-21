@@ -681,7 +681,7 @@ public class GravityService {
     private void requireCosmoToken() {
         if (!hasCosmoToken()) {
             throw new IllegalStateException(
-                    "COSMO_ACCESS_TOKEN is not configured. Public aggregate lookup can still be attempted by poll ID."
+                    "COSMO_ACCESS_TOKEN is not configured. Automatic tripleS Poll discovery requires this token; configured Apollo Poll IDs can still be queried directly."
             );
         }
     }
