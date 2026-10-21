@@ -12,6 +12,16 @@ tripleS 팬 커뮤니티 웹사이트 (Spring Boot 3.5 + Mustache + MariaDB).
 
 ---
 
+
+## COSMO Gravity 연동
+
+- 목록: `/cosmo/gravity` (기존 `/gravity` 경로도 호환)
+- 상세: `/cosmo/gravity/{gravityId}`
+- 로컬 `.env`에 본인 계정의 유효한 `COSMO_ACCESS_TOKEN`을 설정하면 서버가 COSMO API에서 목록·상세·후보 정보를 조회합니다.
+- 토큰은 만료될 수 있으므로 실제 값을 GitHub 저장소나 `.env.example`에 넣지 마세요. 현재 구성은 액세스 토큰 자동 갱신을 구현하지 않았습니다.
+- 공개되지 않은 후보별 COMO 집계는 임의의 숫자로 채우지 않습니다. 토큰이 없거나 외부 API 요청이 실패하면 기존 아카이브 요약과 안내 메시지를 표시합니다.
+- 이 연동은 조회 전용이며, 실제 투표나 COMO 전송을 실행하지 않습니다.
+
 ## 케미명 데이터
 
 페이지: `/triples/chemistry`  
