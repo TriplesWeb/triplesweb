@@ -1,5 +1,7 @@
 package com.example.triplesweb.controller;
 
+import com.example.triplesweb.service.GravityService;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,9 +23,34 @@ public class CosmoGravityDetailController {
 
     private static final Map<String, Map<String, Object>> ARCHIVE = createArchive();
 
+    private final GravityService gravityService;
+
+    public CosmoGravityDetailController(GravityService gravityService) {
+        this.gravityService = gravityService;
+    }
+
     @GetMapping("/cosmo/gravity/{id}")
     public String gravityDetail(@PathVariable String id, Model model) {
         String normalizedId = id == null ? "" : id.trim().toLowerCase(Locale.ROOT);
+
+        // Numeric IDs are looked up live first. Static archive records remain a fallback
+        // when no COSMO token is configured or the upstream API is unavailable.
+        if (normalizedId.matches("\\d+") && gravityService.hasCosmoToken()) {
+            try {
+                JsonNode apiGravity = gravityService.fetchGravityDetail(Long.parseLong(normalizedId));
+                Map<String, Object> liveDetail = gravityService.buildGravityDetailView(apiGravity);
+                model.addAttribute("gravity", liveDetail);
+                model.addAttribute("isKnownGravity", true);
+                model.addAttribute("isLiveGravity", true);
+                return "cosmo/gravity-detail";
+            } catch (Exception exception) {
+                model.addAttribute("apiError", GravityService.describeApiError(exception));
+            }
+        } else if (!gravityService.hasCosmoToken()) {
+            model.addAttribute("archiveNotice",
+                    "현재는 COSMO_ACCESS_TOKEN이 설정되지 않아 저장된 아카이브 요약을 표시합니다. 실시간 정보는 아직 조회되지 않았습니다.");
+        }
+
         Map<String, Object> detail = ARCHIVE.get(normalizedId);
 
         if (detail == null) {
