@@ -203,8 +203,8 @@ public class GravityService {
 
         synchronized (this) {
             now = System.currentTimeMillis();
-            if (now - tripleSPollMappingsCachedAt < POLL_MAPPING_CACHE_MILLIS
-                    && !tripleSPollMappingsCache.isEmpty()) {
+            if (tripleSPollMappingsCachedAt > 0
+                    && now - tripleSPollMappingsCachedAt < POLL_MAPPING_CACHE_MILLIS) {
                 return copyMaps(tripleSPollMappingsCache);
             }
 
@@ -609,9 +609,27 @@ public class GravityService {
     private void requireCosmoToken() {
         if (!hasCosmoToken()) {
             throw new IllegalStateException(
-                    "COSMO_ACCESS_TOKEN is not configured. Automatic tripleS Poll discovery requires this token; configured Apollo Poll IDs can still be queried directly."
+                    "COSMO_ACCESS_TOKEN이 설정되지 않았습니다. 그래비티 목록과 상세 정보를 조회하려면 토큰이 필요합니다."
             );
         }
+    }
+
+    /**
+     * Returns fresh map instances so callers cannot mutate the cached top-level records.
+     * Nested values are only used for rendering and are not modified by this service.
+     */
+    private static List<Map<String, Object>> copyMaps(List<Map<String, Object>> source) {
+        List<Map<String, Object>> copies = new ArrayList<>();
+        if (source == null || source.isEmpty()) {
+            return copies;
+        }
+
+        for (Map<String, Object> item : source) {
+            if (item != null) {
+                copies.add(new LinkedHashMap<>(item));
+            }
+        }
+        return copies;
     }
 
     private static String firstText(JsonNode node, String... fields) {
