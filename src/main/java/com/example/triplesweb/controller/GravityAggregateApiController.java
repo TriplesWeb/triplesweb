@@ -24,13 +24,16 @@ public class GravityAggregateApiController {
 
     private final GravityService gravityService;
     private final String tripleSPollMap;
+    private final String tripleSPollIds;
 
     public GravityAggregateApiController(
             GravityService gravityService,
-            @Value("${gravity.apollo-triples-poll-map:}") String tripleSPollMap
+            @Value("${gravity.apollo-triples-poll-map:}") String tripleSPollMap,
+            @Value("${gravity.apollo-triples-poll-ids:267}") String tripleSPollIds
     ) {
         this.gravityService = gravityService;
         this.tripleSPollMap = tripleSPollMap == null ? "" : tripleSPollMap;
+        this.tripleSPollIds = tripleSPollIds == null ? "" : tripleSPollIds;
     }
 
     @GetMapping("/aggregate")
@@ -74,6 +77,10 @@ public class GravityAggregateApiController {
     private boolean isVerifiedTripleSPoll(long pollId, Long gravityId) {
         if (isConfiguredTripleSPair(pollId, gravityId)) return true;
 
+        // The list page has no Gravity ID to pair with the Poll ID. Permit only the
+        // explicitly verified tripleS aggregate IDs in that case.
+        if (gravityId == null && isConfiguredTripleSPollId(pollId)) return true;
+
         if (!gravityService.hasCosmoToken()) return false;
         try {
             List<Map<String, Object>> gravities = gravityService.fetchGravityList("tripleS");
@@ -92,6 +99,17 @@ public class GravityAggregateApiController {
             }
         } catch (RuntimeException ignored) {
             // Fail closed: a failed COSMO ownership check must not expose another artist's poll.
+        }
+        return false;
+    }
+
+    private boolean isConfiguredTripleSPollId(long pollId) {
+        for (String value : tripleSPollIds.split(",")) {
+            try {
+                if (Long.parseLong(value.trim()) == pollId) return true;
+            } catch (NumberFormatException ignored) {
+                // Ignore invalid IDs; do not loosen the allowlist.
+            }
         }
         return false;
     }
