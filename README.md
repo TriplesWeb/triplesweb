@@ -18,6 +18,9 @@ tripleS 팬 커뮤니티 웹사이트 (Spring Boot 3.5 + Mustache + MariaDB).
 - 목록: `/cosmo/gravity` (기존 `/gravity` 경로도 호환)
 - 상세: `/cosmo/gravity/{gravityId}`
 - 로컬 `.env`에 본인 계정의 유효한 `COSMO_ACCESS_TOKEN`을 설정하면 서버가 COSMO API에서 목록·상세·후보 정보를 조회합니다.
+- COSMO 토큰이 없어도 공개 Apollo 집계 API를 통해 `/cosmo/gravity?pollId=투표ID`에서 전체 투표 수·사용 COMO·공개된 투표 수·시간대별 집계를 조회할 수 있습니다. 상세 화면의 `Poll ID`는 Gravity ID와 다를 수 있습니다.
+- 공개 집계 API 프록시: `GET /api/cosmo/gravity/aggregate?pollId={pollId}`. Apollo가 공개한 집계만 조회하며 투표/COMO 전송은 하지 않습니다.
+- 후보별 최종 COMO 합계는 Apollo가 모든 투표 공개를 확인한 뒤에만 표시됩니다. 토큰이 없으면 후보명 대신 후보 번호를 표시합니다.
 - 토큰은 만료될 수 있으므로 실제 값을 GitHub 저장소나 `.env.example`에 넣지 마세요. 현재 구성은 액세스 토큰 자동 갱신을 구현하지 않았습니다.
 - 공개되지 않은 후보별 COMO 집계는 임의의 숫자로 채우지 않습니다. 토큰이 없거나 외부 API 요청이 실패하면 기존 아카이브 요약과 안내 메시지를 표시합니다.
 - 이 연동은 조회 전용이며, 실제 투표나 COMO 전송을 실행하지 않습니다.
