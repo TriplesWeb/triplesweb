@@ -85,6 +85,7 @@ public class ChemistryApiController {
             @RequestParam String member1,
             @RequestParam String member2,
             @RequestParam String label,
+            @RequestParam(required = false, defaultValue = "") String labelEn,
             @RequestParam(required = false, defaultValue = "") String description,
             @RequestParam(required = false, defaultValue = "") String descriptionEn,
             @RequestParam(required = false) MultipartFile image,
@@ -97,7 +98,8 @@ public class ChemistryApiController {
         requireAdmin(request, session);
         try {
             return chemistryService.upsert(
-                    member1, member2, label, description, descriptionEn, image, clearImage, linksJson, labelTone);
+                    member1, member2, label, labelEn, description, descriptionEn,
+                    image, clearImage, linksJson, labelTone);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }

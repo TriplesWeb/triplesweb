@@ -56,19 +56,19 @@
       : "ko";
   const IS_EN = CHEM_LANG === "en";
 
+  // 공개 UI만 페이지 언어 따름. 관리자 편집/로그인은 항상 한국어.
   const I18N = IS_EN
     ? {
         emptyHint: "No chemistry names have been registered.",
-        emptyAdminHint: "Admin: tap + to add. Purple-tint cells still need an English description.",
-        addChemTitle: "Add chemistry",
+        emptyAdminHint: "관리자 모드에서 빈 칸(+)을 눌러 케미를 추가할 수 있어요.",
+        addChemTitle: "케미 추가",
         loadFailed: "Couldn't load chemistry data. Please try again shortly.",
         noChemData: "No chemistry data:",
-        adminNeeded: "Admin login required. Please sign in again.",
-        adminLogout: "Logout",
-        admin: "Admin",
-        needsEnTitle: "Missing English description — open to edit",
-        editTitle: "Edit chemistry",
-        editTitleNew: "Add chemistry"
+        adminNeeded: "관리자 로그인이 필요합니다. 다시 로그인해 주세요.",
+        adminLogout: "로그아웃",
+        admin: "관리자",
+        editTitle: "케미 편집",
+        editTitleNew: "케미 추가"
       }
     : {
         emptyHint: "아직 등록된 케미명이 없습니다.",
@@ -79,7 +79,6 @@
         adminNeeded: "관리자 로그인이 필요합니다. 다시 로그인해 주세요.",
         adminLogout: "로그아웃",
         admin: "관리자",
-        needsEnTitle: "영문 설명 없음 — 열어 편집",
         editTitle: "케미 편집",
         editTitleNew: "케미 추가"
       };
@@ -338,11 +337,11 @@
       const labelKo = String(entry.label || "").trim();
       if (!labelKo) return;
 
-      // 케미명은 고유명사 — 한/영 페이지 모두 한국어 라벨 표시
-      const displayLabel = entry.label;
+      const labelEn = String(entry.labelEn || "").trim();
+      // 영문 페이지: labelEn 있으면 사용, 없으면 한국어 케미명 폴백
+      const displayLabel = IS_EN ? (labelEn ? entry.labelEn : entry.label) : entry.label;
       const descKo = entry.description || "";
       const descEn = entry.descriptionEn || "";
-      const needsEn = IS_EN && isAdmin && !String(descEn).trim();
 
       const image = entry.imageUrl || "";
       const cross = Boolean(entry.crossFlag);
@@ -360,7 +359,6 @@
           key: key,
           cross: cross,
           labelTone: labelTone,
-          needsEn: needsEn,
           dbId: entry.id
         };
         const payload = {
@@ -368,6 +366,7 @@
           descriptionEn: descEn,
           image: image,
           label: entry.label || "",
+          labelEn: entry.labelEn || "",
           labelTone: labelTone
         };
         if (links && Object.keys(links).length) {
@@ -426,11 +425,9 @@
             '"></td>';
         } else if (cell.type === "chem" && cell.key) {
           const toneCls = toneClass(cell.labelTone);
-          const needsEnCls = cell.needsEn ? " chem-cell--needs-en" : "";
           bodyHtml +=
             '<td class="chem-cell' +
             (toneCls ? " " + toneCls : "") +
-            needsEnCls +
             '" data-person="' +
             escapeHtml(cell.person) +
             '" data-key="' +
@@ -441,9 +438,7 @@
             escapeHtml(MEMBERS[ci]) +
             '" data-tone="' +
             escapeHtml(normalizeLabelTone(cell.labelTone)) +
-            '" tabindex="0" role="button"' +
-            (cell.needsEn ? ' title="' + escapeHtml(I18N.needsEnTitle) + '"' : "") +
-            ">" +
+            '" tabindex="0" role="button">' +
             formatLabel(cell.label) +
             "</td>";
         } else if (isAdmin) {
@@ -478,7 +473,6 @@
             (cell && cell.label) ||
             (el.textContent || "").replace(/\s+/g, " ").trim(),
           labelTone: (cell && cell.labelTone) || el.dataset.tone || "NONE",
-          needsEn: Boolean(cell && cell.needsEn),
           dbId: cell && cell.dbId ? cell.dbId : null
         };
         openChemistryName(el.dataset.person, el.dataset.key);
@@ -493,7 +487,8 @@
     });
 
     tbody.querySelectorAll(".chem-addable").forEach((el) => {
-      const open = () => openEditForm(el.dataset.m1, el.dataset.m2, "", "", "", "", {}, "NONE");
+      const open = () =>
+        openEditForm(el.dataset.m1, el.dataset.m2, "", "", "", "", "", {}, "NONE");
       el.addEventListener("click", open);
       el.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -657,7 +652,7 @@
     return ko || en;
   }
 
-  /** 표 칸 케미명 글자색 (NONE=기본 흰) */
+  /** 표 칸 케미명 글자색 (NONE=공식 흰) */
   const LABEL_TONES = ["NONE", "UNDECIDED", "RECENT", "FAN"];
 
   function normalizeLabelTone(value) {
@@ -698,9 +693,11 @@
   const CHEM_PINNED_COLORS_MAX = 12;
   const CHEM_DEFAULT_TEXT_COLOR = "#00f5d4";
   const CHEM_DEFAULT_HIGHLIGHT_COLOR = "#ffe566";
-  const CHEM_COLOR_PAGE_TITLES = IS_EN
-    ? { 1: "Member colors (S1–S24)", 2: "Pinned · Recent" }
-    : { 1: "멤버 상징색 (S1–S24)", 2: "고정 · 최근" };
+  // 관리자 팔레트 문구는 페이지 언어와 무관하게 한국어
+  const CHEM_COLOR_PAGE_TITLES = {
+    1: "멤버 상징색 (S1–S24)",
+    2: "고정 · 최근"
+  };
   let chemColorPage = 1;
   /** foreColor | hiliteColor — 공유 팔레트가 글자색/형광펜 중 어디에 적용될지 */
   let chemColorMode = "foreColor";
@@ -1073,8 +1070,11 @@
         if (!m) return person;
         return m[1] === person ? m[2] : m[1];
       })();
-    const chemLabel =
-      (currentView && currentView.label) || data.label || "";
+    const chemLabel = IS_EN
+      ? String(data.labelEn || "").trim()
+        ? data.labelEn
+        : data.label || (currentView && currentView.label) || ""
+      : (currentView && currentView.label) || data.label || "";
     const titleEl = document.getElementById("chemistryTitle");
     const pairEl = document.getElementById("chemistryPair");
     if (titleEl) {
@@ -1165,13 +1165,7 @@
     toggle.setAttribute("aria-pressed", visible ? "true" : "false");
     toggle.setAttribute(
       "aria-label",
-      visible
-        ? IS_EN
-          ? "Hide password"
-          : "비밀번호 숨기기"
-        : IS_EN
-          ? "Show password"
-          : "비밀번호 보기"
+      visible ? "비밀번호 숨기기" : "비밀번호 보기"
     );
     const icon = toggle.querySelector(".material-symbols-outlined");
     if (icon) icon.textContent = visible ? "visibility_off" : "visibility";
@@ -1326,7 +1320,7 @@
     wrap.classList.remove("hidden");
   }
 
-  function openEditForm(member1, member2, label, description, descriptionEn, imageUrl, links, labelTone) {
+  function openEditForm(member1, member2, label, labelEn, description, descriptionEn, imageUrl, links, labelTone) {
     editingPair = { member1, member2 };
     closeModal();
     closeColorPalette();
@@ -1337,7 +1331,10 @@
     const editorEn = document.getElementById("chemEditDescriptionEn");
     document.getElementById("chemEditMember1").value = member1;
     document.getElementById("chemEditMember2").value = member2;
-    document.getElementById("chemEditLabel").value = label || "";
+    const labelKoEl = document.getElementById("chemEditLabel");
+    const labelEnEl = document.getElementById("chemEditLabelEn");
+    if (labelKoEl) labelKoEl.value = label || "";
+    if (labelEnEl) labelEnEl.value = labelEn || "";
     setLabelToneInputs(labelTone);
     if (editorKo) editorKo.innerHTML = descriptionToEditorHtml(description || "");
     if (editorEn) editorEn.innerHTML = descriptionToEditorHtml(descriptionEn || "");
@@ -1494,12 +1491,11 @@
         if ((!currentView || !currentView.labelTone) && cell && cell.labelTone) {
           labelTone = cell.labelTone;
         }
-        const editLabel =
-          (data && data.label) || (cell && cell.label) || "";
         openEditForm(
           member1,
           member2,
-          editLabel,
+          (data && data.label) || "",
+          (data && data.labelEn) || "",
           (data && data.description) || "",
           (data && data.descriptionEn) || "",
           data.image || "",
@@ -1705,6 +1701,10 @@
         fd.append("member1", document.getElementById("chemEditMember1").value);
         fd.append("member2", document.getElementById("chemEditMember2").value);
         fd.append("label", document.getElementById("chemEditLabel").value);
+        fd.append(
+          "labelEn",
+          (document.getElementById("chemEditLabelEn")?.value || "").trim()
+        );
         fd.append("description", getEditorDescriptionHtml("chemEditDescription"));
         fd.append("descriptionEn", getEditorDescriptionHtml("chemEditDescriptionEn"));
         fd.append("labelTone", selectedLabelTone());
@@ -1844,6 +1844,7 @@
     bindLegendToggle();
     bindAdminUi();
 
+    // 영어 페이지에는 로그인 버튼 없음. 한국어에서 로그인된 세션이면 추가/수정 가능.
     try {
       const statusRes = await chemFetch("/api/chemistry/admin/status");
       if (statusRes.ok) {

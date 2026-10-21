@@ -188,12 +188,6 @@ html[lang="en"] .chem-member-name {
     overflow-wrap: anywhere;
 }
 
-/* 영문 미입력 — 관리자용 한국어 폴백 칸 */
-.chem-table td.chem-cell.chem-cell--needs-en {
-    opacity: 0.72;
-    box-shadow: inset 0 0 0 1px rgba(201, 168, 255, 0.45);
-}
-
 .chem-edit-lang-label {
     margin: 0.7rem 0 0.35rem;
     font-size: 0.75rem;
@@ -444,7 +438,7 @@ html[lang="en"] .chem-member-name {
     font-weight: 900;
 }
 
-/* 케미명 글자색만: 기본 흰 / 미정 보라 / 최근 분홍 / WAV 하늘 (배경은 chem-cell 유지) */
+/* 케미명 글자색만: 공식 흰 / 미정 보라 / 최근 분홍 / WAV 하늘 (배경은 chem-cell 유지) */
 .chem-table td.chem-cell.chem-tone-undecided {
     color: #c9a8ff !important;
 }

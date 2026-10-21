@@ -48,9 +48,9 @@ public class ChemistryService {
     }
 
     @Transactional
-    public ChemistryDto upsert(String member1, String member2, String label, String description,
-                               String descriptionEn, MultipartFile image, boolean clearImage,
-                               String linksJson, String labelTone) {
+    public ChemistryDto upsert(String member1, String member2, String label, String labelEn,
+                               String description, String descriptionEn, MultipartFile image,
+                               boolean clearImage, String linksJson, String labelTone) {
         Artist[] pair = normalizePair(member1, member2);
         if (!StringUtils.hasText(label)) {
             throw new IllegalArgumentException("케미명은 필수입니다.");
@@ -71,11 +71,11 @@ public class ChemistryService {
                         .description("")
                         .build());
 
-        // 케미명은 고유명사로 한국어 유지. 설명만 한·영 각각 저장.
+        // 한·영 케미명·설명 각각 저장. 영문 케미명이 비면 표시 시 한국어로 폴백.
         entity.setLabel(label.trim());
+        entity.setLabelEn(StringUtils.hasText(labelEn) ? labelEn.trim() : null);
         entity.setDescription(description);
         entity.setDescriptionEn(descriptionEn != null ? descriptionEn : "");
-        entity.setLabelEn(null);
         entity.setLinksJson(normalizeLinksJson(linksJson));
         entity.setLabelTone(tone);
 

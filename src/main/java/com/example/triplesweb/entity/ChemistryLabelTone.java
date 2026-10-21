@@ -3,7 +3,7 @@ package com.example.triplesweb.entity;
 /**
  * 표 칸 케미명 글자색.
  * <ul>
- *   <li>{@link #NONE} — 미선택 (기본 흰색)</li>
+ *   <li>{@link #NONE} — 공식 (흰색)</li>
  *   <li>{@link #UNDECIDED} — 미정 (보라)</li>
  *   <li>{@link #RECENT} — 최근에 정해짐 (분홍)</li>
  *   <li>{@link #FAN} — WAV가 정함 (하늘)</li>
