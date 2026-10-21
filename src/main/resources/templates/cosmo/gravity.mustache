@@ -60,8 +60,8 @@
                         <span class="rounded-full border border-[#00f5d4]/30 bg-[#00f5d4]/10 px-2 py-0.5 text-[10px] text-[#00f5d4]">토큰 불필요</span>
                     </div>
                     <p class="mt-2 text-xs leading-5 text-gray-400">
-                        공개 Apollo 집계 API를 조회합니다. 입력값은 Gravity ID가 아닌 COSMO Poll ID입니다.
-                        진행 중에는 총 투표·COMO와 공개된 기록을 표시하며, 후보별 최종 합계는 투표 공개가 완료된 뒤 표시됩니다.
+                        tripleS 소속이 확인된 Apollo 집계만 조회합니다. 입력값은 Gravity ID가 아닌 COSMO Poll ID이며, 등록되지 않았거나 다른 그룹에 속한 Poll ID는 거부됩니다.
+                        진행 중에는 총 투표·COMO를 표시하고, 후보별 최종 합계는 투표 공개가 완료된 뒤 표시됩니다.
                     </p>
                 </div>
                 <a href="https://apollo.cafe/" target="_blank" rel="noopener noreferrer" class="text-xs text-[#00f5d4] hover:underline shrink-0">Apollo 열기 ↗</a>
@@ -400,9 +400,9 @@
 
                 <!-- 아티스트 필터 -->
                 <div class="space-y-1">
-                    <label class="text-[11px] text-gray-400 font-medium">아티스트</label>
+                    <label class="text-[11px] text-gray-400 font-medium">tripleS 디멘션/유닛</label>
                     <select name="artist" class="w-full bg-[#1a1b20] text-gray-200 font-medium text-xs rounded-xl px-3 py-2 border border-white/15 focus:outline-none focus:border-[#00f5d4]">
-                        <option value="all" selected>all</option>
+                        <option value="all" selected>tripleS 전체</option>
                         <option value="tripleS">tripleS (완전체)</option>
                         <option value="AcidAngel">Acid Angel from Asia</option>
                         <option value="KrystalEyes">+(KR)ystal Eyes</option>
