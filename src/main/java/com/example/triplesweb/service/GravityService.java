@@ -148,7 +148,7 @@ public class GravityService {
             throw new IllegalArgumentException("gravityId must be positive");
         }
 
-        JsonNode response = cosmoGet("/bff/v3/gravities/" + gravityId);
+        JsonNode response = cosmoGet("/v3/gravities/" + gravityId);
         if (response == null || response.isNull()) {
             throw new IllegalStateException("COSMO returned an empty Gravity response");
         }
@@ -194,7 +194,7 @@ public class GravityService {
             throw new IllegalArgumentException("pollId must be positive");
         }
 
-        JsonNode response = cosmoGet("/bff/v3/polls/" + pollId);
+        JsonNode response = cosmoGet("/v3/polls/" + pollId);
         JsonNode details = response.path("pollDetail");
         if (details.isObject()) return details;
 
