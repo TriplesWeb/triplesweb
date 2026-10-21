@@ -382,7 +382,7 @@
     font-weight: 900;
 }
 
-/* 케미명 글자색만: 기본 흰 / 미정 보라 / 최근 분홍 / 팬 하늘 (배경은 chem-cell 유지) */
+/* 케미명 글자색만: 기본 흰 / 미정 보라 / 최근 분홍 / WAV 하늘 (배경은 chem-cell 유지) */
 .chem-table td.chem-cell.chem-tone-undecided {
     color: #c9a8ff !important;
 }
