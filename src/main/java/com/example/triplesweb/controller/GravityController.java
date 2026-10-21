@@ -26,7 +26,7 @@ public class GravityController {
         this.gravityService = gravityService;
     }
 
-    @GetMapping("/gravity")
+    @GetMapping({"/gravity", "/cosmo/gravity"})
     public String gravity(
             @RequestParam(defaultValue = "tripleS") String artistId,
             @RequestParam(required = false) Long pollId,
