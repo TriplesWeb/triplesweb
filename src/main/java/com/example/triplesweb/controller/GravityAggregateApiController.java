@@ -36,6 +36,22 @@ public class GravityAggregateApiController {
         this.tripleSPollIds = tripleSPollIds == null ? "" : tripleSPollIds;
     }
 
+    @GetMapping("/discover")
+    public ResponseEntity<?> discoverTripleSPolls() {
+        try {
+            List<Map<String, Object>> polls = gravityService.discoverTripleSPollAggregates();
+            return ResponseEntity.ok(Map.of(
+                    "scannedRange", "1-264",
+                    "count", polls.size(),
+                    "polls", polls
+            ));
+        } catch (Exception exception) {
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of(
+                    "error", GravityService.describeApiError(exception)
+            ));
+        }
+    }
+
     @GetMapping("/aggregate")
     public ResponseEntity<?> aggregate(
             @RequestParam long pollId,
@@ -79,42 +95,35 @@ public class GravityAggregateApiController {
      */
     private Long resolveVerifiedTripleSPollId(long requestedId, Long gravityId) {
         if (gravityId != null) {
-            return isConfiguredTripleSPair(requestedId, gravityId) ? requestedId : resolveFromTripleSList(requestedId, gravityId);
+            if (isConfiguredTripleSPair(requestedId, gravityId)) return requestedId;
+            try {
+                Map<String, Object> mapping = gravityService.findTripleSPollMapping(requestedId);
+                if (mapping != null
+                        && ((Number) mapping.get("gravityId")).longValue() == gravityId) {
+                    return requestedId;
+                }
+            } catch (RuntimeException ignored) {
+                // Fall through to the explicitly configured mapping only.
+            }
+            return null;
         }
 
-        // If the input is a Gravity ID (e.g. 262), translate it to the associated
-        // Apollo aggregate ID (e.g. 267) instead of querying the wrong endpoint.
-        Long mappedPollId = configuredPollForGravityId(requestedId);
-        if (mappedPollId != null) return mappedPollId;
-
-        // Direct Poll ID entry is allowed only when explicitly verified for tripleS.
+        // Keep known manual aliases working, then use COSMO's complete tripleS mapping.
+        Long configuredPollId = configuredPollForGravityId(requestedId);
+        if (configuredPollId != null) return configuredPollId;
         if (isConfiguredTripleSPollId(requestedId) || isConfiguredPollId(requestedId)) return requestedId;
 
-        return resolveFromTripleSList(requestedId, null);
-    }
+        if (gravityService.hasCosmoToken()) {
+            try {
+                Long pollForGravity = gravityService.findTripleSPollIdForGravity(requestedId);
+                if (pollForGravity != null) return pollForGravity;
 
-    private Long resolveFromTripleSList(long requestedId, Long gravityId) {
-        if (!gravityService.hasCosmoToken()) return null;
-        try {
-            List<Map<String, Object>> gravities = gravityService.fetchGravityList("tripleS");
-            for (Map<String, Object> gravity : gravities) {
-                String id = String.valueOf(gravity.getOrDefault("id", ""));
-                if (gravityId != null && !gravityId.toString().equals(id)) continue;
-                boolean inputIsGravityId = gravityId == null && matchesPollId(id, requestedId);
-                Object pollsObject = gravity.get("polls");
-                if (!(pollsObject instanceof List<?> polls)) continue;
-                for (Object pollObject : polls) {
-                    if (!(pollObject instanceof Map<?, ?> poll)) continue;
-                    Object pollIdValue = poll.containsKey("id") ? poll.get("id") : poll.get("cosmoId");
-                    Long candidatePollId = parsePositiveLong(pollIdValue);
-                    if (inputIsGravityId && candidatePollId != null) return candidatePollId;
-                    if (candidatePollId != null && candidatePollId == requestedId) return candidatePollId;
-                    Long cosmoId = parsePositiveLong(poll.get("cosmoId"));
-                    if (cosmoId != null && cosmoId == requestedId) return cosmoId;
+                if (gravityService.findTripleSPollMapping(requestedId) != null) {
+                    return requestedId;
                 }
+            } catch (RuntimeException ignored) {
+                // Fail closed if COSMO cannot confirm that this belongs to tripleS.
             }
-        } catch (RuntimeException ignored) {
-            // Fail closed: do not expose an ID when ownership cannot be verified.
         }
         return null;
     }
@@ -177,22 +186,4 @@ public class GravityAggregateApiController {
         return false;
     }
 
-    private static Long parsePositiveLong(Object value) {
-        if (value == null) return null;
-        try {
-            long parsed = Long.parseLong(String.valueOf(value));
-            return parsed > 0 ? parsed : null;
-        } catch (NumberFormatException ignored) {
-            return null;
-        }
-    }
-
-    private static boolean matchesPollId(Object value, long pollId) {
-        if (value == null) return false;
-        try {
-            return Long.parseLong(String.valueOf(value)) == pollId;
-        } catch (NumberFormatException ignored) {
-            return false;
-        }
-    }
 }
