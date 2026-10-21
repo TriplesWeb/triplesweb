@@ -11,8 +11,10 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.util.UriUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.List;
 import java.util.Map;
 
@@ -82,10 +84,41 @@ public class GravityService {
             }
 
             Map<String, Object> gravity = objectMapper.convertValue(gravityNode, MAP_TYPE);
+            String gravityId = gravityNode.path("id").asText("");
+            String title = gravityNode.path("title").asText("Gravity");
+            String startDate = firstNonBlank(
+                    gravityNode.path("startDate").asText(""),
+                    gravityNode.path("entireStartDate").asText(""),
+                    gravityNode.path("startAt").asText(""));
+            String endDate = firstNonBlank(
+                    gravityNode.path("endDate").asText(""),
+                    gravityNode.path("entireEndDate").asText(""),
+                    gravityNode.path("endAt").asText(""));
+            long totalComo = gravityNode.path("result").path("totalComoUsed").asLong(
+                    gravityNode.path("totalComoUsed").asLong(0));
+
+            // Align API keys to the field names expected by gravity.mustache.
+            gravity.put("id", gravityId);
+            gravity.put("number", gravityId);
+            gravity.put("title", title);
+            gravity.put("status", statusLabel);
             gravity.put("statusLabel", statusLabel);
+            gravity.put("season", firstNonBlank(
+                    gravityNode.path("dimension").asText(""),
+                    gravityNode.path("type").asText(""),
+                    artistId));
+            gravity.put("startDate", displayDate(startDate));
+            gravity.put("endDate", displayDate(endDate));
+            gravity.put("description", firstNonBlank(
+                    gravityNode.path("description").asText(""),
+                    gravityNode.path("summary").asText(""),
+                    "상세 설명은 COSMO API에서 제공하지 않습니다."));
+            gravity.put("hasComoCount", totalComo > 0);
+            gravity.put("comoCount", totalComo > 0
+                    ? NumberFormat.getNumberInstance(Locale.US).format(totalComo)
+                    : "");
             gravity.put("artistId", artistId);
-            gravity.put("apolloUrl", apolloBaseUrl + "/gravity/" + artistId + "/" +
-                    gravityNode.path("id").asText());
+            gravity.put("apolloUrl", apolloBaseUrl + "/gravity/" + artistId + "/" + gravityId);
 
             List<Map<String, Object>> polls = new ArrayList<>();
             JsonNode pollNodes = gravityNode.path("polls");
@@ -104,6 +137,29 @@ public class GravityService {
                 pastCount++;
             }
         }
+    }
+
+    /**
+     * Loads one Gravity record from COSMO. IDs are COSMO Gravity IDs, not poll IDs.
+     */
+    public JsonNode fetchGravityDetail(long gravityId) {
+        requireCosmoToken();
+        if (gravityId <= 0) {
+            throw new IllegalArgumentException("gravityId must be positive");
+        }
+
+        JsonNode response = cosmoGet("/bff/v3/gravities/" + gravityId);
+        if (response == null || response.isNull()) {
+            throw new IllegalStateException("COSMO returned an empty Gravity response");
+        }
+        JsonNode data = response.path("data");
+        JsonNode gravity = response.path("gravity");
+        if (gravity.isObject()) return gravity;
+        if (data.isObject()) {
+            gravity = data.path("gravity");
+            return gravity.isObject() ? gravity : data;
+        }
+        return response;
     }
 
     /**
@@ -147,6 +203,159 @@ public class GravityService {
      * Maps final candidate totals to COSMO choice titles. The upstream aggregate
      * exposes candidate totals only after all votes have been revealed.
      */
+    /**
+     * Converts the upstream Gravity payload into the field names consumed by the
+     * existing Mustache detail template. Missing result fields stay absent rather
+     * than being replaced with invented vote counts.
+     */
+    public Map<String, Object> buildGravityDetailView(JsonNode source) {
+        if (source == null || source.isNull() || source.isMissingNode()) {
+            throw new IllegalStateException("COSMO returned no Gravity detail");
+        }
+
+        JsonNode gravity = source;
+        if (source.path("gravity").isObject()) gravity = source.path("gravity");
+        else if (source.path("data").isObject()) {
+            JsonNode nested = source.path("data");
+            gravity = nested.path("gravity").isObject() ? nested.path("gravity") : nested;
+        }
+
+        Map<String, Object> view = new LinkedHashMap<>();
+        String id = firstText(gravity, "id", "gravityId");
+        String title = firstText(gravity, "title", "name");
+        String category = firstText(gravity, "type", "pollType");
+        String description = firstText(gravity, "description", "summary");
+        if (description.isBlank() && gravity.path("body").isArray()) {
+            StringBuilder bodyText = new StringBuilder();
+            for (JsonNode block : gravity.path("body")) {
+                String type = block.path("type").asText("");
+                if ("text".equalsIgnoreCase(type) || "heading".equalsIgnoreCase(type)) {
+                    String text = block.path("text").asText("");
+                    if (!text.isBlank()) {
+                        if (bodyText.length() > 0) bodyText.append("\n\n");
+                        bodyText.append(text);
+                    }
+                }
+            }
+            description = bodyText.toString();
+        }
+
+        String startDate = firstNonBlank(
+                gravity.path("startDate").asText(""),
+                gravity.path("entireStartDate").asText(""),
+                "");
+        String endDate = firstNonBlank(
+                gravity.path("endDate").asText(""),
+                gravity.path("entireEndDate").asText(""),
+                "");
+
+        List<Map<String, String>> candidates = new ArrayList<>();
+        boolean publishedResult = false;
+        boolean hasComoTotal = false;
+        long totalComo = gravity.path("result").path("totalComoUsed").asLong(0);
+        if (totalComo > 0) hasComoTotal = true;
+
+        JsonNode polls = gravity.path("polls");
+        if (polls.isArray()) {
+            for (JsonNode originalPoll : polls) {
+                JsonNode poll = originalPoll;
+                JsonNode choices = poll.path("choices");
+                if (!choices.isArray() || choices.isEmpty()) {
+                    long pollId = poll.path("id").asLong(0);
+                    if (pollId > 0 && hasCosmoToken()) {
+                        try {
+                            JsonNode pollDetails = fetchPollDetails(pollId);
+                            if (pollDetails != null && pollDetails.path("choices").isArray()) {
+                                choices = pollDetails.path("choices");
+                            }
+                        } catch (RuntimeException ignored) {
+                            // Keep showing the Gravity record even if one poll cannot be enriched.
+                        }
+                    }
+                }
+
+                JsonNode pollResult = poll.path("result");
+                JsonNode results = pollResult.path("results");
+                boolean hasPollResult = pollResult.isObject() && !pollResult.isEmpty();
+                if (hasPollResult) publishedResult = true;
+                long pollComo = pollResult.path("totalComoUsed").asLong(0);
+                if (pollComo > 0) {
+                    totalComo += pollComo;
+                    hasComoTotal = true;
+                }
+
+                int count = Math.max(choices.isArray() ? choices.size() : 0,
+                        results.isArray() ? results.size() : 0);
+                for (int i = 0; i < count; i++) {
+                    JsonNode choice = choices.isArray() && i < choices.size()
+                            ? choices.get(i) : objectMapper.createObjectNode();
+                    JsonNode result = results.isArray() && i < results.size()
+                            ? results.get(i) : objectMapper.createObjectNode();
+
+                    String name = firstNonBlank(
+                            firstText(result, "title", "choiceTitle", "candidateTitle", "name"),
+                            firstText(choice, "title", "name", "label"),
+                            "후보 " + (i + 1));
+                    String imageUrl = firstText(choice, "txImageUrl", "imageUrl", "imageURL");
+                    int rank = result.path("rank").asInt(i + 1);
+                    long candidateComo = result.path("comoUsed").asLong(
+                            result.path("totalComoUsed").asLong(0));
+
+                    Map<String, String> candidate = new LinkedHashMap<>();
+                    candidate.put("number", String.format("%02d", candidates.size() + 1));
+                    candidate.put("name", name);
+                    candidate.put("type", hasPollResult ? rank + "위" : "투표 후보");
+                    candidate.put("amount", candidateComo > 0
+                            ? NumberFormat.getNumberInstance(Locale.US).format(candidateComo) + " COMO" : "");
+                    candidate.put("imageUrl", imageUrl);
+                    candidates.add(candidate);
+                }
+            }
+        }
+
+        List<Map<String, String>> leaderboard = new ArrayList<>();
+        JsonNode leaderboardNode = gravity.path("leaderboard");
+        if (leaderboardNode.isArray()) {
+            for (JsonNode entry : leaderboardNode) {
+                Map<String, String> item = new LinkedHashMap<>();
+                item.put("rank", firstText(entry, "rank"));
+                item.put("nickname", firstText(entry, "nickname", "name"));
+                long amount = entry.path("comoUsed").asLong(entry.path("totalComoUsed").asLong(0));
+                item.put("como", amount > 0
+                        ? NumberFormat.getNumberInstance(Locale.US).format(amount) + " COMO" : "—");
+                if (!item.get("nickname").isBlank()) leaderboard.add(item);
+            }
+        }
+
+        String status = firstText(gravity, "status", "state");
+        if (status.isBlank()) {
+            status = publishedResult ? "결과 공개" : "COSMO API 조회 완료";
+        }
+        String como = hasComoTotal
+                ? NumberFormat.getNumberInstance(Locale.US).format(totalComo) + " COMO"
+                : "결과 미공개";
+        String resultNote = publishedResult
+                ? "공개된 후보 결과는 COSMO API 응답을 기준으로 표시합니다."
+                : "COSMO API에서 최종 결과가 공개되기 전이거나 결과 데이터가 제공되지 않았습니다. 확인 가능한 후보 정보만 표시합니다.";
+
+        view.put("id", firstNonBlank(id, "-", "-"));
+        view.put("title", firstNonBlank(title, "그래비티 상세 정보", "그래비티 상세 정보"));
+        view.put("category", firstNonBlank(category, "COSMO GRAVITY", "COSMO GRAVITY"));
+        view.put("status", status);
+        view.put("description", firstNonBlank(description, "상세 설명을 제공하지 않습니다.", "상세 설명을 제공하지 않습니다."));
+        view.put("period", firstNonBlank(displayDate(startDate), "-", "-") + " ~ "
+                + firstNonBlank(displayDate(endDate), "-", "-"));
+        view.put("como", como);
+        view.put("resultNote", resultNote);
+        view.put("candidates", candidates);
+        view.put("hasCandidates", !candidates.isEmpty());
+        view.put("candidateCount", candidates.size());
+        view.put("leaderboard", leaderboard);
+        view.put("hasLeaderboard", !leaderboard.isEmpty());
+        view.put("bannerImageUrl", firstText(gravity, "bannerImageUrl", "bannerImageURL"));
+        return view;
+    }
+
     public List<Map<String, Object>> buildCandidateResults(JsonNode pollDetails, JsonNode aggregate) {
         List<Map<String, Object>> result = new ArrayList<>();
         if (pollDetails == null || aggregate == null) {
@@ -211,6 +420,27 @@ public class GravityService {
                     "COSMO_ACCESS_TOKEN is not configured. Public aggregate lookup can still be attempted by poll ID."
             );
         }
+    }
+
+    private static String firstText(JsonNode node, String... fields) {
+        if (node == null || node.isMissingNode() || node.isNull()) return "";
+        for (String field : fields) {
+            JsonNode value = node.path(field);
+            if (!value.isMissingNode() && !value.isNull()) {
+                String text = value.asText("");
+                if (!text.isBlank()) return text;
+            }
+        }
+        return "";
+    }
+
+    private static String displayDate(String value) {
+        if (value == null || value.isBlank()) return "";
+        String date = value.trim();
+        int timeSeparator = date.indexOf('T');
+        if (timeSeparator > 0) date = date.substring(0, timeSeparator);
+        if (date.matches("\\d{4}-\\d{2}-\\d{2}")) return date.replace('-', '.');
+        return date;
     }
 
     private static String firstNonBlank(String first, String second, String fallback) {
