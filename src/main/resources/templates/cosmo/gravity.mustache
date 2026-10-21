@@ -226,6 +226,171 @@
         })();
         </script>
 
+        <!-- tripleS Poll ID 자동 탐색: COSMO 매핑으로 소속을 검증하고 Apollo 집계를 조회 -->
+        <section id="triples-poll-discovery" class="rounded-2xl border border-[#00f5d4]/25 bg-[#11151a] p-5 sm:p-6 space-y-4">
+            <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-5 rounded-full bg-[#00f5d4]"></span>
+                        <h2 class="text-lg font-bold text-white">tripleS 전체 Poll ID 자동 탐색</h2>
+                        <span class="rounded-full border border-[#00f5d4]/30 bg-[#00f5d4]/10 px-2 py-0.5 text-[10px] text-[#00f5d4]">자동 매핑</span>
+                    </div>
+                    <p class="mt-2 text-xs leading-5 text-gray-400">
+                        Apollo API Poll ID 1~264를 검사하고, COSMO 메타데이터에서 확인한 tripleS Poll ID도 추가로 확인합니다.
+                        Gravity ID와 Poll ID가 달라도 자동으로 연결하며, tripleS 소속이 확인된 항목만 표시합니다.
+                    </p>
+                </div>
+                <button id="triples-poll-refresh" type="button"
+                        class="shrink-0 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-white hover:bg-white/10">
+                    목록 새로고침
+                </button>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+                <input id="triples-poll-search" type="search" placeholder="Poll ID, Gravity ID 또는 제목 검색"
+                       class="min-w-0 flex-1 rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:border-[#00f5d4] focus:outline-none">
+                <p id="triples-poll-status" role="status" class="text-xs leading-5 text-gray-400 sm:max-w-md">
+                    COSMO Poll 목록과 Apollo 집계를 확인하고 있습니다. 처음 조회에는 시간이 걸릴 수 있습니다.
+                </p>
+            </div>
+
+            <div id="triples-poll-list" class="space-y-3">
+                <div class="rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-gray-400">
+                    tripleS Poll ID를 탐색하는 중입니다…
+                </div>
+            </div>
+        </section>
+
+        <script>
+        (() => {
+            const list = document.getElementById('triples-poll-list');
+            const status = document.getElementById('triples-poll-status');
+            const search = document.getElementById('triples-poll-search');
+            const refreshButton = document.getElementById('triples-poll-refresh');
+            if (!list || !status || !search || !refreshButton) return;
+
+            let allPolls = [];
+            const numberFormat = new Intl.NumberFormat('ko-KR');
+
+            function renderPolls() {
+                const query = search.value.trim().toLocaleLowerCase('ko-KR');
+                const polls = allPolls.filter(poll => {
+                    const text = [
+                        poll.pollId, poll.gravityId, poll.pollTitle, poll.gravityTitle
+                    ].join(' ').toLocaleLowerCase('ko-KR');
+                    return text.includes(query);
+                });
+
+                list.replaceChildren();
+                if (polls.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-gray-400';
+                    empty.textContent = allPolls.length === 0
+                        ? '표시할 Poll이 없습니다. COSMO_ACCESS_TOKEN 설정과 COSMO API 응답을 확인해 주세요.'
+                        : '검색 조건에 맞는 Poll이 없습니다.';
+                    list.appendChild(empty);
+                    return;
+                }
+
+                for (const poll of polls) {
+                    const card = document.createElement('article');
+                    card.className = 'rounded-xl border border-white/10 bg-black/20 p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4';
+
+                    const main = document.createElement('div');
+                    main.className = 'min-w-0 space-y-2';
+
+                    const ids = document.createElement('div');
+                    ids.className = 'flex flex-wrap items-center gap-2';
+                    const pollBadge = document.createElement('span');
+                    pollBadge.className = 'rounded-lg border border-[#00f5d4]/25 bg-[#00f5d4]/10 px-2 py-1 font-mono text-xs text-[#00f5d4]';
+                    pollBadge.textContent = 'POLL #' + poll.pollId;
+                    const gravityBadge = document.createElement('span');
+                    gravityBadge.className = 'rounded-lg border border-white/10 bg-white/5 px-2 py-1 font-mono text-xs text-gray-300';
+                    gravityBadge.textContent = 'GRAVITY #' + poll.gravityId;
+                    ids.append(pollBadge, gravityBadge);
+
+                    const title = document.createElement('h3');
+                    title.className = 'font-semibold text-white break-words';
+                    title.textContent = poll.pollTitle || poll.gravityTitle || ('Poll #' + poll.pollId);
+
+                    const gravityTitle = document.createElement('p');
+                    gravityTitle.className = 'text-xs text-gray-400 break-words';
+                    gravityTitle.textContent = poll.gravityTitle && poll.gravityTitle !== poll.pollTitle
+                        ? 'Gravity: ' + poll.gravityTitle : '';
+
+                    const meta = document.createElement('p');
+                    meta.className = 'text-xs text-gray-500';
+                    const dates = [poll.startDate, poll.endDate].filter(Boolean).join(' ~ ');
+                    meta.textContent = dates || '기간 정보 없음';
+
+                    main.append(ids, title, gravityTitle, meta);
+
+                    const side = document.createElement('div');
+                    side.className = 'flex flex-col sm:flex-row sm:items-center gap-3 lg:justify-end shrink-0';
+
+                    const stats = document.createElement('div');
+                    stats.className = 'text-xs text-gray-400 sm:text-right';
+                    const votes = document.createElement('div');
+                    votes.textContent = numberFormat.format(Number(poll.totalVoteCount || 0)) + '표';
+                    const como = document.createElement('div');
+                    como.className = 'mt-1 font-mono font-semibold text-[#00f5d4]';
+                    como.textContent = numberFormat.format(Number(poll.totalComoCount || 0)) + ' COMO';
+                    stats.append(votes, como);
+
+                    const actions = document.createElement('div');
+                    actions.className = 'flex items-center gap-2';
+                    const localLink = document.createElement('a');
+                    localLink.href = '/cosmo/gravity?pollId=' + encodeURIComponent(poll.pollId);
+                    localLink.className = 'rounded-lg bg-[#00f5d4] px-3 py-2 text-xs font-bold text-black hover:brightness-110';
+                    localLink.textContent = '집계 보기';
+                    const externalLink = document.createElement('a');
+                    externalLink.href = poll.apolloUrl || ('https://apollo.cafe/gravity/triples/' + encodeURIComponent(poll.gravityId) + '?poll=' + encodeURIComponent(poll.pollId));
+                    externalLink.target = '_blank';
+                    externalLink.rel = 'noopener noreferrer';
+                    externalLink.className = 'rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10';
+                    externalLink.textContent = 'Apollo ↗';
+                    actions.append(localLink, externalLink);
+                    side.append(stats, actions);
+                    card.append(main, side);
+                    list.appendChild(card);
+                }
+            }
+
+            async function loadPolls() {
+                refreshButton.disabled = true;
+                refreshButton.textContent = '조회 중…';
+                status.textContent = 'API Poll ID 1~264 및 tripleS 메타데이터에서 발견된 추가 ID를 검사하고 있습니다.';
+                try {
+                    const response = await fetch('/api/cosmo/gravity/discover', {
+                        headers: { 'Accept': 'application/json' },
+                        cache: 'no-store'
+                    });
+                    const data = await response.json();
+                    if (!response.ok || data.error) throw new Error(data.error || ('HTTP ' + response.status));
+                    allPolls = Array.isArray(data.polls) ? data.polls : [];
+                    status.textContent = allPolls.length + '개 항목 확인 완료 · 결과는 서버에서 10분간 캐시됩니다.';
+                    renderPolls();
+                } catch (error) {
+                    allPolls = [];
+                    list.replaceChildren();
+                    const errorNode = document.createElement('p');
+                    errorNode.className = 'rounded-xl border border-rose-400/25 bg-rose-400/5 p-4 text-sm text-rose-100';
+                    errorNode.textContent = error && error.message
+                        ? error.message : 'Poll 목록을 불러오지 못했습니다.';
+                    list.appendChild(errorNode);
+                    status.textContent = '탐색 실패';
+                } finally {
+                    refreshButton.disabled = false;
+                    refreshButton.textContent = '목록 새로고침';
+                }
+            }
+
+            search.addEventListener('input', renderPolls);
+            refreshButton.addEventListener('click', loadPolls);
+            loadPolls();
+        })();
+        </script>
+
         <!-- 2. 상단 캐러셀 / 하이라이트 섹션 (참조 이미지 상단 카드 트랙) -->
         <section class="space-y-4">
             <div class="flex items-center justify-between">
