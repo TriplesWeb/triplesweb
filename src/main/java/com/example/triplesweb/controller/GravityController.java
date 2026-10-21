@@ -37,10 +37,13 @@ public class GravityController {
         model.addAttribute("artistOptions", artistOptions(selectedArtist));
         model.addAttribute("cosmoConfigured", gravityService.hasCosmoToken());
         model.addAttribute("selectedPollId", pollId);
+        model.addAttribute("gravityCount", 0);
 
         if (gravityService.hasCosmoToken()) {
             try {
-                model.addAttribute("gravityList", gravityService.fetchGravityList(selectedArtist));
+                List<Map<String, Object>> liveGravities = gravityService.fetchGravityList(selectedArtist);
+                model.addAttribute("gravityList", liveGravities);
+                model.addAttribute("gravityCount", liveGravities.size());
             } catch (Exception exception) {
                 model.addAttribute("gravityListError", GravityService.describeApiError(exception));
             }
