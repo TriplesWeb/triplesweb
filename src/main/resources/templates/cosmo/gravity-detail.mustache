@@ -146,7 +146,7 @@
                         전체 투표 수와 COMO 사용량은 실시간으로 표시합니다. 후보별 득표와 순위는 Apollo가 최종 결과를 공개한 경우에만 표시합니다.
                     </p>
                 </div>
-                <a href="https://apollo.cafe/gravity/idntt/233" target="_blank" rel="noopener noreferrer"
+                <a href="https://apollo.cafe/" target="_blank" rel="noopener noreferrer"
                    class="text-xs text-[#00f5d4] hover:underline shrink-0">Apollo 원본 페이지 ↗</a>
             </div>
 
@@ -239,7 +239,7 @@
 
             async function refreshAggregate() {
                 const pollId = input.value.trim();
-                if (!/^\\d+$/.test(pollId) || Number(pollId) <= 0) {
+                if (!/^\d+$/.test(pollId) || Number(pollId) <= 0) {
                     status.textContent = 'Poll ID를 입력하면 Apollo 공개 집계를 조회할 수 있습니다.';
                     return;
                 }
