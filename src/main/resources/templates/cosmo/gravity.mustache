@@ -47,6 +47,171 @@
         <div class="rounded-xl border border-rose-400/25 bg-rose-400/5 px-4 py-3 text-sm text-rose-100">{{gravityListError}}</div>
         {{/gravityListError}}
 
+        <!-- 공개 Apollo 집계 API: COSMO 개인 토큰 없이 Poll ID로 조회 -->
+        <section id="apollo-live-panel" data-poll-id="{{selectedPollId}}" class="rounded-2xl border border-[#00f5d4]/25 bg-[#11151a] p-5 sm:p-6 space-y-5">
+            <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-5 rounded-full bg-[#00f5d4]"></span>
+                        <h2 class="text-lg font-bold text-white">Apollo 실시간 온체인 투표 집계</h2>
+                        <span class="rounded-full border border-[#00f5d4]/30 bg-[#00f5d4]/10 px-2 py-0.5 text-[10px] text-[#00f5d4]">토큰 불필요</span>
+                    </div>
+                    <p class="mt-2 text-xs leading-5 text-gray-400">
+                        공개 Apollo 집계 API를 조회합니다. 입력값은 Gravity ID가 아닌 COSMO Poll ID입니다.
+                        진행 중에는 총 투표·COMO와 공개된 기록을 표시하며, 후보별 최종 합계는 투표 공개가 완료된 뒤 표시됩니다.
+                    </p>
+                </div>
+                <a href="https://apollo.cafe/" target="_blank" rel="noopener noreferrer" class="text-xs text-[#00f5d4] hover:underline shrink-0">Apollo 열기 ↗</a>
+            </div>
+
+            <form action="/cosmo/gravity" method="get" class="flex flex-col sm:flex-row gap-2">
+                <input type="hidden" name="artistId" value="{{artistId}}">
+                <label for="apollo-poll-id" class="sr-only">COSMO Poll ID</label>
+                <input id="apollo-poll-id" name="pollId" type="number" min="1" step="1" required
+                       value="{{selectedPollId}}" placeholder="COSMO Poll ID (예: Apollo 상세 페이지의 poll ID)"
+                       class="min-w-0 flex-1 rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:border-[#00f5d4] focus:outline-none">
+                <button type="submit" class="rounded-xl bg-[#00f5d4] px-5 py-3 text-sm font-bold text-black hover:brightness-110">집계 조회</button>
+            </form>
+
+            <p id="apollo-live-status" role="status" class="text-sm text-gray-400">
+                {{#selectedPollId}}Poll #{{selectedPollId}} 집계를 불러오는 중입니다. 30초마다 자동 갱신됩니다.{{/selectedPollId}}
+                {{^selectedPollId}}Poll ID를 입력하면 공개 집계를 조회합니다.{{/selectedPollId}}
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="rounded-xl border border-white/10 bg-black/20 p-4">
+                    <p class="text-xs text-gray-500">전체 투표 기록</p>
+                    <p id="apollo-total-votes" class="mt-2 text-2xl font-bold font-mono text-white">—</p>
+                </div>
+                <div class="rounded-xl border border-white/10 bg-black/20 p-4">
+                    <p class="text-xs text-gray-500">사용된 COMO</p>
+                    <p id="apollo-total-como" class="mt-2 text-2xl font-bold font-mono text-[#00f5d4]">—</p>
+                </div>
+                <div class="rounded-xl border border-white/10 bg-black/20 p-4">
+                    <p class="text-xs text-gray-500">공개된 투표 기록</p>
+                    <p id="apollo-revealed-votes" class="mt-2 text-2xl font-bold font-mono text-purple-300">—</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="rounded-xl border border-white/10 bg-black/20 p-4">
+                    <h3 class="font-semibold text-white">후보별 최종 득표</h3>
+                    <p id="apollo-candidate-note" class="mt-1 text-xs leading-5 text-gray-500">최종 결과가 공개되면 후보별 COMO 합계를 표시합니다.</p>
+                    <div id="apollo-candidate-results" class="mt-3 space-y-2"></div>
+                </div>
+                <div class="rounded-xl border border-white/10 bg-black/20 p-4">
+                    <h3 class="font-semibold text-white">최근 시간대별 집계</h3>
+                    <div id="apollo-chart-data" class="mt-3 space-y-2">
+                        <p class="text-xs text-gray-500">조회 후 시간대별 투표 수와 COMO가 표시됩니다.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-white/10 bg-black/20 p-4">
+                <h3 class="font-semibold text-white">상위 투표 기록</h3>
+                <p class="mt-1 text-xs text-gray-500">Apollo가 공개하는 상위 기록 일부입니다. 공개 전 후보 ID는 숨겨질 수 있습니다.</p>
+                <div id="apollo-top-votes" class="mt-3 space-y-2">
+                    <p class="text-xs text-gray-500">조회 후 기록이 표시됩니다.</p>
+                </div>
+            </div>
+        </section>
+
+        <script>
+        (() => {
+            const panel = document.getElementById('apollo-live-panel');
+            const input = document.getElementById('apollo-poll-id');
+            const status = document.getElementById('apollo-live-status');
+            if (!panel || !input || !status) return;
+
+            const numberFormat = new Intl.NumberFormat('ko-KR');
+            const setText = (id, value) => {
+                const node = document.getElementById(id);
+                if (node) node.textContent = value;
+            };
+            const clearAndAppend = (id, children) => {
+                const node = document.getElementById(id);
+                if (!node) return;
+                node.replaceChildren(...children);
+            };
+            const element = (tag, className, text) => {
+                const node = document.createElement(tag);
+                if (className) node.className = className;
+                node.textContent = text;
+                return node;
+            };
+
+            async function refreshAggregate() {
+                const pollId = input.value.trim();
+                if (!/^\\d+$/.test(pollId) || Number(pollId) <= 0) return;
+                status.textContent = 'Apollo 공개 집계를 조회하고 있습니다…';
+                try {
+                    const response = await fetch('/api/cosmo/gravity/aggregate?pollId=' + encodeURIComponent(pollId), {
+                        headers: { 'Accept': 'application/json' },
+                        cache: 'no-store'
+                    });
+                    const data = await response.json();
+                    if (!response.ok || data.error) {
+                        throw new Error(data.error || ('HTTP ' + response.status));
+                    }
+
+                    setText('apollo-total-votes', numberFormat.format(data.totalVoteCount ?? 0));
+                    setText('apollo-total-como', numberFormat.format(data.totalComoCount ?? 0) + ' COMO');
+                    setText('apollo-revealed-votes', numberFormat.format(data.revealedVoteCount ?? 0) + ' / ' + numberFormat.format(data.totalVoteCount ?? 0));
+
+                    const candidates = [];
+                    const candidateNote = document.getElementById('apollo-candidate-note');
+                    if (Array.isArray(data.finalized?.comoPerCandidate)) {
+                        data.finalized.comoPerCandidate
+                            .map((amount, index) => ({ index, amount: Number(amount) || 0 }))
+                            .sort((a, b) => b.amount - a.amount)
+                            .forEach((candidate, rank) => {
+                                candidates.push(element('div', 'flex items-center justify-between gap-3 rounded-lg border border-white/10 px-3 py-2',
+                                    '#' + (rank + 1) + ' · 후보 ' + (candidate.index + 1) + ' · ' + numberFormat.format(candidate.amount) + ' COMO'));
+                            });
+                        if (candidateNote) candidateNote.textContent = '최종 공개된 후보별 합계입니다. 후보 이름은 COSMO 후보 메타데이터가 필요하므로 후보 번호로 표시합니다.';
+                    } else {
+                        if (candidateNote) candidateNote.textContent = '현재 공개된 API 응답에는 후보별 최종 합계가 없습니다. 모든 투표의 공개가 완료되면 표시됩니다.';
+                        candidates.push(element('p', 'text-sm text-gray-500', '후보별 최종 득표는 아직 공개되지 않았습니다.'));
+                    }
+                    clearAndAppend('apollo-candidate-results', candidates);
+
+                    const chart = [];
+                    (Array.isArray(data.chartData) ? data.chartData.slice(-10) : []).forEach((item) => {
+                        const date = item.timestamp ? new Date(item.timestamp).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '시간 미상';
+                        chart.push(element('div', 'flex items-center justify-between gap-3 border-b border-white/5 pb-2 text-xs',
+                            date + ' · ' + numberFormat.format(item.voteCount ?? 0) + '표 · ' + numberFormat.format(item.totalTokenAmount ?? 0) + ' COMO'));
+                    });
+                    if (!chart.length) chart.push(element('p', 'text-xs text-gray-500', '시간대별 기록이 없습니다.'));
+                    clearAndAppend('apollo-chart-data', chart);
+
+                    const topVotes = [];
+                    (Array.isArray(data.topVotes) ? data.topVotes.slice(0, 10) : []).forEach((vote) => {
+                        const candidate = vote.candidateId === null || vote.candidateId === undefined
+                            ? '후보 미공개'
+                            : '후보 ' + (Number(vote.candidateId) + 1);
+                        const voter = vote.username || (vote.voter ? String(vote.voter).slice(0, 8) + '…' + String(vote.voter).slice(-4) : '주소 미공개');
+                        topVotes.push(element('div', 'flex items-center justify-between gap-3 border-b border-white/5 pb-2 text-xs',
+                            voter + ' · ' + candidate + ' · ' + numberFormat.format(vote.comoAmount ?? 0) + ' COMO'));
+                    });
+                    if (!topVotes.length) topVotes.push(element('p', 'text-xs text-gray-500', '공개된 상위 투표 기록이 없습니다.'));
+                    clearAndAppend('apollo-top-votes', topVotes);
+
+                    status.textContent = 'Poll #' + pollId + ' · 마지막 조회 ' + new Date().toLocaleTimeString('ko-KR') +
+                        ' · ' + (data.finalized ? '최종 결과 공개' : '진행/공개 상태에 따라 후보별 결과는 제한될 수 있음') +
+                        ' · 30초마다 갱신';
+                } catch (error) {
+                    status.textContent = 'Apollo 집계를 가져오지 못했습니다: ' + (error?.message || '알 수 없는 오류') +
+                        ' · Poll ID와 Apollo의 공개 접근 가능 여부를 확인하세요.';
+                }
+            }
+
+            if (input.value.trim()) {
+                refreshAggregate();
+                window.setInterval(refreshAggregate, 30000);
+            }
+        })();
+        </script>
+
         <!-- 2. 상단 캐러셀 / 하이라이트 섹션 (참조 이미지 상단 카드 트랙) -->
         <section class="space-y-4">
             <div class="flex items-center justify-between">
