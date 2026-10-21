@@ -207,10 +207,6 @@ public class GravityService {
     }
 
     /**
-     * Maps final candidate totals to COSMO choice titles. The upstream aggregate
-     * exposes candidate totals only after all votes have been revealed.
-     */
-    /**
      * Converts the upstream Gravity payload into the field names consumed by the
      * existing Mustache detail template. Missing result fields stay absent rather
      * than being replaced with invented vote counts.
@@ -304,10 +300,13 @@ public class GravityService {
                             ? results.get(i) : objectMapper.createObjectNode();
 
                     String name = firstNonBlank(
-                            firstText(result, "title", "choiceTitle", "candidateTitle", "name"),
+                            firstText(result, "choiceName", "title", "choiceTitle", "candidateTitle", "name"),
                             firstText(choice, "title", "name", "label"),
                             "후보 " + (i + 1));
-                    String imageUrl = firstText(choice, "txImageUrl", "imageUrl", "imageURL");
+                    String imageUrl = firstNonBlank(
+                            firstText(result, "choiceImageURL", "choiceImageUrl", "imageURL", "imageUrl"),
+                            firstText(choice, "txImageUrl", "imageUrl", "imageURL"),
+                            "");
                     int rank = result.path("rank").asInt(i + 1);
                     long candidateComo = result.path("comoUsed").asLong(
                             result.path("totalComoUsed").asLong(0));
@@ -338,6 +337,10 @@ public class GravityService {
             }
         }
 
+        JsonNode overallResult = gravity.path("result");
+        String winnerTitle = firstText(overallResult, "resultTitle", "title", "winnerTitle");
+        String winnerImageUrl = firstText(overallResult, "resultImageUrl", "resultImageURL", "imageUrl");
+
         String status = firstText(gravity, "status", "state");
         if (status.isBlank()) {
             status = publishedResult ? "결과 공개" : "COSMO API 조회 완료";
@@ -358,6 +361,9 @@ public class GravityService {
                 + firstNonBlank(displayDate(endDate), "-", "-"));
         view.put("como", como);
         view.put("resultNote", resultNote);
+        view.put("winnerTitle", winnerTitle);
+        view.put("winnerImageUrl", winnerImageUrl);
+        view.put("hasWinner", !winnerTitle.isBlank());
         view.put("candidates", candidates);
         view.put("hasCandidates", !candidates.isEmpty());
         view.put("candidateCount", candidates.size());
