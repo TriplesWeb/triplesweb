@@ -71,16 +71,37 @@ public class GravityService {
         requireCosmoToken();
 
         String encodedArtist = UriUtils.encodeQueryParam(artistId, StandardCharsets.UTF_8);
-        // cosmo-tui documents /v4/gravities?category=all for the grouped list.
-        // Request a page of recent history while retaining upcoming and ongoing groups.
-        JsonNode response = cosmoGet("/v4/gravities?category=all&artistId=" + encodedArtist
-                + "&skip=0&take=12&sortBy=endDate&sort=desc");
-        JsonNode root = response.path("data").isObject() ? response.path("data") : response;
+        final int pageSize = 12;
+        int skip = 0;
+        Set<String> seenGravityIds = new HashSet<>();
         List<Map<String, Object>> result = new ArrayList<>();
 
-        appendGravityGroup(result, root.path("ongoing"), "진행 중", artistId, false);
-        appendGravityGroup(result, root.path("upcoming"), "예정", artistId, false);
-        appendGravityGroup(result, root.path("past"), "종료", artistId, true);
+        // Read every page instead of showing only the first 12 historical Gravities.
+        // COSMO returns ongoing/upcoming/past arrays in each grouped response, so
+        // deduplicate by Gravity ID while paging through the historical records.
+        for (int page = 0; page < 100; page++) {
+            JsonNode response = cosmoGet("/v4/gravities?category=all&artistId=" + encodedArtist
+                    + "&skip=" + skip + "&take=" + pageSize + "&sortBy=endDate&sort=desc");
+            JsonNode root = response.path("data").isObject() ? response.path("data") : response;
+            List<Map<String, Object>> pageGravities = new ArrayList<>();
+
+            appendGravityGroup(pageGravities, root.path("ongoing"), "진행 중", artistId, false);
+            appendGravityGroup(pageGravities, root.path("upcoming"), "예정", artistId, false);
+            appendGravityGroup(pageGravities, root.path("past"), "종료", artistId, true);
+
+            int pastCount = root.path("past").isArray() ? root.path("past").size() : 0;
+            int newGravityCount = 0;
+            for (Map<String, Object> gravity : pageGravities) {
+                String gravityId = String.valueOf(gravity.getOrDefault("id", "")).trim();
+                if (gravityId.isBlank() || !seenGravityIds.add(gravityId)) continue;
+                result.add(gravity);
+                newGravityCount++;
+            }
+
+            // Stop when there are no more historical records or the API ignored skip.
+            if (pastCount == 0 || newGravityCount == 0) break;
+            skip += pageSize;
+        }
 
         return result;
     }
@@ -96,13 +117,7 @@ public class GravityService {
             return;
         }
 
-        int pastCount = 0;
         for (JsonNode gravityNode : group) {
-            // Keep the page compact: only show the 12 most recent past entries.
-            if (past && pastCount >= 12) {
-                break;
-            }
-
             Map<String, Object> gravity = objectMapper.convertValue(gravityNode, MAP_TYPE);
             String gravityId = gravityNode.path("id").asText("");
             String title = gravityNode.path("title").asText("Gravity");
@@ -153,9 +168,6 @@ public class GravityService {
             }
             gravity.put("polls", polls);
             destination.add(gravity);
-            if (past) {
-                pastCount++;
-            }
         }
     }
 
