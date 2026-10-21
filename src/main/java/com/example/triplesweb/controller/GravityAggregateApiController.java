@@ -15,8 +15,8 @@ import java.util.Map;
 import java.util.List;
 
 /**
- * Read-only proxy for Apollo's public Gravity aggregation endpoint.
- * This endpoint does not require a COSMO access token; it only needs a COSMO Poll ID.
+ * Read-only proxy for Apollo's public aggregation endpoint.
+ * Only Poll IDs verified as belonging to tripleS are allowed; an unverified ID fails closed.
  */
 @RestController
 @RequestMapping("/api/cosmo/gravity")
