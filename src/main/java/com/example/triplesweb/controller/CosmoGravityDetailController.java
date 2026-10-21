@@ -30,7 +30,7 @@ public class CosmoGravityDetailController {
 
     public CosmoGravityDetailController(
             GravityService gravityService,
-            @Value("${gravity.apollo-poll-map:233:274}") String apolloPollMap
+            @Value("${gravity.apollo-triples-poll-map:}") String apolloPollMap
     ) {
         this.gravityService = gravityService;
         this.apolloPollMap = apolloPollMap == null ? "" : apolloPollMap;
@@ -51,6 +51,26 @@ public class CosmoGravityDetailController {
         }
         model.addAttribute("apolloPollId", selectedPollId);
         model.addAttribute("hasApolloPollId", selectedPollId != null);
+
+        // Never load an arbitrary COSMO Gravity ID: only known tripleS archive IDs,
+        // configured tripleS-only mappings, or IDs returned by the tripleS list are allowed.
+        if (normalizedId.matches("\\d+") && !isKnownTripleSGravity(normalizedId)) {
+            model.addAttribute("archiveNotice",
+                    "이 페이지는 tripleS 그래비티 전용입니다. tripleS로 확인되지 않은 그래비티는 표시하지 않습니다.");
+            model.addAttribute("isKnownGravity", false);
+            model.addAttribute("gravity", createDetail(
+                    normalizedId,
+                    "tripleS 그래비티를 찾을 수 없습니다",
+                    "tripleS ONLY",
+                    "조회 불가",
+                    "tripleS 그래비티 목록에서 선택하거나, tripleS 소속이 확인된 Gravity ID를 사용해 주세요.",
+                    "-",
+                    "집계 미연결",
+                    "다른 아티스트의 그래비티는 이 페이지에서 조회하지 않습니다.",
+                    List.of()
+            ));
+            return "cosmo/gravity-detail";
+        }
 
         // Numeric IDs are looked up live first. Static archive records remain a fallback
         // when no COSMO token is configured or the upstream API is unavailable.
@@ -105,6 +125,21 @@ public class CosmoGravityDetailController {
      * Resolve a Poll ID without requiring a COSMO token. Configure multiple entries as
      * comma-separated GravityID:PollID pairs, for example 233:274,234:275.
      */
+    private boolean isKnownTripleSGravity(String gravityId) {
+        if (ARCHIVE.containsKey(gravityId) || resolveMappedPollId(gravityId) != null) {
+            return true;
+        }
+        if (!gravityService.hasCosmoToken()) {
+            return false;
+        }
+        try {
+            return gravityService.fetchGravityList("tripleS").stream()
+                    .anyMatch(item -> gravityId.equals(String.valueOf(item.get("id"))));
+        } catch (RuntimeException ignored) {
+            return false;
+        }
+    }
+
     private Long resolveMappedPollId(String gravityId) {
         if (apolloPollMap.isBlank() || gravityId == null || gravityId.isBlank()) return null;
         for (String entry : apolloPollMap.split(",")) {
