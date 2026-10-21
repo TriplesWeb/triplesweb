@@ -6,7 +6,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.client.RestClientResponseException;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -54,7 +53,7 @@ public class GravityController {
         if (pollId != null) {
             if (pollId <= 0) {
                 model.addAttribute("aggregationError", "투표 ID는 1 이상의 숫자여야 합니다.");
-                return "gravity";
+                return "cosmo/gravity";
             }
 
             JsonNode aggregateNode = null;
@@ -87,7 +86,7 @@ public class GravityController {
             }
         }
 
-        return "gravity";
+        return "cosmo/gravity";
     }
 
     private static String normalizeArtist(String artistId) {
