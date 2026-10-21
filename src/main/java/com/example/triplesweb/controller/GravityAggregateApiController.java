@@ -29,7 +29,7 @@ public class GravityAggregateApiController {
     public GravityAggregateApiController(
             GravityService gravityService,
             @Value("${gravity.apollo-triples-poll-map:}") String tripleSPollMap,
-            @Value("${gravity.apollo-triples-poll-ids:267}") String tripleSPollIds
+            @Value("${gravity.apollo-triples-poll-ids:}") String tripleSPollIds
     ) {
         this.gravityService = gravityService;
         this.tripleSPollMap = tripleSPollMap == null ? "" : tripleSPollMap;
