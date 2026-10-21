@@ -36,11 +36,14 @@ public class GravityService {
     private final String cosmoApiBaseUrl;
     private final String cosmoAccessToken;
 
+    private volatile long tripleSGravityListCachedAt;
+    private volatile List<Map<String, Object>> tripleSGravityListCache = List.of();
     private volatile long tripleSPollMappingsCachedAt;
     private volatile List<Map<String, Object>> tripleSPollMappingsCache = List.of();
     private volatile long tripleSPollDiscoveryCachedAt;
     private volatile List<Map<String, Object>> tripleSPollDiscoveryCache = List.of();
 
+    private static final long GRAVITY_LIST_CACHE_MILLIS = 10L * 60L * 1000L;
     private static final long POLL_MAPPING_CACHE_MILLIS = 60L * 60L * 1000L;
     private static final long POLL_DISCOVERY_CACHE_MILLIS = 10L * 60L * 1000L;
     private static final int APOLLO_DISCOVERY_RANGE_END = 264;
@@ -69,7 +72,31 @@ public class GravityService {
      */
     public List<Map<String, Object>> fetchGravityList(String artistId) {
         requireCosmoToken();
+        if (!"tripleS".equalsIgnoreCase(artistId)) {
+            return loadGravityListPages(artistId);
+        }
 
+        long now = System.currentTimeMillis();
+        if (tripleSGravityListCachedAt > 0
+                && now - tripleSGravityListCachedAt < GRAVITY_LIST_CACHE_MILLIS) {
+            return copyMaps(tripleSGravityListCache);
+        }
+
+        synchronized (this) {
+            now = System.currentTimeMillis();
+            if (tripleSGravityListCachedAt > 0
+                    && now - tripleSGravityListCachedAt < GRAVITY_LIST_CACHE_MILLIS) {
+                return copyMaps(tripleSGravityListCache);
+            }
+
+            List<Map<String, Object>> loaded = loadGravityListPages(artistId);
+            tripleSGravityListCache = copyMaps(loaded);
+            tripleSGravityListCachedAt = System.currentTimeMillis();
+            return copyMaps(loaded);
+        }
+    }
+
+    private List<Map<String, Object>> loadGravityListPages(String artistId) {
         String encodedArtist = UriUtils.encodeQueryParam(artistId, StandardCharsets.UTF_8);
         final int pageSize = 12;
         int skip = 0;
