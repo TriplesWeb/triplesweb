@@ -47,8 +47,8 @@ public class GravityController {
             }
         } else {
             model.addAttribute("cosmoNotice",
-                    "COSMO 액세스 토큰이 설정되지 않았습니다. 투표 ID 집계 조회를 먼저 시도할 수 있으며, " +
-                    "Gravity 목록과 후보명을 보려면 본인 계정의 유효한 토큰을 서버 환경 변수로 설정해야 합니다.");
+                    "COSMO 액세스 토큰이 설정되지 않아 실시간 Gravity 목록은 조회할 수 없습니다. " +
+                    "Apollo 집계는 tripleS 소속이 확인된 GravityID:PollID 매핑이 등록된 경우에만 조회됩니다.");
         }
 
         if (pollId != null && pollId <= 0) {
