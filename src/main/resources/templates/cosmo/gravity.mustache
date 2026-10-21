@@ -46,6 +46,9 @@
         {{#gravityListError}}
         <div class="rounded-xl border border-rose-400/25 bg-rose-400/5 px-4 py-3 text-sm text-rose-100">{{gravityListError}}</div>
         {{/gravityListError}}
+        {{#aggregationError}}
+        <div class="rounded-xl border border-rose-400/25 bg-rose-400/5 px-4 py-3 text-sm text-rose-100">{{aggregationError}}</div>
+        {{/aggregationError}}
 
         <!-- 공개 Apollo 집계 API: COSMO 개인 토큰 없이 Poll ID로 조회 -->
         <section id="apollo-live-panel" data-poll-id="{{selectedPollId}}" class="rounded-2xl border border-[#00f5d4]/25 bg-[#11151a] p-5 sm:p-6 space-y-5">
