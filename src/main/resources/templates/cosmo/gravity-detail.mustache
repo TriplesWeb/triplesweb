@@ -91,6 +91,22 @@
             </div>
         </section>
 
+        {{#gravity.hasWinner}}
+        <section class="rounded-2xl border border-[#00f5d4]/25 bg-gradient-to-r from-[#00f5d4]/10 to-purple-500/10 p-5 sm:p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                {{#gravity.winnerImageUrl}}
+                <img src="{{gravity.winnerImageUrl}}" alt="{{gravity.winnerTitle}}" loading="lazy"
+                     class="w-20 h-20 rounded-xl object-cover border border-white/10" />
+                {{/gravity.winnerImageUrl}}
+                <div class="min-w-0">
+                    <p class="text-xs font-bold tracking-widest text-[#00f5d4]">FINAL RESULT · COSMO</p>
+                    <h2 class="text-xl sm:text-2xl font-extrabold mt-1">최종 선정: {{gravity.winnerTitle}}</h2>
+                    <p class="text-sm text-gray-400 mt-1">COSMO API가 공개한 그래비티 결과 정보입니다.</p>
+                </div>
+            </div>
+        </section>
+        {{/gravity.hasWinner}}
+
         {{#isKnownGravity}}
         <section class="gravity-grid">
             <div class="rounded-2xl border border-white/10 bg-[#16181f] p-4 sm:p-5">
