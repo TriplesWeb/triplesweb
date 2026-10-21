@@ -112,9 +112,9 @@ public class GravityService {
             JsonNode root = response.path("data").isObject() ? response.path("data") : response;
             List<Map<String, Object>> pageGravities = new ArrayList<>();
 
-            appendGravityGroup(pageGravities, root.path("ongoing"), "진행 중", artistId, false);
-            appendGravityGroup(pageGravities, root.path("upcoming"), "예정", artistId, false);
-            appendGravityGroup(pageGravities, root.path("past"), "종료", artistId, true);
+            appendGravityGroup(pageGravities, root.path("ongoing"), "진행 중", artistId);
+            appendGravityGroup(pageGravities, root.path("upcoming"), "예정", artistId);
+            appendGravityGroup(pageGravities, root.path("past"), "종료", artistId);
 
             int pastCount = root.path("past").isArray() ? root.path("past").size() : 0;
             int newGravityCount = 0;
@@ -137,8 +137,7 @@ public class GravityService {
             List<Map<String, Object>> destination,
             JsonNode group,
             String statusLabel,
-            String artistId,
-            boolean past
+            String artistId
     ) {
         if (!group.isArray()) {
             return;
