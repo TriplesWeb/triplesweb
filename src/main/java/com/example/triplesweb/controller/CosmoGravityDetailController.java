@@ -2,10 +2,12 @@ package com.example.triplesweb.controller;
 
 import com.example.triplesweb.service.GravityService;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -24,20 +26,45 @@ public class CosmoGravityDetailController {
     private static final Map<String, Map<String, Object>> ARCHIVE = createArchive();
 
     private final GravityService gravityService;
+    private final String apolloPollMap;
 
-    public CosmoGravityDetailController(GravityService gravityService) {
+    public CosmoGravityDetailController(
+            GravityService gravityService,
+            @Value("${gravity.apollo-poll-map:233:274}") String apolloPollMap
+    ) {
         this.gravityService = gravityService;
+        this.apolloPollMap = apolloPollMap == null ? "" : apolloPollMap;
     }
 
     @GetMapping("/cosmo/gravity/{id}")
-    public String gravityDetail(@PathVariable String id, Model model) {
+    public String gravityDetail(
+            @PathVariable String id,
+            @RequestParam(required = false) Long pollId,
+            Model model
+    ) {
         String normalizedId = id == null ? "" : id.trim().toLowerCase(Locale.ROOT);
+        Long selectedPollId = pollId != null
+                ? (pollId > 0 ? pollId : null)
+                : resolveMappedPollId(normalizedId);
+        if (pollId != null && pollId <= 0) {
+            model.addAttribute("apolloPollError", "Poll ID는 1 이상의 숫자여야 합니다.");
+        }
+        model.addAttribute("apolloPollId", selectedPollId);
+        model.addAttribute("hasApolloPollId", selectedPollId != null);
 
         // Numeric IDs are looked up live first. Static archive records remain a fallback
         // when no COSMO token is configured or the upstream API is unavailable.
         if (normalizedId.matches("\\d+") && gravityService.hasCosmoToken()) {
             try {
                 JsonNode apiGravity = gravityService.fetchGravityDetail(Long.parseLong(normalizedId));
+                if (pollId == null) {
+                    Long livePollId = findFirstPollId(apiGravity);
+                    if (livePollId != null) {
+                        selectedPollId = livePollId;
+                        model.addAttribute("apolloPollId", selectedPollId);
+                        model.addAttribute("hasApolloPollId", true);
+                    }
+                }
                 Map<String, Object> liveDetail = gravityService.buildGravityDetailView(apiGravity);
                 model.addAttribute("gravity", liveDetail);
                 model.addAttribute("isKnownGravity", true);
@@ -72,6 +99,42 @@ public class CosmoGravityDetailController {
 
         model.addAttribute("gravity", detail);
         return "cosmo/gravity-detail";
+    }
+
+    /**
+     * Resolve a Poll ID without requiring a COSMO token. Configure multiple entries as
+     * comma-separated GravityID:PollID pairs, for example 233:274,234:275.
+     */
+    private Long resolveMappedPollId(String gravityId) {
+        if (apolloPollMap.isBlank() || gravityId == null || gravityId.isBlank()) return null;
+        for (String entry : apolloPollMap.split(",")) {
+            String[] pair = entry.trim().split(":", 2);
+            if (pair.length != 2 || !gravityId.equals(pair[0].trim())) continue;
+            try {
+                long candidate = Long.parseLong(pair[1].trim());
+                if (candidate > 0) return candidate;
+            } catch (NumberFormatException ignored) {
+                // Ignore malformed mapping entries; an explicit pollId can still be supplied.
+            }
+        }
+        return null;
+    }
+
+    private static Long findFirstPollId(JsonNode source) {
+        if (source == null || source.isNull() || source.isMissingNode()) return null;
+        JsonNode gravity = source;
+        if (source.path("gravity").isObject()) gravity = source.path("gravity");
+        else if (source.path("data").isObject()) {
+            JsonNode data = source.path("data");
+            gravity = data.path("gravity").isObject() ? data.path("gravity") : data;
+        }
+        JsonNode polls = gravity.path("polls");
+        if (!polls.isArray()) return null;
+        for (JsonNode poll : polls) {
+            long candidate = poll.path("id").asLong(0);
+            if (candidate > 0) return candidate;
+        }
+        return null;
     }
 
     private static Map<String, Map<String, Object>> createArchive() {
