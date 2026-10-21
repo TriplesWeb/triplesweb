@@ -252,7 +252,6 @@ public class GravityService {
 
             // No more historical entries, or the upstream ignored the offset.
             if (pastCount == 0 || newGravityCount == 0) break;
-            if (pastCount < pageSize) break;
             skip += pageSize;
         }
 
