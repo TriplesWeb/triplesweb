@@ -47,13 +47,16 @@ public class GravityAggregateApiController {
         }
 
         try {
-            if (!isVerifiedTripleSPoll(pollId, gravityId)) {
+            Long resolvedPollId = resolveVerifiedTripleSPollId(pollId, gravityId);
+            if (resolvedPollId == null) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
-                        "error", "이 페이지는 tripleS 그래비티 전용입니다. tripleS 소속이 확인된 Poll ID만 조회할 수 있습니다."
+                        "error", "이 페이지는 tripleS 그래비티 전용입니다. tripleS 소속이 확인된 Gravity ID 또는 Poll ID만 조회할 수 있습니다."
                 ));
             }
-            JsonNode data = gravityService.fetchAggregatedData(pollId);
-            return ResponseEntity.ok(data);
+            JsonNode data = gravityService.fetchAggregatedData(resolvedPollId);
+            return ResponseEntity.ok()
+                    .header("X-Apollo-Poll-Id", String.valueOf(resolvedPollId))
+                    .body(data);
         } catch (RestClientResponseException exception) {
             if (exception.getStatusCode().value() == 404) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
@@ -71,34 +74,77 @@ public class GravityAggregateApiController {
     }
 
     /**
-     * Only allow Poll IDs explicitly mapped to tripleS Gravity IDs, or Poll IDs
-     * found in COSMO's tripleS-only Gravity list when a COSMO token is configured.
+     * Accept a verified tripleS Gravity ID or Poll ID.
+     * Gravity IDs are translated to their Apollo aggregate Poll IDs when a mapping exists.
      */
-    private boolean isVerifiedTripleSPoll(long pollId, Long gravityId) {
-        if (isConfiguredTripleSPair(pollId, gravityId)) return true;
+    private Long resolveVerifiedTripleSPollId(long requestedId, Long gravityId) {
+        if (gravityId != null) {
+            return isConfiguredTripleSPair(requestedId, gravityId) ? requestedId : resolveFromTripleSList(requestedId, gravityId);
+        }
 
-        // The list page has no Gravity ID to pair with the Poll ID. Permit only the
-        // explicitly verified tripleS aggregate IDs in that case.
-        if (gravityId == null && isConfiguredTripleSPollId(pollId)) return true;
+        // If the input is a Gravity ID (e.g. 262), translate it to the associated
+        // Apollo aggregate ID (e.g. 267) instead of querying the wrong endpoint.
+        Long mappedPollId = configuredPollForGravityId(requestedId);
+        if (mappedPollId != null) return mappedPollId;
 
-        if (!gravityService.hasCosmoToken()) return false;
+        // Direct Poll ID entry is allowed only when explicitly verified for tripleS.
+        if (isConfiguredTripleSPollId(requestedId) || isConfiguredPollId(requestedId)) return requestedId;
+
+        return resolveFromTripleSList(requestedId, null);
+    }
+
+    private Long resolveFromTripleSList(long requestedId, Long gravityId) {
+        if (!gravityService.hasCosmoToken()) return null;
         try {
             List<Map<String, Object>> gravities = gravityService.fetchGravityList("tripleS");
             for (Map<String, Object> gravity : gravities) {
                 String id = String.valueOf(gravity.getOrDefault("id", ""));
                 if (gravityId != null && !gravityId.toString().equals(id)) continue;
+                boolean inputIsGravityId = gravityId == null && matchesPollId(id, requestedId);
                 Object pollsObject = gravity.get("polls");
                 if (!(pollsObject instanceof List<?> polls)) continue;
                 for (Object pollObject : polls) {
                     if (!(pollObject instanceof Map<?, ?> poll)) continue;
-                    if (matchesPollId(poll.get("id"), pollId)
-                            || matchesPollId(poll.get("cosmoId"), pollId)) {
-                        return true;
-                    }
+                    Object pollIdValue = poll.containsKey("id") ? poll.get("id") : poll.get("cosmoId");
+                    Long candidatePollId = parsePositiveLong(pollIdValue);
+                    if (inputIsGravityId && candidatePollId != null) return candidatePollId;
+                    if (candidatePollId != null && candidatePollId == requestedId) return candidatePollId;
+                    Long cosmoId = parsePositiveLong(poll.get("cosmoId"));
+                    if (cosmoId != null && cosmoId == requestedId) return cosmoId;
                 }
             }
         } catch (RuntimeException ignored) {
-            // Fail closed: a failed COSMO ownership check must not expose another artist's poll.
+            // Fail closed: do not expose an ID when ownership cannot be verified.
+        }
+        return null;
+    }
+
+    private Long configuredPollForGravityId(long gravityId) {
+        if (tripleSPollMap.isBlank()) return null;
+        for (String entry : tripleSPollMap.split(",")) {
+            String[] pair = entry.trim().split(":", 2);
+            if (pair.length != 2) continue;
+            try {
+                long configuredGravityId = Long.parseLong(pair[0].trim());
+                long configuredPollId = Long.parseLong(pair[1].trim());
+                if (configuredGravityId == gravityId) return configuredPollId;
+            } catch (NumberFormatException ignored) {
+                // Ignore malformed mapping entries.
+            }
+        }
+        return null;
+    }
+
+    private boolean isConfiguredPollId(long pollId) {
+        if (tripleSPollMap.isBlank()) return false;
+        for (String entry : tripleSPollMap.split(",")) {
+            String[] pair = entry.trim().split(":", 2);
+            if (pair.length != 2) continue;
+            try {
+                if (Long.parseLong(pair[1].trim()) == pollId) return true;
+            } catch (NumberFormatException ignored) {
+                // Ignore malformed mapping entries.
+            }
         }
         return false;
     }
@@ -129,6 +175,16 @@ public class GravityAggregateApiController {
             }
         }
         return false;
+    }
+
+    private static Long parsePositiveLong(Object value) {
+        if (value == null) return null;
+        try {
+            long parsed = Long.parseLong(String.valueOf(value));
+            return parsed > 0 ? parsed : null;
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
     private static boolean matchesPollId(Object value, long pollId) {
