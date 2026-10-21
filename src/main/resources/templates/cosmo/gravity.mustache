@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>트리플에스 커뮤니티 - 역대 그래비티</title>
+    <title>트리플에스 커뮤니티 - 코스모 업데이트 일지</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
@@ -15,11 +17,449 @@
     <link rel="stylesheet" href="/../static/css/style.css">
 </head>
 <body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screenbg-surface text-on-surface min-h-screen flex flex-col">
+
 {{>layout/header}}
-<main class="main-content max-w-7xl w-full mx-auto px-4 py-8">
-    <div class="card-box bg-[#16181f]/80 backdrop-blur-md border border-[#3a4a46]/30 rounded-2xl p-6 shadow-xl">
-        <h2 class="text-2xl font-bold text-[#e3e2e8] mb-6 flex items-center gap-2">역대 그래비티</h2>
+
+<main class="min-h-screen bg-[#0d0e12] text-white pt-6 pb-20 font-sans selection:bg-[#00f5d4] selection:text-black">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+
+        <!-- 1. 페이지 헤더 타이틀 및 서브 탭 -->
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-5">
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="px-2.5 py-0.5 rounded text-[10px] font-bold tracking-widest uppercase bg-[#00f5d4]/10 text-[#00f5d4] border border-[#00f5d4]/30">GRAND GRAVITY ARCHIVE</span>
+                    <span class="text-xs text-gray-500 font-mono">ON-CHAIN GOVERNANCE</span>
+                </div>
+                <h1 class="text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
+                    역대 그래비티
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4] animate-pulse"></span>
+                </h1>
+                <p class="text-xs sm:text-sm text-gray-400 mt-1">
+                    COSMO 분산형 거버넌스를 통해 팬덤 WAV가 직접 투표로 결정한 모든 디멘션과 타이틀곡의 공식 기록입니다.
+                </p>
+            </div>
+        </div>
+
+        <!-- 2. 상단 캐러셀 / 하이라이트 섹션 (참조 이미지 상단 카드 트랙) -->
+        <section class="space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-5 bg-[#00f5d4] rounded-full"></span>
+                    <h2 class="text-lg font-bold text-white">주요 역사적 그래비티 하이라이트</h2>
+                    <span class="text-xs text-gray-400 font-mono hidden sm:inline">Top Staked Events</span>
+                </div>
+
+                <!-- 좌우 넘기기 버튼 -->
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="scrollGravityTrack(-360)" class="p-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-gray-300 transition" aria-label="이전">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <button type="button" onclick="scrollGravityTrack(360)" class="p-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-gray-300 transition" aria-label="다음">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 가로 스크롤 카드 트랙 (이미지 없이 CSS 구조화된 포스터 카드) -->
+            <div id="gravityCarouselTrack" class="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth" style="scrollbar-width: none; -ms-overflow-style: none;">
+
+                <!-- Highlight Card 1: ASSEMBLE24 -->
+                <div class="min-w-[300px] sm:min-w-[340px] md:min-w-[380px] bg-gradient-to-b from-[#1a1b20] to-[#121317] border border-white/15 hover:border-[#00f5d4]/60 rounded-2xl p-6 shadow-2xl flex flex-col justify-between snap-start transition-all duration-300 group">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#00f5d4]/10 text-[#00f5d4] border border-[#00f5d4]/30">S1-S24 FULL UNIT</span>
+                            <span class="text-xs font-mono text-gray-400">Cream02</span>
+                        </div>
+
+                        <!-- 포스터 그래픽 배너 (순수 CSS 뱃지형 디자인) -->
+                        <div class="p-5 rounded-xl bg-black/40 border border-white/10 space-y-2 text-center relative overflow-hidden">
+                            <div class="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-[#00f5d4]/10 blur-xl"></div>
+                            <span class="text-[10px] text-gray-400 tracking-widest uppercase font-mono">GRAND GRAVITY #08</span>
+                            <h3 class="text-xl font-black text-white tracking-tight group-hover:text-[#00f5d4] transition">ASSEMBLE24</h3>
+                            <p class="text-xs text-gray-300">타이틀곡 'Girls Never Die' 선정</p>
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-bold mt-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> 최종 의결 완료
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 text-xs text-gray-300">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">총 스테이킹 Como:</span>
+                                <strong class="text-[#00f5d4] font-mono">1,842,590 COMO</strong>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">투표 진행 기간:</span>
+                                <span class="font-mono text-gray-300">2024.02.15 ~ 2024.02.20</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 pt-4 border-t border-white/10 flex items-center justify-between">
+                        <span class="text-[11px] text-gray-400">#ASSEMBLE24 #완전체</span>
+                        <a href="/cosmo/gravity/8" class="text-xs font-semibold text-[#00f5d4] hover:underline flex items-center gap-1">결과 상세 &rarr;</a>
+                    </div>
+                </div>
+
+                <!-- Highlight Card 2: LOVElution & EVOLution -->
+                <div class="min-w-[300px] sm:min-w-[340px] md:min-w-[380px] bg-gradient-to-b from-[#1a1b20] to-[#121317] border border-white/15 hover:border-purple-500/60 rounded-2xl p-6 shadow-2xl flex flex-col justify-between snap-start transition-all duration-300 group">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/10 text-purple-400 border border-purple-500/30">DIMENSION FORMATION</span>
+                            <span class="text-xs font-mono text-gray-400">Binary01</span>
+                        </div>
+
+                        <div class="p-5 rounded-xl bg-black/40 border border-white/10 space-y-2 text-center relative overflow-hidden">
+                            <div class="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-purple-500/10 blur-xl"></div>
+                            <span class="text-[10px] text-gray-400 tracking-widest uppercase font-mono">GRAND GRAVITY #04</span>
+                            <h3 class="text-xl font-black text-white tracking-tight group-hover:text-purple-400 transition">LOVElution & EVOLution</h3>
+                            <p class="text-xs text-gray-300">듀얼 디멘션 8:8 멤버 밸런스 조합</p>
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-bold mt-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> 의결 채택
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 text-xs text-gray-300">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">총 스테이킹 Como:</span>
+                                <strong class="text-purple-400 font-mono">986,210 COMO</strong>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">투표 진행 기간:</span>
+                                <span class="font-mono text-gray-300">2023.04.21 ~ 2023.04.28</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 pt-4 border-t border-white/10 flex items-center justify-between">
+                        <span class="text-[11px] text-gray-400">#LOVElution #EVOLution</span>
+                        <a href="/cosmo/gravity/4" class="text-xs font-semibold text-purple-400 hover:underline flex items-center gap-1">결과 상세 &rarr;</a>
+                    </div>
+                </div>
+
+                <!-- Highlight Card 3: AAA vs +(KR)ystal Eyes -->
+                <div class="min-w-[300px] sm:min-w-[340px] md:min-w-[380px] bg-gradient-to-b from-[#1a1b20] to-[#121317] border border-white/15 hover:border-pink-500/60 rounded-2xl p-6 shadow-2xl flex flex-col justify-between snap-start transition-all duration-300 group">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-pink-500/10 text-pink-400 border border-pink-500/30">1ST HISTORIC GRAVITY</span>
+                            <span class="text-xs font-mono text-gray-400">Atom01</span>
+                        </div>
+
+                        <div class="p-5 rounded-xl bg-black/40 border border-white/10 space-y-2 text-center relative overflow-hidden">
+                            <div class="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-pink-500/10 blur-xl"></div>
+                            <span class="text-[10px] text-gray-400 tracking-widest uppercase font-mono">GRAND GRAVITY #01</span>
+                            <h3 class="text-xl font-black text-white tracking-tight group-hover:text-pink-400 transition">AAA vs +(KR)ystal Eyes</h3>
+                            <p class="text-xs text-gray-300">tripleS 최초의 유닛 결성 그래비티</p>
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-bold mt-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> 의결 채택
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 text-xs text-gray-300">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">총 스테이킹 Como:</span>
+                                <strong class="text-pink-400 font-mono">481,200 COMO</strong>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">투표 진행 기간:</span>
+                                <span class="font-mono text-gray-300">2022.09.21 ~ 2022.09.25</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 pt-4 border-t border-white/10 flex items-center justify-between">
+                        <span class="text-[11px] text-gray-400">#AcidAngel #KrystalEyes</span>
+                        <a href="/cosmo/gravity/1" class="text-xs font-semibold text-pink-400 hover:underline flex items-center gap-1">결과 상세 &rarr;</a>
+                    </div>
+                </div>
+
+                <!-- Highlight Card 4: Official Fandom Name -->
+                <div class="min-w-[300px] sm:min-w-[340px] md:min-w-[380px] bg-gradient-to-b from-[#1a1b20] to-[#121317] border border-white/15 hover:border-amber-400/60 rounded-2xl p-6 shadow-2xl flex flex-col justify-between snap-start transition-all duration-300 group">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-400/10 text-amber-400 border border-amber-400/30">OFFICIAL FANDOM</span>
+                            <span class="text-xs font-mono text-gray-400">Special</span>
+                        </div>
+
+                        <div class="p-5 rounded-xl bg-black/40 border border-white/10 space-y-2 text-center relative overflow-hidden">
+                            <div class="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-amber-400/10 blur-xl"></div>
+                            <span class="text-[10px] text-gray-400 tracking-widest uppercase font-mono">EVENT GRAVITY</span>
+                            <h3 class="text-xl font-black text-white tracking-tight group-hover:text-amber-400 transition">WAV (웨이브) 확정</h3>
+                            <p class="text-xs text-gray-300">공식 팬덤명 대투표</p>
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-bold mt-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> 의결 채택
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 text-xs text-gray-300">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">총 스테이킹 Como:</span>
+                                <strong class="text-amber-400 font-mono">312,890 COMO</strong>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">투표 진행 기간:</span>
+                                <span class="font-mono text-gray-300">2022.12.01 ~ 2022.12.06</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 pt-4 border-t border-white/10 flex items-center justify-between">
+                        <span class="text-[11px] text-gray-400">#WAV #OfficialName</span>
+                        <a href="/cosmo/gravity/fandom" class="text-xs font-semibold text-amber-400 hover:underline flex items-center gap-1">결과 상세 &rarr;</a>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 3. 필터 & 검색 바 (참조 이미지 스크린샷 2026-10-21 110456.png 하단 필터바 1:1 구현) -->
+        <form action="/cosmo/gravity" method="get" class="bg-[#16181f]/90 border border-white/10 rounded-2xl p-4 sm:p-5 shadow-xl backdrop-blur-md">
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-center">
+
+                <!-- 아티스트 필터 -->
+                <div class="space-y-1">
+                    <label class="text-[11px] text-gray-400 font-medium">아티스트</label>
+                    <select name="artist" class="w-full bg-[#1a1b20] text-gray-200 font-medium text-xs rounded-xl px-3 py-2 border border-white/15 focus:outline-none focus:border-[#00f5d4]">
+                        <option value="all" selected>all</option>
+                        <option value="tripleS">tripleS (완전체)</option>
+                        <option value="AcidAngel">Acid Angel from Asia</option>
+                        <option value="KrystalEyes">+(KR)ystal Eyes</option>
+                        <option value="LOVElution">LOVElution</option>
+                        <option value="EVOLution">EVOLution</option>
+                        <option value="Aria">Aria</option>
+                        <option value="Glow">Glow</option>
+                        <option value="VisionaryVision">Visionary Vision</option>
+                    </select>
+                </div>
+
+                <!-- 시대 (Generation / Epoch) -->
+                <div class="space-y-1">
+                    <label class="text-[11px] text-gray-400 font-medium">시대</label>
+                    <select name="epoch" class="w-full bg-[#1a1b20] text-gray-200 font-medium text-xs rounded-xl px-3 py-2 border border-white/15 focus:outline-none focus:border-[#00f5d4]">
+                        <option value="all" selected>all</option>
+                        <option value="2022">2022 (Debut Epoch)</option>
+                        <option value="2023">2023 (Dimension Epoch)</option>
+                        <option value="2024">2024 (Assemble24 Epoch)</option>
+                        <option value="2025">2025 (Current)</option>
+                    </select>
+                </div>
+
+                <!-- 시즌 -->
+                <div class="space-y-1">
+                    <label class="text-[11px] text-gray-400 font-medium">시즌</label>
+                    <select name="season" class="w-full bg-[#1a1b20] text-gray-200 font-medium text-xs rounded-xl px-3 py-2 border border-white/15 focus:outline-none focus:border-[#00f5d4]">
+                        <option value="all" selected>all</option>
+                        <option value="Atom01">Atom01</option>
+                        <option value="Binary01">Binary01</option>
+                        <option value="Cream01">Cream01</option>
+                        <option value="Cream02">Cream02</option>
+                        <option value="Divine01">Divine01</option>
+                    </select>
+                </div>
+
+                <!-- 유형 -->
+                <div class="space-y-1">
+                    <label class="text-[11px] text-gray-400 font-medium">유형</label>
+                    <select name="type" class="w-full bg-[#1a1b20] text-gray-200 font-medium text-xs rounded-xl px-3 py-2 border border-white/15 focus:outline-none focus:border-[#00f5d4]">
+                        <option value="all" selected>all</option>
+                        <option value="title">타이틀곡 선정</option>
+                        <option value="unit">디멘션/유닛 결성</option>
+                        <option value="leader">리더/포지션 선출</option>
+                        <option value="fandom">팬덤/이벤트 거버넌스</option>
+                    </select>
+                </div>
+
+                <!-- 정렬 -->
+                <div class="space-y-1">
+                    <label class="text-[11px] text-gray-400 font-medium">정렬</label>
+                    <select name="sort" class="w-full bg-[#1a1b20] text-gray-200 font-medium text-xs rounded-xl px-3 py-2 border border-white/15 focus:outline-none focus:border-[#00f5d4]">
+                        <option value="latest" selected>최신순</option>
+                        <option value="oldest">과거순</option>
+                        <option value="como">Como 투표순</option>
+                        <option value="voters">참여 인원순</option>
+                    </select>
+                </div>
+
+                <!-- 검색창 및 전송 버튼 -->
+                <div class="space-y-1 col-span-2 sm:col-span-3 lg:col-span-1">
+                    <label class="text-[11px] text-gray-400 font-medium">검색</label>
+                    <div class="flex gap-2">
+                        <input type="text" name="keyword" placeholder="그래비티 명칭/곡명..."
+                               class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#00f5d4]">
+                        <button type="submit" class="px-3.5 py-2 rounded-xl bg-[#00f5d4] text-black font-bold text-xs hover:brightness-110 flex-shrink-0">
+                            검색
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="flex items-center justify-between text-xs text-gray-400 mt-4 pt-3 border-t border-white/5">
+                <div>
+                    총 <strong class="text-[#00f5d4] font-mono">18</strong>건의 그래비티 기록
+                </div>
+                <a href="/cosmo/gravity" class="text-xs text-gray-500 hover:text-white flex items-center gap-1 transition">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    필터 초기화
+                </a>
+            </div>
+        </form>
+
+        <!-- 4. 그래비티 아카이브 상세 리스트 (Mustache 반복문 템플릿) -->
+        <section class="space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <span class="w-1.5 h-4 bg-[#00f5d4] rounded-full"></span>
+                    그래비티 아카이브 리스트
+                </h3>
+                <span class="text-xs text-gray-400 font-mono">DECISION VERIFIED ON COSMO CHAIN</span>
+            </div>
+
+            <!-- 리스트 컨테이너 -->
+            <div class="space-y-3">
+
+                {{#gravityList}}
+                    <div class="bg-[#1a1b20]/90 border border-white/10 hover:border-[#00f5d4]/40 rounded-2xl p-5 shadow-lg backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
+                        <div class="flex items-start gap-4">
+                            <div class="px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-center font-mono shrink-0">
+                                <span class="text-[10px] text-gray-500 block">GRAV</span>
+                                <strong class="text-[#00f5d4] text-sm">{{number}}</strong>
+                            </div>
+                            <div class="space-y-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{{status}}</span>
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-white/5 text-gray-300 border border-white/10">{{season}}</span>
+                                    <h4 class="text-base font-bold text-white hover:text-[#00f5d4] transition">
+                                        <a href="/cosmo/gravity/{{id}}">{{title}}</a>
+                                    </h4>
+                                </div>
+                                <p class="text-xs text-gray-400 line-clamp-1">{{description}}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between md:justify-end gap-6 pt-3 md:pt-0 border-t md:border-t-0 border-white/5 shrink-0 text-xs">
+                            <div class="text-left md:text-right">
+                                <span class="text-gray-500 block text-[11px] font-mono">{{startDate}} ~ {{endDate}}</span>
+                                <span class="text-[#00f5d4] font-mono font-bold">{{comoCount}} COMO</span>
+                            </div>
+                            <a href="/cosmo/gravity/{{id}}" class="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-gray-200 hover:text-white font-semibold transition flex items-center gap-1">
+                                상세보기 &rarr;
+                            </a>
+                        </div>
+                    </div>
+                {{/gravityList}}
+
+                {{^gravityList}}
+                    <!-- 샘플 정적 목록 (Mustache 데이터 부재 시 fallback) -->
+                    <div class="bg-[#1a1b20]/90 border border-white/10 hover:border-[#00f5d4]/40 rounded-2xl p-5 shadow-lg backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
+                        <div class="flex items-start gap-4">
+                            <div class="px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-center font-mono shrink-0">
+                                <span class="text-[10px] text-gray-500 block">GRAV</span>
+                                <strong class="text-[#00f5d4] text-sm">#08</strong>
+                            </div>
+                            <div class="space-y-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">투표 완료</span>
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-white/5 text-gray-300 border border-white/10">Cream02</span>
+                                    <h4 class="text-base font-bold text-white hover:text-[#00f5d4] transition">
+                                        <a href="/cosmo/gravity/8">ASSEMBLE24 완전체 타이틀곡 투표 (Girls Never Die)</a>
+                                    </h4>
+                                </div>
+                                <p class="text-xs text-gray-400 line-clamp-1">24인 총출동 정규 앨범 타이틀곡 선정: A트랙 'Girls Never Die' vs B트랙 'Midnight Flower'</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between md:justify-end gap-6 pt-3 md:pt-0 border-t md:border-t-0 border-white/5 shrink-0 text-xs">
+                            <div class="text-left md:text-right">
+                                <span class="text-gray-500 block text-[11px] font-mono">2024.02.15 ~ 2024.02.20</span>
+                                <span class="text-[#00f5d4] font-mono font-bold">1,842,590 COMO</span>
+                            </div>
+                            <a href="/cosmo/gravity/8" class="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-gray-200 hover:text-white font-semibold transition flex items-center gap-1">
+                                상세보기 &rarr;
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#1a1b20]/90 border border-white/10 hover:border-[#00f5d4]/40 rounded-2xl p-5 shadow-lg backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
+                        <div class="flex items-start gap-4">
+                            <div class="px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-center font-mono shrink-0">
+                                <span class="text-[10px] text-gray-500 block">GRAV</span>
+                                <strong class="text-[#00f5d4] text-sm">#07</strong>
+                            </div>
+                            <div class="space-y-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">투표 완료</span>
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-white/5 text-gray-300 border border-white/10">Cream01</span>
+                                    <h4 class="text-base font-bold text-white hover:text-[#00f5d4] transition">
+                                        <a href="/cosmo/gravity/7">Visionary Vision (VV) 댄스 디멘션 리더 선출 Gravity</a>
+                                    </h4>
+                                </div>
+                                <p class="text-xs text-gray-400 line-clamp-1">퍼포먼스 유닛 Visionary Vision의 리더를 WAV 투표로 결정: S12 곽연지 vs S1 윤서연 후보 경합</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between md:justify-end gap-6 pt-3 md:pt-0 border-t md:border-t-0 border-white/5 shrink-0 text-xs">
+                            <div class="text-left md:text-right">
+                                <span class="text-gray-500 block text-[11px] font-mono">2023.11.02 ~ 2023.11.05</span>
+                                <span class="text-[#00f5d4] font-mono font-bold">714,120 COMO</span>
+                            </div>
+                            <a href="/cosmo/gravity/7" class="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-gray-200 hover:text-white font-semibold transition flex items-center gap-1">
+                                상세보기 &rarr;
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#1a1b20]/90 border border-white/10 hover:border-[#00f5d4]/40 rounded-2xl p-5 shadow-lg backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
+                        <div class="flex items-start gap-4">
+                            <div class="px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-center font-mono shrink-0">
+                                <span class="text-[10px] text-gray-500 block">GRAV</span>
+                                <strong class="text-[#00f5d4] text-sm">#06</strong>
+                            </div>
+                            <div class="space-y-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">투표 완료</span>
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-white/5 text-gray-300 border border-white/10">Binary01</span>
+                                    <h4 class="text-base font-bold text-white hover:text-[#00f5d4] transition">
+                                        <a href="/cosmo/gravity/6">Aria(아리아) 발라드 디멘션 5인 멤버 선정 Gravity</a>
+                                    </h4>
+                                </div>
+                                <p class="text-xs text-gray-400 line-clamp-1">겨울 시즌 발라드 유닛 결성을 위해 보컬 멤버 5인을 팬덤 거버넌스로 확정 (다현, 채연, 지우, 카에데, 니엔)</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between md:justify-end gap-6 pt-3 md:pt-0 border-t md:border-t-0 border-white/5 shrink-0 text-xs">
+                            <div class="text-left md:text-right">
+                                <span class="text-gray-500 block text-[11px] font-mono">2023.10.12 ~ 2023.10.16</span>
+                                <span class="text-[#00f5d4] font-mono font-bold">852,940 COMO</span>
+                            </div>
+                            <a href="/cosmo/gravity/6" class="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-gray-200 hover:text-white font-semibold transition flex items-center gap-1">
+                                상세보기 &rarr;
+                            </a>
+                        </div>
+                    </div>
+                {{/gravityList}}
+
+            </div>
+
+            <!-- 페이지네이션 -->
+            <div class="flex items-center justify-center gap-1.5 pt-6 font-mono text-xs">
+                <a href="#" class="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white">&lt;</a>
+                <a href="#" class="px-3 py-1.5 rounded-lg bg-[#00f5d4] text-black font-bold">1</a>
+                <a href="#" class="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10">2</a>
+                <a href="#" class="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10">3</a>
+                <a href="#" class="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white">&gt;</a>
+            </div>
+        </section>
+
     </div>
 </main>
 </body>
 </html>
+
+{{>layout/footer}}
+
+<script>
+    // 상단 캐러셀 좌우 스크롤 스크립트
+    function scrollGravityTrack(distance) {
+        const track = document.getElementById('gravityCarouselTrack');
+        if (track) {
+            track.scrollBy({ left: distance, behavior: 'smooth' });
+        }
+    }
+</script>
