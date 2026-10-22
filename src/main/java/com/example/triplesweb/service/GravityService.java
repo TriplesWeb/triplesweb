@@ -13,7 +13,6 @@ import org.springframework.web.util.UriUtils;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,10 +26,6 @@ public class GravityService {
     private final ObjectMapper objectMapper;
     private final String cosmoApiBaseUrl;
     private final CosmoTokenProvider tokens;
-
-    private static final long GRAVITY_LIST_CACHE_MILLIS = 10L * 60L * 1000L;
-    private volatile long tripleSGravityListCachedAt;
-    private volatile List<Map<String, Object>> tripleSGravityListCache = List.of();
 
     @org.springframework.beans.factory.annotation.Autowired
     public GravityService(
@@ -60,25 +55,7 @@ public class GravityService {
      */
     public List<Map<String, Object>> fetchGravityList(String artistId) {
         requireCosmoToken();
-
-        if ("tripleS".equalsIgnoreCase(artistId)) {
-            long now = System.currentTimeMillis();
-            if (tripleSGravityListCachedAt > 0
-                    && now - tripleSGravityListCachedAt < GRAVITY_LIST_CACHE_MILLIS) {
-                return copyMaps(tripleSGravityListCache);
-            }
-            synchronized (this) {
-                now = System.currentTimeMillis();
-                if (tripleSGravityListCachedAt > 0
-                        && now - tripleSGravityListCachedAt < GRAVITY_LIST_CACHE_MILLIS) {
-                    return copyMaps(tripleSGravityListCache);
-                }
-                List<Map<String, Object>> loaded = loadGravityList(artistId);
-                tripleSGravityListCache = copyMaps(loaded);
-                tripleSGravityListCachedAt = System.currentTimeMillis();
-                return copyMaps(loaded);
-            }
-        }
+        // Keep Gravity status and newly created entries fresh on each request.
         return loadGravityList(artistId);
     }
 
@@ -125,8 +102,10 @@ public class GravityService {
                     gravityNode.path("startDate").asText(""), "");
             String endDate = firstNonBlank(gravityNode.path("entireEndDate").asText(""),
                     gravityNode.path("endDate").asText(""), "");
-            long totalComo = gravityNode.path("result").path("totalComoUsed").asLong(
-                    gravityNode.path("totalComoUsed").asLong(0));
+            long totalComo = gravityNode.path("result").path("totalComoUsed").asLong(0);
+            if (totalComo <= 0) {
+                totalComo = gravityNode.path("totalComoUsed").asLong(0);
+            }
 
             gravity.put("id", gravityId);
             gravity.put("statusLabel", statusLabel);
@@ -222,16 +201,6 @@ public class GravityService {
 
     public static String safeImage(String url) {
         return url.startsWith("https://") ? url : "";
-    }
-
-    private static List<Map<String, Object>> copyMaps(List<Map<String, Object>> source) {
-        List<Map<String, Object>> copies = new ArrayList<>();
-        if (source != null) {
-            for (Map<String, Object> item : source) {
-                if (item != null) copies.add(new LinkedHashMap<>(item));
-            }
-        }
-        return copies;
     }
 
     private static String displayDate(String value) {
