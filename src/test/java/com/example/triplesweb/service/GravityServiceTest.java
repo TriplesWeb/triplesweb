@@ -42,7 +42,7 @@ class GravityServiceTest {
     }
 
     @Test
-    void gravityListDeduplicatesIdsAndCachesForTenMinutes() {
+    void gravityListDeduplicatesIdsAndReflectsFreshApiResponse() {
         var builder = RestClient.builder();
         var server = MockRestServiceServer.bindTo(builder).build();
         when(tokens.decodeResponse(anyString(), anyBoolean()))
@@ -60,8 +60,20 @@ class GravityServiceTest {
                   "past": [{"id": 22, "title": "Duplicate past", "polls": []}]
                 }
                 """;
+        String updatedResponse = """
+                {
+                  "ongoing": [{"id": 21, "title": "Live", "polls": []}],
+                  "upcoming": [
+                    {"id": 22, "title": "Future", "startDate": "2026-10-01T10:00:00Z", "polls": []},
+                    {"id": 23, "title": "New Gravity", "polls": []}
+                  ],
+                  "past": [{"id": 22, "title": "Duplicate past", "polls": []}]
+                }
+                """;
         server.expect(requestTo("https://cosmo.test/bff/v3/gravities?artistId=tripleS"))
                 .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
+        server.expect(requestTo("https://cosmo.test/bff/v3/gravities?artistId=tripleS"))
+                .andRespond(withSuccess(updatedResponse, MediaType.APPLICATION_JSON));
 
         GravityService service = service(builder.build());
         var first = service.fetchGravityList("tripleS");
@@ -71,7 +83,9 @@ class GravityServiceTest {
         assertThat(first.get(0)).containsEntry("title", "Live");
         assertThat(first.get(1)).containsEntry("title", "Future")
                 .containsEntry("entireStartDate", "2026.10.01");
-        assertThat(second).hasSize(2);
+        assertThat(second).hasSize(3);
+        assertThat(second).extracting(item -> item.get("title"))
+                .contains("New Gravity");
         server.verify();
     }
 
