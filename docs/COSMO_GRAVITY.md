@@ -18,7 +18,9 @@ Gravity ID, COSMO poll ID, 온체인 poll ID는 서로 다를 수 있다. Apollo
 
 이제 토큰을 다른 프로그램에서 복사할 필요 없이 `/cosmo/gravity/connect`에서 연결할 수 있다.
 
-1. 기존 사이트 관리자 비밀번호로 로그인한다 (`CHEMISTRY_ADMIN_PASSWORD`).
+1. 상단 `관리자` 버튼을 눌러 케미명 페이지와 같은 비밀번호 모달에서 로그인한다 (`CHEMISTRY_ADMIN_PASSWORD`).
+   케미명 페이지에서 이미 로그인했다면 세션·토큰을 공유하므로 재입력이 필요 없다.
+   관리자에게만 `COSMO 계정 연결` 버튼이 표시되고 로그아웃도 케미명과 함께 적용된다.
 2. 본인이 사용하는 COSMO 등록 이메일로 인증번호를 요청한다.
 3. 이메일로 받은 6자리 인증번호를 입력한다.
 4. 서버가 Privy 세션을 COSMO access/refresh token으로 교환하고 서버 전용 파일에 저장한다.
@@ -82,3 +84,30 @@ python3 scripts/setup-cosmo.py --from-file "$HOME/.config/cosmo-tui/auth.json"
 참조 프로젝트의 구현을 의존성으로 포함하지 않고 HTTP 규약에 맞춰 Java로 구현했다.
 공개 앱 식별자와 프로토콜 상수는 호환성을 위해 사용한다.
 실제 계정 인증 API 성공 검증은 운영자가 본인 이메일 인증을 완료한 뒤 수행해야 한다.
+
+## Gravity 화면 리소스
+
+Gravity 목록은 tripleS 전용이다. 외부 Tailwind 런타임 대신 미리 생성한
+`src/main/resources/static/css/gravity.css`와 자체 제공 아이콘 폰트를 사용한다.
+계정 연결 버튼은 목록 상단에 있다.
+
+헤더 또는 Gravity 화면의 클래스 수정 후 저장소 루트에서
+`node scripts/build-gravity-css.cjs`로 정적 CSS를 다시 생성한다.
+Tailwind 3.4.17을 고정해 사용하며, 생성된 CSS도 함께 커밋한다.
+공통 아이콘 부분집합 폰트의 라이선스는 `static/fonts/gravity-icons.LICENSE`에 보관한다.
+
+관리자 비밀번호 오류(HTTP 401)는 `비밀번호가 올바르지 않습니다.`로 표시한다.
+실제 네트워크 연결 실패는 별도 한국어 안내로 표시하며 브라우저 원문 오류를 노출하지 않는다.
+
+### 이메일 인증 접근 거부
+
+외부 인증 서버의 403은 로컬 관리자 로그인 실패와 다르다. 도메인 제한으로 단정하지 않는다. `cosmo-tui/internal/cosmo/login.go`와 동일한 Privy 앱 ID·클라이언트·Origin 및 `User-Agent: okhttp/4.9.2`를 사용한다. TUI는 기본 Go/urllib 클라이언트가 Cloudflare에 차단될 수 있다고 설명한다. Origin은 `https://auth.privy.io`이며 공식 Gravity 도메인으로 바꾸지 않는다.
+
+실패 응답은 JSON·HTML·기타로 구분한다. JSON 오류 코드는 사전에 정의한 코드만 화면과 로그에 남긴다. 로그는 고정 API 경로·상태·응답 유형·허용된 코드만 포함하고 이메일, 인증번호, 토큰, 원문 응답은 포함하지 않는다. HTML 403은 HTML 차단 응답으로 안내하되 Cloudflare라고 단정하지 않는다. 클라이언트 설정 변경만으로 실제 인증 성공을 보장하지 않으며 이메일 수신과 토큰 교환은 본인 계정으로 검증해야 한다.
+
+참고: https://codeberg.org/djvu/cosmo-tui/src/branch/master/internal/cosmo/login.go
+COSMO Web의 QR 인증은 별도 `user-session` 쿠키를 발급하는 경로이므로 이메일 인증 토큰 발급과 구분한다: https://github.com/teamreflex/cosmo-web/blob/main/packages/cosmo/src/server/qr-auth.ts
+
+발송 실패는 인증 challenge와 60초 재전송 대기를 생성하지 않는다. 발송 성공 뒤에만 대기를 적용하고 화면에서 남은 시간을 표시한다. 로컬 재전송 제한은 429와 Retry-After 및 retryAfterSeconds로 반환한다. 실제 이메일 수신 및 토큰 교환은 본인 계정으로 별도 확인해야 한다.
+
+이메일 인증 전송은 `JdkClientHttpRequestFactory`를 사용한다. 기존 `SimpleClientHttpRequestFactory`의 HttpURLConnection은 Origin을 제한 헤더로 처리해 전송에서 누락한다. MockRestServiceServer의 헤더 검사만으로는 발견할 수 없으므로 로컬 HTTP 수신 서버로 실제 Origin·User-Agent·Privy 헤더 전송을 검증한다. 전역 제한 헤더 해제 옵션은 사용하지 않는다.

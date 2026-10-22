@@ -31,6 +31,19 @@ class GravityControllerTest {
         }
     }
 
+    @Test void listUsesTripleSAndLoadsHeaderIconFont() throws Exception {
+        when(service.hasCosmoToken()).thenReturn(true);
+        when(service.fetchGravityList("tripleS")).thenReturn(java.util.List.of());
+        mvc.perform(get("/cosmo/gravity?artistId=artms")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("/fonts/gravity-icons.ttf")))
+                .andExpect(content().string(not(containsString("cdn.tailwindcss.com"))))
+                .andExpect(content().string(containsString("gravityAdminLoginForm")))
+                .andExpect(content().string(not(containsString("href=\"?artistId=artms\""))))
+                .andExpect(content().string(not(containsString("href=\"?artistId=idntt\""))));
+        verify(service).fetchGravityList("tripleS");
+        verify(service, never()).fetchGravityList("artms");
+    }
+
     @Test void detailRendersOfficialResultsWhenApolloIsUnavailable() throws Exception {
         var mapper = new ObjectMapper();
         when(service.fetchGravityDetails(21)).thenReturn(mapper.readTree("""

@@ -225,6 +225,7 @@
   }
 
   async function readChemError(res, fallback) {
+    if (res.status === 401) return "비밀번호가 올바르지 않습니다.";
     try {
       const text = await res.text();
       if (!text) return fallback;

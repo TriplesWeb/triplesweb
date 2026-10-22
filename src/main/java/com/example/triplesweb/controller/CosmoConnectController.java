@@ -49,6 +49,16 @@ public class CosmoConnectController {
         return admin.login(body, session);
     }
 
+    @PostMapping("/api/gravity/connect/admin-logout")
+    @ResponseBody
+    public Map<String, Object> adminLogout(
+            @RequestHeader(name = "X-Gravity-Connect", defaultValue = "") String sameOrigin,
+            HttpServletRequest request, HttpSession session) {
+        requireSameOriginHeader(sameOrigin);
+        session.removeAttribute(CHALLENGE);
+        return admin.logout(request, session);
+    }
+
     @PostMapping("/api/gravity/connect/email")
     @ResponseBody
     public Map<String, Object> email(@RequestBody Map<String, String> body,
@@ -63,11 +73,13 @@ public class CosmoConnectController {
         synchronized (session) {
             Challenge previous = (Challenge) session.getAttribute(CHALLENGE);
             if (previous != null && previous.sentAt().plusSeconds(60).isAfter(Instant.now())) {
-                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "인증번호는 60초 후 다시 요청할 수 있습니다.");
+                long seconds = Math.max(1, (java.time.Duration.between(Instant.now(), previous.sentAt().plusSeconds(60)).toMillis() + 999) / 1000);
+                throw new EmailCooldownException(seconds);
             }
             Challenge challenge = new Challenge(email, UUID.randomUUID().toString(), Instant.now(), 0);
-            session.setAttribute(CHALLENGE, challenge);
             login.sendCode(email, challenge.clientId());
+            // A failed delivery must not create a usable challenge or a resend cooldown.
+            session.setAttribute(CHALLENGE, new Challenge(email, challenge.clientId(), Instant.now(), 0));
         }
         return Map.of("sent", true, "expiresIn", 600);
     }
@@ -104,6 +116,28 @@ public class CosmoConnectController {
     @ResponseBody
     public ResponseEntity<Map<String, String>> error(IllegalStateException error) {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of("message", error.getMessage()));
+    }
+
+    @ExceptionHandler(EmailCooldownException.class)
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> cooldown(EmailCooldownException error) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", Long.toString(error.seconds))
+                .body(Map.of("message", "인증번호는 " + error.seconds + "초 후 다시 요청할 수 있습니다.",
+                        "retryAfterSeconds", error.seconds));
+    }
+
+    private static class EmailCooldownException extends RuntimeException {
+        private final long seconds;
+        EmailCooldownException(long seconds) { this.seconds = seconds; }
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    @ResponseBody
+    public ResponseEntity<Map<String, String>> requestError(ResponseStatusException error) {
+        String message = error.getReason();
+        if (message == null) message = "요청을 처리할 수 없습니다.";
+        return ResponseEntity.status(error.getStatusCode()).body(Map.of("message", message));
     }
 
     private record Challenge(String email, String clientId, Instant sentAt, int attempts) { }

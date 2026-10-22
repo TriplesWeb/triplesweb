@@ -1,0 +1,11 @@
+/* Match the shared Chemistry/About administrator controls. */
+[hidden] { display: none !important; }
+.gravity-admin-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.gravity-admin-btn { border-radius: 9999px; padding: .4rem .9rem; background: rgba(13,14,18,.85); }
+.gravity-login-panel { width: min(92vw, 640px); }
+.gravity-login-help { margin: 0 0 1rem; font-size: .85rem; color: #b9cac4; line-height: 1.7; }
+.gravity-password-field { position: relative; }
+.gravity-password-field input { width: 100%; padding: .65rem 4rem .65rem .75rem; border: 1px solid #3a4a468c; border-radius: .55rem; background: #0d0e12; color: #e3e2e8; }
+.gravity-password-field button { position: absolute; top: 50%; right: .75rem; transform: translateY(-50%); font-size: .8rem; color: #b9cac4; }
+.gravity-password-field button:hover { color: #00f5d4; }
+.gravity-connect-help { color: #b9cac4; font-size: .9rem; line-height: 1.8; }

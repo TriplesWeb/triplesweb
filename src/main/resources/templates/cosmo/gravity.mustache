@@ -2,19 +2,20 @@
 <html lang="ko">
 <head>
 {{>layout/favicon}}
+{{>layout/gravity-fonts}}
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>그래비티 - 트리플에스 커뮤니티</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-<script src="/js/tailwind.config.js"></script>
-<link rel="stylesheet" href="/css/style.css">
 <style>body{background:#0d0e12;color:#e3e2e8} .gravity-card{background:#16181f;border:1px solid #ffffff18;border-radius:16px;padding:24px} .gravity-card a{color:#00f5d4} .gravity-notice{border:1px solid #fbbf2440;background:#fbbf2408;padding:16px;border-radius:12px}</style>
 </head><body class="min-h-screen flex flex-col">
 {{>layout/header}}
 <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-8 space-y-6">
 
-<div><p class="text-xs tracking-widest text-[#00f5d4]">COSMO GRAVITY</p><h1 class="text-3xl font-bold mt-2">그래비티</h1><p class="text-gray-400 mt-3">진행 중인 투표와 역대 그래비티의 공식 결과를 확인하세요.</p></div>
-<nav class="flex gap-4"><a href="?artistId=tripleS">tripleS</a><a href="?artistId=artms">ARTMS</a><a href="?artistId=idntt">idntt</a></nav>
-<p class="text-sm text-gray-400">선택한 아티스트: {{artistId}}</p>
+<div class="flex flex-wrap items-start justify-between gap-4">
+    <div><p class="text-xs tracking-widest text-[#00f5d4]">COSMO GRAVITY</p><h1 class="text-3xl font-bold mt-2">그래비티</h1><p class="text-gray-400 mt-3">tripleS의 투표와 역대 그래비티 공식 결과를 확인하세요.</p></div>
+    {{>cosmo/partials/gravity-admin-controls}}
+</div>
+<p id="gravityAdminHint" class="about-admin-hint" hidden>관리자 모드: COSMO 계정 연결을 관리할 수 있습니다.</p>
+<p id="gravityAdminMessage" role="status" class="text-sm text-gray-400" hidden></p>
 {{#gravityListError}}<p role="status" class="gravity-notice">{{gravityListError}}</p>{{/gravityListError}}
 {{#emptyList}}<p class="gravity-card">등록된 그래비티가 없습니다.</p>{{/emptyList}}
 <div class="grid gap-5 md:grid-cols-2">
@@ -30,10 +31,14 @@
 </article>
 {{/gravityList}}
 </div>
-<p class="text-sm text-gray-400"><a href="/cosmo/gravity/connect">관리자 · COSMO 계정 연결</a></p>
 <details class="gravity-card"><summary class="cursor-pointer">투표 ID로 집계 조회</summary>
-<form action="/cosmo/gravity" method="get" class="flex gap-3 mt-4"><input type="hidden" name="artistId" value="{{artistId}}"><label>투표 ID <input type="number" name="pollId" min="1" required class="bg-black rounded text-white" {{#selectedPollId}}value="{{selectedPollId}}"{{/selectedPollId}}></label><button type="submit" class="text-[#00f5d4]">조회</button></form>
+<form action="/cosmo/gravity" method="get" class="flex gap-3 mt-4"><label>투표 ID <input type="number" name="pollId" min="1" required class="bg-black rounded text-white" {{#selectedPollId}}value="{{selectedPollId}}"{{/selectedPollId}}></label><button type="submit" class="text-[#00f5d4]">조회</button></form>
 {{#aggregationError}}<p class="gravity-notice mt-4">{{aggregationError}}</p>{{/aggregationError}}
 {{#aggregation}}<p class="mt-4">투표 수: {{totalVoteCount}} · 사용 COMO: {{totalComoCount}} · 공개된 투표 수: {{revealedVoteCount}}</p>{{/aggregation}}
 </details>
-</main>{{>layout/footer}}</body></html>
+</main>
+{{>cosmo/partials/gravity-admin-login}}
+{{>layout/footer}}
+<script src="/js/about-admin-auth.js?v=1"></script>
+<script src="/js/gravity-connect.js?v=4"></script>
+</body></html>

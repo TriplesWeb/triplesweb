@@ -1,7 +1,6 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.service.GravityService;
-import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,14 +12,10 @@ public class GravityController {
     public GravityController(GravityService service) { this.service = service; }
 
     @GetMapping({"/gravity", "/cosmo/gravity"})
-    public String gravity(@RequestParam(name = "artistId", defaultValue = "tripleS") String artist,
-            @RequestParam(name = "pollId", required = false) Long pollId, Model model) {
-        String selected = "artms".equalsIgnoreCase(artist) ? "artms"
-                : "idntt".equalsIgnoreCase(artist) ? "idntt" : "tripleS";
-        model.addAttribute("artistId", selected);
+    public String gravity(@RequestParam(name = "pollId", required = false) Long pollId, Model model) {
         try {
             if (service.hasCosmoToken()) {
-                var list = service.fetchGravityList(selected);
+                var list = service.fetchGravityList("tripleS");
                 model.addAttribute("gravityList", list);
                 model.addAttribute("emptyList", list.isEmpty());
             } else {

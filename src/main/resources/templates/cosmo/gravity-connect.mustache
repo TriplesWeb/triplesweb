@@ -2,36 +2,34 @@
 <html lang="ko">
 <head>
 {{>layout/favicon}}
+{{>layout/gravity-fonts}}
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>그래비티 - 트리플에스 커뮤니티</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-<script src="/js/tailwind.config.js"></script>
-<link rel="stylesheet" href="/css/style.css">
 <style>body{background:#0d0e12;color:#e3e2e8} .gravity-card{background:#16181f;border:1px solid #ffffff18;border-radius:16px;padding:24px} .gravity-card a{color:#00f5d4} .gravity-notice{border:1px solid #fbbf2440;background:#fbbf2408;padding:16px;border-radius:12px}</style>
 </head><body class="min-h-screen flex flex-col">
 {{>layout/header}}
 <main class="flex-1 max-w-xl w-full mx-auto px-4 py-8 space-y-6">
 <a href="/cosmo/gravity" class="text-[#00f5d4]">← 그래비티 목록</a>
-<h1 class="text-2xl font-bold">COSMO 계정 연결</h1>
+<div class="flex flex-wrap items-center justify-between gap-4"><h1 class="text-2xl font-bold">COSMO 계정 연결</h1>{{>cosmo/partials/gravity-admin-controls}}</div>
 <p class="text-sm text-gray-400">사이트 관리자가 본인 COSMO 계정으로 연결하면 그래비티 정보를 조회할 수 있습니다. 최초 이메일 인증 후 연결은 자동으로 갱신됩니다.</p>
 <p id="connectStatus" role="status" class="gravity-notice">연결 상태 확인 중…</p>
-<form id="adminLogin" class="gravity-card space-y-4" hidden>
-<h2 class="font-bold">사이트 관리자 로그인</h2>
-<label class="block">관리자 비밀번호<input id="adminPassword" type="password" autocomplete="current-password" required class="block w-full mt-2 bg-black rounded text-white"></label>
-<button type="submit" class="text-[#00f5d4]">로그인</button></form>
+<section id="gravityLoginRequired" class="gravity-card" hidden>
+<p class="gravity-connect-help">케미명 페이지와 같은 관리자 로그인을 사용합니다. 이미 로그인했다면 별도 비밀번호 입력 없이 연결을 관리할 수 있습니다.</p>
+<button type="button" id="gravityLoginOpen" class="about-mode-btn is-active mt-4">관리자 로그인</button>
+</section>
 <section id="cosmoLogin" class="gravity-card space-y-5" hidden>
-<form id="emailForm" class="space-y-4">
+<form method="post" id="emailForm" class="about-edit-form">
 <h2 class="font-bold">COSMO 이메일 인증</h2>
 <p class="text-sm text-gray-400">COSMO에 등록된 본인 이메일을 입력하세요. 계정 연결은 사이트의 Gravity 조회에 사용됩니다.</p>
-<label class="block">이메일<input id="cosmoEmail" type="email" autocomplete="email" required maxlength="254" class="block w-full mt-2 bg-black rounded text-white"></label>
-<button type="submit" class="text-[#00f5d4]">인증번호 받기</button>
+<label class="about-edit-label">이메일<input id="cosmoEmail" type="email" autocomplete="email" required maxlength="254" class="block w-full mt-2 bg-black rounded text-white"></label>
+<button id="sendEmailButton" type="submit" class="about-mode-btn is-active">인증번호 받기</button>
 </form>
-<form id="codeForm" class="space-y-4" hidden>
-<label class="block">이메일 인증번호<input id="cosmoCode" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required class="block w-full mt-2 bg-black rounded text-white"></label>
-<button type="submit" class="text-[#00f5d4]">계정 연결</button>
+<form method="post" id="codeForm" class="space-y-4" hidden>
+<label class="about-edit-label">이메일 인증번호<input id="cosmoCode" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required class="block w-full mt-2 bg-black rounded text-white"></label>
+<button type="submit" class="about-mode-btn is-active">계정 연결</button>
 </form>
 </section>
-</main>{{>layout/footer}}
+</main>{{>cosmo/partials/gravity-admin-login}}{{>layout/footer}}
 <script src="/js/about-admin-auth.js"></script>
-<script src="/js/gravity-connect.js"></script>
+<script src="/js/gravity-connect.js?v=4"></script>
 </body></html>

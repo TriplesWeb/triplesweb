@@ -1,0 +1,16 @@
+<div id="gravityLoginModal" class="about-modal" role="dialog" aria-modal="true" aria-labelledby="gravityLoginTitle" hidden>
+    <div class="about-modal-panel gravity-login-panel">
+        <button type="button" class="about-close" data-gravity-login-close aria-label="닫기"><span class="material-symbols-outlined" aria-hidden="true">close</span></button>
+        <h2 id="gravityLoginTitle" class="about-modal-title">관리자 로그인</h2>
+        <p class="gravity-login-help">케미명 페이지와 같은 관리자 비밀번호를 사용합니다. 로그인 상태는 함께 유지됩니다.</p>
+        <form id="gravityAdminLoginForm" method="post" class="about-edit-form">
+            <label class="about-edit-label" for="gravityAdminPassword">비밀번호</label>
+            <div class="gravity-password-field">
+                <input type="password" id="gravityAdminPassword" name="password" required autocomplete="current-password">
+                <button type="button" id="gravityPasswordToggle" aria-label="비밀번호 보기" aria-pressed="false">보기</button>
+            </div>
+            <p id="gravityLoginError" class="about-edit-error" role="alert" hidden></p>
+            <div class="about-edit-actions"><button type="submit" class="about-mode-btn is-active">로그인</button></div>
+        </form>
+    </div>
+</div>
