@@ -6,6 +6,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>그래비티 - 트리플에스 커뮤니티</title>
 <style>body{background:#0d0e12;color:#e3e2e8} .gravity-card{background:#16181f;border:1px solid #ffffff18;border-radius:16px;padding:24px} .gravity-card a{color:#00f5d4} .gravity-notice{border:1px solid #fbbf2440;background:#fbbf2408;padding:16px;border-radius:12px}</style>
+<link rel="stylesheet" href="/css/gravity-charts.css?v=1">
 </head><body class="min-h-screen flex flex-col">
 {{>layout/header}}
 <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-8 space-y-6">
@@ -25,13 +26,15 @@
 {{#polls}}<a href="?pollId={{id}}" class="gravity-card text-sm" {{#selected}}aria-current="page"{{/selected}}>{{title}}</a>{{/polls}}
 </nav>
 {{#selectedPoll}}<h2 class="text-xl font-bold">{{title}}</h2><p class="text-sm text-gray-400">{{startDate}} ~ {{endDate}} · 결과 공개 {{revealDate}}</p>{{/selectedPoll}}
+{{#selectedPoll}}<section class="gravity-card"><p class="gravity-eyebrow">COMO TIMELINE</p><h2 class="text-lg font-bold">시간대별 소비량</h2><p class="gravity-chart-status">시간별 집계 데이터가 아직 없습니다. 공개된 공식 결과는 아래에서 확인할 수 있습니다.</p></section>{{/selectedPoll}}
 {{#hasOfficialResults}}
-<section class="gravity-card space-y-4"><h2 class="text-lg font-bold">COSMO 공식 결과</h2>
+<section class="gravity-card space-y-4"><p class="gravity-eyebrow">OFFICIAL RESULTS</p><h2 class="text-lg font-bold">COSMO 공식 결과</h2><p class="gravity-chart-help">막대 길이는 같은 투표의 최다 COMO 대비 소비량입니다.</p>
 {{#officialResults}}<p>총 사용 COMO: {{totalComoUsed}}</p>
-{{#voteResults}}<div class="border-t border-white/10 pt-3"><p class="text-[#00f5d4]">{{rank}}위</p>
-{{#votedChoice}}<p>{{choiceName}} · {{comoUsed}} COMO</p>{{/votedChoice}}
-{{#votedSlots}}<p>{{slotName}}: {{slotChoiceName}} · {{comoUsed}} COMO</p>{{/votedSlots}}
+{{#voteResults}}<div class="gravity-official-result border-t border-white/10 pt-3"><p class="text-[#00f5d4]">{{rank}}위</p>
+{{#votedChoice}}<div class="gravity-rank-row" data-como="{{comoUsed}}"><p><span>{{choiceName}}</span><strong>{{comoUsed}} COMO</strong></p><div class="gravity-rank-track"><div class="gravity-rank-fill"></div></div></div>{{/votedChoice}}
+{{#votedSlots}}<div class="gravity-rank-row" data-como="{{comoUsed}}"><p><span>{{slotName}}: {{slotChoiceName}}</span><strong>{{comoUsed}} COMO</strong></p><div class="gravity-rank-track"><div class="gravity-rank-fill"></div></div></div>{{/votedSlots}}
 </div>{{/voteResults}}{{/officialResults}}
 </section>{{/hasOfficialResults}}
 {{^hasOfficialResults}}{{#selectedPoll}}<p class="gravity-notice">공식 결과가 아직 공개되지 않았습니다.</p>{{/selectedPoll}}{{/hasOfficialResults}}
-</main>{{>layout/footer}}</body></html>
+
+</main>{{>layout/footer}}<script src="/js/gravity-detail.js?v=2" defer></script></body></html>

@@ -61,6 +61,8 @@ class GravityControllerTest {
         mvc.perform(get("/cosmo/gravity/21")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("Actual Gravity")))
                 .andExpect(content().string(containsString("Winner")))
+                .andExpect(content().string(containsString("data-como=\"120\"")))
+                .andExpect(content().string(containsString("gravity-rank-track")))
                 .andExpect(content().string(not(containsString("apollo.cafe"))))
                 .andExpect(content().string(containsString("120")));
         verify(service, never()).fetchPollDetails(anyLong());
