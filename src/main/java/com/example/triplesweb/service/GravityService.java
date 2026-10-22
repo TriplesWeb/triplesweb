@@ -13,7 +13,6 @@ import org.springframework.web.util.UriUtils;
 import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -97,9 +96,8 @@ public class GravityService {
         // Read every page instead of showing only the first 12 historical Gravities.
         // COSMO returns ongoing/upcoming/past arrays in each grouped response, so
         // deduplicate by Gravity ID while paging through the historical records.
-        for (int page = 0; page < 100; page++) {
-            JsonNode response = cosmoGet("/v4/gravities?category=all&artistId=" + encodedArtist
-                    + "&skip=" + skip + "&take=" + pageSize + "&sortBy=endDate&sort=desc");
+        {
+            JsonNode response = cosmoGet("/bff/v3/gravities?artistId=" + encodedArtist);
             JsonNode root = response.path("data").isObject() ? response.path("data") : response;
             List<Map<String, Object>> pageGravities = new ArrayList<>();
 
@@ -116,9 +114,8 @@ public class GravityService {
                 newGravityCount++;
             }
 
-            // Stop when there are no more historical records or the API ignored skip.
-            if (pastCount == 0 || newGravityCount == 0) break;
-            skip += pageSize;
+            // The BFF response groups ongoing/upcoming/past arrays; it is not a skip/take envelope.
+            break;
         }
 
         return result;
@@ -224,9 +221,8 @@ public class GravityService {
 
         // COSMO returns ongoing/upcoming/past groups. Page through the past group
         // instead of stopping at the 12 recent entries used by the compact page.
-        for (int page = 0; page < 100; page++) {
-            JsonNode response = cosmoGet("/v4/gravities?category=all&artistId=" + encodedArtist
-                    + "&skip=" + skip + "&take=" + pageSize + "&sortBy=endDate&sort=desc");
+        {
+            JsonNode response = cosmoGet("/bff/v3/gravities?artistId=" + encodedArtist);
             JsonNode root = response.path("data").isObject() ? response.path("data") : response;
             int pastCount = root.path("past").isArray() ? root.path("past").size() : 0;
             int newGravityCount = 0;
@@ -272,16 +268,15 @@ public class GravityService {
                                 pollNode.path("endDate").asText(""),
                                 gravityNode.path("entireEndDate").asText(""),
                                 "")));
-                        mapping.put("apolloUrl", apolloBaseUrl + "/gravity/triples/" + gravityId
+                        mapping.put("apolloUrl", apolloBaseUrl + "/gravity/tripleS/" + gravityId
                                 + "?poll=" + pollId);
                         pollsById.put(pollId, mapping);
                     }
                 }
             }
 
-            // No more historical entries, or the upstream ignored the offset.
-            if (pastCount == 0 || newGravityCount == 0) break;
-            skip += pageSize;
+            // The BFF response groups ongoing/upcoming/past arrays; it is not a skip/take envelope.
+            break;
         }
 
         List<Map<String, Object>> result = new ArrayList<>(pollsById.values());
@@ -323,7 +318,7 @@ public class GravityService {
             throw new IllegalArgumentException("gravityId must be positive");
         }
 
-        JsonNode response = cosmoGet("/v3/gravities/" + gravityId);
+        JsonNode response = cosmoGet("/bff/v3/gravities/" + gravityId);
         if (response == null || response.isNull()) {
             throw new IllegalStateException("COSMO returned an empty Gravity response");
         }
@@ -369,7 +364,7 @@ public class GravityService {
             throw new IllegalArgumentException("pollId must be positive");
         }
 
-        JsonNode response = cosmoGet("/v3/polls/" + pollId);
+        JsonNode response = cosmoGet("/bff/v3/polls/" + pollId);
         JsonNode details = response.path("pollDetail");
         if (details.isObject()) return details;
 
@@ -546,6 +541,37 @@ public class GravityService {
         view.put("hasLeaderboard", !leaderboard.isEmpty());
         view.put("bannerImageUrl", firstText(gravity, "bannerImageUrl", "bannerImageURL"));
         return view;
+    }
+
+    /**
+     * Convert Apollo aggregate rows for display. Per-candidate amounts are shown only
+     * once Apollo supplies its finalized payload.
+     */
+    public List<Map<String, String>> buildApolloCandidateResults(long pollId, JsonNode aggregate) {
+        List<Map<String, String>> rows = new ArrayList<>();
+        if (aggregate == null || aggregate.isNull()) return rows;
+        JsonNode finalized = aggregate.path("finalized");
+        if (finalized.isMissingNode() || finalized.isNull()) return rows;
+
+        JsonNode pollDetails = fetchPollDetails(pollId);
+        JsonNode choices = pollDetails == null ? objectMapper.createArrayNode() : pollDetails.path("choices");
+        JsonNode amounts = finalized.path("comoPerCandidate");
+        if (!choices.isArray() || !amounts.isArray()) return rows;
+        int count = Math.min(choices.size(), amounts.size());
+        for (int i = 0; i < count; i++) {
+            JsonNode choice = choices.get(i);
+            Map<String, String> item = new LinkedHashMap<>();
+            item.put("number", String.format("%02d", i + 1));
+            item.put("name", firstNonBlank(choice.path("title").asText(""),
+                    choice.path("name").asText(""), "후보 " + (i + 1)));
+            item.put("type", "최종 결과");
+            item.put("amount", NumberFormat.getNumberInstance(Locale.US)
+                    .format(amounts.path(i).asLong(0)) + " COMO");
+            item.put("imageUrl", firstNonBlank(choice.path("txImageUrl").asText(""),
+                    choice.path("imageUrl").asText(""), ""));
+            rows.add(item);
+        }
+        return rows;
     }
 
     public List<Map<String, Object>> buildCandidateResults(JsonNode pollDetails, JsonNode aggregate) {

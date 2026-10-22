@@ -2,7 +2,6 @@ package com.example.triplesweb.controller;
 
 import com.example.triplesweb.service.GravityService;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,17 +22,9 @@ import java.util.List;
 public class GravityAggregateApiController {
 
     private final GravityService gravityService;
-    private final String tripleSPollMap;
-    private final String tripleSPollIds;
 
-    public GravityAggregateApiController(
-            GravityService gravityService,
-            @Value("${gravity.apollo-triples-poll-map:}") String tripleSPollMap,
-            @Value("${gravity.apollo-triples-poll-ids:}") String tripleSPollIds
-    ) {
+    public GravityAggregateApiController(GravityService gravityService) {
         this.gravityService = gravityService;
-        this.tripleSPollMap = tripleSPollMap == null ? "" : tripleSPollMap;
-        this.tripleSPollIds = tripleSPollIds == null ? "" : tripleSPollIds;
     }
 
     @GetMapping("/aggregate")
@@ -74,107 +65,19 @@ public class GravityAggregateApiController {
     }
 
     /**
-     * Accept a verified tripleS Gravity ID or Poll ID.
-     * Gravity IDs are translated to their Apollo aggregate Poll IDs when a mapping exists.
+     * Apollo aggregation uses a Poll ID, not a Gravity ID.
+     * Confirm the requested poll belongs to a Gravity in the tripleS COSMO list.
      */
     private Long resolveVerifiedTripleSPollId(long requestedId, Long gravityId) {
-        if (gravityId != null) {
-            if (isConfiguredTripleSPair(requestedId, gravityId)) return requestedId;
-            try {
-                Map<String, Object> mapping = gravityService.findTripleSPollMapping(requestedId);
-                if (mapping != null
-                        && ((Number) mapping.get("gravityId")).longValue() == gravityId) {
-                    return requestedId;
-                }
-            } catch (RuntimeException ignored) {
-                // Fall through to the explicitly configured mapping only.
-            }
+        try {
+            Map<String, Object> mapping = gravityService.findTripleSPollMapping(requestedId);
+            if (mapping == null) return null;
+            if (gravityId != null
+                    && ((Number) mapping.get("gravityId")).longValue() != gravityId) return null;
+            return ((Number) mapping.get("pollId")).longValue();
+        } catch (RuntimeException exception) {
             return null;
         }
-
-        // Treat a verified API Poll ID as a Poll ID first. This avoids confusing
-        // a Poll ID with a different Gravity ID that happens to have the same number.
-        if (isConfiguredTripleSPollId(requestedId) || isConfiguredPollId(requestedId)) return requestedId;
-
-        if (gravityService.hasCosmoToken()) {
-            try {
-                if (gravityService.findTripleSPollMapping(requestedId) != null) {
-                    return requestedId;
-                }
-
-                // Only fall back to Gravity ID translation when the number is not a Poll ID.
-                Long configuredPollId = configuredPollForGravityId(requestedId);
-                if (configuredPollId != null) return configuredPollId;
-
-                Long pollForGravity = gravityService.findTripleSPollIdForGravity(requestedId);
-                if (pollForGravity != null) return pollForGravity;
-            } catch (RuntimeException ignored) {
-                // Fail closed if COSMO cannot confirm that this belongs to tripleS.
-            }
-        } else {
-            // Without COSMO metadata, retain only explicitly configured aliases.
-            Long configuredPollId = configuredPollForGravityId(requestedId);
-            if (configuredPollId != null) return configuredPollId;
-        }
-        return null;
-    }
-
-    private Long configuredPollForGravityId(long gravityId) {
-        if (tripleSPollMap.isBlank()) return null;
-        for (String entry : tripleSPollMap.split(",")) {
-            String[] pair = entry.trim().split(":", 2);
-            if (pair.length != 2) continue;
-            try {
-                long configuredGravityId = Long.parseLong(pair[0].trim());
-                long configuredPollId = Long.parseLong(pair[1].trim());
-                if (configuredGravityId == gravityId) return configuredPollId;
-            } catch (NumberFormatException ignored) {
-                // Ignore malformed mapping entries.
-            }
-        }
-        return null;
-    }
-
-    private boolean isConfiguredPollId(long pollId) {
-        if (tripleSPollMap.isBlank()) return false;
-        for (String entry : tripleSPollMap.split(",")) {
-            String[] pair = entry.trim().split(":", 2);
-            if (pair.length != 2) continue;
-            try {
-                if (Long.parseLong(pair[1].trim()) == pollId) return true;
-            } catch (NumberFormatException ignored) {
-                // Ignore malformed mapping entries.
-            }
-        }
-        return false;
-    }
-
-    private boolean isConfiguredTripleSPollId(long pollId) {
-        for (String value : tripleSPollIds.split(",")) {
-            try {
-                if (Long.parseLong(value.trim()) == pollId) return true;
-            } catch (NumberFormatException ignored) {
-                // Ignore invalid IDs; do not loosen the allowlist.
-            }
-        }
-        return false;
-    }
-
-    private boolean isConfiguredTripleSPair(long pollId, Long gravityId) {
-        if (tripleSPollMap.isBlank()) return false;
-        for (String entry : tripleSPollMap.split(",")) {
-            String[] pair = entry.trim().split(":", 2);
-            if (pair.length != 2) continue;
-            try {
-                long configuredGravityId = Long.parseLong(pair[0].trim());
-                long configuredPollId = Long.parseLong(pair[1].trim());
-                if (configuredPollId != pollId) continue;
-                if (gravityId == null || gravityId == configuredGravityId) return true;
-            } catch (NumberFormatException ignored) {
-                // Ignore invalid entries; do not loosen the allowlist.
-            }
-        }
-        return false;
     }
 
 }

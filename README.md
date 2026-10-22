@@ -20,7 +20,7 @@ tripleS 팬 커뮤니티 웹사이트 (Spring Boot 3.5 + Mustache + MariaDB).
 - `COSMO_ACCESS_TOKEN`이 설정되면 서버가 COSMO API에서 tripleS 그래비티 목록과 상세·후보·공개 결과를 조회합니다.
 - 그래비티 목록은 COSMO API의 페이지를 끝까지 순회해 tripleS 그래비티를 모두 불러오고, Gravity ID 기준으로 중복을 제거합니다. 목록 결과는 서버에서 10분간 캐시합니다.
 - 목록 페이지에는 Poll ID 입력, 자동 탐색, Apollo 실시간 집계 UI를 두지 않습니다. API에서 받은 그래비티 항목을 목록에 추가하며, 각 상세 페이지에서 COSMO API가 공개한 후보와 투표 결과를 표시합니다.
-- 실시간 Apollo 집계는 현재 웹 UI에서 사용하지 않습니다. 공개 Apollo 집계 프록시 코드는 남아 있지만, 페이지에서 30초마다 조회하거나 Poll ID를 수동 연결하지 않습니다.
+- 상세 페이지는 COSMO가 반환한 `polls[].id`에서 Poll ID를 확인한 뒤 Apollo 공개 집계 API(`/api/gravity/{pollId}/aggregated`)를 조회합니다. Gravity ID를 Poll ID로 임의 변환하지 않습니다.
 - 상세 페이지는 tripleS 소속이 확인된 Gravity ID만 조회합니다. COSMO API에서 결과가 제공되지 않으면 후보별 득표 수치를 임의로 만들지 않습니다. COSMO 토큰이 없거나 API 호출이 실패하면 저장된 아카이브 참고 정보를 표시할 수 있으며, 이 정보는 실제 API 결과가 아닐 수 있습니다.
 - 토큰은 만료될 수 있으므로 실제 값을 GitHub 저장소나 `.env.example`에 넣지 마세요. 현재 구성은 액세스 토큰 자동 갱신을 구현하지 않았습니다.
 - 이 연동은 조회 전용이며, 실제 투표나 COMO 전송을 실행하지 않습니다.

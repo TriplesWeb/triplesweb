@@ -91,6 +91,9 @@
             </div>
         </section>
 
+        {{#gravity.aggregateNotice}}
+        <div class="rounded-xl border border-amber-400/25 bg-amber-400/5 px-4 py-3 text-sm text-amber-100">{{gravity.aggregateNotice}}</div>
+        {{/gravity.aggregateNotice}}
         {{#gravity.hasWinner}}
         <section class="rounded-2xl border border-[#00f5d4]/25 bg-gradient-to-r from-[#00f5d4]/10 to-purple-500/10 p-5 sm:p-6">
             <div class="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -204,6 +207,18 @@
             </div>
         </section>
         {{/gravity.hasLeaderboard}}
+
+        {{#gravity.aggregate}}
+        <section class="rounded-2xl border border-white/10 bg-[#16181f] p-5 sm:p-6">
+            <h2 class="text-lg font-bold mb-3">Apollo 집계</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div class="rounded-xl bg-black/20 p-3"><p class="text-xs text-gray-500">총 투표</p><p class="font-mono mt-1">{{gravity.aggregate.totalVoteCount}}</p></div>
+                <div class="rounded-xl bg-black/20 p-3"><p class="text-xs text-gray-500">COMO 합계</p><p class="font-mono mt-1">{{gravity.aggregate.totalComoCount}}</p></div>
+                <div class="rounded-xl bg-black/20 p-3"><p class="text-xs text-gray-500">공개된 투표</p><p class="font-mono mt-1">{{gravity.aggregate.revealedVoteCount}}</p></div>
+                <div class="rounded-xl bg-black/20 p-3"><p class="text-xs text-gray-500">최종 결과</p><p class="font-mono mt-1">{{#gravity.aggregate.finalized}}공개{{/gravity.aggregate.finalized}}{{^gravity.aggregate.finalized}}미공개{{/gravity.aggregate.finalized}}</p></div>
+            </div>
+        </section>
+        {{/gravity.aggregate}}
 
         <div class="flex justify-center pt-2">
             <a href="/cosmo/gravity" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-gray-200 font-semibold transition">
