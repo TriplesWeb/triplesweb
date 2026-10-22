@@ -42,6 +42,10 @@
     const page = document.querySelector(".artist-page");
     const btn = document.getElementById("artistAdminBtn");
     const hint = document.getElementById("artistAdminHint");
+    // 관리자 인증 전에는 소개/멤버 편집 버튼을 표시하지 않는다.
+    document.querySelectorAll(".artist-edit-inline").forEach((control) => {
+      control.hidden = !isAdmin;
+    });
     if (page) page.classList.toggle("is-admin", Boolean(isAdmin));
     if (btn) {
       if (!adminConfigured) {
@@ -473,6 +477,7 @@
         const status = await res.json();
         adminConfigured = Boolean(status.configured);
         isAdmin = Boolean(status.admin);
+        if (!isAdmin) setAdminToken("");
       }
     } catch (_) {
       adminConfigured = false;
