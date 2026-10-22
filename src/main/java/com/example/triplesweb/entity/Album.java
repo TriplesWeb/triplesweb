@@ -2,7 +2,6 @@ package com.example.triplesweb.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,4 +40,17 @@ public class Album {
     @JoinColumn(name = "unit_id")
     private Unit unit;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "album_type", nullable = false, length = 16)
+    private AlbumType albumType = AlbumType.SUBUNIT;
+
+    /** Mustache용: 10인 완전체 배지 */
+    public boolean isFull10() {
+        return albumType == AlbumType.FULL_10;
+    }
+
+    /** Mustache용: 24인 완전체 배지 */
+    public boolean isFull24() {
+        return albumType == AlbumType.FULL_24;
+    }
 }

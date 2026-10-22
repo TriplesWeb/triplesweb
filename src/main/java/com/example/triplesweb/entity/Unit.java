@@ -35,6 +35,10 @@ public class Unit {
 
     private String debutDate;
 
+    /** 목록/탭에 노출할지 여부. false면 상위 컨테이너(예: MSNZ) 숨김 */
+    @Column(nullable = false)
+    private boolean visible = true;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_unit_id")
     private Unit parentUnit;
@@ -58,6 +62,7 @@ public class Unit {
         this.formationDate = formationDate;
         this.debutDate = debutDate;
         this.parentUnit = parentUnit;
+        this.visible = true;
         this.subUnits = new ArrayList<>();
         this.unitMembers = new ArrayList<>();
         this.albums = new ArrayList<>();
