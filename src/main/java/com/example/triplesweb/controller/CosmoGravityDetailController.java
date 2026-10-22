@@ -12,6 +12,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Serves the detail page linked from /cosmo/gravity.
@@ -28,6 +30,8 @@ public class CosmoGravityDetailController {
     public CosmoGravityDetailController(GravityService gravityService) {
         this.gravityService = gravityService;
     }
+    private static final Logger log =
+            LoggerFactory.getLogger(CosmoGravityDetailController.class);
 
     @GetMapping("/cosmo/gravity/{id}")
     public String gravityDetail(
@@ -36,39 +40,46 @@ public class CosmoGravityDetailController {
     ) {
         String normalizedId = id == null ? "" : id.trim().toLowerCase(Locale.ROOT);
 
-        // Validate the Gravity against the live tripleS COSMO list before loading details.
+        // Never load an arbitrary COSMO Gravity ID: only known tripleS archive IDs
+        // or IDs returned by COSMO's tripleS-only Gravity list are allowed.
+        if (normalizedId.matches("\\d+") && !isKnownTripleSGravity(normalizedId)) {
+            model.addAttribute("archiveNotice",
+                    "이 페이지는 tripleS 그래비티 전용입니다. tripleS로 확인되지 않은 그래비티는 표시하지 않습니다.");
+            model.addAttribute("isKnownGravity", false);
+            model.addAttribute("gravity", createDetail(
+                    normalizedId,
+                    "tripleS 그래비티를 찾을 수 없습니다",
+                    "tripleS ONLY",
+                    "조회 불가",
+                    "tripleS 그래비티 목록에서 선택하거나, tripleS 소속이 확인된 Gravity ID를 사용해 주세요.",
+                    "-",
+                    "집계 미연결",
+                    "다른 아티스트의 그래비티는 이 페이지에서 조회하지 않습니다.",
+                    List.of()
+            ));
+            return "cosmo/gravity-detail";
+        }
+
+        // Numeric IDs are looked up live first. Static archive records remain a fallback
+        // when no COSMO token is configured or the upstream API is unavailable.
         if (normalizedId.matches("\\d+") && gravityService.hasCosmoToken()) {
             try {
-                boolean known = gravityService.fetchGravityList("tripleS").stream()
-                        .anyMatch(item -> normalizedId.equals(String.valueOf(item.get("id"))));
-                if (!known) {
-                    model.addAttribute("archiveNotice", "tripleS COSMO 그래비티 목록에서 확인되지 않은 ID입니다.");
-                    model.addAttribute("isKnownGravity", false);
-                    model.addAttribute("gravity", createDetail(normalizedId,
-                            "그래비티를 찾을 수 없습니다", "tripleS ONLY", "조회 불가",
-                            "tripleS 목록에 포함된 그래비티만 표시합니다.", "-", "결과 없음",
-                            "Gravity ID를 확인해 주세요.", List.of()));
-                    return "cosmo/gravity-detail";
-                }
-
                 JsonNode apiGravity = gravityService.fetchGravityDetail(Long.parseLong(normalizedId));
-                Map<String, Object> liveDetail = gravityService.buildGravityDetailView(apiGravity);
-                Long pollId = gravityService.findTripleSPollIdForGravity(Long.parseLong(normalizedId));
-                if (pollId != null) {
-                    try {
-                        JsonNode aggregate = gravityService.fetchAggregatedData(pollId);
-                        liveDetail.put("aggregate", gravityService.toMap(aggregate));
-                        List<Map<String, String>> rows =
-                                gravityService.buildApolloCandidateResults(pollId, aggregate);
-                        if (!rows.isEmpty()) {
-                            liveDetail.put("candidates", rows);
-                            liveDetail.put("hasCandidates", true);
-                            liveDetail.put("candidateCount", rows.size());
-                        }
-                    } catch (Exception aggregateException) {
-                        liveDetail.put("aggregateNotice", "Apollo 공개 집계 API 응답을 가져오지 못했습니다.");
-                    }
-                }
+                // 1. COSMO API에서 실제로 받은 원본 응답
+                log.info("========== COSMO Gravity 원본 응답 ==========");
+                log.info("Gravity ID: {}", normalizedId);
+                log.info("{}", apiGravity == null ? "응답이 null입니다." : apiGravity.toPrettyString());
+
+// 2. Mustache에 전달할 형태로 변환
+                Map<String, Object> liveDetail =
+                        gravityService.buildGravityDetailView(apiGravity);
+
+// 3. 변환된 Map 확인
+                log.info("========== 변환된 gravity 데이터 ==========");
+                log.info("{}", liveDetail);
+
+// 4. 기존처럼 화면에 전달
+                model.addAttribute("gravity", liveDetail);
                 model.addAttribute("gravity", liveDetail);
                 model.addAttribute("isKnownGravity", true);
                 model.addAttribute("isLiveGravity", true);
@@ -76,9 +87,9 @@ public class CosmoGravityDetailController {
             } catch (Exception exception) {
                 model.addAttribute("apiError", GravityService.describeApiError(exception));
             }
-        } else if (normalizedId.matches("\\d+")) {
+        } else if (!gravityService.hasCosmoToken()) {
             model.addAttribute("archiveNotice",
-                    "실시간 그래비티 정보를 조회하려면 COSMO_ACCESS_TOKEN이 필요합니다.");
+                    "현재는 COSMO_ACCESS_TOKEN이 설정되지 않아 저장된 아카이브 요약을 표시합니다. 실시간 정보는 아직 조회되지 않았습니다.");
         }
 
         Map<String, Object> detail = ARCHIVE.get(normalizedId);

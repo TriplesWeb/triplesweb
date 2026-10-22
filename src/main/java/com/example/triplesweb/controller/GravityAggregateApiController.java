@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.util.Map;
-import java.util.List;
 
 /**
  * Read-only proxy for Apollo's public aggregation endpoint.
