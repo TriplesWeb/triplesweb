@@ -1,0 +1,75 @@
+<div id="albumLoginModal" class="about-modal hidden" role="dialog" aria-modal="true" aria-labelledby="albumLoginTitle">
+    <div class="about-modal-panel about-login-panel">
+        <button type="button" class="about-close album-login-close" aria-label="닫기">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        <h3 id="albumLoginTitle" class="about-modal-title">관리자 로그인</h3>
+        <form id="albumLoginForm" class="about-edit-form">
+            <label class="about-edit-label">비밀번호
+                <input type="password" id="albumLoginPassword" name="password" required autocomplete="current-password">
+            </label>
+            <p id="albumLoginError" class="about-edit-error" hidden></p>
+            <div class="about-edit-actions">
+                <button type="submit" class="about-mode-btn is-active">로그인</button>
+                <button type="button" class="about-mode-btn album-login-close">취소</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="albumEditModal" class="about-modal hidden" role="dialog" aria-modal="true" aria-labelledby="albumEditTitle">
+    <div class="about-modal-panel about-edit-panel">
+        <button type="button" class="about-close album-edit-close" aria-label="닫기">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        <h3 id="albumEditTitle" class="about-modal-title">앨범 수정</h3>
+        <form id="albumEditForm" class="about-edit-form">
+            <input type="hidden" id="albumEditId">
+            <label class="about-edit-label">앨범명
+                <input type="text" id="albumEditName" required maxlength="120">
+            </label>
+            <div class="about-edit-grid">
+                <label class="about-edit-label">발매일
+                    <input type="text" id="albumEditReleaseDate" required maxlength="40" placeholder="YYYY-MM-DD">
+                </label>
+                <label class="about-edit-label">유형
+                    <select id="albumEditType">
+                        <option value="SUBUNIT">유닛 앨범</option>
+                        <option value="FULL_10">10인 완전체</option>
+                        <option value="FULL_24">24인 완전체</option>
+                    </select>
+                </label>
+            </div>
+            <label class="about-edit-label">참여 유닛
+                <select id="albumEditUnitId"></select>
+            </label>
+            <label class="about-edit-label">소개
+                <textarea id="albumEditInfo" rows="3"></textarea>
+            </label>
+            <label class="about-edit-label">커버 이미지
+                <input type="file" id="albumEditImage" accept="image/*">
+            </label>
+            <img id="albumEditImagePreview" class="about-preview hidden" alt="커버 미리보기">
+            <label class="about-edit-check">
+                <input type="checkbox" id="albumEditClearImage"> 커버 이미지 제거
+            </label>
+            <div class="about-edit-label album-tracks-field">트랙리스트
+                <div class="album-track-head" aria-hidden="true">
+                    <span>#</span>
+                    <span>곡 제목</span>
+                    <span>시간</span>
+                    <span>타이틀</span>
+                    <span></span>
+                </div>
+                <div id="albumEditTracks" class="album-track-rows"></div>
+                <button type="button" id="albumAddTrackBtn" class="about-mode-btn album-add-track-btn">곡 추가</button>
+            </div>
+            <p id="albumEditError" class="about-edit-error" hidden></p>
+            <div class="about-edit-actions">
+                <button type="button" id="albumEditDeleteBtn" class="about-mode-btn about-btn-danger hidden">삭제</button>
+                <button type="submit" class="about-mode-btn is-active">저장</button>
+                <button type="button" class="about-mode-btn album-edit-close">취소</button>
+            </div>
+        </form>
+    </div>
+</div>
