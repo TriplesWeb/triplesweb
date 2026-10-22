@@ -135,6 +135,8 @@ public class GravityService {
             gravity.put("artistId", artistId);
             gravity.put("startDate", displayDate(startDate));
             gravity.put("endDate", displayDate(endDate));
+            gravity.put("entireStartDate", displayDate(startDate));
+            gravity.put("entireEndDate", displayDate(endDate));
             gravity.put("hasComoCount", totalComo > 0);
             gravity.put("comoCount", totalComo > 0 ? java.text.NumberFormat.getNumberInstance(java.util.Locale.US).format(totalComo) : "");
 
