@@ -201,69 +201,55 @@ public class GravityService {
 
     private List<Map<String, Object>> loadAllTripleSPollMappings(String artistId) {
         String encodedArtist = UriUtils.encodeQueryParam(artistId, StandardCharsets.UTF_8);
-        final int pageSize = 12;
-        int skip = 0;
-        Set<String> seenGravityIds = new HashSet<>();
+        JsonNode response = cosmoGet("/bff/v3/gravities?artistId=" + encodedArtist);
+        JsonNode root = response.path("data").isObject() ? response.path("data") : response;
+
         Map<Long, Map<String, Object>> pollsById = new LinkedHashMap<>();
+        for (String groupName : List.of("ongoing", "upcoming", "past")) {
+            JsonNode group = root.path(groupName);
+            if (!group.isArray()) continue;
 
-        // COSMO returns ongoing/upcoming/past groups. Page through the past group
-        // instead of stopping at the 12 recent entries used by the compact page.
-        {
-            JsonNode response = cosmoGet("/bff/v3/gravities?artistId=" + encodedArtist);
-            JsonNode root = response.path("data").isObject() ? response.path("data") : response;
-            int pastCount = root.path("past").isArray() ? root.path("past").size() : 0;
-            int newGravityCount = 0;
+            for (JsonNode gravityNode : group) {
+                String gravityId = firstNonBlank(
+                        gravityNode.path("id").asText(""),
+                        gravityNode.path("gravityId").asText(""),
+                        "");
+                if (gravityId.isBlank()) continue;
 
-            for (String groupName : List.of("ongoing", "upcoming", "past")) {
-                JsonNode group = root.path(groupName);
-                if (!group.isArray()) continue;
+                String gravityTitle = firstNonBlank(
+                        gravityNode.path("title").asText(""),
+                        gravityNode.path("name").asText(""),
+                        "Gravity #" + gravityId);
+                JsonNode pollNodes = gravityNode.path("polls");
+                if (!pollNodes.isArray()) continue;
 
-                for (JsonNode gravityNode : group) {
-                    String gravityId = firstNonBlank(
-                            gravityNode.path("id").asText(""),
-                            gravityNode.path("gravityId").asText(""),
-                            "");
-                    if (gravityId.isBlank()) continue;
-                    if (seenGravityIds.add(gravityId)) newGravityCount++;
+                for (JsonNode pollNode : pollNodes) {
+                    long pollId = pollNode.path("id").asLong(
+                            pollNode.path("cosmoId").asLong(0));
+                    if (pollId <= 0) continue;
 
-                    String gravityTitle = firstNonBlank(
-                            gravityNode.path("title").asText(""),
-                            gravityNode.path("name").asText(""),
-                            "Gravity #" + gravityId);
-                    JsonNode pollNodes = gravityNode.path("polls");
-                    if (!pollNodes.isArray()) continue;
-
-                    for (JsonNode pollNode : pollNodes) {
-                        long pollId = pollNode.path("id").asLong(
-                                pollNode.path("cosmoId").asLong(0));
-                        if (pollId <= 0) continue;
-
-                        Map<String, Object> mapping = new LinkedHashMap<>();
-                        mapping.put("pollId", pollId);
-                        mapping.put("gravityId", Long.parseLong(gravityId));
-                        mapping.put("pollTitle", firstNonBlank(
-                                pollNode.path("title").asText(""),
-                                pollNode.path("titleKo").asText(""),
-                                gravityTitle));
-                        mapping.put("gravityTitle", gravityTitle);
-                        mapping.put("artistId", artistId);
-                        mapping.put("startDate", displayDate(firstNonBlank(
-                                pollNode.path("startDate").asText(""),
-                                gravityNode.path("entireStartDate").asText(""),
-                                "")));
-                        mapping.put("endDate", displayDate(firstNonBlank(
-                                pollNode.path("endDate").asText(""),
-                                gravityNode.path("entireEndDate").asText(""),
-                                "")));
-                        mapping.put("apolloUrl", apolloBaseUrl + "/gravity/tripleS/" + gravityId
-                                + "?poll=" + pollId);
-                        pollsById.put(pollId, mapping);
-                    }
+                    Map<String, Object> mapping = new LinkedHashMap<>();
+                    mapping.put("pollId", pollId);
+                    mapping.put("gravityId", Long.parseLong(gravityId));
+                    mapping.put("pollTitle", firstNonBlank(
+                            pollNode.path("title").asText(""),
+                            pollNode.path("titleKo").asText(""),
+                            gravityTitle));
+                    mapping.put("gravityTitle", gravityTitle);
+                    mapping.put("artistId", artistId);
+                    mapping.put("startDate", displayDate(firstNonBlank(
+                            pollNode.path("startDate").asText(""),
+                            gravityNode.path("entireStartDate").asText(""),
+                            "")));
+                    mapping.put("endDate", displayDate(firstNonBlank(
+                            pollNode.path("endDate").asText(""),
+                            gravityNode.path("entireEndDate").asText(""),
+                            "")));
+                    mapping.put("apolloUrl", apolloBaseUrl + "/gravity/tripleS/" + gravityId
+                            + "?poll=" + pollId);
+                    pollsById.put(pollId, mapping);
                 }
             }
-
-            // The BFF response groups ongoing/upcoming/past arrays; it is not a skip/take envelope.
-            break;
         }
 
         List<Map<String, Object>> result = new ArrayList<>(pollsById.values());
