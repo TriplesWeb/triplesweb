@@ -12,9 +12,11 @@ import org.springframework.web.util.UriUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class GravityService {
@@ -25,6 +27,10 @@ public class GravityService {
     private final ObjectMapper objectMapper;
     private final String cosmoApiBaseUrl;
     private final CosmoTokenProvider tokens;
+
+    private static final long GRAVITY_LIST_CACHE_MILLIS = 10L * 60L * 1000L;
+    private volatile long tripleSGravityListCachedAt;
+    private volatile List<Map<String, Object>> tripleSGravityListCache = List.of();
 
     @org.springframework.beans.factory.annotation.Autowired
     public GravityService(
@@ -55,18 +61,46 @@ public class GravityService {
     public List<Map<String, Object>> fetchGravityList(String artistId) {
         requireCosmoToken();
 
+        if ("tripleS".equalsIgnoreCase(artistId)) {
+            long now = System.currentTimeMillis();
+            if (tripleSGravityListCachedAt > 0
+                    && now - tripleSGravityListCachedAt < GRAVITY_LIST_CACHE_MILLIS) {
+                return copyMaps(tripleSGravityListCache);
+            }
+            synchronized (this) {
+                now = System.currentTimeMillis();
+                if (tripleSGravityListCachedAt > 0
+                        && now - tripleSGravityListCachedAt < GRAVITY_LIST_CACHE_MILLIS) {
+                    return copyMaps(tripleSGravityListCache);
+                }
+                List<Map<String, Object>> loaded = loadGravityList(artistId);
+                tripleSGravityListCache = copyMaps(loaded);
+                tripleSGravityListCachedAt = System.currentTimeMillis();
+                return copyMaps(loaded);
+            }
+        }
+        return loadGravityList(artistId);
+    }
+
+    private List<Map<String, Object>> loadGravityList(String artistId) {
         String encodedArtist = UriUtils.encodeQueryParam(artistId, StandardCharsets.UTF_8);
-        JsonNode root = cosmoGet("/bff/v3/gravities?artistId=" + encodedArtist);
+        JsonNode response = cosmoGet("/bff/v3/gravities?artistId=" + encodedArtist);
+        JsonNode root = response.path("data").isObject() ? response.path("data") : response;
         if (!root.path("ongoing").isArray() || !root.path("upcoming").isArray() || !root.path("past").isArray()) {
             throw new IllegalStateException("COSMO 그래비티 목록 응답 형식이 변경되었습니다.");
         }
         List<Map<String, Object>> result = new ArrayList<>();
-
         appendGravityGroup(result, root.path("ongoing"), "진행 중", artistId);
         appendGravityGroup(result, root.path("upcoming"), "예정", artistId);
         appendGravityGroup(result, root.path("past"), "종료", artistId);
 
-        return result;
+        Set<String> seenIds = new HashSet<>();
+        List<Map<String, Object>> unique = new ArrayList<>();
+        for (Map<String, Object> gravity : result) {
+            String id = String.valueOf(gravity.getOrDefault("id", "")).trim();
+            if (!id.isBlank() && !"0".equals(id) && seenIds.add(id)) unique.add(gravity);
+        }
+        return unique;
     }
 
     private void appendGravityGroup(
@@ -81,10 +115,28 @@ public class GravityService {
 
         for (JsonNode gravityNode : group) {
             Map<String, Object> gravity = objectMapper.convertValue(gravityNode, MAP_TYPE);
+            String gravityId = firstNonBlank(
+                    gravityNode.path("id").asText(""),
+                    gravityNode.path("gravityId").asText(""),
+                    "");
+            if (gravityId.isBlank() || "0".equals(gravityId)) continue;
+
+            String startDate = firstNonBlank(gravityNode.path("entireStartDate").asText(""),
+                    gravityNode.path("startDate").asText(""), "");
+            String endDate = firstNonBlank(gravityNode.path("entireEndDate").asText(""),
+                    gravityNode.path("endDate").asText(""), "");
+            long totalComo = gravityNode.path("result").path("totalComoUsed").asLong(
+                    gravityNode.path("totalComoUsed").asLong(0));
+
+            gravity.put("id", gravityId);
             gravity.put("statusLabel", statusLabel);
             gravity.put("bannerImageUrl", safeImage(gravityNode.path("bannerImageUrl").asText("")));
-            gravity.put("detailUrl", "/cosmo/gravity/" + gravityNode.path("id").asLong());
+            gravity.put("detailUrl", "/cosmo/gravity/" + gravityId);
             gravity.put("artistId", artistId);
+            gravity.put("startDate", displayDate(startDate));
+            gravity.put("endDate", displayDate(endDate));
+            gravity.put("hasComoCount", totalComo > 0);
+            gravity.put("comoCount", totalComo > 0 ? java.text.NumberFormat.getNumberInstance(java.util.Locale.US).format(totalComo) : "");
 
 
             List<Map<String, Object>> polls = new ArrayList<>();
@@ -168,6 +220,25 @@ public class GravityService {
 
     public static String safeImage(String url) {
         return url.startsWith("https://") ? url : "";
+    }
+
+    private static List<Map<String, Object>> copyMaps(List<Map<String, Object>> source) {
+        List<Map<String, Object>> copies = new ArrayList<>();
+        if (source != null) {
+            for (Map<String, Object> item : source) {
+                if (item != null) copies.add(new LinkedHashMap<>(item));
+            }
+        }
+        return copies;
+    }
+
+    private static String displayDate(String value) {
+        if (value == null || value.isBlank()) return "";
+        String date = value.trim();
+        int timeSeparator = date.indexOf('T');
+        if (timeSeparator > 0) date = date.substring(0, timeSeparator);
+        if (date.matches("\\d{4}-\\d{2}-\\d{2}")) return date.replace('-', '.');
+        return date;
     }
 
     private static String firstNonBlank(String first, String second, String fallback) {
