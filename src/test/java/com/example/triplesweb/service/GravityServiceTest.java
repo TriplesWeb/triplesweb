@@ -34,31 +34,7 @@ class GravityServiceTest {
         server.verify();
     }
 
-    @Test void candidateMapSupportsSparseKeysAndDoesNotInventZeroes() throws Exception {
-        var result = service(RestClient.create()).buildCandidateResults(
-                mapper.readTree("{\"choices\":[{\"id\":\"a\",\"title\":\"A\"},{\"id\":\"b\",\"title\":\"B\"},{\"id\":\"c\",\"title\":\"C\"}]}"),
-                mapper.readTree("{\"finalized\":{\"comoPerCandidate\":{\"0\":12,\"2\":30}}}"));
-        assertThat(result).hasSize(2);
-        assertThat(result.get(0)).containsEntry("name", "C").containsEntry("comoAmount", 30L);
-    }
-
-    @Test void unrevealedVotesDoNotExposeCandidateTotals() throws Exception {
-        assertThat(service(RestClient.create()).buildCandidateResults(
-                mapper.readTree("{\"choices\":[{\"title\":\"A\"}]}"), mapper.readTree("{\"finalized\":null}"))).isEmpty();
-    }
-
-    @Test void aggregateUsesPollIdAndDoesNotSendCosmoToken() {
-        var builder = RestClient.builder();
-        var server = MockRestServiceServer.bindTo(builder).build();
-        server.expect(requestTo("https://apollo.test/api/gravity/75/aggregated"))
-                .andExpect(headerDoesNotExist("Authorization"))
-                .andRespond(withSuccess("{\"totalVoteCount\":10}", MediaType.APPLICATION_JSON));
-        assertThat(service(builder.build()).fetchAggregatedData(75).path("totalVoteCount").asInt()).isEqualTo(10);
-        verifyNoInteractions(tokens);
-        server.verify();
-    }
-
     private GravityService service(RestClient client) {
-        return new GravityService(client, mapper, "https://apollo.test", "https://cosmo.test", tokens);
+        return new GravityService(client, mapper, "https://cosmo.test", tokens);
     }
 }

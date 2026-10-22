@@ -23,7 +23,6 @@ public class GravityService {
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
-    private final String apolloBaseUrl;
     private final String cosmoApiBaseUrl;
     private final CosmoTokenProvider tokens;
 
@@ -31,19 +30,16 @@ public class GravityService {
     public GravityService(
             RestClient.Builder restClientBuilder,
             ObjectMapper objectMapper,
-            @Value("${gravity.apollo-base-url:https://apollo.cafe}") String apolloBaseUrl,
             @Value("${gravity.cosmo-api-base-url:https://api.cosmo.fans}") String cosmoApiBaseUrl,
             CosmoTokenProvider tokens
     ) {
         this(restClientBuilder.clone().requestFactory(CosmoTokenProvider.requestFactory()).build(),
-                objectMapper, apolloBaseUrl, cosmoApiBaseUrl, tokens);
+                objectMapper, cosmoApiBaseUrl, tokens);
     }
 
-    GravityService(RestClient client, ObjectMapper objectMapper, String apolloBaseUrl,
-            String cosmoApiBaseUrl, CosmoTokenProvider tokens) {
+    GravityService(RestClient client, ObjectMapper objectMapper, String cosmoApiBaseUrl, CosmoTokenProvider tokens) {
         this.restClient = client;
         this.objectMapper = objectMapper;
-        this.apolloBaseUrl = trimTrailingSlash(apolloBaseUrl);
         this.cosmoApiBaseUrl = trimTrailingSlash(cosmoApiBaseUrl);
         this.tokens = tokens;
     }
@@ -89,8 +85,7 @@ public class GravityService {
             gravity.put("bannerImageUrl", safeImage(gravityNode.path("bannerImageUrl").asText("")));
             gravity.put("detailUrl", "/cosmo/gravity/" + gravityNode.path("id").asLong());
             gravity.put("artistId", artistId);
-            gravity.put("apolloUrl", apolloBaseUrl + "/gravity/" + artistId + "/" +
-                    gravityNode.path("id").asText());
+
 
             List<Map<String, Object>> polls = new ArrayList<>();
             JsonNode pollNodes = gravityNode.path("polls");
@@ -109,28 +104,6 @@ public class GravityService {
     }
 
     /**
-     * Reads the public Apollo aggregate endpoint. The live deployment may enforce
-     * access restrictions even though the route in the public source has no
-     * explicit API-key check.
-     */
-    public JsonNode fetchAggregatedData(long pollId) {
-        if (pollId <= 0) {
-            throw new IllegalArgumentException("pollId must be positive");
-        }
-
-        String url = apolloBaseUrl + "/api/gravity/" + pollId + "/aggregated";
-        JsonNode response = restClient.get()
-                .uri(url)
-                .retrieve()
-                .body(JsonNode.class);
-
-        if (response == null || response.has("error")) {
-            throw new IllegalStateException("Apollo returned an empty or error response");
-        }
-        return response;
-    }
-
-    /**
      * Candidate metadata comes from COSMO. The supplied ID is the COSMO poll ID,
      * not the parent Gravity ID.
      */
@@ -144,54 +117,6 @@ public class GravityService {
         JsonNode details = response.path("pollDetail");
         if (!details.isObject()) throw new IllegalStateException("COSMO 투표 응답 형식이 변경되었습니다.");
         return details;
-    }
-
-    /**
-     * Maps final candidate totals to COSMO choice titles. The upstream aggregate
-     * exposes candidate totals only after all votes have been revealed.
-     */
-    public List<Map<String, Object>> buildCandidateResults(JsonNode pollDetails, JsonNode aggregate) {
-        List<Map<String, Object>> result = new ArrayList<>();
-        if (pollDetails == null || aggregate == null) {
-            return result;
-        }
-
-        JsonNode finalized = aggregate.path("finalized");
-        if (finalized.isMissingNode() || finalized.isNull()) {
-            return result;
-        }
-
-        JsonNode choices = pollDetails.path("choices");
-        JsonNode amounts = finalized.path("comoPerCandidate");
-        if (!choices.isArray()) {
-            return result;
-        }
-
-        for (int index = 0; index < choices.size(); index++) {
-            JsonNode choice = choices.get(index);
-            Map<String, Object> candidate = new LinkedHashMap<>();
-            candidate.put("candidateId", index);
-            candidate.put("name", firstNonBlank(
-                    choice.path("title").asText(""),
-                    choice.path("id").asText(""),
-                    "후보 " + (index + 1)
-            ));
-            JsonNode amount = amounts.isObject() ? amounts.path(String.valueOf(index)) : amounts.path(index);
-            if (!amount.isNumber()) continue;
-            candidate.put("comoAmount", amount.asLong());
-            candidate.put("imageUrl", safeImage(firstNonBlank(
-                    choice.path("txImageUrl").asText(""),
-                    choice.path("imageUrl").asText(""),
-                    ""
-            )));
-            result.add(candidate);
-        }
-
-        result.sort((a, b) -> Long.compare(
-                ((Number) b.get("comoAmount")).longValue(),
-                ((Number) a.get("comoAmount")).longValue()
-        ));
-        return result;
     }
 
     public Map<String, Object> toMap(JsonNode node) {

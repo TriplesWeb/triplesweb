@@ -4,7 +4,6 @@ import com.example.triplesweb.service.GravityService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 public class GravityController {
@@ -12,7 +11,7 @@ public class GravityController {
     public GravityController(GravityService service) { this.service = service; }
 
     @GetMapping({"/gravity", "/cosmo/gravity"})
-    public String gravity(@RequestParam(name = "pollId", required = false) Long pollId, Model model) {
+    public String gravity(Model model) {
         try {
             if (service.hasCosmoToken()) {
                 var list = service.fetchGravityList("tripleS");
@@ -23,14 +22,6 @@ public class GravityController {
             }
         } catch (Exception e) {
             model.addAttribute("gravityListError", GravityService.describeApiError(e));
-        }
-        if (pollId != null) {
-            model.addAttribute("selectedPollId", pollId);
-            try {
-                model.addAttribute("aggregation", service.toMap(service.fetchAggregatedData(pollId)));
-            } catch (Exception e) {
-                model.addAttribute("aggregationError", GravityService.describeApiError(e));
-            }
         }
         return "cosmo/gravity";
     }

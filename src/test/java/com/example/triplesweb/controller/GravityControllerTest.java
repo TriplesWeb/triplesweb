@@ -44,7 +44,7 @@ class GravityControllerTest {
         verify(service, never()).fetchGravityList("artms");
     }
 
-    @Test void detailRendersOfficialResultsWhenApolloIsUnavailable() throws Exception {
+    @Test void detailUsesCosmoOfficialResultsWithoutExtraRequests() throws Exception {
         var mapper = new ObjectMapper();
         when(service.fetchGravityDetails(21)).thenReturn(mapper.readTree("""
                 {"id":21,"type":"grand-gravity","title":"Actual Gravity","description":"API description",
@@ -58,11 +58,17 @@ class GravityControllerTest {
             com.fasterxml.jackson.databind.JsonNode node = call.getArgument(0);
             return node.isMissingNode() || node.isNull() ? null : mapper.convertValue(node, java.util.Map.class);
         });
-        when(service.fetchAggregatedData(75)).thenThrow(new IllegalStateException("Apollo unavailable"));
         mvc.perform(get("/cosmo/gravity/21")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("Actual Gravity")))
                 .andExpect(content().string(containsString("Winner")))
+                .andExpect(content().string(not(containsString("apollo.cafe"))))
                 .andExpect(content().string(containsString("120")));
+        verify(service, never()).fetchPollDetails(anyLong());
+    }
+
+    @Test void legacyAggregationEndpointDoesNotContactThirdParty() throws Exception {
+        mvc.perform(get("/api/gravity/polls/75/aggregated")).andExpect(status().isGone());
+        verifyNoInteractions(service);
     }
 
     @Test void detailRejectsPollBelongingToDifferentGravity() throws Exception {
@@ -70,7 +76,6 @@ class GravityControllerTest {
         when(service.fetchGravityDetails(21)).thenReturn(gravity);
         when(service.toMap(any())).thenReturn(java.util.Map.of());
         mvc.perform(get("/cosmo/gravity/21?pollId=76")).andExpect(status().isNotFound());
-        verify(service, never()).fetchAggregatedData(anyLong());
     }
 
     @Test void apiRejectsInvalidArtistAndReturnsSanitizedConfigurationError() throws Exception {

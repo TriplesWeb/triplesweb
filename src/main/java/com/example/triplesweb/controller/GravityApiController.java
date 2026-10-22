@@ -35,7 +35,8 @@ public class GravityApiController {
 
     @GetMapping("/polls/{id:[0-9]+}/aggregated")
     public Object aggregate(@PathVariable("id") long id) {
-        return service.toMap(service.fetchAggregatedData(id));
+        return ResponseEntity.status(HttpStatus.GONE).body(Map.of("message",
+                "시간대별 투표 집계는 현재 제공되지 않습니다. 공식 결과는 그래비티 상세에서 확인해 주세요."));
     }
 
     @ExceptionHandler(Exception.class)

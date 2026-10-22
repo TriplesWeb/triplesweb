@@ -42,7 +42,7 @@ public class CosmoGravityDetailController {
             model.addAttribute("polls", polls);
             if (selectedPoll != null && !found) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
             if (pollId != null) {
-                // COSMO supplies final official results even if Apollo is unavailable.
+                // Render official COSMO results without third-party aggregation calls.
                 for (JsonNode poll : gravity.path("polls")) {
                     if (poll.path("id").asLong() == pollId) {
                         model.addAttribute("selectedPoll", service.toMap(poll));
@@ -50,16 +50,7 @@ public class CosmoGravityDetailController {
                         model.addAttribute("hasOfficialResults", poll.path("result").path("voteResults").size() > 0);
                     }
                 }
-                try {
-                    JsonNode aggregate = service.fetchAggregatedData(pollId);
-                    model.addAttribute("aggregation", service.toMap(aggregate));
-                    JsonNode details = service.fetchPollDetails(pollId);
-                    var candidates = service.buildCandidateResults(details, aggregate);
-                    model.addAttribute("candidateResults", candidates);
-                    model.addAttribute("hasCandidateResults", !candidates.isEmpty());
-                } catch (Exception e) {
-                    model.addAttribute("aggregationError", "실시간 집계를 가져오지 못했습니다. " + GravityService.describeApiError(e));
-                }
+
             }
         } catch (ResponseStatusException e) {
             throw e;
@@ -71,4 +62,5 @@ public class CosmoGravityDetailController {
         }
         return "cosmo/gravity-detail";
     }
+
 }

@@ -31,11 +31,7 @@
 </article>
 {{/gravityList}}
 </div>
-<details class="gravity-card"><summary class="cursor-pointer">투표 ID로 집계 조회</summary>
-<form action="/cosmo/gravity" method="get" class="flex gap-3 mt-4"><label>투표 ID <input type="number" name="pollId" min="1" required class="bg-black rounded text-white" {{#selectedPollId}}value="{{selectedPollId}}"{{/selectedPollId}}></label><button type="submit" class="text-[#00f5d4]">조회</button></form>
-{{#aggregationError}}<p class="gravity-notice mt-4">{{aggregationError}}</p>{{/aggregationError}}
-{{#aggregation}}<p class="mt-4">투표 수: {{totalVoteCount}} · 사용 COMO: {{totalComoCount}} · 공개된 투표 수: {{revealedVoteCount}}</p>{{/aggregation}}
-</details>
+
 </main>
 {{>cosmo/partials/gravity-admin-login}}
 {{>layout/footer}}

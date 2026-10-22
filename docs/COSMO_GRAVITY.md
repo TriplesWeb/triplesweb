@@ -1,15 +1,15 @@
 # COSMO Gravity 연결
 
 현재 `/cosmo/gravity`와 `/gravity`는 같은 실제 API 목록을 표시한다.
-`/cosmo/gravity/{gravityId}?pollId={pollId}`는 COSMO 공식 결과와 Apollo 공개 집계를 표시한다.
-Gravity ID, COSMO poll ID, 온체인 poll ID는 서로 다를 수 있다. Apollo에는 COSMO poll ID를 전달한다.
+`/cosmo/gravity/{gravityId}?pollId={pollId}`는 COSMO 공식 결과만 직접 조회해 표시한다.
+Gravity ID, COSMO poll ID, 온체인 poll ID는 서로 다를 수 있다.
 정적 데모 수치와 가상의 과거 ID 매핑은 제거했다.
 
 읽기 전용 JSON API:
 - `GET /api/gravity?artistId=tripleS` (artms, idntt도 지원)
 - `GET /api/gravity/{gravityId}`
 - `GET /api/gravity/polls/{pollId}`
-- `GET /api/gravity/polls/{pollId}/aggregated` (COSMO 토큰 없이 Apollo 공개 조회)
+- `GET /api/gravity/polls/{pollId}/aggregated` (종료된 기능: 외부 호출 없이 410 반환)
 
 입력 오류는 400, 없는 upstream 항목은 404, 인증·설정 미완료는 503,
 그 밖의 외부 연결 오류는 502로 처리한다. 토큰 등록·갱신은 공개 API로 제공하지 않는다.
@@ -72,8 +72,8 @@ python3 scripts/setup-cosmo.py --from-file "$HOME/.config/cosmo-tui/auth.json"
   암호화 응답도 처리한다. JWT exp는 갱신 시점 판단에만 쓰며 계정 인증은 COSMO가 수행한다.
 - 토큰·암호화 요청/응답을 HTML, JSON API, 로그에 출력하지 않는다.
 - COSMO 미설정·만료·외부 API 장애는 안내 문구로 표시한다. 가상의 결과를 대신 표시하지 않는다.
-- Apollo 접근이 막히거나 집계가 없으면 COSMO 공식 결과는 계속 표시한다.
-  후보별 온체인 집계는 공개 완료됐을 때만 표시하며 누락 수치를 0으로 만들지 않는다.
+- Apollo 요청·주소 설정과 목록의 집계 조회 폼을 제거했다. 상세 페이지는 COSMO 그래비티 조회 한 번으로 공식 순위를 렌더링한다.
+- 확인한 COSMO 조회 응답은 최종 결과 및 후보 정보이며 시간별 투표 내역이 없다. 시간대별 소비량·실시간 후보 누적선은 자체 온체인 수집/인덱싱이 필요하며 아직 구현하지 않았다. 미제공 데이터는 안내만 표시하고 최종 합계로 과거 시계열을 만들지 않는다.
 
 ## 참고한 프로토콜
 

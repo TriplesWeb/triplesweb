@@ -34,8 +34,4 @@
 </div>{{/voteResults}}{{/officialResults}}
 </section>{{/hasOfficialResults}}
 {{^hasOfficialResults}}{{#selectedPoll}}<p class="gravity-notice">공식 결과가 아직 공개되지 않았습니다.</p>{{/selectedPoll}}{{/hasOfficialResults}}
-{{#aggregationError}}<p role="status" class="gravity-notice">{{aggregationError}}</p>{{/aggregationError}}
-{{#aggregation}}<section class="gravity-card"><h2 class="font-bold text-lg">Apollo 투표 집계</h2><p class="mt-3">투표 수 {{totalVoteCount}} · 사용 COMO {{totalComoCount}} · 공개된 투표 수 {{revealedVoteCount}}</p></section>{{/aggregation}}
-{{#hasCandidateResults}}<section class="gravity-card space-y-3"><h2 class="font-bold">공개 완료된 후보별 COMO</h2>
-{{#candidateResults}}<div class="flex gap-4 items-center border-t border-white/10 pt-3">{{#imageUrl}}<img src="{{imageUrl}}" alt="" loading="lazy" referrerpolicy="no-referrer" class="w-14 h-14 object-cover rounded">{{/imageUrl}}<span>{{name}}</span><strong class="ml-auto">{{comoAmount}} COMO</strong></div>{{/candidateResults}}</section>{{/hasCandidateResults}}
 </main>{{>layout/footer}}</body></html>
