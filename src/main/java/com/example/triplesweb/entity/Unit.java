@@ -54,6 +54,10 @@ public class Unit {
     @OneToMany(mappedBy = "unit", cascade = CascadeType.ALL)
     private List<Album> albums = new ArrayList<>();
 
+    /** 목록 페이지용: 부모/자식 앨범까지 합친 표시 목록 (영속화하지 않음) */
+    @Transient
+    private List<Album> displayAlbums = new ArrayList<>();
+
     public Unit(Long unitId, String unitName, String smallName, String unitImage, String formationDate, String debutDate, Unit parentUnit) {
         this.unitId = unitId;
         this.unitName = unitName;

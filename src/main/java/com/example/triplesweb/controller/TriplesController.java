@@ -83,11 +83,10 @@ public class TriplesController {
         return "triples/album_detail";
     }
 
+    /** 상세는 유닛 목록 탭에 통합. 기존 링크는 해당 탭으로 보낸다. */
     @GetMapping("/unit/{id:[0-9]+}")
-    public String TriplesUnitDetail(@PathVariable("id") long unitId, Model model) {
-        UnitService.UnitDetail detail = unitService.getDetail(unitId);
-        model.addAttribute("unit", detail.unit());
-        model.addAttribute("albums", detail.albums());
-        return "triples/unit_detail";
+    public String TriplesUnitDetail(@PathVariable("id") long unitId) {
+        unitService.getDetail(unitId); // 존재 여부 검증
+        return "redirect:/triples/unit?tab=unit-" + unitId;
     }
 }

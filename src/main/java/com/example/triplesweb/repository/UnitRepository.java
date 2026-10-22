@@ -11,5 +11,6 @@ import java.util.List;
  */
 public interface UnitRepository extends JpaRepository<Unit, Long> {
 
-    List<Unit> findByVisibleTrueOrderByUnitIdAsc();
+    /** 목록/탭: 결성일 오름차순, 동일 결성일은 id 순 */
+    List<Unit> findByVisibleTrueOrderByFormationDateAscUnitIdAsc();
 }

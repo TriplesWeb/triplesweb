@@ -1,0 +1,71 @@
+<div id="unitLoginModal" class="about-modal hidden" role="dialog" aria-modal="true" aria-labelledby="unitLoginTitle">
+    <div class="about-modal-panel about-login-panel">
+        <button type="button" class="about-close unit-login-close" aria-label="닫기">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        <h3 id="unitLoginTitle" class="about-modal-title">관리자 로그인</h3>
+        <form id="unitLoginForm" class="about-edit-form">
+            <label class="about-edit-label">비밀번호
+                <input type="password" id="unitLoginPassword" name="password" required autocomplete="current-password">
+            </label>
+            <p id="unitLoginError" class="about-edit-error" hidden></p>
+            <div class="about-edit-actions">
+                <button type="submit" class="about-mode-btn is-active">로그인</button>
+                <button type="button" class="about-mode-btn unit-login-close">취소</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="unitEditModal" class="about-modal hidden" role="dialog" aria-modal="true" aria-labelledby="unitEditTitle">
+    <div class="about-modal-panel about-edit-panel">
+        <button type="button" class="about-close unit-edit-close" aria-label="닫기">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        <h3 id="unitEditTitle" class="about-modal-title">유닛 수정</h3>
+        <form id="unitEditForm" class="about-edit-form">
+            <input type="hidden" id="unitEditId">
+            <div class="about-edit-grid">
+                <label class="about-edit-label">유닛명
+                    <input type="text" id="unitEditName" required maxlength="120">
+                </label>
+                <label class="about-edit-label">짧은 이름
+                    <input type="text" id="unitEditSmallName" required maxlength="40" placeholder="예: aaa">
+                </label>
+            </div>
+            <div class="about-edit-grid">
+                <label class="about-edit-label">결성일
+                    <input type="text" id="unitEditFormation" required maxlength="40" placeholder="YYYY-MM-DD">
+                </label>
+                <label class="about-edit-label">데뷔일
+                    <input type="text" id="unitEditDebut" maxlength="40" placeholder="YYYY-MM-DD">
+                </label>
+            </div>
+            <label class="about-edit-label">상위 유닛
+                <select id="unitEditParentId"></select>
+            </label>
+            <label class="about-edit-check">
+                <input type="checkbox" id="unitEditVisible" checked> 목록에 표시
+            </label>
+            <label class="about-edit-label">이미지 URL (나무위키 등)
+                <input type="url" id="unitEditImageUrl" maxlength="1000" placeholder="https://i.namu.wiki/i/...">
+            </label>
+            <label class="about-edit-label">또는 파일 업로드
+                <input type="file" id="unitEditImage" accept="image/*">
+            </label>
+            <img id="unitEditImagePreview" class="about-preview hidden" alt="유닛 미리보기">
+            <label class="about-edit-check">
+                <input type="checkbox" id="unitEditClearImage"> 이미지 제거
+            </label>
+            <div class="about-edit-label">소속 멤버
+                <div id="unitEditArtists" class="about-unit-checks" role="group" aria-label="소속 멤버"></div>
+            </div>
+            <p id="unitEditError" class="about-edit-error" hidden></p>
+            <div class="about-edit-actions">
+                <button type="button" id="unitEditDeleteBtn" class="about-mode-btn about-btn-danger hidden mr-auto">삭제</button>
+                <button type="submit" class="about-mode-btn is-active">저장</button>
+                <button type="button" class="about-mode-btn unit-edit-close">취소</button>
+            </div>
+        </form>
+    </div>
+</div>

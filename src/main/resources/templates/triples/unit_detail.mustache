@@ -13,19 +13,26 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/about-admin.css?v=6">
 </head>
-<body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
+<body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen about-admin-page">
 {{>layout/header}}
 
 <main class="main-content w-full max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-8 flex-1">
     {{#unit}}
         <section id="triplesUnitProfileSection" class="bg-[#16181f]/80 backdrop-blur-md border border-[#3a4a46]/30 rounded-2xl p-6 lg:p-10 mb-8 shadow-xl">
+            <div class="flex flex-wrap items-center justify-end gap-2 mb-4">
+                <button type="button" class="about-mode-btn about-edit-inline is-active" data-unit-edit="{{unitId}}">유닛 수정</button>
+                <button type="button" id="unitAdminBtn" class="about-admin-btn hidden" aria-pressed="false">관리자</button>
+            </div>
+            <p id="unitAdminHint" class="about-admin-hint hidden mb-4">관리자 모드: 유닛 정보·멤버·공개 여부를 수정할 수 있어요.</p>
+
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
                 <!-- 유닛 프로필 이미지 -->
                 <div class="lg:col-span-4 relative group">
                     <div class="unit-image relative w-full aspect-[4/5] rounded-2xl overflow-hidden border border-[#3a4a46]/40 bg-black/50 shadow-inner">
-                        <img src="/uploads/images/{{smallName}}.jpg" class="w-full h-full object-cover" alt="{{unitName}}" />
+                        <img src="{{unitImage}}" class="w-full h-full object-cover" alt="{{unitName}}" />
                     </div>
                 </div>
 
@@ -89,6 +96,9 @@
             </div>
         </section>
 </main>
+{{>triples/partials/unit-admin-modals}}
 {{>layout/footer}}
+<script src="/js/about-admin-auth.js?v=1"></script>
+<script src="/js/unit.js?v=4"></script>
 </body>
 </html>

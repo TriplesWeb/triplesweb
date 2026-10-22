@@ -105,32 +105,43 @@ public class DataInitializer implements ApplicationRunner {
             Unit nxt = new Unit(null,"Nxt", "nxt", "/uploads/images/nxt.jpg", "2023-11-22", "2023-12-23", null);
             Unit glow = new Unit(null, "Glow", "glow", "/uploads/images/glow.jpg", "2024-04-01", "2024-06-21", null);
             Unit vv = new Unit(null, "Visionary Vision", "VV", "/uploads/images/vv.jpg", "2024-06-18", "2024-10-23", null);
+            Unit acidEyes = new Unit(null, "Acid Eyes", "acideyes", "/uploads/images/acideyes.jpg", "2022-12-26", "2023-01-06", null);
             Unit msnz = new Unit (null, "MSNZ", "msnz", "/uploads/images/msnz.jpg", "2025-09-09", "2025-11-24", null);
-            msnz.setVisible(false);
             Unit moon = new Unit(null, "msnz Moon","moon","/uploads/images/moon.jpg", "2025-09-09", "2025-11-24", msnz);
             Unit sun = new Unit(null,"msnz Sun","sun","/uploads/images/sun.jpg","2025-09-09","2025-11-24", msnz);
             Unit neptune = new Unit(null,"msnz Neptune", "neptune","/uploads/images/neptune.jpg","2025-09-09","2025-11-24", msnz);
             Unit zenith = new Unit (null,"msnz Zenith","zenith","/uploads/images/zenith.jpg","2025-09-09","2025-11-24", msnz);
+            Unit hatchi = new Unit(null, "∞!", "hatchi", "/uploads/images/hatchi.jpg", "2024-09-01", "2024-11-20", null);
+            Unit alphie = new Unit(null, "Alphie", "alphie", "/uploads/images/alphie.jpg", "2025-07-02", "2025-09-03", null);
 
             msnz.getSubUnits().addAll(List.of(moon, sun, neptune, zenith));
-            unitrepository.saveAll(List.of(aaa, kre, lovelution, evolution, aria, nxt, glow, vv, msnz, moon, sun, neptune, zenith));
+            unitrepository.saveAll(List.of(aaa, kre, lovelution, evolution, aria, nxt, glow, vv, acidEyes, msnz, moon, sun, neptune, zenith, hatchi, alphie));
 
 
 
             // 3. Artist ↔ Unit 매핑 (UnitMember 생성)
             addUnitMembers(aaa, List.of(hyerin, yooyeon, nakyoung, yubin));
             addUnitMembers(kre, List.of(seoyeon, jiwoo, chaeyeon, soomin));
+            addUnitMembers(acidEyes, List.of(hyerin, yooyeon, nakyoung, yubin, seoyeon, jiwoo, chaeyeon, soomin));
             addUnitMembers(lovelution, List.of(seoyeon, hyerin, yubin, kaede, dahyun, nien, sohyun, xinyu));
             addUnitMembers(evolution, List.of(jiwoo, chaeyeon, yooyeon, soomin, nakyoung, kotone, yeonji, mayu));
             addUnitMembers(aria, List.of(jiwoo, chaeyeon, dahyun, kaede, nien));
             addUnitMembers(nxt, List.of(lynn, joobin, hayeon, shion));
             addUnitMembers(glow, List.of(chaewon, sullin, seoah, jiyeon));
             addUnitMembers(vv,  List.of(hyerin, yooyeon, nakyoung, yubin, kaede, kotone, yeonji, nien, sohyun, xinyu, lynn, jiyeon));
+            addUnitMembers(hatchi, List.of(jiwoo, chaeyeon, yooyeon, soomin, kotone, mayu, shion, chaewon));
+            addUnitMembers(alphie, List.of(yooyeon, kotone, nien, lynn, hayeon, shion, chaewon, jiyeon));
             addUnitMembers(moon, List.of(kaede, sohyun, lynn, shion, sullin, jiyeon));
             addUnitMembers(sun, List.of (hyerin, chaeyeon, yooyeon, xinyu, mayu, chaewon));
             addUnitMembers(neptune, List.of(seoyeon, nakyoung, dahyun, kotone, nien, seoah));
             addUnitMembers(zenith, List.of(jiwoo, soomin, yubin, yeonji, joobin, hayeon));
-            unitrepository.saveAll(List.of(aaa, kre, lovelution, evolution, aria, nxt, glow, vv, msnz, moon, sun, neptune, zenith));
+            addUnitMembers(msnz, List.of(
+                    kaede, sohyun, lynn, shion, sullin, jiyeon,
+                    hyerin, chaeyeon, yooyeon, xinyu, mayu, chaewon,
+                    seoyeon, nakyoung, dahyun, kotone, nien, seoah,
+                    jiwoo, soomin, yubin, yeonji, joobin, hayeon
+            ));
+            unitrepository.saveAll(List.of(aaa, kre, lovelution, evolution, aria, nxt, glow, vv, acidEyes, msnz, moon, sun, neptune, zenith, hatchi, alphie));
 
 
         // 4. Album (앨범 4개) 생성 및 해당 Unit 매핑 후 저장
@@ -141,9 +152,9 @@ public class DataInitializer implements ApplicationRunner {
                     "트리플에스 완전체 첫 앨범", new ArrayList<>(), null, AlbumType.FULL_10);
             Album aesthetic = new Album(null, "AESTHETIC", "/uploads/images/aesthetic.jpg", "2023-05-04",
                             "트리플에스 크아의 첫 앨범", new ArrayList<>(), kre, AlbumType.SUBUNIT);
-            Album lovelAlbum = new Album(null, "ↀ", "/uploads/images/ↀ.jpg", "2023-08-17",
+            Album lovelAlbum = new Album(null, "ↀ", "/uploads/images/lovelution-album.jpg", "2023-08-17",
                             "트리플에스 러블루션의 첫 앨범", new ArrayList<>(), lovelution, AlbumType.SUBUNIT);
-            Album evolAlbum  = new Album(null, "⟡", "/uploads/images/⟡.jpg", "2023-10-11",
+            Album evolAlbum  = new Album(null, "⟡", "/uploads/images/evolution-album.jpg", "2023-10-11",
                             "트리플에스 에볼루션의 첫 앨범", new ArrayList<>(), evolution, AlbumType.SUBUNIT);
             Album sadness = new Album(null, "Structure of Sadness","/uploads/images/sadness.jpg","2024-01-15",
                     "트리플에스 아리아의 앨범",new ArrayList<>(), aria, AlbumType.SUBUNIT);
