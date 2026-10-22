@@ -1,0 +1,193 @@
+<div id="chemistryModal" class="chem-modal hidden" role="dialog" aria-modal="true" aria-labelledby="chemistryTitle">
+    <div class="chem-modal-panel">
+        <button type="button" class="chem-close" aria-label="닫기">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        <div class="chem-modal-heading">
+            <h3 id="chemistryTitle" class="chem-modal-title"></h3>
+            <p id="chemistryPair" class="chem-modal-pair"></p>
+        </div>
+        <figure class="chem-modal-media">
+            <img id="chemistryImage" class="chem-modal-img" src="" alt="">
+            <figcaption id="chemistryCredit" class="chem-modal-credit" hidden></figcaption>
+        </figure>
+        <p id="chemistryDescription" class="chem-modal-desc"></p>
+        <div id="chemistryLinks" class="chem-modal-links"></div>
+        <div id="chemistryAdminActions" class="chem-admin-actions hidden">
+            <button type="button" id="chemEditBtn" class="chem-mode-btn is-active">수정</button>
+            <button type="button" id="chemDeleteBtn" class="chem-mode-btn chem-btn-danger">삭제</button>
+        </div>
+    </div>
+</div>
+
+<div id="chemistryEditModal" class="chem-modal hidden" role="dialog" aria-modal="true" aria-labelledby="chemistryEditTitle">
+    <div class="chem-modal-panel chem-edit-panel">
+        <button type="button" class="chem-close chem-edit-close" aria-label="닫기">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        <h3 id="chemistryEditTitle" class="chem-modal-title">케미 편집</h3>
+        <details class="chem-edit-help" open>
+            <summary>입력 방법 안내</summary>
+            <ul class="chem-edit-help-list">
+                <li><strong>케미명(한/영)</strong> — 표 칸에 보이는 짧은 이름입니다. 영문 케미명이 비어 있으면 영어 페이지에서도 한국어 케미명을 씁니다. 복수면 줄바꿈으로 구분합니다.</li>
+                <li><strong>글자 색상</strong> — 공식(흰색) 또는 미정(보라) / 최근(분홍) / WAV(하늘). 표 칸 글자색만 바뀝니다.</li>
+                <li><strong>설명(한/영)</strong> — 한국어·영어 설명을 한 화면에서 함께 저장합니다. 영어 페이지는 영문 설명을 보여 줍니다.</li>
+                <li><strong>설명 서식</strong> — 편집 칸을 클릭한 뒤 글자를 드래그하고 <b>B</b>(굵게) / <i>I</i>(기울임) / <u>U</u>(밑줄) / <b>A</b>(색상)를 누르세요.</li>
+                <li><strong>하이퍼링크</strong> — 아래에 표시 텍스트와 URL을 추가한 뒤, 설명 본문에서 같은 문구를 <code>**표시 텍스트**</code>처럼 감싸면 클릭 가능한 링크가 됩니다.</li>
+                <li><strong>사진 출처</strong> — 설명 <em>맨 끝</em>에 <code>photo by. @계정</code> 형식으로 적으면, 본문에서는 빠지고 이미지 아래에 출처로만 표시됩니다.<br>
+                    예: <code>…귀여운 케미명이다. photo by. @posh1204</code></li>
+                <li><strong>사진</strong> — 새 파일을 고르면 업로드·교체됩니다. 체크박스 <em>사진 제거</em>는 이미지를 없앱니다.</li>
+            </ul>
+        </details>
+        <form id="chemistryEditForm" class="chem-edit-form">
+            <input type="hidden" id="chemEditMember1" name="member1">
+            <input type="hidden" id="chemEditMember2" name="member2">
+            <div class="chem-edit-label">케미명 (한국어 / English)
+                <p class="chem-edit-lang-label">한국어</p>
+                <textarea id="chemEditLabel" name="label" required maxlength="120" rows="2" autocomplete="off" placeholder="예: 꼬꼬마즈&#10;복수면 줄바꿈으로 구분"></textarea>
+                <p class="chem-edit-lang-label">English</p>
+                <textarea id="chemEditLabelEn" name="labelEn" maxlength="120" rows="2" autocomplete="off" placeholder="선택. 비우면 영어 페이지에서 한국어 케미명 사용"></textarea>
+                <p class="chem-edit-field-hint">영문 칸이 비어 있으면 영어 페이지에서 한국어 케미명을 그대로 표시합니다.</p>
+            </div>
+            <fieldset class="chem-tone-picker">
+                <legend>글자 색상</legend>
+                <div class="chem-tone-options" role="radiogroup" aria-label="케미명 글자 색상">
+                    <label class="chem-tone-option chem-tone-option--none">
+                        <input type="radio" name="labelTone" value="NONE" checked>
+                        <span>공식</span>
+                    </label>
+                    <label class="chem-tone-option chem-tone-option--undecided">
+                        <input type="radio" name="labelTone" value="UNDECIDED">
+                        <span>미정</span>
+                    </label>
+                    <label class="chem-tone-option chem-tone-option--recent">
+                        <input type="radio" name="labelTone" value="RECENT">
+                        <span>최근</span>
+                    </label>
+                    <label class="chem-tone-option chem-tone-option--fan">
+                        <input type="radio" name="labelTone" value="FAN">
+                        <span>WAV</span>
+                    </label>
+                </div>
+                <p class="chem-edit-field-hint">공식은 흰색. 미정·최근·WAV를 고르면 표에서 글자색만 바뀝니다.</p>
+            </fieldset>
+            <div class="chem-edit-label">설명 (한국어 / English)
+                <div class="chem-fmt-toolbar" role="toolbar" aria-label="글꼴 서식">
+                    <button type="button" class="chem-fmt-btn" data-fmt="bold" title="굵게"><b>B</b></button>
+                    <button type="button" class="chem-fmt-btn" data-fmt="italic" title="기울임"><i>I</i></button>
+                    <button type="button" class="chem-fmt-btn" data-fmt="underline" title="밑줄"><u>U</u></button>
+                    <div class="chem-color-wrap">
+                        <button type="button" class="chem-fmt-btn chem-color-toggle" id="chemColorToggle" title="글자 색" aria-expanded="false" aria-haspopup="true">
+                            <span class="chem-color-toggle-label">A</span>
+                            <span class="chem-color-toggle-bar" id="chemColorBar"></span>
+                        </button>
+                        <button type="button" class="chem-fmt-btn chem-color-toggle chem-highlight-toggle" id="chemHighlightToggle" title="형광펜 (배경색)" aria-expanded="false" aria-haspopup="true">
+                            <span class="chem-highlight-toggle-label">A</span>
+                            <span class="chem-color-toggle-bar" id="chemHighlightBar"></span>
+                        </button>
+                        <div id="chemColorPalette" class="chem-color-palette hidden" role="dialog" aria-label="색상 팔레트">
+                            <div class="chem-color-pages">
+                                <div class="chem-color-page-head">
+                                    <div id="chemColorPageTitle" class="chem-color-palette-title">멤버 상징색 (S1–S24)</div>
+                                    <div class="chem-color-page-nav" role="group" aria-label="팔레트 페이지">
+                                        <button type="button" id="chemColorPagePrev" class="chem-color-page-btn" aria-label="이전 페이지" disabled>‹</button>
+                                        <span id="chemColorPageIndicator" class="chem-color-page-indicator" aria-live="polite">1 / 2</span>
+                                        <button type="button" id="chemColorPageNext" class="chem-color-page-btn" aria-label="다음 페이지">›</button>
+                                    </div>
+                                </div>
+                                <div id="chemColorPage1" class="chem-color-page" data-page="1">
+                                    <div id="chemColorSwatches" class="chem-color-swatches" role="listbox" aria-label="멤버 상징색 S1부터 S24"></div>
+                                </div>
+                                <div id="chemColorPage2" class="chem-color-page hidden" data-page="2" hidden>
+                                    <div class="chem-color-section">
+                                        <div class="chem-color-section-label">고정</div>
+                                        <div id="chemColorPinned" class="chem-color-swatches chem-color-pinned" role="listbox" aria-label="고정 색상"></div>
+                                        <p id="chemColorPinnedEmpty" class="chem-color-recent-empty">고정한 색이 없습니다</p>
+                                    </div>
+                                    <div class="chem-color-section">
+                                        <div class="chem-color-section-label">최근</div>
+                                        <div id="chemColorRecent" class="chem-color-swatches chem-color-recent" role="listbox" aria-label="최근 사용 색상"></div>
+                                        <p id="chemColorRecentEmpty" class="chem-color-recent-empty">최근 사용한 색이 없습니다</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chem-color-custom">
+                                <label class="chem-color-custom-row">
+                                    <span>피커</span>
+                                    <input type="color" id="chemColorPicker" value="#00f5d4" title="색을 고른 뒤 확인을 누르세요">
+                                </label>
+                                <label class="chem-color-custom-row">
+                                    <span>HEX</span>
+                                    <input type="text" id="chemColorHex" value="#00f5d4" maxlength="7" spellcheck="false" placeholder="#00f5d4">
+                                </label>
+                                <div class="chem-color-rgb-row">
+                                    <label>R <input type="number" id="chemColorR" min="0" max="255" value="0"></label>
+                                    <label>G <input type="number" id="chemColorG" min="0" max="255" value="245"></label>
+                                    <label>B <input type="number" id="chemColorB" min="0" max="255" value="212"></label>
+                                </div>
+                                <div class="chem-color-custom-actions">
+                                    <button type="button" id="chemColorPin" class="chem-mode-btn" title="현재 색을 2페이지 고정에 저장">고정</button>
+                                    <button type="button" id="chemColorReset" class="chem-mode-btn">기본</button>
+                                    <button type="button" id="chemColorApply" class="chem-mode-btn is-active">확인</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p class="chem-edit-field-hint">편집할 칸을 클릭 → 글자 선택 → 서식. 출처는 각 설명 맨 끝 <code>photo by. @계정</code></p>
+                <p class="chem-edit-lang-label">한국어</p>
+                <div id="chemEditDescription" class="chem-edit-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="한국어 설명을 입력하세요. 끝예: photo by. @username"></div>
+                <p class="chem-edit-lang-label">English</p>
+                <div id="chemEditDescriptionEn" class="chem-edit-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="영어 설명을 입력하세요. 끝예: photo by. @username"></div>
+            </div>
+            <div class="chem-edit-links-block">
+                <div class="chem-edit-links-head">
+                    <span>하이퍼링크</span>
+                    <button type="button" id="chemAddLinkBtn" class="chem-mode-btn">링크 추가</button>
+                </div>
+                <p class="chem-edit-links-hint">표시 텍스트 + URL을 추가하고, 설명에서 같은 문구를 <code>**표시 텍스트**</code>로 감싸세요.</p>
+                <div id="chemEditLinks" class="chem-edit-links"></div>
+            </div>
+            <label class="chem-edit-label">사진
+                <input type="file" id="chemEditImage" name="image" accept="image/*">
+            </label>
+            <div id="chemEditImagePreviewWrap" class="chem-edit-image-preview hidden">
+                <img id="chemEditImagePreview" alt="현재 사진 미리보기">
+                <p class="chem-edit-field-hint">새 파일을 고르지 않으면 이 사진이 유지됩니다.</p>
+            </div>
+            <p class="chem-edit-field-hint">출처는 사진 칸이 아니라 설명 맨 끝 <code>photo by. @계정</code>으로 적습니다. 이미지 아래 캡션으로 표시됩니다.</p>
+            <label class="chem-edit-check">
+                <input type="checkbox" id="chemEditClearImage" name="clearImage"> 사진 제거 (체크 시에만 삭제)
+            </label>
+            <p id="chemEditError" class="chem-edit-error" hidden></p>
+            <div class="chem-edit-actions">
+                <button type="button" id="chemEditDeleteBtn" class="chem-mode-btn chem-btn-danger">삭제</button>
+                <button type="submit" class="chem-mode-btn is-active">저장</button>
+                <button type="button" class="chem-mode-btn chem-edit-cancel">취소</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="chemistryLoginModal" class="chem-modal hidden" role="dialog" aria-modal="true" aria-labelledby="chemistryLoginTitle">
+    <div class="chem-modal-panel chem-login-panel">
+        <button type="button" class="chem-close chem-login-close" aria-label="닫기">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        <h3 id="chemistryLoginTitle" class="chem-modal-title">관리자 로그인</h3>
+        <form id="chemistryLoginForm" class="chem-edit-form">
+            <label class="chem-edit-label">비밀번호
+                <span class="chem-password-field">
+                    <input type="password" id="chemLoginPassword" name="password" required autocomplete="current-password">
+                    <button type="button" id="chemLoginPasswordToggle" class="chem-password-toggle" aria-label="비밀번호 보기" aria-pressed="false">
+                        <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+                    </button>
+                </span>
+            </label>
+            <p id="chemLoginError" class="chem-edit-error" hidden></p>
+            <div class="chem-edit-actions">
+                <button type="submit" class="chem-mode-btn is-active">로그인</button>
+            </div>
+        </form>
+    </div>
+</div>
