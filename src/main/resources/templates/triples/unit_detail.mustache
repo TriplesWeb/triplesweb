@@ -13,7 +13,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/about-admin.css?v=6">
+    <link rel="stylesheet" href="/css/about-admin.css?v=10">
 </head>
 <body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen about-admin-page">
 {{>layout/header}}
@@ -31,8 +31,8 @@
 
                 <!-- 유닛 프로필 이미지 -->
                 <div class="lg:col-span-4 relative group">
-                    <div class="unit-image relative w-full aspect-[4/5] rounded-2xl overflow-hidden border border-[#3a4a46]/40 bg-black/50 shadow-inner">
-                        <img src="{{unitImage}}" class="w-full h-full object-cover" alt="{{unitName}}" />
+                    <div class="unit-image relative w-full rounded-2xl overflow-hidden border border-[#3a4a46]/40 bg-black/50 shadow-inner">
+                        <img src="{{unitImage}}" class="block w-full h-auto object-contain" alt="{{unitName}}" />
                     </div>
                 </div>
 

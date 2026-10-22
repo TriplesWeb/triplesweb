@@ -13,17 +13,25 @@
     const opts = options ? { ...options } : {};
     opts.headers = auth ? auth.applyAuthHeaders(opts.headers || {}) : new Headers(opts.headers || {});
     opts.credentials = "same-origin";
-    return fetch(url, opts);
+    const res = await fetch(url, opts);
+    if (res.status === 403) {
+      setToken("");
+      isAdmin = false;
+      setAdminUi();
+    }
+    return res;
   }
 
   async function readError(res, fallback) {
+    if (res.status === 403) {
+      return "관리자 로그인이 만료되었습니다. 창을 닫고 관리자 로그인 후 다시 저장해 주세요.";
+    }
     try {
       const data = await res.json();
       if (data && (data.detail || data.message || data.error || data.title)) {
         return data.detail || data.message || data.error || data.title;
       }
     } catch (_) { /* ignore */ }
-    if (res.status === 403) return "관리자 로그인이 필요합니다.";
     return fallback || "요청에 실패했습니다.";
   }
 
@@ -153,10 +161,23 @@
     const tabButtons = document.querySelectorAll("#triplesUnitTabs .nav-tab-btn");
     const tabPanes = document.querySelectorAll("#unitTabContent .tab-pane");
     const targetId = btn.getAttribute("data-target");
+    if (/^#unit-[0-9]+$/.test(targetId)) {
+      const current = new URL(window.location.href);
+      current.searchParams.set("tab", targetId.slice(1));
+      window.history.replaceState(null, "", current.pathname + current.search + current.hash);
+    }
     tabButtons.forEach((b) => b.classList.remove("is-active"));
     btn.classList.add("is-active");
     tabPanes.forEach((pane) => pane.classList.add("hidden"));
-    document.querySelector(targetId)?.classList.remove("hidden");
+    const pane = document.querySelector(targetId);
+    if (pane) {
+      pane.querySelectorAll("img[data-unit-src]").forEach(img => {
+        const source = img.getAttribute("data-unit-src");
+        if (source) img.src = source;
+        img.removeAttribute("data-unit-src");
+      });
+      pane.classList.remove("hidden");
+    }
     const scroller = btn.closest(".unit-tabs-scroller");
     if (scroller) {
       const btnRect = btn.getBoundingClientRect();
@@ -263,7 +284,16 @@
         const url = id ? API + "/" + id : API;
         const res = await apiFetch(url, { method: "POST", body: fd });
         if (!res.ok) throw new Error(await readError(res, "저장 실패"));
-        location.reload();
+        const saved = await res.json();
+        const destination = new URL(window.location.href);
+        destination.pathname = "/triples/unit";
+        destination.hash = "";
+        if (saved.visible !== false) {
+          destination.searchParams.set("tab", "unit-" + saved.unitId);
+        } else {
+          destination.searchParams.delete("tab");
+        }
+        window.location.assign(destination.toString());
       } catch (ex) {
         if (err) { err.hidden = false; err.textContent = ex.message || "저장 실패"; }
       }
@@ -293,7 +323,8 @@
       if (statusRes.ok) {
         const status = await statusRes.json();
         adminConfigured = Boolean(status.configured);
-        isAdmin = Boolean(status.admin) || Boolean(getToken());
+        isAdmin = Boolean(status.admin);
+        if (!isAdmin) setToken("");
       }
     } catch (_) { /* ignore */ }
     setAdminUi();

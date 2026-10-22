@@ -246,9 +246,6 @@ public class CosmoController {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
     }
 
-    @GetMapping("/gravity")
-    public String indexGravity() { return "cosmo/gravity"; }
-
     @GetMapping("/event")
     public String indexCosmoEvent() { return "cosmo/event"; }
 

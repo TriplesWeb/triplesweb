@@ -69,6 +69,26 @@ class UnitAdminServiceTest {
     }
 
     @Test
+    void clearingOnlyImageKeepsMembersAndRemovesImageReference() {
+        Artist artist = artist("retained-with-image");
+        Unit unit = unit(artist);
+        unit.setUnitImage("/uploads/images/acideyes.jpg");
+        em.flush();
+        Long linkId = unit.getUnitMembers().get(0).getId();
+        Long unitId = unit.getUnitId();
+        Long artistId = artist.getArtistId();
+        em.clear();
+
+        var response = service.update(unitId, "Original", "original", "2026-10-22", "", true,
+                null, List.of(artistId), null, null, true);
+
+        assertThat(response.getUnitImage()).isNull();
+        Unit saved = reload(unitId);
+        assertThat(saved.getUnitImage()).isNull();
+        assertThat(saved.getUnitMembers()).extracting(UnitMember::getId).containsExactly(linkId);
+    }
+
+    @Test
     void creatingUnitDeduplicatesMembers() {
         Artist artist = artist("new");
         Long id = service.create("New", "new", "2026-10-22", "", true, null,

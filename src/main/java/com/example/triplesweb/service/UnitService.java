@@ -26,11 +26,33 @@ public class UnitService {
 
     @Transactional(readOnly = true)
     public List<Unit> listVisible() {
-        List<Unit> units = unitRepository.findByVisibleTrueOrderByFormationDateAscUnitIdAsc();
-        for (Unit unit : units) {
-            hydrateForPage(unit);
+        // Hidden containers/children still participate in album inheritance.
+        List<Unit> allUnits = unitRepository.findAllForUnitPage();
+        List<Unit> visible = allUnits.stream().filter(Unit::isVisible).toList();
+        if (visible.isEmpty()) return visible;
+
+        Map<Long, List<Long>> childIds = new LinkedHashMap<>();
+        for (Unit unit : allUnits) {
+            if (unit.getParentUnit() != null) {
+                childIds.computeIfAbsent(unit.getParentUnit().getUnitId(), ignored -> new ArrayList<>())
+                        .add(unit.getUnitId());
+            }
         }
-        return units;
+        Map<Long, List<Album>> albumsByUnit = new LinkedHashMap<>();
+        var unitIds = allUnits.stream().map(Unit::getUnitId).toList();
+        for (Album album : albumRepository.findByUnit_UnitIdInOrderByReleaseDateAscAlbumIdAsc(unitIds)) {
+            albumsByUnit.computeIfAbsent(album.getUnit().getUnitId(), ignored -> new ArrayList<>()).add(album);
+        }
+        for (Unit unit : visible) {
+            Map<Long, Album> merged = new LinkedHashMap<>();
+            addAlbums(merged, albumsByUnit.get(unit.getUnitId()));
+            if (unit.getParentUnit() != null) addAlbums(merged, albumsByUnit.get(unit.getParentUnit().getUnitId()));
+            for (Long childId : childIds.getOrDefault(unit.getUnitId(), List.of())) {
+                addAlbums(merged, albumsByUnit.get(childId));
+            }
+            unit.setDisplayAlbums(new ArrayList<>(merged.values()));
+        }
+        return visible;
     }
 
     @Transactional(readOnly = true)

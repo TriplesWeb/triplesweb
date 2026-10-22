@@ -25,24 +25,31 @@ public class GravityService {
     private final ObjectMapper objectMapper;
     private final String apolloBaseUrl;
     private final String cosmoApiBaseUrl;
-    private final String cosmoAccessToken;
+    private final CosmoTokenProvider tokens;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public GravityService(
             RestClient.Builder restClientBuilder,
             ObjectMapper objectMapper,
             @Value("${gravity.apollo-base-url:https://apollo.cafe}") String apolloBaseUrl,
             @Value("${gravity.cosmo-api-base-url:https://api.cosmo.fans}") String cosmoApiBaseUrl,
-            @Value("${gravity.cosmo-access-token:}") String cosmoAccessToken
+            CosmoTokenProvider tokens
     ) {
-        this.restClient = restClientBuilder.build();
+        this(restClientBuilder.clone().requestFactory(CosmoTokenProvider.requestFactory()).build(),
+                objectMapper, apolloBaseUrl, cosmoApiBaseUrl, tokens);
+    }
+
+    GravityService(RestClient client, ObjectMapper objectMapper, String apolloBaseUrl,
+            String cosmoApiBaseUrl, CosmoTokenProvider tokens) {
+        this.restClient = client;
         this.objectMapper = objectMapper;
         this.apolloBaseUrl = trimTrailingSlash(apolloBaseUrl);
         this.cosmoApiBaseUrl = trimTrailingSlash(cosmoApiBaseUrl);
-        this.cosmoAccessToken = cosmoAccessToken == null ? "" : cosmoAccessToken.trim();
+        this.tokens = tokens;
     }
 
     public boolean hasCosmoToken() {
-        return !cosmoAccessToken.isBlank();
+        return tokens.isConfigured();
     }
 
     /**
@@ -54,11 +61,14 @@ public class GravityService {
 
         String encodedArtist = UriUtils.encodeQueryParam(artistId, StandardCharsets.UTF_8);
         JsonNode root = cosmoGet("/bff/v3/gravities?artistId=" + encodedArtist);
+        if (!root.path("ongoing").isArray() || !root.path("upcoming").isArray() || !root.path("past").isArray()) {
+            throw new IllegalStateException("COSMO 그래비티 목록 응답 형식이 변경되었습니다.");
+        }
         List<Map<String, Object>> result = new ArrayList<>();
 
-        appendGravityGroup(result, root.path("ongoing"), "진행 중", artistId, false);
-        appendGravityGroup(result, root.path("upcoming"), "예정", artistId, false);
-        appendGravityGroup(result, root.path("past"), "종료", artistId, true);
+        appendGravityGroup(result, root.path("ongoing"), "진행 중", artistId);
+        appendGravityGroup(result, root.path("upcoming"), "예정", artistId);
+        appendGravityGroup(result, root.path("past"), "종료", artistId);
 
         return result;
     }
@@ -67,22 +77,17 @@ public class GravityService {
             List<Map<String, Object>> destination,
             JsonNode group,
             String statusLabel,
-            String artistId,
-            boolean past
+            String artistId
     ) {
         if (!group.isArray()) {
             return;
         }
 
-        int pastCount = 0;
         for (JsonNode gravityNode : group) {
-            // Keep the page compact: only show the 12 most recent past entries.
-            if (past && pastCount >= 12) {
-                break;
-            }
-
             Map<String, Object> gravity = objectMapper.convertValue(gravityNode, MAP_TYPE);
             gravity.put("statusLabel", statusLabel);
+            gravity.put("bannerImageUrl", safeImage(gravityNode.path("bannerImageUrl").asText("")));
+            gravity.put("detailUrl", "/cosmo/gravity/" + gravityNode.path("id").asLong());
             gravity.put("artistId", artistId);
             gravity.put("apolloUrl", apolloBaseUrl + "/gravity/" + artistId + "/" +
                     gravityNode.path("id").asText());
@@ -100,9 +105,6 @@ public class GravityService {
             }
             gravity.put("polls", polls);
             destination.add(gravity);
-            if (past) {
-                pastCount++;
-            }
         }
     }
 
@@ -140,7 +142,8 @@ public class GravityService {
 
         JsonNode response = cosmoGet("/bff/v3/polls/" + pollId);
         JsonNode details = response.path("pollDetail");
-        return details.isMissingNode() || details.isNull() ? null : details;
+        if (!details.isObject()) throw new IllegalStateException("COSMO 투표 응답 형식이 변경되었습니다.");
+        return details;
     }
 
     /**
@@ -173,12 +176,14 @@ public class GravityService {
                     choice.path("id").asText(""),
                     "후보 " + (index + 1)
             ));
-            candidate.put("comoAmount", amounts.path(index).asLong(0));
-            candidate.put("imageUrl", firstNonBlank(
+            JsonNode amount = amounts.isObject() ? amounts.path(String.valueOf(index)) : amounts.path(index);
+            if (!amount.isNumber()) continue;
+            candidate.put("comoAmount", amount.asLong());
+            candidate.put("imageUrl", safeImage(firstNonBlank(
                     choice.path("txImageUrl").asText(""),
                     choice.path("imageUrl").asText(""),
                     ""
-            ));
+            )));
             result.add(candidate);
         }
 
@@ -196,21 +201,48 @@ public class GravityService {
         return objectMapper.convertValue(node, MAP_TYPE);
     }
 
+    public JsonNode fetchGravityDetails(long gravityId) {
+        if (gravityId <= 0) throw new IllegalArgumentException("Invalid gravity ID");
+        JsonNode response = cosmoGet("/bff/v3/gravities/" + gravityId);
+        JsonNode gravity = response.path("gravity");
+        if (!gravity.isObject()) throw new IllegalStateException("COSMO 그래비티 응답을 확인할 수 없습니다.");
+        return gravity;
+    }
+
     private JsonNode cosmoGet(String path) {
-        requireCosmoToken();
-        return restClient.get()
-                .uri(cosmoApiBaseUrl + path)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + cosmoAccessToken)
-                .retrieve()
-                .body(JsonNode.class);
+        String token = tokens.accessToken();
+        try {
+            return getWithToken(path, token);
+        } catch (RestClientResponseException e) {
+            if (e.getStatusCode().value() != 401) throw e;
+            return getWithToken(path, tokens.afterUnauthorized(token));
+        }
+    }
+
+    private JsonNode getWithToken(String path, String token) {
+        JsonNode response = restClient.get().uri(cosmoApiBaseUrl + path)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .header(HttpHeaders.USER_AGENT, "triplesweb/1.0")
+                .exchange((request, reply) -> {
+                    if (!reply.getStatusCode().is2xxSuccessful()) {
+                        throw new RestClientResponseException("COSMO API request failed",
+                                reply.getStatusCode().value(), "", null, new byte[0], StandardCharsets.UTF_8);
+                    }
+                    String body = new String(reply.getBody().readAllBytes(), StandardCharsets.UTF_8);
+                    return tokens.decodeResponse(body, "1".equals(reply.getHeaders().getFirst("x-cosmo-encrypted")));
+                });
+        if (response == null || response.has("error")) {
+            throw new IllegalStateException("COSMO API에서 올바른 응답을 받지 못했습니다.");
+        }
+        return response;
     }
 
     private void requireCosmoToken() {
-        if (!hasCosmoToken()) {
-            throw new IllegalStateException(
-                    "COSMO_ACCESS_TOKEN is not configured. Public aggregate lookup can still be attempted by poll ID."
-            );
-        }
+        if (!hasCosmoToken()) throw new IllegalStateException("COSMO 인증이 아직 연결되지 않았습니다.");
+    }
+
+    public static String safeImage(String url) {
+        return url.startsWith("https://") ? url : "";
     }
 
     private static String firstNonBlank(String first, String second, String fallback) {

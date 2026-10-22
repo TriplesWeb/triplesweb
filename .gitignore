@@ -49,3 +49,6 @@ uploads/**/*.orig
 
 ### Docker entrypoint chemistry bundle marker ###
 uploads/**/.bundle-version
+
+# Rotating COSMO account credentials
+data/cosmo/

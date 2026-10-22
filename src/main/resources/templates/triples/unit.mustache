@@ -12,7 +12,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/about-admin.css?v=9">
+    <link rel="stylesheet" href="/css/about-admin.css?v=11">
 </head>
 <body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen about-admin-page">
 {{>layout/header}}
@@ -49,8 +49,8 @@
                 <div class="tab-pane hidden" id="unit-{{unitId}}">
                     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                         <div class="lg:col-span-4">
-                            <div class="relative w-full aspect-[4/5] rounded-2xl overflow-hidden border border-[#3a4a46]/40 bg-black/50 shadow-inner">
-                                <img src="{{unitImage}}" alt="{{unitName}}" class="w-full h-full object-cover">
+                            <div class="relative w-full rounded-2xl overflow-hidden border border-[#3a4a46]/40 bg-black/50 shadow-inner">
+                                <img data-unit-src="{{unitImage}}" alt="{{unitName}}" class="block w-full h-auto object-contain">
                             </div>
                         </div>
                         <div class="lg:col-span-8 space-y-6">
@@ -77,7 +77,7 @@
                                 <div class="flex flex-wrap gap-3 pt-1">
                                     {{#displayAlbums}}
                                         <a href="/triples/album/{{albumId}}" class="bg-white/5 hover:bg-white/10 border border-[#3a4a46]/30 hover:border-[#00f5d4]/40 text-[#b9cac4] hover:text-[#00f5d4] flex flex-col items-center p-2 rounded-xl transition-all shrink-0 no-underline">
-                                            <img src="{{albumImage}}" class="w-16 h-16 rounded-lg object-cover mb-1 border border-[#3a4a46]/30 shadow" alt="{{albumName}}">
+                                            <img data-unit-src="{{albumImage}}" class="w-16 h-16 rounded-lg object-cover mb-1 border border-[#3a4a46]/30 shadow" alt="{{albumName}}">
                                             <span class="text-xs font-semibold text-center max-w-[80px] truncate">{{albumName}}</span>
                                         </a>
                                     {{/displayAlbums}}
@@ -92,7 +92,7 @@
                                 <div class="flex flex-wrap gap-3 pt-1">
                                     {{#unitMembers}}
                                         <a href="/triples/artist/{{artist.artistId}}" class="bg-white/5 hover:bg-white/10 border border-[#3a4a46]/30 hover:border-[#00f5d4]/40 text-[#b9cac4] hover:text-[#00f5d4] flex flex-col items-center p-2.5 rounded-xl transition-all no-underline shrink-0">
-                                            <img src="{{artist.profileImage}}" class="w-12 h-12 rounded-full object-cover mb-1.5 border border-[#3a4a46]/40" alt="{{artist.name}}">
+                                            <img data-unit-src="{{artist.profileImage}}" class="w-12 h-12 rounded-full object-cover mb-1.5 border border-[#3a4a46]/40" alt="{{artist.name}}">
                                             <span class="text-xs font-semibold">{{artist.name}}</span>
                                         </a>
                                     {{/unitMembers}}
@@ -111,6 +111,6 @@
 {{>triples/partials/unit-admin-modals}}
 {{>layout/footer}}
 <script src="/js/about-admin-auth.js?v=1"></script>
-<script src="/js/unit.js?v=6"></script>
+<script src="/js/unit.js?v=9"></script>
 </body>
 </html>
