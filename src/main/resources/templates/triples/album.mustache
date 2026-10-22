@@ -14,6 +14,7 @@
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/about-admin.css?v=7">
+<style>[data-album-edit][hidden], #albumAddBtn[hidden]{display:none!important}</style>
 </head>
 <body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen about-admin-page">
 {{>layout/header}}
@@ -25,7 +26,7 @@
                 <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4]"></span> 트리플에스의 발매 앨범
             </h2>
             <div class="flex flex-wrap items-center gap-2">
-                <button type="button" id="albumAddBtn" class="about-mode-btn about-admin-only is-active">앨범 추가</button>
+                <button type="button" id="albumAddBtn" hidden class="about-mode-btn about-admin-only is-active">앨범 추가</button>
                 <button type="button" id="albumAdminBtn" class="about-admin-btn hidden" aria-pressed="false">관리자</button>
             </div>
         </div>
@@ -37,7 +38,7 @@
                     <img src="{{albumImage}}" width="200" height="200" alt="{{albumName}}" class="w-full aspect-square object-cover rounded-lg mb-2 border border-[#3a4a46]/30">
                     <div class="text-sm sm:text-base font-semibold">{{albumName}}</div>
                 </a>
-                <button type="button" class="about-edit-inline about-mode-btn" data-album-edit="{{albumId}}" style="position:absolute;top:0.5rem;right:0.5rem;">수정</button>
+                <button type="button" class="about-edit-inline about-mode-btn" hidden data-album-edit="{{albumId}}" style="position:absolute;top:0.5rem;right:0.5rem;">수정</button>
             </li>
             {{/album}}
         </ul>
@@ -49,6 +50,6 @@
 {{>triples/partials/album-admin-modals}}
 {{>layout/footer}}
 <script src="/js/about-admin-auth.js?v=1"></script>
-<script src="/js/album.js?v=3"></script>
+<script src="/js/album.js?v=4"></script>
 </body>
 </html>

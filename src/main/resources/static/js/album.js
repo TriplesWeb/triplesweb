@@ -12,7 +12,14 @@
     const opts = options ? { ...options } : {};
     opts.headers = auth ? auth.applyAuthHeaders(opts.headers || {}) : new Headers(opts.headers || {});
     opts.credentials = "same-origin";
-    return fetch(url, opts);
+    opts.cache = "no-store";
+    const response = await fetch(url, opts);
+    if (response.status === 403) {
+      isAdmin = false;
+      setToken("");
+      setAdminUi();
+    }
+    return response;
   }
 
   async function readError(res, fallback) {
@@ -30,6 +37,7 @@
     const page = document.querySelector(".about-admin-page");
     const btn = document.getElementById("albumAdminBtn");
     const hint = document.getElementById("albumAdminHint");
+    document.querySelectorAll("[data-album-edit], #albumAddBtn").forEach(control => { control.hidden = !isAdmin; });
     if (page) page.classList.toggle("is-admin", Boolean(isAdmin));
     if (btn) {
       if (!adminConfigured) btn.classList.add("hidden");
@@ -112,6 +120,7 @@
   }
 
   async function openEditModal(albumId) {
+    if (!isAdmin) { openLoginModal(); return; }
     const err = document.getElementById("albumEditError");
     if (err) { err.hidden = true; err.textContent = ""; }
     document.getElementById("albumEditId").value = albumId || "";
@@ -256,22 +265,22 @@
     });
   }
 
-  async function init() {
-    bindUi();
+  async function refreshAdmin() {
+    isAdmin = false;
+    setAdminUi();
     try {
       const statusRes = await apiFetch(API + "/admin/status");
       if (statusRes.ok) {
         const status = await statusRes.json();
         adminConfigured = Boolean(status.configured);
         isAdmin = Boolean(status.admin);
-        if (!isAdmin && getToken()) {
-          // token may still be valid client-side after refresh
-          isAdmin = true;
-        }
+        if (!isAdmin) setToken("");
       }
     } catch (_) { /* ignore */ }
     setAdminUi();
   }
 
-  document.addEventListener("DOMContentLoaded", init);
+  document.addEventListener("DOMContentLoaded", () => { bindUi(); refreshAdmin(); });
+  window.addEventListener("pageshow", event => { if (event.persisted) refreshAdmin(); });
+  window.addEventListener("storage", event => { if (auth && event.key === auth.TOKEN_KEY) refreshAdmin(); });
 })();
