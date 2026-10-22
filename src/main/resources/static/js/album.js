@@ -132,6 +132,7 @@
     document.getElementById("albumEditType").value = "SUBUNIT";
     document.getElementById("albumEditClearImage").checked = false;
     document.getElementById("albumEditImage").value = "";
+    document.getElementById("albumEditImageUrl").value = "";
     const preview = document.getElementById("albumEditImagePreview");
     preview.classList.add("hidden");
     preview.removeAttribute("src");
@@ -154,6 +155,7 @@
       document.getElementById("albumEditType").value = data.albumType || "SUBUNIT";
       fillUnitSelect(data.unitId);
       document.getElementById("albumEditTracks").innerHTML = trackRowsHtml(data.tracks);
+      if (/^https?:\/\//i.test(data.albumImage || "")) document.getElementById("albumEditImageUrl").value = data.albumImage;
       if (data.albumImage) {
         preview.src = data.albumImage;
         preview.classList.remove("hidden");
@@ -242,6 +244,8 @@
       fd.append("tracksJson", JSON.stringify(collectTracks()));
       const file = document.getElementById("albumEditImage").files?.[0];
       if (file) fd.append("image", file);
+      const imageUrl = document.getElementById("albumEditImageUrl").value.trim();
+      if (imageUrl) fd.append("imageUrl", imageUrl);
       if (document.getElementById("albumEditClearImage").checked) fd.append("clearImage", "true");
       try {
         const url = id ? API + "/" + id : API;
