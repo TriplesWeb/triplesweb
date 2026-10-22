@@ -88,37 +88,23 @@ public class GravityService {
 
     private List<Map<String, Object>> loadGravityListPages(String artistId) {
         String encodedArtist = UriUtils.encodeQueryParam(artistId, StandardCharsets.UTF_8);
-        final int pageSize = 12;
-        int skip = 0;
-        Set<String> seenGravityIds = new HashSet<>();
+        JsonNode response = cosmoGet("/bff/v3/gravities?artistId=" + encodedArtist);
+        JsonNode root = response.path("data").isObject() ? response.path("data") : response;
+
         List<Map<String, Object>> result = new ArrayList<>();
+        appendGravityGroup(result, root.path("ongoing"), "진행 중", artistId);
+        appendGravityGroup(result, root.path("upcoming"), "예정", artistId);
+        appendGravityGroup(result, root.path("past"), "종료", artistId);
 
-        // Read every page instead of showing only the first 12 historical Gravities.
-        // COSMO returns ongoing/upcoming/past arrays in each grouped response, so
-        // deduplicate by Gravity ID while paging through the historical records.
-        {
-            JsonNode response = cosmoGet("/bff/v3/gravities?artistId=" + encodedArtist);
-            JsonNode root = response.path("data").isObject() ? response.path("data") : response;
-            List<Map<String, Object>> pageGravities = new ArrayList<>();
-
-            appendGravityGroup(pageGravities, root.path("ongoing"), "진행 중", artistId);
-            appendGravityGroup(pageGravities, root.path("upcoming"), "예정", artistId);
-            appendGravityGroup(pageGravities, root.path("past"), "종료", artistId);
-
-            int pastCount = root.path("past").isArray() ? root.path("past").size() : 0;
-            int newGravityCount = 0;
-            for (Map<String, Object> gravity : pageGravities) {
-                String gravityId = String.valueOf(gravity.getOrDefault("id", "")).trim();
-                if (gravityId.isBlank() || !seenGravityIds.add(gravityId)) continue;
-                result.add(gravity);
-                newGravityCount++;
+        Set<String> seenIds = new HashSet<>();
+        List<Map<String, Object>> unique = new ArrayList<>();
+        for (Map<String, Object> gravity : result) {
+            String gravityId = String.valueOf(gravity.getOrDefault("id", "")).trim();
+            if (!gravityId.isBlank() && seenIds.add(gravityId)) {
+                unique.add(gravity);
             }
-
-            // The BFF response groups ongoing/upcoming/past arrays; it is not a skip/take envelope.
-            break;
         }
-
-        return result;
+        return unique;
     }
 
     private void appendGravityGroup(
