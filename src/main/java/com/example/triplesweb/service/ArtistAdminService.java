@@ -113,6 +113,59 @@ public class ArtistAdminService {
     }
 
     @Transactional
+    public ArtistAdminDto createArtist(
+            String name,
+            String engName,
+            String nationality,
+            String birthDate,
+            String birthPlace,
+            String debutDate,
+            String color,
+            String soloContent,
+            String broadcastContent,
+            List<Long> unitIds,
+            MultipartFile image
+    ) {
+        String trimmedName = requireText(name, "이름은 필수입니다.");
+        String trimmedEng = requireText(engName, "영문명은 필수입니다.").toLowerCase(Locale.ROOT);
+        String trimmedNation = requireText(nationality, "국적은 필수입니다.");
+        String trimmedBirthDate = requireText(birthDate, "출생은 필수입니다.");
+        String trimmedBirthPlace = requireText(birthPlace, "출신지는 필수입니다.");
+        String trimmedDebut = requireText(debutDate, "데뷔일은 필수입니다.");
+        String trimmedColor = normalizeColor(color);
+
+        if (artistRepository.findByName(trimmedName).isPresent()) {
+            throw new IllegalArgumentException("이미 사용 중인 이름입니다: " + trimmedName);
+        }
+        if (artistRepository.findByEngName(trimmedEng).isPresent()) {
+            throw new IllegalArgumentException("이미 사용 중인 영문명입니다: " + trimmedEng);
+        }
+
+        Artist artist = new Artist();
+        artist.setName(trimmedName);
+        artist.setEngName(trimmedEng);
+        artist.setNationality(trimmedNation);
+        artist.setBirthDate(trimmedBirthDate);
+        artist.setBirthPlace(trimmedBirthPlace);
+        artist.setDebutDate(trimmedDebut);
+        artist.setColor(trimmedColor);
+        artist.setSoloContent(ContentLinks.normalizeJson(soloContent));
+        artist.setBroadcastContent(ContentLinks.normalizeJson(broadcastContent));
+
+        if (image != null && !image.isEmpty()) {
+            try {
+                SavedMeta meta = fileStorageService.saveWithMeta(image, "artist");
+                artist.setProfileImage(meta.getUrl());
+            } catch (IOException e) {
+                throw new IllegalStateException("프로필 이미지 저장에 실패했습니다.", e);
+            }
+        }
+
+        syncUnits(artist, unitIds);
+        return toDto(artistRepository.save(artist));
+    }
+
+    @Transactional
     public ArtistAdminDto updateArtist(
             long artistId,
             String name,
