@@ -212,10 +212,16 @@ public class UnitAdminService {
         }
         if (unit.getUnitMembers() == null) {
             unit.setUnitMembers(new ArrayList<>());
-        } else {
-            unit.getUnitMembers().clear();
         }
+        // Keep persisted links for retained members: recreating them can INSERT before
+        // orphan removal DELETEs and violate uk_unit_member (artist_id, unit_id).
+        unit.getUnitMembers().removeIf(link -> link.getArtist() == null
+                || !wanted.contains(link.getArtist().getArtistId()));
+        Set<Long> existing = unit.getUnitMembers().stream()
+                .map(link -> link.getArtist().getArtistId())
+                .collect(Collectors.toSet());
         for (Long artistId : wanted) {
+            if (existing.contains(artistId)) continue;
             Artist artist = artistRepository.findById(artistId)
                     .orElseThrow(() -> new IllegalArgumentException("멤버가 없습니다. id=" + artistId));
             UnitMember link = new UnitMember();
