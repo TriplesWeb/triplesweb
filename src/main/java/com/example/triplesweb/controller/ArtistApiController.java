@@ -74,6 +74,34 @@ public class ArtistApiController {
         }
     }
 
+    @PostMapping
+    public ArtistAdminDto create(
+            @RequestParam String name,
+            @RequestParam String engName,
+            @RequestParam String nationality,
+            @RequestParam String birthDate,
+            @RequestParam String birthPlace,
+            @RequestParam String debutDate,
+            @RequestParam String color,
+            @RequestParam(required = false, defaultValue = "") String soloContent,
+            @RequestParam(required = false, defaultValue = "") String broadcastContent,
+            @RequestParam(required = false) List<Long> unitIds,
+            @RequestParam(required = false) MultipartFile image,
+            HttpServletRequest request,
+            HttpSession session
+    ) {
+        aboutAdminAuth.requireAdmin(request, session);
+        try {
+            List<Long> ids = unitIds != null ? unitIds : new ArrayList<>();
+            return artistAdminService.createArtist(
+                    name, engName, nationality, birthDate, birthPlace, debutDate, color,
+                    soloContent, broadcastContent, ids, image
+            );
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
+
     @GetMapping("/{id:[0-9]+}")
     public ArtistAdminDto get(@PathVariable long id) {
         try {
