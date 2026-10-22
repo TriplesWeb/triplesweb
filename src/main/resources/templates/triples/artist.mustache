@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html class="dark" lang="ko">
 <head>
+    {{>layout/favicon}}
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>트리플에스 커뮤니티- ABOUT 트리플에스</title>
+    <title>트리플에스 커뮤니티 - ABOUT 트리플에스</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
@@ -29,12 +30,12 @@
 
         <ul class="nav nav-tabs border-b border-[#3a4a46]/40 flex overflow-x-auto items-center pb-2 gap-2" id="triplesTabs">
             <button class="nav-tab-btn bg-transparent border-0 text-[#b9cac4] hover:text-[#00f5d4] flex flex-col items-center p-2 rounded-xl transition-all shrink-0" id="triples-tab" data-target="#triples" type="button">
-                <img id="groupTabImageDisplay" src="{{groupTabImage}}" class="w-12 h-12 rounded-full border-2 border-[#00f5d4] object-cover mb-1" alt="tripleS">
+                <img id="groupTabImageDisplay" src="{{groupTabImage}}" referrerpolicy="no-referrer" class="w-12 h-12 rounded-full border-2 border-[#00f5d4] object-cover mb-1" alt="tripleS">
                 <span class="text-xs font-semibold">TripleS</span>
             </button>
             {{#artist}}
             <button class="nav-tab-btn bg-transparent border-0 text-[#b9cac4] hover:text-[#00f5d4] flex flex-col items-center p-2 rounded-xl transition-all shrink-0" id="{{engName}}-tab" data-target="#member-{{artistId}}" type="button">
-                <img src="{{profileImage}}" class="w-12 h-12 rounded-full border-2 border-transparent object-cover mb-1" alt="{{name}}">
+                <img src="{{profileImage}}" referrerpolicy="no-referrer" class="w-12 h-12 rounded-full border-2 border-transparent object-cover mb-1" alt="{{name}}">
                 <span class="text-xs font-semibold">{{name}}</span>
             </button>
             {{/artist}}
@@ -43,7 +44,7 @@
         <div class="tab-content mt-6" id="memberTabContent">
             <div class="tab-pane" id="triples">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                    <img id="groupImageDisplay" src="{{groupImage}}" alt="트리플에스" class="w-full rounded-xl border border-[#3a4a46]/30 object-cover shadow-lg">
+                    <img id="groupImageDisplay" src="{{groupImage}}" referrerpolicy="no-referrer" alt="트리플에스" class="w-full rounded-xl border border-[#3a4a46]/30 object-cover shadow-lg">
                     <div class="space-y-4">
                         <h3 id="groupTitleDisplay" class="text-xl font-bold text-[#00f5d4]">{{groupTitle}}</h3>
                         <p id="groupBodyDisplay" class="text-sm text-[#b9cac4] leading-relaxed whitespace-pre-wrap">{{groupBody}}</p>
@@ -57,7 +58,7 @@
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     <div class="lg:col-span-4 relative group">
                         <div class="relative w-full aspect-[4/5] rounded-2xl overflow-hidden border border-[#3a4a46]/40 bg-black/50 shadow-inner">
-                            <img src="/uploads/images/{{engName}}.jpg" class="w-full h-full object-cover" alt="{{name}}" width="500" height="500" onerror="this.onerror=null;this.src='{{profileImage}}';">
+                            <img src="{{profileImage}}" referrerpolicy="no-referrer" class="w-full h-full object-cover" alt="{{name}}" width="500" height="500">
                         </div>
                     </div>
                     <div class="lg:col-span-8 space-y-6">
@@ -279,6 +280,7 @@
     </div>
 </div>
 
+{{>layout/footer}}
 <script src="/js/artist.js?v=3"></script>
 </body>
 </html>
