@@ -12,6 +12,17 @@ tripleS 팬 커뮤니티 웹사이트 (Spring Boot 3.5 + Mustache + MariaDB).
 
 ---
 
+## COSMO Gravity
+
+- 목록: `/cosmo/gravity` (기존 `/gravity` 경로도 호환)
+- COSMO API 인증은 서버의 `CosmoTokenProvider`를 사용하며 access token이 만료되면 refresh token으로 갱신을 시도합니다.
+- 목록 응답은 진행 중 → 예정 → 종료 순서로 표시하고 Gravity ID 중복을 제거합니다. tripleS 목록은 10분 동안 메모리에 캐시됩니다.
+- 상세 페이지에서는 COSMO가 제공하는 Gravity·Poll 메타데이터와 공식 공개 결과만 표시합니다. 공개되지 않은 후보별 득표량을 임의 생성하지 않습니다.
+- Apollo 외부 집계 호출은 현재 페이지 흐름에 연결하지 않습니다. 외부 API 결과의 형식과 접근 권한이 검증되기 전에는 공식 COSMO 결과와 별도로 표시해야 합니다.
+- 토큰과 인증 파일은 브라우저로 전달하거나 저장소에 커밋하지 마세요. 환경 변수 `COSMO_ACCESS_TOKEN`, `COSMO_REFRESH_TOKEN`, `COSMO_KEY`, `COSMO_CREDENTIALS_FILE`을 배포 환경에서 관리합니다.
+
+---
+
 ## 케미명 데이터
 
 페이지: `/triples/chemistry`  
