@@ -1,0 +1,606 @@
+/* About 트리플에스 — 관리자 모달 (케미 편집 UI와 톤 맞춤) */
+.about-admin-btn {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: 2.25rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #12141a;
+    color: #b9cac4;
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1.2;
+    cursor: pointer;
+}
+
+.about-admin-btn:hover {
+    border-color: rgba(0, 245, 212, 0.5);
+    color: #00f5d4;
+}
+
+.about-admin-btn.is-active {
+    border-color: rgba(0, 245, 212, 0.65);
+    color: #0d0e12;
+    background: #00f5d4;
+}
+
+.about-admin-hint {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #00f5d4;
+}
+
+.about-edit-inline {
+    display: none;
+    margin-top: 0.75rem;
+}
+
+.about-admin-page.is-admin .about-edit-inline {
+    display: inline-flex;
+}
+
+.about-admin-page.is-admin .about-admin-only {
+    display: inline-flex !important;
+}
+
+.about-admin-only {
+    display: none !important;
+}
+
+.about-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.62);
+}
+
+.about-modal.flex {
+    display: flex;
+}
+
+.about-modal-panel {
+    position: relative;
+    width: min(92vw, 520px);
+    max-height: min(90vh, 820px);
+    overflow: auto;
+    border-radius: 1rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #16181f;
+    padding: 1.25rem 1.25rem 1rem;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+.about-modal-panel.about-edit-panel {
+    width: min(96vw, 640px);
+}
+
+.about-modal-title {
+    margin: 0 2rem 1rem 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #e3e2e8;
+}
+
+.about-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: #b9cac4;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 0.4rem;
+}
+
+.about-close:hover {
+    color: #00f5d4;
+}
+
+.about-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.about-edit-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #b9cac4;
+}
+
+.about-edit-label > input:not([type="checkbox"]):not([type="radio"]),
+.about-edit-label > textarea,
+.about-edit-label > select,
+.about-edit-label > .about-password-field > input {
+    appearance: none;
+    width: 100%;
+    border-radius: 0.55rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #0d0e12;
+    color: #e3e2e8;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.9rem;
+}
+
+.about-edit-label textarea {
+    min-height: 5rem;
+    resize: vertical;
+}
+
+.about-edit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+}
+
+@media (max-width: 640px) {
+    .about-edit-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.about-unit-checks {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.45rem;
+    max-height: 10rem;
+    overflow: auto;
+    padding: 0.55rem;
+    border-radius: 0.55rem;
+    border: 1px solid rgba(58, 74, 70, 0.4);
+    background: #0d0e12;
+}
+
+.about-unit-checks .about-unit-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    max-width: 100%;
+    padding: 0.35rem 0.65rem;
+    border-radius: 999px;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #16181f;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: #e3e2e8;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.about-unit-checks .about-unit-chip:has(input:checked) {
+    border-color: rgba(0, 245, 212, 0.65);
+    color: #00f5d4;
+    background: rgba(0, 245, 212, 0.08);
+}
+
+.about-unit-checks .about-unit-chip input {
+    appearance: auto;
+    -webkit-appearance: checkbox;
+    width: 0.9rem;
+    height: 0.9rem;
+    margin: 0;
+    flex: 0 0 auto;
+    accent-color: #00f5d4;
+    cursor: pointer;
+}
+
+.about-unit-checks .about-unit-chip span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.about-edit-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    margin-top: 0.35rem;
+}
+
+.about-mode-btn {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: 2.25rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #12141a;
+    color: #b9cac4;
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1.2;
+    cursor: pointer;
+}
+
+.about-mode-btn.is-active {
+    background: #00f5d4;
+    color: #0d0e12;
+    border-color: #00f5d4;
+}
+
+.about-btn-danger {
+    border: 1px solid rgba(255, 123, 123, 0.45) !important;
+    color: #ff9b9b !important;
+    background: rgba(255, 80, 80, 0.12) !important;
+}
+
+.about-btn-danger:hover {
+    color: #e3e2e8 !important;
+    background: rgba(255, 80, 80, 0.28) !important;
+}
+
+.about-edit-error {
+    margin: 0;
+    color: #ffb4ab;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.about-password-field {
+    position: relative;
+    display: block;
+}
+
+.about-password-field input {
+    padding-right: 2.6rem;
+}
+
+.about-password-toggle {
+    position: absolute;
+    right: 0.35rem;
+    top: 50%;
+    transform: translateY(-50%);
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: #8a9a94;
+    cursor: pointer;
+    padding: 0.2rem;
+}
+
+.about-edit-check {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.82rem;
+    color: #b9cac4;
+}
+
+.about-preview {
+    max-width: 8rem;
+    border-radius: 0.6rem;
+    border: 1px solid rgba(58, 74, 70, 0.45);
+}
+
+.about-edit-field-hint {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #8a9a94;
+}
+
+.about-link-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.about-link-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.about-link-row input {
+    appearance: none;
+    width: 100%;
+    border-radius: 0.55rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #0d0e12;
+    color: #e3e2e8;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.about-link-remove {
+    appearance: none;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.45rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #12141a;
+    color: #b9cac4;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.about-link-remove:hover {
+    border-color: rgba(255, 180, 171, 0.55);
+    color: #ffb4ab;
+}
+
+.about-link-list {
+    list-style: none;
+    margin: 0.55rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.about-video-link {
+    color: #00f5d4;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.about-video-link:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+    .about-link-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 앨범 트랙리스트 편집 */
+.album-tracks-field {
+    gap: 0.55rem;
+}
+
+.album-track-head,
+.album-track-row {
+    display: grid;
+    grid-template-columns: 3.25rem minmax(0, 1fr) 4.25rem 2.4rem 2rem;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.album-track-head {
+    padding: 0 0.1rem;
+    color: #8a9a94;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.album-track-head span:nth-child(4),
+.album-track-head span:nth-child(5) {
+    text-align: center;
+}
+
+.album-track-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    max-height: min(42vh, 360px);
+    overflow: auto;
+    padding-right: 0.15rem;
+}
+
+.album-track-row input[type="number"],
+.album-track-row input[type="text"] {
+    appearance: none;
+    width: 100%;
+    min-width: 0;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #0d0e12;
+    color: #e3e2e8;
+    padding: 0.45rem 0.55rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.album-track-row .track-num {
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.8rem;
+}
+
+.album-track-row .track-duration {
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.8rem;
+}
+
+.track-title-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    margin: 0;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #12141a;
+    color: #8a9a94;
+    cursor: pointer;
+    user-select: none;
+}
+
+.track-title-toggle input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.track-title-toggle span {
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.track-title-toggle:has(input:checked) {
+    border-color: rgba(0, 245, 212, 0.65);
+    background: rgba(0, 245, 212, 0.16);
+    color: #00f5d4;
+}
+
+.album-add-track-btn {
+    width: 100%;
+    margin-top: 0.15rem;
+}
+
+@media (max-width: 640px) {
+    .album-track-head {
+        display: none;
+    }
+
+    .album-track-row {
+        grid-template-columns: 2.75rem minmax(0, 1fr) 2.25rem 2rem;
+        grid-template-areas:
+            "num title title title"
+            "dur dur flag remove";
+    }
+
+    .album-track-row .track-num { grid-area: num; }
+    .album-track-row .track-title { grid-area: title; }
+    .album-track-row .track-duration { grid-area: dur; }
+    .album-track-row .track-title-toggle { grid-area: flag; }
+    .album-track-row .track-remove { grid-area: remove; }
+}
+
+/* body(flex)+mx-auto 조합에서 콘텐츠 너비로 페이지가 늘어나지 않게 */
+.about-admin-page .main-content {
+    width: 100%;
+    max-width: 80rem;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.about-admin-page .card-box {
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* 유닛 탭: 바깥이 스크롤, 안쪽은 콘텐츠 너비(모바일·좁은 화면용) */
+.unit-tabs-scroller {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0 0 0.55rem;
+    border-bottom: 1px solid rgba(58, 74, 70, 0.4);
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 245, 212, 0.45) rgba(58, 74, 70, 0.25);
+}
+
+.unit-tabs-scroller::-webkit-scrollbar {
+    height: 6px;
+}
+
+.unit-tabs-scroller::-webkit-scrollbar-track {
+    background: rgba(58, 74, 70, 0.25);
+    border-radius: 999px;
+}
+
+.unit-tabs-scroller::-webkit-scrollbar-thumb {
+    background: rgba(0, 245, 212, 0.45);
+    border-radius: 999px;
+}
+
+.unit-tabs {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: flex-start;
+    gap: 0.35rem;
+    width: max-content;
+    min-width: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border: 0;
+}
+
+.unit-tab-btn {
+    appearance: none;
+    flex: 0 0 auto;
+    width: 4.25rem;
+    min-width: 4.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.35rem 0.15rem;
+    border: 0;
+    border-radius: 0.75rem;
+    background: transparent;
+    color: #b9cac4;
+    cursor: pointer;
+    scroll-snap-align: start;
+    transition: color 0.15s ease;
+}
+
+.unit-tab-btn:hover {
+    color: #00f5d4;
+}
+
+.unit-tab-btn img {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.55rem;
+    object-fit: cover;
+    border: 2px solid transparent;
+    background: #101116;
+    flex-shrink: 0;
+}
+
+.unit-tab-btn span {
+    display: block;
+    width: 100%;
+    height: 1.2em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.unit-tab-btn.is-active,
+.unit-tab-btn:focus-visible {
+    color: #00f5d4;
+}
+
+.unit-tab-btn.is-active img,
+.unit-tab-btn:focus-visible img {
+    border-color: #00f5d4;
+}

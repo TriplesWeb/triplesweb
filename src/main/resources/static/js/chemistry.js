@@ -206,46 +206,21 @@
   let editingPair = null;
   let currentView = null;
 
-  const ADMIN_TOKEN_KEY = "chemistryAdminToken";
+  const auth = window.AboutAdminAuth;
 
-  /** localStorage — 한/영 페이지·탭 간 관리자 로그인 유지 */
+  /** localStorage — ABOUT 전 페이지·탭 간 관리자 로그인 유지 */
   function getAdminToken() {
-    try {
-      const local = localStorage.getItem(ADMIN_TOKEN_KEY) || "";
-      if (local) return local;
-      // 이전 sessionStorage 토큰 마이그레이션
-      const legacy = sessionStorage.getItem(ADMIN_TOKEN_KEY) || "";
-      if (legacy) {
-        localStorage.setItem(ADMIN_TOKEN_KEY, legacy);
-        sessionStorage.removeItem(ADMIN_TOKEN_KEY);
-      }
-      return legacy;
-    } catch (_) {
-      return "";
-    }
+    return auth ? auth.getToken() : "";
   }
 
   function setAdminToken(token) {
-    try {
-      if (token) {
-        localStorage.setItem(ADMIN_TOKEN_KEY, token);
-        sessionStorage.removeItem(ADMIN_TOKEN_KEY);
-      } else {
-        localStorage.removeItem(ADMIN_TOKEN_KEY);
-        sessionStorage.removeItem(ADMIN_TOKEN_KEY);
-      }
-    } catch (_) {
-      /* private mode 등 */
-    }
+    if (auth) auth.setToken(token);
   }
 
   /** 쿠키가 막혀도 동작하도록 관리자 토큰 헤더를 붙인다. */
   function chemFetch(url, options) {
     const opts = Object.assign({ credentials: "same-origin" }, options || {});
-    const headers = new Headers(opts.headers || {});
-    const token = getAdminToken();
-    if (token) headers.set("X-Chemistry-Admin-Token", token);
-    opts.headers = headers;
+    opts.headers = auth ? auth.applyAuthHeaders(opts.headers || {}) : new Headers(opts.headers || {});
     return fetch(url, opts);
   }
 

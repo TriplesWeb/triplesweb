@@ -1,31 +1,19 @@
 (() => {
-  const TOKEN_KEY = "artistAdminToken";
+  const auth = window.AboutAdminAuth;
   let adminConfigured = false;
   let isAdmin = false;
 
   function getAdminToken() {
-    try {
-      return sessionStorage.getItem(TOKEN_KEY) || "";
-    } catch (_) {
-      return "";
-    }
+    return auth ? auth.getToken() : "";
   }
 
   function setAdminToken(token) {
-    try {
-      if (token) sessionStorage.setItem(TOKEN_KEY, token);
-      else sessionStorage.removeItem(TOKEN_KEY);
-    } catch (_) {
-      /* private mode */
-    }
+    if (auth) auth.setToken(token);
   }
 
   async function artistFetch(url, options) {
     const opts = options ? { ...options } : {};
-    const headers = new Headers(opts.headers || {});
-    const token = getAdminToken();
-    if (token) headers.set("X-Artist-Admin-Token", token);
-    opts.headers = headers;
+    opts.headers = auth ? auth.applyAuthHeaders(opts.headers || {}) : new Headers(opts.headers || {});
     opts.credentials = "same-origin";
     return fetch(url, opts);
   }
