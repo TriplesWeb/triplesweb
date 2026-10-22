@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+    {{>layout/favicon}}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>트리플에스 커뮤니티- 발매 앨범</title>
+    <title>트리플에스 커뮤니티 - 발매 앨범</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -22,21 +23,21 @@
         <h2 class="text-2xl font-bold text-[#e3e2e8] mb-6 flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4]"></span> 트리플에스의 발매 앨범
         </h2>
-        <table id="albumTable" class="w-full">
-            <tr>
-        <td class="flex flex-wrap gap-6 justify-start">
+        <ul class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 list-none p-0 m-0">
             {{#album}}
-            <a href="/triples/album/{{albumId}}" class="text-decoration-none text-center w-48">
-            <div>
-                <img src= "{{albumImage}}" width="200" height="200" alt="{{albumName}}" class="w-full h-44 object-cover rounded-lg mb-2">
-                <div class="caption text-lg text-[#e3e2e8] font-semibold" >{{albumName}}</div>
-            </div>
-            </a>
+            <li>
+                <a href="/triples/album/{{albumId}}" class="block text-center no-underline text-[#e3e2e8] hover:text-[#00f5d4] transition-colors">
+                    <img src="{{albumImage}}" width="200" height="200" alt="{{albumName}}" class="w-full aspect-square object-cover rounded-lg mb-2 border border-[#3a4a46]/30">
+                    <div class="text-sm sm:text-base font-semibold">{{albumName}}</div>
+                </a>
+            </li>
             {{/album}}
-        </td>
-    </tr>
-        </table>
+        </ul>
+        {{^album}}
+        <p class="text-sm text-[#b9cac4]/70 py-8 text-center" role="status">등록된 앨범이 없습니다.</p>
+        {{/album}}
     </div>
 </main>
+{{>layout/footer}}
 </body>
 </html>

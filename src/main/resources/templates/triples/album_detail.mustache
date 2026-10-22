@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+    {{>layout/favicon}}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>트리플에스 커뮤니티- 발매 앨범</title>
+    <title>트리플에스 커뮤니티 - 발매 앨범</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
@@ -11,7 +12,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    </head>
+</head>
 <body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
 {{>layout/header}}
 <main class="main-content max-w-7xl mx-auto px-4 py-8">
@@ -35,13 +36,13 @@
             {{#unit}}
                 <div class="flex items-center gap-3 overflow-x-auto pb-1">
                     {{#subUnits}}
-                        <a href="/triples/unit/{{unitId}}" class="nav-tab-btn bg-transparent border border-[#3a4a46]/30 text-[#b9cac4] hover:text-[#00f5d4] flex items-center gap-3 px-4 py-2 rounded-xl transition-all shrink-0 no-underline" id="{{unitName}}-tab" data-target="#unitMember-{{unitId}}" type="button">
+                        <a href="/triples/unit/{{unitId}}" class="bg-transparent border border-[#3a4a46]/30 text-[#b9cac4] hover:text-[#00f5d4] flex items-center gap-3 px-4 py-2 rounded-xl transition-all shrink-0 no-underline">
                             <img src="{{unitImage}}" class="w-10 h-10 rounded-full object-cover border border-[#3a4a46]/50" alt="{{unitName}}">
                             <span class="unitMember-item text-xs font-bold">{{unitName}}</span>
                         </a>
                     {{/subUnits}}
                     {{^subUnits}}
-                        <a href="/triples/unit/{{unitId}}" class="nav-tab-btn bg-white/5 hover:bg-white/10 border border-[#3a4a46]/30 hover:border-[#00f5d4]/50 text-[#b9cac4] hover:text-[#00f5d4] flex items-center gap-3 px-4 py-2 rounded-xl transition-all shrink-0 no-underline">
+                        <a href="/triples/unit/{{unitId}}" class="bg-white/5 hover:bg-white/10 border border-[#3a4a46]/30 hover:border-[#00f5d4]/50 text-[#b9cac4] hover:text-[#00f5d4] flex items-center gap-3 px-4 py-2 rounded-xl transition-all shrink-0 no-underline">
                             <img src="{{unitImage}}" class="w-10 h-10 rounded-full object-cover border border-[#3a4a46]/50" alt="{{unitName}}">
                             <span class="text-sm font-bold">{{unitName}}</span>
                         </a>
@@ -49,18 +50,18 @@
                 </div>
             {{/unit}}
             {{^unit}}
-                {{#isAlbum2}}
+                {{#full10}}
                     <div class="inline-flex items-center gap-2 bg-[#00f5d4]/10 text-[#00f5d4] border border-[#00f5d4]/30 px-3 py-1.5 rounded-xl text-xs font-bold">
                         <span class="material-symbols-outlined text-base">groups</span>
                         <span>10인 완전체 앨범</span>
                     </div>
-                {{/isAlbum2}}
-                {{^isAlbum2}}
+                {{/full10}}
+                {{#full24}}
                 <div class="inline-flex items-center gap-2 bg-[#00f5d4]/10 text-[#00f5d4] border border-[#00f5d4]/30 px-3 py-1.5 rounded-xl text-xs font-bold">
                     <span class="material-symbols-outlined text-base">groups</span>
                     <span>24명 완전체 앨범</span>
                 </div>
-                {{/isAlbum2}}
+                {{/full24}}
             {{/unit}}
         </div>
     </div>
@@ -94,6 +95,11 @@
                 <td class="py-4 px-4 text-center font-mono text-xs text-[#8b9b95]">{{duration}}</td>
             </tr>
         {{/tracks}}
+        {{^tracks}}
+            <tr>
+                <td colspan="3" class="py-8 px-4 text-center text-[#b9cac4]/60">등록된 트랙이 없습니다.</td>
+            </tr>
+        {{/tracks}}
         </tbody>
     </table>
     </div>
@@ -102,5 +108,6 @@
             {{/album}}
 
 </main>
+{{>layout/footer}}
 </body>
 </html>
