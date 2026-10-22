@@ -42,6 +42,7 @@
     const page = document.querySelector(".artist-page");
     const btn = document.getElementById("artistAdminBtn");
     const hint = document.getElementById("artistAdminHint");
+    const addBtn = document.getElementById("artistAddBtn");
     if (page) page.classList.toggle("is-admin", Boolean(isAdmin));
     if (btn) {
       if (!adminConfigured) {
@@ -52,6 +53,10 @@
         btn.setAttribute("aria-pressed", isAdmin ? "true" : "false");
         btn.classList.toggle("is-active", isAdmin);
       }
+    }
+    if (addBtn) {
+      addBtn.hidden = !isAdmin;
+      addBtn.classList.toggle("hidden", !isAdmin);
     }
     if (hint) hint.classList.toggle("hidden", !isAdmin);
   }
@@ -254,6 +259,35 @@
     }
   }
 
+  function openMemberCreate() {
+    const err = document.getElementById("artistEditError");
+    if (err) {
+      err.hidden = true;
+      err.textContent = "";
+    }
+    document.getElementById("artistEditId").value = "";
+    document.getElementById("artistEditName").value = "";
+    document.getElementById("artistEditEngName").value = "";
+    document.getElementById("artistEditBirthDate").value = "";
+    document.getElementById("artistEditBirthPlace").value = "";
+    document.getElementById("artistEditNationality").value = "";
+    document.getElementById("artistEditDebutDate").value = "";
+    document.getElementById("artistEditColor").value = "#00f5d4";
+    document.getElementById("artistEditClearImage").checked = false;
+    document.getElementById("artistEditImage").value = "";
+    const preview = document.getElementById("artistEditImagePreview");
+    if (preview) {
+      preview.removeAttribute("src");
+      preview.classList.add("hidden");
+    }
+    setUnitChecks([]);
+    renderLinkRows("artistEditSoloLinks", []);
+    renderLinkRows("artistEditBroadcastLinks", []);
+    document.getElementById("artistEditTitle").textContent = "새 멤버 추가";
+    openModal("artistEditModal");
+    document.getElementById("artistEditName").focus();
+  }
+
   function openGroupEdit() {
     const err = document.getElementById("artistGroupError");
     if (err) {
@@ -295,6 +329,17 @@
           return;
         }
         openLoginModal();
+      });
+    }
+
+    const addBtn = document.getElementById("artistAddBtn");
+    if (addBtn) {
+      addBtn.addEventListener("click", () => {
+        if (!isAdmin) {
+          openLoginModal();
+          return;
+        }
+        openMemberCreate();
       });
     }
 
@@ -403,7 +448,8 @@
         const file = document.getElementById("artistEditImage").files[0];
         if (file && !clearChecked) fd.append("image", file);
         try {
-          const res = await artistFetch("/api/artist/" + id, { method: "POST", body: fd });
+          const url = id ? "/api/artist/" + id : "/api/artist";
+          const res = await artistFetch(url, { method: "POST", body: fd });
           if (!res.ok) {
             if (err) {
               err.textContent = await readError(res, "저장에 실패했습니다.");
@@ -416,7 +462,9 @@
             }
             return;
           }
-          const tab = "member-" + id;
+          const saved = await res.json();
+          const savedId = id || saved.artistId;
+          const tab = "member-" + savedId;
           window.location.href = "/triples/artist?tab=" + encodeURIComponent(tab);
         } catch (_) {
           if (err) {
