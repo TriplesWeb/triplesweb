@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+    {{>layout/favicon}}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Triples 커뮤니티- 역대 유닛</title>
+    <title>트리플에스 커뮤니티 - 역대 유닛</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
@@ -11,9 +12,9 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
+</head>
 <body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
 {{>layout/header}}
-
 
 <main class="main-content max-w-7xl mx-auto px-4 py-8">
     <div class="card-box bg-[#16181f]/80 backdrop-blur-md border border-[#3a4a46]/30 rounded-2xl p-6 shadow-xl">
@@ -21,19 +22,21 @@
             <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4]"></span>트리플에스 역대 유닛
         </h2>
 
-        <ul class="nav nav-tabs grid grid-cols-10 gap-x-2 border-b border-[#3a4a46]/40 flex flex-wrap justify-between items-start pb-2" id="triplesUnitTabs">
+        <ul class="nav nav-tabs border-b border-[#3a4a46]/40 flex overflow-x-auto items-center pb-2 gap-2" id="triplesUnitTabs">
             {{#unit}}
                 <button class="nav-tab-btn bg-transparent border-0 space-x-1 text-[#b9cac4] hover:text-[#00f5d4] flex flex-col items-center p-2 rounded-xl transition-all shrink-0" id="{{unitName}}-tab" data-target="#unit-{{unitId}}" type="button">
                     <img src="{{unitImage}}" class="w-12 h-12 border-2 rounded-lg border-transparent object-cover mb-1" alt="{{unitName}}">
-                    <span class="text-sm font-semibold">{{unitName}}</span>
+                    <span class="text-sm font-semibold whitespace-nowrap">{{unitName}}</span>
                 </button>
             {{/unit}}
         </ul>
+        {{^unit}}
+        <p class="text-sm text-[#b9cac4]/70 py-8 text-center" role="status">등록된 유닛이 없습니다.</p>
+        {{/unit}}
 
         <div class="tab-content mt-6" id="unitTabContent">
-
             {{#unit}}
-                <div class="tab-pane" id="unit-{{unitId}}">
+                <div class="tab-pane hidden" id="unit-{{unitId}}">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                         <img src="{{unitImage}}" alt="{{unitName}}" class="w-full max-h-96 object-cover rounded-xl border border-[#3a4a46]/30 shadow-lg">
                         <div class="space-y-3">
@@ -56,27 +59,16 @@
         </div>
     </div>
 </main>
+{{>layout/footer}}
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const tabButtons = document.querySelectorAll('.nav-tab-btn');
-        const tabPanes = document.querySelectorAll('.tab-pane');
-        const hiddenUnits = ["MSNZ", "msnz"];
+        const tabButtons = document.querySelectorAll('#triplesUnitTabs .nav-tab-btn');
+        const tabPanes = document.querySelectorAll('#unitTabContent .tab-pane');
 
         tabButtons.forEach(btn => {
-            const unitName = btn.querySelector('span')?.textContent.trim();
-            if (hiddenUnits.includes(unitName)) {
-                // 버튼 숨기기
-                btn.remove(); // 아예 DOM에서 삭제 (또는 btn.classList.add('hidden'))
-
-                // 해당 탭 본문(Pane)도 삭제
-                const targetId = btn.getAttribute('data-target');
-                const targetPane = document.querySelector(targetId);
-                if (targetPane) targetPane.remove();
-            }
             btn.addEventListener('click', () => {
                 const targetId = btn.getAttribute('data-target');
 
-                // 탭 버튼 스타일 초기화
                 tabButtons.forEach(b => {
                     const img = b.querySelector('img');
                     const span = b.querySelector('span');
@@ -90,7 +82,6 @@
                     }
                 });
 
-                // 선택된 버튼 활성화
                 const activeImg = btn.querySelector('img');
                 const activeSpan = btn.querySelector('span');
                 if (activeImg) {
@@ -101,7 +92,7 @@
                     activeSpan.classList.remove('text-[#b9cac4]');
                     activeSpan.classList.add('text-[#00f5d4]');
                 }
-                // 탭 본문 전환
+
                 tabPanes.forEach(pane => pane.classList.add('hidden'));
                 const targetPane = document.querySelector(targetId);
                 if (targetPane) {
