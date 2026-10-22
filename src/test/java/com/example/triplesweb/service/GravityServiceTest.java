@@ -60,7 +60,7 @@ class GravityServiceTest {
                   "past": [{"id": 22, "title": "Duplicate past", "polls": []}]
                 }
                 """;
-        server.expect(once(), requestTo("https://cosmo.test/bff/v3/gravities?artistId=tripleS"))
+        server.expect(requestTo("https://cosmo.test/bff/v3/gravities?artistId=tripleS"))
                 .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
 
         GravityService service = service(builder.build());
