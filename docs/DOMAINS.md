@@ -31,7 +31,7 @@ flowchart TB
 |--------|------------|----------------------|
 | [회원·인증](#1-회원인증) | 계정·세션·권한 | 로그인, 가입, 마이페이지 |
 | [게시판](#2-게시판-글댓글좋아요검색) | 팬 커뮤니티 글·소통 | 잡담/교환/거래/정보/공지, 댓글, 좋아요 |
-| [tripleS 소개](#3-triples-소개-아티스트유닛앨범) | 그룹 메타 정보 조회 | 멤버·유닛·앨범·트랙 |
+| [tripleS 소개](#3-triples-소개-아티스트유닛앨범) | 그룹 메타 정보 조회 | 멤버·유닛·앨범·트랙·케미 |
 | [공식 미디어](#4-공식-미디어-youtube-카탈로그) | 공식 영상 큐레이션 | MV, SIGNAL, 비하인드 등 탭 |
 | [아카이브](#5-파일-아카이브) | 유저/운영 업로드 미디어 보관 | 사진·영상 아카이브 |
 | [일정](#6-일정) | 스케줄 캘린더 | 일정 목록·등록(ADMIN) |
@@ -198,18 +198,20 @@ flowchart TB
 |------|------|
 | 아티스트 목록·상세 | 이름, 영문, 국적, 생일, 프로필 이미지, 대표 컬러 |
 | 유닛 목록·상세 | 유닛명, 결성일, 상위/하위 유닛, 소속 멤버 |
-| 앨범 목록·상세 | 앨범 정보, 트랙리스트(타이틀곡·러닝타임) |
+| 앨범 목록·상세 | 앨범 정보, 트랙리스트(타이틀곡·러닝타임), `AlbumType`(SUBUNIT/FULL_10/FULL_24) |
+| 멤버간 케미 | 2인 매트릭스, KO/EN, 관리자 CRUD·시드 (`/api/chemistry`) |
 | 시드 | 기동 시 앨범이 비어 있으면 `DataInitializer`가 대량 삽입 |
-
-헤더의 `chemistry` 등은 템플릿/링크만 있고 백엔드가 비어 있을 수 있다.
 
 ### 흐름
 
 ```mermaid
 flowchart LR
   TC[TriplesController] --> ArtR[ArtistRepository]
-  TC --> UniR[UnitRepository]
-  TC --> AlbR[AlbumRepository]
+  TC --> UniS[UnitService]
+  TC --> AlbS[AlbumService]
+  TC --> Chem[chemistry_templates]
+  UniS --> UniR[UnitRepository]
+  AlbS --> AlbR[AlbumRepository]
   ArtR --> Artist
   UniR --> Unit
   AlbR --> Album
@@ -217,6 +219,7 @@ flowchart LR
   Artist --> UnitMember
   Unit --> Album
   Album --> Track
+  ChemApi[ChemistryApiController] --> ChemS[ChemistryService]
   DI[DataInitializer] --> ArtR
   DI --> UniR
   DI --> AlbR
@@ -235,16 +238,17 @@ erDiagram
 
 | 종류 | 이름 |
 |------|------|
-| Entity | `Artist`, `Unit`, `UnitMember`, `Album`, `Track` |
-| Repository | `ArtistRepository`, `UnitRepository`, `AlbumRepository` |
-| Controller | `TriplesController` (`/triples/artist\|album\|unit`) |
+| Entity | `Artist`, `Unit`, `UnitMember`, `Album`, `AlbumType`, `Track`, `Chemistry` |
+| Repository | `ArtistRepository`, `UnitRepository`, `AlbumRepository`, `ChemistryRepository` |
+| Service | `UnitService`, `AlbumService`, `ArtistAdminService`, `ChemistryService`, `ChemistrySeedService` |
+| Controller | `TriplesController` (`/triples/artist\|album\|unit\|chemistry`), `ChemistryApiController`, `ArtistApiController` |
 | Config | `DataInitializer` |
-| 뷰 | `templates/triples/*` |
+| 뷰 | `templates/triples/*` (+ `partials/chemistry-modals`) |
 | Util | `TrackInfo` (시드용 트랙 상수) |
 
 ### 레이어 메모
 
-Service 없음 · Controller → Repository. **순수 조회라 Optional — 패턴 안 따라도 됨.**
+앨범·유닛 조회는 `AlbumService`/`UnitService`로 분리. 아티스트·케미는 Admin/API Service 사용.
 
 ---
 

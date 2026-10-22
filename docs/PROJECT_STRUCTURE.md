@@ -236,13 +236,15 @@ flowchart LR
 
 
 
-#### tripleS 소개 (Service 없음)
+#### tripleS 소개
 
 ```mermaid
 flowchart LR
   TC[TriplesController] --> ArtR[ArtistRepository]
-  TC --> AlbR[AlbumRepository]
-  TC --> UniR[UnitRepository]
+  TC --> AlbS[AlbumService]
+  TC --> UniS[UnitService]
+  AlbS --> AlbR[AlbumRepository]
+  UniS --> UniR[UnitRepository]
   ArtR --> Artist
   AlbR --> Album
   UniR --> Unit
@@ -300,7 +302,6 @@ flowchart LR
 |------|------|
 | `/objekt` | `ObjektController` 스텁 가능 |
 | 헤더 `/cosmo/*`, `/sns` | 백엔드 미연결 가능 |
-| `/triples/chemistry` | 템플릿·링크 불일치 가능 |
 
 ---
 
@@ -340,7 +341,7 @@ templates/
 ├── members/     login, signup, mypage, mypage_edit, myposts, mycomments
 ├── article/     article, article_new, article_edit, article_detail, popular
 ├── comment/     부분 템플릿 (_list, _comments, _new)
-├── triples/     artist, album, unit, *_detail, chemistry
+├── triples/     artist, album, unit, *_detail, chemistry(+en), partials/
 ├── archive/     image/video archive, media*, media_detail
 └── shop/        shop, shop_detail, shop_new, shop_cart
 ```
@@ -426,7 +427,7 @@ Spring Boot start
 
 1. **패키지·이름 잔재**: 테스트 `com.example.illitweb`, `data/illitdb.`* — ILLIT 포크 흔적
 2. **UserDetailsService 이중 정의**: `SecurityConfig` 인라인 Bean + `CustomUserDetailsService` 클래스
-3. **헤더 메뉴 vs 실제 라우트**: `/cosmo/`*, `/sns`, `/triples/chemistry` 등 UI만 있고 백엔드 미구현 가능
+3. **헤더 메뉴 vs 실제 라우트**: `/cosmo/`*, `/sns` 등 UI만 있고 백엔드 미연결 가능 (`/triples/chemistry`는 API·시드 구현됨)
 4. **메인 카테고리 불일치**: 헤더는 `chat` 등, 메인 위젯은 `free`/`notice` 중심
 5. **CSRF disable** + 대용량 업로드 허용 — 운영 전 보안 재검토 필요
 6. **시크릿 평문** — DB/API 키 분리·로테이션
