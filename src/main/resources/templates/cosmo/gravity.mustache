@@ -17,6 +17,7 @@
 <p id="gravityAdminHint" class="about-admin-hint" hidden>관리자 모드: COSMO 계정 연결을 관리할 수 있습니다.</p>
 <p id="gravityAdminMessage" role="status" class="text-sm text-gray-400" hidden></p>
 {{#gravityListError}}<p role="status" class="gravity-notice">{{gravityListError}}</p>{{/gravityListError}}
+{{#gravityListCount}}<p class="text-sm text-gray-400">전체 {{gravityListCount}}개 · 목록은 10분간 캐시됩니다.</p>{{/gravityListCount}}
 {{#emptyList}}<p class="gravity-card">등록된 그래비티가 없습니다.</p>{{/emptyList}}
 <div class="grid gap-5 md:grid-cols-2">
 {{#gravityList}}
@@ -26,7 +27,8 @@
 <h2 class="text-xl font-bold"><a href="{{detailUrl}}">{{title}}</a></h2>
 <p class="text-sm text-gray-400">{{description}}</p>
 <p class="text-xs text-gray-400">{{entireStartDate}} ~ {{entireEndDate}}</p>
-{{#result}}<p class="text-sm">총 사용 COMO: {{totalComoUsed}}</p>{{/result}}
+{{#hasComoCount}}<p class="text-sm">공개된 총 사용 COMO: {{comoCount}}</p>{{/hasComoCount}}
+{{#result}}<p class="text-sm">공개된 총 사용 COMO: {{totalComoUsed}}</p>{{/result}}
 <a class="inline-block text-sm" href="{{detailUrl}}">투표 및 결과 보기 →</a>
 </article>
 {{/gravityList}}
