@@ -3,6 +3,7 @@ package com.example.triplesweb.service;
 import com.example.triplesweb.entity.Album;
 import com.example.triplesweb.repository.AlbumRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,7 +20,8 @@ public class AlbumService {
 
     @Transactional(readOnly = true)
     public List<Album> listAll() {
-        return albumRepository.findAll();
+        return albumRepository.findAll(Sort.by("releaseDate").ascending()
+                .and(Sort.by("albumId").ascending()));
     }
 
     @Transactional(readOnly = true)
