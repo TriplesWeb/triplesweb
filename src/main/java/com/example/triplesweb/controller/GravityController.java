@@ -16,6 +16,7 @@ public class GravityController {
             if (service.hasCosmoToken()) {
                 var list = service.fetchGravityList("tripleS");
                 model.addAttribute("gravityList", list);
+                model.addAttribute("gravityListCount", list.size());
                 model.addAttribute("emptyList", list.isEmpty());
             } else {
                 model.addAttribute("gravityListError", "그래비티 정보를 준비 중입니다. 계정 연결이 완료되면 목록을 볼 수 있습니다.");
