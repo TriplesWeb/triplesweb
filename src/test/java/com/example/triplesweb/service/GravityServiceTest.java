@@ -34,6 +34,31 @@ class GravityServiceTest {
         server.verify();
     }
 
+    @Test void gravityListDeduplicatesIdsAndCachesForTenMinutes() {
+        var builder = RestClient.builder();
+        var server = MockRestServiceServer.bindTo(builder).build();
+        when(tokens.decodeResponse(anyString(), anyBoolean())).thenAnswer(call -> mapper.readTree((String) call.getArgument(0)));
+        when(tokens.isConfigured()).thenReturn(true);
+        when(tokens.accessToken()).thenReturn("token");
+        String response = "{\\"ongoing\\":[{\\"id\\":21,\\"title\\":\\"Live\\",\\"polls\\" : []}],"
+                + "\\"upcoming\\":[{\\"id\\":21,\\"title\\":\\"Duplicate\\",\\"polls\\":[]},"
+                + "{\\"id\\":22,\\"title\\":\\"Future\\",\\"startDate\\":\\"2026-10-01T10:00:00Z\\",\\"polls\\":[]}],"
+                + "\\"past\\":[{\\"id\\":22,\\"title\\":\\"Duplicate past\\",\\"polls\\":[]}]}";
+        server.expect(once(), requestTo("https://cosmo.test/bff/v3/gravities?artistId=tripleS"))
+                .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
+
+        GravityService service = service(builder.build());
+        var first = service.fetchGravityList("tripleS");
+        var second = service.fetchGravityList("tripleS");
+
+        assertThat(first).hasSize(2);
+        assertThat(first.get(0)).containsEntry("title", "Live");
+        assertThat(first.get(1)).containsEntry("title", "Future")
+                .containsEntry("entireStartDate", "2026.10.01");
+        assertThat(second).hasSize(2);
+        server.verify();
+    }
+
     private GravityService service(RestClient client) {
         return new GravityService(client, mapper, "https://cosmo.test", tokens);
     }
