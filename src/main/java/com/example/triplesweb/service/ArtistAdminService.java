@@ -40,8 +40,10 @@ public class ArtistAdminService {
             "tripleS(한국어: 트리플에스)는 모드하우스가 결성한 대한민국의 24인조 걸그룹이다. "
                     + "2022년 5월 시작된 이래 정식 데뷔 9개월 이전의 프로젝트를 통하여 대중에게 소개되었다. "
                     + "국내 최다인원 24명으로 이루어진 걸그룹으로 ASSEMBLE,ASSEMBLE24,ASSEMBLE25 등을 발매하였다.";
-    private static final String DEFAULT_GROUP_IMAGE = "/uploads/images/tripleS.jpg";
-    private static final String DEFAULT_GROUP_TAB_IMAGE = "/uploads/images/triples2.jpg";
+    private static final String DEFAULT_GROUP_IMAGE =
+            "https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w4sFOxa0qwo4UedO_C0_jcoBe03789wNc5YmISVsRpQCUGa0obgJJFcjBxDI9La7P22k1Y69v81a-3yCmFW4bIEncacdQLXxQ8oCq1Bu4BaK72Rqff_oF6s-6VOylFoxz4vRAjLTVYAD_Y2d1Q3cMkQ.webp";
+    private static final String DEFAULT_GROUP_TAB_IMAGE =
+            "https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w4sFOxa0qwo4UedO_C0_jcoBe03789wNc5YmISVsRpQCUGa0obgJJFcjBxDI9La7P22k1Y69v81a-3yCmFW4bIEncacdQLXxQ8oCq1Bu4BaK72Rqff_oF6s-6VOylFoxz4vRAjLTVYAD_Y2d1Q3cMkQ.webp";
 
     private final ArtistRepository artistRepository;
     private final UnitRepository unitRepository;

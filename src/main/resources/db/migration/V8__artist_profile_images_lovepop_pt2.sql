@@ -1,0 +1,35 @@
+-- 나무위키 tripleS 문서 LOVE&POP pt.2 최신 프로필 이미지 URL로 교체 (파일 저장 없이 핫링크)
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w68zHOYJBtMY32IkaXifE0L-lSc6XmhsCqSNKBh63W8hWwKvilDFHoxQTXbf-Pu__Oq3e7HuoWM0NqxN_7Ovg8TZ48z8WZRCQJ2zN4jHfgy14cJyb45M5hNEv1Cl2kSgjug1EZdCEdq9_4zGPXv9eto.webp' WHERE eng_name = 'seoyeon';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w4YLn5UqkiKFOOnuYVw2I3KLM7mw6JD_fzlDf3J8bmY3c5yoEYuP77Rd1xwxSWHmE_CjaElEKVSCLMgP4fZMFd4j0Qv7fuOKpb0J0GlPxzdv2BZEDalSN2_Qd46XiZhbeuoQw3rzBF7Iu7VxEYC39c0.webp' WHERE eng_name = 'hyerin';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w9at-WkbWd07laZGmdFKk3zy6O2xqaurG_NNiDDY0LANnnH7P-M_Nk6NUVoPUbsW3SAhtMszCxf7JVCHAu9dL_00yVcQsL6QgEFIjcKD_JSJPVlMmSkn4VOQ_Fs0uF3_rxty-iw3pf6DL-wrCrG8Cao.webp' WHERE eng_name = 'jiwoo';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w8a_R9BZ0tioI-VDutV727DI3gCtnkAE7Da3HoqqatVMBJd9oD_6936lxo7z76RU4OOlE1KRUUzC2nYLA2IMrcaZd6EW7nyt9_AB5OJDtZxP76FfXe3iyaUjxMeKSJBH41mL7U8ltc1icvIKM5YhipE.webp' WHERE eng_name = 'chaeyeon';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w6cw31IHS8Zx7k2pVIJirXi76msqUpTVJPA74N43-BY9XoDdE_e23u8NNkbWmc3vcgn9jSVN-6_BSwcV1757sEf4EQbnlBWQFM3Nqg8gYVP6MvtzzFt84kfDdvqCI3FCPW_TNk3FzcrKe9UD_ZOxSFo.webp' WHERE eng_name = 'yooyeon';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w1IAjfvpC-dyADV7EZfMa8M3FYFHSkSE2nZz7Yd75vsMeQMbBWvq43EtInHt7dGh9Q1leQKtpjTLu02XksBbmH6iFjYlUDDyHuvUzrQA9M6OK9SVptkmJaPaW0A0R_fEpFDznOqz90WxQkyCvD-gIwY.webp' WHERE eng_name = 'soomin';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0wybDxIz9ovmFA4dtBgG-0vc7e8q7JbWZsRPDXJREsLhewbJxw_Lw9aFSJZkOGVBdmZ1KkXIpvaXJHJ1zWCu1Q8nggJSHpdGwxiIJS9jvAIKitliA73AoY4cBQ1FAwd6s_O6Ssk_Wfhpv9mRkRh02TUc.webp' WHERE eng_name = 'nakyoung';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w2sQiT0DVB9D8kY8D2KYdYQaP0E7XLFwpz3M8VupdadnYPKmH0bIF23bT2oiS126tFnxzreOUXne4ZfQUu5hyrtiIFoP2SHhsQQ2RCGrtJEG_7SdffZwzCLOhWb-faQKyE-h6uUxMg0bpiD15S209zU.webp' WHERE eng_name = 'yubin';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w2LtApvJQTCR6wrCQPiPkKp-t-4GUzDZkM3u8kvmMZqdhv7MaHI9GNTix17-7_4wOZMn-pCXzxlCIusPAyb7A2pYeRNhMGtVphZDVO3shpQl4yICjAcoB8MKleIdtPSrT5Lp_JqmN5PQUqrO1B82N_0.webp' WHERE eng_name = 'kaede';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w5Yd3O_oD_O_Vp69lFGda59hT6WcSuNPFbTYRS3h4y1I4Adl-NIOBQe0C1MLoXq_EucuMPiOE0cwFd9lW_QEFPc7fjGDitZZWHxOKYKZKRyu6FaR7olxdlTZprmEnA2j83lwBe6xUtAP-YKItleDoEA.webp' WHERE eng_name = 'dahyun';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w_vbWdVCTpvkvHyLJx1ytGETFE_7ClYnCND6VbTV6DAOYFvQbvF4J0RMKZTBVRwFUsjZX1TyTD2k4VakNegUQd8HMOePZLFTLTnTSokIFDcK5NHGX595wbbI7lA4apQI_t88lNaEmWyhgcWbGE6z-ow.webp' WHERE eng_name = 'kotone';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0wzkpzlS0MMGfx2CBeOBOQCGtqphX6PVnpZNGQbhfTKMD35aykYKc23iSf6TCT8h0Fx14b_FtlCRQIh5KAdhb2X1UTS24yRsb9gbG86pcSNGfs_sDKyn_SZYa8P1bt8JZSj7iWqc2wYPVeE0Jv-KZAlg.webp' WHERE eng_name = 'yeonji';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0wzXBXT9IHJg8VQteBcasCJw77tovyqYSXK95PmzZg9OKNT7Kcmx7tcksRDc5hO55UBhO6KwHnrzQgt6Zn7Y5COu60kvZKuvSkdU1Sx8L3cTeEs1gXmk6BEptcvm2cyVchfnJ7KJZPmaU00rRR5FD7_4.webp' WHERE eng_name = 'nien';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w_jlOWL1r4Pmv5bqUzqJrkmFRkd3K0seeP5ZP1xTPb-Ebq7S-E4EmXCHBfRt-pF9EKupXg9yTYmdRiP2zzXrGDkVapHgvRdrKdgBju8IicTZQZxNQvYI2DjK28On2A-Pu5Y2YMPgBA_nEycy206yeRY.webp' WHERE eng_name = 'sohyun';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w9QORF9VxtOV2RcE9HvGNuxsOzYEnOZsvshvWUuLuGMeADLwGY0XyQYCrNOBv8Pr-TgquFqlrPw_zy1KBdAFU-DmgTZAUSZcKeMR-eNQZfPn-1tgciKwsjVcaSAlX-coRExMTXOI-Zo-ukUasGLSu3A.webp' WHERE eng_name = 'xinyu';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w664qjpwdKguDHjAYpmwd4qeZ1Q8GwLXZaHhv5iqIy14TqzTNYIyjZoFWqhSHz3i4GiHxojVj6UY3L_cweXtV4MWhP34A7SkKoPA3yjfx8oHyko0qggvUwScSGQA0nloIjzwbiAtvuNJzYn-2AIOrU0.webp' WHERE eng_name = 'mayu';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w-ObUNdojWV-cW1DuFh1pxwZeC7OqVi_rIelETUk6MDt4N24N6gSU0RW6YUyWtzP2x0hj71CStvTQ5aZoh4_26vZOCehnJBm-TXXExxFGPppN4mRA4US99bC7N2wpE-9PyzGwk2AuRyXSlord35Xsa8.webp' WHERE eng_name = 'lynn';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w20z42O9lu0PDdhdngjxdu7UYCMqvsO3VWtj9a8TuoedbymIt_l1XTzcRf6xnrdyvEAQan9HWCSBa8XVjB8fAEho8z-2MfbylNbJTv16W7rsmsCYPMz4fzMmdOmHpBH7Mj686dRYsqR2OZHB0CRJuYI.webp' WHERE eng_name = 'joobin';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0wxIyHZJ0p8Jwinb8XivgLrq1h-TiYlBDLXEVSbkpcweA6nXiWIAyA-yJpcTeTWf3ffPiYgn8BcYxYwcU7NxDUINdxlYKXOKeClKRs9BAEz0KOJ524mFX7het-BiHbJSemrAtzT4n8I_Z59ZyhK0Xar8.webp' WHERE eng_name = 'hayeon';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w0nz1GYankyHr76uHk-bAM544rxDe0BBBpaYf7l73pVEAde25Rd0VvZnJK_FMWW_Uxtt897uu_iEiNWJve4F6cK55CYig4SYW0AjVtYhPRiEXrHEqWbiRTX83iv0DgKFeLCKo8HaBQMoVzjJ8dOTglI.webp' WHERE eng_name = 'shion';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w_NrQBWa0aClalB9OQSlqU8W8AVT_yx0HJPlXFxyd6cRu_ZAX0tLCBwJ4hXmmhKuKH--7pvLUsPtO0yAlgbqsRYGX5UhqFaTR3OjBdxe58R-w_v20zH1fMx-C_zA4lBSHSWnyZQMrVyUUzNF5KD2IrY.webp' WHERE eng_name = 'chaewon';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w3HySMLgOapHV-1jQ1CXXPHZMwO_vgaj95JiJQeWQb9GLE7qO-X2fUwk0KkYfvd0r_WwflAuO7MaydbvC68PYysl04TEDI5lmqPZLDLfY1aOhQHf5lKUrMvxW3Wq_0_WNATFmkJyVk3ZuXh2QJ8g140.webp' WHERE eng_name = 'sullin';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w5bmAMaxBkcqdclJD604Rwm-I8Hv1gaQ0Gra_h6ErJawUAgutlc2l-Tw5kDT6Os3L15XFV6azRcekgXIe-Jp3F1aujkq9wyBdvKnbzEqKwz70E6EH4DBQQ17q5_XidqXNQ4CdntCeSMq1iPDUjlEgKs.webp' WHERE eng_name = 'seoah';
+UPDATE artist SET profile_image = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0wxJLEBh4mV3LiHOJf93bTbszH9UyX6Jmj3HHr4NV2KezILQhDl-AMeycB-p5bXUB-7kUh6bYPBlnkbCHYIOX7uT4ERLjQZwb5HA4JX0l7qBWLss7ou98MruUj1NNSFhw8Gem8lMoWjiNRUpPq9BtAWY.webp' WHERE eng_name = 'jiyeon';
+
+-- 그룹 소개 이미지도 LOVE&POP pt.2 컨셉으로 갱신 (행이 있을 때만)
+UPDATE site_content
+SET content_value = 'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w4sFOxa0qwo4UedO_C0_jcoBe03789wNc5YmISVsRpQCUGa0obgJJFcjBxDI9La7P22k1Y69v81a-3yCmFW4bIEncacdQLXxQ8oCq1Bu4BaK72Rqff_oF6s-6VOylFoxz4vRAjLTVYAD_Y2d1Q3cMkQ.webp'
+WHERE content_key = 'about.group.image';
+
+INSERT INTO site_content (content_key, content_value)
+SELECT 'about.group.image',
+       'https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w4sFOxa0qwo4UedO_C0_jcoBe03789wNc5YmISVsRpQCUGa0obgJJFcjBxDI9La7P22k1Y69v81a-3yCmFW4bIEncacdQLXxQ8oCq1Bu4BaK72Rqff_oF6s-6VOylFoxz4vRAjLTVYAD_Y2d1Q3cMkQ.webp'
+WHERE NOT EXISTS (SELECT 1 FROM site_content WHERE content_key = 'about.group.image');
