@@ -13,9 +13,8 @@ import java.util.List;
 @Table(name = "album")
 @Getter
 @Setter
-@ToString(exclude = {"unit","tracks"})
+@ToString(exclude = {"unit", "tracks", "section"})
 @NoArgsConstructor
-@AllArgsConstructor
 public class Album {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,6 +24,11 @@ public class Album {
     private String albumName;
 
     private String albumImage;
+
+    @Transient
+    public String getDisplayAlbumImage() {
+        return com.example.triplesweb.util.ImageUrls.orPlaceholder(albumImage);
+    }
 
     @Column(nullable = false)
     private String releaseDate;
@@ -40,9 +44,34 @@ public class Album {
     @JoinColumn(name = "unit_id")
     private Unit unit;
 
+    /** 목록 구분(섹션). null이면 「기타」 */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "section_id")
+    private AlbumSection section;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "album_type", nullable = false, length = 16)
     private AlbumType albumType = AlbumType.SUBUNIT;
+
+    public Album(
+            Long albumId,
+            String albumName,
+            String albumImage,
+            String releaseDate,
+            String albumInfo,
+            List<Track> tracks,
+            Unit unit,
+            AlbumType albumType
+    ) {
+        this.albumId = albumId;
+        this.albumName = albumName;
+        this.albumImage = albumImage;
+        this.releaseDate = releaseDate;
+        this.albumInfo = albumInfo;
+        this.tracks = tracks != null ? tracks : new ArrayList<>();
+        this.unit = unit;
+        this.albumType = albumType != null ? albumType : AlbumType.SUBUNIT;
+    }
 
     /** Mustache용: 10인 완전체 배지 */
     public boolean isFull10() {

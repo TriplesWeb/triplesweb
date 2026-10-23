@@ -4,6 +4,7 @@
   let adminConfigured = false;
   let isAdmin = false;
   let unitOptions = [];
+  let sectionOptions = [];
 
   function getToken() { return auth ? auth.getToken() : ""; }
   function setToken(token) { if (auth) auth.setToken(token); }
@@ -37,7 +38,9 @@
     const page = document.querySelector(".about-admin-page");
     const btn = document.getElementById("albumAdminBtn");
     const hint = document.getElementById("albumAdminHint");
-    document.querySelectorAll("[data-album-edit], #albumAddBtn").forEach(control => { control.hidden = !isAdmin; });
+    document.querySelectorAll("[data-album-edit], #albumAddBtn, #albumSectionBtn").forEach((control) => {
+      control.hidden = !isAdmin;
+    });
     if (page) page.classList.toggle("is-admin", Boolean(isAdmin));
     if (btn) {
       if (!adminConfigured) btn.classList.add("hidden");
@@ -119,6 +122,50 @@
       unitOptions.map((u) => `<option value="${u.unitId}" ${String(u.unitId) === String(selectedId || "") ? "selected" : ""}>${escapeAttr(u.unitName)}</option>`).join("");
   }
 
+  function fillSectionSelect(selectedId) {
+    const sel = document.getElementById("albumEditSectionId");
+    if (!sel) return;
+    sel.innerHTML = '<option value="">기타 (구분 없음)</option>' +
+      sectionOptions.map((s) => `<option value="${s.sectionId}" ${String(s.sectionId) === String(selectedId || "") ? "selected" : ""}>${escapeAttr(s.name)}</option>`).join("");
+  }
+
+  async function loadOptions() {
+    if (!unitOptions.length) {
+      const res = await apiFetch(API + "/units");
+      if (res.ok) unitOptions = await res.json();
+    }
+    const secRes = await apiFetch(API + "/sections");
+    if (secRes.ok) sectionOptions = await secRes.json();
+  }
+
+  function renderSectionList() {
+    const list = document.getElementById("albumSectionList");
+    if (!list) return;
+    if (!sectionOptions.length) {
+      list.innerHTML = '<li class="text-sm text-[#b9cac4]/70 py-2">등록된 구분이 없습니다.</li>';
+      return;
+    }
+    list.innerHTML = sectionOptions.map((s, i) => `
+      <li class="flex flex-wrap items-center gap-2 border border-[#3a4a46]/40 rounded-lg p-2" data-section-id="${s.sectionId}">
+        <input type="text" class="section-name-input flex-1 min-w-[8rem] bg-[#0d0e12] border border-[#3a4a46]/50 rounded px-2 py-1 text-sm" value="${escapeAttr(s.name)}" maxlength="120" aria-label="구분명">
+        <button type="button" class="about-mode-btn section-rename" title="이름 저장">저장</button>
+        <button type="button" class="about-mode-btn section-up" ${i === 0 ? "disabled" : ""} title="위로">↑</button>
+        <button type="button" class="about-mode-btn section-down" ${i === sectionOptions.length - 1 ? "disabled" : ""} title="아래로">↓</button>
+        <button type="button" class="about-mode-btn about-btn-danger section-delete" title="삭제">삭제</button>
+      </li>`).join("");
+  }
+
+  async function openSectionModal() {
+    if (!isAdmin) { openLoginModal(); return; }
+    const err = document.getElementById("albumSectionError");
+    if (err) { err.hidden = true; err.textContent = ""; }
+    const nameInput = document.getElementById("albumSectionNewName");
+    if (nameInput) nameInput.value = "";
+    await loadOptions();
+    renderSectionList();
+    openModal("albumSectionModal");
+  }
+
   async function openEditModal(albumId) {
     if (!isAdmin) { openLoginModal(); return; }
     const err = document.getElementById("albumEditError");
@@ -137,10 +184,7 @@
     preview.classList.add("hidden");
     preview.removeAttribute("src");
 
-    if (!unitOptions.length) {
-      const res = await apiFetch(API + "/units");
-      if (res.ok) unitOptions = await res.json();
-    }
+    await loadOptions();
 
     if (albumId) {
       const res = await apiFetch(API + "/" + albumId);
@@ -154,6 +198,7 @@
       document.getElementById("albumEditInfo").value = data.albumInfo || "";
       document.getElementById("albumEditType").value = data.albumType || "SUBUNIT";
       fillUnitSelect(data.unitId);
+      fillSectionSelect(data.sectionId);
       document.getElementById("albumEditTracks").innerHTML = trackRowsHtml(data.tracks);
       if (/^https?:\/\//i.test(data.albumImage || "")) document.getElementById("albumEditImageUrl").value = data.albumImage;
       if (data.albumImage) {
@@ -162,6 +207,7 @@
       }
     } else {
       fillUnitSelect(null);
+      fillSectionSelect(null);
       document.getElementById("albumEditTracks").innerHTML = trackRowsHtml([]);
     }
     openModal("albumEditModal");
@@ -209,8 +255,15 @@
     document.querySelectorAll(".album-edit-close").forEach((el) => {
       el.addEventListener("click", () => closeModal("albumEditModal"));
     });
+    document.querySelectorAll(".album-section-close").forEach((el) => {
+      el.addEventListener("click", () => {
+        closeModal("albumSectionModal");
+        location.reload();
+      });
+    });
 
     document.getElementById("albumAddBtn")?.addEventListener("click", () => openEditModal(null));
+    document.getElementById("albumSectionBtn")?.addEventListener("click", () => openSectionModal());
     document.querySelectorAll("[data-album-edit]").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.preventDefault();
@@ -230,6 +283,64 @@
       if (e.target.closest(".track-remove")) e.target.closest(".album-track-row")?.remove();
     });
 
+    document.getElementById("albumSectionAddForm")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const err = document.getElementById("albumSectionError");
+      const name = document.getElementById("albumSectionNewName")?.value?.trim();
+      try {
+        const res = await apiFetch(API + "/sections", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name })
+        });
+        if (!res.ok) throw new Error(await readError(res, "추가 실패"));
+        document.getElementById("albumSectionNewName").value = "";
+        sectionOptions = await (await apiFetch(API + "/sections")).json();
+        renderSectionList();
+      } catch (ex) {
+        if (err) { err.hidden = false; err.textContent = ex.message || "추가 실패"; }
+      }
+    });
+
+    document.getElementById("albumSectionList")?.addEventListener("click", async (e) => {
+      const row = e.target.closest("[data-section-id]");
+      if (!row) return;
+      const id = row.getAttribute("data-section-id");
+      const err = document.getElementById("albumSectionError");
+      try {
+        if (e.target.closest(".section-rename")) {
+          const name = row.querySelector(".section-name-input")?.value?.trim();
+          const res = await apiFetch(API + "/sections/" + id, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name })
+          });
+          if (!res.ok) throw new Error(await readError(res, "저장 실패"));
+          sectionOptions = await (await apiFetch(API + "/sections")).json();
+          renderSectionList();
+        } else if (e.target.closest(".section-up")) {
+          const res = await apiFetch(API + "/sections/" + id + "/move?direction=-1", { method: "POST" });
+          if (!res.ok) throw new Error(await readError(res, "순서 변경 실패"));
+          sectionOptions = await res.json();
+          renderSectionList();
+        } else if (e.target.closest(".section-down")) {
+          const res = await apiFetch(API + "/sections/" + id + "/move?direction=1", { method: "POST" });
+          if (!res.ok) throw new Error(await readError(res, "순서 변경 실패"));
+          sectionOptions = await res.json();
+          renderSectionList();
+        } else if (e.target.closest(".section-delete")) {
+          if (!confirm("이 구분을 삭제할까요? 소속 앨범은 「기타」로 이동합니다.")) return;
+          const res = await apiFetch(API + "/sections/" + id, { method: "DELETE" });
+          if (!res.ok) throw new Error(await readError(res, "삭제 실패"));
+          sectionOptions = await (await apiFetch(API + "/sections")).json();
+          renderSectionList();
+        }
+        if (err) { err.hidden = true; err.textContent = ""; }
+      } catch (ex) {
+        if (err) { err.hidden = false; err.textContent = ex.message || "요청 실패"; }
+      }
+    });
+
     document.getElementById("albumEditForm")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const err = document.getElementById("albumEditError");
@@ -241,6 +352,8 @@
       fd.append("albumType", document.getElementById("albumEditType").value);
       const unitId = document.getElementById("albumEditUnitId").value;
       if (unitId) fd.append("unitId", unitId);
+      const sectionId = document.getElementById("albumEditSectionId")?.value;
+      if (sectionId) fd.append("sectionId", sectionId);
       fd.append("tracksJson", JSON.stringify(collectTracks()));
       const file = document.getElementById("albumEditImage").files?.[0];
       if (file) fd.append("image", file);
@@ -284,7 +397,88 @@
     setAdminUi();
   }
 
-  document.addEventListener("DOMContentLoaded", () => { bindUi(); refreshAdmin(); });
+  function bindSectionTabs() {
+    const tabButtons = document.querySelectorAll("#albumSectionTabs .album-section-tab");
+    const tabPanes = document.querySelectorAll("#albumSectionTabContent .tab-pane");
+    if (!tabButtons.length) return;
+
+    function activateTab(targetId) {
+      if (!targetId) return;
+      const btn = document.querySelector('#albumSectionTabs .album-section-tab[data-target="' + targetId + '"]');
+      const targetPane = document.querySelector(targetId);
+      if (!targetPane) return;
+
+      tabButtons.forEach((b) => {
+        const img = b.querySelector("img");
+        const span = b.querySelector("span");
+        if (img) {
+          img.classList.remove("border-[#00f5d4]");
+          img.classList.add("border-transparent");
+        }
+        if (span) {
+          span.classList.remove("text-[#00f5d4]");
+          span.classList.add("text-[#b9cac4]");
+        }
+      });
+
+      if (btn) {
+        const activeImg = btn.querySelector("img");
+        const activeSpan = btn.querySelector("span");
+        if (activeImg) {
+          activeImg.classList.remove("border-transparent");
+          activeImg.classList.add("border-[#00f5d4]");
+        }
+        if (activeSpan) {
+          activeSpan.classList.remove("text-[#b9cac4]");
+          activeSpan.classList.add("text-[#00f5d4]");
+        }
+        const scroller = btn.closest("#albumSectionTabs");
+        if (scroller && scroller.scrollWidth > scroller.clientWidth + 1) {
+          const btnRect = btn.getBoundingClientRect();
+          const scrollerRect = scroller.getBoundingClientRect();
+          if (btnRect.left < scrollerRect.left || btnRect.right > scrollerRect.right) {
+            btn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+          }
+        }
+      }
+
+      tabPanes.forEach((pane) => pane.classList.add("hidden"));
+      targetPane.classList.remove("hidden");
+    }
+
+    tabButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const targetId = btn.getAttribute("data-target");
+        activateTab(targetId);
+        if (targetId && targetId.startsWith("#")) {
+          const url = new URL(window.location.href);
+          url.searchParams.set("tab", targetId.slice(1));
+          url.hash = "";
+          history.replaceState(null, "", url.pathname + url.search);
+        }
+      });
+    });
+
+    const tabsEl = document.getElementById("albumSectionTabs");
+    if (tabsEl) {
+      tabsEl.addEventListener("wheel", (e) => {
+        if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+        if (tabsEl.scrollWidth <= tabsEl.clientWidth + 1) return;
+        e.preventDefault();
+        tabsEl.scrollLeft += e.deltaY;
+      }, { passive: false });
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    const fromQuery = tab
+      ? document.querySelector('#albumSectionTabs .album-section-tab[data-target="#' + CSS.escape(tab) + '"]')
+      : null;
+    const initial = fromQuery || tabButtons[0];
+    if (initial) activateTab(initial.getAttribute("data-target"));
+  }
+
+  document.addEventListener("DOMContentLoaded", () => { bindSectionTabs(); bindUi(); refreshAdmin(); });
   window.addEventListener("pageshow", event => { if (event.persisted) refreshAdmin(); });
   window.addEventListener("storage", event => { if (auth && event.key === auth.TOKEN_KEY) refreshAdmin(); });
 })();

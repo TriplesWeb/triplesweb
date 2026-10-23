@@ -21,7 +21,7 @@
 
     <div id="albumDetailTable" class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start border-b border-[#3a4a46]/30 pb-8">
              <div id="albumImage" class="md:col-span-4 lg:col-span-3 flex justify-center">
-                 <img src="{{albumImage}}" width="300" height="300" alt="{{albumName}}" class="w-full max-w-[260px] aspect-square object-cover rounded-2xl border border-[#3a4a46]/40 shadow-2xl " />
+                 <img src="{{displayAlbumImage}}" width="300" height="300" alt="{{albumName}}" class="w-full max-w-[260px] aspect-square object-cover rounded-2xl border border-[#3a4a46]/40 shadow-2xl " />
              </div>
         <div class="md:col-span-8 lg:col-span-9 space-y-5">
             <div>
@@ -37,13 +37,13 @@
                 <div class="flex items-center gap-3 overflow-x-auto pb-1">
                     {{#subUnits}}
                         <a href="/triples/unit/{{unitId}}" class="bg-transparent border border-[#3a4a46]/30 text-[#b9cac4] hover:text-[#00f5d4] flex items-center gap-3 px-4 py-2 rounded-xl transition-all shrink-0 no-underline">
-                            <img src="{{unitImage}}" class="w-10 h-10 rounded-full object-cover border border-[#3a4a46]/50" alt="{{unitName}}">
+                            <img src="{{displayUnitImage}}" class="w-10 h-10 rounded-full object-cover border border-[#3a4a46]/50" alt="{{unitName}}">
                             <span class="unitMember-item text-xs font-bold">{{unitName}}</span>
                         </a>
                     {{/subUnits}}
                     {{^subUnits}}
                         <a href="/triples/unit/{{unitId}}" class="bg-white/5 hover:bg-white/10 border border-[#3a4a46]/30 hover:border-[#00f5d4]/50 text-[#b9cac4] hover:text-[#00f5d4] flex items-center gap-3 px-4 py-2 rounded-xl transition-all shrink-0 no-underline">
-                            <img src="{{unitImage}}" class="w-10 h-10 rounded-full object-cover border border-[#3a4a46]/50" alt="{{unitName}}">
+                            <img src="{{displayUnitImage}}" class="w-10 h-10 rounded-full object-cover border border-[#3a4a46]/50" alt="{{unitName}}">
                             <span class="text-sm font-bold">{{unitName}}</span>
                         </a>
                     {{/subUnits}}

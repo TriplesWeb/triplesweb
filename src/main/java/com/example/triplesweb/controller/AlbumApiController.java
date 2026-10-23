@@ -1,6 +1,7 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.dto.AlbumAdminDto;
+import com.example.triplesweb.dto.AlbumSectionDto;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.AlbumAdminService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -49,6 +51,75 @@ public class AlbumApiController {
         return albumAdminService.listUnitOptions();
     }
 
+    @GetMapping("/sections")
+    public List<AlbumSectionDto> sections() {
+        return albumAdminService.listSections();
+    }
+
+    @PostMapping("/sections")
+    public AlbumSectionDto createSection(
+            @RequestBody Map<String, String> body,
+            HttpServletRequest request,
+            HttpSession session
+    ) {
+        aboutAdminAuth.requireAdmin(request, session);
+        try {
+            return albumAdminService.createSection(body != null ? body.get("name") : null);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
+
+    @PutMapping("/sections/{id:[0-9]+}")
+    public AlbumSectionDto updateSection(
+            @PathVariable long id,
+            @RequestBody Map<String, Object> body,
+            HttpServletRequest request,
+            HttpSession session
+    ) {
+        aboutAdminAuth.requireAdmin(request, session);
+        try {
+            String name = body != null && body.get("name") != null ? String.valueOf(body.get("name")) : null;
+            Integer sortOrder = null;
+            if (body != null && body.get("sortOrder") instanceof Number n) {
+                sortOrder = n.intValue();
+            }
+            return albumAdminService.updateSection(id, name, sortOrder);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
+
+    @PostMapping("/sections/{id:[0-9]+}/move")
+    public List<AlbumSectionDto> moveSection(
+            @PathVariable long id,
+            @RequestParam int direction,
+            HttpServletRequest request,
+            HttpSession session
+    ) {
+        aboutAdminAuth.requireAdmin(request, session);
+        try {
+            return albumAdminService.moveSection(id, direction);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/sections/{id:[0-9]+}")
+    public Map<String, Object> deleteSection(
+            @PathVariable long id,
+            HttpServletRequest request,
+            HttpSession session
+    ) {
+        aboutAdminAuth.requireAdmin(request, session);
+        try {
+            albumAdminService.deleteSection(id);
+            return Map.of("deleted", true);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
+
     @GetMapping("/{id:[0-9]+}")
     public AlbumAdminDto get(@PathVariable long id) {
         try {
@@ -65,6 +136,7 @@ public class AlbumApiController {
             @RequestParam(required = false, defaultValue = "") String albumInfo,
             @RequestParam(required = false, defaultValue = "SUBUNIT") String albumType,
             @RequestParam(required = false) Long unitId,
+            @RequestParam(required = false) Long sectionId,
             @RequestParam(required = false, defaultValue = "[]") String tracksJson,
             @RequestParam(required = false) MultipartFile image,
             @RequestParam(required = false) String imageUrl,
@@ -73,7 +145,8 @@ public class AlbumApiController {
     ) {
         aboutAdminAuth.requireAdmin(request, session);
         try {
-            return albumAdminService.create(albumName, releaseDate, albumInfo, albumType, unitId, tracksJson, image, imageUrl);
+            return albumAdminService.create(
+                    albumName, releaseDate, albumInfo, albumType, unitId, sectionId, tracksJson, image, imageUrl);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
@@ -87,6 +160,7 @@ public class AlbumApiController {
             @RequestParam(required = false, defaultValue = "") String albumInfo,
             @RequestParam(required = false, defaultValue = "SUBUNIT") String albumType,
             @RequestParam(required = false) Long unitId,
+            @RequestParam(required = false) Long sectionId,
             @RequestParam(required = false, defaultValue = "[]") String tracksJson,
             @RequestParam(required = false) MultipartFile image,
             @RequestParam(required = false) String imageUrl,
@@ -96,7 +170,9 @@ public class AlbumApiController {
     ) {
         aboutAdminAuth.requireAdmin(request, session);
         try {
-            return albumAdminService.update(id, albumName, releaseDate, albumInfo, albumType, unitId, tracksJson, image, imageUrl, clearImage);
+            return albumAdminService.update(
+                    id, albumName, releaseDate, albumInfo, albumType, unitId, sectionId,
+                    tracksJson, image, imageUrl, clearImage);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }

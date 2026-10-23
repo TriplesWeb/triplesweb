@@ -47,7 +47,7 @@ public class TriplesController {
 
     @GetMapping("/album")
     public String indexTriplesAlbum(Model model) {
-        model.addAttribute("album", albumService.listAll());
+        model.addAttribute("albumSections", albumService.listGroupedBySection());
         return "triples/album";
     }
 

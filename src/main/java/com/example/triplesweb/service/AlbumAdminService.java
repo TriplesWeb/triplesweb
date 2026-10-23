@@ -1,12 +1,15 @@
 package com.example.triplesweb.service;
 
 import com.example.triplesweb.dto.AlbumAdminDto;
+import com.example.triplesweb.dto.AlbumSectionDto;
 import com.example.triplesweb.entity.Album;
+import com.example.triplesweb.entity.AlbumSection;
 import com.example.triplesweb.entity.AlbumType;
 import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.entity.Track;
 import com.example.triplesweb.entity.Unit;
 import com.example.triplesweb.repository.AlbumRepository;
+import com.example.triplesweb.repository.AlbumSectionRepository;
 import com.example.triplesweb.repository.UnitRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,6 +31,7 @@ import java.util.stream.Collectors;
 public class AlbumAdminService {
 
     private final AlbumRepository albumRepository;
+    private final AlbumSectionRepository albumSectionRepository;
     private final UnitRepository unitRepository;
     private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
@@ -38,6 +42,7 @@ public class AlbumAdminService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 앨범이 존재하지 않습니다. id=" + albumId));
         if (album.getTracks() != null) album.getTracks().size();
         if (album.getUnit() != null) album.getUnit().getUnitName();
+        if (album.getSection() != null) album.getSection().getName();
         return toDto(album);
     }
 
@@ -54,6 +59,93 @@ public class AlbumAdminService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<AlbumSectionDto> listSections() {
+        return albumSectionRepository.findAllByOrderBySortOrderAscSectionIdAsc().stream()
+                .map(this::toSectionDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public AlbumSectionDto createSection(String name) {
+        String trimmed = requireText(name, "구분명은 필수입니다.");
+        albumSectionRepository.findByNameIgnoreCase(trimmed).ifPresent(other -> {
+            throw new IllegalArgumentException("이미 사용 중인 구분명입니다: " + trimmed);
+        });
+        int nextOrder = albumSectionRepository.findAll().stream()
+                .mapToInt(AlbumSection::getSortOrder)
+                .max()
+                .orElse(-1) + 1;
+        AlbumSection section = new AlbumSection(null, trimmed, nextOrder);
+        return toSectionDto(albumSectionRepository.save(section));
+    }
+
+    @Transactional
+    public AlbumSectionDto updateSection(long sectionId, String name, Integer sortOrder) {
+        AlbumSection section = albumSectionRepository.findById(sectionId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 구분이 존재하지 않습니다. id=" + sectionId));
+        if (StringUtils.hasText(name)) {
+            String trimmed = name.trim();
+            albumSectionRepository.findByNameIgnoreCase(trimmed).ifPresent(other -> {
+                if (!Objects.equals(other.getSectionId(), sectionId)) {
+                    throw new IllegalArgumentException("이미 사용 중인 구분명입니다: " + trimmed);
+                }
+            });
+            section.setName(trimmed);
+        }
+        if (sortOrder != null) {
+            section.setSortOrder(sortOrder);
+        }
+        return toSectionDto(albumSectionRepository.save(section));
+    }
+
+    @Transactional
+    public void deleteSection(long sectionId) {
+        AlbumSection section = albumSectionRepository.findById(sectionId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 구분이 존재하지 않습니다. id=" + sectionId));
+        for (Album album : albumRepository.findAll()) {
+            if (album.getSection() != null && Objects.equals(album.getSection().getSectionId(), sectionId)) {
+                album.setSection(null);
+            }
+        }
+        albumSectionRepository.delete(section);
+    }
+
+    @Transactional
+    public List<AlbumSectionDto> moveSection(long sectionId, int direction) {
+        List<AlbumSection> sections = new ArrayList<>(
+                albumSectionRepository.findAllByOrderBySortOrderAscSectionIdAsc());
+        int index = -1;
+        for (int i = 0; i < sections.size(); i++) {
+            if (Objects.equals(sections.get(i).getSectionId(), sectionId)) {
+                index = i;
+                break;
+            }
+        }
+        if (index < 0) {
+            throw new IllegalArgumentException("해당 구분이 존재하지 않습니다. id=" + sectionId);
+        }
+        int swapWith = index + (direction < 0 ? -1 : 1);
+        if (swapWith < 0 || swapWith >= sections.size()) {
+            return sections.stream().map(this::toSectionDto).collect(Collectors.toList());
+        }
+        AlbumSection a = sections.get(index);
+        AlbumSection b = sections.get(swapWith);
+        int tmp = a.getSortOrder();
+        a.setSortOrder(b.getSortOrder());
+        b.setSortOrder(tmp);
+        // keep stable if equal orders
+        if (a.getSortOrder() == b.getSortOrder()) {
+            a.setSortOrder(swapWith);
+            b.setSortOrder(index);
+        }
+        albumSectionRepository.save(a);
+        albumSectionRepository.save(b);
+        return albumSectionRepository.findAllByOrderBySortOrderAscSectionIdAsc().stream()
+                .map(this::toSectionDto)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public AlbumAdminDto create(
             String albumName,
@@ -61,12 +153,13 @@ public class AlbumAdminService {
             String albumInfo,
             String albumType,
             Long unitId,
+            Long sectionId,
             String tracksJson,
             MultipartFile image,
             String imageUrl
     ) {
         Album album = new Album();
-        applyFields(album, null, albumName, releaseDate, albumInfo, albumType, unitId, tracksJson, image, imageUrl, false);
+        applyFields(album, null, albumName, releaseDate, albumInfo, albumType, unitId, sectionId, tracksJson, image, imageUrl, false);
         return toDto(albumRepository.save(album));
     }
 
@@ -78,6 +171,7 @@ public class AlbumAdminService {
             String albumInfo,
             String albumType,
             Long unitId,
+            Long sectionId,
             String tracksJson,
             MultipartFile image,
             String imageUrl,
@@ -85,7 +179,7 @@ public class AlbumAdminService {
     ) {
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 앨범이 존재하지 않습니다. id=" + albumId));
-        applyFields(album, albumId, albumName, releaseDate, albumInfo, albumType, unitId, tracksJson, image, imageUrl, clearImage);
+        applyFields(album, albumId, albumName, releaseDate, albumInfo, albumType, unitId, sectionId, tracksJson, image, imageUrl, clearImage);
         return toDto(albumRepository.save(album));
     }
 
@@ -105,6 +199,7 @@ public class AlbumAdminService {
             String albumInfo,
             String albumType,
             Long unitId,
+            Long sectionId,
             String tracksJson,
             MultipartFile image,
             String imageUrl,
@@ -131,6 +226,14 @@ public class AlbumAdminService {
             album.setUnit(unit);
         } else {
             album.setUnit(null);
+        }
+
+        if (sectionId != null && sectionId > 0) {
+            AlbumSection section = albumSectionRepository.findById(sectionId)
+                    .orElseThrow(() -> new IllegalArgumentException("구분이 없습니다. id=" + sectionId));
+            album.setSection(section);
+        } else {
+            album.setSection(null);
         }
 
         if (image != null && !image.isEmpty()) {
@@ -219,6 +322,7 @@ public class AlbumAdminService {
             }
         }
         Unit unit = album.getUnit();
+        AlbumSection section = album.getSection();
         return AlbumAdminDto.builder()
                 .albumId(album.getAlbumId())
                 .albumName(album.getAlbumName())
@@ -228,7 +332,17 @@ public class AlbumAdminService {
                 .albumType(album.getAlbumType() != null ? album.getAlbumType().name() : AlbumType.SUBUNIT.name())
                 .unitId(unit != null ? unit.getUnitId() : null)
                 .unitName(unit != null ? unit.getUnitName() : null)
+                .sectionId(section != null ? section.getSectionId() : null)
+                .sectionName(section != null ? section.getName() : null)
                 .tracks(tracks)
+                .build();
+    }
+
+    private AlbumSectionDto toSectionDto(AlbumSection section) {
+        return AlbumSectionDto.builder()
+                .sectionId(section.getSectionId())
+                .name(section.getName())
+                .sortOrder(section.getSortOrder())
                 .build();
     }
 

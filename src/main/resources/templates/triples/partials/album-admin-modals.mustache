@@ -43,6 +43,9 @@
             <label class="about-edit-label">참여 유닛
                 <select id="albumEditUnitId"></select>
             </label>
+            <label class="about-edit-label">목록 구분
+                <select id="albumEditSectionId"></select>
+            </label>
             <label class="about-edit-label">소개
                 <textarea id="albumEditInfo" rows="3"></textarea>
             </label>
@@ -75,5 +78,27 @@
                 <button type="button" class="about-mode-btn album-edit-close">취소</button>
             </div>
         </form>
+    </div>
+</div>
+
+<div id="albumSectionModal" class="about-modal hidden" role="dialog" aria-modal="true" aria-labelledby="albumSectionTitle">
+    <div class="about-modal-panel about-edit-panel">
+        <button type="button" class="about-close album-section-close" aria-label="닫기">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        <h3 id="albumSectionTitle" class="about-modal-title">구분 관리</h3>
+        <form id="albumSectionAddForm" class="about-edit-form" style="margin-bottom:1rem">
+            <label class="about-edit-label">구분명 추가
+                <div class="flex gap-2">
+                    <input type="text" id="albumSectionNewName" required maxlength="120" placeholder="예: 완전체, 유닛" class="flex-1">
+                    <button type="submit" class="about-mode-btn is-active shrink-0">추가</button>
+                </div>
+            </label>
+            <p id="albumSectionError" class="about-edit-error" hidden></p>
+        </form>
+        <ul id="albumSectionList" class="list-none p-0 m-0 space-y-2"></ul>
+        <div class="about-edit-actions" style="margin-top:1rem">
+            <button type="button" class="about-mode-btn album-section-close">닫기</button>
+        </div>
     </div>
 </div>

@@ -23,6 +23,8 @@ public class AlbumAdminDto {
     private String albumType;
     private Long unitId;
     private String unitName;
+    private Long sectionId;
+    private String sectionName;
     @Builder.Default
     private List<TrackItem> tracks = new ArrayList<>();
 
@@ -46,5 +48,15 @@ public class AlbumAdminDto {
     public static class UnitOption {
         private Long unitId;
         private String unitName;
+    }
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SectionOption {
+        private Long sectionId;
+        private String name;
     }
 }
