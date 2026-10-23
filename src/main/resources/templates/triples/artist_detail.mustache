@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    {{>layout/favicon}}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{artist.name}} ({{artist.engName}}) - tripleS 멤버 상세</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="/js/tailwind.config.js"></script>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .artist-detail-panel { background:rgba(22,24,31,.82); border:1px solid rgba(58,74,70,.35); border-radius:1.25rem; }
+        .artist-detail-kicker { color:#00f5d4; letter-spacing:.16em; font-size:.7rem; font-weight:800; }
+        .artist-detail-label { color:#8b9b95; font-size:.7rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+        .artist-detail-value { color:#e3e2e8; font-size:.95rem; font-weight:600; }
+        .artist-detail-link { color:#00f5d4; text-decoration:none; }
+        .artist-detail-link:hover { color:#fff; text-decoration:underline; }
+        .artist-media-card { background:rgba(13,14,18,.72); border:1px solid rgba(58,74,70,.35); }
+        .artist-media-card:hover { border-color:rgba(0,245,212,.5); transform:translateY(-2px); }
+    </style>
+</head>
+<body class="min-h-screen bg-[#0d0e12] text-[#e3e2e8]">
+{{>layout/header}}
+<main class="main-content mx-auto max-w-7xl space-y-8 px-4 py-8">
+    <a href="/triples/artist" class="inline-flex items-center gap-2 text-sm text-[#b9cac4] no-underline hover:text-[#00f5d4]">
+        <span class="material-symbols-outlined text-base">arrow_back</span> 멤버 목록으로
+    </a>
+
+    {{#artist}}
+    <section class="artist-detail-panel overflow-hidden shadow-2xl">
+        <div class="grid grid-cols-1 gap-0 md:grid-cols-12">
+            <div class="relative flex min-h-[320px] items-center justify-center bg-black/25 p-6 md:col-span-4 lg:col-span-3">
+                {{#profileImage}}
+                    <img src="{{profileImage}}" alt="{{name}} 프로필" class="aspect-[3/4] w-full max-w-[280px] rounded-2xl object-cover shadow-2xl">
+                {{/profileImage}}
+                {{^profileImage}}
+                    <div class="flex aspect-[3/4] w-full max-w-[280px] flex-col items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-[#8b9b95]">
+                        <span class="material-symbols-outlined text-6xl">person</span>
+                        <span class="mt-3 text-sm">프로필 이미지 없음</span>
+                    </div>
+                {{/profileImage}}
+            </div>
+            <div class="space-y-6 p-6 md:col-span-8 md:p-8 lg:col-span-9">
+                <div>
+                    <p class="artist-detail-kicker mb-2">TRIPLES · MEMBER PROFILE</p>
+                    <h1 class="font-sora text-4xl font-extrabold tracking-tight text-white md:text-5xl">{{name}}</h1>
+                    <p class="mt-2 text-lg text-[#b9cac4]">{{engName}}</p>
+                </div>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <div class="rounded-xl border border-white/5 bg-black/20 p-4">
+                        <p class="artist-detail-label mb-2">생년월일</p>
+                        <p class="artist-detail-value">{{birthDate}}</p>
+                    </div>
+                    <div class="rounded-xl border border-white/5 bg-black/20 p-4">
+                        <p class="artist-detail-label mb-2">출생지</p>
+                        <p class="artist-detail-value">{{birthPlace}}</p>
+                    </div>
+                    <div class="rounded-xl border border-white/5 bg-black/20 p-4">
+                        <p class="artist-detail-label mb-2">국적</p>
+                        <p class="artist-detail-value">{{nationality}}</p>
+                    </div>
+                    <div class="rounded-xl border border-white/5 bg-black/20 p-4">
+                        <p class="artist-detail-label mb-2">데뷔일</p>
+                        <p class="artist-detail-value">{{debutDate}}</p>
+                    </div>
+                    <div class="rounded-xl border border-white/5 bg-black/20 p-4 sm:col-span-2">
+                        <p class="artist-detail-label mb-2">소속 유닛</p>
+                        <div class="flex flex-wrap gap-2">
+                            {{#affiliatedUnit}}
+                                {{#unit}}
+                                    <a href="/triples/unit/{{unitId}}" class="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-[#e3e2e8] no-underline hover:border-[#00f5d4]/50 hover:text-[#00f5d4]">{{unitName}}</a>
+                                {{/unit}}
+                            {{/affiliatedUnit}}
+                            {{^affiliatedUnit}}<span class="text-sm text-[#8b9b95]">등록된 유닛 정보가 없습니다.</span>{{/affiliatedUnit}}
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <a href="/media" class="inline-flex items-center gap-2 rounded-full border border-[#00f5d4]/40 bg-[#00f5d4]/10 px-4 py-2 text-sm font-bold text-[#00f5d4] no-underline hover:bg-[#00f5d4]/20">
+                        <span class="material-symbols-outlined text-base">movie</span> 공식 미디어
+                    </a>
+                    <a href="/schedule" class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-[#e3e2e8] no-underline hover:border-[#00f5d4]/40 hover:text-[#00f5d4]">
+                        <span class="material-symbols-outlined text-base">calendar_month</span> 공식 스케줄
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+    {{/artist}}
+
+    <section class="space-y-4">
+        <div class="flex items-end justify-between gap-4">
+            <div>
+                <p class="artist-detail-kicker mb-1">MEMBER MEDIA</p>
+                <h2 class="text-2xl font-extrabold text-white">연결된 미디어</h2>
+            </div>
+            <span class="text-xs text-[#8b9b95]">최근 12개</span>
+        </div>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {{#videos}}
+            <a href="/media/{{tab}}/{{youtubeId}}" class="artist-media-card group overflow-hidden rounded-2xl p-3 no-underline transition-all duration-200">
+                <div class="relative overflow-hidden rounded-xl bg-black">
+                    <img src="https://img.youtube.com/vi/{{youtubeId}}/hqdefault.jpg" alt="{{title}}" class="aspect-video w-full object-cover transition-transform duration-300 group-hover:scale-105">
+                    <span class="absolute bottom-2 right-2 rounded-md bg-black/80 px-2 py-1 text-xs font-mono text-[#00f5d4]">{{duration}}</span>
+                </div>
+                <h3 class="mt-3 line-clamp-2 text-sm font-bold text-[#e3e2e8] group-hover:text-[#00f5d4]">{{title}}</h3>
+                <p class="mt-1 text-xs text-[#8b9b95]">{{viewCountFmt}} views</p>
+            </a>
+            {{/videos}}
+            {{^videos}}
+            <div class="rounded-2xl border border-dashed border-white/10 px-6 py-12 text-center text-sm text-[#8b9b95] sm:col-span-2 lg:col-span-3 xl:col-span-4">
+                아직 이 멤버와 연결된 미디어가 없습니다. 미디어 등록에서 멤버 태그를 선택하면 여기에 표시됩니다.
+            </div>
+            {{/videos}}
+        </div>
+    </section>
+
+    <section class="space-y-4">
+        <div>
+            <p class="artist-detail-kicker mb-1">SCHEDULE APPEARANCES</p>
+            <h2 class="text-2xl font-extrabold text-white">출연 스케줄</h2>
+        </div>
+        <div class="artist-detail-panel divide-y divide-white/5">
+            {{#schedules}}
+            <div class="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h3 class="font-bold text-white">{{title}}</h3>
+                    <p class="mt-1 text-xs text-[#8b9b95]">{{start}}{{#end}} · {{end}}{{/end}}</p>
+                </div>
+                <a href="/schedule" class="artist-detail-link inline-flex items-center gap-1 text-sm">캘린더에서 보기 <span class="material-symbols-outlined text-base">arrow_outward</span></a>
+            </div>
+            {{/schedules}}
+            {{^schedules}}
+            <div class="px-6 py-10 text-center text-sm text-[#8b9b95]">아직 이 멤버에게 연결된 스케줄이 없습니다.</div>
+            {{/schedules}}
+        </div>
+    </section>
+
+    {{#artist}}
+    <section class="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <div class="artist-detail-panel p-5 md:p-6">
+            <h2 class="mb-4 flex items-center gap-2 text-lg font-bold text-white"><span class="material-symbols-outlined text-[#00f5d4]">play_circle</span> 멤버 단독 콘텐츠</h2>
+            {{#hasSoloLinks}}
+                <ul class="space-y-3">
+                    {{#soloLinks}}<li><a class="artist-detail-link text-sm" href="{{url}}" target="_blank" rel="noopener noreferrer">{{title}}</a></li>{{/soloLinks}}
+                </ul>
+            {{/hasSoloLinks}}
+            {{^hasSoloLinks}}<p class="text-sm text-[#8b9b95]">등록된 링크가 없습니다.</p>{{/hasSoloLinks}}
+        </div>
+        <div class="artist-detail-panel p-5 md:p-6">
+            <h2 class="mb-4 flex items-center gap-2 text-lg font-bold text-white"><span class="material-symbols-outlined text-[#00f5d4]">live_tv</span> 출연 방송</h2>
+            {{#hasBroadcastLinks}}
+                <ul class="space-y-3">
+                    {{#broadcastLinks}}<li><a class="artist-detail-link text-sm" href="{{url}}" target="_blank" rel="noopener noreferrer">{{title}}</a></li>{{/broadcastLinks}}
+                </ul>
+            {{/hasBroadcastLinks}}
+            {{^hasBroadcastLinks}}<p class="text-sm text-[#8b9b95]">등록된 링크가 없습니다.</p>{{/hasBroadcastLinks}}
+        </div>
+    </section>
+    {{/artist}}
+</main>
+{{>layout/footer}}
+</body>
+</html>
