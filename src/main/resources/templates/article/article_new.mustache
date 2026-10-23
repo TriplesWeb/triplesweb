@@ -109,6 +109,24 @@
                     <input type="hidden" name="content" id="hiddenContent" />
                 </div>
 
+
+                {{#showObjektPicker}}
+                <section class="space-y-3 rounded-xl border border-teal-400/30 bg-teal-400/[0.04] p-4">
+                    <h3 class="font-semibold text-teal-200">연결할 오브젝트 선택</h3>
+                    <p class="text-xs text-slate-400">교환·거래 게시글에 연결할 오브젝트를 최대 20개까지 선택할 수 있습니다.</p>
+                    <div class="grid max-h-72 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-4">
+                        {{#objektOptions}}
+                        <label class="cursor-pointer rounded-lg border border-white/10 p-2 hover:border-teal-300/50">
+                            <input type="checkbox" name="selectedObjektIds" value="{{id}}" class="mb-2">
+                            <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" class="mb-2 aspect-[2/3] w-full rounded object-cover">
+                            <span class="block truncate text-xs font-semibold">{{collectionId}}</span>
+                            <span class="block truncate text-[11px] text-slate-400">{{member}} · {{collectionNo}}</span>
+                        </label>
+                        {{/objektOptions}}
+                    </div>
+                </section>
+                {{/showObjektPicker}}
+
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">첨부 파일 (이미지 또는 영상)</label>
                     <div class="relative group">
