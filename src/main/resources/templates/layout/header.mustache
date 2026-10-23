@@ -1,3 +1,4 @@
+<script src="/js/image-fallback.js?v=1"></script>
 <!-- 헤더 고정 상단 영역 -->
 <header class="sticky top-0 z-50 w-full bg-[#16181f]/80 backdrop-blur-md border-b border-[#3a4a46]/30 transition-transform duration-300" id="top-header">
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
@@ -5,9 +6,8 @@
     <div class="flex items-center gap-8">
 
     <!-- 1. 브랜드 로고 -->
-    <a href="/" class="flex items-center gap-2 group text-decoration-none">
-        <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4] shadow-[0_0_8px_#00f5d4]"></span>
-        <span class="font-bold text-xl text-[#00f5d4]" style="font-family: 'Sora', sans-serif;">tripleS</span>
+    <a href="/" class="flex items-center shrink-0 text-decoration-none" aria-label="tripleS 홈">
+        <img src="/images/triples-wordmark-white.png" alt="tripleS" width="120" height="36" class="h-7 w-auto block" decoding="async">
     </a>
 
     <!-- 2. 네비게이션 메뉴 (데스크톱) -->
