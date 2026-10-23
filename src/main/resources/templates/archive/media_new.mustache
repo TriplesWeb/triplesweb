@@ -51,6 +51,9 @@
             color: #b9cac4;
             margin-bottom: 0.5rem;
         }
+        select[multiple].form-select {
+            min-height: 10rem;
+        }
     </style>
 </head>
 <body>
@@ -63,6 +66,9 @@
             <span class="material-symbols-outlined text-[#00f5d4]">add_box</span> 새 미디어 등록
         </h2>
 
+        {{#formError}}
+            <div class="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">{{formError}}</div>
+        {{/formError}}
         <form method="post" action="/media_new" class="row g-4">
             <div class="col-md-4">
                 <label class="form-label">탭 분류</label>
@@ -97,6 +103,16 @@
             <div class="col-12">
                 <label class="form-label">제목</label>
                 <input class="form-control" name="title" value="{{form.title}}" readonly>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label" for="artistIds">연결할 아티스트</label>
+                <select id="artistIds" name="artistIds" class="form-select" multiple size="6" aria-describedby="artistHelp">
+                    {{#artistOptions}}
+                        <option value="{{artistId}}">{{name}} ({{engName}})</option>
+                    {{/artistOptions}}
+                </select>
+                <p id="artistHelp" class="mt-2 text-xs text-[#8b9b95]">개별 멤버 영상에 해당하는 멤버를 선택하세요. 트리플에스 단체 영상은 선택하지 않아도 됩니다.</p>
             </div>
 
             <div class="col-12">
