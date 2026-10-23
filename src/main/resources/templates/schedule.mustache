@@ -546,11 +546,10 @@
                             <input type="date" class="form-control font-mono" id="endInput" name="end">
                         </div>
                         <div>
-                            <label class="form-label">출연 멤버 <span class="text-secondary">(여러 명 선택 가능)</span></label>
-                            <div id="addArtistNames" class="grid max-h-44 grid-cols-3 gap-2 overflow-y-auto rounded-xl border border-[#3a4a46]/40 bg-[#0d0e12]/50 p-3 sm:grid-cols-4">
-                                {{#artistOptions}}<label class="flex cursor-pointer items-center gap-2 rounded-lg border border-[#3a4a46]/30 px-2 py-2 text-sm hover:border-[#00f5d4]/60"><input type="checkbox" value="{{name}}" class="rounded border-[#3a4a46] text-[#00f5d4] focus:ring-[#00f5d4]"><span>{{name}}</span></label>{{/artistOptions}}
-                            </div>
-                            <div class="mt-2 flex items-center justify-between"><span class="text-xs text-secondary"><span data-selected-count="addArtistNames">0</span>명 선택</span><button type="button" data-clear-artist-picker="addArtistNames" class="btn-custom-secondary text-xs">전체 해제</button></div>
+                            <label for="addArtistNames" class="form-label">출연 멤버</label>
+                            <select id="addArtistNames" class="form-control" name="artistNames" multiple size="5">
+                                {{#artistOptions}}<option value="{{name}}">{{name}}</option>{{/artistOptions}}
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -589,11 +588,10 @@
                             <input type="date" class="form-control font-mono" id="editEndInput" name="end">
                         </div>
                         <div>
-                            <label class="form-label">출연 멤버 <span class="text-secondary">(여러 명 선택 가능)</span></label>
-                            <div id="editArtistNames" class="grid max-h-44 grid-cols-3 gap-2 overflow-y-auto rounded-xl border border-[#3a4a46]/40 bg-[#0d0e12]/50 p-3 sm:grid-cols-4">
-                                {{#artistOptions}}<label class="flex cursor-pointer items-center gap-2 rounded-lg border border-[#3a4a46]/30 px-2 py-2 text-sm hover:border-[#00f5d4]/60"><input type="checkbox" value="{{name}}" class="rounded border-[#3a4a46] text-[#00f5d4] focus:ring-[#00f5d4]"><span>{{name}}</span></label>{{/artistOptions}}
-                            </div>
-                            <div class="mt-2 flex items-center justify-between"><span class="text-xs text-secondary"><span data-selected-count="editArtistNames">0</span>명 선택</span><button type="button" data-clear-artist-picker="editArtistNames" class="btn-custom-secondary text-xs">전체 해제</button></div>
+                            <label for="editArtistNames" class="form-label">출연 멤버</label>
+                            <select id="editArtistNames" class="form-control" name="artistNames" multiple size="5">
+                                {{#artistOptions}}<option value="{{name}}">{{name}}</option>{{/artistOptions}}
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -612,26 +610,6 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/ko.global.min.js"></script>
 
     <script>
-        function selectedArtistValues(containerId) {
-            return [...document.querySelectorAll('#' + containerId + ' input[type="checkbox"]:checked')].map(input => input.value);
-        }
-        function setSelectedArtistValues(containerId, values) {
-            const selected = new Set(values || []);
-            document.querySelectorAll('#' + containerId + ' input[type="checkbox"]').forEach(input => { input.checked = selected.has(input.value); });
-            updateArtistPickerCount(containerId);
-        }
-        function updateArtistPickerCount(containerId) {
-            const count = selectedArtistValues(containerId).length;
-            const label = document.querySelector('[data-selected-count="' + containerId + '"]');
-            if (label) label.textContent = String(count);
-        }
-        document.querySelectorAll('[data-clear-artist-picker]').forEach(button => {
-            button.addEventListener('click', () => setSelectedArtistValues(button.dataset.clearArtistPicker, []));
-        });
-        document.querySelectorAll('#addArtistNames input, #editArtistNames input').forEach(input => {
-            input.addEventListener('change', () => updateArtistPickerCount(input.closest('#addArtistNames, #editArtistNames').id));
-        });
-
         function showAddModal() {
             const modalElement = document.getElementById('addScheduleModal');
             bootstrap.Modal.getOrCreateInstance(modalElement).show();
@@ -769,7 +747,7 @@
                         document.getElementById('editStartInput').value = String(selectedEvent.startStr || '').substring(0, 10);
                         document.getElementById('editEndInput').value = String(getRawEnd(selectedEvent)).substring(0, 10);
                         const selectedArtists = String(selectedEvent.extendedProps.artistNames || '').split(',').map(v => v.trim()).filter(Boolean);
-                        setSelectedArtistValues('editArtistNames', selectedArtists);
+                        document.querySelectorAll('#editArtistNames option').forEach(option => option.selected = selectedArtists.includes(option.value));
 
                         bootstrap.Modal.getOrCreateInstance(viewModalElement).hide();
                         bootstrap.Modal.getOrCreateInstance(editModalElement).show();
@@ -848,9 +826,8 @@
                     }
 
                     const body = new URLSearchParams({ title, start, end });
-                    const selectedAddArtists = selectedArtistValues('addArtistNames');
-                    selectedAddArtists.forEach(name => body.append('artistNames', name));
-                    const artistNames = selectedAddArtists.join(',');
+                    document.querySelectorAll('#addArtistNames option:checked').forEach(option => body.append('artistNames', option.value));
+                    const artistNames = [...document.querySelectorAll('#addArtistNames option:checked')].map(option => option.value).join(',');
                     try {
                         const response = await fetch('/schedule/add', {
                             method: 'POST',
@@ -900,9 +877,8 @@
                     }
 
                     const body = new URLSearchParams({ title, startDate: start, endDate: end });
-                    const selectedEditArtists = selectedArtistValues('editArtistNames');
-                    selectedEditArtists.forEach(name => body.append('artistNames', name));
-                    const artistNames = selectedEditArtists.join(',');
+                    document.querySelectorAll('#editArtistNames option:checked').forEach(option => body.append('artistNames', option.value));
+                    const artistNames = [...document.querySelectorAll('#editArtistNames option:checked')].map(option => option.value).join(',');
                     try {
                         const response = await fetch(`/edit/${encodeURIComponent(id)}`, {
                             method: 'POST',

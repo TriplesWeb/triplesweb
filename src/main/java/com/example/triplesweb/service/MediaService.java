@@ -43,26 +43,6 @@ public class MediaService {
     @Transactional(readOnly = true)
     public int totalByTab(String tab) { return (int) mediaRepository.countByTab(tab); }
 
-    @Transactional(readOnly = true)
-    public Map<Long, List<MediaDto>> byArtistMap(int limit) {
-        Map<Long, List<MediaDto>> grouped = new LinkedHashMap<>();
-        for (Media media : mediaRepository.findAllWithArtists()) {
-            if (media.getArtists() == null) continue;
-            for (Artist artist : media.getArtists()) {
-                if (artist.getArtistId() == null) continue;
-                List<MediaDto> items = grouped.computeIfAbsent(artist.getArtistId(), key -> new ArrayList<>());
-                if (items.size() < Math.max(0, limit)) items.add(toDto(media));
-            }
-        }
-        return grouped;
-    }
-
-    @Transactional(readOnly = true)
-    public List<MediaDto> byArtist(Long artistId, int limit) {
-        return mediaRepository.findDistinctByArtists_ArtistIdOrderBySortOrderAscIdAsc(artistId)
-                .stream().limit(Math.max(0, limit)).map(this::toDto).toList();
-    }
-
     public void addMedia(String tab, MediaDto dto, boolean addFirst) {
         addMedia(tab,dto,addFirst,dto == null ? "" : dto.getArtistNames());
     }

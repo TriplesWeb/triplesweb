@@ -114,7 +114,7 @@
                 <section class="space-y-3 rounded-xl border border-teal-400/30 bg-teal-400/[0.04] p-4">
                     <h3 class="font-semibold text-teal-200">연결할 오브젝트 선택</h3>
                     <p class="text-xs text-slate-400">교환·거래 게시글에 연결할 오브젝트를 최대 20개까지 선택할 수 있습니다.</p>
-                    <div id="objektPickerGrid" class="grid max-h-72 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-4">
+                    <div class="grid max-h-72 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-4">
                         {{#objektOptions}}
                         <label class="cursor-pointer rounded-lg border border-white/10 p-2 hover:border-teal-300/50">
                             <input type="checkbox" name="selectedObjektIds" value="{{id}}" class="mb-2">
@@ -123,12 +123,6 @@
                             <span class="block truncate text-[11px] text-slate-400">{{member}} · {{collectionNo}}</span>
                         </label>
                         {{/objektOptions}}
-                    </div>
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <p class="text-xs text-slate-400">선택 <strong id="selectedObjektCount" class="text-teal-200">0</strong> / 20개</p>
-                        {{#objektPickerHasMore}}
-                        <button id="loadMoreObjekts" type="button" data-next-page="1" class="rounded-lg border border-teal-300/40 px-4 py-2 text-xs font-semibold text-teal-200 hover:bg-teal-300/10">다음 오브젝트 20개 불러오기</button>
-                        {{/objektPickerHasMore}}
                     </div>
                 </section>
                 {{/showObjektPicker}}
@@ -312,79 +306,6 @@
    });
 </script>
 
-
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const grid = document.getElementById('objektPickerGrid');
-  const loadButton = document.getElementById('loadMoreObjekts');
-  const countLabel = document.getElementById('selectedObjektCount');
-  if (!grid) return;
-  const form = document.getElementById('articleForm');
-  const category = document.getElementById('editorRoot')?.dataset.category || 'trade';
-  const refreshCount = () => {
-    const checks = [...grid.querySelectorAll('input[name="selectedObjektIds"]')];
-    const selected = checks.filter(input => input.checked).length;
-    if (countLabel) countLabel.textContent = String(selected);
-    checks.forEach(input => { input.disabled = !input.checked && selected >= 20; });
-  };
-  grid.addEventListener('change', event => {
-    if (event.target.matches('input[name="selectedObjektIds"]')) refreshCount();
-  });
-  if (loadButton) {
-    loadButton.addEventListener('click', async () => {
-      const page = Number(loadButton.dataset.nextPage || '1');
-      loadButton.disabled = true;
-      loadButton.textContent = '불러오는 중…';
-      try {
-        const response = await fetch('/article/' + encodeURIComponent(category) + '/objekts?page=' + page, { credentials: 'same-origin' });
-        if (!response.ok) throw new Error(response.status === 403 ? '관리자 로그인이 필요합니다.' : '오브젝트를 불러오지 못했습니다.');
-        const data = await response.json();
-        (data.items || []).forEach(item => {
-          const label = document.createElement('label');
-          label.className = 'cursor-pointer rounded-lg border border-white/10 p-2 hover:border-teal-300/50';
-          const checkbox = document.createElement('input');
-          checkbox.type = 'checkbox';
-          checkbox.name = 'selectedObjektIds';
-          checkbox.value = String(item.id ?? item.collectionId ?? '');
-          checkbox.className = 'mb-2';
-          const img = document.createElement('img');
-          img.src = item.thumbnailImage || item.frontImage || '';
-          img.alt = item.collectionId || '오브젝트';
-          img.loading = 'lazy';
-          img.className = 'mb-2 aspect-[2/3] w-full rounded object-cover';
-          const title = document.createElement('span');
-          title.className = 'block truncate text-xs font-semibold';
-          title.textContent = item.collectionId || '이름 없는 오브젝트';
-          const meta = document.createElement('span');
-          meta.className = 'block truncate text-[11px] text-slate-400';
-          meta.textContent = (item.member || item.memberName || '') + ' · ' + (item.collectionNo || '');
-          label.append(checkbox, img, title, meta);
-          grid.appendChild(label);
-        });
-        refreshCount();
-        if (!data.hasMore) loadButton.remove();
-        else {
-          loadButton.dataset.nextPage = String(data.nextPage);
-          loadButton.disabled = false;
-          loadButton.textContent = '다음 오브젝트 20개 불러오기';
-        }
-      } catch (error) {
-        alert(error.message || '오브젝트를 불러오지 못했습니다.');
-        loadButton.disabled = false;
-        loadButton.textContent = '다시 시도';
-      }
-    });
-  }
-  if (form) form.addEventListener('submit', event => {
-    if (grid.querySelectorAll('input[name="selectedObjektIds"]:checked').length > 20) {
-      event.preventDefault();
-      alert('오브젝트는 최대 20개까지 선택할 수 있습니다.');
-    }
-  });
-  refreshCount();
-});
-</script>
 
 </body>
 </html>

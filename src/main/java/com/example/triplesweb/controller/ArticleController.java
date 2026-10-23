@@ -11,8 +11,6 @@ import com.example.triplesweb.service.ArticleObjektService;
 import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.CommentService;
 import com.example.triplesweb.service.DateTimeFormatService;
-import com.example.triplesweb.service.AboutAdminAuth;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,8 +19,6 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -42,7 +38,6 @@ public class ArticleController {
     private final DateTimeFormatService dateTimeFormatService;
     private final ArticleObjektService articleObjektService;
     private final ObjektService objektService;
-    private final AboutAdminAuth aboutAdminAuth;
 
     private static final Set<String> ALLOWED_CATEGORIES = Set.of(
             "free", "chat", "trade", "sell", "info", "notice"
@@ -61,9 +56,10 @@ public class ArticleController {
     /** 작성 폼 */
     @GetMapping("/new")
     public String showArticleForm(@PathVariable("category") String category,
-                                  HttpServletRequest request, HttpSession session, Model model) {
+                                  Model model) {
         if (isInvalidCategory(category)) return "redirect:/article/trade";
-        aboutAdminAuth.requireAdmin(request, session);
+
+        // 로그인 체크 및 관리자 체크 제거 (누구나 작성 가능)
         model.addAttribute("category", category);
         model.addAttribute("categoryName", getCategoryName(category));
         model.addAttribute("articleForm", new ArticleForm());
@@ -79,10 +75,8 @@ public class ArticleController {
                                 Model model,
                                 @RequestParam(value = "uploadFiles", required = false) List<MultipartFile> files,
                                 @RequestParam(value = "uploadedFiles", required = false) List<String> uploadedFiles,
-                                @RequestParam(value = "selectedObjektIds", required = false) List<String> selectedObjektIds,
-                                HttpServletRequest request, HttpSession session) throws IOException {
+                                @RequestParam(value = "selectedObjektIds", required = false) List<String> selectedObjektIds) throws IOException {
         if (isInvalidCategory(category)) return "redirect:/article/trade";
-        aboutAdminAuth.requireAdmin(request, session);
 
         if (bindingResult.hasErrors() || form.getTitle() == null || form.getTitle().trim().isEmpty() || form.getContent() == null || form.getContent().trim().isEmpty()) {
             model.addAttribute("category", category);
@@ -123,41 +117,11 @@ public class ArticleController {
         return "redirect:/article/" + category + "/" + savedArticle.getId();
     }
 
-    private static final int OBJEKT_PICKER_PAGE_SIZE = 20;
-
     private void addObjektOptions(Model model, String category) {
         if ("trade".equals(category) || "sell".equals(category)) {
-            List<java.util.Map<String, Object>> all = objektService.findCollections("triples");
-            int to = Math.min(OBJEKT_PICKER_PAGE_SIZE, all.size());
             model.addAttribute("showObjektPicker", true);
-            model.addAttribute("objektOptions", all.subList(0, to));
-            model.addAttribute("objektPickerPage", 0);
-            model.addAttribute("objektPickerHasMore", all.size() > to);
-            model.addAttribute("objektPickerTotal", all.size());
+            model.addAttribute("objektOptions", objektService.findCollections("triples"));
         }
-    }
-
-    /** 게시글 작성 폼의 오브젝트는 처음 20개만 보내고 요청할 때마다 다음 20개를 전달한다. */
-    @GetMapping("/objekts")
-    @ResponseBody
-    public java.util.Map<String, Object> nextObjektOptions(@PathVariable("category") String category,
-                                                            @RequestParam(defaultValue = "0") int page,
-                                                            HttpServletRequest request, HttpSession session) {
-        if (isInvalidCategory(category) || !("trade".equals(category) || "sell".equals(category))) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
-        aboutAdminAuth.requireAdmin(request, session);
-        List<java.util.Map<String, Object>> all = objektService.findCollections("triples");
-        int safePage = Math.max(0, page);
-        int from = Math.min(safePage * OBJEKT_PICKER_PAGE_SIZE, all.size());
-        int to = Math.min(from + OBJEKT_PICKER_PAGE_SIZE, all.size());
-        return java.util.Map.of(
-                "items", all.subList(from, to),
-                "page", safePage,
-                "nextPage", safePage + 1,
-                "hasMore", to < all.size(),
-                "total", all.size()
-        );
     }
 
     private String getCategoryName(String category) {
@@ -176,16 +140,10 @@ public class ArticleController {
     @GetMapping
     public String indexArticle(@PathVariable("category") String category,
                                Model model,
-                               @RequestParam(name = "limit", required = false, defaultValue = "10") Integer limit,
-                               @RequestParam(name = "type", required = false, defaultValue = "title") String type,
-                               @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword,
-                               HttpServletRequest request, HttpSession session) {
+                               @RequestParam(name = "limit", required = false, defaultValue = "10") Integer limit) {
         if (isInvalidCategory(category)) return "redirect:/article/trade";
 
-        int safeLimit = limit == null ? 10 : Math.min(100, Math.max(1, limit));
-        List<Article> articles = (keyword == null || keyword.isBlank())
-                ? articleService.findRecentByCategory(category, safeLimit)
-                : articleService.searchByCategory(category, type, keyword, safeLimit);
+        List<Article> articles = articleService.findRecentByCategory(category, limit);
 
         List<ArticleViewDto> articleViewList = new ArrayList<>();
         int totalSize = articles.size();
@@ -210,17 +168,11 @@ public class ArticleController {
         model.addAttribute("categoryName", getCategoryName(category));
         model.addAttribute("isNotice", "notice".equals(category));
         model.addAttribute("articleList", articleViewList);
-        String normalizedSearchType = type == null ? "title" : type.toLowerCase(java.util.Locale.ROOT);
-        model.addAttribute("searchType", normalizedSearchType);
-        model.addAttribute("isSearchTitle", "title".equals(normalizedSearchType));
-        model.addAttribute("isSearchContent", "content".equals(normalizedSearchType));
-        model.addAttribute("isSearchWriter", "writer".equals(normalizedSearchType));
-        model.addAttribute("searchKeyword", keyword == null ? "" : keyword);
         model.addAttribute("popularList", articleService.findPopularArticles(category, 5));
 
-        boolean isAdmin = aboutAdminAuth.isAdmin(request, session);
-        model.addAttribute("isLoggedIn", isAdmin);
-        model.addAttribute("isAdmin", isAdmin);
+        // Mustache 템플릿에서 글쓰기 버튼 등이 항상 노출되도록 강제 설정
+        model.addAttribute("isLoggedIn", true);
+        model.addAttribute("isAdmin", true);
 
         return "article/article";
     }
@@ -229,7 +181,7 @@ public class ArticleController {
     @GetMapping("/{id:[0-9]+}")
     public String showArticle(@PathVariable("category") String category,
                               @PathVariable("id") Long id,
-                              HttpServletRequest request, HttpSession session, Model model) {
+                              Model model) {
 
         if (isInvalidCategory(category)) return "redirect:/article/trade";
         Article article = articleService.showWithFiles(id);
@@ -243,7 +195,7 @@ public class ArticleController {
         model.addAttribute("category", category);
         model.addAttribute("commentDtos", commentService.show(id));
         model.addAttribute("categoryName", getCategoryName(category));
-        model.addAttribute("isOwner", aboutAdminAuth.isAdmin(request, session));
+        model.addAttribute("isOwner", true); // 누구나 수정/삭제 가능하도록 허용
         model.addAttribute("likeCount", articleService.getLikesCount(id));
         model.addAttribute("liked", false);
 
@@ -282,9 +234,8 @@ public class ArticleController {
     @GetMapping("/{id}/edit")
     public String editArticle(@PathVariable("category") String category,
                               @PathVariable("id") Long id,
-                              HttpServletRequest request, HttpSession session, Model model) {
+                              Model model) {
         if (isInvalidCategory(category)) return "redirect:/article/trade";
-        aboutAdminAuth.requireAdmin(request, session);
         Article article = articleService.showWithFiles(id);
         if (article == null) return "redirect:/article/" + category;
 
@@ -320,9 +271,8 @@ public class ArticleController {
                                 @RequestParam(value = "uploadFiles", required = false) List<MultipartFile> files,
                                 @RequestParam(value = "uploadedFiles", required = false) List<String> uploadedFiles,
                                 @RequestParam(value = "deletedFiles", required = false) List<Long> deletedFiles,
-                                HttpServletRequest request, HttpSession session, Model model) throws IOException {
+                                Model model) throws IOException {
         if (isInvalidCategory(category)) return "redirect:/article/trade";
-        aboutAdminAuth.requireAdmin(request, session);
 
         Article article = articleService.showWithFiles(id);
         if (article == null) return "redirect:/article/" + category;
@@ -362,10 +312,8 @@ public class ArticleController {
     /** 삭제 */
     @PostMapping("/{id}/delete")
     public String deleteArticle(@PathVariable("id") Long id,
-                                @PathVariable("category") String category,
-                                HttpServletRequest request, HttpSession session) {
+                                @PathVariable("category") String category) {
         if (isInvalidCategory(category)) return "redirect:/article/trade";
-        aboutAdminAuth.requireAdmin(request, session);
         Article article = articleService.showWithFiles(id);
         if (article == null) return "redirect:/article/" + category;
 

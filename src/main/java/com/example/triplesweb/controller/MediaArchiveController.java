@@ -6,9 +6,6 @@ import com.example.triplesweb.media.MediaTab;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.MediaService;
-import com.example.triplesweb.service.AboutAdminAuth;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import com.example.triplesweb.util.YoutubeIdExtractor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,7 +14,6 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import java.io.IOException;
 import java.util.*;
 
 @Controller
@@ -26,16 +22,15 @@ public class MediaArchiveController {
     private final MediaService media;
     private final ArtistRepository artistRepository;
     private final ScheduleRepository scheduleRepository;
-    private final AboutAdminAuth aboutAdminAuth;
 
     @GetMapping("/media")
     public String mediaPage(@RequestParam(name="tab",defaultValue="mv") String tab,
                             @RequestParam(defaultValue="1") int page,
                             @RequestParam(defaultValue="10") int size,
                             @RequestParam(required=false) String artist,
-                            HttpServletRequest request, HttpSession session, Model model) {
+                            Model model) {
         tab=normalizeTab(tab); page=Math.max(1,page); size=Math.min(Math.max(1,size),100);
-        model.addAttribute("isAdmin", aboutAdminAuth.isAdmin(request, session));
+        model.addAttribute("isAdmin",true);
         model.addAttribute("artistOptions",artistRepository.findAll());
         model.addAttribute("currentTab",tab);
         model.addAttribute("isMV","mv".equals(tab)); model.addAttribute("isSIGNAL","signal".equals(tab));
@@ -74,8 +69,7 @@ public class MediaArchiveController {
     }
 
     @GetMapping("/media_new")
-    public String newMediaForm(@RequestParam(defaultValue="mv")String tab, HttpServletRequest request, HttpSession session, Model model) {
-        model.addAttribute("isAdmin", aboutAdminAuth.isAdmin(request, session));
+    public String newMediaForm(@RequestParam(defaultValue="mv")String tab,Model model) {
         MediaDto form=MediaDto.builder().tab(MediaTab.from(tab).getKey()).addFirst(true).build();
         bindTabFlags(model,form.normalizedTab()); model.addAttribute("artistOptions",artistRepository.findAll()); model.addAttribute("form",form);
         return "archive/media_new";
@@ -85,9 +79,7 @@ public class MediaArchiveController {
     public String createNewMedia(@org.springframework.validation.annotation.Validated @ModelAttribute("form")MediaDto form,
                                  BindingResult binding,
                                  @RequestParam(value="artistNames",required=false)List<String> artistNames,
-                                 HttpServletRequest request, HttpSession session, Model model)throws Exception {
-        aboutAdminAuth.requireAdmin(request, session);
-        model.addAttribute("isAdmin", true);
+                                 Model model)throws Exception {
         String tab=form!=null?form.normalizedTab():"mv"; String rawId=form!=null?form.getYoutubeId():"";
         String ytId=YoutubeIdExtractor.extract(rawId);
         if(ytId==null||ytId.isBlank()||!ytId.matches("^[a-zA-Z0-9_-]{11}$"))binding.rejectValue("youtubeId","invalid","유효한 유튜브 ID 또는 URL을 입력하세요.");
@@ -98,8 +90,7 @@ public class MediaArchiveController {
     }
 
     @PostMapping("/media_delete")
-    public String deleteMedia(@RequestParam String tab,@RequestParam String youtubeId, HttpServletRequest request, HttpSession session)throws Exception {
-        aboutAdminAuth.requireAdmin(request, session);
+    public String deleteMedia(@RequestParam String tab,@RequestParam String youtubeId)throws Exception {
         String t=MediaTab.from(tab).getKey();media.remove(t,youtubeId);return "redirect:/media?tab="+t;
     }
     private List<String> splitNames(String names){if(names==null||names.isBlank())return List.of();return Arrays.stream(names.split(",")).map(String::trim).filter(s->!s.isBlank()).distinct().toList();}

@@ -5,8 +5,6 @@ import com.example.triplesweb.entity.ObjektFavorite;
 import com.example.triplesweb.repository.ObjektDescriptionRepository;
 import com.example.triplesweb.repository.ObjektFavoriteRepository;
 import com.example.triplesweb.service.ObjektService;
-import com.example.triplesweb.service.AboutAdminAuth;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -25,7 +23,6 @@ public class ObjektFeatureController {
     private final ObjektService objektService;
     private final ObjektFavoriteRepository favoriteRepository;
     private final ObjektDescriptionRepository descriptionRepository;
-    private final AboutAdminAuth aboutAdminAuth;
 
     @GetMapping("/member")
     public String memberObjekts(@RequestParam String name,
@@ -54,10 +51,9 @@ public class ObjektFeatureController {
     }
 
     @GetMapping("/detail/{key}")
-    public String detail(@PathVariable String key, HttpServletRequest request, HttpSession session, Model model) {
+    public String detail(@PathVariable String key, HttpSession session, Model model) {
         Map<String, Object> item = findObjekt(key);
         if (item == null) return "redirect:/cosmo/objekt";
-        model.addAttribute("isAdmin", aboutAdminAuth.isAdmin(request, session));
         model.addAttribute("objekt", item);
         model.addAttribute("objektKey", key);
         model.addAttribute("isFavorite", favoriteRepository.existsByVisitorKeyAndObjektKey(session.getId(), key));
@@ -68,9 +64,7 @@ public class ObjektFeatureController {
 
     @PostMapping("/detail/{key}/description")
     public String saveDescription(@PathVariable String key,
-                                  @RequestParam(required = false) String description,
-                                  HttpServletRequest request, HttpSession session) {
-        aboutAdminAuth.requireAdmin(request, session);
+                                  @RequestParam(required = false) String description) {
         if (findObjekt(key) == null) return "redirect:/cosmo/objekt";
         ObjektDescription entity = descriptionRepository.findByObjektKey(key)
                 .orElseGet(ObjektDescription::new);
