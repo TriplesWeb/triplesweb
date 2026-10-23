@@ -103,6 +103,26 @@
                         <input type="text" class="w-full px-3 pr-4 py-3 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md placeholder:text-outline/60 focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all text-black" name="title" required>
                     </div>
                 </div>
+                {{#showObjektPicker}}
+                <section class="space-y-3 rounded-2xl border border-teal-400/30 bg-teal-400/[0.04] p-4">
+                    <div>
+                        <h2 class="font-semibold text-teal-200">교환/거래할 오브젝트 선택</h2>
+                        <p class="mt-1 text-xs text-slate-400">최대 20개까지 선택할 수 있습니다. 선택한 오브젝트는 게시글 상세에 표시됩니다.</p>
+                    </div>
+                    <div class="grid max-h-72 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3">
+                        {{#objektOptions}}
+                        <label class="cursor-pointer rounded-xl border border-white/10 bg-black/20 p-2 text-xs">
+                            <input type="checkbox" name="selectedObjektIds" value="{{id}}" class="objekt-choice mr-1">
+                            <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" class="mb-2 mt-2 aspect-[2/3] w-full rounded-lg object-cover" onerror="this.onerror=null;this.src='{{frontImage}}'">
+                            <span class="block truncate font-semibold">{{collectionId}}</span>
+                            <span class="mt-1 block truncate text-slate-400">{{member}} · {{collectionNo}}</span>
+                        </label>
+                        {{/objektOptions}}
+                    </div>
+                    <p id="objekt-choice-count" class="text-xs text-slate-400">0 / 20개 선택</p>
+                </section>
+                {{/showObjektPicker}}
+
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">내용</label>
                     <div id="content" contenteditable="true" class="w-full p-4 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" aria-multiline="true"></div>
