@@ -22,7 +22,7 @@ public interface ArtistRepository extends JpaRepository<Artist, Long> {
     Optional<Artist> findByName(String name);
 
     @Query("""
-            SELECT a FROM Artist a
+            SELECT DISTINCT a FROM Artist a
             LEFT JOIN FETCH a.affiliatedUnit au
             LEFT JOIN FETCH au.unit
             WHERE a.artistId = :artistId
