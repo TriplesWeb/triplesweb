@@ -3,7 +3,6 @@ package com.example.triplesweb.service;
 import com.example.triplesweb.dto.AlbumAdminDto;
 import com.example.triplesweb.dto.AlbumSectionDto;
 import com.example.triplesweb.entity.Album;
-import com.example.triplesweb.entity.AlbumFormat;
 import com.example.triplesweb.entity.AlbumSection;
 import com.example.triplesweb.entity.AlbumType;
 import com.example.triplesweb.entity.SavedMeta;
@@ -225,7 +224,7 @@ public class AlbumAdminService {
         album.setReleaseDate(date);
         album.setAlbumInfo(info);
         album.setAlbumType(parseAlbumType(albumType));
-        album.setAlbumFormat(parseAlbumFormat(albumFormat));
+        album.setAlbumFormat(normalizeAlbumFormat(albumFormat));
 
         if (unitId != null && unitId > 0) {
             Unit unit = unitRepository.findById(unitId)
@@ -316,13 +315,13 @@ public class AlbumAdminService {
         }
     }
 
-    private AlbumFormat parseAlbumFormat(String raw) {
+    private String normalizeAlbumFormat(String raw) {
         if (!StringUtils.hasText(raw)) return null;
-        try {
-            return AlbumFormat.valueOf(raw.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("앨범 규격이 올바르지 않습니다: " + raw);
+        String trimmed = raw.trim();
+        if (trimmed.length() > 120) {
+            throw new IllegalArgumentException("앨범 규격은 120자 이하여야 합니다.");
         }
+        return trimmed;
     }
 
     private AlbumAdminDto toDto(Album album) {
@@ -339,7 +338,6 @@ public class AlbumAdminService {
         }
         Unit unit = album.getUnit();
         AlbumSection section = album.getSection();
-        AlbumFormat format = album.getAlbumFormat();
         return AlbumAdminDto.builder()
                 .albumId(album.getAlbumId())
                 .albumName(album.getAlbumName())
@@ -347,7 +345,7 @@ public class AlbumAdminService {
                 .releaseDate(album.getReleaseDate())
                 .albumInfo(album.getAlbumInfo())
                 .albumType(album.getAlbumType() != null ? album.getAlbumType().name() : AlbumType.SUBUNIT.name())
-                .albumFormat(format != null ? format.name() : null)
+                .albumFormat(album.getAlbumFormat())
                 .unitId(unit != null ? unit.getUnitId() : null)
                 .unitName(unit != null ? unit.getUnitName() : null)
                 .sectionId(section != null ? section.getSectionId() : null)

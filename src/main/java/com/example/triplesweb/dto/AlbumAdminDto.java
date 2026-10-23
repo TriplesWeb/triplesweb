@@ -21,7 +21,7 @@ public class AlbumAdminDto {
     private String releaseDate;
     private String albumInfo;
     private String albumType;
-    /** {@link com.example.triplesweb.entity.AlbumFormat} name, or null/empty if unset */
+    /** 앨범 규격(자유 입력). 비어 있으면 미지정 */
     private String albumFormat;
     private Long unitId;
     private String unitName;

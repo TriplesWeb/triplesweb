@@ -41,17 +41,17 @@
                 </label>
             </div>
             <label class="about-edit-label">앨범 규격
-                <select id="albumEditFormat">
-                    <option value="">미지정</option>
-                    <option value="DIGITAL_SINGLE">싱글 (디지털)</option>
-                    <option value="DIGITAL_ALBUM">앨범 (디지털)</option>
-                    <option value="DOUBLE_ALBUM">더블 앨범</option>
-                    <option value="EP">EP (미니 앨범)</option>
-                    <option value="CONCEPT">콘셉트 앨범</option>
-                    <option value="LIVE">라이브 앨범</option>
-                    <option value="REPACKAGE">리패키지</option>
-                    <option value="COMPILATION">컴필레이션 앨범</option>
-                </select>
+                <input type="text" id="albumEditFormat" maxlength="120" placeholder="예: EP (미니 앨범), 싱글 (디지털)" list="albumFormatSuggestions" autocomplete="off">
+                <datalist id="albumFormatSuggestions">
+                    <option value="싱글 (디지털)"></option>
+                    <option value="앨범 (디지털)"></option>
+                    <option value="더블 앨범"></option>
+                    <option value="EP (미니 앨범)"></option>
+                    <option value="콘셉트 앨범"></option>
+                    <option value="라이브 앨범"></option>
+                    <option value="리패키지"></option>
+                    <option value="컴필레이션 앨범"></option>
+                </datalist>
             </label>
             <label class="about-edit-label">참여 유닛
                 <select id="albumEditUnitId"></select>
