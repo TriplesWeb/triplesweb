@@ -489,6 +489,7 @@
                         <span class="mb-1 block text-xs text-[#b9cac4]">일정 제목</span>
                         <h3 id="modalScheduleTitle" class="text-base font-bold text-white"></h3>
                     </div>
+                    <div id="modalScheduleArtists" class="text-sm text-teal-200"></div>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="rounded-xl border border-white/5 bg-black/30 p-3">
                             <span class="block text-[11px] text-[#b9cac4]">시작 일자</span>
@@ -543,6 +544,12 @@
                         <div>
                             <label for="endInput" class="form-label">종료 날짜 (선택)</label>
                             <input type="date" class="form-control font-mono" id="endInput" name="end">
+                        </div>
+                        <div>
+                            <label for="addArtistNames" class="form-label">출연 멤버</label>
+                            <select id="addArtistNames" class="form-control" name="artistNames" multiple size="5">
+                                {{#artistOptions}}<option value="{{name}}">{{name}}</option>{{/artistOptions}}
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -710,6 +717,17 @@
                 document.getElementById('modalScheduleTitle').textContent = event.title || '';
                 document.getElementById('modalScheduleStart').textContent = formatDate(event.startStr);
                 document.getElementById('modalScheduleEnd').textContent = formatDate(getRawEnd(event));
+                const artistBox = document.getElementById('modalScheduleArtists');
+                if (artistBox) {
+                    artistBox.replaceChildren();
+                    String(event.extendedProps.artistNames || '').split(',').map(v => v.trim()).filter(Boolean).forEach(name => {
+                        const link = document.createElement('a');
+                        link.href = '/media?artist=' + encodeURIComponent(name);
+                        link.className = 'mr-2 underline text-teal-200';
+                        link.textContent = name + ' 영상';
+                        artistBox.appendChild(link);
+                    });
+                }
 
                 const deleteForm = document.getElementById('deleteForm');
                 if (deleteForm) deleteForm.action = `/delete/${encodeURIComponent(event.id)}`;
@@ -722,6 +740,8 @@
                         document.getElementById('editTitleInput').value = selectedEvent.title || '';
                         document.getElementById('editStartInput').value = String(selectedEvent.startStr || '').substring(0, 10);
                         document.getElementById('editEndInput').value = String(getRawEnd(selectedEvent)).substring(0, 10);
+                        const selectedArtists = String(selectedEvent.extendedProps.artistNames || '').split(',').map(v => v.trim()).filter(Boolean);
+                        document.querySelectorAll('#editArtistNames option').forEach(option => option.selected = selectedArtists.includes(option.value));
 
                         bootstrap.Modal.getOrCreateInstance(viewModalElement).hide();
                         bootstrap.Modal.getOrCreateInstance(editModalElement).show();
@@ -792,6 +812,8 @@
                     }
 
                     const body = new URLSearchParams({ title, start, end });
+                    document.querySelectorAll('#addArtistNames option:checked').forEach(option => body.append('artistNames', option.value));
+                    const artistNames = [...document.querySelectorAll('#addArtistNames option:checked')].map(option => option.value).join(',');
                     try {
                         const response = await fetch('/schedule/add', {
                             method: 'POST',
@@ -808,7 +830,7 @@
                             title,
                             start,
                             end: end ? addOneDay(end) : null,
-                            extendedProps: { rawEnd: end }
+                            extendedProps: { rawEnd: end, artistNames }
                         });
 
                         bootstrap.Modal.getOrCreateInstance(addModalElement).hide();
@@ -841,6 +863,8 @@
                     }
 
                     const body = new URLSearchParams({ title, startDate: start, endDate: end });
+                    document.querySelectorAll('#editArtistNames option:checked').forEach(option => body.append('artistNames', option.value));
+                    const artistNames = [...document.querySelectorAll('#editArtistNames option:checked')].map(option => option.value).join(',');
                     try {
                         const response = await fetch(`/edit/${encodeURIComponent(id)}`, {
                             method: 'POST',
@@ -859,6 +883,7 @@
                             eventToUpdate.setStart(start);
                             eventToUpdate.setEnd(end ? addOneDay(end) : null);
                             eventToUpdate.setExtendedProp('rawEnd', end);
+                            eventToUpdate.setExtendedProp('artistNames', artistNames);
                         }
 
                         bootstrap.Modal.getOrCreateInstance(editModalElement).hide();
