@@ -14,6 +14,7 @@ public class ArtistAdminDto {
     private String engName;
     private String nationality;
     private String birthDate;
+    private String bornPlace;
     private String birthPlace;
     private String debutDate;
     private String color;

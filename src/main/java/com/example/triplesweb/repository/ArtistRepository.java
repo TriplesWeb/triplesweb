@@ -3,6 +3,7 @@ package com.example.triplesweb.repository;
 import com.example.triplesweb.entity.Artist;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,12 +19,23 @@ public interface ArtistRepository extends JpaRepository<Artist, Long> {
 
     Optional<Artist> findByEngName(String engName);
 
+    Optional<Artist> findByEngNameIgnoreCase(String engName);
+
     Optional<Artist> findByName(String name);
 
     @Query("""
             SELECT DISTINCT a FROM Artist a
             LEFT JOIN FETCH a.affiliatedUnit au
             LEFT JOIN FETCH au.unit
+            WHERE a.artistId = :id
+            """)
+    Optional<Artist> findByIdWithAffiliatedUnits(@Param("id") Long id);
+
+    @Query("""
+            SELECT DISTINCT a FROM Artist a
+            LEFT JOIN FETCH a.affiliatedUnit au
+            LEFT JOIN FETCH au.unit u
+            LEFT JOIN FETCH u.parentUnit
             ORDER BY a.artistId
             """)
     List<Artist> findAllWithUnits();

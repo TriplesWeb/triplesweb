@@ -218,7 +218,37 @@
     return JSON.stringify(out);
   }
 
+  async function refreshAdminStatus() {
+    try {
+      const res = await artistFetch("/api/artist/admin/status");
+      if (!res.ok) {
+        adminConfigured = false;
+        isAdmin = false;
+        setAdminUi();
+        return false;
+      }
+      const status = await res.json();
+      adminConfigured = Boolean(status.configured);
+      isAdmin = Boolean(status.admin);
+      if (!isAdmin) setAdminToken("");
+      setAdminUi();
+      return isAdmin;
+    } catch (_) {
+      adminConfigured = false;
+      isAdmin = false;
+      setAdminUi();
+      return false;
+    }
+  }
+
+  async function requireAdminOrLogin() {
+    if (await refreshAdminStatus()) return true;
+    openLoginModal();
+    return false;
+  }
+
   async function openMemberEdit(artistId) {
+    if (!(await requireAdminOrLogin())) return;
     const err = document.getElementById("artistEditError");
     if (err) {
       err.hidden = true;
@@ -232,6 +262,7 @@
       document.getElementById("artistEditName").value = data.name || "";
       document.getElementById("artistEditEngName").value = data.engName || "";
       document.getElementById("artistEditBirthDate").value = data.birthDate || "";
+      document.getElementById("artistEditBornPlace").value = data.bornPlace || "";
       document.getElementById("artistEditBirthPlace").value = data.birthPlace || "";
       document.getElementById("artistEditNationality").value = data.nationality || "";
       document.getElementById("artistEditDebutDate").value = data.debutDate || "";
@@ -355,7 +386,6 @@
 
     document.querySelectorAll("[data-artist-edit]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        if (!isAdmin) return;
         openMemberEdit(btn.getAttribute("data-artist-edit"));
       });
     });
@@ -377,8 +407,8 @@
 
     const groupEditBtn = document.getElementById("artistGroupEditBtn");
     if (groupEditBtn) {
-      groupEditBtn.addEventListener("click", () => {
-        if (!isAdmin) return;
+      groupEditBtn.addEventListener("click", async () => {
+        if (!(await requireAdminOrLogin())) return;
         openGroupEdit();
       });
     }
@@ -387,12 +417,14 @@
     if (editForm) {
       editForm.addEventListener("submit", async (e) => {
         e.preventDefault();
+        if (!(await requireAdminOrLogin())) return;
         const err = document.getElementById("artistEditError");
         const id = document.getElementById("artistEditId").value;
         const fd = new FormData();
         fd.append("name", document.getElementById("artistEditName").value);
         fd.append("engName", document.getElementById("artistEditEngName").value);
         fd.append("birthDate", document.getElementById("artistEditBirthDate").value);
+        fd.append("bornPlace", document.getElementById("artistEditBornPlace").value);
         fd.append("birthPlace", document.getElementById("artistEditBirthPlace").value);
         fd.append("nationality", document.getElementById("artistEditNationality").value);
         fd.append("debutDate", document.getElementById("artistEditDebutDate").value);
@@ -435,6 +467,7 @@
     if (groupForm) {
       groupForm.addEventListener("submit", async (e) => {
         e.preventDefault();
+        if (!(await requireAdminOrLogin())) return;
         const err = document.getElementById("artistGroupError");
         const fd = new FormData();
         fd.append("title", document.getElementById("artistGroupTitle").value);
@@ -471,20 +504,11 @@
   }
 
   async function initAdmin() {
-    try {
-      const res = await artistFetch("/api/artist/admin/status");
-      if (res.ok) {
-        const status = await res.json();
-        adminConfigured = Boolean(status.configured);
-        isAdmin = Boolean(status.admin);
-        if (!isAdmin) setAdminToken("");
-      }
-    } catch (_) {
-      adminConfigured = false;
-      isAdmin = false;
-    }
-    setAdminUi();
+    await refreshAdminStatus();
     bindAdminUi();
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") refreshAdminStatus();
+    });
   }
 
   document.addEventListener("DOMContentLoaded", () => {

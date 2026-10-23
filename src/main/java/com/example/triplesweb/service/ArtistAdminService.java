@@ -119,6 +119,7 @@ public class ArtistAdminService {
             String engName,
             String nationality,
             String birthDate,
+            String bornPlace,
             String birthPlace,
             String debutDate,
             String color,
@@ -128,14 +129,15 @@ public class ArtistAdminService {
             MultipartFile image,
             boolean clearImage
     ) {
-        Artist artist = artistRepository.findById(artistId)
+        Artist artist = artistRepository.findByIdWithAffiliatedUnits(artistId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 아티스트가 존재하지 않습니다. id=" + artistId));
 
         String trimmedName = requireText(name, "이름은 필수입니다.");
-        String trimmedEng = requireText(engName, "영문명은 필수입니다.").toLowerCase(Locale.ROOT);
+        String trimmedEng = requireText(engName, "영문명은 필수입니다.");
         String trimmedNation = requireText(nationality, "국적은 필수입니다.");
         String trimmedBirthDate = requireText(birthDate, "출생은 필수입니다.");
-        String trimmedBirthPlace = requireText(birthPlace, "출신지는 필수입니다.");
+        String trimmedBornPlace = bornPlace != null ? bornPlace.trim() : "";
+        String trimmedBirthPlace = birthPlace != null ? birthPlace.trim() : "";
         String trimmedDebut = requireText(debutDate, "데뷔일은 필수입니다.");
         String trimmedColor = normalizeColor(color);
 
@@ -144,7 +146,7 @@ public class ArtistAdminService {
                 throw new IllegalArgumentException("이미 사용 중인 이름입니다: " + trimmedName);
             }
         });
-        artistRepository.findByEngName(trimmedEng).ifPresent(other -> {
+        artistRepository.findByEngNameIgnoreCase(trimmedEng).ifPresent(other -> {
             if (!Objects.equals(other.getArtistId(), artistId)) {
                 throw new IllegalArgumentException("이미 사용 중인 영문명입니다: " + trimmedEng);
             }
@@ -154,7 +156,8 @@ public class ArtistAdminService {
         artist.setEngName(trimmedEng);
         artist.setNationality(trimmedNation);
         artist.setBirthDate(trimmedBirthDate);
-        artist.setBirthPlace(trimmedBirthPlace);
+        artist.setBornPlace(trimmedBornPlace.isEmpty() ? null : trimmedBornPlace);
+        artist.setBirthPlace(trimmedBirthPlace.isEmpty() ? null : trimmedBirthPlace);
         artist.setDebutDate(trimmedDebut);
         artist.setColor(trimmedColor);
         artist.setSoloContent(ContentLinks.normalizeJson(soloContent));
@@ -185,14 +188,25 @@ public class ArtistAdminService {
                 if (id != null) wanted.add(id);
             }
         }
-        artist.getAffiliatedUnit().clear();
+        if (artist.getAffiliatedUnit() == null) {
+            artist.setAffiliatedUnit(new ArrayList<>());
+        }
+        // Keep persisted links for retained units: recreating them can INSERT before
+        // orphan removal DELETEs and violate uk_unit_member (artist_id, unit_id).
+        artist.getAffiliatedUnit().removeIf(link -> link.getUnit() == null
+                || !wanted.contains(link.getUnit().getUnitId()));
+        Set<Long> existing = artist.getAffiliatedUnit().stream()
+                .map(link -> link.getUnit().getUnitId())
+                .collect(Collectors.toSet());
         for (Long unitId : wanted) {
+            if (existing.contains(unitId)) continue;
             Unit unit = unitRepository.findById(unitId)
                     .orElseThrow(() -> new IllegalArgumentException("유닛이 없습니다. id=" + unitId));
             UnitMember link = new UnitMember();
             link.setArtist(artist);
             link.setUnit(unit);
             artist.getAffiliatedUnit().add(link);
+            existing.add(unitId);
         }
     }
 
@@ -215,6 +229,7 @@ public class ArtistAdminService {
                 .engName(artist.getEngName())
                 .nationality(artist.getNationality())
                 .birthDate(artist.getBirthDate())
+                .bornPlace(artist.getBornPlace())
                 .birthPlace(artist.getBirthPlace())
                 .debutDate(artist.getDebutDate())
                 .color(artist.getColor())

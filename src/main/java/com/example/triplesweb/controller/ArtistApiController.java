@@ -90,7 +90,8 @@ public class ArtistApiController {
             @RequestParam String engName,
             @RequestParam String nationality,
             @RequestParam String birthDate,
-            @RequestParam String birthPlace,
+            @RequestParam(required = false, defaultValue = "") String bornPlace,
+            @RequestParam(required = false, defaultValue = "") String birthPlace,
             @RequestParam String debutDate,
             @RequestParam String color,
             @RequestParam(required = false, defaultValue = "") String soloContent,
@@ -105,7 +106,7 @@ public class ArtistApiController {
         try {
             List<Long> ids = unitIds != null ? unitIds : new ArrayList<>();
             return artistAdminService.updateArtist(
-                    id, name, engName, nationality, birthDate, birthPlace, debutDate, color,
+                    id, name, engName, nationality, birthDate, bornPlace, birthPlace, debutDate, color,
                     soloContent, broadcastContent, ids, image, clearImage
             );
         } catch (IllegalArgumentException e) {

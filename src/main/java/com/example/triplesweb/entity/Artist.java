@@ -5,8 +5,10 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 아티스트(멤버) 프로필 엔티티. {@link UnitMember}로 유닛 소속 1:N.
@@ -37,16 +39,37 @@ public class Artist {
     @Column(nullable = false)
     private String birthDate;
 
-    @Column(nullable = false)
+    /** 출생지 (출생 칸에 생년월일과 함께 표시). 출신지와 별개. */
+    private String bornPlace;
+
+    /** 출신지 (거주지/성장지). 비어 있으면 프로필에 표시하지 않음. */
     private String birthPlace;
 
     @Column(nullable = false)
     private String debutDate;
 
+    @Transient
+    public boolean isHasBornPlace() {
+        return bornPlace != null && !bornPlace.isBlank();
+    }
+
+    @Transient
+    public boolean isHasBirthPlace() {
+        return birthPlace != null && !birthPlace.isBlank();
+    }
+
     @OneToMany(mappedBy = "artist", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UnitMember> affiliatedUnit = new ArrayList<>();
 
     private String profileImage;
+
+    /** 프로필 이미지가 없을 때 쓰는 플레이스홀더 */
+    public static final String DEFAULT_PROFILE_IMAGE = com.example.triplesweb.util.ImageUrls.PLACEHOLDER;
+
+    @Transient
+    public String getDisplayProfileImage() {
+        return com.example.triplesweb.util.ImageUrls.orPlaceholder(profileImage);
+    }
 
     @Column(nullable = false)
     private String color;
@@ -58,6 +81,32 @@ public class Artist {
     /** 출연한 방송 영상 링크 JSON */
     @Column(columnDefinition = "TEXT")
     private String broadcastContent;
+
+    /**
+     * 프로필 표시용 소속 유닛. 같은 아티스트가 하위 유닛에도 속하면 상위(예: MSNZ)는 숨긴다.
+     */
+    @Transient
+    public List<UnitMember> getDisplayAffiliatedUnit() {
+        if (affiliatedUnit == null || affiliatedUnit.isEmpty()) {
+            return List.of();
+        }
+        Set<Long> parentsWithChild = new HashSet<>();
+        for (UnitMember link : affiliatedUnit) {
+            Unit unit = link.getUnit();
+            if (unit == null || unit.getParentUnit() == null || unit.getParentUnit().getUnitId() == null) {
+                continue;
+            }
+            parentsWithChild.add(unit.getParentUnit().getUnitId());
+        }
+        List<UnitMember> display = new ArrayList<>();
+        for (UnitMember link : affiliatedUnit) {
+            Unit unit = link.getUnit();
+            if (unit == null || unit.getUnitId() == null) continue;
+            if (parentsWithChild.contains(unit.getUnitId())) continue;
+            display.add(link);
+        }
+        return display;
+    }
 
     @Transient
     public List<Map<String, String>> getSoloLinks() {
