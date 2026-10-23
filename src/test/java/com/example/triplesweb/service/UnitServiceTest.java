@@ -56,20 +56,68 @@ class UnitServiceTest {
         assertThat(statistics.getPrepareStatementCount()).isLessThanOrEqualTo(2);
     }
 
+    @Test void unitMembersAreOrderedByArtistId() {
+        Unit unit = unit("ordered", null, true);
+        Artist s1 = artist("s1", "s1");
+        Artist s2 = artist("s2", "s2");
+        em.persist(s1);
+        em.persist(s2);
+        // Insert higher id first so raw join order differs from S order.
+        em.persist(new UnitMember(null, s2, unit));
+        em.persist(new UnitMember(null, s1, unit));
+        Long id1 = s1.getArtistId();
+        Long id2 = s2.getArtistId();
+        em.flush();
+        em.clear();
+
+        var units = service.listVisible();
+        assertThat(units).hasSize(1);
+        assertThat(units.get(0).getUnitMembers())
+                .extracting(member -> member.getArtist().getArtistId())
+                .containsExactly(id1, id2);
+    }
+
+    private Artist artist(String name, String engName) {
+        Artist artist = new Artist();
+        artist.setName(name);
+        artist.setEngName(engName);
+        artist.setNationality("KR");
+        artist.setBirthDate("2000-01-01");
+        artist.setBirthPlace("Seoul");
+        artist.setDebutDate("2022-01-01");
+        artist.setColor("#fff");
+        return artist;
+    }
+
     @Test void retainsHiddenParentAndChildAlbumsWithoutShowingHiddenTabs() {
         Unit parent = unit("parent", null, false);
         Unit visible = unit("visible", parent, true);
         Unit hidden = unit("hidden-child", visible, false);
-        album("parent-album", parent);
-        album("own-album", visible);
-        album("child-album", hidden);
+        album("parent-album", parent, "2024-01-01");
+        album("own-album", visible, "2025-01-01");
+        album("child-album", hidden, "2026-01-01");
         em.flush();
         em.clear();
 
         var units = service.listVisible();
         assertThat(units).extracting(Unit::getUnitName).containsExactly("visible");
         assertThat(units.get(0).getDisplayAlbums()).extracting(Album::getAlbumName)
-                .containsExactly("own-album", "parent-album", "child-album");
+                .containsExactly("parent-album", "own-album", "child-album");
+    }
+
+    @Test void displayAlbumsAreOrderedByReleaseDateAcrossInheritedUnits() {
+        Unit parent = unit("msnz", null, false);
+        Unit visible = unit("moon", parent, true);
+        // Own album is newer but would appear first without a global release-date sort.
+        album("Dream Dress", visible, "2025-05-12");
+        album("Beyond Beauty", parent, "2024-11-20");
+        em.flush();
+        em.clear();
+
+        var units = service.listVisible();
+        assertThat(units).hasSize(1);
+        assertThat(units.get(0).getDisplayAlbums()).extracting(Album::getAlbumName)
+                .containsExactly("Beyond Beauty", "Dream Dress");
     }
 
     private Unit unit(String name, Unit parent, boolean visible) {
@@ -80,10 +128,14 @@ class UnitServiceTest {
     }
 
     private void album(String name, Unit unit) {
+        album(name, unit, "2026-10-22");
+    }
+
+    private void album(String name, Unit unit, String releaseDate) {
         Album album = new Album();
         album.setAlbumName(name);
         album.setAlbumInfo("info");
-        album.setReleaseDate("2026-10-22");
+        album.setReleaseDate(releaseDate);
         album.setUnit(unit);
         em.persist(album);
     }

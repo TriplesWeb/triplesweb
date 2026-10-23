@@ -16,9 +16,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -147,7 +147,7 @@ public class UnitAdminService {
             boolean clearImage
     ) {
         String name = requireText(unitName, "유닛명은 필수입니다.");
-        String small = requireText(smallName, "짧은 이름(smallName)은 필수입니다.").toLowerCase(Locale.ROOT);
+        String small = requireText(smallName, "짧은 이름(smallName)은 필수입니다.");
         String formation = requireText(formationDate, "결성일은 필수입니다.");
         String debut = debutDate != null ? debutDate.trim() : "";
 
@@ -235,14 +235,17 @@ public class UnitAdminService {
         List<Long> artistIds = new ArrayList<>();
         List<UnitAdminDto.MemberOption> members = new ArrayList<>();
         if (unit.getUnitMembers() != null) {
-            for (UnitMember um : unit.getUnitMembers()) {
-                if (um.getArtist() == null) continue;
-                artistIds.add(um.getArtist().getArtistId());
-                members.add(UnitAdminDto.MemberOption.builder()
-                        .artistId(um.getArtist().getArtistId())
-                        .name(um.getArtist().getName())
-                        .build());
-            }
+            unit.getUnitMembers().stream()
+                    .filter(um -> um.getArtist() != null)
+                    .sorted(Comparator.comparingLong(um ->
+                            um.getArtist().getArtistId() != null ? um.getArtist().getArtistId() : 0L))
+                    .forEach(um -> {
+                        artistIds.add(um.getArtist().getArtistId());
+                        members.add(UnitAdminDto.MemberOption.builder()
+                                .artistId(um.getArtist().getArtistId())
+                                .name(um.getArtist().getName())
+                                .build());
+                    });
         }
         Unit parent = unit.getParentUnit();
         return UnitAdminDto.builder()

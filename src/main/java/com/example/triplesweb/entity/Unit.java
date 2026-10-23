@@ -30,6 +30,11 @@ public class Unit {
 
     private String unitImage;
 
+    @Transient
+    public String getDisplayUnitImage() {
+        return com.example.triplesweb.util.ImageUrls.orPlaceholder(unitImage);
+    }
+
     @Column(nullable = false)
     private String formationDate;
 
@@ -48,7 +53,9 @@ public class Unit {
     private List<Unit> subUnits = new ArrayList<>();
 
 
+    /** 소속 멤버는 항상 artistId(S순) 오름차순 */
     @OneToMany(mappedBy = "unit", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("artist.artistId ASC")
     private List<UnitMember> unitMembers = new ArrayList<>();
 
     @OneToMany(mappedBy = "unit", cascade = CascadeType.ALL)

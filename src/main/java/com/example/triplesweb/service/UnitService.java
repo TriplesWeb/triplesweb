@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +51,8 @@ public class UnitService {
             for (Long childId : childIds.getOrDefault(unit.getUnitId(), List.of())) {
                 addAlbums(merged, albumsByUnit.get(childId));
             }
-            unit.setDisplayAlbums(new ArrayList<>(merged.values()));
+            unit.setDisplayAlbums(sortedByReleaseDate(merged.values()));
+            sortMembersByArtistId(unit);
         }
         return visible;
     }
@@ -65,6 +67,7 @@ public class UnitService {
 
     private void hydrateForPage(Unit unit) {
         unit.setDisplayAlbums(mergeAlbums(unit));
+        sortMembersByArtistId(unit);
         if (unit.getUnitMembers() != null) {
             for (UnitMember member : unit.getUnitMembers()) {
                 if (member.getArtist() != null) {
@@ -74,6 +77,15 @@ public class UnitService {
                 }
             }
         }
+    }
+
+    /** join fetch 결과는 DB 삽입 순일 수 있어 artistId(S순)로 고정한다. */
+    private static void sortMembersByArtistId(Unit unit) {
+        if (unit.getUnitMembers() == null || unit.getUnitMembers().size() < 2) return;
+        unit.getUnitMembers().sort(Comparator.comparingLong(member ->
+                member.getArtist() != null && member.getArtist().getArtistId() != null
+                        ? member.getArtist().getArtistId()
+                        : 0L));
     }
 
     private List<Album> mergeAlbums(Unit unit) {
@@ -89,7 +101,19 @@ public class UnitService {
                 }
             }
         }
-        return new ArrayList<>(byId.values());
+        return sortedByReleaseDate(byId.values());
+    }
+
+    /** 부모/자식 병합 후 발매일 오름차순(동일 시 albumId)으로 고정한다. */
+    private static List<Album> sortedByReleaseDate(Iterable<Album> albums) {
+        List<Album> sorted = new ArrayList<>();
+        for (Album album : albums) {
+            if (album != null) sorted.add(album);
+        }
+        sorted.sort(Comparator
+                .comparing((Album a) -> a.getReleaseDate() != null ? a.getReleaseDate() : "", Comparator.nullsLast(String::compareTo))
+                .thenComparing(a -> a.getAlbumId() != null ? a.getAlbumId() : 0L));
+        return sorted;
     }
 
     private static void addAlbums(Map<Long, Album> byId, List<Album> albums) {

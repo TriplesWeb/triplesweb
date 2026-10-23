@@ -172,8 +172,8 @@
     const pane = document.querySelector(targetId);
     if (pane) {
       pane.querySelectorAll("img[data-unit-src]").forEach(img => {
-        const source = img.getAttribute("data-unit-src");
-        if (source) img.src = source;
+        const source = (img.getAttribute("data-unit-src") || "").trim();
+        img.src = source || window.__imagePlaceholder || "/images/image-upload-pending.png";
         img.removeAttribute("data-unit-src");
       });
       pane.classList.remove("hidden");
