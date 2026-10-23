@@ -2,6 +2,7 @@ package com.example.triplesweb.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -17,6 +18,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Value("${file.upload-dir}")
     private String uploadDir;
+
+    /** 비우면 비활성. 로컬 bootRun에서 공유 DB + 서버 uploads 참조용 (예: https://triples.eht3r.cloud) */
+    @Value("${upload.fallback-base-url:}")
+    private String uploadFallbackBaseUrl;
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
@@ -37,9 +42,16 @@ public class WebMvcConfig implements WebMvcConfigurer {
         System.out.println("UPLOAD URI  = " + uri);
         System.out.println("BANNER1     = " +
                 Files.exists(uploadPath.resolve("images/banner1.jpg")));
+        if (StringUtils.hasText(uploadFallbackBaseUrl)) {
+            System.out.println("UPLOAD FALLBACK = " + uploadFallbackBaseUrl.trim().replaceAll("/+$", ""));
+        }
         System.out.println("======================================");
 
-        registry.addResourceHandler("/uploads/**")
+        var registration = registry.addResourceHandler("/uploads/**")
                 .addResourceLocations(uri);
+        if (StringUtils.hasText(uploadFallbackBaseUrl)) {
+            registration.resourceChain(true)
+                    .addResolver(new UploadRemoteFallbackResolver(uploadFallbackBaseUrl.trim()));
+        }
     }
 }
