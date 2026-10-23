@@ -32,6 +32,10 @@ public interface ArticleRepository extends JpaRepository<Article,Long> {
     @Query("SELECT a FROM Article a WHERE LOWER(TRIM(a.category)) = LOWER(TRIM(:category)) ORDER BY a.id DESC")
     List<Article> findByCategoryIgnoreCaseOrderByIdDesc(String category, Pageable pageable);
 
+    List<Article> findByCategoryIgnoreCaseAndTitleContainingIgnoreCaseOrderByIdDesc(String category, String title, Pageable pageable);
+    List<Article> findByCategoryIgnoreCaseAndContentContainingIgnoreCaseOrderByIdDesc(String category, String content, Pageable pageable);
+    List<Article> findByCategoryIgnoreCaseAndUserIdContainingIgnoreCaseOrderByIdDesc(String category, String userId, Pageable pageable);
+
     List<Article> findPopularByCategory(@Param("category") String category, Pageable pageable);
 
     @Query("SELECT MAX(a.displayId) FROM Article a WHERE a.category = :category")

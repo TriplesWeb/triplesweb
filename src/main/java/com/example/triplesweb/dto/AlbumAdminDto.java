@@ -40,6 +40,7 @@ public class AlbumAdminDto {
         private String title;
         private String duration;
         private Boolean isTitle;
+        private String melonSongId;
     }
 
     @Getter

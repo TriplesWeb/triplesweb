@@ -138,6 +138,19 @@
                         </ul>
                         {{/hasSoloLinks}}
                     </div>
+                    <div class="mt-6">
+                        <h2 class="text-xl font-semibold m-0 text-[#e3e2e8]">멤버 출연 콘텐츠</h2>
+                        <p class="mt-1 text-sm text-[#8b9b95]">공식 미디어 탭에 등록된 영상 중 이 멤버와 연결된 콘텐츠입니다.</p>
+                        {{#mediaContents}}
+                        <article class="mt-3 overflow-hidden rounded-xl border border-[#3a4a46]/40 bg-[#0d0e12]/60">
+                            <a href="/media/{{tab}}/{{youtubeId}}" class="block no-underline">
+                                <img src="https://img.youtube.com/vi/{{youtubeId}}/hqdefault.jpg" loading="lazy" alt="{{title}}" class="aspect-video w-full object-cover">
+                                <div class="p-3"><h3 class="text-sm font-semibold text-[#e3e2e8]">{{title}}</h3><p class="mt-1 text-xs text-[#8b9b95]">공식 미디어 · {{tab}}</p></div>
+                            </a>
+                        </article>
+                        {{/mediaContents}}
+                        {{^mediaContents}}<p class="mt-3 text-sm text-[#8b9b95]">아직 연결된 공식 미디어가 없습니다.</p>{{/mediaContents}}
+                    </div>
                     <div>
                         <h2 class="text-xl font-normal m-0">출연한 방송</h2>
                         {{#hasBroadcastLinks}}

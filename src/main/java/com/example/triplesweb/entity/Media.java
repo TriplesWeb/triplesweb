@@ -2,9 +2,12 @@ package com.example.triplesweb.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
- * 유튜브 미디어 카탈로그. JSON 파일 대신 DB가 단일 소스.
+ * 유튜브 미디어 카탈로그. 멤버 연결은 main의 media_artist 관계 테이블을 사용한다.
  */
 @Entity
 @Table(
@@ -14,7 +17,7 @@ import lombok.*;
 )
 @Getter
 @Setter
-@ToString
+@ToString(exclude = "artists")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -42,8 +45,22 @@ public class Media {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    /** 탭 내 정렬(작을수록 앞). addFirst 시 더 작은 값을 부여. */
     @Column(nullable = false)
     @Builder.Default
     private Long sortOrder = 0L;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "media_artist",
+            joinColumns = @JoinColumn(name = "media_id"),
+            inverseJoinColumns = @JoinColumn(name = "artist_id")
+    )
+    @Builder.Default
+    private Set<Artist> artists = new LinkedHashSet<>();
+
+    @Transient
+    public String getArtistNames() {
+        if (artists == null || artists.isEmpty()) return "";
+        return artists.stream().map(Artist::getName).sorted(String.CASE_INSENSITIVE_ORDER).collect(Collectors.joining(","));
+    }
 }

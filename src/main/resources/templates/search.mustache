@@ -3,62 +3,65 @@
 <head>
     {{>layout/favicon}}
     <meta charset="UTF-8">
-    <title>검색 결과</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>'{{keyword}}' 검색 결과 - 트리플에스 커뮤니티</title>
+    <link rel="stylesheet" href="/css/style.css">
     <style>
-        .card {
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        .board-tag {
-            font-size: 0.85rem;
-            color: #888;
-            margin-bottom: 6px;
-        }
+        .search-highlight b { color:#00f5d4; font-weight:800; }
+        .search-snippet { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
     </style>
 </head>
-<body>
+<body class="min-h-screen bg-[#0d0e12] text-[#e3e2e8]">
 {{>layout/header}}
-
-<div class="container mt-5">
-    <h3 class="mb-3">'{{keyword}}'에 대한 검색 결과</h3>
+<main class="mx-auto max-w-6xl px-4 py-8">
+    <header class="mb-8 border-b border-[#3a4a46]/40 pb-5">
+        <p class="text-xs font-semibold uppercase tracking-[.25em] text-[#00f5d4]">GLOBAL SEARCH</p>
+        <h1 class="mt-2 text-2xl font-bold">‘{{keyword}}’ 검색 결과</h1>
+        <p class="mt-2 text-sm text-[#8b9b95]">멤버 프로필과 게시글 제목·본문·작성자를 함께 검색합니다.</p>
+    </header>
 
     {{#errorMessage}}
-        <div class="alert alert-warning">{{errorMessage}}</div>
+    <p class="mb-5 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100">{{errorMessage}}</p>
     {{/errorMessage}}
 
-    {{#resultList}}
-    <div class="card mb-3">
-    <div class="card-body">
-    <div class="board-tag">
-        <span class="badge bg-primary">
-        {{#category}}
-            {{boardName}}
-        {{/category}}
-        </span>
-
-    </div>
-        <div class="board-tag">
-
-        </div>
-        <h5 class="card-title">
-            <a href="/{{category}}/{{id}}" class="text-decoration-none text-dark">
-                {{{title}}}
+    <section class="mb-10">
+        <h2 class="mb-4 flex items-center gap-2 text-lg font-bold"><span class="material-symbols-outlined text-[#00f5d4]">person_search</span>멤버 검색 결과</h2>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {{#memberResults}}
+            <a href="{{profileUrl}}" class="flex items-center gap-4 rounded-2xl border border-[#3a4a46]/40 bg-[#16181f]/80 p-4 no-underline transition hover:border-[#00f5d4]/60 hover:bg-[#1b2026]">
+                <img src="{{profileImage}}" loading="lazy" alt="{{name}}" class="h-16 w-16 shrink-0 rounded-full border border-[#3a4a46]/50 object-cover">
+                <span class="min-w-0">
+                    <strong class="block text-base font-bold text-[#e3e2e8]">{{name}}</strong>
+                    <span class="mt-1 block text-xs text-[#00f5d4]">{{engName}}</span>
+                    <span class="mt-1 block text-xs text-[#8b9b95]">프로필 보기 →</span>
+                </span>
             </a>
-        </h5>
-        <p class="card-text">
-            {{{content}}}
-        </p>
-        <p class="text-end text-muted" style="font-size: 0.9rem;">
-            작성자: {{userId}}
-        </p>
-    </div>
-    </div>
-    {{/resultList}}
+        {{/memberResults}}
+        </div>
+    </section>
 
-    {{^resultList}}
-        <p class="text-muted">검색 결과가 없습니다.</p>
-    {{/resultList}}
-</div>
+    <section>
+        <h2 class="mb-4 flex items-center gap-2 text-lg font-bold"><span class="material-symbols-outlined text-[#00f5d4]">article</span>게시글 검색 결과</h2>
+        {{#resultList}}
+        <article class="mb-3 rounded-2xl border border-[#3a4a46]/35 bg-[#16181f]/70 p-5 transition hover:border-[#00f5d4]/35">
+            <div class="mb-2 flex flex-wrap items-center gap-2">
+                <span class="rounded-full border border-[#00f5d4]/25 bg-[#00f5d4]/10 px-2.5 py-1 text-xs font-semibold text-[#00f5d4]">{{boardName}}</span>
+                <span class="text-xs text-[#8b9b95]">작성자 {{userId}}</span>
+            </div>
+            <h3 class="text-base font-semibold">
+                <a href="/article/{{category}}/{{id}}" class="search-highlight text-[#e3e2e8] no-underline hover:text-[#00f5d4]">{{{title}}}</a>
+            </h3>
+            <p class="search-highlight search-snippet mt-2 text-sm leading-6 text-[#aebbb6]">{{{content}}}</p>
+        </article>
+        {{/resultList}}
+        {{^resultList}}
+        <p class="rounded-xl border border-[#3a4a46]/30 bg-[#16181f]/50 p-6 text-sm text-[#8b9b95]">검색어가 포함된 게시글이 없습니다.</p>
+        {{/resultList}}
+    </section>
 
+    {{^hasAnyResults}}
+    <div class="mt-8 rounded-2xl border border-dashed border-[#3a4a46]/50 p-8 text-center text-sm text-[#8b9b95]">멤버 또는 게시글 검색 결과가 없습니다. 다른 검색어를 입력해 보세요.</div>
+    {{/hasAnyResults}}
+</main>
 </body>
 </html>

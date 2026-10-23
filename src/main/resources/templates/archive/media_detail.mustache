@@ -38,6 +38,16 @@
         <div class="video-meta">조회수 {{viewCountFmt}}{{#publishedAtFmt}} · {{publishedAtFmt}}{{/publishedAtFmt}}</div>
 
         {{#description}}<div class="desc mt-3">{{.}}</div>{{/description}}
+        {{#taggedArtists}}
+        <a class="mt-3 me-2 inline-block rounded border border-info px-2 py-1 small text-info text-decoration-none" href="/triples/artist/{{artistId}}">{{name}}</a>
+        {{/taggedArtists}}
+        {{#relatedSchedules}}
+        <div class="mt-3 rounded border border-secondary p-3">
+            <strong>{{title}}</strong>
+            <div class="small text-secondary">{{start}} {{#end}}~ {{end}}{{/end}}</div>
+            <a class="btn btn-sm btn-outline-info mt-2" href="/schedule?focus={{id}}">연결된 일정 보기</a>
+        </div>
+        {{/relatedSchedules}}
     {{/video}}
 
     <hr class="border-secondary my-4"/>

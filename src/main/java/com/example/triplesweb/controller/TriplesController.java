@@ -7,6 +7,7 @@ import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.service.AlbumService;
 import com.example.triplesweb.service.ArtistAdminService;
 import com.example.triplesweb.service.UnitService;
+import com.example.triplesweb.service.MediaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,11 +31,15 @@ public class TriplesController {
     private final ArtistAdminService artistAdminService;
     private final AlbumService albumService;
     private final UnitService unitService;
+    private final MediaService mediaService;
 
     @GetMapping("/artist")
     @Transactional(readOnly = true)
     public String indexTriples(Model model) {
         List<Artist> artistList = artistrepository.findAllWithUnits();
+        var mediaByArtist = mediaService.byArtistMap(8);
+        artistList.forEach(artist -> artist.setMediaContents(
+                mediaByArtist.getOrDefault(artist.getArtistId(), java.util.List.of())));
         GroupIntroDto group = artistAdminService.getGroupIntro();
         model.addAttribute("artist", artistList);
         model.addAttribute("allUnits", artistAdminService.listUnitOptions());

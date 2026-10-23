@@ -13,6 +13,7 @@ public interface ArticleService {
     Article create(Article article);
     Article show(Long id);
     List<Article> findRecentByCategory(String category, int limit);
+    List<Article> searchByCategory(String category, String type, String keyword, int limit);
     long getLikesCount(Long articleId);
     Article delete(Long id);
     /** 사용자별 이력 없음 — 항상 false */

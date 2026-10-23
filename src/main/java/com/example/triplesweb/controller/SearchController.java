@@ -2,6 +2,8 @@ package com.example.triplesweb.controller;
 
 import com.example.triplesweb.entity.Article;
 import com.example.triplesweb.repository.ArticleRepository;
+import com.example.triplesweb.repository.ArtistRepository;
+import com.example.triplesweb.entity.Artist;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
@@ -19,10 +21,12 @@ import java.util.regex.Pattern;
 public class SearchController {
     @Autowired
     private ArticleRepository articleRepository;
+    @Autowired
+    private ArtistRepository artistRepository;
 
     @GetMapping("/search")
     public String Search(@RequestParam("keyword") String keyword, Model model) {
-        // [수정] HttpSession 세션 체크 및 userId 속성 주입 코드 제거
+        keyword = keyword == null ? "" : keyword.trim();
         model.addAttribute("keyword", keyword);
 
         if (keyword == null || keyword.trim().isEmpty()) {
@@ -45,14 +49,46 @@ public class SearchController {
                 case "free" -> "자유게시판";
                 case "notice" -> "공지게시판";
                 case "trade" -> "교환게시판";
+                case "sell" -> "거래게시판";
+                case "chat" -> "잡담게시판";
+                case "info" -> "정보게시판";
+                case "notice" -> "공지사항";
                 default -> "기타";
             };
             map.put("boardName", boardName);
             return map;
         }).toList();
 
+        List<Map<String, Object>> memberResults = artistRepository.findAll().stream()
+                .filter(artist -> containsIgnoreCase(artist.getName(), keyword)
+                        || containsIgnoreCase(artist.getEngName(), keyword))
+                .sorted((a, b) -> {
+                    boolean aExact = keyword.equalsIgnoreCase(a.getName()) || keyword.equalsIgnoreCase(a.getEngName());
+                    boolean bExact = keyword.equalsIgnoreCase(b.getName()) || keyword.equalsIgnoreCase(b.getEngName());
+                    return Boolean.compare(bExact, aExact);
+                })
+                .map(artist -> {
+                    Map<String, Object> member = new HashMap<>();
+                    member.put("artistId", artist.getArtistId());
+                    member.put("name", artist.getName());
+                    member.put("engName", artist.getEngName());
+                    member.put("profileImage", artist.getDisplayProfileImage());
+                    member.put("profileUrl", "/triples/artist?tab=member-" + artist.getArtistId());
+                    member.put("birthDate", artist.getBirthDate());
+                    member.put("debutDate", artist.getDebutDate());
+                    return member;
+                })
+                .toList();
+
         model.addAttribute("resultList", mappedResult);
+        model.addAttribute("memberResults", memberResults);
+        model.addAttribute("hasAnyResults", !mappedResult.isEmpty() || !memberResults.isEmpty());
         return "search";
+    }
+
+    private boolean containsIgnoreCase(String value, String keyword) {
+        return value != null && keyword != null
+                && value.toLowerCase(java.util.Locale.ROOT).contains(keyword.toLowerCase(java.util.Locale.ROOT));
     }
 
     private String highlight(String text, String keyword) {

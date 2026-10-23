@@ -64,7 +64,7 @@
                             <img src="{{file.url}}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="{{title}}">
                         </div>
                         <div class="p-3 bg-surface-container-high/40">
-                            <p class="text-sm font-medium text-on-surface truncate" title="{{title}}">{{title}}</p>
+                            <p class="text-sm font-medium text-on-surface truncate" title="{{title}}">{{title}}</p>{{#artistNames}}<p class="mt-1 text-xs text-primary-container">{{artistNames}}</p>{{/artistNames}}
                         </div>
                     </div>
                 {{/archives.content}}
@@ -165,6 +165,14 @@
         });
     });
 
+    document.addEventListener('DOMContentLoaded', () => {
+        const picker = document.getElementById('archiveArtistPicker');
+        const count = document.getElementById('archiveArtistCount');
+        const refresh = () => { if (picker && count) count.textContent = String(picker.querySelectorAll('input:checked').length); };
+        picker?.addEventListener('change', refresh);
+        document.getElementById('clearArchiveArtists')?.addEventListener('click', () => { picker?.querySelectorAll('input').forEach(input => input.checked = false); refresh(); });
+        refresh();
+    });
     // 모달 열기
     function showAddModal() {
         const modal = new bootstrap.Modal(document.getElementById('uploadModal'));

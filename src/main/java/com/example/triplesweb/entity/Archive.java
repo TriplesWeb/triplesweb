@@ -21,6 +21,9 @@ public class Archive {
     @Column(nullable = false)
     private String title;
 
+    @Column(name = "artist_names", columnDefinition = "TEXT")
+    private String artistNames;
+
     @Embedded
     private SavedMeta file;
 

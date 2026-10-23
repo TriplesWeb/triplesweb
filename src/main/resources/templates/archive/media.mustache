@@ -180,6 +180,17 @@
         <a class="media-contents {{#isContents}}active{{/isContents}}" href="/media?tab=contents">기타 컨텐츠</a>
     </div>
 
+    <form class="mb-4 flex flex-wrap items-center justify-center gap-3" method="get" action="/media">
+        <input type="hidden" name="tab" value="{{currentTab}}">
+        <label class="text-sm text-[#b9cac4]" for="artist-filter">출연 멤버</label>
+        <select id="artist-filter" name="artist" class="rounded-lg border border-[#3a4a46]/40 bg-[#1a1b20] px-3 py-2 text-sm text-white">
+            <option value="">전체 멤버</option>
+            {{#artistOptions}}<option value="{{name}}" {{#isSelectedArtist}}selected{{/isSelectedArtist}}>{{name}}</option>{{/artistOptions}}
+        </select>
+        <button type="submit" class="rounded-lg border border-[#00f5d4]/40 px-4 py-2 text-sm text-[#00f5d4]">필터 적용</button>
+        {{#selectedArtist}}<a class="text-xs text-slate-300" href="/media?tab={{currentTab}}">필터 초기화</a>{{/selectedArtist}}
+    </form>
+
     <!-- 영상 그리드 리스트 -->
     <div class="row grid-gap">
         {{#videos}}
@@ -224,17 +235,17 @@
             <ul class="pagination mb-0">
                 {{#hasPrev}}
                     <li class="page-item">
-                        <a class="page-link" href="/media?tab={{currentTab}}&page={{prevPage}}">&laquo;</a>
+                        <a class="page-link" href="/media?tab={{currentTab}}&page={{prevPage}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}">&laquo;</a>
                     </li>
                 {{/hasPrev}}
                 {{#pages}}
                     <li class="page-item {{#active}}active{{/active}}">
-                        <a class="page-link" href="/media?tab={{currentTab}}&page={{num}}">{{num}}</a>
+                        <a class="page-link" href="/media?tab={{currentTab}}&page={{num}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}">{{num}}</a>
                     </li>
                 {{/pages}}
                 {{#hasNext}}
                     <li class="page-item">
-                        <a class="page-link" href="/media?tab={{currentTab}}&page={{nextPage}}">&raquo;</a>
+                        <a class="page-link" href="/media?tab={{currentTab}}&page={{nextPage}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}">&raquo;</a>
                     </li>
                 {{/hasNext}}
             </ul>
@@ -265,6 +276,9 @@
         integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
         crossorigin="anonymous"></script>
 <script>
+    const artistFilter = document.getElementById('artist-filter');
+    if (artistFilter) artistFilter.value = '{{selectedArtist}}';
+
     const ytModal = document.getElementById('ytModal');
     const ytPlayer = document.getElementById('ytPlayer');
 
