@@ -333,9 +333,9 @@
                 <span class="objekt-flip-hint absolute bottom-2 right-2 rounded-full bg-black/65 px-2 py-1 text-[10px] text-white">앞면</span>
             </button>
             <div class="p-3">
-                <p class="truncate text-sm font-semibold text-slate-100" title="{{collectionId}}">{{collectionId}}</p>
+                <a href="/cosmo/objekt/detail/{{id}}" class="block truncate text-sm font-semibold text-slate-100 hover:text-[#00f5d4]" title="{{collectionId}}">{{collectionId}}</a>
                 <div class="mt-1 flex items-center justify-between gap-2 text-xs text-slate-400">
-                    <span class="truncate">{{member}}</span><span class="shrink-0 font-mono">{{collectionNo}}</span>
+                    <a class="truncate text-teal-200 hover:underline" href="/cosmo/objekt/member?name={{member}}">{{member}}</a><span class="shrink-0 font-mono">{{collectionNo}}</span>
                 </div>
             </div>
         </article>
