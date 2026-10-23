@@ -20,8 +20,6 @@ public class AlbumSectionGroupDto {
     private Long sectionId;
     private String name;
     private boolean other;
-    /** 탭 썸네일: 해당 구분 첫 앨범 커버 */
-    private String tabImage;
     /** 탭/패널 DOM id (예: album-section-1, album-section-other) */
     private String tabKey;
     @Builder.Default

@@ -33,11 +33,10 @@
         </div>
         <p id="albumAdminHint" class="about-admin-hint hidden mb-4">관리자 모드: 구분을 만들고 앨범을 배정하거나, 카드의 수정 버튼으로 편집할 수 있어요.</p>
 
-        <ul class="nav nav-tabs border-b border-[#3a4a46]/40 flex overflow-x-auto items-center pb-2 gap-2{{^albumSections}} hidden{{/albumSections}}" id="albumSectionTabs" role="tablist">
+        <ul class="nav nav-tabs border-b border-[#3a4a46]/40 flex overflow-x-auto items-center pb-2 gap-1.5{{^albumSections}} hidden{{/albumSections}}" id="albumSectionTabs" role="tablist">
             {{#albumSections}}
-            <button class="nav-tab-btn album-section-tab bg-transparent border-0 text-[#b9cac4] hover:text-[#00f5d4] flex flex-col items-center p-2 rounded-xl transition-all shrink-0" id="tab-{{tabKey}}" data-target="#{{tabKey}}" type="button" role="tab" title="{{name}}">
-                <img src="{{tabImage}}" referrerpolicy="no-referrer" class="w-12 h-12 rounded-full border-2 border-transparent object-cover mb-1 bg-[#0d0e12]" alt="{{name}}">
-                <span class="text-xs font-semibold whitespace-nowrap">{{name}}</span>
+            <button class="nav-tab-btn album-section-tab bg-transparent border-0 border-b-2 border-transparent text-[#b9cac4] hover:text-[#00f5d4] px-3 py-2 text-sm font-semibold whitespace-nowrap rounded-none transition-colors shrink-0" id="tab-{{tabKey}}" data-target="#{{tabKey}}" type="button" role="tab" title="{{name}}">
+                {{name}}
             </button>
             {{/albumSections}}
         </ul>
@@ -68,6 +67,6 @@
 {{>triples/partials/album-admin-modals}}
 {{>layout/footer}}
 <script src="/js/about-admin-auth.js?v=1"></script>
-<script src="/js/album.js?v=7"></script>
+<script src="/js/album.js?v=9"></script>
 </body>
 </html>

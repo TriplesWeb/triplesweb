@@ -61,40 +61,27 @@ public class AlbumService {
         List<AlbumSectionGroupDto> groups = new ArrayList<>();
         for (AlbumSectionGroupDto group : byId.values()) {
             if (!group.getAlbums().isEmpty()) {
-                groups.add(withTabImage(group));
+                groups.add(group);
             }
         }
         if (!unassigned.isEmpty()) {
-            groups.add(withTabImage(AlbumSectionGroupDto.builder()
+            groups.add(AlbumSectionGroupDto.builder()
                     .sectionId(null)
                     .name("기타")
                     .other(true)
                     .tabKey("album-section-other")
                     .albums(unassigned)
-                    .build()));
+                    .build());
         }
-        // If no sections exist yet, show a single untitled group of all albums as 기타
-        // (already covered when all are unassigned).
-        // If everything is empty, return empty list.
         if (groups.isEmpty() && !albums.isEmpty()) {
-            // all albums somehow skipped — shouldn't happen
-            groups.add(withTabImage(AlbumSectionGroupDto.builder()
+            groups.add(AlbumSectionGroupDto.builder()
                     .name("기타")
                     .other(true)
                     .tabKey("album-section-other")
                     .albums(albums)
-                    .build()));
+                    .build());
         }
         return groups;
-    }
-
-    private static AlbumSectionGroupDto withTabImage(AlbumSectionGroupDto group) {
-        if (group.getAlbums() != null && !group.getAlbums().isEmpty()) {
-            group.setTabImage(group.getAlbums().get(0).getDisplayAlbumImage());
-        } else {
-            group.setTabImage(com.example.triplesweb.util.ImageUrls.PLACEHOLDER);
-        }
-        return group;
     }
 
     @Transactional(readOnly = true)

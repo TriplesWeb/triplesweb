@@ -177,6 +177,8 @@
     document.getElementById("albumEditReleaseDate").value = "";
     document.getElementById("albumEditInfo").value = "";
     document.getElementById("albumEditType").value = "SUBUNIT";
+    const formatSel = document.getElementById("albumEditFormat");
+    if (formatSel) formatSel.value = "";
     document.getElementById("albumEditClearImage").checked = false;
     document.getElementById("albumEditImage").value = "";
     document.getElementById("albumEditImageUrl").value = "";
@@ -197,6 +199,7 @@
       document.getElementById("albumEditReleaseDate").value = data.releaseDate || "";
       document.getElementById("albumEditInfo").value = data.albumInfo || "";
       document.getElementById("albumEditType").value = data.albumType || "SUBUNIT";
+      if (formatSel) formatSel.value = data.albumFormat || "";
       fillUnitSelect(data.unitId);
       fillSectionSelect(data.sectionId);
       document.getElementById("albumEditTracks").innerHTML = trackRowsHtml(data.tracks);
@@ -350,6 +353,8 @@
       fd.append("releaseDate", document.getElementById("albumEditReleaseDate").value.trim());
       fd.append("albumInfo", document.getElementById("albumEditInfo").value);
       fd.append("albumType", document.getElementById("albumEditType").value);
+      const albumFormat = document.getElementById("albumEditFormat")?.value || "";
+      fd.append("albumFormat", albumFormat);
       const unitId = document.getElementById("albumEditUnitId").value;
       if (unitId) fd.append("unitId", unitId);
       const sectionId = document.getElementById("albumEditSectionId")?.value;
@@ -409,29 +414,13 @@
       if (!targetPane) return;
 
       tabButtons.forEach((b) => {
-        const img = b.querySelector("img");
-        const span = b.querySelector("span");
-        if (img) {
-          img.classList.remove("border-[#00f5d4]");
-          img.classList.add("border-transparent");
-        }
-        if (span) {
-          span.classList.remove("text-[#00f5d4]");
-          span.classList.add("text-[#b9cac4]");
-        }
+        b.classList.remove("text-[#00f5d4]", "border-[#00f5d4]");
+        b.classList.add("text-[#b9cac4]", "border-transparent");
       });
 
       if (btn) {
-        const activeImg = btn.querySelector("img");
-        const activeSpan = btn.querySelector("span");
-        if (activeImg) {
-          activeImg.classList.remove("border-transparent");
-          activeImg.classList.add("border-[#00f5d4]");
-        }
-        if (activeSpan) {
-          activeSpan.classList.remove("text-[#b9cac4]");
-          activeSpan.classList.add("text-[#00f5d4]");
-        }
+        btn.classList.remove("text-[#b9cac4]", "border-transparent");
+        btn.classList.add("text-[#00f5d4]", "border-[#00f5d4]");
         const scroller = btn.closest("#albumSectionTabs");
         if (scroller && scroller.scrollWidth > scroller.clientWidth + 1) {
           const btnRect = btn.getBoundingClientRect();
