@@ -2,10 +2,12 @@ package com.example.triplesweb.service;
 
 import com.example.triplesweb.dto.MediaDto;
 import com.example.triplesweb.entity.Media;
+import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.infra.YoutubeDataApiClient;
 import com.example.triplesweb.infra.YoutubeOembedClient;
 import com.example.triplesweb.media.MediaTab;
 import com.example.triplesweb.repository.MediaRepository;
+import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.util.ISODuration;
 import com.example.triplesweb.util.YoutubeIdExtractor;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ import java.util.*;
 @Service @RequiredArgsConstructor @Transactional
 public class MediaService {
     private final MediaRepository mediaRepository;
+    private final ArtistRepository artistRepository;
     private final YoutubeOembedClient oembed;
     private final YoutubeDataApiClient yt;
 
@@ -52,8 +55,9 @@ public class MediaService {
                 .mediaTitle(dto.getTitle()!=null?dto.getTitle():"")
                 .mediaDur(dto.getDuration()!=null?dto.getDuration():"")
                 .viewCount(dto.getViews()!=null?dto.getViews():0L)
-                .description(dto.getDescription()).artistNames(artistNames==null?"":artistNames)
+                .description(dto.getDescription())
                 .sortOrder(sortOrder).build();
+        entity.setArtists(resolveArtists(artistNames));
         mediaRepository.save(entity);
     }
     public boolean remove(String tab,String youtubeId) {
@@ -86,6 +90,19 @@ public class MediaService {
         MediaDto dto=MediaDto.builder().youtubeId(ytId).title(title).duration(dur).views(views).viewCountFmt(NumberFormat.getInstance().format(views)).description(description).artistNames(artistNames==null?"":artistNames).build();
         addMedia(tab,dto,form.isAddFirst(),artistNames);
     }
+    private Set<Artist> resolveArtists(String names) {
+        Set<Artist> result = new LinkedHashSet<>();
+        if (names == null || names.isBlank()) return result;
+        for (String raw : names.split(",")) {
+            String name = raw.trim();
+            if (name.isBlank()) continue;
+            artistRepository.findByName(name)
+                    .or(() -> artistRepository.findByEngNameIgnoreCase(name))
+                    .ifPresent(result::add);
+        }
+        return result;
+    }
+
     private MediaDto toDto(Media m) {
         long views=m.getViewCount()!=null?m.getViewCount():0L;
         return MediaDto.builder().tab(m.getTab()).youtubeId(m.getYoutubeId()).title(m.getMediaTitle()).duration(m.getMediaDur()).views(views).viewCountFmt(NumberFormat.getInstance().format(views)).description(m.getDescription()).artistNames(m.getArtistNames()).build();
