@@ -43,12 +43,12 @@ public class ArticleObjektService {
 
     @Transactional(readOnly = true)
     public List<ArticleObjekt> findForArticle(Long articleId) {
-        return repository.findByArticleIdOrderByIdAsc(articleId);
+        return repository.findByArticle_IdOrderByIdAsc(articleId);
     }
 
     @Transactional
     public void deleteForArticle(Long articleId) {
-        repository.deleteByArticleId(articleId);
+        repository.deleteByArticle_Id(articleId);
     }
 
     private static String value(Map<String, Object> map, String key) {
