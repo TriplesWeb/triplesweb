@@ -36,6 +36,9 @@
 
         <div class="video-title">{{title}}</div>
         <div class="video-meta">조회수 {{viewCountFmt}}{{#publishedAtFmt}} · {{publishedAtFmt}}{{/publishedAtFmt}}</div>
+        {{#artists}}
+            <a href="/triples/artist/{{artistId}}" class="mt-3 me-2 inline-flex rounded-full border border-[#00f5d4]/30 bg-[#00f5d4]/10 px-3 py-1 text-sm text-[#00f5d4] text-decoration-none">{{name}}</a>
+        {{/artists}}
 
         {{#description}}<div class="desc mt-3">{{.}}</div>{{/description}}
     {{/video}}
