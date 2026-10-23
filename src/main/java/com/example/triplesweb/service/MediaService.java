@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service @RequiredArgsConstructor @Transactional
 public class MediaService {
@@ -100,6 +101,65 @@ public class MediaService {
                     .or(() -> artistRepository.findByEngNameIgnoreCase(name))
                     .ifPresent(result::add);
         }
+        return result;
+    }
+
+    /**
+     * 아티스트별 미디어 목록을 구성한다.
+     * 각 아티스트에게 정렬 순서대로 최대 limit개를 제공한다.
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, List<MediaDto>> byArtistMap(int limit) {
+        Map<Long, List<MediaDto>> result = new LinkedHashMap<>();
+
+        if (limit <= 0) {
+            return result;
+        }
+
+        List<Media> mediaList = mediaRepository.findAllWithArtists();
+
+        NumberFormat numberFormat =
+                NumberFormat.getIntegerInstance(Locale.KOREA);
+
+        for (Media media : mediaList) {
+            if (media.getArtists() == null || media.getArtists().isEmpty()) {
+                continue;
+            }
+
+            Long views = media.getViewCount() == null
+                    ? 0L
+                    : media.getViewCount();
+
+            MediaDto dto = MediaDto.builder()
+                    .tab(media.getTab())
+                    .youtubeId(media.getYoutubeId())
+                    .title(media.getMediaTitle())
+                    .views(views)
+                    .viewCountFmt(numberFormat.format(views))
+                    .duration(media.getMediaDur())
+                    .description(media.getDescription())
+                    .artistNames(media.getArtistNames())
+                    .build();
+
+            for (Artist artist : media.getArtists()) {
+                Long artistId = artist.getArtistId();
+
+                if (artistId == null) {
+                    continue;
+                }
+
+                List<MediaDto> artistMedia =
+                        result.computeIfAbsent(
+                                artistId,
+                                key -> new ArrayList<>()
+                        );
+
+                if (artistMedia.size() < limit) {
+                    artistMedia.add(dto);
+                }
+            }
+        }
+
         return result;
     }
 

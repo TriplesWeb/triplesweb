@@ -14,6 +14,8 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.io.IOException;
 import java.util.*;
 
 @Controller
@@ -55,7 +57,7 @@ public class MediaArchiveController {
     }
 
     @GetMapping("/media/{tab}/{youtubeId}")
-    public String mediaDetail(@PathVariable String tab,@PathVariable String youtubeId,Model model)throws IOException {
+    public String mediaDetail(@PathVariable String tab,@PathVariable String youtubeId,Model model) throws IOException {
         MediaTab t=MediaTab.from(tab);
         MediaDto video=media.findOne(t,youtubeId).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"영상이 없습니다."));
         model.addAttribute("currentTab",t.getKey()); model.addAttribute("tabNameKo",t.getKor()); model.addAttribute("video",video);
