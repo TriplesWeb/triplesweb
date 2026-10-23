@@ -87,6 +87,17 @@
                     </div>
                 {{/errors}}
             </div>
+
+            <div class="col-12">
+                <label class="form-label">출연 멤버 (여러 명 선택 가능)</label>
+                <select class="form-select" name="artistNames" multiple size="6">
+                    {{#artistOptions}}
+                    <option value="{{name}}">{{name}}</option>
+                    {{/artistOptions}}
+                </select>
+                <div class="mt-1 small text-secondary">Ctrl 또는 Shift 키로 여러 멤버를 선택하세요.</div>
+            </div>
+
             <!-- 💡 name="duration" 속성 추가 -->
             <div class="col-md-6">
                 <label class="form-label">영상 길이</label>
