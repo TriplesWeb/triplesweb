@@ -137,27 +137,51 @@ public class ArticleController {
     }
 
     /** 목록 */
-    @GetMapping
-    public String indexArticle(@PathVariable("category") String category,
-                               Model model,
-                               @RequestParam(name = "limit", required = false, defaultValue = "10") Integer limit) {
-        if (isInvalidCategory(category)) return "redirect:/article/trade";
 
-        List<Article> articles = articleService.findRecentByCategory(category, limit);
+    /** 목록 및 검색 */
+    @GetMapping
+    public String indexArticle(
+            @PathVariable("category") String category,
+            Model model,
+            @RequestParam(name = "limit", required = false, defaultValue = "10") Integer limit,
+            @RequestParam(name = "type", required = false, defaultValue = "title") String type,
+            @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword) {
+
+        if (isInvalidCategory(category)) {
+            return "redirect:/article/trade";
+        }
+
+        // 검색 조건 정리
+        String searchType = type;
+        if (!Set.of("title", "content", "writer").contains(searchType)) {
+            searchType = "title";
+        }
+
+        String searchKeyword = keyword == null ? "" : keyword.trim();
+
+        // 검색어가 있으면 검색, 없으면 최신 게시글 조회
+        List<Article> articles;
+        if (searchKeyword.isEmpty()) {
+            articles = articleService.findRecentByCategory(category, limit);
+        } else {
+            articles = articleService.searchByCategory(
+                    category, searchType, searchKeyword, limit);
+        }
 
         List<ArticleViewDto> articleViewList = new ArrayList<>();
-        int totalSize = articles.size();
-        for (int i = 0; i < totalSize; i++) {
+
+        for (int i = 0; i < articles.size(); i++) {
             Article art = articles.get(i);
-            long displayNo = i + 1;
 
             ArticleViewDto dto = ArticleViewDto.builder()
                     .id(art.getId())
-                    .displayId(displayNo)
+                    .displayId((long) (i + 1))
                     .title(art.getTitle())
                     .userId(art.getUserId())
                     .category(art.getCategory())
-                    .formattedDate(dateTimeFormatService.formatKst(art.getFormattedCreatedAt()))
+                    .formattedDate(
+                            dateTimeFormatService.formatKst(
+                                    art.getFormattedCreatedAt()))
                     .likesCount(art.getLikesCount())
                     .build();
 
@@ -168,14 +192,24 @@ public class ArticleController {
         model.addAttribute("categoryName", getCategoryName(category));
         model.addAttribute("isNotice", "notice".equals(category));
         model.addAttribute("articleList", articleViewList);
-        model.addAttribute("popularList", articleService.findPopularArticles(category, 5));
+        model.addAttribute("popularList",
+                articleService.findPopularArticles(category, 5));
 
-        // Mustache 템플릿에서 글쓰기 버튼 등이 항상 노출되도록 강제 설정
+        // 검색 폼에서 사용하는 Mustache 변수
+        model.addAttribute("searchKeyword", searchKeyword);
+        model.addAttribute("isSearchTitle", "title".equals(searchType));
+        model.addAttribute("isSearchContent", "content".equals(searchType));
+        model.addAttribute("isSearchWriter", "writer".equals(searchType));
+
+        model.addAttribute("limit", limit);
+
+        // 기존 화면 표시 설정 유지
         model.addAttribute("isLoggedIn", true);
         model.addAttribute("isAdmin", true);
 
         return "article/article";
     }
+
 
     /** 상세 */
     @GetMapping("/{id:[0-9]+}")
