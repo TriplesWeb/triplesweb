@@ -20,6 +20,14 @@ public interface MediaRepository extends JpaRepository<Media, Long> {
 
     Optional<Media> findByTabAndYoutubeIdIgnoreCase(String tab, String youtubeId);
 
+    @Query("""
+            select distinct m from Media m
+            join m.artists artist
+            where artist.artistId = :artistId
+            order by m.sortOrder asc, m.id asc
+            """)
+    List<Media> findByArtistId(@Param("artistId") Long artistId);
+
     Optional<Media> findByYoutubeIdIgnoreCase(String youtubeId);
 
     void deleteByTabAndYoutubeIdIgnoreCase(String tab, String youtubeId);
