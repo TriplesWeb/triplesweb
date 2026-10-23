@@ -7,6 +7,8 @@ import com.example.triplesweb.dto.ArticleViewMapper;
 import com.example.triplesweb.entity.Article;
 import com.example.triplesweb.service.ArticleFileServiceImpl;
 import com.example.triplesweb.service.ArticleService;
+import com.example.triplesweb.service.ArticleObjektService;
+import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.CommentService;
 import com.example.triplesweb.service.DateTimeFormatService;
 import jakarta.servlet.http.HttpSession;
@@ -34,6 +36,8 @@ public class ArticleController {
     private final CommentService commentService;
     private final ArticleFileServiceImpl articleFileService;
     private final DateTimeFormatService dateTimeFormatService;
+    private final ArticleObjektService articleObjektService;
+    private final ObjektService objektService;
 
     private static final Set<String> ALLOWED_CATEGORIES = Set.of(
             "free", "chat", "trade", "sell", "info", "notice"
@@ -59,6 +63,7 @@ public class ArticleController {
         model.addAttribute("category", category);
         model.addAttribute("categoryName", getCategoryName(category));
         model.addAttribute("articleForm", new ArticleForm());
+        addObjektOptions(model, category);
         return "article/article_new";
     }
 
@@ -69,7 +74,8 @@ public class ArticleController {
                                 BindingResult bindingResult,
                                 Model model,
                                 @RequestParam(value = "uploadFiles", required = false) List<MultipartFile> files,
-                                @RequestParam(value = "uploadedFiles", required = false) List<String> uploadedFiles) throws IOException {
+                                @RequestParam(value = "uploadedFiles", required = false) List<String> uploadedFiles,
+                                @RequestParam(value = "selectedObjektIds", required = false) List<String> selectedObjektIds) throws IOException {
         if (isInvalidCategory(category)) return "redirect:/article/trade";
 
         if (bindingResult.hasErrors() || form.getTitle() == null || form.getTitle().trim().isEmpty() || form.getContent() == null || form.getContent().trim().isEmpty()) {
@@ -77,6 +83,7 @@ public class ArticleController {
             model.addAttribute("categoryName", getCategoryName(category));
             model.addAttribute("errorMessage", "제목과 내용을 모두 입력해주세요.");
             model.addAttribute("articleForm", form);
+            addObjektOptions(model, category);
             return "article/article_new";
         }
 
@@ -88,6 +95,9 @@ public class ArticleController {
 
         // 1) 게시글 생성
         Article savedArticle = articleService.create(article);
+        if ("trade".equals(category) || "sell".equals(category)) {
+            articleObjektService.attachSelected(savedArticle, selectedObjektIds);
+        }
 
         // 2) 파일 저장 처리
         if (files != null) {
@@ -105,6 +115,14 @@ public class ArticleController {
         articleFileService.extractAndSaveFilesFromContent(savedArticle);
 
         return "redirect:/article/" + category + "/" + savedArticle.getId();
+    }
+
+
+    private void addObjektOptions(Model model, String category) {
+        if ("trade".equals(category) || "sell".equals(category)) {
+            model.addAttribute("showObjektPicker", true);
+            model.addAttribute("objektOptions", objektService.findCollections("triples"));
+        }
     }
 
     private String getCategoryName(String category) {
@@ -172,6 +190,9 @@ public class ArticleController {
         if (article == null) return "redirect:/article/" + category;
 
         model.addAttribute("article", article);
+        List<com.example.triplesweb.entity.ArticleObjekt> linkedObjekts = articleObjektService.findForArticle(id);
+        model.addAttribute("linkedObjekts", linkedObjekts);
+        model.addAttribute("hasLinkedObjekts", !linkedObjekts.isEmpty());
         model.addAttribute("category", category);
         model.addAttribute("commentDtos", commentService.show(id));
         model.addAttribute("categoryName", getCategoryName(category));

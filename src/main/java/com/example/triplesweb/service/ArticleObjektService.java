@@ -1,0 +1,58 @@
+package com.example.triplesweb.service;
+
+import com.example.triplesweb.entity.Article;
+import com.example.triplesweb.entity.ArticleObjekt;
+import com.example.triplesweb.repository.ArticleObjektRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+@Service
+@RequiredArgsConstructor
+public class ArticleObjektService {
+    private final ArticleObjektRepository repository;
+    private final ObjektService objektService;
+
+    @Transactional
+    public void attachSelected(Article article, List<String> selectedKeys) {
+        if (article == null || selectedKeys == null || selectedKeys.isEmpty()) return;
+        List<Map<String, Object>> all = objektService.findCollections("triples");
+        for (String key : selectedKeys.stream().filter(v -> v != null && !v.isBlank()).distinct().limit(20).toList()) {
+            Map<String, Object> item = all.stream()
+                    .filter(o -> key.equals(value(o, "id")) || key.equals(value(o, "collectionId")) || key.equals(value(o, "slug")))
+                    .findFirst().orElse(null);
+            if (item == null) continue;
+            ArticleObjekt linked = new ArticleObjekt();
+            linked.setArticle(article);
+            linked.setObjektKey(key);
+            linked.setCollectionId(value(item, "collectionId"));
+            linked.setMemberName(value(item, "member"));
+            linked.setThumbnailImage(value(item, "thumbnailImage"));
+            linked.setFrontImage(value(item, "frontImage"));
+            linked.setBackImage(value(item, "backImage"));
+            linked.setSeason(value(item, "season"));
+            linked.setObjektClass(value(item, "class"));
+            linked.setCollectionNo(value(item, "collectionNo"));
+            repository.save(linked);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<ArticleObjekt> findForArticle(Long articleId) {
+        return repository.findByArticle_IdOrderByIdAsc(articleId);
+    }
+
+    @Transactional
+    public void deleteForArticle(Long articleId) {
+        repository.deleteByArticle_Id(articleId);
+    }
+
+    private static String value(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        return value == null ? "" : value.toString();
+    }
+}
