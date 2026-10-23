@@ -235,17 +235,17 @@
             <ul class="pagination mb-0">
                 {{#hasPrev}}
                     <li class="page-item">
-                        <a class="page-link" href="/media?tab={{currentTab}}&page={{prevPage}}">&laquo;</a>
+                        <a class="page-link" href="/media?tab={{currentTab}}&page={{prevPage}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}">&laquo;</a>
                     </li>
                 {{/hasPrev}}
                 {{#pages}}
                     <li class="page-item {{#active}}active{{/active}}">
-                        <a class="page-link" href="/media?tab={{currentTab}}&page={{num}}">{{num}}</a>
+                        <a class="page-link" href="/media?tab={{currentTab}}&page={{num}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}">{{num}}</a>
                     </li>
                 {{/pages}}
                 {{#hasNext}}
                     <li class="page-item">
-                        <a class="page-link" href="/media?tab={{currentTab}}&page={{nextPage}}">&raquo;</a>
+                        <a class="page-link" href="/media?tab={{currentTab}}&page={{nextPage}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}">&raquo;</a>
                     </li>
                 {{/hasNext}}
             </ul>
