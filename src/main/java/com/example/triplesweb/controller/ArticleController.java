@@ -190,7 +190,9 @@ public class ArticleController {
         if (article == null) return "redirect:/article/" + category;
 
         model.addAttribute("article", article);
-        model.addAttribute("linkedObjekts", articleObjektService.findForArticle(id));
+        List<com.example.triplesweb.entity.ArticleObjekt> linkedObjekts = articleObjektService.findForArticle(id);
+        model.addAttribute("linkedObjekts", linkedObjekts);
+        model.addAttribute("hasLinkedObjekts", !linkedObjekts.isEmpty());
         model.addAttribute("category", category);
         model.addAttribute("commentDtos", commentService.show(id));
         model.addAttribute("categoryName", getCategoryName(category));
