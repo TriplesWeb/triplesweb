@@ -5,6 +5,8 @@ import com.example.triplesweb.entity.Album;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.service.AlbumService;
+import com.example.triplesweb.service.MediaService;
+import com.example.triplesweb.service.ScheduleService;
 import com.example.triplesweb.service.ArtistAdminService;
 import com.example.triplesweb.service.UnitService;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +16,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 
@@ -30,6 +34,8 @@ public class TriplesController {
     private final ArtistAdminService artistAdminService;
     private final AlbumService albumService;
     private final UnitService unitService;
+    private final MediaService mediaService;
+    private final ScheduleService scheduleService;
 
     @GetMapping("/artist")
     @Transactional(readOnly = true)
@@ -67,13 +73,17 @@ public class TriplesController {
         return "triples/chemistry-en";
     }
 
-    /** 상세는 그룹 소개 탭에 통합. 케미/유닛 등 기존 링크는 해당 멤버 탭으로 보낸다. */
+    /** 개별 멤버 상세 페이지: 프로필·태그된 미디어·출연 스케줄을 한 화면에 연결한다. */
     @GetMapping("/artist/{id:[0-9]+}")
-    public String TriplesArtistDetail(@PathVariable("id") long artistId) {
-        if (!artistrepository.existsByArtistId(artistId)) {
-            throw new IllegalArgumentException("해당 아티스트가 존재하지 않습니다. id=" + artistId);
-        }
-        return "redirect:/triples/artist?tab=member-" + artistId;
+    @Transactional(readOnly = true)
+    public String TriplesArtistDetail(@PathVariable("id") long artistId, Model model) {
+        Artist artist = artistrepository.findByIdWithUnits(artistId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "해당 아티스트가 존재하지 않습니다."));
+
+        model.addAttribute("artist", artist);
+        model.addAttribute("videos", mediaService.findByArtist(artistId, 12));
+        model.addAttribute("schedules", scheduleService.findByArtist(artistId));
+        return "triples/artist_detail";
     }
 
     @GetMapping("/album/{id:[0-9]+}")
