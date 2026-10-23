@@ -3,6 +3,7 @@ package com.example.triplesweb.service;
 import com.example.triplesweb.dto.AlbumAdminDto;
 import com.example.triplesweb.dto.AlbumSectionDto;
 import com.example.triplesweb.entity.Album;
+import com.example.triplesweb.entity.AlbumFormat;
 import com.example.triplesweb.entity.AlbumSection;
 import com.example.triplesweb.entity.AlbumType;
 import com.example.triplesweb.entity.SavedMeta;
@@ -152,6 +153,7 @@ public class AlbumAdminService {
             String releaseDate,
             String albumInfo,
             String albumType,
+            String albumFormat,
             Long unitId,
             Long sectionId,
             String tracksJson,
@@ -159,7 +161,8 @@ public class AlbumAdminService {
             String imageUrl
     ) {
         Album album = new Album();
-        applyFields(album, null, albumName, releaseDate, albumInfo, albumType, unitId, sectionId, tracksJson, image, imageUrl, false);
+        applyFields(album, null, albumName, releaseDate, albumInfo, albumType, albumFormat, unitId, sectionId,
+                tracksJson, image, imageUrl, false);
         return toDto(albumRepository.save(album));
     }
 
@@ -170,6 +173,7 @@ public class AlbumAdminService {
             String releaseDate,
             String albumInfo,
             String albumType,
+            String albumFormat,
             Long unitId,
             Long sectionId,
             String tracksJson,
@@ -179,7 +183,8 @@ public class AlbumAdminService {
     ) {
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 앨범이 존재하지 않습니다. id=" + albumId));
-        applyFields(album, albumId, albumName, releaseDate, albumInfo, albumType, unitId, sectionId, tracksJson, image, imageUrl, clearImage);
+        applyFields(album, albumId, albumName, releaseDate, albumInfo, albumType, albumFormat, unitId, sectionId,
+                tracksJson, image, imageUrl, clearImage);
         return toDto(albumRepository.save(album));
     }
 
@@ -198,6 +203,7 @@ public class AlbumAdminService {
             String releaseDate,
             String albumInfo,
             String albumType,
+            String albumFormat,
             Long unitId,
             Long sectionId,
             String tracksJson,
@@ -219,6 +225,7 @@ public class AlbumAdminService {
         album.setReleaseDate(date);
         album.setAlbumInfo(info);
         album.setAlbumType(parseAlbumType(albumType));
+        album.setAlbumFormat(parseAlbumFormat(albumFormat));
 
         if (unitId != null && unitId > 0) {
             Unit unit = unitRepository.findById(unitId)
@@ -309,6 +316,15 @@ public class AlbumAdminService {
         }
     }
 
+    private AlbumFormat parseAlbumFormat(String raw) {
+        if (!StringUtils.hasText(raw)) return null;
+        try {
+            return AlbumFormat.valueOf(raw.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("앨범 규격이 올바르지 않습니다: " + raw);
+        }
+    }
+
     private AlbumAdminDto toDto(Album album) {
         List<AlbumAdminDto.TrackItem> tracks = new ArrayList<>();
         if (album.getTracks() != null) {
@@ -323,6 +339,7 @@ public class AlbumAdminService {
         }
         Unit unit = album.getUnit();
         AlbumSection section = album.getSection();
+        AlbumFormat format = album.getAlbumFormat();
         return AlbumAdminDto.builder()
                 .albumId(album.getAlbumId())
                 .albumName(album.getAlbumName())
@@ -330,6 +347,7 @@ public class AlbumAdminService {
                 .releaseDate(album.getReleaseDate())
                 .albumInfo(album.getAlbumInfo())
                 .albumType(album.getAlbumType() != null ? album.getAlbumType().name() : AlbumType.SUBUNIT.name())
+                .albumFormat(format != null ? format.name() : null)
                 .unitId(unit != null ? unit.getUnitId() : null)
                 .unitName(unit != null ? unit.getUnitName() : null)
                 .sectionId(section != null ? section.getSectionId() : null)

@@ -53,6 +53,11 @@ public class Album {
     @Column(name = "album_type", nullable = false, length = 16)
     private AlbumType albumType = AlbumType.SUBUNIT;
 
+    /** 앨범 규격(싱글/미니/정규 등). null이면 미지정 */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "album_format", length = 16)
+    private AlbumFormat albumFormat;
+
     public Album(
             Long albumId,
             String albumName,
@@ -81,5 +86,20 @@ public class Album {
     /** Mustache용: 24인 완전체 배지 */
     public boolean isFull24() {
         return albumType == AlbumType.FULL_24;
+    }
+
+    /** Mustache용: 규격이 지정된 경우 */
+    public boolean isHasAlbumFormat() {
+        return albumFormat != null;
+    }
+
+    /** Mustache용: 규격 한글 라벨 */
+    public String getAlbumFormatLabel() {
+        return albumFormat != null ? albumFormat.labelKo() : null;
+    }
+
+    /** Mustache용: 소개 문구가 있을 때 */
+    public boolean isHasAlbumInfo() {
+        return albumInfo != null && !albumInfo.isBlank();
     }
 }

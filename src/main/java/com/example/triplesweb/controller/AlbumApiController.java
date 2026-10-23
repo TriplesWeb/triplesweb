@@ -135,6 +135,7 @@ public class AlbumApiController {
             @RequestParam String releaseDate,
             @RequestParam(required = false, defaultValue = "") String albumInfo,
             @RequestParam(required = false, defaultValue = "SUBUNIT") String albumType,
+            @RequestParam(required = false) String albumFormat,
             @RequestParam(required = false) Long unitId,
             @RequestParam(required = false) Long sectionId,
             @RequestParam(required = false, defaultValue = "[]") String tracksJson,
@@ -146,7 +147,8 @@ public class AlbumApiController {
         aboutAdminAuth.requireAdmin(request, session);
         try {
             return albumAdminService.create(
-                    albumName, releaseDate, albumInfo, albumType, unitId, sectionId, tracksJson, image, imageUrl);
+                    albumName, releaseDate, albumInfo, albumType, albumFormat, unitId, sectionId,
+                    tracksJson, image, imageUrl);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
@@ -159,6 +161,7 @@ public class AlbumApiController {
             @RequestParam String releaseDate,
             @RequestParam(required = false, defaultValue = "") String albumInfo,
             @RequestParam(required = false, defaultValue = "SUBUNIT") String albumType,
+            @RequestParam(required = false) String albumFormat,
             @RequestParam(required = false) Long unitId,
             @RequestParam(required = false) Long sectionId,
             @RequestParam(required = false, defaultValue = "[]") String tracksJson,
@@ -171,7 +174,7 @@ public class AlbumApiController {
         aboutAdminAuth.requireAdmin(request, session);
         try {
             return albumAdminService.update(
-                    id, albumName, releaseDate, albumInfo, albumType, unitId, sectionId,
+                    id, albumName, releaseDate, albumInfo, albumType, albumFormat, unitId, sectionId,
                     tracksJson, image, imageUrl, clearImage);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
