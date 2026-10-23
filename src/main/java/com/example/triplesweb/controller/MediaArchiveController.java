@@ -133,7 +133,14 @@ public class MediaArchiveController {
             return "archive/media_new";
         }
 
-        media.registerMedia(tab, form);
+        try {
+            media.registerMedia(tab, form);
+        } catch (IllegalArgumentException ex) {
+            bindTabFlags(model, tab);
+            model.addAttribute("form", form);
+            model.addAttribute("formError", ex.getMessage());
+            return "archive/media_new";
+        }
         return "redirect:/media?tab=" + tab;
     }
 
@@ -153,5 +160,6 @@ public class MediaArchiveController {
         model.addAttribute("tab_behind", "behind".equals(t));
         model.addAttribute("tab_secret", "secret".equals(t));
         model.addAttribute("tab_contents", "contents".equals(t));
+        model.addAttribute("artistOptions", media.listArtistOptions());
     }
 }
