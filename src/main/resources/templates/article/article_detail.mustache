@@ -65,6 +65,21 @@
                 </h1>
             </div>
 
+
+            {{#hasLinkedObjekts}}
+            <section class="my-6 rounded-2xl border border-teal-400/30 bg-teal-400/[0.04] p-4">
+                <h2 class="mb-3 font-semibold text-teal-200">게시글에 연결된 오브젝트</h2>
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {{#linkedObjekts}}
+                    <a href="/cosmo/objekt/detail/{{objektKey}}" class="overflow-hidden rounded-xl border border-white/10 bg-black/20">
+                        <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" class="aspect-[2/3] w-full object-cover" onerror="this.onerror=null;this.src='{{frontImage}}'">
+                        <div class="p-2"><p class="truncate text-sm font-semibold">{{collectionId}}</p><p class="mt-1 text-xs text-slate-400">{{memberName}} · {{collectionNo}}</p></div>
+                    </a>
+                    {{/linkedObjekts}}
+                </div>
+            </section>
+            {{/hasLinkedObjekts}}
+
             <!-- 구분선 -->
             <hr class="border-outline-variant/30 my-6" />
 
