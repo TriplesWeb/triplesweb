@@ -1,6 +1,8 @@
 package com.example.triplesweb.controller;
 
+import com.example.triplesweb.dto.ArtistTagDto;
 import com.example.triplesweb.dto.ScheduleForm;
+import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.Schedule;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.ArticleServiceImpl;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -35,14 +38,25 @@ public class MainController {
     public String mainPage(Model model, @RequestParam(defaultValue = "5") Integer limit) {
         // [수정 완료] 로그인 세션(loginMember) 체크 로직 및 관련 모델 속성(userId, level, points 등) 제거
 
-        List<Schedule> scheduleList = scheduleRepository.findAll();
+        List<Schedule> scheduleList = scheduleRepository.findAllWithArtists();
 
         List<ScheduleForm> scheduleForms = scheduleList.stream()
-                .map(s -> new ScheduleForm(String.valueOf(s.getId()),
-                        s.getTitle(),
-                        s.getStart(),
-                        s.getEnd() != null ? s.getEnd().plusDays(1) : null,
-                        s.getEnd()))
+                .map(s -> {
+                    ScheduleForm form = new ScheduleForm(String.valueOf(s.getId()),
+                            s.getTitle(),
+                            s.getStart(),
+                            s.getEnd() != null ? s.getEnd().plusDays(1) : null,
+                            s.getEnd());
+                    form.setArtists(s.getArtists() == null ? List.of() : s.getArtists().stream()
+                            .sorted(Comparator.comparing(Artist::getArtistId))
+                            .map(a -> ArtistTagDto.builder()
+                                    .artistId(a.getArtistId())
+                                    .name(a.getName())
+                                    .engName(a.getEngName())
+                                    .build())
+                            .toList());
+                    return form;
+                })
                 .collect(Collectors.toList());
 
         ObjectMapper mapper = new ObjectMapper()
