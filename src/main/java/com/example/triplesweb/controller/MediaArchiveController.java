@@ -1,7 +1,6 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.dto.MediaDto;
-import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.Schedule;
 import com.example.triplesweb.media.MediaTab;
 import com.example.triplesweb.repository.ArtistRepository;
@@ -15,7 +14,6 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import java.io.IOException;
 import java.util.*;
 
 @Controller
