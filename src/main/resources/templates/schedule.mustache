@@ -587,6 +587,12 @@
                             <label for="editEndInput" class="form-label">종료 날짜 (선택)</label>
                             <input type="date" class="form-control font-mono" id="editEndInput" name="end">
                         </div>
+                        <div>
+                            <label for="editArtistNames" class="form-label">출연 멤버</label>
+                            <select id="editArtistNames" class="form-control" name="artistNames" multiple size="5">
+                                {{#artistOptions}}<option value="{{name}}">{{name}}</option>{{/artistOptions}}
+                            </select>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn-custom-secondary" data-bs-dismiss="modal">취소</button>
@@ -784,6 +790,14 @@
             });
 
             calendar.render();
+            const focusId = new URLSearchParams(window.location.search).get('focus');
+            if (focusId) {
+                const focused = calendar.getEventById(focusId);
+                if (focused) {
+                    renderSelectedDate(focused.startStr, focused.start);
+                    openEventDetails(focused);
+                }
+            }
 
             if (todayButton) {
                 todayButton.addEventListener('click', function () {
