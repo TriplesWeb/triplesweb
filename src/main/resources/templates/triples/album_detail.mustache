@@ -90,16 +90,16 @@
                         {{#isTitle}}
                             <span class="text-[10px] font-extrabold bg-[#00f5d4]/20 text-[#00f5d4] border border-[#00f5d4]/40 px-1.5 py-0.5 rounded tracking-wide">TITLE</span>
                         {{/isTitle}}
-                        <span class="track-play-links ml-1 inline-flex items-center gap-2">
+                        <span class="track-play-links ml-1 inline-flex items-center gap-2" data-track-title="{{title}}">
                             <a class="inline-flex items-center gap-1 rounded-full border border-[#00f5d4]/30 bg-[#00f5d4]/5 px-2.5 py-1 text-xs font-semibold text-[#00f5d4] no-underline transition hover:bg-[#00f5d4]/15"
-                               href="https://www.youtube.com/results?search_query={{title}}%20tripleS"
-                               target="_blank" rel="noopener noreferrer"
+                               href="https://www.youtube.com/results"
+                               data-track-provider="youtube" target="_blank" rel="noopener noreferrer"
                                aria-label="{{title}} YouTube에서 검색" title="YouTube에서 검색">
                                 <span class="material-symbols-outlined text-sm">play_circle</span> YouTube
                             </a>
                             <a class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-[#b9cac4] no-underline transition hover:border-[#00f5d4]/30 hover:text-[#00f5d4]"
-                               href="https://www.melon.com/search/total/index.htm?q={{title}}"
-                               target="_blank" rel="noopener noreferrer"
+                               href="https://www.melon.com/search/total/index.htm"
+                               data-track-provider="melon" target="_blank" rel="noopener noreferrer"
                                aria-label="{{title}} 멜론에서 검색" title="멜론에서 검색">
                                 <span class="material-symbols-outlined text-sm">headphones</span> 멜론
                             </a>
@@ -123,5 +123,20 @@
 
 </main>
 {{>layout/footer}}
+<script>
+    document.querySelectorAll('.track-play-links').forEach(function (container) {
+        const title = container.dataset.trackTitle || '';
+        const youtube = container.querySelector('[data-track-provider="youtube"]');
+        const melon = container.querySelector('[data-track-provider="melon"]');
+        if (youtube) {
+            youtube.href = 'https://www.youtube.com/results?search_query='
+                + encodeURIComponent(title + ' tripleS');
+        }
+        if (melon) {
+            melon.href = 'https://www.melon.com/search/total/index.htm?q='
+                + encodeURIComponent(title);
+        }
+    });
+</script>
 </body>
 </html>
