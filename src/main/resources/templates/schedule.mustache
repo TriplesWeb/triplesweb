@@ -445,7 +445,8 @@
                             <thead>
                                 <tr>
                                     <th class="px-4 py-3">제목</th>
-                                    <th class="px-4 py-3" style="width: 25%">시작일</th>
+                                    <th class="px-4 py-3">출연 멤버</th>
+                                    <th class="px-4 py-3" style="width: 22%">시작일</th>
                                     <th class="px-4 py-3" style="width: 25%">종료일</th>
                                 </tr>
                             </thead>
@@ -453,13 +454,17 @@
                                 {{#schedules}}
                                 <tr>
                                     <td class="px-4 py-3 font-medium text-white">{{title}}</td>
+                                    <td class="px-4 py-3 text-xs">
+                                        {{#artists}}<a class="mr-1 text-brand no-underline hover:underline" href="/triples/artist/{{artistId}}">{{name}}</a>{{/artists}}
+                                        {{^artists}}<span class="text-[#8b9b95]">단체 일정</span>{{/artists}}
+                                    </td>
                                     <td class="px-4 py-3 font-mono text-[#b9cac4]">{{startStr}}</td>
                                     <td class="px-4 py-3 font-mono text-[#b9cac4]">{{endStr}}</td>
                                 </tr>
                                 {{/schedules}}
                                 {{^schedules}}
                                 <tr>
-                                    <td colspan="3" class="py-6 text-center text-[#b9cac4]">등록된 일정이 없습니다.</td>
+                                    <td colspan="4" class="py-6 text-center text-[#b9cac4]">등록된 일정이 없습니다.</td>
                                 </tr>
                                 {{/schedules}}
                             </tbody>
@@ -498,6 +503,10 @@
                             <span class="block text-[11px] text-[#b9cac4]">종료 일자</span>
                             <strong id="modalScheduleEnd" class="font-mono text-sm text-white"></strong>
                         </div>
+                    </div>
+                    <div class="rounded-xl border border-white/5 bg-black/30 p-3">
+                        <span class="mb-1 block text-[11px] text-[#b9cac4]">출연 멤버</span>
+                        <div id="modalScheduleArtists" class="flex flex-wrap gap-2 text-sm text-brand">단체 일정</div>
                     </div>
                 </div>
                 <div class="modal-footer flex justify-between">
@@ -544,6 +553,12 @@
                             <label for="endInput" class="form-label">종료 날짜 (선택)</label>
                             <input type="date" class="form-control font-mono" id="endInput" name="end">
                         </div>
+                        <div>
+                            <label for="artistIds" class="form-label">출연 멤버 (선택)</label>
+                            <select id="artistIds" name="artistIds" class="form-select" multiple size="5">
+                                {{#artistOptions}}<option value="{{artistId}}">{{name}} ({{engName}})</option>{{/artistOptions}}
+                            </select>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn-custom-secondary" data-bs-dismiss="modal">취소</button>
@@ -579,6 +594,12 @@
                         <div>
                             <label for="editEndInput" class="form-label">종료 날짜 (선택)</label>
                             <input type="date" class="form-control font-mono" id="editEndInput" name="end">
+                        </div>
+                        <div>
+                            <label for="editArtistIds" class="form-label">출연 멤버 (선택)</label>
+                            <select id="editArtistIds" name="artistIds" class="form-select" multiple size="5">
+                                {{#artistOptions}}<option value="{{artistId}}">{{name}} ({{engName}})</option>{{/artistOptions}}
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -700,7 +721,17 @@
                     openButton.textContent = '상세 보기';
                     openButton.addEventListener('click', () => openEventDetails(event));
 
-                    item.append(title, dates, openButton);
+                    item.append(title, dates);
+
+                    const artists = event.extendedProps?.artists || [];
+                    if (artists.length) {
+                        const members = document.createElement('p');
+                        members.className = 'text-xs text-brand';
+                        members.textContent = '출연: ' + artists.map(artist => artist.name).filter(Boolean).join(', ');
+                        item.appendChild(members);
+                    }
+
+                    item.appendChild(openButton);
                     detailElement.appendChild(item);
                 });
             }
@@ -710,6 +741,23 @@
                 document.getElementById('modalScheduleTitle').textContent = event.title || '';
                 document.getElementById('modalScheduleStart').textContent = formatDate(event.startStr);
                 document.getElementById('modalScheduleEnd').textContent = formatDate(getRawEnd(event));
+
+                const artistContainer = document.getElementById('modalScheduleArtists');
+                if (artistContainer) {
+                    artistContainer.replaceChildren();
+                    const linkedArtists = event.extendedProps?.artists || [];
+                    if (!linkedArtists.length) {
+                        artistContainer.textContent = '단체 일정';
+                    } else {
+                        linkedArtists.forEach(artist => {
+                            const link = document.createElement('a');
+                            link.href = '/triples/artist/' + encodeURIComponent(artist.artistId);
+                            link.textContent = artist.name || artist.engName || '멤버';
+                            link.className = 'rounded-full border border-brand/30 bg-brand/10 px-3 py-1 text-brand no-underline hover:bg-brand/20';
+                            artistContainer.appendChild(link);
+                        });
+                    }
+                }
 
                 const deleteForm = document.getElementById('deleteForm');
                 if (deleteForm) deleteForm.action = `/delete/${encodeURIComponent(event.id)}`;
@@ -722,6 +770,11 @@
                         document.getElementById('editTitleInput').value = selectedEvent.title || '';
                         document.getElementById('editStartInput').value = String(selectedEvent.startStr || '').substring(0, 10);
                         document.getElementById('editEndInput').value = String(getRawEnd(selectedEvent)).substring(0, 10);
+                        const artistSelect = document.getElementById('editArtistIds');
+                        const linkedArtists = selectedEvent.extendedProps?.artists || [];
+                        Array.from(artistSelect.options).forEach(option => {
+                            option.selected = linkedArtists.some(artist => String(artist.artistId) === option.value);
+                        });
 
                         bootstrap.Modal.getOrCreateInstance(viewModalElement).hide();
                         bootstrap.Modal.getOrCreateInstance(editModalElement).show();
@@ -792,6 +845,8 @@
                     }
 
                     const body = new URLSearchParams({ title, start, end });
+                    Array.from(document.getElementById('artistIds').selectedOptions)
+                        .forEach(option => body.append('artistIds', option.value));
                     try {
                         const response = await fetch('/schedule/add', {
                             method: 'POST',
@@ -804,11 +859,16 @@
                             return;
                         }
 
+                        const savedSchedule = await response.json();
                         calendar.addEvent({
-                            title,
-                            start,
-                            end: end ? addOneDay(end) : null,
-                            extendedProps: { rawEnd: end }
+                            id: savedSchedule.id,
+                            title: savedSchedule.title || title,
+                            start: savedSchedule.start || start,
+                            end: savedSchedule.end || (end ? addOneDay(end) : null),
+                            extendedProps: {
+                                rawEnd: savedSchedule.rawEnd || end,
+                                artists: savedSchedule.artists || []
+                            }
                         });
 
                         bootstrap.Modal.getOrCreateInstance(addModalElement).hide();
@@ -841,6 +901,8 @@
                     }
 
                     const body = new URLSearchParams({ title, startDate: start, endDate: end });
+                    Array.from(document.getElementById('editArtistIds').selectedOptions)
+                        .forEach(option => body.append('artistIds', option.value));
                     try {
                         const response = await fetch(`/edit/${encodeURIComponent(id)}`, {
                             method: 'POST',
@@ -852,13 +914,15 @@
                             alert('스케줄 수정에 실패했습니다.');
                             return;
                         }
+                        const savedSchedule = await response.json();
 
                         const eventToUpdate = calendar.getEventById(id);
                         if (eventToUpdate) {
                             eventToUpdate.setProp('title', title);
                             eventToUpdate.setStart(start);
                             eventToUpdate.setEnd(end ? addOneDay(end) : null);
-                            eventToUpdate.setExtendedProp('rawEnd', end);
+                            eventToUpdate.setExtendedProp('rawEnd', savedSchedule.rawEnd || end);
+                            eventToUpdate.setExtendedProp('artists', savedSchedule.artists || []);
                         }
 
                         bootstrap.Modal.getOrCreateInstance(editModalElement).hide();
