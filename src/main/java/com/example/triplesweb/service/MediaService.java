@@ -1,10 +1,13 @@
 package com.example.triplesweb.service;
 
+import com.example.triplesweb.dto.ArtistTagDto;
 import com.example.triplesweb.dto.MediaDto;
+import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.Media;
 import com.example.triplesweb.infra.YoutubeDataApiClient;
 import com.example.triplesweb.infra.YoutubeOembedClient;
 import com.example.triplesweb.media.MediaTab;
+import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.MediaRepository;
 import com.example.triplesweb.util.ISODuration;
 import com.example.triplesweb.util.YoutubeIdExtractor;
@@ -15,6 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.text.NumberFormat;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Comparator;
+import java.util.Objects;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,6 +34,7 @@ import java.util.Optional;
 public class MediaService {
 
     private final MediaRepository mediaRepository;
+    private final ArtistRepository artistRepository;
     private final YoutubeOembedClient oembed;
     private final YoutubeDataApiClient yt;
 
@@ -58,10 +65,44 @@ public class MediaService {
         return (int) mediaRepository.countByTab(tab);
     }
 
+    @Transactional(readOnly = true)
+    public List<ArtistTagDto> listArtistOptions() {
+        return artistRepository.findAll().stream()
+                .sorted(Comparator.comparing(Artist::getArtistId))
+                .map(artist -> ArtistTagDto.builder()
+                        .artistId(artist.getArtistId())
+                        .name(artist.getName())
+                        .engName(artist.getEngName())
+                        .build())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MediaDto> findByArtist(Long artistId, int limit) {
+        if (artistId == null || artistId <= 0 || limit <= 0) {
+            return List.of();
+        }
+        return mediaRepository.findByArtistId(artistId).stream()
+                .limit(limit)
+                .map(this::toDto)
+                .toList();
+    }
+
     public void addMedia(String tab, MediaDto dto, boolean addFirst) {
         if (dto.getYoutubeId() == null || dto.getYoutubeId().isBlank()) {
             return;
         }
+        List<Long> requestedArtistIds = dto.getArtistIds() == null
+                ? List.of()
+                : dto.getArtistIds().stream()
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .toList();
+        List<Artist> selectedArtists = artistRepository.findAllById(requestedArtistIds);
+        if (selectedArtists.size() != requestedArtistIds.size()) {
+            throw new IllegalArgumentException("선택한 아티스트 중 존재하지 않는 멤버가 있습니다.");
+        }
+
         String ytId = dto.getYoutubeId().trim();
         mediaRepository.findByTabAndYoutubeIdIgnoreCase(tab, ytId).ifPresent(mediaRepository::delete);
 
@@ -77,6 +118,7 @@ public class MediaService {
                 .viewCount(dto.getViews() != null ? dto.getViews() : 0L)
                 .description(dto.getDescription())
                 .sortOrder(sortOrder)
+                .artists(new LinkedHashSet<>(selectedArtists))
                 .build();
         mediaRepository.save(entity);
     }
@@ -198,6 +240,7 @@ public class MediaService {
                 .views(views)
                 .viewCountFmt(NumberFormat.getInstance().format(views))
                 .description(description)
+                .artistIds(form.getArtistIds() != null ? form.getArtistIds() : List.of())
                 .build();
 
         addMedia(tab, dto, form.isAddFirst());
@@ -205,6 +248,14 @@ public class MediaService {
 
     private MediaDto toDto(Media m) {
         long views = m.getViewCount() != null ? m.getViewCount() : 0L;
+        List<ArtistTagDto> artists = m.getArtists() == null ? List.of() : m.getArtists().stream()
+                .sorted(Comparator.comparing(Artist::getArtistId))
+                .map(artist -> ArtistTagDto.builder()
+                        .artistId(artist.getArtistId())
+                        .name(artist.getName())
+                        .engName(artist.getEngName())
+                        .build())
+                .toList();
         return MediaDto.builder()
                 .tab(m.getTab())
                 .youtubeId(m.getYoutubeId())
@@ -213,6 +264,8 @@ public class MediaService {
                 .views(views)
                 .viewCountFmt(NumberFormat.getInstance().format(views))
                 .description(m.getDescription())
+                .artistIds(artists.stream().map(ArtistTagDto::getArtistId).toList())
+                .artists(artists)
                 .build();
     }
 }
