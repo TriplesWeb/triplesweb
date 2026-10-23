@@ -9,6 +9,8 @@ import com.example.triplesweb.service.MediaService;
 import com.example.triplesweb.util.YoutubeIdExtractor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -30,9 +32,10 @@ public class MediaArchiveController {
                             @RequestParam(defaultValue="1") int page,
                             @RequestParam(defaultValue="10") int size,
                             @RequestParam(required=false) String artist,
-                            Model model) {
+                            Model model,
+                            Authentication authentication) {
         tab=normalizeTab(tab); page=Math.max(1,page); size=Math.min(Math.max(1,size),100);
-        model.addAttribute("isAdmin",true);
+        model.addAttribute("isAdmin", isAdmin(authentication));
         model.addAttribute("artistOptions",artistRepository.findAll());
         model.addAttribute("currentTab",tab);
         model.addAttribute("isMV","mv".equals(tab)); model.addAttribute("isSIGNAL","signal".equals(tab));
@@ -71,7 +74,9 @@ public class MediaArchiveController {
     }
 
     @GetMapping("/media_new")
-    public String newMediaForm(@RequestParam(defaultValue="mv")String tab,Model model) {
+    public String newMediaForm(@RequestParam(defaultValue="mv")String tab,Model model,
+                               Authentication authentication) {
+        requireAdmin(authentication);
         MediaDto form=MediaDto.builder().tab(MediaTab.from(tab).getKey()).addFirst(true).build();
         bindTabFlags(model,form.normalizedTab()); model.addAttribute("artistOptions",artistRepository.findAll()); model.addAttribute("form",form);
         return "archive/media_new";
@@ -81,7 +86,9 @@ public class MediaArchiveController {
     public String createNewMedia(@org.springframework.validation.annotation.Validated @ModelAttribute("form")MediaDto form,
                                  BindingResult binding,
                                  @RequestParam(value="artistNames",required=false)List<String> artistNames,
-                                 Model model)throws Exception {
+                                 Model model,
+                                 Authentication authentication)throws Exception {
+        requireAdmin(authentication);
         String tab=form!=null?form.normalizedTab():"mv"; String rawId=form!=null?form.getYoutubeId():"";
         String ytId=YoutubeIdExtractor.extract(rawId);
         if(ytId==null||ytId.isBlank()||!ytId.matches("^[a-zA-Z0-9_-]{11}$"))binding.rejectValue("youtubeId","invalid","유효한 유튜브 ID 또는 URL을 입력하세요.");
@@ -92,9 +99,25 @@ public class MediaArchiveController {
     }
 
     @PostMapping("/media_delete")
-    public String deleteMedia(@RequestParam String tab,@RequestParam String youtubeId)throws Exception {
+    public String deleteMedia(@RequestParam String tab,@RequestParam String youtubeId,
+                              Authentication authentication)throws Exception {
+        requireAdmin(authentication);
         String t=MediaTab.from(tab).getKey();media.remove(t,youtubeId);return "redirect:/media?tab="+t;
     }
+
+    private boolean isAdmin(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) return false;
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(role -> "ROLE_ADMIN".equals(role) || "ADMIN".equals(role));
+    }
+
+    private void requireAdmin(Authentication authentication) {
+        if (!isAdmin(authentication)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "관리자만 이용할 수 있습니다.");
+        }
+    }
+
     private List<String> splitNames(String names){if(names==null||names.isBlank())return List.of();return Arrays.stream(names.split(",")).map(String::trim).filter(s->!s.isBlank()).distinct().toList();}
     private String normalizeTab(String tab){return switch(tab.toLowerCase()){case "mv","signal","behind","secret","contents"->tab.toLowerCase();default->"mv";};}
     private void bindTabFlags(Model model,String t){model.addAttribute("tab",t);model.addAttribute("tab_mv","mv".equals(t));model.addAttribute("tab_signal","signal".equals(t));model.addAttribute("tab_behind","behind".equals(t));model.addAttribute("tab_secret","secret".equals(t));model.addAttribute("tab_contents","contents".equals(t));}
