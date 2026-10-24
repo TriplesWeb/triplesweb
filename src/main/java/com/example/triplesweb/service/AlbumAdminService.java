@@ -11,6 +11,7 @@ import com.example.triplesweb.entity.Unit;
 import com.example.triplesweb.repository.AlbumRepository;
 import com.example.triplesweb.repository.AlbumSectionRepository;
 import com.example.triplesweb.repository.UnitRepository;
+import com.example.triplesweb.util.YoutubeIdExtractor;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -293,6 +294,7 @@ public class AlbumAdminService {
             track.setDuration(StringUtils.hasText(item.getDuration()) ? item.getDuration().trim() : null);
             track.setIsTitle(Boolean.TRUE.equals(item.getIsTitle()));
             track.setMelonSongId(normalizeMelonSongId(item.getMelonSongId()));
+            track.setYoutubeVideoId(normalizeYoutubeVideoId(item.getYoutubeVideoId()));
             album.getTracks().add(track);
             i++;
         }
@@ -335,6 +337,7 @@ public class AlbumAdminService {
                         .duration(t.getDuration())
                         .isTitle(Boolean.TRUE.equals(t.getIsTitle()))
                         .melonSongId(t.getMelonSongId())
+                        .youtubeVideoId(t.getYoutubeVideoId())
                         .build());
             }
         }
@@ -375,6 +378,15 @@ public class AlbumAdminService {
             throw new IllegalArgumentException("멜론 곡 ID는 숫자만 입력하거나 곡 상세 URL을 입력하세요.");
         }
         return value;
+    }
+
+    private String normalizeYoutubeVideoId(String raw) {
+        if (!StringUtils.hasText(raw)) return null;
+        String id = YoutubeIdExtractor.extract(raw.trim());
+        if (!StringUtils.hasText(id) || id.length() != 11) {
+            throw new IllegalArgumentException("유튜브 영상 ID(11자) 또는 watch/youtu.be URL을 입력하세요.");
+        }
+        return id;
     }
 
     private void deleteManagedImage(String imageUrl) {

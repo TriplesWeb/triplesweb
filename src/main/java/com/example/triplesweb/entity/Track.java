@@ -34,6 +34,10 @@ public class Track {
     @Column(name = "melon_song_id", length = 40)
     private String melonSongId;
 
+    /** Official YouTube video ID (11 chars) for a direct watch link (optional). */
+    @Column(name = "youtube_video_id", length = 20)
+    private String youtubeVideoId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "album_id")
     private Album album;
@@ -47,5 +51,6 @@ public class Track {
         this.isTitle = isTitle;
         this.album = album;
         this.melonSongId = null;
+        this.youtubeVideoId = null;
     }
 }

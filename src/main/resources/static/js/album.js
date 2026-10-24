@@ -79,20 +79,33 @@
   }
 
   function trackRowsHtml(tracks) {
-    const list = Array.isArray(tracks) && tracks.length ? tracks : [{ trackNum: 1, title: "", duration: "", isTitle: false, melonSongId: "" }];
+    const list = Array.isArray(tracks) && tracks.length
+      ? tracks
+      : [{ trackNum: 1, title: "", duration: "", isTitle: false, youtubeVideoId: "", melonSongId: "" }];
     return list.map((t, i) => `
       <div class="album-track-row" data-idx="${i}">
-        <input type="number" class="track-num" min="1" value="${t.trackNum || i + 1}" title="트랙 번호" aria-label="트랙 번호">
-        <input type="text" class="track-title" placeholder="곡 제목" value="${escapeAttr(t.title || "")}" aria-label="곡 제목">
-        <input type="text" class="track-duration" placeholder="3:12" value="${escapeAttr(t.duration || "")}" title="재생 시간" aria-label="재생 시간">
-        <input type="text" class="track-melon-id" placeholder="멜론 ID" value="${escapeAttr(t.melonSongId || "")}" title="멜론 곡 ID 또는 곡 상세 URL" aria-label="멜론 곡 ID">
-        <label class="track-title-toggle" title="타이틀곡">
-          <input type="checkbox" class="track-title-flag" ${t.isTitle ? "checked" : ""}>
-          <span>T</span>
-        </label>
-        <button type="button" class="about-link-remove track-remove" title="곡 삭제" aria-label="곡 삭제">
-          <span class="material-symbols-outlined" style="font-size:1.05rem">close</span>
-        </button>
+        <div class="album-track-main">
+          <input type="number" class="track-num" min="1" value="${t.trackNum || i + 1}" title="트랙 번호" aria-label="트랙 번호">
+          <input type="text" class="track-title" placeholder="곡 제목" value="${escapeAttr(t.title || "")}" aria-label="곡 제목">
+          <input type="text" class="track-duration" placeholder="3:12" value="${escapeAttr(t.duration || "")}" title="재생 시간" aria-label="재생 시간">
+          <label class="track-title-toggle" title="타이틀곡">
+            <input type="checkbox" class="track-title-flag" ${t.isTitle ? "checked" : ""}>
+            <span>T</span>
+          </label>
+          <button type="button" class="about-link-remove track-remove" title="곡 삭제" aria-label="곡 삭제">
+            <span class="material-symbols-outlined" style="font-size:1.05rem">close</span>
+          </button>
+        </div>
+        <div class="album-track-links">
+          <label class="album-track-link">
+            <span>YouTube</span>
+            <input type="text" class="track-youtube-id" placeholder="영상 ID 또는 URL" value="${escapeAttr(t.youtubeVideoId || "")}" title="공식 유튜브 영상 ID 또는 watch URL" aria-label="유튜브 영상 ID">
+          </label>
+          <label class="album-track-link">
+            <span>Melon</span>
+            <input type="text" class="track-melon-id" placeholder="곡 ID 또는 URL" value="${escapeAttr(t.melonSongId || "")}" title="멜론 곡 ID 또는 곡 상세 URL" aria-label="멜론 곡 ID">
+          </label>
+        </div>
       </div>`).join("");
   }
 
@@ -111,6 +124,7 @@
         title,
         duration: row.querySelector(".track-duration")?.value?.trim() || "",
         isTitle: Boolean(row.querySelector(".track-title-flag")?.checked),
+        youtubeVideoId: row.querySelector(".track-youtube-id")?.value?.trim() || "",
         melonSongId: row.querySelector(".track-melon-id")?.value?.trim() || ""
       });
     });
