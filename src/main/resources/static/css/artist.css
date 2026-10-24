@@ -655,7 +655,7 @@
         transparent 100%
     );
     transform: skewX(-18deg);
-    animation: artist-tab-shine-sweep 4.8s ease-in-out infinite;
+    animation: none;
 }
 
 .artist-page .nav-tab-btn:hover .artist-tab-shine,
@@ -665,7 +665,7 @@
 
 .artist-page .nav-tab-btn:hover .artist-tab-shine::before,
 .artist-page .nav-tab-btn.is-active .artist-tab-shine::before {
-    animation-duration: 1.6s;
+    animation: artist-tab-shine-sweep 1.6s ease-in-out infinite;
     background: linear-gradient(
         105deg,
         transparent 0%,
@@ -693,9 +693,11 @@
     white-space: nowrap;
 }
 
-/* 멤버 상세 — 상징색 강조 */
+/* 멤버 상세 — 상징색 강조. 숨긴 탭은 레이아웃 계산을 건너뛴다. */
 .artist-member-pane {
     --artist-color: #00f5d4;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 720px;
 }
 
 .artist-member-photo {

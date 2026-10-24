@@ -6,6 +6,7 @@ import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.entity.Schedule;
+import com.example.triplesweb.repository.ArchiveRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -27,16 +29,16 @@ public class MemberSpotlightService {
     private static final int LIMIT = 5;
 
     private final ObjektService objektService;
-    private final ArchiveService archiveService;
+    private final ArchiveRepository archiveRepository;
     private final MediaService mediaService;
     private final ScheduleRepository scheduleRepository;
 
     public MemberSpotlightService(ObjektService objektService,
-                                  ArchiveService archiveService,
+                                  ArchiveRepository archiveRepository,
                                   MediaService mediaService,
                                   ScheduleRepository scheduleRepository) {
         this.objektService = objektService;
-        this.archiveService = archiveService;
+        this.archiveRepository = archiveRepository;
         this.mediaService = mediaService;
         this.scheduleRepository = scheduleRepository;
     }
@@ -45,6 +47,8 @@ public class MemberSpotlightService {
     public void attach(List<Artist> artists) {
         if (artists == null || artists.isEmpty()) return;
         List<Map<String, Object>> objekts = loadObjekts();
+        List<Archive> images = archiveRepository.findTop2000ByFile_MediaTypeOrderByIdDesc(MediaType.IMAGE);
+        List<Archive> videos = archiveRepository.findTop2000ByFile_MediaTypeOrderByIdDesc(MediaType.VIDEO);
         Map<Long, List<MediaDto>> media = mediaService.byArtistMap(LIMIT);
         List<Schedule> schedules = scheduleRepository.findAllWithArtists();
         for (Artist artist : artists) {
@@ -61,9 +65,9 @@ public class MemberSpotlightService {
                     "/cosmo/objekt?member=" + objektQuery,
                     objektCards(objekts, name, objektQuery)));
             feeds.add(archiveFeed("사진 아카이브", "등록된 사진 최신 5개입니다.", "이 멤버의 사진이 없습니다.",
-                    MediaType.IMAGE, name, "/archive/image_archive?members=" + encoded));
+                    images, MediaType.IMAGE, name, "/archive/image_archive?members=" + encoded));
             feeds.add(archiveFeed("영상 아카이브", "등록된 영상 최신 5개입니다.", "이 멤버의 영상이 없습니다.",
-                    MediaType.VIDEO, name, "/archive/video_archive?members=" + encoded));
+                    videos, MediaType.VIDEO, name, "/archive/video_archive?members=" + encoded));
             feeds.add(feed(
                     "공식 미디어",
                     "공식 미디어에서 이 멤버가 선택된 최신 5개입니다.",
@@ -82,9 +86,13 @@ public class MemberSpotlightService {
     }
 
     private Map<String, Object> archiveFeed(String title, String description, String emptyText,
-                                            MediaType type, String name, String moreUrl) {
+                                            List<Archive> archives, MediaType type, String name, String moreUrl) {
         List<Map<String, Object>> cards = new ArrayList<>();
-        for (Archive archive : archiveService.pageByType(type, 0, LIMIT, null, List.of(name)).getContent()) {
+        int kept = 0;
+        for (Archive archive : archives) {
+            if (kept >= LIMIT) break;
+            if (!archiveHasMember(archive.getArtistNames(), name)) continue;
+            kept++;
             SavedMeta file = archive.getFile();
             String url = file == null || file.getUrl() == null ? "" : file.getUrl();
             boolean image = type == MediaType.IMAGE && !url.isBlank();
@@ -197,6 +205,12 @@ public class MemberSpotlightService {
                 text(objekt.get("slug")),
                 text(objekt.get("artist")),
                 text(objekt.get("searchText")));
+    }
+
+    private static boolean archiveHasMember(String artistNames, String name) {
+        String needle = "," + name.toLowerCase(Locale.ROOT).replace(" ", "") + ",";
+        String normalized = (artistNames == null ? "" : artistNames).toLowerCase(Locale.ROOT).replace(" ", "");
+        return ("," + normalized + ",").contains(needle);
     }
 
     private static List<String> split(String names) {
