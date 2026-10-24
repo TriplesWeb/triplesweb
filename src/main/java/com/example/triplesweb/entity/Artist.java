@@ -46,6 +46,13 @@ public class Artist {
     /** 출신지 (거주지/성장지). 비어 있으면 프로필에 표시하지 않음. */
     private String birthPlace;
 
+    /** 본명. 비어 있으면 프로필에 표시하지 않음. */
+    private String realName;
+
+    /** MBTI. 비어 있으면 프로필에 표시하지 않음. */
+    @Column(length = 16)
+    private String mbti;
+
     @Column(nullable = false)
     private String debutDate;
 
@@ -59,10 +66,23 @@ public class Artist {
         return birthPlace != null && !birthPlace.isBlank();
     }
 
+    @Transient
+    public boolean isHasRealName() {
+        return realName != null && !realName.isBlank();
+    }
+
+    @Transient
+    public boolean isHasMbti() {
+        return mbti != null && !mbti.isBlank();
+    }
+
     @OneToMany(mappedBy = "artist", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UnitMember> affiliatedUnit = new ArrayList<>();
 
     private String profileImage;
+
+    /** 싸인(서명) 이미지. 비어 있으면 프로필에 표시하지 않음. */
+    private String signatureImage;
 
     /** 프로필 이미지가 없을 때 쓰는 플레이스홀더 */
     public static final String DEFAULT_PROFILE_IMAGE = com.example.triplesweb.util.ImageUrls.PLACEHOLDER;
@@ -70,6 +90,11 @@ public class Artist {
     @Transient
     public String getDisplayProfileImage() {
         return com.example.triplesweb.util.ImageUrls.orPlaceholder(profileImage);
+    }
+
+    @Transient
+    public boolean isHasSignatureImage() {
+        return signatureImage != null && !signatureImage.isBlank();
     }
 
     @Column(nullable = false)

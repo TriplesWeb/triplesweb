@@ -121,13 +121,17 @@ public class ArtistAdminService {
             String birthDate,
             String bornPlace,
             String birthPlace,
+            String realName,
+            String mbti,
             String debutDate,
             String color,
             String soloContent,
             String broadcastContent,
             List<Long> unitIds,
             MultipartFile image,
-            boolean clearImage
+            boolean clearImage,
+            MultipartFile signatureImage,
+            boolean clearSignatureImage
     ) {
         Artist artist = artistRepository.findByIdWithAffiliatedUnits(artistId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 아티스트가 존재하지 않습니다. id=" + artistId));
@@ -138,6 +142,8 @@ public class ArtistAdminService {
         String trimmedBirthDate = requireText(birthDate, "출생은 필수입니다.");
         String trimmedBornPlace = bornPlace != null ? bornPlace.trim() : "";
         String trimmedBirthPlace = birthPlace != null ? birthPlace.trim() : "";
+        String trimmedRealName = realName != null ? realName.trim() : "";
+        String trimmedMbti = normalizeMbti(mbti);
         String trimmedDebut = requireText(debutDate, "데뷔일은 필수입니다.");
         String trimmedColor = normalizeColor(color);
 
@@ -158,6 +164,8 @@ public class ArtistAdminService {
         artist.setBirthDate(trimmedBirthDate);
         artist.setBornPlace(trimmedBornPlace.isEmpty() ? null : trimmedBornPlace);
         artist.setBirthPlace(trimmedBirthPlace.isEmpty() ? null : trimmedBirthPlace);
+        artist.setRealName(trimmedRealName.isEmpty() ? null : trimmedRealName);
+        artist.setMbti(trimmedMbti);
         artist.setDebutDate(trimmedDebut);
         artist.setColor(trimmedColor);
         artist.setSoloContent(ContentLinks.normalizeJson(soloContent));
@@ -175,6 +183,20 @@ public class ArtistAdminService {
         } else if (clearImage) {
             deleteManagedArtistImage(artist.getProfileImage());
             artist.setProfileImage(null);
+        }
+
+        if (signatureImage != null && !signatureImage.isEmpty()) {
+            try {
+                String previous = artist.getSignatureImage();
+                SavedMeta meta = fileStorageService.saveWithMeta(signatureImage, "artist");
+                artist.setSignatureImage(meta.getUrl());
+                deleteManagedArtistImage(previous);
+            } catch (IOException e) {
+                throw new IllegalStateException("싸인 이미지 저장에 실패했습니다.", e);
+            }
+        } else if (clearSignatureImage) {
+            deleteManagedArtistImage(artist.getSignatureImage());
+            artist.setSignatureImage(null);
         }
 
         syncUnits(artist, unitIds);
@@ -231,9 +253,12 @@ public class ArtistAdminService {
                 .birthDate(artist.getBirthDate())
                 .bornPlace(artist.getBornPlace())
                 .birthPlace(artist.getBirthPlace())
+                .realName(artist.getRealName())
+                .mbti(artist.getMbti())
                 .debutDate(artist.getDebutDate())
                 .color(artist.getColor())
                 .profileImage(artist.getProfileImage())
+                .signatureImage(artist.getSignatureImage())
                 .soloLinks(artist.getSoloLinks())
                 .broadcastLinks(artist.getBroadcastLinks())
                 .unitIds(unitIds)
@@ -281,6 +306,16 @@ public class ArtistAdminService {
             throw new IllegalArgumentException("상징 색은 #RRGGBB 형식이어야 합니다.");
         }
         return raw.toLowerCase(Locale.ROOT);
+    }
+
+    /** 비우면 null. 있으면 대문자·길이 제한만 적용 (예: INFP). */
+    private static String normalizeMbti(String mbti) {
+        if (!StringUtils.hasText(mbti)) return null;
+        String trimmed = mbti.trim().toUpperCase(Locale.ROOT);
+        if (trimmed.length() > 16) {
+            throw new IllegalArgumentException("MBTI는 16자 이하여야 합니다.");
+        }
+        return trimmed;
     }
 
     private void deleteManagedArtistImage(String imageUrl) {

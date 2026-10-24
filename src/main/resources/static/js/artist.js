@@ -264,6 +264,8 @@
       document.getElementById("artistEditBirthDate").value = data.birthDate || "";
       document.getElementById("artistEditBornPlace").value = data.bornPlace || "";
       document.getElementById("artistEditBirthPlace").value = data.birthPlace || "";
+      document.getElementById("artistEditRealName").value = data.realName || "";
+      document.getElementById("artistEditMbti").value = data.mbti || "";
       document.getElementById("artistEditNationality").value = data.nationality || "";
       document.getElementById("artistEditDebutDate").value = data.debutDate || "";
       document.getElementById("artistEditColor").value = data.color || "#00f5d4";
@@ -279,6 +281,18 @@
         } else {
           preview.removeAttribute("src");
           preview.classList.add("hidden");
+        }
+      }
+      document.getElementById("artistEditClearSignatureImage").checked = false;
+      document.getElementById("artistEditSignatureImage").value = "";
+      const sigPreview = document.getElementById("artistEditSignaturePreview");
+      if (sigPreview) {
+        if (data.signatureImage) {
+          sigPreview.src = data.signatureImage;
+          sigPreview.classList.remove("hidden");
+        } else {
+          sigPreview.removeAttribute("src");
+          sigPreview.classList.add("hidden");
         }
       }
       setUnitChecks(data.unitIds || []);
@@ -426,6 +440,8 @@
         fd.append("birthDate", document.getElementById("artistEditBirthDate").value);
         fd.append("bornPlace", document.getElementById("artistEditBornPlace").value);
         fd.append("birthPlace", document.getElementById("artistEditBirthPlace").value);
+        fd.append("realName", document.getElementById("artistEditRealName").value);
+        fd.append("mbti", document.getElementById("artistEditMbti").value);
         fd.append("nationality", document.getElementById("artistEditNationality").value);
         fd.append("debutDate", document.getElementById("artistEditDebutDate").value);
         fd.append("color", document.getElementById("artistEditColor").value);
@@ -438,6 +454,10 @@
         fd.append("clearImage", clearChecked ? "true" : "false");
         const file = document.getElementById("artistEditImage").files[0];
         if (file && !clearChecked) fd.append("image", file);
+        const clearSig = Boolean(document.getElementById("artistEditClearSignatureImage")?.checked);
+        fd.append("clearSignatureImage", clearSig ? "true" : "false");
+        const sigFile = document.getElementById("artistEditSignatureImage").files[0];
+        if (sigFile && !clearSig) fd.append("signatureImage", sigFile);
         try {
           const res = await artistFetch("/api/artist/" + id, { method: "POST", body: fd });
           if (!res.ok) {

@@ -86,11 +86,15 @@ class ArtistAdminServiceTest {
                 "2000-01-01",
                 "",
                 "Seoul",
+                "",
+                "",
                 "2022-01-01",
                 "#ffffff",
                 "",
                 "",
                 unitIds,
+                null,
+                false,
                 null,
                 false
         );

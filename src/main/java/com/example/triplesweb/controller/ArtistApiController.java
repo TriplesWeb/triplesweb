@@ -92,6 +92,8 @@ public class ArtistApiController {
             @RequestParam String birthDate,
             @RequestParam(required = false, defaultValue = "") String bornPlace,
             @RequestParam(required = false, defaultValue = "") String birthPlace,
+            @RequestParam(required = false, defaultValue = "") String realName,
+            @RequestParam(required = false, defaultValue = "") String mbti,
             @RequestParam String debutDate,
             @RequestParam String color,
             @RequestParam(required = false, defaultValue = "") String soloContent,
@@ -99,6 +101,8 @@ public class ArtistApiController {
             @RequestParam(required = false) List<Long> unitIds,
             @RequestParam(required = false) MultipartFile image,
             @RequestParam(required = false, defaultValue = "false") boolean clearImage,
+            @RequestParam(required = false) MultipartFile signatureImage,
+            @RequestParam(required = false, defaultValue = "false") boolean clearSignatureImage,
             HttpServletRequest request,
             HttpSession session
     ) {
@@ -106,8 +110,9 @@ public class ArtistApiController {
         try {
             List<Long> ids = unitIds != null ? unitIds : new ArrayList<>();
             return artistAdminService.updateArtist(
-                    id, name, engName, nationality, birthDate, bornPlace, birthPlace, debutDate, color,
-                    soloContent, broadcastContent, ids, image, clearImage
+                    id, name, engName, nationality, birthDate, bornPlace, birthPlace, realName, mbti,
+                    debutDate, color, soloContent, broadcastContent, ids, image, clearImage,
+                    signatureImage, clearSignatureImage
             );
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
