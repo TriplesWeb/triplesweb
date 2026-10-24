@@ -1,7 +1,11 @@
 package com.example.triplesweb.controller;
 
+import com.example.triplesweb.entity.Artist;
+import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.service.ObjektService;
+import com.example.triplesweb.util.MemberPortraitOptions;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,6 +33,7 @@ public class CosmoController {
 
     private static final int PAGE_SIZE = 20;
     private final ObjektService objektService;
+    private final ArtistRepository artistRepository;
 
     @GetMapping("/objekt")
     public String indexCosmoObjekt(
@@ -81,8 +86,11 @@ public class CosmoController {
         List<Map<String, Object>> pageObjekts = filtered.subList(fromIndex, toIndex);
 
         // 드롭다운 선택지는 현재 페이지 50개가 아니라 전체 캐시에서 생성한다.
-        model.addAttribute("memberOptions", orderedMemberOptions(
-                uniqueValues(allObjekts, objekt -> firstValue(objekt, "member", "memberName"))));
+        List<String> memberOptions = orderedMemberOptions(
+                uniqueValues(allObjekts, objekt -> firstValue(objekt, "member", "memberName")));
+        List<Artist> artists = artistRepository.findAll(Sort.by(Sort.Direction.ASC, "artistId"));
+        model.addAttribute("memberOptions", memberOptions);
+        model.addAttribute("memberPickerOptions", MemberPortraitOptions.forObjektFilter(memberOptions, artists));
         model.addAttribute("seasonOptions", uniqueValues(allObjekts, objekt -> firstValue(objekt, "seasonKey", "season")));
         model.addAttribute("classOptions", uniqueValues(allObjekts, objekt -> firstValue(objekt, "classKey", "class")));
         model.addAttribute("objektNumbers", uniqueValues(allObjekts, objekt -> firstValue(objekt, "collectionNo", "collectionNumber")));

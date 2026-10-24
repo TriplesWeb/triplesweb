@@ -358,7 +358,15 @@
     dbEntries = Array.isArray(entries) ? entries : [];
     pairMatrix = buildFromDb(dbEntries);
     updateEmptyState(countChemCells(pairMatrix));
-    if (currentMode === "pair") buildTable(pairMatrix);
+    if (currentMode === "pair") {
+      buildTable(pairMatrix);
+    } else if (currentMode === "trio") {
+      renderTrioResults(
+        window.MemberPortraitPicker
+          ? MemberPortraitPicker.selectedValues(document.getElementById("chemTrioView"))
+          : []
+      );
+    }
   }
 
   function buildTable(matrix) {
@@ -1753,19 +1761,156 @@
     if (trioView) trioView.classList.add("hidden");
   }
 
-  function showTrioPlaceholder() {
+  function showTrioView() {
     const pairView = document.getElementById("chemPairView");
     const trioView = document.getElementById("chemTrioView");
     if (pairView) pairView.classList.add("hidden");
     if (trioView) trioView.classList.remove("hidden");
+    renderTrioResults(MemberPortraitPicker
+      ? MemberPortraitPicker.selectedValues(document.getElementById("chemTrioView"))
+      : []);
+  }
+
+  function trioHint(count) {
+    if (IS_EN) {
+      if (count < 2) return "Pick multiple members to list chemistries among them.";
+      return count + " selected · showing pairs among them.";
+    }
+    if (count < 2) return "멤버를 여러 명 고르면 사이 케미를 모아요.";
+    return count + "명 선택됨 · 선택 멤버 사이 케미를 표시합니다.";
+  }
+
+  function collectTrioPairs(selectedNames) {
+    const selected = new Set(selectedNames || []);
+    if (selected.size < 2 || !pairMatrix) return [];
+    const seen = new Set();
+    const pairs = [];
+    selected.forEach((a) => {
+      selected.forEach((b) => {
+        if (!a || !b || a === b) return;
+        const ia = memberIndex(a);
+        const ib = memberIndex(b);
+        if (ia < 0 || ib < 0 || ia >= ib) return;
+        const key = a + "\0" + b;
+        if (seen.has(key)) return;
+        seen.add(key);
+        const cell = pairMatrix[ia] && pairMatrix[ia][ib];
+        if (!cell || cell.type !== "chem") return;
+        pairs.push({
+          member1: a,
+          member2: b,
+          person: a,
+          key: cell.key,
+          label: cell.label || "",
+          labelTone: cell.labelTone || "NONE",
+          dbId: cell.dbId || null
+        });
+      });
+    });
+    return pairs;
+  }
+
+  function renderTrioResults(selectedNames) {
+    const meta = document.getElementById("chemTrioMeta");
+    const box = document.getElementById("chemTrioResults");
+    const names = selectedNames || [];
+    if (meta) meta.textContent = trioHint(names.length);
+    if (!box) return;
+
+    if (names.length < 2) {
+      box.innerHTML =
+        '<p class="chem-trio-empty">' +
+        escapeHtml(
+          IS_EN
+            ? "Select at least two members."
+            : "멤버를 두 명 이상 선택해 주세요."
+        ) +
+        "</p>";
+      return;
+    }
+
+    const pairs = collectTrioPairs(names);
+    if (!pairs.length) {
+      box.innerHTML =
+        '<p class="chem-trio-empty">' +
+        escapeHtml(
+          IS_EN
+            ? "No chemistry names among the selected members."
+            : "선택한 멤버 사이에 등록된 케미명이 없어요."
+        ) +
+        "</p>";
+      return;
+    }
+
+    box.innerHTML = pairs
+      .map((pair) => {
+        const toneCls = toneClass(pair.labelTone);
+        return (
+          '<button type="button" class="chem-trio-card" data-m1="' +
+          escapeHtml(pair.member1) +
+          '" data-m2="' +
+          escapeHtml(pair.member2) +
+          '" data-person="' +
+          escapeHtml(pair.person) +
+          '" data-key="' +
+          escapeHtml(pair.key) +
+          '" data-tone="' +
+          escapeHtml(normalizeLabelTone(pair.labelTone)) +
+          '">' +
+          '<span class="chem-trio-card-pair">' +
+          escapeHtml(pairTitleText(pair.member1, pair.member2)) +
+          "</span>" +
+          '<span class="chem-trio-card-label' +
+          (toneCls ? " " + toneCls : "") +
+          '">' +
+          escapeHtml(pair.label) +
+          "</span>" +
+          "</button>"
+        );
+      })
+      .join("");
+
+    box.querySelectorAll(".chem-trio-card").forEach((el) => {
+      el.addEventListener("click", () => {
+        const ri = memberIndex(el.dataset.m1);
+        const ci = memberIndex(el.dataset.m2);
+        const cell = pairMatrix && pairMatrix[ri] && pairMatrix[ri][ci];
+        editingPair = { member1: el.dataset.m1, member2: el.dataset.m2 };
+        currentView = {
+          person: el.dataset.person,
+          key: el.dataset.key,
+          member1: el.dataset.m1,
+          member2: el.dataset.m2,
+          label: (cell && cell.label) || "",
+          labelTone: (cell && cell.labelTone) || el.dataset.tone || "NONE",
+          dbId: cell && cell.dbId ? cell.dbId : null
+        };
+        openChemistryName(el.dataset.person, el.dataset.key);
+      });
+    });
+  }
+
+  function bindTrioPicker() {
+    const root = document.getElementById("chemTrioView");
+    if (!root || !window.MemberPortraitPicker) return;
+    MemberPortraitPicker.bindMultiSelect(root, {
+      multi: true,
+      onChange: (values) => renderTrioResults(values)
+    });
+    const clearBtn = document.getElementById("chemTrioClear");
+    if (clearBtn) {
+      clearBtn.addEventListener("click", () => {
+        MemberPortraitPicker.clear(root);
+        renderTrioResults([]);
+      });
+    }
   }
 
   function setMode(mode) {
     currentMode = mode === "trio" ? "trio" : "pair";
     setModeButtons(currentMode);
     if (currentMode === "trio") {
-      // 3인 이상 케미 구조화 데이터 없음(이미지 몇 장만) → 플레이스홀더
-      showTrioPlaceholder();
+      showTrioView();
       return;
     }
     showPairView();
@@ -1817,6 +1962,7 @@
     });
 
     bindModeToggle();
+    bindTrioPicker();
     bindLegendToggle();
     bindAdminUi();
 

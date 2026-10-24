@@ -10,9 +10,11 @@ import com.example.triplesweb.service.AlbumService;
 import com.example.triplesweb.service.ArtistAdminService;
 import com.example.triplesweb.service.MediaService;
 import com.example.triplesweb.service.UnitService;
+import com.example.triplesweb.util.MemberPortraitOptions;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
@@ -96,13 +98,21 @@ public class TriplesController {
     }
 
     @GetMapping("/chemistry")
-    public String indexTriplesChemistry() {
+    public String indexTriplesChemistry(Model model) {
+        addChemistryMemberPicker(model, false);
         return "triples/chemistry";
     }
 
     @GetMapping("/chemistry-en")
-    public String indexTriplesChemistryEn() {
+    public String indexTriplesChemistryEn(Model model) {
+        addChemistryMemberPicker(model, true);
         return "triples/chemistry-en";
+    }
+
+    /** 3인 이상 케미 탭용 멤버 초상화 피커 옵션. */
+    private void addChemistryMemberPicker(Model model, boolean englishLabels) {
+        List<Artist> artists = artistrepository.findAll(Sort.by(Sort.Direction.ASC, "artistId"));
+        model.addAttribute("memberPickerOptions", MemberPortraitOptions.fromArtists(artists, englishLabels));
     }
 
     /**

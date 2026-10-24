@@ -1,0 +1,212 @@
+/* 공유 멤버 초상화 다중선택 그리드 (아티스트 탭과 동일 톤) */
+.member-portrait-picker {
+    --mpp-gap: 4px;
+    display: grid;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    grid-auto-flow: row;
+    gap: var(--mpp-gap);
+    margin: 0 auto;
+    padding: 0;
+    width: min(100%, 66rem);
+    list-style: none;
+}
+
+@media (max-width: 639px) {
+    .member-portrait-picker {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 3px;
+        width: 100%;
+    }
+}
+
+.member-portrait-picker .mpp-item {
+    --artist-color: #00f5d4;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    color: #b9cac4;
+    cursor: pointer;
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    position: relative;
+    transition: transform 0.15s ease;
+}
+
+.member-portrait-picker .mpp-item:hover {
+    z-index: 2;
+}
+
+.member-portrait-picker .mpp-item.is-active {
+    z-index: 3;
+}
+
+.member-portrait-picker .artist-tab-avatar {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    margin: 0;
+    overflow: hidden;
+    background: #0d0e12;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.member-portrait-picker .artist-tab-photo {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    border-radius: 0;
+    background: #0d0e12;
+}
+
+.member-portrait-picker .artist-tab-frame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    z-index: 2;
+    transition: filter 0.25s ease;
+}
+
+.member-portrait-picker .artist-tab-shine {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    overflow: hidden;
+    opacity: 0.28;
+}
+
+.member-portrait-picker .artist-tab-shine::before {
+    content: "";
+    position: absolute;
+    top: -40%;
+    left: -60%;
+    width: 45%;
+    height: 180%;
+    background: linear-gradient(
+        105deg,
+        transparent 0%,
+        color-mix(in srgb, var(--artist-color) 18%, transparent) 40%,
+        color-mix(in srgb, var(--artist-color) 70%, #fff) 50%,
+        color-mix(in srgb, var(--artist-color) 18%, transparent) 60%,
+        transparent 100%
+    );
+    transform: skewX(-18deg);
+    animation: mpp-shine-sweep 4.8s ease-in-out infinite;
+}
+
+.member-portrait-picker .mpp-item:hover .artist-tab-shine,
+.member-portrait-picker .mpp-item.is-active .artist-tab-shine {
+    opacity: 0.85;
+}
+
+.member-portrait-picker .mpp-item:hover .artist-tab-shine::before,
+.member-portrait-picker .mpp-item.is-active .artist-tab-shine::before {
+    animation-duration: 1.6s;
+}
+
+.member-portrait-picker .mpp-item.is-active .artist-tab-avatar {
+    box-shadow:
+        inset 0 0 0 2px #f4fbff,
+        0 0 0 2px color-mix(in srgb, var(--artist-color, #7ec8ff) 75%, #9ad0ff),
+        0 0 14px color-mix(in srgb, var(--artist-color, #7ec8ff) 55%, transparent),
+        0 0 28px color-mix(in srgb, #9ad0ff 35%, transparent);
+}
+
+.member-portrait-picker .mpp-item.is-active .artist-tab-avatar::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    z-index: 5;
+    width: 0;
+    height: 0;
+    transform: translate(-50%, -1px);
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 8px solid #f4fbff;
+    filter: drop-shadow(0 0 4px rgba(154, 208, 255, 0.8));
+    pointer-events: none;
+}
+
+.member-portrait-picker .mpp-item:hover .artist-tab-frame,
+.member-portrait-picker .mpp-item.is-active .artist-tab-frame {
+    filter: drop-shadow(0 0 8px color-mix(in srgb, var(--artist-color) 65%, transparent));
+}
+
+.member-portrait-picker .artist-tab-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.mpp-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 0.75rem;
+    margin: 0 0 0.65rem;
+}
+
+.mpp-toolbar-title {
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #e3e2e8;
+}
+
+.mpp-toolbar-meta {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #b9cac4;
+}
+
+.mpp-toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.mpp-tool-btn {
+    appearance: none;
+    padding: 0.35rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #12141a;
+    color: #b9cac4;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.mpp-tool-btn:hover {
+    border-color: rgba(0, 245, 212, 0.5);
+    color: #00f5d4;
+}
+
+@keyframes mpp-shine-sweep {
+    0% { transform: translateX(0) skewX(-18deg); }
+    55%, 100% { transform: translateX(320%) skewX(-18deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .member-portrait-picker .artist-tab-shine::before {
+        animation: none;
+        opacity: 0;
+    }
+}

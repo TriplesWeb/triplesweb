@@ -15,7 +15,27 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=1">
     <style>
+        .objekt-member-picker-panel {
+            margin-bottom: 12px;
+            padding: 14px 14px 12px;
+            background: linear-gradient(135deg, rgba(18,20,28,.96), rgba(20,23,33,.92));
+            border: 1px solid rgba(83, 95, 122, .28);
+            border-radius: 16px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 12px 30px rgba(0,0,0,.16);
+        }
+        .objekt-member-checks {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
         /* 오브젝트 페이지 전용 스타일: 기존 필터/스크립트 동작은 유지 */
         .objekt-filter-bar {
             display: flex;
@@ -194,30 +214,28 @@
         </div>
         <form id="objekt-search-form" action="/cosmo/objekt" method="get">
         <input type="hidden" name="page" value="0">
-        <div class="objekt-filter-bar relative">
 
-            <div class="objekt-filter relative" id="member-dropdown">
-                <span class="objekt-filter-label">멤버</span>
-                <!-- 드롭다운 토글 버튼 -->
-                <button type="button" onclick="toggleDropdown('member-menu')" class="objekt-filter-control flex items-center justify-between gap-3 cursor-pointer">
-                    <span id="member-label" class="truncate">전체 멤버</span>
-                    <span class="material-symbols-outlined text-xs text-black">arrow_drop_down</span>
-                </button>
-
-                <!-- 체크박스 목록 메뉴 -->
-                <div id="member-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 w-full rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
-                    <label class="flex items-center gap-2 px-2.5 py-2 hover:bg-[#1a1d28] rounded-md cursor-pointer text-sm text-white">
-                        <input type="checkbox" value="all" class="rounded member-checkbox" checked><span>전체 멤버</span>
-                    </label>
-                    <div id="member-options">
-                        {{#memberOptions}}
-                        <label class="flex items-center gap-2 px-2.5 py-2 hover:bg-[#1a1d28] rounded-md cursor-pointer text-sm text-white">
-                            <input type="checkbox" name="member" value="{{.}}" class="rounded member-checkbox"><span>{{.}}</span>
-                        </label>
-                        {{/memberOptions}}
-                    </div>
+        <div class="objekt-member-picker-panel" id="member-dropdown">
+            <div class="mpp-toolbar">
+                <div>
+                    <p class="mpp-toolbar-title">멤버 (다중 선택)</p>
+                    <p class="mpp-toolbar-meta" id="member-label">전체 멤버</p>
+                </div>
+                <div class="mpp-toolbar-actions">
+                    <button type="button" class="mpp-tool-btn" id="objekt-member-clear">전체</button>
                 </div>
             </div>
+            <div class="objekt-member-checks" id="member-options" aria-hidden="true">
+                {{#memberPickerOptions}}
+                <input type="checkbox" name="member" value="{{value}}" class="member-checkbox" data-mpp-value="{{value}}">
+                {{/memberPickerOptions}}
+            </div>
+            <div class="member-portrait-picker" id="objekt-member-picker" role="group" aria-label="멤버 다중 선택">
+                {{>partials/member-portrait-picker}}
+            </div>
+        </div>
+
+        <div class="objekt-filter-bar relative">
 
             <!-- 1. 시즌 다중 선택 필터 (너비 확장 및 독립 스크립트 연동) -->
             <div class="objekt-filter relative" id="season-dropdown">
@@ -348,33 +366,78 @@
         {{#hasNextPage}}<a class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-white hover:border-teal-400" href="{{nextPageUrl}}">다음</a>{{/hasNextPage}}
     </nav>
 </main>
-</body>
+<script src="/js/member-portrait-picker.js?v=1"></script>
 <script>
 (() => {
     const form = document.getElementById('objekt-search-form');
-    const searchInput = document.querySelector('.objekt-search-input');
     const kindSelect = document.querySelector('.objekt-kind-select');
     const sortSelect = document.querySelector('.objekt-sort-select');
     const cards = Array.from(document.querySelectorAll('.objekt-item'));
     const empty = document.getElementById('objekt-empty');
+    const memberRoot = document.getElementById('member-dropdown');
+    const memberLabel = document.getElementById('member-label');
 
-    // 필터 옵션은 현재 50개 카드가 아니라 서버가 전달한 전체 데이터 기준이다.
-    // URL의 선택값을 복원해 페이지 이동 후에도 검색 조건을 유지한다.
     const params = new URLSearchParams(window.location.search);
     kindSelect.value = params.get('kind') || 'all';
     sortSelect.value = params.get('sort') || 'latest';
 
-    function updateLabel(type) {
+    function updateDropdownLabel(type) {
         const checks = [...document.querySelectorAll(`.${type}-checkbox:checked`)];
         const all = document.querySelector(`.${type}-checkbox[value="all"]`);
         const target = document.getElementById(`${type}-label`);
+        if (!target) return;
         const chosen = checks.filter(cb => cb !== all);
-        if (!chosen.length || (all && all.checked)) target.textContent = type === 'member' ? '전체 멤버' : 'all';
+        if (!chosen.length || (all && all.checked)) target.textContent = 'all';
         else if (chosen.length === 1) target.textContent = chosen[0].nextElementSibling.textContent.trim();
         else target.textContent = `${chosen[0].nextElementSibling.textContent.trim()} 외 ${chosen.length - 1}개`;
     }
 
-    ['member', 'season', 'class'].forEach(type => {
+    function syncMemberLabel() {
+        const chosen = [...document.querySelectorAll('.member-checkbox:checked')];
+        if (!memberLabel) return;
+        if (!chosen.length) {
+            memberLabel.textContent = '전체 멤버';
+            return;
+        }
+        const first = chosen[0].value;
+        memberLabel.textContent = chosen.length === 1
+            ? first
+            : `${first} 외 ${chosen.length - 1}명`;
+    }
+
+    function syncMemberChecks(values) {
+        const selected = new Set((values || []).map(v => String(v).toLocaleLowerCase()));
+        document.querySelectorAll('.member-checkbox').forEach((cb) => {
+            cb.checked = selected.has(String(cb.value).toLocaleLowerCase());
+        });
+        syncMemberLabel();
+    }
+
+    // 멤버 초상화 다중선택
+    const selectedMembers = params.getAll('member');
+    if (window.MemberPortraitPicker && memberRoot) {
+        MemberPortraitPicker.bindMultiSelect(memberRoot, {
+            multi: true,
+            onChange: syncMemberChecks
+        });
+        memberRoot.querySelectorAll('.mpp-item').forEach((btn) => {
+            const value = (btn.dataset.value || '').toLocaleLowerCase();
+            const active = selectedMembers.some(v => String(v).toLocaleLowerCase() === value);
+            MemberPortraitPicker.setActive(btn, active);
+        });
+        syncMemberChecks(
+            MemberPortraitPicker.selectedValues(memberRoot)
+        );
+        document.getElementById('objekt-member-clear')?.addEventListener('click', () => {
+            MemberPortraitPicker.clear(memberRoot);
+            syncMemberChecks([]);
+        });
+    } else {
+        syncMemberLabel();
+    }
+
+    // 시즌·클래스 드롭다운 (기존 다중선택 유지)
+    ['season', 'class'].forEach(type => {
         const selected = params.getAll(type).map(v => v.toLocaleLowerCase());
         const boxes = [...document.querySelectorAll(`.${type}-checkbox`)];
         boxes.forEach(cb => {
@@ -391,9 +454,9 @@
             }
             const chosen = boxes.some(other => other.value !== 'all' && other.checked);
             if (all && !chosen) all.checked = true;
-            updateLabel(type);
+            updateDropdownLabel(type);
         }));
-        updateLabel(type);
+        updateDropdownLabel(type);
     });
 
     window.toggleDropdown = function(id) {
@@ -404,25 +467,26 @@
     };
 
     window.addEventListener('click', e => {
-        if (!e.target.closest('#season-dropdown') && !e.target.closest('#class-dropdown') && !e.target.closest('#member-dropdown')) {
-            ['season-menu', 'member-menu', 'class-menu'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+        if (!e.target.closest('#season-dropdown') && !e.target.closest('#class-dropdown')) {
+            ['season-menu', 'class-menu'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
         }
     });
 
-    // 버튼을 눌렀을 때만 서버로 검색한다. 페이지 이동 시 필터 조건은 URL에 유지된다.
     form.addEventListener('submit', () => {
         const page = form.querySelector('input[name="page"]');
         if (page) page.value = '0';
+        // 미선택(전체)일 때는 member 파라미터를 보내지 않는다.
+        document.querySelectorAll('.member-checkbox').forEach((cb) => {
+            if (!cb.checked) cb.disabled = true;
+        });
     });
 
     document.getElementById('objekt-reset').addEventListener('click', () => {
         window.location.href = '/cosmo/objekt?page=0';
     });
 
-    // 현재 페이지에 카드가 없으면 서버 검색 결과가 0개인 상태다.
     if (empty) empty.classList.toggle('hidden', cards.length > 0);
 
-    // 카드 이미지를 클릭하면 앞면/뒷면을 전환한다.
     document.querySelectorAll('.objekt-image-button').forEach(button => button.addEventListener('click', () => {
         const image = button.querySelector('img');
         const hint = button.querySelector('.objekt-flip-hint');
@@ -434,4 +498,5 @@
     }));
 })();
 </script>
+</body>
 </html>
