@@ -28,6 +28,7 @@ class CosmoConnectControllerTest {
     @MockitoBean CosmoTokenProvider tokens;
     @MockitoBean com.example.triplesweb.service.ChemistryService chemistryService;
     @MockitoBean com.example.triplesweb.service.ChemistrySeedService chemistrySeedService;
+    @MockitoBean com.example.triplesweb.service.ChemistryGroupService chemistryGroupService;
 
     @Test void anonymousCannotSendCodesOrReplaceCredentials() throws Exception {
         mvc.perform(post("/api/gravity/connect/email").header("X-Gravity-Connect", "1")
