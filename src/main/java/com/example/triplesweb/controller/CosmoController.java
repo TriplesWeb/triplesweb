@@ -52,7 +52,13 @@ public class CosmoController {
         try {
             allObjekts = objektService.findCollections("triples");
             if (allObjekts == null) allObjekts = Collections.emptyList();
-            if (allObjekts.isEmpty()) error = "API 응답에 표시할 컬렉션이 없습니다.";
+            if (allObjekts.isEmpty()) {
+                // 페이지는 캐시만 본다. 최초 적재 전·갱신 실패 시 빈 목록 → 외부 API 장애로 오해하기 쉬움.
+                long lastOk = objektService.getLastSuccessfulRefreshMillis();
+                error = lastOk <= 0
+                        ? "Objekt 목록을 아직 불러오지 못했어요. 잠시 후 새로고침해 주세요. (백그라운드에서 objekt.top 캐시를 갱신합니다)"
+                        : "API 응답에 표시할 컬렉션이 없습니다.";
+            }
         } catch (RestClientException ex) {
             allObjekts = Collections.emptyList();
             error = "Objekt API에 연결하지 못했습니다. 잠시 후 새로고침해 주세요.";
@@ -88,7 +94,13 @@ public class CosmoController {
         // 드롭다운 선택지는 현재 페이지 50개가 아니라 전체 캐시에서 생성한다.
         List<String> memberOptions = orderedMemberOptions(
                 uniqueValues(allObjekts, objekt -> firstValue(objekt, "member", "memberName")));
-        List<Artist> artists = artistRepository.findAll(Sort.by(Sort.Direction.ASC, "artistId"));
+        // 멤버 초상화는 DB Artist에 의존. DB 장애 시에도 오브젝트 목록은 보여 준다.
+        List<Artist> artists = Collections.emptyList();
+        try {
+            artists = artistRepository.findAll(Sort.by(Sort.Direction.ASC, "artistId"));
+        } catch (RuntimeException ex) {
+            ex.printStackTrace();
+        }
         model.addAttribute("memberOptions", memberOptions);
         model.addAttribute("memberPickerOptions", MemberPortraitOptions.forObjektFilter(memberOptions, artists));
         model.addAttribute("seasonOptions", uniqueValues(allObjekts, objekt -> firstValue(objekt, "seasonKey", "season")));

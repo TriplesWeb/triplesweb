@@ -32,15 +32,20 @@ public class ObjektService {
 
     public ObjektService(
             @Value("${objekt.api.base-url:https://objekt.top/api/v1}")
-            String baseUrl
+            String baseUrl,
+            // 전체 컬렉션 JSON이 ~10MB라 네트워크에 따라 수 초 이상 걸린다.
+            @Value("${objekt.api.connect-timeout-ms:10000}")
+            long connectTimeoutMs,
+            @Value("${objekt.api.read-timeout-ms:45000}")
+            long readTimeoutMs
     ) {
         HttpClient httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(3))
+                .connectTimeout(Duration.ofMillis(Math.max(1000, connectTimeoutMs)))
                 .build();
 
         JdkClientHttpRequestFactory requestFactory =
                 new JdkClientHttpRequestFactory(httpClient);
-        requestFactory.setReadTimeout(Duration.ofSeconds(6));
+        requestFactory.setReadTimeout(Duration.ofMillis(Math.max(3000, readTimeoutMs)));
 
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
