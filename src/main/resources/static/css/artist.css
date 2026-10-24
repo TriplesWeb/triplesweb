@@ -259,14 +259,6 @@
     border: 1px solid rgba(58, 74, 70, 0.45);
 }
 
-#artistEditSignaturePreview {
-    max-width: 12rem;
-    max-height: 7rem;
-    object-fit: contain;
-    background: #f4f5f7;
-    padding: 0.5rem 0.75rem;
-}
-
 .artist-edit-field-hint {
     margin: 0;
     font-size: 0.75rem;
@@ -345,6 +337,39 @@
     }
 }
 
+/* 멤버 탭 — N열 그리드 (가로 스크롤 없음) */
+.artist-page .artist-member-tabs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(4.75rem, 1fr));
+    gap: 0.65rem 0.4rem;
+    align-items: start;
+    justify-items: center;
+    overflow: visible;
+    list-style: none;
+    margin: 0;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+@media (min-width: 640px) {
+    .artist-page .artist-member-tabs {
+        grid-template-columns: repeat(auto-fill, minmax(5.1rem, 1fr));
+        gap: 0.75rem 0.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .artist-page .artist-member-tabs {
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1280px) {
+    .artist-page .artist-member-tabs {
+        grid-template-columns: repeat(9, minmax(0, 1fr));
+    }
+}
+
 /* 멤버 탭 — 사각 프로필 + S테두리 + 상징색 반짝임 */
 .artist-page .nav-tab-btn {
     --artist-color: #00f5d4;
@@ -355,6 +380,13 @@
     cursor: pointer;
     border-radius: 0.75rem;
     transition: color 0.2s ease, transform 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 5.5rem;
+    padding: 0.35rem 0.2rem;
+    margin: 0;
 }
 
 .artist-page .nav-tab-btn[data-member-tab] .artist-tab-label {
@@ -464,9 +496,14 @@
 }
 
 .artist-tab-label {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 600;
     line-height: 1.2;
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* 멤버 상세 — 상징색 강조 */
