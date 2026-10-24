@@ -65,7 +65,9 @@ public class ObjektService {
 
     public List<Map<String, Object>> findCollections(String artist) {
         List<Map<String, Object>> snapshot = cachedCollections;
-        if (snapshot == null || snapshot.isEmpty()) {
+        // 빈 결과도 정상적으로 적재된 캐시다. 빈 테이블일 때 페이지 요청마다
+        // DB 전체 조회가 반복되지 않도록 null인 최초 상태에서만 다시 읽는다.
+        if (snapshot == null) {
             snapshot = loadFromDatabase(artist);
             cachedCollections = snapshot;
         }
@@ -112,8 +114,11 @@ public class ObjektService {
                 if (dto.collectionId() == null || dto.collectionId().isBlank()) continue;
                 unique.put(dto.collectionId(), dto.toEntity());
             }
-            catalogStore.replace("triples", new ArrayList<>(unique.values()));
-            cachedCollections = loadFromDatabase("triples");
+            List<ObjektCatalog> rows = new ArrayList<>(unique.values());
+            // DB는 다음 시작 시 복구할 스냅샷으로만 저장한다. 갱신 직후 다시
+            // SELECT 하지 않고, 이미 받은 API 응답으로 메모리 캐시를 교체한다.
+            catalogStore.replace("triples", rows);
+            cachedCollections = rows.stream().map(ObjektCatalogDto::toView).toList();
             lastSuccessfulRefreshMillis = System.currentTimeMillis();
 
             log.info("Objekt 카탈로그 저장 완료: {}개", cachedCollections.size());

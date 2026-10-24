@@ -47,6 +47,16 @@ public class MemberSpotlightService {
     public void attach(List<Artist> artists) {
         if (artists == null || artists.isEmpty()) return;
         List<Map<String, Object>> objekts = loadObjekts();
+        List<Map<String, Object>> newestObjekts = objekts.stream()
+                .sorted(Comparator.comparing(
+                        (Map<String, Object> objekt) -> text(objekt.get("createdAt")),
+                        Comparator.reverseOrder()))
+                .toList();
+        List<String> objektMembers = objekts.stream()
+                .map(objekt -> text(objekt.get("member")))
+                .filter(value -> !value.isBlank())
+                .distinct()
+                .toList();
         List<Archive> images = archiveRepository.findTop2000ByFile_MediaTypeOrderByIdDesc(MediaType.IMAGE);
         List<Archive> videos = archiveRepository.findTop2000ByFile_MediaTypeOrderByIdDesc(MediaType.VIDEO);
         Map<Long, List<MediaDto>> media = mediaService.byArtistMap(LIMIT);
@@ -56,14 +66,14 @@ public class MemberSpotlightService {
             String name = artist.getName().trim();
             String encoded = URLEncoder.encode(name, StandardCharsets.UTF_8);
             List<Map<String, Object>> feeds = new ArrayList<>();
-            String objektMember = objektFilterValue(objekts, artist);
+            String objektMember = objektFilterValue(objektMembers, artist);
             String objektQuery = URLEncoder.encode(objektMember, StandardCharsets.UTF_8);
             feeds.add(feed(
                     "오브젝트",
                     "이 멤버만 고른 오브젝트 최신 5개입니다.",
                     "이 멤버의 오브젝트가 없습니다.",
                     "/cosmo/objekt?member=" + objektQuery,
-                    objektCards(objekts, name, objektQuery)));
+                    objektCards(newestObjekts, name, objektQuery)));
             feeds.add(archiveFeed("사진 아카이브", "등록된 사진 최신 5개입니다.", "이 멤버의 사진이 없습니다.",
                     images, MediaType.IMAGE, name, "/archive/image_archive?members=" + encoded));
             feeds.add(archiveFeed("영상 아카이브", "등록된 영상 최신 5개입니다.", "이 멤버의 영상이 없습니다.",
@@ -103,20 +113,19 @@ public class MemberSpotlightService {
     }
 
     private List<Map<String, Object>> objektCards(List<Map<String, Object>> objekts, String name, String objektQuery) {
-        return objekts.stream()
-                .filter(objekt -> MemberPortraitOptions.objektIncludesMember(objektText(objekt), name))
-                .sorted(Comparator.comparing((Map<String, Object> objekt) -> text(objekt.get("createdAt"))).reversed())
-                .limit(LIMIT)
-                .map(objekt -> {
-                    String id = text(objekt.get("id"));
-                    String href = id.isBlank()
-                            ? "/cosmo/objekt?member=" + objektQuery
-                            : "/cosmo/objekt/detail/" + URLEncoder.encode(id, StandardCharsets.UTF_8);
-                    String image = firstNonBlank(text(objekt.get("thumbnailImage")), text(objekt.get("frontImage")));
-                    String meta = joinMeta(text(objekt.get("season")), text(objekt.get("class")));
-                    return card(text(objekt.get("collectionId")), href, !image.isBlank(), image, meta, !image.isBlank());
-                })
-                .toList();
+        List<Map<String, Object>> cards = new ArrayList<>(LIMIT);
+        for (Map<String, Object> objekt : objekts) {
+            if (!MemberPortraitOptions.objektIncludesMember(objektText(objekt), name)) continue;
+            String id = text(objekt.get("id"));
+            String href = id.isBlank()
+                    ? "/cosmo/objekt?member=" + objektQuery
+                    : "/cosmo/objekt/detail/" + URLEncoder.encode(id, StandardCharsets.UTF_8);
+            String image = firstNonBlank(text(objekt.get("thumbnailImage")), text(objekt.get("frontImage")));
+            String meta = joinMeta(text(objekt.get("season")), text(objekt.get("class")));
+            cards.add(card(text(objekt.get("collectionId")), href, !image.isBlank(), image, meta, !image.isBlank()));
+            if (cards.size() == LIMIT) break;
+        }
+        return cards;
     }
 
     private List<Map<String, Object>> mediaCards(List<MediaDto> media) {
@@ -184,10 +193,9 @@ public class MemberSpotlightService {
         return card;
     }
 
-    private static String objektFilterValue(List<Map<String, Object>> objekts, Artist artist) {
+    private static String objektFilterValue(List<String> options, Artist artist) {
         String name = artist.getName() == null ? "" : artist.getName().trim();
         String eng = artist.getEngName() == null ? "" : artist.getEngName().trim();
-        List<String> options = objekts.stream().map(objekt -> text(objekt.get("member"))).filter(value -> !value.isBlank()).distinct().toList();
         for (String option : options) {
             if (option.equals(name) || option.equalsIgnoreCase(eng)) return option;
         }
