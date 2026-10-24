@@ -12,7 +12,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/artist.css?v=13">
+    <link rel="stylesheet" href="/css/artist.css?v=14">
     <style>
         .artist-page .artist-edit-inline[hidden] { display: none !important; }
     </style>
@@ -128,9 +128,12 @@
                         </div>
                         <div class="bg-[#0d0e12]/40 border border-[#3a4a46]/30 rounded-xl p-4 space-y-2.5">
                             <span class="text-xl font-semibold text-[#b9cac4] block whitespace-nowrap">역대 소속 유닛</span>
-                            <div class="flex flex-wrap gap-2">
+                            <div class="artist-unit-chips">
                                 {{#displayAffiliatedUnit}}
-                                <a href="/triples/unit/{{unit.unitId}}" class="inline-flex items-center whitespace-nowrap px-3 py-1 rounded-full bg-[#16181f]/80 hover:bg-[#00f5d4]/20 border border-[#3a4a46]/50 hover:border-[#00f5d4]/50 text-xl font-medium text-[#e3e2e8] hover:text-[#00f5d4] transition-all text-decoration-none">{{unit.unitName}}</a>
+                                <a href="/triples/unit/{{unit.unitId}}" class="artist-unit-chip" title="{{unit.unitName}}">
+                                    <img class="artist-unit-chip-photo" src="{{unit.displayUnitImage}}" alt="" referrerpolicy="no-referrer" loading="lazy">
+                                    <span class="artist-unit-chip-name">{{unit.unitName}}</span>
+                                </a>
                                 {{/displayAffiliatedUnit}}
                                 {{^displayAffiliatedUnit}}
                                 <span class="text-xs text-[#b9cac4]/60 font-mono">소속 유닛 없음</span>

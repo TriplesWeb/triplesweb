@@ -728,6 +728,53 @@
         0 0 14px color-mix(in srgb, var(--artist-color) 55%, transparent);
 }
 
+.artist-unit-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+}
+
+.artist-unit-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    max-width: 100%;
+    padding: 0.28rem 0.85rem 0.28rem 0.28rem;
+    border-radius: 999px;
+    background: rgba(22, 24, 31, 0.9);
+    border: 1px solid rgba(58, 74, 70, 0.65);
+    color: #e3e2e8;
+    text-decoration: none;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.artist-unit-chip:hover {
+    background: rgba(0, 245, 212, 0.1);
+    border-color: rgba(0, 245, 212, 0.55);
+    color: #00f5d4;
+    transform: translateY(-1px);
+}
+
+.artist-unit-chip-photo {
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 999px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: #101116;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.artist-unit-chip-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
 @keyframes artist-tab-shine-sweep {
     0% { transform: translateX(0) skewX(-18deg); }
     55%, 100% { transform: translateX(320%) skewX(-18deg); }
