@@ -195,36 +195,38 @@
                         {{/hasSoloLinks}}
                     </section>
 
-                    <section class="artist-content-section" aria-labelledby="media-heading-{{artistId}}">
+                    {{#memberFeeds}}
+                    <section class="artist-content-section">
                         <div class="artist-content-head">
                             <div>
-                                <h2 id="media-heading-{{artistId}}" class="artist-content-title">멤버 출연 콘텐츠</h2>
-                                <p class="artist-content-desc">공식 미디어에 등록되고 이 멤버와 연결된 영상입니다.</p>
+                                <h2 class="artist-content-title">{{title}}</h2>
+                                <p class="artist-content-desc">{{description}}</p>
                             </div>
-                            <a href="/media?artist={{name}}" class="artist-content-more">공식 미디어 보기</a>
+                            <a href="{{moreUrl}}" class="artist-content-more">더보기</a>
                         </div>
-                        {{#hasMediaContents}}
+                        {{#hasItems}}
                         <div class="artist-content-grid">
-                            {{#mediaContents}}
+                            {{#items}}
                             <article class="artist-content-card">
-                                <a href="/media/{{tab}}/{{youtubeId}}" class="artist-content-card-link">
+                                <a href="{{href}}" class="artist-content-card-link" {{#external}}target="_blank" rel="noopener noreferrer"{{/external}}>
                                     <div class="artist-content-thumb">
-                                        <img src="https://img.youtube.com/vi/{{youtubeId}}/hqdefault.jpg" loading="lazy" alt="{{title}}">
-                                        {{#duration}}<span class="artist-content-duration">{{duration}}</span>{{/duration}}
+                                        {{#hasImage}}<img src="{{image}}" loading="lazy" alt="{{title}}">{{/hasImage}}
+                                        {{^hasImage}}<span class="material-symbols-outlined artist-content-play" aria-hidden="true">{{icon}}</span>{{/hasImage}}
                                     </div>
                                     <div class="artist-content-body">
                                         <h3 class="artist-content-card-title">{{title}}</h3>
-                                        <p class="artist-content-meta">공식 미디어 · {{tabLabel}}{{#viewCountFmt}} · 조회수 {{viewCountFmt}}{{/viewCountFmt}}</p>
+                                        {{#hasMeta}}<p class="artist-content-meta">{{meta}}</p>{{/hasMeta}}
                                     </div>
                                 </a>
                             </article>
-                            {{/mediaContents}}
+                            {{/items}}
                         </div>
-                        {{/hasMediaContents}}
-                        {{^hasMediaContents}}
-                        <p class="artist-content-empty">아직 연결된 공식 미디어가 없습니다. 미디어 등록 시 출연 멤버로 선택하면 여기에 표시됩니다.</p>
-                        {{/hasMediaContents}}
+                        {{/hasItems}}
+                        {{^hasItems}}
+                        <p class="artist-content-empty">{{emptyText}}</p>
+                        {{/hasItems}}
                     </section>
+                    {{/memberFeeds}}
 
                     <section class="artist-content-section" aria-labelledby="broadcast-heading-{{artistId}}">
                         <div class="artist-content-head">

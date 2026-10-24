@@ -112,6 +112,10 @@ public class Artist {
     @Transient
     private List<MediaDto> mediaContents = new ArrayList<>();
 
+    /** 멤버 탭에 붙는 오브젝트·아카이브·일정·공식 미디어 미리보기. */
+    @Transient
+    private List<Map<String, Object>> memberFeeds = List.of();
+
     /**
      * DataInitializer와 기존 호출부를 위한 호환 생성자(미디어 목록은 페이지에서 채운다).
      * main의 본명·MBTI·싸인 이미지 필드를 포함하며, {@code mediaContents}는 넣지 않는다.

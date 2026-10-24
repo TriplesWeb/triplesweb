@@ -414,6 +414,16 @@
     overflow: hidden;
 }
 
+.artist-content-thumb:not(:has(img)) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.artist-content-thumb:not(:has(img)) .artist-content-play {
+    position: static;
+}
+
 .artist-content-thumb img {
     width: 100%;
     height: 100%;
