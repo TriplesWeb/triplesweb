@@ -17,13 +17,117 @@
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=4">
     <style>
+        .objekt-head {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,.06);
+        }
+        .objekt-head-copy {
+            min-width: 0;
+        }
+        .objekt-head-kicker {
+            margin: 0 0 .35rem;
+            color: #6ee7d8;
+            font-family: Sora, Inter, sans-serif;
+            font-size: .68rem;
+            font-weight: 700;
+            letter-spacing: .22em;
+            text-transform: uppercase;
+        }
+        .objekt-head-title {
+            margin: 0;
+            color: #f3f4f8;
+            font-family: Sora, Inter, sans-serif;
+            font-size: clamp(1.55rem, 2.4vw, 1.95rem);
+            font-weight: 800;
+            letter-spacing: -.03em;
+            line-height: 1.1;
+        }
+        .objekt-head-sub {
+            margin: .35rem 0 0;
+            color: #8b93a7;
+            font-size: .82rem;
+            font-weight: 500;
+        }
+        .objekt-fav-link {
+            display: inline-flex;
+            flex-shrink: 0;
+            align-items: center;
+            gap: .4rem;
+            min-height: 2.35rem;
+            padding: 0 .95rem;
+            border: 1px solid rgba(244, 114, 182, .28);
+            border-radius: 999px;
+            background: rgba(244, 114, 182, .06);
+            color: #f9a8d4;
+            font-size: .78rem;
+            font-weight: 650;
+            text-decoration: none;
+            transition: border-color .18s ease, background .18s ease, color .18s ease;
+        }
+        .objekt-fav-link:hover {
+            border-color: rgba(244, 114, 182, .55);
+            background: rgba(244, 114, 182, .12);
+            color: #fce7f3;
+        }
+
+        .objekt-workspace {
+            display: grid;
+            gap: .85rem;
+            padding: 1rem;
+            border: 1px solid rgba(72, 82, 108, .32);
+            border-radius: 18px;
+            background:
+                radial-gradient(120% 80% at 0% 0%, rgba(0, 232, 203, .05), transparent 42%),
+                linear-gradient(160deg, rgba(20, 23, 33, .96), rgba(14, 16, 24, .94));
+        }
         .objekt-member-picker-panel {
-            margin-bottom: 12px;
-            padding: 14px 14px 12px;
-            background: linear-gradient(135deg, rgba(18,20,28,.96), rgba(20,23,33,.92));
-            border: 1px solid rgba(83, 95, 122, .28);
-            border-radius: 16px;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 12px 30px rgba(0,0,0,.16);
+            margin: 0;
+            padding: 0 0 .85rem;
+            border: 0;
+            border-bottom: 1px solid rgba(255,255,255,.06);
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+        .objekt-member-picker-panel .mpp-toolbar { margin-bottom: 0; }
+        .objekt-member-picker-panel:not(.is-collapsed) .mpp-toolbar { margin-bottom: .75rem; }
+        .objekt-member-toggle {
+            display: flex;
+            flex: 1 1 auto;
+            min-width: 0;
+            align-items: center;
+            gap: .55rem;
+            margin: 0;
+            border: 0;
+            background: transparent;
+            padding: 0;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+        .objekt-member-toggle .mpp-toolbar-title,
+        .objekt-member-toggle .mpp-toolbar-meta {
+            display: block;
+        }
+        .objekt-member-toggle:hover .mpp-toolbar-title,
+        .objekt-member-toggle[aria-expanded="true"] .mpp-toolbar-title {
+            color: #7df9e8;
+        }
+        .objekt-member-toggle-caret {
+            flex: 0 0 auto;
+            margin-left: .15rem;
+            color: #6ee7d8;
+            font-size: 1.2rem;
+            line-height: 1;
+            transition: transform .18s ease;
+        }
+        .objekt-member-toggle[aria-expanded="true"] .objekt-member-toggle-caret {
+            transform: rotate(180deg);
         }
         .objekt-member-checks {
             position: absolute;
@@ -36,121 +140,254 @@
             white-space: nowrap;
             border: 0;
         }
-        /* 오브젝트 페이지 전용 스타일: 기존 필터/스크립트 동작은 유지 */
         .objekt-filter-bar {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             align-items: center;
-            gap: 12px;
-            padding: 16px;
-            background: linear-gradient(135deg, rgba(18,20,28,.96), rgba(20,23,33,.92));
-            border: 1px solid rgba(83, 95, 122, .28);
-            border-radius: 16px;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 12px 30px rgba(0,0,0,.16);
+            gap: .55rem .65rem;
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
         }
         .objekt-filter {
             display: flex;
-            flex: 0 0 auto;
-            min-height: 52px;
+            width: 100%;
+            min-width: 0;
+            height: 2.65rem;
             align-items: center;
-            gap: 12px;
-            padding: 8px 12px;
-            border: 1px solid #2c3144;
-            border-radius: 12px;
-            background: rgba(26,29,40,.9);
-            transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
+            gap: .5rem;
+            padding: .25rem .25rem .25rem .75rem;
+            border: 1px solid rgba(58, 66, 88, .72);
+            border-radius: 999px;
+            background: rgba(10, 12, 18, .55);
+            transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
         }
         .objekt-filter:focus-within,
         .objekt-filter:hover {
-            border-color: rgba(0,245,212,.45);
-            box-shadow: 0 0 0 1px rgba(0,245,212,.06);
+            border-color: rgba(0, 245, 212, .38);
+            background: rgba(0, 245, 212, .04);
         }
         .objekt-filter-label {
             flex: 0 0 auto;
-            color: #a4adbf;
-            font-size: 13px;
-            font-weight: 500;
-            letter-spacing: .01em;
+            color: #8b93a7;
+            font-size: .72rem;
+            font-weight: 650;
+            letter-spacing: .04em;
+            text-transform: uppercase;
         }
         .objekt-filter-control {
-            min-width: 76px;
-            min-height: 38px;
-            border: 1px solid rgba(0,0,0,.08);
-            border-radius: 9px;
-            background-color: #00e8cb;
-            padding: 7px 12px;
-            color: #071513;
-            font-size: 13px;
-            font-weight: 650;
-            transition: background-color .2s ease, box-shadow .2s ease;
+            display: inline-flex;
+            flex: 1 1 auto;
+            align-items: center;
+            justify-content: space-between;
+            gap: .2rem;
+            box-sizing: border-box;
+            min-width: 0;
+            width: auto;
+            height: 2.1rem;
+            margin: 0;
+            border: 0;
+            border-radius: 999px;
+            background: rgba(255,255,255,.045);
+            padding: 0 .35rem 0 .75rem;
+            color: #e8ebf2;
+            font-size: .82rem;
+            font-weight: 600;
+            line-height: 1;
+            transition: background .18s ease, color .18s ease;
         }
-        .objekt-filter-control:hover { background-color: #39f7df; }
+        .objekt-filter-control:hover { background: rgba(255,255,255,.07); }
+        .objekt-filter button.objekt-filter-control { cursor: pointer; }
+        .objekt-filter-control > .truncate { min-width: 0; }
+        .objekt-filter-caret {
+            flex: 0 0 auto;
+            color: #6ee7d8;
+            font-size: 1.1rem !important;
+            line-height: 1 !important;
+            pointer-events: none;
+        }
         .objekt-filter.is-filtered {
-            border-color: rgba(0, 245, 212, .7);
+            border-color: rgba(0, 245, 212, .55);
             background: rgba(0, 245, 212, .08);
         }
+        .objekt-filter.is-filtered .objekt-filter-label { color: #7df9e8; }
         .objekt-search.is-filtered {
-            border-color: rgba(0, 245, 212, .7);
-            box-shadow: 0 0 0 3px rgba(0, 245, 212, .09);
-        }
-        .objekt-member-picker-panel.is-filtered {
             border-color: rgba(0, 245, 212, .55);
+            box-shadow: 0 0 0 3px rgba(0, 245, 212, .08);
+        }
+        .objekt-member-picker-panel.is-filtered .mpp-toolbar-meta {
+            color: #7df9e8;
         }
 
-        /* select 텍스트가 잘리지 않도록 종류/정렬 너비만 소폭 확장 */
-        .objekt-filter select.objekt-filter-control {
-            width: auto;
+        .objekt-filter-select-wrap {
+            position: relative;
+            min-width: 0;
+            padding-right: .25rem;
+        }
+        .objekt-filter-select-wrap select,
+        .objekt-filter-select-wrap select:hover,
+        .objekt-filter-select-wrap select:focus {
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            width: 100%;
+            min-width: 0;
+            height: 2.1rem;
+            margin: 0;
+            border: 0 !important;
+            outline: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            padding: 0 1.35rem 0 0 !important;
+            color: #e8ebf2 !important;
+            font-size: .82rem;
+            font-weight: 600;
+            line-height: 2.1rem;
+            cursor: pointer;
+        }
+        .objekt-filter-select-wrap .objekt-filter-caret {
+            position: absolute;
+            top: 50%;
+            right: .2rem;
+            transform: translateY(-50%);
+        }
+
+        .objekt-kind-combo {
+            min-width: 0;
+            gap: 0;
+            padding: 0 .2rem 0 .65rem;
+        }
+        .objekt-filter input.objekt-kind-select,
+        .objekt-filter input.objekt-kind-select:hover,
+        .objekt-filter input.objekt-kind-select:focus,
+        .objekt-filter input.objekt-kind-select:focus-visible {
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            width: 100%;
+            min-width: 0;
+            max-width: none;
+            flex: 1 1 auto;
+            height: 2.1rem;
+            margin: 0;
+            border: 0 !important;
+            border-radius: 0 !important;
+            outline: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            background-color: transparent !important;
+            padding: 0 !important;
+            color: #e8ebf2 !important;
+            font-family: "JetBrains Mono", ui-monospace, monospace;
+            font-size: .8rem;
+            font-weight: 650;
+            letter-spacing: .02em;
+            line-height: 2.1rem;
+            text-transform: uppercase;
+            caret-color: #6ee7d8;
+        }
+        .objekt-filter input.objekt-kind-select::placeholder {
+            color: #6b7388 !important;
+            opacity: 1;
+            text-transform: none;
+            font-family: inherit;
+            font-weight: 600;
+            letter-spacing: 0;
+        }
+        .objekt-kind-toggle {
+            display: inline-flex;
             flex: 0 0 auto;
-            min-width: 112px;
-            padding-left: 14px;
-            padding-right: 28px;
-            white-space: nowrap;
+            align-items: center;
+            justify-content: center;
+            width: 1.45rem;
+            height: 1.45rem;
+            border: 0;
+            border-radius: 999px;
+            background: transparent;
+            color: #6ee7d8;
+            cursor: pointer;
         }
-        .objekt-filter select.objekt-sort-select {
-            min-width: 142px;
+        .objekt-kind-toggle:hover { background: rgba(255,255,255,.06); }
+        .objekt-kind-toggle .material-symbols-outlined {
+            font-size: 1.1rem;
+            line-height: 1;
         }
+        .objekt-kind-option {
+            display: block;
+            width: 100%;
+            padding: .45rem .7rem;
+            border: 0;
+            border-radius: .5rem;
+            background: transparent;
+            color: #e8ebf2;
+            font-family: "JetBrains Mono", ui-monospace, monospace;
+            font-size: .82rem;
+            text-align: left;
+            cursor: pointer;
+        }
+        .objekt-kind-option:hover,
+        .objekt-kind-option.is-active {
+            background: rgba(0, 245, 212, .1);
+            color: #7df9e8;
+        }
+        .objekt-kind-option[hidden] { display: none; }
+        .objekt-kind-empty {
+            padding: .55rem .7rem;
+            color: #8b93a7;
+            font-size: .78rem;
+        }
+        .objekt-kind-empty[hidden] { display: none; }
         .objekt-filter-control:focus-visible,
         .objekt-search-input:focus-visible {
             outline: 2px solid #00f5d4;
             outline-offset: 2px;
         }
+        .objekt-search-row {
+            display: flex;
+            grid-column: 1 / -1;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: .55rem;
+            width: 100%;
+            margin-top: .15rem;
+            padding-top: .85rem;
+            border-top: 1px solid rgba(255,255,255,.06);
+        }
         .objekt-search {
             display: flex;
-            flex: 1 1 250px;
-            min-width: 220px;
-            max-width: none;
-            min-height: 52px;
+            flex: 1 1 16rem;
+            min-width: 12rem;
+            min-height: 2.75rem;
             align-items: center;
-            gap: 10px;
-            margin-left: auto;
-            padding: 0 14px;
-            border: 1px solid #30364a;
-            border-radius: 12px;
-            background: rgba(10,12,18,.72);
-            transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+            gap: .55rem;
+            padding: 0 .95rem;
+            border: 1px solid rgba(58, 66, 88, .72);
+            border-radius: 999px;
+            background: rgba(8, 10, 16, .72);
+            transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
         }
         .objekt-search-button {
             display: inline-flex;
             flex: 0 0 auto;
-            min-height: 52px;
+            min-height: 2.75rem;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            padding: 0 20px;
-            border: 1px solid rgba(0,245,212,.42);
-            border-radius: 12px;
+            gap: .4rem;
+            padding: 0 1.15rem;
+            border: 0;
+            border-radius: 999px;
             background: #00e8cb;
             color: #071513;
-            font-size: 13px;
+            font-size: .82rem;
             font-weight: 750;
             letter-spacing: .01em;
             cursor: pointer;
-            box-shadow: 0 4px 14px rgba(0,232,203,.12);
+            box-shadow: 0 8px 22px rgba(0, 232, 203, .16);
             transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
         }
         .objekt-search-button:hover {
             background: #39f7df;
-            box-shadow: 0 6px 20px rgba(0,232,203,.2);
+            box-shadow: 0 10px 26px rgba(0, 232, 203, .22);
             transform: translateY(-1px);
         }
         .objekt-search-button:active { transform: translateY(0); }
@@ -161,34 +398,34 @@
         .objekt-reset-button {
             display: inline-flex;
             flex: 0 0 auto;
-            min-height: 52px;
+            min-height: 2.75rem;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            padding: 0 18px;
-            border: 1px solid rgba(255, 180, 171, .45);
-            border-radius: 12px;
-            background: rgba(255, 180, 171, .08);
-            color: #ffd0c8;
-            font-size: 13px;
-            font-weight: 750;
+            gap: .4rem;
+            padding: 0 1rem;
+            border: 1px solid rgba(120, 130, 155, .35);
+            border-radius: 999px;
+            background: transparent;
+            color: #a4adbf;
+            font-size: .82rem;
+            font-weight: 650;
             letter-spacing: .01em;
             cursor: pointer;
             transition: background .18s ease, border-color .18s ease, color .18s ease;
         }
         .objekt-reset-button:hover {
-            background: rgba(255, 180, 171, .16);
-            border-color: rgba(255, 180, 171, .7);
-            color: #fff;
+            border-color: rgba(180, 190, 210, .45);
+            background: rgba(255,255,255,.04);
+            color: #e8ebf2;
         }
         .objekt-reset-button:focus-visible {
-            outline: 2px solid #ffb4ab;
+            outline: 2px solid #a4adbf;
             outline-offset: 3px;
         }
         .objekt-search:focus-within {
-            border-color: #00d9bd;
-            background: rgba(10,12,18,.95);
-            box-shadow: 0 0 0 3px rgba(0,245,212,.09);
+            border-color: rgba(0, 217, 189, .7);
+            background: rgba(8, 10, 16, .92);
+            box-shadow: 0 0 0 3px rgba(0, 245, 212, .08);
         }
         .objekt-search-input {
             width: 100%;
@@ -198,11 +435,11 @@
             box-shadow: none !important;
             background: transparent !important;
             color: #f1f5f9 !important;
-            font-size: 14px;
+            font-size: .9rem;
         }
-        .objekt-search-input::placeholder { color: #70798d; }
+        .objekt-search-input::placeholder { color: #6b7388; }
         .objekt-dropdown-menu {
-            min-width: 100%;
+            min-width: 12rem;
             border-color: #343b51;
             background: #171a24;
             box-shadow: 0 18px 40px rgba(0,0,0,.42);
@@ -218,21 +455,21 @@
             box-shadow: 0 14px 32px rgba(0,0,0,.34), 0 0 0 1px rgba(0,245,212,.06);
         }
         @media (max-width: 760px) {
-            .objekt-filter-bar { gap: 9px; padding: 12px; }
-            .objekt-filter { flex: 1 1 calc(50% - 9px); min-width: 0; justify-content: space-between; }
-            .objekt-filter-control { min-width: 0; max-width: 62%; }
-            .objekt-filter select.objekt-filter-control { min-width: 104px; max-width: none; }
-            .objekt-filter select.objekt-sort-select { min-width: 132px; }
-            .objekt-search { flex: 1 1 100%; max-width: none; margin-left: 0; }
+            .objekt-workspace { padding: .85rem; gap: .75rem; }
+            .objekt-filter-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .objekt-filter { height: auto; min-height: 2.65rem; justify-content: space-between; border-radius: 14px; }
+            .objekt-filter-control { max-width: none; }
+            .objekt-filter-select-wrap,
+            .objekt-kind-combo { max-width: none; }
+            .objekt-search { flex: 1 1 100%; }
             .objekt-search-button,
-            .objekt-reset-button { flex: 1 1 calc(50% - 9px); }
+            .objekt-reset-button { flex: 1 1 calc(50% - .55rem); }
             .objekt-card-grid { gap: 10px; }
         }
         @media (max-width: 420px) {
-            .objekt-filter { flex-basis: 100%; }
-            .objekt-filter-control { max-width: 72%; }
-            .objekt-filter select.objekt-filter-control { min-width: 112px; }
-            .objekt-filter select.objekt-sort-select { min-width: 142px; }
+            .objekt-filter-bar { grid-template-columns: 1fr; }
+            .objekt-head { align-items: flex-start; }
+            .objekt-fav-link { padding: 0 .8rem; }
         }
     </style>
 </head>
@@ -240,30 +477,31 @@
 {{>layout/header}}
 <main class="main-content w-full max-w-[1440px] mx-auto px-4 sm:px-6 py-6 mb-auto">
     <section class="card-box w-full bg-[#16181f]/85 backdrop-blur-xl border border-[#303646]/80 rounded-2xl p-4 sm:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)] relative z-30">
-        <div class="mb-5 flex items-center justify-between gap-4 border-b border-white/[0.06] pb-4">
-            <div class="flex min-w-0 flex-wrap items-end gap-x-3 gap-y-2">
-                <div>
-                    <p class="mb-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#00d9bd]">COLLECTION</p>
-                    <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-[#f0f1f6]">오브젝트</h2>
-                </div>
-                <span class="hidden sm:inline-flex items-center gap-2 rounded-full border border-[#00f5d4]/20 bg-[#00f5d4]/[0.06] px-3 py-1.5 text-xs font-medium text-[#7df9e8]">
-                    <span class="h-1.5 w-1.5 rounded-full bg-[#00f5d4] shadow-[0_0_8px_#00f5d4]"></span>
-                    Objekt Archive
-                </span>
+        <div class="objekt-head">
+            <div class="objekt-head-copy">
+                <p class="objekt-head-kicker">Collection</p>
+                <h2 class="objekt-head-title">오브젝트</h2>
+                <p class="objekt-head-sub">Objekt Archive</p>
             </div>
-            <a href="/cosmo/objekt/favorites" class="shrink-0 rounded-full border border-pink-400/30 px-3 py-2 text-xs text-pink-200">♡ 찜 목록</a>
+            <a href="/cosmo/objekt/favorites" class="objekt-fav-link">
+                <span class="material-symbols-outlined text-[1rem]" aria-hidden="true">favorite</span>
+                찜 목록
+            </a>
         </div>
         <form id="objekt-search-form" action="/cosmo/objekt" method="get">
         <input type="hidden" name="page" value="0">
 
+        <div class="objekt-workspace">
         <div class="objekt-member-picker-panel is-collapsed" id="member-dropdown">
             <div class="mpp-toolbar">
-                <div>
-                    <p class="mpp-toolbar-title">멤버 (다중 선택)</p>
-                    <p class="mpp-toolbar-meta" id="member-label">전체 멤버</p>
-                </div>
+                <button type="button" class="objekt-member-toggle" id="objekt-member-toggle" aria-expanded="false" aria-controls="objekt-member-picker">
+                    <span>
+                        <span class="mpp-toolbar-title">멤버</span>
+                        <span class="mpp-toolbar-meta" id="member-label">전체 멤버</span>
+                    </span>
+                    <span class="material-symbols-outlined objekt-member-toggle-caret" aria-hidden="true">expand_more</span>
+                </button>
                 <div class="mpp-toolbar-actions">
-                    <button type="button" class="mpp-tool-btn" id="objekt-member-toggle" aria-expanded="false" aria-controls="objekt-member-picker">멤버 선택</button>
                     <button type="button" class="mpp-tool-btn" id="objekt-member-clear">전체</button>
                 </div>
             </div>
@@ -279,17 +517,13 @@
 
         <div class="objekt-filter-bar relative">
 
-            <!-- 1. 시즌 다중 선택 필터 (너비 확장 및 독립 스크립트 연동) -->
             <div class="objekt-filter relative" id="season-dropdown">
                 <span class="objekt-filter-label">시즌</span>
-                <!-- 드롭다운 토글 버튼 -->
-                <button type="button" onclick="toggleDropdown('season-menu')" class="objekt-filter-control flex items-center justify-between gap-3 cursor-pointer">
+                <button type="button" onclick="toggleDropdown('season-menu')" class="objekt-filter-control">
                     <span id="season-label" class="truncate">전체</span>
-                    <span class="material-symbols-outlined text-xs text-black">arrow_drop_down</span>
+                    <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                 </button>
-
-                <!-- 체크박스 목록 메뉴 -->
-                <div id="season-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 w-full rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
+                <div id="season-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
                     <label class="flex items-center gap-2 px-2.5 py-2 hover:bg-[#1a1d28] rounded-md cursor-pointer text-sm text-white">
                         <input type="checkbox" value="all" class="rounded season-checkbox" checked><span>전체 시즌</span>
                     </label>
@@ -303,31 +537,42 @@
                 </div>
             </div>
 
-            <!-- 2. 종류 필터 -->
-            <div class="objekt-filter">
+            <div class="objekt-filter relative" id="kind-dropdown">
                 <span class="objekt-filter-label">종류</span>
-                <label class="w-full">
-                    <select name="kind" class="objekt-filter-control objekt-kind-select cursor-pointer" aria-label="옵젝 종류 필터">
-                        <option value="all">all</option>
-                        {{#objektNumbers}}
-                        <option value="{{.}}">{{.}}</option>
-                        {{/objektNumbers}}
-                    </select>
-                </label>
+                <div class="objekt-filter-control objekt-kind-combo">
+                    <input type="text"
+                           name="kind"
+                           id="objekt-kind-input"
+                           class="objekt-kind-select"
+                           value="{{selectedKind}}"
+                           placeholder="all"
+                           autocomplete="off"
+                           spellcheck="false"
+                           role="combobox"
+                           aria-expanded="false"
+                           aria-controls="kind-menu"
+                           aria-autocomplete="list"
+                           aria-label="옵젝 종류 필터 (입력 또는 선택)">
+                    <button type="button" class="objekt-kind-toggle" id="objekt-kind-toggle" aria-label="종류 목록 열기" tabindex="-1">
+                        <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
+                    </button>
+                </div>
+                <div id="kind-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 min-w-[9rem] max-h-60 overflow-y-auto rounded-xl border z-50 p-1.5" role="listbox" aria-label="종류 목록">
+                    <button type="button" class="objekt-kind-option" data-value="all" role="option">all</button>
+                    {{#objektNumbers}}
+                    <button type="button" class="objekt-kind-option" data-value="{{.}}" role="option">{{.}}</button>
+                    {{/objektNumbers}}
+                    <p class="objekt-kind-empty" id="kind-empty" hidden>일치하는 종류 없음</p>
+                </div>
             </div>
 
-
-            <!-- 3. 클래스 다중 선택 필터 (너비 확장 및 독립 스크립트 연동) -->
             <div class="objekt-filter relative" id="class-dropdown">
                 <span class="objekt-filter-label">클래스</span>
-                <!-- 드롭다운 토글 버튼 -->
-                <button type="button" onclick="toggleDropdown('class-menu')" class="objekt-filter-control flex items-center justify-between gap-3 cursor-pointer">
+                <button type="button" onclick="toggleDropdown('class-menu')" class="objekt-filter-control">
                     <span id="class-label" class="truncate">전체</span>
-                    <span class="material-symbols-outlined text-xs text-black">arrow_drop_down</span>
+                    <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                 </button>
-
-                <!-- 체크박스 목록 메뉴 -->
-                <div id="class-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 w-full rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
+                <div id="class-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
                     <label class="flex items-center gap-2 px-2.5 py-2 hover:bg-[#1a1d28] rounded-md cursor-pointer text-sm text-white">
                         <input type="checkbox" value="all" class="rounded class-checkbox" checked><span>전체 클래스</span>
                     </label>
@@ -341,11 +586,10 @@
                 </div>
             </div>
 
-            <!-- 4. 정렬 필터 -->
-            <div class="objekt-filter">
+            <div class="objekt-filter relative" id="sort-dropdown">
                 <span class="objekt-filter-label">정렬</span>
-                <label class="w-full">
-                    <select name="sort" class="objekt-filter-control objekt-sort-select cursor-pointer">
+                <label class="objekt-filter-control objekt-filter-select-wrap">
+                    <select name="sort" class="objekt-sort-select" aria-label="정렬">
                         <option value="latest">최신순</option>
                         <option value="oldest">오래된순</option>
                         <option value="number_low">번호 낮은순</option>
@@ -355,25 +599,28 @@
                         <option value="mint_low">민팅 적은순</option>
                         <option value="mint_high">민팅 많은순</option>
                     </select>
+                    <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                 </label>
             </div>
 
-            <!-- 5. 검색 입력창 -->
-            <div class="objekt-search">
-                <span class="material-symbols-outlined text-[#00d9bd] text-xl pointer-events-none" aria-hidden="true">search</span>
-                <label class="w-full min-w-0">
-                    <input type="search" name="search" value="{{searchQuery}}" placeholder="전체 오브젝트에서 검색..." aria-label="전체 오브젝트 검색" autocomplete="off" class="objekt-search-input">
-                </label>
+            <div class="objekt-search-row">
+                <div class="objekt-search">
+                    <span class="material-symbols-outlined text-[#6ee7d8] text-xl pointer-events-none" aria-hidden="true">search</span>
+                    <label class="w-full min-w-0">
+                        <input type="search" name="search" value="{{searchQuery}}" placeholder="전체 오브젝트에서 검색..." aria-label="전체 오브젝트 검색" autocomplete="off" class="objekt-search-input">
+                    </label>
+                </div>
+                <button type="submit" id="objekt-search-submit" class="objekt-search-button">
+                    <span class="material-symbols-outlined text-lg" aria-hidden="true">search</span>
+                    검색
+                </button>
+                <button type="button" id="objekt-reset" class="objekt-reset-button">
+                    <span class="material-symbols-outlined text-lg" aria-hidden="true">restart_alt</span>
+                    초기화
+                </button>
             </div>
-            <button type="submit" id="objekt-search-submit" class="objekt-search-button">
-                <span class="material-symbols-outlined text-lg" aria-hidden="true">search</span>
-                검색하기
-            </button>
-            <button type="button" id="objekt-reset" class="objekt-reset-button">
-                <span class="material-symbols-outlined text-lg" aria-hidden="true">restart_alt</span>
-                필터 초기화
-            </button>
 
+        </div>
         </div>
         </form>
     </section>
@@ -428,8 +675,152 @@
     const memberLabel = document.getElementById('member-label');
 
     const params = new URLSearchParams(window.location.search);
-    kindSelect.value = params.get('kind') || 'all';
+    const kindMenu = document.getElementById('kind-menu');
+    const kindToggle = document.getElementById('objekt-kind-toggle');
+    const kindEmpty = document.getElementById('kind-empty');
+    const kindOptions = kindMenu ? [...kindMenu.querySelectorAll('.objekt-kind-option')] : [];
+    let kindActiveIndex = -1;
+    let filtersReady = false;
+    let filterTimer = null;
+
+    function normalizeKindValue(raw) {
+        const value = String(raw || '').trim();
+        if (!value || value.toLowerCase() === 'all') return 'all';
+        return value.toUpperCase();
+    }
+
+    function submitFilters({ immediate = false } = {}) {
+        if (!filtersReady || !form) return;
+        const run = () => {
+            if (typeof form.requestSubmit === 'function') form.requestSubmit();
+            else form.submit();
+        };
+        clearTimeout(filterTimer);
+        if (immediate) run();
+        else filterTimer = setTimeout(run, 320);
+    }
+
+    function setKindValue(raw, { apply = false } = {}) {
+        if (!kindSelect) return;
+        const next = normalizeKindValue(raw);
+        const prevApplied = normalizeKindValue(params.get('kind') || 'all');
+        kindSelect.value = next;
+        markActiveFilters();
+        if (apply && next !== prevApplied) submitFilters({ immediate: true });
+    }
+
+    function filterKindOptions(query) {
+        const q = normalizeKindValue(query);
+        const needle = q === 'all' ? '' : q.toLowerCase();
+        let shown = 0;
+        kindOptions.forEach((opt) => {
+            const value = String(opt.dataset.value || '').toLowerCase();
+            const match = !needle || value.includes(needle);
+            opt.hidden = !match;
+            if (match) shown += 1;
+        });
+        if (kindEmpty) kindEmpty.hidden = shown > 0;
+        kindActiveIndex = -1;
+        kindOptions.forEach((opt) => opt.classList.remove('is-active'));
+        return shown;
+    }
+
+    function openKindMenu(showAll) {
+        if (!kindMenu || !kindSelect) return;
+        filterKindOptions(showAll ? '' : kindSelect.value);
+        kindMenu.classList.remove('hidden');
+        kindSelect.setAttribute('aria-expanded', 'true');
+        document.getElementById('season-menu')?.classList.add('hidden');
+        document.getElementById('class-menu')?.classList.add('hidden');
+    }
+
+    function closeKindMenu() {
+        if (!kindMenu || !kindSelect) return;
+        kindMenu.classList.add('hidden');
+        kindSelect.setAttribute('aria-expanded', 'false');
+        kindActiveIndex = -1;
+        kindOptions.forEach((opt) => opt.classList.remove('is-active'));
+    }
+
+    function visibleKindOptions() {
+        return kindOptions.filter((opt) => !opt.hidden);
+    }
+
+    function moveKindActive(delta) {
+        const visible = visibleKindOptions();
+        if (!visible.length) return;
+        kindActiveIndex = (kindActiveIndex + delta + visible.length) % visible.length;
+        visible.forEach((opt, i) => opt.classList.toggle('is-active', i === kindActiveIndex));
+        visible[kindActiveIndex]?.scrollIntoView({ block: 'nearest' });
+    }
+
+    const initialKind = normalizeKindValue(params.get('kind') || kindSelect?.value || 'all');
+    if (kindSelect) kindSelect.value = initialKind;
     sortSelect.value = params.get('sort') || 'latest';
+
+    if (kindSelect && kindMenu) {
+        kindSelect.addEventListener('focus', () => openKindMenu(false));
+        kindSelect.addEventListener('click', () => openKindMenu(false));
+        kindSelect.addEventListener('input', () => {
+            openKindMenu(false);
+            markActiveFilters();
+        });
+        kindSelect.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (kindMenu.classList.contains('hidden')) openKindMenu(false);
+                else moveKindActive(1);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (kindMenu.classList.contains('hidden')) openKindMenu(false);
+                else moveKindActive(-1);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const visible = visibleKindOptions().filter((opt) => opt.dataset.value !== 'all');
+                if (!kindMenu.classList.contains('hidden') && kindActiveIndex >= 0) {
+                    const allVisible = visibleKindOptions();
+                    if (allVisible[kindActiveIndex]) {
+                        setKindValue(allVisible[kindActiveIndex].dataset.value, { apply: true });
+                        closeKindMenu();
+                        return;
+                    }
+                }
+                const typed = normalizeKindValue(kindSelect.value);
+                const exact = kindOptions.find((opt) => normalizeKindValue(opt.dataset.value) === typed);
+                if (exact) setKindValue(exact.dataset.value, { apply: true });
+                else if (visible.length === 1) setKindValue(visible[0].dataset.value, { apply: true });
+                else setKindValue(typed, { apply: true });
+                closeKindMenu();
+            } else if (e.key === 'Escape') {
+                closeKindMenu();
+            }
+        });
+        kindSelect.addEventListener('blur', () => {
+            // 옵션 클릭이 blur보다 먼저 처리되도록 약간 지연
+            setTimeout(() => {
+                if (!kindMenu.contains(document.activeElement) && document.activeElement !== kindToggle) {
+                    setKindValue(kindSelect.value, { apply: true });
+                    closeKindMenu();
+                }
+            }, 120);
+        });
+        kindToggle?.addEventListener('mousedown', (e) => e.preventDefault());
+        kindToggle?.addEventListener('click', () => {
+            if (kindMenu.classList.contains('hidden')) {
+                kindSelect.focus();
+                openKindMenu(true);
+            } else {
+                closeKindMenu();
+            }
+        });
+        kindOptions.forEach((opt) => {
+            opt.addEventListener('mousedown', (e) => e.preventDefault());
+            opt.addEventListener('click', () => {
+                setKindValue(opt.dataset.value, { apply: true });
+                closeKindMenu();
+            });
+        });
+    }
 
     function updateDropdownLabel(type) {
         const checks = [...document.querySelectorAll(`.${type}-checkbox:checked`)];
@@ -455,13 +846,14 @@
             : `${first} 외 ${chosen.length - 1}명`;
     }
 
-    function syncMemberChecks(values) {
+    function syncMemberChecks(values, { apply = false } = {}) {
         const selected = new Set((values || []).map(v => String(v).toLocaleLowerCase()));
         document.querySelectorAll('.member-checkbox').forEach((cb) => {
             cb.checked = selected.has(String(cb.value).toLocaleLowerCase());
         });
         syncMemberLabel();
         if (typeof markActiveFilters === 'function') markActiveFilters();
+        if (apply) submitFilters();
     }
 
     // 멤버 초상화 다중선택
@@ -469,7 +861,7 @@
     if (window.MemberPortraitPicker && memberRoot) {
         MemberPortraitPicker.bindMultiSelect(memberRoot, {
             multi: true,
-            onChange: syncMemberChecks
+            onChange: (values) => syncMemberChecks(values, { apply: true })
         });
         memberRoot.querySelectorAll('.mpp-item').forEach((btn) => {
             const value = (btn.dataset.value || '').toLocaleLowerCase();
@@ -481,7 +873,7 @@
         );
         document.getElementById('objekt-member-clear')?.addEventListener('click', () => {
             MemberPortraitPicker.clear(memberRoot);
-            syncMemberChecks([]);
+            syncMemberChecks([], { apply: true });
         });
     } else {
         syncMemberLabel();
@@ -491,9 +883,7 @@
     function setMemberPickerOpen(open) {
         memberRoot.classList.toggle('is-collapsed', !open);
         if (memberToggle) {
-            memberToggle.classList.toggle('is-open', open);
             memberToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-            memberToggle.textContent = open ? '멤버 닫기' : '멤버 선택';
         }
     }
     setMemberPickerOpen(selectedMembers.length > 0);
@@ -521,6 +911,7 @@
             if (all && !chosen) all.checked = true;
             updateDropdownLabel(type);
             markActiveFilters();
+            submitFilters();
         }));
         updateDropdownLabel(type);
     });
@@ -530,7 +921,8 @@
         document.getElementById('season-dropdown')?.classList.toggle('is-filtered', !!seasonText && seasonText !== '전체');
         const classText = document.getElementById('class-label')?.textContent.trim();
         document.getElementById('class-dropdown')?.classList.toggle('is-filtered', !!classText && classText !== '전체');
-        kindSelect.closest('.objekt-filter')?.classList.toggle('is-filtered', kindSelect.value && kindSelect.value !== 'all');
+        const kindValue = normalizeKindValue(kindSelect?.value);
+        kindSelect?.closest('.objekt-filter')?.classList.toggle('is-filtered', kindValue !== 'all');
         sortSelect.closest('.objekt-filter')?.classList.toggle('is-filtered', sortSelect.value && sortSelect.value !== 'latest');
         const searchValue = (form.querySelector('input[name="search"]')?.value || '').trim();
         document.querySelector('.objekt-search')?.classList.toggle('is-filtered', searchValue.length > 0);
@@ -538,9 +930,14 @@
         memberRoot?.classList.toggle('is-filtered', memberOn);
     }
     markActiveFilters();
-    form.addEventListener('change', markActiveFilters);
+    form.addEventListener('change', (e) => {
+        markActiveFilters();
+        if (e.target === sortSelect) submitFilters({ immediate: true });
+    });
+    filtersReady = true;
 
     window.toggleDropdown = function(id) {
+        closeKindMenu();
         document.querySelectorAll('[id$="-menu"]').forEach(menu => {
             if (menu.id !== id) menu.classList.add('hidden');
         });
@@ -548,14 +945,16 @@
     };
 
     window.addEventListener('click', e => {
-        if (!e.target.closest('#season-dropdown') && !e.target.closest('#class-dropdown')) {
+        if (!e.target.closest('#season-dropdown') && !e.target.closest('#class-dropdown') && !e.target.closest('#kind-dropdown')) {
             ['season-menu', 'class-menu'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+            closeKindMenu();
         }
     });
 
     form.addEventListener('submit', () => {
         const page = form.querySelector('input[name="page"]');
         if (page) page.value = '0';
+        if (kindSelect) kindSelect.value = normalizeKindValue(kindSelect.value);
         // 미선택(전체)일 때는 member 파라미터를 보내지 않는다.
         document.querySelectorAll('.member-checkbox').forEach((cb) => {
             if (!cb.checked) cb.disabled = true;
