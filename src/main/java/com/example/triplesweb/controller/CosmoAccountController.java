@@ -1,44 +1,15 @@
 package com.example.triplesweb.controller;
 
-import com.example.triplesweb.service.AboutAdminAuth;
-import com.example.triplesweb.service.CosmoAccountService;
-import com.example.triplesweb.service.GravityService;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 
+/**
+ * 예전 연결 계정 화면. 보유 카드는 닉네임 검색으로 보이므로 컬렉션 검색으로 보낸다.
+ */
 @Controller
 public class CosmoAccountController {
-    private final AboutAdminAuth aboutAdminAuth;
-    private final CosmoAccountService accountService;
-
-    public CosmoAccountController(AboutAdminAuth aboutAdminAuth, CosmoAccountService accountService) {
-        this.aboutAdminAuth = aboutAdminAuth;
-        this.accountService = accountService;
-    }
-
     @GetMapping("/cosmo/account")
-    public String account(HttpServletRequest request, HttpSession session, Model model) {
-        if (!aboutAdminAuth.isAdmin(request, session)) {
-            model.addAttribute("needsAdmin", true);
-            return "cosmo/account";
-        }
-        try {
-            model.addAttribute("cosmoAccount", accountService.load());
-            model.addAttribute("hasCosmoAccount", true);
-        } catch (Exception e) {
-            model.addAttribute("cosmoAccountError", GravityService.describeApiError(e));
-        }
-        return "cosmo/account";
-    }
-
-    @GetMapping("/api/cosmo/account")
-    @ResponseBody
-    public java.util.Map<String, Object> accountApi(HttpServletRequest request, HttpSession session) {
-        aboutAdminAuth.requireAdmin(request, session);
-        return accountService.load();
+    public String account() {
+        return "redirect:/cosmo/collection";
     }
 }
