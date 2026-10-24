@@ -194,9 +194,14 @@
     cursor: pointer;
 }
 
-.mpp-tool-btn:hover {
+.mpp-tool-btn:hover,
+.mpp-tool-btn.is-open {
     border-color: rgba(0, 245, 212, 0.5);
     color: #00f5d4;
+}
+
+.objekt-member-picker-panel.is-collapsed .member-portrait-picker {
+    display: none;
 }
 
 @keyframes mpp-shine-sweep {

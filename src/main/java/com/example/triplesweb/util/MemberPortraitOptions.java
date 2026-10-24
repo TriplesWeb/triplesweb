@@ -5,9 +5,11 @@ import com.example.triplesweb.entity.Artist;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 멤버 초상화 피커(아티스트 탭 스타일)용 옵션 맵을 만든다.
@@ -19,6 +21,12 @@ public final class MemberPortraitOptions {
             "nakyoung", "yubin", "kaede", "dahyun", "kotone", "yeonji",
             "nien", "sohyun", "xinyu", "mayu", "lynn", "joobin",
             "hayeon", "shion", "chaewon", "sullin", "seoah", "jiyeon"
+    );
+    private static final List<String> KOREAN_ORDER = List.of(
+            "윤서연", "정혜린", "이지우", "김채연", "김유연", "김수민",
+            "김나경", "공유빈", "카에데", "서다현", "코토네", "곽연지",
+            "니엔", "박소현", "신위", "마유", "린", "주빈",
+            "정하연", "박시온", "김채원", "설린", "서아", "지연"
     );
 
     private MemberPortraitOptions() {
@@ -113,6 +121,51 @@ public final class MemberPortraitOptions {
             }
         }
         return 0;
+    }
+
+    /**
+     * 선택한 멤버가 오브젝트 문구에 포함되는지 본다.
+     * 솔로 카드는 이름(윤서연)이고, 유닛 카드는 {@code S1 X S9}처럼 번호만 적혀 있다.
+     * S1은 번호 토큰으로만 맞추고 S10·S11과는 겹치지 않는다.
+     */
+    public static boolean objektIncludesMember(String objektText, String selectedMember) {
+        Set<String> aliases = memberAliases(selectedMember);
+        if (aliases.isEmpty() || objektText == null || objektText.isBlank()) return false;
+        Set<String> tokens = tokens(objektText);
+        for (String alias : aliases) {
+            if (tokens.contains(alias)) return true;
+        }
+        return false;
+    }
+
+    static Set<String> memberAliases(String selectedMember) {
+        Set<String> selectedTokens = tokens(selectedMember);
+        Set<String> aliases = new LinkedHashSet<>();
+        for (String token : selectedTokens) {
+            if (token.length() >= 2 && !"x".equals(token)) aliases.add(token);
+        }
+        for (int i = 0; i < ENGLISH_ORDER.size(); i++) {
+            String english = ENGLISH_ORDER.get(i);
+            String korean = normalize(KOREAN_ORDER.get(i));
+            String number = "s" + (i + 1);
+            if (selectedTokens.contains(english) || selectedTokens.contains(korean) || selectedTokens.contains(number)) {
+                aliases.add(english);
+                aliases.add(korean);
+                aliases.add(number);
+            }
+        }
+        aliases.remove("x");
+        return aliases;
+    }
+
+    static Set<String> tokens(String value) {
+        Set<String> out = new LinkedHashSet<>();
+        if (value == null || value.isBlank()) return out;
+        String lower = value.toLowerCase(Locale.ROOT);
+        for (String part : lower.split("[^a-z0-9가-힣]+")) {
+            if (!part.isEmpty()) out.add(part);
+        }
+        return out;
     }
 
     private static boolean hasProfileImage(Artist artist) {

@@ -15,7 +15,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=2">
+    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=3">
     <style>
         .objekt-member-picker-panel {
             margin-bottom: 12px;
@@ -215,13 +215,14 @@
         <form id="objekt-search-form" action="/cosmo/objekt" method="get">
         <input type="hidden" name="page" value="0">
 
-        <div class="objekt-member-picker-panel" id="member-dropdown">
+        <div class="objekt-member-picker-panel is-collapsed" id="member-dropdown">
             <div class="mpp-toolbar">
                 <div>
                     <p class="mpp-toolbar-title">멤버 (다중 선택)</p>
                     <p class="mpp-toolbar-meta" id="member-label">전체 멤버</p>
                 </div>
                 <div class="mpp-toolbar-actions">
+                    <button type="button" class="mpp-tool-btn" id="objekt-member-toggle" aria-expanded="false" aria-controls="objekt-member-picker">멤버 선택</button>
                     <button type="button" class="mpp-tool-btn" id="objekt-member-clear">전체</button>
                 </div>
             </div>
@@ -435,6 +436,20 @@
     } else {
         syncMemberLabel();
     }
+
+    const memberToggle = document.getElementById('objekt-member-toggle');
+    function setMemberPickerOpen(open) {
+        memberRoot.classList.toggle('is-collapsed', !open);
+        if (memberToggle) {
+            memberToggle.classList.toggle('is-open', open);
+            memberToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            memberToggle.textContent = open ? '멤버 닫기' : '멤버 선택';
+        }
+    }
+    setMemberPickerOpen(selectedMembers.length > 0);
+    memberToggle?.addEventListener('click', () => {
+        setMemberPickerOpen(memberRoot.classList.contains('is-collapsed'));
+    });
 
     // 시즌·클래스 드롭다운 (기존 다중선택 유지)
     ['season', 'class'].forEach(type => {
