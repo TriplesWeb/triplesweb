@@ -2,6 +2,7 @@ package com.example.triplesweb.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriUtils;
 
 import java.nio.charset.StandardCharsets;
@@ -29,9 +30,13 @@ public class CosmoAccountService {
     );
 
     private final GravityService gravity;
+    private final AbstractObjektReadService chainOwned;
+    private final RestClient publicCosmo;
 
-    public CosmoAccountService(GravityService gravity) {
+    public CosmoAccountService(GravityService gravity, AbstractObjektReadService chainOwned) {
         this.gravity = gravity;
+        this.chainOwned = chainOwned;
+        this.publicCosmo = RestClient.builder().baseUrl("https://api.cosmo.fans").build();
     }
 
     public Map<String, Object> load() {
@@ -53,8 +58,18 @@ public class CosmoAccountService {
                 break;
             }
         }
+        if (address.isBlank() && !nickname.isBlank() && !"COSMO".equals(nickname)) {
+            address = publicAddress(nickname);
+        }
+        List<Map<String, Object>> chain = chainOwned.owned(address, OWNED_LIMIT);
+        long chainCount = chainOwned.ownedCount(address);
         boolean ownedTruncated = objekts.size() > OWNED_LIMIT;
-        if (ownedTruncated) objekts = objekts.subList(0, OWNED_LIMIT);
+        if (chainCount > 0) {
+            objekts = chain;
+            ownedTruncated = chainCount > OWNED_LIMIT;
+        } else if (ownedTruncated) {
+            objekts = objekts.subList(0, OWNED_LIMIT);
+        }
 
         List<Map<String, Object>> scans = List.of();
         for (String path : SCAN_PATHS) {
@@ -73,14 +88,26 @@ public class CosmoAccountService {
         view.put("addressShort", shorten(address));
         view.put("profileImageUrl", image);
         view.put("hasProfileImage", !image.isBlank());
-        view.put("ownedCount", objekts.size());
+        view.put("ownedCount", chainCount > 0 ? chainCount : objekts.size());
         view.put("ownedTruncated", ownedTruncated);
+        view.put("chainSyncNote", chainOwned.progressNote());
         view.put("ownedObjekts", objekts);
         view.put("hasOwned", !objekts.isEmpty());
         view.put("scans", scans);
         view.put("hasScans", !scans.isEmpty());
         view.put("scanCount", scans.size());
         return view;
+    }
+
+    private String publicAddress(String nickname) {
+        try {
+            JsonNode node = publicCosmo.get()
+                    .uri("/bff/v3/users/by-nickname/" + UriUtils.encodePath(nickname, StandardCharsets.UTF_8))
+                    .retrieve().body(JsonNode.class);
+            return node == null ? "" : node.path("address").asText("");
+        } catch (RuntimeException ex) {
+            return "";
+        }
     }
 
     private JsonNode firstProfile() {

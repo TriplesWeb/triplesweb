@@ -37,6 +37,7 @@
         <section class="gv-panel gv-headline">
             <h2 data-nickname>COSMO</h2>
             <p data-summary class="gv-muted"></p>
+            <p data-chain class="gv-muted"></p>
         </section>
         <section class="gv-block">
             <div class="gv-section-title"><h2>소유 오브젝트</h2></div>
@@ -50,6 +51,7 @@
         </section>
     </div>
     {{#cosmoAccountError}}<p class="gv-notice" role="status">{{cosmoAccountError}}</p>{{/cosmoAccountError}}
+    {{#hasCosmoAccount}}{{#cosmoAccount}}{{#chainSyncNote}}<p class="gv-muted">{{chainSyncNote}}</p>{{/chainSyncNote}}{{/cosmoAccount}}{{/hasCosmoAccount}}
 
     {{#hasCosmoAccount}}
     {{#cosmoAccount}}
@@ -139,6 +141,7 @@
       root.hidden = false;
       root.querySelector('[data-nickname]').textContent = data.nickname || 'COSMO';
       root.querySelector('[data-summary]').textContent = '소유 오브젝트 ' + (data.ownedCount || 0) + '개 · 스캔 시리얼 ' + (data.scanCount || 0) + '개';
+      root.querySelector('[data-chain]').textContent = data.chainSyncNote || '';
       const grid = root.querySelector('[data-owned]');
       (data.ownedObjekts || []).forEach(item => grid.appendChild(card(item)));
       root.querySelector('[data-owned-empty]').hidden = Boolean(data.hasOwned);
