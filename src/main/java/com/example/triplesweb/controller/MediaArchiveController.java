@@ -8,6 +8,7 @@ import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.MediaService;
+import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.YoutubeIdExtractor;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -129,6 +130,7 @@ public class MediaArchiveController {
                 .build();
         bindTabFlags(model, form.normalizedTab());
         model.addAttribute("artistOptions", artistPickerOptions(List.of()));
+        model.addAttribute("memberPickerOptions", portraitOptions(List.of()));
         model.addAttribute("form", form);
         return "archive/media_new";
     }
@@ -137,12 +139,17 @@ public class MediaArchiveController {
     public String createNewMedia(@ModelAttribute("form") MediaDto form,
                                  BindingResult binding,
                                  @RequestParam(value = "artistNames", required = false) List<String> artistNames,
+                                 @RequestParam(value = "extraArtists", required = false) String extraArtists,
                                  HttpServletRequest request,
                                  HttpSession session,
                                  Model model) {
         aboutAdminAuth.requireAdmin(request, session);
 
-        List<String> selectedArtists = artistNames == null ? List.of() : artistNames;
+        List<String> selectedArtists = new ArrayList<>();
+        if (artistNames != null) selectedArtists.addAll(artistNames);
+        if (extraArtists != null && !extraArtists.isBlank()) {
+            selectedArtists.addAll(splitNames(extraArtists));
+        }
         String tab = form != null ? form.normalizedTab() : "mv";
         String rawId = form != null && form.getYoutubeId() != null ? form.getYoutubeId() : "";
         String ytId = YoutubeIdExtractor.extract(rawId);
@@ -184,6 +191,7 @@ public class MediaArchiveController {
             bindTabFlags(model, tab);
             model.addAttribute("form", form);
             model.addAttribute("artistOptions", artistPickerOptions(selectedArtists));
+            model.addAttribute("memberPickerOptions", portraitOptions(selectedArtists));
             return "archive/media_new";
         }
 
@@ -210,6 +218,15 @@ public class MediaArchiveController {
             row.put("name", artist.getName());
             row.put("selected", selected.equals(artist.getName()));
             options.add(row);
+        }
+        return options;
+    }
+
+    private List<Map<String, Object>> portraitOptions(List<String> selectedNames) {
+        List<String> selected = selectedNames == null ? List.of() : selectedNames;
+        List<Map<String, Object>> options = MemberPortraitOptions.fromArtists(artistRepository.findAll(), false);
+        for (Map<String, Object> option : options) {
+            option.put("active", selected.contains(String.valueOf(option.get("value"))));
         }
         return options;
     }

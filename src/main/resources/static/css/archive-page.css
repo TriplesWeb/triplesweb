@@ -93,7 +93,16 @@
 .ar-id { color: #dbb8ff; background: rgba(104, 7, 186, 0.35); border: 1px solid rgba(219, 184, 255, 0.28); font-weight: 700; }
 .ar-badge { color: #00f5d4; background: rgba(0, 245, 212, 0.1); border: 1px solid rgba(0, 245, 212, 0.28); }
 .ar-member-row { display: flex; flex-direction: column; gap: 0.6rem; }
-.ar-member-row .member-portrait-picker { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.archive-page .member-portrait-picker,
+.member-portrait-picker.is-compact {
+    width: min(100%, 18rem);
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 2px;
+}
+@media (max-width: 639px) {
+    .archive-page .member-portrait-picker,
+    .member-portrait-picker.is-compact { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+}
 .ar-actions { display: flex; gap: 0.4rem; margin-top: 0.45rem; }
 .ar-actions button { padding: 0.32rem 0.65rem; border-radius: 9999px; border: 1px solid rgba(0, 245, 212, 0.45); background: rgba(0, 245, 212, 0.1); color: #00f5d4; font-size: 0.75rem; font-weight: 700; }
 .ar-actions button.ar-delete { color: #ffb4ab; border-color: rgba(255, 180, 171, 0.35); }

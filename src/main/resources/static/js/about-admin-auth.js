@@ -36,6 +36,12 @@
     return "";
   }
 
+  function syncCookie(token) {
+    const maxAge = token ? 60 * 60 * 12 : 0;
+    document.cookie = "about_admin_token=" + encodeURIComponent(token || "")
+      + "; Path=/; Max-Age=" + maxAge + "; SameSite=Lax";
+  }
+
   function setToken(token) {
     writeStorage(localStorage, TOKEN_KEY, token || "");
     writeStorage(sessionStorage, TOKEN_KEY, "");
@@ -43,6 +49,7 @@
       writeStorage(localStorage, key, token || "");
       writeStorage(sessionStorage, key, "");
     }
+    syncCookie(token || "");
   }
 
   function clearToken() {
@@ -64,4 +71,5 @@
     clearToken,
     applyAuthHeaders
   };
+  syncCookie(getToken());
 })();

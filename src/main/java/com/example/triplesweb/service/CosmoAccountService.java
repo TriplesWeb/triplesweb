@@ -16,7 +16,13 @@ import java.util.Map;
 @Service
 public class CosmoAccountService {
     private static final int OWNED_LIMIT = 48;
+    private static final List<String> PROFILE_PATHS = List.of(
+            "/user/v1/me",
+            "/bff/v1/users/me",
+            "/bff/v3/users/me"
+    );
     private static final List<String> SCAN_PATHS = List.of(
+            "/bff/v3/activity/histories?artistName=tripleS&historyType=objekt_receive",
             "/bff/v1/scan-histories",
             "/objekt/v1/scan-histories",
             "/bff/v1/users/me/scans"
@@ -29,15 +35,24 @@ public class CosmoAccountService {
     }
 
     public Map<String, Object> load() {
-        JsonNode me = gravity.getAuthorized("/bff/v1/users/me");
+        JsonNode me = firstProfile();
+        if (me == null) {
+            throw new IllegalStateException("연결된 COSMO 계정 정보를 가져오지 못했습니다. 그래비티의 COSMO 계정 연결을 다시 확인해 주세요.");
+        }
         String nickname = firstText(me, "nickname", "profile.nickname");
         String address = firstText(me, "address", "profile.address");
         String image = GravityService.safeImage(firstText(me, "profileImageUrl", "profile.profileImageUrl"));
 
-        JsonNode owned = address.isBlank()
-                ? gravity.getAuthorized("/objekt/v1/owned-by/me?sort=newest")
-                : gravity.getAuthorized("/objekt/v1/owned-by/" + UriUtils.encodePath(address, StandardCharsets.UTF_8) + "?sort=newest");
-        List<Map<String, Object>> objekts = extractObjekts(owned);
+        List<Map<String, Object>> objekts = List.of();
+        for (String path : ownedPaths(address)) {
+            var response = gravity.tryGet(path);
+            if (response.isEmpty()) continue;
+            List<Map<String, Object>> parsed = extractObjekts(response.get());
+            if (!parsed.isEmpty()) {
+                objekts = parsed;
+                break;
+            }
+        }
         boolean ownedTruncated = objekts.size() > OWNED_LIMIT;
         if (ownedTruncated) objekts = objekts.subList(0, OWNED_LIMIT);
 
@@ -68,7 +83,72 @@ public class CosmoAccountService {
         return view;
     }
 
+    private JsonNode firstProfile() {
+        if (!gravity.hasCosmoToken()) {
+            throw new IllegalStateException("COSMO 인증이 아직 연결되지 않았습니다.");
+        }
+        for (String path : PROFILE_PATHS) {
+            var response = gravity.tryGet(path);
+            if (response.isEmpty()) continue;
+            JsonNode node = response.get();
+            if (node.has("profile") && node.get("profile").isObject()
+                    && (node.get("profile").has("nickname") || node.get("profile").has("address"))) {
+                node = node.get("profile");
+            }
+            if (!firstText(node, "nickname", "address").isBlank()) return node;
+        }
+        return null;
+    }
+
+    private static List<String> ownedPaths(String address) {
+        List<String> paths = new ArrayList<>();
+        if (address != null && !address.isBlank()) {
+            String encoded = UriUtils.encodePath(address, StandardCharsets.UTF_8);
+            paths.add("/objekt/v1/owned-by/" + encoded + "?sort=newest");
+            paths.add("/bff/v3/objekts/owned-by/" + encoded + "?sort=newest");
+        }
+        paths.add("/objekt/v1/owned/collection-groups?artistName=tripleS");
+        paths.add("/bff/v3/objekts?artistName=tripleS&sort=newest");
+        paths.add("/objekt/v1/owned-by/me?sort=newest");
+        return paths;
+    }
+
+    static List<Map<String, Object>> extractCollectionGroups(JsonNode root) {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        if (root == null) return rows;
+        JsonNode groups = root.get("collections");
+        if (groups == null || !groups.isArray()) return rows;
+        for (JsonNode group : groups) {
+            JsonNode collection = group.path("collection");
+            if (!collection.isObject()) collection = group;
+            JsonNode owned = group.path("objekts");
+            if (owned.isArray() && !owned.isEmpty()) {
+                for (JsonNode item : owned) rows.add(ownedRow(collection, item));
+            } else if (!firstText(collection, "collectionId").isBlank()) {
+                rows.add(ownedRow(collection, collection));
+            }
+        }
+        return rows;
+    }
+
+    private static Map<String, Object> ownedRow(JsonNode collection, JsonNode item) {
+        String thumbnail = GravityService.safeImage(firstText(collection, "thumbnailImage", "frontImage"));
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("collectionId", firstText(collection, "collectionId"));
+        row.put("member", firstText(collection, "member", "artistMember.name"));
+        row.put("season", firstText(collection, "season"));
+        row.put("objektClass", firstText(collection, "class"));
+        row.put("tokenId", firstText(item, "metadata.tokenId", "tokenId"));
+        row.put("objektNo", firstText(item, "metadata.objektNo", "objektNo"));
+        row.put("serial", firstText(item, "serial", "serialNumber"));
+        row.put("thumbnailImage", thumbnail);
+        row.put("hasImage", !thumbnail.isBlank());
+        return row;
+    }
+
     static List<Map<String, Object>> extractObjekts(JsonNode root) {
+        List<Map<String, Object>> grouped = extractCollectionGroups(root);
+        if (!grouped.isEmpty()) return grouped;
         JsonNode array = firstArray(root);
         List<Map<String, Object>> rows = new ArrayList<>();
         if (array == null) return rows;
