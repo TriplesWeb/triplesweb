@@ -33,22 +33,66 @@ public class SchemaImproveRunner implements ApplicationRunner {
         ensureUnitMemberUnique();
         ensureSavedMetaColumns("article_file");
         ensureSavedMetaColumns("shop_image");
-        relaxLegacyCategory("article_file");
-        relaxLegacyCategory("shop_image");
+        dropLegacyCamelColumns("article_file");
+        dropLegacyCamelColumns("shop_image");
+        relaxUnmappedRequiredColumns("article_file");
+        relaxUnmappedRequiredColumns("shop_image");
     }
 
-    /** 엔티티에 없는 category 가 NOT NULL 이면 첨부 INSERT 가 1364로 실패한다. */
-    private void relaxLegacyCategory(String table) {
-        if (!tableExists(table) || !columnExists(table, "category")) {
+    /**
+     * Hibernate는 snake_case만 INSERT 한다. camelCase NOT NULL 컬럼이 남으면
+     * {@code Field 'fileType' doesn't have a default value} 로 저장이 실패한다.
+     */
+    private void dropLegacyCamelColumns(String table) {
+        if (!tableExists(table)) {
             return;
         }
-        try {
-            em.createNativeQuery(
-                    "ALTER TABLE `" + table + "` MODIFY COLUMN `category` VARCHAR(255) NULL DEFAULT NULL"
-            ).executeUpdate();
-            log.info("Made {}.category nullable", table);
-        } catch (RuntimeException e) {
-            log.warn("Relax {}.category failed: {}", table, e.getMessage());
+        for (String column : new String[] {"fileType", "originalName", "savedName", "mediaType"}) {
+            if (!columnExists(table, column)) {
+                continue;
+            }
+            try {
+                em.createNativeQuery(
+                        "ALTER TABLE `" + table + "` DROP COLUMN `" + column + "`"
+                ).executeUpdate();
+                log.info("Dropped legacy column {}.{}", table, column);
+            } catch (RuntimeException e) {
+                log.warn("Drop {}.{} failed: {}", table, column, e.getMessage());
+            }
+        }
+    }
+
+    /** JPA가 쓰지 않는 NOT NULL 컬럼은 값 없이 INSERT 되도록 NULL 허용으로 바꾼다. */
+    private void relaxUnmappedRequiredColumns(String table) {
+        if (!tableExists(table)) {
+            return;
+        }
+        @SuppressWarnings("unchecked")
+        java.util.List<Object[]> rows = em.createNativeQuery("""
+                SELECT COLUMN_NAME, COLUMN_TYPE
+                FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = :t
+                  AND IS_NULLABLE = 'NO'
+                  AND COLUMN_DEFAULT IS NULL
+                  AND EXTRA NOT LIKE '%auto_increment%'
+                """).setParameter("t", table).getResultList();
+        java.util.Set<String> mapped = java.util.Set.of(
+                "id", "article_id", "original_name", "saved_name", "url", "size", "file_type", "media_type", "title");
+        for (Object[] row : rows) {
+            String column = String.valueOf(row[0]);
+            String columnType = String.valueOf(row[1]);
+            if (mapped.contains(column)) {
+                continue;
+            }
+            try {
+                em.createNativeQuery(
+                        "ALTER TABLE `" + table + "` MODIFY COLUMN `" + column + "` " + columnType + " NULL"
+                ).executeUpdate();
+                log.info("Made unmapped column {}.{} nullable", table, column);
+            } catch (RuntimeException e) {
+                log.warn("Relax {}.{} failed: {}", table, column, e.getMessage());
+            }
         }
     }
 
