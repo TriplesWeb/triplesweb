@@ -18,8 +18,9 @@ import java.sql.Types;
 import java.util.List;
 
 /**
- * Follows Objekt Transfer logs on Abstract and stores them in MariaDB.
- * Each tick advances a saved block cursor, so a restart continues the backfill.
+ * Follows every Objekt Transfer on Abstract and stores it in MariaDB.
+ * Off by default: the table grows faster than the shared database can absorb,
+ * and nickname search already reads one wallet directly.
  */
 @Service
 public class AbstractObjektIndexer {
@@ -36,7 +37,7 @@ public class AbstractObjektIndexer {
     private final JdbcTemplate jdbc;
 
     public AbstractObjektIndexer(
-            @Value("${abstract.indexer.enabled:true}") boolean enabled,
+            @Value("${abstract.indexer.enabled:false}") boolean enabled,
             @Value("${abstract.indexer.rpc-url:https://api.mainnet.abs.xyz}") String rpcUrl,
             @Value("${abstract.indexer.contract:0x99Bb83AE9bb0C0A6be865CaCF67760947f91Cb70}") String contract,
             @Value("${abstract.indexer.start-block:6800000}") long startBlock,

@@ -24,8 +24,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
- * Resolves a COSMO nickname and reads that wallet's Objekt transfers directly,
- * so a collection can be shown without waiting for the full-chain backfill.
+ * Resolves a COSMO nickname and reads that wallet's Objekt transfers directly.
+ * One address-filtered getLogs pass is enough; the full-chain table is not used.
  */
 @Service
 public class CosmoCollectionService {

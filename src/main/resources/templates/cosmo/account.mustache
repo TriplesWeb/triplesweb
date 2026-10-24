@@ -11,7 +11,6 @@
 .cosmo-account-card img { width: 100%; height: 8.5rem; object-fit: cover; border-radius: 0.5rem; background: #07080b; }
 .cosmo-account-profile { display: flex; align-items: center; gap: 0.8rem; }
 .cosmo-account-profile img { width: 3rem; height: 3rem; border-radius: 9999px; object-fit: cover; }
-.cosmo-scan { display: flex; justify-content: space-between; gap: 1rem; padding: 0.7rem 0; border-top: 1px solid rgba(255,255,255,.08); font-family: "JetBrains Mono", monospace; font-size: 12px; }
 </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -30,7 +29,7 @@
 
     <section class="gv-panel gv-headline">
         <h1>내 COSMO 계정</h1>
-        <p>코스모 메뉴의 이 화면에서, 서버에 연결된 COSMO 계정의 닉네임·소유 오브젝트·스캔 시리얼을 봅니다. 왼쪽 아래 관리자 로그인 후 표시됩니다.</p>
+        <p>연결된 계정의 닉네임과, 그 지갑이 지금 들고 있는 오브젝트를 Abstract에서 바로 읽습니다. 전체 전송을 데이터베이스에 쌓지 않습니다.</p>
     </section>
     <p id="cosmoAccountGate" class="gv-panel gv-empty" {{#hasCosmoAccount}}hidden{{/hasCosmoAccount}}>관리자로 로그인한 뒤 계정 정보를 불러옵니다.</p>
     <div id="cosmoAccountLive" hidden {{#hasCosmoAccount}}data-ready="server"{{/hasCosmoAccount}}>
@@ -38,20 +37,15 @@
             <h2 data-nickname>COSMO</h2>
             <p data-summary class="gv-muted"></p>
             <p data-chain class="gv-muted"></p>
+            <p><a data-collection href="/cosmo/collection">이 닉네임의 컬렉션 전체 보기</a></p>
         </section>
         <section class="gv-block">
             <div class="gv-section-title"><h2>소유 오브젝트</h2></div>
             <div class="cosmo-account-grid" data-owned></div>
             <p data-owned-empty class="gv-panel gv-empty">소유 오브젝트가 없습니다.</p>
         </section>
-        <section class="gv-panel" style="padding:1rem 1.1rem">
-            <h2>스캔한 시리얼</h2>
-            <div data-scans></div>
-            <p data-scans-empty class="gv-muted">이 계정에서 가져온 스캔 시리얼이 없습니다.</p>
-        </section>
     </div>
     {{#cosmoAccountError}}<p class="gv-notice" role="status">{{cosmoAccountError}}</p>{{/cosmoAccountError}}
-    {{#hasCosmoAccount}}{{#cosmoAccount}}{{#chainSyncNote}}<p class="gv-muted">{{chainSyncNote}}</p>{{/chainSyncNote}}{{/cosmoAccount}}{{/hasCosmoAccount}}
 
     {{#hasCosmoAccount}}
     {{#cosmoAccount}}
@@ -61,7 +55,9 @@
             <div>
                 <h1>{{nickname}}</h1>
                 {{#hasAddress}}<p class="gv-muted">{{addressShort}}</p>{{/hasAddress}}
-                <p class="gv-muted">소유 오브젝트 {{ownedCount}}개 · 스캔 시리얼 {{scanCount}}개</p>
+                <p class="gv-muted">소유 오브젝트 {{ownedCount}}개</p>
+                {{#hasHoldingNote}}<p class="gv-notice" role="status">{{holdingNote}}</p>{{/hasHoldingNote}}
+                {{#hasCollectionLink}}<p><a href="{{collectionHref}}">이 닉네임의 컬렉션 전체 보기</a></p>{{/hasCollectionLink}}
             </div>
         </div>
     </section>
@@ -76,23 +72,12 @@
                 <h3>{{collectionId}}</h3>
                 <p class="gv-muted">{{member}} {{#objektClass}}· {{objektClass}}{{/objektClass}}</p>
                 {{#tokenId}}<p class="gv-muted">#{{tokenId}}</p>{{/tokenId}}
-                {{#serial}}<p class="gv-muted">{{serial}}</p>{{/serial}}
             </article>
             {{/ownedObjekts}}
         </div>
-        {{#ownedTruncated}}<p class="gv-muted">앞쪽 {{ownedCount}}개만 표시합니다.</p>{{/ownedTruncated}}
+        {{#ownedTruncated}}<p class="gv-muted">이 화면에는 {{shownCount}}장만 표시합니다.</p>{{/ownedTruncated}}
         {{/hasOwned}}
         {{^hasOwned}}<p class="gv-panel gv-empty">소유 오브젝트가 없습니다.</p>{{/hasOwned}}
-    </section>
-
-    <section class="gv-panel" style="padding:1rem 1.1rem">
-        <h2>스캔한 시리얼</h2>
-        {{#hasScans}}
-        {{#scans}}
-        <div class="cosmo-scan"><span>{{serial}}</span><span>{{collectionId}} {{when}}</span></div>
-        {{/scans}}
-        {{/hasScans}}
-        {{^hasScans}}<p class="gv-muted">이 계정에서 가져온 스캔 시리얼이 없습니다.</p>{{/hasScans}}
     </section>
     {{/cosmoAccount}}
     {{/hasCosmoAccount}}
@@ -124,6 +109,12 @@
     meta.className = 'gv-muted';
     meta.textContent = [item.member, item.objektClass].filter(Boolean).join(' · ');
     article.appendChild(meta);
+    if (item.tokenId) {
+      const token = document.createElement('p');
+      token.className = 'gv-muted';
+      token.textContent = '#' + item.tokenId;
+      article.appendChild(token);
+    }
     return article;
   }
   document.addEventListener('DOMContentLoaded', async () => {
@@ -140,19 +131,14 @@
       const data = await response.json();
       root.hidden = false;
       root.querySelector('[data-nickname]').textContent = data.nickname || 'COSMO';
-      root.querySelector('[data-summary]').textContent = '소유 오브젝트 ' + (data.ownedCount || 0) + '개 · 스캔 시리얼 ' + (data.scanCount || 0) + '개';
-      root.querySelector('[data-chain]').textContent = data.chainSyncNote || '';
+      root.querySelector('[data-summary]').textContent = '소유 오브젝트 ' + (data.ownedCount || 0) + '개';
+      root.querySelector('[data-chain]').textContent = data.holdingNote || '';
+      const link = root.querySelector('[data-collection]');
+      if (data.collectionHref) link.href = data.collectionHref;
+      link.hidden = !data.hasCollectionLink;
       const grid = root.querySelector('[data-owned]');
       (data.ownedObjekts || []).forEach(item => grid.appendChild(card(item)));
       root.querySelector('[data-owned-empty]').hidden = Boolean(data.hasOwned);
-      const scans = root.querySelector('[data-scans]');
-      (data.scans || []).forEach(item => {
-        const row = document.createElement('div');
-        row.className = 'cosmo-scan';
-        row.textContent = item.serial + (item.collectionId ? ' · ' + item.collectionId : '');
-        scans.appendChild(row);
-      });
-      root.querySelector('[data-scans-empty]').hidden = Boolean(data.hasScans);
     } catch (_) {
       if (gate) gate.textContent = '계정 정보를 불러오지 못했습니다.';
     }
