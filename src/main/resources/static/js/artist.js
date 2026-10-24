@@ -331,7 +331,16 @@
     if (adminBtn) {
       adminBtn.addEventListener("click", async () => {
         if (isAdmin) {
-          await artistFetch("/api/artist/admin/logout", { method: "POST" });
+          try {
+            const res = await artistFetch("/api/artist/admin/logout", { method: "POST" });
+            if (!res.ok) {
+              alert(await readError(res, "로그아웃에 실패했습니다."));
+              return;
+            }
+          } catch (_) {
+            alert("로그아웃 요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
+            return;
+          }
           isAdmin = false;
           setAdminToken("");
           setAdminUi();
@@ -428,6 +437,17 @@
         if (!(await requireAdminOrLogin())) return;
         const err = document.getElementById("artistEditError");
         const id = document.getElementById("artistEditId").value;
+        const name = document.getElementById("artistEditName").value.trim();
+        if (!name) {
+          if (err) { err.textContent = "이름을 입력해 주세요."; err.hidden = false; }
+          return;
+        }
+        const clearChecked = Boolean(document.getElementById("artistEditClearImage")?.checked);
+        const clearSig = Boolean(document.getElementById("artistEditClearSignatureImage")?.checked);
+        const saveMessage = (clearChecked || clearSig)
+          ? "이 멤버 정보를 저장하시겠습니까? 체크한 사진은 삭제됩니다."
+          : "이 멤버 정보를 저장하시겠습니까?";
+        if (!window.confirm(saveMessage)) return;
         const fd = new FormData();
         fd.append("name", document.getElementById("artistEditName").value);
         fd.append("engName", document.getElementById("artistEditEngName").value);
@@ -444,11 +464,9 @@
         document.querySelectorAll('#artistEditUnits input[type="checkbox"]:checked').forEach((cb) => {
           fd.append("unitIds", cb.value);
         });
-        const clearChecked = Boolean(document.getElementById("artistEditClearImage")?.checked);
         fd.append("clearImage", clearChecked ? "true" : "false");
         const file = document.getElementById("artistEditImage").files[0];
         if (file && !clearChecked) fd.append("image", file);
-        const clearSig = Boolean(document.getElementById("artistEditClearSignatureImage")?.checked);
         fd.append("clearSignatureImage", clearSig ? "true" : "false");
         const sigFile = document.getElementById("artistEditSignatureImage").files[0];
         if (sigFile && !clearSig) fd.append("signatureImage", sigFile);
@@ -483,6 +501,17 @@
         e.preventDefault();
         if (!(await requireAdminOrLogin())) return;
         const err = document.getElementById("artistGroupError");
+        const title = document.getElementById("artistGroupTitle").value.trim();
+        if (!title) {
+          if (err) { err.textContent = "제목을 입력해 주세요."; err.hidden = false; }
+          return;
+        }
+        const clearImage = document.getElementById("artistGroupClearImage").checked;
+        const clearTab = document.getElementById("artistGroupClearTabImage").checked;
+        const groupMessage = (clearImage || clearTab)
+          ? "그룹 소개를 저장하시겠습니까? 체크한 사진은 삭제됩니다."
+          : "그룹 소개를 저장하시겠습니까?";
+        if (!window.confirm(groupMessage)) return;
         const fd = new FormData();
         fd.append("title", document.getElementById("artistGroupTitle").value);
         fd.append("body", document.getElementById("artistGroupBody").value);

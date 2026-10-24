@@ -73,10 +73,24 @@ public class ShopController {
     // [주석] @PreAuthorize("hasRole('ADMIN')") 삭제
     @PostMapping("/shop_new")
     public String createShopGoods(@ModelAttribute Shop shop,
-                                  @RequestParam("files") List<MultipartFile> files) throws IOException {
+                                  @RequestParam(value = "files", required = false) List<MultipartFile> files,
+                                  Model model) {
         shop.setCategory(normalizeCategory(shop.getCategory()));
-        Shop savedGoods = shopService.registerGoods(shop, files);
-        return "redirect:/shop/item/" + savedGoods.getCategory() + "/" + savedGoods.getId();
+        if (shop.getName() == null || shop.getName().isBlank()) {
+            bindTabFlags(model, shop.normalizedTab());
+            model.addAttribute("goodsForm", shop);
+            model.addAttribute("errorMessage", "제목을 입력해 주세요.");
+            return "shop/shop_new";
+        }
+        try {
+            Shop savedGoods = shopService.registerGoods(shop, files);
+            return "redirect:/shop/item/" + savedGoods.getCategory() + "/" + savedGoods.getId();
+        } catch (RuntimeException | java.io.IOException ex) {
+            bindTabFlags(model, shop.normalizedTab());
+            model.addAttribute("goodsForm", shop);
+            model.addAttribute("errorMessage", "상품을 저장하지 못했습니다. 첨부 파일을 확인한 뒤 다시 시도해 주세요.");
+            return "shop/shop_new";
+        }
     }
 
     @PostMapping("/cart/add/{id}")

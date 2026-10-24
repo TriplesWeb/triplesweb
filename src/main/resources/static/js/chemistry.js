@@ -1947,6 +1947,8 @@
           fd.append("member2", document.getElementById("chemEditMember2").value);
         }
 
+        const clearCheckedSave = Boolean(document.getElementById("chemEditClearImage")?.checked);
+        if (!window.confirm(clearCheckedSave ? "이 케미를 저장하시겠습니까? 체크한 사진은 삭제됩니다." : "이 케미를 저장하시겠습니까?")) return;
         try {
           const res = await chemFetch(endpoint, { method: "POST", body: fd });
           if (!res.ok) {

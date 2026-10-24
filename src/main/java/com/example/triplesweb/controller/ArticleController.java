@@ -102,28 +102,31 @@ public class ArticleController {
         article.setCategory(category);
         article.setUserId("익명"); // 로그인 기능 삭제로 기본 작성자 지정
 
-        // 1) 게시글 생성
-        Article savedArticle = articleService.create(article);
-        if ("trade".equals(category) || "sell".equals(category)) {
-            articleObjektService.attachSelected(savedArticle, selectedObjektIds);
-        }
-
-        // 2) 파일 저장 처리
-        if (files != null) {
-            for (MultipartFile mf : files) {
-                if (mf != null && !mf.isEmpty()) {
-                    articleFileService.uploadFile(mf, savedArticle);
+        try {
+            Article savedArticle = articleService.create(article);
+            if ("trade".equals(category) || "sell".equals(category)) {
+                articleObjektService.attachSelected(savedArticle, selectedObjektIds);
+            }
+            if (files != null) {
+                for (MultipartFile mf : files) {
+                    if (mf != null && !mf.isEmpty()) {
+                        articleFileService.uploadFile(mf, savedArticle);
+                    }
                 }
             }
+            if (uploadedFiles != null && !uploadedFiles.isEmpty()) {
+                articleFileService.attachUploadedFiles(uploadedFiles, savedArticle);
+            }
+            articleFileService.extractAndSaveFilesFromContent(savedArticle);
+            return "redirect:/article/" + category + "/" + savedArticle.getId();
+        } catch (RuntimeException | IOException ex) {
+            model.addAttribute("category", category);
+            model.addAttribute("categoryName", getCategoryName(category));
+            model.addAttribute("errorMessage", "글을 저장하지 못했습니다. 첨부 파일과 내용을 확인한 뒤 다시 시도해 주세요.");
+            model.addAttribute("articleForm", form);
+            addObjektOptions(model, category, selectedObjektIds == null ? Set.of() : Set.copyOf(selectedObjektIds));
+            return "article/article_new";
         }
-
-        if (uploadedFiles != null && !uploadedFiles.isEmpty()) {
-            articleFileService.attachUploadedFiles(uploadedFiles, savedArticle);
-        }
-
-        articleFileService.extractAndSaveFilesFromContent(savedArticle);
-
-        return "redirect:/article/" + category + "/" + savedArticle.getId();
     }
 
     private void addObjektOptions(Model model, String category) {
@@ -274,6 +277,7 @@ public class ArticleController {
     @GetMapping("/{id:[0-9]+}")
     public String showArticle(@PathVariable("category") String category,
                               @PathVariable("id") Long id,
+                              @RequestParam(required = false) String notice,
                               Model model) {
 
         if (isInvalidCategory(category)) return "redirect:/article/trade";
@@ -300,6 +304,9 @@ public class ArticleController {
         model.addAttribute("files", fileDtos);
         model.addAttribute("formattedDate", view.getFormattedDate());
         model.addAttribute("isLikeAllowed", LIKE_ALLOWED_CATEGORIES.contains(category));
+        if ("delete-failed".equals(notice)) {
+            model.addAttribute("errorMessage", "글을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        }
 
         return "article/article_detail";
     }
@@ -365,19 +372,28 @@ public class ArticleController {
             return "article/article_edit";
         }
 
-        Article saved = articleService.updateWithFiles(
-                id,
-                newarticle.getTitle().trim(),
-                newarticle.getContent(),
-                files,
-                uploadedFiles,
-                deletedFiles);
+        try {
+            Article saved = articleService.updateWithFiles(
+                    id,
+                    newarticle.getTitle().trim(),
+                    newarticle.getContent(),
+                    files,
+                    uploadedFiles,
+                    deletedFiles);
 
-        if ("trade".equals(category) || "sell".equals(category)) {
-            articleObjektService.replaceSelected(saved, selectedObjektIds);
+            if ("trade".equals(category) || "sell".equals(category)) {
+                articleObjektService.replaceSelected(saved, selectedObjektIds);
+            }
+            return "redirect:/article/" + category + "/" + id;
+        } catch (RuntimeException | IOException ex) {
+            article.setTitle(newarticle.getTitle());
+            article.setContent(newarticle.getContent());
+            prepareEditModel(article, model, "글을 수정하지 못했습니다. 첨부 파일과 내용을 확인한 뒤 다시 시도해 주세요.");
+            model.addAttribute("category", category);
+            model.addAttribute("categoryName", getCategoryName(category));
+            addObjektOptionsForArticle(model, category, id);
+            return "article/article_edit";
         }
-
-        return "redirect:/article/" + category + "/" + id;
     }
 
     private void addObjektOptionsForArticle(Model model, String category, Long articleId) {
@@ -398,10 +414,14 @@ public class ArticleController {
         Article article = articleService.showWithFiles(id);
         if (article == null) return "redirect:/article/" + category;
 
-        List<Long> fileIds = articleFileService.findFileIdsByArticleId(id);
-        fileIds.forEach(articleFileService::deleteFileById);
-        articleService.delete(id);
-        return "redirect:/article/" + category;
+        try {
+            List<Long> fileIds = articleFileService.findFileIdsByArticleId(id);
+            fileIds.forEach(articleFileService::deleteFileById);
+            articleService.delete(id);
+            return "redirect:/article/" + category;
+        } catch (RuntimeException ex) {
+            return "redirect:/article/" + category + "/" + id + "?notice=delete-failed";
+        }
     }
 
     private void prepareEditModel(Article article,

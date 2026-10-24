@@ -31,6 +31,7 @@
 </head>
 <body class="other_page">
 <form id="editForm" class="container" action="/shop/shop_new" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit()">
+    {{#errorMessage}}<p class="alert alert-danger" role="alert">{{errorMessage}}</p>{{/errorMessage}}
     <div class="col-md-3">
         <label class="form-label">탭</label>
         <label>
@@ -49,7 +50,7 @@
     </div>
     <div class="mb-3">
         <label class="form-label">가격</label>
-        <input type="text" class="form-control" name="price" required>
+        <input type="number" min="0" step="1" class="form-control" name="price" required>
     </div>
     <div class="mb-3">
         <label class="form-label">내용 (상세 정보)</label>
@@ -75,19 +76,38 @@
             method: "POST",
             body: formData
         })
-        .then(response => response.json())
+        .then(async response => {
+            if (!response.ok) {
+                const text = await response.text().catch(() => "");
+                throw new Error(text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 180) || "이미지 업로드에 실패했습니다.");
+            }
+            return response.json();
+        })
         .then(data => {
-         let contentDiv = document.getElementById("content");
-         contentDiv.innerHTML += `<div class="content-media"><img src="${data.url}" alt="상품 이미지"></div>`;
-            })     .catch(err => {
-        console.error(err);
-        alert("이미지 업로드 실패!");
-    });
+            if (!data || !data.url) throw new Error("업로드 응답에 주소가 없습니다.");
+            const contentDiv = document.getElementById("content");
+            const img = document.createElement("img");
+            img.src = data.url;
+            img.alt = "상품 이미지";
+            const wrap = document.createElement("div");
+            wrap.className = "content-media";
+            wrap.appendChild(img);
+            contentDiv.appendChild(wrap);
+        })
+        .catch(err => {
+            console.error(err);
+            alert(err.message || "이미지 업로드에 실패했습니다. 네트워크 연결을 확인해 주세요.");
+        });
         });
     function beforeSubmit() {
-    document.getElementById("hiddenContent").value = document.getElementById("content").innerHTML;
-    return true;
-}
+        const name = document.querySelector('[name="name"]')?.value.trim();
+        const price = document.querySelector('[name="price"]')?.value.trim();
+        const content = document.getElementById("content");
+        document.getElementById("hiddenContent").value = content ? content.innerHTML : "";
+        if (!name) { alert("제목을 입력해 주세요."); return false; }
+        if (!price) { alert("가격을 입력해 주세요."); return false; }
+        return window.confirm("이 상품을 등록하시겠습니까?");
+    }
 </script>
 
 </body>

@@ -132,6 +132,10 @@
                         window.location.reload();
                     })
                     .catch(function (error) {
+                        if (errorMessageDiv.style.display !== "block") {
+                            errorMessageDiv.textContent = "댓글을 등록하지 못했습니다. 네트워크 연결을 확인해 주세요.";
+                            errorMessageDiv.style.display = "block";
+                        }
                         console.error("댓글 등록 중 오류 발생:", error);
                     });
         });
