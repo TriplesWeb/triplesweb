@@ -31,6 +31,36 @@ public class SchemaImproveRunner implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         migrateChemistryToArtistFk();
         ensureUnitMemberUnique();
+        ensureSavedMetaFileType("article_file");
+        ensureSavedMetaFileType("shop_image");
+    }
+
+    /**
+     * SavedMeta.fileType 임베드 컬럼({@code file_type})이 없으면 추가한다.
+     * Flyway V25와 동일 목적 — 배포 전 스키마 누락으로 article 상세가 500 나는 경우 방어.
+     */
+    private void ensureSavedMetaFileType(String table) {
+        if (!tableExists(table) || columnExists(table, "file_type")) {
+            return;
+        }
+        try {
+            em.createNativeQuery(
+                    "ALTER TABLE `" + table + "`"
+                            + " ADD COLUMN file_type VARCHAR(255) NOT NULL"
+                            + " DEFAULT 'application/octet-stream'"
+            ).executeUpdate();
+            if (columnExists(table, "media_type")) {
+                em.createNativeQuery(
+                        "UPDATE `" + table + "` SET file_type = CASE"
+                                + " WHEN UPPER(COALESCE(media_type,'')) IN ('IMAGE','PHOTO') THEN 'image/jpeg'"
+                                + " WHEN UPPER(COALESCE(media_type,'')) = 'VIDEO' THEN 'video/mp4'"
+                                + " ELSE 'application/octet-stream' END"
+                ).executeUpdate();
+            }
+            log.info("Added {}.file_type for SavedMeta embed", table);
+        } catch (RuntimeException e) {
+            log.warn("Ensure {}.file_type failed: {}", table, e.getMessage());
+        }
     }
 
     private void migrateChemistryToArtistFk() {
