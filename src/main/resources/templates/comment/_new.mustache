@@ -6,38 +6,22 @@
             <!-- 1. [변경됨] 내용(textarea) 영역을 위쪽으로 배치 -->
             <div class="mb-3">
                 <label class="form-label block mb-2" style="color: #b9cac4; font-size: 0.9rem; font-weight: 500; display: block;">댓글 내용</label>
-                {{#isLoggedIn}}
-                    <textarea class="form-control w-full"
-                              rows="3"
-                              id="new-comment-body"
-                              style=" width: 100%; !important; background-color: rgba(13, 14, 18, 0.8) !important; border: 1px solid rgba(58, 74, 70, 0.4) !important; color: #e3e2e8 !important; border-radius: 0.75rem !important; padding: 0.75rem 1rem !important; font-size: 0.95rem; transition: all 0.2s;"></textarea>
-                {{/isLoggedIn}}
-
-                {{^isLoggedIn}}
-                    <textarea class="form-control w-full"
-                              rows="3"
-                              id="new-comment-body"
-                              placeholder="로그인 후 작성 가능합니다."
-                              readonly
-                              style="width: 100% !important; background-color: rgba(13, 14, 18, 0.8) !important; border: 1px solid rgba(58, 74, 70, 0.4) !important; color: #b9cac4 !important; border-radius: 0.75rem !important; padding: 0.75rem 1rem !important; font-size: 0.95rem;"></textarea>
-                {{/isLoggedIn}}
+                <textarea class="form-control w-full"
+                          rows="3"
+                          id="new-comment-body"
+                          placeholder="댓글을 입력하세요"
+                          style="width: 100% !important; background-color: rgba(13, 14, 18, 0.8) !important; border: 1px solid rgba(58, 74, 70, 0.4) !important; color: #e3e2e8 !important; border-radius: 0.75rem !important; padding: 0.75rem 1rem !important; font-size: 0.95rem; transition: all 0.2s;"></textarea>
             </div>
 
-            <!-- 2. [변경됨] 작성자 영역을 아래쪽으로 배치 (플렉스로 좌우 정렬 구성) -->
+            <!-- 2. 작성자 영역 (로그인 제거: 익명) -->
             <div class="mb-2 flex items-center justify-between flex-wrap gap-3">
                 <div>
                     <label class="form-label inline-block mr-2 mb-0" style="color: #b9cac4; font-size: 0.85rem; font-weight: 500; margin-right: 0.5rem;">작성자:</label>
-                    {{#isLoggedIn}}
-                        <span class="text-white font-medium" style="font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: #00f5d4 !important;">{{userId}}</span>
-                        <input type="hidden"
-                               id="new-comment-userId"
-                               value="{{userId}}"
-                               class="form-control" />
-                    {{/isLoggedIn}}
-
-                    {{^isLoggedIn}}
-                        <span class="text-[#b9cac4]" style="font-size: 0.9rem;">로그인 필요</span>
-                    {{/isLoggedIn}}
+                    <span class="text-white font-medium" style="font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: #00f5d4 !important;">{{#userId}}{{userId}}{{/userId}}{{^userId}}익명{{/userId}}</span>
+                    <input type="hidden"
+                           id="new-comment-userId"
+                           value="{{#userId}}{{userId}}{{/userId}}{{^userId}}익명{{/userId}}"
+                           class="form-control" />
                 </div>
             </div>
 
@@ -49,14 +33,11 @@
                  class="text-danger mb-3"
                  style="display: none; font-size: 0.85rem; font-family: 'JetBrains Mono', monospace;"></div>
 
-            {{#isLoggedIn}}
-                <div class="flex justify-end">
-                    <!-- 작성하기 버튼 -->
-                    <button type="button" class="btn btn-custom-primary" id="comment-create-btn">
-                        <span class="material-symbols-outlined" style="font-size: 15px; vertical-align: -2px; margin-right: 2px;">send</span> 작성하기
-                    </button>
-                </div>
-            {{/isLoggedIn}}
+            <div class="flex justify-end">
+                <button type="button" class="btn btn-custom-primary" id="comment-create-btn">
+                    <span class="material-symbols-outlined" style="font-size: 15px; vertical-align: -2px; margin-right: 2px;">send</span> 작성하기
+                </button>
+            </div>
         </form>
     </div>
 </div>
@@ -109,11 +90,7 @@
             const body = bodyInput ? bodyInput.value.trim() : "";
             const articleId = articleIdInput ? articleIdInput.value.trim() : "";
 
-            if (!userId) {
-                errorMessageDiv.textContent = "로그인 후 댓글을 작성할 수 있습니다.";
-                errorMessageDiv.style.display = "block";
-                return;
-            }
+            if (!userId) userId = "익명";
             if (!body) {
                 errorMessageDiv.textContent = "내용을 입력해주세요.";
                 errorMessageDiv.style.display = "block";

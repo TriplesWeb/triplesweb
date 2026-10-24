@@ -6,7 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -19,12 +21,43 @@ import java.util.List;
 public class ArticleServiceImpl implements ArticleService {
 
     private final ArticleRepository articleRepository;
+    private final ArticleFileService articleFileService;
 
     @Override
     public Article create(Article article) {
         Long maxDisplayId = articleRepository.findMaxDisplayIdByCategory(article.getCategory());
         long nextDisplayId = (maxDisplayId == null) ? 1L : maxDisplayId + 1;
         article.setDisplayId(nextDisplayId);
+        return articleRepository.save(article);
+    }
+
+    @Override
+    public Article update(Article article) {
+        if (article == null || article.getId() == null) {
+            throw new IllegalArgumentException("수정할 게시글이 없습니다.");
+        }
+        return articleRepository.save(article);
+    }
+
+    @Override
+    public Article updateWithFiles(Long id, String title, String content,
+                                   List<MultipartFile> multipartFiles,
+                                   List<String> uploadedFiles,
+                                   List<Long> deletedFileIds) throws IOException {
+        Article article = articleRepository.findByIdWithFiles(id)
+                .orElseThrow(() -> new IllegalArgumentException("수정할 게시글이 없습니다."));
+        article.setTitle(title);
+        article.setContent(content);
+        articleFileService.unlinkFiles(article, deletedFileIds);
+        if (multipartFiles != null) {
+            for (MultipartFile mf : multipartFiles) {
+                if (mf != null && !mf.isEmpty()) {
+                    articleFileService.uploadFile(mf, article);
+                }
+            }
+        }
+        articleFileService.attachUploadedFiles(uploadedFiles, article);
+        articleFileService.extractAndSaveFilesFromContent(article);
         return articleRepository.save(article);
     }
 

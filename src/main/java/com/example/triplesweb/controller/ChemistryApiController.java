@@ -1,7 +1,9 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.dto.ChemistryDto;
+import com.example.triplesweb.dto.ChemistryGroupDto;
 import com.example.triplesweb.service.AboutAdminAuth;
+import com.example.triplesweb.service.ChemistryGroupService;
 import com.example.triplesweb.service.ChemistrySeedService;
 import com.example.triplesweb.service.ChemistryService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,6 +24,7 @@ import java.util.Map;
 public class ChemistryApiController {
 
     private final ChemistryService chemistryService;
+    private final ChemistryGroupService chemistryGroupService;
     private final ChemistrySeedService chemistrySeedService;
     private final AboutAdminAuth aboutAdminAuth;
 
@@ -104,5 +107,60 @@ public class ChemistryApiController {
                 "enFilled", enFilled,
                 "total", chemistryService.findAll().size()
         );
+    }
+
+    @GetMapping("/groups")
+    public List<ChemistryGroupDto> listGroups() {
+        return chemistryGroupService.findAll();
+    }
+
+    @PostMapping("/groups")
+    public ChemistryGroupDto upsertGroup(
+            @RequestParam List<String> members,
+            @RequestParam String label,
+            @RequestParam(required = false, defaultValue = "") String labelEn,
+            @RequestParam(required = false, defaultValue = "") String description,
+            @RequestParam(required = false, defaultValue = "") String descriptionEn,
+            @RequestParam(required = false) MultipartFile image,
+            @RequestParam(required = false, defaultValue = "false") boolean clearImage,
+            @RequestParam(required = false, defaultValue = "") String linksJson,
+            @RequestParam(required = false, defaultValue = "NONE") String labelTone,
+            HttpServletRequest request,
+            HttpSession session
+    ) {
+        aboutAdminAuth.requireAdmin(request, session);
+        try {
+            return chemistryGroupService.upsert(
+                    members, label, labelEn, description, descriptionEn,
+                    image, clearImage, linksJson, labelTone);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/groups/{id}")
+    public ResponseEntity<Void> deleteGroup(
+            @PathVariable Long id,
+            HttpServletRequest request,
+            HttpSession session
+    ) {
+        aboutAdminAuth.requireAdmin(request, session);
+        chemistryGroupService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/groups")
+    public ResponseEntity<Void> deleteGroupByMembers(
+            @RequestParam List<String> members,
+            HttpServletRequest request,
+            HttpSession session
+    ) {
+        aboutAdminAuth.requireAdmin(request, session);
+        try {
+            chemistryGroupService.deleteByMembers(members);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
     }
 }

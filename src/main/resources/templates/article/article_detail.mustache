@@ -19,15 +19,19 @@
 
     <style>
         /* 본문 내용(HTML) 내부 이미지/영상 반응형 스타일 정돈 */
-        .detail-content img {
-            max-width: 100%;
-            border-radius: 0.75rem;
-            margin: 1rem 0;
-        }
+        .detail-content img,
         .detail-content video {
             max-width: 100%;
             border-radius: 0.75rem;
             margin: 1rem 0;
+            display: block;
+        }
+        /* 과거 편집 UI가 본문에 남아 있어도 상세에서는 숨김 */
+        .detail-content .remove-btn { display: none !important; }
+        .detail-content .content-media {
+            position: static;
+            display: block;
+            margin: 0;
         }
     </style>
 </head>
@@ -35,9 +39,10 @@
 
 {{>layout/header}}
 
-<!-- CSRF 메타 데이터 -->
-<meta name="_csrf" content="{{_csrf.token}}">
-<meta name="_csrf_header" content="{{_csrf.headerName}}">
+{{#_csrf}}
+<meta name="_csrf" content="{{token}}">
+<meta name="_csrf_header" content="{{headerName}}">
+{{/_csrf}}
 
 <main class="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-12 z-10 relative">
     <div class="w-full max-w-3xl relative">
@@ -110,7 +115,9 @@
                                     수정하기
                                 </a>
                                 <form method="post" action="/article/{{category}}/{{article.id}}/delete" onsubmit="return confirm('정말 삭제하시겠습니까?')" class="inline">
-                                    <input type="hidden" name="_csrf" value="{{_csrf.token}}">
+                                    {{#_csrf}}
+                                    <input type="hidden" name="{{parameterName}}" value="{{token}}">
+                                    {{/_csrf}}
                                     <button type="submit" class="py-2 px-4 rounded-xl bg-error-container/20 hover:bg-error-container/30 border border-error/30 text-error text-sm font-medium transition-all">
                                         삭제하기
                                     </button>
@@ -137,36 +144,43 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const CSRF_TOKEN = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
-    const CSRF_HEADER = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content') || 'X-CSRF-TOKEN';
+    (function () {
+        const CSRF_TOKEN = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+        const CSRF_HEADER = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content') || 'X-CSRF-TOKEN';
+        const likeBtn = document.getElementById('likeButton');
+        const likeCountElem = document.getElementById('likeCount');
+        if (!likeBtn || !likeCountElem) return;
 
-    const likeBtn = document.getElementById('likeButton');
-    const likeCountElem = document.getElementById('likeCount');
+        let pending = false;
+        likeBtn.addEventListener('click', function () {
+            if (pending) return;
+            pending = true;
+            const headers = { 'Content-Type': 'application/json' };
+            if (CSRF_TOKEN) headers[CSRF_HEADER] = CSRF_TOKEN;
 
-    if (likeBtn) {
-        likeBtn.addEventListener('click', function() {
             fetch('/article/{{category}}/{{article.id}}/like', {
                 method: 'POST',
                 credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/json',
-                    [CSRF_HEADER]: CSRF_TOKEN
-                }
+                headers
             })
-                    .then(res => res.json())
-                    .then(liked => {
-                        if (liked) {
-                            likeCountElem.textContent = parseInt(likeCountElem.textContent) + 1;
-                        } else {
-                            likeCountElem.textContent = parseInt(likeCountElem.textContent) - 1;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('오류가 발생했습니다');
-                    });
+                .then(res => {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.json();
+                })
+                .then(ok => {
+                    // 서버는 좋아요 카운터 +1만 수행 (토글 아님)
+                    if (ok) {
+                        const n = parseInt(likeCountElem.textContent, 10) || 0;
+                        likeCountElem.textContent = String(n + 1);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('추천 처리 중 오류가 발생했습니다');
+                })
+                .finally(() => { pending = false; });
         });
-    }
+    })();
 </script>
 
 </body>

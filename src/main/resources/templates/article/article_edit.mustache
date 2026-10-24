@@ -139,9 +139,10 @@
 
 {{>layout/header}}
 
-<!-- CSRF 메타 데이터 -->
-<meta name="_csrf" content="{{_csrf.token}}">
-<meta name="_csrf_header" content="{{_csrf.headerName}}">
+{{#_csrf}}
+<meta name="_csrf" content="{{token}}">
+<meta name="_csrf_header" content="{{headerName}}">
+{{/_csrf}}
 
 <div id="editorRoot" data-category="{{article.category}}"></div>
 
@@ -223,27 +224,44 @@
 {{>layout/footer}}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/article-content.js"></script>
 <script>
     /* -------------------- helpers -------------------- */
     function savedFromUrl(u) {
         if (!u) return null;
         try {
             const s = u.replace(/^"(.*)"$/, '$1');
+            const relative = window.ArticleContent?.toRelativeUploadUrl(s) || s;
+            if (relative.startsWith('/uploads/')) return relative.substring('/uploads/'.length);
             const url = s.startsWith('http') ? s : new URL(s, location.origin).href;
             const i = url.indexOf('/uploads/');
             return i >= 0 ? url.substring(i + '/uploads/'.length) : null;
         } catch { return null; }
     }
-    function makeAbsoluteUrl(url) {
+    function toUploadsUrl(url) {
         let u = (url || '').trim().replace(/^"(.*)"$/, '$1');
-        if (!u.startsWith('/')) u = '/' + u;
-        return new URL(u, location.origin).href;
+        if (/^https?:\/\//i.test(u)) {
+            const i = u.indexOf('/uploads/');
+            return i >= 0 ? u.substring(i) : u;
+        }
+        if (u.startsWith('/uploads/')) return u;
+        if (u.startsWith('/')) return u;
+        return '/uploads/' + u.replace(/^\/+/, '');
     }
     function isVideoType(mimeOrUrl) {
         if (!mimeOrUrl) return false;
         if (typeof mimeOrUrl === 'string' && mimeOrUrl.includes('/')) return mimeOrUrl.startsWith('video');
         const u = String(mimeOrUrl).toLowerCase();
         return /\.(mp4|mov|m4v|avi|mkv|webm)(\?|#|$)/.test(u);
+    }
+    function basenamePath(p) {
+        if (!p) return '';
+        const s = String(p).replace(/\\/g, '/');
+        const i = s.lastIndexOf('/');
+        return i >= 0 ? s.substring(i + 1) : s;
+    }
+    function cssAttrContains(value) {
+        return String(value || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
     }
 
     /* -------------------- main -------------------- */
@@ -257,69 +275,65 @@
         const fileInput     = document.getElementById('fileInput');
         const previewArea   = document.getElementById('previewArea');
 
-        const fileIdMap = {
-            {{#files}}
-                "{{savedName}}": {{id}},
-            {{/files}}
-        };
+        // DB savedName은 파일명만, 본문 URL은 images/.../파일명 경로 → 둘 다 매핑
+        const fileIdMap = Object.create(null);
+        {{#files}}
+        {
+            const id = {{id}};
+            const name = "{{savedName}}";
+            if (name) {
+                fileIdMap[name] = id;
+                fileIdMap[basenamePath(name)] = id;
+            }
+        }
+        {{/files}}
+
+        function lookupFileId(saved) {
+            if (!saved) return null;
+            if (fileIdMap[saved] != null) return String(fileIdMap[saved]);
+            const base = basenamePath(saved);
+            if (base && fileIdMap[base] != null) return String(fileIdMap[base]);
+            for (const [key, id] of Object.entries(fileIdMap)) {
+                if (saved.endsWith('/' + key) || key.endsWith('/' + saved) || saved.endsWith(key)) {
+                    return String(id);
+                }
+            }
+            return null;
+        }
 
         const _csrf  = document.querySelector('meta[name="_csrf"]')?.content;
         const _ch    = document.querySelector('meta[name="_csrf_header"]')?.content;
         const buildHeaders = () => (_csrf && _ch) ? { [_ch]: _csrf } : {};
 
+        let syncingPreview = false;
+        const mo = new MutationObserver(() => {
+            if (syncingPreview) return;
+            syncPreviewFromContent();
+        });
+        mo.observe(contentDiv, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
+
         enhanceContentMediaFromDOM();
-        syncPreviewFromContent()
-        {
-            previewArea.innerHTML = '';
-            contentDiv.querySelectorAll('img, video').forEach(el => {
-                const isImg = el.tagName.toLowerCase() === 'img';
-                const src = isImg ? el.src : (el.src || el.querySelector('source')?.src || '');
-                const saved = savedFromUrl(src);
-
-                const thumbBox = document.createElement('div');
-                thumbBox.className = 'preview-item';
-
-                let pv;
-                if (isImg) {
-                    pv = document.createElement('img'); pv.src = src;
-                } else {
-                    pv = document.createElement('video'); pv.controls = true; pv.src = src;
-                }
-                thumbBox.appendChild(pv);
-
-                // 👈 미리보기에도 X 삭제 버튼 추가
-                if (saved) {
-                    const tr = document.createElement('span');
-                    tr.className = 'remove-btn';
-                    tr.dataset.savedName = saved;
-                    tr.innerHTML = `<i class="bi bi-x" style="font-size:16px;color:#fff;"></i>`;
-                    thumbBox.appendChild(tr);
-                }
-
-                previewArea.appendChild(thumbBox);
-            });
-        }
-
-        const mo = new MutationObserver(() => syncPreviewFromContent());
-        mo.observe(contentDiv, { childList:true, subtree:true, attributes:true });
+        syncPreviewFromContent();
 
         document.body.addEventListener('click', (e) => {
             const btn = e.target.closest('.remove-btn');
             if (!btn) return;
+            e.preventDefault();
 
-            const wrapper = btn.closest('.content-media');
-            const media = wrapper?.querySelector('img, video, source');
+            const wrapper = btn.closest('.content-media') || btn.closest('.preview-item');
+            const media = wrapper?.querySelector('img, video') || null;
+            const source = media?.tagName?.toLowerCase() === 'video'
+                ? (media.querySelector('source') || media)
+                : media;
 
             let fileId = btn.dataset.fileId || media?.dataset.fileId || null;
             let saved = btn.dataset.savedName || media?.dataset.savedName || null;
 
             if (!saved) {
-                const src = media?.src || media?.querySelector?.('source')?.src;
+                const src = media?.currentSrc || media?.src || source?.src || '';
                 saved = savedFromUrl(src);
             }
-            if (!fileId && saved && fileIdMap[saved]) {
-                fileId = String(fileIdMap[saved]);
-            }
+            if (!fileId) fileId = lookupFileId(saved);
 
             removeMediaEverywhere(saved);
 
@@ -332,8 +346,11 @@
                     editForm.appendChild(hid);
                 }
             } else if (saved) {
-                const up = editForm.querySelector(`input[name="uploadedFiles"][value="${saved}"]`);
-                if (up) up.remove();
+                const base = basenamePath(saved);
+                editForm.querySelectorAll('input[name="uploadedFiles"]').forEach(up => {
+                    const v = up.value || '';
+                    if (v === saved || v === base || basenamePath(v) === base) up.remove();
+                });
             }
         });
 
@@ -341,12 +358,17 @@
             const files = Array.from(e.target.files || []);
             for (const f of files) {
                 try {
-                    const fd = new FormData(); fd.append('file', f);
-                    const res = await fetch(UPLOAD_ENDPOINT, { method:'POST', body: fd, headers: buildHeaders() });
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const fd = new FormData();
+                    fd.append('file', f);
+                    const res = await fetch(UPLOAD_ENDPOINT, { method: 'POST', body: fd, headers: buildHeaders() });
+                    if (!res.ok) {
+                        const txt = await res.text().catch(() => String(res.status));
+                        throw new Error(`HTTP ${res.status} - ${txt.substring(0, 200)}`);
+                    }
                     const ct = res.headers.get('content-type') || '';
                     const payload = ct.includes('application/json') ? await res.json() : { url: await res.text() };
-                    const url = payload.url || payload.path || payload.location || payload.href;
+                    const url = payload.url || payload.path || payload.location || payload.href
+                        || (payload.savedName ? ('/uploads/' + payload.savedName) : null);
                     if (!url) throw new Error('업로드 응답에 url 없음');
 
                     const { saved } = insertMedia(url, f.type);
@@ -365,7 +387,8 @@
         });
 
         window.beforeSubmit = function(form) {
-            hiddenContent.value = contentDiv.innerHTML.trim();
+            const cleaned = window.ArticleContent?.cleanEditorHtml(contentDiv.innerHTML) || contentDiv.innerHTML.trim();
+            hiddenContent.value = cleaned;
 
             const title = form.querySelector('input[name="title"]')?.value?.trim() || '';
             if (!title) { alert('제목을 입력해주세요.'); return false; }
@@ -382,110 +405,138 @@
             return true;
         };
 
-        function enhanceContentMediaFromDOM() {
-            contentDiv.querySelectorAll('img, video').forEach(el => {
-                const src = el.src || el.querySelector('source')?.src || '';
-                const saved = savedFromUrl(src);
-                if (!saved) return;
+        function attachRemoveBtn(host, saved, fileId) {
+            let btn = host.querySelector('.remove-btn');
+            if (!btn) {
+                btn = document.createElement('span');
+                btn.className = 'remove-btn';
+                btn.innerHTML = `<i class="bi bi-x" style="font-size:16px;color:#fff;"></i>`;
+                host.appendChild(btn);
+            }
+            if (saved) btn.dataset.savedName = saved;
+            if (fileId) btn.dataset.fileId = String(fileId);
+            return btn;
+        }
 
-                let wrapper = el.closest('.content-media');
-                if (!wrapper) {
-                    wrapper = document.createElement('div');
-                    wrapper.className = 'content-media';
-                    el.parentNode.insertBefore(wrapper, el);
-                    wrapper.appendChild(el);
-                }
-                if (!wrapper.querySelector('.remove-btn')) {
-                    const btn = document.createElement('span');
-                    btn.className = 'remove-btn';
-                    btn.dataset.savedName = saved;
-                    btn.innerHTML = `<i class="bi bi-x" style="font-size:16px;color:#fff;"></i>`;
-                    wrapper.appendChild(btn);
-                }
-                el.dataset.savedName = saved;
-                const id = fileIdMap[saved];
-                if (id) {
-                    el.dataset.fileId = String(id);
-                    wrapper.querySelector('.remove-btn').dataset.fileId = String(id);
-                } else {
-                    wrapper.querySelector('.remove-btn').dataset.savedName = saved;
-                }
-            });
+        function enhanceContentMediaFromDOM() {
+            syncingPreview = true;
+            try {
+                contentDiv.querySelectorAll('img, video').forEach(el => {
+                    const src = el.currentSrc || el.src || el.querySelector('source')?.src || '';
+                    const saved = savedFromUrl(src);
+                    if (!saved) return;
+
+                    let wrapper = el.closest('.content-media');
+                    if (!wrapper) {
+                        wrapper = document.createElement('div');
+                        wrapper.className = 'content-media';
+                        el.parentNode.insertBefore(wrapper, el);
+                        wrapper.appendChild(el);
+                    }
+                    el.dataset.savedName = saved;
+                    const id = lookupFileId(saved);
+                    if (id) el.dataset.fileId = id;
+                    attachRemoveBtn(wrapper, saved, id);
+                });
+            } finally {
+                syncingPreview = false;
+            }
         }
 
         function syncPreviewFromContent() {
-            previewArea.innerHTML = '';
-            contentDiv.querySelectorAll('img, video').forEach(el => {
-                const isImg = el.tagName.toLowerCase() === 'img';
-                const src = isImg ? el.src : (el.src || el.querySelector('source')?.src || '');
+            syncingPreview = true;
+            try {
+                previewArea.innerHTML = '';
+                contentDiv.querySelectorAll('img, video').forEach(el => {
+                    const isImg = el.tagName.toLowerCase() === 'img';
+                    const src = isImg
+                        ? (el.currentSrc || el.src)
+                        : (el.currentSrc || el.src || el.querySelector('source')?.src || '');
+                    const saved = el.dataset.savedName || savedFromUrl(src);
+                    const fileId = el.dataset.fileId || lookupFileId(saved);
 
-                const thumbBox = document.createElement('div');
-                thumbBox.className = 'preview-item';
+                    const thumbBox = document.createElement('div');
+                    thumbBox.className = 'preview-item';
 
-                let pv;
-                if (isImg) {
-                    pv = document.createElement('img'); pv.src = src;
-                } else {
-                    pv = document.createElement('video'); pv.controls = true; pv.src = src;
-                }
-                thumbBox.appendChild(pv);
-                previewArea.appendChild(thumbBox);
-            });
+                    let pv;
+                    if (isImg) {
+                        pv = document.createElement('img');
+                        pv.src = src;
+                    } else {
+                        pv = document.createElement('video');
+                        pv.controls = true;
+                        pv.src = src;
+                    }
+                    if (saved) pv.dataset.savedName = saved;
+                    if (fileId) pv.dataset.fileId = fileId;
+                    thumbBox.appendChild(pv);
+                    if (saved) attachRemoveBtn(thumbBox, saved, fileId);
+                    previewArea.appendChild(thumbBox);
+                });
+            } finally {
+                syncingPreview = false;
+            }
         }
 
         function removeMediaEverywhere(saved) {
             if (!saved) return;
-            contentDiv.querySelectorAll(`img[src*="/uploads/${saved}"], video source[src*="/uploads/${saved}"], video[src*="/uploads/${saved}"]`)
-                    .forEach(node => {
-                        const v = node.tagName.toLowerCase() === 'source' ? node.parentElement : node;
-                        (v.closest('.content-media') || v).remove();
-                    });
-            previewArea.querySelectorAll(`img[src*="/uploads/${saved}"], video[src*="/uploads/${saved}"]`)
-                    .forEach(node => node.closest('.preview-item')?.remove() || node.remove());
+            const needle = cssAttrContains(saved);
+            const base = cssAttrContains(basenamePath(saved));
+            const selectors = [
+                `img[src*="/uploads/${needle}"]`,
+                `video[src*="/uploads/${needle}"]`,
+                `video source[src*="/uploads/${needle}"]`,
+                `img[src*="${base}"]`,
+                `video[src*="${base}"]`,
+                `video source[src*="${base}"]`
+            ].join(', ');
+
+            syncingPreview = true;
+            try {
+                contentDiv.querySelectorAll(selectors).forEach(node => {
+                    const v = node.tagName.toLowerCase() === 'source' ? node.parentElement : node;
+                    (v.closest('.content-media') || v).remove();
+                });
+                previewArea.querySelectorAll(selectors).forEach(node => {
+                    node.closest('.preview-item')?.remove() || node.remove();
+                });
+            } finally {
+                syncingPreview = false;
+            }
+            syncPreviewFromContent();
         }
 
         function insertMedia(url, mimeOrType) {
-            const absUrl = makeAbsoluteUrl(url);
-            const saved = savedFromUrl(absUrl) || (absUrl.split('/uploads/')[1] || '');
+            const mediaUrl = toUploadsUrl(url);
+            const saved = savedFromUrl(mediaUrl) || (mediaUrl.split('/uploads/')[1] || '');
 
-            const wrapper = document.createElement('div');
-            wrapper.className = 'content-media';
+            syncingPreview = true;
+            try {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'content-media';
 
-            let media;
-            const treatAsVideo = isVideoType(mimeOrType || absUrl);
-            if (treatAsVideo) {
-                media = document.createElement('video'); media.controls = true;
-                const src = document.createElement('source'); src.src = absUrl; src.type = (typeof mimeOrType === 'string' && mimeOrType.includes('/')) ? mimeOrType : '';
-                media.appendChild(src);
-            } else {
-                media = document.createElement('img'); media.src = absUrl;
+                let media;
+                const treatAsVideo = isVideoType(mimeOrType || mediaUrl);
+                if (treatAsVideo) {
+                    media = document.createElement('video');
+                    media.controls = true;
+                    const src = document.createElement('source');
+                    src.src = mediaUrl;
+                    src.type = (typeof mimeOrType === 'string' && mimeOrType.includes('/')) ? mimeOrType : '';
+                    media.appendChild(src);
+                } else {
+                    media = document.createElement('img');
+                    media.src = mediaUrl;
+                }
+                media.dataset.savedName = saved;
+                wrapper.appendChild(media);
+                attachRemoveBtn(wrapper, saved, null);
+                contentDiv.appendChild(wrapper);
+            } finally {
+                syncingPreview = false;
             }
-            media.dataset.savedName = saved;
-            wrapper.appendChild(media);
-
-            const removeBtn = document.createElement('span');
-            removeBtn.className = 'remove-btn';
-            removeBtn.dataset.savedName = saved;
-            removeBtn.innerHTML = `<i class="bi bi-x" style="font-size:16px;color:#fff;"></i>`;
-            wrapper.appendChild(removeBtn);
-
-            contentDiv.appendChild(wrapper);
-
-            const thumbBox = document.createElement('div'); thumbBox.className = 'preview-item';
-            const pv = treatAsVideo ? document.createElement('video') : document.createElement('img');
-            if (treatAsVideo) pv.controls = true;
-            pv.src = absUrl;
-            thumbBox.appendChild(pv);
-
-            const previewRemoveBtn = document.createElement('span');
-            previewRemoveBtn.className = 'remove-btn';
-            previewRemoveBtn.dataset.savedName = saved;
-            previewRemoveBtn.innerHTML = `<i class="bi bi-x" style="font-size:16px;color:#fff;"></i>`;
-            thumbBox.appendChild(previewRemoveBtn);
-
-            previewArea.appendChild(thumbBox);
-
-            return { saved, wrapper, preview: pv };
+            syncPreviewFromContent();
+            return { saved };
         }
     });
 </script>

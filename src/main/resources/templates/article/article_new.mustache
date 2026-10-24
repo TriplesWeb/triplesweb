@@ -135,8 +135,10 @@
 <body class="bg-surface text-on-surface min-h-screen flex flex-col">
 {{>layout/header}}
 
-<meta name="_csrf" content="{{_csrf.token}}">
-<meta name="_csrf_header" content="{{_csrf.headerName}}">
+{{#_csrf}}
+<meta name="_csrf" content="{{token}}">
+<meta name="_csrf_header" content="{{headerName}}">
+{{/_csrf}}
 <div id="editorRoot" data-category="{{category}}"></div>
 <main class="flex-1 flex items-center justify-center px-4 sm:px-6 py-12 z-10 relative">
     <div class="w-full max-w-2xl relative">
@@ -202,20 +204,21 @@
     </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/article-content.js"></script>
 <script>
     window.beforeSubmit = function(form) {
     const titleInput    = form.querySelector('input[name="title"]');
     const contentDiv    = document.getElementById('content');
     const hiddenContent = document.getElementById('hiddenContent');
-    const rawContent = (contentDiv?.innerHTML || '').trim();
+    const cleaned = (window.ArticleContent?.cleanEditorHtml(contentDiv?.innerHTML || '') || (contentDiv?.innerHTML || '').trim());
 
-    // 본문 HTML을 hidden으로 동기화
-    hiddenContent.value = rawContent;
+    // 본문 HTML을 hidden으로 동기화 (편집 UI 제거·상대경로 정규화)
+    hiddenContent.value = cleaned;
     const titleOk = !!(titleInput && titleInput.value.trim());
 
-    const hasText  = rawContent.replace(/<br\s*\/?>/gi, '').replace(/\s/g, '') !== '';
-    const hasImg   = /<img\s[^>]*src=['"][^'"]+['"][^>]*>/i.test(rawContent);
-    const hasVideo = /<video\s[^>]*>.*?<\/video>/i.test(rawContent) || /<source\s[^>]*src=['"][^'"]+['"][^>]*>/i.test(rawContent);
+    const hasText  = cleaned.replace(/<br\s*\/?>/gi, '').replace(/\s/g, '') !== '';
+    const hasImg   = /<img\s[^>]*src=['"][^'"]+['"][^>]*>/i.test(cleaned);
+    const hasVideo = /<video\s[^>]*>.*?<\/video>/i.test(cleaned) || /<source\s[^>]*src=['"][^'"]+['"][^>]*>/i.test(cleaned);
 
     if (!titleOk) {
             alert('제목을 입력해 주세요.');
