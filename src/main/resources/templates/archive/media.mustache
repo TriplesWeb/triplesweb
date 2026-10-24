@@ -164,10 +164,11 @@
     <div class="flex items-center justify-between mb-6">
         <h2 class="text-2xl font-bold tracking-tight text-[#e3e2e8] m-0">공식 미디어</h2>
         {{#isAdmin}}
-            <a href="/media_new" class="px-4 py-2 rounded-xl bg-[#00f5d4]/10 border border-[#00f5d4]/40 text-[#00f5d4] hover:bg-[#00f5d4]/20 text-xs font-bold transition-all no-underline flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-sm">add_box</span>
-                <span>새 영상 등록</span>
-            </a>
+        <a href="/media_new?tab={{currentTab}}"
+           class="px-4 py-2 rounded-xl bg-[#00f5d4]/10 border border-[#00f5d4]/40 text-[#00f5d4] hover:bg-[#00f5d4]/20 text-xs font-bold transition-all no-underline flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-sm">add_box</span>
+            <span>새 영상 등록</span>
+        </a>
         {{/isAdmin}}
     </div>
 
@@ -185,7 +186,7 @@
         <label class="text-sm text-[#b9cac4]" for="artist-filter">출연 멤버</label>
         <select id="artist-filter" name="artist" class="rounded-lg border border-[#3a4a46]/40 bg-[#1a1b20] px-3 py-2 text-sm text-white">
             <option value="">전체 멤버</option>
-            {{#artistOptions}}<option value="{{name}}" {{#isSelectedArtist}}selected{{/isSelectedArtist}}>{{name}}</option>{{/artistOptions}}
+            {{#artistOptions}}<option value="{{name}}" {{#selected}}selected{{/selected}}>{{name}}</option>{{/artistOptions}}
         </select>
         <button type="submit" class="rounded-lg border border-[#00f5d4]/40 px-4 py-2 text-sm text-[#00f5d4]">필터 적용</button>
         {{#selectedArtist}}<a class="text-xs text-slate-300" href="/media?tab={{currentTab}}">필터 초기화</a>{{/selectedArtist}}
@@ -211,11 +212,11 @@
                     </a>
 
                     {{#isAdmin}}
-                        <form method="post" action="/media_delete" class="mt-3">
-                            <input type="hidden" name="tab" value="{{currentTab}}">
-                            <input type="hidden" name="youtubeId" value="{{youtubeId}}">
-                            <button type="submit" class="w-full py-1.5 px-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-xs font-semibold transition-all">삭제</button>
-                        </form>
+                    <form method="post" action="/media_delete" class="mt-3">
+                        <input type="hidden" name="tab" value="{{currentTab}}">
+                        <input type="hidden" name="youtubeId" value="{{youtubeId}}">
+                        <button type="submit" class="w-full py-1.5 px-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-xs font-semibold transition-all">삭제</button>
+                    </form>
                     {{/isAdmin}}
                 </div>
             </div>

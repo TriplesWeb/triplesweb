@@ -24,9 +24,7 @@
             display: flex;
             flex-direction: column;
         }
-        .container {
-            max-width: 48rem;
-        }
+        .container { max-width: 48rem; }
         .form-control, .form-select {
             background-color: rgba(26, 27, 32, 0.7);
             border: 1px solid rgba(58, 74, 70, 0.4);
@@ -41,29 +39,45 @@
             color: #e3e2e8;
             box-shadow: 0 0 0 3px rgba(0, 245, 212, 0.15);
         }
-        .form-control[readonly] {
-            background-color: rgba(16, 17, 22, 0.5);
-            color: #8b9b95;
-        }
         .form-label {
             font-size: 0.85rem;
             font-weight: 600;
             color: #b9cac4;
             margin-bottom: 0.5rem;
         }
+        .member-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            padding: .4rem .75rem;
+            border: 1px solid rgba(58, 74, 70, .55);
+            border-radius: 999px;
+            background: rgba(13, 14, 18, .55);
+            color: #b9cac4;
+            font-size: .8rem;
+            cursor: pointer;
+            user-select: none;
+        }
+        .member-chip:has(input:checked) {
+            border-color: rgba(0, 245, 212, .55);
+            background: rgba(0, 245, 212, .12);
+            color: #00f5d4;
+            font-weight: 700;
+        }
+        .member-chip input { accent-color: #00f5d4; }
     </style>
 </head>
-<body>
+<body class="other-page">
 
 {{>layout/header}}
 
 <div class="container py-5 flex-1">
     <div class="bg-[rgba(26,27,32,0.7)] border border-[rgba(58,74,70,0.3)] rounded-2xl p-6 lg:p-8 backdrop-blur-xl shadow-2xl">
         <h2 class="text-2xl font-bold tracking-tight text-[#e3e2e8] mb-6 flex items-center gap-2">
-            <span class="material-symbols-outlined text-[#00f5d4]">add_box</span> 새 미디어 등록
+            <span class="material-symbols-outlined text-[#00f5d4]">add_box</span> 새 유튜브 영상 등록
         </h2>
 
-        <form method="post" action="/media_new" class="row g-4">
+        <form method="post" action="/media_new" class="row g-4" id="mediaNewForm">
             <div class="col-md-4">
                 <label class="form-label">탭 분류</label>
                 <select class="form-select" name="tab">
@@ -76,47 +90,48 @@
             </div>
 
             <div class="col-md-8">
-                <label class="form-label">유튜브 URL 또는 ID 입력</label>
+                <label class="form-label">유튜브 URL 또는 ID</label>
                 <div class="input-group">
-                    <input id="ytUrl" name="youtubeId" class="form-control" placeholder="https://youtu.be/... 또는 ID 입력">
+                    <input id="ytUrl" name="youtubeId" class="form-control" value="{{form.youtubeId}}" placeholder="https://youtu.be/... 또는 영상 ID" required>
                     <button class="px-4 bg-[#00f5d4]/10 border border-[#00f5d4]/40 text-[#00f5d4] hover:bg-[#00f5d4]/20 font-bold text-sm rounded-r-xl transition-all" type="button" id="btnFetch">정보 가져오기</button>
                 </div>
-                {{#errors}}
-                    <div class="text-danger text-xs mt-1" style="color: #ff6b6b; font-size: 0.8rem; margin-top: 4px;">
-                        ❌ 올바른 유튜브 ID 혹은 주소 형식이 아닙니다. 다시 확인해 주세요.
-                    </div>
-                {{/errors}}
+                <p id="ytFetchStatus" class="mt-1 text-xs text-[#8b9b95]" aria-live="polite"></p>
             </div>
 
             <div class="col-12">
                 <label class="form-label">출연 멤버 (여러 명 선택 가능)</label>
-                <select class="form-select" name="artistNames" multiple size="6">
+                <div class="flex flex-wrap gap-2">
                     {{#artistOptions}}
-                    <option value="{{name}}">{{name}}</option>
+                    <label class="member-chip">
+                        <input type="checkbox" name="artistNames" value="{{name}}" {{#selected}}checked{{/selected}}>
+                        <span>{{name}}</span>
+                    </label>
                     {{/artistOptions}}
-                </select>
-                <div class="mt-1 small text-secondary">Ctrl 또는 Shift 키로 여러 멤버를 선택하세요.</div>
+                </div>
             </div>
 
-            <!-- 💡 name="duration" 속성 추가 -->
             <div class="col-md-6">
                 <label class="form-label">영상 길이</label>
-                <input class="form-control font-mono" name="duration" readonly value="{{form.duration}}">
+                <input class="form-control font-mono" name="duration" id="durationInput" value="{{form.duration}}" placeholder="자동 입력" readonly>
             </div>
 
-            <!-- 💡 name="title" 속성 추가 -->
+            <div class="col-md-6">
+                <label class="form-label">조회수</label>
+                {{#form.views}}<input type="hidden" name="views" value="{{form.views}}">{{/form.views}}
+                <input class="form-control font-mono" id="viewsInput" value="{{form.views}}" placeholder="자동 입력" readonly>
+            </div>
+
             <div class="col-12">
                 <label class="form-label">제목</label>
-                <input class="form-control" name="title" value="{{form.title}}" readonly>
+                <input class="form-control" name="title" id="titleInput" value="{{form.title}}" placeholder="정보 가져오기 후 자동 입력 (수정 가능)">
             </div>
 
             <div class="col-12">
-                <input type="hidden" name="views" value="{{form.views}}">
-                <div id="ytThumb" class="mt-2"></div>
+                <div id="ytThumb" class="mt-1"></div>
             </div>
 
             <div class="col-12 flex items-center justify-end gap-3 pt-4 border-t border-[rgba(58,74,70,0.3)]">
-                <a href="/media" class="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-[rgba(58,74,70,0.4)] text-[#b9cac4] text-sm font-medium transition-all no-underline">취소</a>
+                <a href="/media?tab={{tab}}" class="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-[rgba(58,74,70,0.4)] text-[#b9cac4] text-sm font-medium transition-all no-underline">취소</a>
                 <button type="submit" class="px-6 py-2.5 rounded-xl bg-[#00f5d4] text-[#0d0e12] font-bold text-sm hover:opacity-90 transition-all shadow-lg">저장하기</button>
             </div>
         </form>
@@ -124,29 +139,76 @@
 </div>
 
 <script>
-    document.getElementById('btnFetch').addEventListener('click', async () => {
-        const url = document.getElementById('ytUrl').value.trim();
-        if (!url) { alert('URL 또는 ID를 입력해주세요.'); return; }
+(() => {
+  const statusEl = document.getElementById('ytFetchStatus');
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (el && val != null) el.value = val;
+  };
 
-        const res = await fetch('/api/media/resolve?urlOrId=' + encodeURIComponent(url));
-        if (!res.ok) { alert('영상 정보를 가져오지 못했습니다.'); return; }
+  function syncViewsHidden(views) {
+    const form = document.getElementById('mediaNewForm');
+    let hidden = form.querySelector('input[type="hidden"][name="views"]');
+    if (views == null || views === '') {
+      if (hidden) hidden.remove();
+      return;
+    }
+    if (!hidden) {
+      hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.name = 'views';
+      form.appendChild(hidden);
+    }
+    hidden.value = String(views);
+  }
 
-        const d = await res.json();
-        const set = (sel, val)=>{ const el=document.querySelector(sel); if(el && val!=null) el.value = val; };
+  async function fetchYoutubeInfo() {
+    const url = document.getElementById('ytUrl').value.trim();
+    if (!url) {
+      alert('URL 또는 ID를 입력해주세요.');
+      return false;
+    }
+    if (statusEl) statusEl.textContent = '영상 정보를 불러오는 중...';
+    try {
+      const res = await fetch('/api/media/resolve?urlOrId=' + encodeURIComponent(url));
+      if (!res.ok) throw new Error('resolve failed');
+      const d = await res.json();
+      if (d.youtubeId) document.getElementById('ytUrl').value = d.youtubeId;
+      set('titleInput', d.title || '');
+      set('durationInput', d.duration || '');
+      set('viewsInput', d.views != null ? d.views : '');
+      syncViewsHidden(d.views != null ? d.views : '');
+      if (d.thumbnail) {
+        document.getElementById('ytThumb').innerHTML = `
+          <div class="p-3 bg-[rgba(13,14,18,0.5)] border border-[rgba(58,74,70,0.3)] rounded-xl inline-block">
+            <p class="text-xs text-[#b9cac4] mb-2 font-medium">썸네일 미리보기</p>
+            <img src="${d.thumbnail}" style="max-width:240px;border-radius:8px;border:1px solid rgba(58,74,70,0.4)" alt="썸네일">
+          </div>`;
+      }
+      if (statusEl) statusEl.textContent = '영상 정보를 불러왔습니다.';
+      return true;
+    } catch (e) {
+      if (statusEl) statusEl.textContent = '영상 정보를 가져오지 못했습니다. URL을 확인하세요.';
+      alert('영상 정보를 가져오지 못했습니다.');
+      return false;
+    }
+  }
 
-        set('input[name="youtubeId"]', d.youtubeId);
-        set('input[name="title"]', d.title);
-        set('input[name="duration"]', d.duration);
-        set('input[name="views"]', d.views);
+  document.getElementById('btnFetch').addEventListener('click', () => { fetchYoutubeInfo(); });
 
-        if (d.thumbnail) {
-            document.getElementById('ytThumb').innerHTML = `
-              <div class="p-3 bg-[rgba(13,14,18,0.5)] border border-[rgba(58,74,70,0.3)] rounded-xl inline-block">
-                  <p class="text-xs text-[#b9cac4] mb-2 font-medium">썸네일 미리보기</p>
-                  <img src="${d.thumbnail}" style="max-width:240px;border-radius:8px;border:1px solid rgba(58,74,70,0.4)" alt="썸네일">
-              </div>`;
-        }
-    });
+  document.getElementById('mediaNewForm').addEventListener('submit', async (event) => {
+    const title = document.getElementById('titleInput').value.trim();
+    if (!title) {
+      event.preventDefault();
+      const ok = await fetchYoutubeInfo();
+      if (!ok || !document.getElementById('titleInput').value.trim()) {
+        alert('영상 정보를 먼저 가져와 주세요.');
+        return;
+      }
+      event.target.submit();
+    }
+  });
+})();
 </script>
 </body>
 </html>

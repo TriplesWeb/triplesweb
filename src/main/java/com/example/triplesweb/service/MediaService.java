@@ -56,7 +56,7 @@ public class MediaService {
                 .mediaTitle(dto.getTitle()!=null?dto.getTitle():"")
                 .mediaDur(dto.getDuration()!=null?dto.getDuration():"")
                 .viewCount(dto.getViews()!=null?dto.getViews():0L)
-                .description(dto.getDescription())
+                .description(truncateDescription(dto.getDescription()))
                 .sortOrder(sortOrder).build();
         entity.setArtists(resolveArtists(artistNames));
         mediaRepository.save(entity);
@@ -166,5 +166,13 @@ public class MediaService {
     private MediaDto toDto(Media m) {
         long views=m.getViewCount()!=null?m.getViewCount():0L;
         return MediaDto.builder().tab(m.getTab()).youtubeId(m.getYoutubeId()).title(m.getMediaTitle()).duration(m.getMediaDur()).views(views).viewCountFmt(NumberFormat.getInstance().format(views)).description(m.getDescription()).artistNames(m.getArtistNames()).build();
+    }
+
+    /** TEXT 컬럼 한도 안에서 저장 (유튜브 설명이 매우 긴 경우 대비) */
+    private static String truncateDescription(String description) {
+        if (description == null || description.isBlank()) return "";
+        String trimmed = description.trim();
+        final int max = 60_000;
+        return trimmed.length() <= max ? trimmed : trimmed.substring(0, max);
     }
 }
