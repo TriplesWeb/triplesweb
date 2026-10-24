@@ -31,37 +31,84 @@ public class SchemaImproveRunner implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         migrateChemistryToArtistFk();
         ensureUnitMemberUnique();
-        ensureSavedMetaFileType("article_file");
-        ensureSavedMetaFileType("shop_image");
+        ensureSavedMetaColumns("article_file");
+        ensureSavedMetaColumns("shop_image");
     }
 
     /**
-     * SavedMeta.fileType 임베드 컬럼({@code file_type})이 없으면 추가한다.
-     * V26이 camelCase만 있고 snake_case가 없으면 rename하고, 둘 다 없으면 아무 것도 하지 않는다.
-     * 그 경우 article 상세가 file_type 없음으로 500이 나므로 여기서 컬럼을 보강한다.
+     * {@code SavedMeta} snake_case 컬럼이 없으면 추가하고, 남아 있는 camelCase 값을 복사한다.
+     * V26 rename이 건너뛰어진 뒤 V27이 mediaType만 지우면 media_type이 없어 상세 조회가 실패한다.
      */
-    private void ensureSavedMetaFileType(String table) {
-        if (!tableExists(table) || columnExists(table, "file_type")) {
+    private void ensureSavedMetaColumns(String table) {
+        if (!tableExists(table)) {
             return;
         }
         try {
-            em.createNativeQuery(
-                    "ALTER TABLE `" + table + "`"
-                            + " ADD COLUMN file_type VARCHAR(255) NOT NULL"
-                            + " DEFAULT 'application/octet-stream'"
-            ).executeUpdate();
-            if (columnExists(table, "media_type")) {
-                em.createNativeQuery(
-                        "UPDATE `" + table + "` SET file_type = CASE"
-                                + " WHEN UPPER(COALESCE(media_type,'')) IN ('IMAGE','PHOTO') THEN 'image/jpeg'"
-                                + " WHEN UPPER(COALESCE(media_type,'')) = 'VIDEO' THEN 'video/mp4'"
-                                + " ELSE 'application/octet-stream' END"
-                ).executeUpdate();
-            }
-            log.info("Added {}.file_type for SavedMeta embed", table);
+            addColumnIfMissing(table, "original_name", "VARCHAR(300) NOT NULL DEFAULT ''");
+            addColumnIfMissing(table, "saved_name", "VARCHAR(400) NOT NULL DEFAULT ''");
+            addColumnIfMissing(table, "url", "VARCHAR(512) NOT NULL DEFAULT ''");
+            addColumnIfMissing(table, "size", "BIGINT NOT NULL DEFAULT 0");
+            addColumnIfMissing(table, "file_type", "VARCHAR(255) NOT NULL DEFAULT 'application/octet-stream'");
+            addColumnIfMissing(table, "media_type", "VARCHAR(255) NOT NULL DEFAULT 'OTHER'");
+            copyColumnIfPresent(table, "originalName", "original_name");
+            copyColumnIfPresent(table, "savedName", "saved_name");
+            copyColumnIfPresent(table, "fileType", "file_type");
+            copyMediaType(table);
+            backfillMediaType(table);
         } catch (RuntimeException e) {
-            log.warn("Ensure {}.file_type failed: {}", table, e.getMessage());
+            log.warn("Ensure SavedMeta columns on {} failed: {}", table, e.getMessage());
         }
+    }
+
+    private void addColumnIfMissing(String table, String column, String definition) {
+        if (columnExists(table, column)) {
+            return;
+        }
+        em.createNativeQuery(
+                "ALTER TABLE `" + table + "` ADD COLUMN `" + column + "` " + definition
+        ).executeUpdate();
+        log.info("Added {}.{}", table, column);
+    }
+
+    private void copyColumnIfPresent(String table, String fromColumn, String toColumn) {
+        if (!columnExists(table, fromColumn) || !columnExists(table, toColumn)) {
+            return;
+        }
+        em.createNativeQuery(
+                "UPDATE `" + table + "` SET `" + toColumn + "` = `" + fromColumn + "`"
+                        + " WHERE `" + fromColumn + "` IS NOT NULL AND `" + fromColumn + "` <> ''"
+                        + " AND (`" + toColumn + "` IS NULL OR `" + toColumn + "` = ''"
+                        + " OR `" + toColumn + "` = 'application/octet-stream')"
+        ).executeUpdate();
+    }
+
+    private void copyMediaType(String table) {
+        if (!columnExists(table, "mediaType") || !columnExists(table, "media_type")) {
+            return;
+        }
+        em.createNativeQuery(
+                "UPDATE `" + table + "` SET media_type = CASE"
+                        + " WHEN UPPER(mediaType) IN ('IMAGE','PHOTO') THEN 'IMAGE'"
+                        + " WHEN UPPER(mediaType) = 'VIDEO' THEN 'VIDEO'"
+                        + " ELSE COALESCE(NULLIF(media_type, ''), 'OTHER') END"
+                        + " WHERE mediaType IS NOT NULL AND mediaType <> ''"
+        ).executeUpdate();
+    }
+
+    private void backfillMediaType(String table) {
+        if (!columnExists(table, "media_type") || !columnExists(table, "file_type")
+                || !columnExists(table, "saved_name")) {
+            return;
+        }
+        em.createNativeQuery(
+                "UPDATE `" + table + "` SET media_type = CASE"
+                        + " WHEN file_type LIKE 'image/%'"
+                        + " OR LOWER(saved_name) REGEXP '\\\\.(jpg|jpeg|png|gif|webp|bmp)$' THEN 'IMAGE'"
+                        + " WHEN file_type LIKE 'video/%'"
+                        + " OR LOWER(saved_name) REGEXP '\\\\.(mp4|mov|m4v|webm|mkv|avi)$' THEN 'VIDEO'"
+                        + " ELSE media_type END"
+                        + " WHERE media_type IS NULL OR media_type = '' OR media_type = 'OTHER'"
+        ).executeUpdate();
     }
 
     private void migrateChemistryToArtistFk() {
