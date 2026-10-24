@@ -1,14 +1,12 @@
 package com.example.triplesweb.config;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Flyway 이후 남은 스키마 정리.
@@ -23,20 +21,59 @@ import org.springframework.transaction.annotation.Transactional;
 @Profile("!test")
 public class SchemaImproveRunner implements ApplicationRunner {
 
-    @PersistenceContext
-    private EntityManager em;
+    private final JdbcTemplate jdbc;
 
+    public SchemaImproveRunner(JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
+    }
+
+    /**
+     * DDL은 MariaDB에서 암시적 커밋을 일으키고 연결을 끊을 수 있다.
+     * JPA 트랜잭션으로 묶으면 롤백이 {@code Connection is closed}로 실패해 앱 기동이 멈춘다.
+     */
     @Override
-    @Transactional
     public void run(ApplicationArguments args) {
-        migrateChemistryToArtistFk();
-        ensureUnitMemberUnique();
-        ensureSavedMetaColumns("article_file");
-        ensureSavedMetaColumns("shop_image");
-        dropLegacyCamelColumns("article_file");
-        dropLegacyCamelColumns("shop_image");
-        relaxUnmappedRequiredColumns("article_file");
-        relaxUnmappedRequiredColumns("shop_image");
+        try {
+            migrateChemistryToArtistFk();
+            ensureUnitMemberUnique();
+            ensureSavedMetaColumns("article_file");
+            ensureSavedMetaColumns("shop_image");
+            dropLegacyCamelColumns("article_file");
+            dropLegacyCamelColumns("shop_image");
+            relaxUnmappedRequiredColumns("article_file");
+            relaxUnmappedRequiredColumns("shop_image");
+        } catch (RuntimeException e) {
+            log.warn("Schema improve skipped; application will still start: {}", e.getMessage());
+        }
+    }
+
+    private long count(String sql, Object... args) {
+        try {
+            Long n = jdbc.queryForObject(sql, Long.class, args);
+            return n == null ? 0 : n;
+        } catch (RuntimeException e) {
+            log.warn("Schema lookup skipped: {}", e.getMessage());
+            return 0;
+        }
+    }
+
+    private static String cell(java.util.Map<String, Object> row, String name) {
+        for (var entry : row.entrySet()) {
+            if (entry.getKey() != null && entry.getKey().equalsIgnoreCase(name) && entry.getValue() != null) {
+                return entry.getValue().toString();
+            }
+        }
+        return "";
+    }
+
+    private boolean execute(String sql, Object... args) {
+        try {
+            jdbc.update(sql, args);
+            return true;
+        } catch (RuntimeException e) {
+            log.warn("Schema statement skipped: {}", e.getMessage());
+            return false;
+        }
     }
 
     /**
@@ -51,13 +88,8 @@ public class SchemaImproveRunner implements ApplicationRunner {
             if (!columnExists(table, column)) {
                 continue;
             }
-            try {
-                em.createNativeQuery(
-                        "ALTER TABLE `" + table + "` DROP COLUMN `" + column + "`"
-                ).executeUpdate();
+            if (execute("ALTER TABLE `" + table + "` DROP COLUMN `" + column + "`")) {
                 log.info("Dropped legacy column {}.{}", table, column);
-            } catch (RuntimeException e) {
-                log.warn("Drop {}.{} failed: {}", table, column, e.getMessage());
             }
         }
     }
@@ -67,31 +99,31 @@ public class SchemaImproveRunner implements ApplicationRunner {
         if (!tableExists(table)) {
             return;
         }
-        @SuppressWarnings("unchecked")
-        java.util.List<Object[]> rows = em.createNativeQuery("""
-                SELECT COLUMN_NAME, COLUMN_TYPE
-                FROM information_schema.COLUMNS
-                WHERE TABLE_SCHEMA = DATABASE()
-                  AND TABLE_NAME = :t
-                  AND IS_NULLABLE = 'NO'
-                  AND COLUMN_DEFAULT IS NULL
-                  AND EXTRA NOT LIKE '%auto_increment%'
-                """).setParameter("t", table).getResultList();
+        java.util.List<java.util.Map<String, Object>> rows;
+        try {
+            rows = jdbc.queryForList("""
+                    SELECT COLUMN_NAME, COLUMN_TYPE
+                    FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = ?
+                      AND IS_NULLABLE = 'NO'
+                      AND COLUMN_DEFAULT IS NULL
+                      AND EXTRA NOT LIKE '%auto_increment%'
+                    """, table);
+        } catch (RuntimeException e) {
+            log.warn("Unmapped column lookup skipped for {}: {}", table, e.getMessage());
+            return;
+        }
         java.util.Set<String> mapped = java.util.Set.of(
                 "id", "article_id", "original_name", "saved_name", "url", "size", "file_type", "media_type", "title");
-        for (Object[] row : rows) {
-            String column = String.valueOf(row[0]);
-            String columnType = String.valueOf(row[1]);
+        for (java.util.Map<String, Object> row : rows) {
+            String column = cell(row, "COLUMN_NAME");
+            String columnType = cell(row, "COLUMN_TYPE");
             if (mapped.contains(column)) {
                 continue;
             }
-            try {
-                em.createNativeQuery(
-                        "ALTER TABLE `" + table + "` MODIFY COLUMN `" + column + "` " + columnType + " NULL"
-                ).executeUpdate();
+            if (execute("ALTER TABLE `" + table + "` MODIFY COLUMN `" + column + "` " + columnType + " NULL")) {
                 log.info("Made unmapped column {}.{} nullable", table, column);
-            } catch (RuntimeException e) {
-                log.warn("Relax {}.{} failed: {}", table, column, e.getMessage());
             }
         }
     }
@@ -125,9 +157,7 @@ public class SchemaImproveRunner implements ApplicationRunner {
         if (columnExists(table, column)) {
             return;
         }
-        em.createNativeQuery(
-                "ALTER TABLE `" + table + "` ADD COLUMN `" + column + "` " + definition
-        ).executeUpdate();
+        execute("ALTER TABLE `" + table + "` ADD COLUMN `" + column + "` " + definition);
         log.info("Added {}.{}", table, column);
     }
 
@@ -135,25 +165,21 @@ public class SchemaImproveRunner implements ApplicationRunner {
         if (!columnExists(table, fromColumn) || !columnExists(table, toColumn)) {
             return;
         }
-        em.createNativeQuery(
-                "UPDATE `" + table + "` SET `" + toColumn + "` = `" + fromColumn + "`"
-                        + " WHERE `" + fromColumn + "` IS NOT NULL AND `" + fromColumn + "` <> ''"
-                        + " AND (`" + toColumn + "` IS NULL OR `" + toColumn + "` = ''"
-                        + " OR `" + toColumn + "` = 'application/octet-stream')"
-        ).executeUpdate();
+        execute("UPDATE `" + table + "` SET `" + toColumn + "` = `" + fromColumn + "`"
+                + " WHERE `" + fromColumn + "` IS NOT NULL AND `" + fromColumn + "` <> ''"
+                + " AND (`" + toColumn + "` IS NULL OR `" + toColumn + "` = ''"
+                + " OR `" + toColumn + "` = 'application/octet-stream')");
     }
 
     private void copyMediaType(String table) {
         if (!columnExists(table, "mediaType") || !columnExists(table, "media_type")) {
             return;
         }
-        em.createNativeQuery(
-                "UPDATE `" + table + "` SET media_type = CASE"
-                        + " WHEN UPPER(mediaType) IN ('IMAGE','PHOTO') THEN 'IMAGE'"
-                        + " WHEN UPPER(mediaType) = 'VIDEO' THEN 'VIDEO'"
-                        + " ELSE COALESCE(NULLIF(media_type, ''), 'OTHER') END"
-                        + " WHERE mediaType IS NOT NULL AND mediaType <> ''"
-        ).executeUpdate();
+        execute("UPDATE `" + table + "` SET media_type = CASE"
+                + " WHEN UPPER(mediaType) IN ('IMAGE','PHOTO') THEN 'IMAGE'"
+                + " WHEN UPPER(mediaType) = 'VIDEO' THEN 'VIDEO'"
+                + " ELSE COALESCE(NULLIF(media_type, ''), 'OTHER') END"
+                + " WHERE mediaType IS NOT NULL AND mediaType <> ''");
     }
 
     private void backfillMediaType(String table) {
@@ -161,15 +187,13 @@ public class SchemaImproveRunner implements ApplicationRunner {
                 || !columnExists(table, "saved_name")) {
             return;
         }
-        em.createNativeQuery(
-                "UPDATE `" + table + "` SET media_type = CASE"
-                        + " WHEN file_type LIKE 'image/%'"
-                        + " OR LOWER(saved_name) REGEXP '\\\\.(jpg|jpeg|png|gif|webp|bmp)$' THEN 'IMAGE'"
-                        + " WHEN file_type LIKE 'video/%'"
-                        + " OR LOWER(saved_name) REGEXP '\\\\.(mp4|mov|m4v|webm|mkv|avi)$' THEN 'VIDEO'"
-                        + " ELSE media_type END"
-                        + " WHERE media_type IS NULL OR media_type = '' OR media_type = 'OTHER'"
-        ).executeUpdate();
+        execute("UPDATE `" + table + "` SET media_type = CASE"
+                + " WHEN file_type LIKE 'image/%'"
+                + " OR LOWER(saved_name) REGEXP '\\\\.(jpg|jpeg|png|gif|webp|bmp)$' THEN 'IMAGE'"
+                + " WHEN file_type LIKE 'video/%'"
+                + " OR LOWER(saved_name) REGEXP '\\\\.(mp4|mov|m4v|webm|mkv|avi)$' THEN 'VIDEO'"
+                + " ELSE media_type END"
+                + " WHERE media_type IS NULL OR media_type = '' OR media_type = 'OTHER'");
     }
 
     private void migrateChemistryToArtistFk() {
@@ -189,27 +213,19 @@ public class SchemaImproveRunner implements ApplicationRunner {
 
         if (hasMemberA) {
             if (!hasArtistA) {
-                em.createNativeQuery(
-                        "ALTER TABLE chemistry"
-                                + " ADD COLUMN artist_a_id BIGINT NULL, ADD COLUMN artist_b_id BIGINT NULL"
-                ).executeUpdate();
+                execute("ALTER TABLE chemistry"
+                        + " ADD COLUMN artist_a_id BIGINT NULL, ADD COLUMN artist_b_id BIGINT NULL");
             }
-            em.createNativeQuery(
-                    "UPDATE chemistry c"
-                            + " INNER JOIN artist a ON a.name = c." + memberACol
-                            + " INNER JOIN artist b ON b.name = c." + memberBCol
-                            + " SET c.artist_a_id = a.artist_id, c.artist_b_id = b.artist_id"
-                            + " WHERE c.artist_a_id IS NULL OR c.artist_b_id IS NULL"
-            ).executeUpdate();
-            em.createNativeQuery(
-                    "DELETE FROM chemistry WHERE artist_a_id IS NULL OR artist_b_id IS NULL"
-            ).executeUpdate();
+            execute("UPDATE chemistry c"
+                    + " INNER JOIN artist a ON a.name = c." + memberACol
+                    + " INNER JOIN artist b ON b.name = c." + memberBCol
+                    + " SET c.artist_a_id = a.artist_id, c.artist_b_id = b.artist_id"
+                    + " WHERE c.artist_a_id IS NULL OR c.artist_b_id IS NULL");
+            execute("DELETE FROM chemistry WHERE artist_a_id IS NULL OR artist_b_id IS NULL");
             if (indexExists("chemistry", "uk_chemistry_pair")) {
-                em.createNativeQuery("ALTER TABLE chemistry DROP INDEX uk_chemistry_pair").executeUpdate();
+                execute("ALTER TABLE chemistry DROP INDEX uk_chemistry_pair");
             }
-            em.createNativeQuery(
-                    "ALTER TABLE chemistry DROP COLUMN " + memberACol + ", DROP COLUMN " + memberBCol
-            ).executeUpdate();
+            execute("ALTER TABLE chemistry DROP COLUMN " + memberACol + ", DROP COLUMN " + memberBCol);
             log.info("Migrated chemistry.{} → artist_a_id/artist_b_id", memberACol);
             hasArtistA = true;
             hasMemberA = false;
@@ -217,16 +233,12 @@ public class SchemaImproveRunner implements ApplicationRunner {
 
         if (hasArtistA && !hasMemberA) {
             if (columnIsNullable("chemistry", "artist_a_id") || columnIsNullable("chemistry", "artist_b_id")) {
-                em.createNativeQuery(
-                        "ALTER TABLE chemistry"
-                                + " MODIFY COLUMN artist_a_id BIGINT NOT NULL, MODIFY COLUMN artist_b_id BIGINT NOT NULL"
-                ).executeUpdate();
+                execute("ALTER TABLE chemistry"
+                        + " MODIFY COLUMN artist_a_id BIGINT NOT NULL, MODIFY COLUMN artist_b_id BIGINT NOT NULL");
             }
             if (!indexExists("chemistry", "uk_chemistry_pair")) {
-                em.createNativeQuery(
-                        "ALTER TABLE chemistry"
-                                + " ADD CONSTRAINT uk_chemistry_pair UNIQUE (artist_a_id, artist_b_id)"
-                ).executeUpdate();
+                execute("ALTER TABLE chemistry"
+                        + " ADD CONSTRAINT uk_chemistry_pair UNIQUE (artist_a_id, artist_b_id)");
             }
             ensureChemistryFk("chemistry", "artist", "artist_id", "fk_chemistry_artist_a", "artist_a_id");
             ensureChemistryFk("chemistry", "artist", "artist_id", "fk_chemistry_artist_b", "artist_b_id");
@@ -261,11 +273,9 @@ public class SchemaImproveRunner implements ApplicationRunner {
             constraintName = baseName + "_" + suffix++;
         }
 
-        em.createNativeQuery(
-                "ALTER TABLE `" + chemTable + "` ADD CONSTRAINT `" + constraintName + "`"
-                        + " FOREIGN KEY (`" + column + "`)"
-                        + " REFERENCES `" + artistTable + "` (`" + artistPk + "`)"
-        ).executeUpdate();
+        execute("ALTER TABLE `" + chemTable + "` ADD CONSTRAINT `" + constraintName + "`"
+                + " FOREIGN KEY (`" + column + "`)"
+                + " REFERENCES `" + artistTable + "` (`" + artistPk + "`)");
         log.info("Added Chemistry FK: {} on {}.{} -> {}.{}", constraintName, chemTable, column, artistTable, artistPk);
     }
 
@@ -275,30 +285,23 @@ public class SchemaImproveRunner implements ApplicationRunner {
             String referencedTable,
             String referencedColumn
     ) {
-        Number count = (Number) em.createNativeQuery("""
+        return count("""
                 SELECT COUNT(*)
                 FROM information_schema.KEY_COLUMN_USAGE
                 WHERE TABLE_SCHEMA = DATABASE()
-                  AND TABLE_NAME = :tableName
-                  AND COLUMN_NAME = :columnName
+                  AND TABLE_NAME = ?
+                  AND COLUMN_NAME = ?
                   AND REFERENCED_TABLE_SCHEMA = DATABASE()
-                  AND REFERENCED_TABLE_NAME = :referencedTable
-                  AND REFERENCED_COLUMN_NAME = :referencedColumn
-                """)
-                .setParameter("tableName", table)
-                .setParameter("columnName", column)
-                .setParameter("referencedTable", referencedTable)
-                .setParameter("referencedColumn", referencedColumn)
-                .getSingleResult();
-        return count.longValue() > 0;
+                  AND REFERENCED_TABLE_NAME = ?
+                  AND REFERENCED_COLUMN_NAME = ?
+                """, table, column, referencedTable, referencedColumn) > 0;
     }
 
     private boolean constraintNameExists(String name) {
-        Number n = (Number) em.createNativeQuery("""
+        return count("""
                 SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
-                WHERE CONSTRAINT_SCHEMA = DATABASE() AND CONSTRAINT_NAME = :n
-                """).setParameter("n", name).getSingleResult();
-        return n.longValue() > 0;
+                WHERE CONSTRAINT_SCHEMA = DATABASE() AND CONSTRAINT_NAME = ?
+                """, name) > 0;
     }
 
     private void ensureUnitMemberUnique() {
@@ -308,87 +311,81 @@ public class SchemaImproveRunner implements ApplicationRunner {
         if (!columnExists("unit_member", "artist_id") || !columnExists("unit_member", "unit_id")) {
             return;
         }
-        em.createNativeQuery(
-                "ALTER TABLE unit_member ADD CONSTRAINT uk_unit_member UNIQUE (artist_id, unit_id)"
-        ).executeUpdate();
+        execute("ALTER TABLE unit_member ADD CONSTRAINT uk_unit_member UNIQUE (artist_id, unit_id)");
         log.info("Added uk_unit_member on unit_member");
     }
 
     private boolean tableExists(String table) {
-        Number n = (Number) em.createNativeQuery("""
+        return count("""
                 SELECT COUNT(*) FROM information_schema.TABLES
-                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t
-                """).setParameter("t", table).getSingleResult();
-        return n.longValue() > 0;
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+                """, table) > 0;
     }
 
     private boolean columnExists(String table, String column) {
-        Number n = (Number) em.createNativeQuery("""
+        return count("""
                 SELECT COUNT(*) FROM information_schema.COLUMNS
                 WHERE TABLE_SCHEMA = DATABASE()
-                  AND TABLE_NAME = :t
-                  AND COLUMN_NAME = :c
-                """).setParameter("t", table).setParameter("c", column).getSingleResult();
-        return n.longValue() > 0;
+                  AND TABLE_NAME = ?
+                  AND COLUMN_NAME = ?
+                """, table, column) > 0;
     }
 
     /** information_schema에 실제 저장된 컬럼명(대소문자 포함)을 반환한다. */
     private String resolveColumnName(String table, String column) {
         try {
-            Object name = em.createNativeQuery("""
+            return jdbc.query("""
                     SELECT COLUMN_NAME FROM information_schema.COLUMNS
                     WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME = :t
-                      AND LOWER(COLUMN_NAME) = LOWER(:c)
+                      AND TABLE_NAME = ?
+                      AND LOWER(COLUMN_NAME) = LOWER(?)
                     LIMIT 1
-                    """).setParameter("t", table).setParameter("c", column).getSingleResult();
-            return name != null ? name.toString() : null;
+                    """, (rs, row) -> rs.getString(1), table, column)
+                    .stream().findFirst().orElse(null);
         } catch (RuntimeException e) {
             return null;
         }
     }
 
     private boolean indexExists(String table, String index) {
-        Number n = (Number) em.createNativeQuery("""
+        return count("""
                 SELECT COUNT(*) FROM information_schema.STATISTICS
                 WHERE TABLE_SCHEMA = DATABASE()
-                  AND TABLE_NAME = :t
-                  AND INDEX_NAME = :i
-                """).setParameter("t", table).setParameter("i", index).getSingleResult();
-        return n.longValue() > 0;
+                  AND TABLE_NAME = ?
+                  AND INDEX_NAME = ?
+                """, table, index) > 0;
     }
 
     private boolean constraintExists(String table, String name) {
-        Number n = (Number) em.createNativeQuery("""
+        return count("""
                 SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
                 WHERE TABLE_SCHEMA = DATABASE()
-                  AND TABLE_NAME = :t
-                  AND CONSTRAINT_NAME = :n
-                """).setParameter("t", table).setParameter("n", name).getSingleResult();
-        return n.longValue() > 0;
+                  AND TABLE_NAME = ?
+                  AND CONSTRAINT_NAME = ?
+                """, table, name) > 0;
     }
 
     private boolean foreignKeyExistsOnColumn(String table, String column) {
-        Number n = (Number) em.createNativeQuery("""
+        return count("""
                 SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE
                 WHERE TABLE_SCHEMA = DATABASE()
-                  AND TABLE_NAME = :t
-                  AND COLUMN_NAME = :c
+                  AND TABLE_NAME = ?
+                  AND COLUMN_NAME = ?
                   AND REFERENCED_TABLE_NAME IS NOT NULL
-                """).setParameter("t", table).setParameter("c", column).getSingleResult();
-        return n.longValue() > 0;
+                """, table, column) > 0;
     }
 
     private boolean columnIsNullable(String table, String column) {
         try {
-            Object nullable = em.createNativeQuery("""
+            String nullable = jdbc.query("""
                     SELECT IS_NULLABLE FROM information_schema.COLUMNS
                     WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME = :t
-                      AND COLUMN_NAME = :c
+                      AND TABLE_NAME = ?
+                      AND COLUMN_NAME = ?
                     LIMIT 1
-                    """).setParameter("t", table).setParameter("c", column).getSingleResult();
-            return nullable != null && "YES".equalsIgnoreCase(nullable.toString());
+                    """, (rs, row) -> rs.getString(1), table, column)
+                    .stream().findFirst().orElse(null);
+            return nullable != null && "YES".equalsIgnoreCase(nullable);
         } catch (RuntimeException e) {
             return false;
         }
