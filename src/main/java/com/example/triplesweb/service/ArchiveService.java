@@ -97,17 +97,47 @@ public class ArchiveService {
     @Transactional
     public boolean delete(long id) {
         return archiveRepository.findById(id).map(archive -> {
-            try {
-                SavedMeta file = archive.getFile();
-                if (file != null && file.getSavedName() != null && !file.getSavedName().isBlank()) {
-                    fileStorageService.deleteFile(file.getSavedName());
-                }  else if (file.getUrl() != null && file.getUrl().startsWith("/uploads/")) {
-                    fileStorageService.deleteFile(file.getUrl());
-                }
-            } catch (Exception ignored) {}
+            deleteStored(archive.getFile());
             archiveRepository.delete(archive);
             return true;
         }).orElse(false);
+    }
+
+    /**
+     * 제목과 출연 표기를 바꾸고, 새 파일이 있으면 기존 미디어를 교체한다.
+     * 파일은 비워 둘 수 있으며, 이때 저장된 미디어는 그대로 둔다.
+     */
+    @Transactional
+    public Archive update(long id, String title, MultipartFile file, String artistNames) throws IOException {
+        Archive archive = show(id);
+        String safeTitle = title == null ? "" : title.trim();
+        if (safeTitle.isEmpty()) {
+            throw new IllegalArgumentException("제목을 입력해주세요.");
+        }
+        archive.setTitle(safeTitle);
+        if (artistNames != null) {
+            archive.setArtistNames(artistNames.trim());
+        }
+        if (file != null && !file.isEmpty()) {
+            SavedMeta previous = archive.getFile();
+            SavedMeta meta = fileStorageService.saveWithMeta(file);
+            coerceType(archive.getType(), meta);
+            archive.setFile(meta);
+            deleteStored(previous);
+        }
+        return archiveRepository.save(archive);
+    }
+
+    private void deleteStored(SavedMeta file) {
+        if (file == null) return;
+        try {
+            if (file.getSavedName() != null && !file.getSavedName().isBlank()) {
+                fileStorageService.deleteFile(file.getSavedName());
+            } else if (file.getUrl() != null && file.getUrl().startsWith("/uploads/")) {
+                fileStorageService.deleteFile(file.getUrl());
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     @Transactional

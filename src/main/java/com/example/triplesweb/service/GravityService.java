@@ -85,6 +85,10 @@ public class GravityService {
             gravity.put("bannerImageUrl", safeImage(gravityNode.path("bannerImageUrl").asText("")));
             gravity.put("detailUrl", "/cosmo/gravity/" + gravityNode.path("id").asLong());
             gravity.put("artistId", artistId);
+            JsonNode resultNode = gravityNode.path("result");
+            boolean hasComo = resultNode.path("totalComoUsed").isNumber();
+            gravity.put("hasComo", hasComo);
+            gravity.put("comoUsed", hasComo ? resultNode.path("totalComoUsed").asLong() : 0L);
 
 
             List<Map<String, Object>> polls = new ArrayList<>();

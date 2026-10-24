@@ -31,6 +31,30 @@ class GravityControllerTest {
         }
     }
 
+    @Test void listPageUsesLiveItemsWithoutDesignPlaceholders() throws Exception {
+        when(service.hasCosmoToken()).thenReturn(true);
+        when(service.fetchGravityList("tripleS")).thenReturn(java.util.List.of(java.util.Map.of(
+                "id", 21L,
+                "title", "Actual Gravity",
+                "description", "API description",
+                "statusLabel", "종료",
+                "type", "grand-gravity",
+                "detailUrl", "/cosmo/gravity/21",
+                "hasComo", true,
+                "comoUsed", 120L,
+                "entireStartDate", "2026-10-01",
+                "entireEndDate", "2026-10-02"
+        )));
+        mvc.perform(get("/cosmo/gravity")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("Actual Gravity")))
+                .andExpect(content().string(containsString("API description")))
+                .andExpect(content().string(containsString("120")))
+                .andExpect(content().string(not(containsString("14.8M"))))
+                .andExpect(content().string(not(containsString("Polygon Mainnet"))))
+                .andExpect(content().string(not(containsString("Girls Never Die"))))
+                .andExpect(content().string(not(containsString("cdn.tailwindcss.com"))));
+    }
+
     @Test void listUsesTripleSAndLoadsHeaderIconFont() throws Exception {
         when(service.hasCosmoToken()).thenReturn(true);
         when(service.fetchGravityList("tripleS")).thenReturn(java.util.List.of());

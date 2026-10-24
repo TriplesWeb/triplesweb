@@ -82,6 +82,23 @@ public class ArchiveController {
         return "redirect:/archive/video_archive";
     }
 
+    @PostMapping("/{id}")
+    @ResponseBody
+    public ResponseEntity<?> updateArchive(@PathVariable long id,
+                                           @RequestParam("title") String title,
+                                           @RequestParam(value = "file", required = false) MultipartFile file,
+                                           @RequestParam(value = "artistNames", required = false) String artistNames,
+                                           HttpServletRequest request,
+                                           HttpSession session) throws IOException {
+        aboutAdminAuth.requireAdmin(request, session);
+        try {
+            archiveService.update(id, title, file, artistNames);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @DeleteMapping("/{id}")
     @ResponseBody
     public ResponseEntity<?> deleteArchive(@PathVariable long id, HttpServletRequest request, HttpSession session) {
