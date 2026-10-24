@@ -440,10 +440,13 @@ public class ArticleController {
         model.addAttribute("article", article);
 
         List<ArticleFileDto> fileDtos = article.getFiles().stream().map(f -> {
+            var m = f.getFile();
             ArticleFileDto dto = new ArticleFileDto();
             dto.setId(f.getId());
-            dto.setOriginalName(f.getFile().getOriginalName());
-            dto.setType(f.getFile().getMediaType());
+            dto.setOriginalName(m.getOriginalName());
+            dto.setSavedName(m.getSavedName());
+            dto.setType(m.getMediaType());
+            dto.setSize(m.getSize());
             dto.setCategory(article.getCategory());
             dto.setArticleId(article.getId());
             return dto;
