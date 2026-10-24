@@ -85,6 +85,18 @@
                                     {{/hasBornPlace}}
                                 </div>
                             </div>
+                            {{#hasRealName}}
+                            <div class="bg-[#0d0e12]/40 border border-[#3a4a46]/30 rounded-xl p-3.5 flex items-center justify-between gap-3">
+                                <span class="text-xs font-semibold text-[#b9cac4]">본명</span>
+                                <span class="text-sm font-medium text-[#e3e2e8]">{{realName}}</span>
+                            </div>
+                            {{/hasRealName}}
+                            {{#hasMbti}}
+                            <div class="bg-[#0d0e12]/40 border border-[#3a4a46]/30 rounded-xl p-3.5 flex items-center justify-between gap-3">
+                                <span class="text-xs font-semibold text-[#b9cac4]">MBTI</span>
+                                <span class="text-sm font-medium text-[#e3e2e8] font-mono">{{mbti}}</span>
+                            </div>
+                            {{/hasMbti}}
                             {{#hasBirthPlace}}
                             <div class="bg-[#0d0e12]/40 border border-[#3a4a46]/30 rounded-xl p-3.5 flex items-center justify-between gap-3">
                                 <span class="text-xs font-semibold text-[#b9cac4]">출신지</span>
@@ -118,6 +130,12 @@
                                 {{/displayAffiliatedUnit}}
                             </div>
                         </div>
+                        {{#hasSignatureImage}}
+                        <div class="bg-[#0d0e12]/40 border border-[#3a4a46]/30 rounded-xl p-4 space-y-2.5">
+                            <span class="text-xl font-semibold text-[#b9cac4] block whitespace-nowrap">싸인</span>
+                            <img src="{{signatureImage}}" alt="{{name}} 싸인" class="max-h-28 w-auto object-contain" loading="lazy" decoding="async">
+                        </div>
+                        {{/hasSignatureImage}}
                     </div>
                 </div>
                 <div class="member-activities mt-8 text-xl text-[#b9cac4] space-y-4">
@@ -252,6 +270,14 @@
                 </label>
             </div>
             <div class="artist-edit-grid">
+                <label class="artist-edit-label">본명
+                    <input type="text" id="artistEditRealName" maxlength="120" placeholder="비워두면 프로필에 표시되지 않음">
+                </label>
+                <label class="artist-edit-label">MBTI
+                    <input type="text" id="artistEditMbti" maxlength="16" placeholder="예: INFP">
+                </label>
+            </div>
+            <div class="artist-edit-grid">
                 <label class="artist-edit-label">데뷔일
                     <input type="text" id="artistEditDebutDate" required maxlength="40" placeholder="YYYY-MM-DD">
                 </label>
@@ -265,6 +291,13 @@
             <img id="artistEditImagePreview" class="artist-preview hidden" alt="프로필 미리보기">
             <label class="artist-edit-check">
                 <input type="checkbox" id="artistEditClearImage"> 프로필 사진 제거
+            </label>
+            <label class="artist-edit-label">싸인 이미지
+                <input type="file" id="artistEditSignatureImage" accept="image/*">
+            </label>
+            <img id="artistEditSignaturePreview" class="artist-preview hidden" alt="싸인 미리보기">
+            <label class="artist-edit-check">
+                <input type="checkbox" id="artistEditClearSignatureImage"> 싸인 이미지 제거
             </label>
             <div class="artist-edit-label">역대 소속 유닛
                 <div id="artistEditUnits" class="artist-unit-checks" role="group" aria-label="역대 소속 유닛">
@@ -297,6 +330,6 @@
 
 {{>layout/footer}}
 <script src="/js/about-admin-auth.js?v=1"></script>
-<script src="/js/artist.js?v=6"></script>
+<script src="/js/artist.js?v=7"></script>
 </body>
 </html>

@@ -16,9 +16,12 @@ public class ArtistAdminDto {
     private String birthDate;
     private String bornPlace;
     private String birthPlace;
+    private String realName;
+    private String mbti;
     private String debutDate;
     private String color;
     private String profileImage;
+    private String signatureImage;
     /** 영상 링크 목록 [{title,url}] */
     private List<Map<String, String>> soloLinks;
     private List<Map<String, String>> broadcastLinks;
