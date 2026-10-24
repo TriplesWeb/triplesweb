@@ -40,10 +40,10 @@ public class SearchController {
         model.addAttribute("keyword", searchKeyword);
 
         if (searchKeyword.isEmpty()) {
-            model.addAttribute(
-                    "errorMessage",
-                    "검색어를 입력해주세요."
-            );
+            model.addAttribute("errorMessage", "검색어를 입력해주세요.");
+            model.addAttribute("resultList", List.of());
+            model.addAttribute("memberResults", List.of());
+            model.addAttribute("hasAnyResults", false);
             return "search";
         }
 
