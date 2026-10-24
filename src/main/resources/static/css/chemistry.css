@@ -241,6 +241,19 @@ html[lang="en"] .chem-member-name {
     overflow: auto;
 }
 
+/* 3인 이상: 1행 8명 × 3행 (프레임 타일 디자인 유지) */
+.chem-trio-view .member-portrait-picker {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    width: min(100%, 56rem);
+}
+
+@media (max-width: 639px) {
+    .chem-trio-view .member-portrait-picker {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        width: 100%;
+    }
+}
+
 .chem-trio-view.hidden,
 .chem-trio-placeholder.hidden {
     display: none;

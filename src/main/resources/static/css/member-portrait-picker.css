@@ -1,19 +1,19 @@
-/* 공유 멤버 초상화 다중선택 그리드 (아티스트 탭과 동일 톤) */
+/* 공유 멤버 초상화 다중선택 그리드 — 기본 8열×3행(24명) */
 .member-portrait-picker {
     --mpp-gap: 4px;
     display: grid;
-    grid-template-columns: repeat(10, minmax(0, 1fr));
+    grid-template-columns: repeat(8, minmax(0, 1fr));
     grid-auto-flow: row;
     gap: var(--mpp-gap);
     margin: 0 auto;
     padding: 0;
-    width: min(100%, 66rem);
+    width: min(100%, 56rem);
     list-style: none;
 }
 
 @media (max-width: 639px) {
     .member-portrait-picker {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 3px;
         width: 100%;
     }
