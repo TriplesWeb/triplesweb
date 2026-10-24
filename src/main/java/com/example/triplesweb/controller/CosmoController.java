@@ -69,7 +69,7 @@ public class CosmoController {
         // 전체 캐시에서 검색어와 모든 필터를 먼저 적용하고, 그 결과에만 정렬과 페이지네이션을 적용한다.
         List<Map<String, Object>> filtered = allObjekts.stream()
                 .filter(objekt -> query.isBlank() || searchableText(objekt).contains(query))
-                .filter(objekt -> matchesSelection(selectedMembers, firstValue(objekt, "member", "memberName")))
+                .filter(objekt -> matchesMember(selectedMembers, objekt))
                 .filter(objekt -> matchesSelection(selectedSeasons, firstValue(objekt, "seasonKey", "season")))
                 .filter(objekt -> matchesSelection(selectedClasses, firstValue(objekt, "classKey", "class")))
                 .filter(objekt -> selectedKind.isBlank() || "all".equals(selectedKind)
@@ -164,6 +164,17 @@ public class CosmoController {
         return values.stream().filter(Objects::nonNull).map(String::trim)
                 .filter(value -> !value.isBlank() && !"all".equalsIgnoreCase(value))
                 .distinct().collect(Collectors.toList());
+    }
+
+    private static boolean matchesMember(List<String> selected, Map<String, Object> objekt) {
+        if (selected == null || selected.isEmpty()) return true;
+        String text = String.join(" ",
+                firstValue(objekt, "member", "memberName"),
+                firstValue(objekt, "collectionId"),
+                firstValue(objekt, "slug"),
+                firstValue(objekt, "artist"),
+                value(objekt, "searchText"));
+        return selected.stream().anyMatch(member -> MemberPortraitOptions.objektIncludesMember(text, member));
     }
 
     private static boolean matchesSelection(List<String> selected, String actual) {

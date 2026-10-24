@@ -13,7 +13,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/about-admin.css?v=13">
+    <link rel="stylesheet" href="/css/about-admin.css?v=14">
 </head>
 <body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen about-admin-page">
 {{>layout/header}}
@@ -81,9 +81,9 @@
                         <h3 class="font-semibold text-sm text-[#b9cac4]">소속 멤버</h3>
                         <div class="flex flex-wrap gap-3 pt-1">
                             {{#unitMembers}}
-                                <a href="/triples/artist/{{artist.artistId}}" class="bg-white/5 hover:bg-white/10 border border-[#3a4a46]/30 hover:border-[#00f5d4]/40 text-[#b9cac4] hover:text-[#00f5d4] flex flex-col items-center p-2.5 rounded-xl transition-all no-underline shrink-0">
-                                    <img src="{{artist.displayProfileImage}}" class="w-12 h-12 rounded-full object-cover mb-1.5 border border-[#3a4a46]/40" alt="{{artist.name}}">
-                                    <span class="unitMember-item text-xs font-semibold">{{artist.name}}</span>
+                                <a href="/triples/artist/{{artist.artistId}}" class="unit-member-chip" style="--member-color: {{artist.color}};">
+                                    <img src="{{artist.displayProfileImage}}" alt="{{artist.name}}" referrerpolicy="no-referrer">
+                                    <span class="unitMember-item">{{artist.name}}</span>
                                 </a>
                             {{/unitMembers}}
                             {{^unitMembers}}

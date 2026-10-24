@@ -6,8 +6,34 @@
 (function (global) {
   const FRAME_BASE = "/uploads/images/artist-tab-frames/";
 
+  const PLACEHOLDER = "/images/image-upload-pending.png";
+
+  function hideWithoutImage(root) {
+    const scope = root || document;
+    scope.querySelectorAll(".member-portrait-picker .mpp-item").forEach((btn) => {
+      const img = btn.querySelector(".artist-tab-photo");
+      if (!img) return;
+      const drop = () => {
+        const value = btn.dataset.value || "";
+        if (value) {
+          scope.querySelectorAll(".member-checkbox[data-mpp-value]").forEach((box) => {
+            if (box.getAttribute("data-mpp-value") === value) box.remove();
+          });
+        }
+        btn.remove();
+      };
+      const src = (img.getAttribute("src") || "").trim();
+      if (!src || src.indexOf("image-upload-pending") >= 0 || src === PLACEHOLDER) {
+        drop();
+        return;
+      }
+      img.addEventListener("error", drop);
+    });
+  }
+
   function bindFrames(root) {
     const scope = root || document;
+    hideWithoutImage(scope);
     scope.querySelectorAll(".member-portrait-picker .mpp-item").forEach((btn, i) => {
       const frame = btn.querySelector(".artist-tab-frame");
       if (!frame) return;
