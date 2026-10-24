@@ -37,7 +37,8 @@ public class SchemaImproveRunner implements ApplicationRunner {
 
     /**
      * SavedMeta.fileType 임베드 컬럼({@code file_type})이 없으면 추가한다.
-     * Flyway V26과 동일 목적 — 배포 전 스키마 누락으로 article 상세가 500 나는 경우 방어.
+     * V26이 camelCase만 있고 snake_case가 없으면 rename하고, 둘 다 없으면 아무 것도 하지 않는다.
+     * 그 경우 article 상세가 file_type 없음으로 500이 나므로 여기서 컬럼을 보강한다.
      */
     private void ensureSavedMetaFileType(String table) {
         if (!tableExists(table) || columnExists(table, "file_type")) {
