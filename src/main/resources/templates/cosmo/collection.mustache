@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+{{>layout/favicon}}
+{{>layout/gravity-fonts}}
+<link rel="stylesheet" href="/css/gravity-page.css?v=2">
+<link rel="stylesheet" href="/css/archive-page.css?v=3">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}COSMO 컬렉션 검색{{/nickname}}</title>
+</head>
+<body class="min-h-screen flex flex-col">
+{{>layout/header}}
+<main class="gravity-page">
+    <section class="gv-kicker"><div><strong>COSMO</strong> · 닉네임 컬렉션</div></section>
+    <section class="gv-panel gv-headline">
+        <h1>COSMO 컬렉션</h1>
+        <p>닉네임을 검색하면 그 지갑이 Abstract에서 보유 중인 오브젝트를 바로 보여 줍니다.</p>
+        <form class="ar-filters" method="get" action="/cosmo/collection" style="margin-top:1rem">
+            <label class="ar-search-wrap">
+                <span class="material-symbols-outlined">search</span>
+                <input class="ar-search" type="search" name="nickname" value="{{query}}" placeholder="ottomagic" aria-label="COSMO 닉네임">
+            </label>
+            <button class="ar-submit" type="submit">검색</button>
+        </form>
+    </section>
+    {{#collectionError}}<p class="gv-notice" role="status">{{collectionError}}</p>{{/collectionError}}
+    {{#hasCollection}}
+    <section class="gv-panel gv-headline">
+        <div class="cosmo-account-profile">
+            {{#hasProfileImage}}<img src="{{profileImageUrl}}" alt="" referrerpolicy="no-referrer">{{/hasProfileImage}}
+            <div>
+                <h1>{{nickname}}</h1>
+                <p class="gv-muted">{{addressShort}}</p>
+                <p>보유 오브젝트 <strong>{{ownedCount}}</strong>개</p>
+            </div>
+        </div>
+    </section>
+    {{#hasCards}}
+    <section class="ar-grid">
+        {{#cards}}
+        <article class="ar-panel ar-card">
+            {{#hasImage}}<img src="{{thumbnailImage}}" alt="{{collectionId}}" referrerpolicy="no-referrer">{{/hasImage}}
+            {{^hasImage}}<div class="ar-card" style="height:9.5rem"></div>{{/hasImage}}
+            <div class="ar-body">
+                <div class="ar-meta"><span class="ar-id">#{{tokenId}}</span>{{#objektClass}}<span class="ar-badge">{{objektClass}}</span>{{/objektClass}}</div>
+                <h3>{{collectionId}}</h3>
+                <p class="ar-muted">{{member}}{{#season}} · {{season}}{{/season}}</p>
+            </div>
+        </article>
+        {{/cards}}
+    </section>
+    {{/hasCards}}
+    {{^hasCards}}<p class="gv-panel gv-empty">이 페이지에 표시할 보유 오브젝트가 없습니다.</p>{{/hasCards}}
+    <nav class="ar-panel ar-pager" aria-label="컬렉션 페이지">
+        <span>{{ownedCount}}개 중 페이지 {{pageDisplay}} / {{totalPages}}</span>
+        <div class="ar-pager-controls">
+            {{#hasPrev}}<a href="/cosmo/collection?nickname={{nickname}}&amp;page={{prevPage}}">이전</a>{{/hasPrev}}
+            {{^hasPrev}}<a class="is-disabled">이전</a>{{/hasPrev}}
+            {{#hasNext}}<a href="/cosmo/collection?nickname={{nickname}}&amp;page={{nextPage}}">다음</a>{{/hasNext}}
+            {{^hasNext}}<a class="is-disabled">다음</a>{{/hasNext}}
+        </div>
+    </nav>
+    {{/hasCollection}}
+</main>
+{{>layout/footer}}
+</body>
+</html>

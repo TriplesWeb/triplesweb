@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS abstract_index_state (
 );
 
 INSERT INTO abstract_index_state (id, next_block)
-SELECT 1, 7200000
+SELECT 1, 6800000
 WHERE NOT EXISTS (SELECT 1 FROM abstract_index_state WHERE id = 1);
 
 CREATE TABLE IF NOT EXISTS abstract_objekt_transfer (

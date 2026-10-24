@@ -39,7 +39,7 @@ public class AbstractObjektIndexer {
             @Value("${abstract.indexer.enabled:true}") boolean enabled,
             @Value("${abstract.indexer.rpc-url:https://api.mainnet.abs.xyz}") String rpcUrl,
             @Value("${abstract.indexer.contract:0x99Bb83AE9bb0C0A6be865CaCF67760947f91Cb70}") String contract,
-            @Value("${abstract.indexer.start-block:7200000}") long startBlock,
+            @Value("${abstract.indexer.start-block:6800000}") long startBlock,
             @Value("${abstract.indexer.chunk-size:800}") int chunkSize,
             @Value("${abstract.indexer.chunks-per-tick:6}") int chunksPerTick,
             ObjectMapper mapper,
@@ -129,8 +129,11 @@ public class AbstractObjektIndexer {
     private long cursor() {
         Long stored = jdbc.query("SELECT next_block FROM abstract_index_state WHERE id = 1",
                 rs -> rs.next() ? rs.getLong(1) : null);
-        if (stored == null) {
-            jdbc.update("INSERT INTO abstract_index_state (id, next_block) VALUES (1, ?)", startBlock);
+        if (stored == null || (stored == 7_200_000L && startBlock < stored)) {
+            jdbc.update("""
+                    INSERT INTO abstract_index_state (id, next_block) VALUES (1, ?)
+                    ON DUPLICATE KEY UPDATE next_block = VALUES(next_block)
+                    """, startBlock);
             return startBlock;
         }
         return Math.max(stored, startBlock);
