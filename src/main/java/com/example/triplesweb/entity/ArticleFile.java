@@ -18,7 +18,19 @@ public class ArticleFile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /**
+     * Live DB still has legacy camelCase embed columns (fileType, …).
+     * {@link SavedMeta} defaults to snake_case for archive; override here.
+     */
     @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "originalName", column = @Column(name = "originalName", nullable = false, length = 300)),
+            @AttributeOverride(name = "savedName", column = @Column(name = "savedName", nullable = false, length = 400)),
+            @AttributeOverride(name = "url", column = @Column(name = "url", nullable = false)),
+            @AttributeOverride(name = "size", column = @Column(name = "size", nullable = false)),
+            @AttributeOverride(name = "fileType", column = @Column(name = "fileType", nullable = false)),
+            @AttributeOverride(name = "mediaType", column = @Column(name = "mediaType", nullable = false, length = 50))
+    })
     private SavedMeta file;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
