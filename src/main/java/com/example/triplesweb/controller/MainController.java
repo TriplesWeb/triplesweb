@@ -1,8 +1,10 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.dto.ScheduleForm;
+import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.Schedule;
 import com.example.triplesweb.repository.ScheduleRepository;
+import com.example.triplesweb.service.ArchiveService;
 import com.example.triplesweb.service.ArticleServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -12,8 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,8 +22,11 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MainController {
 
+    private static final int HOME_LIMIT = 5;
+
     private final ArticleServiceImpl articleService;
     private final ScheduleRepository scheduleRepository;
+    private final ArchiveService archiveService;
 
     /** 이전 URL 호환: {@code /main} → {@code /} */
     @GetMapping("/main")
@@ -32,8 +35,7 @@ public class MainController {
     }
 
     @GetMapping("/")
-    public String mainPage(Model model, @RequestParam(defaultValue = "5") Integer limit) {
-        // [수정 완료] 로그인 세션(loginMember) 체크 로직 및 관련 모델 속성(userId, level, points 등) 제거
+    public String mainPage(Model model) {
 
         List<Schedule> scheduleList = scheduleRepository.findAll();
 
@@ -56,9 +58,11 @@ public class MainController {
             schedulesJson = mapper.writeValueAsString(scheduleForms);
         } catch (Exception ignored) {}
 
-        model.addAttribute("freePosts",   articleService.findRecentByCategory("free",   limit));
-        model.addAttribute("noticePosts", articleService.findRecentByCategory("notice", limit));
-        model.addAttribute("popularPosts",articleService.findPopularArticles(null, limit));
+        model.addAttribute("noticePosts", articleService.findRecentByCategory("notice", HOME_LIMIT));
+        model.addAttribute("recentPhotos", archiveService.pageByType(MediaType.IMAGE, 0, HOME_LIMIT, null)
+                .getContent().stream()
+                .filter(photo -> photo.getFile() != null && photo.getFile().getUrl() != null)
+                .toList());
         model.addAttribute("schedulesJson", schedulesJson);
 
         return "main";
