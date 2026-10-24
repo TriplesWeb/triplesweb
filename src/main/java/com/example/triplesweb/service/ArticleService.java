@@ -11,6 +11,8 @@ import java.util.List;
  */
 public interface ArticleService {
     Article create(Article article);
+    /** 제목·본문 등 변경 사항 저장 */
+    Article update(Article article);
     Article show(Long id);
     List<Article> findRecentByCategory(String category, int limit);
     List<Article> searchByCategory(String category, String type, String keyword, int limit);

@@ -81,7 +81,8 @@ public class ArticleController {
                                 Model model,
                                 @RequestParam(value = "uploadFiles", required = false) List<MultipartFile> files,
                                 @RequestParam(value = "uploadedFiles", required = false) List<String> uploadedFiles,
-                                @RequestParam(value = "selectedObjektIds", required = false) List<String> selectedObjektIds) throws IOException {
+                                @RequestParam(value = "selectedObjektIds", required = false) List<String> selectedObjektIds,
+                                RedirectAttributes redirectAttributes) throws IOException {
         if (isInvalidCategory(category)) return "redirect:/article/trade";
 
         if (bindingResult.hasErrors() || form.getTitle() == null || form.getTitle().trim().isEmpty() || form.getContent() == null || form.getContent().trim().isEmpty()) {
@@ -105,20 +106,24 @@ public class ArticleController {
             articleObjektService.attachSelected(savedArticle, selectedObjektIds);
         }
 
-        // 2) 파일 저장 처리
-        if (files != null) {
-            for (MultipartFile mf : files) {
-                if (mf != null && !mf.isEmpty()) {
-                    articleFileService.uploadFile(mf, savedArticle);
+        // 2) 파일 저장 — 실패해도 글 자체는 유지하고 상세로 이동 (Whitelabel 500 방지)
+        try {
+            if (files != null) {
+                for (MultipartFile mf : files) {
+                    if (mf != null && !mf.isEmpty()) {
+                        articleFileService.uploadFile(mf, savedArticle);
+                    }
                 }
             }
+            if (uploadedFiles != null && !uploadedFiles.isEmpty()) {
+                articleFileService.attachUploadedFiles(uploadedFiles, savedArticle);
+            }
+            articleFileService.extractAndSaveFilesFromContent(savedArticle);
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "글은 저장됐지만 파일 첨부 중 오류가 났습니다. 수정 화면에서 다시 첨부해 주세요.");
+            return "redirect:/article/" + category + "/" + savedArticle.getId();
         }
-
-        if (uploadedFiles != null && !uploadedFiles.isEmpty()) {
-            articleFileService.attachUploadedFiles(uploadedFiles, savedArticle);
-        }
-
-        articleFileService.extractAndSaveFilesFromContent(savedArticle);
 
         return "redirect:/article/" + category + "/" + savedArticle.getId();
     }
@@ -363,7 +368,8 @@ public class ArticleController {
                                 @RequestParam(value = "uploadedFiles", required = false) List<String> uploadedFiles,
                                 @RequestParam(value = "deletedFiles", required = false) List<Long> deletedFiles,
                                 @RequestParam(value = "selectedObjektIds", required = false) List<String> selectedObjektIds,
-                                Model model) throws IOException {
+                                Model model,
+                                RedirectAttributes redirectAttributes) throws IOException {
         if (isInvalidCategory(category)) return "redirect:/article/trade";
 
         Article article = articleService.showWithFiles(id);
@@ -380,28 +386,33 @@ public class ArticleController {
 
         article.setTitle(newarticle.getTitle());
         article.setContent(newarticle.getContent());
+        articleService.update(article);
 
-        if (deletedFiles != null) {
-            for (Long fid : deletedFiles) {
-                articleFileService.deleteFileById(fid);
-            }
-        }
-        if (files != null) {
-            for (MultipartFile mf : files) {
-                if (mf != null && !mf.isEmpty()) {
-                    articleFileService.uploadFile(mf, article);
+        try {
+            if (deletedFiles != null) {
+                for (Long fid : deletedFiles) {
+                    articleFileService.deleteFileById(fid);
                 }
             }
-        }
+            if (files != null) {
+                for (MultipartFile mf : files) {
+                    if (mf != null && !mf.isEmpty()) {
+                        articleFileService.uploadFile(mf, article);
+                    }
+                }
+            }
+            if (uploadedFiles != null && !uploadedFiles.isEmpty()) {
+                articleFileService.attachUploadedFiles(uploadedFiles, article);
+            }
+            articleFileService.extractAndSaveFilesFromContent(article);
 
-        if (uploadedFiles != null && !uploadedFiles.isEmpty()) {
-            articleFileService.attachUploadedFiles(uploadedFiles, article);
-        }
-
-        articleFileService.extractAndSaveFilesFromContent(article);
-
-        if ("trade".equals(category) || "sell".equals(category)) {
-            articleObjektService.replaceSelected(article, selectedObjektIds);
+            if ("trade".equals(category) || "sell".equals(category)) {
+                articleObjektService.replaceSelected(article, selectedObjektIds);
+            }
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "글 내용은 저장됐지만 파일 처리 중 오류가 났습니다. 다시 첨부해 주세요.");
+            return "redirect:/article/" + category + "/" + id;
         }
 
         return "redirect:/article/" + category + "/" + id;

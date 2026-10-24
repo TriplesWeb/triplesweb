@@ -29,6 +29,11 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
+    public Article update(Article article) {
+        return articleRepository.save(article);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public Article showWithFiles(Long id) {
         return articleRepository.findByIdWithFiles(id).orElse(null);

@@ -12,19 +12,20 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class SavedMeta {
-    @Column(nullable = false, length = 300)
+    /** Explicit snake_case names — legacy DBs had camelCase (fileType); see V26. */
+    @Column(name = "original_name", nullable = false, length = 300)
     private String originalName;
-    @Column(nullable = false, length = 400)
+    @Column(name = "saved_name", nullable = false, length = 400)
     private String savedName;
-    @Column(nullable = false)
+    @Column(name = "url", nullable = false)
     private String url;
-    @Column(nullable = false)
+    @Column(name = "size", nullable = false)
     private long size;
-    @Column(nullable = false)
+    @Column(name = "file_type", nullable = false)
     private String fileType;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "media_type", nullable = false)
     private MediaType mediaType;
 
     // 파생 판단자 (DB 칼럼 아님)

@@ -8,7 +8,6 @@ import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.repository.ArticleFileRepository;
 import com.example.triplesweb.util.HtmlMediaParser;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -50,7 +49,6 @@ public class ArticleFileServiceImpl implements ArticleFileService {
         if (article.getFiles() != null) article.getFiles().add(af);
     }
 
-    @SneakyThrows
     @Override
     public void attachUploadedFiles(List<String> uploadedFiles, Article article) {
         if (uploadedFiles == null || uploadedFiles.isEmpty() || article == null) return;
@@ -72,8 +70,18 @@ public class ArticleFileServiceImpl implements ArticleFileService {
             String savedName = path.getFileName().toString();
             if (!StringUtils.hasText(savedName) || existing.contains(savedName)) continue;
 
-            long size = Files.size(path);
-            String contentType = Files.probeContentType(path);
+            long size;
+            String contentType;
+            try {
+                if (!Files.exists(path)) {
+                    // 업로드 직후 디스크/공유 스토리지 지연이 있어도 글 저장은 막지 않는다.
+                    continue;
+                }
+                size = Files.size(path);
+                contentType = Files.probeContentType(path);
+            } catch (IOException e) {
+                continue;
+            }
             if (!StringUtils.hasText(contentType)) {
                 contentType = guessContentTypeByExt(savedName); // 확장자 기반 fallback
             }
@@ -142,10 +150,14 @@ public class ArticleFileServiceImpl implements ArticleFileService {
             long size;
             String contentType;
             try {
+                if (!Files.exists(path)) {
+                    continue;
+                }
                 size = Files.size(path);
                 contentType = Files.probeContentType(path);
             } catch (IOException e) {
-                throw new RuntimeException("파일 메타 추출 실패: " + url, e);
+                // 본문 HTML에 남아 있어도 메타 추출 실패로 글 저장 전체가 깨지지 않게 한다.
+                continue;
             }
             if (!StringUtils.hasText(contentType)) contentType = guessContentTypeByExt(fileName);
 
