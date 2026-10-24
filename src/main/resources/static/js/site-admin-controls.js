@@ -7,6 +7,9 @@
   style.textContent = `
     ${protectedSelector} { display: none !important; }
     body.site-admin-enabled [data-admin-only], body.site-admin-enabled .admin-only { display: revert !important; }
+    body.site-admin-enabled .ar-actions[data-admin-only] { display: flex !important; }
+    body.site-admin-enabled a[data-admin-only], body.site-admin-enabled button[data-admin-only] { display: inline-flex !important; }
+    body.site-admin-enabled form[data-admin-only] { display: block !important; }
     #siteAdminControls { position: fixed; left: 1rem; bottom: 1rem; z-index: 10000; }
     #siteAdminButton { border: 1px solid rgba(0,245,212,.5); border-radius: 999px; padding: .7rem 1rem; color: #00f5d4; background: #16181f; box-shadow: 0 8px 30px #0008; font-weight: 700; }
     #siteAdminModal[hidden] { display:none !important; }
@@ -110,6 +113,48 @@
     } catch (_) {
       error.textContent = "로그인 요청에 실패했습니다.";
       error.hidden = false;
+    }
+  });
+
+  document.addEventListener("submit", (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || form.hasAttribute("data-admin-fetch")) return;
+    const message = form.getAttribute("data-confirm");
+    if (message && !window.confirm(message)) event.preventDefault();
+  }, true);
+
+  document.addEventListener("submit", async (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || !form.hasAttribute("data-admin-fetch")) return;
+    const confirmMessage = form.getAttribute("data-confirm");
+    if (confirmMessage && !window.confirm(confirmMessage)) {
+      event.preventDefault();
+      return;
+    }
+    event.preventDefault();
+    const busy = event.submitter instanceof HTMLButtonElement ? event.submitter : form.querySelector("button[type='submit']");
+    if (busy) busy.disabled = true;
+    try {
+      const response = await fetch(form.action, {
+        method: (form.getAttribute("method") || "POST").toUpperCase(),
+        body: new FormData(form),
+        credentials: "same-origin",
+        headers: auth.applyAuthHeaders()
+      });
+      if (response.ok) {
+        window.location.href = response.redirected ? response.url : window.location.href;
+        return;
+      }
+      let detail = "";
+      try { detail = (await response.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(); } catch (_) {}
+      if (detail.length > 180) detail = detail.slice(0, 180);
+      alert(response.status === 403
+        ? "관리자 로그인 후 다시 시도해 주세요."
+        : (detail || "저장하지 못했습니다. 입력값을 확인하고 다시 시도해 주세요."));
+    } catch (_) {
+      alert("요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
+    } finally {
+      if (busy) busy.disabled = false;
     }
   });
 

@@ -32,13 +32,16 @@ public class FileStorageServiceImpl implements FileStorageService {
 
     private final String uploadRoot;
     private final UploadSyncService uploadSyncService;
+    private final UploadContentStore uploadContentStore;
 
     public FileStorageServiceImpl(
             @Value("${file.upload-dir}") String uploadRoot,
-            UploadSyncService uploadSyncService
+            UploadSyncService uploadSyncService,
+            UploadContentStore uploadContentStore
     ) {
         this.uploadRoot = uploadRoot;
         this.uploadSyncService = uploadSyncService;
+        this.uploadContentStore = uploadContentStore;
     }
 
     private static final Set<String> IMAGE_EXT = Set.of("jpg","jpeg","png","gif","webp","bmp");
@@ -111,8 +114,10 @@ public class FileStorageServiceImpl implements FileStorageService {
         }
         writeOriginalNameSidecar(newPath, originalName);
         String url = toPublicUrl(newPath);
-        // 공유 DB ↔ 공유 파일: 로컬 저장분을 원격 uploads에도 맞춤
-        uploadSyncService.pushRelative(normalizeSavedName(url));
+        // 공유 DB ↔ 공유 파일: 로컬 저장분을 원격 uploads와 MariaDB에도 남긴다.
+        String relative = normalizeSavedName(url);
+        uploadSyncService.pushRelative(relative);
+        copyToDatabase(newPath, relative, guessContentType(ext, type));
 
         return SavedMeta.builder()
                 .originalName(originalName)
@@ -138,10 +143,30 @@ public class FileStorageServiceImpl implements FileStorageService {
             Files.deleteIfExists(sidecar);
             boolean deleted = Files.deleteIfExists(target);
             uploadSyncService.deleteRelative(relative);
+            uploadContentStore.delete(relative);
             return deleted;
         } catch (IOException e) {
             throw new FileStorageException("파일 삭제 실패: " + relative, e);
         }
+    }
+
+    private void copyToDatabase(Path localFile, String relative, String contentType) {
+        try {
+            long size = Files.size(localFile);
+            if (size <= 0 || size > uploadContentStore.maxBytes()) {
+                logSkip(relative, size);
+                return;
+            }
+            uploadContentStore.save(relative, Files.readAllBytes(localFile), contentType);
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(FileStorageServiceImpl.class)
+                    .warn("업로드 DB 복사 실패 {}: {}", relative, e.toString());
+        }
+    }
+
+    private void logSkip(String relative, long size) {
+        org.slf4j.LoggerFactory.getLogger(FileStorageServiceImpl.class)
+                .info("업로드 DB 복사 생략 {} ({} bytes)", relative, size);
     }
 
     private String getExtension(String name) {

@@ -1,5 +1,6 @@
 package com.example.triplesweb.service;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Value;
@@ -119,6 +120,14 @@ public class AboutAdminAuth {
         String auth = request.getHeader("Authorization");
         if (StringUtils.hasText(auth) && auth.regionMatches(true, 0, "Bearer ", 0, 7)) {
             return auth.substring(7).trim();
+        }
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("about_admin_token".equals(cookie.getName()) && StringUtils.hasText(cookie.getValue())) {
+                    return java.net.URLDecoder.decode(cookie.getValue().trim(), java.nio.charset.StandardCharsets.UTF_8);
+                }
+            }
         }
         return null;
     }

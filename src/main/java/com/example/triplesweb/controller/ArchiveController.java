@@ -6,7 +6,14 @@ import com.example.triplesweb.service.ArchiveService;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.entity.Artist;
+import com.example.triplesweb.util.MemberPortraitOptions;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -31,8 +38,9 @@ public class ArchiveController {
     @GetMapping("/{type}_archive")
     public String showArchive(@PathVariable("type") String typeSlug,
                               @RequestParam(defaultValue = "0") int page,
-                              @RequestParam(defaultValue = "24") int size,
+                              @RequestParam(defaultValue = "9") int size,
                               @RequestParam(required = false) String q,
+                              @RequestParam(required = false) List<String> members,
                               HttpServletRequest request, HttpSession session, Model model) {
 
         boolean isAdmin = aboutAdminAuth.isAdmin(request, session);
@@ -44,15 +52,81 @@ public class ArchiveController {
 
         MediaType type = MediaType.valueOf(key);
 
-        Page<Archive> archives = archiveService.pageByType(type, page, size, q);
+        List<String> selectedMembers = normalizeMembers(members);
+        Page<Archive> archives = selectedMembers.isEmpty()
+                ? archiveService.pageByType(type, page, size, q)
+                : archiveService.pageByType(type, page, size, q, selectedMembers);
 
+        List<Artist> artists = artistRepository.findAll();
         model.addAttribute("archives", archives);
-        model.addAttribute("artistOptions", artistRepository.findAll());
+        model.addAttribute("artistOptions", artists);
+        model.addAttribute("memberPickerOptions", memberOptions(artists, selectedMembers));
+        model.addAttribute("selectedMembers", selectedMembers);
+        model.addAttribute("hasSelectedMembers", !selectedMembers.isEmpty());
         model.addAttribute("page", archives);
         model.addAttribute("type", type);
         model.addAttribute("isAuthenticated", isAuthenticated);
         model.addAttribute("isAdmin", isAdmin);
+        addArchivePage(model, archives, type, q, memberQuery(selectedMembers));
         return (type == MediaType.IMAGE) ? "archive/image_archive" : "archive/video_archive";
+    }
+
+    private static List<String> normalizeMembers(List<String> members) {
+        if (members == null) return List.of();
+        Set<String> unique = new LinkedHashSet<>();
+        for (String member : members) {
+            if (member != null && !member.isBlank()) unique.add(member.trim());
+        }
+        return List.copyOf(unique);
+    }
+
+    private static List<Map<String, Object>> memberOptions(List<Artist> artists, List<String> selected) {
+        Set<String> chosen = Set.copyOf(selected);
+        List<Map<String, Object>> options = MemberPortraitOptions.fromArtists(artists, false);
+        for (Map<String, Object> option : options) {
+            option.put("active", chosen.contains(String.valueOf(option.get("value"))));
+        }
+        return options;
+    }
+
+    private static String memberQuery(List<String> selected) {
+        if (selected.isEmpty()) return "";
+        StringBuilder query = new StringBuilder();
+        for (String member : selected) {
+            query.append("&members=").append(URLEncoder.encode(member, StandardCharsets.UTF_8));
+        }
+        return query.toString();
+    }
+
+    private void addArchivePage(Model model, Page<Archive> archives, MediaType type, String q, String memberQuery) {
+        int totalPages = archives.getTotalPages();
+        int current = archives.getNumber();
+        String query = q == null ? "" : q.trim();
+        model.addAttribute("archiveTotal", archives.getTotalElements());
+        model.addAttribute("archivePageCount", archives.getNumberOfElements());
+        model.addAttribute("archivePageDisplay", current + 1);
+        model.addAttribute("archiveTotalPages", totalPages);
+        model.addAttribute("hasArchivePrev", archives.hasPrevious());
+        model.addAttribute("hasArchiveNext", archives.hasNext());
+        model.addAttribute("archivePrevPage", Math.max(0, current - 1));
+        model.addAttribute("archiveNextPage", current + 1);
+        model.addAttribute("hasArchives", !archives.isEmpty());
+        model.addAttribute("archiveHighlights", archives.getContent().stream().limit(8).toList());
+        model.addAttribute("memberQuery", memberQuery == null ? "" : memberQuery);
+        model.addAttribute("query", query);
+        model.addAttribute("hasQuery", !query.isEmpty());
+        model.addAttribute("archivePath", type == MediaType.IMAGE ? "/archive/image_archive" : "/archive/video_archive");
+        model.addAttribute("imageArchive", type == MediaType.IMAGE);
+        List<Map<String, Object>> archivePages = new ArrayList<>();
+        if (totalPages > 0) {
+            int start = Math.max(0, current - 2);
+            int end = Math.min(totalPages - 1, start + 4);
+            start = Math.max(0, end - 4);
+            for (int i = start; i <= end; i++) {
+                archivePages.add(Map.of("num", i, "label", i + 1, "active", i == current));
+            }
+        }
+        model.addAttribute("archivePages", archivePages);
     }
 
     @PostMapping("/upload")
@@ -80,6 +154,23 @@ public class ArchiveController {
         aboutAdminAuth.requireAdmin(request, session);
         archiveService.uploadVideoOnly(file, title, MediaType.VIDEO, artistNames == null ? "" : String.join(",", artistNames));
         return "redirect:/archive/video_archive";
+    }
+
+    @PostMapping("/{id}")
+    @ResponseBody
+    public ResponseEntity<?> updateArchive(@PathVariable long id,
+                                           @RequestParam("title") String title,
+                                           @RequestParam(value = "file", required = false) MultipartFile file,
+                                           @RequestParam(value = "artistNames", required = false) String artistNames,
+                                           HttpServletRequest request,
+                                           HttpSession session) throws IOException {
+        aboutAdminAuth.requireAdmin(request, session);
+        try {
+            archiveService.update(id, title, file, artistNames);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")

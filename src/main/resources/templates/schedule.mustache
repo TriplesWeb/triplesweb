@@ -455,6 +455,7 @@
                     <span class="h-2.5 w-2.5 animate-pulse rounded-full bg-brand shadow-[0_0_10px_#00f5d4]"></span>
                     공식 스케줄
                 </h1>
+                {{#selectedArtist}}<p class="mt-2 text-sm text-[#b9cac4]">{{selectedArtist}}만 보는 중입니다. <a class="text-[#00f5d4]" href="/schedule">전체 일정</a></p>{{/selectedArtist}}
             </div>
 
             <div class="flex shrink-0 items-center gap-2.5">
@@ -568,7 +569,7 @@
                 <div class="modal-footer flex justify-between">
                     <div>
                         {{#isAdmin}}
-                        <form id="deleteForm" method="post" class="m-0 d-inline">
+                        <form id="deleteForm" method="post" class="m-0 d-inline" data-confirm="이 일정을 삭제하시겠습니까? 삭제하면 되돌릴 수 없습니다.">
                             <button type="submit" class="btn-custom-danger">삭제</button>
                         </form>
                         {{/isAdmin}}
@@ -883,6 +884,7 @@
                         alert('종료 날짜는 시작 날짜보다 빠를 수 없습니다.');
                         return;
                     }
+                    if (!window.confirm('이 일정을 추가하시겠습니까?')) return;
 
                     const body = new URLSearchParams({ title, start, end });
                     document.querySelectorAll('#addArtistNames option:checked').forEach(option => body.append('artistNames', option.value));
@@ -934,6 +936,7 @@
                         alert('종료 날짜는 시작 날짜보다 빠를 수 없습니다.');
                         return;
                     }
+                    if (!window.confirm('이 일정을 수정하시겠습니까?')) return;
 
                     const body = new URLSearchParams({ title, startDate: start, endDate: end });
                     document.querySelectorAll('#editArtistNames option:checked').forEach(option => body.append('artistNames', option.value));

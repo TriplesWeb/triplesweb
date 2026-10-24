@@ -2,13 +2,12 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.dto.GroupIntroDto;
-import com.example.triplesweb.dto.MediaDto;
 import com.example.triplesweb.entity.Album;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.service.AlbumService;
 import com.example.triplesweb.service.ArtistAdminService;
-import com.example.triplesweb.service.MediaService;
+import com.example.triplesweb.service.MemberSpotlightService;
 import com.example.triplesweb.service.UnitService;
 import com.example.triplesweb.util.MemberPortraitOptions;
 
@@ -23,7 +22,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.util.List;
-import java.util.Map;
 
 @Controller
 @RequestMapping("/triples")
@@ -34,33 +32,18 @@ public class TriplesController {
     private final ArtistAdminService artistAdminService;
     private final AlbumService albumService;
     private final UnitService unitService;
-    private final MediaService mediaService;
+    private final MemberSpotlightService memberSpotlightService;
 
     /**
      * 그룹 및 멤버 소개 페이지.
-     * 멤버별 미디어를 최대 8개씩 연결한다.
+     * 멤버별 오브젝트·아카이브·공식 미디어·일정을 5개씩 연결한다.
      */
     @GetMapping("/artist")
     @Transactional(readOnly = true)
     public String indexTriples(Model model) {
 
-        // 유닛 정보를 포함한 아티스트 조회
-        List<Artist> artistList =
-                artistrepository.findAllWithUnits();
-
-        // 아티스트 ID별 미디어 목록 조회
-        Map<Long, List<MediaDto>> mediaByArtist =
-                mediaService.byArtistMap(12);
-
-        // 각 아티스트 객체에 미디어 목록 연결
-        artistList.forEach(artist ->
-                artist.setMediaContents(
-                        mediaByArtist.getOrDefault(
-                                artist.getArtistId(),
-                                List.of()
-                        )
-                )
-        );
+        List<Artist> artistList = artistrepository.findAllWithUnits();
+        memberSpotlightService.attach(artistList);
 
         // 그룹 소개 정보
         GroupIntroDto group =

@@ -402,7 +402,7 @@
                 alert('내용을 입력해주세요.');
                 return false;
             }
-            return true;
+            return window.confirm('이 글을 수정하시겠습니까?');
         };
 
         function attachRemoveBtn(host, saved, fileId) {
@@ -540,6 +540,6 @@
         }
     });
 </script>
-<script src="/js/article-objekt-picker.js"></script>
+<script src="/js/article-objekt-picker.js?v=2"></script>
 </body>
 </html>

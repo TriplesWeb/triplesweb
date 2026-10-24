@@ -85,6 +85,10 @@ public class GravityService {
             gravity.put("bannerImageUrl", safeImage(gravityNode.path("bannerImageUrl").asText("")));
             gravity.put("detailUrl", "/cosmo/gravity/" + gravityNode.path("id").asLong());
             gravity.put("artistId", artistId);
+            JsonNode resultNode = gravityNode.path("result");
+            boolean hasComo = resultNode.path("totalComoUsed").isNumber();
+            gravity.put("hasComo", hasComo);
+            gravity.put("comoUsed", hasComo ? resultNode.path("totalComoUsed").asLong() : 0L);
 
 
             List<Map<String, Object>> polls = new ArrayList<>();
@@ -160,6 +164,20 @@ public class GravityService {
             throw new IllegalStateException("COSMO API에서 올바른 응답을 받지 못했습니다.");
         }
         return response;
+    }
+
+    public JsonNode getAuthorized(String path) {
+        requireCosmoToken();
+        return cosmoGet(path);
+    }
+
+    public java.util.Optional<JsonNode> tryGet(String path) {
+        if (!hasCosmoToken()) return java.util.Optional.empty();
+        try {
+            return java.util.Optional.of(cosmoGet(path));
+        } catch (RuntimeException ex) {
+            return java.util.Optional.empty();
+        }
     }
 
     private void requireCosmoToken() {

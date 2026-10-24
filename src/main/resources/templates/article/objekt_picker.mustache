@@ -1,5 +1,5 @@
 {{#showObjektPicker}}
-<section class="space-y-3 rounded-xl border border-teal-400/30 bg-teal-400/[0.04] p-4" id="objektPickerSection">
+<section class="space-y-3 rounded-xl border border-teal-400/30 bg-teal-400/[0.04] p-4" id="objektPickerSection" data-objekt-api="/article/{{category}}/objekt-options">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
             <h3 class="font-semibold text-teal-200">교환/거래 오브젝트</h3>
@@ -50,20 +50,12 @@
             <button type="button" id="objektFilterReset" class="objekt-picker-reset">초기화</button>
         </div>
 
-        <div id="objektOptionsList" class="grid max-h-72 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-4">
-            {{#objektOptions}}
-            <label class="objekt-option cursor-pointer rounded-lg border border-white/10 p-2 hover:border-teal-300/50{{#selected}} border-teal-300/60 bg-teal-400/10{{/selected}}"
-                   data-member="{{member}}"
-                   data-season="{{season}}"
-                   data-class="{{class}}"
-                   data-search="{{collectionId}} {{member}} {{collectionNo}} {{season}} {{class}}">
-                <input type="checkbox" name="selectedObjektIds" value="{{id}}" class="objekt-checkbox mb-2" {{#selected}}checked{{/selected}}>
-                <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" class="mb-2 aspect-[2/3] w-full rounded object-cover">
-                <span class="block truncate text-xs font-semibold">{{collectionId}}</span>
-                <span class="block truncate text-[11px] text-slate-400">{{member}} · {{collectionNo}}</span>
-            </label>
-            {{/objektOptions}}
+        <div id="objektSelectedInputs">
+            {{#objektSelected}}
+            <input type="hidden" name="selectedObjektIds" value="{{id}}" data-objekt-id="{{id}}">
+            {{/objektSelected}}
         </div>
+        <div id="objektOptionsList" class="grid max-h-72 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-4"></div>
         <div class="mt-1 flex flex-wrap items-center justify-between gap-2">
             <p id="objektPickerStatus" class="text-xs text-slate-400" aria-live="polite">오브젝트를 불러오는 중...</p>
             <button id="loadMoreObjekts" type="button"

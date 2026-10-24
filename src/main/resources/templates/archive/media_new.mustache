@@ -12,6 +12,8 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/archive-page.css?v=4">
+    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=4">
 
     <title>트리플에스 커뮤니티 - 새 미디어 등록</title>
 
@@ -99,15 +101,12 @@
             </div>
 
             <div class="col-12">
-                <label class="form-label">출연 멤버 (여러 명 선택 가능)</label>
-                <div class="flex flex-wrap gap-2">
-                    {{#artistOptions}}
-                    <label class="member-chip">
-                        <input type="checkbox" name="artistNames" value="{{name}}" {{#selected}}checked{{/selected}}>
-                        <span>{{name}}</span>
-                    </label>
-                    {{/artistOptions}}
+                <label class="form-label">출연 멤버</label>
+                <p class="mb-2 text-xs text-[#8b9b95]">사진을 눌러 출연 멤버를 고르세요. 목록에 없는 이름은 아래에 쉼표로 추가할 수 있습니다.</p>
+                <div class="member-portrait-picker is-compact" id="media-member-picker" role="group" aria-label="출연 멤버">
+                    {{>partials/member-portrait-picker}}
                 </div>
+                <input class="form-control mt-3" name="extraArtists" placeholder="직접 추가할 멤버 이름 (쉼표로 구분)">
             </div>
 
             <div class="col-md-6">
@@ -138,6 +137,7 @@
     </div>
 </div>
 
+<script src="/js/member-portrait-picker.js?v=2"></script>
 <script>
 (() => {
   const statusEl = document.getElementById('ytFetchStatus');
@@ -196,7 +196,19 @@
 
   document.getElementById('btnFetch').addEventListener('click', () => { fetchYoutubeInfo(); });
 
+  if (window.MemberPortraitPicker) MemberPortraitPicker.bindMultiSelect(document);
   document.getElementById('mediaNewForm').addEventListener('submit', async (event) => {
+    const form = event.target;
+    form.querySelectorAll('input[name="artistNames"]').forEach(node => node.remove());
+    if (window.MemberPortraitPicker) {
+      MemberPortraitPicker.selectedValues(document).forEach(value => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'artistNames';
+        input.value = value;
+        form.appendChild(input);
+      });
+    }
     const title = document.getElementById('titleInput').value.trim();
     if (!title) {
       event.preventDefault();
@@ -205,8 +217,11 @@
         alert('영상 정보를 먼저 가져와 주세요.');
         return;
       }
+      if (!window.confirm('이 영상을 등록하시겠습니까?')) return;
       event.target.submit();
+      return;
     }
+    if (!window.confirm('이 영상을 등록하시겠습니까?')) event.preventDefault();
   });
 })();
 </script>

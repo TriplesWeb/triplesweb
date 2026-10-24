@@ -23,7 +23,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -102,28 +101,31 @@ public class ArticleController {
         article.setCategory(category);
         article.setUserId("익명"); // 로그인 기능 삭제로 기본 작성자 지정
 
-        // 1) 게시글 생성
-        Article savedArticle = articleService.create(article);
-        if ("trade".equals(category) || "sell".equals(category)) {
-            articleObjektService.attachSelected(savedArticle, selectedObjektIds);
-        }
-
-        // 2) 파일 저장 처리
-        if (files != null) {
-            for (MultipartFile mf : files) {
-                if (mf != null && !mf.isEmpty()) {
-                    articleFileService.uploadFile(mf, savedArticle);
+        try {
+            Article savedArticle = articleService.create(article);
+            if ("trade".equals(category) || "sell".equals(category)) {
+                articleObjektService.attachSelected(savedArticle, selectedObjektIds);
+            }
+            if (files != null) {
+                for (MultipartFile mf : files) {
+                    if (mf != null && !mf.isEmpty()) {
+                        articleFileService.uploadFile(mf, savedArticle);
+                    }
                 }
             }
+            if (uploadedFiles != null && !uploadedFiles.isEmpty()) {
+                articleFileService.attachUploadedFiles(uploadedFiles, savedArticle);
+            }
+            articleFileService.extractAndSaveFilesFromContent(savedArticle);
+            return "redirect:/article/" + category + "/" + savedArticle.getId();
+        } catch (RuntimeException | IOException ex) {
+            model.addAttribute("category", category);
+            model.addAttribute("categoryName", getCategoryName(category));
+            model.addAttribute("errorMessage", "글을 저장하지 못했습니다. 첨부 파일과 내용을 확인한 뒤 다시 시도해 주세요.");
+            model.addAttribute("articleForm", form);
+            addObjektOptions(model, category, selectedObjektIds == null ? Set.of() : Set.copyOf(selectedObjektIds));
+            return "article/article_new";
         }
-
-        if (uploadedFiles != null && !uploadedFiles.isEmpty()) {
-            articleFileService.attachUploadedFiles(uploadedFiles, savedArticle);
-        }
-
-        articleFileService.extractAndSaveFilesFromContent(savedArticle);
-
-        return "redirect:/article/" + category + "/" + savedArticle.getId();
     }
 
     private void addObjektOptions(Model model, String category) {
@@ -140,43 +142,88 @@ public class ArticleController {
                 .filter(v -> !v.isEmpty())
                 .collect(Collectors.toSet());
 
-        List<Map<String, Object>> options = new ArrayList<>();
+        List<Map<String, Object>> selectedItems = new ArrayList<>();
         Set<String> members = new LinkedHashSet<>();
         Set<String> seasons = new LinkedHashSet<>();
         Set<String> classes = new LinkedHashSet<>();
 
         for (Map<String, Object> item : objektService.findCollections("triples")) {
-            Map<String, Object> copy = new LinkedHashMap<>(item);
-            String id = stringValue(item.get("id"));
-            String collectionId = stringValue(item.get("collectionId"));
-            String slug = stringValue(item.get("slug"));
-            boolean isSelected = selected.contains(id)
-                    || selected.contains(collectionId)
-                    || selected.contains(slug);
-            copy.put("selected", isSelected);
-            options.add(copy);
-
             String member = stringValue(item.get("member"));
             String season = stringValue(item.get("season"));
             String klass = stringValue(item.get("class"));
             if (!member.isBlank()) members.add(member);
             if (!season.isBlank()) seasons.add(season);
             if (!klass.isBlank()) classes.add(klass);
+
+            String id = stringValue(item.get("id"));
+            String collectionId = stringValue(item.get("collectionId"));
+            String slug = stringValue(item.get("slug"));
+            boolean isSelected = selected.contains(id)
+                    || selected.contains(collectionId)
+                    || selected.contains(slug);
+            if (!isSelected || selectedItems.size() >= 20) continue;
+            selectedItems.add(pickerItem(item));
         }
 
-        options.sort(Comparator
-                .comparing((Map<String, Object> o) -> !Boolean.TRUE.equals(o.get("selected")))
-                .thenComparing(o -> stringValue(o.get("member")), String.CASE_INSENSITIVE_ORDER)
-                .thenComparing(o -> stringValue(o.get("collectionId")), String.CASE_INSENSITIVE_ORDER));
-
         model.addAttribute("showObjektPicker", true);
-        model.addAttribute("objektOptions", options);
+        model.addAttribute("objektSelected", selectedItems);
         model.addAttribute("objektMemberOptions", members.stream()
                 .sorted(String.CASE_INSENSITIVE_ORDER).toList());
         model.addAttribute("objektSeasonOptions", seasons.stream()
                 .sorted(String.CASE_INSENSITIVE_ORDER).toList());
         model.addAttribute("objektClassOptions", classes.stream()
                 .sorted(String.CASE_INSENSITIVE_ORDER).toList());
+    }
+
+    @GetMapping("/objekt-options")
+    @ResponseBody
+    public Map<String, Object> objektOptions(@RequestParam(defaultValue = "") String member,
+                                             @RequestParam(defaultValue = "") String season,
+                                             @RequestParam(name = "class", defaultValue = "") String objektClass,
+                                             @RequestParam(defaultValue = "") String q,
+                                             @RequestParam(defaultValue = "0") int offset,
+                                             @RequestParam(defaultValue = "24") int limit) {
+        int size = Math.min(48, Math.max(1, limit));
+        int start = Math.max(0, offset);
+        String memberKey = member.trim().toLowerCase();
+        String seasonKey = season.trim().toLowerCase();
+        String classKey = objektClass.trim().toLowerCase();
+        String query = q.trim().toLowerCase();
+        List<Map<String, Object>> matched = new ArrayList<>();
+        for (Map<String, Object> item : objektService.findCollections("triples")) {
+            if (!memberKey.isEmpty() && !stringValue(item.get("member")).toLowerCase().equals(memberKey)) continue;
+            if (!seasonKey.isEmpty() && !stringValue(item.get("season")).toLowerCase().equals(seasonKey)) continue;
+            if (!classKey.isEmpty() && !stringValue(item.get("class")).toLowerCase().equals(classKey)) continue;
+            if (!query.isEmpty()) {
+                String haystack = (stringValue(item.get("collectionId")) + " " + stringValue(item.get("member"))
+                        + " " + stringValue(item.get("collectionNo")) + " " + stringValue(item.get("season"))
+                        + " " + stringValue(item.get("class"))).toLowerCase();
+                if (!haystack.contains(query)) continue;
+            }
+            matched.add(item);
+        }
+        int end = Math.min(matched.size(), start + size);
+        List<Map<String, Object>> page = new ArrayList<>();
+        if (start < matched.size()) {
+            for (Map<String, Object> item : matched.subList(start, end)) page.add(pickerItem(item));
+        }
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("total", matched.size());
+        body.put("offset", start);
+        body.put("items", page);
+        return body;
+    }
+
+    private static Map<String, Object> pickerItem(Map<String, Object> item) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("id", stringValue(item.get("id")));
+        row.put("collectionId", stringValue(item.get("collectionId")));
+        row.put("member", stringValue(item.get("member")));
+        row.put("season", stringValue(item.get("season")));
+        row.put("class", stringValue(item.get("class")));
+        row.put("collectionNo", stringValue(item.get("collectionNo")));
+        row.put("thumbnailImage", stringValue(item.get("thumbnailImage")));
+        return row;
     }
 
     private static String stringValue(Object value) {
@@ -274,6 +321,7 @@ public class ArticleController {
     @GetMapping("/{id:[0-9]+}")
     public String showArticle(@PathVariable("category") String category,
                               @PathVariable("id") Long id,
+                              @RequestParam(required = false) String notice,
                               Model model) {
 
         if (isInvalidCategory(category)) return "redirect:/article/trade";
@@ -300,6 +348,9 @@ public class ArticleController {
         model.addAttribute("files", fileDtos);
         model.addAttribute("formattedDate", view.getFormattedDate());
         model.addAttribute("isLikeAllowed", LIKE_ALLOWED_CATEGORIES.contains(category));
+        if ("delete-failed".equals(notice)) {
+            model.addAttribute("errorMessage", "글을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        }
 
         return "article/article_detail";
     }
@@ -365,19 +416,28 @@ public class ArticleController {
             return "article/article_edit";
         }
 
-        Article saved = articleService.updateWithFiles(
-                id,
-                newarticle.getTitle().trim(),
-                newarticle.getContent(),
-                files,
-                uploadedFiles,
-                deletedFiles);
+        try {
+            Article saved = articleService.updateWithFiles(
+                    id,
+                    newarticle.getTitle().trim(),
+                    newarticle.getContent(),
+                    files,
+                    uploadedFiles,
+                    deletedFiles);
 
-        if ("trade".equals(category) || "sell".equals(category)) {
-            articleObjektService.replaceSelected(saved, selectedObjektIds);
+            if ("trade".equals(category) || "sell".equals(category)) {
+                articleObjektService.replaceSelected(saved, selectedObjektIds);
+            }
+            return "redirect:/article/" + category + "/" + id;
+        } catch (RuntimeException | IOException ex) {
+            article.setTitle(newarticle.getTitle());
+            article.setContent(newarticle.getContent());
+            prepareEditModel(article, model, "글을 수정하지 못했습니다. 첨부 파일과 내용을 확인한 뒤 다시 시도해 주세요.");
+            model.addAttribute("category", category);
+            model.addAttribute("categoryName", getCategoryName(category));
+            addObjektOptionsForArticle(model, category, id);
+            return "article/article_edit";
         }
-
-        return "redirect:/article/" + category + "/" + id;
     }
 
     private void addObjektOptionsForArticle(Model model, String category, Long articleId) {
@@ -398,10 +458,14 @@ public class ArticleController {
         Article article = articleService.showWithFiles(id);
         if (article == null) return "redirect:/article/" + category;
 
-        List<Long> fileIds = articleFileService.findFileIdsByArticleId(id);
-        fileIds.forEach(articleFileService::deleteFileById);
-        articleService.delete(id);
-        return "redirect:/article/" + category;
+        try {
+            List<Long> fileIds = articleFileService.findFileIdsByArticleId(id);
+            fileIds.forEach(articleFileService::deleteFileById);
+            articleService.delete(id);
+            return "redirect:/article/" + category;
+        } catch (RuntimeException ex) {
+            return "redirect:/article/" + category + "/" + id + "?notice=delete-failed";
+        }
     }
 
     private void prepareEditModel(Article article,

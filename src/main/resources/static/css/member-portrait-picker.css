@@ -100,7 +100,7 @@
         transparent 100%
     );
     transform: skewX(-18deg);
-    animation: mpp-shine-sweep 4.8s ease-in-out infinite;
+    animation: none;
 }
 
 .member-portrait-picker .mpp-item:hover .artist-tab-shine,
@@ -110,7 +110,7 @@
 
 .member-portrait-picker .mpp-item:hover .artist-tab-shine::before,
 .member-portrait-picker .mpp-item.is-active .artist-tab-shine::before {
-    animation-duration: 1.6s;
+    animation: mpp-shine-sweep 1.6s ease-in-out infinite;
 }
 
 .member-portrait-picker .mpp-item.is-active .artist-tab-avatar {

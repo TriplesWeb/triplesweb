@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -56,6 +57,14 @@ public class CommentApiController {
             HttpSession session) {
         CommentDto deletedDto = commentService.delete(commentId);
         return ResponseEntity.status(HttpStatus.OK).body(deletedDto);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<String> invalidComment(IllegalArgumentException error) {
+        String message = error.getMessage() == null || error.getMessage().isBlank()
+                ? "댓글을 처리하지 못했습니다."
+                : error.getMessage();
+        return ResponseEntity.badRequest().body(message);
     }
 
     private static String resolveUserId(String requested, HttpSession session) {

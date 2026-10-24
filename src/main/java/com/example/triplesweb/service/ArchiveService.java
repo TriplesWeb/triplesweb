@@ -13,8 +13,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Predicate;
+
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * 아카이브({@link Archive}) 미디어 목록·상세·업로드·삭제를 담당한다.
@@ -34,11 +39,38 @@ public class ArchiveService {
 
     @Transactional(readOnly = true)
     public Page<Archive> pageByType(MediaType type, int page, int size, String keyword) {
+        return pageByType(type, page, size, keyword, List.of());
+    }
+
+    public Page<Archive> pageByType(MediaType type, int page, int size, String keyword, List<String> members) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
-        if (keyword != null && !keyword.isBlank()) {
-            return archiveRepository.findByFile_MediaTypeAndTitleContainingIgnoreCase(type, keyword.trim(), pageable);
+        String q = keyword == null ? "" : keyword.trim();
+        List<String> names = members == null ? List.of() : members.stream()
+                .filter(name -> name != null && !name.isBlank())
+                .map(name -> name.trim().toLowerCase(Locale.ROOT).replace(" ", ""))
+                .distinct()
+                .toList();
+        if (q.isEmpty() && names.isEmpty()) {
+            return archiveRepository.findByFile_MediaType(type, pageable);
         }
-        return archiveRepository.findByFile_MediaType(type, pageable);
+        return archiveRepository.findAll((root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("file").get("mediaType"), type));
+            if (!q.isEmpty()) {
+                predicates.add(cb.like(cb.lower(root.get("title")), "%" + q.toLowerCase(Locale.ROOT) + "%"));
+            }
+            if (!names.isEmpty()) {
+                Expression<String> normalized = cb.lower(cb.function(
+                        "replace", String.class, cb.coalesce(root.get("artistNames"), ""), cb.literal(" "), cb.literal("")));
+                Expression<String> wrapped = cb.concat(",", cb.concat(normalized, ","));
+                List<Predicate> anyMember = new ArrayList<>();
+                for (String name : names) {
+                    anyMember.add(cb.like(wrapped, "%," + name + ",%"));
+                }
+                predicates.add(cb.or(anyMember.toArray(Predicate[]::new)));
+            }
+            return cb.and(predicates.toArray(Predicate[]::new));
+        }, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -97,17 +129,47 @@ public class ArchiveService {
     @Transactional
     public boolean delete(long id) {
         return archiveRepository.findById(id).map(archive -> {
-            try {
-                SavedMeta file = archive.getFile();
-                if (file != null && file.getSavedName() != null && !file.getSavedName().isBlank()) {
-                    fileStorageService.deleteFile(file.getSavedName());
-                }  else if (file.getUrl() != null && file.getUrl().startsWith("/uploads/")) {
-                    fileStorageService.deleteFile(file.getUrl());
-                }
-            } catch (Exception ignored) {}
+            deleteStored(archive.getFile());
             archiveRepository.delete(archive);
             return true;
         }).orElse(false);
+    }
+
+    /**
+     * 제목과 출연 표기를 바꾸고, 새 파일이 있으면 기존 미디어를 교체한다.
+     * 파일은 비워 둘 수 있으며, 이때 저장된 미디어는 그대로 둔다.
+     */
+    @Transactional
+    public Archive update(long id, String title, MultipartFile file, String artistNames) throws IOException {
+        Archive archive = show(id);
+        String safeTitle = title == null ? "" : title.trim();
+        if (safeTitle.isEmpty()) {
+            throw new IllegalArgumentException("제목을 입력해주세요.");
+        }
+        archive.setTitle(safeTitle);
+        if (artistNames != null) {
+            archive.setArtistNames(artistNames.trim());
+        }
+        if (file != null && !file.isEmpty()) {
+            SavedMeta previous = archive.getFile();
+            SavedMeta meta = fileStorageService.saveWithMeta(file);
+            coerceType(archive.getType(), meta);
+            archive.setFile(meta);
+            deleteStored(previous);
+        }
+        return archiveRepository.save(archive);
+    }
+
+    private void deleteStored(SavedMeta file) {
+        if (file == null) return;
+        try {
+            if (file.getSavedName() != null && !file.getSavedName().isBlank()) {
+                fileStorageService.deleteFile(file.getSavedName());
+            } else if (file.getUrl() != null && file.getUrl().startsWith("/uploads/")) {
+                fileStorageService.deleteFile(file.getUrl());
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     @Transactional

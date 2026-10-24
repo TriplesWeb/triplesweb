@@ -292,6 +292,11 @@
       e.preventDefault();
       const err = document.getElementById("albumSectionError");
       const name = document.getElementById("albumSectionNewName")?.value?.trim();
+      if (!name) {
+        if (err) { err.hidden = false; err.textContent = "구분 이름을 입력해 주세요."; }
+        return;
+      }
+      if (!window.confirm("이 구분을 추가하시겠습니까?")) return;
       try {
         const res = await apiFetch(API + "/sections", {
           method: "POST",
@@ -315,6 +320,8 @@
       try {
         if (e.target.closest(".section-rename")) {
           const name = row.querySelector(".section-name-input")?.value?.trim();
+          if (!name) throw new Error("구분 이름을 입력해 주세요.");
+          if (!window.confirm("이 구분 이름을 수정하시겠습니까?")) return;
           const res = await apiFetch(API + "/sections/" + id, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -334,7 +341,7 @@
           sectionOptions = await res.json();
           renderSectionList();
         } else if (e.target.closest(".section-delete")) {
-          if (!confirm("이 구분을 삭제할까요? 소속 앨범은 「기타」로 이동합니다.")) return;
+          if (!confirm("이 구분을 삭제하시겠습니까? 소속 앨범은 「기타」로 이동합니다.")) return;
           const res = await apiFetch(API + "/sections/" + id, { method: "DELETE" });
           if (!res.ok) throw new Error(await readError(res, "삭제 실패"));
           sectionOptions = await (await apiFetch(API + "/sections")).json();
@@ -366,7 +373,14 @@
       if (file) fd.append("image", file);
       const imageUrl = document.getElementById("albumEditImageUrl").value.trim();
       if (imageUrl) fd.append("imageUrl", imageUrl);
-      if (document.getElementById("albumEditClearImage").checked) fd.append("clearImage", "true");
+      const clearImage = document.getElementById("albumEditClearImage").checked;
+      if (clearImage) fd.append("clearImage", "true");
+      const albumName = document.getElementById("albumEditName").value.trim();
+      if (!albumName) {
+        if (err) { err.hidden = false; err.textContent = "앨범 이름을 입력해 주세요."; }
+        return;
+      }
+      if (!window.confirm(clearImage ? "이 앨범을 저장하시겠습니까? 체크한 사진은 삭제됩니다." : (id ? "이 앨범을 수정하시겠습니까?" : "이 앨범을 추가하시겠습니까?"))) return;
       try {
         const url = id ? API + "/" + id : API;
         const res = await apiFetch(url, { method: "POST", body: fd });
@@ -379,13 +393,17 @@
 
     document.getElementById("albumEditDeleteBtn")?.addEventListener("click", async () => {
       const id = document.getElementById("albumEditId").value;
-      if (!id || !confirm("이 앨범을 삭제할까요?")) return;
-      const res = await apiFetch(API + "/" + id, { method: "DELETE" });
-      if (!res.ok) {
-        alert(await readError(res, "삭제 실패"));
-        return;
+      if (!id || !confirm("이 앨범을 삭제하시겠습니까? 삭제하면 되돌릴 수 없습니다.")) return;
+      try {
+        const res = await apiFetch(API + "/" + id, { method: "DELETE" });
+        if (!res.ok) {
+          alert(await readError(res, "삭제에 실패했습니다."));
+          return;
+        }
+        location.href = "/triples/album";
+      } catch (_) {
+        alert("삭제 요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
       }
-      location.href = "/triples/album";
     });
   }
 

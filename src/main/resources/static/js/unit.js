@@ -279,7 +279,13 @@
       if (file) fd.append("image", file);
       const imageUrl = document.getElementById("unitEditImageUrl")?.value?.trim();
       if (imageUrl) fd.append("imageUrl", imageUrl);
-      if (document.getElementById("unitEditClearImage").checked) fd.append("clearImage", "true");
+      const clearImage = document.getElementById("unitEditClearImage").checked;
+      if (clearImage) fd.append("clearImage", "true");
+      if (!document.getElementById("unitEditName").value.trim()) {
+        if (err) { err.hidden = false; err.textContent = "유닛 이름을 입력해 주세요."; }
+        return;
+      }
+      if (!window.confirm(clearImage ? "이 유닛을 저장하시겠습니까? 체크한 사진은 삭제됩니다." : (id ? "이 유닛을 수정하시겠습니까?" : "이 유닛을 추가하시겠습니까?"))) return;
       try {
         const url = id ? API + "/" + id : API;
         const res = await apiFetch(url, { method: "POST", body: fd });
@@ -303,7 +309,7 @@
       const id = document.getElementById("unitEditId").value;
       const err = document.getElementById("unitEditError");
       if (!id) return;
-      if (!confirm("이 유닛을 삭제할까요?\n연결된 앨범·하위 유닛은 삭제되지 않고 연결만 해제됩니다.")) return;
+      if (!confirm("이 유닛을 삭제하시겠습니까?\n연결된 앨범·하위 유닛은 삭제되지 않고 연결만 해제됩니다.")) return;
       try {
         const res = await apiFetch(API + "/" + id, { method: "DELETE" });
         if (!res.ok) throw new Error(await readError(res, "삭제 실패"));

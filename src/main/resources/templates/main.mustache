@@ -60,22 +60,22 @@
                 <div class="flex items-center gap-2">
                     <span class="font-mono text-xs text-on-surface font-semibold tracking-wider">OFFICIAL MEDIA</span>
                 </div>
-                <span class="text-xs text-on-surface-variant font-mono">tripleS (트리플에스) 'baby flower' MV</span>
+                <span class="text-xs text-on-surface-variant font-mono">LOVE &amp; POP Pt.2 : Andless</span>
             </div>
             <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-outline-variant/30">
-                <iframe class="w-full h-full" src="https://www.youtube.com/embed/6q8UMVXhXsE?si=yT7hzf3ua0zwXnO-" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                <iframe class="w-full h-full" src="https://www.youtube.com/embed/uqJ6GDJSyfY?si=L_IVf7HVVG5Ol3mo" title="tripleS LOVE &amp; POP Pt.2 : Andless" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
             </div>
         </div>
 
         <!-- 메인 이미지 캐러셀 배너 -->
         <div class="lg:col-span-5 bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-4 backdrop-blur-md shadow-xl flex flex-col relative overflow-hidden group">
-            <div class="relative w-full h-full min-h-[240px] rounded-xl overflow-hidden flex flex-col justify-end p-5 bg-cover bg-center" style="background-image: url('../../../uploads/images/loveandpop1.jpg');">
+            <div class="relative w-full h-full min-h-[240px] rounded-xl overflow-hidden flex flex-col justify-end p-5 bg-cover bg-center" style="background-image: url('../../../uploads/images/andless.webp');">
                 <div class="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent"></div>
 
                 <div class="relative z-10 space-y-1.5">
                     <span class="inline-block px-2.5 py-0.5 rounded-full bg-primary-container/20 border border-primary-container text-primary-container text-[11px] font-semibold">컴백</span>
-                    <h3 class="text-xl font-bold text-on-surface">ASSEMBLE26 : Baby Flower</h3>
-                    <p class="text-xs text-on-surface-variant line-clamp-2">암흑에서 벗어나 다시 뛰기 시작한 24명의 소녀들</p>
+                    <h3 class="text-xl font-bold text-on-surface">LOVE &amp; POP Pt.2 : Andless</h3>
+                    <p class="text-xs text-on-surface-variant line-clamp-2">끝나지 않을 영원한 트리플에스의 스토리</p>
                 </div>
             </div>
         </div>
@@ -104,13 +104,9 @@
         </div>
     </section>
 
-    <!-- 3. 메인 그리드 (게시판 / 스케줄 / 아카이브) -->
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        <!-- 좌측 컬럼 -->
-        <div class="flex flex-col gap-6">
-            <!-- 공지사항 -->
-            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
+    <!-- 3. 공지 · 스케줄 · 사진 -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl h-full">
                 <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
                     <div class="flex items-center gap-2">
                         <span class="material-symbols-outlined text-secondary text-xl">campaign</span>
@@ -133,63 +129,7 @@
                 </ul>
             </div>
 
-            <!-- 아카이브 -->
-            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
-                <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary-container text-xl">photo_library</span>
-                        <h3 class="text-base font-bold text-on-surface">사진 아카이브</h3>
-                    </div>
-                    <a href="/archive/image_archive" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
-                        전체보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
-                    </a>
-                </div>
-                <div id="MainArchive"></div>
-            </div>
-            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
-                <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary-container text-xl">video_library</span>
-                        <h3 class="text-base font-bold text-on-surface">영상 아카이브</h3>
-                    </div>
-                    <a href="/archive/video_archive" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
-                        전체보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
-                    </a>
-                </div>
-                <div id="MainArchive2"></div>
-            </div>
-
-        </div>
-
-        <!-- 우측 컬럼 -->
-        <div class="flex flex-col gap-6">
-
-            <!-- 인기글 -->
-            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
-                <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-red-400 text-xl">local_fire_department</span>
-                        <h3 class="text-base font-bold text-on-surface">인기글</h3>
-                    </div>
-                    <a href="/popular" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
-                        더보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
-                    </a>
-                </div>
-                <ul class="divide-y divide-outline-variant/20 text-xs">
-                    {{#popularPosts}}
-                        <li class="py-2.5 flex items-center justify-between gap-4 hover:bg-surface-container-high/40 px-2 rounded-lg transition-colors">
-                            <a href="/article/{{category}}/{{id}}" class="truncate text-on-surface hover:text-primary-container font-medium flex-1">{{title}}</a>
-                            <div class="text-on-surface-variant/80 font-mono text-[11px] shrink-0">{{userId}} · {{formattedDate}}</div>
-                        </li>
-                    {{/popularPosts}}
-                    {{^popularPosts}}
-                        <li class="py-4 text-center text-on-surface-variant/60">인기글이 없습니다.</li>
-                    {{/popularPosts}}
-                </ul>
-            </div>
-
-            <!-- 스케줄 (미니 달력) -->
-            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
+            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl h-full">
                 <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
                     <div class="flex items-center gap-2">
                         <span class="material-symbols-outlined text-primary-container text-xl">calendar_month</span>
@@ -201,30 +141,29 @@
                 </div>
                 <div id="miniCalendar" class="w-full"></div>
             </div>
+    </section>
 
-            <!-- 굿즈샵 -->
-            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
-                <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary-container text-xl">shopping_bag</span>
-                        <h3 class="text-base font-bold text-on-surface">굿즈샵</h3>
-                    </div>
-                    <a href="/shop" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
-                        공식샵 이동 <span class="material-symbols-outlined text-sm">chevron_right</span>
-                    </a>
-                </div>
-                <ul class="divide-y divide-outline-variant/20 text-xs">
-                    {{#freePosts}}
-                        <li class="py-2.5 flex items-center justify-between gap-4 hover:bg-surface-container-high/40 px-2 rounded-lg transition-colors">
-                            <a href="/shop/{{id}}" class="truncate text-on-surface hover:text-primary-container font-medium flex-1">{{title}}</a>
-                            <div class="text-on-surface-variant/80 font-mono text-[11px] shrink-0">{{userId}}</div>
-                        </li>
-                    {{/freePosts}}
-                </ul>
+    <section class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
+        <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-4">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary-container text-xl">photo_library</span>
+                <h3 class="text-base font-bold text-on-surface">사진 아카이브</h3>
             </div>
-
+            <a href="/archive/image_archive" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
+                전체보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
+            </a>
         </div>
-
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {{#recentPhotos}}
+                <a href="/archive/image_archive" class="group block rounded-xl overflow-hidden border border-outline-variant/30 bg-black/30 no-underline">
+                    <img src="{{file.url}}" alt="{{title}}" referrerpolicy="no-referrer" loading="lazy" class="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-105">
+                    <span class="block truncate px-2.5 py-2 text-xs font-medium text-on-surface">{{title}}</span>
+                </a>
+            {{/recentPhotos}}
+            {{^recentPhotos}}
+                <p class="col-span-full py-6 text-center text-sm text-on-surface-variant/60">등록된 사진이 없습니다.</p>
+            {{/recentPhotos}}
+        </div>
     </section>
 
 </main>
