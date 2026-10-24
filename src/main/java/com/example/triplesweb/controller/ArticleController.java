@@ -294,18 +294,7 @@ public class ArticleController {
         model.addAttribute("likeCount", articleService.getLikesCount(id));
         model.addAttribute("liked", false);
 
-        List<ArticleFileDto> fileDtos = article.getFiles().stream().map(af -> {
-            var m = af.getFile();
-            ArticleFileDto dto = new ArticleFileDto();
-            dto.setId(af.getId());
-            dto.setType(m.getMediaType());
-            dto.setOriginalName(m.getOriginalName());
-            dto.setSavedName(m.getSavedName());
-            dto.setSize(m.getSize());
-            dto.setArticleId(article.getId());
-            dto.setCategory(article.getCategory());
-            return dto;
-        }).toList();
+        List<ArticleFileDto> fileDtos = toFileDtos(article);
 
         ArticleViewDto view = ArticleViewMapper.toView(article, fileDtos, dateTimeFormatService);
         model.addAttribute("files", fileDtos);
@@ -339,18 +328,7 @@ public class ArticleController {
         model.addAttribute("categoryName", getCategoryName(category));
         addObjektOptionsForArticle(model, category, id);
 
-        List<ArticleFileDto> fileDtos = article.getFiles().stream().map(af -> {
-            var m = af.getFile();
-            ArticleFileDto dto = new ArticleFileDto();
-            dto.setId(af.getId());
-            dto.setType(m.getMediaType());
-            dto.setOriginalName(m.getOriginalName());
-            dto.setSavedName(m.getSavedName());
-            dto.setSize(m.getSize());
-            dto.setArticleId(article.getId());
-            dto.setCategory(article.getCategory());
-            return dto;
-        }).toList();
+        List<ArticleFileDto> fileDtos = toFileDtos(article);
 
         ArticleViewDto view = ArticleViewMapper.toView(article, fileDtos, dateTimeFormatService);
         model.addAttribute("formattedDate", view.getFormattedDate());
@@ -387,34 +365,17 @@ public class ArticleController {
             return "article/article_edit";
         }
 
-        article.setTitle(newarticle.getTitle().trim());
-        article.setContent(newarticle.getContent());
-
-        if (deletedFiles != null) {
-            for (Long fid : deletedFiles) {
-                articleFileService.deleteFileById(fid);
-            }
-        }
-        if (files != null) {
-            for (MultipartFile mf : files) {
-                if (mf != null && !mf.isEmpty()) {
-                    articleFileService.uploadFile(mf, article);
-                }
-            }
-        }
-
-        if (uploadedFiles != null && !uploadedFiles.isEmpty()) {
-            articleFileService.attachUploadedFiles(uploadedFiles, article);
-        }
-
-        articleFileService.extractAndSaveFilesFromContent(article);
+        Article saved = articleService.updateWithFiles(
+                id,
+                newarticle.getTitle().trim(),
+                newarticle.getContent(),
+                files,
+                uploadedFiles,
+                deletedFiles);
 
         if ("trade".equals(category) || "sell".equals(category)) {
-            articleObjektService.replaceSelected(article, selectedObjektIds);
+            articleObjektService.replaceSelected(saved, selectedObjektIds);
         }
-
-        // showWithFiles는 readOnly라 본문 변경이 자동 반영되지 않음 → 명시 저장
-        articleService.update(article);
 
         return "redirect:/article/" + category + "/" + id;
     }
@@ -451,21 +412,28 @@ public class ArticleController {
         }
         model.addAttribute("article", article);
 
-        List<ArticleFileDto> fileDtos = article.getFiles().stream().map(f -> {
-            var m = f.getFile();
-            ArticleFileDto dto = new ArticleFileDto();
-            dto.setId(f.getId());
-            dto.setOriginalName(m.getOriginalName());
-            dto.setSavedName(m.getSavedName());
-            dto.setType(m.getMediaType());
-            dto.setSize(m.getSize());
-            dto.setCategory(article.getCategory());
-            dto.setArticleId(article.getId());
-            return dto;
-        }).toList();
+        List<ArticleFileDto> fileDtos = toFileDtos(article);
         model.addAttribute("files", fileDtos);
         ArticleViewDto view = ArticleViewMapper.toView(article, fileDtos, dateTimeFormatService);
         model.addAttribute("formattedDate", view.getFormattedDate());
+    }
+
+    private List<ArticleFileDto> toFileDtos(Article article) {
+        if (article.getFiles() == null) return List.of();
+        return article.getFiles().stream()
+                .filter(af -> af.getFile() != null)
+                .map(af -> {
+                    var m = af.getFile();
+                    ArticleFileDto dto = new ArticleFileDto();
+                    dto.setId(af.getId());
+                    dto.setType(m.getMediaType());
+                    dto.setOriginalName(m.getOriginalName());
+                    dto.setSavedName(m.getSavedName());
+                    dto.setSize(m.getSize());
+                    dto.setArticleId(article.getId());
+                    dto.setCategory(article.getCategory());
+                    return dto;
+                }).toList();
     }
 
     private String validateArticle(Article newArt) {

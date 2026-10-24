@@ -15,6 +15,8 @@ public interface ArticleFileService {
     void uploadFile(MultipartFile mf, Article article) throws IOException;
     void attachUploadedFiles(List<String> uploadedFiles, Article article);
     void extractAndSaveFilesFromContent(Article article);
+    /** 컬렉션에서 빼고 디스크 파일만 지운다. DB 행은 orphanRemoval 로 삭제된다. */
+    void unlinkFiles(Article article, List<Long> fileIds);
     void deleteFileById(Long id);
 
     List<Long> findFileIdsByArticleId(Long articleId);

@@ -8,6 +8,7 @@ import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.repository.ArticleFileRepository;
 import com.example.triplesweb.util.HtmlMediaParser;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class ArticleFileServiceImpl implements ArticleFileService {
 
     private final FileStorageService fileStorageService;
@@ -64,8 +66,9 @@ public class ArticleFileServiceImpl implements ArticleFileService {
             if (!StringUtils.hasText(token)) continue;
 
             String url = toUploadsUrl(token);
+            Path path = tryResolve(url);
+            if (path == null) continue;
             String relative = fileStorageService.toRelativePath(url);
-            Path path = fileStorageService.resolvePhysicalPath(relative);
 
             String savedName = path.getFileName().toString();
             if (!StringUtils.hasText(savedName) || existing.contains(savedName)) continue;
@@ -135,8 +138,9 @@ public class ArticleFileServiceImpl implements ArticleFileService {
                 .collect(Collectors.toSet());
 
         for (String url : urls) {
+            Path path = tryResolve(url);
+            if (path == null) continue;
             String relative = fileStorageService.toRelativePath(url);
-            Path path = fileStorageService.resolvePhysicalPath(relative);
             String fileName = path.getFileName().toString();
 
             if (!StringUtils.hasText(fileName) || existing.contains(fileName)) continue;
@@ -180,11 +184,47 @@ public class ArticleFileServiceImpl implements ArticleFileService {
     }
 
     @Override
+    public void unlinkFiles(Article article, List<Long> fileIds) {
+        if (article == null || article.getFiles() == null || fileIds == null || fileIds.isEmpty()) return;
+        Set<Long> ids = new HashSet<>(fileIds);
+        article.getFiles().removeIf(af -> {
+            if (af.getId() == null || !ids.contains(af.getId())) return false;
+            deletePhysicalQuietly(af);
+            return true;
+        });
+    }
+
+    @Override
     public void deleteFileById(Long id) {
         articleFileRepository.findById(id).ifPresent(af -> {
-            fileStorageService.deleteFile(af.getFile().getUrl());
-            articleFileRepository.deleteById(id);
+            if (af.getArticle() != null && af.getArticle().getFiles() != null) {
+                af.getArticle().getFiles().remove(af);
+            }
+            deletePhysicalQuietly(af);
+            articleFileRepository.delete(af);
         });
+    }
+
+    private void deletePhysicalQuietly(ArticleFile af) {
+        SavedMeta meta = af.getFile();
+        if (meta == null || !StringUtils.hasText(meta.getUrl())) return;
+        try {
+            fileStorageService.deleteFile(meta.getUrl());
+        } catch (RuntimeException ex) {
+            log.warn("첨부 파일 디스크 삭제 실패 id={}: {}", af.getId(), ex.getMessage());
+        }
+    }
+
+    private Path tryResolve(String url) {
+        if (!StringUtils.hasText(url)) return null;
+        try {
+            String relative = fileStorageService.toRelativePath(url);
+            if (!StringUtils.hasText(relative)) return null;
+            return fileStorageService.resolvePhysicalPath(relative);
+        } catch (RuntimeException ex) {
+            log.warn("첨부 경로를 열 수 없음: {}", ex.getMessage());
+            return null;
+        }
     }
 
     @Transactional(readOnly = true)

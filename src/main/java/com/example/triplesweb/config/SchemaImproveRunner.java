@@ -33,6 +33,23 @@ public class SchemaImproveRunner implements ApplicationRunner {
         ensureUnitMemberUnique();
         ensureSavedMetaColumns("article_file");
         ensureSavedMetaColumns("shop_image");
+        relaxLegacyCategory("article_file");
+        relaxLegacyCategory("shop_image");
+    }
+
+    /** 엔티티에 없는 category 가 NOT NULL 이면 첨부 INSERT 가 1364로 실패한다. */
+    private void relaxLegacyCategory(String table) {
+        if (!tableExists(table) || !columnExists(table, "category")) {
+            return;
+        }
+        try {
+            em.createNativeQuery(
+                    "ALTER TABLE `" + table + "` MODIFY COLUMN `category` VARCHAR(255) NULL DEFAULT NULL"
+            ).executeUpdate();
+            log.info("Made {}.category nullable", table);
+        } catch (RuntimeException e) {
+            log.warn("Relax {}.category failed: {}", table, e.getMessage());
+        }
     }
 
     /**
