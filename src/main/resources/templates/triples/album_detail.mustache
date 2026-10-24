@@ -75,7 +75,8 @@
             {{#hasAlbumInfo}}
             <div class="pt-1">
                 <h3 class="text-xs font-semibold text-[#b9cac4] uppercase tracking-wider mb-2">소개</h3>
-                <p class="text-sm leading-relaxed text-[#e3e2e8]/90 whitespace-pre-wrap">{{albumInfo}}</p>
+                <p id="albumInfoText" class="text-sm leading-relaxed text-[#e3e2e8]/90 whitespace-pre-wrap max-h-[9.75rem] overflow-hidden">{{albumInfo}}</p>
+                <button type="button" id="albumInfoToggle" class="mt-2 text-sm font-semibold text-[#00f5d4] hover:text-[#7dffe8] transition-colors" hidden aria-expanded="false" aria-controls="albumInfoText">더 보기</button>
             </div>
             {{/hasAlbumInfo}}
         </div>
@@ -123,5 +124,23 @@
 
 </main>
 {{>layout/footer}}
+<script>
+(function () {
+  var text = document.getElementById("albumInfoText");
+  var btn = document.getElementById("albumInfoToggle");
+  if (!text || !btn) return;
+  if (text.scrollHeight <= text.clientHeight + 2) return;
+
+  var collapsed = true;
+  btn.hidden = false;
+  btn.addEventListener("click", function () {
+    collapsed = !collapsed;
+    text.classList.toggle("max-h-[9.75rem]", collapsed);
+    text.classList.toggle("overflow-hidden", collapsed);
+    btn.textContent = collapsed ? "더 보기" : "접기";
+    btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  });
+})();
+</script>
 </body>
 </html>
