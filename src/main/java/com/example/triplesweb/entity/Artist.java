@@ -114,10 +114,12 @@ public class Artist {
 
     /**
      * DataInitializer와 기존 호출부를 위한 호환 생성자(미디어 목록은 페이지에서 채운다).
+     * main의 본명·MBTI·싸인 이미지 필드를 포함하며, {@code mediaContents}는 넣지 않는다.
      */
     public Artist(Long artistId, String name, String engName, String nationality, String birthDate,
-                  String bornPlace, String birthPlace, String debutDate, List<UnitMember> affiliatedUnit,
-                  String profileImage, String color, String soloContent, String broadcastContent) {
+                  String bornPlace, String birthPlace, String realName, String mbti, String debutDate,
+                  List<UnitMember> affiliatedUnit, String profileImage, String signatureImage,
+                  String color, String soloContent, String broadcastContent) {
         this.artistId = artistId;
         this.name = name;
         this.engName = engName;
@@ -125,9 +127,12 @@ public class Artist {
         this.birthDate = birthDate;
         this.bornPlace = bornPlace;
         this.birthPlace = birthPlace;
+        this.realName = realName;
+        this.mbti = mbti;
         this.debutDate = debutDate;
         this.affiliatedUnit = affiliatedUnit != null ? affiliatedUnit : new ArrayList<>();
         this.profileImage = profileImage;
+        this.signatureImage = signatureImage;
         this.color = color;
         this.soloContent = soloContent;
         this.broadcastContent = broadcastContent;
