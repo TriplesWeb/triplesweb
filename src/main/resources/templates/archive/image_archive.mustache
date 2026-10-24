@@ -66,12 +66,10 @@
                     <span class="ar-id">#{{id}}</span>
                     <h3>{{title}}</h3>
                     {{#artistNames}}<p class="ar-muted">{{artistNames}}</p>{{/artistNames}}
-                    {{#isAdmin}}
-                    <div class="ar-actions">
+                    <div class="ar-actions" data-admin-only>
                         <button type="button" data-archive-edit data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}">수정</button>
                         <button type="button" class="ar-delete" data-archive-delete data-id="{{id}}">삭제</button>
                     </div>
-                    {{/isAdmin}}
                 </div>
             </article>
             {{/archiveHighlights}}
@@ -94,9 +92,7 @@
                 <input class="ar-search" type="search" name="q" value="{{query}}" placeholder="사진 제목 검색" aria-label="사진 제목 검색">
             </label>
             <button class="ar-submit" type="submit">검색</button>
-            {{#isAdmin}}
-            <button type="button" class="ar-submit" onclick="showAddModal()">사진 추가</button>
-            {{/isAdmin}}
+            <button type="button" class="ar-submit" data-admin-only onclick="showAddModal()">사진 추가</button>
         </form>
         <div class="ar-member-row">
             <button type="button" class="ar-text-btn" id="archiveMemberToggle" aria-expanded="false" aria-controls="archiveMemberPanel">멤버 선택</button>
@@ -119,12 +115,10 @@
             <div class="ar-body">
                 <div class="ar-meta"><span class="ar-id">#{{id}}</span>{{#artistNames}}<span class="ar-badge">{{artistNames}}</span>{{/artistNames}}</div>
                 <h3>{{title}}</h3>
-                {{#isAdmin}}
-                <div class="ar-actions">
+                <div class="ar-actions" data-admin-only>
                     <button type="button" data-archive-edit data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}">수정</button>
                     <button type="button" class="ar-delete" data-archive-delete data-id="{{id}}">삭제</button>
                 </div>
-                {{/isAdmin}}
             </div>
         </article>
         {{/archives.content}}
@@ -151,7 +145,6 @@
 </main>
 
 <!-- 업로드 모달 창 (Tailwind 스타일 적용) -->
-{{#isAdmin}}
 <form id="archiveUploadForm" enctype="multipart/form-data">
     <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -184,9 +177,7 @@
         </div>
     </div>
 </form>
-{{/isAdmin}}
 
-{{#isAdmin}}
 <form id="archiveEditForm" enctype="multipart/form-data">
     <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -215,7 +206,6 @@
         </div>
     </div>
 </form>
-{{/isAdmin}}
 
 {{>layout/footer}}
 
@@ -230,13 +220,14 @@
             const formData = new FormData(form);
             formData.set('type', '{{type}}' || 'IMAGE');
 
-            const headers = {};
+            const headerMap = {};
             const csrf = document.querySelector('meta[name="_csrf"]');
             const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
-            if (csrf && csrfHeader) headers[csrfHeader.content] = csrf.content;
+            if (csrf && csrfHeader) headerMap[csrfHeader.content] = csrf.content;
+            const headers = window.AboutAdminAuth ? AboutAdminAuth.applyAuthHeaders(headerMap) : headerMap;
 
             try {
-                const res = await fetch('/archive/upload', { method: 'POST', body: formData, headers });
+                const res = await fetch('/archive/upload', { method: 'POST', body: formData, headers, credentials: 'same-origin' });
                 if (res.ok) {
                     location.reload();
                 } else if (res.status === 403) {

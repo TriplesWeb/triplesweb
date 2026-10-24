@@ -28,9 +28,27 @@
         <a class="gv-pill is-active" href="/cosmo/account"><span class="gv-dot"></span>내 COSMO</a>
     </div>
 
-    {{#needsAdmin}}
-    <p class="gv-panel gv-empty">관리자로 로그인한 뒤, 연결된 COSMO 계정의 닉네임·소유 오브젝트·스캔 시리얼을 볼 수 있습니다.</p>
-    {{/needsAdmin}}
+    <section class="gv-panel gv-headline">
+        <h1>내 COSMO 계정</h1>
+        <p>코스모 메뉴의 이 화면에서, 서버에 연결된 COSMO 계정의 닉네임·소유 오브젝트·스캔 시리얼을 봅니다. 왼쪽 아래 관리자 로그인 후 표시됩니다.</p>
+    </section>
+    <p id="cosmoAccountGate" class="gv-panel gv-empty" {{#hasCosmoAccount}}hidden{{/hasCosmoAccount}}>관리자로 로그인한 뒤 계정 정보를 불러옵니다.</p>
+    <div id="cosmoAccountLive" hidden {{#hasCosmoAccount}}data-ready="server"{{/hasCosmoAccount}}>
+        <section class="gv-panel gv-headline">
+            <h2 data-nickname>COSMO</h2>
+            <p data-summary class="gv-muted"></p>
+        </section>
+        <section class="gv-block">
+            <div class="gv-section-title"><h2>소유 오브젝트</h2></div>
+            <div class="cosmo-account-grid" data-owned></div>
+            <p data-owned-empty class="gv-panel gv-empty">소유 오브젝트가 없습니다.</p>
+        </section>
+        <section class="gv-panel" style="padding:1rem 1.1rem">
+            <h2>스캔한 시리얼</h2>
+            <div data-scans></div>
+            <p data-scans-empty class="gv-muted">이 계정에서 가져온 스캔 시리얼이 없습니다.</p>
+        </section>
+    </div>
     {{#cosmoAccountError}}<p class="gv-notice" role="status">{{cosmoAccountError}}</p>{{/cosmoAccountError}}
 
     {{#hasCosmoAccount}}
@@ -81,5 +99,62 @@
 {{>layout/footer}}
 <script src="/js/about-admin-auth.js?v=1"></script>
 <script src="/js/gravity-connect.js?v=4"></script>
+<script>
+(function () {
+  const gate = document.getElementById('cosmoAccountGate');
+  const root = document.getElementById('cosmoAccountLive');
+  if (!root || root.dataset.ready === 'server') return;
+  const headers = () => window.AboutAdminAuth ? AboutAdminAuth.applyAuthHeaders() : {};
+  function card(item) {
+    const article = document.createElement('article');
+    article.className = 'gv-panel gv-card cosmo-account-card';
+    if (item.hasImage) {
+      const img = document.createElement('img');
+      img.src = item.thumbnailImage;
+      img.alt = '';
+      img.referrerPolicy = 'no-referrer';
+      article.appendChild(img);
+    }
+    const title = document.createElement('h3');
+    title.textContent = item.collectionId || '';
+    article.appendChild(title);
+    const meta = document.createElement('p');
+    meta.className = 'gv-muted';
+    meta.textContent = [item.member, item.objektClass].filter(Boolean).join(' · ');
+    article.appendChild(meta);
+    return article;
+  }
+  document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const status = await fetch('/api/artist/admin/status', { credentials: 'same-origin', headers: headers() });
+      const state = status.ok ? await status.json() : {};
+      if (!state.admin) return;
+      if (gate) gate.hidden = true;
+      const response = await fetch('/api/cosmo/account', { credentials: 'same-origin', headers: headers() });
+      if (!response.ok) {
+        if (gate) { gate.hidden = false; gate.textContent = 'COSMO 계정 정보를 불러오지 못했습니다. 계정 연결을 확인해 주세요.'; }
+        return;
+      }
+      const data = await response.json();
+      root.hidden = false;
+      root.querySelector('[data-nickname]').textContent = data.nickname || 'COSMO';
+      root.querySelector('[data-summary]').textContent = '소유 오브젝트 ' + (data.ownedCount || 0) + '개 · 스캔 시리얼 ' + (data.scanCount || 0) + '개';
+      const grid = root.querySelector('[data-owned]');
+      (data.ownedObjekts || []).forEach(item => grid.appendChild(card(item)));
+      root.querySelector('[data-owned-empty]').hidden = Boolean(data.hasOwned);
+      const scans = root.querySelector('[data-scans]');
+      (data.scans || []).forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'cosmo-scan';
+        row.textContent = item.serial + (item.collectionId ? ' · ' + item.collectionId : '');
+        scans.appendChild(row);
+      });
+      root.querySelector('[data-scans-empty]').hidden = Boolean(data.hasScans);
+    } catch (_) {
+      if (gate) gate.textContent = '계정 정보를 불러오지 못했습니다.';
+    }
+  });
+})();
+</script>
 </body>
 </html>

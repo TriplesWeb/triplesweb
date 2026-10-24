@@ -7,6 +7,9 @@
   style.textContent = `
     ${protectedSelector} { display: none !important; }
     body.site-admin-enabled [data-admin-only], body.site-admin-enabled .admin-only { display: revert !important; }
+    body.site-admin-enabled .ar-actions[data-admin-only] { display: flex !important; }
+    body.site-admin-enabled a[data-admin-only], body.site-admin-enabled button[data-admin-only] { display: inline-flex !important; }
+    body.site-admin-enabled form[data-admin-only] { display: block !important; }
     #siteAdminControls { position: fixed; left: 1rem; bottom: 1rem; z-index: 10000; }
     #siteAdminButton { border: 1px solid rgba(0,245,212,.5); border-radius: 999px; padding: .7rem 1rem; color: #00f5d4; background: #16181f; box-shadow: 0 8px 30px #0008; font-weight: 700; }
     #siteAdminModal[hidden] { display:none !important; }
@@ -110,6 +113,23 @@
     } catch (_) {
       error.textContent = "로그인 요청에 실패했습니다.";
       error.hidden = false;
+    }
+  });
+
+  document.addEventListener("submit", async (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || !form.hasAttribute("data-admin-fetch")) return;
+    event.preventDefault();
+    const headers = auth.applyAuthHeaders();
+    try {
+      const response = await fetch(form.action, { method: "POST", body: new FormData(form), credentials: "same-origin", headers });
+      if (response.ok) {
+        window.location.href = response.redirected ? response.url : window.location.href;
+        return;
+      }
+      alert(response.status === 403 ? "관리자 로그인 후 다시 시도해 주세요." : "저장하지 못했습니다.");
+    } catch (_) {
+      alert("요청에 실패했습니다.");
     }
   });
 

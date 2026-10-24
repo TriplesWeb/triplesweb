@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 public class CosmoAccountController {
@@ -32,5 +33,12 @@ public class CosmoAccountController {
             model.addAttribute("cosmoAccountError", GravityService.describeApiError(e));
         }
         return "cosmo/account";
+    }
+
+    @GetMapping("/api/cosmo/account")
+    @ResponseBody
+    public java.util.Map<String, Object> accountApi(HttpServletRequest request, HttpSession session) {
+        aboutAdminAuth.requireAdmin(request, session);
+        return accountService.load();
     }
 }

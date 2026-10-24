@@ -1,10 +1,11 @@
 (function () {
     const csrf = document.querySelector('meta[name="_csrf"]');
     const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
-    const headers = {};
+    const headerMap = {};
     if (csrf && csrfHeader && csrf.content && csrfHeader.content) {
-        headers[csrfHeader.content] = csrf.content;
+        headerMap[csrfHeader.content] = csrf.content;
     }
+    const headers = window.AboutAdminAuth ? AboutAdminAuth.applyAuthHeaders(headerMap) : headerMap;
 
     function showEdit(button) {
         const form = document.getElementById('archiveEditForm');
@@ -21,7 +22,7 @@
 
     async function removeArchive(id) {
         if (!confirm('이 자료를 삭제할까요? 삭제하면 되돌릴 수 없습니다.')) return;
-        const res = await fetch('/archive/' + id, { method: 'DELETE', headers });
+        const res = await fetch('/archive/' + id, { method: 'DELETE', headers, credentials: 'same-origin' });
         if (res.ok) {
             location.reload();
             return;
@@ -46,7 +47,7 @@
             const body = new FormData(editForm);
             const file = body.get('file');
             if (file instanceof File && file.size === 0) body.delete('file');
-            const res = await fetch('/archive/' + editForm.dataset.id, { method: 'POST', body, headers });
+            const res = await fetch('/archive/' + editForm.dataset.id, { method: 'POST', body, headers, credentials: 'same-origin' });
             if (res.ok) {
                 location.reload();
                 return;

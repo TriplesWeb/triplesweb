@@ -66,9 +66,9 @@ class ArchiveControllerTest {
 
         mvc.perform(get("/archive/image_archive")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("포토")))
-                .andExpect(content().string(not(containsString("data-archive-edit"))))
-                .andExpect(content().string(not(containsString("data-archive-delete"))))
-                .andExpect(content().string(not(containsString("사진 추가"))));
+                .andExpect(content().string(containsString("data-admin-only")))
+                .andExpect(content().string(containsString("data-archive-edit")))
+                .andExpect(content().string(containsString("사진 추가")));
     }
 
     @Test void videoArchiveUsesSameLiveFields() throws Exception {
@@ -82,7 +82,8 @@ class ArchiveControllerTest {
         mvc.perform(get("/archive/video_archive")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("무대영상")))
                 .andExpect(content().string(containsString("영상 아카이브")))
-                .andExpect(content().string(not(containsString("data-archive-edit"))));
+                .andExpect(content().string(containsString("data-admin-only")))
+                .andExpect(content().string(containsString("영상 추가")));
     }
 
     @Test void adminCanUpdateAndDelete() throws Exception {
