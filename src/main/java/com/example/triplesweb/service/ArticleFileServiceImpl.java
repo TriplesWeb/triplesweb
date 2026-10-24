@@ -8,7 +8,6 @@ import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.repository.ArticleFileRepository;
 import com.example.triplesweb.util.HtmlMediaParser;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -50,7 +49,6 @@ public class ArticleFileServiceImpl implements ArticleFileService {
         if (article.getFiles() != null) article.getFiles().add(af);
     }
 
-    @SneakyThrows
     @Override
     public void attachUploadedFiles(List<String> uploadedFiles, Article article) {
         if (uploadedFiles == null || uploadedFiles.isEmpty() || article == null) return;
@@ -71,9 +69,16 @@ public class ArticleFileServiceImpl implements ArticleFileService {
 
             String savedName = path.getFileName().toString();
             if (!StringUtils.hasText(savedName) || existing.contains(savedName)) continue;
+            if (!Files.exists(path)) continue;
 
-            long size = Files.size(path);
-            String contentType = Files.probeContentType(path);
+            long size;
+            String contentType;
+            try {
+                size = Files.size(path);
+                contentType = Files.probeContentType(path);
+            } catch (IOException e) {
+                continue;
+            }
             if (!StringUtils.hasText(contentType)) {
                 contentType = guessContentTypeByExt(savedName); // 확장자 기반 fallback
             }
@@ -88,7 +93,7 @@ public class ArticleFileServiceImpl implements ArticleFileService {
             SavedMeta meta = SavedMeta.builder()
                     .originalName(originalName)
                     .savedName(savedName)
-                    .url("/uploads/" + relative)
+                    .url("/uploads/" + relative.replace("\\", "/"))
                     .size(size)
                     .fileType(contentType)
                     .mediaType(mt)
@@ -135,6 +140,7 @@ public class ArticleFileServiceImpl implements ArticleFileService {
             String fileName = path.getFileName().toString();
 
             if (!StringUtils.hasText(fileName) || existing.contains(fileName)) continue;
+            if (!Files.exists(path)) continue;
 
             String originalName = fileStorageService.readOriginalName(url);
             if (!StringUtils.hasText(originalName)) originalName = fileName;
@@ -145,7 +151,7 @@ public class ArticleFileServiceImpl implements ArticleFileService {
                 size = Files.size(path);
                 contentType = Files.probeContentType(path);
             } catch (IOException e) {
-                throw new RuntimeException("파일 메타 추출 실패: " + url, e);
+                continue;
             }
             if (!StringUtils.hasText(contentType)) contentType = guessContentTypeByExt(fileName);
 
@@ -156,7 +162,7 @@ public class ArticleFileServiceImpl implements ArticleFileService {
             SavedMeta meta = SavedMeta.builder()
                     .originalName(originalName)
                     .savedName(fileName)
-                    .url("/uploads/" + relative)
+                    .url("/uploads/" + relative.replace("\\", "/"))
                     .size(size)
                     .fileType(contentType)
                     .mediaType(mt)

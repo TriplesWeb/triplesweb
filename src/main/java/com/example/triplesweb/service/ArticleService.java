@@ -11,6 +11,7 @@ import java.util.List;
  */
 public interface ArticleService {
     Article create(Article article);
+    Article update(Article article);
     Article show(Long id);
     List<Article> findRecentByCategory(String category, int limit);
     List<Article> searchByCategory(String category, String type, String keyword, int limit);
@@ -18,9 +19,9 @@ public interface ArticleService {
     Article delete(Long id);
     /** 사용자별 이력 없음 — 항상 false */
     boolean isLikedByUser(Long articleId, String userId);
-    /** likesCount +1 (토글 아님) */
+    /** likesCount +1 (토글 아님). 성공 시 true */
     boolean toggleLike(Long articleId, String userId);
 
     Article showWithFiles(Long id);
-    List<Article> findPopularArticles(String free, int limit);
+    List<Article> findPopularArticles(String category, int limit);
 }

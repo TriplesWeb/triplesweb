@@ -29,6 +29,14 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
+    public Article update(Article article) {
+        if (article == null || article.getId() == null) {
+            throw new IllegalArgumentException("수정할 게시글이 없습니다.");
+        }
+        return articleRepository.save(article);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public Article showWithFiles(Long id) {
         return articleRepository.findByIdWithFiles(id).orElse(null);

@@ -11,7 +11,7 @@ import com.example.triplesweb.service.ArticleObjektService;
 import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.CommentService;
 import com.example.triplesweb.service.DateTimeFormatService;
-import jakarta.servlet.http.HttpSession;
+import com.example.triplesweb.util.ArticleHtmlCleaner;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -20,7 +20,6 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -84,7 +83,11 @@ public class ArticleController {
                                 @RequestParam(value = "selectedObjektIds", required = false) List<String> selectedObjektIds) throws IOException {
         if (isInvalidCategory(category)) return "redirect:/article/trade";
 
-        if (bindingResult.hasErrors() || form.getTitle() == null || form.getTitle().trim().isEmpty() || form.getContent() == null || form.getContent().trim().isEmpty()) {
+        String cleanedContent = ArticleHtmlCleaner.clean(form.getContent());
+        form.setContent(cleanedContent);
+        if (bindingResult.hasErrors()
+                || form.getTitle() == null || form.getTitle().trim().isEmpty()
+                || cleanedContent == null || cleanedContent.isBlank()) {
             model.addAttribute("category", category);
             model.addAttribute("categoryName", getCategoryName(category));
             model.addAttribute("errorMessage", "제목과 내용을 모두 입력해주세요.");
@@ -94,10 +97,10 @@ public class ArticleController {
         }
 
         Article article = new Article();
-        article.setTitle(form.getTitle());
-        article.setContent(form.getContent());
+        article.setTitle(form.getTitle().trim());
+        article.setContent(cleanedContent);
         article.setCategory(category);
-        article.setUserId("익명"); // 로그인 기능 삭제로 기본 작성자 지정 (또는 폼 입력값 사용)
+        article.setUserId("익명"); // 로그인 기능 삭제로 기본 작성자 지정
 
         // 1) 게시글 생성
         Article savedArticle = articleService.create(article);
@@ -285,7 +288,9 @@ public class ArticleController {
         model.addAttribute("category", category);
         model.addAttribute("commentDtos", commentService.show(id));
         model.addAttribute("categoryName", getCategoryName(category));
-        model.addAttribute("isOwner", true); // 누구나 수정/삭제 가능하도록 허용
+        model.addAttribute("isOwner", true); // 로그인 제거: 누구나 수정/삭제 가능
+        model.addAttribute("isLoggedIn", true);
+        model.addAttribute("userId", "익명");
         model.addAttribute("likeCount", articleService.getLikesCount(id));
         model.addAttribute("liked", false);
 
@@ -369,8 +374,12 @@ public class ArticleController {
         Article article = articleService.showWithFiles(id);
         if (article == null) return "redirect:/article/" + category;
 
+        newarticle.setContent(ArticleHtmlCleaner.clean(newarticle.getContent()));
         String validationError = validateArticle(newarticle);
         if (validationError != null) {
+            // 사용자가 입력한 값을 유지해 재표시
+            article.setTitle(newarticle.getTitle());
+            article.setContent(newarticle.getContent());
             prepareEditModel(article, model, validationError);
             model.addAttribute("category", category);
             model.addAttribute("categoryName", getCategoryName(category));
@@ -378,7 +387,7 @@ public class ArticleController {
             return "article/article_edit";
         }
 
-        article.setTitle(newarticle.getTitle());
+        article.setTitle(newarticle.getTitle().trim());
         article.setContent(newarticle.getContent());
 
         if (deletedFiles != null) {
@@ -403,6 +412,9 @@ public class ArticleController {
         if ("trade".equals(category) || "sell".equals(category)) {
             articleObjektService.replaceSelected(article, selectedObjektIds);
         }
+
+        // showWithFiles는 readOnly라 본문 변경이 자동 반영되지 않음 → 명시 저장
+        articleService.update(article);
 
         return "redirect:/article/" + category + "/" + id;
     }

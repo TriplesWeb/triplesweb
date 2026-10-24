@@ -139,9 +139,10 @@
 
 {{>layout/header}}
 
-<!-- CSRF 메타 데이터 -->
-<meta name="_csrf" content="{{_csrf.token}}">
-<meta name="_csrf_header" content="{{_csrf.headerName}}">
+{{#_csrf}}
+<meta name="_csrf" content="{{token}}">
+<meta name="_csrf_header" content="{{headerName}}">
+{{/_csrf}}
 
 <div id="editorRoot" data-category="{{article.category}}"></div>
 
@@ -223,21 +224,29 @@
 {{>layout/footer}}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/article-content.js"></script>
 <script>
     /* -------------------- helpers -------------------- */
     function savedFromUrl(u) {
         if (!u) return null;
         try {
             const s = u.replace(/^"(.*)"$/, '$1');
+            const relative = window.ArticleContent?.toRelativeUploadUrl(s) || s;
+            if (relative.startsWith('/uploads/')) return relative.substring('/uploads/'.length);
             const url = s.startsWith('http') ? s : new URL(s, location.origin).href;
             const i = url.indexOf('/uploads/');
             return i >= 0 ? url.substring(i + '/uploads/'.length) : null;
         } catch { return null; }
     }
-    function makeAbsoluteUrl(url) {
+    function toUploadsUrl(url) {
         let u = (url || '').trim().replace(/^"(.*)"$/, '$1');
-        if (!u.startsWith('/')) u = '/' + u;
-        return new URL(u, location.origin).href;
+        if (/^https?:\/\//i.test(u)) {
+            const i = u.indexOf('/uploads/');
+            return i >= 0 ? u.substring(i) : u;
+        }
+        if (u.startsWith('/uploads/')) return u;
+        if (u.startsWith('/')) return u;
+        return '/uploads/' + u.replace(/^\/+/, '');
     }
     function isVideoType(mimeOrUrl) {
         if (!mimeOrUrl) return false;
@@ -378,7 +387,8 @@
         });
 
         window.beforeSubmit = function(form) {
-            hiddenContent.value = contentDiv.innerHTML.trim();
+            const cleaned = window.ArticleContent?.cleanEditorHtml(contentDiv.innerHTML) || contentDiv.innerHTML.trim();
+            hiddenContent.value = cleaned;
 
             const title = form.querySelector('input[name="title"]')?.value?.trim() || '';
             if (!title) { alert('제목을 입력해주세요.'); return false; }
@@ -497,8 +507,8 @@
         }
 
         function insertMedia(url, mimeOrType) {
-            const absUrl = makeAbsoluteUrl(url);
-            const saved = savedFromUrl(absUrl) || (absUrl.split('/uploads/')[1] || '');
+            const mediaUrl = toUploadsUrl(url);
+            const saved = savedFromUrl(mediaUrl) || (mediaUrl.split('/uploads/')[1] || '');
 
             syncingPreview = true;
             try {
@@ -506,17 +516,17 @@
                 wrapper.className = 'content-media';
 
                 let media;
-                const treatAsVideo = isVideoType(mimeOrType || absUrl);
+                const treatAsVideo = isVideoType(mimeOrType || mediaUrl);
                 if (treatAsVideo) {
                     media = document.createElement('video');
                     media.controls = true;
                     const src = document.createElement('source');
-                    src.src = absUrl;
+                    src.src = mediaUrl;
                     src.type = (typeof mimeOrType === 'string' && mimeOrType.includes('/')) ? mimeOrType : '';
                     media.appendChild(src);
                 } else {
                     media = document.createElement('img');
-                    media.src = absUrl;
+                    media.src = mediaUrl;
                 }
                 media.dataset.savedName = saved;
                 wrapper.appendChild(media);
