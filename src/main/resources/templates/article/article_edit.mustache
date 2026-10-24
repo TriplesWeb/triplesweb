@@ -257,11 +257,24 @@
         const fileInput     = document.getElementById('fileInput');
         const previewArea   = document.getElementById('previewArea');
 
-        const fileIdMap = {
-            {{#files}}
-                "{{savedName}}": {{id}},
-            {{/files}}
-        };
+        // savedName(UUID.ext)와 상대경로(images/.../UUID.ext) 둘 다로 id를 찾을 수 있게 한다.
+        const fileIdMap = {};
+        {{#files}}
+        fileIdMap["{{savedName}}"] = {{id}};
+        {{/files}}
+        function fileBaseName(pathLike) {
+            if (!pathLike) return '';
+            const cleaned = String(pathLike).split('?')[0].split('#')[0];
+            const parts = cleaned.split('/');
+            return parts[parts.length - 1] || cleaned;
+        }
+        function resolveFileId(savedOrPath) {
+            if (!savedOrPath) return null;
+            if (fileIdMap[savedOrPath] != null) return String(fileIdMap[savedOrPath]);
+            const base = fileBaseName(savedOrPath);
+            if (base && fileIdMap[base] != null) return String(fileIdMap[base]);
+            return null;
+        }
 
         const _csrf  = document.querySelector('meta[name="_csrf"]')?.content;
         const _ch    = document.querySelector('meta[name="_csrf_header"]')?.content;
@@ -317,8 +330,8 @@
                 const src = media?.src || media?.querySelector?.('source')?.src;
                 saved = savedFromUrl(src);
             }
-            if (!fileId && saved && fileIdMap[saved]) {
-                fileId = String(fileIdMap[saved]);
+            if (!fileId && saved) {
+                fileId = resolveFileId(saved);
             }
 
             removeMediaEverywhere(saved);
@@ -343,7 +356,10 @@
                 try {
                     const fd = new FormData(); fd.append('file', f);
                     const res = await fetch(UPLOAD_ENDPOINT, { method:'POST', body: fd, headers: buildHeaders() });
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    if (!res.ok) {
+                        const txt = await res.text().catch(() => String(res.status));
+                        throw new Error(`HTTP ${res.status} - ${txt.substring(0, 200)}`);
+                    }
                     const ct = res.headers.get('content-type') || '';
                     const payload = ct.includes('application/json') ? await res.json() : { url: await res.text() };
                     const url = payload.url || payload.path || payload.location || payload.href;
@@ -403,10 +419,10 @@
                     wrapper.appendChild(btn);
                 }
                 el.dataset.savedName = saved;
-                const id = fileIdMap[saved];
+                const id = resolveFileId(saved);
                 if (id) {
-                    el.dataset.fileId = String(id);
-                    wrapper.querySelector('.remove-btn').dataset.fileId = String(id);
+                    el.dataset.fileId = id;
+                    wrapper.querySelector('.remove-btn').dataset.fileId = id;
                 } else {
                     wrapper.querySelector('.remove-btn').dataset.savedName = saved;
                 }
