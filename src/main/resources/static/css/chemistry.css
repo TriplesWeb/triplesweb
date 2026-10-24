@@ -372,6 +372,105 @@ html[lang="en"] .chem-member-name {
 .chem-trio-card-label.chem-tone-recent { color: #f9a8d4; }
 .chem-trio-card-label.chem-tone-fan { color: #7dd3fc; }
 
+.chem-trio-selected-line {
+    margin: -0.25rem 0 0.15rem;
+    font-size: 0.92rem;
+    font-weight: 650;
+    color: #b9cac4;
+    text-align: center;
+    line-height: 1.45;
+}
+
+.chem-trio-card-grid--primary {
+    grid-template-columns: minmax(16rem, 28rem);
+    justify-content: center;
+}
+
+.chem-trio-plus-zone {
+    appearance: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    width: 100%;
+    min-height: 10.5rem;
+    margin: 0;
+    padding: 1.4rem 1.2rem;
+    border-radius: 1rem;
+    border: 2px dashed rgba(0, 245, 212, 0.55);
+    background:
+        radial-gradient(circle at 50% 35%, rgba(0, 245, 212, 0.12), transparent 55%),
+        #12141a;
+    color: #00f5d4;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.chem-trio-plus-zone:hover {
+    border-color: rgba(0, 245, 212, 0.9);
+    background:
+        radial-gradient(circle at 50% 35%, rgba(0, 245, 212, 0.18), transparent 58%),
+        #151821;
+    transform: translateY(-1px);
+}
+
+.chem-trio-plus-mark {
+    font-size: 3.4rem;
+    font-weight: 300;
+    line-height: 1;
+    color: #00f5d4;
+}
+
+.chem-trio-plus-caption {
+    font-size: 1rem;
+    font-weight: 750;
+    color: #d7ddd9;
+}
+
+.chem-trio-card--group {
+    padding: 0;
+    overflow: hidden;
+}
+
+.chem-trio-card-main {
+    appearance: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    width: 100%;
+    margin: 0;
+    padding: 1.15rem 1.15rem 0.85rem;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.chem-trio-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    padding: 0 0.9rem 0.9rem;
+}
+
+.chem-trio-edit-name {
+    appearance: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 0.55rem;
+    border: 1px solid rgba(0, 245, 212, 0.45);
+    background: rgba(0, 245, 212, 0.1);
+    color: #00f5d4;
+    font-size: 0.82rem;
+    font-weight: 750;
+    cursor: pointer;
+}
+
+.chem-trio-edit-name:hover {
+    background: rgba(0, 245, 212, 0.18);
+}
+
 .chem-trio-add {
     appearance: none;
     display: inline-flex;

@@ -1416,6 +1416,13 @@
       modal.classList.add("flex");
       document.body.style.overflow = "hidden";
     }
+    // 추가/수정 모두 케미명부터 입력하도록 포커스
+    if (labelKoEl) {
+      requestAnimationFrame(() => {
+        labelKoEl.focus();
+        labelKoEl.select();
+      });
+    }
   }
 
   function openChemistryGroup(group) {
@@ -2097,30 +2104,25 @@
       '<p class="chem-trio-section-title">' +
       escapeHtml(IS_EN ? "3+ chemistry" : "3인 이상 케미") +
       "</p>";
+    html +=
+      '<p class="chem-trio-selected-line">' +
+      escapeHtml(formatGroupMembers(names)) +
+      "</p>";
 
-    if (groups.length) {
-      html += '<div class="chem-trio-card-grid">';
-      groups.forEach((group) => {
-        const toneCls = toneClass(group.labelTone);
-        const displayLabel = IS_EN
-          ? String(group.labelEn || "").trim() || group.label || ""
-          : group.label || "";
-        html +=
-          '<button type="button" class="chem-trio-card chem-trio-card--group" data-group-id="' +
-          escapeHtml(String(group.id || "")) +
-          '">' +
-          '<span class="chem-trio-card-pair">' +
-          escapeHtml(formatGroupMembers(group.members)) +
-          "</span>" +
-          '<span class="chem-trio-card-label' +
-          (toneCls ? " " + toneCls : "") +
-          '">' +
-          escapeHtml(displayLabel) +
-          "</span>" +
-          "</button>";
-      });
-      html += "</div>";
-    } else {
+    html += '<div class="chem-trio-card-grid chem-trio-card-grid--primary">';
+
+    // 관리자: 큰 + 추가 구역 (3명 이상 선택 시 항상)
+    if (isAdmin && !groups.length) {
+      html +=
+        '<button type="button" class="chem-trio-plus-zone" id="chemTrioAddBtn" aria-label="' +
+        escapeHtml(IS_EN ? "Add 3+ chemistry" : "3인 이상 케미 추가") +
+        '">' +
+        '<span class="chem-trio-plus-mark" aria-hidden="true">+</span>' +
+        '<span class="chem-trio-plus-caption">' +
+        escapeHtml(IS_EN ? "Add chemistry for this selection" : "이 조합으로 케미 추가") +
+        "</span>" +
+        "</button>";
+    } else if (!isAdmin && !groups.length) {
       html +=
         '<p class="chem-trio-empty">' +
         escapeHtml(
@@ -2131,21 +2133,43 @@
         "</p>";
     }
 
-    if (isAdmin) {
+    groups.forEach((group) => {
+      const toneCls = toneClass(group.labelTone);
+      const displayLabel = IS_EN
+        ? String(group.labelEn || "").trim() || group.label || ""
+        : group.label || "";
       html +=
-        '<button type="button" class="chem-trio-add" id="chemTrioAddBtn">' +
-        escapeHtml(
-          groups.length
-            ? IS_EN
-              ? "Edit / add another"
-              : "이 조합 케미 수정·추가"
-            : IS_EN
-              ? "+ Add 3+ chemistry"
-              : "+ 3인 이상 케미 추가"
-        ) +
+        '<article class="chem-trio-card chem-trio-card--group" data-group-id="' +
+        escapeHtml(String(group.id || "")) +
+        '">' +
+        '<button type="button" class="chem-trio-card-main" data-group-open="' +
+        escapeHtml(String(group.id || "")) +
+        '">' +
+        '<span class="chem-trio-card-pair">' +
+        escapeHtml(formatGroupMembers(group.members)) +
+        "</span>" +
+        '<span class="chem-trio-card-label' +
+        (toneCls ? " " + toneCls : "") +
+        '">' +
+        escapeHtml(displayLabel) +
+        "</span>" +
         "</button>";
-    }
-    html += "</section>";
+      if (isAdmin) {
+        html +=
+          '<div class="chem-trio-card-actions">' +
+          '<button type="button" class="chem-trio-edit-name" data-group-edit="' +
+          escapeHtml(String(group.id || "")) +
+          '">' +
+          escapeHtml(IS_EN ? "Edit name" : "케미명 수정") +
+          "</button>" +
+          "</div>";
+      }
+      html += "</article>";
+    });
+
+    // 이미 그룹이 있어도 관리자는 같은 조합을 수정할 큰 + 대신 보조 추가 안 함(유니크 조합).
+    // 대신 상단 카드에서 케미명 수정.
+    html += "</div></section>";
 
     if (pairs.length) {
       html += '<section class="chem-trio-section">';
@@ -2183,11 +2207,35 @@
 
     box.innerHTML = html;
 
-    box.querySelectorAll(".chem-trio-card--group").forEach((el) => {
+    function openGroupEditor(group) {
+      if (!group) return;
+      openEditFormGroup(
+        group.members && group.members.length ? group.members : names,
+        group.label || "",
+        group.labelEn || "",
+        group.description || "",
+        group.descriptionEn || "",
+        group.imageUrl || "",
+        group.links || {},
+        group.labelTone || "NONE"
+      );
+    }
+
+    box.querySelectorAll("[data-group-open]").forEach((el) => {
       el.addEventListener("click", () => {
-        const id = Number(el.dataset.groupId);
+        const id = Number(el.getAttribute("data-group-open"));
         const group = (groupEntries || []).find((g) => Number(g.id) === id);
         if (group) openChemistryGroup(group);
+      });
+    });
+
+    box.querySelectorAll("[data-group-edit]").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = Number(el.getAttribute("data-group-edit"));
+        const group = (groupEntries || []).find((g) => Number(g.id) === id);
+        openGroupEditor(group || { members: names });
       });
     });
 
@@ -2215,17 +2263,7 @@
     const addBtn = document.getElementById("chemTrioAddBtn");
     if (addBtn) {
       addBtn.addEventListener("click", () => {
-        const existing = findExactGroups(names)[0];
-        openEditFormGroup(
-          names,
-          existing ? existing.label || "" : "",
-          existing ? existing.labelEn || "" : "",
-          existing ? existing.description || "" : "",
-          existing ? existing.descriptionEn || "" : "",
-          existing ? existing.imageUrl || "" : "",
-          existing ? existing.links || {} : {},
-          existing ? existing.labelTone || "NONE" : "NONE"
-        );
+        openEditFormGroup(names, "", "", "", "", "", {}, "NONE");
       });
     }
   }
