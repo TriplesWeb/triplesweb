@@ -31,6 +31,15 @@ public class ArticleObjektService {
             repository.save(linked);
         }
     }
+
+    /** 기존 연결을 지우고 선택 목록으로 다시 저장한다. 빈 목록이면 연결만 제거한다. */
+    @Transactional
+    public void replaceSelected(Article article, List<String> selectedKeys) {
+        if (article == null || article.getId() == null) return;
+        deleteForArticle(article.getId());
+        attachSelected(article, selectedKeys);
+    }
+
     @Transactional(readOnly = true) public List<ArticleObjekt> findForArticle(Long articleId) { return repository.findByArticle_IdOrderByIdAsc(articleId); }
     @Transactional public void deleteForArticle(Long articleId) { repository.deleteByArticle_Id(articleId); }
     private static String value(Map<String,Object> map, String key) { Object v=map.get(key); return v==null ? "" : v.toString(); }

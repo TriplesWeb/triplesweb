@@ -24,8 +24,14 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
@@ -83,7 +89,7 @@ public class ArticleController {
             model.addAttribute("categoryName", getCategoryName(category));
             model.addAttribute("errorMessage", "제목과 내용을 모두 입력해주세요.");
             model.addAttribute("articleForm", form);
-            addObjektOptions(model, category);
+            addObjektOptions(model, category, selectedObjektIds == null ? Set.of() : Set.copyOf(selectedObjektIds));
             return "article/article_new";
         }
 
@@ -118,10 +124,60 @@ public class ArticleController {
     }
 
     private void addObjektOptions(Model model, String category) {
-        if ("trade".equals(category) || "sell".equals(category)) {
-            model.addAttribute("showObjektPicker", true);
-            model.addAttribute("objektOptions", objektService.findCollections("triples"));
+        addObjektOptions(model, category, Set.of());
+    }
+
+    private void addObjektOptions(Model model, String category, Set<String> selectedKeys) {
+        if (!("trade".equals(category) || "sell".equals(category))) {
+            return;
         }
+        Set<String> selected = selectedKeys == null ? Set.of() : selectedKeys.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(v -> !v.isEmpty())
+                .collect(Collectors.toSet());
+
+        List<Map<String, Object>> options = new ArrayList<>();
+        Set<String> members = new LinkedHashSet<>();
+        Set<String> seasons = new LinkedHashSet<>();
+        Set<String> classes = new LinkedHashSet<>();
+
+        for (Map<String, Object> item : objektService.findCollections("triples")) {
+            Map<String, Object> copy = new LinkedHashMap<>(item);
+            String id = stringValue(item.get("id"));
+            String collectionId = stringValue(item.get("collectionId"));
+            String slug = stringValue(item.get("slug"));
+            boolean isSelected = selected.contains(id)
+                    || selected.contains(collectionId)
+                    || selected.contains(slug);
+            copy.put("selected", isSelected);
+            options.add(copy);
+
+            String member = stringValue(item.get("member"));
+            String season = stringValue(item.get("season"));
+            String klass = stringValue(item.get("class"));
+            if (!member.isBlank()) members.add(member);
+            if (!season.isBlank()) seasons.add(season);
+            if (!klass.isBlank()) classes.add(klass);
+        }
+
+        options.sort(Comparator
+                .comparing((Map<String, Object> o) -> !Boolean.TRUE.equals(o.get("selected")))
+                .thenComparing(o -> stringValue(o.get("member")), String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(o -> stringValue(o.get("collectionId")), String.CASE_INSENSITIVE_ORDER));
+
+        model.addAttribute("showObjektPicker", true);
+        model.addAttribute("objektOptions", options);
+        model.addAttribute("objektMemberOptions", members.stream()
+                .sorted(String.CASE_INSENSITIVE_ORDER).toList());
+        model.addAttribute("objektSeasonOptions", seasons.stream()
+                .sorted(String.CASE_INSENSITIVE_ORDER).toList());
+        model.addAttribute("objektClassOptions", classes.stream()
+                .sorted(String.CASE_INSENSITIVE_ORDER).toList());
+    }
+
+    private static String stringValue(Object value) {
+        return value == null ? "" : value.toString();
     }
 
     private String getCategoryName(String category) {
@@ -276,6 +332,7 @@ public class ArticleController {
         model.addAttribute("article", article);
         model.addAttribute("category", category);
         model.addAttribute("categoryName", getCategoryName(category));
+        addObjektOptionsForArticle(model, category, id);
 
         List<ArticleFileDto> fileDtos = article.getFiles().stream().map(af -> {
             var m = af.getFile();
@@ -305,6 +362,7 @@ public class ArticleController {
                                 @RequestParam(value = "uploadFiles", required = false) List<MultipartFile> files,
                                 @RequestParam(value = "uploadedFiles", required = false) List<String> uploadedFiles,
                                 @RequestParam(value = "deletedFiles", required = false) List<Long> deletedFiles,
+                                @RequestParam(value = "selectedObjektIds", required = false) List<String> selectedObjektIds,
                                 Model model) throws IOException {
         if (isInvalidCategory(category)) return "redirect:/article/trade";
 
@@ -315,6 +373,8 @@ public class ArticleController {
         if (validationError != null) {
             prepareEditModel(article, model, validationError);
             model.addAttribute("category", category);
+            model.addAttribute("categoryName", getCategoryName(category));
+            addObjektOptionsForArticle(model, category, id);
             return "article/article_edit";
         }
 
@@ -340,7 +400,21 @@ public class ArticleController {
 
         articleFileService.extractAndSaveFilesFromContent(article);
 
+        if ("trade".equals(category) || "sell".equals(category)) {
+            articleObjektService.replaceSelected(article, selectedObjektIds);
+        }
+
         return "redirect:/article/" + category + "/" + id;
+    }
+
+    private void addObjektOptionsForArticle(Model model, String category, Long articleId) {
+        Set<String> selected = articleObjektService.findForArticle(articleId).stream()
+                .flatMap(link -> java.util.stream.Stream.of(link.getObjektKey(), link.getCollectionId()))
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(v -> !v.isEmpty())
+                .collect(Collectors.toSet());
+        addObjektOptions(model, category, selected);
     }
 
     /** 삭제 */
