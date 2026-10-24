@@ -36,6 +36,7 @@ public final class MemberPortraitOptions {
         int frame = 1;
         for (Artist artist : ordered) {
             if (artist == null || artist.getName() == null || artist.getName().isBlank()) continue;
+            if (!hasProfileImage(artist)) continue;
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("value", artist.getName());
             row.put("label", englishLabels && artist.getEngName() != null && !artist.getEngName().isBlank()
@@ -64,6 +65,8 @@ public final class MemberPortraitOptions {
         for (String option : memberOptions) {
             if (option == null || option.isBlank()) continue;
             Artist matched = matchArtist(option, artists);
+            // 프로필 사진이 없는 API 멤버 값은 '이미지 업로드 예정' 버튼이 되므로 피커에서 뺀다.
+            if (!hasProfileImage(matched)) continue;
             int frame = matched != null && matched.getArtistId() != null
                     ? matched.getArtistId().intValue()
                     : preferredIndex(option) + 1;
@@ -110,6 +113,15 @@ public final class MemberPortraitOptions {
             }
         }
         return 0;
+    }
+
+    private static boolean hasProfileImage(Artist artist) {
+        if (artist == null) return false;
+        String image = artist.getProfileImage();
+        if (image == null || image.isBlank()) return false;
+        String trimmed = image.trim();
+        return !trimmed.equals(ImageUrls.PLACEHOLDER)
+                && !trimmed.endsWith("/images/image-upload-pending.png");
     }
 
     private static String normalize(String value) {
