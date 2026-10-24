@@ -23,8 +23,17 @@ public final class ContentLinks {
         if (!StringUtils.hasText(raw)) return List.of();
         String trimmed = raw.trim();
         if (!trimmed.startsWith("[")) {
-            // 예전 평문 호환: 한 줄이면 제목만
-            return List.of(Map.of("title", trimmed, "url", ""));
+            // 예전 평문 호환: URL이면 링크로, 아니면 제목만
+            Map<String, String> item = new LinkedHashMap<>();
+            if (trimmed.matches("(?i)^https?://.+")) {
+                item.put("title", trimmed);
+                item.put("url", trimmed);
+                enrichYoutube(item, trimmed);
+            } else {
+                item.put("title", trimmed);
+                item.put("url", "");
+            }
+            return List.of(item);
         }
         try {
             List<Map<String, Object>> rows = MAPPER.readValue(trimmed, new TypeReference<>() {});
@@ -38,6 +47,7 @@ public final class ContentLinks {
                 Map<String, String> item = new LinkedHashMap<>();
                 item.put("title", title);
                 item.put("url", url);
+                enrichYoutube(item, url);
                 out.add(item);
             }
             return out;
@@ -75,6 +85,14 @@ public final class ContentLinks {
 
     public static String normalizeJson(String raw) {
         return toJson(parse(raw));
+    }
+
+    private static void enrichYoutube(Map<String, String> item, String url) {
+        if (item == null || !StringUtils.hasText(url)) return;
+        String youtubeId = YoutubeIdExtractor.extract(url);
+        if (!StringUtils.hasText(youtubeId)) return;
+        item.put("youtubeId", youtubeId);
+        item.put("thumbnail", "https://img.youtube.com/vi/" + youtubeId + "/hqdefault.jpg");
     }
 
     private static String stringVal(Object value) {

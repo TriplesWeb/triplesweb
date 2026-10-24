@@ -48,7 +48,7 @@ public class TriplesController {
 
         // 아티스트 ID별 미디어 목록 조회
         Map<Long, List<MediaDto>> mediaByArtist =
-                mediaService.byArtistMap(8);
+                mediaService.byArtistMap(12);
 
         // 각 아티스트 객체에 미디어 목록 연결
         artistList.forEach(artist ->

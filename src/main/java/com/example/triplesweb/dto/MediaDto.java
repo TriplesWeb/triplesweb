@@ -18,4 +18,9 @@ public class MediaDto {
     private String artistNames;
     @Builder.Default private boolean addFirst = true;
     public String normalizedTab() { return MediaTab.from(tab == null ? "mv" : tab).getKey(); }
+
+    /** 프로필 등 UI 표시용 탭 한글명 */
+    public String getTabLabel() {
+        return MediaTab.from(tab == null ? "mv" : tab).getKor();
+    }
 }

@@ -184,4 +184,9 @@ public class Artist {
     public boolean isHasBroadcastLinks() {
         return !getBroadcastLinks().isEmpty();
     }
+
+    @Transient
+    public boolean isHasMediaContents() {
+        return mediaContents != null && !mediaContents.isEmpty();
+    }
 }
