@@ -50,7 +50,7 @@ cp .env.example .env   # 최초 1회 — DB/API 값 채우기 (.gitignore)
 DB를 서버와 같이 쓰면 **파일도 같이** 보여야 합니다.
 
 - **실시간:** 로컬 `bootRun` 업로드/삭제 시 Tailscale로 서버 `uploads/`에 push (기동 시 서버→로컬 pull). `.env`의 `UPLOAD_SYNC_*` 참고.
-- **참조만:** `local` 프로필은 로컬 `./uploads`에 없으면 `upload.fallback-base-url`(기본 `https://triples.eht3r.cloud`)에서 `/uploads/**`를 가져옵니다. Tailscale/rsync 없이 화면 확인용.
+- **참조만:** 로컬 `./uploads`에 없으면 `upload.fallback-base-url`(기본 `https://triples.eht3r.cloud`)로 **리다이렉트**합니다. 공유 DB를 쓰는 협업자 PC에서도 멤버·유닛 이미지가 보입니다. 서버 Docker는 폴백을 비웁니다.
 - **배포:** `uploads/`를 Actions가 서버로 rsync. `--delete`이지만 `images/`·`videos/`·`files/` 전체는 protect라서 관리자가 올린 앨범·멤버·유닛 커버 등이 배포마다 지워지지 않습니다. 배포 전후 `chown`·`chmod a+rwX`로 권한 충돌을 피합니다.
 
 ```bash
