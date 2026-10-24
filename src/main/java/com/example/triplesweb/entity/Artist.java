@@ -1,6 +1,7 @@
 package com.example.triplesweb.entity;
 
 import com.example.triplesweb.util.ContentLinks;
+import com.example.triplesweb.dto.MediaDto;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -106,6 +107,37 @@ public class Artist {
     /** 출연한 방송 영상 링크 JSON */
     @Column(columnDefinition = "TEXT")
     private String broadcastContent;
+
+    /** 프로필 페이지에서 렌더링할 연결 공식 미디어 목록(영속화하지 않음). */
+    @Transient
+    private List<MediaDto> mediaContents = new ArrayList<>();
+
+    /**
+     * DataInitializer와 기존 호출부를 위한 호환 생성자(미디어 목록은 페이지에서 채운다).
+     * main의 본명·MBTI·싸인 이미지 필드를 포함하며, {@code mediaContents}는 넣지 않는다.
+     */
+    public Artist(Long artistId, String name, String engName, String nationality, String birthDate,
+                  String bornPlace, String birthPlace, String realName, String mbti, String debutDate,
+                  List<UnitMember> affiliatedUnit, String profileImage, String signatureImage,
+                  String color, String soloContent, String broadcastContent) {
+        this.artistId = artistId;
+        this.name = name;
+        this.engName = engName;
+        this.nationality = nationality;
+        this.birthDate = birthDate;
+        this.bornPlace = bornPlace;
+        this.birthPlace = birthPlace;
+        this.realName = realName;
+        this.mbti = mbti;
+        this.debutDate = debutDate;
+        this.affiliatedUnit = affiliatedUnit != null ? affiliatedUnit : new ArrayList<>();
+        this.profileImage = profileImage;
+        this.signatureImage = signatureImage;
+        this.color = color;
+        this.soloContent = soloContent;
+        this.broadcastContent = broadcastContent;
+        this.mediaContents = new ArrayList<>();
+    }
 
     /**
      * 프로필 표시용 소속 유닛. 같은 아티스트가 하위 유닛에도 속하면 상위(예: MSNZ)는 숨긴다.

@@ -65,7 +65,7 @@
                             </video>
                         </div>
                         <div class="p-4 bg-surface-container-high/40 flex-1 flex items-center">
-                            <p class="text-sm font-medium text-on-surface truncate w-full" title="{{title}}">{{title}}</p>
+                            <p class="text-sm font-medium text-on-surface truncate w-full" title="{{title}}">{{title}}</p>{{#artistNames}}<p class="mt-1 text-xs text-primary-container">{{artistNames}}</p>{{/artistNames}}
                         </div>
                     </div>
                 {{/archives}}
@@ -109,6 +109,13 @@
                         <input type="text" class="w-full px-4 py-2.5 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl text-sm text-black placeholder:text-outline/60 focus:outline-none focus:border-primary-container" id="title" name="title" placeholder="영상 제목을 입력하세요" required />
                     </div>
 
+                    <div class="space-y-1.5">
+                        <label class="block font-label-md text-sm text-on-surface-variant font-medium">출연 멤버</label>
+                        <div id="archiveArtistPicker" class="grid max-h-36 grid-cols-3 gap-2 overflow-y-auto rounded-xl border border-outline-variant/40 p-3 sm:grid-cols-4">
+                            {{#artistOptions}}<label class="flex cursor-pointer items-center gap-2 rounded-lg border border-outline-variant/30 px-2 py-2 text-xs hover:border-primary-container"><input type="checkbox" name="artistNames" value="{{name}}"><span>{{name}}</span></label>{{/artistOptions}}
+                        </div>
+                        <div class="flex items-center justify-between text-xs"><span><span id="archiveArtistCount">0</span>명 선택</span><button type="button" id="clearArchiveArtists" class="rounded-lg border border-outline-variant/40 px-3 py-1.5">전체 해제</button></div>
+                    </div>
                     <!-- 파일 -->
                     <div class="space-y-1.5">
                         <label for="file" class="block font-label-md text-sm text-on-surface-variant font-medium">동영상 파일 선택</label>
@@ -131,6 +138,14 @@
 {{>layout/footer}}
 
 <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const picker = document.getElementById('archiveArtistPicker');
+        const count = document.getElementById('archiveArtistCount');
+        const refresh = () => { if (picker && count) count.textContent = String(picker.querySelectorAll('input:checked').length); };
+        picker?.addEventListener('change', refresh);
+        document.getElementById('clearArchiveArtists')?.addEventListener('click', () => { picker?.querySelectorAll('input').forEach(input => input.checked = false); refresh(); });
+        refresh();
+    });
     // 모달 열기
     function showAddModal() {
         const modal = new bootstrap.Modal(document.getElementById('uploadModal'));

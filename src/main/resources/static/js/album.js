@@ -79,12 +79,13 @@
   }
 
   function trackRowsHtml(tracks) {
-    const list = Array.isArray(tracks) && tracks.length ? tracks : [{ trackNum: 1, title: "", duration: "", isTitle: false }];
+    const list = Array.isArray(tracks) && tracks.length ? tracks : [{ trackNum: 1, title: "", duration: "", isTitle: false, melonSongId: "" }];
     return list.map((t, i) => `
       <div class="album-track-row" data-idx="${i}">
         <input type="number" class="track-num" min="1" value="${t.trackNum || i + 1}" title="트랙 번호" aria-label="트랙 번호">
         <input type="text" class="track-title" placeholder="곡 제목" value="${escapeAttr(t.title || "")}" aria-label="곡 제목">
         <input type="text" class="track-duration" placeholder="3:12" value="${escapeAttr(t.duration || "")}" title="재생 시간" aria-label="재생 시간">
+        <input type="text" class="track-melon-id" placeholder="멜론 ID" value="${escapeAttr(t.melonSongId || "")}" title="멜론 곡 ID 또는 곡 상세 URL" aria-label="멜론 곡 ID">
         <label class="track-title-toggle" title="타이틀곡">
           <input type="checkbox" class="track-title-flag" ${t.isTitle ? "checked" : ""}>
           <span>T</span>
@@ -109,7 +110,8 @@
         trackNum: Number(row.querySelector(".track-num")?.value) || out.length + 1,
         title,
         duration: row.querySelector(".track-duration")?.value?.trim() || "",
-        isTitle: Boolean(row.querySelector(".track-title-flag")?.checked)
+        isTitle: Boolean(row.querySelector(".track-title-flag")?.checked),
+        melonSongId: row.querySelector(".track-melon-id")?.value?.trim() || ""
       });
     });
     return out;

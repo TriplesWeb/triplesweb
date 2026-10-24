@@ -355,10 +355,75 @@
         }
 
         .schedule-detail-item {
-            padding: .9rem;
-            border: 1px solid rgba(255, 255, 255, .07);
+            display: flex;
+            flex-direction: column;
+            gap: .55rem;
+            padding: 1rem 1.05rem;
+            border: 1px solid rgba(0, 245, 212, .18);
+            border-radius: 1rem;
+            background: linear-gradient(160deg, rgba(20, 24, 32, .95), rgba(10, 12, 16, .88));
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+            transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+        }
+
+        .schedule-detail-item:hover {
+            border-color: rgba(0, 245, 212, .42);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255, 255, 255, .05);
+            transform: translateY(-1px);
+        }
+
+        .schedule-detail-item .detail-meta {
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            color: var(--schedule-muted);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .72rem;
+        }
+
+        .schedule-detail-item .detail-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: .15rem;
+        }
+
+        .schedule-view-card {
+            border: 1px solid rgba(0, 245, 212, .2);
+            border-radius: 1rem;
+            background: linear-gradient(165deg, rgba(18, 22, 30, .98), rgba(8, 10, 14, .92));
+            padding: 1.1rem 1.2rem;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+        }
+
+        .schedule-view-label {
+            display: block;
+            margin-bottom: .35rem;
+            color: var(--schedule-muted);
+            font-size: .72rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        .schedule-view-dates {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: .75rem;
+        }
+
+        .schedule-view-date {
+            border: 1px solid rgba(58, 74, 70, .55);
             border-radius: .85rem;
-            background: rgba(0, 0, 0, .25);
+            background: rgba(0, 0, 0, .28);
+            padding: .85rem .95rem;
+        }
+
+        .schedule-view-date strong {
+            display: block;
+            margin-top: .2rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .92rem;
+            font-weight: 700;
         }
 
         @media (max-width: 767px) {
@@ -485,18 +550,18 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
                 </div>
                 <div class="modal-body space-y-3 p-4">
-                    <div class="rounded-xl border border-white/5 bg-black/40 p-3.5">
-                        <span class="mb-1 block text-xs text-[#b9cac4]">일정 제목</span>
-                        <h3 id="modalScheduleTitle" class="text-base font-bold text-white"></h3>
+                    <div class="schedule-view-card">
+                        <span class="schedule-view-label">일정 제목</span>
+                        <h3 id="modalScheduleTitle" class="text-lg font-bold leading-snug text-white"></h3>
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="rounded-xl border border-white/5 bg-black/30 p-3">
-                            <span class="block text-[11px] text-[#b9cac4]">시작 일자</span>
-                            <strong id="modalScheduleStart" class="font-mono text-sm text-brand"></strong>
+                    <div class="schedule-view-dates">
+                        <div class="schedule-view-date">
+                            <span class="schedule-view-label">시작</span>
+                            <strong id="modalScheduleStart" class="text-brand"></strong>
                         </div>
-                        <div class="rounded-xl border border-white/5 bg-black/30 p-3">
-                            <span class="block text-[11px] text-[#b9cac4]">종료 일자</span>
-                            <strong id="modalScheduleEnd" class="font-mono text-sm text-white"></strong>
+                        <div class="schedule-view-date">
+                            <span class="schedule-view-label">종료</span>
+                            <strong id="modalScheduleEnd" class="text-white"></strong>
                         </div>
                     </div>
                 </div>
@@ -544,6 +609,12 @@
                             <label for="endInput" class="form-label">종료 날짜 (선택)</label>
                             <input type="date" class="form-control font-mono" id="endInput" name="end">
                         </div>
+                        <div>
+                            <label for="addArtistNames" class="form-label">출연 멤버</label>
+                            <select id="addArtistNames" class="form-control" name="artistNames" multiple size="5">
+                                {{#artistOptions}}<option value="{{name}}">{{name}}</option>{{/artistOptions}}
+                            </select>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn-custom-secondary" data-bs-dismiss="modal">취소</button>
@@ -579,6 +650,12 @@
                         <div>
                             <label for="editEndInput" class="form-label">종료 날짜 (선택)</label>
                             <input type="date" class="form-control font-mono" id="editEndInput" name="end">
+                        </div>
+                        <div>
+                            <label for="editArtistNames" class="form-label">출연 멤버</label>
+                            <select id="editArtistNames" class="form-control" name="artistNames" multiple size="5">
+                                {{#artistOptions}}<option value="{{name}}">{{name}}</option>{{/artistOptions}}
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -684,23 +761,28 @@
 
                 dayEvents.forEach(event => {
                     const item = document.createElement('article');
-                    item.className = 'schedule-detail-item space-y-2';
+                    item.className = 'schedule-detail-item';
 
                     const title = document.createElement('h3');
-                    title.className = 'text-sm font-bold text-white';
+                    title.className = 'text-sm font-bold leading-snug text-white';
                     title.textContent = event.title || '제목 없는 일정';
 
                     const dates = document.createElement('p');
-                    dates.className = 'text-xs font-mono text-[#b9cac4]';
-                    dates.textContent = `${formatDate(event.startStr)}${getRawEnd(event) ? ' ~ ' + formatDate(getRawEnd(event)) : ''}`;
+                    dates.className = 'detail-meta';
+                    const endText = getRawEnd(event) ? ` ~ ${formatDate(getRawEnd(event))}` : '';
+                    dates.innerHTML = `<span class="material-symbols-outlined text-[14px] text-brand">calendar_today</span><span>${formatDate(event.startStr)}${endText}</span>`;
+
+                    const actions = document.createElement('div');
+                    actions.className = 'detail-actions';
 
                     const openButton = document.createElement('button');
                     openButton.type = 'button';
                     openButton.className = 'btn-custom-secondary !px-3 !py-1.5 text-xs';
                     openButton.textContent = '상세 보기';
                     openButton.addEventListener('click', () => openEventDetails(event));
+                    actions.appendChild(openButton);
 
-                    item.append(title, dates, openButton);
+                    item.append(title, dates, actions);
                     detailElement.appendChild(item);
                 });
             }
@@ -709,7 +791,8 @@
                 selectedEvent = event;
                 document.getElementById('modalScheduleTitle').textContent = event.title || '';
                 document.getElementById('modalScheduleStart').textContent = formatDate(event.startStr);
-                document.getElementById('modalScheduleEnd').textContent = formatDate(getRawEnd(event));
+                const endValue = formatDate(getRawEnd(event));
+                document.getElementById('modalScheduleEnd').textContent = endValue === '-' ? '하루 일정' : endValue;
 
                 const deleteForm = document.getElementById('deleteForm');
                 if (deleteForm) deleteForm.action = `/delete/${encodeURIComponent(event.id)}`;
@@ -722,6 +805,8 @@
                         document.getElementById('editTitleInput').value = selectedEvent.title || '';
                         document.getElementById('editStartInput').value = String(selectedEvent.startStr || '').substring(0, 10);
                         document.getElementById('editEndInput').value = String(getRawEnd(selectedEvent)).substring(0, 10);
+                        const selectedArtists = String(selectedEvent.extendedProps.artistNames || '').split(',').map(v => v.trim()).filter(Boolean);
+                        document.querySelectorAll('#editArtistNames option').forEach(option => option.selected = selectedArtists.includes(option.value));
 
                         bootstrap.Modal.getOrCreateInstance(viewModalElement).hide();
                         bootstrap.Modal.getOrCreateInstance(editModalElement).show();
@@ -764,6 +849,14 @@
             });
 
             calendar.render();
+            const focusId = new URLSearchParams(window.location.search).get('focus');
+            if (focusId) {
+                const focused = calendar.getEventById(focusId);
+                if (focused) {
+                    renderSelectedDate(focused.startStr, focused.start);
+                    openEventDetails(focused);
+                }
+            }
 
             if (todayButton) {
                 todayButton.addEventListener('click', function () {
@@ -792,6 +885,8 @@
                     }
 
                     const body = new URLSearchParams({ title, start, end });
+                    document.querySelectorAll('#addArtistNames option:checked').forEach(option => body.append('artistNames', option.value));
+                    const artistNames = [...document.querySelectorAll('#addArtistNames option:checked')].map(option => option.value).join(',');
                     try {
                         const response = await fetch('/schedule/add', {
                             method: 'POST',
@@ -808,7 +903,7 @@
                             title,
                             start,
                             end: end ? addOneDay(end) : null,
-                            extendedProps: { rawEnd: end }
+                            extendedProps: { rawEnd: end, artistNames }
                         });
 
                         bootstrap.Modal.getOrCreateInstance(addModalElement).hide();
@@ -841,6 +936,8 @@
                     }
 
                     const body = new URLSearchParams({ title, startDate: start, endDate: end });
+                    document.querySelectorAll('#editArtistNames option:checked').forEach(option => body.append('artistNames', option.value));
+                    const artistNames = [...document.querySelectorAll('#editArtistNames option:checked')].map(option => option.value).join(',');
                     try {
                         const response = await fetch(`/edit/${encodeURIComponent(id)}`, {
                             method: 'POST',
@@ -859,6 +956,7 @@
                             eventToUpdate.setStart(start);
                             eventToUpdate.setEnd(end ? addOneDay(end) : null);
                             eventToUpdate.setExtendedProp('rawEnd', end);
+                            eventToUpdate.setExtendedProp('artistNames', artistNames);
                         }
 
                         bootstrap.Modal.getOrCreateInstance(editModalElement).hide();

@@ -7,6 +7,8 @@ import com.example.triplesweb.dto.ArticleViewMapper;
 import com.example.triplesweb.entity.Article;
 import com.example.triplesweb.service.ArticleFileServiceImpl;
 import com.example.triplesweb.service.ArticleService;
+import com.example.triplesweb.service.ArticleObjektService;
+import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.CommentService;
 import com.example.triplesweb.service.DateTimeFormatService;
 import jakarta.servlet.http.HttpSession;
@@ -22,8 +24,14 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
@@ -34,6 +42,8 @@ public class ArticleController {
     private final CommentService commentService;
     private final ArticleFileServiceImpl articleFileService;
     private final DateTimeFormatService dateTimeFormatService;
+    private final ArticleObjektService articleObjektService;
+    private final ObjektService objektService;
 
     private static final Set<String> ALLOWED_CATEGORIES = Set.of(
             "free", "chat", "trade", "sell", "info", "notice"
@@ -59,6 +69,7 @@ public class ArticleController {
         model.addAttribute("category", category);
         model.addAttribute("categoryName", getCategoryName(category));
         model.addAttribute("articleForm", new ArticleForm());
+        addObjektOptions(model, category);
         return "article/article_new";
     }
 
@@ -69,7 +80,8 @@ public class ArticleController {
                                 BindingResult bindingResult,
                                 Model model,
                                 @RequestParam(value = "uploadFiles", required = false) List<MultipartFile> files,
-                                @RequestParam(value = "uploadedFiles", required = false) List<String> uploadedFiles) throws IOException {
+                                @RequestParam(value = "uploadedFiles", required = false) List<String> uploadedFiles,
+                                @RequestParam(value = "selectedObjektIds", required = false) List<String> selectedObjektIds) throws IOException {
         if (isInvalidCategory(category)) return "redirect:/article/trade";
 
         if (bindingResult.hasErrors() || form.getTitle() == null || form.getTitle().trim().isEmpty() || form.getContent() == null || form.getContent().trim().isEmpty()) {
@@ -77,6 +89,7 @@ public class ArticleController {
             model.addAttribute("categoryName", getCategoryName(category));
             model.addAttribute("errorMessage", "제목과 내용을 모두 입력해주세요.");
             model.addAttribute("articleForm", form);
+            addObjektOptions(model, category, selectedObjektIds == null ? Set.of() : Set.copyOf(selectedObjektIds));
             return "article/article_new";
         }
 
@@ -88,6 +101,9 @@ public class ArticleController {
 
         // 1) 게시글 생성
         Article savedArticle = articleService.create(article);
+        if ("trade".equals(category) || "sell".equals(category)) {
+            articleObjektService.attachSelected(savedArticle, selectedObjektIds);
+        }
 
         // 2) 파일 저장 처리
         if (files != null) {
@@ -107,6 +123,63 @@ public class ArticleController {
         return "redirect:/article/" + category + "/" + savedArticle.getId();
     }
 
+    private void addObjektOptions(Model model, String category) {
+        addObjektOptions(model, category, Set.of());
+    }
+
+    private void addObjektOptions(Model model, String category, Set<String> selectedKeys) {
+        if (!("trade".equals(category) || "sell".equals(category))) {
+            return;
+        }
+        Set<String> selected = selectedKeys == null ? Set.of() : selectedKeys.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(v -> !v.isEmpty())
+                .collect(Collectors.toSet());
+
+        List<Map<String, Object>> options = new ArrayList<>();
+        Set<String> members = new LinkedHashSet<>();
+        Set<String> seasons = new LinkedHashSet<>();
+        Set<String> classes = new LinkedHashSet<>();
+
+        for (Map<String, Object> item : objektService.findCollections("triples")) {
+            Map<String, Object> copy = new LinkedHashMap<>(item);
+            String id = stringValue(item.get("id"));
+            String collectionId = stringValue(item.get("collectionId"));
+            String slug = stringValue(item.get("slug"));
+            boolean isSelected = selected.contains(id)
+                    || selected.contains(collectionId)
+                    || selected.contains(slug);
+            copy.put("selected", isSelected);
+            options.add(copy);
+
+            String member = stringValue(item.get("member"));
+            String season = stringValue(item.get("season"));
+            String klass = stringValue(item.get("class"));
+            if (!member.isBlank()) members.add(member);
+            if (!season.isBlank()) seasons.add(season);
+            if (!klass.isBlank()) classes.add(klass);
+        }
+
+        options.sort(Comparator
+                .comparing((Map<String, Object> o) -> !Boolean.TRUE.equals(o.get("selected")))
+                .thenComparing(o -> stringValue(o.get("member")), String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(o -> stringValue(o.get("collectionId")), String.CASE_INSENSITIVE_ORDER));
+
+        model.addAttribute("showObjektPicker", true);
+        model.addAttribute("objektOptions", options);
+        model.addAttribute("objektMemberOptions", members.stream()
+                .sorted(String.CASE_INSENSITIVE_ORDER).toList());
+        model.addAttribute("objektSeasonOptions", seasons.stream()
+                .sorted(String.CASE_INSENSITIVE_ORDER).toList());
+        model.addAttribute("objektClassOptions", classes.stream()
+                .sorted(String.CASE_INSENSITIVE_ORDER).toList());
+    }
+
+    private static String stringValue(Object value) {
+        return value == null ? "" : value.toString();
+    }
+
     private String getCategoryName(String category) {
         return switch (category) {
             case "free" -> "자유";
@@ -120,27 +193,51 @@ public class ArticleController {
     }
 
     /** 목록 */
-    @GetMapping
-    public String indexArticle(@PathVariable("category") String category,
-                               Model model,
-                               @RequestParam(name = "limit", required = false, defaultValue = "10") Integer limit) {
-        if (isInvalidCategory(category)) return "redirect:/article/trade";
 
-        List<Article> articles = articleService.findRecentByCategory(category, limit);
+    /** 목록 및 검색 */
+    @GetMapping
+    public String indexArticle(
+            @PathVariable("category") String category,
+            Model model,
+            @RequestParam(name = "limit", required = false, defaultValue = "10") Integer limit,
+            @RequestParam(name = "type", required = false, defaultValue = "title") String type,
+            @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword) {
+
+        if (isInvalidCategory(category)) {
+            return "redirect:/article/trade";
+        }
+
+        // 검색 조건 정리
+        String searchType = type;
+        if (!Set.of("title", "content", "writer").contains(searchType)) {
+            searchType = "title";
+        }
+
+        String searchKeyword = keyword == null ? "" : keyword.trim();
+
+        // 검색어가 있으면 검색, 없으면 최신 게시글 조회
+        List<Article> articles;
+        if (searchKeyword.isEmpty()) {
+            articles = articleService.findRecentByCategory(category, limit);
+        } else {
+            articles = articleService.searchByCategory(
+                    category, searchType, searchKeyword, limit);
+        }
 
         List<ArticleViewDto> articleViewList = new ArrayList<>();
-        int totalSize = articles.size();
-        for (int i = 0; i < totalSize; i++) {
+
+        for (int i = 0; i < articles.size(); i++) {
             Article art = articles.get(i);
-            long displayNo = i + 1;
 
             ArticleViewDto dto = ArticleViewDto.builder()
                     .id(art.getId())
-                    .displayId(displayNo)
+                    .displayId((long) (i + 1))
                     .title(art.getTitle())
                     .userId(art.getUserId())
                     .category(art.getCategory())
-                    .formattedDate(dateTimeFormatService.formatKst(art.getFormattedCreatedAt()))
+                    .formattedDate(
+                            dateTimeFormatService.formatKst(
+                                    art.getFormattedCreatedAt()))
                     .likesCount(art.getLikesCount())
                     .build();
 
@@ -151,14 +248,24 @@ public class ArticleController {
         model.addAttribute("categoryName", getCategoryName(category));
         model.addAttribute("isNotice", "notice".equals(category));
         model.addAttribute("articleList", articleViewList);
-        model.addAttribute("popularList", articleService.findPopularArticles(category, 5));
+        model.addAttribute("popularList",
+                articleService.findPopularArticles(category, 5));
 
-        // Mustache 템플릿에서 글쓰기 버튼 등이 항상 노출되도록 강제 설정
+        // 검색 폼에서 사용하는 Mustache 변수
+        model.addAttribute("searchKeyword", searchKeyword);
+        model.addAttribute("isSearchTitle", "title".equals(searchType));
+        model.addAttribute("isSearchContent", "content".equals(searchType));
+        model.addAttribute("isSearchWriter", "writer".equals(searchType));
+
+        model.addAttribute("limit", limit);
+
+        // 기존 화면 표시 설정 유지
         model.addAttribute("isLoggedIn", true);
         model.addAttribute("isAdmin", true);
 
         return "article/article";
     }
+
 
     /** 상세 */
     @GetMapping("/{id:[0-9]+}")
@@ -172,6 +279,9 @@ public class ArticleController {
         if (article == null) return "redirect:/article/" + category;
 
         model.addAttribute("article", article);
+        List<com.example.triplesweb.entity.ArticleObjekt> linkedObjekts = articleObjektService.findForArticle(id);
+        model.addAttribute("linkedObjekts", linkedObjekts);
+        model.addAttribute("hasLinkedObjekts", !linkedObjekts.isEmpty());
         model.addAttribute("category", category);
         model.addAttribute("commentDtos", commentService.show(id));
         model.addAttribute("categoryName", getCategoryName(category));
@@ -222,6 +332,7 @@ public class ArticleController {
         model.addAttribute("article", article);
         model.addAttribute("category", category);
         model.addAttribute("categoryName", getCategoryName(category));
+        addObjektOptionsForArticle(model, category, id);
 
         List<ArticleFileDto> fileDtos = article.getFiles().stream().map(af -> {
             var m = af.getFile();
@@ -251,6 +362,7 @@ public class ArticleController {
                                 @RequestParam(value = "uploadFiles", required = false) List<MultipartFile> files,
                                 @RequestParam(value = "uploadedFiles", required = false) List<String> uploadedFiles,
                                 @RequestParam(value = "deletedFiles", required = false) List<Long> deletedFiles,
+                                @RequestParam(value = "selectedObjektIds", required = false) List<String> selectedObjektIds,
                                 Model model) throws IOException {
         if (isInvalidCategory(category)) return "redirect:/article/trade";
 
@@ -261,6 +373,8 @@ public class ArticleController {
         if (validationError != null) {
             prepareEditModel(article, model, validationError);
             model.addAttribute("category", category);
+            model.addAttribute("categoryName", getCategoryName(category));
+            addObjektOptionsForArticle(model, category, id);
             return "article/article_edit";
         }
 
@@ -286,7 +400,21 @@ public class ArticleController {
 
         articleFileService.extractAndSaveFilesFromContent(article);
 
+        if ("trade".equals(category) || "sell".equals(category)) {
+            articleObjektService.replaceSelected(article, selectedObjektIds);
+        }
+
         return "redirect:/article/" + category + "/" + id;
+    }
+
+    private void addObjektOptionsForArticle(Model model, String category, Long articleId) {
+        Set<String> selected = articleObjektService.findForArticle(articleId).stream()
+                .flatMap(link -> java.util.stream.Stream.of(link.getObjektKey(), link.getCollectionId()))
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(v -> !v.isEmpty())
+                .collect(Collectors.toSet());
+        addObjektOptions(model, category, selected);
     }
 
     /** 삭제 */

@@ -2,63 +2,146 @@
 <html lang="ko">
 <head>
     {{>layout/favicon}}
-    <meta charset="UTF-8">
-    <title>검색 결과</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{#keyword}}‘{{keyword}}’ 검색 결과{{/keyword}}{{^keyword}}검색{{/keyword}} - 트리플에스 커뮤니티</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="/js/tailwind.config.js"></script>
+    <link rel="stylesheet" href="/css/style.css">
     <style>
-        .card {
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        .search-highlight b {
+            color: #00f5d4;
+            font-weight: 800;
         }
-        .board-tag {
-            font-size: 0.85rem;
-            color: #888;
-            margin-bottom: 6px;
+        .search-snippet {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            overflow-wrap: anywhere;
         }
     </style>
 </head>
-<body>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col">
 {{>layout/header}}
 
-<div class="container mt-5">
-    <h3 class="mb-3">'{{keyword}}'에 대한 검색 결과</h3>
+<main class="flex-1 flex items-start justify-center px-4 sm:px-6 py-6 z-10 relative">
+    <div class="w-full max-w-4xl relative">
+        <div class="absolute -inset-1 rounded-3xl bg-gradient-to-b from-primary-container/20 via-transparent to-secondary-container/30 blur-xl opacity-75 pointer-events-none"></div>
 
-    {{#errorMessage}}
-        <div class="alert alert-warning">{{errorMessage}}</div>
-    {{/errorMessage}}
+        <div class="relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
 
-    {{#resultList}}
-    <div class="card mb-3">
-    <div class="card-body">
-    <div class="board-tag">
-        <span class="badge bg-primary">
-        {{#category}}
-            {{boardName}}
-        {{/category}}
-        </span>
+            <div class="flex flex-col gap-5 mb-8 pb-5 border-b border-outline-variant/30 sm:flex-row sm:items-end sm:justify-between">
+                <div class="flex items-start gap-3">
+                    <span class="material-symbols-outlined text-primary-container text-3xl mt-0.5" data-icon="search">search</span>
+                    <div>
+                        <p class="font-mono text-[10px] uppercase tracking-[0.22em] text-primary-container">GLOBAL SEARCH</p>
+                        <h1 class="font-headline-lg text-headline-md font-bold text-on-surface tracking-tight mt-1">
+                            {{#keyword}}‘{{keyword}}’ 검색 결과{{/keyword}}{{^keyword}}전체 검색{{/keyword}}
+                        </h1>
+                        <p class="mt-1.5 text-sm text-on-surface-variant">멤버 프로필과 게시글 제목·본문·작성자를 함께 검색합니다.</p>
+                    </div>
+                </div>
 
-    </div>
-        <div class="board-tag">
+                <form action="/search" method="get" class="flex w-full sm:w-auto items-center gap-2">
+                    <div class="relative flex-1 sm:w-64">
+                        <input type="search" name="keyword" value="{{keyword}}" placeholder="검색어를 입력하세요"
+                               class="w-full py-2.5 pl-3 pr-10 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl text-sm text-on-surface placeholder:text-outline/60 focus:outline-none focus:border-primary-container" />
+                        <button type="submit" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-outline hover:text-primary-container" aria-label="검색">
+                            <span class="material-symbols-outlined text-[18px]" data-icon="search">search</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {{#errorMessage}}
+            <div class="mb-6 p-3.5 rounded-xl bg-error-container/20 border border-error/40 flex items-start gap-3">
+                <span class="material-symbols-outlined text-error text-[20px] flex-shrink-0 mt-0.5" data-icon="error">error</span>
+                <p class="font-body-sm text-body-sm text-error font-medium">{{errorMessage}}</p>
+            </div>
+            {{/errorMessage}}
+
+            {{#keyword}}
+            <section class="mb-10">
+                <div class="mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary-container text-[22px]" data-icon="person_search">person_search</span>
+                    <h2 class="font-headline-sm text-lg font-bold text-on-surface">멤버 검색 결과</h2>
+                </div>
+
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {{#memberResults}}
+                    <a href="{{profileUrl}}"
+                       class="group flex items-center gap-4 rounded-2xl border border-outline-variant/40 bg-surface-container-lowest/40 p-4 no-underline transition hover:border-primary-container/50 hover:bg-surface-container-highest/30">
+                        <img src="{{profileImage}}" loading="lazy" alt="{{name}}"
+                             class="h-16 w-16 shrink-0 rounded-full border border-outline-variant/50 object-cover">
+                        <span class="min-w-0">
+                            <strong class="block truncate text-base font-bold text-on-surface group-hover:text-primary-container transition-colors">{{name}}</strong>
+                            <span class="mt-1 block truncate text-xs font-semibold text-primary-container">{{engName}}</span>
+                            <span class="mt-1.5 inline-flex items-center gap-1 text-xs text-on-surface-variant">
+                                프로필 보기
+                                <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                            </span>
+                        </span>
+                    </a>
+                    {{/memberResults}}
+                </div>
+
+                {{^memberResults}}
+                <div class="rounded-2xl border border-outline-variant/30 bg-surface-container-lowest/30 py-10 text-center">
+                    <span class="material-symbols-outlined text-outline text-3xl mb-2" data-icon="person_off">person_off</span>
+                    <p class="text-sm text-on-surface-variant font-medium">일치하는 멤버가 없습니다.</p>
+                </div>
+                {{/memberResults}}
+            </section>
+
+            <section>
+                <div class="mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary-container text-[22px]" data-icon="article">article</span>
+                    <h2 class="font-headline-sm text-lg font-bold text-on-surface">게시글 검색 결과</h2>
+                </div>
+
+                <div class="w-full overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface-container-lowest/40">
+                    {{#resultList}}
+                    <article class="border-b border-outline-variant/20 px-5 py-4 last:border-b-0 hover:bg-surface-container-highest/30 transition-colors">
+                        <div class="mb-2 flex flex-wrap items-center gap-2">
+                            <span class="rounded-full border border-primary-container/30 bg-primary-container/10 px-2.5 py-1 text-[11px] font-semibold text-primary-container">{{boardName}}</span>
+                            <span class="text-xs text-on-surface-variant">작성자 {{userId}}</span>
+                        </div>
+                        <h3 class="text-base font-semibold leading-snug">
+                            <a href="/article/{{category}}/{{id}}" class="search-highlight text-on-surface no-underline hover:text-primary-container transition-colors">{{{title}}}</a>
+                        </h3>
+                        <p class="search-highlight search-snippet mt-2 text-sm leading-6 text-on-surface-variant">{{{content}}}</p>
+                    </article>
+                    {{/resultList}}
+
+                    {{^resultList}}
+                    <div class="py-16 text-center">
+                        <span class="material-symbols-outlined text-outline text-4xl mb-2" data-icon="inbox">inbox</span>
+                        <p class="text-on-surface-variant font-medium">검색어가 포함된 게시글이 없습니다.</p>
+                    </div>
+                    {{/resultList}}
+                </div>
+            </section>
+
+            {{^hasAnyResults}}
+            <div class="mt-8 rounded-2xl border border-dashed border-outline-variant/50 bg-surface-container-lowest/20 p-8 text-center">
+                <span class="material-symbols-outlined text-outline text-4xl mb-2" data-icon="search_off">search_off</span>
+                <p class="text-sm text-on-surface-variant font-medium">멤버 또는 게시글 검색 결과가 없습니다.</p>
+                <p class="mt-1 text-xs text-outline">다른 검색어를 입력해 보세요.</p>
+            </div>
+            {{/hasAnyResults}}
+            {{/keyword}}
 
         </div>
-        <h5 class="card-title">
-            <a href="/{{category}}/{{id}}" class="text-decoration-none text-dark">
-                {{{title}}}
-            </a>
-        </h5>
-        <p class="card-text">
-            {{{content}}}
-        </p>
-        <p class="text-end text-muted" style="font-size: 0.9rem;">
-            작성자: {{userId}}
-        </p>
     </div>
-    </div>
-    {{/resultList}}
+</main>
 
-    {{^resultList}}
-        <p class="text-muted">검색 결과가 없습니다.</p>
-    {{/resultList}}
-</div>
-
+{{>layout/footer}}
 </body>
 </html>

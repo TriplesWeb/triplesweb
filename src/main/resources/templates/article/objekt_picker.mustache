@@ -1,0 +1,76 @@
+{{#showObjektPicker}}
+<section class="space-y-3 rounded-xl border border-teal-400/30 bg-teal-400/[0.04] p-4" id="objektPickerSection">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+            <h3 class="font-semibold text-teal-200">교환/거래 오브젝트</h3>
+            <p class="mt-1 text-xs text-slate-400">최대 20개까지 연결할 수 있습니다.</p>
+        </div>
+        <button type="button" id="objektPickerToggle"
+                class="inline-flex items-center gap-1.5 rounded-full border border-teal-300/50 bg-teal-400/10 px-4 py-2 text-xs font-semibold text-teal-100 hover:bg-teal-400/20"
+                aria-expanded="false" aria-controls="objektPickerPanel">
+            오브젝트 선택
+        </button>
+    </div>
+    <p id="objektSelectedSummary" class="text-xs text-slate-400" aria-live="polite">선택된 오브젝트 0개</p>
+
+    <div id="objektPickerPanel" class="hidden space-y-3" hidden>
+        <p class="text-xs text-slate-400">멤버·시즌·클래스로 필터하거나 검색한 뒤 체크하세요.</p>
+
+        <div class="objekt-picker-filter-bar">
+            <div class="objekt-picker-filter">
+                <span class="objekt-picker-filter-label">멤버</span>
+                <select id="objektFilterMember" class="objekt-picker-filter-control" aria-label="멤버 필터">
+                    <option value="">전체</option>
+                    {{#objektMemberOptions}}
+                    <option value="{{.}}">{{.}}</option>
+                    {{/objektMemberOptions}}
+                </select>
+            </div>
+            <div class="objekt-picker-filter">
+                <span class="objekt-picker-filter-label">시즌</span>
+                <select id="objektFilterSeason" class="objekt-picker-filter-control" aria-label="시즌 필터">
+                    <option value="">전체</option>
+                    {{#objektSeasonOptions}}
+                    <option value="{{.}}">{{.}}</option>
+                    {{/objektSeasonOptions}}
+                </select>
+            </div>
+            <div class="objekt-picker-filter">
+                <span class="objekt-picker-filter-label">클래스</span>
+                <select id="objektFilterClass" class="objekt-picker-filter-control" aria-label="클래스 필터">
+                    <option value="">전체</option>
+                    {{#objektClassOptions}}
+                    <option value="{{.}}">{{.}}</option>
+                    {{/objektClassOptions}}
+                </select>
+            </div>
+            <div class="objekt-picker-search">
+                <input type="search" id="objektFilterSearch" class="objekt-picker-search-input" placeholder="검색..." aria-label="오브젝트 검색" autocomplete="off">
+            </div>
+            <button type="button" id="objektFilterReset" class="objekt-picker-reset">초기화</button>
+        </div>
+
+        <div id="objektOptionsList" class="grid max-h-72 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-4">
+            {{#objektOptions}}
+            <label class="objekt-option cursor-pointer rounded-lg border border-white/10 p-2 hover:border-teal-300/50{{#selected}} border-teal-300/60 bg-teal-400/10{{/selected}}"
+                   data-member="{{member}}"
+                   data-season="{{season}}"
+                   data-class="{{class}}"
+                   data-search="{{collectionId}} {{member}} {{collectionNo}} {{season}} {{class}}">
+                <input type="checkbox" name="selectedObjektIds" value="{{id}}" class="objekt-checkbox mb-2" {{#selected}}checked{{/selected}}>
+                <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" class="mb-2 aspect-[2/3] w-full rounded object-cover">
+                <span class="block truncate text-xs font-semibold">{{collectionId}}</span>
+                <span class="block truncate text-[11px] text-slate-400">{{member}} · {{collectionNo}}</span>
+            </label>
+            {{/objektOptions}}
+        </div>
+        <div class="mt-1 flex flex-wrap items-center justify-between gap-2">
+            <p id="objektPickerStatus" class="text-xs text-slate-400" aria-live="polite">오브젝트를 불러오는 중...</p>
+            <button id="loadMoreObjekts" type="button"
+                    class="rounded-full border border-teal-300/40 px-3 py-1.5 text-[11px] font-semibold text-teal-200 hover:bg-teal-300/10">
+                오브젝트 더 보기
+            </button>
+        </div>
+    </div>
+</section>
+{{/showObjektPicker}}

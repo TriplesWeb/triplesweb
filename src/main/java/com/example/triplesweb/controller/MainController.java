@@ -45,6 +45,8 @@ public class MainController {
                         s.getEnd()))
                 .collect(Collectors.toList());
 
+        scheduleForms.forEach(f -> { Schedule source = scheduleList.stream().filter(s -> String.valueOf(s.getId()).equals(f.getId())).findFirst().orElse(null); if (source != null) f.setArtistNames(source.getArtistNames() == null ? "" : source.getArtistNames()); });
+
         ObjectMapper mapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);

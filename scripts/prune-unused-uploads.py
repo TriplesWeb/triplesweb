@@ -17,7 +17,7 @@ LEGACY_DIRS = [
     "images/케미 리스트",
     "images/상단",
     "images/하단",
-    "images/상징로고",
+    "images/S 상징색 로고",
     "images/objekts",
 ]
 

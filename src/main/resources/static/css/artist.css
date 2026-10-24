@@ -344,3 +344,184 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* 멤버 탭 — 사각 프로필 + S테두리 + 상징색 반짝임 */
+.artist-page .nav-tab-btn {
+    --artist-color: #00f5d4;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    color: #b9cac4;
+    cursor: pointer;
+    border-radius: 0.75rem;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.artist-page .nav-tab-btn[data-member-tab] .artist-tab-label {
+    color: color-mix(in srgb, var(--artist-color) 72%, #b9cac4);
+}
+
+.artist-page .nav-tab-btn:hover,
+.artist-page .nav-tab-btn.is-active {
+    color: var(--artist-color, #00f5d4);
+}
+
+.artist-page .nav-tab-btn[data-member-tab]:hover .artist-tab-label,
+.artist-page .nav-tab-btn[data-member-tab].is-active .artist-tab-label {
+    color: var(--artist-color);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--artist-color) 55%, transparent);
+}
+
+.artist-page .nav-tab-btn.is-active {
+    transform: translateY(-1px);
+}
+
+.artist-tab-avatar {
+    position: relative;
+    display: block;
+    width: 3.25rem;
+    height: 3.25rem;
+    margin-bottom: 0.25rem;
+    flex-shrink: 0;
+}
+
+.artist-tab-photo {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0.35rem;
+    background: #0d0e12;
+}
+
+.artist-tab-avatar--group .artist-tab-photo {
+    border: 1px solid rgba(0, 245, 212, 0.35);
+}
+
+.artist-tab-frame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    z-index: 2;
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--artist-color) 45%, transparent));
+    transition: filter 0.25s ease;
+}
+
+.artist-tab-shine {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    border-radius: 0.35rem;
+    overflow: hidden;
+    opacity: 0.4;
+}
+
+.artist-tab-shine::before {
+    content: "";
+    position: absolute;
+    top: -40%;
+    left: -60%;
+    width: 45%;
+    height: 180%;
+    background: linear-gradient(
+        105deg,
+        transparent 0%,
+        color-mix(in srgb, var(--artist-color) 18%, transparent) 40%,
+        color-mix(in srgb, var(--artist-color) 70%, #fff) 50%,
+        color-mix(in srgb, var(--artist-color) 18%, transparent) 60%,
+        transparent 100%
+    );
+    transform: skewX(-18deg);
+    animation: artist-tab-shine-sweep 4.8s ease-in-out infinite;
+}
+
+.artist-page .nav-tab-btn:hover .artist-tab-shine,
+.artist-page .nav-tab-btn.is-active .artist-tab-shine {
+    opacity: 1;
+}
+
+.artist-page .nav-tab-btn:hover .artist-tab-shine::before,
+.artist-page .nav-tab-btn.is-active .artist-tab-shine::before {
+    animation-duration: 1.6s;
+    background: linear-gradient(
+        105deg,
+        transparent 0%,
+        color-mix(in srgb, var(--artist-color) 25%, transparent) 36%,
+        color-mix(in srgb, var(--artist-color) 85%, #fff) 50%,
+        color-mix(in srgb, var(--artist-color) 30%, transparent) 64%,
+        transparent 100%
+    );
+}
+
+.artist-page .nav-tab-btn:hover .artist-tab-frame,
+.artist-page .nav-tab-btn.is-active .artist-tab-frame {
+    filter: drop-shadow(0 0 7px color-mix(in srgb, var(--artist-color) 75%, transparent))
+        drop-shadow(0 0 14px color-mix(in srgb, var(--artist-color) 40%, transparent));
+}
+
+.artist-tab-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+/* 멤버 상세 — 상징색 강조 */
+.artist-member-pane {
+    --artist-color: #00f5d4;
+}
+
+.artist-member-photo {
+    border: 2px solid color-mix(in srgb, var(--artist-color) 65%, #3a4a46);
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--artist-color) 25%, transparent),
+        0 12px 28px color-mix(in srgb, var(--artist-color) 18%, transparent);
+}
+
+.artist-member-heading {
+    border-color: color-mix(in srgb, var(--artist-color) 40%, rgba(58, 74, 70, 0.3));
+}
+
+.artist-member-color-dot {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 999px;
+    background: var(--artist-color);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--artist-color) 70%, transparent);
+}
+
+.artist-color-card {
+    background:
+        linear-gradient(
+            135deg,
+            color-mix(in srgb, var(--artist-color) 22%, rgba(13, 14, 18, 0.4)),
+            rgba(13, 14, 18, 0.4) 55%
+        );
+    border: 1px solid color-mix(in srgb, var(--artist-color) 55%, rgba(58, 74, 70, 0.3));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--artist-color) 12%, transparent);
+}
+
+.artist-color-swatch {
+    width: 1.35rem;
+    height: 1.35rem;
+    border-radius: 999px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    box-shadow:
+        0 0 0 2px color-mix(in srgb, var(--artist-color) 35%, transparent),
+        0 0 14px color-mix(in srgb, var(--artist-color) 55%, transparent);
+}
+
+@keyframes artist-tab-shine-sweep {
+    0% { transform: translateX(0) skewX(-18deg); }
+    55%, 100% { transform: translateX(320%) skewX(-18deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .artist-tab-shine::before {
+        animation: none;
+        opacity: 0;
+    }
+}

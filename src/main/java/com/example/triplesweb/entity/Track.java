@@ -30,7 +30,22 @@ public class Track {
 
     private Boolean isTitle;
 
+    /** Melon song ID for a direct track page link (optional). */
+    @Column(name = "melon_song_id", length = 40)
+    private String melonSongId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "album_id")
     private Album album;
+
+    /** Compatibility constructor for existing initializers. */
+    public Track(Long trackId, int trackNum, String title, String duration, Boolean isTitle, Album album) {
+        this.trackId = trackId;
+        this.trackNum = trackNum;
+        this.title = title;
+        this.duration = duration;
+        this.isTitle = isTitle;
+        this.album = album;
+        this.melonSongId = null;
     }
+}

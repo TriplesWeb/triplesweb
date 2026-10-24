@@ -1,4 +1,6 @@
 <script src="/js/image-fallback.js?v=1"></script>
+<script src="/js/about-admin-auth.js?v=1"></script>
+<script src="/js/site-admin-controls.js?v=1" defer></script>
 <!-- 헤더 고정 상단 영역 -->
 <header class="sticky top-0 z-50 w-full bg-[#16181f]/80 backdrop-blur-md border-b border-[#3a4a46]/30 transition-transform duration-300" id="top-header">
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
@@ -85,12 +87,12 @@
     <!-- 3. 검색바 & 유저 프로필 섹션 -->
 <div class="flex items-center gap-3">
     <!-- 검색창 -->
-    <div class="relative hidden sm:flex items-center">
-        <input class="w-40 lg:w-52 bg-[#0d0e12]/80 border border-[#3a4a46]/50 rounded-full px-3 py-1.5 text-xs text-[#e3e2e8] placeholder-[#b9cac4]/50 focus:outline-none focus:border-[#00f5d4] transition-all" type="text" placeholder="검색어를 입력하세요" />
-        <button class="absolute right-1 p-1 bg-[#00f5d4] hover:bg-[#00f5d4]/80 text-[#0d0e12] rounded-full flex items-center justify-center transition-colors border-0 cursor-pointer" title="검색">
+    <form action="/search" method="get" role="search" class="relative hidden sm:flex items-center">
+        <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" class="w-40 lg:w-52 bg-[#0d0e12]/80 border border-[#3a4a46]/50 rounded-full px-3 py-1.5 pr-9 text-xs text-[#e3e2e8] placeholder-[#b9cac4]/50 focus:outline-none focus:border-[#00f5d4] transition-all" type="search" placeholder="멤버·게시글 검색" />
+        <button type="submit" class="absolute right-1 p-1 bg-[#00f5d4] hover:bg-[#00f5d4]/80 text-[#0d0e12] rounded-full flex items-center justify-center transition-colors border-0 cursor-pointer" title="검색">
             <span class="material-symbols-outlined text-sm">search</span>
         </button>
-    </div>
+    </form>
 
     <!-- 로그인한 회원 메뉴 -->
 {{#member}}
@@ -137,12 +139,12 @@
     <!-- 모바일 메뉴 패널 -->
     <div id="mobile-menu" class="lg:hidden hidden border-t border-[#3a4a46]/30 bg-[#16181f]/95 backdrop-blur-md">
         <nav class="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-1 text-sm">
-            <div class="relative flex items-center mb-2 sm:hidden">
-                <input class="w-full bg-[#0d0e12]/80 border border-[#3a4a46]/50 rounded-full px-3 py-2 pr-10 text-xs text-[#e3e2e8] placeholder-[#b9cac4]/50 focus:outline-none focus:border-[#00f5d4]" type="text" placeholder="검색어를 입력하세요" />
-                <button type="button" class="absolute right-1 p-1 bg-[#00f5d4] text-[#0d0e12] rounded-full flex items-center justify-center border-0 cursor-pointer" title="검색">
+            <form action="/search" method="get" role="search" class="relative flex items-center mb-2 sm:hidden">
+                <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" class="w-full bg-[#0d0e12]/80 border border-[#3a4a46]/50 rounded-full px-3 py-2 pr-10 text-xs text-[#e3e2e8] placeholder-[#b9cac4]/50 focus:outline-none focus:border-[#00f5d4]" type="search" placeholder="멤버·게시글 검색" />
+                <button type="submit" class="absolute right-1 p-1 bg-[#00f5d4] text-[#0d0e12] rounded-full flex items-center justify-center border-0 cursor-pointer" title="검색">
                     <span class="material-symbols-outlined text-sm">search</span>
                 </button>
-            </div>
+            </form>
 
             <div class="mobile-nav-group">
                 <button type="button" class="mobile-nav-toggle w-full flex items-center justify-between px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] bg-transparent border-0 cursor-pointer rounded-lg hover:bg-white/5">

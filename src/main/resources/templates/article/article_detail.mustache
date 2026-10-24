@@ -65,6 +65,21 @@
                 </h1>
             </div>
 
+
+            {{#hasLinkedObjekts}}
+            <section class="my-6 rounded-2xl border border-teal-400/30 bg-teal-400/[0.04] p-4">
+                <h2 class="mb-3 font-semibold text-teal-200">교환/거래 오브젝트</h2>
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {{#linkedObjekts}}
+                    <a href="/cosmo/objekt/detail/{{objektKey}}" class="overflow-hidden rounded-xl border border-white/10 bg-black/20">
+                        <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" class="aspect-[2/3] w-full object-cover" onerror="this.onerror=null;this.src='{{frontImage}}'">
+                        <div class="p-2"><p class="truncate text-sm font-semibold">{{collectionId}}</p><p class="mt-1 text-xs text-slate-400">{{memberName}} · {{collectionNo}}</p></div>
+                    </a>
+                    {{/linkedObjekts}}
+                </div>
+            </section>
+            {{/hasLinkedObjekts}}
+
             <!-- 구분선 -->
             <hr class="border-outline-variant/30 my-6" />
 
@@ -90,6 +105,7 @@
                 <!-- 버튼 그룹 (수정, 삭제, 목록으로) -->
                 <div class="flex items-center justify-between pt-2">
                     <div class="flex items-center gap-2">
+{{#isOwner}}
                                 <a href="/article/{{category}}/{{article.id}}/edit" class="py-2 px-4 rounded-xl bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/40 text-on-surface text-sm font-medium transition-all">
                                     수정하기
                                 </a>
@@ -99,6 +115,7 @@
                                         삭제하기
                                     </button>
                                 </form>
+{{/isOwner}}
                     </div>
 
                     <a href="/article/{{category}}" class="py-2 px-5 rounded-xl bg-surface-container-high/40 hover:bg-surface-container-high border border-outline-variant/40 text-on-surface-variant hover:text-on-surface text-sm font-medium transition-all">

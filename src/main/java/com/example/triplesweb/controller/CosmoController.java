@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CosmoController {
 
-    private static final int PAGE_SIZE = 50;
+    private static final int PAGE_SIZE = 20;
     private final ObjektService objektService;
 
     @GetMapping("/objekt")

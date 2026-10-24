@@ -48,6 +48,20 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<Article> searchByCategory(String category, String type, String keyword, int limit) {
+        int safeLimit = Math.min(100, Math.max(1, limit));
+        var pageable = PageRequest.of(0, safeLimit);
+        if (keyword == null || keyword.isBlank()) return findRecentByCategory(category, safeLimit);
+        String query = keyword.trim();
+        return switch (type == null ? "title" : type.toLowerCase(java.util.Locale.ROOT)) {
+            case "content" -> articleRepository.findByCategoryIgnoreCaseAndContentContainingIgnoreCaseOrderByIdDesc(category, query, pageable);
+            case "writer", "userid", "author" -> articleRepository.findByCategoryIgnoreCaseAndUserIdContainingIgnoreCaseOrderByIdDesc(category, query, pageable);
+            default -> articleRepository.findByCategoryIgnoreCaseAndTitleContainingIgnoreCaseOrderByIdDesc(category, query, pageable);
+        };
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Article> findPopularArticles(String category, int limit) {
         return articleRepository.findPopularByCategory(category, PageRequest.of(0, limit));
     }

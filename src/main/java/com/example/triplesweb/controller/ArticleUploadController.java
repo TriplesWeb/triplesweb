@@ -2,6 +2,9 @@ package com.example.triplesweb.controller;
 
 import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.service.FileStorageService;
+import com.example.triplesweb.service.AboutAdminAuth;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,13 +23,16 @@ import java.io.IOException;
 public class ArticleUploadController {
 
     private final FileStorageService fileStorageService;
+    private final AboutAdminAuth aboutAdminAuth;
 
     @PostMapping("/{category}/uploadFile")
     public ResponseEntity<SavedMeta> upload(
             @PathVariable String category,
-            @RequestParam("file") MultipartFile file
+            @RequestParam("file") MultipartFile file,
+            HttpServletRequest request,
+            HttpSession session
     ) throws IOException {
-        // category에 따라 하위 폴더 구분 (ex: free)
+        aboutAdminAuth.requireAdmin(request, session);
         SavedMeta meta = fileStorageService.saveWithMeta(file, category);
         return ResponseEntity.ok(meta);
     }

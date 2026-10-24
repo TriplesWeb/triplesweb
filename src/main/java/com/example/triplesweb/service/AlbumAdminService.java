@@ -292,6 +292,7 @@ public class AlbumAdminService {
             track.setTitle(item.getTitle().trim());
             track.setDuration(StringUtils.hasText(item.getDuration()) ? item.getDuration().trim() : null);
             track.setIsTitle(Boolean.TRUE.equals(item.getIsTitle()));
+            track.setMelonSongId(normalizeMelonSongId(item.getMelonSongId()));
             album.getTracks().add(track);
             i++;
         }
@@ -333,6 +334,7 @@ public class AlbumAdminService {
                         .title(t.getTitle())
                         .duration(t.getDuration())
                         .isTitle(Boolean.TRUE.equals(t.getIsTitle()))
+                        .melonSongId(t.getMelonSongId())
                         .build());
             }
         }
@@ -360,6 +362,19 @@ public class AlbumAdminService {
                 .name(section.getName())
                 .sortOrder(section.getSortOrder())
                 .build();
+    }
+
+    private String normalizeMelonSongId(String raw) {
+        if (!StringUtils.hasText(raw)) return null;
+        String value = raw.trim();
+        if (value.matches("https?://www\\.melon\\.com/song/detail\\.htm\\?songId=([0-9]+).*")) {
+            java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("[?&]songId=([0-9]+)").matcher(value);
+            return matcher.find() ? matcher.group(1) : null;
+        }
+        if (!value.matches("[0-9]{1,20}")) {
+            throw new IllegalArgumentException("멜론 곡 ID는 숫자만 입력하거나 곡 상세 URL을 입력하세요.");
+        }
+        return value;
     }
 
     private void deleteManagedImage(String imageUrl) {

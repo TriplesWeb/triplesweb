@@ -49,6 +49,11 @@ public class ArchiveService {
 
     @Transactional
     public Archive save(MultipartFile file, String title, MediaType requestedType) throws IOException {
+        return save(file, title, requestedType, "");
+    }
+
+    @Transactional
+    public Archive save(MultipartFile file, String title, MediaType requestedType, String artistNames) throws IOException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("업로드 할 파일이 없습니다.");
         }
@@ -59,6 +64,7 @@ public class ArchiveService {
         SavedMeta meta = fileStorageService.saveWithMeta(file);   // SavedMeta 채워서 반환
         MediaType finalType = coerceType(requestedType, meta);
         Archive archive = new Archive(title, meta);
+        archive.setArtistNames(artistNames == null ? "" : artistNames.trim());
         return archiveRepository.save(archive);
     }
     @Transactional
@@ -67,17 +73,26 @@ public class ArchiveService {
     }
     @Transactional
     public Archive uploadImageOnly(MultipartFile file, String title,MediaType type) throws IOException {
+        return uploadImageOnly(file, title, type, "");
+    }
+
+    @Transactional
+    public Archive uploadImageOnly(MultipartFile file, String title,MediaType type, String artistNames) throws IOException {
         if (type != null && type != MediaType.IMAGE) {
             throw new IllegalArgumentException("이미지 파일만 업로드 가능합니다.");
         }
-        return save(file, title, MediaType.IMAGE);
+        return save(file, title, MediaType.IMAGE, artistNames);
     }
     @Transactional
     public Archive uploadVideoOnly(MultipartFile file, String title, MediaType type) throws IOException {
+        return uploadVideoOnly(file, title, type, "");
+    }
+    @Transactional
+    public Archive uploadVideoOnly(MultipartFile file, String title, MediaType type, String artistNames) throws IOException {
         if (type != null && type != MediaType.VIDEO) {
             throw new IllegalArgumentException("비디오 파일만 업로드 가능합니다.");
         }
-        return save(file, title, MediaType.VIDEO);
+        return save(file, title, MediaType.VIDEO, artistNames);
     }
     @Transactional
     public boolean delete(long id) {
@@ -102,7 +117,7 @@ public class ArchiveService {
 
     @Transactional
     public Archive uploadVideoOnly(MultipartFile file, String title) throws IOException {
-        return save(file, title, MediaType.VIDEO);
+        return save(file, title, MediaType.VIDEO, "");
     }
 
 

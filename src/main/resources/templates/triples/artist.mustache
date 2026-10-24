@@ -12,7 +12,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/artist.css?v=3">
+    <link rel="stylesheet" href="/css/artist.css?v=5">
     <style>
         .artist-page .artist-edit-inline[hidden] { display: none !important; }
     </style>
@@ -32,14 +32,21 @@
         <p id="artistAdminHint" class="artist-admin-hint hidden mb-4">관리자 모드: 그룹/멤버 탭에서 수정 버튼으로 내용을 편집할 수 있어요.</p>
 
         <ul class="nav nav-tabs border-b border-[#3a4a46]/40 flex overflow-x-auto items-center pb-2 gap-2" id="triplesTabs">
-            <button class="nav-tab-btn bg-transparent border-0 text-[#b9cac4] hover:text-[#00f5d4] flex flex-col items-center p-2 rounded-xl transition-all shrink-0" id="triples-tab" data-target="#triples" type="button">
-                <img id="groupTabImageDisplay" src="{{groupTabImage}}" referrerpolicy="no-referrer" class="w-12 h-12 rounded-full border-2 border-[#00f5d4] object-cover mb-1" alt="tripleS">
-                <span class="text-xs font-semibold">tripleS</span>
+            <button class="nav-tab-btn is-active flex flex-col items-center p-2 shrink-0" id="triples-tab" data-target="#triples" type="button">
+                <span class="artist-tab-avatar artist-tab-avatar--group">
+                    <img id="groupTabImageDisplay" src="{{groupTabImage}}" referrerpolicy="no-referrer" class="artist-tab-photo" alt="tripleS">
+                    <span class="artist-tab-shine" aria-hidden="true"></span>
+                </span>
+                <span class="artist-tab-label">tripleS</span>
             </button>
             {{#artist}}
-            <button class="nav-tab-btn bg-transparent border-0 text-[#b9cac4] hover:text-[#00f5d4] flex flex-col items-center p-2 rounded-xl transition-all shrink-0" id="{{engName}}-tab" data-target="#member-{{artistId}}" type="button">
-                <img src="{{displayProfileImage}}" referrerpolicy="no-referrer" class="w-12 h-12 rounded-full border-2 border-transparent object-cover mb-1" alt="{{name}}">
-                <span class="text-xs font-semibold">{{name}}</span>
+            <button class="nav-tab-btn flex flex-col items-center p-2 shrink-0" id="{{engName}}-tab" data-target="#member-{{artistId}}" data-member-tab type="button" style="--artist-color: {{color}};">
+                <span class="artist-tab-avatar">
+                    <img class="artist-tab-photo" src="{{displayProfileImage}}" referrerpolicy="no-referrer" alt="{{name}}">
+                    <img class="artist-tab-frame" src="" alt="" aria-hidden="true">
+                    <span class="artist-tab-shine" aria-hidden="true"></span>
+                </span>
+                <span class="artist-tab-label">{{name}}</span>
             </button>
             {{/artist}}
         </ul>
@@ -57,16 +64,16 @@
             </div>
 
             {{#artist}}
-            <div class="tab-pane hidden" id="member-{{artistId}}">
+            <div class="tab-pane hidden artist-member-pane" id="member-{{artistId}}" style="--artist-color: {{color}};">
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     <div class="lg:col-span-4 relative group">
-                        <div class="relative w-full aspect-[4/5] rounded-2xl overflow-hidden border border-[#3a4a46]/40 bg-black/50 shadow-inner">
+                        <div class="artist-member-photo relative w-full aspect-[4/5] rounded-2xl overflow-hidden bg-black/50 shadow-inner">
                             <img src="{{displayProfileImage}}" referrerpolicy="no-referrer" class="w-full h-full object-cover" alt="{{name}}" width="500" height="500">
                         </div>
                     </div>
                     <div class="lg:col-span-8 space-y-6">
-                        <div class="border-b border-[#3a4a46]/30 pb-4 mb-2 flex flex-wrap items-center gap-2">
-                            <span class="w-2.5 h-2.5 inline-block rounded-full bg-[#00f5d4] shrink-0"></span>
+                        <div class="artist-member-heading border-b pb-4 mb-2 flex flex-wrap items-center gap-2">
+                            <span class="artist-member-color-dot shrink-0" aria-hidden="true"></span>
                             <h3 class="text-3xl font-extrabold text-[#e3e2e8] tracking-tight">{{name}}</h3>
                             <span class="text-sm font-mono text-[#b9cac4] pl-2">{{engName}}</span>
                             <button type="button" class="artist-mode-btn is-active artist-edit-inline ml-auto" data-artist-edit="{{artistId}}">멤버 수정</button>
@@ -111,11 +118,11 @@
                                 <span class="text-xs font-semibold text-[#b9cac4]">데뷔일</span>
                                 <span class="text-sm font-medium text-[#00f5d4] font-mono">{{debutDate}}</span>
                             </div>
-                            <div class="bg-[#0d0e12]/40 border border-[#3a4a46]/30 rounded-xl p-3.5 flex items-center justify-between gap-3">
+                            <div class="artist-color-card rounded-xl p-3.5 flex items-center justify-between gap-3">
                                 <span class="text-xs font-semibold text-[#b9cac4]">상징 색</span>
-                                <div class="flex items-center gap-2">
-                                    <span class="w-3.5 h-3.5 rounded-full border border-white/20 shadow-sm" style="background-color: {{color}};"></span>
-                                    <span class="text-sm font-medium text-[#e3e2e8] font-mono">{{color}}</span>
+                                <div class="flex items-center gap-2.5">
+                                    <span class="artist-color-swatch" style="background-color: {{color}};" title="{{color}}"></span>
+                                    <span class="text-sm font-semibold font-mono" style="color: {{color}};">{{color}}</span>
                                 </div>
                             </div>
                         </div>
@@ -157,6 +164,19 @@
                             {{/soloLinks}}
                         </ul>
                         {{/hasSoloLinks}}
+                    </div>
+                    <div class="mt-6">
+                        <h2 class="text-xl font-semibold m-0 text-[#e3e2e8]">멤버 출연 콘텐츠</h2>
+                        <p class="mt-1 text-sm text-[#8b9b95]">공식 미디어 탭에 등록된 영상 중 이 멤버와 연결된 콘텐츠입니다.</p>
+                        {{#mediaContents}}
+                        <article class="mt-3 overflow-hidden rounded-xl border border-[#3a4a46]/40 bg-[#0d0e12]/60">
+                            <a href="/media/{{tab}}/{{youtubeId}}" class="block no-underline">
+                                <img src="https://img.youtube.com/vi/{{youtubeId}}/hqdefault.jpg" loading="lazy" alt="{{title}}" class="aspect-video w-full object-cover">
+                                <div class="p-3"><h3 class="text-sm font-semibold text-[#e3e2e8]">{{title}}</h3><p class="mt-1 text-xs text-[#8b9b95]">공식 미디어 · {{tab}}</p></div>
+                            </a>
+                        </article>
+                        {{/mediaContents}}
+                        {{^mediaContents}}<p class="mt-3 text-sm text-[#8b9b95]">아직 연결된 공식 미디어가 없습니다.</p>{{/mediaContents}}
                     </div>
                     <div>
                         <h2 class="text-xl font-normal m-0">출연한 방송</h2>
@@ -332,6 +352,6 @@
 
 {{>layout/footer}}
 <script src="/js/about-admin-auth.js?v=1"></script>
-<script src="/js/artist.js?v=7"></script>
+<script src="/js/artist.js?v=9"></script>
 </body>
 </html>

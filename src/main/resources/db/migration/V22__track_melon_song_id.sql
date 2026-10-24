@@ -1,0 +1,1 @@
+ALTER TABLE track ADD COLUMN melon_song_id VARCHAR(40) NULL;
