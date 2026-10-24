@@ -35,6 +35,6 @@ class CosmoAccountRedirectTest {
         mvc.perform(get("/cosmo/gravity"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("COSMO 계정 연결")))
-                .andExpect(content().string(containsString("href=\"/cosmo/collection\"")));
+                .andExpect(content().string(not(containsString("class=\"gv-pill\" href=\"/cosmo/collection\""))));
     }
 }
