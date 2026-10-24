@@ -431,6 +431,20 @@
     display: block;
 }
 
+/* 오브젝트는 세로 카드 비율을 유지해 원본 사진이 잘리지 않게 표시한다. */
+.artist-content-grid--objekt {
+    grid-template-columns: repeat(auto-fill, minmax(9.25rem, 12rem));
+}
+
+.artist-content-thumb--objekt {
+    aspect-ratio: 2 / 3;
+}
+
+.artist-content-thumb--objekt img {
+    object-fit: contain;
+    object-position: center;
+}
+
 .artist-content-play {
     position: absolute;
     right: 0.55rem;

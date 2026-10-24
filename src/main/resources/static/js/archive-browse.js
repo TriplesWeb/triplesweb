@@ -29,15 +29,32 @@
     sort?.addEventListener('change', apply);
     const form = document.getElementById('archiveFilterForm');
     const panel = document.getElementById('archiveMemberPanel');
-    document.getElementById('archiveMemberToggle')?.addEventListener('click', () => {
+    const memberToggle = document.getElementById('archiveMemberToggle');
+    const memberCount = document.getElementById('archiveMemberCount');
+
+    function updateMemberToggle(values) {
+        const selected = values || (window.MemberPortraitPicker && panel
+            ? MemberPortraitPicker.selectedValues(panel)
+            : []);
+        const count = selected.length;
+        if (memberCount) {
+            memberCount.hidden = count === 0;
+            memberCount.textContent = String(count);
+        }
+        memberToggle?.classList.toggle('has-selection', count > 0);
+        memberToggle?.classList.toggle('is-open', Boolean(panel && !panel.hidden));
+    }
+
+    memberToggle?.addEventListener('click', () => {
         if (!panel) return;
         panel.hidden = !panel.hidden;
-        document.getElementById('archiveMemberToggle').setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
+        memberToggle.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
+        updateMemberToggle();
     });
     if (window.MemberPortraitPicker && panel) {
-        MemberPortraitPicker.bindMultiSelect(panel);
-        if (panel.querySelector('.mpp-item.is-active')) panel.hidden = false;
+        MemberPortraitPicker.bindMultiSelect(panel, { onChange: updateMemberToggle });
     }
+    updateMemberToggle();
     form?.addEventListener('submit', () => {
         form.querySelectorAll('input[name="members"]').forEach(node => node.remove());
         if (!window.MemberPortraitPicker || !panel) return;

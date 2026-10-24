@@ -68,12 +68,14 @@ public class MemberSpotlightService {
             List<Map<String, Object>> feeds = new ArrayList<>();
             String objektMember = objektFilterValue(objektMembers, artist);
             String objektQuery = URLEncoder.encode(objektMember, StandardCharsets.UTF_8);
-            feeds.add(feed(
+            Map<String, Object> objektFeed = feed(
                     "오브젝트",
                     "이 멤버만 고른 오브젝트 최신 5개입니다.",
                     "이 멤버의 오브젝트가 없습니다.",
                     "/cosmo/objekt?member=" + objektQuery,
-                    objektCards(newestObjekts, name, objektQuery)));
+                    objektCards(newestObjekts, name, objektQuery));
+            objektFeed.put("objektFeed", true);
+            feeds.add(objektFeed);
             feeds.add(archiveFeed("사진 아카이브", "등록된 사진 최신 5개입니다.", "이 멤버의 사진이 없습니다.",
                     images, MediaType.IMAGE, name, "/archive/image_archive?members=" + encoded));
             feeds.add(archiveFeed("영상 아카이브", "등록된 영상 최신 5개입니다.", "이 멤버의 영상이 없습니다.",

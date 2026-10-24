@@ -16,7 +16,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/archive-page.css?v=4">
+    <link rel="stylesheet" href="/css/archive-page.css?v=5">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=4">
     {{#_csrf}}
     <meta name="_csrf" content="{{token}}">
@@ -91,8 +91,13 @@
             <button type="button" class="ar-submit" data-admin-only onclick="showAddModal()">사진 추가</button>
         </form>
         <div class="ar-member-row">
-            <button type="button" class="ar-text-btn" id="archiveMemberToggle" aria-expanded="false" aria-controls="archiveMemberPanel">멤버 선택</button>
-            <div id="archiveMemberPanel" hidden>
+            <button type="button" class="ar-member-toggle" id="archiveMemberToggle" aria-expanded="false" aria-controls="archiveMemberPanel">
+                <span class="material-symbols-outlined" aria-hidden="true">group</span>
+                <span>멤버 선택</span>
+                <span class="ar-member-count" id="archiveMemberCount" hidden>0</span>
+                <span class="material-symbols-outlined ar-member-chevron" aria-hidden="true">expand_more</span>
+            </button>
+            <div class="ar-member-panel" id="archiveMemberPanel" hidden>
                 <div class="member-portrait-picker" id="archive-member-picker" role="group" aria-label="멤버 선택">
                     {{>partials/member-portrait-picker}}
                 </div>
@@ -215,6 +220,6 @@
 
 <script src="/js/member-portrait-picker.js?v=2"></script>
 <script src="/js/archive-manage.js?v=2"></script>
-<script src="/js/archive-browse.js?v=3"></script>
+<script src="/js/archive-browse.js?v=4"></script>
 </body>
 </html>

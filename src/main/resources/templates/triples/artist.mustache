@@ -12,7 +12,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/artist.css?v=16">
+    <link rel="stylesheet" href="/css/artist.css?v=17">
     <style>
         .artist-page .artist-edit-inline[hidden] { display: none !important; }
     </style>
@@ -205,11 +205,11 @@
                             <a href="{{moreUrl}}" class="artist-content-more">더보기</a>
                         </div>
                         {{#hasItems}}
-                        <div class="artist-content-grid">
+                        <div class="artist-content-grid{{#objektFeed}} artist-content-grid--objekt{{/objektFeed}}">
                             {{#items}}
-                            <article class="artist-content-card">
+                            <article class="artist-content-card{{#objektFeed}} artist-content-card--objekt{{/objektFeed}}">
                                 <a href="{{href}}" class="artist-content-card-link" {{#external}}target="_blank" rel="noopener noreferrer"{{/external}}>
-                                    <div class="artist-content-thumb">
+                                    <div class="artist-content-thumb{{#objektFeed}} artist-content-thumb--objekt{{/objektFeed}}">
                                         {{#hasImage}}<img src="{{image}}" loading="lazy" alt="{{title}}">{{/hasImage}}
                                         {{^hasImage}}<span class="material-symbols-outlined artist-content-play" aria-hidden="true">{{icon}}</span>{{/hasImage}}
                                     </div>
