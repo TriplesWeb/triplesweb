@@ -85,6 +85,17 @@
             transition: background-color .2s ease, box-shadow .2s ease;
         }
         .objekt-filter-control:hover { background-color: #39f7df; }
+        .objekt-filter.is-filtered {
+            border-color: rgba(0, 245, 212, .7);
+            background: rgba(0, 245, 212, .08);
+        }
+        .objekt-search.is-filtered {
+            border-color: rgba(0, 245, 212, .7);
+            box-shadow: 0 0 0 3px rgba(0, 245, 212, .09);
+        }
+        .objekt-member-picker-panel.is-filtered {
+            border-color: rgba(0, 245, 212, .55);
+        }
 
         /* select 텍스트가 잘리지 않도록 종류/정렬 너비만 소폭 확장 */
         .objekt-filter select.objekt-filter-control {
@@ -147,6 +158,33 @@
             outline: 2px solid #00f5d4;
             outline-offset: 3px;
         }
+        .objekt-reset-button {
+            display: inline-flex;
+            flex: 0 0 auto;
+            min-height: 52px;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 0 18px;
+            border: 1px solid rgba(255, 180, 171, .45);
+            border-radius: 12px;
+            background: rgba(255, 180, 171, .08);
+            color: #ffd0c8;
+            font-size: 13px;
+            font-weight: 750;
+            letter-spacing: .01em;
+            cursor: pointer;
+            transition: background .18s ease, border-color .18s ease, color .18s ease;
+        }
+        .objekt-reset-button:hover {
+            background: rgba(255, 180, 171, .16);
+            border-color: rgba(255, 180, 171, .7);
+            color: #fff;
+        }
+        .objekt-reset-button:focus-visible {
+            outline: 2px solid #ffb4ab;
+            outline-offset: 3px;
+        }
         .objekt-search:focus-within {
             border-color: #00d9bd;
             background: rgba(10,12,18,.95);
@@ -186,7 +224,8 @@
             .objekt-filter select.objekt-filter-control { min-width: 104px; max-width: none; }
             .objekt-filter select.objekt-sort-select { min-width: 132px; }
             .objekt-search { flex: 1 1 100%; max-width: none; margin-left: 0; }
-            .objekt-search-button { flex: 1 1 100%; }
+            .objekt-search-button,
+            .objekt-reset-button { flex: 1 1 calc(50% - 9px); }
             .objekt-card-grid { gap: 10px; }
         }
         @media (max-width: 420px) {
@@ -243,7 +282,7 @@
                 <span class="objekt-filter-label">시즌</span>
                 <!-- 드롭다운 토글 버튼 -->
                 <button type="button" onclick="toggleDropdown('season-menu')" class="objekt-filter-control flex items-center justify-between gap-3 cursor-pointer">
-                    <span id="season-label" class="truncate">all</span>
+                    <span id="season-label" class="truncate">전체</span>
                     <span class="material-symbols-outlined text-xs text-black">arrow_drop_down</span>
                 </button>
 
@@ -281,7 +320,7 @@
                 <span class="objekt-filter-label">클래스</span>
                 <!-- 드롭다운 토글 버튼 -->
                 <button type="button" onclick="toggleDropdown('class-menu')" class="objekt-filter-control flex items-center justify-between gap-3 cursor-pointer">
-                    <span id="class-label" class="truncate">all</span>
+                    <span id="class-label" class="truncate">전체</span>
                     <span class="material-symbols-outlined text-xs text-black">arrow_drop_down</span>
                 </button>
 
@@ -328,6 +367,10 @@
                 <span class="material-symbols-outlined text-lg" aria-hidden="true">search</span>
                 검색하기
             </button>
+            <button type="button" id="objekt-reset" class="objekt-reset-button">
+                <span class="material-symbols-outlined text-lg" aria-hidden="true">restart_alt</span>
+                필터 초기화
+            </button>
 
         </div>
         </form>
@@ -335,7 +378,6 @@
 
     <div class="mt-5 flex items-center justify-between gap-3 px-1">
         <p class="text-sm text-slate-400">검색 결과 <strong class="text-[#00f5d4]">{{objektCount}}</strong>개 <span class="text-slate-500">(전체 {{objektAllCount}}개 중 · 현재 페이지 {{objektPageCount}}개 표시)</span></p>
-        <button type="button" id="objekt-reset" class="text-xs text-slate-400 hover:text-[#00f5d4] transition">필터 초기화</button>
     </div>
     {{#objektError}}
     <div class="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{{objektError}}</div>
@@ -388,7 +430,7 @@
         const target = document.getElementById(`${type}-label`);
         if (!target) return;
         const chosen = checks.filter(cb => cb !== all);
-        if (!chosen.length || (all && all.checked)) target.textContent = 'all';
+        if (!chosen.length || (all && all.checked)) target.textContent = '전체';
         else if (chosen.length === 1) target.textContent = chosen[0].nextElementSibling.textContent.trim();
         else target.textContent = `${chosen[0].nextElementSibling.textContent.trim()} 외 ${chosen.length - 1}개`;
     }
@@ -412,6 +454,7 @@
             cb.checked = selected.has(String(cb.value).toLocaleLowerCase());
         });
         syncMemberLabel();
+        if (typeof markActiveFilters === 'function') markActiveFilters();
     }
 
     // 멤버 초상화 다중선택
@@ -470,9 +513,25 @@
             const chosen = boxes.some(other => other.value !== 'all' && other.checked);
             if (all && !chosen) all.checked = true;
             updateDropdownLabel(type);
+            markActiveFilters();
         }));
         updateDropdownLabel(type);
     });
+
+    function markActiveFilters() {
+        const seasonText = document.getElementById('season-label')?.textContent.trim();
+        document.getElementById('season-dropdown')?.classList.toggle('is-filtered', !!seasonText && seasonText !== '전체');
+        const classText = document.getElementById('class-label')?.textContent.trim();
+        document.getElementById('class-dropdown')?.classList.toggle('is-filtered', !!classText && classText !== '전체');
+        kindSelect.closest('.objekt-filter')?.classList.toggle('is-filtered', kindSelect.value && kindSelect.value !== 'all');
+        sortSelect.closest('.objekt-filter')?.classList.toggle('is-filtered', sortSelect.value && sortSelect.value !== 'latest');
+        const searchValue = (form.querySelector('input[name="search"]')?.value || '').trim();
+        document.querySelector('.objekt-search')?.classList.toggle('is-filtered', searchValue.length > 0);
+        const memberOn = document.querySelectorAll('.member-checkbox:checked').length > 0;
+        memberRoot?.classList.toggle('is-filtered', memberOn);
+    }
+    markActiveFilters();
+    form.addEventListener('change', markActiveFilters);
 
     window.toggleDropdown = function(id) {
         document.querySelectorAll('[id$="-menu"]').forEach(menu => {
