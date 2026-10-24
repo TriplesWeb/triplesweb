@@ -49,9 +49,12 @@ class ArchiveControllerTest {
 
         mvc.perform(get("/archive/image_archive")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("포토")))
+                .andExpect(content().string(containsString("사진 아카이브")))
                 .andExpect(content().string(containsString("data-archive-edit")))
                 .andExpect(content().string(containsString("data-archive-delete")))
-                .andExpect(content().string(containsString("archiveEditForm")));
+                .andExpect(content().string(containsString("archiveEditForm")))
+                .andExpect(content().string(not(containsString("14.8M"))))
+                .andExpect(content().string(not(containsString("Polygon"))));
     }
 
     @Test void guestImageArchiveHidesEditAndDelete() throws Exception {
@@ -63,6 +66,20 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("포토")))
                 .andExpect(content().string(not(containsString("data-archive-edit"))))
                 .andExpect(content().string(not(containsString("data-archive-delete"))));
+    }
+
+    @Test void videoArchiveUsesSameLiveFields() throws Exception {
+        when(aboutAdminAuth.isAdmin(any(), any())).thenReturn(false);
+        when(artistRepository.findAll()).thenReturn(List.of());
+        Archive video = photo();
+        video.setTitle("무대영상");
+        video.setFile(SavedMeta.builder().url("/uploads/a.mp4").mediaType(MediaType.VIDEO).build());
+        when(archiveService.pageByType(eq(MediaType.VIDEO), anyInt(), anyInt(), isNull())).thenReturn(new PageImpl<>(List.of(video)));
+
+        mvc.perform(get("/archive/video_archive")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("무대영상")))
+                .andExpect(content().string(containsString("영상 아카이브")))
+                .andExpect(content().string(not(containsString("data-archive-edit"))));
     }
 
     @Test void adminCanUpdateAndDelete() throws Exception {

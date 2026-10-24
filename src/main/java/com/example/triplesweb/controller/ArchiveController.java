@@ -6,7 +6,9 @@ import com.example.triplesweb.service.ArchiveService;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.entity.Artist;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +33,7 @@ public class ArchiveController {
     @GetMapping("/{type}_archive")
     public String showArchive(@PathVariable("type") String typeSlug,
                               @RequestParam(defaultValue = "0") int page,
-                              @RequestParam(defaultValue = "24") int size,
+                              @RequestParam(defaultValue = "9") int size,
                               @RequestParam(required = false) String q,
                               HttpServletRequest request, HttpSession session, Model model) {
 
@@ -52,7 +54,38 @@ public class ArchiveController {
         model.addAttribute("type", type);
         model.addAttribute("isAuthenticated", isAuthenticated);
         model.addAttribute("isAdmin", isAdmin);
+        addArchivePage(model, archives, type, q);
         return (type == MediaType.IMAGE) ? "archive/image_archive" : "archive/video_archive";
+    }
+
+    private void addArchivePage(Model model, Page<Archive> archives, MediaType type, String q) {
+        int totalPages = archives.getTotalPages();
+        int current = archives.getNumber();
+        String query = q == null ? "" : q.trim();
+        model.addAttribute("archiveTotal", archives.getTotalElements());
+        model.addAttribute("archivePageCount", archives.getNumberOfElements());
+        model.addAttribute("archivePageDisplay", current + 1);
+        model.addAttribute("archiveTotalPages", totalPages);
+        model.addAttribute("hasArchivePrev", archives.hasPrevious());
+        model.addAttribute("hasArchiveNext", archives.hasNext());
+        model.addAttribute("archivePrevPage", Math.max(0, current - 1));
+        model.addAttribute("archiveNextPage", current + 1);
+        model.addAttribute("hasArchives", !archives.isEmpty());
+        model.addAttribute("archiveHighlights", archives.getContent().stream().limit(4).toList());
+        model.addAttribute("query", query);
+        model.addAttribute("hasQuery", !query.isEmpty());
+        model.addAttribute("archivePath", type == MediaType.IMAGE ? "/archive/image_archive" : "/archive/video_archive");
+        model.addAttribute("imageArchive", type == MediaType.IMAGE);
+        List<Map<String, Object>> archivePages = new ArrayList<>();
+        if (totalPages > 0) {
+            int start = Math.max(0, current - 2);
+            int end = Math.min(totalPages - 1, start + 4);
+            start = Math.max(0, end - 4);
+            for (int i = start; i <= end; i++) {
+                archivePages.add(Map.of("num", i, "label", i + 1, "active", i == current));
+            }
+        }
+        model.addAttribute("archivePages", archivePages);
     }
 
     @PostMapping("/upload")
