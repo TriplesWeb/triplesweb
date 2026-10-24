@@ -26,8 +26,29 @@
         if (none) none.hidden = shown.length !== 0;
     }
 
-    artist?.addEventListener('change', apply);
     sort?.addEventListener('change', apply);
+    const form = document.getElementById('archiveFilterForm');
+    const panel = document.getElementById('archiveMemberPanel');
+    document.getElementById('archiveMemberToggle')?.addEventListener('click', () => {
+        if (!panel) return;
+        panel.hidden = !panel.hidden;
+        document.getElementById('archiveMemberToggle').setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
+    });
+    if (window.MemberPortraitPicker) {
+        MemberPortraitPicker.bindMultiSelect(document);
+        if (panel && panel.querySelector('.mpp-item.is-active')) panel.hidden = false;
+    }
+    form?.addEventListener('submit', () => {
+        form.querySelectorAll('input[name="members"]').forEach(node => node.remove());
+        if (!window.MemberPortraitPicker) return;
+        MemberPortraitPicker.selectedValues(document).forEach(value => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'members';
+            input.value = value;
+            form.appendChild(input);
+        });
+    });
     const track = document.getElementById('archiveTrack');
     document.getElementById('archivePrev')?.addEventListener('click', () => track?.scrollBy({ left: -380, behavior: 'smooth' }));
     document.getElementById('archiveNext')?.addEventListener('click', () => track?.scrollBy({ left: 380, behavior: 'smooth' }));

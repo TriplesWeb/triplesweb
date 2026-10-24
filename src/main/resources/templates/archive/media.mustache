@@ -154,6 +154,19 @@
             color: #0d0e12;
             font-weight: bold;
         }
+        .media-add-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.7rem 1.1rem;
+            border-radius: 9999px;
+            background: #00f5d4;
+            color: #0d0e12;
+            font-weight: 800;
+            text-decoration: none;
+            box-shadow: 0 0 18px rgba(0, 245, 212, 0.28);
+        }
+        .media-add-btn:hover { color: #0d0e12; filter: brightness(1.05); }
     </style>
 </head>
 <body>
@@ -164,10 +177,9 @@
     <div class="flex items-center justify-between mb-6">
         <h2 class="text-2xl font-bold tracking-tight text-[#e3e2e8] m-0">공식 미디어</h2>
         {{#isAdmin}}
-        <a href="/media_new?tab={{currentTab}}"
-           class="px-4 py-2 rounded-xl bg-[#00f5d4]/10 border border-[#00f5d4]/40 text-[#00f5d4] hover:bg-[#00f5d4]/20 text-xs font-bold transition-all no-underline flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-sm">add_box</span>
-            <span>새 영상 등록</span>
+        <a href="/media_new?tab={{currentTab}}" class="media-add-btn">
+            <span class="material-symbols-outlined">add_box</span>
+            <span>미디어 추가</span>
         </a>
         {{/isAdmin}}
     </div>

@@ -1,12 +1,12 @@
 {{! 공유 멤버 초상화 피커. 컨텍스트에 memberPickerOptions: [{value,label,image,color,frame}] }}
 {{#memberPickerOptions}}
 <button type="button"
-        class="mpp-item"
+        class="mpp-item{{#active}} is-active{{/active}}"
         data-value="{{value}}"
         data-name="{{label}}"
         data-frame="{{frame}}"
         style="--artist-color:{{color}}"
-        aria-pressed="false"
+        aria-pressed="{{#active}}true{{/active}}{{^active}}false{{/active}}"
         title="{{label}}">
     <span class="artist-tab-avatar">
         <img class="artist-tab-photo" src="{{image}}" referrerpolicy="no-referrer" alt="" loading="lazy">

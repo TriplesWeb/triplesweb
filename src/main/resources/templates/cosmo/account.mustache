@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+{{>layout/favicon}}
+{{>layout/gravity-fonts}}
+<link rel="stylesheet" href="/css/gravity-page.css?v=2">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>내 COSMO - 트리플에스 커뮤니티</title>
+<style>
+.cosmo-account-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.8rem; }
+.cosmo-account-card img { width: 100%; height: 8.5rem; object-fit: cover; border-radius: 0.5rem; background: #07080b; }
+.cosmo-account-profile { display: flex; align-items: center; gap: 0.8rem; }
+.cosmo-account-profile img { width: 3rem; height: 3rem; border-radius: 9999px; object-fit: cover; }
+.cosmo-scan { display: flex; justify-content: space-between; gap: 1rem; padding: 0.7rem 0; border-top: 1px solid rgba(255,255,255,.08); font-family: "JetBrains Mono", monospace; font-size: 12px; }
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+{{>layout/header}}
+<main class="gravity-page">
+    <section class="gv-kicker">
+        <div><strong>COSMO</strong> · 연결된 계정</div>
+        {{>cosmo/partials/gravity-admin-controls}}
+    </section>
+    <p id="gravityAdminHint" class="about-admin-hint" hidden>관리자 모드에서 연결된 COSMO 계정을 볼 수 있습니다.</p>
+    <p id="gravityAdminMessage" role="status" class="gv-muted" hidden></p>
+    <div class="gv-pills">
+        <a class="gv-pill" href="/cosmo/gravity">역대 그래비티</a>
+        <a class="gv-pill is-active" href="/cosmo/account"><span class="gv-dot"></span>내 COSMO</a>
+    </div>
+
+    {{#needsAdmin}}
+    <p class="gv-panel gv-empty">관리자로 로그인한 뒤, 연결된 COSMO 계정의 닉네임·소유 오브젝트·스캔 시리얼을 볼 수 있습니다.</p>
+    {{/needsAdmin}}
+    {{#cosmoAccountError}}<p class="gv-notice" role="status">{{cosmoAccountError}}</p>{{/cosmoAccountError}}
+
+    {{#hasCosmoAccount}}
+    {{#cosmoAccount}}
+    <section class="gv-panel gv-headline">
+        <div class="cosmo-account-profile">
+            {{#hasProfileImage}}<img src="{{profileImageUrl}}" alt="" referrerpolicy="no-referrer">{{/hasProfileImage}}
+            <div>
+                <h1>{{nickname}}</h1>
+                {{#hasAddress}}<p class="gv-muted">{{addressShort}}</p>{{/hasAddress}}
+                <p class="gv-muted">소유 오브젝트 {{ownedCount}}개 · 스캔 시리얼 {{scanCount}}개</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="gv-block">
+        <div class="gv-section-title"><h2>소유 오브젝트</h2></div>
+        {{#hasOwned}}
+        <div class="cosmo-account-grid">
+            {{#ownedObjekts}}
+            <article class="gv-panel gv-card cosmo-account-card">
+                {{#hasImage}}<img src="{{thumbnailImage}}" alt="" referrerpolicy="no-referrer">{{/hasImage}}
+                <h3>{{collectionId}}</h3>
+                <p class="gv-muted">{{member}} {{#objektClass}}· {{objektClass}}{{/objektClass}}</p>
+                {{#tokenId}}<p class="gv-muted">#{{tokenId}}</p>{{/tokenId}}
+                {{#serial}}<p class="gv-muted">{{serial}}</p>{{/serial}}
+            </article>
+            {{/ownedObjekts}}
+        </div>
+        {{#ownedTruncated}}<p class="gv-muted">앞쪽 {{ownedCount}}개만 표시합니다.</p>{{/ownedTruncated}}
+        {{/hasOwned}}
+        {{^hasOwned}}<p class="gv-panel gv-empty">소유 오브젝트가 없습니다.</p>{{/hasOwned}}
+    </section>
+
+    <section class="gv-panel" style="padding:1rem 1.1rem">
+        <h2>스캔한 시리얼</h2>
+        {{#hasScans}}
+        {{#scans}}
+        <div class="cosmo-scan"><span>{{serial}}</span><span>{{collectionId}} {{when}}</span></div>
+        {{/scans}}
+        {{/hasScans}}
+        {{^hasScans}}<p class="gv-muted">이 계정에서 가져온 스캔 시리얼이 없습니다.</p>{{/hasScans}}
+    </section>
+    {{/cosmoAccount}}
+    {{/hasCosmoAccount}}
+</main>
+{{>cosmo/partials/gravity-admin-login}}
+{{>layout/footer}}
+<script src="/js/about-admin-auth.js?v=1"></script>
+<script src="/js/gravity-connect.js?v=4"></script>
+</body>
+</html>

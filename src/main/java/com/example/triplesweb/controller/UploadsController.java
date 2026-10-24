@@ -1,7 +1,10 @@
 package com.example.triplesweb.controller;
 
+import com.example.triplesweb.entity.UploadBlob;
+import com.example.triplesweb.service.UploadContentStore;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -28,15 +31,18 @@ public class UploadsController {
 
     private final Path uploadRoot;
     private final String fallbackBaseUrl;
+    private final UploadContentStore uploadContentStore;
 
     public UploadsController(
             @Value("${file.upload-dir}") String uploadDir,
-            @Value("${upload.fallback-base-url:}") String fallbackBaseUrl
+            @Value("${upload.fallback-base-url:}") String fallbackBaseUrl,
+            UploadContentStore uploadContentStore
     ) {
         this.uploadRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
         this.fallbackBaseUrl = StringUtils.hasText(fallbackBaseUrl)
                 ? fallbackBaseUrl.trim().replaceAll("/+$", "")
                 : "";
+        this.uploadContentStore = uploadContentStore;
     }
 
     @RequestMapping(value = "/uploads/**", method = {RequestMethod.GET, RequestMethod.HEAD})
@@ -60,6 +66,15 @@ public class UploadsController {
                     .body(new FileSystemResource(local));
         }
 
+        UploadBlob stored = uploadContentStore.find(relative).orElse(null);
+        if (stored != null && stored.getData() != null && stored.getData().length > 0) {
+            MediaType type = mediaType(stored.getContentType());
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
+                    .contentType(type)
+                    .body(new ByteArrayResource(stored.getData()));
+        }
+
         if (!StringUtils.hasText(fallbackBaseUrl)) {
             return ResponseEntity.notFound().build();
         }
@@ -78,6 +93,15 @@ public class UploadsController {
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(location)
                 .build();
+    }
+
+    private static MediaType mediaType(String contentType) {
+        if (!StringUtils.hasText(contentType)) return MediaType.APPLICATION_OCTET_STREAM;
+        try {
+            return MediaType.parseMediaType(contentType);
+        } catch (RuntimeException ex) {
+            return MediaType.APPLICATION_OCTET_STREAM;
+        }
     }
 
     private static String relativeUploadPath(HttpServletRequest request) {

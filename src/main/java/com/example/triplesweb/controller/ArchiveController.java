@@ -6,9 +6,14 @@ import com.example.triplesweb.service.ArchiveService;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.entity.Artist;
+import com.example.triplesweb.util.MemberPortraitOptions;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +40,7 @@ public class ArchiveController {
                               @RequestParam(defaultValue = "0") int page,
                               @RequestParam(defaultValue = "9") int size,
                               @RequestParam(required = false) String q,
+                              @RequestParam(required = false) List<String> members,
                               HttpServletRequest request, HttpSession session, Model model) {
 
         boolean isAdmin = aboutAdminAuth.isAdmin(request, session);
@@ -46,19 +52,53 @@ public class ArchiveController {
 
         MediaType type = MediaType.valueOf(key);
 
-        Page<Archive> archives = archiveService.pageByType(type, page, size, q);
+        List<String> selectedMembers = normalizeMembers(members);
+        Page<Archive> archives = selectedMembers.isEmpty()
+                ? archiveService.pageByType(type, page, size, q)
+                : archiveService.pageByType(type, page, size, q, selectedMembers);
 
+        List<Artist> artists = artistRepository.findAll();
         model.addAttribute("archives", archives);
-        model.addAttribute("artistOptions", artistRepository.findAll());
+        model.addAttribute("artistOptions", artists);
+        model.addAttribute("memberPickerOptions", memberOptions(artists, selectedMembers));
+        model.addAttribute("selectedMembers", selectedMembers);
+        model.addAttribute("hasSelectedMembers", !selectedMembers.isEmpty());
         model.addAttribute("page", archives);
         model.addAttribute("type", type);
         model.addAttribute("isAuthenticated", isAuthenticated);
         model.addAttribute("isAdmin", isAdmin);
-        addArchivePage(model, archives, type, q);
+        addArchivePage(model, archives, type, q, memberQuery(selectedMembers));
         return (type == MediaType.IMAGE) ? "archive/image_archive" : "archive/video_archive";
     }
 
-    private void addArchivePage(Model model, Page<Archive> archives, MediaType type, String q) {
+    private static List<String> normalizeMembers(List<String> members) {
+        if (members == null) return List.of();
+        Set<String> unique = new LinkedHashSet<>();
+        for (String member : members) {
+            if (member != null && !member.isBlank()) unique.add(member.trim());
+        }
+        return List.copyOf(unique);
+    }
+
+    private static List<Map<String, Object>> memberOptions(List<Artist> artists, List<String> selected) {
+        Set<String> chosen = Set.copyOf(selected);
+        List<Map<String, Object>> options = MemberPortraitOptions.fromArtists(artists, false);
+        for (Map<String, Object> option : options) {
+            option.put("active", chosen.contains(String.valueOf(option.get("value"))));
+        }
+        return options;
+    }
+
+    private static String memberQuery(List<String> selected) {
+        if (selected.isEmpty()) return "";
+        StringBuilder query = new StringBuilder();
+        for (String member : selected) {
+            query.append("&members=").append(URLEncoder.encode(member, StandardCharsets.UTF_8));
+        }
+        return query.toString();
+    }
+
+    private void addArchivePage(Model model, Page<Archive> archives, MediaType type, String q, String memberQuery) {
         int totalPages = archives.getTotalPages();
         int current = archives.getNumber();
         String query = q == null ? "" : q.trim();
@@ -71,7 +111,8 @@ public class ArchiveController {
         model.addAttribute("archivePrevPage", Math.max(0, current - 1));
         model.addAttribute("archiveNextPage", current + 1);
         model.addAttribute("hasArchives", !archives.isEmpty());
-        model.addAttribute("archiveHighlights", archives.getContent().stream().limit(4).toList());
+        model.addAttribute("archiveHighlights", archives.getContent().stream().limit(8).toList());
+        model.addAttribute("memberQuery", memberQuery == null ? "" : memberQuery);
         model.addAttribute("query", query);
         model.addAttribute("hasQuery", !query.isEmpty());
         model.addAttribute("archivePath", type == MediaType.IMAGE ? "/archive/image_archive" : "/archive/video_archive");

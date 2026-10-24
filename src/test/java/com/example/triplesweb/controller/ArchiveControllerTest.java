@@ -53,6 +53,8 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("data-archive-edit")))
                 .andExpect(content().string(containsString("data-archive-delete")))
                 .andExpect(content().string(containsString("archiveEditForm")))
+                .andExpect(content().string(containsString("사진 추가")))
+                .andExpect(content().string(containsString("멤버 선택")))
                 .andExpect(content().string(not(containsString("14.8M"))))
                 .andExpect(content().string(not(containsString("Polygon"))));
     }
@@ -65,7 +67,8 @@ class ArchiveControllerTest {
         mvc.perform(get("/archive/image_archive")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("포토")))
                 .andExpect(content().string(not(containsString("data-archive-edit"))))
-                .andExpect(content().string(not(containsString("data-archive-delete"))));
+                .andExpect(content().string(not(containsString("data-archive-delete"))))
+                .andExpect(content().string(not(containsString("사진 추가"))));
     }
 
     @Test void videoArchiveUsesSameLiveFields() throws Exception {

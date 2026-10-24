@@ -1,6 +1,9 @@
 package com.example.triplesweb.service;
 
+import com.example.triplesweb.dto.ObjektCatalogDto;
+import com.example.triplesweb.entity.ObjektCatalog;
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -26,14 +29,17 @@ import java.util.Map;
 public class ObjektService {
 
     private final RestClient restClient;
+    private final ObjektCatalogStore catalogStore;
 
     private volatile List<Map<String, Object>> cachedCollections;
     private volatile long lastSuccessfulRefreshMillis;
 
     public ObjektService(
             @Value("${objekt.api.base-url:https://objekt.top/api/v1}")
-            String baseUrl
+            String baseUrl,
+            ObjektCatalogStore catalogStore
     ) {
+        this.catalogStore = catalogStore;
         HttpClient httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(3))
                 .build();
@@ -52,9 +58,18 @@ public class ObjektService {
      * 페이지 요청에서는 외부 API를 호출하지 않는다.
      * 최초 캐시 적재 전에는 빈 목록을 즉시 반환한다.
      */
+    @PostConstruct
+    void loadStoredCatalog() {
+        cachedCollections = loadFromDatabase("triples");
+    }
+
     public List<Map<String, Object>> findCollections(String artist) {
         List<Map<String, Object>> snapshot = cachedCollections;
-        return snapshot == null ? List.of() : snapshot;
+        if (snapshot == null || snapshot.isEmpty()) {
+            snapshot = loadFromDatabase(artist);
+            cachedCollections = snapshot;
+        }
+        return snapshot;
     }
 
     /**
@@ -91,55 +106,17 @@ public class ObjektService {
                 return;
             }
 
-            List<Map<String, Object>> result = new ArrayList<>();
-
+            Map<String, ObjektCatalog> unique = new LinkedHashMap<>();
             for (JsonNode node : collections) {
-                Map<String, Object> item = new LinkedHashMap<>();
-
-                put(item, node, "id");
-                put(item, node, "createdAt");
-                put(item, node, "slug");
-                put(item, node, "collectionId");
-                put(item, node, "season");
-                put(item, node, "member");
-                put(item, node, "artist");
-                put(item, node, "collectionNo");
-                put(item, node, "class");
-                put(item, node, "thumbnailImage");
-                put(item, node, "frontImage");
-                put(item, node, "backImage");
-                put(item, node, "backgroundColor");
-                put(item, node, "textColor");
-                put(item, node, "onOffline");
-                put(item, node, "hasAudio");
-                put(item, node, "originalFrontImage");
-                put(item, node, "originalBackImage");
-                put(item, node, "frontMedia");
-                put(item, node, "bandImageUrl");
-
-                item.put("searchText", String.join(" ",
-                        string(item.get("collectionId")),
-                        string(item.get("slug")),
-                        string(item.get("season")),
-                        string(item.get("member")),
-                        string(item.get("artist")),
-                        string(item.get("collectionNo")),
-                        string(item.get("class"))
-                ));
-
-                item.put("seasonKey", string(item.get("season")).toLowerCase());
-                item.put("classKey", string(item.get("class")).toLowerCase());
-                item.put("numberValue", extractNumber(string(item.get("collectionNo"))));
-
-                // 항목 자체도 불변으로 만들어 호출자가 캐시를 변경하지 못하게 한다.
-                result.add(Map.copyOf(item));
+                ObjektCatalogDto dto = ObjektCatalogDto.from(node);
+                if (dto.collectionId() == null || dto.collectionId().isBlank()) continue;
+                unique.put(dto.collectionId(), dto.toEntity());
             }
-
-            // 모든 데이터를 완성한 후 한 번에 교체한다.
-            cachedCollections = List.copyOf(result);
+            catalogStore.replace("triples", new ArrayList<>(unique.values()));
+            cachedCollections = loadFromDatabase("triples");
             lastSuccessfulRefreshMillis = System.currentTimeMillis();
 
-            log.info("Objekt 캐시 갱신 완료: {}개", cachedCollections.size());
+            log.info("Objekt 카탈로그 저장 완료: {}개", cachedCollections.size());
 
         } catch (RuntimeException ex) {
             // 최초 적재 실패를 포함해 페이지 요청으로 예외를 전파하지 않는다.
@@ -155,30 +132,8 @@ public class ObjektService {
         return lastSuccessfulRefreshMillis;
     }
 
-    private static void put(
-            Map<String, Object> target,
-            JsonNode source,
-            String field
-    ) {
-        JsonNode value = source.get(field);
-        target.put(field, value == null || value.isNull() ? "" : value.asText());
-    }
-
-    private static String string(Object value) {
-        return value == null ? "" : value.toString();
-    }
-
-    private static int extractNumber(String value) {
-        String digits = value.replaceAll("[^0-9]", "");
-
-        if (digits.isBlank()) {
-            return Integer.MAX_VALUE;
-        }
-
-        try {
-            return Integer.parseInt(digits);
-        } catch (NumberFormatException ex) {
-            return Integer.MAX_VALUE;
-        }
+    private List<Map<String, Object>> loadFromDatabase(String artist) {
+        String key = artist == null || artist.isBlank() ? "triples" : artist;
+        return catalogStore.load(key).stream().map(ObjektCatalogDto::toView).toList();
     }
 }

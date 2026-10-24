@@ -166,6 +166,20 @@ public class GravityService {
         return response;
     }
 
+    public JsonNode getAuthorized(String path) {
+        requireCosmoToken();
+        return cosmoGet(path);
+    }
+
+    public java.util.Optional<JsonNode> tryGet(String path) {
+        if (!hasCosmoToken()) return java.util.Optional.empty();
+        try {
+            return java.util.Optional.of(cosmoGet(path));
+        } catch (RuntimeException ex) {
+            return java.util.Optional.empty();
+        }
+    }
+
     private void requireCosmoToken() {
         if (!hasCosmoToken()) throw new IllegalStateException("COSMO 인증이 아직 연결되지 않았습니다.");
     }
