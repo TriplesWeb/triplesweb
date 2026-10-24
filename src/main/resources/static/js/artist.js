@@ -101,9 +101,24 @@
     if (input) input.focus();
   }
 
+  function bindMemberTabFrames() {
+    document.querySelectorAll(".nav-tab-btn[data-member-tab]").forEach((btn, index) => {
+      const frame = btn.querySelector(".artist-tab-frame");
+      if (!frame) return;
+      const n = index + 1;
+      if (n > 24) {
+        frame.hidden = true;
+        return;
+      }
+      frame.src = "/uploads/images/artist-tab-frames/" + n + ".png";
+      frame.hidden = false;
+    });
+  }
+
   function bindTabs() {
     const tabButtons = document.querySelectorAll(".nav-tab-btn");
     const tabPanes = document.querySelectorAll(".tab-pane");
+    bindMemberTabFrames();
 
     function activateTab(targetId) {
       if (!targetId) return;
@@ -111,31 +126,8 @@
       const targetPane = document.querySelector(targetId);
       if (!targetPane) return;
 
-      tabButtons.forEach((b) => {
-        const img = b.querySelector("img");
-        const span = b.querySelector("span");
-        if (img) {
-          img.classList.remove("border-[#00f5d4]");
-          img.classList.add("border-transparent");
-        }
-        if (span) {
-          span.classList.remove("text-[#00f5d4]");
-          span.classList.add("text-[#b9cac4]");
-        }
-      });
-
-      if (btn) {
-        const activeImg = btn.querySelector("img");
-        const activeSpan = btn.querySelector("span");
-        if (activeImg) {
-          activeImg.classList.remove("border-transparent");
-          activeImg.classList.add("border-[#00f5d4]");
-        }
-        if (activeSpan) {
-          activeSpan.classList.remove("text-[#b9cac4]");
-          activeSpan.classList.add("text-[#00f5d4]");
-        }
-      }
+      tabButtons.forEach((b) => b.classList.remove("is-active"));
+      if (btn) btn.classList.add("is-active");
 
       tabPanes.forEach((pane) => pane.classList.add("hidden"));
       targetPane.classList.remove("hidden");
@@ -161,6 +153,8 @@
       activateTab("#" + tab);
     } else if (hash && document.querySelector(hash)) {
       activateTab(hash);
+    } else {
+      activateTab("#triples");
     }
 
     window.__artistActivateTab = activateTab;
