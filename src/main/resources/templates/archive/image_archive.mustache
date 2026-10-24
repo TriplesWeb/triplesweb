@@ -16,7 +16,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/archive-page.css?v=3">
+    <link rel="stylesheet" href="/css/archive-page.css?v=4">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=3">
     {{#_csrf}}
     <meta name="_csrf" content="{{token}}">
@@ -28,7 +28,7 @@
 <div class="ar-glow ar-glow-mint"></div>
 {{>layout/header}}
 
-<main class="archive-page">
+<main class="archive-page" data-archive-kind="image">
     <section class="ar-hero">
         <div class="ar-panel ar-headline">
             <div>
@@ -66,10 +66,6 @@
                     <span class="ar-id">#{{id}}</span>
                     <h3>{{title}}</h3>
                     {{#artistNames}}<p class="ar-muted">{{artistNames}}</p>{{/artistNames}}
-                    <div class="ar-actions" data-admin-only>
-                        <button type="button" data-archive-edit data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}">수정</button>
-                        <button type="button" class="ar-delete" data-archive-delete data-id="{{id}}">삭제</button>
-                    </div>
                 </div>
             </article>
             {{/archiveHighlights}}
@@ -116,8 +112,8 @@
                 <div class="ar-meta"><span class="ar-id">#{{id}}</span>{{#artistNames}}<span class="ar-badge">{{artistNames}}</span>{{/artistNames}}</div>
                 <h3>{{title}}</h3>
                 <div class="ar-actions" data-admin-only>
-                    <button type="button" data-archive-edit data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}">수정</button>
-                    <button type="button" class="ar-delete" data-archive-delete data-id="{{id}}">삭제</button>
+                    <button type="button" data-archive-edit data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-url="{{file.url}}">수정</button>
+                    <button type="button" class="ar-delete" data-archive-delete data-id="{{id}}" data-title="{{title}}">삭제</button>
                 </div>
             </div>
         </article>
@@ -144,154 +140,81 @@
     {{/archiveTotalPages}}
 </main>
 
-<!-- 업로드 모달 창 (Tailwind 스타일 적용) -->
-<form id="archiveUploadForm" enctype="multipart/form-data">
-    <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-surface-container border border-outline-variant/50 rounded-3xl shadow-2xl text-on-surface overflow-hidden">
-                <div class="modal-header border-b border-outline-variant/30 px-6 py-4">
-                    <h5 class="font-headline-md font-bold text-on-surface" id="uploadModalLabel">아카이브 업로드</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="닫기"></button>
-                </div>
-                <div class="modal-body px-6 py-6 space-y-4">
-                    <!-- 제목 -->
-                    <div class="space-y-1.5">
-                        <label for="title" class="block font-label-md text-sm text-on-surface-variant font-medium">제목</label>
-                        <input type="text" class="w-full px-4 py-2.5 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl text-sm placeholder:text-outline/60 focus:outline-none focus:border-primary-container text-black" id="title" name="title" placeholder="사진 제목을 입력하세요" required />
+<div class="ar-dialog" id="uploadModal" hidden>
+    <button type="button" class="ar-dialog-backdrop" data-ar-close aria-label="닫기"></button>
+    <div class="ar-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="uploadModalLabel">
+        <form id="archiveUploadForm" enctype="multipart/form-data" data-upload-url="/archive/upload">
+            <input type="hidden" name="type" value="IMAGE">
+            <div class="ar-dialog-head">
+                <h2 id="uploadModalLabel">사진 추가</h2>
+                <button type="button" class="ar-close" data-ar-close aria-label="닫기">&times;</button>
+            </div>
+            <div class="ar-dialog-body">
+                <label class="ar-field">제목
+                    <input type="text" name="title" placeholder="사진 제목을 입력하세요" required>
+                </label>
+                <div class="ar-field">출연 멤버
+                    <div class="member-portrait-picker" id="archive-upload-picker" role="group" aria-label="출연 멤버">
+                        {{>partials/member-portrait-picker}}
                     </div>
-
-                    <!-- 파일 -->
-                    <div class="space-y-1.5">
-                        <label for="file" class="block font-label-md text-sm text-on-surface-variant font-medium">파일 선택</label>
-                        <input type="file" class="w-full py-2 px-3 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl text-sm text-on-surface-variant file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-container file:text-on-primary hover:file:opacity-90 cursor-pointer" id="file" name="file" accept="image/*" required onchange="previewFile()" />
-                    </div>
-
-                    <!-- 미리보기 -->
-                    <div id="previewArea" class="flex flex-wrap gap-2 mt-2"></div>
+                    <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
+                    <input type="text" name="extraArtists" placeholder="목록에 없는 이름은 쉼표로 추가">
                 </div>
-                <div class="modal-footer border-t border-outline-variant/30 px-6 py-4 flex items-center justify-end gap-2">
-                    <button type="button" class="px-5 py-2.5 rounded-xl bg-surface-container-high/40 hover:bg-surface-container-high border border-outline-variant/40 text-on-surface text-sm font-medium transition-all" data-bs-dismiss="modal">취소</button>
-                    <button type="submit" class="px-6 py-2.5 rounded-full bg-primary-container text-on-primary font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow">추가하기</button>
+                <label class="ar-field">사진 파일
+                    <input type="file" name="file" accept="image/*" required>
+                </label>
+                <div class="ar-preview" id="uploadPreview" hidden>
+                    <div><p>원본</p><div class="ar-preview-full"></div></div>
+                    <div><p>목록에서 보이는 모습</p><div class="ar-preview-card"></div></div>
                 </div>
             </div>
-        </div>
+            <div class="ar-dialog-foot">
+                <button type="button" class="ar-text-btn" data-ar-close>취소</button>
+                <button type="submit" class="ar-submit">추가하기</button>
+            </div>
+        </form>
     </div>
-</form>
+</div>
 
-<form id="archiveEditForm" enctype="multipart/form-data">
-    <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-surface-container border border-outline-variant/50 rounded-3xl text-on-surface overflow-hidden">
-                <div class="modal-header border-b border-outline-variant/30 px-6 py-4">
-                    <h5 class="font-bold">사진 수정</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="닫기"></button>
+<div class="ar-dialog" id="editModal" hidden>
+    <button type="button" class="ar-dialog-backdrop" data-ar-close aria-label="닫기"></button>
+    <div class="ar-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="editModalLabel">
+        <form id="archiveEditForm" enctype="multipart/form-data">
+            <div class="ar-dialog-head">
+                <h2 id="editModalLabel">사진 수정</h2>
+                <button type="button" class="ar-close" data-ar-close aria-label="닫기">&times;</button>
+            </div>
+            <div class="ar-dialog-body">
+                <label class="ar-field">제목
+                    <input type="text" name="title" required>
+                </label>
+                <div class="ar-field">출연 멤버
+                    <div class="member-portrait-picker" id="archive-edit-picker" role="group" aria-label="출연 멤버">
+                        {{>partials/member-portrait-picker}}
+                    </div>
+                    <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
+                    <input type="text" name="extraArtists" placeholder="목록에 없는 이름은 쉼표로 추가">
                 </div>
-                <div class="modal-body px-6 py-6 space-y-4">
-                    <label class="block text-sm text-on-surface-variant">제목
-                        <input type="text" name="title" required class="mt-1 w-full px-4 py-2.5 rounded-xl border border-outline-variant/60 bg-surface-container-lowest/70 text-black">
-                    </label>
-                    <label class="block text-sm text-on-surface-variant">출연 표기
-                        <input type="text" name="artistNames" class="mt-1 w-full px-4 py-2.5 rounded-xl border border-outline-variant/60 bg-surface-container-lowest/70 text-black" placeholder="비워 두면 표기를 지웁니다">
-                    </label>
-                    <label class="block text-sm text-on-surface-variant">파일 교체 (선택)
-                        <input type="file" name="file" accept="image/*" class="mt-1 w-full text-sm">
-                    </label>
-                    <div id="editPreview"></div>
-                </div>
-                <div class="modal-footer border-t border-outline-variant/30 px-6 py-4 flex justify-end gap-2">
-                    <button type="button" class="px-5 py-2.5 rounded-xl border border-outline-variant/40" data-bs-dismiss="modal">취소</button>
-                    <button type="submit" class="px-6 py-2.5 rounded-full bg-primary-container font-bold text-sm">저장</button>
+                <label class="ar-field">파일 교체 (선택)
+                    <input type="file" name="file" accept="image/*">
+                </label>
+                <div class="ar-preview" id="editPreview" hidden>
+                    <div><p>현재 사진</p><div class="ar-preview-full"></div></div>
+                    <div><p>목록에서 보이는 모습</p><div class="ar-preview-card"></div></div>
                 </div>
             </div>
-        </div>
+            <div class="ar-dialog-foot">
+                <button type="button" class="ar-text-btn" data-ar-close>취소</button>
+                <button type="submit" class="ar-submit">저장</button>
+            </div>
+        </form>
     </div>
-</form>
+</div>
 
 {{>layout/footer}}
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const form = document.getElementById('archiveUploadForm');
-        if (!form) return;
-
-        form.addEventListener('submit', async function (e) {
-            e.preventDefault();
-
-            const formData = new FormData(form);
-            formData.set('type', '{{type}}' || 'IMAGE');
-
-            const headerMap = {};
-            const csrf = document.querySelector('meta[name="_csrf"]');
-            const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
-            if (csrf && csrfHeader) headerMap[csrfHeader.content] = csrf.content;
-            const headers = window.AboutAdminAuth ? AboutAdminAuth.applyAuthHeaders(headerMap) : headerMap;
-
-            try {
-                const res = await fetch('/archive/upload', { method: 'POST', body: formData, headers, credentials: 'same-origin' });
-                if (res.ok) {
-                    location.reload();
-                } else if (res.status === 403) {
-                    alert('관리자만 업로드할 수 있습니다.');
-                } else {
-                    const msg = await res.text();
-                    alert('업로드 실패\n' + msg);
-                }
-            } catch (err) {
-                console.error(err);
-                alert('업로드 중 오류 발생');
-            }
-        });
-    });
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const picker = document.getElementById('archiveArtistPicker');
-        const count = document.getElementById('archiveArtistCount');
-        const refresh = () => { if (picker && count) count.textContent = String(picker.querySelectorAll('input:checked').length); };
-        picker?.addEventListener('change', refresh);
-        document.getElementById('clearArchiveArtists')?.addEventListener('click', () => { picker?.querySelectorAll('input').forEach(input => input.checked = false); refresh(); });
-        refresh();
-    });
-    // 모달 열기
-    function showAddModal() {
-        const modal = new bootstrap.Modal(document.getElementById('uploadModal'));
-        document.getElementById('archiveUploadForm').reset();
-        document.getElementById('previewArea').innerHTML = "";
-        modal.show();
-    }
-
-    // 파일 미리보기
-    function previewFile() {
-        const previewArea = document.getElementById("previewArea");
-        const fileInput = document.getElementById("file");
-        const file = fileInput.files[0];
-        previewArea.innerHTML = "";
-
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                if (file.type.startsWith("image/")) {
-                    const thumbBox = document.createElement("div");
-                    thumbBox.className = "relative w-24 h-24 rounded-xl overflow-hidden border border-outline-variant/30 bg-black";
-
-                    const img = document.createElement("img");
-                    img.src = e.target.result;
-                    img.className = "w-full h-full object-cover";
-
-                    thumbBox.appendChild(img);
-                    previewArea.appendChild(thumbBox);
-                } else {
-                    alert("이미지 파일만 선택 가능합니다.");
-                    fileInput.value = "";
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-    }
-</script>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="/js/archive-manage.js?v=1"></script>
 <script src="/js/member-portrait-picker.js?v=2"></script>
-<script src="/js/archive-browse.js?v=2"></script>
+<script src="/js/archive-manage.js?v=2"></script>
+<script src="/js/archive-browse.js?v=3"></script>
 </body>
 </html>

@@ -116,20 +116,45 @@
     }
   });
 
+  document.addEventListener("submit", (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || form.hasAttribute("data-admin-fetch")) return;
+    const message = form.getAttribute("data-confirm");
+    if (message && !window.confirm(message)) event.preventDefault();
+  }, true);
+
   document.addEventListener("submit", async (event) => {
     const form = event.target;
     if (!(form instanceof HTMLFormElement) || !form.hasAttribute("data-admin-fetch")) return;
+    const confirmMessage = form.getAttribute("data-confirm");
+    if (confirmMessage && !window.confirm(confirmMessage)) {
+      event.preventDefault();
+      return;
+    }
     event.preventDefault();
-    const headers = auth.applyAuthHeaders();
+    const busy = event.submitter instanceof HTMLButtonElement ? event.submitter : form.querySelector("button[type='submit']");
+    if (busy) busy.disabled = true;
     try {
-      const response = await fetch(form.action, { method: "POST", body: new FormData(form), credentials: "same-origin", headers });
+      const response = await fetch(form.action, {
+        method: (form.getAttribute("method") || "POST").toUpperCase(),
+        body: new FormData(form),
+        credentials: "same-origin",
+        headers: auth.applyAuthHeaders()
+      });
       if (response.ok) {
         window.location.href = response.redirected ? response.url : window.location.href;
         return;
       }
-      alert(response.status === 403 ? "관리자 로그인 후 다시 시도해 주세요." : "저장하지 못했습니다.");
+      let detail = "";
+      try { detail = (await response.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(); } catch (_) {}
+      if (detail.length > 180) detail = detail.slice(0, 180);
+      alert(response.status === 403
+        ? "관리자 로그인 후 다시 시도해 주세요."
+        : (detail || "저장하지 못했습니다. 입력값을 확인하고 다시 시도해 주세요."));
     } catch (_) {
-      alert("요청에 실패했습니다.");
+      alert("요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
+    } finally {
+      if (busy) busy.disabled = false;
     }
   });
 

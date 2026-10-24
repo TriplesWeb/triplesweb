@@ -12,7 +12,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/archive-page.css?v=3">
+    <link rel="stylesheet" href="/css/archive-page.css?v=4">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=3">
 
     <title>트리플에스 커뮤니티 - 새 미디어 등록</title>
@@ -217,8 +217,11 @@
         alert('영상 정보를 먼저 가져와 주세요.');
         return;
       }
+      if (!window.confirm('이 영상을 등록하시겠습니까?')) return;
       event.target.submit();
+      return;
     }
+    if (!window.confirm('이 영상을 등록하시겠습니까?')) event.preventDefault();
   });
 })();
 </script>

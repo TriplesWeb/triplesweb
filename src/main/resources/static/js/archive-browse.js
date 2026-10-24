@@ -34,14 +34,14 @@
         panel.hidden = !panel.hidden;
         document.getElementById('archiveMemberToggle').setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
     });
-    if (window.MemberPortraitPicker) {
-        MemberPortraitPicker.bindMultiSelect(document);
-        if (panel && panel.querySelector('.mpp-item.is-active')) panel.hidden = false;
+    if (window.MemberPortraitPicker && panel) {
+        MemberPortraitPicker.bindMultiSelect(panel);
+        if (panel.querySelector('.mpp-item.is-active')) panel.hidden = false;
     }
     form?.addEventListener('submit', () => {
         form.querySelectorAll('input[name="members"]').forEach(node => node.remove());
-        if (!window.MemberPortraitPicker) return;
-        MemberPortraitPicker.selectedValues(document).forEach(value => {
+        if (!window.MemberPortraitPicker || !panel) return;
+        MemberPortraitPicker.selectedValues(panel).forEach(value => {
             const input = document.createElement('input');
             input.type = 'hidden';
             input.name = 'members';

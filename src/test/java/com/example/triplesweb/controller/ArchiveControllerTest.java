@@ -55,6 +55,10 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("archiveEditForm")))
                 .andExpect(content().string(containsString("사진 추가")))
                 .andExpect(content().string(containsString("멤버 선택")))
+                .andExpect(content().string(containsString("id=\"uploadModal\" hidden")))
+                .andExpect(content().string(containsString("archive-upload-picker")))
+                .andExpect(content().string(containsString("data-url=\"/uploads/a.jpg\"")))
+                .andExpect(content().string(containsString("목록에서 보이는 모습")))
                 .andExpect(content().string(not(containsString("14.8M"))))
                 .andExpect(content().string(not(containsString("Polygon"))));
     }
@@ -83,7 +87,10 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("무대영상")))
                 .andExpect(content().string(containsString("영상 아카이브")))
                 .andExpect(content().string(containsString("data-admin-only")))
-                .andExpect(content().string(containsString("영상 추가")));
+                .andExpect(content().string(containsString("영상 추가")))
+                .andExpect(content().string(containsString("archive-upload-picker")))
+                .andExpect(content().string(containsString("id=\"editModal\" hidden")))
+                .andExpect(content().string(containsString("data-url=\"/uploads/a.mp4\"")));
     }
 
     @Test void adminCanUpdateAndDelete() throws Exception {

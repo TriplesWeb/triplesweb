@@ -568,7 +568,7 @@
                 <div class="modal-footer flex justify-between">
                     <div>
                         {{#isAdmin}}
-                        <form id="deleteForm" method="post" class="m-0 d-inline">
+                        <form id="deleteForm" method="post" class="m-0 d-inline" data-confirm="이 일정을 삭제하시겠습니까? 삭제하면 되돌릴 수 없습니다.">
                             <button type="submit" class="btn-custom-danger">삭제</button>
                         </form>
                         {{/isAdmin}}
