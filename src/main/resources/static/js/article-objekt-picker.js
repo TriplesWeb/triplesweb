@@ -3,6 +3,9 @@
     const section = document.getElementById('objektPickerSection');
     if (!section) return;
 
+    const panel = document.getElementById('objektPickerPanel');
+    const toggle = document.getElementById('objektPickerToggle');
+    const summary = document.getElementById('objektSelectedSummary');
     const cards = Array.from(section.querySelectorAll('.objekt-option'));
     const checkboxes = Array.from(section.querySelectorAll('.objekt-checkbox'));
     const loadMore = document.getElementById('loadMoreObjekts');
@@ -14,9 +17,39 @@
     const resetBtn = document.getElementById('objektFilterReset');
     const batchSize = 20;
     let visibleCount = batchSize;
+    let open = false;
 
     function normalize(value) {
       return (value || '').toString().trim().toLowerCase();
+    }
+
+    function selectedCount() {
+      return checkboxes.filter((box) => box.checked).length;
+    }
+
+    function updateSummary() {
+      const count = selectedCount();
+      if (summary) {
+        summary.textContent = count > 0
+          ? `선택된 오브젝트 ${count}개`
+          : '선택된 오브젝트 0개';
+      }
+      if (toggle) {
+        toggle.textContent = open ? '목록 닫기' : (count > 0 ? `오브젝트 선택 (${count})` : '오브젝트 선택');
+      }
+    }
+
+    function setOpen(nextOpen) {
+      open = nextOpen;
+      if (panel) {
+        panel.hidden = !open;
+        panel.classList.toggle('hidden', !open);
+      }
+      if (toggle) {
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      }
+      updateSummary();
+      if (open) render();
     }
 
     function matchesFilters(card) {
@@ -42,7 +75,6 @@
         const matchedCard = matchesFilters(card);
         let shouldShow = false;
         if (isSelected) {
-          // 이미 선택된 오브젝트는 필터와 무관하게 항상 표시
           shouldShow = true;
         } else if (matchedCard && shownMatched < visibleCount) {
           shouldShow = true;
@@ -51,22 +83,27 @@
         card.hidden = !shouldShow;
       });
 
-      const selectedCount = checkboxes.filter((box) => box.checked).length;
+      const count = selectedCount();
       const matchedCount = matched.length;
       if (status) {
         status.textContent =
-          `표시 ${Math.min(visibleCount, matchedCount)} / 필터 ${matchedCount}개 · 선택 ${selectedCount} / 20개`;
+          `표시 ${Math.min(visibleCount, matchedCount)} / 필터 ${matchedCount}개 · 선택 ${count} / 20개`;
       }
       if (loadMore) {
         loadMore.hidden = visibleCount >= matchedCount;
         loadMore.textContent =
           `더 보기 (${Math.min(batchSize, Math.max(0, matchedCount - visibleCount))}개)`;
       }
+      updateSummary();
     }
 
     function resetVisible() {
       visibleCount = batchSize;
       render();
+    }
+
+    if (toggle) {
+      toggle.addEventListener('click', () => setOpen(!open));
     }
 
     if (loadMore) {
@@ -104,11 +141,13 @@
           label.classList.toggle('border-teal-300/60', box.checked);
           label.classList.toggle('bg-teal-400/10', box.checked);
         }
-        render();
+        if (open) render();
+        else updateSummary();
       });
     });
 
-    render();
+    // 수정 폼에서 이미 선택된 항목이 있으면 요약만 보여주고, 목록은 버튼으로 연다
+    setOpen(false);
   }
 
   if (document.readyState === 'loading') {
