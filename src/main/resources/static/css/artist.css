@@ -513,35 +513,18 @@
     }
 }
 
-/* 멤버 탭 — 큰 사각 타일, 촘촘한 그리드 (참조 레이아웃) */
+/* 멤버 탭 — 세로 우선(S1~S5 왼쪽 열), 5행×5열 = 25칸 */
 .artist-page .artist-member-tabs {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-auto-flow: column;
     gap: 3px;
     list-style: none;
     margin: 0 0 1rem;
     padding: 0 0 0.85rem;
     overflow: visible;
-}
-
-@media (min-width: 640px) {
-    .artist-page .artist-member-tabs {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 3px;
-    }
-}
-
-@media (min-width: 1024px) {
-    .artist-page .artist-member-tabs {
-        grid-template-columns: repeat(6, minmax(0, 1fr));
-        gap: 4px;
-    }
-}
-
-@media (min-width: 1280px) {
-    .artist-page .artist-member-tabs {
-        grid-template-columns: repeat(8, minmax(0, 1fr));
-    }
+    width: 100%;
 }
 
 .artist-page .nav-tab-btn {
@@ -598,31 +581,10 @@
     inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: fill;
+    object-fit: contain;
     pointer-events: none;
     z-index: 2;
     transition: filter 0.25s ease;
-}
-
-.artist-tab-num {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    z-index: 4;
-    min-width: 1.55rem;
-    padding: 0.12rem 0.35rem 0.14rem;
-    font-family: "JetBrains Mono", ui-monospace, monospace;
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    line-height: 1.2;
-    color: #fff;
-    background: rgba(0, 0, 0, 0.72);
-    pointer-events: none;
-}
-
-.artist-tab-avatar--group .artist-tab-num {
-    display: none;
 }
 
 .artist-tab-shine {
