@@ -241,15 +241,17 @@
 <main class="main-content w-full max-w-[1440px] mx-auto px-4 sm:px-6 py-6 mb-auto">
     <section class="card-box w-full bg-[#16181f]/85 backdrop-blur-xl border border-[#303646]/80 rounded-2xl p-4 sm:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)] relative z-30">
         <div class="mb-5 flex items-center justify-between gap-4 border-b border-white/[0.06] pb-4">
-            <div>
-                <p class="mb-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#00d9bd]">COLLECTION</p>
-                <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-[#f0f1f6]">오브젝트</h2>
+            <div class="flex min-w-0 flex-wrap items-end gap-x-3 gap-y-2">
+                <div>
+                    <p class="mb-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#00d9bd]">COLLECTION</p>
+                    <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-[#f0f1f6]">오브젝트</h2>
+                </div>
+                <span class="hidden sm:inline-flex items-center gap-2 rounded-full border border-[#00f5d4]/20 bg-[#00f5d4]/[0.06] px-3 py-1.5 text-xs font-medium text-[#7df9e8]">
+                    <span class="h-1.5 w-1.5 rounded-full bg-[#00f5d4] shadow-[0_0_8px_#00f5d4]"></span>
+                    Objekt Archive
+                </span>
             </div>
-            <span class="hidden sm:inline-flex items-center gap-2 rounded-full border border-[#00f5d4]/20 bg-[#00f5d4]/[0.06] px-3 py-1.5 text-xs font-medium text-[#7df9e8]">
-                <span class="h-1.5 w-1.5 rounded-full bg-[#00f5d4] shadow-[0_0_8px_#00f5d4]"></span>
-                Objekt Archive
-            </span>
-            <a href="/cosmo/objekt/favorites" class="rounded-full border border-pink-400/30 px-3 py-2 text-xs text-pink-200">♡ 찜 목록</a>
+            <a href="/cosmo/objekt/favorites" class="shrink-0 rounded-full border border-pink-400/30 px-3 py-2 text-xs text-pink-200">♡ 찜 목록</a>
         </div>
         <form id="objekt-search-form" action="/cosmo/objekt" method="get">
         <input type="hidden" name="page" value="0">
@@ -377,7 +379,11 @@
     </section>
 
     <div class="mt-5 flex items-center justify-between gap-3 px-1">
-        <p class="text-sm text-slate-400">검색 결과 <strong class="text-[#00f5d4]">{{objektCount}}</strong>개 <span class="text-slate-500">(전체 {{objektAllCount}}개 중 · 현재 페이지 {{objektPageCount}}개 표시)</span></p>
+        <p id="objekt-result-summary" class="text-sm text-slate-400"
+           data-result-count="{{objektCount}}" data-all-count="{{objektAllCount}}" data-loaded="{{objektPageCount}}">
+            검색 결과 <strong class="text-[#00f5d4]">{{objektCount}}</strong>개
+            <span class="text-slate-500">(전체 {{objektAllCount}}개 중 · <span id="objekt-loaded-count">{{objektPageCount}}</span>개 표시)</span>
+        </p>
     </div>
     {{#objektError}}
     <div class="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{{objektError}}</div>
@@ -403,11 +409,12 @@
         </article>
         {{/objekts}}
     </div>
-    <nav class="flex items-center justify-center gap-4 py-6" aria-label="Objekt 페이지 탐색">
-        {{#hasPreviousPage}}<a class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-white hover:border-teal-400" href="{{previousPageUrl}}">이전</a>{{/hasPreviousPage}}
-        <span class="text-sm text-slate-400">{{objektPageDisplay}} / {{objektTotalPages}} 페이지 · 검색 결과 {{objektCount}}개 / 전체 {{objektAllCount}}개</span>
-        {{#hasNextPage}}<a class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-white hover:border-teal-400" href="{{nextPageUrl}}">다음</a>{{/hasNextPage}}
-    </nav>
+    <div id="objekt-scroll-sentinel" class="flex flex-col items-center justify-center gap-2 py-8" aria-live="polite"
+         data-has-more="{{#hasNextPage}}true{{/hasNextPage}}{{^hasNextPage}}false{{/hasNextPage}}"
+         data-next-page="{{nextPage}}">
+        <p id="objekt-scroll-status" class="text-sm text-slate-500">{{#hasNextPage}}스크롤하면 더 불러옵니다{{/hasNextPage}}{{^hasNextPage}}{{#objektCount}}모두 불러왔습니다{{/objektCount}}{{/hasNextPage}}</p>
+        <div id="objekt-scroll-spinner" class="hidden h-6 w-6 animate-spin rounded-full border-2 border-[#00f5d4]/30 border-t-[#00f5d4]" aria-hidden="true"></div>
+    </div>
 </main>
 <script src="/js/member-portrait-picker.js?v=2"></script>
 <script>
@@ -556,20 +563,159 @@
     });
 
     document.getElementById('objekt-reset').addEventListener('click', () => {
-        window.location.href = '/cosmo/objekt?page=0';
+        window.location.href = '/cosmo/objekt';
     });
 
-    if (empty) empty.classList.toggle('hidden', cards.length > 0);
+    const grid = document.getElementById('objekt-card-grid');
+    const summary = document.getElementById('objekt-result-summary');
+    const loadedEl = document.getElementById('objekt-loaded-count');
+    const sentinel = document.getElementById('objekt-scroll-sentinel');
+    const statusEl = document.getElementById('objekt-scroll-status');
+    const spinner = document.getElementById('objekt-scroll-spinner');
 
-    document.querySelectorAll('.objekt-image-button').forEach(button => button.addEventListener('click', () => {
-        const image = button.querySelector('img');
-        const hint = button.querySelector('.objekt-flip-hint');
-        const showingBack = image.dataset.showingBack === 'true';
-        const next = showingBack ? image.dataset.front : image.dataset.back;
-        if (next) image.src = next;
-        image.dataset.showingBack = showingBack ? 'false' : 'true';
-        hint.textContent = showingBack ? '앞면' : '뒷면';
-    }));
+    let loadedCount = Number(summary?.dataset.loaded || cards.length || 0);
+    let resultCount = Number(summary?.dataset.resultCount || 0);
+    let allCount = Number(summary?.dataset.allCount || 0);
+    let nextPage = Number(sentinel?.dataset.nextPage || 1);
+    let hasMore = sentinel?.dataset.hasMore === 'true';
+    let loading = false;
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function attr(value) {
+        return escapeHtml(value);
+    }
+
+    function bindFlip(root) {
+        (root || document).querySelectorAll('.objekt-image-button').forEach((button) => {
+            if (button.dataset.flipBound === '1') return;
+            button.dataset.flipBound = '1';
+            button.addEventListener('click', () => {
+                const image = button.querySelector('img');
+                const hint = button.querySelector('.objekt-flip-hint');
+                if (!image) return;
+                const showingBack = image.dataset.showingBack === 'true';
+                const next = showingBack ? image.dataset.front : image.dataset.back;
+                if (next) image.src = next;
+                image.dataset.showingBack = showingBack ? 'false' : 'true';
+                if (hint) hint.textContent = showingBack ? '앞면' : '뒷면';
+            });
+        });
+    }
+
+    function updateSummary() {
+        if (loadedEl) loadedEl.textContent = String(loadedCount);
+        if (empty) empty.classList.toggle('hidden', loadedCount > 0);
+        if (!statusEl) return;
+        if (loading) statusEl.textContent = '불러오는 중…';
+        else if (hasMore) statusEl.textContent = '스크롤하면 더 불러옵니다';
+        else if (loadedCount > 0) statusEl.textContent = `모두 불러왔습니다 · ${loadedCount} / ${resultCount}`;
+        else statusEl.textContent = '';
+        spinner?.classList.toggle('hidden', !loading);
+    }
+
+    function buildCard(item) {
+        const collectionId = item.collectionId || '';
+        const member = item.member || item.memberName || '';
+        const collectionNo = item.collectionNo || item.collectionNumber || '';
+        const id = item.id || '';
+        const thumb = item.thumbnailImage || item.frontImage || '';
+        const front = item.frontImage || thumb;
+        const back = item.backImage || front;
+        const klass = item.class || item.classKey || '';
+        const season = item.season || item.seasonKey || '';
+        return `<article class="objekt-card objekt-item group relative border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
+                 data-season="${attr(item.seasonKey || season)}" data-class="${attr(item.classKey || klass)}" data-artist="${attr(item.artist || '')}" data-collection-no="${attr(collectionNo)}"
+                 data-number="${attr(item.numberValue || '')}" data-date="${attr(item.createdAt || '')}" data-member="${attr(member)}" data-search="${attr(item.searchText || '')}">
+            <button type="button" class="objekt-image-button relative block aspect-[2/3] w-full overflow-hidden bg-[#1c1f2e] text-left" aria-label="${attr(collectionId)} 앞면/뒷면 전환">
+                <img src="${attr(thumb)}" data-front="${attr(front)}" data-back="${attr(back)}" alt="${attr(collectionId)}" loading="lazy" decoding="async" class="objekt-image h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null;this.src='${attr(front)}';">
+                <span class="absolute left-2 top-2 rounded-md border border-white/15 bg-black/65 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur">${escapeHtml(klass)}</span>
+                <span class="absolute right-2 top-2 rounded-md bg-[#00e8cb] px-2 py-1 text-[10px] font-bold text-[#071513]">${escapeHtml(season)}</span>
+                <span class="objekt-flip-hint absolute bottom-2 right-2 rounded-full bg-black/65 px-2 py-1 text-[10px] text-white">앞면</span>
+            </button>
+            <div class="p-3">
+                <a href="/cosmo/objekt/detail/${attr(id)}" class="block truncate text-sm font-semibold text-slate-100 hover:text-[#00f5d4]" title="${attr(collectionId)}">${escapeHtml(collectionId)}</a>
+                <div class="mt-1 flex items-center justify-between gap-2 text-xs text-slate-400">
+                    <a href="/cosmo/objekt/member?name=${encodeURIComponent(member)}" class="truncate text-teal-200 hover:underline">${escapeHtml(member)}</a><span class="shrink-0 font-mono">${escapeHtml(collectionNo)}</span>
+                </div>
+            </div>
+        </article>`;
+    }
+
+    function currentFilterParams() {
+        const params = new URLSearchParams(new FormData(form));
+        params.delete('page');
+        // FormData에 미체크 member가 없을 수 있음 — 체크된 것만 유지
+        return params;
+    }
+
+    async function loadMore() {
+        if (!hasMore || loading || !grid) return;
+        loading = true;
+        updateSummary();
+        try {
+            const params = currentFilterParams();
+            params.set('page', String(nextPage));
+            const res = await fetch(`/cosmo/objekt/more?${params.toString()}`, {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+                cache: 'no-store'
+            });
+            if (!res.ok) throw new Error('load failed');
+            const data = await res.json();
+            const items = Array.isArray(data.items) ? data.items : [];
+            if (items.length) {
+                const wrap = document.createElement('div');
+                wrap.innerHTML = items.map(buildCard).join('');
+                const fragment = document.createDocumentFragment();
+                while (wrap.firstChild) fragment.appendChild(wrap.firstChild);
+                grid.appendChild(fragment);
+                bindFlip(grid);
+            }
+            loadedCount += items.length;
+            resultCount = Number(data.resultCount ?? resultCount);
+            allCount = Number(data.allCount ?? allCount);
+            hasMore = Boolean(data.hasMore) && items.length > 0;
+            nextPage = data.nextPage == null ? nextPage + 1 : Number(data.nextPage);
+            if (summary) {
+                summary.dataset.loaded = String(loadedCount);
+                summary.dataset.resultCount = String(resultCount);
+                summary.dataset.allCount = String(allCount);
+            }
+        } catch (_) {
+            hasMore = false;
+            if (statusEl) statusEl.textContent = '더 불러오지 못했습니다. 잠시 후 다시 스크롤해 주세요.';
+        } finally {
+            loading = false;
+            updateSummary();
+        }
+    }
+
+    if (empty) empty.classList.toggle('hidden', cards.length > 0);
+    bindFlip(document);
+    updateSummary();
+
+    if (sentinel && 'IntersectionObserver' in window) {
+        const io = new IntersectionObserver((entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) loadMore();
+        }, { rootMargin: '400px 0px' });
+        io.observe(sentinel);
+    } else if (hasMore) {
+        // 구형 브라우저: 수동 버튼으로 대체
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'rounded-lg border border-slate-600 px-4 py-2 text-sm text-white hover:border-teal-400';
+        btn.textContent = '더 보기';
+        btn.addEventListener('click', loadMore);
+        sentinel?.appendChild(btn);
+    }
 })();
 </script>
 </body>

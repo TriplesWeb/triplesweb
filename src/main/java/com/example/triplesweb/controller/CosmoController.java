@@ -6,19 +6,18 @@ import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.client.RestClientException;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -37,7 +36,6 @@ public class CosmoController {
 
     @GetMapping("/objekt")
     public String indexCosmoObjekt(
-            @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "") String search,
             @RequestParam(required = false) List<String> member,
             @RequestParam(required = false) List<String> season,
@@ -45,6 +43,71 @@ public class CosmoController {
             @RequestParam(defaultValue = "all") String kind,
             @RequestParam(defaultValue = "latest") String sort,
             Model model
+    ) {
+        // 무한 스크롤: 최초 HTML은 항상 첫 페이지(20개)만 렌더한다.
+        ObjektPageResult page = loadObjektPage(0, search, member, season, classFilters, kind, sort);
+
+        List<String> memberOptions = orderedMemberOptions(
+                uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "member", "memberName")));
+        List<Artist> artists = artistRepository.findAll(Sort.by(Sort.Direction.ASC, "artistId"));
+        model.addAttribute("memberOptions", memberOptions);
+        model.addAttribute("memberPickerOptions", MemberPortraitOptions.forObjektFilter(memberOptions, artists));
+        model.addAttribute("seasonOptions", uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "seasonKey", "season")));
+        model.addAttribute("classOptions", uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "classKey", "class")));
+        model.addAttribute("objektNumbers", uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "collectionNo", "collectionNumber")));
+
+        model.addAttribute("objekts", page.items());
+        model.addAttribute("objektCount", page.resultCount());
+        model.addAttribute("objektPageCount", page.items().size());
+        model.addAttribute("objektAllCount", page.allCount());
+        model.addAttribute("searchQuery", search == null ? "" : search);
+        model.addAttribute("selectedKind", kind);
+        model.addAttribute("selectedSort", sort);
+        model.addAttribute("objektPageDisplay", 1);
+        model.addAttribute("objektTotalPages", page.totalPages());
+        model.addAttribute("hasNextPage", page.hasMore());
+        model.addAttribute("nextPage", 1);
+        model.addAttribute("objektError", page.error().isBlank() ? null : page.error());
+
+        return "cosmo/objekt";
+    }
+
+    /** 무한 스크롤용: 필터를 유지한 채 다음 20개만 JSON으로 반환한다. */
+    @GetMapping("/objekt/more")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> moreCosmoObjekt(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(required = false) List<String> member,
+            @RequestParam(required = false) List<String> season,
+            @RequestParam(name = "class", required = false) List<String> classFilters,
+            @RequestParam(defaultValue = "all") String kind,
+            @RequestParam(defaultValue = "latest") String sort
+    ) {
+        int safeRequestPage = Math.max(0, page);
+        ObjektPageResult result = loadObjektPage(safeRequestPage, search, member, season, classFilters, kind, sort);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("page", result.page());
+        body.put("pageSize", PAGE_SIZE);
+        body.put("loaded", result.items().size());
+        body.put("resultCount", result.resultCount());
+        body.put("allCount", result.allCount());
+        body.put("totalPages", result.totalPages());
+        body.put("hasMore", result.hasMore());
+        body.put("nextPage", result.hasMore() ? result.page() + 1 : null);
+        body.put("error", result.error().isBlank() ? null : result.error());
+        body.put("items", result.items());
+        return ResponseEntity.ok(body);
+    }
+
+    private ObjektPageResult loadObjektPage(
+            int page,
+            String search,
+            List<String> member,
+            List<String> season,
+            List<String> classFilters,
+            String kind,
+            String sort
     ) {
         List<Map<String, Object>> allObjekts;
         String error = "";
@@ -78,42 +141,39 @@ public class CosmoController {
                 .collect(Collectors.toList());
 
         int resultCount = filtered.size();
-        // 0개인 경우에도 페이지 표시는 1페이지로 유지한다.
         int totalPages = Math.max(1, (int) Math.ceil(resultCount / (double) PAGE_SIZE));
-        int safePage = Math.max(0, Math.min(page, totalPages - 1));
-        int fromIndex = Math.min(safePage * PAGE_SIZE, resultCount);
+        int safePage = Math.max(0, page);
+        if (resultCount == 0 || safePage >= totalPages) {
+            return new ObjektPageResult(
+                    List.of(), allObjekts, safePage, resultCount, allObjekts.size(), totalPages, false, error);
+        }
+        int fromIndex = safePage * PAGE_SIZE;
         int toIndex = Math.min(fromIndex + PAGE_SIZE, resultCount);
         List<Map<String, Object>> pageObjekts = filtered.subList(fromIndex, toIndex);
+        boolean hasMore = toIndex < resultCount;
 
-        // 드롭다운 선택지는 현재 페이지 50개가 아니라 전체 캐시에서 생성한다.
-        List<String> memberOptions = orderedMemberOptions(
-                uniqueValues(allObjekts, objekt -> firstValue(objekt, "member", "memberName")));
-        List<Artist> artists = artistRepository.findAll(Sort.by(Sort.Direction.ASC, "artistId"));
-        model.addAttribute("memberOptions", memberOptions);
-        model.addAttribute("memberPickerOptions", MemberPortraitOptions.forObjektFilter(memberOptions, artists));
-        model.addAttribute("seasonOptions", uniqueValues(allObjekts, objekt -> firstValue(objekt, "seasonKey", "season")));
-        model.addAttribute("classOptions", uniqueValues(allObjekts, objekt -> firstValue(objekt, "classKey", "class")));
-        model.addAttribute("objektNumbers", uniqueValues(allObjekts, objekt -> firstValue(objekt, "collectionNo", "collectionNumber")));
-
-        model.addAttribute("objekts", pageObjekts);
-        model.addAttribute("objektCount", resultCount);
-        model.addAttribute("objektPageCount", pageObjekts.size());
-        model.addAttribute("objektAllCount", allObjekts.size());
-        model.addAttribute("searchQuery", search == null ? "" : search);
-        model.addAttribute("selectedKind", kind);
-        model.addAttribute("selectedSort", sort);
-        model.addAttribute("objektPageDisplay", safePage + 1);
-        model.addAttribute("objektTotalPages", totalPages);
-        model.addAttribute("hasPreviousPage", safePage > 0);
-        model.addAttribute("hasNextPage", safePage + 1 < totalPages);
-        model.addAttribute("previousPage", Math.max(0, safePage - 1));
-        model.addAttribute("nextPage", Math.min(totalPages - 1, safePage + 1));
-        model.addAttribute("previousPageUrl", buildPageUrl(Math.max(0, safePage - 1), search, selectedMembers, selectedSeasons, selectedClasses, kind, sort));
-        model.addAttribute("nextPageUrl", buildPageUrl(Math.min(totalPages - 1, safePage + 1), search, selectedMembers, selectedSeasons, selectedClasses, kind, sort));
-        model.addAttribute("objektError", error);
-
-        return "cosmo/objekt";
+        return new ObjektPageResult(
+                pageObjekts,
+                allObjekts,
+                safePage,
+                resultCount,
+                allObjekts.size(),
+                totalPages,
+                hasMore,
+                error
+        );
     }
+
+    private record ObjektPageResult(
+            List<Map<String, Object>> items,
+            List<Map<String, Object>> allObjekts,
+            int page,
+            int resultCount,
+            int allCount,
+            int totalPages,
+            boolean hasMore,
+            String error
+    ) {}
 
     /**
      * 멤버 체크박스는 사용자가 지정한 트리플에스 멤버 순서로 표시한다.
@@ -212,29 +272,6 @@ public class CosmoController {
     private static double numberValue(String value) {
         try { return Double.parseDouble(value); }
         catch (Exception ignored) { return 0; }
-    }
-
-    private static String buildPageUrl(int page, String search, List<String> members, List<String> seasons,
-                                       List<String> classes, String kind, String sort) {
-        StringBuilder url = new StringBuilder("/cosmo/objekt?page=").append(page);
-        addParam(url, "search", search);
-        addParams(url, "member", members);
-        addParams(url, "season", seasons);
-        addParams(url, "class", classes);
-        if (kind != null && !kind.isBlank() && !"all".equalsIgnoreCase(kind)) addParam(url, "kind", kind);
-        if (sort != null && !sort.isBlank() && !"latest".equalsIgnoreCase(sort)) addParam(url, "sort", sort);
-        return url.toString();
-    }
-
-    private static void addParams(StringBuilder url, String name, Collection<String> values) {
-        if (values == null) return;
-        values.forEach(value -> addParam(url, name, value));
-    }
-
-    private static void addParam(StringBuilder url, String name, String value) {
-        if (value == null || value.isBlank()) return;
-        url.append('&').append(URLEncoder.encode(name, StandardCharsets.UTF_8))
-                .append('=').append(URLEncoder.encode(value, StandardCharsets.UTF_8));
     }
 
     private static String searchableText(Map<String, Object> objekt) {
