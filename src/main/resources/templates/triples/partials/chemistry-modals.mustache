@@ -40,8 +40,11 @@
             </ul>
         </details>
         <form id="chemistryEditForm" class="chem-edit-form">
+            <input type="hidden" id="chemEditMode" name="editMode" value="pair">
             <input type="hidden" id="chemEditMember1" name="member1">
             <input type="hidden" id="chemEditMember2" name="member2">
+            <input type="hidden" id="chemEditMembersJson" name="membersJson" value="[]">
+            <p id="chemEditGroupMembers" class="chem-edit-group-members hidden" aria-live="polite"></p>
             <div class="chem-edit-label">케미명 (한국어 / English)
                 <p class="chem-edit-lang-label">한국어</p>
                 <textarea id="chemEditLabel" name="label" required maxlength="120" rows="2" autocomplete="off" placeholder="예: 꼬꼬마즈&#10;복수면 줄바꿈으로 구분"></textarea>
