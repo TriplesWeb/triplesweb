@@ -513,33 +513,25 @@
     }
 }
 
-/* 멤버 탭 — 세로 우선(S1~S5 왼쪽 열), 5행×5열 = 25칸 */
+/* 멤버 탭 — 1행 10개, 마지막 행 5개(25칸), 좌→우 순서 */
 .artist-page .artist-member-tabs {
-    --artist-tab-size: clamp(4.4rem, 16vw, 6.75rem);
     display: grid;
-    grid-template-rows: repeat(5, var(--artist-tab-size));
-    grid-template-columns: repeat(5, var(--artist-tab-size));
-    grid-auto-flow: column;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    grid-auto-flow: row;
     gap: 4px;
     list-style: none;
     margin: 0 auto 1rem;
     padding: 0 0 0.85rem;
     overflow: visible;
-    width: max-content;
-    max-width: 100%;
+    width: min(100%, 58rem);
     justify-content: center;
 }
 
-@media (min-width: 768px) {
+@media (max-width: 639px) {
     .artist-page .artist-member-tabs {
-        --artist-tab-size: 7rem;
-        gap: 5px;
-    }
-}
-
-@media (min-width: 1024px) {
-    .artist-page .artist-member-tabs {
-        --artist-tab-size: 7.5rem;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 3px;
+        width: 100%;
     }
 }
 
@@ -570,8 +562,7 @@
 .artist-tab-avatar {
     position: relative;
     display: block;
-    width: var(--artist-tab-size, 100%);
-    height: var(--artist-tab-size, auto);
+    width: 100%;
     aspect-ratio: 1 / 1;
     margin: 0;
     overflow: hidden;
