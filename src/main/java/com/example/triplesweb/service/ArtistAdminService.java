@@ -42,8 +42,6 @@ public class ArtistAdminService {
                     + "국내 최다인원 24명으로 이루어진 걸그룹으로 ASSEMBLE,ASSEMBLE24,ASSEMBLE25 등을 발매하였다.";
     private static final String DEFAULT_GROUP_IMAGE =
             "https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w4sFOxa0qwo4UedO_C0_jcoBe03789wNc5YmISVsRpQCUGa0obgJJFcjBxDI9La7P22k1Y69v81a-3yCmFW4bIEncacdQLXxQ8oCq1Bu4BaK72Rqff_oF6s-6VOylFoxz4vRAjLTVYAD_Y2d1Q3cMkQ.webp";
-    private static final String DEFAULT_GROUP_TAB_IMAGE =
-            "https://i.namu.wiki/i/Q69elsxcXHoCsi7CHMs0w4sFOxa0qwo4UedO_C0_jcoBe03789wNc5YmISVsRpQCUGa0obgJJFcjBxDI9La7P22k1Y69v81a-3yCmFW4bIEncacdQLXxQ8oCq1Bu4BaK72Rqff_oF6s-6VOylFoxz4vRAjLTVYAD_Y2d1Q3cMkQ.webp";
 
     private final ArtistRepository artistRepository;
     private final UnitRepository unitRepository;
@@ -52,11 +50,13 @@ public class ArtistAdminService {
 
     @Transactional(readOnly = true)
     public GroupIntroDto getGroupIntro() {
+        String imageUrl = getContent(KEY_GROUP_IMAGE, DEFAULT_GROUP_IMAGE);
         return GroupIntroDto.builder()
                 .title(getContent(KEY_GROUP_TITLE, DEFAULT_GROUP_TITLE))
                 .body(getContent(KEY_GROUP_BODY, DEFAULT_GROUP_BODY))
-                .imageUrl(getContent(KEY_GROUP_IMAGE, DEFAULT_GROUP_IMAGE))
-                .tabImageUrl(getContent(KEY_GROUP_TAB_IMAGE, DEFAULT_GROUP_TAB_IMAGE))
+                .imageUrl(imageUrl)
+                // 탭 썸네일도 대표 이미지와 동일하게 노출
+                .tabImageUrl(imageUrl)
                 .build();
     }
 
@@ -65,39 +65,35 @@ public class ArtistAdminService {
             String title,
             String body,
             MultipartFile image,
-            MultipartFile tabImage,
-            boolean clearImage,
-            boolean clearTabImage
+            boolean clearImage
     ) {
         putContent(KEY_GROUP_TITLE, StringUtils.hasText(title) ? title.trim() : DEFAULT_GROUP_TITLE);
         putContent(KEY_GROUP_BODY, body != null ? body.trim() : "");
 
+        // 소개 본문 이미지와 상단 탭 썸네일은 동일 이미지로 유지한다.
         if (image != null && !image.isEmpty()) {
             try {
-                String previous = getContent(KEY_GROUP_IMAGE, null);
+                String previousImage = getContent(KEY_GROUP_IMAGE, null);
+                String previousTab = getContent(KEY_GROUP_TAB_IMAGE, null);
                 SavedMeta meta = fileStorageService.saveWithMeta(image, "artist");
                 putContent(KEY_GROUP_IMAGE, meta.getUrl());
-                deleteManagedArtistImage(previous);
+                putContent(KEY_GROUP_TAB_IMAGE, meta.getUrl());
+                deleteManagedArtistImage(previousImage);
+                if (!Objects.equals(previousTab, previousImage)) {
+                    deleteManagedArtistImage(previousTab);
+                }
             } catch (IOException e) {
                 throw new IllegalStateException("그룹 이미지 저장에 실패했습니다.", e);
             }
         } else if (clearImage) {
-            deleteManagedArtistImage(getContent(KEY_GROUP_IMAGE, null));
-            putContent(KEY_GROUP_IMAGE, DEFAULT_GROUP_IMAGE);
-        }
-
-        if (tabImage != null && !tabImage.isEmpty()) {
-            try {
-                String previous = getContent(KEY_GROUP_TAB_IMAGE, null);
-                SavedMeta meta = fileStorageService.saveWithMeta(tabImage, "artist");
-                putContent(KEY_GROUP_TAB_IMAGE, meta.getUrl());
-                deleteManagedArtistImage(previous);
-            } catch (IOException e) {
-                throw new IllegalStateException("탭 이미지 저장에 실패했습니다.", e);
+            String previousImage = getContent(KEY_GROUP_IMAGE, null);
+            String previousTab = getContent(KEY_GROUP_TAB_IMAGE, null);
+            deleteManagedArtistImage(previousImage);
+            if (!Objects.equals(previousTab, previousImage)) {
+                deleteManagedArtistImage(previousTab);
             }
-        } else if (clearTabImage) {
-            deleteManagedArtistImage(getContent(KEY_GROUP_TAB_IMAGE, null));
-            putContent(KEY_GROUP_TAB_IMAGE, DEFAULT_GROUP_TAB_IMAGE);
+            putContent(KEY_GROUP_IMAGE, DEFAULT_GROUP_IMAGE);
+            putContent(KEY_GROUP_TAB_IMAGE, DEFAULT_GROUP_IMAGE);
         }
 
         return getGroupIntro();

@@ -60,15 +60,13 @@ public class ArtistApiController {
             @RequestParam(required = false, defaultValue = "") String title,
             @RequestParam(required = false, defaultValue = "") String body,
             @RequestParam(required = false) MultipartFile image,
-            @RequestParam(required = false) MultipartFile tabImage,
             @RequestParam(required = false, defaultValue = "false") boolean clearImage,
-            @RequestParam(required = false, defaultValue = "false") boolean clearTabImage,
             HttpServletRequest request,
             HttpSession session
     ) {
         aboutAdminAuth.requireAdmin(request, session);
         try {
-            return artistAdminService.updateGroupIntro(title, body, image, tabImage, clearImage, clearTabImage);
+            return artistAdminService.updateGroupIntro(title, body, image, clearImage);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }

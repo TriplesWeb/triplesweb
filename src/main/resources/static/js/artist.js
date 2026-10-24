@@ -306,22 +306,14 @@
     const titleEl = document.getElementById("groupTitleDisplay");
     const bodyEl = document.getElementById("groupBodyDisplay");
     const imgEl = document.getElementById("groupImageDisplay");
-    const tabImgEl = document.getElementById("groupTabImageDisplay");
     document.getElementById("artistGroupTitle").value = (titleEl && titleEl.textContent) || "";
     document.getElementById("artistGroupBody").value = (bodyEl && bodyEl.textContent) || "";
     document.getElementById("artistGroupClearImage").checked = false;
-    document.getElementById("artistGroupClearTabImage").checked = false;
     document.getElementById("artistGroupImage").value = "";
-    document.getElementById("artistGroupTabImage").value = "";
     const preview = document.getElementById("artistGroupImagePreview");
-    const tabPreview = document.getElementById("artistGroupTabImagePreview");
     if (preview && imgEl) {
       preview.src = imgEl.getAttribute("src") || "";
       preview.classList.toggle("hidden", !preview.src);
-    }
-    if (tabPreview && tabImgEl) {
-      tabPreview.src = tabImgEl.getAttribute("src") || "";
-      tabPreview.classList.toggle("hidden", !tabPreview.src);
     }
     openModal("artistGroupModal");
   }
@@ -507,20 +499,16 @@
           return;
         }
         const clearImage = document.getElementById("artistGroupClearImage").checked;
-        const clearTab = document.getElementById("artistGroupClearTabImage").checked;
-        const groupMessage = (clearImage || clearTab)
+        const groupMessage = clearImage
           ? "그룹 소개를 저장하시겠습니까? 체크한 사진은 삭제됩니다."
           : "그룹 소개를 저장하시겠습니까?";
         if (!window.confirm(groupMessage)) return;
         const fd = new FormData();
         fd.append("title", document.getElementById("artistGroupTitle").value);
         fd.append("body", document.getElementById("artistGroupBody").value);
-        fd.append("clearImage", document.getElementById("artistGroupClearImage").checked ? "true" : "false");
-        fd.append("clearTabImage", document.getElementById("artistGroupClearTabImage").checked ? "true" : "false");
+        fd.append("clearImage", clearImage ? "true" : "false");
         const image = document.getElementById("artistGroupImage").files[0];
-        const tabImage = document.getElementById("artistGroupTabImage").files[0];
-        if (image && !document.getElementById("artistGroupClearImage").checked) fd.append("image", image);
-        if (tabImage && !document.getElementById("artistGroupClearTabImage").checked) fd.append("tabImage", tabImage);
+        if (image && !clearImage) fd.append("image", image);
         try {
           const res = await artistFetch("/api/artist/group", { method: "POST", body: fd });
           if (!res.ok) {
