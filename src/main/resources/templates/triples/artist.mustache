@@ -12,7 +12,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/artist.css?v=7">
+    <link rel="stylesheet" href="/css/artist.css?v=8">
     <style>
         .artist-page .artist-edit-inline[hidden] { display: none !important; }
     </style>
@@ -31,19 +31,20 @@
         </div>
         <p id="artistAdminHint" class="artist-admin-hint hidden mb-4">관리자 모드: 그룹/멤버 탭에서 수정 버튼으로 내용을 편집할 수 있어요.</p>
 
-        <ul class="nav nav-tabs border-b border-[#3a4a46]/40 flex overflow-x-auto items-center pb-2 gap-2" id="triplesTabs">
-            <button class="nav-tab-btn is-active flex flex-col items-center p-2 shrink-0" id="triples-tab" data-target="#triples" type="button">
+        <ul class="nav nav-tabs artist-member-tabs border-b border-[#3a4a46]/40" id="triplesTabs" role="tablist" aria-label="멤버 선택">
+            <button class="nav-tab-btn is-active" id="triples-tab" data-target="#triples" type="button" role="tab" aria-label="tripleS">
                 <span class="artist-tab-avatar artist-tab-avatar--group">
-                    <img id="groupTabImageDisplay" src="{{groupTabImage}}" referrerpolicy="no-referrer" class="artist-tab-photo" alt="tripleS">
+                    <img id="groupTabImageDisplay" src="{{groupTabImage}}" referrerpolicy="no-referrer" class="artist-tab-photo" alt="">
                     <span class="artist-tab-shine" aria-hidden="true"></span>
                 </span>
                 <span class="artist-tab-label">tripleS</span>
             </button>
             {{#artist}}
-            <button class="nav-tab-btn flex flex-col items-center p-2 shrink-0" id="{{engName}}-tab" data-target="#member-{{artistId}}" data-member-tab type="button" style="--artist-color: {{color}};">
+            <button class="nav-tab-btn" id="{{engName}}-tab" data-target="#member-{{artistId}}" data-member-tab type="button" role="tab" aria-label="{{name}}" style="--artist-color: {{color}};">
                 <span class="artist-tab-avatar">
-                    <img class="artist-tab-photo" src="{{displayProfileImage}}" referrerpolicy="no-referrer" alt="{{name}}">
+                    <img class="artist-tab-photo" src="{{displayProfileImage}}" referrerpolicy="no-referrer" alt="">
                     <img class="artist-tab-frame" src="" alt="" aria-hidden="true">
+                    <span class="artist-tab-num" aria-hidden="true"></span>
                     <span class="artist-tab-shine" aria-hidden="true"></span>
                 </span>
                 <span class="artist-tab-label">{{name}}</span>
@@ -423,6 +424,6 @@
 
 {{>layout/footer}}
 <script src="/js/about-admin-auth.js?v=1"></script>
-<script src="/js/artist.js?v=9"></script>
+<script src="/js/artist.js?v=10"></script>
 </body>
 </html>

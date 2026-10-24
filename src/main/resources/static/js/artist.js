@@ -103,9 +103,13 @@
 
   function bindMemberTabFrames() {
     document.querySelectorAll(".nav-tab-btn[data-member-tab]").forEach((btn, index) => {
-      const frame = btn.querySelector(".artist-tab-frame");
-      if (!frame) return;
       const n = index + 1;
+      const frame = btn.querySelector(".artist-tab-frame");
+      const num = btn.querySelector(".artist-tab-num");
+      if (num) {
+        num.textContent = String(n).padStart(2, "0");
+      }
+      if (!frame) return;
       if (n > 24) {
         frame.hidden = true;
         return;
