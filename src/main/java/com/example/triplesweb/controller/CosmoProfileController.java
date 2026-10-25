@@ -25,7 +25,7 @@ public class CosmoProfileController {
         }
         model.addAttribute("requestedNickname", nickname);
         try {
-            model.addAllAttributes(profiles.profile(nickname, member, group));
+            model.addAllAttributes(profiles.profile(nickname, member, group, tab));
             model.addAttribute("hasProfile", true);
         } catch (IllegalArgumentException ex) {
             model.addAttribute("profileError", ex.getMessage());

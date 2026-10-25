@@ -4,15 +4,65 @@
  * - 클릭으로 is-active 토글 (다중선택)
  */
 (function (global) {
-  const FRAME_BASE = "/uploads/images/artist-tab-frames/";
+  const FRAME_BASES = [
+    "/uploads/images/" + encodeURIComponent("3인이상 프로필 테두리") + "/",
+    "/uploads/images/artist-tab-frames/"
+  ];
 
   const PLACEHOLDER = "/images/image-upload-pending.png";
 
+  function resolvePicker(root) {
+    if (!root || root === document) return document.querySelector(".member-portrait-picker");
+    if (root.classList && root.classList.contains("member-portrait-picker")) return root;
+    return root.querySelector(".member-portrait-picker");
+  }
+
+  function bindFrameSrc(frame, n) {
+    let attempt = 0;
+    const tryNext = () => {
+      if (attempt >= FRAME_BASES.length) {
+        frame.hidden = true;
+        return;
+      }
+      const src = FRAME_BASES[attempt++] + n + ".png";
+      frame.onerror = tryNext;
+      frame.onload = () => { frame.onerror = null; };
+      frame.hidden = false;
+      frame.src = src;
+    };
+    tryNext();
+  }
+
+  function ensureFrame(avatar, btn, index) {
+    if (!avatar) return null;
+    let frame = avatar.querySelector(".artist-tab-frame");
+    if (!frame) {
+      frame = document.createElement("img");
+      frame.className = "artist-tab-frame";
+      frame.alt = "";
+      frame.setAttribute("aria-hidden", "true");
+      avatar.appendChild(frame);
+    }
+    const n = Number(btn.dataset.frame) || index + 1;
+    if (n < 1 || n > 24) {
+      frame.hidden = true;
+      return frame;
+    }
+    bindFrameSrc(frame, n);
+    return frame;
+  }
+
   function hideWithoutImage(root) {
     const scope = root || document;
-    scope.querySelectorAll(".member-portrait-picker .mpp-item").forEach((btn) => {
+    const items = (scope.classList && scope.classList.contains("member-portrait-picker"))
+      ? scope.querySelectorAll(".mpp-item")
+      : scope.querySelectorAll(".member-portrait-picker .mpp-item");
+    items.forEach((btn, index) => {
       const img = btn.querySelector(".artist-tab-photo");
-      if (!img) return;
+      if (!img) {
+        ensureFrame(btn.querySelector(".artist-tab-avatar"), btn, index);
+        return;
+      }
       const drop = () => {
         if (btn.dataset.keepOption === 'true') {
           const avatar = btn.querySelector('.artist-tab-avatar');
@@ -22,6 +72,7 @@
             fallback.textContent = btn.dataset.name || btn.dataset.value || '•';
             fallback.setAttribute('aria-hidden', 'true');
             avatar.replaceChildren(fallback);
+            ensureFrame(avatar, btn, index);
           }
           return;
         }
@@ -45,17 +96,17 @@
   function bindFrames(root) {
     const scope = root || document;
     hideWithoutImage(scope);
-    scope.querySelectorAll(".member-portrait-picker .mpp-item").forEach((btn, i) => {
-      const frame = btn.querySelector(".artist-tab-frame");
-      if (!frame) return;
-      const n = Number(btn.dataset.frame) || i + 1;
-      if (n < 1 || n > 24) return;
-      frame.src = FRAME_BASE + n + ".png";
+    const items = (scope.classList && scope.classList.contains("member-portrait-picker"))
+      ? scope.querySelectorAll(".mpp-item")
+      : scope.querySelectorAll(".member-portrait-picker .mpp-item");
+    items.forEach((btn, i) => {
+      ensureFrame(btn.querySelector(".artist-tab-avatar"), btn, i);
     });
   }
 
   function selectedValues(root) {
-    return Array.from((root || document).querySelectorAll(".member-portrait-picker .mpp-item.is-active"))
+    const picker = resolvePicker(root) || root;
+    return Array.from((picker || document).querySelectorAll(".mpp-item.is-active"))
       .map((btn) => btn.dataset.value || btn.dataset.name || "")
       .filter(Boolean);
   }
@@ -66,7 +117,8 @@
   }
 
   function clear(root) {
-    (root || document).querySelectorAll(".member-portrait-picker .mpp-item.is-active").forEach((btn) => {
+    const picker = resolvePicker(root) || root;
+    (picker || document).querySelectorAll(".mpp-item.is-active").forEach((btn) => {
       setActive(btn, false);
     });
   }
@@ -78,10 +130,10 @@
   function bindMultiSelect(root, opts) {
     const options = opts || {};
     const multi = options.multi !== false;
-    const picker = (root || document).querySelector(".member-portrait-picker");
+    const picker = resolvePicker(root);
     if (!picker) return;
 
-    bindFrames(root);
+    bindFrames(picker);
 
     picker.addEventListener("click", (e) => {
       const btn = e.target.closest(".mpp-item");
@@ -95,7 +147,7 @@
       }
       setActive(btn, willActive);
       if (typeof options.onChange === "function") {
-        options.onChange(selectedValues(root));
+        options.onChange(selectedValues(picker));
       }
     });
   }

@@ -1,4 +1,37 @@
 .cosmo-profile { gap: 1.5rem; }
+.profile-progress-tabs {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: .35rem;
+    padding: .3rem;
+    border: 1px solid #ffffff14;
+    border-radius: 999px;
+    background: #12151b;
+    width: fit-content;
+}
+.profile-progress-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.2rem;
+    padding: .45rem 1.05rem;
+    border-radius: 999px;
+    color: #a9b8b3;
+    font-size: .85rem;
+    font-weight: 650;
+    text-decoration: none;
+}
+.profile-progress-tab:hover { color: #e8f3ef; background: #ffffff0a; }
+.profile-progress-tab.is-active {
+    color: #081210;
+    background: #7af0d8;
+}
+.profile-progress-tab:focus-visible { outline: 2px solid #8bf5dc; outline-offset: 2px; }
+.profile-member-picker .mpp-toolbar-heading {
+    display: grid;
+    gap: .15rem;
+    min-width: 0;
+}
 .profile-hero { padding: clamp(1.25rem, 3vw, 2.5rem); background: radial-gradient(ellipse at top left, #41256c55, transparent 65%), #14161c; }
 .profile-identity { display: flex; align-items: center; gap: 1.3rem; min-width: 0; }
 .profile-identity h1 { margin: .25rem 0 .5rem; font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 750; overflow-wrap: anywhere; line-height: 1.2; }

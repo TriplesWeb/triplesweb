@@ -38,14 +38,27 @@ class CosmoProfileControllerTest {
         givenProfile();
         var result = mvc.perform(get("/cosmo/profile/Fan")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("Fan")))
+                .andExpect(content().string(containsString("전체 현황")))
+                .andExpect(content().string(containsString("멤버별 상세")))
                 .andExpect(content().string(containsString("멤버별 수집 현황")))
                 .andExpect(content().string(containsString("aria-valuenow=\"100\"")))
                 .andExpect(content().string(containsString("1 / 1종")))
                 .andExpect(content().string(containsString("수집 현황 보기")))
+                .andExpect(content().string(not(containsString("profile-member-picker"))))
                 .andExpect(content().string(not(containsString("보유 카드만 보기"))))
                 .andExpect(content().string(not(containsString("보유 오브젝트</a>"))))
                 .andExpect(content().string(not(containsString("토큰 ID")))).andReturn();
         java.nio.file.Files.writeString(java.nio.file.Path.of("build/profile-progress-preview.html"), result.getResponse().getContentAsString());
+    }
+
+    @Test void membersTabShowsPickerWithoutOverviewBreakdown() throws Exception {
+        givenProfile();
+        mvc.perform(get("/cosmo/profile/Fan").param("tab", "members"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("profile-member-picker")))
+                .andExpect(content().string(containsString("멤버를 선택하면")))
+                .andExpect(content().string(not(containsString("시즌별"))))
+                .andExpect(content().string(not(containsString("클래스별"))));
     }
 
     @Test void collectionTabRedirectsToOwnedCollectionPage() throws Exception {
@@ -69,11 +82,13 @@ class CosmoProfileControllerTest {
                         "collectionNo", "367Z", "collectionId", "Cream02 HaYeon 367Z", "thumbnailImage", "https://example.com/owned.webp"),
                 Map.of("slug", "cream02-hayeon-003z", "member", "HaYeon", "class", "Double", "season", "Cream02",
                         "collectionNo", "003Z", "collectionId", "Cream02 HaYeon 003Z", "thumbnailImage", "https://example.com/missing.webp")));
-        var result = mvc.perform(get("/cosmo/profile/Fan").param("member", "hayeon"))
+        var result = mvc.perform(get("/cosmo/profile/Fan").param("tab", "members").param("member", "hayeon"))
                 .andExpect(status().isOk()).andExpect(content().string(containsString("2종 중 1종 보유 · 1종 미보유")))
+                .andExpect(content().string(containsString("profile-member-picker")))
                 .andExpect(content().string(containsString("profile-checklist-card is-owned")))
                 .andExpect(content().string(containsString("profile-checklist-card is-missing")))
-                .andExpect(content().string(containsString("완료한 시즌 숨기기"))).andReturn();
+                .andExpect(content().string(containsString("완료한 시즌 숨기기")))
+                .andExpect(content().string(not(containsString("시즌별")))).andReturn();
         java.nio.file.Files.writeString(java.nio.file.Path.of("build/profile-checklist-preview.html"), result.getResponse().getContentAsString());
     }
 }

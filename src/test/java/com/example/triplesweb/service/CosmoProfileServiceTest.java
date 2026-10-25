@@ -102,6 +102,6 @@ class CosmoProfileServiceTest {
         var progress = (List<Map<String, Object>>) view.get("memberProgress");
         assertThat(progress).hasSize(1);
         assertThat(progress.get(0)).containsEntry("member", "김채원").containsEntry("total", 3).containsEntry("owned", 2L)
-                .containsEntry("progressUrl", "/cosmo/profile/%ED%85%8C%EC%8A%A4%ED%8A%B8?member=%EA%B9%80%EC%B1%84%EC%9B%90");
+                .containsEntry("progressUrl", "/cosmo/profile/%ED%85%8C%EC%8A%A4%ED%8A%B8?tab=members&member=%EA%B9%80%EC%B1%84%EC%9B%90");
     }
 }

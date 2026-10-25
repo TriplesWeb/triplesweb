@@ -12,10 +12,10 @@
     <span class="artist-tab-avatar">
         {{^textOnly}}
         <img class="artist-tab-photo" src="{{image}}" referrerpolicy="no-referrer" alt="" loading="lazy">
-        <img class="artist-tab-frame" src="" alt="" aria-hidden="true">
-        <span class="artist-tab-shine" aria-hidden="true"></span>
         {{/textOnly}}
         {{#textOnly}}<span class="artist-tab-fallback" aria-hidden="true">{{frameLabel}}</span>{{/textOnly}}
+        <img class="artist-tab-frame" src="" alt="" aria-hidden="true">
+        <span class="artist-tab-shine" aria-hidden="true"></span>
     </span>
     <span class="artist-tab-label">{{label}}</span>
 </button>
