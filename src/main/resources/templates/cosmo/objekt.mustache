@@ -334,12 +334,13 @@
         .objekt-kind-option[hidden] { display: none; }
         #objekt-sort-toggle[hidden],
         #sort-native-control[hidden] { display: none; }
-        #sort-dropdown > div:not(#sort-menu) {
+        #sort-dropdown > .objekt-sort-control {
+            display: flex;
             flex: 1 1 0;
             min-width: 0;
         }
         #objekt-sort-toggle,
-        #sort-native-control { width: 100%; }
+        #sort-native-control { flex: 1 1 0; width: 100%; min-width: 0; max-width: none; }
         #sort-menu {
             left: auto;
             right: 0;
@@ -604,7 +605,7 @@
 
             <div class="objekt-filter relative" id="sort-dropdown">
                 <span class="objekt-filter-label">정렬</span>
-                <div>
+                <div class="objekt-sort-control">
                     <button type="button" id="objekt-sort-toggle" class="objekt-filter-control" aria-label="정렬" aria-haspopup="listbox" aria-expanded="false" aria-controls="sort-menu" hidden>
                         <span id="sort-label">최신순</span>
                         <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
