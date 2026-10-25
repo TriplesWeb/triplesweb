@@ -4,12 +4,15 @@ import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.service.CosmoCollectionService;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektFilterOrder;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -80,5 +83,34 @@ public class CosmoCollectionController {
             model.addAttribute("collectionError", "소유 오브젝트를 바로 불러오지 못했습니다. 잠시 후 다시 검색해 주세요.");
         }
         return "cosmo/collection";
+    }
+
+    @GetMapping("/cosmo/collection/more")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> more(@RequestParam String nickname,
+                                                    @RequestParam(defaultValue = "1") int page,
+                                                    @RequestParam(defaultValue = "") String member,
+                                                    @RequestParam(defaultValue = "") String season,
+                                                    @RequestParam(name = "class", defaultValue = "") String objektClass,
+                                                    @RequestParam(name = "q", defaultValue = "") String query,
+                                                    @RequestParam(defaultValue = "all") String group) {
+        try {
+            Map<String, Object> view = collections.search(nickname, Math.max(0, page), member, season, objektClass, query, group);
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("items", view.getOrDefault("cards", List.of()));
+            body.put("page", view.get("page"));
+            body.put("pageSize", view.get("pageSize"));
+            body.put("ownedCount", view.get("ownedCount"));
+            body.put("filteredCount", view.get("filteredCount"));
+            body.put("hasMore", Boolean.TRUE.equals(view.get("hasMore")));
+            body.put("nextPage", view.get("nextPage"));
+            return ResponseEntity.ok(body);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", ex.getMessage(), "items", List.of(), "hasMore", false));
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(503).body(Map.of(
+                    "error", "소유 오브젝트를 바로 불러오지 못했습니다.", "items", List.of(), "hasMore", false));
+        }
     }
 }

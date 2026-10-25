@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="/css/gravity-page.css?v=2">
 <link rel="stylesheet" href="/css/archive-page.css?v=3">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=8">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=5">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=6">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}내 오브젝트 검색{{/nickname}}</title>
 </head>
@@ -32,7 +32,7 @@
             {{#hasProfileImage}}<img src="{{profileImageUrl}}" alt="" referrerpolicy="no-referrer">{{/hasProfileImage}}
             <div>
                 <h1>{{nickname}}</h1>
-                <p>보유 오브젝트 <strong>{{ownedCount}}</strong>개{{#hasActiveFilters}} · 필터 결과 <strong>{{filteredCount}}</strong>개{{/hasActiveFilters}}</p>
+                <p>보유 오브젝트 <strong>{{ownedCount}}</strong>개{{#hasActiveFilters}} · 필터 결과 <strong id="collection-filtered-count">{{filteredCount}}</strong>개{{/hasActiveFilters}}</p>
                 {{#profileUrl}}<a class="collection-action-btn" href="{{profileUrl}}">수집 현황 보기</a>{{/profileUrl}}
             </div>
         </div>
@@ -91,8 +91,8 @@
             </div>
         </form>
     </section>
-    {{#hasCards}}
-    <section class="ar-grid collection-grid" aria-label="보유 오브젝트">
+    <section class="ar-grid collection-grid" id="collection-grid" aria-label="보유 오브젝트"
+             data-loaded="{{loadedCount}}" data-filtered="{{filteredCount}}" data-owned="{{ownedCount}}">
         {{#cards}}
         <article class="ar-panel ar-card collection-card">
             <div class="collection-image-wrap">
@@ -108,17 +108,13 @@
         </article>
         {{/cards}}
     </section>
-    {{/hasCards}}
-    {{^hasCards}}<p class="gv-panel gv-empty">이 페이지에 표시할 보유 오브젝트가 없습니다.</p>{{/hasCards}}
-    <nav class="ar-panel ar-pager" aria-label="컬렉션 페이지">
-        <span>{{#hasActiveFilters}}필터 {{filteredCount}}개 · {{/hasActiveFilters}}보유 {{ownedCount}}개 중 페이지 {{pageDisplay}} / {{totalPages}}</span>
-        <div class="ar-pager-controls">
-            {{#hasPrev}}<a href="/cosmo/collection?nickname={{nicknameEncoded}}&amp;page={{prevPage}}{{filterQuery}}">이전</a>{{/hasPrev}}
-            {{^hasPrev}}<a class="is-disabled">이전</a>{{/hasPrev}}
-            {{#hasNext}}<a href="/cosmo/collection?nickname={{nicknameEncoded}}&amp;page={{nextPage}}{{filterQuery}}">다음</a>{{/hasNext}}
-            {{^hasNext}}<a class="is-disabled">다음</a>{{/hasNext}}
-        </div>
-    </nav>
+    <p class="gv-panel gv-empty{{#hasCards}} is-hidden{{/hasCards}}" id="collection-empty">이 조건에 표시할 보유 오브젝트가 없습니다.</p>
+    <div class="collection-scroll-footer" id="collection-scroll-sentinel"
+         data-has-more="{{#hasMore}}true{{/hasMore}}{{^hasMore}}false{{/hasMore}}"
+         data-next-page="{{nextPage}}">
+        <p id="collection-scroll-status" class="collection-scroll-status" aria-live="polite"></p>
+        <span id="collection-scroll-spinner" class="collection-scroll-spinner is-hidden" aria-hidden="true"></span>
+    </div>
     {{/hasCollection}}
 </main>
 {{>layout/footer}}
@@ -134,7 +130,12 @@
   const meta = document.getElementById('collection-member-meta');
   const otherNotice = document.getElementById('collection-other-notice');
   const tabs = document.querySelectorAll('.collection-group-tab');
-  if (!form || !window.MemberPortraitPicker) return;
+  const grid = document.getElementById('collection-grid');
+  const empty = document.getElementById('collection-empty');
+  const sentinel = document.getElementById('collection-scroll-sentinel');
+  const statusEl = document.getElementById('collection-scroll-status');
+  const spinner = document.getElementById('collection-scroll-spinner');
+  const filteredCountEl = document.getElementById('collection-filtered-count');
 
   function setGroup(group, clearMember) {
     const next = group || 'all';
@@ -143,7 +144,7 @@
     if (picker) picker.hidden = next === 'other';
     if (otherNotice) otherNotice.hidden = next !== 'other';
     if (clearMember) {
-      MemberPortraitPicker.clear(picker);
+      if (window.MemberPortraitPicker) MemberPortraitPicker.clear(picker);
       if (memberInput) memberInput.value = '';
     }
     if (meta) {
@@ -153,25 +154,134 @@
     }
   }
 
-  if (picker) {
-    MemberPortraitPicker.bindMultiSelect(picker, {
-      multi: false,
-      onChange: (values) => {
-        if (memberInput) memberInput.value = values[0] || '';
-        setGroup(values[0] ? 'members' : (groupInput?.value === 'other' ? 'other' : 'members'), false);
-        form.requestSubmit();
-      }
+  if (form && window.MemberPortraitPicker) {
+    if (picker) {
+      MemberPortraitPicker.bindMultiSelect(picker, {
+        multi: false,
+        onChange: (values) => {
+          if (memberInput) memberInput.value = values[0] || '';
+          setGroup(values[0] ? 'members' : (groupInput?.value === 'other' ? 'other' : 'members'), false);
+          form.requestSubmit();
+        }
+      });
+    }
+    tabs.forEach((tab) => tab.addEventListener('click', () => {
+      setGroup(tab.dataset.objektGroup || 'all', true);
+      form.requestSubmit();
+    }));
+    toggle?.addEventListener('click', () => {
+      const collapsed = panel.classList.toggle('is-collapsed');
+      toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
     });
+    setGroup(groupInput?.value || 'all', false);
   }
-  tabs.forEach((tab) => tab.addEventListener('click', () => {
-    setGroup(tab.dataset.objektGroup || 'all', true);
-    form.requestSubmit();
-  }));
-  toggle?.addEventListener('click', () => {
-    const collapsed = panel.classList.toggle('is-collapsed');
-    toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-  });
-  setGroup(groupInput?.value || 'all', false);
+
+  if (!grid || !sentinel || !form) return;
+
+  let loadedCount = Number(grid.dataset.loaded || grid.querySelectorAll('.collection-card').length || 0);
+  let filteredCount = Number(grid.dataset.filtered || 0);
+  let ownedCount = Number(grid.dataset.owned || 0);
+  let nextPage = Number(sentinel.dataset.nextPage || 1);
+  let hasMore = sentinel.dataset.hasMore === 'true';
+  let loading = false;
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function updateStatus() {
+    if (empty) empty.classList.toggle('is-hidden', loadedCount > 0);
+    if (filteredCountEl) filteredCountEl.textContent = String(filteredCount);
+    if (!statusEl) return;
+    if (loading) statusEl.textContent = '불러오는 중…';
+    else if (hasMore) statusEl.textContent = '스크롤하면 더 불러옵니다';
+    else if (loadedCount > 0) statusEl.textContent = `모두 불러왔습니다 · ${loadedCount} / ${filteredCount || ownedCount}`;
+    else statusEl.textContent = '';
+    spinner?.classList.toggle('is-hidden', !loading);
+  }
+
+  function buildCard(item) {
+    const title = escapeHtml(item.collectionId || '오브젝트');
+    const member = escapeHtml(item.member || '');
+    const season = item.season ? ' · ' + escapeHtml(item.season) : '';
+    const klass = item.objektClass ? `<span class="ar-badge">${escapeHtml(item.objektClass)}</span>` : '';
+    const serial = item.hasSerial
+      ? `<span class="ar-id" aria-label="시리얼 ${escapeHtml(item.serial)}">#${escapeHtml(item.serial)}</span>`
+      : '<span class="ar-id">시리얼 확인 중</span>';
+    const image = item.hasImage
+      ? `<img class="collection-image" src="${escapeHtml(item.thumbnailImage)}" alt="${title}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
+      : '<span class="ar-muted">이미지 준비 중</span>';
+    const heading = item.hasDetail
+      ? `<h3><a class="collection-title-link" href="${escapeHtml(item.detailUrl)}">${title}</a></h3>`
+      : `<h3>${title}</h3>`;
+    return `<article class="ar-panel ar-card collection-card">
+      <div class="collection-image-wrap">${image}</div>
+      <div class="ar-body">
+        <div class="ar-meta">${serial}${klass}</div>
+        ${heading}
+        <p class="ar-muted">${member}${season}</p>
+      </div>
+    </article>`;
+  }
+
+  async function loadMore() {
+    if (!hasMore || loading) return;
+    loading = true;
+    updateStatus();
+    try {
+      const params = new URLSearchParams(new FormData(form));
+      params.set('page', String(nextPage));
+      const res = await fetch(`/cosmo/collection/more?${params.toString()}`, {
+        headers: { Accept: 'application/json' },
+        credentials: 'same-origin',
+        cache: 'no-store'
+      });
+      if (!res.ok) throw new Error('load failed');
+      const data = await res.json();
+      const items = Array.isArray(data.items) ? data.items : [];
+      if (items.length) {
+        const wrap = document.createElement('div');
+        wrap.innerHTML = items.map(buildCard).join('');
+        const fragment = document.createDocumentFragment();
+        while (wrap.firstChild) fragment.appendChild(wrap.firstChild);
+        grid.appendChild(fragment);
+      }
+      loadedCount += items.length;
+      filteredCount = Number(data.filteredCount ?? filteredCount);
+      ownedCount = Number(data.ownedCount ?? ownedCount);
+      hasMore = Boolean(data.hasMore) && items.length > 0;
+      nextPage = data.nextPage == null ? nextPage + 1 : Number(data.nextPage);
+      grid.dataset.loaded = String(loadedCount);
+      grid.dataset.filtered = String(filteredCount);
+      grid.dataset.owned = String(ownedCount);
+    } catch (_) {
+      hasMore = false;
+      if (statusEl) statusEl.textContent = '더 불러오지 못했습니다. 잠시 후 다시 스크롤해 주세요.';
+    } finally {
+      loading = false;
+      updateStatus();
+    }
+  }
+
+  updateStatus();
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) loadMore();
+    }, { rootMargin: '400px 0px' });
+    io.observe(sentinel);
+  } else if (hasMore) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'collection-load-more';
+    btn.textContent = '더 보기';
+    btn.addEventListener('click', loadMore);
+    sentinel.appendChild(btn);
+  }
 })();
 </script>
 </body>

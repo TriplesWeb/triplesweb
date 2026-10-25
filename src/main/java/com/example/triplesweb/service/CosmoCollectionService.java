@@ -92,10 +92,15 @@ public class CosmoCollectionService {
         view.put("allCards", found.cards);
         view.put("profileUrl", "/cosmo/profile/" + nickEnc.replace("+", "%20"));
         view.put("hasCards", !cards.isEmpty());
+        view.put("page", safePage);
         view.put("pageDisplay", safePage + 1);
+        view.put("pageSize", PAGE_SIZE);
+        view.put("loadedCount", cards.size());
         view.put("totalPages", totalPages);
         view.put("hasPrev", safePage > 0);
-        view.put("hasNext", safePage + 1 < totalPages);
+        boolean hasMore = safePage + 1 < totalPages;
+        view.put("hasNext", hasMore);
+        view.put("hasMore", hasMore);
         view.put("prevPage", Math.max(0, safePage - 1));
         view.put("nextPage", safePage + 1);
         view.put("selectedMember", "other".equals(selectedGroup) ? "" : memberKey);
