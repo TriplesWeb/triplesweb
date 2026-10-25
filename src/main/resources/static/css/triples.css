@@ -2011,6 +2011,9 @@ html[lang="en"] .chem-member-name {
 
 .chem-trio-jump {
     text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
 }
 
 .chem-tone-badge {
@@ -2227,8 +2230,9 @@ html[lang="en"] .chem-member-name {
 }
 
 .chem-trio-card-grid--primary {
-    grid-template-columns: minmax(16rem, 28rem);
-    justify-content: center;
+    /* 한 열 고정 대신 일반 케미 카드와 같이 여러 열로 채운다 */
+    grid-template-columns: repeat(auto-fill, minmax(14.5rem, 1fr));
+    justify-content: stretch;
 }
 
 .chem-trio-plus-zone {
@@ -2401,7 +2405,6 @@ html[lang="en"] .chem-member-name {
 }
 
 .chem-trio-back {
-    margin-top: 0.35rem;
     background: #00f5d4;
     color: #0d0e12;
 }
@@ -2409,6 +2412,33 @@ html[lang="en"] .chem-member-name {
 .chem-trio-back:hover {
     color: #0d0e12;
     filter: brightness(1.05);
+}
+
+/* 툴바 안에서는 선택 해제·결과 보기와 높이·정렬을 맞춘다 */
+.chem-trio-view .mpp-toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.chem-trio-view .mpp-toolbar-actions .mpp-tool-btn,
+.chem-trio-view .mpp-toolbar-actions .chem-mode-btn {
+    margin: 0;
+    min-height: 2.1rem;
+    padding: 0.35rem 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.2;
+    border-radius: 0.5rem;
+}
+
+.chem-trio-view .mpp-toolbar-actions .chem-trio-back {
+    border: 1px solid transparent;
 }
 
 .chem-table-wrap {
@@ -3824,11 +3854,17 @@ a.chem-highlight:hover {
 .mpp-toolbar-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
+    align-items: center;
+    gap: 0.45rem;
 }
 
 .mpp-tool-btn {
     appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: 2.1rem;
     padding: 0.35rem 0.75rem;
     border-radius: 0.5rem;
     border: 1px solid rgba(58, 74, 70, 0.55);
@@ -3836,6 +3872,7 @@ a.chem-highlight:hover {
     color: #b9cac4;
     font-size: 0.78rem;
     font-weight: 700;
+    line-height: 1.2;
     cursor: pointer;
 }
 

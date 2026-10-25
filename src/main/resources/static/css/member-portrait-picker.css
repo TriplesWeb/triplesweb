@@ -182,11 +182,17 @@
 .mpp-toolbar-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
+    align-items: center;
+    gap: 0.45rem;
 }
 
 .mpp-tool-btn {
     appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: 2.1rem;
     padding: 0.35rem 0.75rem;
     border-radius: 0.5rem;
     border: 1px solid rgba(58, 74, 70, 0.55);
@@ -194,6 +200,7 @@
     color: #b9cac4;
     font-size: 0.78rem;
     font-weight: 700;
+    line-height: 1.2;
     cursor: pointer;
 }
 
