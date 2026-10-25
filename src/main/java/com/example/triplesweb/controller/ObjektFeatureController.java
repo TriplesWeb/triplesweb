@@ -132,8 +132,14 @@ public class ObjektFeatureController {
         if (item == null) return ResponseEntity.notFound().build();
         if (serial < 1) return ResponseEntity.badRequest().body(Map.of("message", "시리얼은 1 이상의 정수로 입력해 주세요."));
         try {
+            Map<String, Object> result = marketData.owner(item, serial);
+            // Send only the fields rendered by the public owner lookup.
+            Map<String, Object> publicResult = new LinkedHashMap<>();
+            for (String field : List.of("status", "serial", "nickname")) {
+                if (result.containsKey(field)) publicResult.put(field, result.get(field));
+            }
             return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
-                    .body(marketData.owner(item, serial));
+                    .body(publicResult);
         } catch (RuntimeException e) {
             return ResponseEntity.status(503).body(Map.of("message", "소유자 정보를 검증하지 못했습니다. 잠시 후 다시 조회해 주세요."));
         }

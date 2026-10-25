@@ -47,3 +47,18 @@ test('failed save keeps desired state for a safe retry and restores button', asy
   assert.equal(ui.button.disabled, false);
   assert.match(ui.status.textContent, /다시/);
 });
+
+test('owner lookup renders only serial and nickname even if internal fields are returned', async () => {
+  const result = {children: [], replaceChildren() { this.children = []; }, append(node) { this.children.push(node); }};
+  const button = {disabled: false};
+  const form = {action: '/owner', reportValidity: () => true, elements: {namedItem: () => ({value: '3'})},
+    querySelector: () => button, setAttribute() {}, removeAttribute() {}, addEventListener(type, fn) { this.submit = fn; }};
+  vm.runInNewContext(code, {document: {
+    querySelector: s => s === '[data-objekt-owner]' ? form : s === '[data-owner-result]' ? result : null,
+    createElement: tag => ({tag})
+  }, URLSearchParams, fetch: async () => ({ok: true, json: async () => ({status: 'found', serial: 3,
+    nickname: 'TVTwe', address: '0xprivate', tokenId: '30569938', verifiedAt: 'time', explorerUrl: 'https://abscan.org/token/private'})})});
+  await form.submit({preventDefault() {}});
+  assert.deepEqual(result.children.map(p => p.textContent), ['#3 · TVTwe']);
+  assert.equal(button.disabled, false);
+});

@@ -70,4 +70,15 @@ class ObjektFeaturesTest {
                 .andExpect(content().string(containsString("name=\"favorite\" value=\"true\"")))
                 .andExpect(content().string(containsString("/js/objekt-detail.js")));
     }
+
+    @Test void ownerResponseDoesNotExposeInternalVerificationFields() throws Exception {
+        Map<String, Object> item = Map.of("id", "uuid", "slug", "sample");
+        when(catalog.findCollections("triples")).thenReturn(List.of(item));
+        when(market.owner(item, 1)).thenReturn(Map.of("status", "found", "serial", 1, "nickname", "테스트",
+                "address", "0xprivate", "tokenId", "30000001", "verifiedAt", "time", "explorerUrl", "https://abscan.org"));
+        mvc.perform(get("/cosmo/objekt/detail/uuid/owner").param("serial", "1")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.nickname").value("테스트"))
+                .andExpect(jsonPath("$.address").doesNotExist()).andExpect(jsonPath("$.tokenId").doesNotExist())
+                .andExpect(jsonPath("$.verifiedAt").doesNotExist()).andExpect(jsonPath("$.explorerUrl").doesNotExist());
+    }
 }

@@ -34,7 +34,7 @@
     if (!Number.isSafeInteger(Number(serial)) || Number(serial) < 1) return;
     const result = document.querySelector('[data-owner-result]');
     result.replaceChildren();
-    result.textContent = 'Abstract에서 소유자를 확인하는 중…';
+    result.textContent = '소유자를 확인하는 중…';
     button.disabled = true;
     owner.setAttribute('aria-busy', 'true');
     try {
@@ -54,16 +54,6 @@
         const line = document.createElement('p'); line.textContent = value; result.append(line);
       };
       text(`#${data.serial} · ${data.nickname || '닉네임 정보 없음'}`);
-      text(data.address);
-      text(`토큰 ID ${data.tokenId}`);
-      const time = new Date(data.verifiedAt);
-      text(`확인 시각: ${time.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false })} (한국 시간)`);
-      const link = document.createElement('a');
-      if (typeof data.explorerUrl === 'string' && data.explorerUrl.startsWith('https://abscan.org/token/')) {
-        link.href = data.explorerUrl; link.target = '_blank'; link.rel = 'noopener noreferrer';
-        link.textContent = 'Abstract에서 확인 ↗'; link.className = 'inline-block text-teal-300 underline';
-        result.append(link);
-      }
     } catch (error) {
       result.textContent = error.message || '조회하지 못했습니다. 잠시 후 다시 시도해 주세요.';
     } finally {

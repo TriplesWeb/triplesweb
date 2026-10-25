@@ -19,7 +19,11 @@ public class CosmoCollectionController {
                              @RequestParam(defaultValue = "0") int page,
                              Model model) {
         model.addAttribute("query", nickname == null ? "" : nickname.trim());
-        if (nickname == null || nickname.isBlank()) return "cosmo/collection";
+        if (nickname == null) return "cosmo/collection";
+        if (nickname.isBlank()) {
+            model.addAttribute("collectionError", "없는 닉네임 입니다.");
+            return "cosmo/collection";
+        }
         try {
             model.addAllAttributes(collections.search(nickname, page));
             model.addAttribute("hasCollection", true);
