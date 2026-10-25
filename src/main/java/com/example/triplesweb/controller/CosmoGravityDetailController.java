@@ -1,6 +1,7 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.service.GravityService;
+import com.example.triplesweb.util.GravityDisplay;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -12,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,7 +26,7 @@ public class CosmoGravityDetailController {
             @RequestParam(name = "pollId", required = false) Long selectedPoll, Model model) {
         try {
             JsonNode gravity = service.fetchGravityDetails(id);
-            model.addAttribute("gravity", service.toMap(gravity));
+            model.addAttribute("gravity", GravityDisplay.gravity(service.toMap(gravity)));
             model.addAttribute("bannerImageUrl", GravityService.safeImage(gravity.path("bannerImageUrl").asText("")));
             List<Map<String, Object>> polls = new ArrayList<>();
             Long pollId = selectedPoll;
@@ -34,7 +34,7 @@ public class CosmoGravityDetailController {
             for (JsonNode poll : gravity.path("polls")) {
                 long current = poll.path("id").asLong();
                 if (pollId == null) pollId = current;
-                Map<String, Object> row = new LinkedHashMap<>(service.toMap(poll));
+                Map<String, Object> row = GravityDisplay.poll(service.toMap(poll));
                 row.put("selected", pollId == current);
                 polls.add(row);
                 if (pollId == current) found = true;
@@ -45,7 +45,7 @@ public class CosmoGravityDetailController {
                 // Render official COSMO results without third-party aggregation calls.
                 for (JsonNode poll : gravity.path("polls")) {
                     if (poll.path("id").asLong() == pollId) {
-                        model.addAttribute("selectedPoll", service.toMap(poll));
+                        model.addAttribute("selectedPoll", GravityDisplay.poll(service.toMap(poll)));
                         model.addAttribute("officialResults", service.toMap(poll.path("result")));
                         model.addAttribute("hasOfficialResults", poll.path("result").path("voteResults").size() > 0);
                     }
