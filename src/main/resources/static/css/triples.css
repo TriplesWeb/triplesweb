@@ -1672,8 +1672,8 @@ body {
         105deg,
         transparent 0%,
         color-mix(in srgb, var(--artist-color) 40%, transparent) 30%,
-        #fff 48%,
-        color-mix(in srgb, var(--artist-color) 92%, #fff) 54%,
+        #d5deea 48%,
+        color-mix(in srgb, var(--artist-color) 70%, #d5deea) 54%,
         color-mix(in srgb, var(--artist-color) 34%, transparent) 70%,
         transparent 100%
     );
@@ -1801,50 +1801,45 @@ body {
 
 @keyframes member-tab-frame-sparkle {
     0%, 100% {
-        filter: drop-shadow(0 0 3px #fff)
-            drop-shadow(0 0 8px color-mix(in srgb, var(--artist-color, #9ad0ff) 80%, #fff));
+        filter: drop-shadow(0 0 2px color-mix(in srgb, var(--artist-color, #9ad0ff) 55%, #9aabbf))
+            drop-shadow(0 0 6px color-mix(in srgb, var(--artist-color, #9ad0ff) 40%, transparent));
     }
     22%, 58% {
-        filter: drop-shadow(0 0 6px #fff)
-            drop-shadow(0 0 14px #fff)
-            drop-shadow(0 0 26px color-mix(in srgb, var(--artist-color, #9ad0ff) 100%, #fff));
+        filter: drop-shadow(0 0 3px #c5d0de)
+            drop-shadow(0 0 8px color-mix(in srgb, var(--artist-color, #9ad0ff) 62%, #d5deea))
+            drop-shadow(0 0 14px color-mix(in srgb, var(--artist-color, #9ad0ff) 38%, transparent));
     }
     38% {
-        filter: drop-shadow(0 0 2px color-mix(in srgb, var(--artist-color, #9ad0ff) 70%, #fff));
+        filter: drop-shadow(0 0 2px color-mix(in srgb, var(--artist-color, #9ad0ff) 35%, transparent));
     }
 }
 
 @keyframes member-tab-border-sparkle {
     0%, 100% {
         box-shadow:
-            inset 0 0 0 2px #ffffff,
-            0 0 0 2px #ffffff,
-            0 0 10px #ffffff,
-            0 0 18px color-mix(in srgb, var(--artist-color, #9ad0ff) 90%, #fff),
-            0 0 32px color-mix(in srgb, var(--artist-color, #9ad0ff) 55%, transparent);
+            inset 0 0 0 4px #c5d0de,
+            0 0 0 4px color-mix(in srgb, var(--artist-color, #9ad0ff) 62%, #b7c4d4),
+            0 0 8px color-mix(in srgb, var(--artist-color, #9ad0ff) 42%, transparent);
     }
     18% {
         box-shadow:
-            inset 0 0 0 4px #ffffff,
-            0 0 0 4px #ffffff,
-            0 0 18px #ffffff,
-            0 0 36px #ffffff,
-            0 0 58px color-mix(in srgb, var(--artist-color, #9ad0ff) 100%, #fff),
-            0 0 84px color-mix(in srgb, var(--artist-color, #9ad0ff) 78%, transparent);
+            inset 0 0 0 6px #d5deea,
+            0 0 0 5px #c9d4e2,
+            0 0 12px color-mix(in srgb, var(--artist-color, #9ad0ff) 58%, #d5deea),
+            0 0 22px color-mix(in srgb, var(--artist-color, #9ad0ff) 32%, transparent);
     }
     36% {
         box-shadow:
-            inset 0 0 0 2px rgba(255, 255, 255, 0.72),
-            0 0 0 2px color-mix(in srgb, var(--artist-color, #9ad0ff) 75%, #fff),
-            0 0 12px color-mix(in srgb, var(--artist-color, #9ad0ff) 70%, #fff);
+            inset 0 0 0 4px color-mix(in srgb, var(--artist-color, #9ad0ff) 48%, #9aabbf),
+            0 0 0 4px color-mix(in srgb, var(--artist-color, #9ad0ff) 50%, #8ea0b4),
+            0 0 8px color-mix(in srgb, var(--artist-color, #9ad0ff) 28%, transparent);
     }
     54% {
         box-shadow:
-            inset 0 0 0 4px #ffffff,
-            0 0 0 3px #ffffff,
-            0 0 22px #ffffff,
-            0 0 42px #ffffff,
-            0 0 70px color-mix(in srgb, var(--artist-color, #9ad0ff) 95%, #fff);
+            inset 0 0 0 6px #d0dbe8,
+            0 0 0 5px color-mix(in srgb, var(--artist-color, #9ad0ff) 55%, #c5d0de),
+            0 0 14px color-mix(in srgb, var(--artist-color, #9ad0ff) 55%, #d5deea),
+            0 0 24px color-mix(in srgb, var(--artist-color, #9ad0ff) 30%, transparent);
     }
 }
 
@@ -3908,8 +3903,8 @@ a.chem-highlight:hover {
         105deg,
         transparent 0%,
         color-mix(in srgb, var(--artist-color) 35%, transparent) 32%,
-        #fff 48%,
-        color-mix(in srgb, var(--artist-color) 90%, #fff) 52%,
+        #d5deea 48%,
+        color-mix(in srgb, var(--artist-color) 70%, #d5deea) 52%,
         color-mix(in srgb, var(--artist-color) 30%, transparent) 68%,
         transparent 100%
     );
@@ -4022,7 +4017,7 @@ a.chem-highlight:hover {
     .member-portrait-picker .artist-tab-shine::before { opacity: 0; }
     .member-portrait-picker .mpp-item.is-active .artist-tab-avatar {
         box-shadow:
-            inset 0 0 0 2px #ffffff,
-            0 0 0 2px color-mix(in srgb, var(--artist-color, #9ad0ff) 82%, #fff);
+            inset 0 0 0 4px #c5d0de,
+            0 0 0 4px color-mix(in srgb, var(--artist-color, #9ad0ff) 62%, #b7c4d4);
     }
 }
