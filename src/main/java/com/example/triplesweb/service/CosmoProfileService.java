@@ -19,6 +19,11 @@ public class CosmoProfileService {
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> profile(String nickname, String member) {
+        return profile(nickname, member, "all");
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> profile(String nickname, String member, String group) {
         Map<String, Object> view = new LinkedHashMap<>(collections.search(nickname, 0));
         List<Map<String, Object>> all = (List<Map<String, Object>>) view.remove("allCards");
         String base = String.valueOf(view.get("profileUrl"));
@@ -30,18 +35,40 @@ public class CosmoProfileService {
         view.put("hasStats", !all.isEmpty());
         List<Map<String, Object>> catalogSnapshot = catalog.findCollections("triples");
         List<Map<String, Object>> progress = progress(all, base, catalogSnapshot);
-        view.put("memberProgress", progress);
-        view.put("hasMemberProgress", !progress.isEmpty());
+        String selectedGroup = normalizeGroup(group, member);
+        List<Map<String, Object>> visibleProgress = progress.stream()
+                .filter(row -> MemberPortraitOptions.matchesMemberGroup(selectedGroup, List.of(), text(row, "member")))
+                .toList();
+        view.put("memberProgress", visibleProgress);
+        view.put("hasMemberProgress", !visibleProgress.isEmpty());
         String selected = MemberPortraitOptions.memberName(member);
         view.put("hasProgressMember", !selected.isBlank());
         view.put("selectedMember", selected);
+        view.put("selectedGroup", selectedGroup);
+        view.put("isOtherGroup", "other".equals(selectedGroup));
+        view.put("isMembersGroup", "members".equals(selectedGroup));
+        view.put("isAllGroup", "all".equals(selectedGroup));
         view.putAll(memberChecklist(all, catalogSnapshot, selected, base));
-        List<Map<String, Object>> picker = MemberPortraitOptions.fromArtists(artists.findAll(), false);
+        Set<String> rawMembers = new LinkedHashSet<>();
+        for (Map<String, Object> item : catalogSnapshot) {
+            String name = text(item, "member");
+            if (!name.isBlank()) rawMembers.add(name);
+        }
+        List<Map<String, Object>> picker = MemberPortraitOptions.forObjektFilter(
+                MemberPortraitOptions.soloMemberNames(rawMembers), artists.findAll());
         for (Map<String, Object> option : picker) {
             option.put("active", MemberPortraitOptions.sameMember(selected, String.valueOf(option.get("value"))));
         }
         view.put("memberPickerOptions", picker);
         return view;
+    }
+
+    private static String normalizeGroup(String group, String member) {
+        if ("other".equalsIgnoreCase(group)) return "other";
+        if ("members".equalsIgnoreCase(group) || (member != null && !member.isBlank()
+                && !MemberPortraitOptions.isOtherMember(member))) return "members";
+        if (member != null && !member.isBlank() && MemberPortraitOptions.isOtherMember(member)) return "other";
+        return "all";
     }
 
     private List<Map<String, Object>> progress(List<Map<String, Object>> held, String profileUrl,

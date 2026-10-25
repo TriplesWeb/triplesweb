@@ -11,9 +11,13 @@
     const loadMore = document.getElementById('loadMoreObjekts');
     const status = document.getElementById('objektPickerStatus');
     const memberFilter = document.getElementById('objektFilterMember');
+    const groupFilter = document.getElementById('objektFilterGroup');
     const memberRoot = document.getElementById('objekt-picker-member');
+    const memberPanel = document.getElementById('objekt-picker-member-panel');
+    const memberToggle = document.getElementById('objekt-picker-member-toggle');
     const memberMeta = document.getElementById('objektPickerMemberMeta');
-    const memberClear = document.getElementById('objektPickerMemberClear');
+    const otherNotice = document.getElementById('objekt-picker-other-notice');
+    const groupTabs = section.querySelectorAll('.objekt-picker-group-tab');
     const seasonFilter = document.getElementById('objektFilterSeason');
     const classFilter = document.getElementById('objektFilterClass');
     const searchFilter = document.getElementById('objektFilterSearch');
@@ -41,9 +45,39 @@
       if (toggle) toggle.textContent = open ? '목록 닫기' : (count > 0 ? `오브젝트 선택 (${count})` : '오브젝트 선택');
     }
 
+    function currentGroup() {
+      return groupFilter ? groupFilter.value || 'all' : 'all';
+    }
+
     function syncMemberMeta() {
+      const group = currentGroup();
       const value = memberFilter ? memberFilter.value.trim() : '';
-      if (memberMeta) memberMeta.textContent = value || '전체 멤버';
+      if (!memberMeta) return;
+      if (group === 'other') memberMeta.textContent = '기타 옵젝';
+      else if (value) memberMeta.textContent = value;
+      else if (group === 'members') memberMeta.textContent = '전체 멤버';
+      else memberMeta.textContent = '전체 오브젝트';
+    }
+
+    function applyGroup(group, clearMember) {
+      const next = group || 'all';
+      if (groupFilter) groupFilter.value = next;
+      groupTabs.forEach((tab) => {
+        const active = tab.dataset.objektGroup === next;
+        tab.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+      if (memberRoot) memberRoot.hidden = next === 'other';
+      if (otherNotice) otherNotice.hidden = next !== 'other';
+      if (clearMember || next === 'other' || next === 'all') {
+        if (window.MemberPortraitPicker && memberRoot) MemberPortraitPicker.clear(memberRoot);
+        if (memberFilter) memberFilter.value = '';
+      }
+      if (next !== 'other' && memberPanel) {
+        memberPanel.classList.remove('is-collapsed');
+        if (memberToggle) memberToggle.setAttribute('aria-expanded', 'true');
+        if (memberRoot && next !== 'other') memberRoot.hidden = false;
+      }
+      syncMemberMeta();
     }
 
     function setSelected(id, on) {
@@ -121,7 +155,8 @@
       const current = ++requestId;
       if (status) status.textContent = '오브젝트를 불러오는 중...';
       const params = new URLSearchParams();
-      if (memberFilter && memberFilter.value) params.set('member', memberFilter.value);
+      params.set('group', currentGroup());
+      if (memberFilter && memberFilter.value && currentGroup() !== 'other') params.set('member', memberFilter.value);
       if (seasonFilter && seasonFilter.value) params.set('season', seasonFilter.value);
       if (classFilter && classFilter.value) params.set('class', classFilter.value);
       if (searchFilter && searchFilter.value.trim()) params.set('q', searchFilter.value.trim());
@@ -165,19 +200,27 @@
         multi: false,
         onChange: (values) => {
           if (memberFilter) memberFilter.value = values[0] || '';
+          if (values[0]) applyGroup('members', false);
           syncMemberMeta();
           if (open) load(true);
         }
       });
     }
-    if (memberClear) {
-      memberClear.addEventListener('click', () => {
-        if (window.MemberPortraitPicker && memberRoot) MemberPortraitPicker.clear(memberRoot);
-        if (memberFilter) memberFilter.value = '';
-        syncMemberMeta();
-        if (open) load(true);
+
+    if (memberToggle && memberPanel) {
+      memberToggle.addEventListener('click', () => {
+        const collapsed = memberPanel.classList.toggle('is-collapsed');
+        memberToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        if (!collapsed && currentGroup() !== 'other' && memberRoot) memberRoot.hidden = false;
       });
     }
+
+    groupTabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        applyGroup(tab.dataset.objektGroup || 'all', true);
+        if (open) load(true);
+      });
+    });
 
     if (toggle) toggle.addEventListener('click', () => setOpen(!open));
     if (loadMore) loadMore.addEventListener('click', () => load(false));
@@ -192,17 +235,15 @@
     }
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
-        if (window.MemberPortraitPicker && memberRoot) MemberPortraitPicker.clear(memberRoot);
-        if (memberFilter) memberFilter.value = '';
+        applyGroup('all', true);
         if (seasonFilter) seasonFilter.value = '';
         if (classFilter) classFilter.value = '';
         if (searchFilter) searchFilter.value = '';
-        syncMemberMeta();
         if (open) load(true);
       });
     }
 
-    syncMemberMeta();
+    applyGroup('all', true);
     updateSummary();
     setOpen(false);
   }

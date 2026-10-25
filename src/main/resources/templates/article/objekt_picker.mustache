@@ -16,20 +16,27 @@
     <div id="objektPickerPanel" class="hidden space-y-3" hidden>
         <p class="text-xs text-slate-400">멤버·시즌·클래스로 필터하거나 검색한 뒤 체크하세요.</p>
 
-        <div class="objekt-picker-member-block">
+        <div class="objekt-member-picker-panel is-collapsed" id="objekt-picker-member-panel">
             <div class="mpp-toolbar">
-                <div>
-                    <p class="mpp-toolbar-title">멤버</p>
-                    <p class="mpp-toolbar-meta" id="objektPickerMemberMeta">전체 멤버</p>
-                </div>
-                <div class="mpp-toolbar-actions">
-                    <button type="button" class="mpp-tool-btn" id="objektPickerMemberClear">선택 해제</button>
+                <button type="button" class="objekt-member-toggle" id="objekt-picker-member-toggle" aria-expanded="false" aria-controls="objekt-picker-member">
+                    <span>
+                        <span class="mpp-toolbar-title">멤버</span>
+                        <span class="mpp-toolbar-meta" id="objektPickerMemberMeta">전체 오브젝트</span>
+                    </span>
+                    <span class="material-symbols-outlined objekt-member-toggle-caret" aria-hidden="true">expand_more</span>
+                </button>
+                <div class="mpp-toolbar-actions" role="group" aria-label="오브젝트 분류">
+                    <button type="button" class="mpp-tool-btn objekt-picker-group-tab" data-objekt-group="all" aria-pressed="true">전체</button>
+                    <button type="button" class="mpp-tool-btn objekt-picker-group-tab" data-objekt-group="members" aria-pressed="false">멤버</button>
+                    <button type="button" class="mpp-tool-btn objekt-picker-group-tab" data-objekt-group="other" aria-pressed="false">기타 옵젝</button>
                 </div>
             </div>
             <input type="hidden" id="objektFilterMember" value="" aria-hidden="true">
-            <div class="member-portrait-picker is-compact" id="objekt-picker-member" role="group" aria-label="멤버 필터">
+            <input type="hidden" id="objektFilterGroup" value="all" aria-hidden="true">
+            <div class="member-portrait-picker" id="objekt-picker-member" role="group" aria-label="멤버 필터" hidden>
                 {{>partials/member-portrait-picker}}
             </div>
+            <p class="objekt-other-notice" id="objekt-picker-other-notice" hidden>멤버와 연결되지 않은 그룹·기타 오브젝트를 모아 보여줍니다.</p>
         </div>
 
         <div class="objekt-picker-filter-bar">

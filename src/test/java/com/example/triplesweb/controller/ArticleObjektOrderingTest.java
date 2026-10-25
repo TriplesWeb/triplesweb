@@ -32,7 +32,7 @@ class ArticleObjektOrderingTest {
             for (var model : List.of(fresh, edited)) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> picker = (List<Map<String, Object>>) model.get("memberPickerOptions");
-                assertThat(picker).extracting(row -> row.get("value")).containsExactly("윤서연", "정혜린", "지연", "Alpha");
+                assertThat(picker).extracting(row -> row.get("value")).containsExactly("윤서연", "정혜린", "지연");
                 assertThat(model.get("objektSeasonOptions")).isEqualTo(List.of("Cream02", "Binary02", "Ever01", "Atom01"));
             }
         }
@@ -45,9 +45,11 @@ class ArticleObjektOrderingTest {
         var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
                 mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog, artists);
         when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("member", "S21"),
-                Map.of("member", "ChaeWon"), Map.of("member", "김채원"), Map.of("member", "S22")));
-        assertThat(controller.objektOptions("김채원", "", "", "", 0, 24)).containsEntry("total", 3);
-        assertThat(controller.objektOptions("S21", "", "", "", 0, 24)).containsEntry("total", 3);
+                Map.of("member", "ChaeWon"), Map.of("member", "김채원"), Map.of("member", "S22"),
+                Map.of("member", "zenith")));
+        assertThat(controller.objektOptions("김채원", "", "", "", "members", 0, 24)).containsEntry("total", 3);
+        assertThat(controller.objektOptions("S21", "", "", "", "members", 0, 24)).containsEntry("total", 3);
+        assertThat(controller.objektOptions("", "", "", "", "other", 0, 24)).containsEntry("total", 1);
         var model = new ExtendedModelMap(); controller.showArticleForm("trade", model);
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> picker = (List<Map<String, Object>>) model.get("memberPickerOptions");

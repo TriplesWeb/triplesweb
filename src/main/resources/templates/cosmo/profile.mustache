@@ -7,9 +7,9 @@
 <title>{{requestedNickname}} · COSMO 닉네임 상세</title>
 <link rel="stylesheet" href="/css/gravity-page.css?v=2">
 <link rel="stylesheet" href="/css/archive-page.css?v=3">
-<link rel="stylesheet" href="/css/member-portrait-picker.css?v=6">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=3">
-<link rel="stylesheet" href="/css/cosmo-profile.css?v=3">
+<link rel="stylesheet" href="/css/member-portrait-picker.css?v=7">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=4">
+<link rel="stylesheet" href="/css/cosmo-profile.css?v=4">
 </head>
 <body class="collection-page min-h-screen flex flex-col">
 {{>layout/header}}
@@ -30,17 +30,25 @@
     </dl>
 </section>
 <section class="profile-member-picker" aria-labelledby="progress-member-heading">
-    <div class="mpp-toolbar">
-        <div>
-            <p class="mpp-toolbar-title" id="progress-member-heading">멤버별 오브젝트 종류</p>
-            <p class="mpp-toolbar-meta" id="progress-member-meta">{{#hasProgressMember}}{{selectedMember}} 선택됨{{/hasProgressMember}}{{^hasProgressMember}}멤버를 고르면 전체 종류 수집 현황을 볼 수 있어요.{{/hasProgressMember}}</p>
+    <div class="objekt-member-picker-panel{{^hasProgressMember}}{{^isOtherGroup}} is-collapsed{{/isOtherGroup}}{{/hasProgressMember}}" id="profile-member-panel">
+        <div class="mpp-toolbar">
+            <button type="button" class="objekt-member-toggle" id="profile-member-toggle" aria-expanded="false" aria-controls="profile-member-picker">
+                <span>
+                    <span class="mpp-toolbar-title" id="progress-member-heading">멤버별 오브젝트 종류</span>
+                    <span class="mpp-toolbar-meta" id="progress-member-meta">{{#isOtherGroup}}기타 옵젝{{/isOtherGroup}}{{^isOtherGroup}}{{#hasProgressMember}}{{selectedMember}} 선택됨{{/hasProgressMember}}{{^hasProgressMember}}{{#isMembersGroup}}전체 멤버{{/isMembersGroup}}{{^isMembersGroup}}멤버를 고르면 전체 종류 수집 현황을 볼 수 있어요.{{/isMembersGroup}}{{/hasProgressMember}}{{/isOtherGroup}}</span>
+                </span>
+                <span class="material-symbols-outlined objekt-member-toggle-caret" aria-hidden="true">expand_more</span>
+            </button>
+            <div class="mpp-toolbar-actions" role="group" aria-label="오브젝트 분류">
+                <a class="mpp-tool-btn" href="{{profileUrl}}" aria-pressed="{{#isAllGroup}}true{{/isAllGroup}}{{^isAllGroup}}false{{/isAllGroup}}">전체</a>
+                <a class="mpp-tool-btn" href="{{profileUrl}}?group=members" aria-pressed="{{#isMembersGroup}}true{{/isMembersGroup}}{{^isMembersGroup}}false{{/isMembersGroup}}">멤버</a>
+                <a class="mpp-tool-btn" href="{{profileUrl}}?group=other" aria-pressed="{{#isOtherGroup}}true{{/isOtherGroup}}{{^isOtherGroup}}false{{/isOtherGroup}}">기타 옵젝</a>
+            </div>
         </div>
-        <div class="mpp-toolbar-actions">
-            <a class="mpp-tool-btn" href="{{profileUrl}}">전체 현황</a>
+        <div class="member-portrait-picker" id="profile-member-picker" role="group" aria-label="멤버별 오브젝트 종류" {{#isOtherGroup}}hidden{{/isOtherGroup}}>
+            {{>partials/member-portrait-picker}}
         </div>
-    </div>
-    <div class="member-portrait-picker" id="profile-member-picker" role="group" aria-label="멤버별 오브젝트 종류">
-        {{>partials/member-portrait-picker}}
+        <p class="objekt-other-notice" {{^isOtherGroup}}hidden{{/isOtherGroup}}>멤버와 연결되지 않은 그룹·기타 오브젝트 수집 현황입니다.</p>
     </div>
 </section>
 {{^hasProgressMember}}
@@ -58,8 +66,9 @@
     </article>
     {{/memberProgress}}
     </div>
-    {{^hasMemberProgress}}<p class="gv-panel gv-empty">표시할 tripleS 멤버 수집 현황이 없습니다.</p>{{/hasMemberProgress}}
+    {{^hasMemberProgress}}<p class="gv-panel gv-empty">표시할 수집 현황이 없습니다.</p>{{/hasMemberProgress}}
 </section>
+{{^isOtherGroup}}
 <div class="profile-breakdown-grid">
     <section class="ar-panel profile-breakdown"><h2>시즌별</h2>
     {{#seasonStats}}<div class="profile-breakdown-row"><span>{{label}}</span><div class="profile-progress-track"><span style="width:{{percent}}%"></span></div><strong>{{count}}개</strong><span>{{percent}}%</span></div>{{/seasonStats}}
@@ -68,6 +77,7 @@
     {{#classStats}}<div class="profile-breakdown-row"><span>{{label}}</span><div class="profile-progress-track"><span style="width:{{percent}}%"></span></div><strong>{{count}}개</strong><span>{{percent}}%</span></div>{{/classStats}}
     {{^hasStats}}<p class="ar-muted">아직 보유한 오브젝트가 없습니다.</p>{{/hasStats}}</section>
 </div>
+{{/isOtherGroup}}
 {{/hasProgressMember}}
 {{#hasProgressMember}}
 <section class="profile-checklist" aria-labelledby="checklist-heading">
@@ -105,6 +115,8 @@
 <script>
 (() => {
   const picker = document.getElementById('profile-member-picker');
+  const panel = document.getElementById('profile-member-panel');
+  const toggle = document.getElementById('profile-member-toggle');
   const base = {{#profileUrl}}"{{profileUrl}}"{{/profileUrl}}{{^profileUrl}}""{{/profileUrl}};
   if (!picker || !base || !window.MemberPortraitPicker) return;
   MemberPortraitPicker.bindMultiSelect(picker, {
@@ -113,8 +125,12 @@
       const member = values[0] || '';
       window.location.href = member
         ? base + '?member=' + encodeURIComponent(member)
-        : base;
+        : base + '?group=members';
     }
+  });
+  toggle?.addEventListener('click', () => {
+    const collapsed = panel.classList.toggle('is-collapsed');
+    toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
   });
 })();
 </script>

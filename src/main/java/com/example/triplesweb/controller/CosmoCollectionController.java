@@ -33,6 +33,7 @@ public class CosmoCollectionController {
                              @RequestParam(defaultValue = "") String season,
                              @RequestParam(name = "class", defaultValue = "") String objektClass,
                              @RequestParam(name = "q", defaultValue = "") String query,
+                             @RequestParam(defaultValue = "all") String group,
                              Model model) {
         model.addAttribute("query", nickname == null ? "" : nickname.trim());
         if (nickname == null) return "cosmo/collection";
@@ -41,30 +42,28 @@ public class CosmoCollectionController {
             return "cosmo/collection";
         }
         try {
-            Map<String, Object> view = collections.search(nickname, page, member, season, objektClass, query);
+            Map<String, Object> view = collections.search(nickname, page, member, season, objektClass, query, group);
             model.addAllAttributes(view);
             model.addAttribute("hasCollection", true);
             List<Map<String, Object>> allCards = (List<Map<String, Object>>) view.getOrDefault("allCards", List.of());
-            Set<String> members = new LinkedHashSet<>();
+            Set<String> rawMembers = new LinkedHashSet<>();
             Set<String> seasons = new LinkedHashSet<>();
             Set<String> classes = new LinkedHashSet<>();
             for (Map<String, Object> card : allCards) {
                 Object m = card.get("member");
                 Object s = card.get("season");
                 Object c = card.get("objektClass");
-                if (m != null && !m.toString().isBlank()) members.add(m.toString());
+                if (m != null && !m.toString().isBlank()) rawMembers.add(m.toString());
                 if (s != null && !s.toString().isBlank()) seasons.add(s.toString());
                 if (c != null && !c.toString().isBlank()) classes.add(c.toString());
             }
             List<Map<String, Object>> picker = MemberPortraitOptions.forObjektFilter(
-                    ObjektFilterOrder.sortedMembers(members), artists.findAll());
+                    MemberPortraitOptions.soloMemberNames(rawMembers), artists.findAll());
             String selectedMember = String.valueOf(view.getOrDefault("selectedMember", ""));
             for (Map<String, Object> option : picker) {
                 option.put("active", MemberPortraitOptions.sameMember(selectedMember, String.valueOf(option.get("value"))));
             }
             model.addAttribute("memberPickerOptions", picker);
-            model.addAttribute("seasonOptions", ObjektFilterOrder.sortedSeasons(seasons));
-            model.addAttribute("classOptions", classes.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList());
             List<Map<String, Object>> seasonChoices = new ArrayList<>();
             for (String value : ObjektFilterOrder.sortedSeasons(seasons)) {
                 seasonChoices.add(Map.of("value", value, "selected", value.equalsIgnoreCase(String.valueOf(view.get("selectedSeason")))));

@@ -3,6 +3,7 @@ package com.example.triplesweb.util;
 import com.example.triplesweb.entity.Artist;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -110,6 +111,37 @@ public final class MemberPortraitOptions {
             frame++;
         }
         return out;
+    }
+
+    /** 원본 멤버 문자열에서 S1~S24 솔로 한글 이름만 뽑아 정렬한다. 유닛·기타는 제외. */
+    public static List<String> soloMemberNames(Collection<String> rawMembers) {
+        if (rawMembers == null || rawMembers.isEmpty()) return List.of();
+        return ObjektFilterOrder.sortedMembers(rawMembers.stream()
+                .flatMap(value -> objektMembers(value).stream())
+                .toList());
+    }
+
+    /** 멤버 필드가 솔로/유닛이 아닌 기타(zenith 등)인지. */
+    public static boolean isOtherMember(String member) {
+        return objektMembers(member).isEmpty();
+    }
+
+    /**
+     * objekt 페이지와 같은 분류: all / members / other.
+     * members에서 선택이 있으면 유닛 카드도 포함 멤버 OR 매칭.
+     */
+    public static boolean matchesMemberGroup(String group, Collection<String> selected, String memberField) {
+        Set<String> actual = objektMembers(memberField);
+        String normalized = group == null || group.isBlank() ? "all" : group.trim().toLowerCase(Locale.ROOT);
+        if ("other".equals(normalized)) return actual.isEmpty();
+        if ("members".equals(normalized)) {
+            if (actual.isEmpty()) return false;
+            if (selected == null || selected.isEmpty()) return true;
+            Set<String> wanted = selected.stream().map(MemberPortraitOptions::memberName)
+                    .filter(name -> !name.isBlank()).collect(java.util.stream.Collectors.toSet());
+            return actual.stream().anyMatch(wanted::contains);
+        }
+        return true;
     }
 
     /**

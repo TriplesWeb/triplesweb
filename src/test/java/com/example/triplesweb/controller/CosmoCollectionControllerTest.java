@@ -33,10 +33,10 @@ class CosmoCollectionControllerTest {
     }
 
     @Test void missingNicknameAndNetworkFailureHaveDifferentMessages() throws Exception {
-        when(collections.search("없는사람", 0, "", "", "", "")).thenThrow(new IllegalArgumentException("없는 닉네임 입니다."));
+        when(collections.search("없는사람", 0, "", "", "", "", "all")).thenThrow(new IllegalArgumentException("없는 닉네임 입니다."));
         mvc.perform(get("/cosmo/collection").param("nickname", "없는사람"))
                 .andExpect(status().isOk()).andExpect(content().string(containsString("없는 닉네임 입니다.")));
-        when(collections.search("테스트", 0, "", "", "", "")).thenThrow(new IllegalStateException("network"));
+        when(collections.search("테스트", 0, "", "", "", "", "all")).thenThrow(new IllegalStateException("network"));
         mvc.perform(get("/cosmo/collection").param("nickname", "테스트"))
                 .andExpect(content().string(containsString("잠시 후 다시 검색")))
                 .andExpect(content().string(not(containsString("없는 닉네임 입니다."))));
@@ -58,6 +58,10 @@ class CosmoCollectionControllerTest {
         view.put("selectedMember", "");
         view.put("selectedSeason", "");
         view.put("selectedClass", "");
+        view.put("selectedGroup", "all");
+        view.put("isAllGroup", true);
+        view.put("isMembersGroup", false);
+        view.put("isOtherGroup", false);
         view.put("searchQuery", "");
         view.put("filterQuery", "");
         view.put("hasActiveFilters", false);
@@ -65,13 +69,14 @@ class CosmoCollectionControllerTest {
                 "member", "HaYeon", "season", "Cream02", "objektClass", "Double", "hasImage", true,
                 "thumbnailImage", "https://example.com/card.webp", "hasDetail", false)));
         view.put("allCards", view.get("cards"));
-        when(collections.search("테스트", 0, "", "", "", "")).thenReturn(view);
+        when(collections.search("테스트", 0, "", "", "", "", "all")).thenReturn(view);
         when(artists.findAll()).thenReturn(List.of());
         mvc.perform(get("/cosmo/collection").param("nickname", "테스트")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("#27")))
                 .andExpect(content().string(containsString("collection-image")))
                 .andExpect(content().string(containsString("내 오브젝트 검색")))
                 .andExpect(content().string(containsString("수집 현황 보기")))
+                .andExpect(content().string(containsString("기타 옵젝")))
                 .andExpect(content().string(containsString("보유 오브젝트 필터")))
                 .andExpect(content().string(not(containsString("#30000001"))));
     }

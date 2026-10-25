@@ -34,11 +34,16 @@ public class CosmoCollectionService {
     }
 
     public Map<String, Object> search(String rawNickname, int page) {
-        return search(rawNickname, page, "", "", "", "");
+        return search(rawNickname, page, "", "", "", "", "all");
     }
 
     public Map<String, Object> search(String rawNickname, int page,
                                       String member, String season, String objektClass, String query) {
+        return search(rawNickname, page, member, season, objektClass, query, "all");
+    }
+
+    public Map<String, Object> search(String rawNickname, int page,
+                                      String member, String season, String objektClass, String query, String group) {
         String nickname = rawNickname == null ? "" : rawNickname.trim();
         if (nickname.isBlank()) throw new IllegalArgumentException(NOT_FOUND);
         if (nickname.length() > 40 || nickname.contains("/") || nickname.contains(" "))
@@ -54,10 +59,11 @@ public class CosmoCollectionService {
         String seasonKey = season == null ? "" : season.trim();
         String classKey = objektClass == null ? "" : objektClass.trim();
         String search = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
+        String selectedGroup = normalizeGroup(group, memberKey);
+        List<String> selectedMembers = memberKey.isBlank() ? List.of() : List.of(memberKey);
         List<Map<String, Object>> filtered = found.cards.stream().filter(card -> {
-            if (!memberKey.isBlank()
-                    && !com.example.triplesweb.util.MemberPortraitOptions.sameMember(
-                    text(card, "member"), memberKey)) return false;
+            if (!com.example.triplesweb.util.MemberPortraitOptions.matchesMemberGroup(
+                    selectedGroup, selectedMembers, text(card, "member"))) return false;
             if (!seasonKey.isBlank() && !text(card, "season").equalsIgnoreCase(seasonKey)) return false;
             if (!classKey.isBlank() && !text(card, "objektClass").equalsIgnoreCase(classKey)) return false;
             if (!search.isBlank()) {
@@ -73,7 +79,7 @@ public class CosmoCollectionService {
         int from = safePage * PAGE_SIZE;
         List<Map<String, Object>> cards = filtered.subList(from, Math.min(filtered.size(), from + PAGE_SIZE));
         String nickEnc = URLEncoder.encode(found.nickname, StandardCharsets.UTF_8);
-        String filterQuery = filterQuery(memberKey, seasonKey, classKey, query == null ? "" : query.trim());
+        String filterQuery = filterQuery(memberKey, seasonKey, classKey, query == null ? "" : query.trim(), selectedGroup);
         Map<String, Object> view = new LinkedHashMap<>();
         view.put("nickname", found.nickname);
         view.put("nicknameEncoded", nickEnc);
@@ -91,19 +97,32 @@ public class CosmoCollectionService {
         view.put("hasNext", safePage + 1 < totalPages);
         view.put("prevPage", Math.max(0, safePage - 1));
         view.put("nextPage", safePage + 1);
-        view.put("selectedMember", memberKey);
+        view.put("selectedMember", "other".equals(selectedGroup) ? "" : memberKey);
         view.put("selectedSeason", seasonKey);
         view.put("selectedClass", classKey);
+        view.put("selectedGroup", selectedGroup);
+        view.put("isOtherGroup", "other".equals(selectedGroup));
+        view.put("isMembersGroup", "members".equals(selectedGroup));
+        view.put("isAllGroup", "all".equals(selectedGroup));
         view.put("searchQuery", query == null ? "" : query.trim());
         view.put("filterQuery", filterQuery);
-        view.put("hasActiveFilters", !memberKey.isBlank() || !seasonKey.isBlank()
+        view.put("hasActiveFilters", !"all".equals(selectedGroup) || !memberKey.isBlank() || !seasonKey.isBlank()
                 || !classKey.isBlank() || !(query == null || query.isBlank()));
         return view;
     }
 
-    private static String filterQuery(String member, String season, String klass, String query) {
+    private static String normalizeGroup(String group, String member) {
+        if ("other".equalsIgnoreCase(group)) return "other";
+        if ("members".equalsIgnoreCase(group) || (member != null && !member.isBlank())) return "members";
+        return "all";
+    }
+
+    private static String filterQuery(String member, String season, String klass, String query, String group) {
         StringBuilder out = new StringBuilder();
-        if (!member.isBlank()) out.append("&member=").append(URLEncoder.encode(member, StandardCharsets.UTF_8));
+        if (group != null && !group.isBlank() && !"all".equals(group))
+            out.append("&group=").append(URLEncoder.encode(group, StandardCharsets.UTF_8));
+        if (!member.isBlank() && !"other".equals(group))
+            out.append("&member=").append(URLEncoder.encode(member, StandardCharsets.UTF_8));
         if (!season.isBlank()) out.append("&season=").append(URLEncoder.encode(season, StandardCharsets.UTF_8));
         if (!klass.isBlank()) out.append("&class=").append(URLEncoder.encode(klass, StandardCharsets.UTF_8));
         if (!query.isBlank()) out.append("&q=").append(URLEncoder.encode(query, StandardCharsets.UTF_8));

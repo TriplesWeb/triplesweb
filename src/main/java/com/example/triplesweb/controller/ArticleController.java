@@ -172,7 +172,7 @@ public class ArticleController {
         model.addAttribute("showObjektPicker", true);
         model.addAttribute("objektSelected", selectedItems);
         model.addAttribute("memberPickerOptions",
-                MemberPortraitOptions.forObjektFilter(ObjektFilterOrder.sortedMembers(members), artistRepository.findAll()));
+                MemberPortraitOptions.forObjektFilter(MemberPortraitOptions.soloMemberNames(members), artistRepository.findAll()));
         model.addAttribute("objektSeasonOptions", ObjektFilterOrder.sortedSeasons(seasons));
         model.addAttribute("objektClassOptions", classes.stream()
                 .sorted(String.CASE_INSENSITIVE_ORDER).toList());
@@ -184,17 +184,20 @@ public class ArticleController {
                                              @RequestParam(defaultValue = "") String season,
                                              @RequestParam(name = "class", defaultValue = "") String objektClass,
                                              @RequestParam(defaultValue = "") String q,
+                                             @RequestParam(defaultValue = "all") String group,
                                              @RequestParam(defaultValue = "0") int offset,
                                              @RequestParam(defaultValue = "24") int limit) {
         int size = Math.min(48, Math.max(1, limit));
         int start = Math.max(0, offset);
-        String memberKey = member.trim().toLowerCase();
         String seasonKey = season.trim().toLowerCase();
         String classKey = objektClass.trim().toLowerCase();
         String query = q.trim().toLowerCase();
+        String selectedGroup = "other".equalsIgnoreCase(group) ? "other"
+                : ("members".equalsIgnoreCase(group) || !member.isBlank() ? "members" : "all");
+        List<String> selectedMembers = member.isBlank() ? List.of() : List.of(member.trim());
         List<Map<String, Object>> matched = new ArrayList<>();
         for (Map<String, Object> item : objektService.findCollections("triples")) {
-            if (!memberKey.isEmpty() && !MemberPortraitOptions.sameMember(stringValue(item.get("member")), member)) continue;
+            if (!MemberPortraitOptions.matchesMemberGroup(selectedGroup, selectedMembers, stringValue(item.get("member")))) continue;
             if (!seasonKey.isEmpty() && !stringValue(item.get("season")).toLowerCase().equals(seasonKey)) continue;
             if (!classKey.isEmpty() && !stringValue(item.get("class")).toLowerCase().equals(classKey)) continue;
             if (!query.isEmpty()) {

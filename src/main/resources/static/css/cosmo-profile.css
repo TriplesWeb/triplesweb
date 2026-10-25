@@ -43,10 +43,19 @@
     border-radius: 1rem;
     background: #14161c;
 }
+.profile-member-picker .objekt-member-picker-panel {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
 .profile-member-picker .mpp-tool-btn {
     display: inline-flex;
     align-items: center;
     text-decoration: none;
+}
+.profile-member-picker .mpp-tool-btn[aria-pressed="true"] {
+    border-color: rgba(0, 245, 212, .55);
+    background: rgba(0, 245, 212, .12);
+    color: #7df9e8;
 }
 .profile-checklist { min-width: 0; }
 .profile-checklist-legend { display: flex; flex-wrap: wrap; gap: .75rem; font-size: .8rem; color: #9daaa7; margin-bottom: 1rem; }
