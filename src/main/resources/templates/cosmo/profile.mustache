@@ -7,9 +7,9 @@
 <title>{{requestedNickname}} · COSMO 닉네임 상세</title>
 <link rel="stylesheet" href="/css/gravity-page.css?v=2">
 <link rel="stylesheet" href="/css/archive-page.css?v=3">
-<link rel="stylesheet" href="/css/member-portrait-picker.css?v=8">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=4">
-<link rel="stylesheet" href="/css/cosmo-profile.css?v=7">
+<link rel="stylesheet" href="/css/member-portrait-picker.css?v=11">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=8">
+<link rel="stylesheet" href="/css/cosmo-profile.css?v=9">
 </head>
 <body class="collection-page min-h-screen flex flex-col">
 {{>layout/header}}
@@ -111,11 +111,13 @@
         <a class="profile-ownership-tab{{#isOwnershipMissing}} is-active{{/isOwnershipMissing}}" href="{{ownershipMissingUrl}}" {{#isOwnershipMissing}}aria-current="page"{{/isOwnershipMissing}}>미보유</a>
     </nav>
     {{/hasOwnershipFilter}}
+    <div class="profile-season-grid">
     {{#checklistSeasons}}
     <section class="ar-panel profile-checklist-season" data-checklist-season data-complete="{{complete}}">
-        <header class="profile-season-heading"><h3>{{season}}</h3><p>{{owned}} / {{total}}종 <strong>{{percent}}%</strong></p></header>
+        <details class="profile-season-fold">
+        <summary class="profile-season-heading"><h3>{{season}}</h3><p>{{owned}} / {{total}}종 <strong>{{percent}}%</strong></p><span class="profile-group-toggle">펼치기 / 접기</span></summary>
         {{#groups}}
-        <details class="profile-checklist-group" {{#open}}open{{/open}}>
+        <details class="profile-checklist-group">
             <summary><span>{{klass}}</span><strong>{{owned}} / {{total}}종</strong>{{#complete}}<span class="profile-group-complete">✓ 완료</span>{{/complete}}{{^complete}}<span>{{missing}}종 미보유</span>{{/complete}}<span class="profile-group-toggle">펼치기 / 접기</span></summary>
             <div class="profile-checklist-grid">
             {{#cards}}
@@ -128,8 +130,10 @@
             </div>
         </details>
         {{/groups}}
+        </details>
     </section>
     {{/checklistSeasons}}
+    </div>
 </section>
 {{/hasChecklist}}
 {{^hasChecklist}}

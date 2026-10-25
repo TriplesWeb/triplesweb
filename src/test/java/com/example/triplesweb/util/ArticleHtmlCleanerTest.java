@@ -27,6 +27,15 @@ class ArticleHtmlCleanerTest {
     }
 
     @Test
+    void blankMarkupHasNoVisibleContentAndMatchesTheSameText() {
+        assertFalse(ArticleHtmlCleaner.hasVisibleContent("<p><br></p>"));
+        assertTrue(ArticleHtmlCleaner.hasVisibleContent("<p>본문</p>"));
+        assertTrue(ArticleHtmlCleaner.hasVisibleContent("<img src=\"/uploads/a.jpg\">"));
+        assertEquals(ArticleHtmlCleaner.fingerprint("<p>같은 글</p>"),
+                ArticleHtmlCleaner.fingerprint("<div class=\"content-media\"><p>같은 글</p></div>"));
+    }
+
+    @Test
     void emptyInputReturnsEmpty() {
         assertEquals("", ArticleHtmlCleaner.clean(null));
         assertEquals("", ArticleHtmlCleaner.clean("   "));

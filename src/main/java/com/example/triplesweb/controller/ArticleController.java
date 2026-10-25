@@ -86,12 +86,11 @@ public class ArticleController {
 
         String cleanedContent = ArticleHtmlCleaner.clean(form.getContent());
         form.setContent(cleanedContent);
-        if (bindingResult.hasErrors()
-                || form.getTitle() == null || form.getTitle().trim().isEmpty()
-                || cleanedContent == null || cleanedContent.isBlank()) {
+        String validationError = validateTitleAndContent(form.getTitle(), cleanedContent);
+        if (bindingResult.hasErrors() || validationError != null) {
             model.addAttribute("category", category);
             model.addAttribute("categoryName", getCategoryName(category));
-            model.addAttribute("errorMessage", "제목과 내용을 모두 입력해주세요.");
+            model.addAttribute("errorMessage", validationError != null ? validationError : "제목과 내용을 모두 입력해주세요.");
             model.addAttribute("articleForm", form);
             addObjektOptions(model, category, selectedObjektIds == null ? Set.of() : Set.copyOf(selectedObjektIds));
             return "article/article_new";
@@ -224,7 +223,7 @@ public class ArticleController {
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("id", stringValue(item.get("id")));
         row.put("collectionId", stringValue(item.get("collectionId")));
-        row.put("member", stringValue(item.get("member")));
+        row.put("member", com.example.triplesweb.util.MemberPortraitOptions.displayMember(stringValue(item.get("member"))));
         row.put("season", stringValue(item.get("season")));
         row.put("class", stringValue(item.get("class")));
         row.put("collectionNo", stringValue(item.get("collectionNo")));
@@ -337,7 +336,7 @@ public class ArticleController {
 
         model.addAttribute("article", article);
         List<com.example.triplesweb.entity.ArticleObjekt> linkedObjekts = articleObjektService.findForArticle(id);
-        model.addAttribute("linkedObjekts", linkedObjekts);
+        model.addAttribute("linkedObjekts", linkedObjekts.stream().map(ArticleController::linkedObjektView).toList());
         model.addAttribute("hasLinkedObjekts", !linkedObjekts.isEmpty());
         model.addAttribute("category", category);
         model.addAttribute("commentDtos", commentService.show(id));
@@ -410,7 +409,7 @@ public class ArticleController {
         if (article == null) return "redirect:/article/" + category;
 
         newarticle.setContent(ArticleHtmlCleaner.clean(newarticle.getContent()));
-        String validationError = validateArticle(newarticle);
+        String validationError = validateArticleUpdate(article, newarticle, category, files, uploadedFiles, deletedFiles, selectedObjektIds);
         if (validationError != null) {
             // 사용자가 입력한 값을 유지해 재표시
             article.setTitle(newarticle.getTitle());
@@ -507,10 +506,66 @@ public class ArticleController {
     }
 
     private String validateArticle(Article newArt) {
-        if (newArt.getTitle() == null || newArt.getTitle().trim().isEmpty())
-            return "제목을 입력해주세요.";
-        if (newArt.getContent() == null || newArt.getContent().trim().isEmpty())
-            return "내용을 입력해주세요.";
+        return validateTitleAndContent(newArt.getTitle(), newArt.getContent());
+    }
+
+    private String validateArticleUpdate(Article existing,
+                                         Article incoming,
+                                         String category,
+                                         List<MultipartFile> files,
+                                         List<String> uploadedFiles,
+                                         List<Long> deletedFiles,
+                                         List<String> selectedObjektIds) {
+        String invalid = validateArticle(incoming);
+        if (invalid != null) return invalid;
+        boolean sameText = existing.getTitle() != null
+                && existing.getTitle().trim().equals(incoming.getTitle().trim())
+                && ArticleHtmlCleaner.fingerprint(existing.getContent())
+                .equals(ArticleHtmlCleaner.fingerprint(incoming.getContent()));
+        if (!sameText || hasFileChanges(files, uploadedFiles, deletedFiles)) return null;
+        if (("trade".equals(category) || "sell".equals(category))
+                && !sameObjektSelection(existing.getId(), selectedObjektIds)) {
+            return null;
+        }
+        return "게시글을 수정해주세요.";
+    }
+
+    private static boolean hasFileChanges(List<MultipartFile> files,
+                                          List<String> uploadedFiles,
+                                          List<Long> deletedFiles) {
+        boolean uploaded = files != null && files.stream().anyMatch(file -> file != null && !file.isEmpty());
+        return uploaded
+                || (uploadedFiles != null && uploadedFiles.stream().anyMatch(name -> name != null && !name.isBlank()))
+                || (deletedFiles != null && !deletedFiles.isEmpty());
+    }
+
+    private boolean sameObjektSelection(Long articleId, List<String> selectedObjektIds) {
+        Set<String> current = articleObjektService.findForArticle(articleId).stream()
+                .map(com.example.triplesweb.entity.ArticleObjekt::getObjektKey)
+                .filter(key -> key != null && !key.isBlank())
+                .collect(Collectors.toSet());
+        Set<String> incoming = selectedObjektIds == null ? Set.of() : selectedObjektIds.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .collect(Collectors.toSet());
+        return current.equals(incoming);
+    }
+
+    private static String validateTitleAndContent(String title, String content) {
+        if (title == null || title.trim().isEmpty()) return "제목을 입력해주세요.";
+        if (!ArticleHtmlCleaner.hasVisibleContent(content)) return "내용을 입력해주세요.";
         return null;
+    }
+
+    private static Map<String, Object> linkedObjektView(com.example.triplesweb.entity.ArticleObjekt link) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("objektKey", link.getObjektKey());
+        row.put("collectionId", link.getCollectionId());
+        row.put("memberName", com.example.triplesweb.util.MemberPortraitOptions.displayMember(link.getMemberName()));
+        row.put("thumbnailImage", link.getThumbnailImage());
+        row.put("frontImage", link.getFrontImage());
+        row.put("collectionNo", link.getCollectionNo());
+        return row;
     }
 }

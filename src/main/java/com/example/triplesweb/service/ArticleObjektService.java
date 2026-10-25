@@ -32,7 +32,8 @@ public class ArticleObjektService {
             if (!stored.add(objektKey)) continue;
             ArticleObjekt linked = new ArticleObjekt();
             linked.setArticle(article); linked.setObjektKey(objektKey);
-            linked.setCollectionId(value(item, "collectionId")); linked.setMemberName(value(item, "member"));
+            linked.setCollectionId(value(item, "collectionId"));
+            linked.setMemberName(fit(com.example.triplesweb.util.MemberPortraitOptions.displayMember(value(item, "member")), 100));
             linked.setThumbnailImage(value(item, "thumbnailImage")); linked.setFrontImage(value(item, "frontImage"));
             linked.setBackImage(value(item, "backImage")); linked.setSeason(value(item, "season"));
             linked.setObjektClass(value(item, "class")); linked.setCollectionNo(value(item, "collectionNo"));
@@ -54,4 +55,8 @@ public class ArticleObjektService {
     @Transactional(readOnly = true) public List<ArticleObjekt> findForArticle(Long articleId) { return repository.findByArticle_IdOrderByIdAsc(articleId); }
     @Transactional public void deleteForArticle(Long articleId) { repository.deleteByArticle_Id(articleId); }
     private static String value(Map<String,Object> map, String key) { Object v=map.get(key); return v==null ? "" : v.toString(); }
+    private static String fit(String value, int max) {
+        if (value == null) return "";
+        return value.length() <= max ? value : value.substring(0, max);
+    }
 }

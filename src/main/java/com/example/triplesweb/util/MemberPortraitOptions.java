@@ -52,6 +52,15 @@ public final class MemberPortraitOptions {
         return index < 24 ? KOREAN_ORDER.get(index) : value == null ? "" : value.trim();
     }
 
+    /** 솔로는 한글 이름, 유닛은 구성 멤버 한글 이름을 구분해 보여 준다. */
+    public static String displayMember(String value) {
+        if (value == null || value.isBlank()) return "";
+        Set<String> members = objektMembers(value);
+        if (members.isEmpty()) return value.trim();
+        if (members.size() == 1) return members.iterator().next();
+        return String.join(" × ", members);
+    }
+
     public static boolean sameMember(String first, String second) {
         return memberName(first).equalsIgnoreCase(memberName(second));
     }

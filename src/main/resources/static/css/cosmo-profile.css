@@ -129,11 +129,16 @@
 .profile-hide-complete { display: inline-flex; align-items: center; gap: .5rem; color: #c2d0cb; font-size: .85rem; cursor: pointer; }
 .profile-hide-complete[hidden], .profile-checklist-season[hidden] { display: none; }
 .profile-hide-complete input { accent-color: #66e6ce; }
-.profile-checklist-season { padding: clamp(.8rem, 2vw, 1.25rem); margin-bottom: 1.25rem; min-width: 0; }
-.profile-season-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: 1rem; }
-.profile-season-heading h3 { font-size: 1.1rem; font-weight: 750; }
-.profile-season-heading p { color: #b9cac4; font-size: .85rem; }
-.profile-season-heading strong { color: #a1ffe9; margin-left: .8rem; }
+.profile-season-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; align-items: start; }
+.profile-checklist-season { padding: .4rem .5rem; margin-bottom: 0; min-width: 0; }
+.profile-season-fold > summary { list-style: none; cursor: pointer; }
+.profile-season-fold > summary::-webkit-details-marker { display: none; }
+.profile-season-fold:not([open]) .profile-season-heading { margin-bottom: 0; }
+.profile-season-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .25rem .45rem; margin-bottom: .4rem; }
+.profile-season-heading h3 { font-size: .82rem; font-weight: 750; }
+.profile-season-heading p { color: #b9cac4; font-size: .72rem; }
+.profile-season-heading strong { color: #a1ffe9; margin-left: .35rem; }
+.profile-season-heading .profile-group-toggle { margin-left: auto; font-size: .68rem; color: #8fb8b0; }
 .profile-checklist-group { border: 1px solid #ffffff15; border-radius: .75rem; margin-top: .65rem; background: #0d1015; overflow: hidden; }
 .profile-checklist-group summary { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem 1.1rem; padding: .9rem 1rem; cursor: pointer; list-style: none; font-size: .85rem; }
 .profile-checklist-group summary::-webkit-details-marker { display: none; }
@@ -156,6 +161,9 @@
 .profile-checklist-caption strong { font-variant-numeric: tabular-nums; }
 .profile-checklist-caption span { color: #a1b1ab; font-size: .65rem; }
 .profile-checklist-card:focus-visible, .profile-checklist-group summary:focus-visible { outline: 2px solid #8bf5dc; outline-offset: -3px; }
+@media (max-width: 540px) {
+    .profile-season-grid { grid-template-columns: 1fr; }
+}
 @media (max-width: 600px) {
     .profile-checklist-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: .6rem; gap: .6rem; }
     .profile-checklist-caption { flex-direction: column; align-items: flex-start; }
