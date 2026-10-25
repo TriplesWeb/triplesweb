@@ -14,11 +14,19 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryPermission;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclFileAttributeView;
+import java.nio.file.attribute.FileAttribute;
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
+import java.util.List;
+import java.util.EnumSet;
 
 /** Server-only COSMO credentials. JWT expiry is a refresh hint, not authentication. */
 @Component
@@ -144,8 +152,7 @@ public class CosmoTokenProvider {
         Path temporary = null;
         try {
             Files.createDirectories(credentialsFile.getParent());
-            temporary = Files.createTempFile(credentialsFile.getParent(), ".credentials-", ".tmp",
-                    PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
+            temporary = createPrivateTempFile(credentialsFile.getParent());
             Files.writeString(temporary, mapper.writeValueAsString(Map.of(
                     "accessToken", accessToken, "refreshToken", refreshToken)));
             Files.move(temporary, credentialsFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
@@ -156,6 +163,28 @@ public class CosmoTokenProvider {
                 try { Files.deleteIfExists(temporary); } catch (Exception ignored) { }
             }
         }
+    }
+
+    /** Restrict access at creation, before any credential bytes are written. */
+    static Path createPrivateTempFile(Path directory) throws IOException {
+        var store = Files.getFileStore(directory);
+        if (store.supportsFileAttributeView("posix")) {
+            return Files.createTempFile(directory, ".credentials-", ".tmp",
+                    PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
+        }
+        if (store.supportsFileAttributeView(AclFileAttributeView.class)) {
+            // Resolve the process account rather than inheriting the parent directory's ACL.
+            var user = directory.getFileSystem().getUserPrincipalLookupService()
+                    .lookupPrincipalByName(System.getProperty("user.name"));
+            var entry = AclEntry.newBuilder().setType(AclEntryType.ALLOW).setPrincipal(user)
+                    .setPermissions(EnumSet.allOf(AclEntryPermission.class)).build();
+            FileAttribute<List<AclEntry>> acl = new FileAttribute<>() {
+                @Override public String name() { return "acl:acl"; }
+                @Override public List<AclEntry> value() { return List.of(entry); }
+            };
+            return Files.createTempFile(directory, ".credentials-", ".tmp", acl);
+        }
+        throw new IOException("Credential storage requires POSIX permissions or an ACL-capable filesystem.");
     }
 
     JsonNode decodeResponse(String body, boolean encrypted) {

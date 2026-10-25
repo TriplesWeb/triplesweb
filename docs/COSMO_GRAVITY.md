@@ -50,6 +50,17 @@ python3 scripts/setup-cosmo.py --from-file "$HOME/.config/cosmo-tui/auth.json"
 
 같은 refresh token을 다른 클라이언트와 동시에 갱신하지 않는다. 인증 파일이 있으면 환경 변수보다 우선한다.
 
+## Windows 로컬 실행과 인증 파일 권한
+
+Java에서 POSIX 권한을 지원하지 않는 Windows 파일시스템에는 NTFS ACL을 사용한다.
+인증 임시 파일을 생성할 때부터 실행 계정만 접근 가능한 ACL을 지정하며,
+그 이후 토큰을 기록하고 기존 파일을 원자적으로 교체한다. 상위 폴더의 넓은 ACL을 그대로 상속하지 않는다.
+Linux 등 POSIX 파일시스템에서는 기존 `600` 권한을 유지한다.
+어느 방식도 지원하지 않는 파일시스템에서는 접근 제한 없이 토큰을 저장하지 않고 오류로 처리한다.
+이 방식은 운영체제의 파일 접근 제어이며 관리자 권한을 우회하거나 파일 내용을 암호화하는 기능은 아니다.
+
+Java API: [AclFileAttributeView](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/nio/file/attribute/AclFileAttributeView.html).
+
 ## Raspberry Pi / Compose
 
 - 운영 호스트의 기존 `./data` 볼륨 안에 `cosmo/credentials.json`을 배치한다.
