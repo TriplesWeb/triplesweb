@@ -539,7 +539,197 @@
             border-color: rgba(0,245,212,.58);
             box-shadow: 0 14px 32px rgba(0,0,0,.34), 0 0 0 1px rgba(0,245,212,.06);
         }
+        .objekt-open-detail {
+            appearance: none;
+            display: block;
+            width: 100%;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+            text-align: left;
+        }
+        .objekt-detail-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 80;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: rgba(6, 8, 14, 0.72);
+            backdrop-filter: blur(8px);
+        }
+        .objekt-detail-modal.is-open {
+            display: flex;
+        }
+        .objekt-detail-panel {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(0, 17rem) minmax(0, 1fr);
+            gap: 1.25rem;
+            width: min(52rem, 100%);
+            max-height: min(90vh, 44rem);
+            overflow: auto;
+            padding: 1.1rem;
+            border-radius: 1.25rem;
+            border: 1px solid rgba(255,255,255,.1);
+            background: linear-gradient(165deg, #1a1d28, #10131b);
+            box-shadow: 0 24px 60px rgba(0,0,0,.45);
+        }
+        .objekt-detail-media {
+            position: relative;
+            margin: 0;
+            border-radius: 1rem;
+            overflow: hidden;
+            background: #12141c;
+            border: 1px solid rgba(255,255,255,.08);
+        }
+        .objekt-detail-media-btn {
+            appearance: none;
+            display: block;
+            width: 100%;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            cursor: zoom-in;
+        }
+        .objekt-detail-media-btn.is-flippable {
+            cursor: pointer;
+        }
+        .objekt-detail-media-btn:disabled {
+            cursor: default;
+        }
+        .objekt-detail-media img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 2 / 3;
+            object-fit: cover;
+        }
+        .objekt-detail-face {
+            position: absolute;
+            right: .65rem;
+            bottom: .65rem;
+            border-radius: 999px;
+            background: rgba(0,0,0,.65);
+            color: #fff;
+            font-size: .68rem;
+            font-weight: 700;
+            padding: .28rem .55rem;
+            pointer-events: none;
+        }
+        .objekt-detail-body {
+            display: flex;
+            flex-direction: column;
+            gap: .85rem;
+            min-width: 0;
+        }
+        .objekt-detail-close {
+            position: absolute;
+            top: .7rem;
+            right: .7rem;
+            appearance: none;
+            width: 2.1rem;
+            height: 2.1rem;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,.12);
+            background: rgba(0,0,0,.35);
+            color: #e8edf5;
+            font-size: 1.2rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+        .objekt-detail-kicker {
+            margin: 0;
+            color: #6ee7d8;
+            font-size: .68rem;
+            font-weight: 700;
+            letter-spacing: .18em;
+            text-transform: uppercase;
+        }
+        .objekt-detail-title {
+            margin: .2rem 0 0;
+            padding-right: 2.2rem;
+            color: #f3f4f8;
+            font-size: clamp(1.15rem, 2vw, 1.45rem);
+            font-weight: 800;
+            line-height: 1.25;
+            word-break: break-word;
+        }
+        .objekt-detail-meta {
+            margin: 0;
+            display: grid;
+            gap: .45rem;
+        }
+        .objekt-detail-meta div {
+            display: flex;
+            justify-content: space-between;
+            gap: .75rem;
+            padding-bottom: .45rem;
+            border-bottom: 1px solid rgba(255,255,255,.08);
+            font-size: .86rem;
+        }
+        .objekt-detail-meta dt { color: #8b93a7; margin: 0; }
+        .objekt-detail-meta dd { margin: 0; color: #e8edf5; font-weight: 600; text-align: right; }
+        .objekt-detail-desc {
+            margin: 0;
+            color: #b7c0d0;
+            font-size: .88rem;
+            line-height: 1.65;
+            white-space: pre-wrap;
+        }
+        .objekt-detail-desc.is-empty { color: #6b7388; }
+        .objekt-detail-actions {
+            display: grid;
+            gap: .5rem;
+            margin-top: auto;
+        }
+        .objekt-detail-actions a,
+        .objekt-detail-actions button {
+            display: block;
+            width: 100%;
+            text-align: center;
+            border-radius: .85rem;
+            padding: .72rem 1rem;
+            font-size: .88rem;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .objekt-fav-toggle {
+            appearance: none;
+            border: 1px solid rgba(244, 114, 182, .4);
+            background: rgba(244, 114, 182, .1);
+            color: #f9a8d4;
+            cursor: pointer;
+        }
+        .objekt-fav-toggle.is-on {
+            background: rgba(244, 114, 182, .22);
+            color: #fce7f3;
+        }
+        .objekt-detail-actions .objekt-member-link {
+            border: 1px solid rgba(255,255,255,.12);
+            color: #d7dde8;
+            background: transparent;
+        }
+        .objekt-detail-actions .objekt-trade-link {
+            background: #00f5d4;
+            color: #071513;
+        }
+        .objekt-detail-actions .objekt-full-link {
+            border: 1px solid rgba(0, 245, 212, .35);
+            color: #6ee7d8;
+            background: rgba(0, 245, 212, .06);
+            font-weight: 650;
+        }
         @media (max-width: 760px) {
+            .objekt-detail-panel {
+                grid-template-columns: 1fr;
+                max-height: 92vh;
+            }
+            .objekt-detail-media {
+                max-width: 16rem;
+                margin: 0 auto;
+            }
             .objekt-workspace { padding: .85rem; gap: .75rem; }
             .objekt-filter-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .objekt-filter { height: auto; min-height: 2.65rem; justify-content: space-between; border-radius: 14px; }
@@ -743,18 +933,18 @@
     <div id="objekt-card-grid" class="objekt-card-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 py-2 mt-3">
         {{#objekts}}
         <article class="objekt-card objekt-item group relative border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
+                 data-objekt-key="{{id}}"
                  data-season="{{seasonKey}}" data-class="{{classKey}}" data-artist="{{artist}}" data-collection-no="{{collectionNo}}"
                  data-number="{{numberValue}}" data-date="{{createdAt}}" data-member="{{member}}" data-search="{{searchText}}">
-            <button type="button" class="objekt-image-button relative block aspect-[2/3] w-full overflow-hidden bg-[#1c1f2e] text-left" aria-label="{{collectionId}} 앞면/뒷면 전환">
-                <img src="{{thumbnailImage}}" data-front="{{frontImage}}" data-back="{{backImage}}" alt="{{collectionId}}" loading="lazy" class="objekt-image h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null;this.src='{{frontImage}}';">
+            <button type="button" class="objekt-open-detail relative block aspect-[2/3] w-full overflow-hidden bg-[#1c1f2e]" aria-label="{{collectionId}} 상세 보기">
+                <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" class="objekt-image h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null;this.src='{{frontImage}}';">
                 <span class="absolute left-2 top-2 rounded-md border border-white/15 bg-black/65 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur">{{class}}</span>
                 <span class="absolute right-2 top-2 rounded-md bg-[#00e8cb] px-2 py-1 text-[10px] font-bold text-[#071513]">{{season}}</span>
-                <span class="objekt-flip-hint absolute bottom-2 right-2 rounded-full bg-black/65 px-2 py-1 text-[10px] text-white">앞면</span>
             </button>
             <div class="p-3">
-                <a href="/cosmo/objekt/detail/{{id}}" class="block truncate text-sm font-semibold text-slate-100 hover:text-[#00f5d4]" title="{{collectionId}}">{{collectionId}}</a>
+                <a href="/cosmo/objekt/detail/{{id}}" class="objekt-detail-link block truncate text-sm font-semibold text-slate-100 hover:text-[#00f5d4]" title="{{collectionId}}">{{collectionId}}</a>
                 <div class="mt-1 flex items-center justify-between gap-2 text-xs text-slate-400">
-                    <a href="/cosmo/objekt/member?name={{member}}" class="truncate text-teal-200 hover:underline">{{member}}</a><span class="shrink-0 font-mono">{{collectionNo}}</span>
+                    <a href="/cosmo/objekt/member?name={{member}}" class="objekt-member-chip truncate text-teal-200 hover:underline">{{member}}</a><span class="shrink-0 font-mono">{{collectionNo}}</span>
                 </div>
                 {{#mintCountKnown}}<p class="mt-2 text-xs text-slate-300">발행량 {{mintCount}}개</p>{{/mintCountKnown}}
             </div>
@@ -768,6 +958,38 @@
         <div id="objekt-scroll-spinner" class="hidden h-6 w-6 animate-spin rounded-full border-2 border-[#00f5d4]/30 border-t-[#00f5d4]" aria-hidden="true"></div>
     </div>
 </main>
+
+<div id="objektDetailModal" class="objekt-detail-modal" hidden aria-hidden="true">
+        <div class="objekt-detail-panel" aria-labelledby="objektDetailTitle" tabindex="-1">
+        <button type="button" class="objekt-detail-close" id="objektDetailClose" aria-label="닫기">&times;</button>
+        <figure class="objekt-detail-media">
+            <button type="button" class="objekt-detail-media-btn" id="objektDetailFlip" aria-label="앞면">
+                <img id="objektDetailImage" src="" alt="" data-front="" data-back="" data-showing-back="false">
+                <span class="objekt-detail-face" id="objektDetailFace">앞면</span>
+            </button>
+        </figure>
+        <div class="objekt-detail-body">
+            <div>
+                <p class="objekt-detail-kicker">OBJEKT</p>
+                <h2 class="objekt-detail-title" id="objektDetailTitle">—</h2>
+            </div>
+            <dl class="objekt-detail-meta">
+                <div><dt>멤버</dt><dd id="objektDetailMember">—</dd></div>
+                <div><dt>시즌</dt><dd id="objektDetailSeason">—</dd></div>
+                <div><dt>클래스</dt><dd id="objektDetailClass">—</dd></div>
+                <div><dt>번호</dt><dd id="objektDetailNo">—</dd></div>
+            </dl>
+            <p class="objekt-detail-desc is-empty" id="objektDetailDesc">불러오는 중…</p>
+            <div class="objekt-detail-actions">
+                <button type="button" class="objekt-fav-toggle" id="objektDetailFavorite">♡ 찜하기</button>
+                <a class="objekt-member-link" id="objektDetailMemberLink" href="/cosmo/objekt">이 멤버의 오브젝트 더 보기</a>
+                <a class="objekt-trade-link" href="/article/trade/new">교환 게시글 작성</a>
+                <a class="objekt-full-link" id="objektDetailFullLink" href="/cosmo/objekt">전체 페이지로 보기</a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="/js/member-portrait-picker.js?v=4"></script>
 <script>
 (() => {
@@ -1181,22 +1403,188 @@
         return escapeHtml(value);
     }
 
-    function bindFlip(root) {
-        (root || document).querySelectorAll('.objekt-image-button').forEach((button) => {
-            if (button.dataset.flipBound === '1') return;
-            button.dataset.flipBound = '1';
-            button.addEventListener('click', () => {
-                const image = button.querySelector('img');
-                const hint = button.querySelector('.objekt-flip-hint');
-                if (!image) return;
-                const showingBack = image.dataset.showingBack === 'true';
-                const next = showingBack ? image.dataset.front : image.dataset.back;
-                if (next) image.src = next;
-                image.dataset.showingBack = showingBack ? 'false' : 'true';
-                if (hint) hint.textContent = showingBack ? '앞면' : '뒷면';
-            });
-        });
+    const detailModal = document.getElementById('objektDetailModal');
+    const detailImage = document.getElementById('objektDetailImage');
+    const detailFlip = document.getElementById('objektDetailFlip');
+    const detailFace = document.getElementById('objektDetailFace');
+    const detailTitle = document.getElementById('objektDetailTitle');
+    const detailMember = document.getElementById('objektDetailMember');
+    const detailSeason = document.getElementById('objektDetailSeason');
+    const detailClass = document.getElementById('objektDetailClass');
+    const detailNo = document.getElementById('objektDetailNo');
+    const detailDesc = document.getElementById('objektDetailDesc');
+    const detailFavorite = document.getElementById('objektDetailFavorite');
+    const detailMemberLink = document.getElementById('objektDetailMemberLink');
+    const detailFullLink = document.getElementById('objektDetailFullLink');
+    const detailClose = document.getElementById('objektDetailClose');
+    let activeObjektKey = '';
+    let detailLoading = false;
+
+    function csrfHeaders(extra) {
+        const headers = new Headers(extra || {});
+        headers.set('Accept', 'application/json');
+        if (window.AboutAdminAuth && typeof window.AboutAdminAuth.applyAuthHeaders === 'function') {
+            return window.AboutAdminAuth.applyAuthHeaders(headers);
+        }
+        const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
+        if (match) headers.set('X-XSRF-TOKEN', decodeURIComponent(match[1]));
+        return headers;
     }
+
+    function setFavoriteButton(on) {
+        if (!detailFavorite) return;
+        detailFavorite.classList.toggle('is-on', Boolean(on));
+        detailFavorite.textContent = on ? '♥ 찜 해제' : '♡ 찜하기';
+        detailFavorite.dataset.favorite = on ? 'true' : 'false';
+    }
+
+    function resetModalFlip(front, back, hasBack) {
+        if (!detailImage || !detailFlip || !detailFace) return;
+        const frontUrl = front || '';
+        const backUrl = hasBack ? (back || '') : '';
+        detailImage.dataset.front = frontUrl;
+        detailImage.dataset.back = backUrl;
+        detailImage.dataset.showingBack = 'false';
+        detailImage.src = frontUrl;
+        detailFace.textContent = '앞면';
+        detailFlip.disabled = !hasBack;
+        detailFlip.classList.toggle('is-flippable', Boolean(hasBack));
+        detailFlip.setAttribute('aria-label', hasBack ? '이미지 클릭 시 뒷면으로 전환' : '앞면');
+    }
+
+    function flipModalImage() {
+        if (!detailImage || !detailFlip || detailFlip.disabled) return;
+        const showingBack = detailImage.dataset.showingBack === 'true';
+        const next = showingBack ? detailImage.dataset.front : detailImage.dataset.back;
+        if (!next) return;
+        detailImage.src = next;
+        detailImage.dataset.showingBack = showingBack ? 'false' : 'true';
+        if (detailFace) detailFace.textContent = showingBack ? '앞면' : '뒷면';
+        detailFlip.setAttribute('aria-label', showingBack ? '이미지 클릭 시 뒷면으로 전환' : '이미지 클릭 시 앞면으로 전환');
+    }
+
+    function fillDetailModal(data) {
+        const key = data.objektKey || data.id || activeObjektKey;
+        activeObjektKey = key;
+        if (detailTitle) detailTitle.textContent = data.collectionId || '—';
+        if (detailMember) detailMember.textContent = data.member || '—';
+        if (detailSeason) detailSeason.textContent = data.season || '—';
+        if (detailClass) detailClass.textContent = data.class || '—';
+        if (detailNo) detailNo.textContent = data.collectionNo || '—';
+        if (detailDesc) {
+            const text = (data.description || '').trim();
+            detailDesc.textContent = text || '아직 등록된 상세 설명이 없습니다.';
+            detailDesc.classList.toggle('is-empty', !text);
+        }
+        if (detailImage) detailImage.alt = data.collectionId || '';
+        resetModalFlip(data.frontImage || data.thumbnailImage || '', data.backImage || '', Boolean(data.hasBack));
+        setFavoriteButton(Boolean(data.isFavorite));
+        if (detailMemberLink) detailMemberLink.href = data.memberUrl || '/cosmo/objekt';
+        if (detailFullLink) detailFullLink.href = data.detailUrl || ('/cosmo/objekt/detail/' + encodeURIComponent(key));
+        if (detailFavorite) detailFavorite.dataset.key = key;
+    }
+
+    function closeDetailModal() {
+        if (!detailModal) return;
+        detailModal.classList.remove('is-open');
+        if (window.AboutModal) {
+            window.AboutModal.closeModal(detailModal);
+        } else {
+            detailModal.hidden = true;
+            detailModal.classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+        detailModal.setAttribute('aria-hidden', 'true');
+        activeObjektKey = '';
+    }
+
+    function openDetailModalShell() {
+        if (!detailModal) return;
+        detailModal.hidden = false;
+        detailModal.classList.add('is-open');
+        detailModal.setAttribute('aria-hidden', 'false');
+        if (window.AboutModal) {
+            window.AboutModal.openModal(detailModal, { focusSelector: '#objektDetailClose' });
+            detailModal.classList.add('is-open');
+        } else {
+            detailModal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+            detailClose?.focus();
+        }
+    }
+
+    async function openObjektDetail(key) {
+        if (!key || detailLoading) return;
+        detailLoading = true;
+        openDetailModalShell();
+        if (detailDesc) {
+            detailDesc.textContent = '불러오는 중…';
+            detailDesc.classList.add('is-empty');
+        }
+        if (detailTitle) detailTitle.textContent = '불러오는 중…';
+        try {
+            const res = await fetch('/cosmo/objekt/detail/' + encodeURIComponent(key), {
+                headers: csrfHeaders({ Accept: 'application/json' }),
+                credentials: 'same-origin',
+                cache: 'no-store'
+            });
+            if (!res.ok) throw new Error('detail failed');
+            const data = await res.json();
+            fillDetailModal(data);
+        } catch (_) {
+            if (detailDesc) {
+                detailDesc.textContent = '상세 정보를 불러오지 못했습니다.';
+                detailDesc.classList.add('is-empty');
+            }
+        } finally {
+            detailLoading = false;
+        }
+    }
+
+    function shouldOpenModalFromEvent(event) {
+        if (event.defaultPrevented) return false;
+        if (event.button != null && event.button !== 0) return false;
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
+        return true;
+    }
+
+    grid?.addEventListener('click', (event) => {
+        const memberChip = event.target.closest('.objekt-member-chip');
+        if (memberChip) return;
+        const card = event.target.closest('.objekt-card[data-objekt-key]');
+        if (!card) return;
+        const openHit = event.target.closest('.objekt-open-detail, .objekt-detail-link');
+        if (!openHit && !event.target.closest('.objekt-card')) return;
+        if (!openHit) return;
+        if (!shouldOpenModalFromEvent(event)) return;
+        event.preventDefault();
+        openObjektDetail(card.dataset.objektKey);
+    });
+
+    detailClose?.addEventListener('click', closeDetailModal);
+    detailModal?.addEventListener('click', (event) => {
+        if (event.target === detailModal) closeDetailModal();
+    });
+    detailFlip?.addEventListener('click', flipModalImage);
+    detailFavorite?.addEventListener('click', async () => {
+        const key = detailFavorite.dataset.key || activeObjektKey;
+        if (!key) return;
+        detailFavorite.disabled = true;
+        try {
+            const res = await fetch('/cosmo/objekt/detail/' + encodeURIComponent(key) + '/favorite', {
+                method: 'POST',
+                headers: csrfHeaders({ Accept: 'application/json' }),
+                credentials: 'same-origin'
+            });
+            if (!res.ok) throw new Error('favorite failed');
+            const data = await res.json();
+            setFavoriteButton(Boolean(data.isFavorite));
+        } catch (_) {
+            /* keep previous state */
+        } finally {
+            detailFavorite.disabled = false;
+        }
+    });
 
     function updateSummary() {
         if (loadedEl) loadedEl.textContent = String(loadedCount);
@@ -1216,22 +1604,21 @@
         const id = item.id || '';
         const thumb = item.thumbnailImage || item.frontImage || '';
         const front = item.frontImage || thumb;
-        const back = item.backImage || front;
         const klass = item.class || item.classKey || '';
         const season = item.season || item.seasonKey || '';
         return `<article class="objekt-card objekt-item group relative border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
+                 data-objekt-key="${attr(id)}"
                  data-season="${attr(item.seasonKey || season)}" data-class="${attr(item.classKey || klass)}" data-artist="${attr(item.artist || '')}" data-collection-no="${attr(collectionNo)}"
                  data-number="${attr(item.numberValue || '')}" data-date="${attr(item.createdAt || '')}" data-member="${attr(member)}" data-search="${attr(item.searchText || '')}">
-            <button type="button" class="objekt-image-button relative block aspect-[2/3] w-full overflow-hidden bg-[#1c1f2e] text-left" aria-label="${attr(collectionId)} 앞면/뒷면 전환">
-                <img src="${attr(thumb)}" data-front="${attr(front)}" data-back="${attr(back)}" alt="${attr(collectionId)}" loading="lazy" decoding="async" class="objekt-image h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null;this.src='${attr(front)}';">
+            <button type="button" class="objekt-open-detail relative block aspect-[2/3] w-full overflow-hidden bg-[#1c1f2e]" aria-label="${attr(collectionId)} 상세 보기">
+                <img src="${attr(thumb)}" alt="${attr(collectionId)}" loading="lazy" decoding="async" class="objekt-image h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null;this.src='${attr(front)}';">
                 <span class="absolute left-2 top-2 rounded-md border border-white/15 bg-black/65 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur">${escapeHtml(klass)}</span>
                 <span class="absolute right-2 top-2 rounded-md bg-[#00e8cb] px-2 py-1 text-[10px] font-bold text-[#071513]">${escapeHtml(season)}</span>
-                <span class="objekt-flip-hint absolute bottom-2 right-2 rounded-full bg-black/65 px-2 py-1 text-[10px] text-white">앞면</span>
             </button>
             <div class="p-3">
-                <a href="/cosmo/objekt/detail/${attr(id)}" class="block truncate text-sm font-semibold text-slate-100 hover:text-[#00f5d4]" title="${attr(collectionId)}">${escapeHtml(collectionId)}</a>
+                <a href="/cosmo/objekt/detail/${attr(id)}" class="objekt-detail-link block truncate text-sm font-semibold text-slate-100 hover:text-[#00f5d4]" title="${attr(collectionId)}">${escapeHtml(collectionId)}</a>
                 <div class="mt-1 flex items-center justify-between gap-2 text-xs text-slate-400">
-                    <a href="/cosmo/objekt/member?name=${encodeURIComponent(member)}" class="truncate text-teal-200 hover:underline">${escapeHtml(member)}</a><span class="shrink-0 font-mono">${escapeHtml(collectionNo)}</span>
+                    <a href="/cosmo/objekt/member?name=${encodeURIComponent(member)}" class="objekt-member-chip truncate text-teal-200 hover:underline">${escapeHtml(member)}</a><span class="shrink-0 font-mono">${escapeHtml(collectionNo)}</span>
                 </div>
                 ${Number.isFinite(item.mintCount) ? `<p class="mt-2 text-xs text-slate-300">발행량 ${escapeHtml(String(item.mintCount))}개</p>` : ''}
             </div>
@@ -1266,7 +1653,6 @@
                 const fragment = document.createDocumentFragment();
                 while (wrap.firstChild) fragment.appendChild(wrap.firstChild);
                 grid.appendChild(fragment);
-                bindFlip(grid);
             }
             loadedCount += items.length;
             resultCount = Number(data.resultCount ?? resultCount);
@@ -1288,7 +1674,6 @@
     }
 
     if (empty) empty.classList.toggle('hidden', cards.length > 0);
-    bindFlip(document);
     updateSummary();
 
     if (sentinel && 'IntersectionObserver' in window) {

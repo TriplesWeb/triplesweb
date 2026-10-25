@@ -11,11 +11,14 @@ import com.example.triplesweb.util.MemberPortraitOptions;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.http.ResponseEntity;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -59,7 +62,7 @@ public class ObjektFeatureController {
         return "cosmo/objekt_member";
     }
 
-    @GetMapping("/detail/{key}")
+    @GetMapping(value = "/detail/{key}", produces = MediaType.TEXT_HTML_VALUE)
     public String detail(@PathVariable String key, HttpServletRequest request, HttpSession session, Model model) {
         Map<String, Object> item = findObjekt(key);
         if (item == null) return "redirect:/cosmo/objekt";
@@ -72,6 +75,40 @@ public class ObjektFeatureController {
                 .map(ObjektDescription::getDescription).orElse(""));
         model.addAttribute("isAdmin", aboutAdminAuth.isAdmin(request, session));
         return "cosmo/objekt_detail";
+    }
+
+    /** 목록 모달용 상세 JSON. */
+    @GetMapping(value = "/detail/{key}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public Map<String, Object> detailJson(@PathVariable String key,
+                                          HttpServletRequest request,
+                                          HttpSession session) {
+        Map<String, Object> item = findObjekt(key);
+        if (item == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "오브젝트를 찾을 수 없습니다.");
+        }
+        String front = value(item, "frontImage", "thumbnailImage");
+        String back = value(item, "backImage");
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("id", value(item, "id"));
+        body.put("objektKey", key);
+        body.put("collectionId", value(item, "collectionId", "slug"));
+        body.put("member", value(item, "member", "memberName"));
+        body.put("season", value(item, "season"));
+        body.put("class", value(item, "class"));
+        body.put("collectionNo", value(item, "collectionNo", "collectionNumber"));
+        body.put("thumbnailImage", value(item, "thumbnailImage", "frontImage"));
+        body.put("frontImage", front);
+        body.put("backImage", back);
+        body.put("hasBack", !back.isBlank() && !back.equals(front));
+        body.put("description", descriptionRepository.findByObjektKey(key)
+                .map(ObjektDescription::getDescription).orElse(""));
+        body.put("isFavorite", favorites.contains(session.getId(), item));
+        body.put("isAdmin", aboutAdminAuth.isAdmin(request, session));
+        body.put("detailUrl", "/cosmo/objekt/detail/" + encodePath(key));
+        body.put("memberUrl", "/cosmo/objekt/member?name="
+                + URLEncoder.encode(value(item, "member", "memberName"), StandardCharsets.UTF_8));
+        return body;
     }
 
     @PostMapping("/detail/{key}/description")
@@ -89,7 +126,18 @@ public class ObjektFeatureController {
         return "redirect:/cosmo/objekt/detail/" + encodePath(key);
     }
 
-    @PostMapping("/detail/{key}/favorite")
+    @PostMapping(value = "/detail/{key}/favorite", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> toggleFavoriteJson(@PathVariable String key, HttpSession session) {
+        Map<String, Object> item = findObjekt(key);
+        if (item == null) return ResponseEntity.notFound().build();
+        boolean desired = !favorites.contains(session.getId(), item);
+        setFavorite(session.getId(), item, desired);
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(Map.of("isFavorite", favorites.contains(session.getId(), item), "objektKey", key));
+    }
+
+    @PostMapping(value = "/detail/{key}/favorite", produces = MediaType.TEXT_HTML_VALUE)
     public String toggleFavorite(@PathVariable String key,
                                  @RequestParam(required = false) Boolean favorite, HttpSession session) {
         Map<String, Object> item = findObjekt(key);
@@ -152,6 +200,31 @@ public class ObjektFeatureController {
     public String favorites(HttpSession session, Model model) {
         model.addAttribute("favorites", favoriteRepository.findByVisitorKeyOrderByCreatedAtDesc(session.getId()));
         return "cosmo/objekt_favorites";
+    }
+
+    private boolean toggleFavoriteState(String key, HttpSession session) {
+        Map<String, Object> item = findObjekt(key);
+        if (item == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "오브젝트를 찾을 수 없습니다.");
+        }
+        String visitor = session.getId();
+        if (favoriteRepository.existsByVisitorKeyAndObjektKey(visitor, key)) {
+            favoriteRepository.deleteByVisitorKeyAndObjektKey(visitor, key);
+            return false;
+        }
+        ObjektFavorite favorite = new ObjektFavorite();
+        favorite.setVisitorKey(visitor);
+        favorite.setObjektKey(key);
+        favorite.setCollectionId(value(item, "collectionId", "slug"));
+        favorite.setMemberName(value(item, "member", "memberName"));
+        favorite.setThumbnailImage(value(item, "thumbnailImage"));
+        favorite.setFrontImage(value(item, "frontImage"));
+        favorite.setBackImage(value(item, "backImage"));
+        favorite.setSeason(value(item, "season"));
+        favorite.setObjektClass(value(item, "class"));
+        favorite.setCollectionNo(value(item, "collectionNo", "collectionNumber"));
+        favoriteRepository.save(favorite);
+        return true;
     }
 
     private Map<String, Object> findObjekt(String key) {
