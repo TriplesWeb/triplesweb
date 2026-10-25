@@ -45,20 +45,26 @@ public class CosmoController {
             @RequestParam(name = "class", required = false) List<String> classFilters,
             @RequestParam(defaultValue = "all") String kind,
             @RequestParam(defaultValue = "latest") String sort,
+            @RequestParam(defaultValue = "all") String group,
             Model model
     ) {
         // 무한 스크롤: 최초 HTML은 항상 첫 페이지(20개)만 렌더한다.
-        ObjektPageResult page = loadObjektPage(0, search, member, season, classFilters, kind, sort);
+        ObjektPageResult page = loadObjektPage(0, search, member, season, classFilters, kind, sort, group);
 
         List<String> memberOptions = ObjektFilterOrder.sortedMembers(
-                uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "member", "memberName")));
+                uniqueValues(page.allObjekts(), item -> firstValue(item, "member", "memberName")).stream()
+                        .flatMap(value -> MemberPortraitOptions.objektMembers(value).stream()).toList());
         List<Artist> artists = artistRepository.findAll(Sort.by(Sort.Direction.ASC, "artistId"));
         model.addAttribute("memberOptions", memberOptions);
         List<Map<String, Object>> pickerOptions = MemberPortraitOptions.forObjektFilter(memberOptions, artists);
-        List<String> selectedMembers = cleanSelections(member);
+        String selectedGroup = memberGroup(group, cleanSelections(member));
+        List<String> selectedMembers = "other".equals(selectedGroup) ? List.of() : cleanSelections(member).stream()
+                .flatMap(value -> MemberPortraitOptions.objektMembers(value).stream()).distinct().toList();
         for (Map<String, Object> option : pickerOptions) option.put("active", selectedMembers.stream()
                 .anyMatch(selected -> MemberPortraitOptions.sameMember(selected, option.get("value").toString())));
         model.addAttribute("memberPickerOptions", pickerOptions);
+        model.addAttribute("selectedGroup", selectedGroup);
+        model.addAttribute("isOtherGroup", "other".equals(selectedGroup));
         model.addAttribute("seasonOptions", ObjektFilterOrder.sortedSeasons(uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "seasonKey", "season"))));
         model.addAttribute("classOptions", uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "classKey", "class")));
         model.addAttribute("objektNumbers", uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "collectionNo", "collectionNumber")));
@@ -89,10 +95,11 @@ public class CosmoController {
             @RequestParam(required = false) List<String> season,
             @RequestParam(name = "class", required = false) List<String> classFilters,
             @RequestParam(defaultValue = "all") String kind,
-            @RequestParam(defaultValue = "latest") String sort
+            @RequestParam(defaultValue = "latest") String sort,
+            @RequestParam(defaultValue = "all") String group
     ) {
         int safeRequestPage = Math.max(0, page);
-        ObjektPageResult result = loadObjektPage(safeRequestPage, search, member, season, classFilters, kind, sort);
+        ObjektPageResult result = loadObjektPage(safeRequestPage, search, member, season, classFilters, kind, sort, group);
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("page", result.page());
         body.put("pageSize", PAGE_SIZE);
@@ -114,7 +121,8 @@ public class CosmoController {
             List<String> season,
             List<String> classFilters,
             String kind,
-            String sort
+            String sort,
+            String group
     ) {
         List<Map<String, Object>> allObjekts;
         String error = "";
@@ -132,6 +140,10 @@ public class CosmoController {
 
         String query = normalize(search);
         List<String> selectedMembers = cleanSelections(member);
+        String selectedGroup = memberGroup(group, selectedMembers);
+        java.util.Set<String> selectedNames = selectedMembers.stream()
+                .flatMap(value -> MemberPortraitOptions.objektMembers(value).stream()).collect(Collectors.toSet());
+        Map<String, java.util.Set<String>> membershipCache = new java.util.HashMap<>();
         List<String> selectedSeasons = cleanSelections(season);
         List<String> selectedClasses = cleanSelections(classFilters);
         String selectedKind = normalize(kind);
@@ -140,7 +152,8 @@ public class CosmoController {
         // 전체 캐시에서 검색어와 모든 필터를 먼저 적용하고, 그 결과에만 정렬과 페이지네이션을 적용한다.
         List<Map<String, Object>> filtered = allObjekts.stream()
                 .filter(objekt -> query.isBlank() || searchableText(objekt).contains(query))
-                .filter(objekt -> matchesMember(selectedMembers, objekt))
+                .filter(objekt -> "all".equals(selectedGroup) || matchesMember(selectedGroup, selectedNames,
+                        membershipCache.computeIfAbsent(firstValue(objekt, "member", "memberName"), MemberPortraitOptions::objektMembers)))
                 .filter(objekt -> matchesSelection(selectedSeasons, firstValue(objekt, "seasonKey", "season")))
                 .filter(objekt -> matchesSelection(selectedClasses, firstValue(objekt, "classKey", "class")))
                 .filter(objekt -> selectedKind.isBlank() || "all".equals(selectedKind)
@@ -190,17 +203,16 @@ public class CosmoController {
                 .distinct().collect(Collectors.toList());
     }
 
-    private static boolean matchesMember(List<String> selected, Map<String, Object> objekt) {
-        if (selected == null || selected.isEmpty()) return true;
-        String text = String.join(" ",
-                firstValue(objekt, "member", "memberName"),
-                firstValue(objekt, "collectionId"),
-                firstValue(objekt, "slug"),
-                firstValue(objekt, "artist"),
-                value(objekt, "searchText"));
-        return selected.stream().anyMatch(member -> MemberPortraitOptions.memberIndex(member) < 24
-                ? MemberPortraitOptions.objektIncludesMember(text, member)
-                : normalize(member).equals(normalize(firstValue(objekt, "member", "memberName"))));
+    private static String memberGroup(String group, List<String> selected) {
+        if ("other".equalsIgnoreCase(group)) return "other";
+        if ("members".equalsIgnoreCase(group) || selected.stream().anyMatch(value -> !MemberPortraitOptions.objektMembers(value).isEmpty())) return "members";
+        return selected.isEmpty() ? "all" : "other";
+    }
+
+    private static boolean matchesMember(String group, java.util.Set<String> selected, java.util.Set<String> actual) {
+        if ("all".equals(group)) return true;
+        if ("other".equals(group)) return actual.isEmpty();
+        return !actual.isEmpty() && (selected.isEmpty() || actual.stream().anyMatch(selected::contains));
     }
 
     private static boolean matchesSelection(List<String> selected, String actual) {

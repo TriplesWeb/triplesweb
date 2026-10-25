@@ -16,6 +16,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 @WebMvcTest({CosmoController.class, ObjektFeatureController.class})
 @AutoConfigureMockMvc(addFilters = false)
@@ -97,14 +98,47 @@ class ObjektFeaturesTest {
         when(catalog.findCollections("triples")).thenReturn(items);
         when(market.withMintCounts(items)).thenReturn(items);
         var result = mvc.perform(get("/cosmo/objekt")).andExpect(status().isOk())
-                .andExpect(model().attribute("memberOptions", List.of("윤서연", "정혜린", "김채원", "지연", "Alpha", "S1 X S9")))
+                .andExpect(model().attribute("memberOptions", List.of("윤서연", "정혜린", "카에데", "김채원", "지연")))
                 .andExpect(model().attribute("seasonOptions", List.of("Cream02", "Binary02", "Atom02", "Ever01", "Divine01", "Cream01", "Binary01", "Atom01")))
-                .andExpect(content().string(containsString("data-value=\"S1 X S9\"")))
+                .andExpect(content().string(not(containsString("data-value=\"S1 X S9\""))))
+                .andExpect(content().string(not(containsString("data-value=\"Alpha\""))))
+                .andExpect(content().string(containsString("data-objekt-group=\"other\"")))
                 .andExpect(content().string(containsString("artist-tab-fallback"))).andReturn();
+        java.nio.file.Files.writeString(java.nio.file.Path.of("build/objekt-all-preview.html"), result.getResponse().getContentAsString());
         mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("member", "S1 X S9"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.resultCount").value(1));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.resultCount").value(2));
         var legacy = mvc.perform(get("/cosmo/objekt").param("member", "S21"))
                 .andExpect(status().isOk()).andExpect(model().attribute("objektCount", 3)).andReturn();
         java.nio.file.Files.writeString(java.nio.file.Path.of("build/objekt-filter-order-preview.html"), legacy.getResponse().getContentAsString());
+        var other = mvc.perform(get("/cosmo/objekt").param("group", "other"))
+                .andExpect(status().isOk()).andExpect(model().attribute("objektCount", 1)).andReturn();
+        java.nio.file.Files.writeString(java.nio.file.Path.of("build/objekt-other-preview.html"), other.getResponse().getContentAsString());
+        var membersPage = mvc.perform(get("/cosmo/objekt").param("group", "members"))
+                .andExpect(status().isOk()).andExpect(model().attribute("objektCount", 7)).andReturn();
+        java.nio.file.Files.writeString(java.nio.file.Path.of("build/objekt-members-preview.html"), membersPage.getResponse().getContentAsString());
+    }
+
+    @Test void unitObjectsMatchEitherSelectedMemberAndOthersPaginateSeparately() throws Exception {
+        List<Map<String, Object>> items = new java.util.ArrayList<>(List.of(
+                Map.of("id", "duo", "member", "S5 X S20"), Map.of("id", "five", "member", "Yooyeon"),
+                Map.of("id", "twenty", "member", "Shion"), Map.of("id", "one", "member", "S1")));
+        for (int i = 0; i < 25; i++) items.add(Map.of("id", "other" + i, "member", "Other" + i));
+        when(catalog.findCollections("triples")).thenReturn(items);
+        when(market.withMintCounts(items)).thenReturn(items);
+        for (String member : List.of("김유연", "박시온")) mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("member", member))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.resultCount").value(2))
+                .andExpect(jsonPath("$.items[0].id").value("duo"));
+        mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("member", "김유연", "박시온"))
+                .andExpect(jsonPath("$.resultCount").value(3));
+        mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("member", "정혜린"))
+                .andExpect(jsonPath("$.resultCount").value(0));
+        mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("group", "members"))
+                .andExpect(jsonPath("$.resultCount").value(4));
+        mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("group", "other").param("member", "김유연"))
+                .andExpect(jsonPath("$.resultCount").value(25)).andExpect(jsonPath("$.loaded").value(20))
+                .andExpect(jsonPath("$.hasMore").value(true)).andExpect(jsonPath("$.items[0].id").value("other0"));
+        mvc.perform(get("/cosmo/objekt/more").param("page", "1").param("group", "other"))
+                .andExpect(jsonPath("$.loaded").value(5)).andExpect(jsonPath("$.hasMore").value(false))
+                .andExpect(jsonPath("$.items[0].id").value("other20"));
     }
 }

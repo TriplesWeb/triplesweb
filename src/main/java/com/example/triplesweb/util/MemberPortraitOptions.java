@@ -55,6 +55,26 @@ public final class MemberPortraitOptions {
         return memberName(first).equalsIgnoreCase(memberName(second));
     }
 
+    /** Solo names and numbered unit combinations, without matching S1 inside S10. */
+    public static Set<String> objektMembers(String value) {
+        Set<String> members = new LinkedHashSet<>();
+        int solo = memberIndex(value);
+        if (solo < 24) return Set.of(KOREAN_ORDER.get(solo));
+        for (String token : tokens(value)) {
+            int index = memberIndex(token);
+            if (index < 24) members.add(KOREAN_ORDER.get(index));
+        }
+        String compact = normalize(value);
+        if (compact.matches("s\\d{1,2}(?:xs\\d{1,2})+")) {
+            var matcher = java.util.regex.Pattern.compile("s\\d{1,2}").matcher(compact);
+            while (matcher.find()) {
+                int index = memberIndex(matcher.group());
+                if (index < 24) members.add(KOREAN_ORDER.get(index));
+            }
+        }
+        return members;
+    }
+
     private MemberPortraitOptions() {
     }
 
