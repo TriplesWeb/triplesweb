@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
@@ -66,7 +67,7 @@ class ObjektFeaturesTest {
         for (String field : List.of("frontImage", "backImage", "thumbnailImage", "season", "class", "collectionNo")) item.put(field, "");
         when(catalog.findCollections("triples")).thenReturn(List.of(item));
         when(descriptions.findByObjektKey("uuid")).thenReturn(java.util.Optional.empty());
-        mvc.perform(get("/cosmo/objekt/detail/uuid")).andExpect(status().isOk())
+        mvc.perform(get("/cosmo/objekt/detail/uuid").accept(MediaType.TEXT_HTML)).andExpect(status().isOk())
                 .andExpect(content().string(containsString("data-objekt-owner")))
                 .andExpect(content().string(containsString("name=\"favorite\" value=\"true\"")))
                 .andExpect(content().string(containsString("/js/objekt-detail.js")));

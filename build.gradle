@@ -63,6 +63,15 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
+// Uses the same server-only credentials as Gravity; no tokens in command arguments.
+tasks.register('importCosmoObjekts', JavaExec) {
+    group = 'application'
+    description = 'Import the connected COSMO account into its own DB snapshot tables.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.example.triplesweb.service.CosmoObjektImportCommand'
+    jvmArgs '-Dspring.devtools.restart.enabled=false'
+}
+
 // Load .env into bootRun so local ./gradlew bootRun needs no manual export
 tasks.named('bootRun') {
 	def envFile = rootProject.file('.env')
