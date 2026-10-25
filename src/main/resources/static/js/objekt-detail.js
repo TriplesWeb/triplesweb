@@ -46,14 +46,19 @@
       result.replaceChildren();
       if (data.status !== 'found') {
         result.textContent = ({ not_found: '아직 발행되지 않았거나 인덱스에 반영되지 않은 시리얼입니다.',
-          hidden: '소유자 정보가 비공개인 시리얼입니다.', burned: '소각되어 현재 소유자가 없습니다.' })[data.status]
+          hidden: '이 시리얼의 소유자 정보는 현재 제공되지 않습니다.', burned: '소각되어 현재 소유자가 없습니다.' })[data.status]
           || '소유자 정보를 확인할 수 없습니다.';
         return;
       }
       const text = value => {
         const line = document.createElement('p'); line.textContent = value; result.append(line);
       };
-      text(`#${data.serial} · ${data.nickname || '닉네임 정보 없음'}`);
+      text(`#${data.serial} · ${data.nickname || '현재 공개된 COSMO 닉네임을 확인하지 못했습니다.'}`);
+      if (data.nickname && typeof data.profileUrl === 'string' && data.profileUrl.startsWith('/cosmo/profile/')) {
+        const link = document.createElement('a');
+        link.href = data.profileUrl; link.textContent = `${data.nickname} 님의 오브젝트 보기 →`;
+        link.className = 'inline-block text-teal-300 underline'; result.append(link);
+      }
     } catch (error) {
       result.textContent = error.message || '조회하지 못했습니다. 잠시 후 다시 시도해 주세요.';
     } finally {

@@ -138,6 +138,8 @@ public class ObjektFeatureController {
             for (String field : List.of("status", "serial", "nickname")) {
                 if (result.containsKey(field)) publicResult.put(field, result.get(field));
             }
+            String nickname = String.valueOf(result.getOrDefault("nickname", ""));
+            if (!nickname.isBlank()) publicResult.put("profileUrl", "/cosmo/profile/" + encodePath(nickname));
             return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
                     .body(publicResult);
         } catch (RuntimeException e) {

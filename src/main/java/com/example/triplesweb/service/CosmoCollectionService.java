@@ -56,6 +56,8 @@ public class CosmoCollectionService {
         view.put("hasProfileImage", !GravityService.safeImage(found.image).isBlank());
         view.put("ownedCount", found.cards.size());
         view.put("cards", cards);
+        view.put("allCards", found.cards);
+        view.put("profileUrl", "/cosmo/profile/" + URLEncoder.encode(found.nickname, StandardCharsets.UTF_8).replace("+", "%20"));
         view.put("hasCards", !cards.isEmpty());
         view.put("pageDisplay", safePage + 1);
         view.put("totalPages", totalPages);
@@ -121,6 +123,8 @@ public class CosmoCollectionService {
         card.put("member", objekt.path("member").asText(""));
         card.put("season", objekt.path("season").asText(""));
         card.put("objektClass", objekt.path("class").asText(""));
+        card.put("artist", objekt.path("artist").asText(""));
+        card.put("slug", objekt.path("slug").asText(""));
         String image = GravityService.safeImage(objekt.path("frontImage").asText(""));
         if (image.isBlank()) image = GravityService.safeImage(objekt.path("thumbnailImage").asText(""));
         card.put("thumbnailImage", image);

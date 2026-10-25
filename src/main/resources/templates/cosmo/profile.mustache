@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+{{>layout/favicon}}
+{{>layout/gravity-fonts}}
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{requestedNickname}} · COSMO 닉네임 상세</title>
+<link rel="stylesheet" href="/css/gravity-page.css?v=2">
+<link rel="stylesheet" href="/css/archive-page.css?v=3">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=2">
+<link rel="stylesheet" href="/css/cosmo-profile.css?v=1">
+</head>
+<body class="collection-page min-h-screen flex flex-col">
+{{>layout/header}}
+<main class="gravity-page cosmo-profile">
+<a href="/cosmo/collection" class="collection-detail-link">← 내 오브젝트 검색</a>
+{{#profileError}}<section class="gv-panel gv-headline" role="status"><h1>닉네임 상세</h1><p>{{profileError}}</p></section>{{/profileError}}
+{{#hasProfile}}
+<section class="gv-panel profile-hero">
+    <div class="profile-identity">
+        {{#hasProfileImage}}<img class="profile-avatar" src="{{profileImageUrl}}" alt="" referrerpolicy="no-referrer">{{/hasProfileImage}}
+        {{^hasProfileImage}}<div class="profile-avatar profile-avatar-fallback" aria-hidden="true">S</div>{{/hasProfileImage}}
+        <div><p class="profile-eyebrow">COSMO PROFILE</p><h1>{{nickname}}</h1><p class="ar-muted">오브젝트로 함께 쌓아가는 컬렉션</p></div>
+    </div>
+    <dl class="profile-totals">
+        <div><dt>보유 오브젝트</dt><dd>{{ownedCount}}<span>개</span></dd></div>
+        <div><dt>수집한 종류</dt><dd>{{uniqueCount}}<span>종</span></dd></div>
+        <div><dt>수집한 멤버</dt><dd>{{memberCount}}<span>명</span></dd></div>
+    </dl>
+</section>
+<nav class="profile-tabs" aria-label="닉네임 상세 메뉴">
+    <a href="{{profileUrl}}?tab=progress" {{#isProgress}}aria-current="page"{{/isProgress}}>수집 현황</a>
+    <a href="{{profileUrl}}?tab=collection" {{#isCollection}}aria-current="page"{{/isCollection}}>보유 오브젝트</a>
+</nav>
+{{#isProgress}}
+<section class="profile-progress-section" aria-labelledby="member-progress-heading">
+    <div class="profile-section-heading"><h2 id="member-progress-heading">멤버별 수집 현황</h2><p>tripleS · Welcome·Zero 제외 · 중복을 제외한 종류 기준</p></div>
+    <div class="profile-member-grid">
+    {{#memberProgress}}
+    <article class="ar-panel profile-member" style="--member-color: {{color}}">
+        <div class="profile-member-name">{{#hasImage}}<img src="{{image}}" alt="" loading="lazy">{{/hasImage}}<h3>{{member}}</h3></div>
+        {{#hasTotal}}<p class="profile-percent"><strong>{{percent}}<span>%</span></strong> 수집</p>
+        <div class="profile-progress-track" role="progressbar" aria-label="{{member}} 수집률" aria-valuenow="{{percent}}" aria-valuemin="0" aria-valuemax="100"><span style="width:{{percent}}%"></span></div>
+        <p class="ar-muted">{{owned}} / {{total}}종 · 보유 {{copies}}개</p>{{/hasTotal}}
+        {{^hasTotal}}<p class="ar-muted">전체 목록 준비 중 · 보유 {{copies}}개</p>{{/hasTotal}}
+        <a class="collection-detail-link" href="{{collectionUrl}}">보유 오브젝트 보기 →</a>
+    </article>
+    {{/memberProgress}}
+    </div>
+    {{^hasMemberProgress}}<p class="gv-panel gv-empty">표시할 tripleS 멤버 수집 현황이 없습니다.</p>{{/hasMemberProgress}}
+</section>
+<div class="profile-breakdown-grid">
+    <section class="ar-panel profile-breakdown"><h2>시즌별</h2>
+    {{#seasonStats}}<div class="profile-breakdown-row"><span>{{label}}</span><div class="profile-progress-track"><span style="width:{{percent}}%"></span></div><strong>{{count}}개</strong><span>{{percent}}%</span></div>{{/seasonStats}}
+    {{^hasStats}}<p class="ar-muted">아직 보유한 오브젝트가 없습니다.</p>{{/hasStats}}</section>
+    <section class="ar-panel profile-breakdown"><h2>클래스별</h2>
+    {{#classStats}}<div class="profile-breakdown-row"><span>{{label}}</span><div class="profile-progress-track"><span style="width:{{percent}}%"></span></div><strong>{{count}}개</strong><span>{{percent}}%</span></div>{{/classStats}}
+    {{^hasStats}}<p class="ar-muted">아직 보유한 오브젝트가 없습니다.</p>{{/hasStats}}</section>
+</div>
+{{/isProgress}}
+{{#isCollection}}
+<div class="profile-section-heading"><h2>{{#selectedMember}}{{selectedMember}} · {{/selectedMember}}보유 오브젝트 {{filteredCount}}개</h2>{{#selectedMember}}<a class="collection-detail-link" href="{{profileUrl}}?tab=collection">전체 멤버 보기</a>{{/selectedMember}}</div>
+{{#hasCards}}
+<section class="ar-grid collection-grid" aria-label="보유 오브젝트">
+{{#cards}}
+<article class="ar-panel ar-card collection-card">
+    <div class="collection-image-wrap">{{#hasImage}}<img class="collection-image" src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" decoding="async" referrerpolicy="no-referrer">{{/hasImage}}{{^hasImage}}<span class="ar-muted">이미지 준비 중</span>{{/hasImage}}</div>
+    <div class="ar-body"><div class="ar-meta">{{#hasSerial}}<span class="ar-id">#{{serial}}</span>{{/hasSerial}}{{^hasSerial}}<span class="ar-id">시리얼 확인 중</span>{{/hasSerial}}{{#objektClass}}<span class="ar-badge">{{objektClass}}</span>{{/objektClass}}</div>
+    <h3>{{collectionId}}</h3><p class="ar-muted">{{member}}{{#season}} · {{season}}{{/season}}</p>
+    {{#hasDetail}}<a class="collection-detail-link" href="{{detailUrl}}">오브젝트 상세 보기 →</a>{{/hasDetail}}</div>
+</article>
+{{/cards}}
+</section>
+{{/hasCards}}
+{{^hasCards}}<p class="gv-panel gv-empty">표시할 보유 오브젝트가 없습니다.</p>{{/hasCards}}
+<nav class="ar-panel ar-pager" aria-label="보유 오브젝트 페이지"><span>페이지 {{pageDisplay}} / {{totalPages}}</span><div class="ar-pager-controls">
+{{#hasPrev}}<a href="{{previousUrl}}">이전</a>{{/hasPrev}}{{^hasPrev}}<span class="is-disabled">이전</span>{{/hasPrev}}
+{{#hasNext}}<a href="{{nextUrl}}">다음</a>{{/hasNext}}{{^hasNext}}<span class="is-disabled">다음</span>{{/hasNext}}</div></nav>
+{{/isCollection}}
+{{/hasProfile}}
+</main>
+{{>layout/footer}}
+</body></html>

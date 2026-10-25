@@ -15,6 +15,8 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** Public collection index supplies serial -> token mapping; Abstract verifies current ownership. */
 @Service
@@ -24,6 +26,7 @@ public class ObjektMarketDataService {
     private final RestClient rpc;
     private final String contract;
     private volatile Map<String, Long> mintCounts = Map.of();
+    private final ConcurrentHashMap<String, NicknameCache> nicknames = new ConcurrentHashMap<>();
 
     public ObjektMarketDataService(
             @Value("${objekt.api.base-url:https://objekt.top/api/v1}") String indexUrl,
@@ -112,16 +115,45 @@ public class ObjektMarketDataService {
         String address = "0x" + result.substring(26).toLowerCase(java.util.Locale.ROOT);
         if (address.equals("0x" + "0".repeat(40))) return Map.of("status", "burned");
 
-        String nickname = "";
-        // A historical recipient's nickname must never be attributed to a different current owner.
+        List<String> candidates = new ArrayList<>();
         for (JsonNode transfer : indexed.path("transfers")) {
             if (address.equalsIgnoreCase(transfer.path("to").asText()) && !transfer.path("nickname").isNull()) {
-                nickname = transfer.path("nickname").asText("");
-                break;
+                candidates.add(transfer.path("nickname").asText(""));
             }
         }
+        String nickname = resolveNickname(address, candidates);
         return Map.of("status", "found", "serial", serial, "tokenId", token, "address", address,
                 "nickname", nickname, "verifiedAt", Instant.now().toString(),
                 "explorerUrl", "https://abscan.org/token/" + contract + "?a=" + token);
     }
+
+    private String resolveNickname(String address, List<String> candidates) {
+        long now = Instant.now().getEpochSecond();
+        nicknames.entrySet().removeIf(entry -> entry.getValue().expiresAt <= now);
+        NicknameCache cached = nicknames.get(address);
+        if (cached != null) return cached.nickname;
+        try {
+            JsonNode profile = index.get().uri("/profiles/{address}", address).retrieve().body(JsonNode.class);
+            if (profile != null && address.equalsIgnoreCase(profile.path("address").asText()))
+                candidates.add(0, profile.path("nickname").asText(""));
+        } catch (RuntimeException ignored) {
+            // A public history candidate may still resolve when the profile service is unavailable.
+        }
+        for (String candidate : candidates.stream().filter(s -> !s.isBlank()).distinct().limit(3).toList()) {
+            try {
+                JsonNode account = cosmo.get().uri("/bff/v3/users/by-nickname/{nickname}", candidate)
+                        .retrieve().body(JsonNode.class);
+                if (account != null && address.equalsIgnoreCase(account.path("address").asText())) {
+                    String nickname = account.path("nickname").asText(candidate);
+                    nicknames.put(address, new NicknameCache(nickname, now + 300));
+                    return nickname;
+                }
+            } catch (RuntimeException ignored) {
+                // A missing/renamed candidate must not hide a verified wallet or become a guessed username.
+            }
+        }
+        return "";
+    }
+
+    private record NicknameCache(String nickname, long expiresAt) {}
 }

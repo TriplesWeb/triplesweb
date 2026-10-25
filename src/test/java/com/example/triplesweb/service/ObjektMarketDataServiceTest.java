@@ -18,6 +18,9 @@ class ObjektMarketDataServiceTest {
     private final AtomicReference<String> indexed = new AtomicReference<>("{\"tokenId\":\"30570441\",\"owner\":\"0xold\",\"transfers\":[{\"to\":\"0xaadab543abd013eeaf34eb50219b9316aa5bbcbe\",\"nickname\":\"FlexS5\"}]}");
     private final AtomicReference<String> metadata = new AtomicReference<>("{\"attributes\":[{\"trait_type\":\"Member\",\"value\":\"HaYeon\"},{\"trait_type\":\"Season\",\"value\":\"Cream02\"},{\"trait_type\":\"Collection\",\"value\":\"367Z\"}]}");
     private final AtomicReference<String> chain = new AtomicReference<>("{\"result\":\"0x000000000000000000000000aadab543abd013eeaf34eb50219b9316aa5bbcbe\"}");
+    private final AtomicReference<String> profile = new AtomicReference<>("{\"address\":\"0xaadab543abd013eeaf34eb50219b9316aa5bbcbe\",\"nickname\":\"FlexS5\"}");
+    private final AtomicReference<String> account = new AtomicReference<>("{\"address\":\"0xaadab543abd013eeaf34eb50219b9316aa5bbcbe\",\"nickname\":\"FlexS5\"}");
+    private final java.util.concurrent.atomic.AtomicInteger profileCalls = new java.util.concurrent.atomic.AtomicInteger();
     private final Map<String, Object> collection = Map.of("slug", "sample", "member", "HaYeon", "season", "Cream02", "collectionNo", "367Z");
 
     @BeforeEach void setup() throws Exception {
@@ -25,7 +28,9 @@ class ObjektMarketDataServiceTest {
         server.createContext("/", exchange -> {
             String path = exchange.getRequestURI().getPath();
             String body = path.endsWith("/rarity") ? rarity.get() : path.endsWith("/transfers") ? indexed.get()
-                    : path.contains("nft-metadata") ? metadata.get() : chain.get();
+                    : path.contains("nft-metadata") ? metadata.get()
+                    : path.contains("/profiles/") ? profile.get() : path.contains("by-nickname") ? account.get() : chain.get();
+            if (path.contains("/profiles/")) profileCalls.incrementAndGet();
             if (exchange.getRequestMethod().equals("POST")) {
                 String request = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
                 assertThat(request).contains("eth_call", "6352211e" + "0".repeat(57) + new java.math.BigInteger("30570441").toString(16));
@@ -74,5 +79,23 @@ class ObjektMarketDataServiceTest {
         indexed.set("{\"transfers\":[]}");
         assertThat(service.owner(collection, 1)).containsEntry("status", "not_found");
         assertThatThrownBy(() -> service.owner(collection, 0)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(profileCalls.get()).isZero();
+    }
+
+    @Test void publicProfileResolvesNicknameMissingFromTransferHistoryAndCachesIt() {
+        indexed.set("{\"tokenId\":\"30570441\",\"transfers\":[]}");
+        assertThat(service.owner(collection, 1)).containsEntry("nickname", "FlexS5");
+        assertThat(service.owner(collection, 2)).containsEntry("nickname", "FlexS5");
+        assertThat(profileCalls.get()).isEqualTo(1);
+    }
+
+    @Test void staleOrWrongNicknameIsNeverAttachedToVerifiedOwner() {
+        account.set("{\"address\":\"0xwrong\",\"nickname\":\"FlexS5\"}");
+        assertThat(service.owner(collection, 1)).containsEntry("status", "found").containsEntry("nickname", "");
+    }
+
+    @Test void missingPublicProfileStillUsesVerifiedHistoryCandidate() {
+        profile.set("{}");
+        assertThat(service.owner(collection, 1)).containsEntry("nickname", "FlexS5");
     }
 }
