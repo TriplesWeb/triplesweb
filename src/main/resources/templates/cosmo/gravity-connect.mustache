@@ -28,8 +28,15 @@
 <label class="about-edit-label">이메일 인증번호<input id="cosmoCode" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required class="block w-full mt-2 bg-black rounded text-white"></label>
 <button type="submit" class="about-mode-btn is-active">계정 연결</button>
 </form>
+<div class="space-y-3">
+<h2 class="font-bold">내 보유 오브젝트 DB 동기화</h2>
+<p class="text-sm text-gray-400">연결된 COSMO 계정의 보유 카드와 시리얼을 DB에 저장합니다. 전체 오브젝트 카탈로그는 유지됩니다.</p>
+<button type="button" id="cosmoObjektSync" class="about-mode-btn is-active">보유 오브젝트 가져오기</button>
+<p id="cosmoObjektSyncStatus" role="status" class="text-sm"></p>
+</div>
 </section>
 </main>{{>cosmo/partials/gravity-admin-login}}{{>layout/footer}}
 <script src="/js/about-admin-auth.js"></script>
 <script src="/js/gravity-connect.js?v=4"></script>
+<script src="/js/cosmo-objekt-sync.js?v=1"></script>
 </body></html>
