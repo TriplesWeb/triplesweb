@@ -44,7 +44,7 @@ public class FileStorageServiceImpl implements FileStorageService {
         this.uploadContentStore = uploadContentStore;
     }
 
-    private static final Set<String> IMAGE_EXT = Set.of("jpg","jpeg","png","gif","webp","bmp");
+    private static final Set<String> IMAGE_EXT = Set.of("jpg","jpeg","jfif","png","gif","webp","bmp");
     private static final Set<String> VIDEO_EXT = Set.of("mp4","mov","m4v","avi","mkv","webm");
 
     @Override
@@ -190,7 +190,11 @@ public class FileStorageServiceImpl implements FileStorageService {
         return s.startsWith("/uploads/") ? s.substring("/uploads/".length()) : s;
     }
     private String guessContentType(String ext, MediaType type) {
-        if (type == MediaType.IMAGE) return "image/" + (ext.isEmpty() ? "jpeg" : ext);
+        if (type == MediaType.IMAGE) return switch (ext) {
+            case "", "jpg", "jpeg", "jfif" -> "image/jpeg";
+            case "webp" -> "image/webp";
+            default -> "image/" + ext;
+        };
         if (type == MediaType.VIDEO) return "video/" + (ext.isEmpty() ? "mp4" : ext);
         return "application/octet-stream";
     }

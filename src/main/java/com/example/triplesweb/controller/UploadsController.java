@@ -21,6 +21,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Locale;
 
 /**
  * {@code /uploads/**} 서빙. 로컬 파일이 없으면 공유 원본(운영) URL로 리다이렉트한다.
@@ -58,8 +59,8 @@ public class UploadsController {
         }
 
         if (Files.isRegularFile(local) && Files.isReadable(local)) {
-            MediaType type = MediaTypeFactory.getMediaType(local.getFileName().toString())
-                    .orElse(MediaType.APPLICATION_OCTET_STREAM);
+            MediaType type = imageType(local.getFileName().toString(), MediaTypeFactory.getMediaType(local.getFileName().toString())
+                    .orElse(MediaType.APPLICATION_OCTET_STREAM));
             return ResponseEntity.ok()
                     .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
                     .contentType(type)
@@ -68,7 +69,7 @@ public class UploadsController {
 
         UploadBlob stored = uploadContentStore.find(relative).orElse(null);
         if (stored != null && stored.getData() != null && stored.getData().length > 0) {
-            MediaType type = mediaType(stored.getContentType());
+            MediaType type = imageType(relative, mediaType(stored.getContentType()));
             return ResponseEntity.ok()
                     .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
                     .contentType(type)
@@ -93,6 +94,13 @@ public class UploadsController {
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(location)
                 .build();
+    }
+
+    private static MediaType imageType(String filename, MediaType fallback) {
+        String name = filename.toLowerCase(Locale.ROOT);
+        if (name.endsWith(".jfif")) return MediaType.IMAGE_JPEG;
+        if (name.endsWith(".webp")) return MediaType.parseMediaType("image/webp");
+        return fallback;
     }
 
     private static MediaType mediaType(String contentType) {

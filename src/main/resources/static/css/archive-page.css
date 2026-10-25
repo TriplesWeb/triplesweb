@@ -139,6 +139,25 @@
     width: 100%; border-radius: 0.7rem; border: 1px solid rgba(255, 255, 255, 0.14); background: #0d0e12; color: #e3e2e8; padding: 0.7rem 0.85rem;
 }
 .ar-field input:focus { outline: none; border-color: #00f5d4; }
+.ar-field-hint { margin: 0; color: #93a49e; font-size: 0.75rem; font-weight: 400; line-height: 1.6; }
+.ar-artist-editor { display: flex; flex-direction: column; gap: 0.6rem; padding: 0.75rem; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.7rem; background: rgba(13,14,18,0.45); }
+.ar-artist-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; min-height: 1.7rem; align-items: center; color: #93a49e; font-size: 0.76rem; font-weight: 400; }
+.ar-artist-chip { padding: 0.35rem 0.65rem; border: 1px solid rgba(0,245,212,0.3); border-radius: 999px; background: rgba(0,245,212,0.09); color: #a7f3df; font-size: 0.78rem; cursor: pointer; overflow-wrap: anywhere; }
+.ar-artist-chip:hover { border-color: #00f5d4; background: rgba(0,245,212,0.16); }
+.ar-tag-entry { display: flex; gap: 0.5rem; }
+.ar-tag-entry input { flex: 1; min-width: 0; }
+.ar-tag-add { flex-shrink: 0; border: 1px solid rgba(0,245,212,0.35); border-radius: 0.65rem; padding: 0.4rem 0.8rem; background: rgba(0,245,212,0.1); color: #a7f3df; cursor: pointer; }
+.ar-preview-info, .ar-preview-error { grid-column: 1 / -1; overflow-wrap: anywhere; }
+.ar-preview p.ar-preview-info { margin: 0; color: #b9cac4; font-size: 0.78rem; }
+.ar-preview p.ar-preview-error { color: #ffb4ab; }
+.ar-preview-error[hidden] { display: none; }
+.ar-preview-card.is-photo-preview { position: relative; isolation: isolate; padding: 0.5rem 0.7rem 0.75rem; overflow: visible; border: 0; background: none; }
+.ar-preview-card.is-photo-preview::before { content: ''; position: absolute; inset: 0.75rem 0 0.5rem 1.2rem; z-index: -1; border: 1px solid rgba(0,245,212,0.18); border-radius: 0.85rem; background: #141c20; transform: rotate(3deg) scale(0.96); }
+.ar-preview-photo-card { position: relative; width: 100%; max-width: 20rem; margin: 0 auto; min-height: 0; }
+.ar-preview-card .ar-preview-photo-card img { width: 100%; height: clamp(12rem, 30vw, 18rem); object-fit: contain; }
+.ar-preview-photo-card .ar-body { padding: 0.75rem; }
+.ar-dialog .ar-preview-full img { max-height: 22rem; }
+.ar-dialog-foot { position: sticky; bottom: 0; z-index: 2; background: #1a1b20; }
 .ar-picker-meta { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; color: #b9cac4; font-size: 0.8rem; }
 .ar-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .ar-preview[hidden] { display: none !important; }
