@@ -111,7 +111,6 @@
         <a class="profile-ownership-tab{{#isOwnershipMissing}} is-active{{/isOwnershipMissing}}" href="{{ownershipMissingUrl}}" {{#isOwnershipMissing}}aria-current="page"{{/isOwnershipMissing}}>미보유</a>
     </nav>
     {{/hasOwnershipFilter}}
-    <p class="profile-checklist-legend"><span class="is-owned">● 보유</span><span>○ 미보유</span> · 클래스별 낮은 번호순 · 유닛은 구성 멤버 목록에 포함</p>
     {{#checklistSeasons}}
     <section class="ar-panel profile-checklist-season" data-checklist-season data-complete="{{complete}}">
         <header class="profile-season-heading"><h3>{{season}}</h3><p>{{owned}} / {{total}}종 <strong>{{percent}}%</strong></p></header>
