@@ -1,6 +1,7 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.service.GravityService;
+import com.example.triplesweb.util.GravityDisplay;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,7 +18,8 @@ public class GravityController {
     public String gravity(Model model) {
         try {
             if (service.hasCosmoToken()) {
-                List<Map<String, Object>> list = service.fetchGravityList("tripleS");
+                List<Map<String, Object>> list = service.fetchGravityList("tripleS").stream()
+                        .map(GravityDisplay::gravity).toList();
                 model.addAttribute("gravityList", list);
                 model.addAttribute("emptyList", list.isEmpty());
                 model.addAttribute("hasGravityList", !list.isEmpty());

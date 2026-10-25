@@ -3,7 +3,7 @@
 <head>
 {{>layout/favicon}}
 {{>layout/gravity-fonts}}
-<link rel="stylesheet" href="/css/gravity-page.css?v=1">
+<link rel="stylesheet" href="/css/gravity-page.css?v=2">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>역대 그래비티 - 트리플에스 커뮤니티</title>
 </head>
@@ -54,14 +54,14 @@
             {{#gravityHighlights}}
             <article class="gv-panel gv-highlight">
                 <div>
-                    <div class="gv-meta"><span class="gv-chip">#{{id}}</span><span>{{statusLabel}}</span></div>
+                    <div class="gv-meta">{{>cosmo/partials/gravity-status}}{{#type}}<span class="gv-badge">{{type}}</span>{{/type}}</div>
                     <h3><a href="{{detailUrl}}">{{title}}</a></h3>
+                    <div class="gv-period">{{periodLabel}} <span class="gv-timezone">한국 시간</span></div>
                     {{#description}}<p class="gv-muted">{{description}}</p>{{/description}}
                 </div>
                 <div class="gv-foot">
                     <div>
                         {{#hasComo}}<span class="gv-muted">총 사용 COMO</span><div class="gv-como">{{comoUsed}}</div>{{/hasComo}}
-                        {{^hasComo}}<span class="gv-muted">{{entireStartDate}}{{#entireEndDate}} ~ {{entireEndDate}}{{/entireEndDate}}</span>{{/hasComo}}
                     </div>
                     <a class="gv-link" href="{{detailUrl}}">투표 및 결과 보기</a>
                 </div>
@@ -98,11 +98,11 @@
             <div>
                 {{#bannerImageUrl}}<img src="{{bannerImageUrl}}" alt="" loading="lazy" referrerpolicy="no-referrer">{{/bannerImageUrl}}
                 <div class="gv-meta">
-                    <span class="gv-badge">#{{id}}</span>
-                    <span class="gv-badge">{{statusLabel}}{{#type}} · {{type}}{{/type}}</span>
-                    {{#entireStartDate}}<span>{{entireStartDate}}</span>{{/entireStartDate}}
+                    {{>cosmo/partials/gravity-status}}
+                    {{#type}}<span class="gv-badge">{{type}}</span>{{/type}}
                 </div>
                 <h3><a href="{{detailUrl}}">{{title}}</a></h3>
+                <div class="gv-period">{{periodLabel}} <span class="gv-timezone">한국 시간</span></div>
                 {{#description}}<p>{{description}}</p>{{/description}}
             </div>
             <div class="gv-foot">

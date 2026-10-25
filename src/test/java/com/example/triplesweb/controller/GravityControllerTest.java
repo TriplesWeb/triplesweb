@@ -68,6 +68,22 @@ class GravityControllerTest {
         verify(service, never()).fetchGravityList("artms");
     }
 
+    @Test void listAndRecentCardsHideIdsAndShowKoreanTimeWithStatusPills() throws Exception {
+        when(service.hasCosmoToken()).thenReturn(true);
+        when(service.fetchGravityList("tripleS")).thenReturn(java.util.List.of(java.util.Map.of(
+                "id", 21L, "title", "한국 시간 그래비티", "statusLabel", "진행 중", "type", "grand-gravity",
+                "detailUrl", "/cosmo/gravity/21", "hasComo", true, "comoUsed", 10L,
+                "entireStartDate", "2026-07-28T01:00:00.000Z",
+                "entireEndDate", "2026-07-28T13:00:00.000Z")));
+        mvc.perform(get("/cosmo/gravity")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("gv-status--ongoing")))
+                .andExpect(content().string(containsString("2026-07-28 10:00 ~ 22:00")))
+                .andExpect(content().string(containsString("한국 시간")))
+                .andExpect(content().string(containsString("href=\"/cosmo/gravity/21\"")))
+                .andExpect(content().string(not(containsString(">#21</span>"))))
+                .andExpect(content().string(not(containsString("2026-07-28T01:00:00.000Z"))));
+    }
+
     @Test void detailUsesCosmoOfficialResultsWithoutExtraRequests() throws Exception {
         var mapper = new ObjectMapper();
         when(service.fetchGravityDetails(21)).thenReturn(mapper.readTree("""
@@ -90,6 +106,26 @@ class GravityControllerTest {
                 .andExpect(content().string(not(containsString("apollo.cafe"))))
                 .andExpect(content().string(containsString("120")));
         verify(service, never()).fetchPollDetails(anyLong());
+    }
+
+    @Test void detailAndPollDatesUseKoreanTimeWithoutVisibleIds() throws Exception {
+        var mapper = new ObjectMapper();
+        when(service.fetchGravityDetails(88)).thenReturn(mapper.readTree("""
+                {"id":88,"type":"grand-gravity","title":"한국 시간","description":"기간 표시",
+                 "entireStartDate":"2026-07-28T14:00:00.000Z","entireEndDate":"2026-07-28T16:00:00.000Z",
+                 "polls":[{"id":7,"title":"투표","startDate":"2026-07-28T01:00:00Z",
+                  "endDate":"2026-07-28T13:00:00Z","revealDate":"2026-07-28T18:00:00Z"}]}
+                """));
+        when(service.toMap(any())).thenAnswer(call -> {
+            com.fasterxml.jackson.databind.JsonNode node = call.getArgument(0);
+            return node.isMissingNode() || node.isNull() ? null : mapper.convertValue(node, java.util.Map.class);
+        });
+        mvc.perform(get("/cosmo/gravity/88")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("2026-07-28 23:00 ~ 2026-07-29 01:00")))
+                .andExpect(content().string(containsString("2026-07-28 10:00 ~ 22:00")))
+                .andExpect(content().string(containsString("결과 공개 2026-07-29 03:00")))
+                .andExpect(content().string(not(containsString(" · #88"))))
+                .andExpect(content().string(not(containsString("2026-07-28T14:00:00.000Z"))));
     }
 
     @Test void legacyAggregationEndpointDoesNotContactThirdParty() throws Exception {

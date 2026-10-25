@@ -6,6 +6,7 @@
     const sort = document.getElementById('archiveSort');
     const visible = document.getElementById('archiveVisible');
     const none = document.getElementById('archiveNone');
+    const numberOffset = Math.max(0, Number(grid.dataset.numberOffset) || 0);
 
     function apply() {
         const name = artist ? artist.value : '';
@@ -18,12 +19,23 @@
             return (a.dataset.title || '').localeCompare(b.dataset.title || '', 'ko');
         });
         cards.forEach(card => card.classList.add('ar-off'));
-        shown.forEach(card => {
+        const numbers = new Map();
+        shown.forEach((card, index) => {
             card.classList.remove('ar-off');
+            const number = numberOffset + index + 1;
+            const badge = card.querySelector('[data-archive-number]');
+            if (badge) badge.textContent = String(number);
+            numbers.set(card.dataset.id, number);
             grid.appendChild(card);
+        });
+        document.querySelectorAll('#archiveTrack [data-archive-ref]').forEach(card => {
+            const badge = card.querySelector('[data-archive-number]');
+            const number = numbers.get(card.dataset.archiveRef);
+            if (badge && number !== undefined) badge.textContent = String(number);
         });
         if (visible) visible.textContent = String(shown.length);
         if (none) none.hidden = shown.length !== 0;
+        grid.dispatchEvent(new CustomEvent('archive:updated'));
     }
 
     sort?.addEventListener('change', apply);
@@ -67,6 +79,18 @@
         });
     });
     const track = document.getElementById('archiveTrack');
-    document.getElementById('archivePrev')?.addEventListener('click', () => track?.scrollBy({ left: -380, behavior: 'smooth' }));
-    document.getElementById('archiveNext')?.addEventListener('click', () => track?.scrollBy({ left: 380, behavior: 'smooth' }));
+    const recentPrevious = document.getElementById('archivePrev');
+    const recentNext = document.getElementById('archiveNext');
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    function updateRecentControls() {
+        if (!track) return;
+        if (recentPrevious) recentPrevious.disabled = track.scrollLeft <= 1;
+        if (recentNext) recentNext.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 1;
+    }
+    recentPrevious?.addEventListener('click', () => track?.scrollBy({ left: -380, behavior: motion.matches ? 'instant' : 'smooth' }));
+    recentNext?.addEventListener('click', () => track?.scrollBy({ left: 380, behavior: motion.matches ? 'instant' : 'smooth' }));
+    track?.addEventListener('scroll', updateRecentControls, { passive: true });
+    if (track && window.ResizeObserver) new ResizeObserver(updateRecentControls).observe(track);
+    updateRecentControls();
+    apply();
 })();

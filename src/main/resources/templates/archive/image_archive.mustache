@@ -16,7 +16,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/archive-page.css?v=5">
+    <link rel="stylesheet" href="/css/archive-page.css?v=10">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=4">
     {{#_csrf}}
     <meta name="_csrf" content="{{token}}">
@@ -60,12 +60,12 @@
         </div>
         <div class="ar-track" id="archiveTrack">
             {{#archiveHighlights}}
-            <article class="ar-panel ar-highlight">
-                <img src="{{file.url}}" alt="{{title}}">
+            <article class="ar-panel ar-highlight" data-archive-ref="{{id}}">
+                <img src="{{file.url}}" alt="{{title}}" loading="lazy" decoding="async">
                 <div>
-                    <span class="ar-id">#{{id}}</span>
+                    <span class="ar-id" data-archive-number>{{displayNumber}}</span>
                     <h3>{{title}}</h3>
-                    {{#artistNames}}<p class="ar-muted">{{artistNames}}</p>{{/artistNames}}
+                    <div class="ar-meta">{{>partials/archive-member-badges}}</div>
                 </div>
             </article>
             {{/archiveHighlights}}
@@ -109,12 +109,23 @@
         </div>
     </section>
 
-    <section class="ar-grid" id="archiveGrid">
-        {{#archives.content}}
+    <div class="ar-gallery-controls" id="archiveGalleryControls" hidden>
+        <p class="ar-gallery-hint">사진을 좌우로 넘겨보세요 <span>방향키 · 모바일 스와이프</span></p>
+        <div class="ar-gallery-navigation">
+            <button type="button" class="ar-icon-btn" id="archiveGalleryPrev" aria-label="이전 사진" aria-controls="archiveGrid"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span></button>
+            <span class="ar-gallery-position" id="archiveGalleryPosition" role="status" aria-live="polite" aria-atomic="true"></span>
+            <button type="button" class="ar-icon-btn" id="archiveGalleryNext" aria-label="다음 사진" aria-controls="archiveGrid"><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
+        </div>
+    </div>
+    <section class="ar-grid" id="archiveGrid" aria-label="사진 목록" data-number-offset="{{archiveOffset}}">
+        {{#archiveCards}}
         <article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}">
-            <img src="{{file.url}}" alt="{{title}}">
+            <a class="ar-photo-link" href="{{file.url}}" target="_blank" rel="noopener noreferrer" aria-label="{{title}} 원본 보기">
+                <img src="{{file.url}}" alt="{{title}}" loading="lazy" decoding="async">
+                <span class="ar-photo-open">원본 보기 ↗</span>
+            </a>
             <div class="ar-body">
-                <div class="ar-meta"><span class="ar-id">#{{id}}</span>{{#artistNames}}<span class="ar-badge">{{artistNames}}</span>{{/artistNames}}</div>
+                <div class="ar-meta"><span class="ar-id" data-archive-number>{{displayNumber}}</span>{{>partials/archive-member-badges}}</div>
                 <h3>{{title}}</h3>
                 <div class="ar-actions" data-admin-only>
                     <button type="button" data-archive-edit data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-url="{{file.url}}">수정</button>
@@ -122,7 +133,7 @@
                 </div>
             </div>
         </article>
-        {{/archives.content}}
+        {{/archiveCards}}
     </section>
     <p id="archiveNone" class="ar-panel ar-empty" hidden>이 페이지에서 조건에 맞는 사진이 없습니다.</p>
     {{^hasArchives}}
@@ -163,14 +174,24 @@
                         {{>partials/member-portrait-picker}}
                     </div>
                     <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
-                    <input type="text" name="extraArtists" placeholder="목록에 없는 이름은 쉼표로 추가">
+                    <div class="ar-artist-editor" data-artist-tags>
+                        <div class="ar-artist-chips" data-artist-chips aria-label="선택한 출연자"></div>
+                        <div class="ar-tag-entry">
+                            <input type="text" name="extraArtists" placeholder="다른 출연자 이름" aria-label="추가 출연자 이름" autocomplete="off" maxlength="80">
+                            <button type="button" class="ar-tag-add" data-artist-add>추가</button>
+                        </div>
+                        <p class="ar-field-hint">목록에 없는 출연자는 이름을 입력하고 Enter 또는 추가를 누르세요.</p>
+                    </div>
                 </div>
                 <label class="ar-field">사진 파일
-                    <input type="file" name="file" accept="image/*" required>
+                    <input type="file" name="file" accept="image/*,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp" required>
+                    <span class="ar-field-hint">JPG · JPEG · JFIF · PNG · WebP · GIF · BMP</span>
                 </label>
                 <div class="ar-preview" id="uploadPreview" hidden>
+                    <p class="ar-preview-info" data-preview-file></p>
                     <div><p>원본</p><div class="ar-preview-full"></div></div>
-                    <div><p>목록에서 보이는 모습</p><div class="ar-preview-card"></div></div>
+                    <div><p>목록에서 보이는 모습 · 카드/슬라이드</p><div class="ar-preview-card"></div></div>
+                    <p class="ar-preview-error" data-preview-error role="alert" hidden></p>
                 </div>
             </div>
             <div class="ar-dialog-foot">
@@ -198,14 +219,24 @@
                         {{>partials/member-portrait-picker}}
                     </div>
                     <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
-                    <input type="text" name="extraArtists" placeholder="목록에 없는 이름은 쉼표로 추가">
+                    <div class="ar-artist-editor" data-artist-tags>
+                        <div class="ar-artist-chips" data-artist-chips aria-label="선택한 출연자"></div>
+                        <div class="ar-tag-entry">
+                            <input type="text" name="extraArtists" placeholder="다른 출연자 이름" aria-label="추가 출연자 이름" autocomplete="off" maxlength="80">
+                            <button type="button" class="ar-tag-add" data-artist-add>추가</button>
+                        </div>
+                        <p class="ar-field-hint">목록에 없는 출연자는 이름을 입력하고 Enter 또는 추가를 누르세요.</p>
+                    </div>
                 </div>
                 <label class="ar-field">파일 교체 (선택)
-                    <input type="file" name="file" accept="image/*">
+                    <input type="file" name="file" accept="image/*,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp">
+                    <span class="ar-field-hint">JFIF · WebP 포함 · 새 파일을 선택하지 않으면 현재 사진을 유지합니다.</span>
                 </label>
                 <div class="ar-preview" id="editPreview" hidden>
+                    <p class="ar-preview-info" data-preview-file></p>
                     <div><p>현재 사진</p><div class="ar-preview-full"></div></div>
-                    <div><p>목록에서 보이는 모습</p><div class="ar-preview-card"></div></div>
+                    <div><p>목록에서 보이는 모습 · 카드/슬라이드</p><div class="ar-preview-card"></div></div>
+                    <p class="ar-preview-error" data-preview-error role="alert" hidden></p>
                 </div>
             </div>
             <div class="ar-dialog-foot">
@@ -219,7 +250,8 @@
 {{>layout/footer}}
 
 <script src="/js/member-portrait-picker.js?v=2"></script>
-<script src="/js/archive-manage.js?v=2"></script>
-<script src="/js/archive-browse.js?v=4"></script>
+<script src="/js/archive-manage.js?v=4"></script>
+<script src="/js/archive-browse.js?v=6"></script>
+<script src="/js/archive-photo-carousel.js?v=1"></script>
 </body>
 </html>

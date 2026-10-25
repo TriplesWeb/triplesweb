@@ -16,16 +16,16 @@
 {{#gravity}}
 <section class="gravity-card space-y-4">
 {{#bannerImageUrl}}<img src="{{bannerImageUrl}}" alt="" referrerpolicy="no-referrer" class="w-full max-h-80 object-contain rounded-lg">{{/bannerImageUrl}}
-<p class="text-xs text-[#00f5d4]">{{type}} · #{{id}}</p>
+<p class="text-xs text-[#00f5d4]">{{type}}</p>
 <h1 class="text-3xl font-bold">{{title}}</h1><p class="text-gray-400">{{description}}</p>
-<p class="text-sm">{{entireStartDate}} ~ {{entireEndDate}}</p>
+<p class="text-sm">{{periodLabel}} (한국 시간)</p>
 {{#result}}<p>공식 총 사용 COMO: {{totalComoUsed}}</p>{{/result}}
 </section>
 {{/gravity}}
 <nav class="flex gap-3 flex-wrap">
 {{#polls}}<a href="?pollId={{id}}" class="gravity-card text-sm" {{#selected}}aria-current="page"{{/selected}}>{{title}}</a>{{/polls}}
 </nav>
-{{#selectedPoll}}<h2 class="text-xl font-bold">{{title}}</h2><p class="text-sm text-gray-400">{{startDate}} ~ {{endDate}} · 결과 공개 {{revealDate}}</p>{{/selectedPoll}}
+{{#selectedPoll}}<h2 class="text-xl font-bold">{{title}}</h2><p class="text-sm text-gray-400">{{periodLabel}} · 결과 공개 {{revealLabel}} (한국 시간)</p>{{/selectedPoll}}
 {{#selectedPoll}}<section class="gravity-card"><p class="gravity-eyebrow">COMO TIMELINE</p><h2 class="text-lg font-bold">시간대별 소비량</h2><p class="gravity-chart-status">시간별 집계 데이터가 아직 없습니다. 공개된 공식 결과는 아래에서 확인할 수 있습니다.</p></section>{{/selectedPoll}}
 {{#hasOfficialResults}}
 <section class="gravity-card space-y-4"><p class="gravity-eyebrow">OFFICIAL RESULTS</p><h2 class="text-lg font-bold">COSMO 공식 결과</h2><p class="gravity-chart-help">막대 길이는 같은 투표의 최다 COMO 대비 소비량입니다.</p>
