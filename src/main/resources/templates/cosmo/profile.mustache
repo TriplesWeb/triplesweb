@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="/css/archive-page.css?v=3">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=8">
 <link rel="stylesheet" href="/css/cosmo-collection.css?v=4">
-<link rel="stylesheet" href="/css/cosmo-profile.css?v=5">
+<link rel="stylesheet" href="/css/cosmo-profile.css?v=6">
 </head>
 <body class="collection-page min-h-screen flex flex-col">
 {{>layout/header}}
@@ -37,10 +37,10 @@
 
 {{#isOverviewTab}}
 <section class="profile-progress-section" aria-labelledby="member-progress-heading">
-    <div class="profile-section-heading"><h2 id="member-progress-heading">멤버별 수집 현황</h2><p>tripleS · Welcome·Zero 제외 · 중복을 제외한 종류 기준</p></div>
+    <div class="profile-section-heading"><h2 id="member-progress-heading">멤버별 수집 현황</h2><p>tripleS · Welcome·Zero 제외 · 유닛은 구성 멤버에 합산 · 미수집도 함께 표시</p></div>
     <div class="profile-member-grid">
     {{#memberProgress}}
-    <article class="ar-panel profile-member" style="--member-color: {{color}}">
+    <article class="ar-panel profile-member{{#isEmpty}} is-empty{{/isEmpty}}" style="--member-color: {{color}}">
         <div class="profile-member-name">{{#hasImage}}<img src="{{image}}" alt="" loading="lazy">{{/hasImage}}<h3>{{member}}</h3></div>
         {{#hasTotal}}<p class="profile-percent"><strong>{{percent}}<span>%</span></strong> 수집</p>
         <div class="profile-progress-track" role="progressbar" aria-label="{{member}} 수집률" aria-valuenow="{{percent}}" aria-valuemin="0" aria-valuemax="100"><span style="width:{{percent}}%"></span></div>
@@ -50,15 +50,32 @@
     </article>
     {{/memberProgress}}
     </div>
-    {{^hasMemberProgress}}<p class="gv-panel gv-empty">표시할 수집 현황이 없습니다.</p>{{/hasMemberProgress}}
+    {{^hasMemberProgress}}<p class="gv-panel gv-empty">표시할 멤버 수집 현황이 없습니다.</p>{{/hasMemberProgress}}
 </section>
+{{#hasOtherProgress}}
+<section class="profile-progress-section" aria-labelledby="other-progress-heading">
+    <div class="profile-section-heading"><h2 id="other-progress-heading">기타 옵젝 현황</h2><p>zenith 등 멤버에 속하지 않는 종류를 한곳에 모았습니다</p></div>
+    <div class="profile-member-grid profile-other-grid">
+    {{#otherProgress}}
+    <article class="ar-panel profile-member profile-other{{#isEmpty}} is-empty{{/isEmpty}}" style="--member-color: {{color}}">
+        <div class="profile-member-name"><h3>{{member}}</h3></div>
+        {{#hasTotal}}<p class="profile-percent"><strong>{{percent}}<span>%</span></strong> 수집</p>
+        <div class="profile-progress-track" role="progressbar" aria-label="기타 옵젝 수집률" aria-valuenow="{{percent}}" aria-valuemin="0" aria-valuemax="100"><span style="width:{{percent}}%"></span></div>
+        <p class="ar-muted">{{owned}} / {{total}}종 · 보유 {{copies}}개</p>{{/hasTotal}}
+        {{^hasTotal}}<p class="ar-muted">전체 목록 준비 중 · 보유 {{copies}}개</p>{{/hasTotal}}
+        <a class="collection-action-btn" href="{{progressUrl}}">수집 현황 보기</a>
+    </article>
+    {{/otherProgress}}
+    </div>
+</section>
+{{/hasOtherProgress}}
 <div class="profile-breakdown-grid">
     <section class="ar-panel profile-breakdown"><h2>시즌별</h2>
-    {{#seasonStats}}<div class="profile-breakdown-row"><span>{{label}}</span><div class="profile-progress-track"><span style="width:{{percent}}%"></span></div><strong>{{count}}개</strong><span>{{percent}}%</span></div>{{/seasonStats}}
-    {{^hasStats}}<p class="ar-muted">아직 보유한 오브젝트가 없습니다.</p>{{/hasStats}}</section>
+    {{#seasonStats}}<div class="profile-breakdown-row{{#isEmpty}} is-empty{{/isEmpty}}"><span>{{label}}</span><div class="profile-progress-track"><span style="width:{{percent}}%"></span></div><strong>{{owned}} / {{total}}</strong><span>{{percent}}%</span></div>{{/seasonStats}}
+    {{^hasStats}}<p class="ar-muted">아직 표시할 시즌 현황이 없습니다.</p>{{/hasStats}}</section>
     <section class="ar-panel profile-breakdown"><h2>클래스별</h2>
-    {{#classStats}}<div class="profile-breakdown-row"><span>{{label}}</span><div class="profile-progress-track"><span style="width:{{percent}}%"></span></div><strong>{{count}}개</strong><span>{{percent}}%</span></div>{{/classStats}}
-    {{^hasStats}}<p class="ar-muted">아직 보유한 오브젝트가 없습니다.</p>{{/hasStats}}</section>
+    {{#classStats}}<div class="profile-breakdown-row{{#isEmpty}} is-empty{{/isEmpty}}"><span>{{label}}</span><div class="profile-progress-track"><span style="width:{{percent}}%"></span></div><strong>{{owned}} / {{total}}</strong><span>{{percent}}%</span></div>{{/classStats}}
+    {{^hasStats}}<p class="ar-muted">아직 표시할 클래스 현황이 없습니다.</p>{{/hasStats}}</section>
 </div>
 {{/isOverviewTab}}
 
@@ -79,15 +96,15 @@
         <div class="member-portrait-picker" id="profile-member-picker" role="group" aria-label="멤버별 오브젝트 종류" {{#isOtherGroup}}hidden{{/isOtherGroup}}>
             {{>partials/member-portrait-picker}}
         </div>
-        <p class="objekt-other-notice" {{^isOtherGroup}}hidden{{/isOtherGroup}}>멤버와 연결되지 않은 그룹·기타 오브젝트 수집 현황입니다.</p>
+        <p class="objekt-other-notice" {{^isOtherGroup}}hidden{{/isOtherGroup}}>zenith 등 멤버와 연결되지 않은 그룹·기타 오브젝트 전체 종류입니다. 미보유는 어둡게 표시됩니다.</p>
     </div>
 </section>
-{{#hasProgressMember}}
+{{#hasChecklist}}
 <section class="profile-checklist" aria-labelledby="checklist-heading">
     <div class="profile-section-heading"><div><h2 id="checklist-heading">{{selectedMember}} · 오브젝트 수집 목록</h2><p>{{checklistTotal}}종 중 {{checklistOwned}}종 보유 · {{checklistMissing}}종 미보유</p></div>
         <label class="profile-hide-complete" data-hide-complete-label hidden><input type="checkbox" data-hide-complete>완료한 시즌 숨기기</label>
     </div>
-    <p class="profile-checklist-legend"><span class="is-owned">● 보유</span><span>○ 미보유</span> · 클래스별 낮은 번호순</p>
+    <p class="profile-checklist-legend"><span class="is-owned">● 보유</span><span>○ 미보유</span> · 클래스별 낮은 번호순 · 유닛은 구성 멤버 목록에 포함</p>
     {{#checklistSeasons}}
     <section class="ar-panel profile-checklist-season" data-checklist-season data-complete="{{complete}}">
         <header class="profile-season-heading"><h3>{{season}}</h3><p>{{owned}} / {{total}}종 <strong>{{percent}}%</strong></p></header>
@@ -107,14 +124,21 @@
         {{/groups}}
     </section>
     {{/checklistSeasons}}
-    {{^hasChecklist}}<p class="gv-panel gv-empty">이 멤버의 전체 오브젝트 목록을 아직 불러오지 못했습니다.</p>{{/hasChecklist}}
 </section>
-{{/hasProgressMember}}
-{{^hasProgressMember}}
+{{/hasChecklist}}
+{{^hasChecklist}}
 {{^isOtherGroup}}
+{{^hasProgressMember}}
 <p class="gv-panel gv-empty">위에서 멤버를 선택하면 해당 멤버의 전체 종류 수집 현황을 볼 수 있습니다.</p>
-{{/isOtherGroup}}
 {{/hasProgressMember}}
+{{#hasProgressMember}}
+<p class="gv-panel gv-empty">이 멤버의 전체 오브젝트 목록을 아직 불러오지 못했습니다.</p>
+{{/hasProgressMember}}
+{{/isOtherGroup}}
+{{#isOtherGroup}}
+<p class="gv-panel gv-empty">표시할 기타 옵젝 종류가 없습니다.</p>
+{{/isOtherGroup}}
+{{/hasChecklist}}
 {{/isMembersTab}}
 {{/hasProfile}}
 </main>

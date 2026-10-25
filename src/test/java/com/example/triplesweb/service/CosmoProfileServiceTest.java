@@ -23,15 +23,20 @@ class CosmoProfileServiceTest {
     }
     @Test @SuppressWarnings("unchecked") void duplicateCopiesDoNotInflateCompletionAndWelcomeIsExcluded() {
         given(List.of(card("a", "HaYeon", "Double"), card("a", "HaYeon", "Double"), card("welcome", "HaYeon", "Welcome")),
-                List.of(Map.of("slug", "a", "member", "HaYeon", "class", "Double"),
-                        Map.of("slug", "b", "member", "HaYeon", "class", "First"),
-                        Map.of("slug", "welcome", "member", "HaYeon", "class", "Welcome")));
+                List.of(Map.of("slug", "a", "member", "HaYeon", "class", "Double", "season", "Cream02"),
+                        Map.of("slug", "b", "member", "HaYeon", "class", "First", "season", "Cream02"),
+                        Map.of("slug", "welcome", "member", "HaYeon", "class", "Welcome", "season", "Cream02")));
         var view = profiles.profile("테스트", "");
         var rows = (List<Map<String, Object>>) view.get("memberProgress");
         assertThat(view).containsEntry("uniqueCount", 2L).containsEntry("ownedCount", 3);
         assertThat(rows).hasSize(1);
         assertThat(rows.get(0)).containsEntry("owned", 1L).containsEntry("total", 2).containsEntry("percent", 50).containsEntry("copies", 2);
-        assertThat((List<Map<String, Object>>) view.get("classStats")).extracting(r -> r.get("count")).containsExactly(2L, 1L);
+        var classStats = (List<Map<String, Object>>) view.get("classStats");
+        assertThat(classStats).extracting(r -> r.get("label")).containsExactlyInAnyOrder("Double", "First");
+        assertThat(classStats).filteredOn(r -> "Double".equals(r.get("label")))
+                .first().satisfies(r -> assertThat(r).containsEntry("owned", 1).containsEntry("total", 1).containsEntry("percent", 100));
+        assertThat(classStats).filteredOn(r -> "First".equals(r.get("label")))
+                .first().satisfies(r -> assertThat(r).containsEntry("owned", 0).containsEntry("total", 1).containsEntry("percent", 0));
     }
     @Test @SuppressWarnings("unchecked") void missingCatalogDoesNotFabricateACompletionRate() {
         given(List.of(card("a", "HaYeon", "Double")), List.of());
@@ -41,7 +46,8 @@ class CosmoProfileServiceTest {
     @Test void emptyProfileHasNoInventedStatistics() {
         given(List.of(), List.of());
         assertThat(profiles.profile("테스트", "")).containsEntry("hasStats", false)
-                .containsEntry("uniqueCount", 0L).containsEntry("memberCount", 0L).containsEntry("hasMemberProgress", false);
+                .containsEntry("uniqueCount", 0L).containsEntry("memberCount", 0L).containsEntry("hasMemberProgress", false)
+                .containsEntry("hasOtherProgress", false);
     }
 
     private static Map<String, Object> kind(String slug, String member, String season, String klass, String number) {
@@ -80,6 +86,10 @@ class CosmoProfileServiceTest {
                 .containsEntry("selectedMember", "공유빈");
         assertThat((List<Map<String, Object>>) view.get("checklistSeasons")).extracting(row -> row.get("season"))
                 .containsExactly("Cream02", "Atom01");
+        var progress = (List<Map<String, Object>>) view.get("memberProgress");
+        assertThat(progress).hasSize(1);
+        assertThat(progress.get(0)).containsEntry("member", "공유빈").containsEntry("owned", 0L)
+                .containsEntry("total", 2).containsEntry("percent", 0).containsEntry("isEmpty", true);
     }
 
     @Test @SuppressWarnings("unchecked") void seasonCompletionUsesDistinctCatalogKindsNotCopyCount() {
@@ -103,5 +113,39 @@ class CosmoProfileServiceTest {
         assertThat(progress).hasSize(1);
         assertThat(progress.get(0)).containsEntry("member", "김채원").containsEntry("total", 3).containsEntry("owned", 2L)
                 .containsEntry("progressUrl", "/cosmo/profile/%ED%85%8C%EC%8A%A4%ED%8A%B8?tab=members&member=%EA%B9%80%EC%B1%84%EC%9B%90");
+    }
+
+    @Test @SuppressWarnings("unchecked") void unitObjektsCountTowardEachSoloMemberAndNeverAsUnitRow() {
+        given(List.of(card("unit", "S19 X S24", "Unit")), List.of(
+                kind("solo19", "HaYeon", "Cream02", "First", "101Z"),
+                kind("solo24", "Jiyeon", "Cream02", "First", "102Z"),
+                kind("unit", "S19 X S24", "Cream02", "Unit", "201Z")));
+        var view = profiles.profile("테스트", "");
+        var progress = (List<Map<String, Object>>) view.get("memberProgress");
+        assertThat(progress).extracting(r -> r.get("member")).containsExactlyInAnyOrder("정하연", "지연");
+        assertThat(progress).noneMatch(r -> String.valueOf(r.get("member")).contains("S19"));
+        assertThat(progress).filteredOn(r -> "정하연".equals(r.get("member"))).first()
+                .satisfies(r -> assertThat(r).containsEntry("owned", 1L).containsEntry("total", 2).containsEntry("copies", 1));
+        assertThat(progress).filteredOn(r -> "지연".equals(r.get("member"))).first()
+                .satisfies(r -> assertThat(r).containsEntry("owned", 1L).containsEntry("total", 2).containsEntry("copies", 1));
+        var checklist = profiles.profile("테스트", "정하연");
+        assertThat(checklist).containsEntry("checklistTotal", 2).containsEntry("checklistOwned", 1);
+    }
+
+    @Test @SuppressWarnings("unchecked") void otherObjektsLikeZenithAreMergedIntoOtherProgress() {
+        given(List.of(card("z1", "zenith", "Special")), List.of(
+                kind("z1", "zenith", "Cream02", "Special", "001Z"),
+                kind("z2", "zenith", "Cream02", "Special", "002Z"),
+                kind("alpha", "Alpha", "Cream02", "Special", "003Z")));
+        var view = profiles.profile("테스트", "");
+        assertThat((List<?>) view.get("memberProgress")).isEmpty();
+        assertThat(view).containsEntry("hasOtherProgress", true);
+        var other = ((List<Map<String, Object>>) view.get("otherProgress")).get(0);
+        assertThat(other).containsEntry("member", "기타 옵젝").containsEntry("owned", 1L).containsEntry("total", 3)
+                .containsEntry("percent", 33).containsEntry("progressUrl",
+                        "/cosmo/profile/%ED%85%8C%EC%8A%A4%ED%8A%B8?tab=members&group=other");
+        var detail = profiles.profile("테스트", "", "other", "members");
+        assertThat(detail).containsEntry("isOtherGroup", true).containsEntry("checklistTotal", 3)
+                .containsEntry("checklistOwned", 1).containsEntry("checklistMissing", 2);
     }
 }

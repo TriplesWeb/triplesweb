@@ -48,6 +48,11 @@
 .profile-section-heading p { font-size: .78rem; color: #a6b6b1; }
 .profile-member-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); gap: 1rem; }
 .profile-member { padding: 1.25rem; display: flex; flex-direction: column; gap: .8rem; min-width: 0; }
+.profile-member.is-empty { opacity: .55; filter: saturate(.55); }
+.profile-member.is-empty .profile-progress-track > span { background: #ffffff28; }
+.profile-other-grid { grid-template-columns: minmax(min(100%, 18rem), 22rem); }
+.profile-breakdown-row.is-empty { opacity: .55; }
+.profile-breakdown-row.is-empty .profile-progress-track > span { background: #ffffff22; }
 .profile-member-name { display: flex; align-items: center; gap: .7rem; }
 .profile-member-name img { width: 3rem; height: 3rem; border-radius: 50%; object-fit: contain; border: 2px solid var(--member-color); background: #0b0d11; }
 .profile-member h3 { font-weight: 700; overflow-wrap: anywhere; }
