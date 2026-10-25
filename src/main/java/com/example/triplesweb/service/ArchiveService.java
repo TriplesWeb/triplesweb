@@ -121,15 +121,26 @@ public class ArchiveService {
     }
     @Transactional
     public Archive uploadVideoOnly(MultipartFile file, String title, MediaType type, String artistNames) throws IOException {
+        return uploadVideoOnly(file, title, type, artistNames, null);
+    }
+
+    @Transactional
+    public Archive uploadVideoOnly(MultipartFile file, String title, MediaType type, String artistNames, MultipartFile thumbnail) throws IOException {
         if (type != null && type != MediaType.VIDEO) {
             throw new IllegalArgumentException("비디오 파일만 업로드 가능합니다.");
         }
-        return save(file, title, MediaType.VIDEO, artistNames);
+        validateThumbnail(thumbnail);
+        Archive archive = save(file, title, MediaType.VIDEO, artistNames);
+        if (thumbnail != null && !thumbnail.isEmpty()) {
+            archive.setThumbnailUrl(fileStorageService.saveWithMeta(thumbnail).getUrl());
+        }
+        return archiveRepository.save(archive);
     }
     @Transactional
     public boolean delete(long id) {
         return archiveRepository.findById(id).map(archive -> {
             deleteStored(archive.getFile());
+            deleteThumbnail(archive.getThumbnailUrl());
             archiveRepository.delete(archive);
             return true;
         }).orElse(false);
@@ -141,7 +152,16 @@ public class ArchiveService {
      */
     @Transactional
     public Archive update(long id, String title, MultipartFile file, String artistNames) throws IOException {
+        return update(id, title, file, artistNames, null, false);
+    }
+
+    @Transactional
+    public Archive update(long id, String title, MultipartFile file, String artistNames, MultipartFile thumbnail, boolean clearThumbnail) throws IOException {
         Archive archive = show(id);
+        validateThumbnail(thumbnail);
+        if (thumbnail != null && !thumbnail.isEmpty() && archive.getType() != MediaType.VIDEO) {
+            throw new IllegalArgumentException("영상 아카이브에만 썸네일을 설정할 수 있습니다.");
+        }
         String safeTitle = title == null ? "" : title.trim();
         if (safeTitle.isEmpty()) {
             throw new IllegalArgumentException("제목을 입력해주세요.");
@@ -157,7 +177,29 @@ public class ArchiveService {
             archive.setFile(meta);
             deleteStored(previous);
         }
+        String previousThumbnail = archive.getThumbnailUrl();
+        if (thumbnail != null && !thumbnail.isEmpty()) {
+            archive.setThumbnailUrl(fileStorageService.saveWithMeta(thumbnail).getUrl());
+            deleteThumbnail(previousThumbnail);
+        } else if (clearThumbnail) {
+            archive.setThumbnailUrl(null);
+            deleteThumbnail(previousThumbnail);
+        }
         return archiveRepository.save(archive);
+    }
+
+    private void validateThumbnail(MultipartFile thumbnail) {
+        if (thumbnail == null || thumbnail.isEmpty()) return;
+        String name = thumbnail.getOriginalFilename();
+        if (name == null || !name.toLowerCase(Locale.ROOT).matches(".*\\.(jpg|jpeg|jfif|png|webp|gif|bmp)$")) {
+            throw new IllegalArgumentException("썸네일은 JPG, JFIF, PNG, WebP, GIF, BMP 이미지 파일로 선택해 주세요.");
+        }
+    }
+
+    private void deleteThumbnail(String url) {
+        if (url != null && url.startsWith("/uploads/")) {
+            deleteStored(SavedMeta.builder().url(url).build());
+        }
     }
 
     private void deleteStored(SavedMeta file) {

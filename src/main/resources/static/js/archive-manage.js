@@ -92,6 +92,7 @@
         }
         box.hidden = false;
         syncPreview(box.closest('form'));
+        syncThumbnail(box.closest('form'));
     }
 
     function rememberUrl(file) {
@@ -227,6 +228,92 @@
         return /\.(jpe?g|jfif|png|webp|gif|bmp)$/i.test(file.name) || file.type.startsWith('image/');
     }
 
+    function syncThumbnail(form) {
+        if (!form) return;
+        const url = form.dataset.thumbnailUrl || '';
+        form.querySelectorAll('.ar-preview video').forEach(video => {
+            if (url) video.poster = url;
+            else video.removeAttribute('poster');
+        });
+    }
+
+    function showThumbnail(form, url) {
+        if (!form) return;
+        const box = form.querySelector('[data-thumbnail-preview]');
+        if (!box) return;
+        const input = form.querySelector('[name="thumbnail"]');
+        const error = form.querySelector('[data-thumbnail-error]');
+        const image = box.querySelector('img');
+        form.dataset.thumbnailUrl = url || '';
+        delete form.dataset.thumbnailInvalid;
+        delete form.dataset.thumbnailPending;
+        if (error) { error.hidden = true; error.textContent = ''; }
+        box.hidden = !url;
+        if (url) {
+            const file = input.files?.[0];
+            box.querySelector('[data-thumbnail-info]').textContent = file ? file.name : '현재 저장된 썸네일';
+            if (file) form.dataset.thumbnailPending = 'true';
+            image.onload = () => { delete form.dataset.thumbnailPending; };
+            image.onerror = () => {
+                delete form.dataset.thumbnailPending;
+                if (input.files?.[0]) form.dataset.thumbnailInvalid = 'true';
+                if (error) { error.textContent = '썸네일 이미지를 읽지 못했습니다. 다른 사진을 선택하거나 썸네일을 해제해 주세요.'; error.hidden = false; }
+            };
+            image.src = url;
+        } else {
+            image.removeAttribute('src');
+        }
+        syncThumbnail(form);
+    }
+
+    function resetThumbnail(form, original = '') {
+        const input = form?.querySelector('[name="thumbnail"]');
+        if (!input) return;
+        releaseUrl(input._archiveLastFile);
+        input._archiveLastFile = null;
+        input.value = '';
+        form.dataset.originalThumbnail = original;
+        const clear = form.querySelector('[name="clearThumbnail"]');
+        if (clear) clear.value = 'false';
+        showThumbnail(form, original);
+    }
+
+    function bindThumbnail(form) {
+        const input = form?.querySelector('[name="thumbnail"]');
+        if (!input) return;
+        const clear = form.querySelector('[name="clearThumbnail"]');
+        input.addEventListener('change', () => {
+            releaseUrl(input._archiveLastFile);
+            input._archiveLastFile = null;
+            const file = input.files?.[0];
+            if (!file) { showThumbnail(form, clear?.value === 'true' ? '' : form.dataset.originalThumbnail || ''); return; }
+            if (!/\.(jpe?g|jfif|png|webp|gif|bmp)$/i.test(file.name)) {
+                alert('썸네일은 JPG, JFIF, PNG, WebP, GIF, BMP 이미지 파일로 선택해 주세요.');
+                input.value = '';
+                showThumbnail(form, clear?.value === 'true' ? '' : form.dataset.originalThumbnail || '');
+                return;
+            }
+            if (clear) clear.value = 'false';
+            input._archiveLastFile = file;
+            showThumbnail(form, rememberUrl(file));
+        });
+        form.querySelector('[data-thumbnail-clear]')?.addEventListener('click', () => {
+            releaseUrl(input._archiveLastFile);
+            input._archiveLastFile = null;
+            input.value = '';
+            if (clear) clear.value = 'true';
+            showThumbnail(form, '');
+        });
+    }
+
+    function validThumbnail(form) {
+        if (form.dataset.thumbnailInvalid || form.dataset.thumbnailPending) {
+            alert('썸네일 미리보기를 확인하거나 다른 이미지 파일을 선택해 주세요.');
+            return false;
+        }
+        return true;
+    }
+
     document.querySelectorAll(".ar-dialog").forEach(dialog => {
         dialog.querySelectorAll("[data-ar-close]").forEach(button => {
             button.addEventListener("click", () => closeDialog(dialog));
@@ -243,10 +330,12 @@
     const uploadPreview = document.getElementById("uploadPreview");
     const uploadFile = uploadForm?.querySelector('input[type="file"]');
     bindPicker(uploadDialog);
+    bindThumbnail(uploadForm);
 
     window.showAddModal = function () {
         if (!uploadForm || !uploadDialog) return;
         uploadForm.reset();
+        resetThumbnail(uploadForm);
         applyArtists(uploadDialog, uploadForm.querySelector("[name='extraArtists']"), "");
         if (uploadFile) releaseUrl(uploadFile._archiveLastFile);
         showPreview(uploadPreview, "");
@@ -287,6 +376,7 @@
             return;
         }
         if (!window.confirm("이 " + noun + "을 추가하시겠습니까?")) return;
+        if (!validThumbnail(uploadForm)) return;
         const body = new FormData(uploadForm);
         body.delete("artistNames");
         body.delete("extraArtists");
@@ -315,10 +405,12 @@
     const editPreview = document.getElementById("editPreview");
     const editFile = editForm?.querySelector('input[type="file"]');
     bindPicker(editDialog);
+    bindThumbnail(editForm);
 
     function showEdit(button) {
         if (!editForm || !editDialog) return;
         editForm.reset();
+        resetThumbnail(editForm, button.dataset.thumbnailUrl || '');
         editForm.dataset.id = button.dataset.id || "";
         editForm.dataset.originalUrl = button.dataset.url || '';
         editForm.querySelector("[name='title']").value = button.dataset.title || "";
@@ -393,10 +485,15 @@
             ? "이 " + noun + "을 수정하시겠습니까? 선택한 파일로 기존 미디어가 바뀝니다."
             : "이 " + noun + "을 수정하시겠습니까?";
         if (!window.confirm(message)) return;
+        if (!validThumbnail(editForm)) return;
         const body = new FormData();
         body.set("title", title);
         body.set("artistNames", selectedArtists(editDialog, editForm.querySelector("[name='extraArtists']")).join(","));
         if (replacing) body.set("file", editFile.files[0]);
+        const thumbnail = editForm.querySelector('[name="thumbnail"]')?.files?.[0];
+        if (thumbnail) body.set('thumbnail', thumbnail);
+        const clearThumbnail = editForm.querySelector('[name="clearThumbnail"]');
+        if (clearThumbnail) body.set('clearThumbnail', clearThumbnail.value);
         const button = editForm.querySelector("[type='submit']");
         if (button) button.disabled = true;
         try {

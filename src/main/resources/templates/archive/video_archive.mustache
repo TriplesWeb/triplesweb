@@ -16,7 +16,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/archive-page.css?v=7">
+    <link rel="stylesheet" href="/css/archive-page.css?v=8">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=4">
     {{#_csrf}}
     <meta name="_csrf" content="{{token}}">
@@ -61,7 +61,7 @@
         <div class="ar-track" id="archiveTrack">
             {{#archiveHighlights}}
             <article class="ar-panel ar-highlight">
-                <video controls preload="metadata"><source src="{{file.url}}" type="video/mp4"></video>
+                <video controls preload="metadata"{{#thumbnailUrl}} poster="{{thumbnailUrl}}"{{/thumbnailUrl}}><source src="{{file.url}}" type="{{file.fileType}}"></video>
                 <div>
                     <span class="ar-id">#{{id}}</span>
                     <h3>{{title}}</h3>
@@ -112,12 +112,12 @@
     <section class="ar-grid" id="archiveGrid">
         {{#archives.content}}
         <article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}">
-            <video controls preload="metadata"><source src="{{file.url}}" type="video/mp4"></video>
+            <video controls preload="metadata"{{#thumbnailUrl}} poster="{{thumbnailUrl}}"{{/thumbnailUrl}}><source src="{{file.url}}" type="{{file.fileType}}"></video>
             <div class="ar-body">
                 <div class="ar-meta"><span class="ar-id">#{{id}}</span>{{#artistNames}}<span class="ar-badge">{{artistNames}}</span>{{/artistNames}}</div>
                 <h3>{{title}}</h3>
                 <div class="ar-actions" data-admin-only>
-                    <button type="button" data-archive-edit data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-url="{{file.url}}">수정</button>
+                    <button type="button" data-archive-edit data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-url="{{file.url}}" data-thumbnail-url="{{thumbnailUrl}}">수정</button>
                     <button type="button" class="ar-delete" data-archive-delete data-id="{{id}}" data-title="{{title}}">삭제</button>
                 </div>
             </div>
@@ -167,6 +167,15 @@
                 <label class="ar-field">영상 파일
                     <input type="file" name="file" accept="video/*" required>
                 </label>
+                <label class="ar-field">썸네일 이미지 (선택)
+                    <input type="file" name="thumbnail" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp">
+                    <span class="ar-field-hint">영상 재생 전에 표시할 사진을 선택하세요. 세로·가로 이미지 모두 잘리지 않게 표시됩니다.</span>
+                </label>
+                <div class="ar-thumbnail-preview" data-thumbnail-preview hidden>
+                    <img alt="영상 썸네일 미리보기">
+                    <div><p data-thumbnail-info></p><button type="button" class="ar-text-btn" data-thumbnail-clear>썸네일 해제</button></div>
+                </div>
+                <p class="ar-preview-error" data-thumbnail-error role="alert" hidden></p>
                 <div class="ar-preview" id="uploadPreview" hidden>
                     <div><p>원본</p><div class="ar-preview-full"></div></div>
                     <div><p>목록에서 보이는 모습</p><div class="ar-preview-card"></div></div>
@@ -202,6 +211,16 @@
                 <label class="ar-field">파일 교체 (선택)
                     <input type="file" name="file" accept="video/*">
                 </label>
+                <label class="ar-field">썸네일 이미지 교체 (선택)
+                    <input type="file" name="thumbnail" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp">
+                    <span class="ar-field-hint">새 사진을 선택하지 않으면 현재 썸네일을 유지합니다.</span>
+                </label>
+                <input type="hidden" name="clearThumbnail" value="false">
+                <div class="ar-thumbnail-preview" data-thumbnail-preview hidden>
+                    <img alt="영상 썸네일 미리보기">
+                    <div><p data-thumbnail-info></p><button type="button" class="ar-text-btn" data-thumbnail-clear>썸네일 해제</button></div>
+                </div>
+                <p class="ar-preview-error" data-thumbnail-error role="alert" hidden></p>
                 <div class="ar-preview" id="editPreview" hidden>
                     <div><p>현재 영상</p><div class="ar-preview-full"></div></div>
                     <div><p>목록에서 보이는 모습</p><div class="ar-preview-card"></div></div>
@@ -218,7 +237,7 @@
 {{>layout/footer}}
 
 <script src="/js/member-portrait-picker.js?v=2"></script>
-<script src="/js/archive-manage.js?v=3"></script>
+<script src="/js/archive-manage.js?v=4"></script>
 <script src="/js/archive-browse.js?v=5"></script>
 </body>
 </html>

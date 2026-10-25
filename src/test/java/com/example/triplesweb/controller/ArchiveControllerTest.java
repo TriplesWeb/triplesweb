@@ -80,10 +80,13 @@ class ArchiveControllerTest {
         when(artistRepository.findAll()).thenReturn(List.of());
         Archive video = photo();
         video.setTitle("무대영상");
+        video.setThumbnailUrl("/uploads/poster.webp");
         video.setFile(SavedMeta.builder().url("/uploads/a.mp4").mediaType(MediaType.VIDEO).build());
         when(archiveService.pageByType(eq(MediaType.VIDEO), anyInt(), anyInt(), isNull())).thenReturn(new PageImpl<>(List.of(video)));
 
         mvc.perform(get("/archive/video_archive")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("poster=\"/uploads/poster.webp\"")))
+                .andExpect(content().string(containsString("name=\"thumbnail\"")))
                 .andExpect(content().string(containsString("무대영상")))
                 .andExpect(content().string(containsString("영상 아카이브")))
                 .andExpect(content().string(containsString("data-admin-only")))
@@ -99,11 +102,21 @@ class ArchiveControllerTest {
 
         mvc.perform(multipart("/archive/7").file(file).param("title", "새 제목").param("artistNames", "서연"))
                 .andExpect(status().isOk());
-        verify(archiveService).update(eq(7L), eq("새 제목"), any(), eq("서연"));
+        verify(archiveService).update(eq(7L), eq("새 제목"), any(), eq("서연"), isNull(), eq(false));
         verify(aboutAdminAuth).requireAdmin(any(), any());
 
         mvc.perform(delete("/archive/7")).andExpect(status().isOk());
         verify(archiveService).delete(7L);
+    }
+
+    @Test void videoUploadAcceptsOptionalThumbnail() throws Exception {
+        var video = new MockMultipartFile("file", "video.mp4", "video/mp4", new byte[]{1});
+        var thumbnail = new MockMultipartFile("thumbnail", "poster.jfif", "application/octet-stream", new byte[]{2});
+        mvc.perform(multipart("/archive/upload/video").file(video).file(thumbnail)
+                        .param("title", "영상").param("artistNames", "서연"))
+                .andExpect(status().is3xxRedirection());
+        verify(archiveService).uploadVideoOnly(any(), eq("영상"), eq(MediaType.VIDEO), eq("서연"), any());
+        verify(aboutAdminAuth).requireAdmin(any(), any());
     }
 
     private static Archive photo() {

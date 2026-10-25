@@ -150,9 +150,10 @@ public class ArchiveController {
 
     @PostMapping("/upload/video")
     public String uploadVideo(@RequestParam("file") MultipartFile file,
+                              @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnail,
                               @RequestParam("title") String title, @RequestParam(value="artistNames", required=false) List<String> artistNames, HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
-        archiveService.uploadVideoOnly(file, title, MediaType.VIDEO, artistNames == null ? "" : String.join(",", artistNames));
+        archiveService.uploadVideoOnly(file, title, MediaType.VIDEO, artistNames == null ? "" : String.join(",", artistNames), thumbnail);
         return "redirect:/archive/video_archive";
     }
 
@@ -161,12 +162,14 @@ public class ArchiveController {
     public ResponseEntity<?> updateArchive(@PathVariable long id,
                                            @RequestParam("title") String title,
                                            @RequestParam(value = "file", required = false) MultipartFile file,
+                                           @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnail,
+                                           @RequestParam(defaultValue = "false") boolean clearThumbnail,
                                            @RequestParam(value = "artistNames", required = false) String artistNames,
                                            HttpServletRequest request,
                                            HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
         try {
-            archiveService.update(id, title, file, artistNames);
+            archiveService.update(id, title, file, artistNames, thumbnail, clearThumbnail);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -179,5 +182,11 @@ public class ArchiveController {
         aboutAdminAuth.requireAdmin(request, session);
         boolean ok = archiveService.delete(id);
         return ok ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseBody
+    public ResponseEntity<String> invalidUpload(IllegalArgumentException exception) {
+        return ResponseEntity.badRequest().body(exception.getMessage());
     }
 }
