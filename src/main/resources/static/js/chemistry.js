@@ -137,17 +137,6 @@
     return escapeHtml(label).replace(/\n/g, "<br>");
   }
 
-  function toneBadgeHtml(tone) {
-    const t = normalizeLabelTone(tone);
-    if (t === "NONE") return "";
-    const text =
-      t === "UNDECIDED" ? (IS_EN ? "TBD" : "미정")
-        : t === "RECENT" ? (IS_EN ? "Recent" : "최근")
-          : t === "FAN" ? "WAV"
-            : "";
-    return text ? '<span class="chem-tone-badge">' + escapeHtml(text) + "</span>" : "";
-  }
-
   /** 케미명 여러 개(줄바꿈)를 배열로 */
   function splitChemLabels(label) {
     return String(label || "")
@@ -187,6 +176,14 @@
   let dbEntries = [];
   let editingPair = null;
   let currentView = null;
+
+  const CHEM_MAX_IMAGES = 10;
+  /** @type {{id:string, kind:'url'|'file', url?:string, file?:File, preview?:string}[]} */
+  let editImageItems = [];
+  let carouselUrls = [];
+  let carouselIndex = 0;
+  let carouselTouchX = null;
+  let carouselAlt = "";
 
   const auth = window.AboutAdminAuth;
 
@@ -301,7 +298,7 @@
       const descKo = entry.description || "";
       const descEn = entry.descriptionEn || "";
 
-      const image = entry.imageUrl || "";
+      const images = normalizeImageList(entry);
       const cross = Boolean(entry.crossFlag);
       const labelTone = normalizeLabelTone(entry.labelTone);
       const links = entry.links && typeof entry.links === "object" ? entry.links : {};
@@ -322,7 +319,8 @@
         const payload = {
           description: descKo,
           descriptionEn: descEn,
-          image: image,
+          image: images[0] || "",
+          images: images,
           label: entry.label || "",
           labelEn: entry.labelEn || "",
           labelTone: labelTone
@@ -406,7 +404,6 @@
             escapeHtml(normalizeLabelTone(cell.labelTone)) +
             '" tabindex="0" role="button">' +
             formatLabel(cell.label) +
-            toneBadgeHtml(cell.labelTone) +
             "</td>";
         } else if (isAdmin) {
           bodyHtml +=
@@ -888,56 +885,170 @@
       .join("/");
   }
 
-  function setChemistryDetailImage(url) {
-    const img = document.getElementById("chemistryImage");
-    const media = img && img.closest(".chem-modal-media");
-    if (!img) return;
-    const src = encodeUploadUrl(url);
-    const show = Boolean(src);
-    img.onload = () => {
-      if (img.naturalWidth > 0) syncModalContentWidth();
-      else hideChemistryDetailImage();
-    };
-    img.onerror = () => hideChemistryDetailImage();
-    if (!show) {
-      hideChemistryDetailImage();
-      return;
+  function normalizeImageList(entry) {
+    if (!entry) return [];
+    if (Array.isArray(entry.imageUrls) && entry.imageUrls.length) {
+      return entry.imageUrls.map((u) => String(u || "").trim()).filter(Boolean);
     }
-    img.style.display = "block";
-    if (media) media.style.display = "block";
-    if (img.getAttribute("src") === src && img.complete) {
-      if (img.naturalWidth > 0) syncModalContentWidth();
-      else hideChemistryDetailImage();
-      return;
+    if (Array.isArray(entry.images) && entry.images.length) {
+      return entry.images.map((u) => String(u || "").trim()).filter(Boolean);
     }
-    img.src = src;
+    const single = entry.imageUrl || entry.image || "";
+    return single ? [String(single).trim()] : [];
+  }
+
+  function setChemistryDetailImages(urls, altText) {
+    carouselAlt = altText || "";
+    carouselUrls = (urls || []).map((u) => encodeUploadUrl(u)).filter(Boolean);
+    carouselIndex = 0;
+    renderChemistryCarousel();
   }
 
   function hideChemistryDetailImage() {
-    const img = document.getElementById("chemistryImage");
-    const media = img && img.closest(".chem-modal-media");
-    const creditEl = document.getElementById("chemistryCredit");
-    if (img) {
-      img.removeAttribute("src");
-      img.style.display = "none";
+    carouselUrls = [];
+    carouselIndex = 0;
+    carouselAlt = "";
+    const media = document.getElementById("chemistryMedia");
+    const track = document.getElementById("chemistryCarouselTrack");
+    const dots = document.getElementById("chemistryCarouselDots");
+    const count = document.getElementById("chemistryCarouselCount");
+    const prev = document.getElementById("chemistryCarouselPrev");
+    const next = document.getElementById("chemistryCarouselNext");
+    if (media) media.hidden = true;
+    if (track) track.innerHTML = "";
+    if (dots) {
+      dots.innerHTML = "";
+      dots.hidden = true;
     }
-    if (media) media.style.display = "none";
-    if (creditEl) {
-      creditEl.textContent = "";
-      creditEl.hidden = true;
+    if (count) {
+      count.textContent = "";
+      count.hidden = true;
     }
+    if (prev) prev.hidden = true;
+    if (next) next.hidden = true;
     syncModalContentWidth();
   }
 
-  /** 설명·링크 가로폭을 렌더된 이미지 너비에 맞춤 */
+  function renderChemistryCarousel() {
+    const media = document.getElementById("chemistryMedia");
+    const track = document.getElementById("chemistryCarouselTrack");
+    const dots = document.getElementById("chemistryCarouselDots");
+    const count = document.getElementById("chemistryCarouselCount");
+    const prev = document.getElementById("chemistryCarouselPrev");
+    const next = document.getElementById("chemistryCarouselNext");
+    if (!media || !track) return;
+
+    if (!carouselUrls.length) {
+      hideChemistryDetailImage();
+      return;
+    }
+
+    media.hidden = false;
+    const multi = carouselUrls.length > 1;
+    track.innerHTML = carouselUrls
+      .map(
+        (src, i) =>
+          '<div class="chem-carousel-slide' +
+          (i === carouselIndex ? " is-active" : "") +
+          '" data-i="' +
+          i +
+          '">' +
+          '<img class="chem-modal-img" src="' +
+          escapeHtml(src) +
+          '" alt="' +
+          escapeHtml(carouselAlt) +
+          '" draggable="false">' +
+          "</div>"
+      )
+      .join("");
+
+    if (dots) {
+      if (multi) {
+        dots.hidden = false;
+        dots.innerHTML = carouselUrls
+          .map(
+            (_, i) =>
+              '<button type="button" class="chem-carousel-dot' +
+              (i === carouselIndex ? " is-active" : "") +
+              '" data-dot="' +
+              i +
+              '" role="tab" aria-label="' +
+              (i + 1) +
+              " / " +
+              carouselUrls.length +
+              '" aria-selected="' +
+              (i === carouselIndex ? "true" : "false") +
+              '"></button>'
+          )
+          .join("");
+      } else {
+        dots.innerHTML = "";
+        dots.hidden = true;
+      }
+    }
+
+    if (count) {
+      if (multi) {
+        count.hidden = false;
+        count.textContent = carouselIndex + 1 + " / " + carouselUrls.length;
+      } else {
+        count.textContent = "";
+        count.hidden = true;
+      }
+    }
+    if (prev) {
+      prev.hidden = !multi;
+      prev.disabled = carouselIndex <= 0;
+    }
+    if (next) {
+      next.hidden = !multi;
+      next.disabled = carouselIndex >= carouselUrls.length - 1;
+    }
+
+    const activeImg = track.querySelector(".chem-carousel-slide.is-active img");
+    if (activeImg) {
+      activeImg.onerror = () => {
+        if (carouselUrls.length <= 1) hideChemistryDetailImage();
+      };
+      if (activeImg.complete && activeImg.naturalWidth > 0) syncModalContentWidth();
+      else activeImg.onload = () => syncModalContentWidth();
+    }
+  }
+
+  function goChemistryCarousel(index) {
+    if (!carouselUrls.length) return;
+    const next = Math.max(0, Math.min(carouselUrls.length - 1, index));
+    if (next === carouselIndex) return;
+    carouselIndex = next;
+    renderChemistryCarousel();
+  }
+
+  /**
+   * 설명·링크 가로폭: 가능하면 이미지에 맞추되, 세로로 긴 사진 등
+   * 이미지가 좁을 때는 본문 가독 최소폭(약 32~36자)을 유지한다.
+   */
+  const CHEM_DESC_MIN_PX = 600;
+
   function syncModalContentWidth() {
-    const img = document.getElementById("chemistryImage");
     const desc = document.getElementById("chemistryDescription");
     const links = document.getElementById("chemistryLinks");
-    const width =
-      img && img.style.display !== "none" && img.naturalWidth > 0 && img.offsetWidth > 0
-        ? Math.round(img.getBoundingClientRect().width) + "px"
-        : "";
+    const panel = document.querySelector("#chemistryModal .chem-modal-panel");
+    const media = document.getElementById("chemistryMedia");
+    const img = media && !media.hidden
+      ? media.querySelector(".chem-carousel-slide.is-active .chem-modal-img")
+      : null;
+    let width = "";
+    if (img && img.naturalWidth > 0 && img.offsetWidth > 0) {
+      const imgW = img.getBoundingClientRect().width;
+      let panelInner = imgW;
+      if (panel) {
+        const cs = getComputedStyle(panel);
+        const padX =
+          (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+        panelInner = Math.max(0, panel.clientWidth - padX);
+      }
+      width = Math.round(Math.min(panelInner, Math.max(imgW, CHEM_DESC_MIN_PX))) + "px";
+    }
     if (desc) desc.style.width = width;
     if (links) links.style.width = width;
   }
@@ -1000,15 +1111,13 @@
       pairEl.hidden = !chemLabel;
     }
     const creditEl = document.getElementById("chemistryCredit");
-    const img = document.getElementById("chemistryImage");
-    if (img) {
-      img.alt = chemLabel
-        ? chemLabelPlain(chemLabel) + " — " + pairTitleText(titleMember1, titleMember2)
-        : pairTitleText(titleMember1, titleMember2);
-    }
-    setChemistryDetailImage(data.image || "");
+    const imageList = normalizeImageList(data);
+    const altText = chemLabel
+      ? chemLabelPlain(chemLabel) + " — " + pairTitleText(titleMember1, titleMember2)
+      : pairTitleText(titleMember1, titleMember2);
+    setChemistryDetailImages(imageList, altText);
     if (creditEl) {
-      if (credit && data.image) {
+      if (credit && imageList.length) {
         creditEl.textContent = "photo by. " + credit;
         creditEl.hidden = false;
       } else {
@@ -1221,22 +1330,110 @@
     }
   }
 
-  function setEditImagePreview(url) {
+  function revokeEditFilePreviews() {
+    editImageItems.forEach((item) => {
+      if (item.kind === "file" && item.preview) {
+        try {
+          URL.revokeObjectURL(item.preview);
+        } catch (_) {
+          /* ignore */
+        }
+      }
+    });
+  }
+
+  function setEditImages(urls) {
+    revokeEditFilePreviews();
+    editImageItems = (urls || [])
+      .map((u) => String(u || "").trim())
+      .filter(Boolean)
+      .slice(0, CHEM_MAX_IMAGES)
+      .map((url, i) => ({ id: "u-" + i + "-" + url, kind: "url", url: url }));
+    const clearCb = document.getElementById("chemEditClearImage");
+    if (clearCb) clearCb.checked = false;
+    const input = document.getElementById("chemEditImage");
+    if (input) input.value = "";
+    renderEditImageThumbs();
+  }
+
+  function clearEditImages() {
+    revokeEditFilePreviews();
+    editImageItems = [];
+    const input = document.getElementById("chemEditImage");
+    if (input) input.value = "";
+    renderEditImageThumbs();
+  }
+
+  function renderEditImageThumbs() {
     const wrap = document.getElementById("chemEditImagePreviewWrap");
-    const img = document.getElementById("chemEditImagePreview");
-    if (!wrap || !img) return;
-    const src = encodeUploadUrl(url);
-    if (!src) {
-      img.removeAttribute("src");
+    const box = document.getElementById("chemEditImageThumbs");
+    if (!wrap || !box) return;
+    if (!editImageItems.length) {
+      box.innerHTML = "";
       wrap.classList.add("hidden");
       return;
     }
-    img.onerror = () => {
-      img.removeAttribute("src");
-      wrap.classList.add("hidden");
-    };
-    img.src = src;
     wrap.classList.remove("hidden");
+    box.innerHTML = editImageItems
+      .map((item, index) => {
+        const src =
+          item.kind === "file"
+            ? item.preview || ""
+            : encodeUploadUrl(item.url) || item.url || "";
+        return (
+          '<div class="chem-edit-thumb" data-idx="' +
+          index +
+          '">' +
+          '<img src="' +
+          escapeHtml(src) +
+          '" alt="">' +
+          '<button type="button" class="chem-edit-thumb-remove" data-remove-idx="' +
+          index +
+          '" aria-label="사진 삭제">×</button>' +
+          "</div>"
+        );
+      })
+      .join("");
+  }
+
+  function addEditImageFiles(fileList) {
+    const files = Array.from(fileList || []).filter((f) => f && f.type && f.type.startsWith("image/"));
+    if (!files.length) return;
+    const clearCb = document.getElementById("chemEditClearImage");
+    if (clearCb) clearCb.checked = false;
+    const room = CHEM_MAX_IMAGES - editImageItems.length;
+    if (room <= 0) {
+      window.alert("사진은 최대 " + CHEM_MAX_IMAGES + "장까지 등록할 수 있습니다.");
+      return;
+    }
+    files.slice(0, room).forEach((file, i) => {
+      editImageItems.push({
+        id: "f-" + Date.now() + "-" + i,
+        kind: "file",
+        file: file,
+        preview: URL.createObjectURL(file)
+      });
+    });
+    if (files.length > room) {
+      window.alert("사진은 최대 " + CHEM_MAX_IMAGES + "장까지 등록할 수 있습니다.");
+    }
+    renderEditImageThumbs();
+  }
+
+  function removeEditImageAt(index) {
+    const item = editImageItems[index];
+    if (!item) return;
+    if (item.kind === "file" && item.preview) {
+      try {
+        URL.revokeObjectURL(item.preview);
+      } catch (_) {
+        /* ignore */
+      }
+    }
+    editImageItems.splice(index, 1);
+    const clearCb = document.getElementById("chemEditClearImage");
+    if (clearCb && !editImageItems.length) clearCb.checked = true;
+    renderEditImageThumbs();
   }
 
   function setEditModeUi(mode, members) {
@@ -1257,7 +1454,7 @@
     }
   }
 
-  function openEditForm(member1, member2, label, labelEn, description, descriptionEn, imageUrl, links, labelTone) {
+  function openEditForm(member1, member2, label, labelEn, description, descriptionEn, imageUrlOrUrls, links, labelTone) {
     editingPair = { member1, member2 };
     editingGroupMembers = null;
     currentGroupView = null;
@@ -1278,10 +1475,13 @@
     setLabelToneInputs(labelTone);
     if (editorKo) editorKo.innerHTML = descriptionToEditorHtml(description || "");
     if (editorEn) editorEn.innerHTML = descriptionToEditorHtml(descriptionEn || "");
-    document.getElementById("chemEditImage").value = "";
-    const clearCb = document.getElementById("chemEditClearImage");
-    if (clearCb) clearCb.checked = false;
-    setEditImagePreview(imageUrl || "");
+    setEditImages(
+      Array.isArray(imageUrlOrUrls)
+        ? imageUrlOrUrls
+        : imageUrlOrUrls
+          ? [imageUrlOrUrls]
+          : []
+    );
     renderLinkRows(links || {});
     if (title) {
       title.textContent =
@@ -1298,7 +1498,7 @@
     }
   }
 
-  function openEditFormGroup(members, label, labelEn, description, descriptionEn, imageUrl, links, labelTone) {
+  function openEditFormGroup(members, label, labelEn, description, descriptionEn, imageUrlOrUrls, links, labelTone) {
     editingPair = null;
     currentView = null;
     editingGroupMembers = (members || []).slice();
@@ -1319,10 +1519,13 @@
     setLabelToneInputs(labelTone);
     if (editorKo) editorKo.innerHTML = descriptionToEditorHtml(description || "");
     if (editorEn) editorEn.innerHTML = descriptionToEditorHtml(descriptionEn || "");
-    document.getElementById("chemEditImage").value = "";
-    const clearCb = document.getElementById("chemEditClearImage");
-    if (clearCb) clearCb.checked = false;
-    setEditImagePreview(imageUrl || "");
+    setEditImages(
+      Array.isArray(imageUrlOrUrls)
+        ? imageUrlOrUrls
+        : imageUrlOrUrls
+          ? [imageUrlOrUrls]
+          : []
+    );
     renderLinkRows(links || {});
     if (title) {
       title.textContent =
@@ -1357,6 +1560,7 @@
       description: group.description || "",
       descriptionEn: group.descriptionEn || "",
       image: group.imageUrl || "",
+      images: normalizeImageList(group),
       label: group.label || "",
       labelEn: group.labelEn || "",
       links: group.links || {}
@@ -1387,10 +1591,14 @@
     if (pairEl) pairEl.innerHTML = escapeHtml(formatGroupMembers(group.members));
     const descEl = document.getElementById("chemistryDescription");
     if (descEl) descEl.innerHTML = formattedDescription;
-    setChemistryDetailImage(data.image || "");
+    const imageList = normalizeImageList(data);
+    setChemistryDetailImages(
+      imageList,
+      chemLabel ? chemLabelPlain(chemLabel) : formatGroupMembers(group.members)
+    );
     const creditEl = document.getElementById("chemistryCredit");
     if (creditEl) {
-      if (credit && data.image) {
+      if (credit && imageList.length) {
         creditEl.textContent = "photo by. " + credit;
         creditEl.hidden = false;
       } else {
@@ -1428,6 +1636,8 @@
     modal.classList.add("hidden");
     modal.classList.remove("flex");
     document.body.style.overflow = "";
+    revokeEditFilePreviews();
+    editImageItems = [];
   }
 
   async function refreshGroupEntries() {
@@ -1592,6 +1802,7 @@
     const editBtn = document.getElementById("chemEditBtn");
     if (editBtn) {
       editBtn.addEventListener("click", () => {
+        if (!isAdmin) return;
         if (currentGroupView) {
           const g = currentGroupView;
           openEditFormGroup(
@@ -1600,7 +1811,7 @@
             g.labelEn || "",
             g.description || "",
             g.descriptionEn || "",
-            g.imageUrl || "",
+            normalizeImageList(g),
             g.links || {},
             g.labelTone || "NONE"
           );
@@ -1631,7 +1842,7 @@
           (data && data.labelEn) || "",
           (data && data.description) || "",
           (data && data.descriptionEn) || "",
-          data.image || "",
+          normalizeImageList(data),
           data.links || {},
           labelTone
         );
@@ -1806,22 +2017,23 @@
     const editImageInput = document.getElementById("chemEditImage");
     if (editImageInput) {
       editImageInput.addEventListener("change", () => {
-        const clearCb = document.getElementById("chemEditClearImage");
-        const file = editImageInput.files && editImageInput.files[0];
-        if (file) {
-          if (clearCb) clearCb.checked = false;
-          setEditImagePreview(URL.createObjectURL(file));
-        }
+        addEditImageFiles(editImageInput.files);
+        editImageInput.value = "";
       });
     }
     const clearImageCb = document.getElementById("chemEditClearImage");
     if (clearImageCb) {
       clearImageCb.addEventListener("change", () => {
-        if (clearImageCb.checked) {
-          const input = document.getElementById("chemEditImage");
-          if (input) input.value = "";
-          setEditImagePreview("");
-        }
+        if (clearImageCb.checked) clearEditImages();
+      });
+    }
+    const thumbsBox = document.getElementById("chemEditImageThumbs");
+    if (thumbsBox) {
+      thumbsBox.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-remove-idx]");
+        if (!btn) return;
+        e.preventDefault();
+        removeEditImageAt(Number(btn.getAttribute("data-remove-idx")));
       });
     }
 
@@ -1840,11 +2052,16 @@
         fd.append("description", getEditorDescriptionHtml("chemEditDescription"));
         fd.append("descriptionEn", getEditorDescriptionHtml("chemEditDescriptionEn"));
         fd.append("labelTone", selectedLabelTone());
-        const clearChecked = Boolean(document.getElementById("chemEditClearImage")?.checked);
-        fd.append("clearImage", clearChecked ? "true" : "false");
+        const keepUrls = editImageItems
+          .filter((item) => item.kind === "url" && item.url)
+          .map((item) => item.url);
+        const clearingAll = editImageItems.length === 0;
+        fd.append("clearImage", clearingAll ? "true" : "false");
+        fd.append("keepImageUrlsJson", JSON.stringify(keepUrls));
         fd.append("linksJson", collectLinksJson());
-        const file = document.getElementById("chemEditImage").files[0];
-        if (file && !clearChecked) fd.append("image", file);
+        editImageItems.forEach((item) => {
+          if (item.kind === "file" && item.file) fd.append("images", item.file);
+        });
 
         let endpoint = "/api/chemistry";
         if (mode === "group") {
@@ -1870,8 +2087,15 @@
           fd.append("member2", document.getElementById("chemEditMember2").value);
         }
 
-        const clearCheckedSave = Boolean(document.getElementById("chemEditClearImage")?.checked);
-        if (!window.confirm(clearCheckedSave ? "이 케미를 저장하시겠습니까? 체크한 사진은 삭제됩니다." : "이 케미를 저장하시겠습니까?")) return;
+        if (
+          !window.confirm(
+            clearingAll
+              ? "이 케미를 저장하시겠습니까? 사진이 모두 삭제됩니다."
+              : "이 케미를 저장하시겠습니까?"
+          )
+        ) {
+          return;
+        }
         try {
           const res = await chemFetch(endpoint, { method: "POST", body: fd });
           if (!res.ok) {
@@ -1910,6 +2134,7 @@
     const links = document.getElementById("chemistryLinks");
     if (desc) desc.style.width = "";
     if (links) links.style.width = "";
+    hideChemistryDetailImage();
   }
 
   window.addEventListener("resize", () => {
@@ -2221,7 +2446,7 @@
         group.labelEn || "",
         group.description || "",
         group.descriptionEn || "",
-        group.imageUrl || "",
+        normalizeImageList(group),
         group.links || {},
         group.labelTone || "NONE"
       );
@@ -2382,11 +2607,61 @@
     });
   }
 
+  function bindChemistryCarousel() {
+    const prev = document.getElementById("chemistryCarouselPrev");
+    const next = document.getElementById("chemistryCarouselNext");
+    const dots = document.getElementById("chemistryCarouselDots");
+    const viewport = document.getElementById("chemistryCarouselViewport");
+    if (prev) prev.addEventListener("click", () => goChemistryCarousel(carouselIndex - 1));
+    if (next) next.addEventListener("click", () => goChemistryCarousel(carouselIndex + 1));
+    if (dots) {
+      dots.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-dot]");
+        if (!btn) return;
+        goChemistryCarousel(Number(btn.getAttribute("data-dot")));
+      });
+    }
+    if (viewport) {
+      viewport.addEventListener(
+        "touchstart",
+        (e) => {
+          carouselTouchX = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : null;
+        },
+        { passive: true }
+      );
+      viewport.addEventListener(
+        "touchend",
+        (e) => {
+          if (carouselTouchX == null || !e.changedTouches || !e.changedTouches[0]) return;
+          const dx = e.changedTouches[0].clientX - carouselTouchX;
+          carouselTouchX = null;
+          if (Math.abs(dx) < 40) return;
+          goChemistryCarousel(carouselIndex + (dx < 0 ? 1 : -1));
+        },
+        { passive: true }
+      );
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", async () => {
     const closeBtn = document.querySelector("#chemistryModal .chem-close");
     if (closeBtn) closeBtn.addEventListener("click", closeModal);
 
     document.addEventListener("keydown", (e) => {
+      const modal = document.getElementById("chemistryModal");
+      const modalOpen = modal && !modal.classList.contains("hidden");
+      if (modalOpen && carouselUrls.length > 1) {
+        if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          goChemistryCarousel(carouselIndex - 1);
+          return;
+        }
+        if (e.key === "ArrowRight") {
+          e.preventDefault();
+          goChemistryCarousel(carouselIndex + 1);
+          return;
+        }
+      }
       if (e.key !== "Escape") return;
       closeLegendPanel();
       closeEditModal();
@@ -2398,6 +2673,7 @@
     bindTrioPicker();
     bindPairFilter();
     bindLegendToggle();
+    bindChemistryCarousel();
     bindAdminUi();
 
     // 영어 페이지에는 로그인 버튼 없음. 한국어에서 로그인된 세션이면 추가/수정 가능.

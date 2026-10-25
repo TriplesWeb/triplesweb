@@ -8,6 +8,7 @@ import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ChemistryRepository;
 import com.example.triplesweb.util.ChemistryHtmlCleaner;
+import com.example.triplesweb.util.ChemistryImages;
 import com.example.triplesweb.util.TripleSMembers;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,8 +47,10 @@ public class ChemistryService {
 
     @Transactional
     public ChemistryDto upsert(String member1, String member2, String label, String labelEn,
-                               String description, String descriptionEn, MultipartFile image,
-                               boolean clearImage, String linksJson, String labelTone) {
+                               String description, String descriptionEn,
+                               MultipartFile image, List<MultipartFile> images,
+                               String keepImageUrlsJson, boolean clearImage,
+                               String linksJson, String labelTone) {
         Artist[] pair = normalizePair(member1, member2);
         if (!StringUtils.hasText(label)) {
             throw new IllegalArgumentException("케미명은 필수입니다.");
@@ -76,22 +79,34 @@ public class ChemistryService {
         entity.setLinksJson(normalizeLinksJson(linksJson));
         entity.setLabelTone(tone);
 
-        if (image != null && !image.isEmpty()) {
-            try {
-                String previousUrl = entity.getImageUrl();
-                SavedMeta meta = fileStorageService.saveWithMeta(image, "chemistry");
-                entity.setImageUrl(meta.getUrl());
-                deleteManagedImageAfterCommit(previousUrl);
-            } catch (IOException e) {
-                throw new IllegalStateException("이미지 저장에 실패했습니다.", e);
-            }
-        } else if (clearImage) {
-            String previousUrl = entity.getImageUrl();
-            entity.setImageUrl(null);
-            deleteManagedImageAfterCommit(previousUrl);
-        }
+        applyImages(entity, image, images, keepImageUrlsJson, clearImage);
 
         return toDto(chemistryRepository.save(entity));
+    }
+
+    private void applyImages(Chemistry entity, MultipartFile image, List<MultipartFile> images,
+                             String keepImageUrlsJson, boolean clearImage) {
+        List<String> previous = ChemistryImages.resolve(entity.getImagesJson(), entity.getImageUrl(), objectMapper);
+        List<MultipartFile> uploads = ChemistryImages.collectUploads(image, images);
+        try {
+            ChemistryImages.Result merged = ChemistryImages.merge(
+                    previous,
+                    keepImageUrlsJson,
+                    uploads,
+                    clearImage,
+                    objectMapper,
+                    file -> {
+                        SavedMeta meta = fileStorageService.saveWithMeta(file, "chemistry");
+                        return meta.getUrl();
+                    });
+            entity.setImagesJson(ChemistryImages.write(merged.urls(), objectMapper));
+            entity.setImageUrl(ChemistryImages.primary(merged.urls()));
+            for (String removed : merged.removed()) {
+                deleteManagedImageAfterCommit(removed);
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("이미지 저장에 실패했습니다.", e);
+        }
     }
 
     @Transactional
@@ -107,9 +122,11 @@ public class ChemistryService {
     }
 
     private void hardDelete(Chemistry entity) {
-        String previous = entity.getImageUrl();
+        List<String> previous = ChemistryImages.resolve(entity.getImagesJson(), entity.getImageUrl(), objectMapper);
         chemistryRepository.delete(entity);
-        deleteManagedImageAfterCommit(previous);
+        for (String url : previous) {
+            deleteManagedImageAfterCommit(url);
+        }
     }
 
     private void deleteManagedImageAfterCommit(String imageUrl) {
@@ -215,6 +232,7 @@ public class ChemistryService {
         if (c.getArtistA() == null || c.getArtistB() == null) {
             throw new IllegalStateException("Chemistry#" + c.getId() + "에 Artist FK가 없습니다. 시드/마이그레이션을 확인하세요.");
         }
+        List<String> imageUrls = ChemistryImages.resolve(c.getImagesJson(), c.getImageUrl(), objectMapper);
         return ChemistryDto.builder()
                 .id(c.getId())
                 .memberA(c.getArtistA().getName())
@@ -225,7 +243,8 @@ public class ChemistryService {
                 .description(c.getDescription())
                 .labelEn(c.getLabelEn())
                 .descriptionEn(c.getDescriptionEn())
-                .imageUrl(c.getImageUrl())
+                .imageUrl(ChemistryImages.primary(imageUrls))
+                .imageUrls(imageUrls)
                 .links(parseLinks(c.getLinksJson()))
                 .crossFlag(c.isCrossFlag())
                 .labelTone(c.getLabelTone() != null ? c.getLabelTone() : ChemistryLabelTone.NONE)

@@ -8,6 +8,7 @@ import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ChemistryGroupRepository;
 import com.example.triplesweb.util.ChemistryHtmlCleaner;
+import com.example.triplesweb.util.ChemistryImages;
 import com.example.triplesweb.util.TripleSMembers;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,8 +51,10 @@ public class ChemistryGroupService {
 
     @Transactional
     public ChemistryGroupDto upsert(List<String> members, String label, String labelEn,
-                                    String description, String descriptionEn, MultipartFile image,
-                                    boolean clearImage, String linksJson, String labelTone) {
+                                    String description, String descriptionEn,
+                                    MultipartFile image, List<MultipartFile> images,
+                                    String keepImageUrlsJson, boolean clearImage,
+                                    String linksJson, String labelTone) {
         ResolvedMembers resolved = resolveMembers(members);
         if (!StringUtils.hasText(label)) {
             throw new IllegalArgumentException("케미명은 필수입니다.");
@@ -79,22 +82,34 @@ public class ChemistryGroupService {
         entity.setLinksJson(normalizeLinksJson(linksJson));
         entity.setLabelTone(tone);
 
-        if (image != null && !image.isEmpty()) {
-            try {
-                String previousUrl = entity.getImageUrl();
-                SavedMeta meta = fileStorageService.saveWithMeta(image, "chemistry");
-                entity.setImageUrl(meta.getUrl());
-                deleteManagedImageAfterCommit(previousUrl);
-            } catch (IOException e) {
-                throw new IllegalStateException("이미지 저장에 실패했습니다.", e);
-            }
-        } else if (clearImage) {
-            String previousUrl = entity.getImageUrl();
-            entity.setImageUrl(null);
-            deleteManagedImageAfterCommit(previousUrl);
-        }
+        applyImages(entity, image, images, keepImageUrlsJson, clearImage);
 
         return toDto(chemistryGroupRepository.save(entity));
+    }
+
+    private void applyImages(ChemistryGroup entity, MultipartFile image, List<MultipartFile> images,
+                             String keepImageUrlsJson, boolean clearImage) {
+        List<String> previous = ChemistryImages.resolve(entity.getImagesJson(), entity.getImageUrl(), objectMapper);
+        List<MultipartFile> uploads = ChemistryImages.collectUploads(image, images);
+        try {
+            ChemistryImages.Result merged = ChemistryImages.merge(
+                    previous,
+                    keepImageUrlsJson,
+                    uploads,
+                    clearImage,
+                    objectMapper,
+                    file -> {
+                        SavedMeta meta = fileStorageService.saveWithMeta(file, "chemistry");
+                        return meta.getUrl();
+                    });
+            entity.setImagesJson(ChemistryImages.write(merged.urls(), objectMapper));
+            entity.setImageUrl(ChemistryImages.primary(merged.urls()));
+            for (String removed : merged.removed()) {
+                deleteManagedImageAfterCommit(removed);
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("이미지 저장에 실패했습니다.", e);
+        }
     }
 
     @Transactional
@@ -109,9 +124,11 @@ public class ChemistryGroupService {
     }
 
     private void hardDelete(ChemistryGroup entity) {
-        String previous = entity.getImageUrl();
+        List<String> previous = ChemistryImages.resolve(entity.getImagesJson(), entity.getImageUrl(), objectMapper);
         chemistryGroupRepository.delete(entity);
-        deleteManagedImageAfterCommit(previous);
+        for (String url : previous) {
+            deleteManagedImageAfterCommit(url);
+        }
     }
 
     private void deleteManagedImageAfterCommit(String imageUrl) {
@@ -229,6 +246,7 @@ public class ChemistryGroupService {
                 }
             }
         }
+        List<String> imageUrls = ChemistryImages.resolve(g.getImagesJson(), g.getImageUrl(), objectMapper);
         return ChemistryGroupDto.builder()
                 .id(g.getId())
                 .memberKey(g.getMemberKey())
@@ -238,7 +256,8 @@ public class ChemistryGroupService {
                 .description(g.getDescription())
                 .labelEn(g.getLabelEn())
                 .descriptionEn(g.getDescriptionEn())
-                .imageUrl(g.getImageUrl())
+                .imageUrl(ChemistryImages.primary(imageUrls))
+                .imageUrls(imageUrls)
                 .links(parseLinks(g.getLinksJson()))
                 .labelTone(g.getLabelTone() != null ? g.getLabelTone() : ChemistryLabelTone.NONE)
                 .build();

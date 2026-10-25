@@ -5,6 +5,7 @@
     if (!(img instanceof HTMLImageElement)) return true;
     if (img.dataset.noPlaceholder === "1") return true;
     if (img.classList.contains("chem-modal-img")) return true;
+    if (img.closest(".chem-carousel, .chem-edit-thumb, #chemEditImageThumbs")) return true;
     if (img.id === "chemistryImage" || img.id === "chemEditImagePreview") return true;
     return Boolean(
       img.closest(

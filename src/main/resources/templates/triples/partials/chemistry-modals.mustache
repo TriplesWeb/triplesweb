@@ -7,8 +7,20 @@
             <h3 id="chemistryTitle" class="chem-modal-title"></h3>
             <p id="chemistryPair" class="chem-modal-pair"></p>
         </div>
-        <figure class="chem-modal-media">
-            <img id="chemistryImage" class="chem-modal-img" src="" alt="">
+        <figure class="chem-modal-media" id="chemistryMedia" hidden>
+            <div class="chem-carousel" id="chemistryCarousel" aria-roledescription="캐러셀">
+                <div class="chem-carousel-viewport" id="chemistryCarouselViewport">
+                    <div class="chem-carousel-track" id="chemistryCarouselTrack"></div>
+                </div>
+                <button type="button" class="chem-carousel-nav chem-carousel-prev" id="chemistryCarouselPrev" aria-label="이전 사진" hidden>
+                    <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+                </button>
+                <button type="button" class="chem-carousel-nav chem-carousel-next" id="chemistryCarouselNext" aria-label="다음 사진" hidden>
+                    <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+                </button>
+                <div class="chem-carousel-count" id="chemistryCarouselCount" hidden></div>
+                <div class="chem-carousel-dots" id="chemistryCarouselDots" role="tablist" aria-label="사진 선택" hidden></div>
+            </div>
             <figcaption id="chemistryCredit" class="chem-modal-credit" hidden></figcaption>
         </figure>
         <p id="chemistryDescription" class="chem-modal-desc"></p>
@@ -36,7 +48,7 @@
                 <li><strong>하이퍼링크</strong> — 아래에 표시 텍스트와 URL을 추가한 뒤, 설명 본문에서 같은 문구를 <code>**표시 텍스트**</code>처럼 감싸면 클릭 가능한 링크가 됩니다.</li>
                 <li><strong>사진 출처</strong> — 설명 <em>맨 끝</em>에 <code>photo by. @계정</code> 형식으로 적으면, 본문에서는 빠지고 이미지 아래에 출처로만 표시됩니다.<br>
                     예: <code>…귀여운 케미명이다. photo by. @posh1204</code></li>
-                <li><strong>사진</strong> — 새 파일을 고르면 업로드·교체됩니다. 체크박스 <em>사진 제거</em>는 이미지를 없앱니다.</li>
+                <li><strong>사진</strong> — 여러 장(최대 10장)을 고를 수 있습니다. 미리보기에서 개별 삭제. 조회 시 인스타처럼 좌우로 넘깁니다.</li>
             </ul>
         </details>
         <form id="chemistryEditForm" class="chem-edit-form">
@@ -151,16 +163,16 @@
                 <p class="chem-edit-links-hint">표시 텍스트 + URL을 추가하고, 설명에서 같은 문구를 <code>**표시 텍스트**</code>로 감싸세요.</p>
                 <div id="chemEditLinks" class="chem-edit-links"></div>
             </div>
-            <label class="chem-edit-label">사진
-                <input type="file" id="chemEditImage" name="image" accept="image/*">
-            </label>
+            <div class="chem-edit-label">사진
+                <input type="file" id="chemEditImage" name="images" accept="image/*" multiple>
+                <p class="chem-edit-field-hint">여러 장 선택 가능 · 최대 10장. 미리보기 × 로 개별 삭제.</p>
+            </div>
             <div id="chemEditImagePreviewWrap" class="chem-edit-image-preview hidden">
-                <img id="chemEditImagePreview" alt="현재 사진 미리보기">
-                <p class="chem-edit-field-hint">새 파일을 고르지 않으면 이 사진이 유지됩니다.</p>
+                <div id="chemEditImageThumbs" class="chem-edit-image-thumbs"></div>
             </div>
             <p class="chem-edit-field-hint">출처는 사진 칸이 아니라 설명 맨 끝 <code>photo by. @계정</code>으로 적습니다. 이미지 아래 캡션으로 표시됩니다.</p>
             <label class="chem-edit-check">
-                <input type="checkbox" id="chemEditClearImage" name="clearImage"> 사진 제거 (체크 시에만 삭제)
+                <input type="checkbox" id="chemEditClearImage" name="clearImage"> 사진 전체 제거
             </label>
             <p id="chemEditError" class="chem-edit-error" hidden></p>
             <div class="chem-edit-actions">

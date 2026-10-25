@@ -50,8 +50,13 @@ public class Chemistry {
     @Column(name = "description_en", columnDefinition = "TEXT")
     private String descriptionEn;
 
+    /** 대표(첫 장) 이미지 — {@link #imagesJson}의 첫 항목과 동기화 */
     @Column(length = 512)
     private String imageUrl;
+
+    /** 이미지 URL JSON 배열: ["/uploads/...", ...] */
+    @Column(name = "images_json", columnDefinition = "TEXT")
+    private String imagesJson;
 
     /** 하이퍼링크 JSON 객체: {"표시텍스트":"https://..."} */
     @Column(columnDefinition = "TEXT")

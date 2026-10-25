@@ -24,7 +24,10 @@ public class ChemistryGroupDto {
     private String description;
     private String labelEn;
     private String descriptionEn;
+    /** 대표(첫 장) — imageUrls[0]과 동일 */
     private String imageUrl;
+    @Builder.Default
+    private List<String> imageUrls = new ArrayList<>();
     @Builder.Default
     private Map<String, String> links = new LinkedHashMap<>();
     @Builder.Default

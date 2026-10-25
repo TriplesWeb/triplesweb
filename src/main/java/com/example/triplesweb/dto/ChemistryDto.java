@@ -3,7 +3,9 @@ package com.example.triplesweb.dto;
 import com.example.triplesweb.entity.ChemistryLabelTone;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -24,7 +26,10 @@ public class ChemistryDto {
     /** 영문 케미명·설명 (미입력 시 null/빈 문자열) */
     private String labelEn;
     private String descriptionEn;
+    /** 대표(첫 장) — imageUrls[0]과 동일 */
     private String imageUrl;
+    @Builder.Default
+    private List<String> imageUrls = new ArrayList<>();
     @Builder.Default
     private Map<String, String> links = new LinkedHashMap<>();
     private boolean crossFlag;

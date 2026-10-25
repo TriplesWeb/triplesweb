@@ -266,15 +266,6 @@ html[lang="en"] .chem-member-name {
     box-sizing: border-box;
 }
 
-.chem-tone-badge {
-    display: block;
-    margin-top: 0.15rem;
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    opacity: 0.9;
-}
-
 .chem-cell-flash {
     outline: 2px solid #00f5d4;
     outline-offset: -2px;
@@ -965,6 +956,37 @@ html[lang="en"] .chem-member-name {
     padding: 0;
 }
 
+.chem-modal-media[hidden] {
+    display: none !important;
+}
+
+.chem-carousel {
+    position: relative;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.chem-carousel-viewport {
+    max-width: 100%;
+    overflow: hidden;
+    border-radius: 1rem;
+    touch-action: pan-y;
+    user-select: none;
+}
+
+.chem-carousel-track {
+    position: relative;
+}
+
+.chem-carousel-slide {
+    display: none;
+}
+
+.chem-carousel-slide.is-active {
+    display: block;
+}
+
 .chem-modal-img {
     max-width: 100%;
     max-height: min(58vh, 720px);
@@ -976,6 +998,86 @@ html[lang="en"] .chem-member-name {
     border: 1px solid rgba(58, 74, 70, 0.35);
     object-fit: contain;
     background: rgba(13, 14, 18, 0.6);
+}
+
+.chem-carousel-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border: none;
+    border-radius: 9999px;
+    background: rgba(13, 14, 18, 0.55);
+    color: #fff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+}
+
+.chem-carousel-nav:hover:not(:disabled) {
+    background: rgba(0, 245, 212, 0.28);
+    color: #00f5d4;
+}
+
+.chem-carousel-nav:disabled {
+    opacity: 0.28;
+    cursor: default;
+}
+
+.chem-carousel-prev {
+    left: 0.45rem;
+}
+
+.chem-carousel-next {
+    right: 0.45rem;
+}
+
+.chem-carousel-nav .material-symbols-outlined {
+    font-size: 1.45rem;
+    line-height: 1;
+}
+
+.chem-carousel-count {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.55rem;
+    z-index: 2;
+    padding: 0.2rem 0.5rem;
+    border-radius: 9999px;
+    background: rgba(13, 14, 18, 0.62);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    backdrop-filter: blur(4px);
+}
+
+.chem-carousel-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.55rem;
+}
+
+.chem-carousel-dot {
+    width: 0.42rem;
+    height: 0.42rem;
+    padding: 0;
+    border: none;
+    border-radius: 9999px;
+    background: rgba(185, 202, 196, 0.45);
+    cursor: pointer;
+}
+
+.chem-carousel-dot.is-active {
+    background: #00f5d4;
+    transform: scale(1.15);
 }
 
 .chem-modal-credit {
@@ -1192,6 +1294,11 @@ a.chem-highlight:hover {
     display: flex;
     justify-content: center;
     gap: 0.5rem;
+}
+
+/* display:flex가 Tailwind .hidden(display:none)을 덮어쓰지 않도록 */
+.chem-admin-actions.hidden {
+    display: none;
 }
 
 .chem-table td.chem-addable {
@@ -1806,14 +1913,46 @@ a.chem-highlight:hover {
     display: none;
 }
 
-.chem-edit-image-preview img {
-    max-width: 100%;
-    max-height: 180px;
-    width: auto;
-    object-fit: contain;
+.chem-edit-image-thumbs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+    gap: 0.55rem;
+}
+
+.chem-edit-thumb {
+    position: relative;
+    aspect-ratio: 1;
     border-radius: 0.65rem;
+    overflow: hidden;
     border: 1px solid rgba(58, 74, 70, 0.55);
     background: #0d0e12;
+}
+
+.chem-edit-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.chem-edit-thumb-remove {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    width: 1.45rem;
+    height: 1.45rem;
+    padding: 0;
+    border: none;
+    border-radius: 9999px;
+    background: rgba(13, 14, 18, 0.78);
+    color: #fff;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.chem-edit-thumb-remove:hover {
+    background: #ef4444;
 }
 
 .chem-edit-check {
