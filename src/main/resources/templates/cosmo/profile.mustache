@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="/css/archive-page.css?v=3">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=8">
 <link rel="stylesheet" href="/css/cosmo-collection.css?v=4">
-<link rel="stylesheet" href="/css/cosmo-profile.css?v=6">
+<link rel="stylesheet" href="/css/cosmo-profile.css?v=7">
 </head>
 <body class="collection-page min-h-screen flex flex-col">
 {{>layout/header}}
@@ -101,9 +101,16 @@
 </section>
 {{#hasChecklist}}
 <section class="profile-checklist" aria-labelledby="checklist-heading">
-    <div class="profile-section-heading"><div><h2 id="checklist-heading">{{selectedMember}} · 오브젝트 수집 목록</h2><p>{{checklistTotal}}종 중 {{checklistOwned}}종 보유 · {{checklistMissing}}종 미보유</p></div>
+    <div class="profile-section-heading"><div><h2 id="checklist-heading">{{selectedMember}} · 오브젝트 수집 목록</h2><p>{{checklistTotal}}종 중 {{checklistOwned}}종 보유 · {{checklistMissing}}종 미보유{{#isOwnershipOwned}} · 보유 {{checklistVisible}}종 표시{{/isOwnershipOwned}}{{#isOwnershipMissing}} · 미보유 {{checklistVisible}}종 표시{{/isOwnershipMissing}}</p></div>
         <label class="profile-hide-complete" data-hide-complete-label hidden><input type="checkbox" data-hide-complete>완료한 시즌 숨기기</label>
     </div>
+    {{#hasOwnershipFilter}}
+    <nav class="profile-ownership-tabs" aria-label="보유 여부 모아보기">
+        <a class="profile-ownership-tab{{#isOwnershipAll}} is-active{{/isOwnershipAll}}" href="{{ownershipAllUrl}}" {{#isOwnershipAll}}aria-current="page"{{/isOwnershipAll}}>전체</a>
+        <a class="profile-ownership-tab{{#isOwnershipOwned}} is-active{{/isOwnershipOwned}}" href="{{ownershipOwnedUrl}}" {{#isOwnershipOwned}}aria-current="page"{{/isOwnershipOwned}}>보유</a>
+        <a class="profile-ownership-tab{{#isOwnershipMissing}} is-active{{/isOwnershipMissing}}" href="{{ownershipMissingUrl}}" {{#isOwnershipMissing}}aria-current="page"{{/isOwnershipMissing}}>미보유</a>
+    </nav>
+    {{/hasOwnershipFilter}}
     <p class="profile-checklist-legend"><span class="is-owned">● 보유</span><span>○ 미보유</span> · 클래스별 낮은 번호순 · 유닛은 구성 멤버 목록에 포함</p>
     {{#checklistSeasons}}
     <section class="ar-panel profile-checklist-season" data-checklist-season data-complete="{{complete}}">
@@ -145,19 +152,21 @@
 {{>layout/footer}}
 {{#isMembersTab}}
 <script src="/js/member-portrait-picker.js?v=6"></script>
-<script src="/js/cosmo-profile.js?v=2" defer></script>
+<script src="/js/cosmo-profile.js?v=3" defer></script>
 <script>
 (() => {
   const picker = document.getElementById('profile-member-picker');
   const base = {{#profileUrl}}"{{profileUrl}}"{{/profileUrl}}{{^profileUrl}}""{{/profileUrl}};
   if (!picker || !base || !window.MemberPortraitPicker) return;
+  const ownership = new URLSearchParams(window.location.search).get('ownership') || '';
+  const ownershipQuery = (ownership === 'owned' || ownership === 'missing') ? '&ownership=' + encodeURIComponent(ownership) : '';
   MemberPortraitPicker.bindMultiSelect(picker, {
     multi: false,
     onChange: (values) => {
       const member = values[0] || '';
       window.location.href = member
-        ? base + '?tab=members&member=' + encodeURIComponent(member)
-        : base + '?tab=members';
+        ? base + '?tab=members&member=' + encodeURIComponent(member) + ownershipQuery
+        : base + '?tab=members' + ownershipQuery;
     }
   });
 })();

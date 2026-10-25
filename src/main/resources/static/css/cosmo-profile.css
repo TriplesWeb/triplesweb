@@ -27,6 +27,34 @@
     background: #7af0d8;
 }
 .profile-progress-tab:focus-visible { outline: 2px solid #8bf5dc; outline-offset: 2px; }
+.profile-ownership-tabs {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: .3rem;
+    margin: 0 0 1rem;
+    padding: .25rem;
+    border: 1px solid #ffffff14;
+    border-radius: .85rem;
+    background: #10141a;
+    width: fit-content;
+}
+.profile-ownership-tab {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    padding: .35rem .9rem;
+    border-radius: .65rem;
+    color: #a9b8b3;
+    font-size: .82rem;
+    font-weight: 650;
+    text-decoration: none;
+}
+.profile-ownership-tab:hover { color: #e8f3ef; background: #ffffff0a; }
+.profile-ownership-tab.is-active {
+    color: #071310;
+    background: #8decd9;
+}
+.profile-ownership-tab:focus-visible { outline: 2px solid #8bf5dc; outline-offset: 2px; }
 .profile-member-picker .mpp-toolbar-heading {
     display: grid;
     gap: .15rem;

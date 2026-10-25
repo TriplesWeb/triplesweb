@@ -65,12 +65,12 @@ class CosmoProfileServiceTest {
                 kind("welcome", "HaYeon", "Cream02", "Welcome", "000Z"),
                 kind("other", "YuBin", "Cream02", "First", "001Z")));
         var view = profiles.profile("테스트", "hayeon");
-        assertThat(view).containsEntry("checklistOwned", 1).containsEntry("checklistTotal", 4)
-                .containsEntry("checklistMissing", 3).containsEntry("hasProgressMember", true);
+        assertThat(view).containsEntry("checklistOwned", 1).containsEntry("checklistTotal", 5)
+                .containsEntry("checklistMissing", 4).containsEntry("hasProgressMember", true);
         var seasons = (List<Map<String, Object>>) view.get("checklistSeasons");
         assertThat(seasons).hasSize(1);
         var groups = (List<Map<String, Object>>) seasons.get(0).get("groups");
-        assertThat(groups).extracting(row -> row.get("klass")).containsExactly("First", "Special");
+        assertThat(groups).extracting(row -> row.get("klass")).containsExactly("First", "Special", "Welcome");
         var cards = (List<Map<String, Object>>) groups.get(0).get("cards");
         assertThat(cards).extracting(row -> row.get("number")).containsExactly("003Z", "20Z", "101Z");
         assertThat(cards.get(0)).containsEntry("owned", false).containsEntry("copies", 0L);
@@ -147,5 +147,39 @@ class CosmoProfileServiceTest {
         var detail = profiles.profile("테스트", "", "other", "members");
         assertThat(detail).containsEntry("isOtherGroup", true).containsEntry("checklistTotal", 3)
                 .containsEntry("checklistOwned", 1).containsEntry("checklistMissing", 2);
+    }
+
+    @Test @SuppressWarnings("unchecked") void otherChecklistIncludesAtom01ZeroClassKinds() {
+        given(List.of(card("aaa", "AAA", "Zero")), List.of(
+                kind("aaa", "AAA", "Atom01", "Zero", "000Z"),
+                kind("tok", "TokyoHaus", "Atom01", "Zero", "000Z"),
+                kind("kre", "+(KR)E", "Atom01", "Zero", "000Z"),
+                kind("ts", "tripleS", "Atom01", "Zero", "000Z"),
+                kind("z", "zenith", "Cream02", "Double", "082Z")));
+        var view = profiles.profile("테스트", "", "other", "members", "all");
+        assertThat(view).containsEntry("checklistTotal", 5).containsEntry("checklistOwned", 1);
+        assertThat((List<Map<String, Object>>) view.get("checklistSeasons"))
+                .extracting(row -> row.get("season")).contains("Atom01", "Cream02");
+    }
+
+    @Test @SuppressWarnings("unchecked") void ownershipFilterWorksForMemberAndOtherChecklists() {
+        given(List.of(card("owned", "HaYeon", "First")), List.of(
+                kind("owned", "HaYeon", "Cream02", "First", "20Z"),
+                kind("miss", "HaYeon", "Cream02", "First", "003Z")));
+        var ownedOnly = profiles.profile("테스트", "HaYeon", "members", "members", "owned");
+        assertThat(ownedOnly).containsEntry("isOwnershipOwned", true).containsEntry("checklistVisible", 1)
+                .containsEntry("checklistTotal", 2).containsEntry("checklistOwned", 1);
+        var cards = ((List<Map<String, Object>>) ((List<Map<String, Object>>)
+                ((List<Map<String, Object>>) ownedOnly.get("checklistSeasons")).get(0).get("groups")).get(0).get("cards"));
+        assertThat(cards).hasSize(1);
+        assertThat(cards.get(0)).containsEntry("owned", true);
+
+        given(List.of(card("z1", "zenith", "Special")), List.of(
+                kind("z1", "zenith", "Cream02", "Special", "001Z"),
+                kind("z2", "zenith", "Cream02", "Special", "002Z")));
+        var missingOther = profiles.profile("테스트", "", "other", "members", "missing");
+        assertThat(missingOther).containsEntry("isOwnershipMissing", true).containsEntry("checklistVisible", 1)
+                .containsEntry("ownershipOwnedUrl",
+                        "/cosmo/profile/%ED%85%8C%EC%8A%A4%ED%8A%B8?tab=members&group=other&ownership=owned");
     }
 }

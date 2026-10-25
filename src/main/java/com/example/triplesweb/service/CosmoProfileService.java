@@ -20,16 +20,21 @@ public class CosmoProfileService {
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> profile(String nickname, String member) {
-        return profile(nickname, member, "all", "progress");
+        return profile(nickname, member, "all", "progress", "all");
     }
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> profile(String nickname, String member, String group) {
-        return profile(nickname, member, group, "progress");
+        return profile(nickname, member, group, "progress", "all");
     }
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> profile(String nickname, String member, String group, String tab) {
+        return profile(nickname, member, group, tab, "all");
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> profile(String nickname, String member, String group, String tab, String ownership) {
         Map<String, Object> view = new LinkedHashMap<>(collections.search(nickname, 0));
         List<Map<String, Object>> all = (List<Map<String, Object>>) view.remove("allCards");
         String base = String.valueOf(view.get("profileUrl"));
@@ -52,6 +57,7 @@ public class CosmoProfileService {
         String selected = MemberPortraitOptions.memberName(member);
         boolean membersTab = isMembersTab(tab, selected, group);
         String selectedGroup = membersTab ? normalizeGroup(group, member) : "all";
+        String ownershipFilter = normalizeOwnership(ownership);
         view.put("hasProgressMember", !selected.isBlank());
         view.put("selectedMember", selected);
         view.put("selectedGroup", selectedGroup);
@@ -62,16 +68,23 @@ public class CosmoProfileService {
         view.put("isMembersTab", membersTab);
         view.put("overviewUrl", base);
         view.put("membersTabUrl", base + "?tab=members");
+        view.put("selectedOwnership", ownershipFilter);
+        view.put("isOwnershipAll", "all".equals(ownershipFilter));
+        view.put("isOwnershipOwned", "owned".equals(ownershipFilter));
+        view.put("isOwnershipMissing", "missing".equals(ownershipFilter));
         if (membersTab) {
-            if ("other".equals(selectedGroup)) {
-                view.putAll(memberChecklist(all, catalogSnapshot, "", true));
-                view.put("hasProgressMember", false);
-                view.put("selectedMember", "기타 옵젝");
-            } else if (!selected.isBlank()) {
-                view.putAll(memberChecklist(all, catalogSnapshot, selected, false));
+            boolean other = "other".equals(selectedGroup);
+            if (other || !selected.isBlank()) {
+                view.putAll(memberChecklist(all, catalogSnapshot, other ? "" : selected, other, ownershipFilter));
+                if (other) {
+                    view.put("hasProgressMember", false);
+                    view.put("selectedMember", "기타 옵젝");
+                }
+                putOwnershipUrls(view, base, other ? "" : selected, selectedGroup, ownershipFilter);
             } else {
                 view.put("checklistSeasons", List.of());
                 view.put("hasChecklist", false);
+                view.put("hasOwnershipFilter", false);
             }
             Set<String> rawMembers = new LinkedHashSet<>();
             for (Map<String, Object> item : catalogSnapshot) {
@@ -88,8 +101,34 @@ public class CosmoProfileService {
             view.put("checklistSeasons", List.of());
             view.put("hasChecklist", false);
             view.put("memberPickerOptions", List.of());
+            view.put("hasOwnershipFilter", false);
         }
         return view;
+    }
+
+    private static String normalizeOwnership(String ownership) {
+        if (ownership == null || ownership.isBlank()) return "all";
+        String value = ownership.trim().toLowerCase(Locale.ROOT);
+        if ("owned".equals(value) || "have".equals(value) || "collected".equals(value)) return "owned";
+        if ("missing".equals(value) || "want".equals(value) || "unowned".equals(value)) return "missing";
+        return "all";
+    }
+
+    private static void putOwnershipUrls(Map<String, Object> view, String base, String member,
+                                         String group, String ownership) {
+        String checklistBase = checklistBaseUrl(base, member, group);
+        view.put("hasOwnershipFilter", true);
+        view.put("ownershipAllUrl", checklistBase);
+        view.put("ownershipOwnedUrl", checklistBase + "&ownership=owned");
+        view.put("ownershipMissingUrl", checklistBase + "&ownership=missing");
+        view.put("checklistBaseUrl", checklistBase);
+        view.put("ownershipQuery", "all".equals(ownership) ? "" : "&ownership=" + ownership);
+    }
+
+    private static String checklistBaseUrl(String base, String member, String group) {
+        if ("other".equals(group)) return base + "?tab=members&group=other";
+        if (member != null && !member.isBlank()) return base + "?tab=members&member=" + encode(member);
+        return base + "?tab=members";
     }
 
     private static boolean isMembersTab(String tab, String selectedMember, String group) {
@@ -113,18 +152,20 @@ public class CosmoProfileService {
         Map<String, Set<String>> owned = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         Map<String, Integer> copies = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (Map<String, Object> item : catalogSnapshot) {
-            if (excluded(text(item, "class"))) continue;
             String slug = text(item, "slug");
             if (slug.isBlank()) continue;
-            for (String key : progressKeys(text(item, "member"))) {
-                totals.computeIfAbsent(key, k -> new HashSet<>()).add(slug);
-            }
+            Set<String> keys = progressKeys(text(item, "member"));
+            // 솔로 진행률만 Welcome·Zero 제외. 기타(zenith·AAA·Zero 등)는 전부 포함.
+            if (excluded(text(item, "class")) && !keys.equals(Set.of(OTHER_KEY))) continue;
+            for (String key : keys) totals.computeIfAbsent(key, k -> new HashSet<>()).add(slug);
         }
         for (Map<String, Object> card : held) {
-            if (!"triples".equalsIgnoreCase(text(card, "artist")) || excluded(text(card, "objektClass"))) continue;
+            if (!"triples".equalsIgnoreCase(text(card, "artist"))) continue;
             String slug = text(card, "slug");
             if (slug.isBlank()) continue;
-            for (String key : progressKeys(text(card, "member"))) {
+            Set<String> keys = progressKeys(text(card, "member"));
+            if (excluded(text(card, "objektClass")) && !keys.equals(Set.of(OTHER_KEY))) continue;
+            for (String key : keys) {
                 owned.computeIfAbsent(key, k -> new HashSet<>()).add(slug);
                 copies.merge(key, 1, Integer::sum);
             }
@@ -249,10 +290,10 @@ public class CosmoProfileService {
     }
 
     private static Map<String, Object> memberChecklist(List<Map<String, Object>> held,
-            List<Map<String, Object>> catalog, String member, boolean otherOnly) {
+            List<Map<String, Object>> catalog, String member, boolean otherOnly, String ownership) {
         Map<String, Map<String, Object>> unique = new LinkedHashMap<>();
         for (Map<String, Object> item : catalog) {
-            if (excluded(text(item, "class"))) continue;
+            // 체크리스트는 Welcome·Zero 포함(기타 Atom01 Zero 4종 등). 솔로 진행률 집계만 제외한다.
             String raw = text(item, "member");
             String slug = text(item, "slug");
             if (slug.isBlank()) continue;
@@ -267,19 +308,21 @@ public class CosmoProfileService {
         Map<String, List<Map<String, Object>>> seasons = new TreeMap<>(ObjektFilterOrder.seasons());
         for (Map<String, Object> item : unique.values())
             seasons.computeIfAbsent(text(item, "season"), k -> new ArrayList<>()).add(item);
-        List<String> classOrder = List.of("first", "special", "double", "premier", "motion", "lenticular", "unit");
+        List<String> classOrder = List.of("first", "special", "double", "premier", "motion", "lenticular", "unit", "zero", "welcome");
         Comparator<String> classes = Comparator.comparingInt((String value) -> {
             int i = classOrder.indexOf(value.toLowerCase(Locale.ROOT));
             return i < 0 ? classOrder.size() : i;
         }).thenComparing(String.CASE_INSENSITIVE_ORDER);
         List<Map<String, Object>> seasonRows = new ArrayList<>();
         int collected = 0;
+        int visible = 0;
         for (var season : seasons.entrySet()) {
             Map<String, List<Map<String, Object>>> groups = new TreeMap<>(classes);
             for (Map<String, Object> item : season.getValue())
                 groups.computeIfAbsent(text(item, "class"), k -> new ArrayList<>()).add(item);
             List<Map<String, Object>> groupRows = new ArrayList<>();
             int seasonOwned = 0;
+            int seasonVisible = 0;
             for (var group : groups.entrySet()) {
                 group.getValue().sort(Comparator.comparing((Map<String, Object> item) -> text(item, "collectionNo"), natural)
                         .thenComparing(item -> text(item, "slug")));
@@ -288,30 +331,49 @@ public class CosmoProfileService {
                 for (Map<String, Object> item : group.getValue()) {
                     String slug = text(item, "slug");
                     long count = copies.getOrDefault(slug, 0L);
-                    if (count > 0) owned++;
+                    boolean have = count > 0;
+                    if ("owned".equals(ownership) && !have) continue;
+                    if ("missing".equals(ownership) && have) continue;
+                    if (have) owned++;
                     String image = GravityService.safeImage(text(item, "thumbnailImage"));
                     if (image.isBlank()) image = GravityService.safeImage(text(item, "frontImage"));
-                    cards.add(Map.of("number", text(item, "collectionNo"), "name", text(item, "collectionId"),
-                            "image", image, "hasImage", !image.isBlank(), "owned", count > 0,
-                            "copies", count, "detailUrl", "/cosmo/objekt/detail/" + encode(slug)));
+                    Map<String, Object> card = new LinkedHashMap<>();
+                    card.put("number", text(item, "collectionNo"));
+                    card.put("name", text(item, "collectionId"));
+                    card.put("image", image);
+                    card.put("hasImage", !image.isBlank());
+                    card.put("owned", have);
+                    card.put("copies", count);
+                    card.put("detailUrl", "/cosmo/objekt/detail/" + encode(slug));
+                    cards.add(card);
                 }
+                if (cards.isEmpty()) continue;
                 Map<String, Object> row = new LinkedHashMap<>();
                 row.put("klass", group.getKey().isBlank() ? "미분류" : group.getKey());
                 row.put("cards", cards); row.put("owned", owned); row.put("total", cards.size());
-                row.put("missing", cards.size() - owned); row.put("complete", owned == cards.size());
-                row.put("percent", owned * 100 / cards.size());
+                row.put("missing", cards.size() - owned); row.put("complete", owned == cards.size() && !cards.isEmpty());
+                row.put("percent", cards.isEmpty() ? 0 : owned * 100 / cards.size());
                 row.put("open", groupRows.isEmpty());
-                groupRows.add(row); seasonOwned += owned;
+                groupRows.add(row);
+                seasonOwned += owned;
+                seasonVisible += cards.size();
             }
+            if (groupRows.isEmpty()) continue;
             seasonRows.add(Map.of("season", season.getKey().isBlank() ? "미분류" : season.getKey(),
-                    "groups", groupRows, "owned", seasonOwned, "total", season.getValue().size(),
-                    "complete", seasonOwned == season.getValue().size(), "percent", seasonOwned * 100 / season.getValue().size()));
+                    "groups", groupRows, "owned", seasonOwned, "total", seasonVisible,
+                    "complete", seasonOwned == seasonVisible && seasonVisible > 0,
+                    "percent", seasonVisible == 0 ? 0 : seasonOwned * 100 / seasonVisible));
             collected += seasonOwned;
+            visible += seasonVisible;
         }
+        int totalKinds = unique.size();
+        int ownedKinds = (int) unique.keySet().stream().filter(slug -> copies.getOrDefault(slug, 0L) > 0).count();
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("checklistSeasons", seasonRows); result.put("hasChecklist", !seasonRows.isEmpty());
-        result.put("checklistOwned", collected); result.put("checklistTotal", unique.size());
-        result.put("checklistMissing", unique.size() - collected);
+        result.put("checklistOwned", ownedKinds); result.put("checklistTotal", totalKinds);
+        result.put("checklistMissing", totalKinds - ownedKinds);
+        result.put("checklistVisible", visible);
+        result.put("checklistFilterOwned", collected);
         return result;
     }
 

@@ -18,6 +18,7 @@ public class CosmoProfileController {
     public String profile(@PathVariable String nickname, @RequestParam(defaultValue = "progress") String tab,
                           @RequestParam(defaultValue = "") String member,
                           @RequestParam(defaultValue = "all") String group,
+                          @RequestParam(defaultValue = "all") String ownership,
                           @RequestParam(defaultValue = "0") int page, Model model) {
         if ("collection".equalsIgnoreCase(tab)) {
             return "redirect:/cosmo/collection?nickname="
@@ -25,7 +26,7 @@ public class CosmoProfileController {
         }
         model.addAttribute("requestedNickname", nickname);
         try {
-            model.addAllAttributes(profiles.profile(nickname, member, group, tab));
+            model.addAllAttributes(profiles.profile(nickname, member, group, tab, ownership));
             model.addAttribute("hasProfile", true);
         } catch (IllegalArgumentException ex) {
             model.addAttribute("profileError", ex.getMessage());
