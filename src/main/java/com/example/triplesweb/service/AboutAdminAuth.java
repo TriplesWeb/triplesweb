@@ -1,6 +1,5 @@
 package com.example.triplesweb.service;
 
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,41 +8,28 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HexFormat;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * ABOUT 트리플에스(케미/아티스트/앨범/유닛) 공통 관리자 인증.
- * 한 곳에서 로그인하면 세션·토큰이 공유된다.
- * 토큰은 비밀번호 기반 HMAC으로 서명되어 서버 재시작 후에도 TTL 동안 유효하다.
+ * HttpOnly 세션 쿠키만 사용한다. JS에 노출되는 토큰은 발급하지 않는다.
  */
 @Service
 public class AboutAdminAuth {
 
     public static final String SESSION_ADMIN = "ABOUT_ADMIN";
-    public static final String HEADER_ADMIN_TOKEN = "X-About-Admin-Token";
-    private static final Duration TOKEN_TTL = Duration.ofHours(12);
-    private static final String TOKEN_PREFIX = "a1.";
 
     private static final String[] LEGACY_SESSION_KEYS = {
             "CHEMISTRY_ADMIN", "ARTIST_ADMIN", "ALBUM_ADMIN", "UNIT_ADMIN"
     };
-    private static final String[] LEGACY_TOKEN_HEADERS = {
-            "X-Chemistry-Admin-Token",
-            "X-Artist-Admin-Token",
-            "X-Album-Admin-Token",
-            "X-Unit-Admin-Token"
-    };
 
-    /** 로그아웃으로 폐기한 서명 토큰 (재시작 시 비워짐 — 그때는 어차피 재로그인). */
-    private final ConcurrentHashMap<String, Instant> revokedTokens = new ConcurrentHashMap<>();
+    private static final int MAX_LOGIN_ATTEMPTS = 5;
+    private static final Duration LOGIN_WINDOW = Duration.ofMinutes(15);
+
+    private final ConcurrentHashMap<String, LoginWindow> loginAttempts = new ConcurrentHashMap<>();
 
     @Value("${chemistry.admin.password:}")
     private String adminPassword;
@@ -58,30 +44,29 @@ public class AboutAdminAuth {
         return Map.of("configured", configured, "admin", admin);
     }
 
-    public Map<String, Object> login(Map<String, String> body, HttpSession session) {
+    public Map<String, Object> login(Map<String, String> body, HttpServletRequest request, HttpSession session) {
         if (!isConfigured()) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "관리자 비밀번호가 설정되지 않았습니다.");
         }
+        String ip = clientIp(request);
+        assertNotRateLimited(ip);
         String password = body != null ? body.get("password") : null;
         if (!adminPassword.equals(password)) {
+            recordFailure(ip);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "비밀번호가 올바르지 않습니다.");
         }
-        purgeRevoked();
+        clearFailures(ip);
         session.setAttribute(SESSION_ADMIN, true);
         for (String legacy : LEGACY_SESSION_KEYS) {
             session.setAttribute(legacy, true);
         }
-        return Map.of("admin", true, "token", issueToken());
+        return Map.of("admin", true);
     }
 
     public Map<String, Object> logout(HttpServletRequest request, HttpSession session) {
         session.removeAttribute(SESSION_ADMIN);
         for (String legacy : LEGACY_SESSION_KEYS) {
             session.removeAttribute(legacy);
-        }
-        String token = extractToken(request);
-        if (StringUtils.hasText(token)) {
-            revokedTokens.put(token, Instant.now().plus(TOKEN_TTL));
         }
         return Map.of("admin", false);
     }
@@ -102,85 +87,46 @@ public class AboutAdminAuth {
                 return true;
             }
         }
-        String token = extractToken(request);
-        return StringUtils.hasText(token) && isValidToken(token);
+        return false;
     }
 
-    private String extractToken(HttpServletRequest request) {
-        String header = request.getHeader(HEADER_ADMIN_TOKEN);
-        if (StringUtils.hasText(header)) {
-            return header.trim();
+    private void assertNotRateLimited(String ip) {
+        LoginWindow window = loginAttempts.get(ip);
+        if (window == null) {
+            return;
         }
-        for (String legacy : LEGACY_TOKEN_HEADERS) {
-            String value = request.getHeader(legacy);
-            if (StringUtils.hasText(value)) {
-                return value.trim();
+        if (window.expiresAt().isBefore(Instant.now())) {
+            loginAttempts.remove(ip, window);
+            return;
+        }
+        if (window.failures() >= MAX_LOGIN_ATTEMPTS) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.");
+        }
+    }
+
+    private void recordFailure(String ip) {
+        loginAttempts.compute(ip, (key, current) -> {
+            Instant now = Instant.now();
+            if (current == null || current.expiresAt().isBefore(now)) {
+                return new LoginWindow(1, now.plus(LOGIN_WINDOW));
             }
-        }
-        String auth = request.getHeader("Authorization");
-        if (StringUtils.hasText(auth) && auth.regionMatches(true, 0, "Bearer ", 0, 7)) {
-            return auth.substring(7).trim();
-        }
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                if ("about_admin_token".equals(cookie.getName()) && StringUtils.hasText(cookie.getValue())) {
-                    return java.net.URLDecoder.decode(cookie.getValue().trim(), java.nio.charset.StandardCharsets.UTF_8);
-                }
-            }
-        }
-        return null;
+            return new LoginWindow(current.failures() + 1, current.expiresAt());
+        });
     }
 
-    private String issueToken() {
-        long exp = Instant.now().plus(TOKEN_TTL).getEpochSecond();
-        String payload = Long.toString(exp);
-        return TOKEN_PREFIX + payload + "." + sign(payload);
+    private void clearFailures(String ip) {
+        loginAttempts.remove(ip);
     }
 
-    private boolean isValidToken(String token) {
-        if (revokedTokens.containsKey(token)) {
-            return false;
+    private static String clientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (StringUtils.hasText(forwarded)) {
+            int comma = forwarded.indexOf(',');
+            return (comma > 0 ? forwarded.substring(0, comma) : forwarded).trim();
         }
-        if (!token.startsWith(TOKEN_PREFIX)) {
-            return false;
-        }
-        String body = token.substring(TOKEN_PREFIX.length());
-        int dot = body.indexOf('.');
-        if (dot <= 0 || dot == body.length() - 1) {
-            return false;
-        }
-        String payload = body.substring(0, dot);
-        String signature = body.substring(dot + 1);
-        long exp;
-        try {
-            exp = Long.parseLong(payload);
-        } catch (NumberFormatException e) {
-            return false;
-        }
-        if (Instant.ofEpochSecond(exp).isBefore(Instant.now())) {
-            return false;
-        }
-        String expected = sign(payload);
-        return MessageDigest.isEqual(
-                expected.getBytes(StandardCharsets.UTF_8),
-                signature.getBytes(StandardCharsets.UTF_8)
-        );
+        String remote = request.getRemoteAddr();
+        return StringUtils.hasText(remote) ? remote : "unknown";
     }
 
-    private String sign(String payload) {
-        try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(adminPassword.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-            byte[] raw = mac.doFinal(("about-admin|" + payload).getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(raw);
-        } catch (Exception e) {
-            throw new IllegalStateException("관리자 토큰 서명에 실패했습니다.", e);
-        }
-    }
-
-    private void purgeRevoked() {
-        Instant now = Instant.now();
-        revokedTokens.entrySet().removeIf(e -> e.getValue().isBefore(now));
-    }
+    private record LoginWindow(int failures, Instant expiresAt) {}
 }

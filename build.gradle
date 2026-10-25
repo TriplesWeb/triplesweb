@@ -27,6 +27,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-tomcat'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.jsoup:jsoup:1.18.3'
 	// 로컬 bootRun만 — Java 저장 후 컴파일되면 컨텍스트 자동 재시작 (war/Docker에는 미포함)
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	testRuntimeOnly 'com.h2database:h2'

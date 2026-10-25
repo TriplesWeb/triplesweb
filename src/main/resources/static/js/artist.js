@@ -120,23 +120,47 @@
     const tabPanes = document.querySelectorAll(".tab-pane");
     bindMemberTabFrames();
 
-    function activateTab(targetId) {
+    function scrollToMemberContent() {
+      const content = document.getElementById("memberTabContent");
+      if (!content) return;
+      const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const headerOffset = 72;
+      const top = content.getBoundingClientRect().top + window.scrollY - headerOffset;
+      window.scrollTo({ top: Math.max(0, top), behavior: reduce ? "auto" : "smooth" });
+    }
+
+    function activateTab(targetId, options) {
       if (!targetId) return;
       const btn = document.querySelector('.nav-tab-btn[data-target="' + targetId + '"]');
       const targetPane = document.querySelector(targetId);
       if (!targetPane) return;
 
-      tabButtons.forEach((b) => b.classList.remove("is-active"));
-      if (btn) btn.classList.add("is-active");
+      tabButtons.forEach((b) => {
+        b.classList.remove("is-active");
+        b.setAttribute("aria-selected", "false");
+        b.tabIndex = -1;
+      });
+      if (btn) {
+        btn.classList.add("is-active");
+        btn.setAttribute("aria-selected", "true");
+        btn.tabIndex = 0;
+        const scroller = btn.closest(".artist-member-tabs");
+        if (scroller && scroller.scrollWidth > scroller.clientWidth + 1) {
+          btn.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+        }
+      }
 
       tabPanes.forEach((pane) => pane.classList.add("hidden"));
       targetPane.classList.remove("hidden");
+      if (options && options.scrollToContent) {
+        scrollToMemberContent();
+      }
     }
 
     tabButtons.forEach((btn) => {
       btn.addEventListener("click", () => {
         const targetId = btn.getAttribute("data-target");
-        activateTab(targetId);
+        activateTab(targetId, { scrollToContent: true });
         if (targetId && targetId.startsWith("#")) {
           const url = new URL(window.location.href);
           url.searchParams.set("tab", targetId.slice(1));
@@ -145,17 +169,36 @@
         }
       });
     });
+    if (window.AboutTabs) {
+      window.AboutTabs.enhanceTabs("#triplesTabs", {
+        onActivate: (btn) => {
+          const targetId = btn.getAttribute("data-target");
+          activateTab(targetId, { scrollToContent: true });
+          if (targetId && targetId.startsWith("#")) {
+            const url = new URL(window.location.href);
+            url.searchParams.set("tab", targetId.slice(1));
+            url.hash = "";
+            history.replaceState(null, "", url.pathname + url.search);
+          }
+        }
+      });
+    }
 
+    const allowedTargets = new Set(
+      Array.from(document.querySelectorAll("#triplesTabs .nav-tab-btn[data-target]"))
+        .map((btn) => btn.getAttribute("data-target"))
+        .filter(Boolean)
+    );
     const params = new URLSearchParams(window.location.search);
     const tab = params.get("tab");
     const hash = window.location.hash;
-    if (tab && document.getElementById(tab)) {
-      activateTab("#" + tab);
-    } else if (hash && document.querySelector(hash)) {
-      activateTab(hash);
-    } else {
-      activateTab("#triples");
+    let initial = "#triples";
+    if (tab && allowedTargets.has("#" + tab)) {
+      initial = "#" + tab;
+    } else if (hash && allowedTargets.has(hash)) {
+      initial = hash;
     }
+    activateTab(initial);
 
     window.__artistActivateTab = activateTab;
   }

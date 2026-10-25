@@ -137,10 +137,44 @@
 
 .chem-page-actions {
     justify-content: flex-end;
+    align-items: center;
+}
+
+/* 2인/3인+ · EN · 관리자 높이를 한 줄로 맞춤 */
+.chem-page-actions .chem-mode-toggle,
+.chem-page-actions .chem-lang-btn,
+.chem-page-actions .chem-admin-btn {
+    box-sizing: border-box;
+    height: 2.15rem;
+    min-height: 2.15rem;
 }
 
 .chem-page-actions .chem-lang-btn {
     margin-left: 0.15rem;
+}
+
+.chem-page-actions .chem-mode-toggle {
+    padding: 2px;
+}
+
+.chem-page-actions .chem-mode-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 0 0.85rem;
+    font-size: 0.8125rem;
+    line-height: 1;
+}
+
+.chem-page-actions .chem-lang-btn,
+.chem-page-actions .chem-admin-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.85rem;
+    font-size: 0.8125rem;
+    line-height: 1;
 }
 
 .chem-lang-btn {
@@ -184,8 +218,72 @@
 html[lang="en"] .chem-member-name {
     font-size: clamp(10px, 0.68vw, 14px);
     letter-spacing: -0.04em;
-    word-break: break-word;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    word-break: normal;
+    overflow-wrap: normal;
+}
+
+.chem-pair-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 0.65rem;
+}
+
+.chem-pair-filter-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-size: 0.75rem;
+    color: #b9cac4;
+}
+
+.chem-pair-filter-select {
+    min-width: 7.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #12141a;
+    color: #e3e2e8;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.85rem;
+}
+
+.chem-pair-filter-hint {
+    flex: 1 1 100%;
+    margin: 0;
+    font-size: 0.75rem;
+    color: #8b9b95;
+}
+
+.chem-trio-jump {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+.chem-tone-badge {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    opacity: 0.9;
+}
+
+.chem-cell-flash {
+    outline: 2px solid #00f5d4;
+    outline-offset: -2px;
+    animation: chemFlash 1.2s ease;
+}
+
+@keyframes chemFlash {
+    from { background-color: rgba(0, 245, 212, 0.35); }
+    to { background-color: transparent; }
 }
 
 .chem-edit-lang-label {
@@ -382,8 +480,9 @@ html[lang="en"] .chem-member-name {
 }
 
 .chem-trio-card-grid--primary {
-    grid-template-columns: minmax(16rem, 28rem);
-    justify-content: center;
+    /* 한 열 고정 대신 일반 케미 카드와 같이 여러 열로 채운다 */
+    grid-template-columns: repeat(auto-fill, minmax(14.5rem, 1fr));
+    justify-content: stretch;
 }
 
 .chem-trio-plus-zone {
@@ -556,7 +655,6 @@ html[lang="en"] .chem-member-name {
 }
 
 .chem-trio-back {
-    margin-top: 0.35rem;
     background: #00f5d4;
     color: #0d0e12;
 }
@@ -564,6 +662,33 @@ html[lang="en"] .chem-member-name {
 .chem-trio-back:hover {
     color: #0d0e12;
     filter: brightness(1.05);
+}
+
+/* 툴바 안에서는 선택 해제·결과 보기와 높이·정렬을 맞춘다 */
+.chem-trio-view .mpp-toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.chem-trio-view .mpp-toolbar-actions .mpp-tool-btn,
+.chem-trio-view .mpp-toolbar-actions .chem-mode-btn {
+    margin: 0;
+    min-height: 2.1rem;
+    padding: 0.35rem 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.2;
+    border-radius: 0.5rem;
+}
+
+.chem-trio-view .mpp-toolbar-actions .chem-trio-back {
+    border: 1px solid transparent;
 }
 
 .chem-table-wrap {
@@ -875,6 +1000,13 @@ html[lang="en"] .chem-member-name {
     box-sizing: border-box;
     word-break: keep-all;
     overflow-wrap: break-word;
+}
+
+/* Enter 두 번(빈 줄)이면 문단 간격이 보이게 */
+.chem-modal-desc br + br {
+    display: block;
+    content: "";
+    margin-top: 0.55em;
 }
 
 .chem-highlight {

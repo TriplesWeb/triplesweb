@@ -1,18 +1,8 @@
 <!DOCTYPE html>
 <html class="dark" lang="ko">
 <head>
-    {{>layout/favicon}}
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {{>layout/triples-head}}
     <title>트리플에스 커뮤니티 - ABOUT 트리플에스</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script src="/js/tailwind.config.js"></script>
-    <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/artist.css?v=17">
     <style>
         .artist-page .artist-edit-inline[hidden] { display: none !important; }
     </style>
@@ -42,8 +32,8 @@
             {{#artist}}
             <button class="nav-tab-btn" id="{{engName}}-tab" data-target="#member-{{artistId}}" data-member-tab type="button" role="tab" aria-label="{{name}}" style="--artist-color: {{color}};">
                 <span class="artist-tab-avatar">
-                    <img class="artist-tab-photo" src="{{displayProfileImage}}" referrerpolicy="no-referrer" alt="{{name}}">
-                    <img class="artist-tab-frame" src="" alt="" aria-hidden="true">
+                    <img class="artist-tab-photo" src="{{displayProfileImage}}" referrerpolicy="no-referrer" alt="{{name}}" loading="lazy" decoding="async">
+                    <img class="artist-tab-frame" src="" alt="" aria-hidden="true" loading="lazy" decoding="async">
                     <span class="artist-tab-shine" aria-hidden="true"></span>
                 </span>
                 <span class="artist-tab-label">{{name}}</span>
@@ -68,7 +58,7 @@
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     <div class="lg:col-span-4 relative group">
                         <div class="artist-member-photo relative w-full aspect-[4/5] rounded-2xl overflow-hidden bg-black/50 shadow-inner">
-                            <img src="{{displayProfileImage}}" referrerpolicy="no-referrer" class="w-full h-full object-cover" alt="{{name}}" width="500" height="500">
+                            <img src="{{displayProfileImage}}" referrerpolicy="no-referrer" class="w-full h-full object-cover" alt="{{name}}" width="500" height="500" loading="lazy" decoding="async">
                         </div>
                     </div>
                     <div class="lg:col-span-8 space-y-6">
@@ -420,7 +410,9 @@
 </div>
 
 {{>layout/footer}}
-<script src="/js/about-admin-auth.js?v=1"></script>
-<script src="/js/artist.js?v=12"></script>
+<script src="/js/about-admin-auth.js?v=2"></script>
+<script src="/js/about-tabs.js?v=1"></script>
+<script src="/js/about-modal.js?v=1"></script>
+<script src="/js/artist.js?v=13"></script>
 </body>
 </html>

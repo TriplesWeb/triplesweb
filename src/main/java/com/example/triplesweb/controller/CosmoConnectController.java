@@ -44,9 +44,9 @@ public class CosmoConnectController {
     @ResponseBody
     public Map<String, Object> adminLogin(@RequestBody Map<String, String> body,
             @RequestHeader(name = "X-Gravity-Connect", defaultValue = "") String sameOrigin,
-            HttpSession session) {
+            HttpServletRequest request, HttpSession session) {
         requireSameOriginHeader(sameOrigin);
-        return admin.login(body, session);
+        return admin.login(body, request, session);
     }
 
     @PostMapping("/api/gravity/connect/admin-logout")

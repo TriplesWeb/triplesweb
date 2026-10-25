@@ -143,8 +143,7 @@
   byId("gravityAdminLoginForm")?.addEventListener("submit", event => submit(event, async () => {
     const value = password.value;
     password.value = "";
-    const result = await api("admin-login", { password: value });
-    auth.setToken(result.token);
+    await api("admin-login", { password: value });
     closeLogin();
     await refresh();
   }, loginError));

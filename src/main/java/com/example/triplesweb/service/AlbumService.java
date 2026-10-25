@@ -34,8 +34,9 @@ public class AlbumService {
     @Transactional(readOnly = true)
     public List<AlbumSectionGroupDto> listGroupedBySection() {
         List<AlbumSection> sections = albumSectionRepository.findAllByOrderBySortOrderAscSectionIdAsc();
-        List<Album> albums = albumRepository.findAll(Sort.by("releaseDate").ascending()
-                .and(Sort.by("albumId").ascending()));
+        // 목록은 최신 발매일이 먼저 오도록 내림차순
+        List<Album> albums = albumRepository.findAll(Sort.by("releaseDate").descending()
+                .and(Sort.by("albumId").descending()));
 
         Map<Long, AlbumSectionGroupDto> byId = new LinkedHashMap<>();
         for (AlbumSection section : sections) {
@@ -50,6 +51,9 @@ public class AlbumService {
 
         List<Album> unassigned = new ArrayList<>();
         for (Album album : albums) {
+            if (album.getUnit() != null) {
+                album.getUnit().getUnitName();
+            }
             AlbumSection section = album.getSection();
             if (section != null && section.getSectionId() != null && byId.containsKey(section.getSectionId())) {
                 byId.get(section.getSectionId()).getAlbums().add(album);

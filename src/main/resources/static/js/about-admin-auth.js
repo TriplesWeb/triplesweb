@@ -1,75 +1,53 @@
 (() => {
-  const TOKEN_KEY = "aboutAdminToken";
-  const HEADER = "X-About-Admin-Token";
-  const LEGACY_KEYS = [
-    "chemistryAdminToken",
-    "artistAdminToken",
-    "albumAdminToken",
-    "unitAdminToken"
-  ];
+  /**
+   * About 관리자 인증은 HttpOnly 세션 쿠키만 사용한다.
+   * 상태 변경 요청에는 CSRF 쿠키(XSRF-TOKEN) → X-XSRF-TOKEN 헤더를 붙인다.
+   * getToken/setToken/clearToken 은 기존 호출처 호환용 no-op 이다.
+   */
 
-  function readStorage(storage, key) {
-    try {
-      return storage.getItem(key) || "";
-    } catch (_) {
-      return "";
-    }
-  }
-
-  function writeStorage(storage, key, value) {
-    try {
-      if (value) storage.setItem(key, value);
-      else storage.removeItem(key);
-    } catch (_) { /* private mode */ }
-  }
-
-  function getToken() {
-    const current = readStorage(localStorage, TOKEN_KEY) || readStorage(sessionStorage, TOKEN_KEY);
-    if (current) return current;
-    for (const key of LEGACY_KEYS) {
-      const legacy = readStorage(localStorage, key) || readStorage(sessionStorage, key);
-      if (legacy) {
-        setToken(legacy);
-        return legacy;
+  function readCookie(name) {
+    const encoded = encodeURIComponent(name);
+    const parts = document.cookie ? document.cookie.split("; ") : [];
+    for (const part of parts) {
+      const eq = part.indexOf("=");
+      if (eq < 0) continue;
+      if (part.slice(0, eq) === name || part.slice(0, eq) === encoded) {
+        return decodeURIComponent(part.slice(eq + 1));
       }
     }
     return "";
   }
 
-  function syncCookie(token) {
-    const maxAge = token ? 60 * 60 * 12 : 0;
-    document.cookie = "about_admin_token=" + encodeURIComponent(token || "")
-      + "; Path=/; Max-Age=" + maxAge + "; SameSite=Lax";
+  function getCsrfToken() {
+    return readCookie("XSRF-TOKEN");
   }
 
-  function setToken(token) {
-    writeStorage(localStorage, TOKEN_KEY, token || "");
-    writeStorage(sessionStorage, TOKEN_KEY, "");
-    for (const key of LEGACY_KEYS) {
-      writeStorage(localStorage, key, token || "");
-      writeStorage(sessionStorage, key, "");
-    }
-    syncCookie(token || "");
+  function getToken() {
+    return "";
+  }
+
+  function setToken() {
+    /* session-only: no JS-readable token */
   }
 
   function clearToken() {
-    setToken("");
+    /* session invalidated server-side on logout */
   }
 
   function applyAuthHeaders(headers) {
     const h = headers instanceof Headers ? headers : new Headers(headers || {});
-    const token = getToken();
-    if (token) h.set(HEADER, token);
+    const csrf = getCsrfToken();
+    if (csrf) {
+      h.set("X-XSRF-TOKEN", csrf);
+    }
     return h;
   }
 
   window.AboutAdminAuth = {
-    TOKEN_KEY,
-    HEADER,
     getToken,
     setToken,
     clearToken,
+    getCsrfToken,
     applyAuthHeaders
   };
-  syncCookie(getToken());
 })();

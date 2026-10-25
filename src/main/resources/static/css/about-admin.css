@@ -34,13 +34,15 @@
     color: #00f5d4;
 }
 
-.about-edit-inline {
-    display: none;
+.about-edit-inline,
+.about-edit-inline.about-mode-btn {
+    display: none !important;
     margin-top: 0.75rem;
 }
 
-.about-admin-page.is-admin .about-edit-inline {
-    display: inline-flex;
+.about-admin-page.is-admin .about-edit-inline,
+.about-admin-page.is-admin .about-edit-inline.about-mode-btn {
+    display: inline-flex !important;
 }
 
 .about-admin-page.is-admin .about-admin-only {

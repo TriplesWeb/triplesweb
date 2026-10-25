@@ -92,22 +92,22 @@ class CosmoConnectControllerTest {
         verify(login, times(5)).verifyCode(anyString(), anyString(), anyString());
     }
 
-    @Test void chemistryLoginAndGravityLogoutShareSessionAndToken() throws Exception {
+    @Test void chemistryLoginAndGravityLogoutShareSession() throws Exception {
         var session = new MockHttpSession();
-        var result = mvc.perform(post("/api/chemistry/admin/login").session(session)
+        mvc.perform(post("/api/chemistry/admin/login").session(session)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"password\":\"test-password\"}"))
-                .andExpect(status().isOk()).andReturn();
-        String token = new com.fasterxml.jackson.databind.ObjectMapper()
-                .readTree(result.getResponse().getContentAsString()).path("token").asText();
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.admin").value(true))
+                .andExpect(jsonPath("$.token").doesNotExist());
         mvc.perform(get("/api/gravity/connect/status").session(session))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.admin").value(true));
-        // The shared browser token also works without the original session cookie.
-        mvc.perform(get("/api/gravity/connect/status").header("X-About-Admin-Token", token))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.admin").value(true));
-        mvc.perform(post("/api/gravity/connect/admin-logout").session(session)
-                .header("X-Gravity-Connect", "1").header("X-About-Admin-Token", token))
+        // 토큰 헤더만으로는 더 이상 인증되지 않는다 (세션 전용).
+        mvc.perform(get("/api/gravity/connect/status").header("X-About-Admin-Token", "ignored"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.admin").value(false));
-        mvc.perform(get("/api/chemistry/admin/status").session(session).header("X-About-Admin-Token", token))
+        mvc.perform(post("/api/gravity/connect/admin-logout").session(session)
+                .header("X-Gravity-Connect", "1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.admin").value(false));
+        mvc.perform(get("/api/chemistry/admin/status").session(session))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.admin").value(false));
     }
 

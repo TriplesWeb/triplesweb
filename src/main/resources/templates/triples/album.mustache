@@ -1,19 +1,8 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    {{>layout/favicon}}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{>layout/triples-head}}
     <title>트리플에스 커뮤니티 - 발매 앨범</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script src="/js/tailwind.config.js"></script>
-    <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/about-admin.css?v=10">
 <style>[data-album-edit][hidden], #albumAddBtn[hidden], #albumSectionBtn[hidden]{display:none!important}</style>
 </head>
 <body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen about-admin-page">
@@ -48,8 +37,15 @@
                     {{#albums}}
                     <li class="relative">
                         <a href="/triples/album/{{albumId}}" class="block text-center no-underline text-[#e3e2e8] hover:text-[#00f5d4] transition-colors">
-                            <img src="{{displayAlbumImage}}" width="200" height="200" alt="{{albumName}}" class="w-full aspect-square object-cover rounded-lg mb-2 border border-[#3a4a46]/30">
+                            <img src="{{displayAlbumImage}}" width="200" height="200" alt="{{albumName}}" loading="lazy" decoding="async" class="w-full aspect-square object-cover rounded-lg mb-2 border border-[#3a4a46]/30">
                             <div class="text-sm sm:text-base font-semibold">{{albumName}}</div>
+                            <div class="text-xs text-[#8b9b95] mt-1 font-mono">{{releaseDate}}</div>
+                            {{#unit}}
+                            <div class="text-xs text-[#b9cac4] mt-0.5">{{unitName}}</div>
+                            {{/unit}}
+                            {{#hasAlbumFormat}}
+                            <div class="text-[11px] text-[#8b9b95] mt-0.5">{{albumFormatLabel}}</div>
+                            {{/hasAlbumFormat}}
                         </a>
                         <button type="button" class="about-edit-inline about-mode-btn" hidden data-album-edit="{{albumId}}" style="position:absolute;top:0.5rem;right:0.5rem;">수정</button>
                     </li>
@@ -66,7 +62,9 @@
 </main>
 {{>triples/partials/album-admin-modals}}
 {{>layout/footer}}
-<script src="/js/about-admin-auth.js?v=1"></script>
-<script src="/js/album.js?v=12"></script>
+<script src="/js/about-admin-auth.js?v=2"></script>
+<script src="/js/about-tabs.js?v=1"></script>
+<script src="/js/about-modal.js?v=1"></script>
+<script src="/js/album.js?v=13"></script>
 </body>
 </html>

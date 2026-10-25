@@ -1,20 +1,8 @@
 <!DOCTYPE html>
 <html class="dark" lang="en" data-chem-lang="en">
 <head>
-    {{>layout/favicon}}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{>layout/triples-head}}
     <title>tripleS Community — Chemistry Names</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script src="/js/tailwind.config.js"></script>
-    <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=5">
-    <link rel="stylesheet" href="/css/chemistry.css?v=53">
 </head>
 <body class="bg-[#0d0e12] text-[#ffffff] min-h-screen">
 {{>layout/header}}
@@ -67,25 +55,40 @@
             </div>
         </div>
 
-        <div class="chem-table-wrap" id="chemPairView">
-            <table id="chemistryTable" class="chem-table" aria-label="Member chemistry name matrix">
-                <thead id="chemThead"></thead>
-                <tbody id="chemTbody">
-                    <tr>
-                        <td colspan="25" class="text-center text-[#b9cac4] py-10 text-sm">Loading chemistry table…</td>
-                    </tr>
-                </tbody>
-            </table>
+        <div id="chemPairView">
+            <div class="chem-pair-filter" id="chemPairFilter">
+                <label class="chem-pair-filter-label">
+                    <span>Member A</span>
+                    <select id="chemFilterA" class="chem-pair-filter-select" aria-label="First member"></select>
+                </label>
+                <label class="chem-pair-filter-label">
+                    <span>Member B</span>
+                    <select id="chemFilterB" class="chem-pair-filter-select" aria-label="Second member"></select>
+                </label>
+                <button type="button" id="chemFilterGo" class="chem-mode-btn">Go to cell</button>
+                <p class="chem-pair-filter-hint">Scroll the table sideways, or pick two members to jump to their cell.</p>
+            </div>
+            <div class="chem-table-wrap">
+                <table id="chemistryTable" class="chem-table" aria-label="Member chemistry name matrix">
+                    <thead id="chemThead"></thead>
+                    <tbody id="chemTbody">
+                        <tr>
+                            <td colspan="25" class="text-center text-[#b9cac4] py-10 text-sm">Loading chemistry table…</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <div class="chem-trio-view hidden" id="chemTrioView" aria-live="polite">
             <div class="mpp-toolbar">
                 <div>
                     <p class="mpp-toolbar-title">Select members</p>
-                    <p class="mpp-toolbar-meta" id="chemTrioMeta">Select 3+ members to view or add group chemistry.</p>
+                    <p class="mpp-toolbar-meta" id="chemTrioMeta">Select members to see related chemistry. 1, 2, or 3+ all work.</p>
                 </div>
                 <div class="mpp-toolbar-actions">
                     <button type="button" class="mpp-tool-btn" id="chemTrioClear">Clear</button>
+                    <a href="#chemTrioResults" id="chemTrioJump" class="mpp-tool-btn chem-trio-jump hidden">View results</a>
                     <button type="button" class="chem-mode-btn chem-trio-back" data-mode="pair" onclick="window.__chemSetMode&&window.__chemSetMode('pair')">View pairs</button>
                 </div>
             </div>
@@ -100,8 +103,11 @@
 {{>triples/partials/chemistry-modals}}
 
 {{>layout/footer}}
-<script src="/js/about-admin-auth.js?v=1"></script>
-<script src="/js/member-portrait-picker.js?v=4"></script>
-<script src="/js/chemistry.js?v=51"></script>
+<script src="/js/about-admin-auth.js?v=2"></script>
+<script src="/js/about-modal.js?v=1"></script>
+<script src="/js/triples-members.js?v=1"></script>
+<script src="/js/chemistry-sanitize.js?v=1"></script>
+<script src="/js/member-portrait-picker.js?v=2"></script>
+<script src="/js/chemistry.js?v=58"></script>
 </body>
 </html>

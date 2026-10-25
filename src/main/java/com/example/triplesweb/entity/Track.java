@@ -1,8 +1,10 @@
 package com.example.triplesweb.entity;
 
-import com.example.triplesweb.util.TrackInfo;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * 앨범 수록곡 엔티티. {@link Album} N:1.
@@ -52,5 +54,22 @@ public class Track {
         this.album = album;
         this.melonSongId = null;
         this.youtubeVideoId = null;
+    }
+
+    /** YouTube 검색 URL (제목 URL 인코딩). */
+    @Transient
+    public String getYoutubeSearchUrl() {
+        String q = (title != null ? title : "") + " tripleS";
+        return "https://www.youtube.com/results?search_query=" + encode(q);
+    }
+
+    /** Melon 검색 URL (제목 URL 인코딩). */
+    @Transient
+    public String getMelonSearchUrl() {
+        return "https://www.melon.com/search/total/index.htm?q=" + encode(title != null ? title : "");
+    }
+
+    private static String encode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 }

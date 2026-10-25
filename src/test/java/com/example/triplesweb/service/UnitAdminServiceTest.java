@@ -97,6 +97,20 @@ class UnitAdminServiceTest {
         assertThat(reload(id).getUnitMembers()).hasSize(1);
     }
 
+    @Test
+    void parentCycleIsRejected() {
+        Unit parent = unit(artist("parent"));
+        Unit child = unit(artist("child"));
+        service.update(child.getUnitId(), "Child", "child", "2026-10-22", "", true,
+                parent.getUnitId(), List.of(), null, null, false);
+        em.flush();
+        em.clear();
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () ->
+                service.update(parent.getUnitId(), "Parent", "parent", "2026-10-22", "", true,
+                        child.getUnitId(), List.of(), null, null, false));
+    }
+
     private void update(Long unitId, List<Long> artistIds) {
         service.update(unitId, "Updated", "updated", "2026-10-22", "", true,
                 null, artistIds, null, null, false);
