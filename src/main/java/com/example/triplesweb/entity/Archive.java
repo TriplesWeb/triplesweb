@@ -3,6 +3,8 @@ package com.example.triplesweb.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
+
 /**
  * 아카이브(미디어 자료) 엔티티. {@link SavedMeta} 임베드로 파일 보관.
  */
@@ -26,6 +28,9 @@ public class Archive {
 
     @Column(name = "thumbnail_url", length = 500)
     private String thumbnailUrl;
+
+    @Column(name = "registered_on")
+    private LocalDate registeredOn;
 
     @Embedded
     private SavedMeta file;

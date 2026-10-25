@@ -30,7 +30,7 @@ public class PopularArticleController {
             Article art = popularArticles.get(i);
             articleViewList.add(ArticleViewDto.builder()
                     .id(art.getId())
-                    .displayId((long) (i + 1))
+                    .displayId(art.getDisplayId() != null ? art.getDisplayId() : art.getId())
                     .title(art.getTitle())
                     .userId(art.getUserId())
                     .category(art.getCategory())

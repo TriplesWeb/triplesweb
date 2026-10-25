@@ -15,6 +15,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -57,6 +59,7 @@ public class MediaService {
                 .mediaDur(dto.getDuration()!=null?dto.getDuration():"")
                 .viewCount(dto.getViews()!=null?dto.getViews():0L)
                 .description(truncateDescription(dto.getDescription()))
+                .publishedOn(parseDate(dto.getPublishedOn()))
                 .sortOrder(sortOrder).build();
         entity.setArtists(resolveArtists(artistNames));
         mediaRepository.save(entity);
@@ -72,7 +75,7 @@ public class MediaService {
         if(id.length()!=11) { Map<String,Object> fallback=new LinkedHashMap<>(); fallback.put("youtubeId",urlOrId!=null?urlOrId:""); fallback.put("title","올바르지 않은 유튜브 ID 또는 링크입니다."); fallback.put("thumbnail",""); fallback.put("duration","03:00"); fallback.put("views",0L); return fallback; }
         Map<String,Object> res=new LinkedHashMap<>(); res.put("youtubeId",id); res.put("title","유튜브 영상 ("+id+")"); res.put("thumbnail","https://img.youtube.com/vi/"+id+"/hqdefault.jpg"); res.put("duration","03:00"); res.put("views",0L);
         try { var oe=oembed.fetch("https://www.youtube.com/watch?v="+id); if(oe!=null) { if(oe.getTitle()!=null&&!oe.getTitle().isBlank())res.put("title",oe.getTitle()); if(oe.getThumbnail_url()!=null&&!oe.getThumbnail_url().isBlank())res.put("thumbnail",oe.getThumbnail_url()); } } catch(Exception ignored) {}
-        try { var vr=yt.fetchVideo(id); if(vr!=null&&vr.getItems()!=null&&vr.getItems().length>0) { var item=vr.getItems()[0]; if(item.getSnippet()!=null) { if(item.getSnippet().getTitle()!=null&&!item.getSnippet().getTitle().isBlank())res.put("title",item.getSnippet().getTitle()); if(item.getSnippet().getDescription()!=null)res.put("description",item.getSnippet().getDescription()); String pub=item.getSnippet().getPublishedAt(); if(pub!=null&&pub.length()>=10)res.put("publishedAt",pub.substring(0,10).replace("-",".")); } if(item.getContentDetails()!=null&&item.getContentDetails().getDuration()!=null) { String d=ISODuration.toClock(item.getContentDetails().getDuration()); if(d!=null&&!d.isBlank())res.put("duration",d); } if(item.getStatistics()!=null&&item.getStatistics().getViewCount()!=null)res.put("views",item.getStatistics().getViewCount()); } } catch(Exception ignored) {}
+        try { var vr=yt.fetchVideo(id); if(vr!=null&&vr.getItems()!=null&&vr.getItems().length>0) { var item=vr.getItems()[0]; if(item.getSnippet()!=null) { if(item.getSnippet().getTitle()!=null&&!item.getSnippet().getTitle().isBlank())res.put("title",item.getSnippet().getTitle()); if(item.getSnippet().getDescription()!=null)res.put("description",item.getSnippet().getDescription()); String pub=item.getSnippet().getPublishedAt(); if(pub!=null&&pub.length()>=10){ String day=pub.substring(0,10); res.put("publishedAt",day.replace("-",".")); res.put("publishedOn",day); } } if(item.getContentDetails()!=null&&item.getContentDetails().getDuration()!=null) { String d=ISODuration.toClock(item.getContentDetails().getDuration()); if(d!=null&&!d.isBlank())res.put("duration",d); } if(item.getStatistics()!=null&&item.getStatistics().getViewCount()!=null)res.put("views",item.getStatistics().getViewCount()); } } catch(Exception ignored) {}
         return res;
     }
     public void registerMedia(String tab,MediaDto form) { registerMedia(tab,form,form==null?"":form.getArtistNames()); }
@@ -88,7 +91,12 @@ public class MediaService {
             if(views==0&&info.get("views")!=null)views=Long.parseLong(info.get("views").toString());
             if(description.isBlank()&&info.get("description")!=null)description=(String)info.get("description");
         } catch(Exception ignored) {}
-        MediaDto dto=MediaDto.builder().youtubeId(ytId).title(title).duration(dur).views(views).viewCountFmt(NumberFormat.getInstance().format(views)).description(description).artistNames(artistNames==null?"":artistNames).build();
+        String publishedOn=form.getPublishedOn()==null?"":form.getPublishedOn().trim();
+        if(publishedOn.isBlank()) try {
+            Map<String,Object> info=makeYoutubeInfo(ytId);
+            if(info.get("publishedOn")!=null) publishedOn=info.get("publishedOn").toString();
+        } catch(Exception ignored) {}
+        MediaDto dto=MediaDto.builder().youtubeId(ytId).title(title).duration(dur).views(views).viewCountFmt(NumberFormat.getInstance().format(views)).description(description).artistNames(artistNames==null?"":artistNames).publishedOn(publishedOn).build();
         addMedia(tab,dto,form.isAddFirst(),artistNames);
     }
     private Set<Artist> resolveArtists(String names) {
@@ -165,7 +173,15 @@ public class MediaService {
 
     private MediaDto toDto(Media m) {
         long views=m.getViewCount()!=null?m.getViewCount():0L;
-        return MediaDto.builder().tab(m.getTab()).youtubeId(m.getYoutubeId()).title(m.getMediaTitle()).duration(m.getMediaDur()).views(views).viewCountFmt(NumberFormat.getInstance().format(views)).description(m.getDescription()).artistNames(m.getArtistNames()).build();
+        return MediaDto.builder().tab(m.getTab()).youtubeId(m.getYoutubeId()).title(m.getMediaTitle()).duration(m.getMediaDur()).views(views).viewCountFmt(NumberFormat.getInstance().format(views)).description(m.getDescription()).artistNames(m.getArtistNames()).publishedOn(m.getPublishedOn()==null?"":m.getPublishedOn().toString()).build();
+    }
+
+    private static LocalDate parseDate(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        String value = raw.trim();
+        if (value.length() >= 10 && value.charAt(4) == '.') value = value.substring(0, 10).replace('.', '-');
+        try { return LocalDate.parse(value.length() >= 10 ? value.substring(0, 10) : value); }
+        catch (DateTimeParseException ex) { return null; }
     }
 
     /** TEXT 컬럼 한도 안에서 저장 (유튜브 설명이 매우 긴 경우 대비) */

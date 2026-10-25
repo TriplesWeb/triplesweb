@@ -141,13 +141,14 @@
 .collection-page .objekt-choice-mark {
     display: grid;
     place-items: center;
-    width: 1.45rem;
-    height: 1.45rem;
-    border-radius: .45rem;
-    border: 1px solid rgba(125, 249, 232, .28);
-    background: rgba(255,255,255,.04);
+    width: 1.15rem;
+    height: 1.15rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
     color: transparent;
-    font-size: 1.05rem;
+    font-size: 1.15rem;
     font-weight: 800;
 }
 .collection-page .objekt-choice-mark::before { content: "✓"; }
@@ -155,10 +156,11 @@
 .collection-page .objekt-choice.is-selected { background: rgba(0, 245, 212, .16); color: #f3fffb; }
 .collection-page .objekt-choice:has(input:checked) .objekt-choice-mark,
 .collection-page .objekt-choice.is-selected .objekt-choice-mark {
-    color: #04211c;
-    background: #7df9e8;
-    border-color: #fff;
-    box-shadow: 0 0 0 2px rgba(125, 249, 232, .55), 0 0 16px rgba(125, 249, 232, .95);
+    color: #7df9e8;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    text-shadow: 0 0 8px rgba(125, 249, 232, .55);
 }
 .collection-page .objekt-search-row {
     display: flex;
@@ -220,8 +222,13 @@
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: center;
-    gap: .55rem .65rem;
+    gap: .55rem 1.15rem;
     width: 100%;
+    padding-right: 1.35rem;
+}
+.collection-page .collection-filter-bar .objekt-filter:last-child .objekt-dropdown-menu {
+    left: auto;
+    right: .35rem;
 }
 .collection-page .collection-filter-bar .objekt-filter { width: 100%; }
 @media (max-width: 900px) {

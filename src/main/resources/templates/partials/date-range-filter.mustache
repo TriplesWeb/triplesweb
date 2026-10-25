@@ -1,0 +1,14 @@
+<div class="ar-date-filter" data-date-filter>
+    <button type="button" class="ar-date-toggle" data-date-toggle aria-expanded="false" aria-haspopup="dialog">
+        <span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>
+        <span>{{#hasDateFilter}}{{from}} ~ {{to}}{{/hasDateFilter}}{{^hasDateFilter}}기간{{/hasDateFilter}}</span>
+    </button>
+    <div class="ar-date-popover" data-date-popover hidden role="dialog" aria-label="기간 선택">
+        <label>시작 날짜<input type="date" name="from" value="{{from}}"></label>
+        <label>마지막 날짜<input type="date" name="to" value="{{to}}"></label>
+        <div class="ar-date-actions">
+            <button type="button" class="ar-text-btn" data-date-clear>지우기</button>
+            <button type="submit" class="ar-submit">적용</button>
+        </div>
+    </div>
+</div>

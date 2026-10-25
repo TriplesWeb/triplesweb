@@ -14,6 +14,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/archive-page.css?v=11">
 
     <title>트리플에스 커뮤니티 - 트리플에스 미디어</title>
 
@@ -198,6 +199,7 @@
             <option value="">전체 멤버</option>
             {{#artistOptions}}<option value="{{name}}" {{#selected}}selected{{/selected}}>{{name}}</option>{{/artistOptions}}
         </select>
+        {{>partials/date-range-filter}}
         <button type="submit" class="rounded-lg border border-[#00f5d4]/40 px-4 py-2 text-sm text-[#00f5d4]">필터 적용</button>
         {{#selectedArtist}}<a class="text-xs text-slate-300" href="/media?tab={{currentTab}}">필터 초기화</a>{{/selectedArtist}}
     </form>
@@ -244,17 +246,17 @@
             <ul class="pagination mb-0">
                 {{#hasPrev}}
                     <li class="page-item">
-                        <a class="page-link" href="/media?tab={{currentTab}}&page={{prevPage}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}">&laquo;</a>
+                        <a class="page-link" href="/media?tab={{currentTab}}&page={{prevPage}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}{{dateQuery}}">&laquo;</a>
                     </li>
                 {{/hasPrev}}
                 {{#pages}}
                     <li class="page-item {{#active}}active{{/active}}">
-                        <a class="page-link" href="/media?tab={{currentTab}}&page={{num}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}">{{num}}</a>
+                        <a class="page-link" href="/media?tab={{currentTab}}&page={{num}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}{{dateQuery}}">{{num}}</a>
                     </li>
                 {{/pages}}
                 {{#hasNext}}
                     <li class="page-item">
-                        <a class="page-link" href="/media?tab={{currentTab}}&page={{nextPage}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}">&raquo;</a>
+                        <a class="page-link" href="/media?tab={{currentTab}}&page={{nextPage}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}{{dateQuery}}">&raquo;</a>
                     </li>
                 {{/hasNext}}
             </ul>
@@ -281,6 +283,7 @@
     </div>
 </div>
 
+<script src="/js/date-range-filter.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
         crossorigin="anonymous"></script>

@@ -16,7 +16,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/archive-page.css?v=10">
+    <link rel="stylesheet" href="/css/archive-page.css?v=11">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=11">
     {{#_csrf}}
     <meta name="_csrf" content="{{token}}">
@@ -87,6 +87,7 @@
                 <span class="material-symbols-outlined">search</span>
                 <input class="ar-search" type="search" name="q" value="{{query}}" placeholder="사진 제목 검색" aria-label="사진 제목 검색">
             </label>
+            {{>partials/date-range-filter}}
             <button class="ar-submit" type="submit">검색</button>
             <button type="button" class="ar-submit" data-admin-only onclick="showAddModal()">사진 추가</button>
         </form>
@@ -128,7 +129,7 @@
                 <div class="ar-meta"><span class="ar-id" data-archive-number>{{displayNumber}}</span>{{>partials/archive-member-badges}}</div>
                 <h3>{{title}}</h3>
                 <div class="ar-actions" data-admin-only>
-                    <button type="button" data-archive-edit data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-url="{{file.url}}">수정</button>
+                    <button type="button" data-archive-edit data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-url="{{file.url}}" data-registered="{{registeredOn}}">수정</button>
                     <button type="button" class="ar-delete" data-archive-delete data-id="{{id}}" data-title="{{title}}">삭제</button>
                 </div>
             </div>
@@ -144,12 +145,12 @@
     <nav class="ar-panel ar-pager" aria-label="사진 페이지">
         <span>총 {{archiveTotal}}장 중 {{archivePageCount}}장 표시 (페이지 {{archivePageDisplay}} / {{archiveTotalPages}})</span>
         <div class="ar-pager-controls">
-            {{#hasArchivePrev}}<a href="{{archivePath}}?page={{archivePrevPage}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}">이전</a>{{/hasArchivePrev}}
+            {{#hasArchivePrev}}<a href="{{archivePath}}?page={{archivePrevPage}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">이전</a>{{/hasArchivePrev}}
             {{^hasArchivePrev}}<a class="is-disabled" aria-disabled="true">이전</a>{{/hasArchivePrev}}
             <div class="ar-pages">
-                {{#archivePages}}<a class="{{#active}}is-current{{/active}}" href="{{archivePath}}?page={{num}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}">{{label}}</a>{{/archivePages}}
+                {{#archivePages}}<a class="{{#active}}is-current{{/active}}" href="{{archivePath}}?page={{num}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">{{label}}</a>{{/archivePages}}
             </div>
-            {{#hasArchiveNext}}<a href="{{archivePath}}?page={{archiveNextPage}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}">다음</a>{{/hasArchiveNext}}
+            {{#hasArchiveNext}}<a href="{{archivePath}}?page={{archiveNextPage}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">다음</a>{{/hasArchiveNext}}
             {{^hasArchiveNext}}<a class="is-disabled" aria-disabled="true">다음</a>{{/hasArchiveNext}}
         </div>
     </nav>
@@ -168,6 +169,9 @@
             <div class="ar-dialog-body">
                 <label class="ar-field">제목
                     <input type="text" name="title" placeholder="사진 제목을 입력하세요" required>
+                </label>
+                <label class="ar-field">등록일
+                    <input type="date" name="registeredOn" required>
                 </label>
                 <div class="ar-field">출연 멤버
                     <div class="member-portrait-picker" id="archive-upload-picker" role="group" aria-label="출연 멤버">
@@ -214,6 +218,9 @@
                 <label class="ar-field">제목
                     <input type="text" name="title" required>
                 </label>
+                <label class="ar-field">등록일
+                    <input type="date" name="registeredOn" required>
+                </label>
                 <div class="ar-field">출연 멤버
                     <div class="member-portrait-picker" id="archive-edit-picker" role="group" aria-label="출연 멤버">
                         {{>partials/member-portrait-picker}}
@@ -250,7 +257,8 @@
 {{>layout/footer}}
 
 <script src="/js/member-portrait-picker.js?v=4"></script>
-<script src="/js/archive-manage.js?v=4"></script>
+<script src="/js/archive-manage.js?v=5"></script>
+<script src="/js/date-range-filter.js?v=1"></script>
 <script src="/js/archive-browse.js?v=6"></script>
 <script src="/js/archive-photo-carousel.js?v=1"></script>
 </body>

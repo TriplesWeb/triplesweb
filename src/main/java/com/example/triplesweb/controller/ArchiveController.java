@@ -27,6 +27,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 
 @Controller
 @RequiredArgsConstructor
@@ -42,6 +44,8 @@ public class ArchiveController {
                               @RequestParam(defaultValue = "0") int page,
                               @RequestParam(defaultValue = "9") int size,
                               @RequestParam(required = false) String q,
+                              @RequestParam(required = false) String from,
+                              @RequestParam(required = false) String to,
                               @RequestParam(required = false) List<String> members,
                               HttpServletRequest request, HttpSession session, Model model) {
 
@@ -55,9 +59,18 @@ public class ArchiveController {
         MediaType type = MediaType.valueOf(key);
 
         List<String> selectedMembers = normalizeMembers(members);
-        Page<Archive> archives = selectedMembers.isEmpty()
-                ? archiveService.pageByType(type, page, size, q)
-                : archiveService.pageByType(type, page, size, q, selectedMembers);
+        LocalDate fromDate = parseDate(from);
+        LocalDate toDate = parseDate(to);
+        if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
+            LocalDate swap = fromDate;
+            fromDate = toDate;
+            toDate = swap;
+        }
+        Page<Archive> archives = (fromDate == null && toDate == null)
+                ? (selectedMembers.isEmpty()
+                    ? archiveService.pageByType(type, page, size, q)
+                    : archiveService.pageByType(type, page, size, q, selectedMembers))
+                : archiveService.pageByType(type, page, size, q, selectedMembers, fromDate, toDate);
 
         List<Artist> artists = artistRepository.findAll();
         List<Map<String, Object>> cards = archiveCards(archives, artists);
@@ -71,6 +84,12 @@ public class ArchiveController {
         model.addAttribute("type", type);
         model.addAttribute("isAuthenticated", isAuthenticated);
         model.addAttribute("isAdmin", isAdmin);
+        String fromText = fromDate == null ? "" : fromDate.toString();
+        String toText = toDate == null ? "" : toDate.toString();
+        model.addAttribute("from", fromText);
+        model.addAttribute("to", toText);
+        model.addAttribute("hasDateFilter", fromDate != null || toDate != null);
+        model.addAttribute("dateQuery", dateQuery(fromText, toText));
         addArchivePage(model, archives, type, q, memberQuery(selectedMembers), cards);
         return (type == MediaType.IMAGE) ? "archive/image_archive" : "archive/video_archive";
     }
@@ -93,6 +112,24 @@ public class ArchiveController {
         return options;
     }
 
+    private static LocalDate parseDate(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try { return LocalDate.parse(raw.trim()); }
+        catch (DateTimeParseException ex) { return null; }
+    }
+
+    private static String dateQuery(String from, String to) {
+        StringBuilder query = new StringBuilder();
+        if (from != null && !from.isBlank()) query.append("&from=").append(URLEncoder.encode(from, StandardCharsets.UTF_8));
+        if (to != null && !to.isBlank()) query.append("&to=").append(URLEncoder.encode(to, StandardCharsets.UTF_8));
+        return query.toString();
+    }
+
+    private static LocalDate requireDate(LocalDate registeredOn) {
+        if (registeredOn == null) throw new IllegalArgumentException("등록일을 입력해주세요.");
+        return registeredOn;
+    }
+
     private static String memberQuery(List<String> selected) {
         if (selected.isEmpty()) return "";
         StringBuilder query = new StringBuilder();
@@ -113,9 +150,21 @@ public class ArchiveController {
         long offset = archives.getPageable().isPaged() ? archives.getPageable().getOffset() : 0;
         List<Map<String, Object>> cards = new ArrayList<>();
         for (Archive archive : archives) {
-            List<Map<String, String>> badges = new ArrayList<>();
+            List<Map<String, Object>> badges = new ArrayList<>();
             for (String name : normalizeMembers(archive.getArtistNames() == null ? List.of() : List.of(archive.getArtistNames().split(",")))) {
-                badges.add(Map.of("name", name, "color", colors.getOrDefault(name.toLowerCase(Locale.ROOT), "#b9cac4")));
+                Artist matched = null;
+                String keyName = name.toLowerCase(Locale.ROOT);
+                for (Artist artist : artists) {
+                    if (artist.getName() != null && artist.getName().trim().equalsIgnoreCase(name)) { matched = artist; break; }
+                    if (artist.getEngName() != null && artist.getEngName().trim().equalsIgnoreCase(name)) { matched = artist; break; }
+                }
+                String image = matched == null || matched.getDisplayProfileImage() == null ? "" : matched.getDisplayProfileImage();
+                Map<String, Object> badge = new LinkedHashMap<>();
+                badge.put("name", name);
+                badge.put("color", colors.getOrDefault(keyName, "#b9cac4"));
+                badge.put("image", image);
+                badge.put("hasImage", !image.isBlank());
+                badges.add(badge);
             }
             Map<String, Object> card = new LinkedHashMap<>();
             card.put("id", archive.getId());
@@ -125,6 +174,7 @@ public class ArchiveController {
             card.put("thumbnailUrl", archive.getThumbnailUrl());
             card.put("displayNumber", offset + cards.size() + 1);
             card.put("memberBadges", badges);
+            card.put("registeredOn", archive.getRegisteredOn() == null ? "" : archive.getRegisteredOn().toString());
             cards.add(card);
         }
         return cards;
@@ -165,9 +215,10 @@ public class ArchiveController {
     @PostMapping("/upload")
     public String uploadArchive(@RequestParam("title") String title,
                                 @RequestParam("type") MediaType type,
-                                @RequestParam("file") MultipartFile file, @RequestParam(value="artistNames", required=false) List<String> artistNames, HttpServletRequest request, HttpSession session) throws IOException {
+                                @RequestParam("file") MultipartFile file, @RequestParam(value="artistNames", required=false) List<String> artistNames,
+                                @RequestParam("registeredOn") LocalDate registeredOn, HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
-        archiveService.save(file, title, type, artistNames == null ? "" : String.join(",", artistNames));
+        archiveService.save(file, title, type, artistNames == null ? "" : String.join(",", artistNames), requireDate(registeredOn));
         return (type == MediaType.IMAGE)
                 ? "redirect:/archive/image_archive"
                 : "redirect:/archive/video_archive";
@@ -175,18 +226,20 @@ public class ArchiveController {
 
     @PostMapping("/upload/image")
     public String uploadImage(@RequestParam("file") MultipartFile file,
-                              @RequestParam("title") String title, @RequestParam(value="artistNames", required=false) List<String> artistNames, HttpServletRequest request, HttpSession session) throws IOException {
+                              @RequestParam("title") String title, @RequestParam(value="artistNames", required=false) List<String> artistNames,
+                              @RequestParam("registeredOn") LocalDate registeredOn, HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
-        archiveService.uploadImageOnly(file, title, MediaType.IMAGE, artistNames == null ? "" : String.join(",", artistNames));
+        archiveService.uploadImageOnly(file, title, MediaType.IMAGE, artistNames == null ? "" : String.join(",", artistNames), requireDate(registeredOn));
         return "redirect:/archive/image_archive";
     }
 
     @PostMapping("/upload/video")
     public String uploadVideo(@RequestParam("file") MultipartFile file,
                               @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnail,
-                              @RequestParam("title") String title, @RequestParam(value="artistNames", required=false) List<String> artistNames, HttpServletRequest request, HttpSession session) throws IOException {
+                              @RequestParam("title") String title, @RequestParam(value="artistNames", required=false) List<String> artistNames,
+                              @RequestParam("registeredOn") LocalDate registeredOn, HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
-        archiveService.uploadVideoOnly(file, title, MediaType.VIDEO, artistNames == null ? "" : String.join(",", artistNames), thumbnail);
+        archiveService.uploadVideoOnly(file, title, MediaType.VIDEO, artistNames == null ? "" : String.join(",", artistNames), thumbnail, requireDate(registeredOn));
         return "redirect:/archive/video_archive";
     }
 
@@ -198,11 +251,12 @@ public class ArchiveController {
                                            @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnail,
                                            @RequestParam(defaultValue = "false") boolean clearThumbnail,
                                            @RequestParam(value = "artistNames", required = false) String artistNames,
+                                           @RequestParam("registeredOn") LocalDate registeredOn,
                                            HttpServletRequest request,
                                            HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
         try {
-            archiveService.update(id, title, file, artistNames, thumbnail, clearThumbnail);
+            archiveService.update(id, title, file, artistNames, thumbnail, clearThumbnail, requireDate(registeredOn));
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

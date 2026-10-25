@@ -1,3 +1,6 @@
 {{#memberBadges}}
-<span class="ar-badge" style="--member-color: {{color}};">{{name}}</span>
+<span class="archive-member-chip" style="--member-color: {{color}};">
+    {{#hasImage}}<img src="{{image}}" alt="" referrerpolicy="no-referrer">{{/hasImage}}
+    <span>{{name}}</span>
+</span>
 {{/memberBadges}}

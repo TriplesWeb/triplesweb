@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -40,6 +42,8 @@ public class MediaArchiveController {
                             @RequestParam(defaultValue = "1") int page,
                             @RequestParam(defaultValue = "10") int size,
                             @RequestParam(required = false) String artist,
+                            @RequestParam(required = false) String from,
+                            @RequestParam(required = false) String to,
                             HttpServletRequest request,
                             HttpSession session,
                             Model model) {
@@ -56,21 +60,39 @@ public class MediaArchiveController {
         model.addAttribute("isSecret", "secret".equals(tab));
         model.addAttribute("isContents", "contents".equals(tab));
 
+        LocalDate fromDate = parseDate(from);
+        LocalDate toDate = parseDate(to);
+        if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
+            LocalDate swap = fromDate;
+            fromDate = toDate;
+            toDate = swap;
+        }
+        final LocalDate rangeStart = fromDate;
+        final LocalDate rangeEnd = toDate;
+        boolean artistFiltered = artist != null && !artist.isBlank();
+        boolean dateFiltered = rangeStart != null || rangeEnd != null;
         List<MediaDto> videos;
         int total;
-        if (artist != null && !artist.isBlank()) {
+        if (artistFiltered || dateFiltered) {
             List<MediaDto> filtered = media.allByTab(tab).stream()
-                    .filter(v -> splitNames(v.getArtistNames()).contains(artist))
+                    .filter(v -> !artistFiltered || splitNames(v.getArtistNames()).contains(artist))
+                    .filter(v -> matchesPublished(v.getPublishedOn(), rangeStart, rangeEnd))
                     .toList();
             total = filtered.size();
-            int from = Math.min((page - 1) * size, total);
-            int to = Math.min(from + size, total);
-            videos = filtered.subList(from, to);
+            int startIndex = Math.min((page - 1) * size, total);
+            int endIndex = Math.min(startIndex + size, total);
+            videos = filtered.subList(startIndex, endIndex);
         } else {
             videos = media.pageByTab(tab, page, size);
             total = media.totalByTab(tab);
         }
 
+        String fromText = rangeStart == null ? "" : rangeStart.toString();
+        String toText = rangeEnd == null ? "" : rangeEnd.toString();
+        model.addAttribute("from", fromText);
+        model.addAttribute("to", toText);
+        model.addAttribute("hasDateFilter", dateFiltered);
+        model.addAttribute("dateQuery", dateQuery(fromText, toText));
         model.addAttribute("selectedArtist", artist == null ? "" : artist);
         int totalPages = (int) Math.ceil(total / (double) size);
         model.addAttribute("videos", videos);
@@ -208,6 +230,27 @@ public class MediaArchiveController {
         String t = MediaTab.from(tab).getKey();
         media.remove(t, youtubeId);
         return "redirect:/media?tab=" + t;
+    }
+
+    private static LocalDate parseDate(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try { return LocalDate.parse(raw.trim()); }
+        catch (DateTimeParseException ex) { return null; }
+    }
+
+    private static boolean matchesPublished(String publishedOn, LocalDate from, LocalDate to) {
+        if (from == null && to == null) return true;
+        LocalDate day = parseDate(publishedOn);
+        if (day == null) return false;
+        if (from != null && day.isBefore(from)) return false;
+        return to == null || !day.isAfter(to);
+    }
+
+    private static String dateQuery(String from, String to) {
+        StringBuilder query = new StringBuilder();
+        if (from != null && !from.isBlank()) query.append("&from=").append(java.net.URLEncoder.encode(from, java.nio.charset.StandardCharsets.UTF_8));
+        if (to != null && !to.isBlank()) query.append("&to=").append(java.net.URLEncoder.encode(to, java.nio.charset.StandardCharsets.UTF_8));
+        return query.toString();
     }
 
     private List<Map<String, Object>> artistFilterOptions(String selectedArtist) {

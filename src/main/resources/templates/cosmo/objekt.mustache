@@ -367,14 +367,15 @@
         .objekt-choice-mark {
             display: grid;
             place-items: center;
-            width: 1.45rem;
-            height: 1.45rem;
+            width: 1.15rem;
+            height: 1.15rem;
             flex: 0 0 auto;
-            border-radius: .45rem;
-            border: 1px solid rgba(125, 249, 232, .28);
-            background: rgba(255,255,255,.04);
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
             color: transparent;
-            font-size: 1.05rem;
+            font-size: 1.15rem;
             font-weight: 800;
             line-height: 1;
         }
@@ -384,10 +385,11 @@
             color: #f3fffb;
         }
         .objekt-choice:has(input:checked) .objekt-choice-mark {
-            color: #04211c;
-            background: #7df9e8;
-            border-color: #fff;
-            box-shadow: 0 0 0 2px rgba(125, 249, 232, .55), 0 0 16px rgba(125, 249, 232, .95);
+            color: #7df9e8;
+            background: transparent;
+            border: 0;
+            box-shadow: none;
+            text-shadow: 0 0 8px rgba(125, 249, 232, .55);
         }
         #objekt-member-toggle[hidden] { display: none !important; }
         .objekt-kind-option:hover,

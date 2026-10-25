@@ -16,6 +16,8 @@ public class MediaDto {
     private String duration;
     private String description;
     private String artistNames;
+    /** 유튜브 공개일. yyyy-MM-dd */
+    private String publishedOn;
     @Builder.Default private boolean addFirst = true;
     public String normalizedTab() { return MediaTab.from(tab == null ? "mv" : tab).getKey(); }
 

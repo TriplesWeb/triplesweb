@@ -17,6 +17,7 @@ import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -43,6 +44,11 @@ public class ArchiveService {
     }
 
     public Page<Archive> pageByType(MediaType type, int page, int size, String keyword, List<String> members) {
+        return pageByType(type, page, size, keyword, members, null, null);
+    }
+
+    public Page<Archive> pageByType(MediaType type, int page, int size, String keyword, List<String> members,
+                                    LocalDate from, LocalDate to) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
         String q = keyword == null ? "" : keyword.trim();
         List<String> names = members == null ? List.of() : members.stream()
@@ -50,7 +56,7 @@ public class ArchiveService {
                 .map(name -> name.trim().toLowerCase(Locale.ROOT).replace(" ", ""))
                 .distinct()
                 .toList();
-        if (q.isEmpty() && names.isEmpty()) {
+        if (q.isEmpty() && names.isEmpty() && from == null && to == null) {
             return archiveRepository.findByFile_MediaType(type, pageable);
         }
         return archiveRepository.findAll((root, query, cb) -> {
@@ -69,6 +75,8 @@ public class ArchiveService {
                 }
                 predicates.add(cb.or(anyMember.toArray(Predicate[]::new)));
             }
+            if (from != null) predicates.add(cb.greaterThanOrEqualTo(root.get("registeredOn"), from));
+            if (to != null) predicates.add(cb.lessThanOrEqualTo(root.get("registeredOn"), to));
             return cb.and(predicates.toArray(Predicate[]::new));
         }, pageable);
     }
@@ -86,6 +94,11 @@ public class ArchiveService {
 
     @Transactional
     public Archive save(MultipartFile file, String title, MediaType requestedType, String artistNames) throws IOException {
+        return save(file, title, requestedType, artistNames, null);
+    }
+
+    @Transactional
+    public Archive save(MultipartFile file, String title, MediaType requestedType, String artistNames, LocalDate registeredOn) throws IOException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("업로드 할 파일이 없습니다.");
         }
@@ -97,6 +110,7 @@ public class ArchiveService {
         MediaType finalType = coerceType(requestedType, meta);
         Archive archive = new Archive(title, meta);
         archive.setArtistNames(artistNames == null ? "" : artistNames.trim());
+        if (registeredOn != null) archive.setRegisteredOn(registeredOn);
         return archiveRepository.save(archive);
     }
     @Transactional
@@ -115,6 +129,14 @@ public class ArchiveService {
         }
         return save(file, title, MediaType.IMAGE, artistNames);
     }
+
+    @Transactional
+    public Archive uploadImageOnly(MultipartFile file, String title, MediaType type, String artistNames, LocalDate registeredOn) throws IOException {
+        if (type != null && type != MediaType.IMAGE) {
+            throw new IllegalArgumentException("이미지 파일만 업로드 가능합니다.");
+        }
+        return save(file, title, MediaType.IMAGE, artistNames, registeredOn);
+    }
     @Transactional
     public Archive uploadVideoOnly(MultipartFile file, String title, MediaType type) throws IOException {
         return uploadVideoOnly(file, title, type, "");
@@ -131,6 +153,20 @@ public class ArchiveService {
         }
         validateThumbnail(thumbnail);
         Archive archive = save(file, title, MediaType.VIDEO, artistNames);
+        return finishVideo(archive, thumbnail);
+    }
+
+    @Transactional
+    public Archive uploadVideoOnly(MultipartFile file, String title, MediaType type, String artistNames, MultipartFile thumbnail, LocalDate registeredOn) throws IOException {
+        if (type != null && type != MediaType.VIDEO) {
+            throw new IllegalArgumentException("비디오 파일만 업로드 가능합니다.");
+        }
+        validateThumbnail(thumbnail);
+        Archive archive = save(file, title, MediaType.VIDEO, artistNames, registeredOn);
+        return finishVideo(archive, thumbnail);
+    }
+
+    private Archive finishVideo(Archive archive, MultipartFile thumbnail) throws IOException {
         if (thumbnail != null && !thumbnail.isEmpty()) {
             archive.setThumbnailUrl(fileStorageService.saveWithMeta(thumbnail).getUrl());
         }
@@ -157,6 +193,11 @@ public class ArchiveService {
 
     @Transactional
     public Archive update(long id, String title, MultipartFile file, String artistNames, MultipartFile thumbnail, boolean clearThumbnail) throws IOException {
+        return update(id, title, file, artistNames, thumbnail, clearThumbnail, null);
+    }
+
+    @Transactional
+    public Archive update(long id, String title, MultipartFile file, String artistNames, MultipartFile thumbnail, boolean clearThumbnail, LocalDate registeredOn) throws IOException {
         Archive archive = show(id);
         validateThumbnail(thumbnail);
         if (thumbnail != null && !thumbnail.isEmpty() && archive.getType() != MediaType.VIDEO) {
@@ -169,6 +210,9 @@ public class ArchiveService {
         archive.setTitle(safeTitle);
         if (artistNames != null) {
             archive.setArtistNames(artistNames.trim());
+        }
+        if (registeredOn != null) {
+            archive.setRegisteredOn(registeredOn);
         }
         if (file != null && !file.isEmpty()) {
             SavedMeta previous = archive.getFile();

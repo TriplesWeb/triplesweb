@@ -108,9 +108,9 @@ class ArchiveControllerTest {
         when(archiveService.delete(7L)).thenReturn(true);
         MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
 
-        mvc.perform(multipart("/archive/7").file(file).param("title", "새 제목").param("artistNames", "서연"))
+        mvc.perform(multipart("/archive/7").file(file).param("title", "새 제목").param("artistNames", "서연").param("registeredOn", "2026-10-01"))
                 .andExpect(status().isOk());
-        verify(archiveService).update(eq(7L), eq("새 제목"), any(), eq("서연"), isNull(), eq(false));
+        verify(archiveService).update(eq(7L), eq("새 제목"), any(), eq("서연"), isNull(), eq(false), eq(java.time.LocalDate.of(2026, 10, 1)));
         verify(aboutAdminAuth).requireAdmin(any(), any());
 
         mvc.perform(delete("/archive/7")).andExpect(status().isOk());
@@ -121,9 +121,9 @@ class ArchiveControllerTest {
         var video = new MockMultipartFile("file", "video.mp4", "video/mp4", new byte[]{1});
         var thumbnail = new MockMultipartFile("thumbnail", "poster.jfif", "application/octet-stream", new byte[]{2});
         mvc.perform(multipart("/archive/upload/video").file(video).file(thumbnail)
-                        .param("title", "영상").param("artistNames", "서연"))
+                        .param("title", "영상").param("artistNames", "서연").param("registeredOn", "2026-10-02"))
                 .andExpect(status().is3xxRedirection());
-        verify(archiveService).uploadVideoOnly(any(), eq("영상"), eq(MediaType.VIDEO), eq("서연"), any());
+        verify(archiveService).uploadVideoOnly(any(), eq("영상"), eq(MediaType.VIDEO), eq("서연"), any(), eq(java.time.LocalDate.of(2026, 10, 2)));
         verify(aboutAdminAuth).requireAdmin(any(), any());
     }
 

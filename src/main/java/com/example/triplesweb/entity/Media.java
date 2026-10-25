@@ -2,6 +2,7 @@ package com.example.triplesweb.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -48,6 +49,9 @@ public class Media {
     @Column(nullable = false)
     @Builder.Default
     private Long sortOrder = 0L;
+
+    @Column(name = "published_on")
+    private LocalDate publishedOn;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
