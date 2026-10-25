@@ -137,10 +137,44 @@
 
 .chem-page-actions {
     justify-content: flex-end;
+    align-items: center;
+}
+
+/* 2인/3인+ · EN · 관리자 높이를 한 줄로 맞춤 */
+.chem-page-actions .chem-mode-toggle,
+.chem-page-actions .chem-lang-btn,
+.chem-page-actions .chem-admin-btn {
+    box-sizing: border-box;
+    height: 2.15rem;
+    min-height: 2.15rem;
 }
 
 .chem-page-actions .chem-lang-btn {
     margin-left: 0.15rem;
+}
+
+.chem-page-actions .chem-mode-toggle {
+    padding: 2px;
+}
+
+.chem-page-actions .chem-mode-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 0 0.85rem;
+    font-size: 0.8125rem;
+    line-height: 1;
+}
+
+.chem-page-actions .chem-lang-btn,
+.chem-page-actions .chem-admin-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.85rem;
+    font-size: 0.8125rem;
+    line-height: 1;
 }
 
 .chem-lang-btn {
