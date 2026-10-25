@@ -165,6 +165,20 @@
 .archive-page[data-archive-kind="video"] .ar-card video { height: auto; aspect-ratio: 16 / 9; max-height: 20rem; object-fit: contain; }
 .archive-page[data-archive-kind="video"] .ar-highlight video,
 .ar-dialog .ar-preview video { object-fit: contain; }
+.ar-video-thumb { position: relative; display: block; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: #07080b; color: #e3e2e8; text-decoration: none; }
+.archive-page .ar-video-thumb img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; }
+.archive-page .ar-video-thumb img[hidden] { display: none; }
+.ar-video-placeholder { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 0.5rem; background: radial-gradient(ellipse at center, #203e3b, #101319); color: #a3b7b0; font-size: 0.75rem; }
+.ar-video-play { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; width: 3rem; height: 3rem; margin: auto; padding-left: 0.15rem; border: 1px solid rgba(0,245,212,0.4); border-radius: 50%; background: rgba(0,0,0,0.72); color: #c0fff3; font-size: 1.15rem; transition: background 150ms ease; }
+.ar-video-thumb:hover .ar-video-play { background: #007b6d; }
+.ar-video-thumb:focus-visible { outline: 2px solid #00f5d4; outline-offset: -3px; }
+.ar-video-player { width: min(94vw, 64rem); max-height: 92dvh; padding: 0; overflow: auto; border: 1px solid rgba(0,245,212,0.25); border-radius: 1rem; background: #16181f; color: #e3e2e8; }
+.ar-video-player::backdrop { background: rgba(0,0,0,0.82); backdrop-filter: blur(4px); }
+.ar-video-player .ar-dialog-head h2 { min-width: 0; overflow-wrap: anywhere; }
+.ar-video-player video { display: block; width: 100%; max-height: 68dvh; aspect-ratio: 16 / 9; object-fit: contain; background: #000; }
+.ar-video-player-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.9rem 1.1rem; font-size: 0.85rem; }
+.ar-video-player-foot p { margin: 0; color: #ffcf9b; }
+.ar-video-player-foot a { margin-left: auto; color: #8bf5dc; }
 .ar-picker-meta { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; color: #b9cac4; font-size: 0.8rem; }
 .ar-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .ar-preview[hidden] { display: none !important; }

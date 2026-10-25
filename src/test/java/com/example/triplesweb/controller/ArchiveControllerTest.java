@@ -85,7 +85,11 @@ class ArchiveControllerTest {
         when(archiveService.pageByType(eq(MediaType.VIDEO), anyInt(), anyInt(), isNull())).thenReturn(new PageImpl<>(List.of(video)));
 
         mvc.perform(get("/archive/video_archive")).andExpect(status().isOk())
-                .andExpect(content().string(containsString("poster=\"/uploads/poster.webp\"")))
+                .andExpect(content().string(containsString("data-poster=\"/uploads/poster.webp\"")))
+                .andExpect(content().string(containsString("src=\"/uploads/poster.webp\"")))
+                .andExpect(content().string(containsString("data-archive-video")))
+                .andExpect(content().string(containsString("id=\"archiveVideoPlayer\"")))
+                .andExpect(content().string(not(containsString("<video controls preload=\"metadata\""))))
                 .andExpect(content().string(containsString("name=\"thumbnail\"")))
                 .andExpect(content().string(containsString("무대영상")))
                 .andExpect(content().string(containsString("영상 아카이브")))
