@@ -234,13 +234,11 @@
         onChange: (values) => {
           if (memberInput) memberInput.value = values[0] || '';
           setGroup(values[0] ? 'members' : (groupInput?.value === 'other' ? 'other' : 'members'), false);
-          form.requestSubmit();
         }
       });
     }
     tabs.forEach((tab) => tab.addEventListener('click', () => {
       setGroup(tab.dataset.objektGroup || 'all', true);
-      form.requestSubmit();
     }));
     toggle?.addEventListener('click', () => {
       const collapsed = panel.classList.toggle('is-collapsed');
@@ -282,7 +280,6 @@
       sync();
       menu.hidden = true;
       toggleBtn.setAttribute('aria-expanded', 'false');
-      form.requestSubmit();
     }));
     toggleBtn.addEventListener('click', () => {
       const open = menu.hasAttribute('hidden');
@@ -320,7 +317,6 @@
       const chosen = boxes().some((other) => other.value !== 'all' && other.checked);
       if (all && !chosen) all.checked = true;
       syncLabel();
-      form.requestSubmit();
     }));
     toggleBtn.addEventListener('click', () => {
       const open = menu.hasAttribute('hidden');

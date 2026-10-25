@@ -859,8 +859,6 @@
     const kindEmpty = document.getElementById('kind-empty');
     const kindOptions = kindMenu ? [...kindMenu.querySelectorAll('.objekt-kind-option')] : [];
     let kindActiveIndex = -1;
-    let filtersReady = false;
-    let filterTimer = null;
 
     function normalizeKindValue(raw) {
         const value = String(raw || '').trim();
@@ -868,24 +866,10 @@
         return value.toUpperCase();
     }
 
-    function submitFilters({ immediate = false } = {}) {
-        if (!filtersReady || !form) return;
-        const run = () => {
-            if (typeof form.requestSubmit === 'function') form.requestSubmit();
-            else form.submit();
-        };
-        clearTimeout(filterTimer);
-        if (immediate) run();
-        else filterTimer = setTimeout(run, 320);
-    }
-
-    function setKindValue(raw, { apply = false } = {}) {
+    function setKindValue(raw) {
         if (!kindSelect) return;
-        const next = normalizeKindValue(raw);
-        const prevApplied = normalizeKindValue(params.get('kind') || 'all');
-        kindSelect.value = next;
+        kindSelect.value = normalizeKindValue(raw);
         markActiveFilters();
-        if (apply && next !== prevApplied) submitFilters({ immediate: true });
     }
 
     function filterKindOptions(query) {
@@ -965,16 +949,16 @@
                 if (!kindMenu.classList.contains('hidden') && kindActiveIndex >= 0) {
                     const allVisible = visibleKindOptions();
                     if (allVisible[kindActiveIndex]) {
-                        setKindValue(allVisible[kindActiveIndex].dataset.value, { apply: true });
+                        setKindValue(allVisible[kindActiveIndex].dataset.value);
                         closeKindMenu();
                         return;
                     }
                 }
                 const typed = normalizeKindValue(kindSelect.value);
                 const exact = kindOptions.find((opt) => normalizeKindValue(opt.dataset.value) === typed);
-                if (exact) setKindValue(exact.dataset.value, { apply: true });
-                else if (visible.length === 1) setKindValue(visible[0].dataset.value, { apply: true });
-                else setKindValue(typed, { apply: true });
+                if (exact) setKindValue(exact.dataset.value);
+                else if (visible.length === 1) setKindValue(visible[0].dataset.value);
+                else setKindValue(typed);
                 closeKindMenu();
             } else if (e.key === 'Escape') {
                 closeKindMenu();
@@ -984,7 +968,7 @@
             // 옵션 클릭이 blur보다 먼저 처리되도록 약간 지연
             setTimeout(() => {
                 if (!kindMenu.contains(document.activeElement) && document.activeElement !== kindToggle) {
-                    setKindValue(kindSelect.value, { apply: true });
+                    setKindValue(kindSelect.value);
                     closeKindMenu();
                 }
             }, 120);
@@ -1001,7 +985,7 @@
         kindOptions.forEach((opt) => {
             opt.addEventListener('mousedown', (e) => e.preventDefault());
             opt.addEventListener('click', () => {
-                setKindValue(opt.dataset.value, { apply: true });
+                setKindValue(opt.dataset.value);
                 closeKindMenu();
             });
         });
@@ -1050,7 +1034,6 @@
         syncMemberGroup();
         syncMemberLabel();
         if (typeof markActiveFilters === 'function') markActiveFilters();
-        if (apply) submitFilters();
     }
 
     // 멤버 초상화 다중선택
@@ -1089,12 +1072,11 @@
         } else { syncMemberGroup(); syncMemberLabel(); }
         setMemberPickerOpen(group === 'members');
         markActiveFilters();
-        submitFilters({ immediate: true });
     }));
     memberToggle?.addEventListener('click', () => {
         if (memberGroupInput.value === 'other') {
             memberGroupInput.value = 'members'; syncMemberGroup(); syncMemberLabel();
-            setMemberPickerOpen(true); markActiveFilters(); submitFilters({ immediate: true }); return;
+            setMemberPickerOpen(true); markActiveFilters(); return;
         }
         setMemberPickerOpen(memberRoot.classList.contains('is-collapsed'));
     });
@@ -1119,7 +1101,6 @@
             if (all && !chosen) all.checked = true;
             updateDropdownLabel(type);
             markActiveFilters();
-            submitFilters();
         }));
         updateDropdownLabel(type);
     });
@@ -1138,11 +1119,9 @@
         memberRoot?.classList.toggle('is-filtered', memberOn);
     }
     markActiveFilters();
-    form.addEventListener('change', (e) => {
+    form.addEventListener('change', () => {
         markActiveFilters();
-        if (e.target === sortSelect) submitFilters({ immediate: true });
     });
-    filtersReady = true;
 
     window.toggleDropdown = function(id) {
         closeKindMenu();
