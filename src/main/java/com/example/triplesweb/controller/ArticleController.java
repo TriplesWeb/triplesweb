@@ -12,6 +12,7 @@ import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.CommentService;
 import com.example.triplesweb.service.DateTimeFormatService;
 import com.example.triplesweb.util.ArticleHtmlCleaner;
+import com.example.triplesweb.util.ObjektFilterOrder;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -167,10 +168,8 @@ public class ArticleController {
 
         model.addAttribute("showObjektPicker", true);
         model.addAttribute("objektSelected", selectedItems);
-        model.addAttribute("objektMemberOptions", members.stream()
-                .sorted(String.CASE_INSENSITIVE_ORDER).toList());
-        model.addAttribute("objektSeasonOptions", seasons.stream()
-                .sorted(String.CASE_INSENSITIVE_ORDER).toList());
+        model.addAttribute("objektMemberOptions", ObjektFilterOrder.sortedMembers(members));
+        model.addAttribute("objektSeasonOptions", ObjektFilterOrder.sortedSeasons(seasons));
         model.addAttribute("objektClassOptions", classes.stream()
                 .sorted(String.CASE_INSENSITIVE_ORDER).toList());
     }

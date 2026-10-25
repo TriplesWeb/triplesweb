@@ -88,7 +88,7 @@ class CosmoProfileServiceTest {
         var view = profiles.profile("테스트", "progress", "YuBin", 0);
         assertThat(view).containsEntry("checklistOwned", 0).containsEntry("checklistTotal", 2);
         assertThat((List<Map<String, Object>>) view.get("checklistSeasons")).extracting(row -> row.get("season"))
-                .containsExactly("Atom01", "Cream02");
+                .containsExactly("Cream02", "Atom01");
         assertThat((List<Map<String, Object>>) view.get("progressMemberOptions")).hasSize(1)
                 .first().asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.MAP).containsEntry("selected", true);
     }
@@ -100,5 +100,15 @@ class CosmoProfileServiceTest {
         assertThat(view).containsEntry("checklistTotal", 1).containsEntry("checklistOwned", 1);
         assertThat(((List<Map<String, Object>>) view.get("checklistSeasons")).get(0))
                 .containsEntry("complete", true).containsEntry("percent", 100);
+    }
+
+    @Test @SuppressWarnings("unchecked") void memberDropdownIsInSOrderWithAdditionalNamesLast() {
+        given(List.of(), List.of(kind("last", "Jiyeon", "Cream02", "First", "101Z"),
+                kind("first", "SeoYeon", "Atom01", "First", "101Z"),
+                kind("extra", "Alpha", "Binary02", "First", "101Z"),
+                kind("second", "HyeRin", "Ever01", "First", "101Z")));
+        var view = profiles.profile("테스트", "progress", "", 0);
+        assertThat((List<Map<String, Object>>) view.get("progressMemberOptions")).extracting(row -> row.get("name"))
+                .containsExactly("SeoYeon", "HyeRin", "Jiyeon", "Alpha");
     }
 }

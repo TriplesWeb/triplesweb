@@ -2,6 +2,7 @@ package com.example.triplesweb.service;
 
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.util.MemberPortraitOptions;
+import com.example.triplesweb.util.ObjektFilterOrder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.net.URLEncoder;
@@ -85,7 +86,7 @@ public class CosmoProfileService {
             Map<String, Object> portrait = portraits.getOrDefault(member, Map.of());
             String color = text(portrait, "color");
             if (!color.matches("#[0-9a-fA-F]{6}")) color = "#66e6ce";
-            String image = text(portrait, "image");
+            String image = Boolean.TRUE.equals(portrait.get("textOnly")) ? "" : text(portrait, "image");
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("member", member); row.put("owned", matched); row.put("total", available.size());
             row.put("copies", copies.getOrDefault(member, 0)); row.put("percent", percent);
@@ -115,7 +116,7 @@ public class CosmoProfileService {
         for (Map<String, Object> card : held) copies.merge(text(card, "slug"), 1L, Long::sum);
         Comparator<String> natural = Comparator.comparingLong(CosmoProfileService::numericPart)
                 .thenComparing(String.CASE_INSENSITIVE_ORDER);
-        Map<String, List<Map<String, Object>>> seasons = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, List<Map<String, Object>>> seasons = new TreeMap<>(ObjektFilterOrder.seasons());
         for (Map<String, Object> item : unique.values())
             seasons.computeIfAbsent(text(item, "season"), k -> new ArrayList<>()).add(item);
         List<String> classOrder = List.of("first", "special", "double", "premier", "motion", "lenticular", "unit");
@@ -163,7 +164,7 @@ public class CosmoProfileService {
         result.put("checklistSeasons", seasonRows); result.put("hasChecklist", !seasonRows.isEmpty());
         result.put("checklistOwned", collected); result.put("checklistTotal", unique.size());
         result.put("checklistMissing", unique.size() - collected);
-        result.put("progressMemberOptions", names.stream().map(name -> Map.<String, Object>of("name", name,
+        result.put("progressMemberOptions", names.stream().sorted(ObjektFilterOrder.members()).map(name -> Map.<String, Object>of("name", name,
                 "selected", name.equalsIgnoreCase(member), "url", base + "?tab=progress&member=" + encode(name))).toList());
         return result;
     }

@@ -5,6 +5,7 @@ import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.ObjektMarketDataService;
 import com.example.triplesweb.util.MemberPortraitOptions;
+import com.example.triplesweb.util.ObjektFilterOrder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
@@ -49,12 +50,12 @@ public class CosmoController {
         // 무한 스크롤: 최초 HTML은 항상 첫 페이지(20개)만 렌더한다.
         ObjektPageResult page = loadObjektPage(0, search, member, season, classFilters, kind, sort);
 
-        List<String> memberOptions = orderedMemberOptions(
+        List<String> memberOptions = ObjektFilterOrder.sortedMembers(
                 uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "member", "memberName")));
         List<Artist> artists = artistRepository.findAll(Sort.by(Sort.Direction.ASC, "artistId"));
         model.addAttribute("memberOptions", memberOptions);
         model.addAttribute("memberPickerOptions", MemberPortraitOptions.forObjektFilter(memberOptions, artists));
-        model.addAttribute("seasonOptions", uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "seasonKey", "season")));
+        model.addAttribute("seasonOptions", ObjektFilterOrder.sortedSeasons(uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "seasonKey", "season"))));
         model.addAttribute("classOptions", uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "classKey", "class")));
         model.addAttribute("objektNumbers", uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "collectionNo", "collectionNumber")));
 
@@ -178,50 +179,6 @@ public class CosmoController {
             String error
     ) {}
 
-    /**
-     * 멤버 체크박스는 사용자가 지정한 트리플에스 멤버 순서로 표시한다.
-     * 이 목록에 없는 API 멤버 값은 아래쪽에 이름순으로 표시한다.
-     */
-    private static List<String> orderedMemberOptions(List<String> values) {
-        List<String> englishOrder = List.of(
-                "seoyeon", "hyerin", "jiwoo", "chaeyeon", "yooyeon", "soomin",
-                "nakyoung", "yubin", "kaede", "dahyun", "kotone", "yeonji",
-                "nien", "sohyun", "xinyu", "mayu", "lynn", "joobin",
-                "hayeon", "shion", "chaewon", "sullin", "seoah", "jiyeon"
-        );
-        List<String> koreanOrder = List.of(
-                "윤서연", "정혜린", "이지우", "김채연", "김유연", "김수민",
-                "김나경", "공유빈", "카에데", "서다현", "코토네", "곽연지",
-                "니엔", "박소현", "신위", "마유", "린", "주빈",
-                "정하연", "박시온", "김채원", "설린", "서아", "지연"
-        );
-
-        return values.stream()
-                .sorted(Comparator
-                        .comparingInt((String value) -> preferredMemberIndex(value, englishOrder, koreanOrder))
-                        .thenComparing(String.CASE_INSENSITIVE_ORDER)
-                        .thenComparing(Comparator.naturalOrder()))
-                .collect(Collectors.toList());
-    }
-
-    private static int preferredMemberIndex(String value, List<String> englishOrder, List<String> koreanOrder) {
-        String normalized = normalizeMemberName(value);
-        for (int i = 0; i < englishOrder.size(); i++) {
-            String english = normalizeMemberName(englishOrder.get(i));
-            String korean = normalizeMemberName(koreanOrder.get(i));
-            if (normalized.equals(english) || normalized.equals(korean)
-                    || normalized.contains(english) || normalized.contains(korean)) {
-                return i;
-            }
-        }
-        return Integer.MAX_VALUE;
-    }
-
-    private static String normalizeMemberName(String value) {
-        if (value == null) return "";
-        return value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9가-힣]", "");
-    }
-
     private static List<String> cleanSelections(List<String> values) {
         if (values == null) return Collections.emptyList();
         return values.stream().filter(Objects::nonNull).map(String::trim)
@@ -237,7 +194,9 @@ public class CosmoController {
                 firstValue(objekt, "slug"),
                 firstValue(objekt, "artist"),
                 value(objekt, "searchText"));
-        return selected.stream().anyMatch(member -> MemberPortraitOptions.objektIncludesMember(text, member));
+        return selected.stream().anyMatch(member -> MemberPortraitOptions.memberIndex(member) < 24
+                ? MemberPortraitOptions.objektIncludesMember(text, member)
+                : normalize(member).equals(normalize(firstValue(objekt, "member", "memberName"))));
     }
 
     private static boolean matchesSelection(List<String> selected, String actual) {

@@ -14,6 +14,18 @@
       const img = btn.querySelector(".artist-tab-photo");
       if (!img) return;
       const drop = () => {
+        if (btn.dataset.keepOption === 'true') {
+          const avatar = btn.querySelector('.artist-tab-avatar');
+          if (avatar) {
+            const fallback = document.createElement('span');
+            fallback.className = 'artist-tab-fallback';
+            const number = Number(btn.dataset.frame);
+            fallback.textContent = number >= 1 && number <= 24 ? `S${number}` : '•';
+            fallback.setAttribute('aria-hidden', 'true');
+            avatar.replaceChildren(fallback);
+          }
+          return;
+        }
         const value = btn.dataset.value || "";
         if (value) {
           scope.querySelectorAll(".member-checkbox[data-mpp-value]").forEach((box) => {
