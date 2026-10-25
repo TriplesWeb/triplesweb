@@ -1,6 +1,7 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.entity.Article;
+import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.service.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.ui.ExtendedModelMap;
@@ -13,8 +14,10 @@ class ArticleObjektOrderingTest {
         var articles = mock(ArticleService.class);
         var objekts = mock(ObjektService.class);
         var links = mock(ArticleObjektService.class);
+        var artists = mock(ArtistRepository.class);
+        when(artists.findAll()).thenReturn(List.of());
         var controller = new ArticleController(articles, mock(CommentService.class), mock(ArticleFileServiceImpl.class),
-                mock(DateTimeFormatService.class), links, objekts);
+                mock(DateTimeFormatService.class), links, objekts, artists);
         when(objekts.findCollections("triples")).thenReturn(List.of(
                 Map.of("member", "Jiyeon", "season", "Atom01"), Map.of("member", "Alpha", "season", "Cream02"),
                 Map.of("member", "HyeRin", "season", "Ever01"), Map.of("member", "SeoYeon", "season", "Binary02")));
@@ -27,7 +30,9 @@ class ArticleObjektOrderingTest {
             var edited = new ExtendedModelMap();
             controller.editArticle(category, 3L, edited);
             for (var model : List.of(fresh, edited)) {
-                assertThat(model.get("objektMemberOptions")).isEqualTo(List.of("윤서연", "정혜린", "지연", "Alpha"));
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> picker = (List<Map<String, Object>>) model.get("memberPickerOptions");
+                assertThat(picker).extracting(row -> row.get("value")).containsExactly("윤서연", "정혜린", "지연", "Alpha");
                 assertThat(model.get("objektSeasonOptions")).isEqualTo(List.of("Cream02", "Binary02", "Ever01", "Atom01"));
             }
         }
@@ -35,13 +40,17 @@ class ArticleObjektOrderingTest {
 
     @Test void mergedMemberOptionSearchesAllOriginalAliases() {
         var catalog = mock(ObjektService.class);
+        var artists = mock(ArtistRepository.class);
+        when(artists.findAll()).thenReturn(List.of());
         var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
-                mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog);
+                mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog, artists);
         when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("member", "S21"),
                 Map.of("member", "ChaeWon"), Map.of("member", "김채원"), Map.of("member", "S22")));
         assertThat(controller.objektOptions("김채원", "", "", "", 0, 24)).containsEntry("total", 3);
         assertThat(controller.objektOptions("S21", "", "", "", 0, 24)).containsEntry("total", 3);
         var model = new ExtendedModelMap(); controller.showArticleForm("trade", model);
-        assertThat(model.get("objektMemberOptions")).isEqualTo(List.of("김채원", "설린"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> picker = (List<Map<String, Object>>) model.get("memberPickerOptions");
+        assertThat(picker).extracting(row -> row.get("value")).containsExactly("김채원", "설린");
     }
 }

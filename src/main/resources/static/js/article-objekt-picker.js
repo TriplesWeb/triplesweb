@@ -11,6 +11,9 @@
     const loadMore = document.getElementById('loadMoreObjekts');
     const status = document.getElementById('objektPickerStatus');
     const memberFilter = document.getElementById('objektFilterMember');
+    const memberRoot = document.getElementById('objekt-picker-member');
+    const memberMeta = document.getElementById('objektPickerMemberMeta');
+    const memberClear = document.getElementById('objektPickerMemberClear');
     const seasonFilter = document.getElementById('objektFilterSeason');
     const classFilter = document.getElementById('objektFilterClass');
     const searchFilter = document.getElementById('objektFilterSearch');
@@ -36,6 +39,11 @@
       const count = selectedNodes().length;
       if (summary) summary.textContent = count > 0 ? `선택된 오브젝트 ${count}개` : '선택된 오브젝트 0개';
       if (toggle) toggle.textContent = open ? '목록 닫기' : (count > 0 ? `오브젝트 선택 (${count})` : '오브젝트 선택');
+    }
+
+    function syncMemberMeta() {
+      const value = memberFilter ? memberFilter.value.trim() : '';
+      if (memberMeta) memberMeta.textContent = value || '전체 멤버';
     }
 
     function setSelected(id, on) {
@@ -152,9 +160,28 @@
       if (open && list && list.children.length === 0) load(true);
     }
 
+    if (window.MemberPortraitPicker && memberRoot) {
+      MemberPortraitPicker.bindMultiSelect(memberRoot, {
+        multi: false,
+        onChange: (values) => {
+          if (memberFilter) memberFilter.value = values[0] || '';
+          syncMemberMeta();
+          if (open) load(true);
+        }
+      });
+    }
+    if (memberClear) {
+      memberClear.addEventListener('click', () => {
+        if (window.MemberPortraitPicker && memberRoot) MemberPortraitPicker.clear(memberRoot);
+        if (memberFilter) memberFilter.value = '';
+        syncMemberMeta();
+        if (open) load(true);
+      });
+    }
+
     if (toggle) toggle.addEventListener('click', () => setOpen(!open));
     if (loadMore) loadMore.addEventListener('click', () => load(false));
-    [memberFilter, seasonFilter, classFilter].forEach((el) => {
+    [seasonFilter, classFilter].forEach((el) => {
       if (el) el.addEventListener('change', () => { if (open) load(true); });
     });
     if (searchFilter) {
@@ -165,14 +192,17 @@
     }
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
+        if (window.MemberPortraitPicker && memberRoot) MemberPortraitPicker.clear(memberRoot);
         if (memberFilter) memberFilter.value = '';
         if (seasonFilter) seasonFilter.value = '';
         if (classFilter) classFilter.value = '';
         if (searchFilter) searchFilter.value = '';
+        syncMemberMeta();
         if (open) load(true);
       });
     }
 
+    syncMemberMeta();
     updateSummary();
     setOpen(false);
   }

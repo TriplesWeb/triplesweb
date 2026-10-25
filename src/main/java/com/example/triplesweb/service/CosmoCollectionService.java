@@ -34,6 +34,11 @@ public class CosmoCollectionService {
     }
 
     public Map<String, Object> search(String rawNickname, int page) {
+        return search(rawNickname, page, "", "", "", "");
+    }
+
+    public Map<String, Object> search(String rawNickname, int page,
+                                      String member, String season, String objektClass, String query) {
         String nickname = rawNickname == null ? "" : rawNickname.trim();
         if (nickname.isBlank()) throw new IllegalArgumentException(NOT_FOUND);
         if (nickname.length() > 40 || nickname.contains("/") || nickname.contains(" "))
@@ -45,19 +50,40 @@ public class CosmoCollectionService {
             return load(nickname);
         });
         if (found.address.isBlank()) throw new IllegalArgumentException(NOT_FOUND);
-        int totalPages = Math.max(1, (int) Math.ceil(found.cards.size() / (double) PAGE_SIZE));
+        String memberKey = member == null ? "" : member.trim();
+        String seasonKey = season == null ? "" : season.trim();
+        String classKey = objektClass == null ? "" : objektClass.trim();
+        String search = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
+        List<Map<String, Object>> filtered = found.cards.stream().filter(card -> {
+            if (!memberKey.isBlank()
+                    && !com.example.triplesweb.util.MemberPortraitOptions.sameMember(
+                    text(card, "member"), memberKey)) return false;
+            if (!seasonKey.isBlank() && !text(card, "season").equalsIgnoreCase(seasonKey)) return false;
+            if (!classKey.isBlank() && !text(card, "objektClass").equalsIgnoreCase(classKey)) return false;
+            if (!search.isBlank()) {
+                String haystack = (text(card, "collectionId") + " " + text(card, "member") + " "
+                        + text(card, "season") + " " + text(card, "objektClass") + " "
+                        + text(card, "serial") + " " + text(card, "slug")).toLowerCase(Locale.ROOT);
+                if (!haystack.contains(search)) return false;
+            }
+            return true;
+        }).toList();
+        int totalPages = Math.max(1, (int) Math.ceil(filtered.size() / (double) PAGE_SIZE));
         int safePage = Math.min(Math.max(0, page), totalPages - 1);
         int from = safePage * PAGE_SIZE;
-        List<Map<String, Object>> cards = found.cards.subList(from, Math.min(found.cards.size(), from + PAGE_SIZE));
+        List<Map<String, Object>> cards = filtered.subList(from, Math.min(filtered.size(), from + PAGE_SIZE));
+        String nickEnc = URLEncoder.encode(found.nickname, StandardCharsets.UTF_8);
+        String filterQuery = filterQuery(memberKey, seasonKey, classKey, query == null ? "" : query.trim());
         Map<String, Object> view = new LinkedHashMap<>();
         view.put("nickname", found.nickname);
-        view.put("nicknameEncoded", URLEncoder.encode(found.nickname, StandardCharsets.UTF_8));
+        view.put("nicknameEncoded", nickEnc);
         view.put("profileImageUrl", GravityService.safeImage(found.image));
         view.put("hasProfileImage", !GravityService.safeImage(found.image).isBlank());
         view.put("ownedCount", found.cards.size());
+        view.put("filteredCount", filtered.size());
         view.put("cards", cards);
         view.put("allCards", found.cards);
-        view.put("profileUrl", "/cosmo/profile/" + URLEncoder.encode(found.nickname, StandardCharsets.UTF_8).replace("+", "%20"));
+        view.put("profileUrl", "/cosmo/profile/" + nickEnc.replace("+", "%20"));
         view.put("hasCards", !cards.isEmpty());
         view.put("pageDisplay", safePage + 1);
         view.put("totalPages", totalPages);
@@ -65,7 +91,28 @@ public class CosmoCollectionService {
         view.put("hasNext", safePage + 1 < totalPages);
         view.put("prevPage", Math.max(0, safePage - 1));
         view.put("nextPage", safePage + 1);
+        view.put("selectedMember", memberKey);
+        view.put("selectedSeason", seasonKey);
+        view.put("selectedClass", classKey);
+        view.put("searchQuery", query == null ? "" : query.trim());
+        view.put("filterQuery", filterQuery);
+        view.put("hasActiveFilters", !memberKey.isBlank() || !seasonKey.isBlank()
+                || !classKey.isBlank() || !(query == null || query.isBlank()));
         return view;
+    }
+
+    private static String filterQuery(String member, String season, String klass, String query) {
+        StringBuilder out = new StringBuilder();
+        if (!member.isBlank()) out.append("&member=").append(URLEncoder.encode(member, StandardCharsets.UTF_8));
+        if (!season.isBlank()) out.append("&season=").append(URLEncoder.encode(season, StandardCharsets.UTF_8));
+        if (!klass.isBlank()) out.append("&class=").append(URLEncoder.encode(klass, StandardCharsets.UTF_8));
+        if (!query.isBlank()) out.append("&q=").append(URLEncoder.encode(query, StandardCharsets.UTF_8));
+        return out.toString();
+    }
+
+    private static String text(Map<String, Object> card, String key) {
+        Object value = card.get(key);
+        return value == null ? "" : value.toString();
     }
 
     private Cached load(String nickname) {

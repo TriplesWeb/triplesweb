@@ -1,6 +1,7 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.config.MustacheConfig;
+import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.service.CosmoCollectionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import static org.hamcrest.Matchers.*;
 class CosmoCollectionControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean CosmoCollectionService collections;
+    @MockitoBean ArtistRepository artists;
 
     @Test void initialPageAndEmptySubmittedNicknameHaveDifferentMessages() throws Exception {
         mvc.perform(get("/cosmo/collection")).andExpect(status().isOk())
@@ -31,26 +33,46 @@ class CosmoCollectionControllerTest {
     }
 
     @Test void missingNicknameAndNetworkFailureHaveDifferentMessages() throws Exception {
-        when(collections.search("없는사람", 0)).thenThrow(new IllegalArgumentException("없는 닉네임 입니다."));
+        when(collections.search("없는사람", 0, "", "", "", "")).thenThrow(new IllegalArgumentException("없는 닉네임 입니다."));
         mvc.perform(get("/cosmo/collection").param("nickname", "없는사람"))
                 .andExpect(status().isOk()).andExpect(content().string(containsString("없는 닉네임 입니다.")));
-        when(collections.search("테스트", 0)).thenThrow(new IllegalStateException("network"));
+        when(collections.search("테스트", 0, "", "", "", "")).thenThrow(new IllegalStateException("network"));
         mvc.perform(get("/cosmo/collection").param("nickname", "테스트"))
                 .andExpect(content().string(containsString("잠시 후 다시 검색")))
                 .andExpect(content().string(not(containsString("없는 닉네임 입니다."))));
     }
 
     @Test void cardsRenderCollectionSerialAndMenuIsSecondOnBothLayouts() throws Exception {
-        var view = new java.util.LinkedHashMap<String, Object>(Map.of("nickname", "테스트", "hasProfileImage", false,
-                "ownedCount", 1, "hasCards", true, "pageDisplay", 1, "totalPages", 1, "hasPrev", false, "hasNext", false));
+        var view = new java.util.LinkedHashMap<String, Object>();
+        view.put("nickname", "테스트");
+        view.put("hasProfileImage", false);
+        view.put("ownedCount", 1);
+        view.put("filteredCount", 1);
+        view.put("hasCards", true);
+        view.put("pageDisplay", 1);
+        view.put("totalPages", 1);
+        view.put("hasPrev", false);
+        view.put("hasNext", false);
+        view.put("nicknameEncoded", "%ED%85%8C%EC%8A%A4%ED%8A%B8");
+        view.put("profileUrl", "/cosmo/profile/%ED%85%8C%EC%8A%A4%ED%8A%B8");
+        view.put("selectedMember", "");
+        view.put("selectedSeason", "");
+        view.put("selectedClass", "");
+        view.put("searchQuery", "");
+        view.put("filterQuery", "");
+        view.put("hasActiveFilters", false);
         view.put("cards", List.of(Map.of("serial", "27", "hasSerial", true, "collectionId", "Cream02 HaYeon 367Z",
                 "member", "HaYeon", "season", "Cream02", "objektClass", "Double", "hasImage", true,
                 "thumbnailImage", "https://example.com/card.webp", "hasDetail", false)));
-        when(collections.search("테스트", 0)).thenReturn(view);
+        view.put("allCards", view.get("cards"));
+        when(collections.search("테스트", 0, "", "", "", "")).thenReturn(view);
+        when(artists.findAll()).thenReturn(List.of());
         mvc.perform(get("/cosmo/collection").param("nickname", "테스트")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("#27")))
                 .andExpect(content().string(containsString("collection-image")))
                 .andExpect(content().string(containsString("내 오브젝트 검색")))
+                .andExpect(content().string(containsString("수집 현황 보기")))
+                .andExpect(content().string(containsString("보유 오브젝트 필터")))
                 .andExpect(content().string(not(containsString("#30000001"))));
     }
 }

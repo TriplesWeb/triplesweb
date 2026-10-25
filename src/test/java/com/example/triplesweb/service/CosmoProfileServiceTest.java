@@ -19,13 +19,14 @@ class CosmoProfileServiceTest {
         when(collections.search("테스트", 0)).thenReturn(Map.of("allCards", held, "ownedCount", held.size(),
                 "nickname", "테스트", "profileUrl", "/cosmo/profile/%ED%85%8C%EC%8A%A4%ED%8A%B8"));
         when(catalog.findCollections("triples")).thenReturn(all);
+        when(artists.findAll()).thenReturn(List.of());
     }
     @Test @SuppressWarnings("unchecked") void duplicateCopiesDoNotInflateCompletionAndWelcomeIsExcluded() {
         given(List.of(card("a", "HaYeon", "Double"), card("a", "HaYeon", "Double"), card("welcome", "HaYeon", "Welcome")),
                 List.of(Map.of("slug", "a", "member", "HaYeon", "class", "Double"),
                         Map.of("slug", "b", "member", "HaYeon", "class", "First"),
                         Map.of("slug", "welcome", "member", "HaYeon", "class", "Welcome")));
-        var view = profiles.profile("테스트", "progress", "", 0);
+        var view = profiles.profile("테스트", "");
         var rows = (List<Map<String, Object>>) view.get("memberProgress");
         assertThat(view).containsEntry("uniqueCount", 2L).containsEntry("ownedCount", 3);
         assertThat(rows).hasSize(1);
@@ -34,23 +35,12 @@ class CosmoProfileServiceTest {
     }
     @Test @SuppressWarnings("unchecked") void missingCatalogDoesNotFabricateACompletionRate() {
         given(List.of(card("a", "HaYeon", "Double")), List.of());
-        var view = profiles.profile("테스트", "progress", "", 0);
+        var view = profiles.profile("테스트", "");
         assertThat(((List<Map<String, Object>>) view.get("memberProgress")).get(0)).containsEntry("hasTotal", false);
-    }
-    @Test @SuppressWarnings("unchecked") void memberFilteredCollectionPaginatesWithoutReloadingEachCard() {
-        List<Map<String, Object>> held = new ArrayList<>();
-        for (int i = 0; i < 26; i++) held.add(card("a" + i, "HaYeon", "Double"));
-        held.add(card("other", "Jiyeon", "First"));
-        given(held, List.of());
-        var view = profiles.profile("테스트", "collection", "HaYeon", Integer.MAX_VALUE);
-        assertThat(view).containsEntry("filteredCount", 26).containsEntry("pageDisplay", 2).containsEntry("hasNext", false);
-        assertThat((List<Map<String, Object>>) view.get("cards")).hasSize(2);
-        assertThat(view.get("previousUrl").toString()).contains("member=%EC%A0%95%ED%95%98%EC%97%B0", "page=0");
-        verify(collections).search("테스트", 0);
     }
     @Test void emptyProfileHasNoInventedStatistics() {
         given(List.of(), List.of());
-        assertThat(profiles.profile("테스트", "progress", "", 0)).containsEntry("hasStats", false)
+        assertThat(profiles.profile("테스트", "")).containsEntry("hasStats", false)
                 .containsEntry("uniqueCount", 0L).containsEntry("memberCount", 0L).containsEntry("hasMemberProgress", false);
     }
 
@@ -68,7 +58,7 @@ class CosmoProfileServiceTest {
                 kind("n201", "HaYeon", "Cream02", "Special", "201Z"),
                 kind("welcome", "HaYeon", "Cream02", "Welcome", "000Z"),
                 kind("other", "YuBin", "Cream02", "First", "001Z")));
-        var view = profiles.profile("테스트", "progress", "hayeon", 0);
+        var view = profiles.profile("테스트", "hayeon");
         assertThat(view).containsEntry("checklistOwned", 1).containsEntry("checklistTotal", 4)
                 .containsEntry("checklistMissing", 3).containsEntry("hasProgressMember", true);
         var seasons = (List<Map<String, Object>>) view.get("checklistSeasons");
@@ -85,31 +75,20 @@ class CosmoProfileServiceTest {
     @Test @SuppressWarnings("unchecked") void membersWithNoHoldingsCanStillOpenTheirEntireCatalog() {
         given(List.of(), List.of(kind("a", "YuBin", "Atom01", "First", "101Z"),
                 kind("b", "YuBin", "Cream02", "Special", "201Z")));
-        var view = profiles.profile("테스트", "progress", "YuBin", 0);
-        assertThat(view).containsEntry("checklistOwned", 0).containsEntry("checklistTotal", 2);
+        var view = profiles.profile("테스트", "YuBin");
+        assertThat(view).containsEntry("checklistOwned", 0).containsEntry("checklistTotal", 2)
+                .containsEntry("selectedMember", "공유빈");
         assertThat((List<Map<String, Object>>) view.get("checklistSeasons")).extracting(row -> row.get("season"))
                 .containsExactly("Cream02", "Atom01");
-        assertThat((List<Map<String, Object>>) view.get("progressMemberOptions")).hasSize(1)
-                .first().asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.MAP).containsEntry("selected", true);
     }
 
     @Test @SuppressWarnings("unchecked") void seasonCompletionUsesDistinctCatalogKindsNotCopyCount() {
         var kind = kind("a", "HaYeon", "Cream02", "First", "101Z");
         given(List.of(card("a", "HaYeon", "First"), card("a", "HaYeon", "First")), List.of(kind, kind));
-        var view = profiles.profile("테스트", "progress", "HaYeon", 0);
+        var view = profiles.profile("테스트", "HaYeon");
         assertThat(view).containsEntry("checklistTotal", 1).containsEntry("checklistOwned", 1);
         assertThat(((List<Map<String, Object>>) view.get("checklistSeasons")).get(0))
                 .containsEntry("complete", true).containsEntry("percent", 100);
-    }
-
-    @Test @SuppressWarnings("unchecked") void memberDropdownIsInSOrderWithAdditionalNamesLast() {
-        given(List.of(), List.of(kind("last", "Jiyeon", "Cream02", "First", "101Z"),
-                kind("first", "SeoYeon", "Atom01", "First", "101Z"),
-                kind("extra", "Alpha", "Binary02", "First", "101Z"),
-                kind("second", "HyeRin", "Ever01", "First", "101Z")));
-        var view = profiles.profile("테스트", "progress", "", 0);
-        assertThat((List<Map<String, Object>>) view.get("progressMemberOptions")).extracting(row -> row.get("name"))
-                .containsExactly("윤서연", "정혜린", "지연", "Alpha");
     }
 
     @Test @SuppressWarnings("unchecked") void profileMergesAliasesAndLegacyMemberUrlsSelectTheUnifiedName() {
@@ -117,15 +96,12 @@ class CosmoProfileServiceTest {
                 kind("a", "S21", "Cream02", "First", "101Z"),
                 kind("b", "ChaeWon", "Cream02", "First", "102Z"),
                 kind("c", "김채원", "Cream02", "First", "103Z")));
-        var view = profiles.profile("테스트", "progress", "S21", 0);
+        var view = profiles.profile("테스트", "S21");
         assertThat(view).containsEntry("selectedMember", "김채원").containsEntry("checklistTotal", 3)
                 .containsEntry("checklistOwned", 2).containsEntry("memberCount", 1L);
-        var options = (List<Map<String, Object>>) view.get("progressMemberOptions");
-        assertThat(options).hasSize(1).first().asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.MAP)
-                .containsEntry("name", "김채원").containsEntry("selected", true);
         var progress = (List<Map<String, Object>>) view.get("memberProgress");
         assertThat(progress).hasSize(1);
-        assertThat(progress.get(0)).containsEntry("member", "김채원").containsEntry("total", 3).containsEntry("owned", 2L);
-        assertThat((List<Map<String, Object>>) profiles.profile("테스트", "collection", "김채원", 0).get("cards")).hasSize(2);
+        assertThat(progress.get(0)).containsEntry("member", "김채원").containsEntry("total", 3).containsEntry("owned", 2L)
+                .containsEntry("progressUrl", "/cosmo/profile/%ED%85%8C%EC%8A%A4%ED%8A%B8?member=%EA%B9%80%EC%B1%84%EC%9B%90");
     }
 }

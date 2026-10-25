@@ -31,6 +31,7 @@ class CosmoProfileControllerTest {
         when(collections.search("Fan", 0)).thenReturn(Map.of("nickname", "Fan", "profileUrl", "/cosmo/profile/Fan",
                 "ownedCount", 1, "hasProfileImage", false, "allCards", List.of(card)));
         when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("slug", "cream02-hayeon-367z", "member", "HaYeon", "class", "Double")));
+        when(artists.findAll()).thenReturn(List.of());
     }
 
     @Test void progressPageRendersActualCountsAndNoWalletIdentifiers() throws Exception {
@@ -40,17 +41,17 @@ class CosmoProfileControllerTest {
                 .andExpect(content().string(containsString("멤버별 수집 현황")))
                 .andExpect(content().string(containsString("aria-valuenow=\"100\"")))
                 .andExpect(content().string(containsString("1 / 1종")))
+                .andExpect(content().string(containsString("수집 현황 보기")))
+                .andExpect(content().string(not(containsString("보유 카드만 보기"))))
+                .andExpect(content().string(not(containsString("보유 오브젝트</a>"))))
                 .andExpect(content().string(not(containsString("토큰 ID")))).andReturn();
         java.nio.file.Files.writeString(java.nio.file.Path.of("build/profile-progress-preview.html"), result.getResponse().getContentAsString());
     }
 
-    @Test void collectionTabShowsActualSerialAndDoesNotLoseMemberFilter() throws Exception {
-        givenProfile();
-        var result = mvc.perform(get("/cosmo/profile/Fan").param("tab", "collection").param("member", "HaYeon"))
-                .andExpect(status().isOk()).andExpect(content().string(containsString("#1")))
-                .andExpect(content().string(containsString("정하연 · 보유 오브젝트 1개")))
-                .andExpect(content().string(containsString("collection-image-wrap"))).andReturn();
-        java.nio.file.Files.writeString(java.nio.file.Path.of("build/profile-collection-preview.html"), result.getResponse().getContentAsString());
+    @Test void collectionTabRedirectsToOwnedCollectionPage() throws Exception {
+        mvc.perform(get("/cosmo/profile/Fan").param("tab", "collection").param("member", "HaYeon"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/cosmo/collection?nickname=Fan"));
     }
 
     @Test void missingAndUnavailableProfilesHaveUsefulErrors() throws Exception {

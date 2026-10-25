@@ -16,16 +16,23 @@
     <div id="objektPickerPanel" class="hidden space-y-3" hidden>
         <p class="text-xs text-slate-400">멤버·시즌·클래스로 필터하거나 검색한 뒤 체크하세요.</p>
 
-        <div class="objekt-picker-filter-bar">
-            <div class="objekt-picker-filter">
-                <span class="objekt-picker-filter-label">멤버</span>
-                <select id="objektFilterMember" class="objekt-picker-filter-control" aria-label="멤버 필터">
-                    <option value="">전체</option>
-                    {{#objektMemberOptions}}
-                    <option value="{{.}}">{{.}}</option>
-                    {{/objektMemberOptions}}
-                </select>
+        <div class="objekt-picker-member-block">
+            <div class="mpp-toolbar">
+                <div>
+                    <p class="mpp-toolbar-title">멤버</p>
+                    <p class="mpp-toolbar-meta" id="objektPickerMemberMeta">전체 멤버</p>
+                </div>
+                <div class="mpp-toolbar-actions">
+                    <button type="button" class="mpp-tool-btn" id="objektPickerMemberClear">선택 해제</button>
+                </div>
             </div>
+            <input type="hidden" id="objektFilterMember" value="" aria-hidden="true">
+            <div class="member-portrait-picker is-compact" id="objekt-picker-member" role="group" aria-label="멤버 필터">
+                {{>partials/member-portrait-picker}}
+            </div>
+        </div>
+
+        <div class="objekt-picker-filter-bar">
             <div class="objekt-picker-filter">
                 <span class="objekt-picker-filter-label">시즌</span>
                 <select id="objektFilterSeason" class="objekt-picker-filter-control" aria-label="시즌 필터">

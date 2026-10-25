@@ -6,6 +6,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @Controller
 @RequiredArgsConstructor
 public class CosmoProfileController {
@@ -15,9 +18,13 @@ public class CosmoProfileController {
     public String profile(@PathVariable String nickname, @RequestParam(defaultValue = "progress") String tab,
                           @RequestParam(defaultValue = "") String member,
                           @RequestParam(defaultValue = "0") int page, Model model) {
+        if ("collection".equalsIgnoreCase(tab)) {
+            return "redirect:/cosmo/collection?nickname="
+                    + URLEncoder.encode(nickname, StandardCharsets.UTF_8).replace("+", "%20");
+        }
         model.addAttribute("requestedNickname", nickname);
         try {
-            model.addAllAttributes(profiles.profile(nickname, tab, member, page));
+            model.addAllAttributes(profiles.profile(nickname, member));
             model.addAttribute("hasProfile", true);
         } catch (IllegalArgumentException ex) {
             model.addAttribute("profileError", ex.getMessage());

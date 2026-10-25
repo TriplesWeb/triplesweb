@@ -18,12 +18,11 @@ public class CosmoProfileService {
     private final ArtistRepository artists;
 
     @SuppressWarnings("unchecked")
-    public Map<String, Object> profile(String nickname, String tab, String member, int page) {
+    public Map<String, Object> profile(String nickname, String member) {
         Map<String, Object> view = new LinkedHashMap<>(collections.search(nickname, 0));
         List<Map<String, Object>> all = (List<Map<String, Object>>) view.remove("allCards");
         String base = String.valueOf(view.get("profileUrl"));
-        view.put("isCollection", "collection".equals(tab));
-        view.put("isProgress", !"collection".equals(tab));
+        view.put("nicknameEncoded", URLEncoder.encode(String.valueOf(view.get("nickname")), StandardCharsets.UTF_8));
         view.put("uniqueCount", all.stream().map(card -> text(card, "slug")).filter(s -> !s.isBlank()).distinct().count());
         view.put("memberCount", all.stream().map(card -> MemberPortraitOptions.memberName(text(card, "member"))).filter(s -> !s.isBlank()).distinct().count());
         view.put("seasonStats", breakdown(all, "season"));
@@ -35,22 +34,13 @@ public class CosmoProfileService {
         view.put("hasMemberProgress", !progress.isEmpty());
         String selected = MemberPortraitOptions.memberName(member);
         view.put("hasProgressMember", !selected.isBlank());
-        if (!"collection".equals(tab)) view.putAll(memberChecklist(all, catalogSnapshot, selected, base));
-        List<Map<String, Object>> filtered = all.stream().filter(card -> selected.isBlank()
-                || MemberPortraitOptions.sameMember(selected, text(card, "member"))).toList();
-        int pages = Math.max(1, (filtered.size() + 23) / 24);
-        int safePage = Math.max(0, Math.min(page, pages - 1));
-        view.put("cards", filtered.subList(safePage * 24, Math.min(filtered.size(), safePage * 24 + 24)));
-        view.put("hasCards", !filtered.isEmpty());
         view.put("selectedMember", selected);
-        view.put("filteredCount", filtered.size());
-        view.put("pageDisplay", safePage + 1);
-        view.put("totalPages", pages);
-        view.put("hasPrev", safePage > 0);
-        view.put("hasNext", safePage + 1 < pages);
-        String query = "?tab=collection&member=" + encode(selected) + "&page=";
-        view.put("previousUrl", base + query + Math.max(0, safePage - 1));
-        view.put("nextUrl", base + query + (safePage + 1));
+        view.putAll(memberChecklist(all, catalogSnapshot, selected, base));
+        List<Map<String, Object>> picker = MemberPortraitOptions.fromArtists(artists.findAll(), false);
+        for (Map<String, Object> option : picker) {
+            option.put("active", MemberPortraitOptions.sameMember(selected, String.valueOf(option.get("value"))));
+        }
+        view.put("memberPickerOptions", picker);
         return view;
     }
 
@@ -92,8 +82,7 @@ public class CosmoProfileService {
             row.put("copies", copies.getOrDefault(member, 0)); row.put("percent", percent);
             row.put("hasTotal", !available.isEmpty()); row.put("color", color);
             row.put("image", image); row.put("hasImage", !image.isBlank());
-            row.put("collectionUrl", profileUrl + "?tab=collection&member=" + encode(member));
-            row.put("progressUrl", profileUrl + "?tab=progress&member=" + encode(member));
+            row.put("progressUrl", profileUrl + "?member=" + encode(member));
             rows.add(row);
         }
         rows.sort(Comparator.<Map<String, Object>>comparingInt(row -> (Integer) row.get("percent")).reversed()
@@ -104,12 +93,10 @@ public class CosmoProfileService {
 
     private static Map<String, Object> memberChecklist(List<Map<String, Object>> held,
             List<Map<String, Object>> catalog, String member, String base) {
-        Set<String> names = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         Map<String, Map<String, Object>> unique = new LinkedHashMap<>();
         for (Map<String, Object> item : catalog) {
             if (excluded(text(item, "class"))) continue;
             String name = MemberPortraitOptions.memberName(text(item, "member")), slug = text(item, "slug");
-            if (!name.isBlank()) names.add(name);
             if (name.equalsIgnoreCase(member) && !slug.isBlank()) unique.putIfAbsent(slug, item);
         }
         Map<String, Long> copies = new HashMap<>();
@@ -164,8 +151,6 @@ public class CosmoProfileService {
         result.put("checklistSeasons", seasonRows); result.put("hasChecklist", !seasonRows.isEmpty());
         result.put("checklistOwned", collected); result.put("checklistTotal", unique.size());
         result.put("checklistMissing", unique.size() - collected);
-        result.put("progressMemberOptions", names.stream().sorted(ObjektFilterOrder.members()).map(name -> Map.<String, Object>of("name", name,
-                "selected", name.equalsIgnoreCase(member), "url", base + "?tab=progress&member=" + encode(name))).toList());
         return result;
     }
 

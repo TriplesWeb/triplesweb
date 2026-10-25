@@ -29,3 +29,85 @@
 .collection-detail-link { margin-top: auto; color: #8bf5dc; font-size: .85rem; text-decoration: none; }
 .collection-detail-link:hover { text-decoration: underline; }
 .collection-detail-link:focus-visible { outline: 2px solid #8bf5dc; outline-offset: 4px; }
+.collection-action-btn {
+    display: inline-flex;
+    align-items: center;
+    margin-top: .85rem;
+    padding: .55rem 1rem;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 245, 212, .4);
+    background: rgba(0, 245, 212, .12);
+    color: #b1fff0;
+    font-size: .85rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+.collection-action-btn:hover { background: rgba(0, 245, 212, .2); }
+.collection-action-btn:focus-visible { outline: 2px solid #8bf5dc; outline-offset: 3px; }
+.collection-filter-panel { display: grid; gap: 1rem; }
+.collection-filter-form { display: grid; gap: .9rem; }
+.collection-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .55rem;
+}
+.collection-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    min-height: 2.4rem;
+    padding: .2rem .65rem;
+    border: 1px solid rgba(48, 54, 74, .9);
+    border-radius: .7rem;
+    background: rgba(26, 29, 40, .88);
+    color: #9aa3b5;
+    font-size: .75rem;
+    font-weight: 650;
+}
+.collection-filter select {
+    min-width: 5.5rem;
+    min-height: 1.7rem;
+    border: 0;
+    border-radius: .45rem;
+    background: #00e8cb;
+    color: #071513;
+    font-size: .75rem;
+    font-weight: 700;
+    padding: .15rem .45rem;
+}
+.collection-search {
+    flex: 1 1 12rem;
+    min-width: 10rem;
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    min-height: 2.4rem;
+    padding: 0 .7rem;
+    border: 1px solid rgba(48, 54, 74, .9);
+    border-radius: .7rem;
+    background: rgba(10, 12, 18, .72);
+    color: #6ee7d8;
+}
+.collection-search input {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #f1f5f9;
+    font: inherit;
+    font-size: .85rem;
+}
+.collection-reset {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.4rem;
+    padding: 0 .85rem;
+    border: 1px solid rgba(0, 245, 212, .35);
+    border-radius: .7rem;
+    color: #7df9e8;
+    font-size: .78rem;
+    font-weight: 650;
+    text-decoration: none;
+}
+.collection-reset:hover { background: rgba(0, 245, 212, .08); }

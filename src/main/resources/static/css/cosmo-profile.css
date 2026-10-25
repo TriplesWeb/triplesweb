@@ -9,10 +9,7 @@
 .profile-totals dt { color: #afbfba; font-size: .85rem; }
 .profile-totals dd { margin-top: .4rem; font-size: 1.8rem; font-weight: 750; font-variant-numeric: tabular-nums; }
 .profile-totals dd span { margin-left: .3rem; font-size: .85rem; color: #afbfba; }
-.profile-tabs { display: flex; gap: 1.5rem; border-bottom: 1px solid #ffffff20; }
-.profile-tabs a { padding: .8rem .2rem; color: #a6b1b0; text-decoration: none; border-bottom: 3px solid transparent; font-weight: 650; }
-.profile-tabs a[aria-current] { color: #b1fff0; border-bottom-color: #6de7d0; }
-.profile-tabs a:focus-visible, .profile-member a:focus-visible { outline: 2px solid #8bf5dc; outline-offset: 3px; }
+.profile-member a:focus-visible { outline: 2px solid #8bf5dc; outline-offset: 3px; }
 .profile-section-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .7rem; margin-bottom: 1rem; }
 .profile-section-heading h2, .profile-breakdown h2 { font-size: 1.1rem; font-weight: 700; }
 .profile-section-heading p { font-size: .78rem; color: #a6b6b1; }
@@ -38,10 +35,19 @@
     .profile-totals { gap: 1.5rem; }
     .profile-totals dd { font-size: 1.5rem; }
 }
-.profile-member-picker { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; }
-.profile-member-picker label { color: #b9cac4; font-size: .85rem; }
-.profile-member-picker select, .profile-member-picker button { border: 1px solid #ffffff25; border-radius: .7rem; background: #171a21; color: #e9f1ee; padding: .65rem .9rem; font: inherit; font-size: .85rem; }
-.profile-member-picker button { background: #65ddc7; color: #071512; font-weight: 700; cursor: pointer; }
+.profile-member-picker {
+    display: grid;
+    gap: .85rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid #ffffff18;
+    border-radius: 1rem;
+    background: #14161c;
+}
+.profile-member-picker .mpp-tool-btn {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+}
 .profile-checklist { min-width: 0; }
 .profile-checklist-legend { display: flex; flex-wrap: wrap; gap: .75rem; font-size: .8rem; color: #9daaa7; margin-bottom: 1rem; }
 .profile-checklist-legend .is-owned { color: #8bf5dc; }
@@ -79,5 +85,4 @@
     .profile-checklist-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: .6rem; gap: .6rem; }
     .profile-checklist-caption { flex-direction: column; align-items: flex-start; }
     .profile-group-toggle { width: 100%; margin-left: 0; }
-    .profile-member-picker select { flex: 1; min-width: 0; }
 }

@@ -7,6 +7,7 @@ import com.example.triplesweb.dto.ArticleViewMapper;
 import com.example.triplesweb.entity.Article;
 import com.example.triplesweb.service.ArticleFileServiceImpl;
 import com.example.triplesweb.service.ArticleService;
+import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.service.ArticleObjektService;
 import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.CommentService;
@@ -44,6 +45,7 @@ public class ArticleController {
     private final DateTimeFormatService dateTimeFormatService;
     private final ArticleObjektService articleObjektService;
     private final ObjektService objektService;
+    private final ArtistRepository artistRepository;
 
     private static final Set<String> ALLOWED_CATEGORIES = Set.of(
             "free", "chat", "trade", "sell", "info", "notice"
@@ -169,7 +171,8 @@ public class ArticleController {
 
         model.addAttribute("showObjektPicker", true);
         model.addAttribute("objektSelected", selectedItems);
-        model.addAttribute("objektMemberOptions", ObjektFilterOrder.sortedMembers(members));
+        model.addAttribute("memberPickerOptions",
+                MemberPortraitOptions.forObjektFilter(ObjektFilterOrder.sortedMembers(members), artistRepository.findAll()));
         model.addAttribute("objektSeasonOptions", ObjektFilterOrder.sortedSeasons(seasons));
         model.addAttribute("objektClassOptions", classes.stream()
                 .sorted(String.CASE_INSENSITIVE_ORDER).toList());

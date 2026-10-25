@@ -7,13 +7,14 @@
 <title>{{requestedNickname}} · COSMO 닉네임 상세</title>
 <link rel="stylesheet" href="/css/gravity-page.css?v=2">
 <link rel="stylesheet" href="/css/archive-page.css?v=3">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=2">
-<link rel="stylesheet" href="/css/cosmo-profile.css?v=2">
+<link rel="stylesheet" href="/css/member-portrait-picker.css?v=6">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=3">
+<link rel="stylesheet" href="/css/cosmo-profile.css?v=3">
 </head>
 <body class="collection-page min-h-screen flex flex-col">
 {{>layout/header}}
 <main class="gravity-page cosmo-profile">
-<a href="/cosmo/collection" class="collection-detail-link">← 내 오브젝트 검색</a>
+<a href="/cosmo/collection?nickname={{requestedNickname}}" class="collection-detail-link">← 내 오브젝트 검색</a>
 {{#profileError}}<section class="gv-panel gv-headline" role="status"><h1>닉네임 상세</h1><p>{{profileError}}</p></section>{{/profileError}}
 {{#hasProfile}}
 <section class="gv-panel profile-hero">
@@ -28,17 +29,20 @@
         <div><dt>수집한 멤버</dt><dd>{{memberCount}}<span>명</span></dd></div>
     </dl>
 </section>
-<nav class="profile-tabs" aria-label="닉네임 상세 메뉴">
-    <a href="{{profileUrl}}?tab=progress" {{#isProgress}}aria-current="page"{{/isProgress}}>수집 현황</a>
-    <a href="{{profileUrl}}?tab=collection" {{#isCollection}}aria-current="page"{{/isCollection}}>보유 오브젝트</a>
-</nav>
-{{#isProgress}}
-<form method="get" action="{{profileUrl}}" class="profile-member-picker">
-    <input type="hidden" name="tab" value="progress">
-    <label for="progress-member">멤버별 오브젝트 종류</label>
-    <select id="progress-member" name="member"><option value="">전체 멤버 현황</option>{{#progressMemberOptions}}<option value="{{name}}" {{#selected}}selected{{/selected}}>{{name}}</option>{{/progressMemberOptions}}</select>
-    <button type="submit">보기</button>
-</form>
+<section class="profile-member-picker" aria-labelledby="progress-member-heading">
+    <div class="mpp-toolbar">
+        <div>
+            <p class="mpp-toolbar-title" id="progress-member-heading">멤버별 오브젝트 종류</p>
+            <p class="mpp-toolbar-meta" id="progress-member-meta">{{#hasProgressMember}}{{selectedMember}} 선택됨{{/hasProgressMember}}{{^hasProgressMember}}멤버를 고르면 전체 종류 수집 현황을 볼 수 있어요.{{/hasProgressMember}}</p>
+        </div>
+        <div class="mpp-toolbar-actions">
+            <a class="mpp-tool-btn" href="{{profileUrl}}">전체 현황</a>
+        </div>
+    </div>
+    <div class="member-portrait-picker" id="profile-member-picker" role="group" aria-label="멤버별 오브젝트 종류">
+        {{>partials/member-portrait-picker}}
+    </div>
+</section>
 {{^hasProgressMember}}
 <section class="profile-progress-section" aria-labelledby="member-progress-heading">
     <div class="profile-section-heading"><h2 id="member-progress-heading">멤버별 수집 현황</h2><p>tripleS · Welcome·Zero 제외 · 중복을 제외한 종류 기준</p></div>
@@ -50,8 +54,7 @@
         <div class="profile-progress-track" role="progressbar" aria-label="{{member}} 수집률" aria-valuenow="{{percent}}" aria-valuemin="0" aria-valuemax="100"><span style="width:{{percent}}%"></span></div>
         <p class="ar-muted">{{owned}} / {{total}}종 · 보유 {{copies}}개</p>{{/hasTotal}}
         {{^hasTotal}}<p class="ar-muted">전체 목록 준비 중 · 보유 {{copies}}개</p>{{/hasTotal}}
-        <a class="collection-detail-link" href="{{progressUrl}}">전체 종류 · 수집 현황 보기 →</a>
-        <a class="collection-detail-link" href="{{collectionUrl}}">보유 카드만 보기</a>
+        <a class="collection-action-btn" href="{{progressUrl}}">수집 현황 보기</a>
     </article>
     {{/memberProgress}}
     </div>
@@ -94,28 +97,25 @@
     {{^hasChecklist}}<p class="gv-panel gv-empty">이 멤버의 전체 오브젝트 목록을 아직 불러오지 못했습니다.</p>{{/hasChecklist}}
 </section>
 {{/hasProgressMember}}
-{{/isProgress}}
-{{#isCollection}}
-<div class="profile-section-heading"><h2>{{#selectedMember}}{{selectedMember}} · {{/selectedMember}}보유 오브젝트 {{filteredCount}}개</h2>{{#selectedMember}}<a class="collection-detail-link" href="{{profileUrl}}?tab=collection">전체 멤버 보기</a>{{/selectedMember}}</div>
-{{#hasCards}}
-<section class="ar-grid collection-grid" aria-label="보유 오브젝트">
-{{#cards}}
-<article class="ar-panel ar-card collection-card">
-    <div class="collection-image-wrap">{{#hasImage}}<img class="collection-image" src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" decoding="async" referrerpolicy="no-referrer">{{/hasImage}}{{^hasImage}}<span class="ar-muted">이미지 준비 중</span>{{/hasImage}}</div>
-    <div class="ar-body"><div class="ar-meta">{{#hasSerial}}<span class="ar-id">#{{serial}}</span>{{/hasSerial}}{{^hasSerial}}<span class="ar-id">시리얼 확인 중</span>{{/hasSerial}}{{#objektClass}}<span class="ar-badge">{{objektClass}}</span>{{/objektClass}}</div>
-    <h3>{{collectionId}}</h3><p class="ar-muted">{{member}}{{#season}} · {{season}}{{/season}}</p>
-    {{#hasDetail}}<a class="collection-detail-link" href="{{detailUrl}}">오브젝트 상세 보기 →</a>{{/hasDetail}}</div>
-</article>
-{{/cards}}
-</section>
-{{/hasCards}}
-{{^hasCards}}<p class="gv-panel gv-empty">표시할 보유 오브젝트가 없습니다.</p>{{/hasCards}}
-<nav class="ar-panel ar-pager" aria-label="보유 오브젝트 페이지"><span>페이지 {{pageDisplay}} / {{totalPages}}</span><div class="ar-pager-controls">
-{{#hasPrev}}<a href="{{previousUrl}}">이전</a>{{/hasPrev}}{{^hasPrev}}<span class="is-disabled">이전</span>{{/hasPrev}}
-{{#hasNext}}<a href="{{nextUrl}}">다음</a>{{/hasNext}}{{^hasNext}}<span class="is-disabled">다음</span>{{/hasNext}}</div></nav>
-{{/isCollection}}
 {{/hasProfile}}
 </main>
 {{>layout/footer}}
-<script src="/js/cosmo-profile.js?v=1" defer></script>
+<script src="/js/member-portrait-picker.js?v=5"></script>
+<script src="/js/cosmo-profile.js?v=2" defer></script>
+<script>
+(() => {
+  const picker = document.getElementById('profile-member-picker');
+  const base = {{#profileUrl}}"{{profileUrl}}"{{/profileUrl}}{{^profileUrl}}""{{/profileUrl}};
+  if (!picker || !base || !window.MemberPortraitPicker) return;
+  MemberPortraitPicker.bindMultiSelect(picker, {
+    multi: false,
+    onChange: (values) => {
+      const member = values[0] || '';
+      window.location.href = member
+        ? base + '?member=' + encodeURIComponent(member)
+        : base;
+    }
+  });
+})();
+</script>
 </body></html>
