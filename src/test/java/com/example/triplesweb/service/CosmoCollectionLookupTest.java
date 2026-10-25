@@ -60,6 +60,7 @@ class CosmoCollectionLookupTest {
         var cards = (List<Map<String, Object>>) first.get("cards");
         assertThat(cards).hasSize(24);
         assertThat(cards.get(0)).containsEntry("serial", "1").containsEntry("collectionId", "Cream02 HaYeon 367Z")
+                .containsEntry("member", "정하연")
                 .doesNotContainKeys("tokenId", "address");
         var last = service.search("테스트", Integer.MAX_VALUE);
         assertThat(last).containsEntry("pageDisplay", 2).containsEntry("hasNext", false);

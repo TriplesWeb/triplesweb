@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="/css/gravity-page.css?v=2">
 <link rel="stylesheet" href="/css/archive-page.css?v=3">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=8">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=4">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=5">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}내 오브젝트 검색{{/nickname}}</title>
 </head>
@@ -101,9 +101,9 @@
             </div>
             <div class="ar-body">
                 <div class="ar-meta">{{#hasSerial}}<span class="ar-id" aria-label="시리얼 {{serial}}">#{{serial}}</span>{{/hasSerial}}{{^hasSerial}}<span class="ar-id">시리얼 확인 중</span>{{/hasSerial}}{{#objektClass}}<span class="ar-badge">{{objektClass}}</span>{{/objektClass}}</div>
-                <h3>{{collectionId}}</h3>
+                {{#hasDetail}}<h3><a class="collection-title-link" href="{{detailUrl}}">{{collectionId}}</a></h3>{{/hasDetail}}
+                {{^hasDetail}}<h3>{{collectionId}}</h3>{{/hasDetail}}
                 <p class="ar-muted">{{member}}{{#season}} · {{season}}{{/season}}</p>
-                {{#hasDetail}}<a class="collection-detail-link" href="{{detailUrl}}">오브젝트 상세 보기 →</a>{{/hasDetail}}
             </div>
         </article>
         {{/cards}}

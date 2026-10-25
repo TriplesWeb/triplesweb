@@ -26,9 +26,9 @@
 .collection-card .ar-id, .collection-card .ar-badge, .collection-card h3 { font-family: inherit; }
 .collection-card .ar-id { color: #b9fff0; border-color: #408a7a; font-variant-numeric: tabular-nums; }
 .collection-card .ar-body { gap: .7rem; }
-.collection-detail-link { margin-top: auto; color: #8bf5dc; font-size: .85rem; text-decoration: none; }
-.collection-detail-link:hover { text-decoration: underline; }
-.collection-detail-link:focus-visible { outline: 2px solid #8bf5dc; outline-offset: 4px; }
+.collection-title-link { color: inherit; text-decoration: none; }
+.collection-title-link:hover { color: #8bf5dc; text-decoration: underline; }
+.collection-title-link:focus-visible { outline: 2px solid #8bf5dc; outline-offset: 3px; }
 .collection-action-btn {
     display: inline-flex;
     align-items: center;

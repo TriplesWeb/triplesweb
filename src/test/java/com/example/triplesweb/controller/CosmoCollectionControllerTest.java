@@ -78,6 +78,7 @@ class CosmoCollectionControllerTest {
                 .andExpect(content().string(containsString("수집 현황 보기")))
                 .andExpect(content().string(containsString("기타 옵젝")))
                 .andExpect(content().string(containsString("보유 오브젝트 필터")))
+                .andExpect(content().string(not(containsString("오브젝트 상세 보기"))))
                 .andExpect(content().string(not(containsString("#30000001"))));
     }
 }

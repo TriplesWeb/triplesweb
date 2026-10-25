@@ -1,5 +1,6 @@
 package com.example.triplesweb.service;
 
+import com.example.triplesweb.util.MemberPortraitOptions;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -186,7 +187,7 @@ public class CosmoCollectionService {
         Map<String, Object> card = new LinkedHashMap<>();
         String name = objekt.path("collectionId").asText("").replaceFirst("\\s*#\\d+\\s*$", "").trim();
         card.put("collectionId", name.isBlank() ? "오브젝트" : name);
-        card.put("member", objekt.path("member").asText(""));
+        card.put("member", MemberPortraitOptions.memberName(objekt.path("member").asText("")));
         card.put("season", objekt.path("season").asText(""));
         card.put("objektClass", objekt.path("class").asText(""));
         card.put("artist", objekt.path("artist").asText(""));

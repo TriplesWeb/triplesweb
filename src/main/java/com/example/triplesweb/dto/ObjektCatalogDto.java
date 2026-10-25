@@ -1,6 +1,7 @@
 package com.example.triplesweb.dto;
 
 import com.example.triplesweb.entity.ObjektCatalog;
+import com.example.triplesweb.util.MemberPortraitOptions;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.LinkedHashMap;
@@ -92,7 +93,7 @@ public record ObjektCatalogDto(
         item.put("slug", blank(row.getSlug()));
         item.put("collectionId", blank(row.getCollectionId()));
         item.put("season", blank(row.getSeason()));
-        item.put("member", blank(row.getMember()));
+        item.put("member", MemberPortraitOptions.memberName(blank(row.getMember())));
         item.put("artist", blank(row.getArtist()));
         item.put("collectionNo", blank(row.getCollectionNo()));
         item.put("class", blank(row.getObjektClass()));
