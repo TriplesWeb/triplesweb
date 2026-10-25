@@ -202,31 +202,6 @@ public class ObjektFeatureController {
         return "cosmo/objekt_favorites";
     }
 
-    private boolean toggleFavoriteState(String key, HttpSession session) {
-        Map<String, Object> item = findObjekt(key);
-        if (item == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "오브젝트를 찾을 수 없습니다.");
-        }
-        String visitor = session.getId();
-        if (favoriteRepository.existsByVisitorKeyAndObjektKey(visitor, key)) {
-            favoriteRepository.deleteByVisitorKeyAndObjektKey(visitor, key);
-            return false;
-        }
-        ObjektFavorite favorite = new ObjektFavorite();
-        favorite.setVisitorKey(visitor);
-        favorite.setObjektKey(key);
-        favorite.setCollectionId(value(item, "collectionId", "slug"));
-        favorite.setMemberName(value(item, "member", "memberName"));
-        favorite.setThumbnailImage(value(item, "thumbnailImage"));
-        favorite.setFrontImage(value(item, "frontImage"));
-        favorite.setBackImage(value(item, "backImage"));
-        favorite.setSeason(value(item, "season"));
-        favorite.setObjektClass(value(item, "class"));
-        favorite.setCollectionNo(value(item, "collectionNo", "collectionNumber"));
-        favoriteRepository.save(favorite);
-        return true;
-    }
-
     private Map<String, Object> findObjekt(String key) {
         return objektService.findCollections("triples").stream()
                 .filter(item -> key.equals(value(item, "id")) || key.equals(value(item, "collectionId"))
