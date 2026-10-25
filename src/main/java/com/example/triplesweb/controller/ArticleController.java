@@ -12,6 +12,8 @@ import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.CommentService;
 import com.example.triplesweb.service.DateTimeFormatService;
 import com.example.triplesweb.util.ArticleHtmlCleaner;
+import com.example.triplesweb.util.ObjektFilterOrder;
+import com.example.triplesweb.util.MemberPortraitOptions;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -165,12 +167,13 @@ public class ArticleController {
             selectedItems.add(pickerItem(item));
         }
 
+        List<String> soloMembers = MemberPortraitOptions.soloMemberNames(members);
+        boolean hasOther = members.stream().anyMatch(MemberPortraitOptions::isOtherMember);
         model.addAttribute("showObjektPicker", true);
         model.addAttribute("objektSelected", selectedItems);
-        model.addAttribute("objektMemberOptions", members.stream()
-                .sorted(String.CASE_INSENSITIVE_ORDER).toList());
-        model.addAttribute("objektSeasonOptions", seasons.stream()
-                .sorted(String.CASE_INSENSITIVE_ORDER).toList());
+        model.addAttribute("objektMemberOptions", soloMembers);
+        model.addAttribute("hasOtherObjektOption", hasOther);
+        model.addAttribute("objektSeasonOptions", ObjektFilterOrder.sortedSeasons(seasons));
         model.addAttribute("objektClassOptions", classes.stream()
                 .sorted(String.CASE_INSENSITIVE_ORDER).toList());
     }
@@ -181,17 +184,20 @@ public class ArticleController {
                                              @RequestParam(defaultValue = "") String season,
                                              @RequestParam(name = "class", defaultValue = "") String objektClass,
                                              @RequestParam(defaultValue = "") String q,
+                                             @RequestParam(defaultValue = "all") String group,
                                              @RequestParam(defaultValue = "0") int offset,
                                              @RequestParam(defaultValue = "24") int limit) {
         int size = Math.min(48, Math.max(1, limit));
         int start = Math.max(0, offset);
-        String memberKey = member.trim().toLowerCase();
         String seasonKey = season.trim().toLowerCase();
         String classKey = objektClass.trim().toLowerCase();
         String query = q.trim().toLowerCase();
+        String selectedGroup = "other".equalsIgnoreCase(group) ? "other"
+                : ("members".equalsIgnoreCase(group) || !member.isBlank() ? "members" : "all");
+        List<String> selectedMembers = member.isBlank() ? List.of() : List.of(member.trim());
         List<Map<String, Object>> matched = new ArrayList<>();
         for (Map<String, Object> item : objektService.findCollections("triples")) {
-            if (!memberKey.isEmpty() && !stringValue(item.get("member")).toLowerCase().equals(memberKey)) continue;
+            if (!MemberPortraitOptions.matchesMemberGroup(selectedGroup, selectedMembers, stringValue(item.get("member")))) continue;
             if (!seasonKey.isEmpty() && !stringValue(item.get("season")).toLowerCase().equals(seasonKey)) continue;
             if (!classKey.isEmpty() && !stringValue(item.get("class")).toLowerCase().equals(classKey)) continue;
             if (!query.isEmpty()) {

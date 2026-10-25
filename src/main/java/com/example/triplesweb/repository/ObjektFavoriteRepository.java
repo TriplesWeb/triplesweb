@@ -9,5 +9,7 @@ public interface ObjektFavoriteRepository extends JpaRepository<ObjektFavorite, 
     List<ObjektFavorite> findByVisitorKeyOrderByCreatedAtDesc(String visitorKey);
     Optional<ObjektFavorite> findByVisitorKeyAndObjektKey(String visitorKey, String objektKey);
     boolean existsByVisitorKeyAndObjektKey(String visitorKey, String objektKey);
+    boolean existsByVisitorKeyAndObjektKeyIn(String visitorKey, List<String> objektKeys);
+    void deleteByVisitorKeyAndObjektKeyIn(String visitorKey, List<String> objektKeys);
     void deleteByVisitorKeyAndObjektKey(String visitorKey, String objektKey);
 }

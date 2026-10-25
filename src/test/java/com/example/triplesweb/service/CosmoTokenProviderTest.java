@@ -10,6 +10,10 @@ import org.springframework.web.client.RestClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.nio.file.attribute.AclFileAttributeView;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclEntryPermission;
+import java.util.EnumSet;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
@@ -64,7 +68,7 @@ class CosmoTokenProviderTest {
         } finally { pool.shutdownNow(); }
         Path file = directory.resolve("credentials.json");
         assertThat(mapper.readTree(Files.readString(file)).path("refreshToken").asText()).isEqualTo(freshRefresh);
-        assertThat(Files.getPosixFilePermissions(file)).isEqualTo(PosixFilePermissions.fromString("rw-------"));
+        assertPrivateFile(file);
         assertThat(provider(RestClient.create(), "", "", key).accessToken()).isEqualTo(freshAccess);
         server.verify();
     }
@@ -89,7 +93,49 @@ class CosmoTokenProviderTest {
         assertThat(provider.isConfigured()).isTrue();
         assertThat(provider.accessToken()).isEqualTo(access);
         assertThat(provider(RestClient.create(), "", "", key).accessToken()).isEqualTo(access);
+        assertPrivateFile(directory.resolve("credentials.json"));
         server.verify();
+    }
+
+    @Test void temporaryFileIsPrivateBeforeWritingCredentials() throws Exception {
+        Path temporary = CosmoTokenProvider.createPrivateTempFile(directory);
+        assertThat(Files.size(temporary)).isZero();
+        assertPrivateFile(temporary);
+    }
+
+    @Test void replacingExistingCredentialsRetainsPrivatePermissionsAndCleansTemporaryFiles() throws Exception {
+        Path file = directory.resolve("credentials.json");
+        Files.writeString(file, "{}");
+        var builder = RestClient.builder();
+        var server = MockRestServiceServer.bindTo(builder).build();
+        String access = jwt(3600), refresh = jwt(7200);
+        server.expect(requestTo("https://cosmo.test/bff/v3/users/login-by-privy"))
+                .andRespond(withSuccess(mapper.writeValueAsString(Map.of("credentials",
+                        Map.of("accessToken", access, "refreshToken", refresh))), MediaType.APPLICATION_JSON));
+        provider(builder.build(), "", "", key).loginWithPrivy("verified-privy-session");
+        assertPrivateFile(file);
+        assertThat(mapper.readTree(Files.readString(file)).path("accessToken").asText()).isEqualTo(access);
+        try (var files = Files.list(directory)) {
+            assertThat(files.toList()).containsExactly(file);
+        }
+        server.verify();
+    }
+
+    private static void assertPrivateFile(Path file) throws Exception {
+        if (Files.getFileStore(file).supportsFileAttributeView("posix")) {
+            assertThat(Files.getPosixFilePermissions(file)).isEqualTo(PosixFilePermissions.fromString("rw-------"));
+        } else {
+            var view = Files.getFileAttributeView(file, AclFileAttributeView.class);
+            assertThat(view).isNotNull();
+            var expectedUser = file.getFileSystem().getUserPrincipalLookupService()
+                    .lookupPrincipalByName(System.getProperty("user.name"));
+            assertThat(view.getAcl()).hasSize(1).allSatisfy(entry -> {
+                assertThat(entry.type()).isEqualTo(AclEntryType.ALLOW);
+                assertThat(entry.principal()).isEqualTo(expectedUser);
+                assertThat(entry.permissions()).containsAll(EnumSet.of(
+                        AclEntryPermission.READ_DATA, AclEntryPermission.WRITE_DATA, AclEntryPermission.DELETE));
+            });
+        }
     }
 
     @Test void refreshFailureDoesNotLeakResponseOrOverwriteCredentials() {

@@ -5,16 +5,18 @@
 {{>layout/gravity-fonts}}
 <link rel="stylesheet" href="/css/gravity-page.css?v=2">
 <link rel="stylesheet" href="/css/archive-page.css?v=3">
+<link rel="stylesheet" href="/css/member-portrait-picker.css?v=8">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=6">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}COSMO 컬렉션 검색{{/nickname}}</title>
+<title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}내 오브젝트 검색{{/nickname}}</title>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="collection-page min-h-screen flex flex-col">
 {{>layout/header}}
 <main class="gravity-page">
     <section class="gv-kicker"><div><strong>COSMO</strong> · 닉네임 컬렉션</div></section>
     <section class="gv-panel gv-headline">
-        <h1>COSMO 컬렉션</h1>
-        <p>닉네임을 검색하면 그 지갑이 Abstract에서 보유 중인 오브젝트를 바로 보여 줍니다.</p>
+        <h1>내 오브젝트 검색</h1>
+        <p>닉네임을 검색하면 보유 오브젝트와 시리얼 번호를 확인할 수 있습니다.</p>
         <form class="ar-filters" method="get" action="/cosmo/collection" style="margin-top:1rem">
             <label class="ar-search-wrap">
                 <span class="material-symbols-outlined">search</span>
@@ -30,38 +32,257 @@
             {{#hasProfileImage}}<img src="{{profileImageUrl}}" alt="" referrerpolicy="no-referrer">{{/hasProfileImage}}
             <div>
                 <h1>{{nickname}}</h1>
-                <p class="gv-muted">{{addressShort}}</p>
-                <p>보유 오브젝트 <strong>{{ownedCount}}</strong>개</p>
+                <p>보유 오브젝트 <strong>{{ownedCount}}</strong>개{{#hasActiveFilters}} · 필터 결과 <strong id="collection-filtered-count">{{filteredCount}}</strong>개{{/hasActiveFilters}}</p>
+                {{#profileUrl}}<a class="collection-action-btn" href="{{profileUrl}}">수집 현황 보기</a>{{/profileUrl}}
             </div>
         </div>
     </section>
-    {{#hasCards}}
-    <section class="ar-grid">
+    <section class="gv-panel collection-filter-panel" aria-label="보유 오브젝트 필터">
+        <form class="collection-filter-form" method="get" action="/cosmo/collection" id="collection-filter-form">
+            <input type="hidden" name="nickname" value="{{nickname}}">
+            <input type="hidden" name="page" value="0">
+            <input type="hidden" name="group" id="collection-group-input" value="{{selectedGroup}}">
+            <input type="hidden" name="member" id="collection-member-input" value="{{selectedMember}}">
+            <div class="objekt-member-picker-panel{{^isOtherGroup}}{{^selectedMember}} is-collapsed{{/selectedMember}}{{/isOtherGroup}}" id="collection-member-panel">
+                <div class="mpp-toolbar">
+                    <button type="button" class="objekt-member-toggle" id="collection-member-toggle" aria-expanded="false" aria-controls="collection-member-picker">
+                        <span>
+                            <span class="mpp-toolbar-title">멤버</span>
+                            <span class="mpp-toolbar-meta" id="collection-member-meta">{{#isOtherGroup}}기타 옵젝{{/isOtherGroup}}{{^isOtherGroup}}{{#selectedMember}}{{selectedMember}}{{/selectedMember}}{{^selectedMember}}{{#isMembersGroup}}전체 멤버{{/isMembersGroup}}{{^isMembersGroup}}전체 오브젝트{{/isMembersGroup}}{{/selectedMember}}{{/isOtherGroup}}</span>
+                        </span>
+                        <span class="material-symbols-outlined objekt-member-toggle-caret" aria-hidden="true">expand_more</span>
+                    </button>
+                    <div class="mpp-toolbar-actions" role="group" aria-label="오브젝트 분류">
+                        <button type="button" class="mpp-tool-btn collection-group-tab" data-objekt-group="all" aria-pressed="{{#isAllGroup}}true{{/isAllGroup}}{{^isAllGroup}}false{{/isAllGroup}}">전체</button>
+                        <button type="button" class="mpp-tool-btn collection-group-tab" data-objekt-group="members" aria-pressed="{{#isMembersGroup}}true{{/isMembersGroup}}{{^isMembersGroup}}false{{/isMembersGroup}}">멤버</button>
+                        <button type="button" class="mpp-tool-btn collection-group-tab" data-objekt-group="other" aria-pressed="{{#isOtherGroup}}true{{/isOtherGroup}}{{^isOtherGroup}}false{{/isOtherGroup}}">기타 옵젝</button>
+                    </div>
+                </div>
+                <div class="member-portrait-picker" id="collection-member-picker" role="group" aria-label="멤버 필터" {{#isOtherGroup}}hidden{{/isOtherGroup}}>
+                    {{>partials/member-portrait-picker}}
+                </div>
+                <p class="objekt-other-notice" id="collection-other-notice" {{^isOtherGroup}}hidden{{/isOtherGroup}}>멤버와 연결되지 않은 그룹·기타 오브젝트를 모아 보여줍니다.</p>
+            </div>
+            <div class="collection-filter-bar">
+                <label class="collection-filter">
+                    <span>시즌</span>
+                    <select name="season" aria-label="시즌 필터">
+                        <option value="">전체</option>
+                        {{#seasonChoices}}
+                        <option value="{{value}}" {{#selected}}selected{{/selected}}>{{value}}</option>
+                        {{/seasonChoices}}
+                    </select>
+                </label>
+                <label class="collection-filter">
+                    <span>클래스</span>
+                    <select name="class" aria-label="클래스 필터">
+                        <option value="">전체</option>
+                        {{#classChoices}}
+                        <option value="{{value}}" {{#selected}}selected{{/selected}}>{{value}}</option>
+                        {{/classChoices}}
+                    </select>
+                </label>
+                <label class="collection-search">
+                    <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                    <input type="search" name="q" value="{{searchQuery}}" placeholder="보유 오브젝트 검색..." aria-label="보유 오브젝트 검색" autocomplete="off">
+                </label>
+                <button class="ar-submit" type="submit">검색</button>
+                <a class="collection-reset" href="/cosmo/collection?nickname={{nicknameEncoded}}">초기화</a>
+            </div>
+        </form>
+    </section>
+    <section class="ar-grid collection-grid" id="collection-grid" aria-label="보유 오브젝트"
+             data-loaded="{{loadedCount}}" data-filtered="{{filteredCount}}" data-owned="{{ownedCount}}">
         {{#cards}}
-        <article class="ar-panel ar-card">
-            {{#hasImage}}<img src="{{thumbnailImage}}" alt="{{collectionId}}" referrerpolicy="no-referrer">{{/hasImage}}
-            {{^hasImage}}<div class="ar-card" style="height:9.5rem"></div>{{/hasImage}}
+        <article class="ar-panel ar-card collection-card">
+            <div class="collection-image-wrap">
+            {{#hasImage}}<img class="collection-image" src="{{thumbnailImage}}" alt="{{collectionId}}" referrerpolicy="no-referrer" loading="lazy" decoding="async">{{/hasImage}}
+            {{^hasImage}}<span class="ar-muted">이미지 준비 중</span>{{/hasImage}}
+            </div>
             <div class="ar-body">
-                <div class="ar-meta"><span class="ar-id">#{{tokenId}}</span>{{#objektClass}}<span class="ar-badge">{{objektClass}}</span>{{/objektClass}}</div>
-                <h3>{{collectionId}}</h3>
+                <div class="ar-meta">{{#hasSerial}}<span class="ar-id" aria-label="시리얼 {{serial}}">#{{serial}}</span>{{/hasSerial}}{{^hasSerial}}<span class="ar-id">시리얼 확인 중</span>{{/hasSerial}}{{#objektClass}}<span class="ar-badge">{{objektClass}}</span>{{/objektClass}}</div>
+                {{#hasDetail}}<h3><a class="collection-title-link" href="{{detailUrl}}">{{collectionId}}</a></h3>{{/hasDetail}}
+                {{^hasDetail}}<h3>{{collectionId}}</h3>{{/hasDetail}}
                 <p class="ar-muted">{{member}}{{#season}} · {{season}}{{/season}}</p>
             </div>
         </article>
         {{/cards}}
     </section>
-    {{/hasCards}}
-    {{^hasCards}}<p class="gv-panel gv-empty">이 페이지에 표시할 보유 오브젝트가 없습니다.</p>{{/hasCards}}
-    <nav class="ar-panel ar-pager" aria-label="컬렉션 페이지">
-        <span>{{ownedCount}}개 중 페이지 {{pageDisplay}} / {{totalPages}}</span>
-        <div class="ar-pager-controls">
-            {{#hasPrev}}<a href="/cosmo/collection?nickname={{nickname}}&amp;page={{prevPage}}">이전</a>{{/hasPrev}}
-            {{^hasPrev}}<a class="is-disabled">이전</a>{{/hasPrev}}
-            {{#hasNext}}<a href="/cosmo/collection?nickname={{nickname}}&amp;page={{nextPage}}">다음</a>{{/hasNext}}
-            {{^hasNext}}<a class="is-disabled">다음</a>{{/hasNext}}
-        </div>
-    </nav>
+    <p class="gv-panel gv-empty{{#hasCards}} is-hidden{{/hasCards}}" id="collection-empty">이 조건에 표시할 보유 오브젝트가 없습니다.</p>
+    <div class="collection-scroll-footer" id="collection-scroll-sentinel"
+         data-has-more="{{#hasMore}}true{{/hasMore}}{{^hasMore}}false{{/hasMore}}"
+         data-next-page="{{nextPage}}">
+        <p id="collection-scroll-status" class="collection-scroll-status" aria-live="polite"></p>
+        <span id="collection-scroll-spinner" class="collection-scroll-spinner is-hidden" aria-hidden="true"></span>
+    </div>
     {{/hasCollection}}
 </main>
 {{>layout/footer}}
+<script src="/js/member-portrait-picker.js?v=6"></script>
+<script>
+(() => {
+  const form = document.getElementById('collection-filter-form');
+  const picker = document.getElementById('collection-member-picker');
+  const panel = document.getElementById('collection-member-panel');
+  const toggle = document.getElementById('collection-member-toggle');
+  const memberInput = document.getElementById('collection-member-input');
+  const groupInput = document.getElementById('collection-group-input');
+  const meta = document.getElementById('collection-member-meta');
+  const otherNotice = document.getElementById('collection-other-notice');
+  const tabs = document.querySelectorAll('.collection-group-tab');
+  const grid = document.getElementById('collection-grid');
+  const empty = document.getElementById('collection-empty');
+  const sentinel = document.getElementById('collection-scroll-sentinel');
+  const statusEl = document.getElementById('collection-scroll-status');
+  const spinner = document.getElementById('collection-scroll-spinner');
+  const filteredCountEl = document.getElementById('collection-filtered-count');
+
+  function setGroup(group, clearMember) {
+    const next = group || 'all';
+    if (groupInput) groupInput.value = next;
+    tabs.forEach((tab) => tab.setAttribute('aria-pressed', tab.dataset.objektGroup === next ? 'true' : 'false'));
+    if (picker) picker.hidden = next === 'other';
+    if (otherNotice) otherNotice.hidden = next !== 'other';
+    if (clearMember) {
+      if (window.MemberPortraitPicker) MemberPortraitPicker.clear(picker);
+      if (memberInput) memberInput.value = '';
+    }
+    if (meta) {
+      if (next === 'other') meta.textContent = '기타 옵젝';
+      else if (memberInput && memberInput.value) meta.textContent = memberInput.value;
+      else meta.textContent = next === 'members' ? '전체 멤버' : '전체 오브젝트';
+    }
+  }
+
+  if (form && window.MemberPortraitPicker) {
+    if (picker) {
+      MemberPortraitPicker.bindMultiSelect(picker, {
+        multi: false,
+        onChange: (values) => {
+          if (memberInput) memberInput.value = values[0] || '';
+          setGroup(values[0] ? 'members' : (groupInput?.value === 'other' ? 'other' : 'members'), false);
+          form.requestSubmit();
+        }
+      });
+    }
+    tabs.forEach((tab) => tab.addEventListener('click', () => {
+      setGroup(tab.dataset.objektGroup || 'all', true);
+      form.requestSubmit();
+    }));
+    toggle?.addEventListener('click', () => {
+      const collapsed = panel.classList.toggle('is-collapsed');
+      toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    });
+    setGroup(groupInput?.value || 'all', false);
+  }
+
+  if (!grid || !sentinel || !form) return;
+
+  let loadedCount = Number(grid.dataset.loaded || grid.querySelectorAll('.collection-card').length || 0);
+  let filteredCount = Number(grid.dataset.filtered || 0);
+  let ownedCount = Number(grid.dataset.owned || 0);
+  let nextPage = Number(sentinel.dataset.nextPage || 1);
+  let hasMore = sentinel.dataset.hasMore === 'true';
+  let loading = false;
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function updateStatus() {
+    if (empty) empty.classList.toggle('is-hidden', loadedCount > 0);
+    if (filteredCountEl) filteredCountEl.textContent = String(filteredCount);
+    if (!statusEl) return;
+    if (loading) statusEl.textContent = '불러오는 중…';
+    else if (hasMore) statusEl.textContent = '스크롤하면 더 불러옵니다';
+    else if (loadedCount > 0) statusEl.textContent = `모두 불러왔습니다 · ${loadedCount} / ${filteredCount || ownedCount}`;
+    else statusEl.textContent = '';
+    spinner?.classList.toggle('is-hidden', !loading);
+  }
+
+  function buildCard(item) {
+    const title = escapeHtml(item.collectionId || '오브젝트');
+    const member = escapeHtml(item.member || '');
+    const season = item.season ? ' · ' + escapeHtml(item.season) : '';
+    const klass = item.objektClass ? `<span class="ar-badge">${escapeHtml(item.objektClass)}</span>` : '';
+    const serial = item.hasSerial
+      ? `<span class="ar-id" aria-label="시리얼 ${escapeHtml(item.serial)}">#${escapeHtml(item.serial)}</span>`
+      : '<span class="ar-id">시리얼 확인 중</span>';
+    const image = item.hasImage
+      ? `<img class="collection-image" src="${escapeHtml(item.thumbnailImage)}" alt="${title}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
+      : '<span class="ar-muted">이미지 준비 중</span>';
+    const heading = item.hasDetail
+      ? `<h3><a class="collection-title-link" href="${escapeHtml(item.detailUrl)}">${title}</a></h3>`
+      : `<h3>${title}</h3>`;
+    return `<article class="ar-panel ar-card collection-card">
+      <div class="collection-image-wrap">${image}</div>
+      <div class="ar-body">
+        <div class="ar-meta">${serial}${klass}</div>
+        ${heading}
+        <p class="ar-muted">${member}${season}</p>
+      </div>
+    </article>`;
+  }
+
+  async function loadMore() {
+    if (!hasMore || loading) return;
+    loading = true;
+    updateStatus();
+    try {
+      const params = new URLSearchParams(new FormData(form));
+      params.set('page', String(nextPage));
+      const res = await fetch(`/cosmo/collection/more?${params.toString()}`, {
+        headers: { Accept: 'application/json' },
+        credentials: 'same-origin',
+        cache: 'no-store'
+      });
+      if (!res.ok) throw new Error('load failed');
+      const data = await res.json();
+      const items = Array.isArray(data.items) ? data.items : [];
+      if (items.length) {
+        const wrap = document.createElement('div');
+        wrap.innerHTML = items.map(buildCard).join('');
+        const fragment = document.createDocumentFragment();
+        while (wrap.firstChild) fragment.appendChild(wrap.firstChild);
+        grid.appendChild(fragment);
+      }
+      loadedCount += items.length;
+      filteredCount = Number(data.filteredCount ?? filteredCount);
+      ownedCount = Number(data.ownedCount ?? ownedCount);
+      hasMore = Boolean(data.hasMore) && items.length > 0;
+      nextPage = data.nextPage == null ? nextPage + 1 : Number(data.nextPage);
+      grid.dataset.loaded = String(loadedCount);
+      grid.dataset.filtered = String(filteredCount);
+      grid.dataset.owned = String(ownedCount);
+    } catch (_) {
+      hasMore = false;
+      if (statusEl) statusEl.textContent = '더 불러오지 못했습니다. 잠시 후 다시 스크롤해 주세요.';
+    } finally {
+      loading = false;
+      updateStatus();
+    }
+  }
+
+  updateStatus();
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) loadMore();
+    }, { rootMargin: '400px 0px' });
+    io.observe(sentinel);
+  } else if (hasMore) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'collection-load-more';
+    btn.textContent = '더 보기';
+    btn.addEventListener('click', loadMore);
+    sentinel.appendChild(btn);
+  }
+})();
+</script>
 </body>
 </html>

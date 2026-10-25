@@ -15,7 +15,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=4">
+    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=5">
     <style>
         .objekt-head {
             display: flex;
@@ -444,6 +444,9 @@
             background: rgba(8, 10, 16, .92);
             box-shadow: 0 0 0 3px rgba(0, 245, 212, .08);
         }
+        .objekt-group-tab[aria-pressed="true"] { background: rgba(0,245,212,.14); color: #9cffe9; border-color: rgba(0,245,212,.5); }
+        #objekt-member-picker[hidden], .objekt-other-notice[hidden] { display: none; }
+        .objekt-other-notice { margin: .85rem 0 .15rem; color: #b9cac4; font-size: .82rem; line-height: 1.6; }
         .objekt-search-input {
             width: 100%;
             min-width: 0;
@@ -507,6 +510,7 @@
         </div>
         <form id="objekt-search-form" action="/cosmo/objekt" method="get">
         <input type="hidden" name="page" value="0">
+        <input type="hidden" name="group" id="objekt-member-group" value="{{selectedGroup}}">
 
         <div class="objekt-workspace">
         <div class="objekt-member-picker-panel is-collapsed" id="member-dropdown">
@@ -518,18 +522,21 @@
                     </span>
                     <span class="material-symbols-outlined objekt-member-toggle-caret" aria-hidden="true">expand_more</span>
                 </button>
-                <div class="mpp-toolbar-actions">
-                    <button type="button" class="mpp-tool-btn" id="objekt-member-clear">전체</button>
+                <div class="mpp-toolbar-actions" role="group" aria-label="오브젝트 분류">
+                    <button type="button" class="mpp-tool-btn objekt-group-tab" id="objekt-member-clear" data-objekt-group="all" aria-pressed="false">전체</button>
+                    <button type="button" class="mpp-tool-btn objekt-group-tab" data-objekt-group="members" aria-pressed="false">멤버</button>
+                    <button type="button" class="mpp-tool-btn objekt-group-tab" data-objekt-group="other" aria-pressed="false">기타 옵젝</button>
                 </div>
             </div>
             <div class="objekt-member-checks" id="member-options" aria-hidden="true">
                 {{#memberPickerOptions}}
-                <input type="checkbox" name="member" value="{{value}}" class="member-checkbox" data-mpp-value="{{value}}">
+                <input type="checkbox" name="member" value="{{value}}" class="member-checkbox" data-mpp-value="{{value}}" {{#active}}checked{{/active}}>
                 {{/memberPickerOptions}}
             </div>
             <div class="member-portrait-picker" id="objekt-member-picker" role="group" aria-label="멤버 다중 선택">
                 {{>partials/member-portrait-picker}}
             </div>
+            <p class="objekt-other-notice" id="objekt-other-notice" {{^isOtherGroup}}hidden{{/isOtherGroup}}>멤버와 연결되지 않은 그룹·기타 오브젝트를 모아 보여줍니다.</p>
         </div>
 
         <div class="objekt-filter-bar relative">
@@ -676,6 +683,7 @@
                 <div class="mt-1 flex items-center justify-between gap-2 text-xs text-slate-400">
                     <a href="/cosmo/objekt/member?name={{member}}" class="truncate text-teal-200 hover:underline">{{member}}</a><span class="shrink-0 font-mono">{{collectionNo}}</span>
                 </div>
+                {{#mintCountKnown}}<p class="mt-2 text-xs text-slate-300">발행량 {{mintCount}}개</p>{{/mintCountKnown}}
             </div>
         </article>
         {{/objekts}}
@@ -687,7 +695,7 @@
         <div id="objekt-scroll-spinner" class="hidden h-6 w-6 animate-spin rounded-full border-2 border-[#00f5d4]/30 border-t-[#00f5d4]" aria-hidden="true"></div>
     </div>
 </main>
-<script src="/js/member-portrait-picker.js?v=2"></script>
+<script src="/js/member-portrait-picker.js?v=4"></script>
 <script>
 (() => {
     const form = document.getElementById('objekt-search-form');
@@ -937,11 +945,18 @@
         else target.textContent = `${chosen[0].nextElementSibling.textContent.trim()} 외 ${chosen.length - 1}개`;
     }
 
+    const memberGroupInput = document.getElementById('objekt-member-group');
+    function syncMemberGroup() {
+        const group = memberGroupInput.value;
+        document.querySelectorAll('[data-objekt-group]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.objektGroup === group)));
+        document.getElementById('objekt-member-picker').hidden = group === 'other';
+        document.getElementById('objekt-other-notice').hidden = group !== 'other';
+    }
     function syncMemberLabel() {
         const chosen = [...document.querySelectorAll('.member-checkbox:checked')];
         if (!memberLabel) return;
         if (!chosen.length) {
-            memberLabel.textContent = '전체 멤버';
+            memberLabel.textContent = memberGroupInput.value === 'other' ? '기타 옵젝' : memberGroupInput.value === 'members' ? '전체 멤버' : '전체 오브젝트';
             return;
         }
         const first = chosen[0].value;
@@ -951,17 +966,19 @@
     }
 
     function syncMemberChecks(values, { apply = false } = {}) {
+        if (apply) memberGroupInput.value = 'members';
         const selected = new Set((values || []).map(v => String(v).toLocaleLowerCase()));
         document.querySelectorAll('.member-checkbox').forEach((cb) => {
             cb.checked = selected.has(String(cb.value).toLocaleLowerCase());
         });
+        syncMemberGroup();
         syncMemberLabel();
         if (typeof markActiveFilters === 'function') markActiveFilters();
         if (apply) submitFilters();
     }
 
     // 멤버 초상화 다중선택
-    const selectedMembers = params.getAll('member');
+    const selectedMembers = [...document.querySelectorAll('.member-checkbox:checked')].map(box => box.value);
     if (window.MemberPortraitPicker && memberRoot) {
         MemberPortraitPicker.bindMultiSelect(memberRoot, {
             multi: true,
@@ -975,12 +992,8 @@
         syncMemberChecks(
             MemberPortraitPicker.selectedValues(memberRoot)
         );
-        document.getElementById('objekt-member-clear')?.addEventListener('click', () => {
-            MemberPortraitPicker.clear(memberRoot);
-            syncMemberChecks([], { apply: true });
-        });
     } else {
-        syncMemberLabel();
+        syncMemberGroup(); syncMemberLabel();
     }
 
     const memberToggle = document.getElementById('objekt-member-toggle');
@@ -990,8 +1003,23 @@
             memberToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
         }
     }
-    setMemberPickerOpen(selectedMembers.length > 0);
+    setMemberPickerOpen(selectedMembers.length > 0 || memberGroupInput.value === 'members');
+    document.querySelectorAll('[data-objekt-group]').forEach(button => button.addEventListener('click', () => {
+        const group = button.dataset.objektGroup;
+        memberGroupInput.value = group;
+        if (group !== 'members') {
+            window.MemberPortraitPicker?.clear(memberRoot);
+            syncMemberChecks([]);
+        } else { syncMemberGroup(); syncMemberLabel(); }
+        setMemberPickerOpen(group === 'members');
+        markActiveFilters();
+        submitFilters({ immediate: true });
+    }));
     memberToggle?.addEventListener('click', () => {
+        if (memberGroupInput.value === 'other') {
+            memberGroupInput.value = 'members'; syncMemberGroup(); syncMemberLabel();
+            setMemberPickerOpen(true); markActiveFilters(); submitFilters({ immediate: true }); return;
+        }
         setMemberPickerOpen(memberRoot.classList.contains('is-collapsed'));
     });
 
@@ -1030,7 +1058,7 @@
         sortSelect.closest('.objekt-filter')?.classList.toggle('is-filtered', sortSelect.value && sortSelect.value !== 'latest');
         const searchValue = (form.querySelector('input[name="search"]')?.value || '').trim();
         document.querySelector('.objekt-search')?.classList.toggle('is-filtered', searchValue.length > 0);
-        const memberOn = document.querySelectorAll('.member-checkbox:checked').length > 0;
+        const memberOn = memberGroupInput.value !== 'all' || document.querySelectorAll('.member-checkbox:checked').length > 0;
         memberRoot?.classList.toggle('is-filtered', memberOn);
     }
     markActiveFilters();
@@ -1150,6 +1178,7 @@
                 <div class="mt-1 flex items-center justify-between gap-2 text-xs text-slate-400">
                     <a href="/cosmo/objekt/member?name=${encodeURIComponent(member)}" class="truncate text-teal-200 hover:underline">${escapeHtml(member)}</a><span class="shrink-0 font-mono">${escapeHtml(collectionNo)}</span>
                 </div>
+                ${Number.isFinite(item.mintCount) ? `<p class="mt-2 text-xs text-slate-300">발행량 ${escapeHtml(String(item.mintCount))}개</p>` : ''}
             </div>
         </article>`;
     }

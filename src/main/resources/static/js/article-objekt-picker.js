@@ -38,6 +38,13 @@
       if (toggle) toggle.textContent = open ? '목록 닫기' : (count > 0 ? `오브젝트 선택 (${count})` : '오브젝트 선택');
     }
 
+    function memberSelection() {
+      const value = memberFilter ? memberFilter.value.trim() : '';
+      if (value === '__other__') return { group: 'other', member: '' };
+      if (value) return { group: 'members', member: value };
+      return { group: 'all', member: '' };
+    }
+
     function setSelected(id, on) {
       if (!selectedInputs || !id) return;
       const existing = selectedInputs.querySelector(`input[data-objekt-id="${CSS.escape(id)}"]`);
@@ -112,8 +119,10 @@
       loading = true;
       const current = ++requestId;
       if (status) status.textContent = '오브젝트를 불러오는 중...';
+      const selection = memberSelection();
       const params = new URLSearchParams();
-      if (memberFilter && memberFilter.value) params.set('member', memberFilter.value);
+      params.set('group', selection.group);
+      if (selection.member) params.set('member', selection.member);
       if (seasonFilter && seasonFilter.value) params.set('season', seasonFilter.value);
       if (classFilter && classFilter.value) params.set('class', classFilter.value);
       if (searchFilter && searchFilter.value.trim()) params.set('q', searchFilter.value.trim());

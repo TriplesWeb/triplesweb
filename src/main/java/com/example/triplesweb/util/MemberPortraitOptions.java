@@ -3,6 +3,7 @@ package com.example.triplesweb.util;
 import com.example.triplesweb.entity.Artist;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -28,17 +29,65 @@ public final class MemberPortraitOptions {
             "니엔", "박소현", "신위", "마유", "린", "주빈",
             "정하연", "박시온", "김채원", "설린", "서아", "지연"
     );
+    private static final List<String> SHORT_KOREAN_ORDER = List.of(
+            "서연", "혜린", "지우", "채연", "유연", "수민", "나경", "유빈",
+            "카에데", "다현", "코토네", "연지", "니엔", "소현", "신위", "마유",
+            "린", "주빈", "하연", "시온", "채원", "설린", "서아", "지연");
+
+    /** Exact solo identity only: S1 X S9 is an extra entry, not S1. */
+    public static int memberIndex(String value) {
+        String normalized = normalize(value);
+        for (int i = 0; i < ENGLISH_ORDER.size(); i++) {
+            String number = "s" + (i + 1);
+            if (normalized.equals(number) || normalized.equals("s0" + (i + 1))) return i;
+            for (String alias : List.of(ENGLISH_ORDER.get(i), KOREAN_ORDER.get(i), SHORT_KOREAN_ORDER.get(i))) {
+                if (normalized.equals(alias) || normalized.equals(number + alias) || normalized.equals(alias + number)) return i;
+            }
+        }
+        return 24;
+    }
+
+    public static String memberName(String value) {
+        int index = memberIndex(value);
+        return index < 24 ? KOREAN_ORDER.get(index) : value == null ? "" : value.trim();
+    }
+
+    public static boolean sameMember(String first, String second) {
+        return memberName(first).equalsIgnoreCase(memberName(second));
+    }
+
+    /** Solo names and numbered unit combinations, without matching S1 inside S10. */
+    public static Set<String> objektMembers(String value) {
+        Set<String> members = new LinkedHashSet<>();
+        int solo = memberIndex(value);
+        if (solo < 24) return Set.of(KOREAN_ORDER.get(solo));
+        for (String token : tokens(value)) {
+            int index = memberIndex(token);
+            if (index < 24) members.add(KOREAN_ORDER.get(index));
+        }
+        String compact = normalize(value);
+        if (compact.matches("s\\d{1,2}(?:xs\\d{1,2})+")) {
+            var matcher = java.util.regex.Pattern.compile("s\\d{1,2}").matcher(compact);
+            while (matcher.find()) {
+                int index = memberIndex(matcher.group());
+                if (index < 24) members.add(KOREAN_ORDER.get(index));
+            }
+        }
+        return members;
+    }
 
     private MemberPortraitOptions() {
     }
 
     /**
-     * Artist 테이블 순서(artistId)로 S1~S24 피커 옵션을 만든다.
+     * 멤버 이름의 S1~S24 순서로 피커 옵션을 만든다.
      * value는 한글 이름(케미 등), label은 표시명.
      */
     public static List<Map<String, Object>> fromArtists(List<Artist> artists, boolean englishLabels) {
         List<Artist> ordered = artists.stream()
-                .sorted(Comparator.comparing(Artist::getArtistId, Comparator.nullsLast(Long::compareTo)))
+                .sorted(Comparator.comparingInt((Artist artist) -> Math.min(memberIndex(artist.getEngName()), memberIndex(artist.getName())))
+                        .thenComparing(Artist::getName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
+                        .thenComparing(Artist::getArtistId, Comparator.nullsLast(Long::compareTo)))
                 .toList();
         List<Map<String, Object>> out = new ArrayList<>(ordered.size());
         int frame = 1;
@@ -54,12 +103,45 @@ public final class MemberPortraitOptions {
             row.put("color", artist.getColor() != null && !artist.getColor().isBlank()
                     ? artist.getColor()
                     : "#00f5d4");
-            row.put("frame", Math.min(frame, 24));
+            int index = memberIndex(artist.getEngName());
+            if (index == 24) index = memberIndex(artist.getName());
+            row.put("frame", index < 24 ? index + 1 : Math.min(frame, 24));
             row.put("artistId", artist.getArtistId());
             out.add(row);
             frame++;
         }
         return out;
+    }
+
+    /** 원본 멤버 문자열에서 S1~S24 솔로 한글 이름만 뽑아 정렬한다. 유닛·기타는 제외. */
+    public static List<String> soloMemberNames(Collection<String> rawMembers) {
+        if (rawMembers == null || rawMembers.isEmpty()) return List.of();
+        return ObjektFilterOrder.sortedMembers(rawMembers.stream()
+                .flatMap(value -> objektMembers(value).stream())
+                .toList());
+    }
+
+    /** 멤버 필드가 솔로/유닛이 아닌 기타(zenith 등)인지. */
+    public static boolean isOtherMember(String member) {
+        return objektMembers(member).isEmpty();
+    }
+
+    /**
+     * objekt 페이지와 같은 분류: all / members / other.
+     * members에서 선택이 있으면 유닛 카드도 포함 멤버 OR 매칭.
+     */
+    public static boolean matchesMemberGroup(String group, Collection<String> selected, String memberField) {
+        Set<String> actual = objektMembers(memberField);
+        String normalized = group == null || group.isBlank() ? "all" : group.trim().toLowerCase(Locale.ROOT);
+        if ("other".equals(normalized)) return actual.isEmpty();
+        if ("members".equals(normalized)) {
+            if (actual.isEmpty()) return false;
+            if (selected == null || selected.isEmpty()) return true;
+            Set<String> wanted = selected.stream().map(MemberPortraitOptions::memberName)
+                    .filter(name -> !name.isBlank()).collect(java.util.stream.Collectors.toSet());
+            return actual.stream().anyMatch(wanted::contains);
+        }
+        return true;
     }
 
     /**
@@ -70,16 +152,11 @@ public final class MemberPortraitOptions {
         List<Map<String, Object>> out = new ArrayList<>();
         if (memberOptions == null) return out;
 
-        for (String option : memberOptions) {
+        for (String option : ObjektFilterOrder.sortedMembers(memberOptions)) {
             if (option == null || option.isBlank()) continue;
             Artist matched = matchArtist(option, artists);
-            // 프로필 사진이 없는 API 멤버 값은 '이미지 업로드 예정' 버튼이 되므로 피커에서 뺀다.
-            if (!hasProfileImage(matched)) continue;
-            int frame = matched != null && matched.getArtistId() != null
-                    ? matched.getArtistId().intValue()
-                    : preferredIndex(option) + 1;
-            if (frame < 1) frame = 1;
-            if (frame > 24) frame = 24;
+            int index = memberIndex(option);
+            int frame = index < 24 ? index + 1 : 0;
 
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("value", option);
@@ -91,6 +168,9 @@ public final class MemberPortraitOptions {
                     ? matched.getColor()
                     : "#00f5d4");
             row.put("frame", frame);
+            row.put("textOnly", !hasProfileImage(matched));
+            row.put("keepOption", true);
+            row.put("frameLabel", index < 24 ? memberName(option) : "•");
             out.add(row);
         }
         return out;
@@ -99,28 +179,19 @@ public final class MemberPortraitOptions {
     private static Artist matchArtist(String option, List<Artist> artists) {
         if (artists == null || artists.isEmpty()) return null;
         String normalized = normalize(option);
+        int index = memberIndex(option);
         for (Artist artist : artists) {
             if (artist == null) continue;
             String ko = normalize(artist.getName());
             String en = normalize(artist.getEngName());
-            if (!ko.isEmpty() && (normalized.equals(ko) || normalized.contains(ko) || ko.contains(normalized))) {
+            if (!ko.isEmpty() && (normalized.equals(ko) || (index < 24 && memberIndex(ko) == index))) {
                 return artist;
             }
-            if (!en.isEmpty() && (normalized.equals(en) || normalized.contains(en) || en.contains(normalized))) {
+            if (!en.isEmpty() && (normalized.equals(en) || (index < 24 && memberIndex(en) == index))) {
                 return artist;
             }
         }
         return null;
-    }
-
-    private static int preferredIndex(String value) {
-        String normalized = normalize(value);
-        for (int i = 0; i < ENGLISH_ORDER.size(); i++) {
-            if (normalized.equals(ENGLISH_ORDER.get(i)) || normalized.contains(ENGLISH_ORDER.get(i))) {
-                return i;
-            }
-        }
-        return 0;
     }
 
     /**
@@ -140,6 +211,7 @@ public final class MemberPortraitOptions {
 
     static Set<String> memberAliases(String selectedMember) {
         Set<String> selectedTokens = tokens(selectedMember);
+        int selectedIndex = memberIndex(selectedMember);
         Set<String> aliases = new LinkedHashSet<>();
         for (String token : selectedTokens) {
             if (token.length() >= 2 && !"x".equals(token)) aliases.add(token);
@@ -148,10 +220,11 @@ public final class MemberPortraitOptions {
             String english = ENGLISH_ORDER.get(i);
             String korean = normalize(KOREAN_ORDER.get(i));
             String number = "s" + (i + 1);
-            if (selectedTokens.contains(english) || selectedTokens.contains(korean) || selectedTokens.contains(number)) {
+            if (selectedIndex == i || selectedTokens.contains(english) || selectedTokens.contains(korean) || selectedTokens.contains(number)) {
                 aliases.add(english);
                 aliases.add(korean);
                 aliases.add(number);
+                aliases.add(SHORT_KOREAN_ORDER.get(i));
             }
         }
         aliases.remove("x");

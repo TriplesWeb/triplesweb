@@ -24,6 +24,9 @@
                     {{#objektMemberOptions}}
                     <option value="{{.}}">{{.}}</option>
                     {{/objektMemberOptions}}
+                    {{#hasOtherObjektOption}}
+                    <option value="__other__">기타 옵젝</option>
+                    {{/hasOtherObjektOption}}
                 </select>
             </div>
             <div class="objekt-picker-filter">

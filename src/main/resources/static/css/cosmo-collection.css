@@ -1,0 +1,147 @@
+.collection-page .collection-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 18rem));
+    justify-content: center;
+    align-items: stretch;
+    gap: 1.1rem;
+}
+.collection-card { width: 100%; min-width: 0; }
+.collection-image-wrap {
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 2 / 3;
+    width: 100%;
+    overflow: hidden;
+    background: #07080b;
+}
+.collection-card .collection-image {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+}
+.collection-card .ar-id, .collection-card .ar-badge, .collection-card h3 { font-family: inherit; }
+.collection-card .ar-id { color: #b9fff0; border-color: #408a7a; font-variant-numeric: tabular-nums; }
+.collection-card .ar-body { gap: .7rem; }
+.collection-title-link { color: inherit; text-decoration: none; }
+.collection-title-link:hover { color: #8bf5dc; text-decoration: underline; }
+.collection-title-link:focus-visible { outline: 2px solid #8bf5dc; outline-offset: 3px; }
+.collection-action-btn {
+    display: inline-flex;
+    align-items: center;
+    margin-top: .85rem;
+    padding: .55rem 1rem;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 245, 212, .4);
+    background: rgba(0, 245, 212, .12);
+    color: #b1fff0;
+    font-size: .85rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+.collection-action-btn:hover { background: rgba(0, 245, 212, .2); }
+.collection-action-btn:focus-visible { outline: 2px solid #8bf5dc; outline-offset: 3px; }
+.collection-filter-panel { display: grid; gap: 1rem; }
+.collection-filter-form { display: grid; gap: .9rem; }
+.collection-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .55rem;
+}
+.collection-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    min-height: 2.4rem;
+    padding: .2rem .65rem;
+    border: 1px solid rgba(48, 54, 74, .9);
+    border-radius: .7rem;
+    background: rgba(26, 29, 40, .88);
+    color: #9aa3b5;
+    font-size: .75rem;
+    font-weight: 650;
+}
+.collection-filter select {
+    min-width: 5.5rem;
+    min-height: 1.7rem;
+    border: 0;
+    border-radius: .45rem;
+    background: #00e8cb;
+    color: #071513;
+    font-size: .75rem;
+    font-weight: 700;
+    padding: .15rem .45rem;
+}
+.collection-search {
+    flex: 1 1 12rem;
+    min-width: 10rem;
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    min-height: 2.4rem;
+    padding: 0 .7rem;
+    border: 1px solid rgba(48, 54, 74, .9);
+    border-radius: .7rem;
+    background: rgba(10, 12, 18, .72);
+    color: #6ee7d8;
+}
+.collection-search input {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #f1f5f9;
+    font: inherit;
+    font-size: .85rem;
+}
+.collection-reset {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.4rem;
+    padding: 0 .85rem;
+    border: 1px solid rgba(0, 245, 212, .35);
+    border-radius: .7rem;
+    color: #7df9e8;
+    font-size: .78rem;
+    font-weight: 650;
+    text-decoration: none;
+}
+.collection-reset:hover { background: rgba(0, 245, 212, .08); }
+.collection-scroll-footer {
+    display: grid;
+    justify-items: center;
+    gap: .65rem;
+    margin: .5rem 0 1.5rem;
+    min-height: 2.5rem;
+}
+.collection-scroll-status {
+    margin: 0;
+    color: #9aa3b5;
+    font-size: .82rem;
+}
+.collection-scroll-spinner {
+    width: 1.35rem;
+    height: 1.35rem;
+    border: 2px solid rgba(0, 245, 212, .2);
+    border-top-color: #7df9e8;
+    border-radius: 50%;
+    animation: collection-spin .7s linear infinite;
+}
+.collection-scroll-spinner.is-hidden,
+.gv-empty.is-hidden { display: none; }
+.collection-load-more {
+    appearance: none;
+    border: 1px solid rgba(0, 245, 212, .4);
+    border-radius: .7rem;
+    background: rgba(0, 245, 212, .1);
+    color: #b1fff0;
+    font-size: .85rem;
+    font-weight: 650;
+    padding: .55rem 1rem;
+    cursor: pointer;
+}
+@keyframes collection-spin { to { transform: rotate(360deg); } }

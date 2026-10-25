@@ -5,11 +5,15 @@
         data-value="{{value}}"
         data-name="{{label}}"
         data-frame="{{frame}}"
+        data-keep-option="{{#keepOption}}true{{/keepOption}}{{^keepOption}}false{{/keepOption}}"
         style="--artist-color:{{color}}"
         aria-pressed="{{#active}}true{{/active}}{{^active}}false{{/active}}"
         title="{{label}}">
     <span class="artist-tab-avatar">
+        {{^textOnly}}
         <img class="artist-tab-photo" src="{{image}}" referrerpolicy="no-referrer" alt="" loading="lazy">
+        {{/textOnly}}
+        {{#textOnly}}<span class="artist-tab-fallback" aria-hidden="true">{{frameLabel}}</span>{{/textOnly}}
         <img class="artist-tab-frame" src="" alt="" aria-hidden="true">
         <span class="artist-tab-shine" aria-hidden="true"></span>
     </span>

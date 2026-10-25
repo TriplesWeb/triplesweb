@@ -3,7 +3,9 @@ package com.example.triplesweb.controller;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.service.ObjektService;
+import com.example.triplesweb.service.ObjektMarketDataService;
 import com.example.triplesweb.util.MemberPortraitOptions;
+import com.example.triplesweb.util.ObjektFilterOrder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +35,7 @@ public class CosmoController {
     private static final int PAGE_SIZE = 20;
     private final ObjektService objektService;
     private final ArtistRepository artistRepository;
+    private final ObjektMarketDataService marketData;
 
     @GetMapping("/objekt")
     public String indexCosmoObjekt(
@@ -42,17 +45,27 @@ public class CosmoController {
             @RequestParam(name = "class", required = false) List<String> classFilters,
             @RequestParam(defaultValue = "all") String kind,
             @RequestParam(defaultValue = "latest") String sort,
+            @RequestParam(defaultValue = "all") String group,
             Model model
     ) {
         // 무한 스크롤: 최초 HTML은 항상 첫 페이지(20개)만 렌더한다.
-        ObjektPageResult page = loadObjektPage(0, search, member, season, classFilters, kind, sort);
+        ObjektPageResult page = loadObjektPage(0, search, member, season, classFilters, kind, sort, group);
 
-        List<String> memberOptions = orderedMemberOptions(
-                uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "member", "memberName")));
+        List<String> memberOptions = ObjektFilterOrder.sortedMembers(
+                uniqueValues(page.allObjekts(), item -> firstValue(item, "member", "memberName")).stream()
+                        .flatMap(value -> MemberPortraitOptions.objektMembers(value).stream()).toList());
         List<Artist> artists = artistRepository.findAll(Sort.by(Sort.Direction.ASC, "artistId"));
         model.addAttribute("memberOptions", memberOptions);
-        model.addAttribute("memberPickerOptions", MemberPortraitOptions.forObjektFilter(memberOptions, artists));
-        model.addAttribute("seasonOptions", uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "seasonKey", "season")));
+        List<Map<String, Object>> pickerOptions = MemberPortraitOptions.forObjektFilter(memberOptions, artists);
+        String selectedGroup = memberGroup(group, cleanSelections(member));
+        List<String> selectedMembers = "other".equals(selectedGroup) ? List.of() : cleanSelections(member).stream()
+                .flatMap(value -> MemberPortraitOptions.objektMembers(value).stream()).distinct().toList();
+        for (Map<String, Object> option : pickerOptions) option.put("active", selectedMembers.stream()
+                .anyMatch(selected -> MemberPortraitOptions.sameMember(selected, option.get("value").toString())));
+        model.addAttribute("memberPickerOptions", pickerOptions);
+        model.addAttribute("selectedGroup", selectedGroup);
+        model.addAttribute("isOtherGroup", "other".equals(selectedGroup));
+        model.addAttribute("seasonOptions", ObjektFilterOrder.sortedSeasons(uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "seasonKey", "season"))));
         model.addAttribute("classOptions", uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "classKey", "class")));
         model.addAttribute("objektNumbers", uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "collectionNo", "collectionNumber")));
 
@@ -82,10 +95,11 @@ public class CosmoController {
             @RequestParam(required = false) List<String> season,
             @RequestParam(name = "class", required = false) List<String> classFilters,
             @RequestParam(defaultValue = "all") String kind,
-            @RequestParam(defaultValue = "latest") String sort
+            @RequestParam(defaultValue = "latest") String sort,
+            @RequestParam(defaultValue = "all") String group
     ) {
         int safeRequestPage = Math.max(0, page);
-        ObjektPageResult result = loadObjektPage(safeRequestPage, search, member, season, classFilters, kind, sort);
+        ObjektPageResult result = loadObjektPage(safeRequestPage, search, member, season, classFilters, kind, sort, group);
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("page", result.page());
         body.put("pageSize", PAGE_SIZE);
@@ -107,7 +121,8 @@ public class CosmoController {
             List<String> season,
             List<String> classFilters,
             String kind,
-            String sort
+            String sort,
+            String group
     ) {
         List<Map<String, Object>> allObjekts;
         String error = "";
@@ -115,6 +130,7 @@ public class CosmoController {
         try {
             allObjekts = objektService.findCollections("triples");
             if (allObjekts == null) allObjekts = Collections.emptyList();
+            allObjekts = marketData.withMintCounts(allObjekts);
             if (allObjekts.isEmpty()) error = "API 응답에 표시할 컬렉션이 없습니다.";
         } catch (RestClientException ex) {
             allObjekts = Collections.emptyList();
@@ -124,6 +140,10 @@ public class CosmoController {
 
         String query = normalize(search);
         List<String> selectedMembers = cleanSelections(member);
+        String selectedGroup = memberGroup(group, selectedMembers);
+        java.util.Set<String> selectedNames = selectedMembers.stream()
+                .flatMap(value -> MemberPortraitOptions.objektMembers(value).stream()).collect(Collectors.toSet());
+        Map<String, java.util.Set<String>> membershipCache = new java.util.HashMap<>();
         List<String> selectedSeasons = cleanSelections(season);
         List<String> selectedClasses = cleanSelections(classFilters);
         String selectedKind = normalize(kind);
@@ -132,7 +152,8 @@ public class CosmoController {
         // 전체 캐시에서 검색어와 모든 필터를 먼저 적용하고, 그 결과에만 정렬과 페이지네이션을 적용한다.
         List<Map<String, Object>> filtered = allObjekts.stream()
                 .filter(objekt -> query.isBlank() || searchableText(objekt).contains(query))
-                .filter(objekt -> matchesMember(selectedMembers, objekt))
+                .filter(objekt -> "all".equals(selectedGroup) || matchesMember(selectedGroup, selectedNames,
+                        membershipCache.computeIfAbsent(firstValue(objekt, "member", "memberName"), MemberPortraitOptions::objektMembers)))
                 .filter(objekt -> matchesSelection(selectedSeasons, firstValue(objekt, "seasonKey", "season")))
                 .filter(objekt -> matchesSelection(selectedClasses, firstValue(objekt, "classKey", "class")))
                 .filter(objekt -> selectedKind.isBlank() || "all".equals(selectedKind)
@@ -175,50 +196,6 @@ public class CosmoController {
             String error
     ) {}
 
-    /**
-     * 멤버 체크박스는 사용자가 지정한 트리플에스 멤버 순서로 표시한다.
-     * 이 목록에 없는 API 멤버 값은 아래쪽에 이름순으로 표시한다.
-     */
-    private static List<String> orderedMemberOptions(List<String> values) {
-        List<String> englishOrder = List.of(
-                "seoyeon", "hyerin", "jiwoo", "chaeyeon", "yooyeon", "soomin",
-                "nakyoung", "yubin", "kaede", "dahyun", "kotone", "yeonji",
-                "nien", "sohyun", "xinyu", "mayu", "lynn", "joobin",
-                "hayeon", "shion", "chaewon", "sullin", "seoah", "jiyeon"
-        );
-        List<String> koreanOrder = List.of(
-                "윤서연", "정혜린", "이지우", "김채연", "김유연", "김수민",
-                "김나경", "공유빈", "카에데", "서다현", "코토네", "곽연지",
-                "니엔", "박소현", "신위", "마유", "린", "주빈",
-                "정하연", "박시온", "김채원", "설린", "서아", "지연"
-        );
-
-        return values.stream()
-                .sorted(Comparator
-                        .comparingInt((String value) -> preferredMemberIndex(value, englishOrder, koreanOrder))
-                        .thenComparing(String.CASE_INSENSITIVE_ORDER)
-                        .thenComparing(Comparator.naturalOrder()))
-                .collect(Collectors.toList());
-    }
-
-    private static int preferredMemberIndex(String value, List<String> englishOrder, List<String> koreanOrder) {
-        String normalized = normalizeMemberName(value);
-        for (int i = 0; i < englishOrder.size(); i++) {
-            String english = normalizeMemberName(englishOrder.get(i));
-            String korean = normalizeMemberName(koreanOrder.get(i));
-            if (normalized.equals(english) || normalized.equals(korean)
-                    || normalized.contains(english) || normalized.contains(korean)) {
-                return i;
-            }
-        }
-        return Integer.MAX_VALUE;
-    }
-
-    private static String normalizeMemberName(String value) {
-        if (value == null) return "";
-        return value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9가-힣]", "");
-    }
-
     private static List<String> cleanSelections(List<String> values) {
         if (values == null) return Collections.emptyList();
         return values.stream().filter(Objects::nonNull).map(String::trim)
@@ -226,15 +203,16 @@ public class CosmoController {
                 .distinct().collect(Collectors.toList());
     }
 
-    private static boolean matchesMember(List<String> selected, Map<String, Object> objekt) {
-        if (selected == null || selected.isEmpty()) return true;
-        String text = String.join(" ",
-                firstValue(objekt, "member", "memberName"),
-                firstValue(objekt, "collectionId"),
-                firstValue(objekt, "slug"),
-                firstValue(objekt, "artist"),
-                value(objekt, "searchText"));
-        return selected.stream().anyMatch(member -> MemberPortraitOptions.objektIncludesMember(text, member));
+    private static String memberGroup(String group, List<String> selected) {
+        if ("other".equalsIgnoreCase(group)) return "other";
+        if ("members".equalsIgnoreCase(group) || selected.stream().anyMatch(value -> !MemberPortraitOptions.objektMembers(value).isEmpty())) return "members";
+        return selected.isEmpty() ? "all" : "other";
+    }
+
+    private static boolean matchesMember(String group, java.util.Set<String> selected, java.util.Set<String> actual) {
+        if ("all".equals(group)) return true;
+        if ("other".equals(group)) return actual.isEmpty();
+        return !actual.isEmpty() && (selected.isEmpty() || actual.stream().anyMatch(selected::contains));
     }
 
     private static boolean matchesSelection(List<String> selected, String actual) {
@@ -260,13 +238,23 @@ public class CosmoController {
 
         return switch (sort) {
             case "oldest" -> byDate;
-            case "number_low", "mint_low" -> byNumber;
-            case "number_high", "mint_high" -> byNumber.reversed();
+            case "number_low" -> byNumber;
+            case "number_high" -> byNumber.reversed();
+            case "mint_low" -> mintComparator(false);
+            case "mint_high" -> mintComparator(true);
             case "first_member" -> byMember;
             case "last_member" -> byMember.reversed();
             case "latest" -> byDate.reversed();
             default -> byDate.reversed();
         };
+    }
+
+    private static Comparator<Map<String, Object>> mintComparator(boolean descending) {
+        Comparator<Long> counts = descending ? Comparator.reverseOrder() : Comparator.naturalOrder();
+        return Comparator.<Map<String, Object>, Long>comparing(item ->
+                        item.get("mintCount") instanceof Number n ? n.longValue() : null,
+                        Comparator.nullsLast(counts))
+                .thenComparing(item -> firstValue(item, "slug", "id"));
     }
 
     private static double numberValue(String value) {
