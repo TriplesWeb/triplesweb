@@ -3,6 +3,7 @@ package com.example.triplesweb.controller;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.service.ObjektService;
+import com.example.triplesweb.service.ObjektMarketDataService;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
@@ -33,6 +34,7 @@ public class CosmoController {
     private static final int PAGE_SIZE = 20;
     private final ObjektService objektService;
     private final ArtistRepository artistRepository;
+    private final ObjektMarketDataService marketData;
 
     @GetMapping("/objekt")
     public String indexCosmoObjekt(
@@ -115,6 +117,7 @@ public class CosmoController {
         try {
             allObjekts = objektService.findCollections("triples");
             if (allObjekts == null) allObjekts = Collections.emptyList();
+            allObjekts = marketData.withMintCounts(allObjekts);
             if (allObjekts.isEmpty()) error = "API 응답에 표시할 컬렉션이 없습니다.";
         } catch (RestClientException ex) {
             allObjekts = Collections.emptyList();
@@ -260,13 +263,23 @@ public class CosmoController {
 
         return switch (sort) {
             case "oldest" -> byDate;
-            case "number_low", "mint_low" -> byNumber;
-            case "number_high", "mint_high" -> byNumber.reversed();
+            case "number_low" -> byNumber;
+            case "number_high" -> byNumber.reversed();
+            case "mint_low" -> mintComparator(false);
+            case "mint_high" -> mintComparator(true);
             case "first_member" -> byMember;
             case "last_member" -> byMember.reversed();
             case "latest" -> byDate.reversed();
             default -> byDate.reversed();
         };
+    }
+
+    private static Comparator<Map<String, Object>> mintComparator(boolean descending) {
+        Comparator<Long> counts = descending ? Comparator.reverseOrder() : Comparator.naturalOrder();
+        return Comparator.<Map<String, Object>, Long>comparing(item ->
+                        item.get("mintCount") instanceof Number n ? n.longValue() : null,
+                        Comparator.nullsLast(counts))
+                .thenComparing(item -> firstValue(item, "slug", "id"));
     }
 
     private static double numberValue(String value) {

@@ -676,6 +676,7 @@
                 <div class="mt-1 flex items-center justify-between gap-2 text-xs text-slate-400">
                     <a href="/cosmo/objekt/member?name={{member}}" class="truncate text-teal-200 hover:underline">{{member}}</a><span class="shrink-0 font-mono">{{collectionNo}}</span>
                 </div>
+                {{#mintCountKnown}}<p class="mt-2 text-xs text-slate-300">발행량 {{mintCount}}개</p>{{/mintCountKnown}}
             </div>
         </article>
         {{/objekts}}
@@ -1150,6 +1151,7 @@
                 <div class="mt-1 flex items-center justify-between gap-2 text-xs text-slate-400">
                     <a href="/cosmo/objekt/member?name=${encodeURIComponent(member)}" class="truncate text-teal-200 hover:underline">${escapeHtml(member)}</a><span class="shrink-0 font-mono">${escapeHtml(collectionNo)}</span>
                 </div>
+                ${Number.isFinite(item.mintCount) ? `<p class="mt-2 text-xs text-slate-300">발행량 ${escapeHtml(String(item.mintCount))}개</p>` : ''}
             </div>
         </article>`;
     }
