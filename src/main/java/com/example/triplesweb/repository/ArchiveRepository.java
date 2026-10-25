@@ -17,4 +17,8 @@ public interface ArchiveRepository extends JpaRepository<Archive, Long>, JpaSpec
     Page<Archive> findByFile_MediaTypeAndTitleContainingIgnoreCase(MediaType type, String q, Pageable pageable);
     Page<Archive> findByFile_MediaType(MediaType type, Pageable pageable);
     List<Archive> findTop2000ByFile_MediaTypeOrderByIdDesc(MediaType type);
+
+    /** 멤버 이름 부분 일치 후보 (정확한 멤버 매칭은 서비스에서 재필터). */
+    List<Archive> findTop40ByFile_MediaTypeAndArtistNamesContainingIgnoreCaseOrderByIdDesc(
+            MediaType type, String artistNames);
 }

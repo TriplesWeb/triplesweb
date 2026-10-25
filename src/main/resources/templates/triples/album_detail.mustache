@@ -1,25 +1,17 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    {{>layout/favicon}}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{>layout/triples-head}}
     <title>트리플에스 커뮤니티 - 발매 앨범</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script src="/js/tailwind.config.js"></script>
-    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
 {{>layout/header}}
 <main class="main-content max-w-7xl mx-auto px-4 py-8">
     {{#album}}
-<div class="card-box bg-[#16181f]/80 backdrop-blur-md border border-[#3a4a46]/30 rounded-2xl p-6 lg:p-8 shadow-xl space-y-8">
+<div class="card-box album-detail-card bg-[#16181f]/80 backdrop-blur-md border border-[#3a4a46]/30 rounded-2xl p-6 lg:p-8 shadow-xl space-y-8">
+    <p class="album-detail-back"><a href="/triples/album">← 앨범 목록</a></p>
 
-    <div id="albumDetailTable" class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start border-b border-[#3a4a46]/30 pb-8">
+    <div id="albumDetailTable" class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start border-b border-[#3a4a46]/30 pb-8 min-w-0">
              <div id="albumImage" class="md:col-span-4 lg:col-span-3 flex justify-center">
                  <img src="{{displayAlbumImage}}" width="300" height="300" alt="{{albumName}}" class="w-full max-w-[260px] aspect-square object-cover rounded-2xl border border-[#3a4a46]/40 shadow-2xl " />
              </div>
@@ -82,44 +74,46 @@
         </div>
     </div>
 
-    <div class="space-y-4">
+    <div class="space-y-4 album-track-section min-w-0">
     <h2 class="text-xl font-bold text-[#e3e2e8] flex items-center gap-2">
         <span class="material-symbols-outlined text-[#00f5d4]">graphic_eq</span> 트랙리스트
     </h2>
-    <div class="rounded-xl border border-[#3a4a46]/30">
-        <table class="w-full text-left text-sm text-[#b9cac4]">
+    <div class="album-track-scroll rounded-xl border border-[#3a4a46]/30 min-w-0">
+        <table class="album-track-table w-full text-left text-sm text-[#b9cac4]">
             <thead class="bg-[#101116] text-[#e3e2e8] text-xs font-semibold border-b border-[#3a4a46]/30">
             <tr>
-                <th class="py-3.5 px-4 w-14 text-center">트랙 순서</th>
-                <th class="py-3.5 px-4 w-20">제목</th>
-                <th class="py-3.5 px-6 w-28 text-center">재생 시간</th>
+                <th class="album-track-num py-3.5 px-3 text-center">#</th>
+                <th class="album-track-title-col py-3.5 px-3">제목</th>
+                <th class="album-track-dur py-3.5 px-3 text-center">시간</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-[#3a4a46]/20 bg-[#16181f]/40">
         {{#tracks}}
             <tr class="hover:bg-[#202430]/60 transition-colors group">
-                <td class="py-4 px-4 text-center font-mono text-xs text-[#8b9b95]">{{trackNum}}</td>
-                <td class="py-4 px-4 font-medium text-[#e3e2e8]">
-                    <div class="flex items-center gap-2">
-                        <span class="group-hover:text-[#00f5d4] transition-colors">{{title}}</span>
+                <td class="album-track-num py-3 px-3 text-center font-mono text-xs text-[#8b9b95]">{{trackNum}}</td>
+                <td class="album-track-title-col py-3 px-3 font-medium text-[#e3e2e8]">
+                    <div class="album-track-title-row">
+                        <span class="album-track-name group-hover:text-[#00f5d4] transition-colors">{{title}}</span>
                         {{#isTitle}}
-                            <span class="text-[10px] font-extrabold bg-[#00f5d4]/20 text-[#00f5d4] border border-[#00f5d4]/40 px-1.5 py-0.5 rounded tracking-wide">TITLE</span>
+                            <span class="album-track-badge text-[10px] font-extrabold bg-[#00f5d4]/20 text-[#00f5d4] border border-[#00f5d4]/40 px-1.5 py-0.5 rounded tracking-wide">TITLE</span>
                         {{/isTitle}}
+                    </div>
+                    <div class="album-track-links">
                         {{#youtubeVideoId}}
-                        <a href="https://www.youtube.com/watch?v={{youtubeVideoId}}" target="_blank" rel="noopener noreferrer" aria-label="{{title}} 유튜브 시청" class="inline-flex items-center gap-1 rounded-lg border border-[#00f5d4]/30 px-2 py-1 text-xs text-[#00f5d4] no-underline">YouTube</a>
+                        <a href="https://www.youtube.com/watch?v={{youtubeVideoId}}" target="_blank" rel="noopener noreferrer" aria-label="{{title}} 유튜브 시청" class="album-track-link album-track-link-yt">YouTube</a>
                         {{/youtubeVideoId}}
                         {{^youtubeVideoId}}
-                        <a href="https://www.youtube.com/results?search_query={{title}}+tripleS" target="_blank" rel="noopener noreferrer" aria-label="{{title}} 유튜브 검색" class="inline-flex items-center gap-1 rounded-lg border border-[#00f5d4]/30 px-2 py-1 text-xs text-[#00f5d4] no-underline">YouTube</a>
+                        <a href="{{youtubeSearchUrl}}" target="_blank" rel="noopener noreferrer" aria-label="{{title}} 유튜브 검색" class="album-track-link album-track-link-yt">YouTube</a>
                         {{/youtubeVideoId}}
                         {{#melonSongId}}
-                        <a href="https://www.melon.com/song/detail.htm?songId={{melonSongId}}" target="_blank" rel="noopener noreferrer" aria-label="{{title}} 멜론 듣기" class="inline-flex items-center rounded-lg border border-white/15 px-2 py-1 text-xs text-[#b9cac4] no-underline">Melon</a>
+                        <a href="https://www.melon.com/song/detail.htm?songId={{melonSongId}}" target="_blank" rel="noopener noreferrer" aria-label="{{title}} 멜론 듣기" class="album-track-link">Melon</a>
                         {{/melonSongId}}
                         {{^melonSongId}}
-                        <a href="https://www.melon.com/search/total/index.htm?q={{title}}" target="_blank" rel="noopener noreferrer" aria-label="{{title}} 멜론 검색" class="inline-flex items-center rounded-lg border border-white/15 px-2 py-1 text-xs text-[#b9cac4] no-underline">Melon</a>
+                        <a href="{{melonSearchUrl}}" target="_blank" rel="noopener noreferrer" aria-label="{{title}} 멜론 검색" class="album-track-link">Melon</a>
                         {{/melonSongId}}
                     </div>
                 </td>
-                <td class="py-4 px-4 text-center font-mono text-xs text-[#8b9b95]">{{duration}}</td>
+                <td class="album-track-dur py-3 px-3 text-center font-mono text-xs text-[#8b9b95]">{{duration}}</td>
             </tr>
         {{/tracks}}
         {{^tracks}}

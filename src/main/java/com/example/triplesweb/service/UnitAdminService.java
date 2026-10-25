@@ -11,12 +11,15 @@ import com.example.triplesweb.repository.UnitRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -128,8 +131,9 @@ public class UnitAdminService {
             unit.getUnitMembers().clear();
         }
 
-        deleteManagedImage(unit.getUnitImage());
+        String previousImage = unit.getUnitImage();
         unitRepository.delete(unit);
+        deleteManagedImageAfterCommit(previousImage);
     }
 
     private void applyFields(
@@ -163,6 +167,9 @@ public class UnitAdminService {
             }
             Unit parent = unitRepository.findById(parentUnitId)
                     .orElseThrow(() -> new IllegalArgumentException("상위 유닛이 없습니다. id=" + parentUnitId));
+            if (unitId != null && wouldCreateParentCycle(unitId, parent)) {
+                throw new IllegalArgumentException("상위 유닛으로 지정하면 순환 관계가 됩니다.");
+            }
             unit.setParentUnit(parent);
         } else {
             unit.setParentUnit(null);
@@ -173,19 +180,20 @@ public class UnitAdminService {
                 String previous = unit.getUnitImage();
                 SavedMeta meta = fileStorageService.saveWithMeta(image, "unit");
                 unit.setUnitImage(meta.getUrl());
-                deleteManagedImage(previous);
+                deleteManagedImageAfterCommit(previous);
             } catch (IOException e) {
                 throw new IllegalStateException("유닛 이미지 저장에 실패했습니다.", e);
             }
         } else if (clearImage) {
-            deleteManagedImage(unit.getUnitImage());
+            String previous = unit.getUnitImage();
             unit.setUnitImage(null);
+            deleteManagedImageAfterCommit(previous);
         } else if (StringUtils.hasText(imageUrl)) {
             String url = normalizeExternalImageUrl(imageUrl);
             String previous = unit.getUnitImage();
             unit.setUnitImage(url);
             if (!Objects.equals(previous, url)) {
-                deleteManagedImage(previous);
+                deleteManagedImageAfterCommit(previous);
             }
         }
 
@@ -261,6 +269,39 @@ public class UnitAdminService {
                 .artistIds(artistIds)
                 .members(members)
                 .build();
+    }
+
+    /** 부모 체인에 unitId가 이미 있으면 순환. */
+    private boolean wouldCreateParentCycle(long unitId, Unit parent) {
+        Set<Long> seen = new HashSet<>();
+        Unit cursor = parent;
+        while (cursor != null) {
+            Long id = cursor.getUnitId();
+            if (id == null || !seen.add(id)) {
+                return true;
+            }
+            if (Objects.equals(id, unitId)) {
+                return true;
+            }
+            cursor = cursor.getParentUnit();
+        }
+        return false;
+    }
+
+    private void deleteManagedImageAfterCommit(String imageUrl) {
+        if (!StringUtils.hasText(imageUrl)) {
+            return;
+        }
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    deleteManagedImage(imageUrl);
+                }
+            });
+        } else {
+            deleteManagedImage(imageUrl);
+        }
     }
 
     private void deleteManagedImage(String imageUrl) {

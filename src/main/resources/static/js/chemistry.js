@@ -6,45 +6,10 @@
 (function () {
   const BASE = "/uploads/chemistry";
 
-  const MEMBERS = [
-    "윤서연","정혜린","이지우","김채연","김유연","김수민","김나경","공유빈",
-    "카에데","서다현","코토네","곽연지","니엔","박소현","신위","마유",
-    "린","주빈","정하연","박시온","김채원","설린","서아","지연"
-  ];
-
-  /** 표·모달 표시용 영문명 (키는 한글 MEMBERS와 동일) */
-  const MEMBER_EN = {
-    "윤서연": "SeoYeon",
-    "정혜린": "HyeRin",
-    "이지우": "JiWoo",
-    "김채연": "ChaeYeon",
-    "김유연": "YooYeon",
-    "김수민": "SooMin",
-    "김나경": "NaKyoung",
-    "공유빈": "YuBin",
-    "카에데": "Kaede",
-    "서다현": "DaHyun",
-    "코토네": "Kotone",
-    "곽연지": "YeonJi",
-    "니엔": "Nien",
-    "박소현": "SoHyun",
-    "신위": "XinYu",
-    "마유": "Mayu",
-    "린": "Lynn",
-    "주빈": "JooBin",
-    "정하연": "HaYeon",
-    "박시온": "ShiOn",
-    "김채원": "ChaeWon",
-    "설린": "Sullin",
-    "서아": "SeoAh",
-    "지연": "JiYeon"
-  };
-
-  const MEMBER_COLORS = [
-    "#22aeff","#9200ff","#fff800","#98f21d","#db0c74","#fc83a4","#6799a0","#ffe3e2",
-    "#ffc935","#ff9ad6","#ffde00","#5974ff","#ff953f","#1222b5","#d51313","#fe8e76",
-    "#ac62b7","#b7f54c","#52d9bb","#ff428a","#c7a3e0","#7bba8d","#cff3ff","#ffab62"
-  ];
+  const catalog = window.TripleSMembers || {};
+  const MEMBERS = catalog.NAMES_KO || [];
+  const MEMBER_EN = catalog.NAME_EN_BY_KO || {};
+  const MEMBER_COLORS = catalog.COLORS || [];
 
   const CHEM_LANG =
     (document.documentElement.getAttribute("data-chem-lang") ||
@@ -170,6 +135,17 @@
 
   function formatLabel(label) {
     return escapeHtml(label).replace(/\n/g, "<br>");
+  }
+
+  function toneBadgeHtml(tone) {
+    const t = normalizeLabelTone(tone);
+    if (t === "NONE") return "";
+    const text =
+      t === "UNDECIDED" ? (IS_EN ? "TBD" : "미정")
+        : t === "RECENT" ? (IS_EN ? "Recent" : "최근")
+          : t === "FAN" ? "WAV"
+            : "";
+    return text ? '<span class="chem-tone-badge">' + escapeHtml(text) + "</span>" : "";
   }
 
   /** 케미명 여러 개(줄바꿈)를 배열로 */
@@ -429,6 +405,7 @@
             escapeHtml(normalizeLabelTone(cell.labelTone)) +
             '" tabindex="0" role="button">' +
             formatLabel(cell.label) +
+            toneBadgeHtml(cell.labelTone) +
             "</td>";
         } else if (isAdmin) {
           bodyHtml +=
@@ -446,6 +423,7 @@
       bodyHtml += "</tr>";
     });
     tbody.innerHTML = bodyHtml;
+    fillPairFilterOptions();
 
     tbody.querySelectorAll(".chem-cell").forEach((el) => {
       const open = () => {
@@ -552,66 +530,10 @@
   }
 
   function sanitizeChemistryHtml(html) {
-    const allowed = new Set(["B", "STRONG", "I", "EM", "U", "SPAN", "BR", "A", "DIV", "P", "FONT", "MARK"]);
-    const wrap = document.createElement("div");
-    wrap.innerHTML = String(html || "");
-    normalizeFontColorsIn(wrap);
-
-    function clean(node) {
-      Array.from(node.childNodes).forEach((child) => {
-        if (child.nodeType === Node.TEXT_NODE) return;
-        if (child.nodeType !== Node.ELEMENT_NODE) {
-          child.remove();
-          return;
-        }
-        if (child.tagName === "FONT" || child.tagName === "MARK") {
-          const span = document.createElement("span");
-          const color = extractElementColor(child);
-          const background =
-            extractElementBackground(child) || (child.tagName === "MARK" ? "#ffe566" : "");
-          applySpanColors(span, color, background);
-          while (child.firstChild) span.appendChild(child.firstChild);
-          node.insertBefore(span, child);
-          child.remove();
-          clean(span);
-          return;
-        }
-        if (!allowed.has(child.tagName)) {
-          while (child.firstChild) node.insertBefore(child.firstChild, child);
-          child.remove();
-          return;
-        }
-        if (child.tagName === "SPAN") {
-          const color = extractElementColor(child);
-          const background = extractElementBackground(child);
-          Array.from(child.attributes).forEach((attr) => child.removeAttribute(attr.name));
-          applySpanColors(child, color, background);
-        } else if (child.tagName === "A") {
-          const href = child.getAttribute("href") || "";
-          Array.from(child.attributes).forEach((attr) => child.removeAttribute(attr.name));
-          if (/^https?:\/\//i.test(href)) {
-            child.setAttribute("href", href);
-            child.setAttribute("target", "_blank");
-            child.setAttribute("rel", "noopener");
-            child.className = "chem-highlight";
-          } else {
-            while (child.firstChild) node.insertBefore(child.firstChild, child);
-            child.remove();
-            return;
-          }
-        } else if (child.tagName === "DIV" || child.tagName === "P") {
-          Array.from(child.attributes).forEach((attr) => child.removeAttribute(attr.name));
-        }
-        clean(child);
-      });
+    if (window.ChemistrySanitize && typeof window.ChemistrySanitize.sanitize === "function") {
+      return window.ChemistrySanitize.sanitize(html);
     }
-
-    clean(wrap);
-    return wrap.innerHTML
-      .replace(/<\/div>\s*<div>/gi, "<br>")
-      .replace(/<\/?div>/gi, "")
-      .replace(/<\/p>\s*<p>/gi, "<br>")
-      .replace(/<\/?p>/gi, "");
+    return String(html || "");
   }
 
   function descriptionToEditorHtml(description) {
@@ -2026,10 +1948,14 @@
 
   function trioHint(count) {
     if (IS_EN) {
-      if (count < 3) return "Select 3+ members to view or add group chemistry.";
-      return count + " selected · group chemistry for this set.";
+      if (count <= 0) return "Select members to see chemistry they belong to.";
+      if (count === 1) return "1 selected · chemistry including this member.";
+      if (count === 2) return "2 selected · chemistry that includes both.";
+      return count + " selected · exact group chemistry for this set.";
     }
-    if (count < 3) return "멤버를 3명 이상 고르면 3인 이상 케미를 보고 추가할 수 있어요.";
+    if (count <= 0) return "멤버를 고르면 관련 케미를 보여 줍니다. 1명·2명·3명 이상 모두 가능해요.";
+    if (count === 1) return "1명 선택됨 · 이 멤버가 속한 케미를 표시합니다.";
+    if (count === 2) return "2명 선택됨 · 두 멤버가 함께 속한 케미를 표시합니다.";
     return count + "명 선택됨 · 이 조합의 3인 이상 케미를 표시합니다.";
   }
 
@@ -2040,149 +1966,80 @@
     return sa.every((name, i) => name === sb[i]);
   }
 
+  /** 3명 이상: 선택 집합과 멤버가 완전히 같은 그룹만. */
   function findExactGroups(selectedNames) {
     return (groupEntries || []).filter((g) => sameMemberSet(g.members || [], selectedNames));
+  }
+
+  /** 1·2명: 선택한 멤버를 모두 포함하는 3인 이상 그룹. */
+  function findGroupsContainingAll(selectedNames) {
+    const selected = selectedNames || [];
+    if (!selected.length) return [];
+    return (groupEntries || []).filter((g) => {
+      const members = g.members || [];
+      return selected.every((name) => members.includes(name));
+    });
   }
 
   function formatGroupMembers(names) {
     return (names || []).map(memberLabel).join(" · ");
   }
 
+  function pairCellBetween(a, b) {
+    const ia = memberIndex(a);
+    const ib = memberIndex(b);
+    if (ia < 0 || ib < 0 || ia === ib || !pairMatrix) return null;
+    const lo = Math.min(ia, ib);
+    const hi = Math.max(ia, ib);
+    const cell = pairMatrix[lo] && pairMatrix[lo][hi];
+    if (!cell || cell.type !== "chem") return null;
+    return {
+      member1: MEMBERS[lo],
+      member2: MEMBERS[hi],
+      person: MEMBERS[lo],
+      key: cell.key,
+      label: cell.label || "",
+      labelTone: cell.labelTone || "NONE",
+      dbId: cell.dbId || null
+    };
+  }
+
+  /** 선택 멤버 사이(2명 이상)의 2인 케미. */
   function collectTrioPairs(selectedNames) {
-    const selected = new Set(selectedNames || []);
-    if (selected.size < 2 || !pairMatrix) return [];
+    const list = selectedNames || [];
+    if (list.length < 2 || !pairMatrix) return [];
     const seen = new Set();
     const pairs = [];
-    selected.forEach((a) => {
-      selected.forEach((b) => {
-        if (!a || !b || a === b) return;
-        const ia = memberIndex(a);
-        const ib = memberIndex(b);
-        if (ia < 0 || ib < 0 || ia >= ib) return;
-        const key = a + "\0" + b;
-        if (seen.has(key)) return;
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const pair = pairCellBetween(list[i], list[j]);
+        if (!pair) continue;
+        const key = pair.member1 + "\0" + pair.member2;
+        if (seen.has(key)) continue;
         seen.add(key);
-        const cell = pairMatrix[ia] && pairMatrix[ia][ib];
-        if (!cell || cell.type !== "chem") return;
-        pairs.push({
-          member1: a,
-          member2: b,
-          person: a,
-          key: cell.key,
-          label: cell.label || "",
-          labelTone: cell.labelTone || "NONE",
-          dbId: cell.dbId || null
-        });
-      });
+        pairs.push(pair);
+      }
+    }
+    return pairs;
+  }
+
+  /** 1명: 그 멤버가 들어간 모든 2인 케미. */
+  function collectPairsForOneMember(name) {
+    if (!name || !pairMatrix) return [];
+    const pairs = [];
+    MEMBERS.forEach((other) => {
+      if (other === name) return;
+      const pair = pairCellBetween(name, other);
+      if (pair) pairs.push(pair);
     });
     return pairs;
   }
 
-  function renderTrioResults(selectedNames) {
-    const meta = document.getElementById("chemTrioMeta");
-    const box = document.getElementById("chemTrioResults");
-    const names = selectedNames || [];
-    if (meta) meta.textContent = trioHint(names.length);
-    if (!box) return;
-
-    if (names.length < 3) {
-      box.innerHTML =
-        '<p class="chem-trio-empty">' +
-        escapeHtml(
-          IS_EN
-            ? "Select at least three members."
-            : "멤버를 세 명 이상 선택해 주세요."
-        ) +
-        "</p>";
-      return;
-    }
-
-    const groups = findExactGroups(names);
-    const pairs = collectTrioPairs(names);
-    let html = "";
-
-    html += '<section class="chem-trio-section">';
-    html +=
-      '<p class="chem-trio-section-title">' +
-      escapeHtml(IS_EN ? "3+ chemistry" : "3인 이상 케미") +
-      "</p>";
-    html +=
-      '<p class="chem-trio-selected-line">' +
-      escapeHtml(formatGroupMembers(names)) +
-      "</p>";
-
-    html += '<div class="chem-trio-card-grid chem-trio-card-grid--primary">';
-
-    // 관리자: 큰 + 추가 구역 (3명 이상 선택 시 항상)
-    if (isAdmin && !groups.length) {
-      html +=
-        '<button type="button" class="chem-trio-plus-zone" id="chemTrioAddBtn" aria-label="' +
-        escapeHtml(IS_EN ? "Add 3+ chemistry" : "3인 이상 케미 추가") +
-        '">' +
-        '<span class="chem-trio-plus-mark" aria-hidden="true">+</span>' +
-        '<span class="chem-trio-plus-caption">' +
-        escapeHtml(IS_EN ? "Add chemistry for this selection" : "이 조합으로 케미 추가") +
-        "</span>" +
-        "</button>";
-    } else if (!isAdmin && !groups.length) {
-      html +=
-        '<p class="chem-trio-empty">' +
-        escapeHtml(
-          IS_EN
-            ? "No 3+ chemistry for this selection yet."
-            : "이 조합의 3인 이상 케미가 아직 없어요."
-        ) +
-        "</p>";
-    }
-
-    groups.forEach((group) => {
-      const toneCls = toneClass(group.labelTone);
-      const displayLabel = IS_EN
-        ? String(group.labelEn || "").trim() || group.label || ""
-        : group.label || "";
-      html +=
-        '<article class="chem-trio-card chem-trio-card--group" data-group-id="' +
-        escapeHtml(String(group.id || "")) +
-        '">' +
-        '<button type="button" class="chem-trio-card-main" data-group-open="' +
-        escapeHtml(String(group.id || "")) +
-        '">' +
-        '<span class="chem-trio-card-pair">' +
-        escapeHtml(formatGroupMembers(group.members)) +
-        "</span>" +
-        '<span class="chem-trio-card-label' +
-        (toneCls ? " " + toneCls : "") +
-        '">' +
-        escapeHtml(displayLabel) +
-        "</span>" +
-        "</button>";
-      if (isAdmin) {
-        html +=
-          '<div class="chem-trio-card-actions">' +
-          '<button type="button" class="chem-trio-edit-name" data-group-edit="' +
-          escapeHtml(String(group.id || "")) +
-          '">' +
-          escapeHtml(IS_EN ? "Edit name" : "케미명 수정") +
-          "</button>" +
-          "</div>";
-      }
-      html += "</article>";
-    });
-
-    // 이미 그룹이 있어도 관리자는 같은 조합을 수정할 큰 + 대신 보조 추가 안 함(유니크 조합).
-    // 대신 상단 카드에서 케미명 수정.
-    html += "</div></section>";
-
-    if (pairs.length) {
-      html += '<section class="chem-trio-section">';
-      html +=
-        '<p class="chem-trio-section-title">' +
-        escapeHtml(IS_EN ? "Pairs among selection" : "선택 멤버 사이 2인 케미") +
-        "</p>";
-      html += '<div class="chem-trio-card-grid">';
-      pairs.forEach((pair) => {
+  function renderPairCardsHtml(pairs) {
+    return pairs
+      .map((pair) => {
         const toneCls = toneClass(pair.labelTone);
-        html +=
+        return (
           '<button type="button" class="chem-trio-card" data-m1="' +
           escapeHtml(pair.member1) +
           '" data-m2="' +
@@ -2202,10 +2059,141 @@
           '">' +
           escapeHtml(pair.label) +
           "</span>" +
+          "</button>"
+        );
+      })
+      .join("");
+  }
+
+  function renderGroupCardsHtml(groups, names) {
+    return groups
+      .map((group) => {
+        const toneCls = toneClass(group.labelTone);
+        const displayLabel = IS_EN
+          ? String(group.labelEn || "").trim() || group.label || ""
+          : group.label || "";
+        let html =
+          '<article class="chem-trio-card chem-trio-card--group" data-group-id="' +
+          escapeHtml(String(group.id || "")) +
+          '">' +
+          '<button type="button" class="chem-trio-card-main" data-group-open="' +
+          escapeHtml(String(group.id || "")) +
+          '">' +
+          '<span class="chem-trio-card-pair">' +
+          escapeHtml(formatGroupMembers(group.members)) +
+          "</span>" +
+          '<span class="chem-trio-card-label' +
+          (toneCls ? " " + toneCls : "") +
+          '">' +
+          escapeHtml(displayLabel) +
+          "</span>" +
           "</button>";
-      });
-      html += "</div></section>";
+        if (isAdmin) {
+          html +=
+            '<div class="chem-trio-card-actions">' +
+            '<button type="button" class="chem-trio-edit-name" data-group-edit="' +
+            escapeHtml(String(group.id || "")) +
+            '">' +
+            escapeHtml(IS_EN ? "Edit name" : "케미명 수정") +
+            "</button>" +
+            "</div>";
+        }
+        html += "</article>";
+        return html;
+      })
+      .join("");
+  }
+
+  function renderTrioResults(selectedNames) {
+    const meta = document.getElementById("chemTrioMeta");
+    const box = document.getElementById("chemTrioResults");
+    const jump = document.getElementById("chemTrioJump");
+    const names = selectedNames || [];
+    if (meta) meta.textContent = trioHint(names.length);
+    if (jump) jump.classList.toggle("hidden", names.length < 1);
+    if (!box) return;
+
+    if (names.length < 1) {
+      box.innerHTML =
+        '<p class="chem-trio-empty">' +
+        escapeHtml(
+          IS_EN
+            ? "Select one or more members to see related chemistry."
+            : "멤버를 한 명 이상 선택해 주세요."
+        ) +
+        "</p>";
+      return;
     }
+
+    const exactMode = names.length >= 3;
+    const groups = exactMode ? findExactGroups(names) : findGroupsContainingAll(names);
+    const pairs = names.length === 1
+      ? collectPairsForOneMember(names[0])
+      : collectTrioPairs(names);
+
+    let html = "";
+    html +=
+      '<p class="chem-trio-selected-line">' +
+      escapeHtml(formatGroupMembers(names)) +
+      "</p>";
+
+    // 3인 이상 그룹 섹션
+    html += '<section class="chem-trio-section">';
+    html +=
+      '<p class="chem-trio-section-title">' +
+      escapeHtml(
+        exactMode
+          ? IS_EN ? "3+ chemistry (exact match)" : "3인 이상 케미 (완전 일치)"
+          : IS_EN ? "3+ chemistry including selection" : "선택 멤버가 속한 3인 이상 케미"
+      ) +
+      "</p>";
+    html += '<div class="chem-trio-card-grid chem-trio-card-grid--primary">';
+
+    if (exactMode && isAdmin && !groups.length) {
+      html +=
+        '<button type="button" class="chem-trio-plus-zone" id="chemTrioAddBtn" aria-label="' +
+        escapeHtml(IS_EN ? "Add 3+ chemistry" : "3인 이상 케미 추가") +
+        '">' +
+        '<span class="chem-trio-plus-mark" aria-hidden="true">+</span>' +
+        '<span class="chem-trio-plus-caption">' +
+        escapeHtml(IS_EN ? "Add chemistry for this selection" : "이 조합으로 케미 추가") +
+        "</span>" +
+        "</button>";
+    } else if (!groups.length) {
+      html +=
+        '<p class="chem-trio-empty">' +
+        escapeHtml(
+          IS_EN
+            ? "No 3+ chemistry matches this selection."
+            : "해당하는 3인 이상 케미가 없어요."
+        ) +
+        "</p>";
+    } else {
+      html += renderGroupCardsHtml(groups, names);
+    }
+    html += "</div></section>";
+
+    // 2인 케미 섹션
+    html += '<section class="chem-trio-section">';
+    html +=
+      '<p class="chem-trio-section-title">' +
+      escapeHtml(
+        names.length === 1
+          ? IS_EN ? "2-person chemistry with this member" : "이 멤버의 2인 케미"
+          : IS_EN ? "2-person chemistry among selection" : "선택 멤버 사이 2인 케미"
+      ) +
+      "</p>";
+    if (pairs.length) {
+      html += '<div class="chem-trio-card-grid">' + renderPairCardsHtml(pairs) + "</div>";
+    } else {
+      html +=
+        '<p class="chem-trio-empty">' +
+        escapeHtml(
+          IS_EN ? "No 2-person chemistry for this selection." : "해당하는 2인 케미가 없어요."
+        ) +
+        "</p>";
+    }
+    html += "</section>";
 
     box.innerHTML = html;
 
@@ -2268,6 +2256,60 @@
         openEditFormGroup(names, "", "", "", "", "", {}, "NONE");
       });
     }
+
+    if (names.length >= 1 && jump) {
+      const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      box.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    }
+  }
+
+  function fillPairFilterOptions() {
+    const a = document.getElementById("chemFilterA");
+    const b = document.getElementById("chemFilterB");
+    if (!a || !b) return;
+    const makeOptions = (select, keep) => {
+      const prev = keep || select.value;
+      select.innerHTML =
+        '<option value="">' +
+        escapeHtml(IS_EN ? "Any" : "선택") +
+        "</option>" +
+        MEMBERS.map((name, i) =>
+          '<option value="' + i + '">' + escapeHtml(memberLabel(name)) + "</option>"
+        ).join("");
+      if (prev !== "" && select.querySelector('option[value="' + prev + '"]')) {
+        select.value = prev;
+      }
+    };
+    makeOptions(a, a.value);
+    makeOptions(b, b.value);
+  }
+
+  function bindPairFilter() {
+    const go = document.getElementById("chemFilterGo");
+    if (!go) return;
+    go.addEventListener("click", () => {
+      const ai = Number(document.getElementById("chemFilterA")?.value);
+      const bi = Number(document.getElementById("chemFilterB")?.value);
+      if (!Number.isFinite(ai) || !Number.isFinite(bi) || ai === bi) {
+        alert(IS_EN ? "Pick two different members." : "서로 다른 멤버 두 명을 선택해 주세요.");
+        return;
+      }
+      const cell =
+        document.querySelector('#chemTbody td[data-m1="' + CSS.escape(MEMBERS[ai]) + '"][data-m2="' + CSS.escape(MEMBERS[bi]) + '"]') ||
+        document.querySelector('#chemTbody td[data-m1="' + CSS.escape(MEMBERS[bi]) + '"][data-m2="' + CSS.escape(MEMBERS[ai]) + '"]');
+      if (!cell) {
+        alert(IS_EN ? "No cell found for that pair." : "해당 교차 칸을 찾지 못했습니다.");
+        return;
+      }
+      const wrap = document.querySelector(".chem-table-wrap");
+      cell.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+      cell.classList.add("chem-cell-flash");
+      setTimeout(() => cell.classList.remove("chem-cell-flash"), 1200);
+      if (wrap) {
+        /* ensure horizontal scroll if needed */
+      }
+      cell.focus();
+    });
   }
 
   function bindTrioPicker() {
@@ -2343,28 +2385,30 @@
 
     bindModeToggle();
     bindTrioPicker();
+    bindPairFilter();
     bindLegendToggle();
     bindAdminUi();
 
     // 영어 페이지에는 로그인 버튼 없음. 한국어에서 로그인된 세션이면 추가/수정 가능.
     try {
-      const statusRes = await chemFetch("/api/chemistry/admin/status");
+      const [statusRes, chemRes, groupRes] = await Promise.all([
+        chemFetch("/api/chemistry/admin/status"),
+        chemFetch("/api/chemistry"),
+        chemFetch("/api/chemistry/groups")
+      ]);
       if (statusRes.ok) {
         const status = await statusRes.json();
         adminConfigured = Boolean(status.configured);
         isAdmin = Boolean(status.admin);
         if (!isAdmin) setAdminToken("");
       }
-    } catch (_) {
-      adminConfigured = false;
-      isAdmin = false;
-    }
-
-    try {
-      const res = await chemFetch("/api/chemistry");
-      if (!res.ok) throw new Error("API " + res.status);
-      applyDbToTable(await res.json());
-      await refreshGroupEntries();
+      if (!chemRes.ok) throw new Error("API " + chemRes.status);
+      applyDbToTable(await chemRes.json());
+      if (groupRes.ok) {
+        groupEntries = await groupRes.json();
+      } else {
+        groupEntries = [];
+      }
       setAdminUi();
       setMode("pair");
     } catch (err) {

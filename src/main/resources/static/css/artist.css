@@ -537,24 +537,43 @@
     }
 }
 
-/* 멤버 탭 — 프레임 + 상징색 이름 (스크린샷 롤백, 이미지·글씨 소폭 확대) */
+/* 멤버 탭 — 모바일은 가로 스크롤, 넓은 화면은 그리드 */
 .artist-page .artist-member-tabs {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(5.6rem, 1fr));
-    gap: 0.75rem 0.5rem;
-    align-items: start;
-    justify-items: center;
-    overflow: visible;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.65rem;
+    align-items: stretch;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
     list-style: none;
     margin: 0;
-    padding-left: 0;
-    padding-right: 0;
+    padding: 0.15rem 0.1rem 0.55rem;
+}
+
+.artist-page .artist-member-tabs .nav-tab-btn {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    min-width: 4.75rem;
 }
 
 @media (min-width: 640px) {
     .artist-page .artist-member-tabs {
+        display: grid;
         grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
         gap: 0.85rem 0.55rem;
+        align-items: start;
+        justify-items: center;
+        overflow: visible;
+        scroll-snap-type: none;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .artist-page .artist-member-tabs .nav-tab-btn {
+        min-width: 0;
     }
 }
 
@@ -589,7 +608,8 @@
 }
 
 .artist-page .nav-tab-btn[data-member-tab] .artist-tab-label {
-    color: color-mix(in srgb, var(--artist-color) 72%, #b9cac4);
+    /* 이름은 밝은 공통색으로 가독성 확보. 상징색은 프레임·테두리로 구분 */
+    color: #e3e2e8;
 }
 
 .artist-page .nav-tab-btn:hover,
@@ -599,15 +619,16 @@
 
 .artist-page .nav-tab-btn[data-member-tab]:hover .artist-tab-label,
 .artist-page .nav-tab-btn[data-member-tab].is-active .artist-tab-label {
-    color: var(--artist-color);
-    text-shadow: 0 0 10px color-mix(in srgb, var(--artist-color) 55%, transparent);
+    color: #ffffff;
+    text-shadow: none;
 }
 
 .artist-page .nav-tab-btn.is-active {
     transform: translateY(-1px);
 }
 
-.artist-tab-avatar {
+/* 그룹 소개 탭 전용 크기 — 케미 피커(.member-portrait-picker)와 클래스명을 공유하므로 .artist-page 로 한정 */
+.artist-page .artist-tab-avatar {
     position: relative;
     display: block;
     width: 4.15rem;
@@ -616,7 +637,7 @@
     flex-shrink: 0;
 }
 
-.artist-tab-photo {
+.artist-page .artist-tab-photo {
     display: block;
     width: 100%;
     height: 100%;
@@ -626,12 +647,12 @@
     background: #0d0e12;
 }
 
-.artist-tab-avatar--group .artist-tab-photo {
+.artist-page .artist-tab-avatar--group .artist-tab-photo {
     object-position: center;
     border: 1px solid rgba(0, 245, 212, 0.35);
 }
 
-.artist-tab-frame {
+.artist-page .artist-tab-frame {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -643,7 +664,7 @@
     transition: filter 0.25s ease;
 }
 
-.artist-tab-shine {
+.artist-page .artist-tab-shine {
     position: absolute;
     inset: 0;
     z-index: 3;
@@ -653,7 +674,7 @@
     opacity: 0.4;
 }
 
-.artist-tab-shine::before {
+.artist-page .artist-tab-shine::before {
     content: "";
     position: absolute;
     top: -40%;

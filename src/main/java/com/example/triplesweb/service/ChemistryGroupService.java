@@ -7,11 +7,15 @@ import com.example.triplesweb.entity.ChemistryLabelTone;
 import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ChemistryGroupRepository;
+import com.example.triplesweb.util.ChemistryHtmlCleaner;
+import com.example.triplesweb.util.TripleSMembers;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -28,12 +32,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ChemistryGroupService {
-
-    private static final List<String> MEMBERS = List.of(
-            "윤서연", "정혜린", "이지우", "김채연", "김유연", "김수민", "김나경", "공유빈",
-            "카에데", "서다현", "코토네", "곽연지", "니엔", "박소현", "신위", "마유",
-            "린", "주빈", "정하연", "박시온", "김채원", "설린", "서아", "지연"
-    );
 
     private final ChemistryGroupRepository chemistryGroupRepository;
     private final ArtistRepository artistRepository;
@@ -76,8 +74,8 @@ public class ChemistryGroupService {
         entity.setMembersJson(writeMembersJson(resolved.orderedNames()));
         entity.setLabel(label.trim());
         entity.setLabelEn(StringUtils.hasText(labelEn) ? labelEn.trim() : null);
-        entity.setDescription(description);
-        entity.setDescriptionEn(descriptionEn != null ? descriptionEn : "");
+        entity.setDescription(ChemistryHtmlCleaner.clean(description));
+        entity.setDescriptionEn(ChemistryHtmlCleaner.clean(descriptionEn != null ? descriptionEn : ""));
         entity.setLinksJson(normalizeLinksJson(linksJson));
         entity.setLabelTone(tone);
 
@@ -86,13 +84,14 @@ public class ChemistryGroupService {
                 String previousUrl = entity.getImageUrl();
                 SavedMeta meta = fileStorageService.saveWithMeta(image, "chemistry");
                 entity.setImageUrl(meta.getUrl());
-                deleteManagedImage(previousUrl);
+                deleteManagedImageAfterCommit(previousUrl);
             } catch (IOException e) {
                 throw new IllegalStateException("이미지 저장에 실패했습니다.", e);
             }
         } else if (clearImage) {
-            deleteManagedImage(entity.getImageUrl());
+            String previousUrl = entity.getImageUrl();
             entity.setImageUrl(null);
+            deleteManagedImageAfterCommit(previousUrl);
         }
 
         return toDto(chemistryGroupRepository.save(entity));
@@ -110,8 +109,25 @@ public class ChemistryGroupService {
     }
 
     private void hardDelete(ChemistryGroup entity) {
-        deleteManagedImage(entity.getImageUrl());
+        String previous = entity.getImageUrl();
         chemistryGroupRepository.delete(entity);
+        deleteManagedImageAfterCommit(previous);
+    }
+
+    private void deleteManagedImageAfterCommit(String imageUrl) {
+        if (!StringUtils.hasText(imageUrl)) {
+            return;
+        }
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    deleteManagedImage(imageUrl);
+                }
+            });
+        } else {
+            deleteManagedImage(imageUrl);
+        }
     }
 
     private void deleteManagedImage(String imageUrl) {
@@ -136,7 +152,7 @@ public class ChemistryGroupService {
         for (String raw : members) {
             if (!StringUtils.hasText(raw)) continue;
             String name = raw.trim();
-            if (!MEMBERS.contains(name)) {
+            if (!TripleSMembers.NAMES_KO.contains(name)) {
                 throw new IllegalArgumentException("알 수 없는 멤버: " + name);
             }
             unique.add(name);

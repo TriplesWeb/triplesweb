@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    {{>layout/favicon}}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>페이지를 찾을 수 없습니다 - 트리플에스</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
+{{>layout/header}}
+<main class="main-content max-w-3xl mx-auto px-4 py-16 text-center">
+    <p class="text-sm font-mono text-[#00f5d4] mb-3">404</p>
+    <h1 class="text-2xl font-bold mb-3">요청한 페이지를 찾을 수 없습니다</h1>
+    <p class="text-[#b9cac4] mb-8">{{message}}</p>
+    <a href="{{listPath}}" class="inline-flex items-center gap-2 rounded-lg border border-[#00f5d4]/40 px-4 py-2 text-[#00f5d4] no-underline hover:bg-[#00f5d4]/10">{{listLabel}}</a>
+</main>
+{{>layout/footer}}
+</body>
+</html>

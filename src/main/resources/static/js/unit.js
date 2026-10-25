@@ -40,6 +40,9 @@
     const btn = document.getElementById("unitAdminBtn");
     const hint = document.getElementById("unitAdminHint");
     if (page) page.classList.toggle("is-admin", Boolean(isAdmin));
+    document.querySelectorAll(".about-edit-inline").forEach((control) => {
+      control.hidden = !isAdmin;
+    });
     if (btn) {
       if (!adminConfigured) btn.classList.add("hidden");
       else {
@@ -113,6 +116,10 @@
   }
 
   async function openEditModal(unitId) {
+    if (!isAdmin) {
+      openLoginModal();
+      return;
+    }
     const err = document.getElementById("unitEditError");
     if (err) { err.hidden = true; err.textContent = ""; }
     document.getElementById("unitEditId").value = unitId || "";
@@ -125,6 +132,8 @@
     document.getElementById("unitEditVisible").checked = true;
     document.getElementById("unitEditClearImage").checked = false;
     document.getElementById("unitEditImage").value = "";
+    const imageUrlInput = document.getElementById("unitEditImageUrl");
+    if (imageUrlInput) imageUrlInput.value = "";
     const preview = document.getElementById("unitEditImagePreview");
     preview.classList.add("hidden");
     preview.removeAttribute("src");
@@ -145,6 +154,9 @@
       document.getElementById("unitEditVisible").checked = data.visible !== false;
       fillParentSelect(data.parentUnitId, data.unitId);
       fillArtistChecks(data.artistIds);
+      if (imageUrlInput && data.unitImage && /^https?:\/\//i.test(data.unitImage)) {
+        imageUrlInput.value = data.unitImage;
+      }
       if (data.unitImage) {
         preview.src = data.unitImage;
         preview.classList.remove("hidden");

@@ -16,6 +16,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -57,10 +58,13 @@ public class MemberSpotlightService {
                 .filter(value -> !value.isBlank())
                 .distinct()
                 .toList();
-        List<Archive> images = archiveRepository.findTop2000ByFile_MediaTypeOrderByIdDesc(MediaType.IMAGE);
-        List<Archive> videos = archiveRepository.findTop2000ByFile_MediaTypeOrderByIdDesc(MediaType.VIDEO);
+        // 전역 최신 묶음을 멤버별로 한 번만 인덱싱해 24회 선형 스캔을 피한다.
+        Map<String, List<Archive>> imageIndex = indexArchives(
+                archiveRepository.findTop2000ByFile_MediaTypeOrderByIdDesc(MediaType.IMAGE));
+        Map<String, List<Archive>> videoIndex = indexArchives(
+                archiveRepository.findTop2000ByFile_MediaTypeOrderByIdDesc(MediaType.VIDEO));
         Map<Long, List<MediaDto>> media = mediaService.byArtistMap(LIMIT);
-        List<Schedule> schedules = scheduleRepository.findAllWithArtists();
+        Map<String, List<Schedule>> scheduleIndex = indexSchedules(scheduleRepository.findAllWithArtists());
         for (Artist artist : artists) {
             if (artist == null || artist.getName() == null || artist.getName().isBlank()) continue;
             String name = artist.getName().trim();
@@ -77,9 +81,9 @@ public class MemberSpotlightService {
             objektFeed.put("objektFeed", true);
             feeds.add(objektFeed);
             feeds.add(archiveFeed("사진 아카이브", "등록된 사진 최신 5개입니다.", "이 멤버의 사진이 없습니다.",
-                    images, MediaType.IMAGE, name, "/archive/image_archive?members=" + encoded));
+                    imageIndex, MediaType.IMAGE, name, "/archive/image_archive?members=" + encoded));
             feeds.add(archiveFeed("영상 아카이브", "등록된 영상 최신 5개입니다.", "이 멤버의 영상이 없습니다.",
-                    videos, MediaType.VIDEO, name, "/archive/video_archive?members=" + encoded));
+                    videoIndex, MediaType.VIDEO, name, "/archive/video_archive?members=" + encoded));
             feeds.add(feed(
                     "공식 미디어",
                     "공식 미디어에서 이 멤버가 선택된 최신 5개입니다.",
@@ -91,20 +95,32 @@ public class MemberSpotlightService {
                     "이 멤버만 고른 일정 5개입니다.",
                     "이 멤버의 일정이 없습니다.",
                     "/schedule?artist=" + encoded,
-                    scheduleCards(schedules, name, encoded)));
+                    scheduleCards(scheduleIndex.getOrDefault(normalizeMemberKey(name), List.of()), encoded)));
             artist.setMemberFeeds(feeds);
             artist.setMediaContents(media.getOrDefault(artist.getArtistId(), List.of()));
         }
     }
 
     private Map<String, Object> archiveFeed(String title, String description, String emptyText,
-                                            List<Archive> archives, MediaType type, String name, String moreUrl) {
+                                            Map<String, List<Archive>> index, MediaType type,
+                                            String name, String moreUrl) {
+        List<Archive> matched = takeFromIndex(index, name);
+        if (matched.size() < LIMIT) {
+            // 전역 최신 2000 밖에만 있는 멤버 자료를 보완 조회
+            List<Archive> fallback = archiveRepository
+                    .findTop40ByFile_MediaTypeAndArtistNamesContainingIgnoreCaseOrderByIdDesc(type, name);
+            for (Archive archive : fallback) {
+                if (matched.size() >= LIMIT) break;
+                if (!archiveHasMember(archive.getArtistNames(), name)) continue;
+                if (matched.stream().anyMatch(a -> a.getId() != null && a.getId().equals(archive.getId()))) {
+                    continue;
+                }
+                matched.add(archive);
+            }
+        }
         List<Map<String, Object>> cards = new ArrayList<>();
-        int kept = 0;
-        for (Archive archive : archives) {
-            if (kept >= LIMIT) break;
-            if (!archiveHasMember(archive.getArtistNames(), name)) continue;
-            kept++;
+        for (Archive archive : matched) {
+            if (cards.size() >= LIMIT) break;
             SavedMeta file = archive.getFile();
             String url = file == null || file.getUrl() == null ? "" : file.getUrl();
             boolean image = type == MediaType.IMAGE && !url.isBlank();
@@ -112,6 +128,38 @@ public class MemberSpotlightService {
             cards.add(card(archive.getTitle(), href, !url.isBlank(), image ? url : "", archive.getArtistNames(), image));
         }
         return feed(title, description, emptyText, moreUrl, cards);
+    }
+
+    private static List<Archive> takeFromIndex(Map<String, List<Archive>> index, String name) {
+        List<Archive> fromIndex = index.getOrDefault(normalizeMemberKey(name), List.of());
+        List<Archive> matched = new ArrayList<>();
+        for (Archive archive : fromIndex) {
+            if (matched.size() >= LIMIT) break;
+            matched.add(archive);
+        }
+        return matched;
+    }
+
+    private static Map<String, List<Archive>> indexArchives(List<Archive> archives) {
+        Map<String, List<Archive>> index = new HashMap<>();
+        if (archives == null) return index;
+        for (Archive archive : archives) {
+            for (String member : split(archive.getArtistNames())) {
+                index.computeIfAbsent(normalizeMemberKey(member), k -> new ArrayList<>()).add(archive);
+            }
+        }
+        return index;
+    }
+
+    private static Map<String, List<Schedule>> indexSchedules(List<Schedule> schedules) {
+        Map<String, List<Schedule>> index = new HashMap<>();
+        if (schedules == null) return index;
+        for (Schedule schedule : schedules) {
+            for (String member : split(schedule.getArtistNames())) {
+                index.computeIfAbsent(normalizeMemberKey(member), k -> new ArrayList<>()).add(schedule);
+            }
+        }
+        return index;
     }
 
     private List<Map<String, Object>> objektCards(List<Map<String, Object>> objekts, String name, String objektQuery) {
@@ -143,9 +191,8 @@ public class MemberSpotlightService {
         return cards;
     }
 
-    private List<Map<String, Object>> scheduleCards(List<Schedule> schedules, String name, String encoded) {
+    private List<Map<String, Object>> scheduleCards(List<Schedule> schedules, String encoded) {
         return schedules.stream()
-                .filter(schedule -> split(schedule.getArtistNames()).contains(name))
                 .sorted(Comparator.comparing(Schedule::getStart, Comparator.nullsLast(Comparator.reverseOrder())))
                 .limit(LIMIT)
                 .map(schedule -> {
@@ -218,9 +265,13 @@ public class MemberSpotlightService {
     }
 
     private static boolean archiveHasMember(String artistNames, String name) {
-        String needle = "," + name.toLowerCase(Locale.ROOT).replace(" ", "") + ",";
+        String needle = "," + normalizeMemberKey(name) + ",";
         String normalized = (artistNames == null ? "" : artistNames).toLowerCase(Locale.ROOT).replace(" ", "");
         return ("," + normalized + ",").contains(needle);
+    }
+
+    private static String normalizeMemberKey(String name) {
+        return (name == null ? "" : name).toLowerCase(Locale.ROOT).replace(" ", "");
     }
 
     private static List<String> split(String names) {

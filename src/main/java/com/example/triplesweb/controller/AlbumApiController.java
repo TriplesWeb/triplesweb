@@ -37,8 +37,9 @@ public class AlbumApiController {
     }
 
     @PostMapping("/admin/login")
-    public Map<String, Object> login(@RequestBody Map<String, String> body, HttpSession session) {
-        return aboutAdminAuth.login(body, session);
+    public Map<String, Object> login(@RequestBody Map<String, String> body,
+                                     HttpServletRequest request, HttpSession session) {
+        return aboutAdminAuth.login(body, request, session);
     }
 
     @PostMapping("/admin/logout")

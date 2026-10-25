@@ -1,0 +1,94 @@
+/* 앨범 상세 — 모바일 가로 넘침 방지 */
+
+.album-detail-card,
+#albumDetailTable,
+.album-track-section {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.album-detail-back {
+    margin: 0;
+}
+
+.album-detail-back a {
+    color: #00f5d4;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.album-track-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.album-track-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+.album-track-num {
+    width: 2.5rem;
+}
+
+.album-track-dur {
+    width: 3.25rem;
+}
+
+.album-track-title-col {
+    width: auto;
+    min-width: 0;
+}
+
+.album-track-title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.5rem;
+    min-width: 0;
+}
+
+.album-track-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.album-track-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.4rem;
+}
+
+.album-track-link {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    color: #b9cac4;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.album-track-link-yt {
+    border-color: rgba(0, 245, 212, 0.3);
+    color: #00f5d4;
+}
+
+@media (min-width: 640px) {
+    .album-track-title-col .album-track-links {
+        display: inline-flex;
+        margin-top: 0;
+        margin-left: 0.35rem;
+    }
+
+    .album-track-title-row {
+        display: inline-flex;
+        flex-wrap: wrap;
+        vertical-align: middle;
+    }
+}

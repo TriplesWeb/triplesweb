@@ -184,8 +184,69 @@
 html[lang="en"] .chem-member-name {
     font-size: clamp(10px, 0.68vw, 14px);
     letter-spacing: -0.04em;
-    word-break: break-word;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    word-break: normal;
+    overflow-wrap: normal;
+}
+
+.chem-pair-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 0.65rem;
+}
+
+.chem-pair-filter-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-size: 0.75rem;
+    color: #b9cac4;
+}
+
+.chem-pair-filter-select {
+    min-width: 7.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #12141a;
+    color: #e3e2e8;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.85rem;
+}
+
+.chem-pair-filter-hint {
+    flex: 1 1 100%;
+    margin: 0;
+    font-size: 0.75rem;
+    color: #8b9b95;
+}
+
+.chem-trio-jump {
+    text-decoration: none;
+}
+
+.chem-tone-badge {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    opacity: 0.9;
+}
+
+.chem-cell-flash {
+    outline: 2px solid #00f5d4;
+    outline-offset: -2px;
+    animation: chemFlash 1.2s ease;
+}
+
+@keyframes chemFlash {
+    from { background-color: rgba(0, 245, 212, 0.35); }
+    to { background-color: transparent; }
 }
 
 .chem-edit-lang-label {

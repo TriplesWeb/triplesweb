@@ -7,11 +7,15 @@ import com.example.triplesweb.entity.ChemistryLabelTone;
 import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ChemistryRepository;
+import com.example.triplesweb.util.ChemistryHtmlCleaner;
+import com.example.triplesweb.util.TripleSMembers;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,13 +28,6 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class ChemistryService {
-
-    /** 케미 매트릭스 표시 순서(한글 이름). 페어 정규화에 사용. */
-    private static final List<String> MEMBERS = List.of(
-            "윤서연", "정혜린", "이지우", "김채연", "김유연", "김수민", "김나경", "공유빈",
-            "카에데", "서다현", "코토네", "곽연지", "니엔", "박소현", "신위", "마유",
-            "린", "주빈", "정하연", "박시온", "김채원", "설린", "서아", "지연"
-    );
 
     private final ChemistryRepository chemistryRepository;
     private final ArtistRepository artistRepository;
@@ -74,8 +71,8 @@ public class ChemistryService {
         // 한·영 케미명·설명 각각 저장. 영문 케미명이 비면 표시 시 한국어로 폴백.
         entity.setLabel(label.trim());
         entity.setLabelEn(StringUtils.hasText(labelEn) ? labelEn.trim() : null);
-        entity.setDescription(description);
-        entity.setDescriptionEn(descriptionEn != null ? descriptionEn : "");
+        entity.setDescription(ChemistryHtmlCleaner.clean(description));
+        entity.setDescriptionEn(ChemistryHtmlCleaner.clean(descriptionEn != null ? descriptionEn : ""));
         entity.setLinksJson(normalizeLinksJson(linksJson));
         entity.setLabelTone(tone);
 
@@ -84,13 +81,14 @@ public class ChemistryService {
                 String previousUrl = entity.getImageUrl();
                 SavedMeta meta = fileStorageService.saveWithMeta(image, "chemistry");
                 entity.setImageUrl(meta.getUrl());
-                deleteManagedImage(previousUrl);
+                deleteManagedImageAfterCommit(previousUrl);
             } catch (IOException e) {
                 throw new IllegalStateException("이미지 저장에 실패했습니다.", e);
             }
         } else if (clearImage) {
-            deleteManagedImage(entity.getImageUrl());
+            String previousUrl = entity.getImageUrl();
             entity.setImageUrl(null);
+            deleteManagedImageAfterCommit(previousUrl);
         }
 
         return toDto(chemistryRepository.save(entity));
@@ -109,8 +107,25 @@ public class ChemistryService {
     }
 
     private void hardDelete(Chemistry entity) {
-        deleteManagedImage(entity.getImageUrl());
+        String previous = entity.getImageUrl();
         chemistryRepository.delete(entity);
+        deleteManagedImageAfterCommit(previous);
+    }
+
+    private void deleteManagedImageAfterCommit(String imageUrl) {
+        if (!StringUtils.hasText(imageUrl)) {
+            return;
+        }
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    deleteManagedImage(imageUrl);
+                }
+            });
+        } else {
+            deleteManagedImage(imageUrl);
+        }
     }
 
     private void deleteManagedImage(String imageUrl) {
@@ -128,15 +143,11 @@ public class ChemistryService {
     }
 
     public int indexOf(String member) {
-        int idx = MEMBERS.indexOf(member);
-        if (idx < 0) {
-            throw new IllegalArgumentException("알 수 없는 멤버: " + member);
-        }
-        return idx;
+        return TripleSMembers.indexOf(member);
     }
 
     public List<String> memberNames() {
-        return List.copyOf(MEMBERS);
+        return List.copyOf(TripleSMembers.NAMES_KO);
     }
 
     /**
