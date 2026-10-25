@@ -2722,6 +2722,13 @@ html[lang="en"] .chem-member-name {
     overflow-wrap: break-word;
 }
 
+/* Enter 두 번(빈 줄)이면 문단 간격이 보이게 */
+.chem-modal-desc br + br {
+    display: block;
+    content: "";
+    margin-top: 0.55em;
+}
+
 .chem-highlight {
     color: #5dffea;
     font-weight: 800;

@@ -171,14 +171,15 @@
   }
 
   /**
-   * 문장 중간 <br>은 공백으로, 문장 끝(.!?) 다음 <br>은 문단 구분으로 유지.
-   * 복수 케미명 설명처럼 의도된 문단 나눔은 살리고, 어색한 강제 개행은 완화한다.
+   * 연속 <br>는 문단 간격용으로 유지하고, 불필요한 공백만 정리한다.
+   * (예전엔 문장 중간 개행을 공백으로 바꿨는데, 에디터에서 Enter로 줄 간격을
+   * 벌리려는 의도와 충돌해서 개행은 그대로 둔다.)
    */
   function softenDescriptionBreaks(html) {
-    return String(html || "").replace(/([^<\s])(?:\s*<br\s*\/?>\s*)+/gi, (full, prev) => {
-      if (/[.!?…]/.test(prev)) return prev + "<br>";
-      return prev + " ";
-    });
+    return String(html || "")
+      .replace(/(?:\s*<br\s*\/?>\s*){3,}/gi, "<br><br>")
+      .replace(/^(?:\s*<br\s*\/?>\s*)+/i, "")
+      .replace(/(?:\s*<br\s*\/?>\s*)+$/i, "");
   }
 
   let isAdmin = false;
