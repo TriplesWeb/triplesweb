@@ -25,7 +25,7 @@ public class CosmoProfileService {
         view.put("isCollection", "collection".equals(tab));
         view.put("isProgress", !"collection".equals(tab));
         view.put("uniqueCount", all.stream().map(card -> text(card, "slug")).filter(s -> !s.isBlank()).distinct().count());
-        view.put("memberCount", all.stream().map(card -> text(card, "member")).filter(s -> !s.isBlank()).distinct().count());
+        view.put("memberCount", all.stream().map(card -> MemberPortraitOptions.memberName(text(card, "member"))).filter(s -> !s.isBlank()).distinct().count());
         view.put("seasonStats", breakdown(all, "season"));
         view.put("classStats", breakdown(all, "objektClass"));
         view.put("hasStats", !all.isEmpty());
@@ -33,11 +33,11 @@ public class CosmoProfileService {
         List<Map<String, Object>> progress = progress(all, base, catalogSnapshot);
         view.put("memberProgress", progress);
         view.put("hasMemberProgress", !progress.isEmpty());
-        String selected = member == null ? "" : member.trim();
+        String selected = MemberPortraitOptions.memberName(member);
         view.put("hasProgressMember", !selected.isBlank());
         if (!"collection".equals(tab)) view.putAll(memberChecklist(all, catalogSnapshot, selected, base));
         List<Map<String, Object>> filtered = all.stream().filter(card -> selected.isBlank()
-                || selected.equalsIgnoreCase(text(card, "member"))).toList();
+                || MemberPortraitOptions.sameMember(selected, text(card, "member"))).toList();
         int pages = Math.max(1, (filtered.size() + 23) / 24);
         int safePage = Math.max(0, Math.min(page, pages - 1));
         view.put("cards", filtered.subList(safePage * 24, Math.min(filtered.size(), safePage * 24 + 24)));
@@ -59,14 +59,14 @@ public class CosmoProfileService {
         Map<String, Set<String>> totals = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (Map<String, Object> item : catalogSnapshot) {
             if (excluded(text(item, "class"))) continue;
-            String member = text(item, "member"), slug = text(item, "slug");
+            String member = MemberPortraitOptions.memberName(text(item, "member")), slug = text(item, "slug");
             if (!member.isBlank() && !slug.isBlank()) totals.computeIfAbsent(member, k -> new HashSet<>()).add(slug);
         }
         Map<String, Set<String>> owned = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         Map<String, Integer> copies = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (Map<String, Object> card : held) {
             if (!"triples".equalsIgnoreCase(text(card, "artist")) || excluded(text(card, "objektClass"))) continue;
-            String member = text(card, "member"), slug = text(card, "slug");
+            String member = MemberPortraitOptions.memberName(text(card, "member")), slug = text(card, "slug");
             if (member.isBlank() || slug.isBlank()) continue;
             owned.computeIfAbsent(member, k -> new HashSet<>()).add(slug);
             copies.merge(member, 1, Integer::sum);
@@ -108,7 +108,7 @@ public class CosmoProfileService {
         Map<String, Map<String, Object>> unique = new LinkedHashMap<>();
         for (Map<String, Object> item : catalog) {
             if (excluded(text(item, "class"))) continue;
-            String name = text(item, "member"), slug = text(item, "slug");
+            String name = MemberPortraitOptions.memberName(text(item, "member")), slug = text(item, "slug");
             if (!name.isBlank()) names.add(name);
             if (name.equalsIgnoreCase(member) && !slug.isBlank()) unique.putIfAbsent(slug, item);
         }

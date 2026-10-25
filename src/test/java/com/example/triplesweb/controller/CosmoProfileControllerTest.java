@@ -48,7 +48,7 @@ class CosmoProfileControllerTest {
         givenProfile();
         var result = mvc.perform(get("/cosmo/profile/Fan").param("tab", "collection").param("member", "HaYeon"))
                 .andExpect(status().isOk()).andExpect(content().string(containsString("#1")))
-                .andExpect(content().string(containsString("HaYeon · 보유 오브젝트 1개")))
+                .andExpect(content().string(containsString("정하연 · 보유 오브젝트 1개")))
                 .andExpect(content().string(containsString("collection-image-wrap"))).andReturn();
         java.nio.file.Files.writeString(java.nio.file.Path.of("build/profile-collection-preview.html"), result.getResponse().getContentAsString());
     }

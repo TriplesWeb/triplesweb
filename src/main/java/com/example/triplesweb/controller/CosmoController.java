@@ -54,7 +54,11 @@ public class CosmoController {
                 uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "member", "memberName")));
         List<Artist> artists = artistRepository.findAll(Sort.by(Sort.Direction.ASC, "artistId"));
         model.addAttribute("memberOptions", memberOptions);
-        model.addAttribute("memberPickerOptions", MemberPortraitOptions.forObjektFilter(memberOptions, artists));
+        List<Map<String, Object>> pickerOptions = MemberPortraitOptions.forObjektFilter(memberOptions, artists);
+        List<String> selectedMembers = cleanSelections(member);
+        for (Map<String, Object> option : pickerOptions) option.put("active", selectedMembers.stream()
+                .anyMatch(selected -> MemberPortraitOptions.sameMember(selected, option.get("value").toString())));
+        model.addAttribute("memberPickerOptions", pickerOptions);
         model.addAttribute("seasonOptions", ObjektFilterOrder.sortedSeasons(uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "seasonKey", "season"))));
         model.addAttribute("classOptions", uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "classKey", "class")));
         model.addAttribute("objektNumbers", uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "collectionNo", "collectionNumber")));

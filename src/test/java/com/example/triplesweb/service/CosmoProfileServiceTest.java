@@ -45,7 +45,7 @@ class CosmoProfileServiceTest {
         var view = profiles.profile("테스트", "collection", "HaYeon", Integer.MAX_VALUE);
         assertThat(view).containsEntry("filteredCount", 26).containsEntry("pageDisplay", 2).containsEntry("hasNext", false);
         assertThat((List<Map<String, Object>>) view.get("cards")).hasSize(2);
-        assertThat(view.get("previousUrl").toString()).contains("member=HaYeon", "page=0");
+        assertThat(view.get("previousUrl").toString()).contains("member=%EC%A0%95%ED%95%98%EC%97%B0", "page=0");
         verify(collections).search("테스트", 0);
     }
     @Test void emptyProfileHasNoInventedStatistics() {
@@ -109,6 +109,23 @@ class CosmoProfileServiceTest {
                 kind("second", "HyeRin", "Ever01", "First", "101Z")));
         var view = profiles.profile("테스트", "progress", "", 0);
         assertThat((List<Map<String, Object>>) view.get("progressMemberOptions")).extracting(row -> row.get("name"))
-                .containsExactly("SeoYeon", "HyeRin", "Jiyeon", "Alpha");
+                .containsExactly("윤서연", "정혜린", "지연", "Alpha");
+    }
+
+    @Test @SuppressWarnings("unchecked") void profileMergesAliasesAndLegacyMemberUrlsSelectTheUnifiedName() {
+        given(List.of(card("a", "S21", "First"), card("b", "ChaeWon", "First")), List.of(
+                kind("a", "S21", "Cream02", "First", "101Z"),
+                kind("b", "ChaeWon", "Cream02", "First", "102Z"),
+                kind("c", "김채원", "Cream02", "First", "103Z")));
+        var view = profiles.profile("테스트", "progress", "S21", 0);
+        assertThat(view).containsEntry("selectedMember", "김채원").containsEntry("checklistTotal", 3)
+                .containsEntry("checklistOwned", 2).containsEntry("memberCount", 1L);
+        var options = (List<Map<String, Object>>) view.get("progressMemberOptions");
+        assertThat(options).hasSize(1).first().asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.MAP)
+                .containsEntry("name", "김채원").containsEntry("selected", true);
+        var progress = (List<Map<String, Object>>) view.get("memberProgress");
+        assertThat(progress).hasSize(1);
+        assertThat(progress.get(0)).containsEntry("member", "김채원").containsEntry("total", 3).containsEntry("owned", 2L);
+        assertThat((List<Map<String, Object>>) profiles.profile("테스트", "collection", "김채원", 0).get("cards")).hasSize(2);
     }
 }

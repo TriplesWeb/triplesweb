@@ -46,6 +46,15 @@ public final class MemberPortraitOptions {
         return 24;
     }
 
+    public static String memberName(String value) {
+        int index = memberIndex(value);
+        return index < 24 ? KOREAN_ORDER.get(index) : value == null ? "" : value.trim();
+    }
+
+    public static boolean sameMember(String first, String second) {
+        return memberName(first).equalsIgnoreCase(memberName(second));
+    }
+
     private MemberPortraitOptions() {
     }
 
@@ -109,7 +118,7 @@ public final class MemberPortraitOptions {
             row.put("frame", frame);
             row.put("textOnly", !hasProfileImage(matched));
             row.put("keepOption", true);
-            row.put("frameLabel", index < 24 ? "S" + (index + 1) : "•");
+            row.put("frameLabel", index < 24 ? memberName(option) : "•");
             out.add(row);
         }
         return out;

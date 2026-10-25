@@ -13,6 +13,7 @@ import com.example.triplesweb.service.CommentService;
 import com.example.triplesweb.service.DateTimeFormatService;
 import com.example.triplesweb.util.ArticleHtmlCleaner;
 import com.example.triplesweb.util.ObjektFilterOrder;
+import com.example.triplesweb.util.MemberPortraitOptions;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -190,7 +191,7 @@ public class ArticleController {
         String query = q.trim().toLowerCase();
         List<Map<String, Object>> matched = new ArrayList<>();
         for (Map<String, Object> item : objektService.findCollections("triples")) {
-            if (!memberKey.isEmpty() && !stringValue(item.get("member")).toLowerCase().equals(memberKey)) continue;
+            if (!memberKey.isEmpty() && !MemberPortraitOptions.sameMember(stringValue(item.get("member")), member)) continue;
             if (!seasonKey.isEmpty() && !stringValue(item.get("season")).toLowerCase().equals(seasonKey)) continue;
             if (!classKey.isEmpty() && !stringValue(item.get("class")).toLowerCase().equals(classKey)) continue;
             if (!query.isEmpty()) {

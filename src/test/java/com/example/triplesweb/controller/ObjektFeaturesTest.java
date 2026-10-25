@@ -85,7 +85,7 @@ class ObjektFeaturesTest {
 
     @Test void mainFiltersRenderSharedSOrderAndNewestSeasonsIncludingTextOnlyExtras() throws Exception {
         List<Map<String, Object>> items = new java.util.ArrayList<>();
-        String[] members = {"S1 X S9", "Jiyeon", "Alpha", "HyeRin", "SeoYeon"};
+        String[] members = {"S1 X S9", "Jiyeon", "Alpha", "HyeRin", "SeoYeon", "S21", "ChaeWon", "김채원"};
         String[] seasons = {"Atom01", "Binary01", "Cream01", "Divine01", "Ever01", "Atom02", "Binary02", "Cream02"};
         for (int i = 0; i < seasons.length; i++) {
             Map<String, Object> item = new java.util.LinkedHashMap<>();
@@ -97,12 +97,14 @@ class ObjektFeaturesTest {
         when(catalog.findCollections("triples")).thenReturn(items);
         when(market.withMintCounts(items)).thenReturn(items);
         var result = mvc.perform(get("/cosmo/objekt")).andExpect(status().isOk())
-                .andExpect(model().attribute("memberOptions", List.of("SeoYeon", "HyeRin", "Jiyeon", "Alpha", "S1 X S9")))
+                .andExpect(model().attribute("memberOptions", List.of("윤서연", "정혜린", "김채원", "지연", "Alpha", "S1 X S9")))
                 .andExpect(model().attribute("seasonOptions", List.of("Cream02", "Binary02", "Atom02", "Ever01", "Divine01", "Cream01", "Binary01", "Atom01")))
                 .andExpect(content().string(containsString("data-value=\"S1 X S9\"")))
                 .andExpect(content().string(containsString("artist-tab-fallback"))).andReturn();
-        java.nio.file.Files.writeString(java.nio.file.Path.of("build/objekt-filter-order-preview.html"), result.getResponse().getContentAsString());
         mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("member", "S1 X S9"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.resultCount").value(2));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.resultCount").value(1));
+        var legacy = mvc.perform(get("/cosmo/objekt").param("member", "S21"))
+                .andExpect(status().isOk()).andExpect(model().attribute("objektCount", 3)).andReturn();
+        java.nio.file.Files.writeString(java.nio.file.Path.of("build/objekt-filter-order-preview.html"), legacy.getResponse().getContentAsString());
     }
 }

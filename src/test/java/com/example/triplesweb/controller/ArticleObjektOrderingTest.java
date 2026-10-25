@@ -27,9 +27,21 @@ class ArticleObjektOrderingTest {
             var edited = new ExtendedModelMap();
             controller.editArticle(category, 3L, edited);
             for (var model : List.of(fresh, edited)) {
-                assertThat(model.get("objektMemberOptions")).isEqualTo(List.of("SeoYeon", "HyeRin", "Jiyeon", "Alpha"));
+                assertThat(model.get("objektMemberOptions")).isEqualTo(List.of("윤서연", "정혜린", "지연", "Alpha"));
                 assertThat(model.get("objektSeasonOptions")).isEqualTo(List.of("Cream02", "Binary02", "Ever01", "Atom01"));
             }
         }
+    }
+
+    @Test void mergedMemberOptionSearchesAllOriginalAliases() {
+        var catalog = mock(ObjektService.class);
+        var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
+                mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog);
+        when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("member", "S21"),
+                Map.of("member", "ChaeWon"), Map.of("member", "김채원"), Map.of("member", "S22")));
+        assertThat(controller.objektOptions("김채원", "", "", "", 0, 24)).containsEntry("total", 3);
+        assertThat(controller.objektOptions("S21", "", "", "", 0, 24)).containsEntry("total", 3);
+        var model = new ExtendedModelMap(); controller.showArticleForm("trade", model);
+        assertThat(model.get("objektMemberOptions")).isEqualTo(List.of("김채원", "설린"));
     }
 }

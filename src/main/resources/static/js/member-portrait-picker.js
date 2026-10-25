@@ -19,8 +19,7 @@
           if (avatar) {
             const fallback = document.createElement('span');
             fallback.className = 'artist-tab-fallback';
-            const number = Number(btn.dataset.frame);
-            fallback.textContent = number >= 1 && number <= 24 ? `S${number}` : '•';
+            fallback.textContent = btn.dataset.name || btn.dataset.value || '•';
             fallback.setAttribute('aria-hidden', 'true');
             avatar.replaceChildren(fallback);
           }

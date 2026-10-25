@@ -524,7 +524,7 @@
             </div>
             <div class="objekt-member-checks" id="member-options" aria-hidden="true">
                 {{#memberPickerOptions}}
-                <input type="checkbox" name="member" value="{{value}}" class="member-checkbox" data-mpp-value="{{value}}">
+                <input type="checkbox" name="member" value="{{value}}" class="member-checkbox" data-mpp-value="{{value}}" {{#active}}checked{{/active}}>
                 {{/memberPickerOptions}}
             </div>
             <div class="member-portrait-picker" id="objekt-member-picker" role="group" aria-label="멤버 다중 선택">
@@ -688,7 +688,7 @@
         <div id="objekt-scroll-spinner" class="hidden h-6 w-6 animate-spin rounded-full border-2 border-[#00f5d4]/30 border-t-[#00f5d4]" aria-hidden="true"></div>
     </div>
 </main>
-<script src="/js/member-portrait-picker.js?v=3"></script>
+<script src="/js/member-portrait-picker.js?v=4"></script>
 <script>
 (() => {
     const form = document.getElementById('objekt-search-form');
@@ -962,7 +962,7 @@
     }
 
     // 멤버 초상화 다중선택
-    const selectedMembers = params.getAll('member');
+    const selectedMembers = [...document.querySelectorAll('.member-checkbox:checked')].map(box => box.value);
     if (window.MemberPortraitPicker && memberRoot) {
         MemberPortraitPicker.bindMultiSelect(memberRoot, {
             multi: true,

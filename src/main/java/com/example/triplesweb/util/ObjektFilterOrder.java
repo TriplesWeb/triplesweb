@@ -3,7 +3,7 @@ package com.example.triplesweb.util;
 import java.util.*;
 import java.util.regex.Pattern;
 
-/** Shared ordering for every Objekt picker; preserve the original filter values. */
+/** Shared picker ordering and one Korean-name option per solo member. */
 public final class ObjektFilterOrder {
     private static final List<String> SEASON_FAMILIES = List.of("atom", "binary", "cream", "divine", "ever");
     private static final Pattern SEASON = Pattern.compile("([a-z]+)([0-9]+)");
@@ -18,7 +18,9 @@ public final class ObjektFilterOrder {
         return Comparator.<String>comparingLong(ObjektFilterOrder::seasonIndex).reversed().thenComparing(ALPHABETICAL);
     }
 
-    public static List<String> sortedMembers(Collection<String> values) { return sorted(values, members()); }
+    public static List<String> sortedMembers(Collection<String> values) {
+        return sorted(values.stream().map(MemberPortraitOptions::memberName).toList(), members());
+    }
     public static List<String> sortedSeasons(Collection<String> values) { return sorted(values, seasons()); }
 
     private static List<String> sorted(Collection<String> values, Comparator<String> comparator) {

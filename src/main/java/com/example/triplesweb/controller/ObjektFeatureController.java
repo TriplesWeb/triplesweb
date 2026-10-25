@@ -7,6 +7,7 @@ import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.ObjektFavoriteService;
 import com.example.triplesweb.service.ObjektMarketDataService;
+import com.example.triplesweb.util.MemberPortraitOptions;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +38,7 @@ public class ObjektFeatureController {
                                 @RequestParam(defaultValue = "0") int page,
                                 Model model) {
         List<Map<String, Object>> matches = objektService.findCollections("triples").stream()
-                .filter(item -> normalize(value(item, "member", "memberName")).equals(normalize(name)))
+                .filter(item -> MemberPortraitOptions.sameMember(value(item, "member", "memberName"), name))
                 .sorted(Comparator.comparing(item -> value(item, "createdAt", "date"), Comparator.reverseOrder()))
                 .toList();
         int total = matches.size();
@@ -45,7 +46,7 @@ public class ObjektFeatureController {
         int safePage = Math.max(0, Math.min(page, totalPages - 1));
         int from = Math.min(safePage * MEMBER_PAGE_SIZE, total);
         int to = Math.min(from + MEMBER_PAGE_SIZE, total);
-        model.addAttribute("memberName", name);
+        model.addAttribute("memberName", MemberPortraitOptions.memberName(name));
         model.addAttribute("objekts", matches.subList(from, to));
         model.addAttribute("objektCount", total);
         model.addAttribute("pageDisplay", safePage + 1);
