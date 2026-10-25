@@ -326,11 +326,20 @@
             cursor: pointer;
         }
         .objekt-kind-option:hover,
+        .objekt-kind-option:focus-visible,
         .objekt-kind-option.is-active {
             background: rgba(0, 245, 212, .1);
             color: #7df9e8;
         }
         .objekt-kind-option[hidden] { display: none; }
+        #objekt-sort-toggle[hidden],
+        #sort-native-control[hidden] { display: none; }
+        #sort-menu {
+            left: auto;
+            right: 0;
+            min-width: min(12rem, calc(100vw - 2rem));
+            max-width: calc(100vw - 2rem);
+        }
         .objekt-kind-empty {
             padding: .55rem .7rem;
             color: #8b93a7;
@@ -588,7 +597,12 @@
 
             <div class="objekt-filter relative" id="sort-dropdown">
                 <span class="objekt-filter-label">정렬</span>
-                <label class="objekt-filter-control objekt-filter-select-wrap">
+                <div>
+                    <button type="button" id="objekt-sort-toggle" class="objekt-filter-control" aria-label="정렬" aria-haspopup="listbox" aria-expanded="false" aria-controls="sort-menu" hidden>
+                        <span id="sort-label">최신순</span>
+                        <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
+                    </button>
+                    <label id="sort-native-control" class="objekt-filter-control objekt-filter-select-wrap">
                     <select name="sort" class="objekt-sort-select" aria-label="정렬">
                         <option value="latest">최신순</option>
                         <option value="oldest">오래된순</option>
@@ -600,7 +614,9 @@
                         <option value="mint_high">민팅 많은순</option>
                     </select>
                     <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
-                </label>
+                    </label>
+                </div>
+                <div id="sort-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 min-w-[10rem] max-h-60 overflow-y-auto rounded-xl border z-50 p-1.5" role="listbox" aria-label="정렬 목록"></div>
             </div>
 
             <div class="objekt-search-row">
@@ -669,6 +685,80 @@
     const form = document.getElementById('objekt-search-form');
     const kindSelect = document.querySelector('.objekt-kind-select');
     const sortSelect = document.querySelector('.objekt-sort-select');
+    const sortToggle = document.getElementById('objekt-sort-toggle');
+    const sortMenu = document.getElementById('sort-menu');
+    const sortLabel = document.getElementById('sort-label');
+
+    function closeSortMenu() {
+        sortMenu.classList.add('hidden');
+        sortToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    function syncSortMenu() {
+        sortLabel.textContent = sortSelect.selectedOptions[0].textContent;
+        sortMenu.querySelectorAll('[role="option"]').forEach((option) => {
+            const selected = option.dataset.value === sortSelect.value;
+            option.classList.toggle('is-active', selected);
+            option.setAttribute('aria-selected', String(selected));
+            option.tabIndex = selected ? 0 : -1;
+        });
+    }
+
+    function openSortMenu(index) {
+        closeKindMenu();
+        ['season-menu', 'class-menu'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+        sortMenu.classList.remove('hidden');
+        sortToggle.setAttribute('aria-expanded', 'true');
+        const options = [...sortMenu.querySelectorAll('[role="option"]')];
+        const focusIndex = index ?? options.findIndex(option => option.dataset.value === sortSelect.value);
+        options.forEach((option, i) => { option.tabIndex = i === focusIndex ? 0 : -1; });
+        options[focusIndex]?.focus();
+    }
+
+    [...sortSelect.options].forEach((option) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'objekt-kind-option';
+        button.dataset.value = option.value;
+        button.textContent = option.textContent;
+        button.setAttribute('role', 'option');
+        button.addEventListener('click', () => {
+            const changed = sortSelect.value !== option.value;
+            sortSelect.value = option.value;
+            syncSortMenu();
+            closeSortMenu();
+            sortToggle.focus();
+            if (changed) sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        sortMenu.appendChild(button);
+    });
+
+    sortToggle.addEventListener('click', () => {
+        if (sortMenu.classList.contains('hidden')) openSortMenu();
+        else closeSortMenu();
+    });
+    document.getElementById('sort-dropdown').addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            closeSortMenu();
+            sortToggle.focus();
+        } else if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+            event.preventDefault();
+            const options = [...sortMenu.querySelectorAll('[role="option"]')];
+            const current = options.indexOf(document.activeElement);
+            const selected = options.findIndex(option => option.dataset.value === sortSelect.value);
+            const index = event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1
+                : current < 0 ? selected
+                : (current + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
+            openSortMenu(index);
+        } else if (event.key === 'Tab') {
+            closeSortMenu();
+            sortToggle.focus();
+        }
+    });
+    document.getElementById('sort-dropdown').addEventListener('focusout', (event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) closeSortMenu();
+    });
     const cards = Array.from(document.querySelectorAll('.objekt-item'));
     const empty = document.getElementById('objekt-empty');
     const memberRoot = document.getElementById('member-dropdown');
@@ -727,6 +817,7 @@
 
     function openKindMenu(showAll) {
         if (!kindMenu || !kindSelect) return;
+        closeSortMenu();
         filterKindOptions(showAll ? '' : kindSelect.value);
         kindMenu.classList.remove('hidden');
         kindSelect.setAttribute('aria-expanded', 'true');
@@ -757,6 +848,11 @@
     const initialKind = normalizeKindValue(params.get('kind') || kindSelect?.value || 'all');
     if (kindSelect) kindSelect.value = initialKind;
     sortSelect.value = params.get('sort') || 'latest';
+    if (!sortSelect.value) sortSelect.value = 'latest';
+    syncSortMenu();
+    sortSelect.addEventListener('change', syncSortMenu);
+    document.getElementById('sort-native-control').hidden = true;
+    sortToggle.hidden = false;
 
     if (kindSelect && kindMenu) {
         kindSelect.addEventListener('focus', () => openKindMenu(false));
@@ -938,6 +1034,7 @@
 
     window.toggleDropdown = function(id) {
         closeKindMenu();
+        closeSortMenu();
         document.querySelectorAll('[id$="-menu"]').forEach(menu => {
             if (menu.id !== id) menu.classList.add('hidden');
         });
@@ -945,6 +1042,7 @@
     };
 
     window.addEventListener('click', e => {
+        if (!e.target.closest('#sort-dropdown')) closeSortMenu();
         if (!e.target.closest('#season-dropdown') && !e.target.closest('#class-dropdown') && !e.target.closest('#kind-dropdown')) {
             ['season-menu', 'class-menu'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
             closeKindMenu();

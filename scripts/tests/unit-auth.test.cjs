@@ -53,6 +53,7 @@ async function page(serverAdmin, options = {}) {
   runInNewContext(readFileSync(resolve(__dirname, '../../src/main/resources/static/js/unit.js'), 'utf8'), {
     document, window: {
       AboutAdminAuth: auth, location,
+      confirm: () => options.confirm !== false,
       history: { replaceState(_state, _unused, value) { current = new URL(value, current); } }
     },
     Headers, FormData, URLSearchParams, URL, CSS: { escape: value => value },
@@ -64,6 +65,7 @@ async function page(serverAdmin, options = {}) {
         : { ok: false, status: 403, json: async () => ({ error: 'Forbidden' }) }
   });
   await init();
+  element('unitEditName').value = 'Test unit';
   return { element, token: () => token, reloaded: () => reloaded,
     url: () => current.href, assigned: () => assigned };
 }
@@ -109,6 +111,13 @@ test('newly created units use the ID returned by the server', async () => {
   const p = await page(true, { tabs: [1], saved: { unitId: 27, visible: true } });
   await p.element('unitEditForm').events.submit({ preventDefault() {} });
   assert.equal(new URL(p.assigned()).searchParams.get('tab'), 'unit-27');
+});
+
+test('cancelling the save confirmation keeps the editor open without navigation', async () => {
+  const p = await page(true, { confirm: false, saved: { unitId: 27, visible: true } });
+  await p.element('unitEditForm').events.submit({ preventDefault() {} });
+  assert.equal(p.assigned(), undefined);
+  assert.equal(p.reloaded(), false);
 });
 
 test('hiding a unit returns to the list without an invalid tab target', async () => {
