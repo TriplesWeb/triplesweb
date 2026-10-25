@@ -6,6 +6,7 @@
     const sort = document.getElementById('archiveSort');
     const visible = document.getElementById('archiveVisible');
     const none = document.getElementById('archiveNone');
+    const numberOffset = Math.max(0, Number(grid.dataset.numberOffset) || 0);
 
     function apply() {
         const name = artist ? artist.value : '';
@@ -18,9 +19,19 @@
             return (a.dataset.title || '').localeCompare(b.dataset.title || '', 'ko');
         });
         cards.forEach(card => card.classList.add('ar-off'));
-        shown.forEach(card => {
+        const numbers = new Map();
+        shown.forEach((card, index) => {
             card.classList.remove('ar-off');
+            const number = numberOffset + index + 1;
+            const badge = card.querySelector('[data-archive-number]');
+            if (badge) badge.textContent = String(number);
+            numbers.set(card.dataset.id, number);
             grid.appendChild(card);
+        });
+        document.querySelectorAll('#archiveTrack [data-archive-ref]').forEach(card => {
+            const badge = card.querySelector('[data-archive-number]');
+            const number = numbers.get(card.dataset.archiveRef);
+            if (badge && number !== undefined) badge.textContent = String(number);
         });
         if (visible) visible.textContent = String(shown.length);
         if (none) none.hidden = shown.length !== 0;

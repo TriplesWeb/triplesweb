@@ -11,7 +11,9 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import jakarta.servlet.http.HttpServletRequest;
@@ -58,7 +60,9 @@ public class ArchiveController {
                 : archiveService.pageByType(type, page, size, q, selectedMembers);
 
         List<Artist> artists = artistRepository.findAll();
+        List<Map<String, Object>> cards = archiveCards(archives, artists);
         model.addAttribute("archives", archives);
+        model.addAttribute("archiveCards", cards);
         model.addAttribute("artistOptions", artists);
         model.addAttribute("memberPickerOptions", memberOptions(artists, selectedMembers));
         model.addAttribute("selectedMembers", selectedMembers);
@@ -67,7 +71,7 @@ public class ArchiveController {
         model.addAttribute("type", type);
         model.addAttribute("isAuthenticated", isAuthenticated);
         model.addAttribute("isAdmin", isAdmin);
-        addArchivePage(model, archives, type, q, memberQuery(selectedMembers));
+        addArchivePage(model, archives, type, q, memberQuery(selectedMembers), cards);
         return (type == MediaType.IMAGE) ? "archive/image_archive" : "archive/video_archive";
     }
 
@@ -98,12 +102,41 @@ public class ArchiveController {
         return query.toString();
     }
 
-    private void addArchivePage(Model model, Page<Archive> archives, MediaType type, String q, String memberQuery) {
+    private static List<Map<String, Object>> archiveCards(Page<Archive> archives, List<Artist> artists) {
+        Map<String, String> colors = new LinkedHashMap<>();
+        for (Artist artist : artists) {
+            String color = artist.getColor();
+            if (color == null || !color.matches("#[0-9a-fA-F]{6}")) color = "#b9cac4";
+            if (artist.getName() != null) colors.put(artist.getName().trim().toLowerCase(Locale.ROOT), color);
+            if (artist.getEngName() != null) colors.put(artist.getEngName().trim().toLowerCase(Locale.ROOT), color);
+        }
+        long offset = archives.getPageable().isPaged() ? archives.getPageable().getOffset() : 0;
+        List<Map<String, Object>> cards = new ArrayList<>();
+        for (Archive archive : archives) {
+            List<Map<String, String>> badges = new ArrayList<>();
+            for (String name : normalizeMembers(archive.getArtistNames() == null ? List.of() : List.of(archive.getArtistNames().split(",")))) {
+                badges.add(Map.of("name", name, "color", colors.getOrDefault(name.toLowerCase(Locale.ROOT), "#b9cac4")));
+            }
+            Map<String, Object> card = new LinkedHashMap<>();
+            card.put("id", archive.getId());
+            card.put("title", archive.getTitle());
+            card.put("artistNames", archive.getArtistNames());
+            card.put("file", archive.getFile());
+            card.put("thumbnailUrl", archive.getThumbnailUrl());
+            card.put("displayNumber", offset + cards.size() + 1);
+            card.put("memberBadges", badges);
+            cards.add(card);
+        }
+        return cards;
+    }
+
+    private void addArchivePage(Model model, Page<Archive> archives, MediaType type, String q, String memberQuery, List<Map<String, Object>> cards) {
         int totalPages = archives.getTotalPages();
         int current = archives.getNumber();
         String query = q == null ? "" : q.trim();
         model.addAttribute("archiveTotal", archives.getTotalElements());
         model.addAttribute("archivePageCount", archives.getNumberOfElements());
+        model.addAttribute("archiveOffset", archives.getPageable().isPaged() ? archives.getPageable().getOffset() : 0);
         model.addAttribute("archivePageDisplay", current + 1);
         model.addAttribute("archiveTotalPages", totalPages);
         model.addAttribute("hasArchivePrev", archives.hasPrevious());
@@ -111,7 +144,7 @@ public class ArchiveController {
         model.addAttribute("archivePrevPage", Math.max(0, current - 1));
         model.addAttribute("archiveNextPage", current + 1);
         model.addAttribute("hasArchives", !archives.isEmpty());
-        model.addAttribute("archiveHighlights", archives.getContent().stream().limit(8).toList());
+        model.addAttribute("archiveHighlights", cards.stream().limit(8).toList());
         model.addAttribute("memberQuery", memberQuery == null ? "" : memberQuery);
         model.addAttribute("query", query);
         model.addAttribute("hasQuery", !query.isEmpty());

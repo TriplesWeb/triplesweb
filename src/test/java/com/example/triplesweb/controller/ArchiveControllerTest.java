@@ -2,17 +2,21 @@ package com.example.triplesweb.controller;
 
 import com.example.triplesweb.config.MustacheConfig;
 import com.example.triplesweb.entity.Archive;
+import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.ArchiveService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -121,6 +125,53 @@ class ArchiveControllerTest {
                 .andExpect(status().is3xxRedirection());
         verify(archiveService).uploadVideoOnly(any(), eq("영상"), eq(MediaType.VIDEO), eq("서연"), any());
         verify(aboutAdminAuth).requireAdmin(any(), any());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MediaType.class, names = {"IMAGE", "VIDEO"})
+    void archivesUseDisplayNumbersAndIndividualMemberColors(MediaType type) throws Exception {
+        var member = new Artist();
+        member.setArtistId(24L);
+        member.setName("지연");
+        member.setColor("#ffab62");
+        when(artistRepository.findAll()).thenReturn(List.of(member));
+        Archive first = photo(), second = photo();
+        first.setId(3L);
+        first.setArtistNames("지연, 게스트");
+        second.setId(99L);
+        when(archiveService.pageByType(eq(type), anyInt(), anyInt(), isNull()))
+                .thenReturn(new PageImpl<>(List.of(first, second), PageRequest.of(0, 9), 2));
+        mvc.perform(get(type == MediaType.IMAGE ? "/archive/image_archive" : "/archive/video_archive"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("data-archive-number>1</span>")))
+                .andExpect(content().string(containsString("data-archive-number>2</span>")))
+                .andExpect(content().string(containsString("--member-color: #ffab62;")))
+                .andExpect(content().string(containsString("--member-color: #b9cac4;")))
+                .andExpect(content().string(containsString("data-id=\"99\"")))
+                .andExpect(content().string(not(containsString(">#99</span>"))));
+    }
+
+    @Test void displayNumbersContinueAcrossPagesWithoutUsingDatabaseIds() throws Exception {
+        when(artistRepository.findAll()).thenReturn(List.of());
+        when(archiveService.pageByType(eq(MediaType.IMAGE), anyInt(), anyInt(), isNull()))
+                .thenReturn(new PageImpl<>(List.of(photo()), PageRequest.of(1, 9), 20));
+        mvc.perform(get("/archive/image_archive").param("page", "1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("data-number-offset=\"9\"")))
+                .andExpect(content().string(containsString("data-archive-number>10</span>")));
+    }
+
+    @Test void invalidMemberColorUsesReadableNeutralBadge() throws Exception {
+        var member = new Artist();
+        member.setName("서연");
+        member.setColor("red;position:fixed");
+        when(artistRepository.findAll()).thenReturn(List.of(member));
+        when(archiveService.pageByType(eq(MediaType.IMAGE), anyInt(), anyInt(), isNull()))
+                .thenReturn(new PageImpl<>(List.of(photo())));
+        mvc.perform(get("/archive/image_archive"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("--member-color: #b9cac4;")))
+                .andExpect(content().string(not(containsString("--member-color: red;position:fixed"))));
     }
 
     private static Archive photo() {
