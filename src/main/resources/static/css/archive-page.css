@@ -48,7 +48,7 @@
 .ar-section-title { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
 .ar-section-title h2 { display: flex; align-items: center; gap: 0.55rem; margin: 0; font-family: Sora, sans-serif; font-size: 1.3rem; font-weight: 650; }
 .ar-section-title h2::before { content: ""; width: 0.55rem; height: 0.55rem; border-radius: 9999px; background: #00f5d4; }
-.ar-icon-btn { width: 2.25rem; height: 2.25rem; border-radius: 9999px; border: 1px solid rgba(255, 255, 255, 0.14); background: #292a2e; color: #b9cac4; }
+.ar-icon-btn { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; width: 2.25rem; height: 2.25rem; border-radius: 9999px; border: 1px solid rgba(255, 255, 255, 0.14); background: #292a2e; color: #b9cac4; }
 .ar-icon-btn:hover { color: #00f5d4; border-color: #00f5d4; }
 .ar-icon-btn .material-symbols-outlined { font-size: 18px; }
 .ar-track { display: flex; gap: 1.1rem; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 0.4rem; }
@@ -162,3 +162,42 @@
 .ar-pager a.is-disabled { opacity: 0.4; pointer-events: none; }
 .ar-pager a:hover { border-color: #00f5d4; color: #00f5d4; }
 .ar-pager a.is-current:hover { color: #0d0e12; }
+
+.ar-icon-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.ar-icon-btn:focus-visible, .ar-photo-link:focus-visible, .is-photo-carousel:focus-visible {
+    outline: 2px solid #00f5d4; outline-offset: 3px;
+}
+.ar-photo-link { position: relative; display: block; flex-shrink: 0; background: #07080b; }
+.ar-photo-open { position: absolute; right: 0.65rem; bottom: 0.65rem; padding: 0.3rem 0.5rem; border-radius: 0.45rem; background: rgba(0, 0, 0, 0.72); color: #e3e2e8; font-size: 0.72rem; }
+.ar-card h3 { overflow-wrap: anywhere; }
+.ar-gallery-controls { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: -1.6rem; }
+.ar-gallery-controls[hidden] { display: none; }
+.ar-gallery-hint { margin: 0; color: #d7fff3; font-size: 0.88rem; }
+.ar-gallery-hint span { display: block; margin-top: 0.25rem; color: #8b9b95; font-size: 0.75rem; }
+.ar-gallery-navigation { display: flex; align-items: center; gap: 0.65rem; }
+.ar-gallery-position { min-width: 4rem; color: #b9cac4; text-align: center; font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+.archive-page[data-archive-kind="image"] .ar-grid.is-photo-carousel {
+    --archive-card-width: min(20rem, calc(100vw - 5rem));
+    position: relative; display: flex; justify-content: flex-start; gap: 1rem;
+    box-sizing: border-box; width: 100%; min-width: 0;
+    overflow-x: auto; overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    padding: 1rem max(1rem, calc((100% - var(--archive-card-width)) / 2)) 2rem;
+    perspective: 1100px; scrollbar-width: thin; scrollbar-color: #4c6861 #101319;
+}
+.archive-page[data-archive-kind="image"] .is-photo-carousel .ar-card {
+    flex: 0 0 var(--archive-card-width); width: var(--archive-card-width); min-height: 0;
+    scroll-snap-align: center; scroll-snap-stop: always;
+    transform: translate3d(0, 10px, -45px) scale(0.92);
+    opacity: 0.65; transition: transform 220ms ease, opacity 220ms ease, border-color 220ms ease;
+}
+.archive-page[data-archive-kind="image"] .is-photo-carousel .ar-card.is-current-photo {
+    transform: translate3d(0, 0, 0) scale(1); opacity: 1; border-color: rgba(0, 245, 212, 0.5);
+}
+.archive-page[data-archive-kind="image"] .is-photo-carousel .ar-card.is-photo-before { transform: translate3d(0, 10px, -45px) rotateY(5deg) scale(0.92); }
+.archive-page[data-archive-kind="image"] .is-photo-carousel .ar-card.is-photo-after { transform: translate3d(0, 10px, -45px) rotateY(-5deg) scale(0.92); }
+@media (prefers-reduced-motion: reduce) {
+    .archive-page[data-archive-kind="image"] .is-photo-carousel .ar-card { transition: none; }
+    .archive-page[data-archive-kind="image"] .is-photo-carousel .ar-card.is-photo-before,
+    .archive-page[data-archive-kind="image"] .is-photo-carousel .ar-card.is-photo-after { transform: none; }
+}

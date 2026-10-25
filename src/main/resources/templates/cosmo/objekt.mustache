@@ -334,10 +334,17 @@
         .objekt-kind-option[hidden] { display: none; }
         #objekt-sort-toggle[hidden],
         #sort-native-control[hidden] { display: none; }
+        #sort-dropdown > div:not(#sort-menu) {
+            flex: 1 1 0;
+            min-width: 0;
+        }
+        #objekt-sort-toggle,
+        #sort-native-control { width: 100%; }
         #sort-menu {
             left: auto;
             right: 0;
-            min-width: min(12rem, calc(100vw - 2rem));
+            min-width: min(100%, calc(100vw - 2rem));
+            width: max-content;
             max-width: calc(100vw - 2rem);
         }
         .objekt-kind-empty {

@@ -24,6 +24,7 @@
         });
         if (visible) visible.textContent = String(shown.length);
         if (none) none.hidden = shown.length !== 0;
+        grid.dispatchEvent(new CustomEvent('archive:updated'));
     }
 
     sort?.addEventListener('change', apply);
@@ -67,6 +68,18 @@
         });
     });
     const track = document.getElementById('archiveTrack');
-    document.getElementById('archivePrev')?.addEventListener('click', () => track?.scrollBy({ left: -380, behavior: 'smooth' }));
-    document.getElementById('archiveNext')?.addEventListener('click', () => track?.scrollBy({ left: 380, behavior: 'smooth' }));
+    const recentPrevious = document.getElementById('archivePrev');
+    const recentNext = document.getElementById('archiveNext');
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    function updateRecentControls() {
+        if (!track) return;
+        if (recentPrevious) recentPrevious.disabled = track.scrollLeft <= 1;
+        if (recentNext) recentNext.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 1;
+    }
+    recentPrevious?.addEventListener('click', () => track?.scrollBy({ left: -380, behavior: motion.matches ? 'instant' : 'smooth' }));
+    recentNext?.addEventListener('click', () => track?.scrollBy({ left: 380, behavior: motion.matches ? 'instant' : 'smooth' }));
+    track?.addEventListener('scroll', updateRecentControls, { passive: true });
+    if (track && window.ResizeObserver) new ResizeObserver(updateRecentControls).observe(track);
+    updateRecentControls();
+    apply();
 })();

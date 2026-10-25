@@ -16,7 +16,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/archive-page.css?v=5">
+    <link rel="stylesheet" href="/css/archive-page.css?v=6">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=4">
     {{#_csrf}}
     <meta name="_csrf" content="{{token}}">
@@ -61,7 +61,7 @@
         <div class="ar-track" id="archiveTrack">
             {{#archiveHighlights}}
             <article class="ar-panel ar-highlight">
-                <img src="{{file.url}}" alt="{{title}}">
+                <img src="{{file.url}}" alt="{{title}}" loading="lazy" decoding="async">
                 <div>
                     <span class="ar-id">#{{id}}</span>
                     <h3>{{title}}</h3>
@@ -109,10 +109,21 @@
         </div>
     </section>
 
-    <section class="ar-grid" id="archiveGrid">
+    <div class="ar-gallery-controls" id="archiveGalleryControls" hidden>
+        <p class="ar-gallery-hint">사진을 좌우로 넘겨보세요 <span>방향키 · 모바일 스와이프</span></p>
+        <div class="ar-gallery-navigation">
+            <button type="button" class="ar-icon-btn" id="archiveGalleryPrev" aria-label="이전 사진" aria-controls="archiveGrid"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span></button>
+            <span class="ar-gallery-position" id="archiveGalleryPosition" role="status" aria-live="polite" aria-atomic="true"></span>
+            <button type="button" class="ar-icon-btn" id="archiveGalleryNext" aria-label="다음 사진" aria-controls="archiveGrid"><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
+        </div>
+    </div>
+    <section class="ar-grid" id="archiveGrid" aria-label="사진 목록">
         {{#archives.content}}
         <article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}">
-            <img src="{{file.url}}" alt="{{title}}">
+            <a class="ar-photo-link" href="{{file.url}}" target="_blank" rel="noopener noreferrer" aria-label="{{title}} 원본 보기">
+                <img src="{{file.url}}" alt="{{title}}" loading="lazy" decoding="async">
+                <span class="ar-photo-open">원본 보기 ↗</span>
+            </a>
             <div class="ar-body">
                 <div class="ar-meta"><span class="ar-id">#{{id}}</span>{{#artistNames}}<span class="ar-badge">{{artistNames}}</span>{{/artistNames}}</div>
                 <h3>{{title}}</h3>
@@ -220,6 +231,7 @@
 
 <script src="/js/member-portrait-picker.js?v=2"></script>
 <script src="/js/archive-manage.js?v=2"></script>
-<script src="/js/archive-browse.js?v=4"></script>
+<script src="/js/archive-browse.js?v=5"></script>
+<script src="/js/archive-photo-carousel.js?v=1"></script>
 </body>
 </html>
