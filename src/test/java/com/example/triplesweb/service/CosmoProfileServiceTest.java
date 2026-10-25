@@ -53,4 +53,52 @@ class CosmoProfileServiceTest {
         assertThat(profiles.profile("테스트", "progress", "", 0)).containsEntry("hasStats", false)
                 .containsEntry("uniqueCount", 0L).containsEntry("memberCount", 0L).containsEntry("hasMemberProgress", false);
     }
+
+    private static Map<String, Object> kind(String slug, String member, String season, String klass, String number) {
+        return Map.of("slug", slug, "member", member, "season", season, "class", klass,
+                "collectionNo", number, "collectionId", season + " " + member + " " + number,
+                "thumbnailImage", "https://example.com/" + slug + ".webp");
+    }
+
+    @Test @SuppressWarnings("unchecked") void checklistIncludesMissingKindsAndSortsNumbersNumericallyWithinEachClass() {
+        given(List.of(card("owned", "HaYeon", "First"), card("owned", "HaYeon", "First")), List.of(
+                kind("n101", "HaYeon", "Cream02", "First", "101Z"),
+                kind("owned", "HaYeon", "Cream02", "First", "20Z"),
+                kind("n3", "HaYeon", "Cream02", "First", "003Z"),
+                kind("n201", "HaYeon", "Cream02", "Special", "201Z"),
+                kind("welcome", "HaYeon", "Cream02", "Welcome", "000Z"),
+                kind("other", "YuBin", "Cream02", "First", "001Z")));
+        var view = profiles.profile("테스트", "progress", "hayeon", 0);
+        assertThat(view).containsEntry("checklistOwned", 1).containsEntry("checklistTotal", 4)
+                .containsEntry("checklistMissing", 3).containsEntry("hasProgressMember", true);
+        var seasons = (List<Map<String, Object>>) view.get("checklistSeasons");
+        assertThat(seasons).hasSize(1);
+        var groups = (List<Map<String, Object>>) seasons.get(0).get("groups");
+        assertThat(groups).extracting(row -> row.get("klass")).containsExactly("First", "Special");
+        var cards = (List<Map<String, Object>>) groups.get(0).get("cards");
+        assertThat(cards).extracting(row -> row.get("number")).containsExactly("003Z", "20Z", "101Z");
+        assertThat(cards.get(0)).containsEntry("owned", false).containsEntry("copies", 0L);
+        assertThat(cards.get(1)).containsEntry("owned", true).containsEntry("copies", 2L);
+        assertThat(groups.get(0)).containsEntry("complete", false).containsEntry("missing", 2);
+    }
+
+    @Test @SuppressWarnings("unchecked") void membersWithNoHoldingsCanStillOpenTheirEntireCatalog() {
+        given(List.of(), List.of(kind("a", "YuBin", "Atom01", "First", "101Z"),
+                kind("b", "YuBin", "Cream02", "Special", "201Z")));
+        var view = profiles.profile("테스트", "progress", "YuBin", 0);
+        assertThat(view).containsEntry("checklistOwned", 0).containsEntry("checklistTotal", 2);
+        assertThat((List<Map<String, Object>>) view.get("checklistSeasons")).extracting(row -> row.get("season"))
+                .containsExactly("Atom01", "Cream02");
+        assertThat((List<Map<String, Object>>) view.get("progressMemberOptions")).hasSize(1)
+                .first().asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.MAP).containsEntry("selected", true);
+    }
+
+    @Test @SuppressWarnings("unchecked") void seasonCompletionUsesDistinctCatalogKindsNotCopyCount() {
+        var kind = kind("a", "HaYeon", "Cream02", "First", "101Z");
+        given(List.of(card("a", "HaYeon", "First"), card("a", "HaYeon", "First")), List.of(kind, kind));
+        var view = profiles.profile("테스트", "progress", "HaYeon", 0);
+        assertThat(view).containsEntry("checklistTotal", 1).containsEntry("checklistOwned", 1);
+        assertThat(((List<Map<String, Object>>) view.get("checklistSeasons")).get(0))
+                .containsEntry("complete", true).containsEntry("percent", 100);
+    }
 }

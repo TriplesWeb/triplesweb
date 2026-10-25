@@ -60,4 +60,19 @@ class CosmoProfileControllerTest {
         mvc.perform(get("/cosmo/profile/Down")).andExpect(content().string(containsString("잠시 후 다시 확인")))
                 .andExpect(content().string(not(containsString("private upstream detail"))));
     }
+
+    @Test void memberChecklistRendersOwnedAndMissingKindsWithFullImages() throws Exception {
+        givenProfile();
+        when(catalog.findCollections("triples")).thenReturn(List.of(
+                Map.of("slug", "cream02-hayeon-367z", "member", "HaYeon", "class", "Double", "season", "Cream02",
+                        "collectionNo", "367Z", "collectionId", "Cream02 HaYeon 367Z", "thumbnailImage", "https://example.com/owned.webp"),
+                Map.of("slug", "cream02-hayeon-003z", "member", "HaYeon", "class", "Double", "season", "Cream02",
+                        "collectionNo", "003Z", "collectionId", "Cream02 HaYeon 003Z", "thumbnailImage", "https://example.com/missing.webp")));
+        var result = mvc.perform(get("/cosmo/profile/Fan").param("member", "hayeon"))
+                .andExpect(status().isOk()).andExpect(content().string(containsString("2종 중 1종 보유 · 1종 미보유")))
+                .andExpect(content().string(containsString("profile-checklist-card is-owned")))
+                .andExpect(content().string(containsString("profile-checklist-card is-missing")))
+                .andExpect(content().string(containsString("완료한 시즌 숨기기"))).andReturn();
+        java.nio.file.Files.writeString(java.nio.file.Path.of("build/profile-checklist-preview.html"), result.getResponse().getContentAsString());
+    }
 }

@@ -11,6 +11,7 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class CosmoProfileService {
+    private static final java.util.regex.Pattern NUMBER = java.util.regex.Pattern.compile("\\d+");
     private final CosmoCollectionService collections;
     private final ObjektService catalog;
     private final ArtistRepository artists;
@@ -27,10 +28,13 @@ public class CosmoProfileService {
         view.put("seasonStats", breakdown(all, "season"));
         view.put("classStats", breakdown(all, "objektClass"));
         view.put("hasStats", !all.isEmpty());
-        List<Map<String, Object>> progress = progress(all, base);
+        List<Map<String, Object>> catalogSnapshot = catalog.findCollections("triples");
+        List<Map<String, Object>> progress = progress(all, base, catalogSnapshot);
         view.put("memberProgress", progress);
         view.put("hasMemberProgress", !progress.isEmpty());
         String selected = member == null ? "" : member.trim();
+        view.put("hasProgressMember", !selected.isBlank());
+        if (!"collection".equals(tab)) view.putAll(memberChecklist(all, catalogSnapshot, selected, base));
         List<Map<String, Object>> filtered = all.stream().filter(card -> selected.isBlank()
                 || selected.equalsIgnoreCase(text(card, "member"))).toList();
         int pages = Math.max(1, (filtered.size() + 23) / 24);
@@ -49,9 +53,10 @@ public class CosmoProfileService {
         return view;
     }
 
-    private List<Map<String, Object>> progress(List<Map<String, Object>> held, String profileUrl) {
+    private List<Map<String, Object>> progress(List<Map<String, Object>> held, String profileUrl,
+                                               List<Map<String, Object>> catalogSnapshot) {
         Map<String, Set<String>> totals = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (Map<String, Object> item : catalog.findCollections("triples")) {
+        for (Map<String, Object> item : catalogSnapshot) {
             if (excluded(text(item, "class"))) continue;
             String member = text(item, "member"), slug = text(item, "slug");
             if (!member.isBlank() && !slug.isBlank()) totals.computeIfAbsent(member, k -> new HashSet<>()).add(slug);
@@ -87,12 +92,87 @@ public class CosmoProfileService {
             row.put("hasTotal", !available.isEmpty()); row.put("color", color);
             row.put("image", image); row.put("hasImage", !image.isBlank());
             row.put("collectionUrl", profileUrl + "?tab=collection&member=" + encode(member));
+            row.put("progressUrl", profileUrl + "?tab=progress&member=" + encode(member));
             rows.add(row);
         }
         rows.sort(Comparator.<Map<String, Object>>comparingInt(row -> (Integer) row.get("percent")).reversed()
                 .thenComparing(Comparator.comparingInt((Map<String, Object> row) -> (Integer) row.get("copies")).reversed())
                 .thenComparing(row -> text(row, "member")));
         return rows;
+    }
+
+    private static Map<String, Object> memberChecklist(List<Map<String, Object>> held,
+            List<Map<String, Object>> catalog, String member, String base) {
+        Set<String> names = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, Map<String, Object>> unique = new LinkedHashMap<>();
+        for (Map<String, Object> item : catalog) {
+            if (excluded(text(item, "class"))) continue;
+            String name = text(item, "member"), slug = text(item, "slug");
+            if (!name.isBlank()) names.add(name);
+            if (name.equalsIgnoreCase(member) && !slug.isBlank()) unique.putIfAbsent(slug, item);
+        }
+        Map<String, Long> copies = new HashMap<>();
+        for (Map<String, Object> card : held) copies.merge(text(card, "slug"), 1L, Long::sum);
+        Comparator<String> natural = Comparator.comparingLong(CosmoProfileService::numericPart)
+                .thenComparing(String.CASE_INSENSITIVE_ORDER);
+        Map<String, List<Map<String, Object>>> seasons = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (Map<String, Object> item : unique.values())
+            seasons.computeIfAbsent(text(item, "season"), k -> new ArrayList<>()).add(item);
+        List<String> classOrder = List.of("first", "special", "double", "premier", "motion", "lenticular", "unit");
+        Comparator<String> classes = Comparator.comparingInt((String value) -> {
+            int i = classOrder.indexOf(value.toLowerCase(Locale.ROOT));
+            return i < 0 ? classOrder.size() : i;
+        }).thenComparing(String.CASE_INSENSITIVE_ORDER);
+        List<Map<String, Object>> seasonRows = new ArrayList<>();
+        int collected = 0;
+        for (var season : seasons.entrySet()) {
+            Map<String, List<Map<String, Object>>> groups = new TreeMap<>(classes);
+            for (Map<String, Object> item : season.getValue())
+                groups.computeIfAbsent(text(item, "class"), k -> new ArrayList<>()).add(item);
+            List<Map<String, Object>> groupRows = new ArrayList<>();
+            int seasonOwned = 0;
+            for (var group : groups.entrySet()) {
+                group.getValue().sort(Comparator.comparing((Map<String, Object> item) -> text(item, "collectionNo"), natural)
+                        .thenComparing(item -> text(item, "slug")));
+                List<Map<String, Object>> cards = new ArrayList<>();
+                int owned = 0;
+                for (Map<String, Object> item : group.getValue()) {
+                    String slug = text(item, "slug");
+                    long count = copies.getOrDefault(slug, 0L);
+                    if (count > 0) owned++;
+                    String image = GravityService.safeImage(text(item, "thumbnailImage"));
+                    if (image.isBlank()) image = GravityService.safeImage(text(item, "frontImage"));
+                    cards.add(Map.of("number", text(item, "collectionNo"), "name", text(item, "collectionId"),
+                            "image", image, "hasImage", !image.isBlank(), "owned", count > 0,
+                            "copies", count, "detailUrl", "/cosmo/objekt/detail/" + encode(slug)));
+                }
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("klass", group.getKey().isBlank() ? "미분류" : group.getKey());
+                row.put("cards", cards); row.put("owned", owned); row.put("total", cards.size());
+                row.put("missing", cards.size() - owned); row.put("complete", owned == cards.size());
+                row.put("percent", owned * 100 / cards.size());
+                row.put("open", groupRows.isEmpty());
+                groupRows.add(row); seasonOwned += owned;
+            }
+            seasonRows.add(Map.of("season", season.getKey().isBlank() ? "미분류" : season.getKey(),
+                    "groups", groupRows, "owned", seasonOwned, "total", season.getValue().size(),
+                    "complete", seasonOwned == season.getValue().size(), "percent", seasonOwned * 100 / season.getValue().size()));
+            collected += seasonOwned;
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("checklistSeasons", seasonRows); result.put("hasChecklist", !seasonRows.isEmpty());
+        result.put("checklistOwned", collected); result.put("checklistTotal", unique.size());
+        result.put("checklistMissing", unique.size() - collected);
+        result.put("progressMemberOptions", names.stream().map(name -> Map.<String, Object>of("name", name,
+                "selected", name.equalsIgnoreCase(member), "url", base + "?tab=progress&member=" + encode(name))).toList());
+        return result;
+    }
+
+    private static long numericPart(String value) {
+        var match = NUMBER.matcher(value);
+        if (!match.find()) return Long.MAX_VALUE;
+        try { return Long.parseLong(match.group()); }
+        catch (NumberFormatException ignored) { return Long.MAX_VALUE; }
     }
 
     private static List<Map<String, Object>> breakdown(List<Map<String, Object>> cards, String field) {

@@ -38,3 +38,46 @@
     .profile-totals { gap: 1.5rem; }
     .profile-totals dd { font-size: 1.5rem; }
 }
+.profile-member-picker { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; }
+.profile-member-picker label { color: #b9cac4; font-size: .85rem; }
+.profile-member-picker select, .profile-member-picker button { border: 1px solid #ffffff25; border-radius: .7rem; background: #171a21; color: #e9f1ee; padding: .65rem .9rem; font: inherit; font-size: .85rem; }
+.profile-member-picker button { background: #65ddc7; color: #071512; font-weight: 700; cursor: pointer; }
+.profile-checklist { min-width: 0; }
+.profile-checklist-legend { display: flex; flex-wrap: wrap; gap: .75rem; font-size: .8rem; color: #9daaa7; margin-bottom: 1rem; }
+.profile-checklist-legend .is-owned { color: #8bf5dc; }
+.profile-hide-complete { display: inline-flex; align-items: center; gap: .5rem; color: #c2d0cb; font-size: .85rem; cursor: pointer; }
+.profile-hide-complete[hidden], .profile-checklist-season[hidden] { display: none; }
+.profile-hide-complete input { accent-color: #66e6ce; }
+.profile-checklist-season { padding: clamp(.8rem, 2vw, 1.25rem); margin-bottom: 1.25rem; min-width: 0; }
+.profile-season-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: 1rem; }
+.profile-season-heading h3 { font-size: 1.1rem; font-weight: 750; }
+.profile-season-heading p { color: #b9cac4; font-size: .85rem; }
+.profile-season-heading strong { color: #a1ffe9; margin-left: .8rem; }
+.profile-checklist-group { border: 1px solid #ffffff15; border-radius: .75rem; margin-top: .65rem; background: #0d1015; overflow: hidden; }
+.profile-checklist-group summary { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem 1.1rem; padding: .9rem 1rem; cursor: pointer; list-style: none; font-size: .85rem; }
+.profile-checklist-group summary::-webkit-details-marker { display: none; }
+.profile-checklist-group summary > span:first-child { min-width: 5rem; font-weight: 700; }
+.profile-checklist-group summary > strong { color: #e9f5ee; font-variant-numeric: tabular-nums; }
+.profile-checklist-group summary > span { color: #b5c6bf; }
+.profile-checklist-group summary .profile-group-complete { color: #79e2b1; }
+.profile-checklist-group[open] > summary { border-bottom: 1px solid #66e6ce30; background: #65ddc70c; }
+.profile-group-toggle { margin-left: auto; font-size: .72rem; }
+.profile-checklist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 8.5rem), 1fr)); gap: .8rem; padding: 1rem; }
+.profile-checklist-card { min-width: 0; color: #dde6e2; text-decoration: none; border: 1px solid #ffffff15; border-radius: .65rem; overflow: hidden; background: #11151a; }
+.profile-checklist-image { position: relative; display: grid; place-items: center; aspect-ratio: 2 / 3; background: #050709; }
+.profile-checklist-image img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center; }
+.profile-checklist-image > span:not(.profile-checklist-status) { padding: .5rem; font-size: .75rem; text-align: center; }
+.profile-checklist-card.is-missing img { filter: grayscale(.85) brightness(.38); }
+.profile-checklist-card.is-owned { border-color: #60dccb70; box-shadow: 0 0 0 1px #60dccb12; }
+.profile-checklist-status { position: absolute; left: .4rem; bottom: .4rem; padding: .2rem .4rem; border-radius: .4rem; background: #080d10e0; color: #b6c4c0; font-size: .65rem; }
+.is-owned .profile-checklist-status { color: #9effe8; border: 1px solid #69e6cb55; }
+.profile-checklist-caption { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .3rem; padding: .55rem; font-size: .75rem; }
+.profile-checklist-caption strong { font-variant-numeric: tabular-nums; }
+.profile-checklist-caption span { color: #a1b1ab; font-size: .65rem; }
+.profile-checklist-card:focus-visible, .profile-checklist-group summary:focus-visible { outline: 2px solid #8bf5dc; outline-offset: -3px; }
+@media (max-width: 600px) {
+    .profile-checklist-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: .6rem; gap: .6rem; }
+    .profile-checklist-caption { flex-direction: column; align-items: flex-start; }
+    .profile-group-toggle { width: 100%; margin-left: 0; }
+    .profile-member-picker select { flex: 1; min-width: 0; }
+}

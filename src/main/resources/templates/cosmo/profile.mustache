@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="/css/gravity-page.css?v=2">
 <link rel="stylesheet" href="/css/archive-page.css?v=3">
 <link rel="stylesheet" href="/css/cosmo-collection.css?v=2">
-<link rel="stylesheet" href="/css/cosmo-profile.css?v=1">
+<link rel="stylesheet" href="/css/cosmo-profile.css?v=2">
 </head>
 <body class="collection-page min-h-screen flex flex-col">
 {{>layout/header}}
@@ -33,6 +33,13 @@
     <a href="{{profileUrl}}?tab=collection" {{#isCollection}}aria-current="page"{{/isCollection}}>보유 오브젝트</a>
 </nav>
 {{#isProgress}}
+<form method="get" action="{{profileUrl}}" class="profile-member-picker">
+    <input type="hidden" name="tab" value="progress">
+    <label for="progress-member">멤버별 오브젝트 종류</label>
+    <select id="progress-member" name="member"><option value="">전체 멤버 현황</option>{{#progressMemberOptions}}<option value="{{name}}" {{#selected}}selected{{/selected}}>{{name}}</option>{{/progressMemberOptions}}</select>
+    <button type="submit">보기</button>
+</form>
+{{^hasProgressMember}}
 <section class="profile-progress-section" aria-labelledby="member-progress-heading">
     <div class="profile-section-heading"><h2 id="member-progress-heading">멤버별 수집 현황</h2><p>tripleS · Welcome·Zero 제외 · 중복을 제외한 종류 기준</p></div>
     <div class="profile-member-grid">
@@ -43,7 +50,8 @@
         <div class="profile-progress-track" role="progressbar" aria-label="{{member}} 수집률" aria-valuenow="{{percent}}" aria-valuemin="0" aria-valuemax="100"><span style="width:{{percent}}%"></span></div>
         <p class="ar-muted">{{owned}} / {{total}}종 · 보유 {{copies}}개</p>{{/hasTotal}}
         {{^hasTotal}}<p class="ar-muted">전체 목록 준비 중 · 보유 {{copies}}개</p>{{/hasTotal}}
-        <a class="collection-detail-link" href="{{collectionUrl}}">보유 오브젝트 보기 →</a>
+        <a class="collection-detail-link" href="{{progressUrl}}">전체 종류 · 수집 현황 보기 →</a>
+        <a class="collection-detail-link" href="{{collectionUrl}}">보유 카드만 보기</a>
     </article>
     {{/memberProgress}}
     </div>
@@ -57,6 +65,35 @@
     {{#classStats}}<div class="profile-breakdown-row"><span>{{label}}</span><div class="profile-progress-track"><span style="width:{{percent}}%"></span></div><strong>{{count}}개</strong><span>{{percent}}%</span></div>{{/classStats}}
     {{^hasStats}}<p class="ar-muted">아직 보유한 오브젝트가 없습니다.</p>{{/hasStats}}</section>
 </div>
+{{/hasProgressMember}}
+{{#hasProgressMember}}
+<section class="profile-checklist" aria-labelledby="checklist-heading">
+    <div class="profile-section-heading"><div><h2 id="checklist-heading">{{selectedMember}} · 오브젝트 수집 목록</h2><p>{{checklistTotal}}종 중 {{checklistOwned}}종 보유 · {{checklistMissing}}종 미보유</p></div>
+        <label class="profile-hide-complete" data-hide-complete-label hidden><input type="checkbox" data-hide-complete>완료한 시즌 숨기기</label>
+    </div>
+    <p class="profile-checklist-legend"><span class="is-owned">● 보유</span><span>○ 미보유</span> · 클래스별 낮은 번호순</p>
+    {{#checklistSeasons}}
+    <section class="ar-panel profile-checklist-season" data-checklist-season data-complete="{{complete}}">
+        <header class="profile-season-heading"><h3>{{season}}</h3><p>{{owned}} / {{total}}종 <strong>{{percent}}%</strong></p></header>
+        {{#groups}}
+        <details class="profile-checklist-group" {{#open}}open{{/open}}>
+            <summary><span>{{klass}}</span><strong>{{owned}} / {{total}}종</strong>{{#complete}}<span class="profile-group-complete">✓ 완료</span>{{/complete}}{{^complete}}<span>{{missing}}종 미보유</span>{{/complete}}<span class="profile-group-toggle">펼치기 / 접기</span></summary>
+            <div class="profile-checklist-grid">
+            {{#cards}}
+                <a href="{{detailUrl}}" class="profile-checklist-card {{#owned}}is-owned{{/owned}}{{^owned}}is-missing{{/owned}}" aria-label="{{name}} · {{#owned}}보유 {{copies}}개{{/owned}}{{^owned}}미보유{{/owned}}">
+                    <div class="profile-checklist-image">{{#hasImage}}<img src="{{image}}" alt="{{name}}" loading="lazy" decoding="async" referrerpolicy="no-referrer">{{/hasImage}}{{^hasImage}}<span>이미지 준비 중</span>{{/hasImage}}
+                    <span class="profile-checklist-status">{{#owned}}✓ 보유{{/owned}}{{^owned}}미보유{{/owned}}</span></div>
+                    <div class="profile-checklist-caption"><strong>{{number}}</strong>{{#owned}}<span>{{copies}}개 보유</span>{{/owned}}{{^owned}}<span>아직 미보유</span>{{/owned}}</div>
+                </a>
+            {{/cards}}
+            </div>
+        </details>
+        {{/groups}}
+    </section>
+    {{/checklistSeasons}}
+    {{^hasChecklist}}<p class="gv-panel gv-empty">이 멤버의 전체 오브젝트 목록을 아직 불러오지 못했습니다.</p>{{/hasChecklist}}
+</section>
+{{/hasProgressMember}}
 {{/isProgress}}
 {{#isCollection}}
 <div class="profile-section-heading"><h2>{{#selectedMember}}{{selectedMember}} · {{/selectedMember}}보유 오브젝트 {{filteredCount}}개</h2>{{#selectedMember}}<a class="collection-detail-link" href="{{profileUrl}}?tab=collection">전체 멤버 보기</a>{{/selectedMember}}</div>
@@ -80,4 +117,5 @@
 {{/hasProfile}}
 </main>
 {{>layout/footer}}
+<script src="/js/cosmo-profile.js?v=1" defer></script>
 </body></html>
