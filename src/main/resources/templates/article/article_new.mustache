@@ -221,11 +221,12 @@
     const hasVideo = /<video\s[^>]*>.*?<\/video>/i.test(cleaned) || /<source\s[^>]*src=['"][^'"]+['"][^>]*>/i.test(cleaned);
 
     if (!titleOk) {
-            alert('제목을 입력해 주세요.');
+            alert('제목을 입력해주세요.');
             return false;
         }
-    if (!hasText && !hasImg && !hasVideo) {
-            alert('내용을 입력해 주세요.');
+    const visible = window.articleHasVisibleContent ? window.articleHasVisibleContent(cleaned) : (hasText || hasImg || hasVideo);
+    if (!visible) {
+            alert('내용을 입력해주세요.');
             return false;
         }
 

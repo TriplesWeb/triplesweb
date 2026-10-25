@@ -353,7 +353,7 @@ public class CosmoProfileService {
                 row.put("cards", cards); row.put("owned", owned); row.put("total", cards.size());
                 row.put("missing", cards.size() - owned); row.put("complete", owned == cards.size() && !cards.isEmpty());
                 row.put("percent", cards.isEmpty() ? 0 : owned * 100 / cards.size());
-                row.put("open", groupRows.isEmpty());
+                row.put("open", false);
                 groupRows.add(row);
                 seasonOwned += owned;
                 seasonVisible += cards.size();

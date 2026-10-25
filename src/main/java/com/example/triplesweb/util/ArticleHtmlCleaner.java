@@ -20,6 +20,30 @@ public final class ArticleHtmlCleaner {
 
     private ArticleHtmlCleaner() {}
 
+    /** 텍스트와 미디어 주소만 남겨, 같은 글인지 비교할 때 편집기 마크업 차이를 무시한다. */
+    public static String fingerprint(String html) {
+        String cleaned = clean(html);
+        String text = cleaned.replaceAll("(?is)<[^>]*>", " ")
+                .replace("&nbsp;", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        Matcher media = SRC_ATTR.matcher(cleaned);
+        StringBuilder sources = new StringBuilder();
+        while (media.find()) {
+            if (!sources.isEmpty()) sources.append('|');
+            sources.append(media.group(3));
+        }
+        return text + "\n" + sources;
+    }
+
+    public static boolean hasVisibleContent(String html) {
+        String finger = fingerprint(html);
+        int split = finger.indexOf('\n');
+        String text = split < 0 ? finger : finger.substring(0, split);
+        String sources = split < 0 ? "" : finger.substring(split + 1);
+        return !text.isBlank() || !sources.isBlank();
+    }
+
     public static String clean(String html) {
         if (!StringUtils.hasText(html)) return "";
 

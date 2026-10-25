@@ -20,6 +20,16 @@ import java.util.Set;
 
 @Controller
 public class CosmoCollectionController {
+    @SuppressWarnings("unchecked")
+    private static List<String> stringList(Object value) {
+        if (!(value instanceof List<?> list)) return List.of();
+        List<String> out = new ArrayList<>();
+        for (Object item : list) {
+            if (item != null && !item.toString().isBlank()) out.add(item.toString());
+        }
+        return out;
+    }
+
     private final CosmoCollectionService collections;
     private final ArtistRepository artists;
 
@@ -33,10 +43,12 @@ public class CosmoCollectionController {
     public String collection(@RequestParam(required = false) String nickname,
                              @RequestParam(defaultValue = "0") int page,
                              @RequestParam(defaultValue = "") String member,
-                             @RequestParam(defaultValue = "") String season,
-                             @RequestParam(name = "class", defaultValue = "") String objektClass,
+                             @RequestParam(required = false) List<String> season,
+                             @RequestParam(name = "class", required = false) List<String> objektClass,
                              @RequestParam(name = "q", defaultValue = "") String query,
                              @RequestParam(defaultValue = "all") String group,
+                             @RequestParam(defaultValue = "all") String kind,
+                             @RequestParam(defaultValue = "latest") String sort,
                              Model model) {
         model.addAttribute("query", nickname == null ? "" : nickname.trim());
         if (nickname == null) return "cosmo/collection";
@@ -45,8 +57,14 @@ public class CosmoCollectionController {
             return "cosmo/collection";
         }
         try {
-            Map<String, Object> view = collections.search(nickname, page, member, season, objektClass, query, group);
+            Map<String, Object> view = collections.search(nickname, page, member,
+                    season == null ? List.of() : season,
+                    objektClass == null ? List.of() : objektClass,
+                    query, group, kind, sort);
             model.addAllAttributes(view);
+            if (view.get("selectedKind") == null) model.addAttribute("selectedKind", "all");
+            if (view.get("selectedSort") == null) model.addAttribute("selectedSort", "latest");
+            if (view.get("kindOptions") == null) model.addAttribute("kindOptions", List.of());
             model.addAttribute("hasCollection", true);
             List<Map<String, Object>> allCards = (List<Map<String, Object>>) view.getOrDefault("allCards", List.of());
             Set<String> rawMembers = new LinkedHashSet<>();
@@ -67,16 +85,20 @@ public class CosmoCollectionController {
                 option.put("active", MemberPortraitOptions.sameMember(selectedMember, String.valueOf(option.get("value"))));
             }
             model.addAttribute("memberPickerOptions", picker);
+            List<String> selectedSeasons = stringList(view.get("selectedSeasons"));
+            List<String> selectedClasses = stringList(view.get("selectedClasses"));
             List<Map<String, Object>> seasonChoices = new ArrayList<>();
             for (String value : ObjektFilterOrder.sortedSeasons(seasons)) {
-                seasonChoices.add(Map.of("value", value, "selected", value.equalsIgnoreCase(String.valueOf(view.get("selectedSeason")))));
+                seasonChoices.add(Map.of("value", value, "selected", selectedSeasons.stream().anyMatch(value::equalsIgnoreCase)));
             }
             List<Map<String, Object>> classChoices = new ArrayList<>();
             for (String value : classes.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList()) {
-                classChoices.add(Map.of("value", value, "selected", value.equalsIgnoreCase(String.valueOf(view.get("selectedClass")))));
+                classChoices.add(Map.of("value", value, "selected", selectedClasses.stream().anyMatch(value::equalsIgnoreCase)));
             }
             model.addAttribute("seasonChoices", seasonChoices);
             model.addAttribute("classChoices", classChoices);
+            model.addAttribute("hasSeasonFilter", seasonChoices.stream().anyMatch(choice -> Boolean.TRUE.equals(choice.get("selected"))));
+            model.addAttribute("hasClassFilter", classChoices.stream().anyMatch(choice -> Boolean.TRUE.equals(choice.get("selected"))));
         } catch (IllegalArgumentException ex) {
             model.addAttribute("collectionError", ex.getMessage());
         } catch (RuntimeException ex) {
@@ -90,12 +112,17 @@ public class CosmoCollectionController {
     public ResponseEntity<Map<String, Object>> more(@RequestParam String nickname,
                                                     @RequestParam(defaultValue = "1") int page,
                                                     @RequestParam(defaultValue = "") String member,
-                                                    @RequestParam(defaultValue = "") String season,
-                                                    @RequestParam(name = "class", defaultValue = "") String objektClass,
+                                                    @RequestParam(required = false) List<String> season,
+                                                    @RequestParam(name = "class", required = false) List<String> objektClass,
                                                     @RequestParam(name = "q", defaultValue = "") String query,
-                                                    @RequestParam(defaultValue = "all") String group) {
+                                                    @RequestParam(defaultValue = "all") String group,
+                                                    @RequestParam(defaultValue = "all") String kind,
+                                                    @RequestParam(defaultValue = "latest") String sort) {
         try {
-            Map<String, Object> view = collections.search(nickname, Math.max(0, page), member, season, objektClass, query, group);
+            Map<String, Object> view = collections.search(nickname, Math.max(0, page), member,
+                    season == null ? List.of() : season,
+                    objektClass == null ? List.of() : objektClass,
+                    query, group, kind, sort);
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("items", view.getOrDefault("cards", List.of()));
             body.put("page", view.get("page"));

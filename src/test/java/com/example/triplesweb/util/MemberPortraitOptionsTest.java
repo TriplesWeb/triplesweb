@@ -25,6 +25,9 @@ class MemberPortraitOptionsTest {
         assertThat(MemberPortraitOptions.objektMembers("S1 X S10")).containsExactly("윤서연", "서다현").doesNotContain("정혜린");
         assertThat(MemberPortraitOptions.objektMembers("Yooyeon X Shion")).containsExactly("김유연", "박시온");
         assertThat(MemberPortraitOptions.objektMembers("S21")).containsExactly("김채원");
+        assertThat(MemberPortraitOptions.displayMember("JiYeon")).isEqualTo("지연");
+        assertThat(MemberPortraitOptions.displayMember("S5 X S20")).isEqualTo("김유연 × 박시온");
+        assertThat(MemberPortraitOptions.displayMember("zenith")).isEqualTo("zenith");
         for (String other : java.util.List.of("AAA", "TokyoHaus", "sun", "+(KR)E", ""))
             assertThat(MemberPortraitOptions.objektMembers(other)).isEmpty();
     }

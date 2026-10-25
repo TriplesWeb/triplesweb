@@ -34,10 +34,10 @@ class CosmoCollectionControllerTest {
     }
 
     @Test void missingNicknameAndNetworkFailureHaveDifferentMessages() throws Exception {
-        when(collections.search("없는사람", 0, "", "", "", "", "all")).thenThrow(new IllegalArgumentException("없는 닉네임 입니다."));
+        when(collections.search("없는사람", 0, "", List.of(), List.of(), "", "all", "all", "latest")).thenThrow(new IllegalArgumentException("없는 닉네임 입니다."));
         mvc.perform(get("/cosmo/collection").param("nickname", "없는사람"))
                 .andExpect(status().isOk()).andExpect(content().string(containsString("없는 닉네임 입니다.")));
-        when(collections.search("테스트", 0, "", "", "", "", "all")).thenThrow(new IllegalStateException("network"));
+        when(collections.search("테스트", 0, "", List.of(), List.of(), "", "all", "all", "latest")).thenThrow(new IllegalStateException("network"));
         mvc.perform(get("/cosmo/collection").param("nickname", "테스트"))
                 .andExpect(content().string(containsString("잠시 후 다시 검색")))
                 .andExpect(content().string(not(containsString("없는 닉네임 입니다."))));
@@ -75,7 +75,7 @@ class CosmoCollectionControllerTest {
                 "member", "HaYeon", "season", "Cream02", "objektClass", "Double", "hasImage", true,
                 "thumbnailImage", "https://example.com/card.webp", "hasDetail", false)));
         view.put("allCards", view.get("cards"));
-        when(collections.search("테스트", 0, "", "", "", "", "all")).thenReturn(view);
+        when(collections.search("테스트", 0, "", List.of(), List.of(), "", "all", "all", "latest")).thenReturn(view);
         when(artists.findAll()).thenReturn(List.of());
         mvc.perform(get("/cosmo/collection").param("nickname", "테스트")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("#27")))
@@ -100,7 +100,7 @@ class CosmoCollectionControllerTest {
         view.put("filteredCount", 30);
         view.put("hasMore", true);
         view.put("nextPage", 2);
-        when(collections.search("테스트", 1, "", "", "", "", "all")).thenReturn(view);
+        when(collections.search("테스트", 1, "", List.of(), List.of(), "", "all", "all", "latest")).thenReturn(view);
         mvc.perform(get("/cosmo/collection/more").param("nickname", "테스트").param("page", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].member").value("정하연"))

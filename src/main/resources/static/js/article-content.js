@@ -37,8 +37,18 @@
     return wrap.innerHTML.trim();
   }
 
+  function hasVisibleContent(html) {
+    const box = document.createElement('div');
+    box.innerHTML = html || '';
+    const text = (box.textContent || '').replace(/\u00a0/g, '').replace(/\s/g, '');
+    const media = [...box.querySelectorAll('[src]')].some((node) => (node.getAttribute('src') || '').trim());
+    return text.length > 0 || media;
+  }
+
+  global.articleHasVisibleContent = hasVisibleContent;
   global.ArticleContent = {
     toRelativeUploadUrl,
-    cleanEditorHtml
+    cleanEditorHtml,
+    hasVisibleContent
   };
 })(window);

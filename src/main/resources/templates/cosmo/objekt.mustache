@@ -15,7 +15,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=5">
+    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=10">
     <style>
         .objekt-head {
             display: flex;
@@ -325,6 +325,71 @@
             text-align: left;
             cursor: pointer;
         }
+        #sort-menu .objekt-kind-option,
+        #sort-dropdown .objekt-kind-option,
+        #objekt-sort-toggle,
+        #sort-label {
+            font-family: Inter, "Noto Sans KR", -apple-system, sans-serif !important;
+            font-weight: 650 !important;
+            letter-spacing: 0 !important;
+            text-transform: none !important;
+        }
+        .objekt-choice {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: .65rem;
+            padding: .5rem .7rem;
+            border-radius: .55rem;
+            color: #e8ebf2;
+            font-family: Inter, "Noto Sans KR", -apple-system, sans-serif;
+            font-size: .9rem;
+            font-weight: 650;
+            cursor: pointer;
+        }
+        .objekt-choice:hover { background: #1a1d28; }
+        .objekt-choice input {
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            position: absolute !important;
+            width: 0 !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0 !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+        .objekt-choice-mark {
+            display: grid;
+            place-items: center;
+            width: 1.45rem;
+            height: 1.45rem;
+            flex: 0 0 auto;
+            border-radius: .45rem;
+            border: 1px solid rgba(125, 249, 232, .28);
+            background: rgba(255,255,255,.04);
+            color: transparent;
+            font-size: 1.05rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .objekt-choice-mark::before { content: "✓"; }
+        .objekt-choice:has(input:checked) {
+            background: rgba(0, 245, 212, .16);
+            color: #f3fffb;
+        }
+        .objekt-choice:has(input:checked) .objekt-choice-mark {
+            color: #04211c;
+            background: #7df9e8;
+            border-color: #fff;
+            box-shadow: 0 0 0 2px rgba(125, 249, 232, .55), 0 0 16px rgba(125, 249, 232, .95);
+        }
+        #objekt-member-toggle[hidden] { display: none !important; }
         .objekt-kind-option:hover,
         .objekt-kind-option:focus-visible,
         .objekt-kind-option.is-active {
@@ -515,7 +580,7 @@
         <div class="objekt-workspace">
         <div class="objekt-member-picker-panel is-collapsed" id="member-dropdown">
             <div class="mpp-toolbar">
-                <button type="button" class="objekt-member-toggle" id="objekt-member-toggle" aria-expanded="false" aria-controls="objekt-member-picker">
+                <button type="button" class="objekt-member-toggle" id="objekt-member-toggle" aria-expanded="false" aria-controls="objekt-member-picker" {{#isOtherGroup}}hidden{{/isOtherGroup}}>
                     <span>
                         <span class="mpp-toolbar-title">멤버</span>
                         <span class="mpp-toolbar-meta" id="member-label">전체 멤버</span>
@@ -548,13 +613,17 @@
                     <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                 </button>
                 <div id="season-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
-                    <label class="flex items-center gap-2 px-2.5 py-2 hover:bg-[#1a1d28] rounded-md cursor-pointer text-sm text-white">
-                        <input type="checkbox" value="all" class="rounded season-checkbox" checked><span>전체 시즌</span>
+                    <label class="objekt-choice">
+                        <input type="checkbox" value="all" class="season-checkbox" checked>
+                        <span class="objekt-choice-mark" aria-hidden="true"></span>
+                        <span class="objekt-choice-text">전체 시즌</span>
                     </label>
                     <div id="season-options">
                         {{#seasonOptions}}
-                        <label class="flex items-center gap-2 px-2.5 py-2 hover:bg-[#1a1d28] rounded-md cursor-pointer text-sm text-white">
-                            <input type="checkbox" name="season" value="{{.}}" class="rounded season-checkbox"><span>{{.}}</span>
+                        <label class="objekt-choice">
+                            <input type="checkbox" name="season" value="{{.}}" class="season-checkbox">
+                            <span class="objekt-choice-mark" aria-hidden="true"></span>
+                            <span class="objekt-choice-text">{{.}}</span>
                         </label>
                         {{/seasonOptions}}
                     </div>
@@ -597,13 +666,17 @@
                     <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                 </button>
                 <div id="class-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
-                    <label class="flex items-center gap-2 px-2.5 py-2 hover:bg-[#1a1d28] rounded-md cursor-pointer text-sm text-white">
-                        <input type="checkbox" value="all" class="rounded class-checkbox" checked><span>전체 클래스</span>
+                    <label class="objekt-choice">
+                        <input type="checkbox" value="all" class="class-checkbox" checked>
+                        <span class="objekt-choice-mark" aria-hidden="true"></span>
+                        <span class="objekt-choice-text">전체 클래스</span>
                     </label>
                     <div id="class-options">
                         {{#classOptions}}
-                        <label class="flex items-center gap-2 px-2.5 py-2 hover:bg-[#1a1d28] rounded-md cursor-pointer text-sm text-white">
-                            <input type="checkbox" name="class" value="{{.}}" class="rounded class-checkbox"><span>{{.}}</span>
+                        <label class="objekt-choice">
+                            <input type="checkbox" name="class" value="{{.}}" class="class-checkbox">
+                            <span class="objekt-choice-mark" aria-hidden="true"></span>
+                            <span class="objekt-choice-text">{{.}}</span>
                         </label>
                         {{/classOptions}}
                     </div>
@@ -940,9 +1013,10 @@
         const target = document.getElementById(`${type}-label`);
         if (!target) return;
         const chosen = checks.filter(cb => cb !== all);
+        const labelOf = (box) => box.closest('label')?.querySelector('.objekt-choice-text')?.textContent.trim() || '';
         if (!chosen.length || (all && all.checked)) target.textContent = '전체';
-        else if (chosen.length === 1) target.textContent = chosen[0].nextElementSibling.textContent.trim();
-        else target.textContent = `${chosen[0].nextElementSibling.textContent.trim()} 외 ${chosen.length - 1}개`;
+        else if (chosen.length === 1) target.textContent = labelOf(chosen[0]);
+        else target.textContent = `${labelOf(chosen[0])} 외 ${chosen.length - 1}개`;
     }
 
     const memberGroupInput = document.getElementById('objekt-member-group');
@@ -951,6 +1025,8 @@
         document.querySelectorAll('[data-objekt-group]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.objektGroup === group)));
         document.getElementById('objekt-member-picker').hidden = group === 'other';
         document.getElementById('objekt-other-notice').hidden = group !== 'other';
+        const memberToggle = document.getElementById('objekt-member-toggle');
+        if (memberToggle) memberToggle.hidden = group === 'other';
     }
     function syncMemberLabel() {
         const chosen = [...document.querySelectorAll('.member-checkbox:checked')];
