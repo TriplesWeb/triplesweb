@@ -1387,17 +1387,17 @@
     if (pairEl) pairEl.innerHTML = escapeHtml(formatGroupMembers(group.members));
     const descEl = document.getElementById("chemistryDescription");
     if (descEl) descEl.innerHTML = formattedDescription;
+    setChemistryDetailImage(data.image || "");
     const creditEl = document.getElementById("chemistryCredit");
     if (creditEl) {
-      if (credit) {
+      if (credit && data.image) {
+        creditEl.textContent = "photo by. " + credit;
         creditEl.hidden = false;
-        creditEl.textContent = credit;
       } else {
-        creditEl.hidden = true;
         creditEl.textContent = "";
+        creditEl.hidden = true;
       }
     }
-    setChemistryDetailImage(data.image || "");
     const linksEl = document.getElementById("chemistryLinks");
     if (linksEl) {
       const entries = Object.entries(data.links || {});
@@ -1967,16 +1967,31 @@
     return sa.every((name, i) => name === sb[i]);
   }
 
+  /** 24명 전원 케미(tripleS) — 이스터에그. 전원 선택 시에만 노출. */
+  function isFullRosterGroup(group) {
+    const members = group && group.members ? group.members : [];
+    if (members.length < MEMBERS.length) return false;
+    return MEMBERS.every((name) => members.includes(name));
+  }
+
+  function isFullRosterSelection(selectedNames) {
+    const selected = selectedNames || [];
+    if (selected.length < MEMBERS.length) return false;
+    return MEMBERS.every((name) => selected.includes(name));
+  }
+
   /** 3명 이상: 선택 집합과 멤버가 완전히 같은 그룹만. */
   function findExactGroups(selectedNames) {
     return (groupEntries || []).filter((g) => sameMemberSet(g.members || [], selectedNames));
   }
 
-  /** 1·2명: 선택한 멤버를 모두 포함하는 3인 이상 그룹. */
+  /** 1·2명: 선택한 멤버를 모두 포함하는 3인 이상 그룹. 전원 케미는 제외. */
   function findGroupsContainingAll(selectedNames) {
     const selected = selectedNames || [];
     if (!selected.length) return [];
+    const fullPick = isFullRosterSelection(selected);
     return (groupEntries || []).filter((g) => {
+      if (isFullRosterGroup(g) && !fullPick) return false;
       const members = g.members || [];
       return selected.every((name) => members.includes(name));
     });
@@ -2256,11 +2271,6 @@
       addBtn.addEventListener("click", () => {
         openEditFormGroup(names, "", "", "", "", "", {}, "NONE");
       });
-    }
-
-    if (names.length >= 1 && jump) {
-      const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      box.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
     }
   }
 
