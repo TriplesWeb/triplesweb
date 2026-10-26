@@ -55,7 +55,8 @@ const fixtures = [
     fs.mkdirSync('/tmp/objekt-ui',{recursive:true});
     await page.screenshot({path:'/tmp/objekt-ui/desktop.png',fullPage:true});
     await page.setViewportSize({width:390,height:844});
-    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,
+      JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('main,main *')].filter(n=>n.getBoundingClientRect().right>innerWidth).slice(0,12).map(n=>({class:n.className,width:n.getBoundingClientRect().width,right:n.getBoundingClientRect().right})))));
     await page.screenshot({path:'/tmp/objekt-ui/mobile.png',fullPage:true});
     await page.setViewportSize({width:320,height:740});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);

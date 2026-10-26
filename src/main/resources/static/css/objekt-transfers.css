@@ -1,6 +1,8 @@
 /* Shared COSMO palette: style.css, cosmo-profile.css, cosmo-collection.css. */
 .tr-site { background: #07080b; color: #e3e2e8; color-scheme: dark; }
 .tr-page {
+    box-sizing: border-box;
+    min-width: 0;
     --tr-accent: #00f5d4;
     --tr-soft: #8decd9;
     --tr-muted: #a6b6b1;
