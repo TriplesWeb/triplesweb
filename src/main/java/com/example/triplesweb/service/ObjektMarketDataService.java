@@ -1,6 +1,7 @@
 package com.example.triplesweb.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -22,17 +23,20 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class ObjektMarketDataService {
     private final RestClient index;
+    private final ObjektIndexClient historyIndex;
     private final RestClient cosmo;
     private final RestClient rpc;
     private final String contract;
     private volatile Map<String, Long> mintCounts = Map.of();
     private final ConcurrentHashMap<String, NicknameCache> nicknames = new ConcurrentHashMap<>();
 
+    @Autowired
     public ObjektMarketDataService(
             @Value("${objekt.api.base-url:https://objekt.top/api/v1}") String indexUrl,
             @Value("${cosmo.api.base-url:https://api.cosmo.fans}") String cosmoUrl,
             @Value("${abstract.indexer.rpc-url:https://api.mainnet.abs.xyz}") String rpcUrl,
-            @Value("${abstract.indexer.contract:0x99Bb83AE9bb0C0A6be865CaCF67760947f91Cb70}") String contract) {
+            @Value("${abstract.indexer.contract:0x99Bb83AE9bb0C0A6be865CaCF67760947f91Cb70}") String contract,
+            ObjektIndexClient historyIndex) {
         var factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(3)).build());
         factory.setReadTimeout(Duration.ofSeconds(6));
@@ -40,6 +44,11 @@ public class ObjektMarketDataService {
         this.cosmo = RestClient.builder().baseUrl(cosmoUrl).requestFactory(factory).build();
         this.rpc = RestClient.builder().baseUrl(rpcUrl).requestFactory(factory).build();
         this.contract = contract;
+        this.historyIndex = historyIndex;
+    }
+
+    ObjektMarketDataService(String indexUrl, String cosmoUrl, String rpcUrl, String contract) {
+        this(indexUrl, cosmoUrl, rpcUrl, contract, new ObjektIndexClient(indexUrl));
     }
 
     // One bulk request, never one request per card or an on-demand whole-chain scan.
@@ -54,7 +63,7 @@ public class ObjektMarketDataService {
                 String slug = row.path("slug").asText();
                 if (slug.isBlank() || !row.path("count").isIntegralNumber()
                         || !row.path("count").canConvertToLong() || row.path("count").asLong() < 0) return;
-                next.put(slug, row.path("count").asLong());
+                if (next.putIfAbsent(slug, row.path("count").asLong()) != null) return;
             }
             mintCounts = Map.copyOf(next);
         } catch (RuntimeException ignored) {
@@ -78,15 +87,8 @@ public class ObjektMarketDataService {
     public Map<String, Object> owner(Map<String, Object> collection, long serial) {
         if (serial < 1) throw new IllegalArgumentException("시리얼은 1 이상의 정수로 입력해 주세요.");
         String slug = String.valueOf(collection.get("slug"));
-        JsonNode indexed;
-        try {
-            indexed = index.get().uri("/collections/{slug}/serials/{serial}/transfers", slug, serial)
-                    .retrieve().body(JsonNode.class);
-        } catch (RestClientResponseException e) {
-            if (e.getStatusCode().value() == 404) return Map.of("status", "not_found");
-            throw e;
-        }
-        if (indexed == null) throw new IllegalStateException("시리얼 응답이 없습니다.");
+        JsonNode indexed = historyIndex.serialHistory(slug, serial);
+        if (indexed == null) return Map.of("status", "not_found");
         if (indexed.path("hide").asBoolean()) return Map.of("status", "hidden");
         String token = indexed.path("tokenId").asText();
         if (token.isBlank()) return Map.of("status", "not_found");
@@ -110,7 +112,7 @@ public class ObjektMarketDataService {
                 "params", List.of(Map.of("to", contract, "data", "0x6352211e" + "0".repeat(64 - hex.length()) + hex), "latest")))
                 .retrieve().body(JsonNode.class);
         String result = chain == null ? "" : chain.path("result").asText();
-        if (!result.matches("0x0{24}[0-9a-fA-F]{40}"))
+        if (chain.has("error") || !result.matches("0x0{24}[0-9a-fA-F]{40}"))
             throw new IllegalStateException("Abstract 소유자 검증에 실패했습니다.");
         String address = "0x" + result.substring(26).toLowerCase(java.util.Locale.ROOT);
         if (address.equals("0x" + "0".repeat(40))) return Map.of("status", "burned");
@@ -125,6 +127,33 @@ public class ObjektMarketDataService {
         return Map.of("status", "found", "serial", serial, "tokenId", token, "address", address,
                 "nickname", nickname, "verifiedAt", Instant.now().toString(),
                 "explorerUrl", "https://abscan.org/token/" + contract + "?a=" + token);
+    }
+
+    /** Indexed history is independent of live RPC health and is labelled as historical. */
+    public Map<String, Object> transfers(Map<String, Object> collection, long serial, int page) {
+        if (serial < 1 || page < 0) throw new IllegalArgumentException("시리얼과 페이지를 확인해 주세요.");
+        JsonNode indexed = historyIndex.serialHistory(String.valueOf(collection.get("slug")), serial);
+        if (indexed == null) return Map.of("status", "not_found");
+        if (indexed.path("hide").asBoolean()) return Map.of("status", "hidden");
+        JsonNode rows = indexed.path("transfers");
+        if (rows.size() > 10000) throw new IllegalStateException("전송 내역이 너무 큽니다.");
+        // Validate the entire upstream response before presenting any page.
+        List<Map<String, Object>> history = new ArrayList<>();
+        for (JsonNode row : rows) {
+            String timestamp = row.path("timestamp").asText("");
+            try { timestamp = Instant.parse(timestamp).toString(); }
+            catch (RuntimeException e) { throw new IllegalStateException("전송 일시를 확인하지 못했습니다."); }
+            String nickname = row.path("nickname").asText("");
+            if (nickname.length() > 100) throw new IllegalStateException("전송 계정 응답이 올바르지 않습니다.");
+            history.add(Map.of("timestamp", timestamp, "nickname", nickname));
+        }
+        history.sort(java.util.Comparator.comparing(row -> Instant.parse((String) row.get("timestamp")),
+                java.util.Comparator.reverseOrder()));
+        int pages = Math.max(1, (history.size() + 19) / 20);
+        int safePage = Math.min(page, pages - 1), from = safePage * 20;
+        return Map.of("status", "available", "serial", serial, "source", "objekt.top",
+                "page", safePage, "total", history.size(), "hasNext", safePage + 1 < pages,
+                "transfers", List.copyOf(history.subList(from, Math.min(from + 20, history.size()))));
     }
 
     private String resolveNickname(String address, List<String> candidates) {
@@ -157,3 +186,4 @@ public class ObjektMarketDataService {
 
     private record NicknameCache(String nickname, long expiresAt) {}
 }
+

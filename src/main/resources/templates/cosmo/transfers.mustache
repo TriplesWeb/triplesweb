@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="ko"><head>{{>layout/favicon}}{{>layout/gravity-fonts}}
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>오브젝트 전송 내역</title><link rel="stylesheet" href="/css/gravity-page.css?v=2">
+<link rel="stylesheet" href="/css/archive-page.css?v=3"></head>
+<body class="collection-page"><div>{{>layout/header}}</div><main class="gravity-page">
+<a href="/cosmo/collection">← 오브젝트 검색</a>
+<section class="gv-panel gv-headline"><h1>계정별 오브젝트 전송 내역</h1>
+<p>공개 인덱스에 반영된 내역입니다. 표시된 닉네임은 현재 소유자를 보장하지 않으며 반영 지연이 있을 수 있습니다.</p>
+<form action="/cosmo/transfers" method="get"><label>닉네임 <input name="nickname" value="{{nickname}}" maxlength="40" required></label><button type="submit">조회</button></form>
+</section>
+<section class="gv-panel" data-transfer-history data-account="{{nickname}}" data-url="/api/objekt/transfers">
+<p role="status" aria-live="polite" data-transfer-status>닉네임을 입력해 조회해 주세요.</p>
+<ol data-transfer-rows></ol><button type="button" data-transfer-more hidden>다음 내역 보기</button>
+</section></main>{{>layout/footer}}<script src="/js/objekt-transfers.js" defer></script></body></html>

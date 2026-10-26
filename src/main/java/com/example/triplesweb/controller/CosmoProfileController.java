@@ -25,6 +25,8 @@ public class CosmoProfileController {
                     + URLEncoder.encode(nickname, StandardCharsets.UTF_8).replace("+", "%20");
         }
         model.addAttribute("requestedNickname", nickname);
+        model.addAttribute("transfersUrl", "/cosmo/transfers?nickname="
+                + URLEncoder.encode(nickname, StandardCharsets.UTF_8));
         try {
             model.addAllAttributes(profiles.profile(nickname, member, group, tab, ownership));
             model.addAttribute("hasProfile", true);
@@ -36,3 +38,4 @@ public class CosmoProfileController {
         return "cosmo/profile";
     }
 }
+

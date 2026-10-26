@@ -31,6 +31,7 @@
 </section>
 
 <nav class="profile-progress-tabs" aria-label="수집 현황 보기">
+    <a class="profile-progress-tab" href="{{transfersUrl}}">전송 내역</a>
     <a class="profile-progress-tab{{#isOverviewTab}} is-active{{/isOverviewTab}}" href="{{overviewUrl}}" {{#isOverviewTab}}aria-current="page"{{/isOverviewTab}}>전체 현황</a>
     <a class="profile-progress-tab{{#isMembersTab}} is-active{{/isMembersTab}}" href="{{membersTabUrl}}" {{#isMembersTab}}aria-current="page"{{/isMembersTab}}>멤버별 상세</a>
 </nav>
@@ -176,3 +177,4 @@
 </script>
 {{/isMembersTab}}
 </body></html>
+

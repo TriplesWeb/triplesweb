@@ -238,7 +238,9 @@ public class CosmoCollectionService {
         var seenTokens = new HashSet<String>();
         var seenCursors = new HashSet<String>();
         JsonNode cursor = null;
+        int pages = 0;
         do {
+            if (++pages > 1000) throw new IllegalStateException("보유 목록이 너무 큽니다. 잠시 후 다시 조회해 주세요.");
             JsonNode currentCursor = cursor;
             JsonNode response = index.get().uri(builder -> {
                 builder.path("/objekts/owned-by/{address}");
@@ -318,3 +320,4 @@ public class CosmoCollectionService {
 
     private record Cached(String nickname, String address, String image, List<Map<String, Object>> cards, long expiresAt) {}
 }
+
