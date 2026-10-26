@@ -22,5 +22,5 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew test --tests '*ObjektMarketDataServiceTest' --tests '*ObjektTransferServiceTest' --tests '*CosmoCollectionServiceTest' --tests '*ObjektFeaturesTest'
+      - run: ./gradlew test --tests '*ObjektMarketDataServiceTest' --tests '*ObjektTransferServiceTest' --tests '*CosmoCollectionServiceTest' --tests '*ObjektFeaturesTest' --tests '*ObjektActivityClientTest' --tests '*ObjektIngestStoreTest'
       - run: node scripts/tests/objekt-detail.test.cjs && node scripts/tests/objekt-transfers.test.cjs

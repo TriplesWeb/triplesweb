@@ -1,6 +1,8 @@
 package com.example.triplesweb.service;
 
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -13,10 +15,20 @@ public class CosmoObjektSnapshotStore {
                        String status, String collectionJson) {}
     private final JdbcTemplate jdbc;
     private final TransactionTemplate transaction;
+    private final ObjektIngestStore ingest;
+    private final boolean confirmSerials;
 
     public CosmoObjektSnapshotStore(JdbcTemplate jdbc, PlatformTransactionManager manager) {
+        this(jdbc, manager, null, false);
+    }
+
+    @Autowired
+    public CosmoObjektSnapshotStore(JdbcTemplate jdbc, PlatformTransactionManager manager,
+                                    ObjektIngestStore ingest, @Value("${objekt.ingest.enabled:true}") boolean confirmSerials) {
         this.jdbc = jdbc;
         this.transaction = new TransactionTemplate(manager);
+        this.ingest = ingest;
+        this.confirmSerials = confirmSerials;
     }
 
     public int save(String scope, int collections, List<Card> cards) {
@@ -45,6 +57,7 @@ public class CosmoObjektSnapshotStore {
                     collections, cards.size(), System.currentTimeMillis(), scope);
             if (updated == 0) jdbc.update("INSERT INTO cosmo_objekt_sync_state (scope_key, artist, collection_count, objekt_count, synced_at) VALUES (?, ?, ?, ?, ?)",
                     scope, "tripleS", collections, cards.size(), System.currentTimeMillis());
+            if (confirmSerials) ingest.confirm(cards);
             return changed;
         }));
     }

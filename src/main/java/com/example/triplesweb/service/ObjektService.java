@@ -75,11 +75,11 @@ public class ObjektService {
     }
 
     /**
-     * 기본 15분 간격으로 캐시를 갱신한다.
+     * 기본 1분 간격으로 캐시를 갱신한다.
      * 최초 적재 실패도 예외를 페이지 요청으로 전파하지 않고 다음 주기에 재시도한다.
      */
     @Scheduled(
-            fixedDelayString = "${objekt.cache.refresh-ms:900000}",
+            fixedDelayString = "${objekt.cache.refresh-ms:60000}",
             initialDelayString = "${objekt.cache.initial-delay-ms:0}"
     )
     public synchronized void refreshCache() {

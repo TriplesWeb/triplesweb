@@ -52,7 +52,7 @@ public class ObjektMarketDataService {
     }
 
     // One bulk request, never one request per card or an on-demand whole-chain scan.
-    @Scheduled(fixedDelayString = "${objekt.mints.refresh-ms:300000}",
+    @Scheduled(fixedDelayString = "${objekt.mints.refresh-ms:60000}",
             initialDelayString = "${objekt.mints.initial-delay-ms:1000}")
     public void refreshMintCounts() {
         try {
