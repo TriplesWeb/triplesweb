@@ -30,3 +30,16 @@ jobs:
         env:
           OBJEKT_LIVE_TEST: 'true'
         run: ./gradlew test --tests '*ObjektLiveApiTest' --info
+      - name: 전송 내역 브라우저 검증
+        env:
+          NODE_PATH: /tmp/objekt-browser/node_modules
+        run: |
+          npm install --prefix /tmp/objekt-browser --no-package-lock playwright@1.56.1
+          /tmp/objekt-browser/node_modules/.bin/playwright install --with-deps chromium
+          node scripts/tests/objekt-account-ui.browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: objekt-transfers-preview
+          path: /tmp/objekt-ui/*.png
+          if-no-files-found: ignore

@@ -50,6 +50,16 @@ class ObjektTransferServiceTest {
         assertThat(result).containsEntry("status", "available").containsEntry("hasNext", false);
         assertThat(result.toString()).contains("받음", "Cream02").doesNotContain(address, "tokenId");
     }
+    @Test void projectsCardPresentationFieldsAndRejectsUnsafeImages() {
+        String enriched = row("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb").replace("\"tokenId\":\"123\"",
+                "\"tokenId\":\"123\",\"member\":\"SeoYeon\",\"season\":\"Cream02\",\"collectionNo\":\"101A\",\"class\":\"First\",\"serial\":42,\"thumbnailImage\":\"https://images.example/card.jpg\"");
+        body.set("{\"results\":[" + enriched + "]}");
+        var result = service.account("B", "", "");
+        assertThat(result.toString()).contains("SeoYeon", "reportedSerial=42", "https://images.example/card.jpg").doesNotContain("tokenId");
+        body.set("{\"results\":[" + enriched.replace("https://images.example/card.jpg", "javascript:alert(1)") + "]}");
+        assertThat(service.account("B", "", "").toString()).doesNotContain("javascript:");
+    }
+
     @Test void forwardsCursorWithoutFetchingOtherPages() {
         service.account("B", "2026-10-25T10:00:00Z", "opaque+id");
         assertThat(java.net.URLDecoder.decode(query.get(), StandardCharsets.UTF_8))

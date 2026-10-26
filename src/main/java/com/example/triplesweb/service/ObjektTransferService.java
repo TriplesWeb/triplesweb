@@ -54,10 +54,18 @@ public class ObjektTransferService {
                     || (!address.equalsIgnoreCase(from) && !address.equalsIgnoreCase(to)))
                 throw new IllegalStateException("계정과 전송 내역이 일치하지 않습니다.");
             String direction = address.equalsIgnoreCase(from) ? (address.equalsIgnoreCase(to) ? "자기 전송" : "보냄") : "받음";
-            rows.add(Map.of("timestamp", parseTime(transfer.path("timestamp").asText("")),
-                    "direction", direction, "collectionId", safeText(card.path("collectionId")),
-                    "fromNickname", safeText(item.path("nickname").path("from")),
-                    "toNickname", safeText(item.path("nickname").path("to"))));
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("timestamp", parseTime(transfer.path("timestamp").asText("")));
+            row.put("direction", direction);
+            row.put("action", from.equalsIgnoreCase("0x" + "0".repeat(40)) ? "mint" : "transfer");
+            row.put("collectionId", safeText(card.path("collectionId")));
+            row.put("fromNickname", safeText(item.path("nickname").path("from")));
+            row.put("toNickname", safeText(item.path("nickname").path("to")));
+            for (String field : List.of("member", "season", "collectionNo", "class")) row.put(field, safeText(card.path(field)));
+            row.put("thumbnailImage", safeImage(card.path("thumbnailImage")));
+            JsonNode serial = card.path("serial");
+            if (serial.isIntegralNumber() && serial.canConvertToLong() && serial.asLong() > 0) row.put("reportedSerial", serial.asLong());
+            rows.add(Collections.unmodifiableMap(row));
         }
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("status", "available"); result.put("source", "objekt.top"); result.put("transfers", List.copyOf(rows));
@@ -72,6 +80,16 @@ public class ObjektTransferService {
         }
         result.put("hasNext", more);
         return result;
+    }
+
+    private static String safeImage(JsonNode node) {
+        String value = node.asText("");
+        if (value.length() > 2000) return "";
+        try {
+            java.net.URI uri = java.net.URI.create(value);
+            return "https".equalsIgnoreCase(uri.getScheme()) && uri.getHost() != null
+                    && uri.getUserInfo() == null ? value : "";
+        } catch (RuntimeException e) { return ""; }
     }
 
     private static String safeText(JsonNode node) {
