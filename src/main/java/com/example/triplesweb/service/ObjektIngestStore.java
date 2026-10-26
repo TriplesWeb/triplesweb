@@ -71,7 +71,7 @@ public class ObjektIngestStore {
         for (CosmoObjektSnapshotStore.Card card : cards) {
             if (card.serial() == null) continue;
             jdbc.update("INSERT IGNORE INTO objekt_observed_token (token_id) VALUES (?)", card.tokenId());
-            int updated = jdbc.update("UPDATE objekt_observed_token SET confirmed_serial=?, confirmed_collection_id=?, confirmed_at=? "
+            int updated = jdbc.update("UPDATE objekt_observed_token SET confirmed_serial=?, confirmed_collection_id=?, confirmed_at_ms=? "
                             + "WHERE token_id=? AND (confirmed_serial IS NULL OR (confirmed_serial=? AND confirmed_collection_id=?))",
                     card.serial(), card.collectionId(), now, card.tokenId(), card.serial(), card.collectionId());
             if (updated != 1) throw new IllegalStateException("확인된 시리얼이 기존 기록과 충돌합니다.");

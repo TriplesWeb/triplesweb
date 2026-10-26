@@ -24,5 +24,5 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew test --tests '*ObjektMarketDataServiceTest' --tests '*ObjektTransferServiceTest' --tests '*CosmoCollectionServiceTest' --tests '*ObjektFeaturesTest' --tests '*ObjektActivityClientTest' --tests '*ObjektIngestStoreTest'
       - if: failure()
-        run: rg -n -A 10 -B 2 'BadSqlGrammarException|JdbcSQLSyntaxErrorException' build/test-results/test || true
+        run: grep -n -A 10 -B 2 -E 'BadSqlGrammarException|JdbcSQLSyntaxErrorException' build/test-results/test/*.xml || true
       - run: node scripts/tests/objekt-detail.test.cjs && node scripts/tests/objekt-transfers.test.cjs
