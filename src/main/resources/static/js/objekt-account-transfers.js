@@ -132,6 +132,9 @@
     $('[data-account-title]').textContent = `@${nickname}`;
     $('[data-account-initial]').textContent = Array.from(nickname)[0].toUpperCase();
     const profile = $('[data-profile-link]'); profile.href = `/cosmo/profile/${encodeURIComponent(nickname)}`; profile.hidden = false;
+    for (const [selector, tab] of [['[data-profile-overview]', 'overview'], ['[data-profile-members]', 'members']]) {
+      const link = $(selector); link.href = `${profile.href}?tab=${tab}`; link.hidden = false;
+    }
     load();
   }
 })();

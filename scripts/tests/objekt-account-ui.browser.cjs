@@ -23,13 +23,16 @@ const fixtures = [
         return route.fulfill({contentType:'application/json',body:JSON.stringify({status:'available',transfers:calls===1?fixtures:[],hasNext:calls===1,cursorTimestamp:'2026-10-25T10:00:00Z',cursorId:'opaque+id'})});
       }
       let html=read('src/main/resources/templates/cosmo/transfers.mustache').replace(/{{>[^}]+}}/g,'').replaceAll('{{nickname}}','lunlun').replace(/<link[^>]+>/g,'').replace(/<script[^>]+><\/script>/g,'');
-      html=html.replace('</head>',`<style>body{margin:0;background:#f6f8f6;font-family:Arial,sans-serif}${read('src/main/resources/static/css/objekt-transfers.css')}</style></head>`);
+      html=html.replace('</head>',`<style>body{margin:0;font-family:Arial,sans-serif}${['gravity-page','archive-page','cosmo-profile','objekt-transfers'].map(name=>read('src/main/resources/static/css/'+name+'.css')).join('\n')}</style></head>`);
       return route.fulfill({contentType:'text/html',body:html});
     });
     await page.goto('https://preview.test/cosmo/transfers?nickname=lunlun');
     await page.addScriptTag({content:read('src/main/resources/static/js/objekt-account-transfers.js')});
     await page.waitForFunction(()=>document.querySelectorAll('.tr-row').length===3);
     assert.equal(await page.locator('.tr-day').count(),2);
+    assert.equal(await page.locator('[data-profile-members]').getAttribute('href'),'https://preview.test/cosmo/profile/lunlun?tab=members');
+    assert.equal(await page.locator('.tr-tabs .is-active').evaluate(node=>getComputedStyle(node).backgroundColor),'rgb(141, 236, 217)');
+    assert.equal(await page.locator('.tr-account-panel').evaluate(node=>getComputedStyle(node).backgroundColor),'rgb(20, 22, 28)');
     assert.equal(await page.locator('.tr-peer script').count(),0);
     assert.match(await page.locator('.tr-peer').first().textContent(),/<script>/);
     await page.getByRole('button',{name:'↗ 보낸 내역'}).click();
@@ -54,6 +57,8 @@ const fixtures = [
     await page.setViewportSize({width:390,height:844});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);
     await page.screenshot({path:'/tmp/objekt-ui/mobile.png',fullPage:true});
+    await page.setViewportSize({width:320,height:740});
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);
     assert.deepEqual(errors,[]);
     console.log('PASS: 날짜 묶음, 방향 필터, 검색, 빈 결과, 오류 재시도, 안전한 텍스트 렌더링, 모바일 가로 넘침 검사');
   } finally { await browser.close(); }

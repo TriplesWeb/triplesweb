@@ -1,5 +1,11 @@
 name: Objekt data reads
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/tests/objekt-*.cjs'
+      - '.github/workflows/objekt-data-tests.yml'
   pull_request:
     paths:
       - 'src/**'
