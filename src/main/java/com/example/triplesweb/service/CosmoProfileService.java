@@ -66,7 +66,7 @@ public class CosmoProfileService {
         view.put("isAllGroup", "all".equals(selectedGroup));
         view.put("isOverviewTab", !membersTab);
         view.put("isMembersTab", membersTab);
-        view.put("overviewUrl", base);
+        view.put("overviewUrl", base + "?tab=overview");
         view.put("membersTabUrl", base + "?tab=members");
         view.put("selectedOwnership", ownershipFilter);
         view.put("isOwnershipAll", "all".equals(ownershipFilter));
@@ -339,6 +339,7 @@ public class CosmoProfileService {
                     if (image.isBlank()) image = GravityService.safeImage(text(item, "frontImage"));
                     Map<String, Object> card = new LinkedHashMap<>();
                     card.put("number", text(item, "collectionNo"));
+                    card.put("season", text(item, "season"));
                     card.put("name", text(item, "collectionId"));
                     card.put("image", image);
                     card.put("hasImage", !image.isBlank());
@@ -369,7 +370,24 @@ public class CosmoProfileService {
         int totalKinds = unique.size();
         int ownedKinds = (int) unique.keySet().stream().filter(slug -> copies.getOrDefault(slug, 0L) > 0).count();
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("checklistSeasons", seasonRows); result.put("hasChecklist", !seasonRows.isEmpty());
+        boolean subset = !"all".equals(ownership);
+        Map<String, List<Map<String, Object>>> byClass = new TreeMap<>(classes);
+        for (Map<String, Object> seasonRow : seasonRows) {
+            @SuppressWarnings("unchecked") var groupList = (List<Map<String, Object>>) seasonRow.get("groups");
+            for (var classRow : groupList) {
+                @SuppressWarnings("unchecked") var cards = (List<Map<String, Object>>) classRow.get("cards");
+                byClass.computeIfAbsent(String.valueOf(classRow.get("klass")), k -> new ArrayList<>()).addAll(cards);
+            }
+        }
+        List<Map<String, Object>> classRows = new ArrayList<>();
+        for (var entry : byClass.entrySet()) {
+            entry.getValue().sort(Comparator.comparing((Map<String,Object> card) -> text(card, "season"), ObjektFilterOrder.seasons())
+                    .thenComparing(card -> text(card, "number"), natural));
+            classRows.add(Map.of("klass", entry.getKey(), "cards", entry.getValue(), "count", entry.getValue().size()));
+        }
+        result.put("isOwnershipSubset", subset);
+        result.put("checklistClasses", classRows);
+        result.put("checklistSeasons", seasonRows); result.put("hasChecklist", !unique.isEmpty());
         result.put("checklistOwned", ownedKinds); result.put("checklistTotal", totalKinds);
         result.put("checklistMissing", totalKinds - ownedKinds);
         result.put("checklistVisible", visible);

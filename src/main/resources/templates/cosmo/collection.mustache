@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="/css/gravity-page.css?v=2">
 <link rel="stylesheet" href="/css/archive-page.css?v=3">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=11">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=9">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=10">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}내 오브젝트 검색{{/nickname}}</title>
 </head>
@@ -33,7 +33,7 @@
             <div>
                 <h1>{{nickname}}</h1>
                 <p>보유 오브젝트 <strong>{{ownedCount}}</strong>개{{#hasActiveFilters}} · 필터 결과 <strong id="collection-filtered-count">{{filteredCount}}</strong>개{{/hasActiveFilters}}</p>
-                {{#profileUrl}}<a class="collection-action-btn" href="{{profileUrl}}">수집 현황 보기</a>{{/profileUrl}}
+                {{#profileUrl}}<a class="collection-action-btn" href="{{profileUrl}}?tab=overview">프로필 보기</a>{{/profileUrl}}
                 <a class="collection-action-btn" href="/cosmo/transfers?nickname={{nicknameEncoded}}">전송 내역 보기</a>
             </div>
         </div>

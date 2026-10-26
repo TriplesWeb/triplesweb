@@ -36,14 +36,14 @@ class CosmoProfileControllerTest {
 
     @Test void progressPageRendersActualCountsAndNoWalletIdentifiers() throws Exception {
         givenProfile();
-        var result = mvc.perform(get("/cosmo/profile/Fan")).andExpect(status().isOk())
+        var result = mvc.perform(get("/cosmo/profile/Fan").param("tab","overview")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("Fan")))
                 .andExpect(content().string(containsString("전체 현황")))
                 .andExpect(content().string(containsString("멤버별 상세")))
                 .andExpect(content().string(containsString("멤버별 수집 현황")))
                 .andExpect(content().string(containsString("aria-valuenow=\"100\"")))
                 .andExpect(content().string(containsString("1 / 1종")))
-                .andExpect(content().string(containsString("수집 현황 보기")))
+                .andExpect(content().string(containsString("profile-progress-link")))
                 .andExpect(content().string(not(containsString("profile-member-picker"))))
                 .andExpect(content().string(not(containsString("보유 카드만 보기"))))
                 .andExpect(content().string(not(containsString("보유 오브젝트</a>"))))
@@ -69,9 +69,9 @@ class CosmoProfileControllerTest {
 
     @Test void missingAndUnavailableProfilesHaveUsefulErrors() throws Exception {
         when(collections.search("Missing", 0)).thenThrow(new IllegalArgumentException("없는 닉네임 입니다."));
-        mvc.perform(get("/cosmo/profile/Missing")).andExpect(content().string(containsString("없는 닉네임 입니다.")));
+        mvc.perform(get("/cosmo/profile/Missing").param("tab","overview")).andExpect(content().string(containsString("없는 닉네임 입니다.")));
         when(collections.search("Down", 0)).thenThrow(new IllegalStateException("private upstream detail"));
-        mvc.perform(get("/cosmo/profile/Down")).andExpect(content().string(containsString("잠시 후 다시 확인")))
+        mvc.perform(get("/cosmo/profile/Down").param("tab","overview")).andExpect(content().string(containsString("잠시 후 다시 확인")))
                 .andExpect(content().string(not(containsString("private upstream detail"))));
     }
 
@@ -106,6 +106,28 @@ class CosmoProfileControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("profile-checklist-card is-owned")))
                 .andExpect(content().string(not(containsString("profile-checklist-card is-missing"))))
-                .andExpect(content().string(containsString("보유 1종 표시")));
+                .andExpect(content().string(containsString("1종 · 클래스별 목록")))
+                .andExpect(content().string(not(containsString("profile-season-heading"))))
+                .andExpect(content().string(not(containsString("role=\"progressbar\""))))
+                .andExpect(content().string(not(containsString("100%"))))
+                .andExpect(content().string(not(containsString("완료한 시즌 숨기기"))));
+    }
+
+    @Test void initialProfileRedirectsToOverview() throws Exception {
+        mvc.perform(get("/cosmo/profile/Fan")).andExpect(redirectedUrl("/cosmo/profile/Fan?tab=overview"));
+        verifyNoInteractions(collections);
+    }
+
+    @Test void missingOwnershipViewShowsClassCardsWithoutProgress() throws Exception {
+        givenProfile();
+        when(catalog.findCollections("triples")).thenReturn(List.of(
+                Map.of("slug","cream02-hayeon-367z","member","HaYeon","class","Double","season","Cream02","collectionNo","001Z"),
+                Map.of("slug","missing","member","HaYeon","class","Double","season","Binary01","collectionNo","002Z")));
+        var result=mvc.perform(get("/cosmo/profile/Fan").param("tab","members").param("member","HaYeon").param("ownership","missing"))
+                .andExpect(status().isOk()).andExpect(content().string(containsString("profile-owned-class")))
+                .andExpect(content().string(not(containsString("profile-season-fold"))))
+                .andExpect(content().string(not(containsString("%</strong>"))))
+                .andExpect(content().string(not(containsString("✓ 완료")))).andReturn();
+        java.nio.file.Files.writeString(java.nio.file.Path.of("build/profile-missing-preview.html"),result.getResponse().getContentAsString());
     }
 }

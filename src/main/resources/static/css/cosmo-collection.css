@@ -222,15 +222,26 @@
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: center;
-    gap: .55rem 1.15rem;
+    gap: .65rem;
     width: 100%;
-    padding-right: 1.35rem;
+    padding-right: 0;
 }
 .collection-page .collection-filter-bar .objekt-filter:last-child .objekt-dropdown-menu {
     left: auto;
     right: .35rem;
 }
 .collection-page .collection-filter-bar .objekt-filter { width: 100%; }
+.collection-page .objekt-filter-control { flex: 1; min-width: 0; }
+.collection-page .objekt-filter-label { flex: 0 0 auto; }
+.collection-page .objekt-dropdown-menu { width: max(100%, 12rem); max-width: calc(100vw - 3rem); }
+.collection-page .objekt-choice { min-height: 2.5rem; font: inherit; font-size: .85rem; }
+.collection-page .objekt-dropdown-caret { width: .45rem; height: .45rem; flex: 0 0 auto; margin: 0 .3rem .2rem .6rem; border-right: 2px solid #6ee7d8; border-bottom: 2px solid #6ee7d8; transform: rotate(45deg); }
+.collection-page .objekt-filter-control[aria-expanded="true"] .objekt-dropdown-caret { transform: rotate(225deg); margin-bottom: 0; }
+.collection-page .objekt-filter [hidden] { display: none !important; }
+.collection-page .objekt-filter-control:focus-visible, .collection-page .objekt-choice:focus-visible { outline: 2px solid #8bf5dc; outline-offset: 2px; }
+.collection-page .objekt-reset-button { flex: 0 0 auto; gap: .4rem; padding: 0 1rem; font-weight: 650; letter-spacing: .01em; transition: background .18s ease, border-color .18s ease, color .18s ease; }
+.collection-page .objekt-reset-button:hover { border-color: #b4bed273; background: #ffffff0a; color: #e8ebf2; }
+.collection-page .objekt-reset-button:focus-visible { outline: 2px solid #a4adbf; outline-offset: 3px; }
 @media (max-width: 900px) {
     .collection-filter-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

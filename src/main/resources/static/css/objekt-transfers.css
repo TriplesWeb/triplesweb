@@ -117,3 +117,4 @@
     .tr-time { grid-column: 3; grid-row: 2; align-self: end; font-size: .7rem; }
     .tr-time small { display: none; }
 }
+.tr-page .tr-facets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.65rem;padding:1rem 0}.tr-page .tr-facets .objekt-filter{width:100%;font-family:inherit}.tr-page .tr-facets .objekt-filter-control{font-family:inherit}.tr-page .tr-workspace{overflow:visible}.tr-page .tr-hero{margin-bottom:0}.tr-page .tr-account-panel{padding-bottom:clamp(1.25rem,3vw,2.5rem)}@media(max-width:600px){.tr-page .tr-facets{grid-template-columns:1fr}.tr-page .tr-facets .objekt-filter{min-height:2.65rem}.tr-page .tr-facets .objekt-filter-control{font-size:.82rem}.tr-page .tr-facets .objekt-dropdown-menu{max-width:100%;width:100%}}

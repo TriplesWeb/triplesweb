@@ -15,11 +15,15 @@ public class CosmoProfileController {
     private final CosmoProfileService profiles;
 
     @GetMapping("/cosmo/profile/{nickname}")
-    public String profile(@PathVariable String nickname, @RequestParam(defaultValue = "progress") String tab,
+    public String profile(@PathVariable String nickname, @RequestParam(defaultValue = "") String tab,
                           @RequestParam(defaultValue = "") String member,
                           @RequestParam(defaultValue = "all") String group,
                           @RequestParam(defaultValue = "all") String ownership,
                           @RequestParam(defaultValue = "0") int page, Model model) {
+        if (tab.isBlank()) {
+            String base = "/cosmo/profile/" + URLEncoder.encode(nickname, StandardCharsets.UTF_8).replace("+", "%20");
+            return "redirect:" + base + (member.isBlank() && "all".equals(group) ? "?tab=overview" : "?tab=members&member=" + URLEncoder.encode(member, StandardCharsets.UTF_8) + "&group=" + URLEncoder.encode(group, StandardCharsets.UTF_8) + "&ownership=" + URLEncoder.encode(ownership, StandardCharsets.UTF_8));
+        }
         if ("collection".equalsIgnoreCase(tab)) {
             return "redirect:/cosmo/collection?nickname="
                     + URLEncoder.encode(nickname, StandardCharsets.UTF_8).replace("+", "%20");

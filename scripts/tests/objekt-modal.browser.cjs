@@ -64,6 +64,8 @@ const base = path.resolve(__dirname, '../..');
     await page.waitForFunction(()=>document.querySelector('#objektDetailTitle').textContent==='Cream02 HaYeon 367Z');
     assert.equal(await page.locator('#objektDescriptionEditor').isVisible(),false);
     await page.goto('https://preview.test/cosmo/objekt/detail/hayeoncc367z');
+    await page.evaluate(()=>document.fonts.ready);
+    assert.equal(await page.evaluate(()=>document.fonts.check('16px "Material Symbols Outlined"')),true);
     assert.equal(await page.locator('[data-admin-only]').count(),0);
     assert.equal(await page.locator('[data-serial-lookup]').count(),1);
     await page.locator('[data-serial-lookup] button').click();

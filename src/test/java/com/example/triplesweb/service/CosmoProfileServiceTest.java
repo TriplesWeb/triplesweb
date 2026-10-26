@@ -7,6 +7,20 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class CosmoProfileServiceTest {
+    @Test @SuppressWarnings("unchecked") void ownershipSubsetCombinesSeasonsByClassWithoutProgressRows() {
+        given(List.of(card("a","HaYeon","Double"),card("a","HaYeon","Double"),card("b","HaYeon","Double")),
+                List.of(Map.of("slug","a","member","HaYeon","class","Double","season","Cream02","collectionNo","001Z"),
+                        Map.of("slug","b","member","HaYeon","class","Double","season","Binary01","collectionNo","002Z"),
+                        Map.of("slug","c","member","HaYeon","class","First","season","Atom01","collectionNo","003A")));
+        var owned=profiles.profile("테스트","HaYeon","members","members","owned");
+        var classes=(List<Map<String,Object>>)owned.get("checklistClasses");
+        assertThat(classes).hasSize(1);
+        assertThat(classes.get(0)).containsEntry("klass","Double").containsEntry("count",2).doesNotContainKeys("percent","complete");
+        assertThat((List<Map<String,Object>>)classes.get(0).get("cards")).hasSize(2);
+        var missing=profiles.profile("테스트","HaYeon","members","members","missing");
+        assertThat((List<Map<String,Object>>)missing.get("checklistClasses")).hasSize(1)
+                .first().satisfies(row->assertThat(row).containsEntry("klass","First").containsEntry("count",1));
+    }
     private final CosmoCollectionService collections = mock(CosmoCollectionService.class);
     private final ObjektService catalog = mock(ObjektService.class);
     private final ArtistRepository artists = mock(ArtistRepository.class);

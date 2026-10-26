@@ -8,8 +8,8 @@
 <link rel="stylesheet" href="/css/gravity-page.css?v=2">
 <link rel="stylesheet" href="/css/archive-page.css?v=3">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=11">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=9">
-<link rel="stylesheet" href="/css/cosmo-profile.css?v=9">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=10">
+<link rel="stylesheet" href="/css/cosmo-profile.css?v=10">
 </head>
 <body class="collection-page min-h-screen flex flex-col">
 {{>layout/header}}
@@ -31,8 +31,8 @@
 </section>
 
 <nav class="profile-progress-tabs" aria-label="수집 현황 보기">
-    <a class="profile-progress-tab" href="{{transfersUrl}}">전송 내역</a>
     <a class="profile-progress-tab{{#isOverviewTab}} is-active{{/isOverviewTab}}" href="{{overviewUrl}}" {{#isOverviewTab}}aria-current="page"{{/isOverviewTab}}>전체 현황</a>
+    <a class="profile-progress-tab" href="{{transfersUrl}}">전송 내역</a>
     <a class="profile-progress-tab{{#isMembersTab}} is-active{{/isMembersTab}}" href="{{membersTabUrl}}" {{#isMembersTab}}aria-current="page"{{/isMembersTab}}>멤버별 상세</a>
 </nav>
 
@@ -47,7 +47,7 @@
         <div class="profile-progress-track" role="progressbar" aria-label="{{member}} 수집률" aria-valuenow="{{percent}}" aria-valuemin="0" aria-valuemax="100"><span style="width:{{percent}}%"></span></div>
         <p class="ar-muted">{{owned}} / {{total}}종 · 보유 {{copies}}개</p>{{/hasTotal}}
         {{^hasTotal}}<p class="ar-muted">전체 목록 준비 중 · 보유 {{copies}}개</p>{{/hasTotal}}
-        <a class="collection-action-btn" href="{{progressUrl}}">수집 현황 보기</a>
+        <a class="profile-progress-link" href="{{progressUrl}}"><span aria-hidden="true">→</span> 수집 현황</a>
     </article>
     {{/memberProgress}}
     </div>
@@ -64,7 +64,7 @@
         <div class="profile-progress-track" role="progressbar" aria-label="기타 옵젝 수집률" aria-valuenow="{{percent}}" aria-valuemin="0" aria-valuemax="100"><span style="width:{{percent}}%"></span></div>
         <p class="ar-muted">{{owned}} / {{total}}종 · 보유 {{copies}}개</p>{{/hasTotal}}
         {{^hasTotal}}<p class="ar-muted">전체 목록 준비 중 · 보유 {{copies}}개</p>{{/hasTotal}}
-        <a class="collection-action-btn" href="{{progressUrl}}">수집 현황 보기</a>
+        <a class="profile-progress-link" href="{{progressUrl}}"><span aria-hidden="true">→</span> 수집 현황</a>
     </article>
     {{/otherProgress}}
     </div>
@@ -102,8 +102,8 @@
 </section>
 {{#hasChecklist}}
 <section class="profile-checklist" aria-labelledby="checklist-heading">
-    <div class="profile-section-heading"><div><h2 id="checklist-heading">{{selectedMember}} · 오브젝트 수집 목록</h2><p>{{checklistTotal}}종 중 {{checklistOwned}}종 보유 · {{checklistMissing}}종 미보유{{#isOwnershipOwned}} · 보유 {{checklistVisible}}종 표시{{/isOwnershipOwned}}{{#isOwnershipMissing}} · 미보유 {{checklistVisible}}종 표시{{/isOwnershipMissing}}</p></div>
-        <label class="profile-hide-complete" data-hide-complete-label hidden><input type="checkbox" data-hide-complete>완료한 시즌 숨기기</label>
+    <div class="profile-section-heading"><div><h2 id="checklist-heading">{{selectedMember}} · {{#isOwnershipOwned}}보유{{/isOwnershipOwned}}{{#isOwnershipMissing}}미보유{{/isOwnershipMissing}}{{#isOwnershipAll}}수집{{/isOwnershipAll}} 오브젝트</h2>{{#isOwnershipSubset}}<p>{{checklistVisible}}종 · 클래스별 목록</p>{{/isOwnershipSubset}}{{^isOwnershipSubset}}<p>{{checklistTotal}}종 중 {{checklistOwned}}종 보유 · {{checklistMissing}}종 미보유{{#isOwnershipOwned}} · 보유 {{checklistVisible}}종 표시{{/isOwnershipOwned}}{{#isOwnershipMissing}} · 미보유 {{checklistVisible}}종 표시{{/isOwnershipMissing}}</p>{{/isOwnershipSubset}}</div>
+        {{#isOwnershipAll}}<label class="profile-hide-complete" data-hide-complete-label hidden><input type="checkbox" data-hide-complete>완료한 시즌 숨기기</label>{{/isOwnershipAll}}
     </div>
     {{#hasOwnershipFilter}}
     <nav class="profile-ownership-tabs" aria-label="보유 여부 모아보기">
@@ -112,6 +112,25 @@
         <a class="profile-ownership-tab{{#isOwnershipMissing}} is-active{{/isOwnershipMissing}}" href="{{ownershipMissingUrl}}" {{#isOwnershipMissing}}aria-current="page"{{/isOwnershipMissing}}>미보유</a>
     </nav>
     {{/hasOwnershipFilter}}
+    {{#isOwnershipSubset}}
+    {{^checklistClasses}}<p class="gv-panel gv-empty">이 조건에 해당하는 오브젝트가 없습니다.</p>{{/checklistClasses}}
+    <div class="profile-ownership-list">
+    {{#checklistClasses}}
+    <section class="ar-panel profile-owned-class">
+        <header class="profile-section-heading"><h3>{{klass}}</h3><p>{{count}}종</p></header>
+        <div class="profile-checklist-grid">
+        {{#cards}}
+        <a href="{{detailUrl}}" class="profile-checklist-card {{#owned}}is-owned{{/owned}}{{^owned}}is-missing{{/owned}}" aria-label="{{name}}">
+            <div class="profile-checklist-image">{{#hasImage}}<img src="{{image}}" alt="{{name}}" loading="lazy" decoding="async" referrerpolicy="no-referrer">{{/hasImage}}{{^hasImage}}<span>이미지 준비 중</span>{{/hasImage}}</div>
+            <div class="profile-checklist-caption"><strong>{{number}}</strong><span>{{season}}{{#owned}} · {{copies}}개{{/owned}}</span></div>
+        </a>
+        {{/cards}}
+        </div>
+    </section>
+    {{/checklistClasses}}
+    </div>
+    {{/isOwnershipSubset}}
+    {{#isOwnershipAll}}
     <div class="profile-season-grid">
     {{#checklistSeasons}}
     <section class="ar-panel profile-checklist-season" data-checklist-season data-complete="{{complete}}">
@@ -135,6 +154,7 @@
     </section>
     {{/checklistSeasons}}
     </div>
+    {{/isOwnershipAll}}
 </section>
 {{/hasChecklist}}
 {{^hasChecklist}}

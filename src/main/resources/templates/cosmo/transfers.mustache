@@ -4,31 +4,35 @@
 <title>전송 내역 · 오브젝트</title>
 <link rel="stylesheet" href="/css/gravity-page.css?v=2">
 <link rel="stylesheet" href="/css/archive-page.css?v=3">
-<link rel="stylesheet" href="/css/cosmo-profile.css?v=9">
-<link rel="stylesheet" href="/css/objekt-transfers.css?v=2"></head>
+<link rel="stylesheet" href="/css/cosmo-profile.css?v=10">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=10">
+<link rel="stylesheet" href="/css/objekt-transfers.css?v=3"></head>
 <body class="collection-page tr-site"><div>{{>layout/header}}</div>
 <main class="gravity-page cosmo-profile tr-page" data-account-transfers data-account="{{nickname}}" data-url="/api/objekt/transfers">
 <nav class="tr-breadcrumb" aria-label="현재 위치"><a href="/cosmo/collection">오브젝트</a><span aria-hidden="true">/</span><span>전송 내역</span></nav>
 <header class="tr-hero"><div><p class="tr-eyebrow">OBJEKT ACTIVITY</p><h1>전송 내역</h1><p class="tr-intro">내 컬렉션에 오고 간 오브젝트를 확인하세요.</p></div>
-<form class="tr-account-form" action="/cosmo/transfers" method="get"><label for="tr-nickname">조회할 계정</label><div><span aria-hidden="true">@</span><input id="tr-nickname" name="nickname" value="{{nickname}}" maxlength="40" placeholder="닉네임 입력" required autocomplete="off"><button type="submit">조회 ↗</button></div></form></header>
+</header>
 <section class="gv-panel profile-hero tr-account-panel" aria-label="계정 전송 요약">
-<header class="tr-account-head profile-identity"><div class="profile-avatar tr-avatar" aria-hidden="true" data-account-initial>O</div><div><p class="profile-eyebrow">COSMO PROFILE</p><h2 data-account-title>계정을 조회해 주세요</h2><p class="ar-muted tr-account-caption">오브젝트로 이어지는 나의 전송 기록</p></div><a class="collection-action-btn tr-profile" data-profile-link hidden>프로필 보기 ↗</a></header>
-<div class="tr-summary" aria-label="불러온 내역 요약"><div><span>불러온 내역</span><strong data-count="all">—</strong></div><div><span><i class="tr-dot tr-dot-in"></i>받음</span><strong data-count="받음">—</strong></div><div><span><i class="tr-dot tr-dot-out"></i>보냄</span><strong data-count="보냄">—</strong></div><p>현재 불러온 내역 기준<br>최신순으로 표시합니다.</p></div>
+<header class="tr-account-head profile-identity"><div class="profile-avatar tr-avatar" aria-hidden="true" data-account-initial>O</div><div><p class="profile-eyebrow">COSMO PROFILE</p><h2 data-account-title>계정을 조회해 주세요</h2><p class="ar-muted tr-account-caption">오브젝트로 이어지는 나의 전송 기록</p></div></header>
 </section>
 <nav class="profile-progress-tabs tr-profile-nav" aria-label="계정 활동 보기">
-<span class="profile-progress-tab is-active" aria-current="page">전송 내역</span>
 <a class="profile-progress-tab" data-profile-overview hidden>전체 현황</a>
+<span class="profile-progress-tab is-active" aria-current="page">전송 내역</span>
 <a class="profile-progress-tab" data-profile-members hidden>멤버별 상세</a>
 </nav>
 <section class="gv-panel tr-workspace" aria-label="계정 전송 내역">
 <div class="profile-section-heading tr-section-heading"><h2>오브젝트 전송 기록</h2><p>최신순 · 불러온 내역에서 검색과 필터 적용</p></div>
-<div class="tr-toolbar"><div class="tr-tabs" role="group" aria-label="전송 방향 필터"><button type="button" class="is-active" data-filter="all" aria-pressed="true">전체</button><button type="button" data-filter="받음" aria-pressed="false">↙ 받은 내역</button><button type="button" data-filter="보냄" aria-pressed="false">↗ 보낸 내역</button><button type="button" data-filter="자기 전송" aria-pressed="false">자기 전송</button></div><label class="tr-search"><span aria-hidden="true">⌕</span><input type="search" data-search placeholder="멤버, 카드, 상대 계정 검색" aria-label="불러온 전송 내역 검색"></label></div>
-<div class="tr-facets"><label>시즌 <select data-season aria-label="시즌 필터"><option value="">전체</option></select></label><label>클래스 <select data-class aria-label="클래스 필터"><option value="">전체</option></select></label><label>액션 <select data-action aria-label="액션 필터"><option value="">전체</option><option value="mint">민트</option><option value="transfer">전송</option></select></label></div>
-<p class="tr-status" data-status role="status" aria-live="polite">닉네임을 입력해 전송 내역을 확인하세요.</p>
+<div class="tr-toolbar"><div class="tr-tabs" role="group" aria-label="전송 방향 필터"><button type="button" class="is-active" data-filter="all" aria-pressed="true">전체</button><button type="button" data-filter="받음" aria-pressed="false">↙ 받은 내역</button><button type="button" data-filter="보냄" aria-pressed="false">↗ 보낸 내역</button></div><label class="tr-search"><span aria-hidden="true">⌕</span><input type="search" data-search placeholder="멤버, 카드, 상대 계정 검색" aria-label="불러온 전송 내역 검색"></label></div>
+<div class="tr-facets">
+<div class="objekt-filter"><span class="objekt-filter-label">시즌</span><select data-season data-objekt-dropdown aria-label="시즌 필터"><option value="">전체</option></select></div>
+<div class="objekt-filter"><span class="objekt-filter-label">클래스</span><select data-class data-objekt-dropdown aria-label="클래스 필터"><option value="">전체</option></select></div>
+<div class="objekt-filter"><span class="objekt-filter-label">액션</span><select data-action data-objekt-dropdown aria-label="액션 필터"><option value="">전체</option><option value="mint">민트</option><option value="transfer">전송</option></select></div>
+</div>
+<p class="tr-status" data-status role="status" aria-live="polite">계정 프로필에서 전송 내역을 선택해 주세요.</p>
 <div class="tr-loading" data-loading hidden aria-hidden="true"><div></div><div></div><div></div></div>
 <div class="tr-timeline" data-timeline></div>
 <div class="tr-empty" data-empty hidden><span aria-hidden="true">↔</span><h3 data-empty-title>표시할 내역이 없습니다</h3><p data-empty-text>다른 검색어나 필터를 선택해 보세요.</p></div>
 <div class="tr-pagination"><button type="button" class="tr-more" data-more hidden>이전 내역 더 보기 ↓</button><button type="button" class="tr-retry" data-retry hidden>다시 시도</button></div>
 </section>
 <aside class="tr-note"><span aria-hidden="true">ⓘ</span><p>공개 인덱스에 반영된 전송 내역입니다. 반영이 늦을 수 있으며, 표시된 계정이 현재 소유자임을 뜻하지 않습니다. 시리얼은 인덱스 보고값으로 추정치가 포함될 수 있습니다.</p></aside>
-</main>{{>layout/footer}}<script src="/js/objekt-account-transfers.js?v=1" defer></script></body></html>
+</main>{{>layout/footer}}<script src="/js/objekt-dropdown.js?v=1" defer></script><script src="/js/objekt-account-transfers.js?v=2" defer></script></body></html>

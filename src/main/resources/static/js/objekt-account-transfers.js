@@ -67,12 +67,11 @@
       section.append(heading, list); fragment.append(section);
     });
     timeline.replaceChildren(fragment);
-    for (const key of ['all', '받음', '보냄']) $('[data-count="' + key + '"]').textContent =
-      rows.filter(row => key === 'all' || row.direction === key).length.toLocaleString('ko-KR');
+
     empty.hidden = loading || state !== 'available' || visible.length > 0;
     $('[data-empty-title]').textContent = rows.length ? '조건에 맞는 내역이 없습니다' : '아직 전송 내역이 없습니다';
     $('[data-empty-text]').textContent = rows.length ? '검색어나 필터를 바꾸거나, 이전 내역을 더 불러와 보세요.' : '공개 인덱스에 기록된 전송이 생기면 이곳에 표시됩니다.';
-    if (state === 'available' && !loading) status.textContent = `${visible.length.toLocaleString('ko-KR')}건 표시 · 불러온 ${rows.length.toLocaleString('ko-KR')}건에서 검색 · 최신순`;
+    if (state === 'available' && !loading) status.textContent = '최신 전송 내역부터 표시합니다.';
   }
   async function load(append = false) {
     if (loading || !nickname) return;
@@ -129,11 +128,11 @@
   ['[data-season]', '[data-class]', '[data-action]'].forEach(selector => $(selector).addEventListener('change', render));
   more.addEventListener('click', () => load(true)); retry.addEventListener('click', () => load(failedAppend));
   if (nickname) {
-    $('[data-account-title]').textContent = `@${nickname}`;
+    $('[data-account-title]').textContent = nickname;
     $('[data-account-initial]').textContent = Array.from(nickname)[0].toUpperCase();
-    const profile = $('[data-profile-link]'); profile.href = `/cosmo/profile/${encodeURIComponent(nickname)}`; profile.hidden = false;
+    const profileUrl = `/cosmo/profile/${encodeURIComponent(nickname)}`;
     for (const [selector, tab] of [['[data-profile-overview]', 'overview'], ['[data-profile-members]', 'members']]) {
-      const link = $(selector); link.href = `${profile.href}?tab=${tab}`; link.hidden = false;
+      const link = $(selector); link.href = `${profileUrl}?tab=${tab}`; link.hidden = false;
     }
     load();
   }
