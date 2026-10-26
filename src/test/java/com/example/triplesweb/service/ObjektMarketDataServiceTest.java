@@ -98,4 +98,25 @@ class ObjektMarketDataServiceTest {
         profile.set("{}");
         assertThat(service.owner(collection, 1)).containsEntry("nickname", "FlexS5");
     }
+
+    @Test void historyDoesNotDependOnRpcAndOmitsVerificationIdentifiers() {
+        indexed.set("{\"tokenId\":\"30570441\",\"transfers\":[{\"to\":\"0xprivate\",\"timestamp\":\"2026-10-25T10:00:00Z\",\"nickname\":\"A\"}]}");
+        chain.set("{\"error\":{}}");
+        Map<String, Object> result = service.transfers(collection, 1, 0);
+        assertThat(result).containsEntry("status", "available").containsEntry("total", 1);
+        assertThat(result.toString()).doesNotContain("0xprivate", "tokenId", "30570441");
+    }
+
+    @Test void invalidHistoryNeverProducesPartialPage() {
+        indexed.set("{\"transfers\":[{\"timestamp\":\"2026-10-25T10:00:00Z\"},{\"timestamp\":\"bad\"}]}");
+        assertThatThrownBy(() -> service.transfers(collection, 1, 0)).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test void duplicateMintCountsCannotReplaceCompleteSnapshot() {
+        service.refreshMintCounts();
+        rarity.set("[{\"slug\":\"sample\",\"count\":1},{\"slug\":\"sample\",\"count\":2}]");
+        service.refreshMintCounts();
+        assertThat(service.withMintCounts(List.of(collection)).get(0)).containsEntry("mintCount", 524L);
+    }
 }
+

@@ -68,6 +68,7 @@ public class ObjektFeatureController {
         if (item == null) return "redirect:/cosmo/objekt";
         model.addAttribute("objekt", item);
         model.addAttribute("objektKey", key);
+        model.addAttribute("transfersUrl", "/cosmo/objekt/detail/" + encodePath(key) + "/transfers");
         boolean isFavorite = favorites.contains(session.getId(), item);
         model.addAttribute("isFavorite", isFavorite);
         model.addAttribute("favoriteDesired", !isFavorite);
@@ -196,6 +197,23 @@ public class ObjektFeatureController {
         }
     }
 
+    @GetMapping("/detail/{key}/transfers")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> transfers(@PathVariable String key,
+            @RequestParam long serial, @RequestParam(defaultValue = "0") int page) {
+        Map<String, Object> item = findObjekt(key);
+        if (item == null) return ResponseEntity.notFound().build();
+        if (serial < 1 || page < 0) return ResponseEntity.badRequest()
+                .body(Map.of("message", "시리얼과 페이지를 확인해 주세요."));
+        try {
+            return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                    .body(marketData.transfers(item, serial, page));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(503).cacheControl(org.springframework.http.CacheControl.noStore())
+                    .body(Map.of("message", "전송 내역을 불러오지 못했습니다. 잠시 후 다시 조회해 주세요."));
+        }
+    }
+
     @GetMapping("/favorites")
     public String favorites(HttpSession session, Model model) {
         model.addAttribute("favorites", favoriteRepository.findByVisitorKeyOrderByCreatedAtDesc(session.getId()));
@@ -223,3 +241,4 @@ public class ObjektFeatureController {
         return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
     }
 }
+

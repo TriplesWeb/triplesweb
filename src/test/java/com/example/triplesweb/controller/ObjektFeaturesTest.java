@@ -85,6 +85,18 @@ class ObjektFeaturesTest {
                 .andExpect(jsonPath("$.verifiedAt").doesNotExist()).andExpect(jsonPath("$.explorerUrl").doesNotExist());
     }
 
+    @Test void historyEndpointDoesNotRequireLiveOwnerVerification() throws Exception {
+        Map<String, Object> item = Map.of("id", "uuid", "slug", "sample");
+        when(catalog.findCollections("triples")).thenReturn(List.of(item));
+        when(market.transfers(item, 1, 0)).thenReturn(Map.of("status", "available", "transfers", List.of()));
+        mvc.perform(get("/cosmo/objekt/detail/uuid/transfers").param("serial", "1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("available"))
+                .andExpect(header().string("Cache-Control", "no-store"));
+        verify(market, never()).owner(anyMap(), anyLong());
+        mvc.perform(get("/cosmo/objekt/detail/uuid/transfers").param("serial", "1").param("page", "-1"))
+                .andExpect(status().isBadRequest());
+    }
+
     @Test void mainFiltersRenderSharedSOrderAndNewestSeasonsIncludingTextOnlyExtras() throws Exception {
         List<Map<String, Object>> items = new java.util.ArrayList<>();
         String[] members = {"S1 X S9", "Jiyeon", "Alpha", "HyeRin", "SeoYeon", "S21", "ChaeWon", "김채원"};
@@ -143,3 +155,4 @@ class ObjektFeaturesTest {
                 .andExpect(jsonPath("$.items[0].id").value("other20"));
     }
 }
+
