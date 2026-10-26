@@ -34,7 +34,7 @@ const fixtures = [
     assert.equal(await page.locator('[data-account-title]').textContent(),'lunlun');
     assert.equal(await page.locator('.tr-account-form, [data-profile-link], [data-count], [data-filter="자기 전송"]').count(),0);
     assert.deepEqual(await page.locator('.tr-profile-nav > *').allTextContents(),['전체 현황','전송 내역','멤버별 상세']);
-    assert.equal(await page.locator('[data-profile-members]').getAttribute('href'),'https://preview.test/cosmo/profile/lunlun?tab=members');
+    assert.equal(await page.locator('[data-profile-members]').getAttribute('href'),'/cosmo/profile/lunlun?tab=members');
     assert.equal(await page.locator('.tr-tabs .is-active').evaluate(node=>getComputedStyle(node).backgroundColor),'rgb(141, 236, 217)');
     assert.equal(await page.locator('.tr-account-panel').evaluate(node=>getComputedStyle(node).backgroundColor),'rgb(20, 22, 28)');
     assert.equal(await page.locator('.tr-peer script').count(),0);
