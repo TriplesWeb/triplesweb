@@ -10,6 +10,19 @@ import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.*;
 
 class ArticleObjektOrderingTest {
+    @Test void composePrefillsOnlyKnownSelectedObjectsForTradeAndSell() {
+        var catalog = mock(ObjektService.class);
+        var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
+                mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog);
+        when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("id","uuid","slug","hayeoncc367z","collectionId","Cream02 HaYeon 367Z","member","HaYeon")));
+        for (String category : List.of("trade","sell")) {
+            var model = new ExtendedModelMap();
+            controller.showArticleForm(category, List.of("uuid","invalid"), model);
+            assertThat((List<Map<String,Object>>)model.get("objektSelected")).hasSize(1)
+                    .first().extracting(row -> row.get("id")).isEqualTo("uuid");
+            assertThat(model.get("objektInitialSearch")).isEqualTo("Cream02 HaYeon 367Z");
+        }
+    }
     @Test void tradeAndSellNewAndEditFormsShareMemberAndSeasonOrder() {
         var articles = mock(ArticleService.class);
         var objekts = mock(ObjektService.class);

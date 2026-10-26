@@ -131,6 +131,11 @@ public class ObjektMarketDataService {
 
     /** Indexed history is independent of live RPC health and is labelled as historical. */
     public Map<String, Object> transfers(Map<String, Object> collection, long serial, int page) {
+        return serialLookup(collection, serial, page);
+    }
+
+    /** Latest recipient and history come from the same index snapshot, without depending on RPC health. */
+    public Map<String, Object> serialLookup(Map<String, Object> collection, long serial, int page) {
         if (serial < 1 || page < 0) throw new IllegalArgumentException("시리얼과 페이지를 확인해 주세요.");
         JsonNode indexed = historyIndex.serialHistory(String.valueOf(collection.get("slug")), serial);
         if (indexed == null) return Map.of("status", "not_found");
@@ -139,6 +144,7 @@ public class ObjektMarketDataService {
         if (rows.size() > 10000) throw new IllegalStateException("전송 내역이 너무 큽니다.");
         // Validate the entire upstream response before presenting any page.
         List<Map<String, Object>> history = new ArrayList<>();
+        List<JsonNode> ordered = new ArrayList<>();
         for (JsonNode row : rows) {
             String timestamp = row.path("timestamp").asText("");
             try { timestamp = Instant.parse(timestamp).toString(); }
@@ -146,14 +152,34 @@ public class ObjektMarketDataService {
             String nickname = row.path("nickname").asText("");
             if (nickname.length() > 100) throw new IllegalStateException("전송 계정 응답이 올바르지 않습니다.");
             history.add(Map.of("timestamp", timestamp, "nickname", nickname));
+            ordered.add(row);
         }
         history.sort(java.util.Comparator.comparing(row -> Instant.parse((String) row.get("timestamp")),
                 java.util.Comparator.reverseOrder()));
+        ordered.sort(java.util.Comparator.comparing((JsonNode row) -> Instant.parse(row.path("timestamp").asText())).reversed());
+        Map<String, Object> latestOwner = new LinkedHashMap<>();
+        latestOwner.put("status", "unknown");
+        latestOwner.put("basis", "latest_transfer");
+        if (!ordered.isEmpty()) {
+            JsonNode latest = ordered.get(0);
+            String address = latest.path("to").asText("");
+            boolean ambiguous = ordered.stream().skip(1).anyMatch(row ->
+                    Instant.parse(row.path("timestamp").asText()).equals(Instant.parse(latest.path("timestamp").asText()))
+                            && !address.equalsIgnoreCase(row.path("to").asText("")));
+            if (!ambiguous && address.matches("0x[0-9a-fA-F]{40}")) {
+                boolean burned = address.equalsIgnoreCase("0x" + "0".repeat(40));
+                latestOwner.put("status", burned ? "burned" : "indexed");
+                latestOwner.put("nickname", latest.path("nickname").asText(""));
+                latestOwner.put("timestamp", Instant.parse(latest.path("timestamp").asText()).toString());
+                String name = latest.path("nickname").asText("");
+                if (!burned && !name.isBlank()) latestOwner.put("profileUrl", "/cosmo/profile/" + java.net.URLEncoder.encode(name, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20"));
+            }
+        }
         int pages = Math.max(1, (history.size() + 19) / 20);
         int safePage = Math.min(page, pages - 1), from = safePage * 20;
         return Map.of("status", "available", "serial", serial, "source", "objekt.top",
                 "page", safePage, "total", history.size(), "hasNext", safePage + 1 < pages,
-                "transfers", List.copyOf(history.subList(from, Math.min(from + 20, history.size()))));
+                "owner", latestOwner, "transfers", List.copyOf(history.subList(from, Math.min(from + 20, history.size()))));
     }
 
     private String resolveNickname(String address, List<String> candidates) {

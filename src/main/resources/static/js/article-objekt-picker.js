@@ -183,7 +183,8 @@
     }
 
     updateSummary();
-    setOpen(false);
+    if (searchFilter && selectedNodes().length === 1 && section.dataset.initialSearch) searchFilter.value = section.dataset.initialSearch;
+    setOpen(selectedNodes().length > 0);
   }
 
   if (document.readyState === 'loading') {

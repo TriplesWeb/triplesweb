@@ -681,6 +681,18 @@
             white-space: pre-wrap;
         }
         .objekt-detail-desc.is-empty { color: #6b7388; }
+        .objekt-description-editor { border: 1px solid #ffffff18; border-radius: .8rem; background: #ffffff04; padding: .7rem .8rem; }
+        .objekt-description-editor[hidden] { display: none !important; }
+        .objekt-description-editor summary { cursor: pointer; color: #8decd9; font-size: .78rem; font-weight: 650; }
+        .objekt-description-editor form { display: grid; gap: .6rem; margin-top: .8rem; }
+        .objekt-description-editor label { color: #b9cac4; font-size: .75rem; }
+        .objekt-description-editor textarea { width: 100%; resize: vertical; border: 1px solid #ffffff20; border-radius: .6rem; background: #0d1015; padding: .65rem; color: #e8f3ef; font: inherit; font-size: .82rem; }
+        .objekt-description-buttons { display: flex; gap: .5rem; }
+        .objekt-description-buttons button { padding: .45rem .8rem; border: 1px solid #00f5d440; border-radius: .5rem; background: #00f5d415; color: #8decd9; cursor: pointer; font-size: .78rem; }
+        .objekt-description-buttons button:last-child { color: #ffb4ab; background: transparent; border-color: #ffb4ab40; }
+        .objekt-description-editor p { color: #b9cac4; font-size: .75rem; margin: 0; }
+        .objekt-description-editor :focus-visible { outline: 2px solid #8bf5dc; outline-offset: 2px; }
+        .objekt-description-editor button:disabled { opacity: .5; cursor: wait; }
         .objekt-detail-actions {
             display: grid;
             gap: .5rem;
@@ -962,7 +974,7 @@
 </main>
 
 <div id="objektDetailModal" class="objekt-detail-modal" hidden aria-hidden="true">
-        <div class="objekt-detail-panel" aria-labelledby="objektDetailTitle" tabindex="-1">
+        <div class="objekt-detail-panel" role="dialog" aria-modal="true" aria-labelledby="objektDetailTitle" tabindex="-1">
         <button type="button" class="objekt-detail-close" id="objektDetailClose" aria-label="닫기">&times;</button>
         <figure class="objekt-detail-media">
             <button type="button" class="objekt-detail-media-btn" id="objektDetailFlip" aria-label="앞면">
@@ -982,11 +994,21 @@
                 <div><dt>번호</dt><dd id="objektDetailNo">—</dd></div>
             </dl>
             <p class="objekt-detail-desc is-empty" id="objektDetailDesc">불러오는 중…</p>
+            <details id="objektDescriptionEditor" class="objekt-description-editor" hidden>
+                <summary>관리자 · 상세 설명 편집</summary>
+                <form id="objektDescriptionForm">
+                    <label for="objektModalDescription">상세 설명</label>
+                    <textarea id="objektModalDescription" name="description" rows="4" maxlength="10000" placeholder="상세 설명을 입력해 주세요."></textarea>
+                    <div class="objekt-description-buttons"><button type="submit">저장</button><button type="button" id="objektDescriptionDelete">설명 삭제</button></div>
+                    <p id="objektDescriptionStatus" role="status" aria-live="polite"></p>
+                </form>
+            </details>
             <div class="objekt-detail-actions">
                 <button type="button" class="objekt-fav-toggle" id="objektDetailFavorite">♡ 찜하기</button>
                 <a class="objekt-member-link" id="objektDetailMemberLink" href="/cosmo/objekt">이 멤버의 오브젝트 더 보기</a>
-                <a class="objekt-trade-link" href="/article/trade/new">교환 게시글 작성</a>
-                <a class="objekt-full-link" id="objektDetailFullLink" href="/cosmo/objekt">전체 페이지로 보기</a>
+                <a class="objekt-trade-link" id="objektDetailTradeLink" href="/article/trade/new">교환 게시글 작성</a>
+                <a class="objekt-member-link" id="objektDetailSellLink" href="/article/sell/new">거래 게시글 작성</a>
+                <a class="objekt-full-link" id="objektDetailFullLink" href="/cosmo/objekt">상세 페이지 보기</a>
             </div>
         </div>
     </div>
@@ -1419,6 +1441,14 @@
     const detailMemberLink = document.getElementById('objektDetailMemberLink');
     const detailFullLink = document.getElementById('objektDetailFullLink');
     const detailClose = document.getElementById('objektDetailClose');
+    const detailTradeLink = document.getElementById('objektDetailTradeLink');
+    const detailSellLink = document.getElementById('objektDetailSellLink');
+    const descriptionEditor = document.getElementById('objektDescriptionEditor');
+    const descriptionForm = document.getElementById('objektDescriptionForm');
+    const descriptionInput = document.getElementById('objektModalDescription');
+    const descriptionStatus = document.getElementById('objektDescriptionStatus');
+    const descriptionDelete = document.getElementById('objektDescriptionDelete');
+    let descriptionUrl = '', descriptionSaving = false, detailRequest = 0;
     let activeObjektKey = '';
     let detailLoading = false;
 
@@ -1484,6 +1514,14 @@
         if (detailMemberLink) detailMemberLink.href = data.memberUrl || '/cosmo/objekt';
         if (detailFullLink) detailFullLink.href = data.detailUrl || ('/cosmo/objekt/detail/' + encodeURIComponent(key));
         if (detailFavorite) detailFavorite.dataset.key = key;
+        if (detailTradeLink) detailTradeLink.href = data.tradeUrl || '/article/trade/new';
+        if (detailSellLink) detailSellLink.href = data.sellUrl || '/article/sell/new';
+        descriptionEditor.hidden = !data.isAdmin;
+        descriptionEditor.open = false;
+        descriptionInput.value = data.description || '';
+        descriptionStatus.textContent = '';
+        descriptionUrl = data.descriptionUrl || '';
+
     }
 
     function closeDetailModal() {
@@ -1497,7 +1535,7 @@
             document.body.style.overflow = '';
         }
         detailModal.setAttribute('aria-hidden', 'true');
-        activeObjektKey = '';
+        activeObjektKey = ''; detailRequest++;
     }
 
     function openDetailModalShell() {
@@ -1518,6 +1556,8 @@
     async function openObjektDetail(key) {
         if (!key || detailLoading) return;
         detailLoading = true;
+        const request = ++detailRequest;
+        descriptionEditor.hidden = true;
         openDetailModalShell();
         if (detailDesc) {
             detailDesc.textContent = '불러오는 중…';
@@ -1532,7 +1572,7 @@
             });
             if (!res.ok) throw new Error('detail failed');
             const data = await res.json();
-            fillDetailModal(data);
+            if (request === detailRequest) fillDetailModal(data);
         } catch (_) {
             if (detailDesc) {
                 detailDesc.textContent = '상세 정보를 불러오지 못했습니다.';
@@ -1542,6 +1582,37 @@
             detailLoading = false;
         }
     }
+
+    async function saveModalDescription(clear) {
+        if (descriptionSaving || !descriptionUrl || descriptionEditor.hidden) return;
+        if (clear && !window.confirm('이 오브젝트의 상세 설명을 삭제하시겠습니까?')) return;
+        if (!clear && !descriptionForm.reportValidity()) return;
+        const key = activeObjektKey;
+        descriptionSaving = true;
+        const buttons = descriptionForm.querySelectorAll('button');
+        buttons.forEach(button => button.disabled = true);
+        descriptionStatus.textContent = clear ? '삭제 중…' : '저장 중…';
+        try {
+            const response = await fetch(descriptionUrl, {
+                method: 'POST', headers: csrfHeaders(), credentials: 'same-origin',
+                body: new URLSearchParams({description: clear ? '' : descriptionInput.value})
+            });
+            if (!response.ok) throw new Error();
+            const data = await response.json();
+            if (typeof data.description !== 'string') throw new Error();
+            if (activeObjektKey !== key) return;
+            descriptionInput.value = data.description;
+            detailDesc.textContent = data.description || '아직 등록된 상세 설명이 없습니다.';
+            detailDesc.classList.toggle('is-empty', !data.description);
+            descriptionStatus.textContent = clear ? '상세 설명을 삭제했습니다.' : '상세 설명을 저장했습니다.';
+        } catch {
+            if (activeObjektKey === key) descriptionStatus.textContent = '저장하지 못했습니다. 관리자 로그인 상태를 확인한 뒤 다시 시도해 주세요.';
+        } finally {
+            descriptionSaving = false; buttons.forEach(button => button.disabled = false);
+        }
+    }
+    descriptionForm?.addEventListener('submit', event => { event.preventDefault(); saveModalDescription(false); });
+    descriptionDelete?.addEventListener('click', () => saveModalDescription(true));
 
     function shouldOpenModalFromEvent(event) {
         if (event.defaultPrevented) return false;

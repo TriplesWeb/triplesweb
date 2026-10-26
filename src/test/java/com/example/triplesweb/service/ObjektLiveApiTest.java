@@ -25,6 +25,14 @@ class ObjektLiveApiTest {
         assertThat(catalog).isNotNull();
         assertThat(catalog.path("collections").isArray()).isTrue();
         assertThat(catalog.path("collections").size()).isPositive();
+        JsonNode target = null;
+        for (JsonNode item : catalog.path("collections")) if (item.path("id").asText().equals("01a170ae-1059-73ce-a7c5-7483cb19e656")) target = item;
+        assertThat(target).as("Requested HaYeon collection must exist").isNotNull();
+        System.out.println("Requested collection readable slug=" + target.path("slug").asText());
+        var market = new ObjektMarketDataService("https://objekt.top/api/v1", "https://api.cosmo.fans", "https://api.mainnet.abs.xyz", "unused");
+        var lookup = market.serialLookup(java.util.Map.of("slug", target.path("slug").asText()), 1, 0);
+        assertThat(lookup).containsEntry("status", "available");
+        System.out.println("Live combined serial lookup: status=" + lookup.get("status") + ", owner=" + ((java.util.Map<?,?>)lookup.get("owner")).get("status"));
         JsonNode rarity = http.get().uri("/collections/rarity").retrieve().body(JsonNode.class);
         assertThat(rarity).isNotNull();
         assertThat(rarity.isArray()).isTrue();

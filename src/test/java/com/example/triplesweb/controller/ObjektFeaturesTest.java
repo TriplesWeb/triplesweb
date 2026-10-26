@@ -67,10 +67,64 @@ class ObjektFeaturesTest {
         for (String field : List.of("frontImage", "backImage", "thumbnailImage", "season", "class", "collectionNo")) item.put(field, "");
         when(catalog.findCollections("triples")).thenReturn(List.of(item));
         when(descriptions.findByObjektKey("uuid")).thenReturn(java.util.Optional.empty());
-        mvc.perform(get("/cosmo/objekt/detail/uuid").accept(MediaType.TEXT_HTML)).andExpect(status().isOk())
-                .andExpect(content().string(containsString("data-objekt-owner")))
+        mvc.perform(get("/cosmo/objekt/detail/sample").accept(MediaType.TEXT_HTML)).andExpect(status().isOk())
+                .andExpect(content().string(containsString("data-serial-lookup")))
+                .andExpect(content().string(not(containsString("objektDescriptionInput"))))
+                .andExpect(content().string(not(containsString("data-transfer-history"))))
                 .andExpect(content().string(containsString("name=\"favorite\" value=\"true\"")))
                 .andExpect(content().string(containsString("/js/objekt-detail.js")));
+    }
+
+    @Test void readableUrlsModalActionsAndLegacyMemberRouteAreConnected() throws Exception {
+        Map<String, Object> item = Map.of("id", "uuid", "slug", "hayeoncc367z", "collectionId", "Cream02 HaYeon 367Z", "member", "HaYeon");
+        when(catalog.findCollections("triples")).thenReturn(List.of(item));
+        mvc.perform(get("/cosmo/objekt/detail/uuid").accept(MediaType.TEXT_HTML))
+                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/cosmo/objekt/detail/hayeoncc367z"));
+        mvc.perform(get("/cosmo/objekt/detail/uuid").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.objektKey").value("uuid"))
+                .andExpect(jsonPath("$.detailUrl").value("/cosmo/objekt/detail/hayeoncc367z"))
+                .andExpect(jsonPath("$.memberUrl").value("/cosmo/objekt?group=members&member=HaYeon"))
+                .andExpect(jsonPath("$.tradeUrl").value("/article/trade/new?selectedObjektIds=uuid"))
+                .andExpect(jsonPath("$.sellUrl").value("/article/sell/new?selectedObjektIds=uuid"));
+        mvc.perform(get("/cosmo/objekt/member").param("name", "HaYeon"))
+                .andExpect(redirectedUrl("/cosmo/objekt?group=members&member=HaYeon"));
+    }
+
+    @Test void modalDescriptionWritesKeepStableKeyAndRequireAdmin() throws Exception {
+        var item = Map.<String,Object>of("id", "uuid", "slug", "hayeoncc367z");
+        when(catalog.findCollections("triples")).thenReturn(List.of(item));
+        mvc.perform(post("/cosmo/objekt/detail/hayeoncc367z/description").accept(MediaType.APPLICATION_JSON).param("description", " 새 설명 "))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.description").value("새 설명"));
+        verify(admin).requireAdmin(any(), any());
+        var captor = org.mockito.ArgumentCaptor.forClass(com.example.triplesweb.entity.ObjektDescription.class);
+        verify(descriptions).save(captor.capture());
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().getObjektKey()).isEqualTo("uuid");
+        mvc.perform(post("/cosmo/objekt/detail/hayeoncc367z/description").accept(MediaType.APPLICATION_JSON).param("description", ""))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.description").value(""));
+        doThrow(new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN)).when(admin).requireAdmin(any(), any());
+        mvc.perform(post("/cosmo/objekt/detail/hayeoncc367z/description").accept(MediaType.APPLICATION_JSON).param("description", "bad"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test void combinedLookupUsesIndexAndNotLiveRpc() throws Exception {
+        var item = Map.<String,Object>of("id", "uuid", "slug", "hayeoncc367z");
+        when(catalog.findCollections("triples")).thenReturn(List.of(item));
+        when(market.serialLookup(item, 1, 0)).thenReturn(Map.of("status","available","owner",Map.of("status","indexed","nickname","A"),"transfers",List.of()));
+        mvc.perform(get("/cosmo/objekt/detail/hayeoncc367z/lookup").param("serial","1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.owner.nickname").value("A"));
+        verify(market, never()).owner(anyMap(), anyLong());
+    }
+
+    @Test void modalPreview() throws Exception {
+        var item = new java.util.LinkedHashMap<String,Object>();
+        for (String field : List.of("frontImage","backImage","thumbnailImage","seasonKey","classKey","artist","createdAt","searchText","backgroundColor","textColor")) item.put(field, "");
+        item.putAll(Map.of("id","uuid","slug","hayeoncc367z","collectionId","Cream02 HaYeon 367Z","member","HaYeon","season","Cream02","class","Special","collectionNo","367Z","numberValue",367));
+        when(catalog.findCollections("triples")).thenReturn(List.of(item));
+        when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
+        var result = mvc.perform(get("/cosmo/objekt")).andExpect(status().isOk()).andReturn();
+        java.nio.file.Files.writeString(java.nio.file.Path.of("build/objekt-modal-preview.html"), result.getResponse().getContentAsString());
+        var detail = mvc.perform(get("/cosmo/objekt/detail/hayeoncc367z").accept(MediaType.TEXT_HTML)).andExpect(status().isOk()).andReturn();
+        java.nio.file.Files.writeString(java.nio.file.Path.of("build/objekt-detail-preview.html"), detail.getResponse().getContentAsString());
     }
 
     @Test void ownerResponseDoesNotExposeInternalVerificationFields() throws Exception {

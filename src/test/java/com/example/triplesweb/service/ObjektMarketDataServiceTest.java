@@ -107,6 +107,19 @@ class ObjektMarketDataServiceTest {
         assertThat(result.toString()).doesNotContain("0xprivate", "tokenId", "30570441");
     }
 
+    @Test void combinedLookupUsesNewestRecipientAndKeepsRpcFailureIndependent() {
+        indexed.set("{\"tokenId\":\"123\",\"transfers\":[{\"to\":\"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"timestamp\":\"2026-10-24T10:00:00Z\",\"nickname\":\"Old\"},{\"to\":\"0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"timestamp\":\"2026-10-25T10:00:00Z\",\"nickname\":\"New\"}]}");
+        chain.set("{\"error\":{}}");
+        var result = service.serialLookup(collection, 1, 0);
+        assertThat((Map<String,Object>)result.get("owner")).containsEntry("status","indexed").containsEntry("nickname","New").containsEntry("basis","latest_transfer");
+        assertThat(result.toString()).doesNotContain("0xaaaaaaaa", "0xbbbbbbbb", "tokenId");
+    }
+
+    @Test void unknownLatestNicknameNeverFallsBackToAnOlderHolder() {
+        indexed.set("{\"transfers\":[{\"to\":\"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"timestamp\":\"2026-10-24T10:00:00Z\",\"nickname\":\"Old\"},{\"to\":\"0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"timestamp\":\"2026-10-25T10:00:00Z\"}]}");
+        assertThat((Map<String,Object>)service.serialLookup(collection, 1, 0).get("owner")).containsEntry("nickname", "");
+    }
+
     @Test void invalidHistoryNeverProducesPartialPage() {
         indexed.set("{\"transfers\":[{\"timestamp\":\"2026-10-25T10:00:00Z\"},{\"timestamp\":\"bad\"}]}");
         assertThatThrownBy(() -> service.transfers(collection, 1, 0)).isInstanceOf(IllegalStateException.class);

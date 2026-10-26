@@ -8,6 +8,7 @@ import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.ObjektFavoriteService;
 import com.example.triplesweb.service.ObjektMarketDataService;
 import com.example.triplesweb.util.MemberPortraitOptions;
+import com.example.triplesweb.util.ObjektLinks;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -40,40 +41,26 @@ public class ObjektFeatureController {
     public String memberObjekts(@RequestParam String name,
                                 @RequestParam(defaultValue = "0") int page,
                                 Model model) {
-        List<Map<String, Object>> matches = objektService.findCollections("triples").stream()
-                .filter(item -> MemberPortraitOptions.sameMember(value(item, "member", "memberName"), name))
-                .sorted(Comparator.comparing(item -> value(item, "createdAt", "date"), Comparator.reverseOrder()))
-                .toList();
-        int total = matches.size();
-        int totalPages = Math.max(1, (int) Math.ceil(total / (double) MEMBER_PAGE_SIZE));
-        int safePage = Math.max(0, Math.min(page, totalPages - 1));
-        int from = Math.min(safePage * MEMBER_PAGE_SIZE, total);
-        int to = Math.min(from + MEMBER_PAGE_SIZE, total);
-        model.addAttribute("memberName", MemberPortraitOptions.memberName(name));
-        model.addAttribute("objekts", matches.subList(from, to));
-        model.addAttribute("objektCount", total);
-        model.addAttribute("pageDisplay", safePage + 1);
-        model.addAttribute("totalPages", totalPages);
-        model.addAttribute("hasPreviousPage", safePage > 0);
-        model.addAttribute("hasNextPage", safePage + 1 < totalPages);
-        model.addAttribute("previousPage", Math.max(0, safePage - 1));
-        model.addAttribute("nextPage", Math.min(totalPages - 1, safePage + 1));
-        model.addAttribute("encodedMemberName", URLEncoder.encode(name, StandardCharsets.UTF_8));
-        return "cosmo/objekt_member";
+        /* Legacy member pages now lead into the shared catalog with the member selected. */
+        return "redirect:/cosmo/objekt?group=members&member=" + ObjektLinks.encode(name);
     }
 
     @GetMapping(value = "/detail/{key}", produces = MediaType.TEXT_HTML_VALUE)
     public String detail(@PathVariable String key, HttpServletRequest request, HttpSession session, Model model) {
         Map<String, Object> item = findObjekt(key);
         if (item == null) return "redirect:/cosmo/objekt";
+        if (!key.equals(ObjektLinks.key(item))) return "redirect:" + ObjektLinks.detail(item);
         model.addAttribute("objekt", item);
-        model.addAttribute("objektKey", key);
+        model.addAttribute("objektKey", ObjektLinks.id(item));
+        model.addAttribute("memberUrl", ObjektLinks.member(item));
+        model.addAttribute("tradeUrl", ObjektLinks.compose(item, "trade"));
+        model.addAttribute("sellUrl", ObjektLinks.compose(item, "sell"));
+        model.addAttribute("lookupUrl", ObjektLinks.detail(item) + "/lookup");
         model.addAttribute("transfersUrl", "/cosmo/objekt/detail/" + encodePath(key) + "/transfers");
         boolean isFavorite = favorites.contains(session.getId(), item);
         model.addAttribute("isFavorite", isFavorite);
         model.addAttribute("favoriteDesired", !isFavorite);
-        model.addAttribute("objektDescription", descriptionRepository.findByObjektKey(key)
-                .map(ObjektDescription::getDescription).orElse(""));
+        model.addAttribute("objektDescription", description(item, key));
         model.addAttribute("isAdmin", aboutAdminAuth.isAdmin(request, session));
         return "cosmo/objekt_detail";
     }
@@ -92,7 +79,7 @@ public class ObjektFeatureController {
         String back = value(item, "backImage");
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("id", value(item, "id"));
-        body.put("objektKey", key);
+        body.put("objektKey", ObjektLinks.id(item));
         body.put("collectionId", value(item, "collectionId", "slug"));
         body.put("member", value(item, "member", "memberName"));
         body.put("season", value(item, "season"));
@@ -102,29 +89,70 @@ public class ObjektFeatureController {
         body.put("frontImage", front);
         body.put("backImage", back);
         body.put("hasBack", !back.isBlank() && !back.equals(front));
-        body.put("description", descriptionRepository.findByObjektKey(key)
-                .map(ObjektDescription::getDescription).orElse(""));
+        body.put("description", description(item, key));
         body.put("isFavorite", favorites.contains(session.getId(), item));
         body.put("isAdmin", aboutAdminAuth.isAdmin(request, session));
-        body.put("detailUrl", "/cosmo/objekt/detail/" + encodePath(key));
-        body.put("memberUrl", "/cosmo/objekt/member?name="
-                + URLEncoder.encode(value(item, "member", "memberName"), StandardCharsets.UTF_8));
+        body.put("detailUrl", ObjektLinks.detail(item));
+        body.put("memberUrl", ObjektLinks.member(item));
+        body.put("tradeUrl", ObjektLinks.compose(item, "trade"));
+        body.put("sellUrl", ObjektLinks.compose(item, "sell"));
+        body.put("descriptionUrl", ObjektLinks.detail(item) + "/description");
         return body;
     }
 
-    @PostMapping("/detail/{key}/description")
+    @PostMapping(value = "/detail/{key}/description", produces = MediaType.TEXT_HTML_VALUE)
     public String saveDescription(@PathVariable String key,
                                   @RequestParam(required = false) String description,
                                   HttpServletRequest request,
                                   HttpSession session) {
         aboutAdminAuth.requireAdmin(request, session);
-        if (findObjekt(key) == null) return "redirect:/cosmo/objekt";
-        ObjektDescription entity = descriptionRepository.findByObjektKey(key)
-                .orElseGet(ObjektDescription::new);
-        entity.setObjektKey(key);
+        Map<String, Object> item = findObjekt(key);
+        if (item == null) return "redirect:/cosmo/objekt";
+        if (description != null && description.length() > 10000) throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        ObjektDescription entity = descriptionEntity(item, key).orElseGet(ObjektDescription::new);
+        if (entity.getObjektKey() == null) entity.setObjektKey(ObjektLinks.id(item));
         entity.setDescription(description == null ? "" : description.trim());
         descriptionRepository.save(entity);
-        return "redirect:/cosmo/objekt/detail/" + encodePath(key);
+        return "redirect:" + ObjektLinks.detail(item);
+    }
+
+    @PostMapping(value = "/detail/{key}/description", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> saveDescriptionJson(@PathVariable String key,
+            @RequestParam(defaultValue = "") String description, HttpServletRequest request, HttpSession session) {
+        aboutAdminAuth.requireAdmin(request, session);
+        Map<String, Object> item = findObjekt(key);
+        if (item == null) return ResponseEntity.notFound().build();
+        if (description.length() > 10000) return ResponseEntity.badRequest().body(Map.of("message", "설명은 10,000자까지 입력할 수 있습니다."));
+        ObjektDescription entity = descriptionEntity(item, key).orElseGet(ObjektDescription::new);
+        if (entity.getObjektKey() == null) entity.setObjektKey(ObjektLinks.id(item));
+        entity.setDescription(description.trim()); descriptionRepository.save(entity);
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(Map.of("description", description.trim()));
+    }
+
+    @GetMapping("/detail/{key}/lookup")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> serialLookup(@PathVariable String key, @RequestParam long serial,
+            @RequestParam(defaultValue = "0") int page) {
+        Map<String, Object> item = findObjekt(key);
+        if (item == null) return ResponseEntity.notFound().build();
+        if (serial < 1 || page < 0) return ResponseEntity.badRequest().build();
+        try {
+            return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore()).body(marketData.serialLookup(item, serial, page));
+        } catch (RuntimeException error) {
+            return ResponseEntity.status(503).cacheControl(org.springframework.http.CacheControl.noStore())
+                    .body(Map.of("message", "조회하지 못했습니다. 잠시 후 다시 시도해 주세요."));
+        }
+    }
+
+    private Optional<ObjektDescription> descriptionEntity(Map<String, Object> item, String requested) {
+        return java.util.stream.Stream.of(ObjektLinks.id(item), value(item, "slug"), value(item, "collectionId"), requested)
+                .filter(s -> !s.isBlank()).distinct().map(descriptionRepository::findByObjektKey)
+                .flatMap(Optional::stream).findFirst();
+    }
+    private String description(Map<String, Object> item, String key) {
+        return descriptionEntity(item, key).map(ObjektDescription::getDescription).orElse("");
     }
 
     @PostMapping(value = "/detail/{key}/favorite", produces = MediaType.APPLICATION_JSON_VALUE)

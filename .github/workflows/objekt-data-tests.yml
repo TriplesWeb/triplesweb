@@ -1,7 +1,7 @@
 name: Objekt data reads
 on:
   push:
-    branches: [main]
+    branches: [main, verify/objekt-modal]
     paths:
       - 'src/**'
       - 'scripts/tests/objekt-*.cjs'
@@ -28,7 +28,7 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew test --tests '*ObjektMarketDataServiceTest' --tests '*ObjektTransferServiceTest' --tests '*CosmoCollectionServiceTest' --tests '*ObjektFeaturesTest' --tests '*ObjektActivityClientTest' --tests '*ObjektIngestStoreTest'
+      - run: ./gradlew test --tests '*ObjektMarketDataServiceTest' --tests '*ObjektTransferServiceTest' --tests '*CosmoCollectionServiceTest' --tests '*ObjektFeaturesTest' --tests '*ObjektActivityClientTest' --tests '*ObjektIngestStoreTest' --tests '*ArticleObjektOrderingTest'
       - if: failure()
         run: grep -n -A 10 -B 2 -E 'BadSqlGrammarException|JdbcSQLSyntaxErrorException' build/test-results/test/*.xml || true
       - run: node scripts/tests/objekt-detail.test.cjs && node scripts/tests/objekt-transfers.test.cjs
@@ -43,6 +43,7 @@ jobs:
           npm install --prefix /tmp/objekt-browser --no-package-lock playwright@1.56.1
           /tmp/objekt-browser/node_modules/.bin/playwright install --with-deps chromium
           node scripts/tests/objekt-account-ui.browser.cjs
+          node scripts/tests/objekt-modal.browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

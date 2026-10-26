@@ -60,8 +60,13 @@ public class ArticleController {
     }
 
     /** 작성 폼 */
+    public String showArticleForm(String category, Model model) {
+        return showArticleForm(category, null, model);
+    }
+
     @GetMapping("/new")
     public String showArticleForm(@PathVariable("category") String category,
+                                  @RequestParam(value = "selectedObjektIds", required = false) List<String> selectedObjektIds,
                                   Model model) {
         if (isInvalidCategory(category)) return "redirect:/article/trade";
 
@@ -69,7 +74,7 @@ public class ArticleController {
         model.addAttribute("category", category);
         model.addAttribute("categoryName", getCategoryName(category));
         model.addAttribute("articleForm", new ArticleForm());
-        addObjektOptions(model, category);
+        addObjektOptions(model, category, selectedObjektIds == null ? Set.of() : selectedObjektIds.stream().filter(Objects::nonNull).limit(20).collect(Collectors.toSet()));
         return "article/article_new";
     }
 
@@ -170,6 +175,7 @@ public class ArticleController {
         boolean hasOther = members.stream().anyMatch(MemberPortraitOptions::isOtherMember);
         model.addAttribute("showObjektPicker", true);
         model.addAttribute("objektSelected", selectedItems);
+        model.addAttribute("objektInitialSearch", selectedItems.size() == 1 ? selectedItems.get(0).getOrDefault("collectionId", "") : "");
         model.addAttribute("objektMemberOptions", soloMembers);
         model.addAttribute("hasOtherObjektOption", hasOther);
         model.addAttribute("objektSeasonOptions", ObjektFilterOrder.sortedSeasons(seasons));
