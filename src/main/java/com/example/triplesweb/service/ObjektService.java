@@ -75,11 +75,11 @@ public class ObjektService {
     }
 
     /**
-     * 기본 15분 간격으로 캐시를 갱신한다.
+     * 기본 1분 간격으로 캐시를 갱신한다.
      * 최초 적재 실패도 예외를 페이지 요청으로 전파하지 않고 다음 주기에 재시도한다.
      */
     @Scheduled(
-            fixedDelayString = "${objekt.cache.refresh-ms:900000}",
+            fixedDelayString = "${objekt.cache.refresh-ms:60000}",
             initialDelayString = "${objekt.cache.initial-delay-ms:0}"
     )
     public synchronized void refreshCache() {
@@ -111,8 +111,11 @@ public class ObjektService {
             Map<String, ObjektCatalog> unique = new LinkedHashMap<>();
             for (JsonNode node : collections) {
                 ObjektCatalogDto dto = ObjektCatalogDto.from(node);
-                if (dto.collectionId() == null || dto.collectionId().isBlank()) continue;
-                unique.put(dto.collectionId(), dto.toEntity());
+                if (dto.collectionId() == null || dto.collectionId().isBlank()
+                        || unique.putIfAbsent(dto.collectionId(), dto.toEntity()) != null) {
+                    log.warn("Objekt 카탈로그에 누락 또는 중복 식별자가 있어 기존 스냅샷을 유지합니다.");
+                    return;
+                }
             }
             List<ObjektCatalog> rows = new ArrayList<>(unique.values());
             // DB는 다음 시작 시 복구할 스냅샷으로만 저장한다. 갱신 직후 다시
@@ -142,3 +145,4 @@ public class ObjektService {
         return catalogStore.load(key).stream().map(ObjektCatalogDto::toView).toList();
     }
 }
+
