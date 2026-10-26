@@ -90,6 +90,15 @@ class ObjektFeaturesTest {
                 .andExpect(redirectedUrl("/cosmo/objekt?group=members&member=HaYeon"));
     }
 
+    @Test void realIndexSlugResolvesShortPublicAliasAndPreservesUpstreamAlias() throws Exception {
+        var item = Map.<String,Object>of("id","uuid","slug","cream02-hayeon-367z","season","Cream02","collectionNo","367Z","member","HaYeon");
+        when(catalog.findCollections("triples")).thenReturn(List.of(item));
+        mvc.perform(get("/cosmo/objekt/detail/hayeoncc367z").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.detailUrl").value("/cosmo/objekt/detail/hayeoncc367z"));
+        mvc.perform(get("/cosmo/objekt/detail/cream02-hayeon-367z").accept(MediaType.TEXT_HTML))
+                .andExpect(redirectedUrl("/cosmo/objekt/detail/hayeoncc367z"));
+    }
+
     @Test void modalDescriptionWritesKeepStableKeyAndRequireAdmin() throws Exception {
         var item = Map.<String,Object>of("id", "uuid", "slug", "hayeoncc367z");
         when(catalog.findCollections("triples")).thenReturn(List.of(item));

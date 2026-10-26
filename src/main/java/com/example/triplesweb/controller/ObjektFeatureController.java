@@ -251,6 +251,7 @@ public class ObjektFeatureController {
     private Map<String, Object> findObjekt(String key) {
         return objektService.findCollections("triples").stream()
                 .filter(item -> key.equals(value(item, "id")) || key.equals(value(item, "collectionId"))
+                        || key.equals(ObjektLinks.key(item))
                         || key.equals(value(item, "slug")))
                 .findFirst().orElse(null);
     }

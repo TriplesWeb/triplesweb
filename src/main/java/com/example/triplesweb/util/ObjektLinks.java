@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Map;
 
-/** Public URLs use the index's readable slug; persistence continues using the collection ID. */
+/** Public URLs use readable card names; upstream slugs and persistent collection IDs stay unchanged. */
 public final class ObjektLinks {
     private ObjektLinks() {}
     public static String id(Map<String, Object> item) {
@@ -17,6 +17,14 @@ public final class ObjektLinks {
     }
     public static String key(Map<String, Object> item) {
         String slug = String.valueOf(item.getOrDefault("slug", "")).toLowerCase(Locale.ROOT);
+        String season = String.valueOf(item.getOrDefault("season", "")).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+        String number = String.valueOf(item.getOrDefault("collectionNo", "")).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+        if (!season.isEmpty() && !number.isEmpty() && slug.startsWith(season + "-") && slug.endsWith("-" + number)) {
+            String member = slug.substring(season.length() + 1, slug.length() - number.length() - 1).replaceAll("[^a-z0-9]", "");
+            // Keep the requested Cream02 short form, e.g. hayeoncc367z.
+            String seasonCode = season.equals("cream02") ? "cc" : season;
+            if (!member.isEmpty()) return member + seasonCode + number;
+        }
         return slug.matches("[a-z0-9][a-z0-9-]{0,199}") ? slug : id(item);
     }
     public static String encode(String value) { return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20"); }
