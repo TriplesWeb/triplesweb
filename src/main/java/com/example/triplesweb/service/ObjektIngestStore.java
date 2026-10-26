@@ -46,13 +46,12 @@ public class ObjektIngestStore {
                 jdbc.update("UPDATE objekt_observed_token SET collection_slug=COALESCE(collection_slug, ?), "
                                 + "collection_id=COALESCE(collection_id, ?), artist=COALESCE(artist, ?), "
                                 + "reported_serial=CASE WHEN ? IS NOT NULL AND (serial_observed_at_ms IS NULL OR serial_observed_at_ms <= ?) THEN ? ELSE reported_serial END, "
-                                + "serial_observed_at_ms=CASE WHEN ? IS NOT NULL AND (serial_observed_at_ms IS NULL OR serial_observed_at_ms <= ?) THEN ? ELSE serial_observed_at_ms END, "
-                                + "indexed_owner=CASE WHEN last_transfer_ms IS NULL OR last_transfer_ms < ? OR (last_transfer_ms = ? AND last_transfer_id < ?) THEN ? ELSE indexed_owner END, "
-                                + "last_transfer_ms=CASE WHEN last_transfer_ms IS NULL OR last_transfer_ms < ? OR (last_transfer_ms = ? AND last_transfer_id < ?) THEN ? ELSE last_transfer_ms END, "
-                                + "last_transfer_id=CASE WHEN last_transfer_ms IS NULL OR last_transfer_ms < ? OR (last_transfer_ms = ? AND last_transfer_id < ?) THEN ? ELSE last_transfer_id END WHERE token_id=?",
+                                + "serial_observed_at_ms=CASE WHEN ? IS NOT NULL AND (serial_observed_at_ms IS NULL OR serial_observed_at_ms <= ?) THEN ? ELSE serial_observed_at_ms END WHERE token_id=?",
                         event.slug(), event.collection(), event.artist(), event.serial(), now, event.serial(),
-                        event.serial(), now, now, event.time(), event.time(), event.id(), event.to(),
-                        event.time(), event.time(), event.id(), event.time(), event.time(), event.time(), event.id(), event.id(), event.tokenId());
+                        event.serial(), now, now, event.tokenId());
+                jdbc.update("UPDATE objekt_observed_token SET indexed_owner=?, last_transfer_ms=?, last_transfer_id=? "
+                                + "WHERE token_id=? AND (last_transfer_ms IS NULL OR last_transfer_ms < ? OR (last_transfer_ms = ? AND last_transfer_id < ?))",
+                        event.to(), event.time(), event.id(), event.tokenId(), event.time(), event.time(), event.id());
             }
             ObjektActivityClient.Cursor next = done ? null : page.next();
             jdbc.update("UPDATE objekt_ingest_cursor SET watermark_ms=?, cycle_head_ms=?, lower_bound_ms=?, cursor_time=?, cursor_id=?, "

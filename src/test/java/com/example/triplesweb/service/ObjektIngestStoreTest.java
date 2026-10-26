@@ -37,6 +37,14 @@ class ObjektIngestStoreTest {
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM objekt_observed_transfer", Integer.class)).isEqualTo(1);
     }
 
+    @Test void newerTimestampWinsEvenWhenItsIdSortsBeforeOlderId() {
+        store.commit(store.state("live"), new ObjektActivityClient.Page(List.of(event("z", 10, A, 7L)), null), 100, 100, 0, true);
+        store.commit(store.state("live"), new ObjektActivityClient.Page(List.of(event("a", 20, B, 7L)), null), 110, 110, 0, true);
+        assertThat(jdbc.queryForObject("SELECT last_transfer_id FROM objekt_observed_token WHERE token_id='123'", String.class)).isEqualTo("a");
+        store.commit(store.state("backfill"), new ObjektActivityClient.Page(List.of(event("b", 20, A, 7L)), null), 120, 120, 0, true);
+        assertThat(jdbc.queryForObject("SELECT indexed_owner FROM objekt_observed_token WHERE token_id='123'", String.class)).isEqualTo(A);
+    }
+
     @Test void pageFailureRollsBackRowsAndCursor() {
         var state = store.state("live");
         var bad = new ObjektActivityClient.Event("bad", "x".repeat(90), A, B, H, 10, "slug", "C1", "triples", 7L);
