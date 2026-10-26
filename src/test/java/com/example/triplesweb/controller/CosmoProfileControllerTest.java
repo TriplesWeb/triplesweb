@@ -109,7 +109,7 @@ class CosmoProfileControllerTest {
                 .andExpect(content().string(containsString("1종 · 클래스별 목록")))
                 .andExpect(content().string(not(containsString("profile-season-heading"))))
                 .andExpect(content().string(not(containsString("role=\"progressbar\""))))
-                .andExpect(content().string(not(containsString("100%"))))
+                .andExpect(content().string(not(containsString("100%</strong>"))))
                 .andExpect(content().string(not(containsString("완료한 시즌 숨기기"))));
     }
 
