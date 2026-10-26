@@ -26,3 +26,7 @@ jobs:
       - if: failure()
         run: grep -n -A 10 -B 2 -E 'BadSqlGrammarException|JdbcSQLSyntaxErrorException' build/test-results/test/*.xml || true
       - run: node scripts/tests/objekt-detail.test.cjs && node scripts/tests/objekt-transfers.test.cjs
+      - name: Validate live public APIs
+        env:
+          OBJEKT_LIVE_TEST: 'true'
+        run: ./gradlew test --tests '*ObjektLiveApiTest' --info
