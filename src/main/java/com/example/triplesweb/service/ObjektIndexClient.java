@@ -32,29 +32,31 @@ public class ObjektIndexClient {
             throw new IllegalArgumentException("컬렉션과 시리얼을 확인해 주세요.");
         String key = slug + ":" + serial;
         synchronized (locks[Math.floorMod(key.hashCode(), locks.length)]) {
-        synchronized (serials) {
-            long now = System.nanoTime();
-            serials.entrySet().removeIf(e -> now - e.getValue().expiresAt() >= 0);
-            Entry cached = serials.get(key);
-            if (cached != null) return cached.body().deepCopy();
-        }
-        JsonNode body;
-        try {
-            body = client.get().uri("/collections/{slug}/serials/{serial}/transfers", slug, serial)
-                    .retrieve().body(JsonNode.class);
-        } catch (RestClientResponseException e) {
-            if (e.getStatusCode().value() == 404) return null;
-            throw e;
-        }
-        if (body == null || !body.isObject() || !body.path("transfers").isArray())
-            throw new IllegalStateException("전송 내역 응답이 올바르지 않습니다.");
-        if (!body.path("hide").asBoolean() && body.path("tokenId").asText("").matches("[0-9]{1,78}")) {
             synchronized (serials) {
-                if (serials.size() >= 256) serials.remove(serials.keySet().iterator().next());
-                serials.put(key, new Entry(body.deepCopy(), System.nanoTime() + Duration.ofSeconds(30).toNanos()));
+                long now = System.nanoTime();
+                serials.entrySet().removeIf(e -> now - e.getValue().expiresAt() >= 0);
+                Entry cached = serials.get(key);
+                if (cached != null) return cached.body().deepCopy();
             }
-        }
-        return body;
+            JsonNode body;
+            try {
+                body = client.get().uri("/collections/{slug}/serials/{serial}/transfers", slug, serial)
+                        .retrieve().body(JsonNode.class);
+            } catch (RestClientResponseException e) {
+                if (e.getStatusCode().value() == 404) return null;
+                throw e;
+            }
+            if (body == null || !body.isObject() || !body.path("transfers").isArray()
+                    || body.path("transfers").size() > 10000)
+                throw new IllegalStateException("전송 내역 응답이 올바르지 않습니다.");
+            if (!body.path("hide").asBoolean() && body.path("transfers").size() <= 1000
+                    && body.path("tokenId").asText("").matches("[0-9]{1,78}")) {
+                synchronized (serials) {
+                    if (serials.size() >= 256) serials.remove(serials.keySet().iterator().next());
+                    serials.put(key, new Entry(body.deepCopy(), System.nanoTime() + Duration.ofSeconds(30).toNanos()));
+                }
+            }
+            return body;
         }
     }
 
@@ -62,8 +64,9 @@ public class ObjektIndexClient {
         if (!address.matches("0x[0-9a-fA-F]{40}")) throw new IllegalArgumentException("잘못된 계정 주소입니다.");
         JsonNode body = client.get().uri(builder -> {
             builder.path("/transfers/{address}").queryParam("order", "desc").queryParam("type", "all");
-            if (!timestamp.isBlank()) builder.queryParam("cursor[timestamp]", timestamp).queryParam("cursor[id]", id);
-            return builder.build(address.toLowerCase(java.util.Locale.ROOT));
+            if (!timestamp.isBlank()) builder.queryParam("cursor[timestamp]", "{timestamp}").queryParam("cursor[id]", "{cursorId}");
+            return builder.build(java.util.Map.of("address", address.toLowerCase(java.util.Locale.ROOT),
+                    "timestamp", timestamp, "cursorId", id));
         }).retrieve().body(JsonNode.class);
         if (body == null || !body.isObject() || !body.path("results").isArray() || body.path("results").size() > 150)
             throw new IllegalStateException("계정 전송 내역 응답이 올바르지 않습니다.");
