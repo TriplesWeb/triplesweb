@@ -95,8 +95,8 @@
 <div class="flex items-center gap-3">
     <!-- 로그인한 회원 메뉴 -->
 {{#member}}
-        <div class="relative group">
-            <button class="flex items-center gap-2 px-3 py-1.5 bg-[#191b22] border border-[#3a4a46]/50 rounded-xl hover:border-[#00f5d4] transition-all bg-transparent cursor-pointer">
+        <div class="relative group site-user-menu">
+            <button type="button" data-user-menu-toggle aria-expanded="false" aria-controls="site-user-menu-panel" class="flex items-center gap-2 px-3 py-1.5 bg-[#191b22] border border-[#3a4a46]/50 rounded-xl hover:border-[#00f5d4] transition-all bg-transparent cursor-pointer">
                 <div class="flex flex-col text-left">
                     <span class="text-xs font-semibold text-[#e3e2e8] leading-tight">{{userId}}님</span>
                     <span class="text-[10px] text-[#00f5d4] font-mono leading-none">Lv.{{level}} {{points}}P</span>
@@ -104,7 +104,7 @@
                 <span class="material-symbols-outlined text-sm text-[#b9cac4] group-hover:rotate-180 transition-transform">arrow_drop_down</span>
             </button>
 
-            <div class="absolute right-0 top-full pt-1 hidden group-hover:block w-48 z-50">
+            <div id="site-user-menu-panel" data-user-menu-panel class="absolute right-0 top-full pt-1 hidden group-hover:block w-48 z-50">
                 <div class="bg-[#191b22]/95 border border-[#3a4a46]/50 rounded-xl shadow-2xl p-1.5 backdrop-blur-lg flex flex-col gap-0.5">
                     <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2 text-decoration-none" href="/mypage">
                         <span class="material-symbols-outlined text-[16px]">account_circle</span> 마이페이지
@@ -238,6 +238,7 @@
                 });
 
                 mobileMenu.querySelectorAll(".mobile-nav-toggle").forEach(function (btn) {
+                    btn.setAttribute("aria-expanded", "false");
                     btn.addEventListener("click", function () {
                         const group = btn.closest(".mobile-nav-group");
                         const panel = group && group.querySelector(".mobile-nav-panel");
@@ -245,11 +246,13 @@
                         if (!panel) return;
                         const willOpen = panel.classList.contains("hidden");
                         panel.classList.toggle("hidden", !willOpen);
+                        btn.setAttribute("aria-expanded", String(willOpen));
                         if (icon) icon.style.transform = willOpen ? "rotate(180deg)" : "";
                     });
                 });
             }
 
+            document.addEventListener("keydown", function(event) { if (event.key === "Escape" && mobileMenu && !mobileMenu.classList.contains("hidden")) { setMobileMenuOpen(false); mobileMenuBtn.focus(); } });
             window.addEventListener("resize", function () {
                 if (window.innerWidth >= 1024) setMobileMenuOpen(false);
             });
@@ -257,6 +260,7 @@
             window.addEventListener("scroll", function () {
                 let currentScroll = window.pageYOffset || document.documentElement.scrollTop;
 
+                if (mobileMenu && !mobileMenu.classList.contains("hidden")) { header.style.transform = "translateY(0)"; lastScrollTop = currentScroll; return; }
                 if (currentScroll > lastScrollTop && currentScroll > 100) {
                     // 아래로 스크롤 시 헤더 올리기
                     header.style.transform = "translateY(-100%)";
