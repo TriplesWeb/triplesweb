@@ -18,11 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            src
-            scripts
-            gradle
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
