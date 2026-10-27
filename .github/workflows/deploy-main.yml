@@ -1,5 +1,6 @@
-name: Build and deploy to Raspberry Pi
+name: Deploy to Raspberry Pi
 
+# main is protected by required PR checks. Do not repeat tests after merge.
 on:
   push:
     branches: [main]
@@ -7,12 +8,14 @@ on:
       - 'docs/**'
       - '**.md'
       - 'qodana.yaml'
-      - '.github/workflows/qodana_code_quality.yml'
+      - '.github/workflows/**'
+      - 'scripts/tests/**'
   workflow_dispatch:
 
+# Serialize deployments and avoid interrupting an in-flight remote restart.
 concurrency:
-  group: deploy-${{ github.ref }}
-  cancel-in-progress: true
+  group: deploy-main
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -20,36 +23,38 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  JAVA_VERSION: '17'
 
 jobs:
-  # Docker 이미지 빌드·배포 전에 컴파일 + 컨텍스트 로드 검사
-  verify:
+  check-current-head:
+    # Skip obsolete queued pushes; only the latest main commit is deployed.
     runs-on: ubuntu-latest
+    outputs:
+      current: ${{ steps.head.outputs.current }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: gradle
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      - name: Compile and test
-        run: ./gradlew test --no-daemon --stacktrace
+      - name: Skip stale commits after a newer main push
+        id: head
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          CURRENT_SHA="$(git ls-remote "https://github.com/${REPOSITORY}.git" refs/heads/main | awk '{print $1}')"
+          if [[ "$CURRENT_SHA" == "$EXPECTED_SHA" ]]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping outdated commit $EXPECTED_SHA; main is at $CURRENT_SHA"
+          fi
 
   build-and-deploy:
-    needs: verify
+    needs: check-current-head
+    if: needs.check-current-head.outputs.current == 'true'
     # Native arm64 — avoids QEMU emulation (largest speedup)
     runs-on: ubuntu-24.04-arm
     steps:
-      - name: Checkout
+      - name: Checkout main commit
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
 
       - name: Image name (lowercase)
         id: image
@@ -71,8 +76,8 @@ jobs:
         with:
           images: ${{ steps.image.outputs.name }}
           tags: |
-            type=sha,prefix=
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ github.sha }}
+            type=raw,value=latest
 
       - name: Build and push (linux/arm64)
         uses: docker/build-push-action@v6
@@ -110,7 +115,7 @@ jobs:
       - name: Sync compose, chemistry assets, and deploy
         env:
           PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
-          IMAGE: ${{ steps.image.outputs.name }}:latest
+          IMAGE: ${{ steps.image.outputs.name }}:${{ github.sha }}
           GHCR_USER: ${{ github.actor }}
           # Prefer a PAT with read:packages (GHCR_TOKEN); fall back to job token
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
