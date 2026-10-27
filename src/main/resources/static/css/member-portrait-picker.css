@@ -271,12 +271,12 @@
         transparent 60%);
     opacity: 0;
     transform: translate3d(-65%, -65%, 0);
-    animation: member-selection-sheen 10.8s ease-in-out infinite;
+    animation: member-selection-sheen 6.8s ease-in-out infinite;
 }
 @keyframes member-selection-sheen {
-    0%, 24% { transform: translate3d(-65%, -65%, 0); opacity: 0; }
-    31%, 52% { opacity: 1; }
-    59%, 100% { transform: translate3d(65%, 65%, 0); opacity: 0; }
+    0%, 20% { transform: translate3d(-65%, -65%, 0); opacity: 0; }
+    28%, 68% { opacity: 1; }
+    75.6%, 100% { transform: translate3d(65%, 65%, 0); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
     .member-portrait-picker .mpp-item.is-active .artist-tab-shine,

@@ -48,7 +48,7 @@ const base = path.resolve(__dirname, '../..');
       assert.notEqual(stable.shadow, 'none');
       assert.equal(stable.animations.length, 1, mode+' 광택 레이어만 반복');
       assert.deepEqual(stable.animations[0].properties.sort(), ['opacity','transform'], mode+' 광택 레이어의 이동과 투명도만 애니메이션');
-      assert.ok(stable.animations[0].duration >= 10000, mode+' 느린 대각선 광택');
+      assert.ok(stable.animations[0].duration >= 6500 && stable.animations[0].duration <= 7000, mode+' 짧은 반복 주기와 느린 대각선 광택');
       assert.equal(await frame.getAttribute('src'), src, mode+' 프레임 주소 유지');
       assert.equal(await frame.evaluate(el=>getComputedStyle(el).filter), 'none');
       assert.equal(await first.locator('.artist-tab-shine').isVisible(), true);
@@ -58,7 +58,7 @@ const base = path.resolve(__dirname, '../..');
         const layer = el.querySelector('.artist-tab-shine');
         animation.currentTime = 0;
         const start = new DOMMatrix(getComputedStyle(layer, '::before').transform);
-        animation.currentTime = animation.effect.getTiming().duration * .70;
+        animation.currentTime = animation.effect.getTiming().duration * .756;
         const end = new DOMMatrix(getComputedStyle(layer, '::before').transform);
         animation.currentTime = 350; animation.play();
         return {dx:end.m41-start.m41,dy:end.m42-start.m42};
@@ -90,6 +90,6 @@ const base = path.resolve(__dirname, '../..');
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth), true);
       await page.emulateMedia({reducedMotion:'no-preference'});
     }
-    console.log('통과: 단독/번들/그룹 소개 선택 효과 · 프레임 보존 · 외곽선 고정 · 상징색 광택 · 긴 반복 간격 · 좌상단→우하단 광택 · transform/opacity만 이동 · 다중선택·키보드 · 모션 감소 · 모바일');
+    console.log('통과: 단독/번들/그룹 소개 선택 효과 · 프레임 보존 · 외곽선 고정 · 상징색 광택 · 짧은 반복 간격 · 좌상단→우하단 광택 · transform/opacity만 이동 · 다중선택·키보드 · 모션 감소 · 모바일');
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exit(1);});
