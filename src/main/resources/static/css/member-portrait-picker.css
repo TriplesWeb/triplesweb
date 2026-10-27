@@ -265,18 +265,18 @@
     inset: -50%;
     background: linear-gradient(135deg,
         transparent 40%,
-        rgba(235, 248, 245, .025) 46%,
-        rgba(250, 255, 254, .16) 50%,
-        rgba(235, 248, 245, .045) 54%,
+        color-mix(in srgb, var(--artist-color, #00f5d4) 10%, transparent) 46%,
+        color-mix(in srgb, color-mix(in srgb, var(--artist-color, #00f5d4) 70%, #fff) 24%, transparent) 50%,
+        color-mix(in srgb, var(--artist-color, #00f5d4) 12%, transparent) 54%,
         transparent 60%);
     opacity: 0;
     transform: translate3d(-65%, -65%, 0);
-    animation: member-selection-sheen 7.6s ease-in-out infinite;
+    animation: member-selection-sheen 10.8s ease-in-out infinite;
 }
 @keyframes member-selection-sheen {
-    0%, 26% { transform: translate3d(-65%, -65%, 0); opacity: 0; }
-    33%, 63% { opacity: 1; }
-    70%, 100% { transform: translate3d(65%, 65%, 0); opacity: 0; }
+    0%, 24% { transform: translate3d(-65%, -65%, 0); opacity: 0; }
+    31%, 52% { opacity: 1; }
+    59%, 100% { transform: translate3d(65%, 65%, 0); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
     .member-portrait-picker .mpp-item.is-active .artist-tab-shine,

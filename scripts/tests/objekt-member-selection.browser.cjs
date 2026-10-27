@@ -48,7 +48,7 @@ const base = path.resolve(__dirname, '../..');
       assert.notEqual(stable.shadow, 'none');
       assert.equal(stable.animations.length, 1, mode+' 광택 레이어만 반복');
       assert.deepEqual(stable.animations[0].properties.sort(), ['opacity','transform'], mode+' 광택 레이어의 이동과 투명도만 애니메이션');
-      assert.ok(stable.animations[0].duration >= 6000, mode+' 느린 대각선 광택');
+      assert.ok(stable.animations[0].duration >= 10000, mode+' 느린 대각선 광택');
       assert.equal(await frame.getAttribute('src'), src, mode+' 프레임 주소 유지');
       assert.equal(await frame.evaluate(el=>getComputedStyle(el).filter), 'none');
       assert.equal(await first.locator('.artist-tab-shine').isVisible(), true);
@@ -67,6 +67,12 @@ const base = path.resolve(__dirname, '../..');
       assert.equal(await first.locator('.artist-tab-photo').evaluate(el=>getComputedStyle(el).filter), 'none');
       await page.waitForTimeout(850);
       assert.equal(await first.locator('.artist-tab-avatar').evaluate(el=>getComputedStyle(el).boxShadow), stable.shadow, mode+' 외곽선 고정');
+      const shine = first.locator('.artist-tab-shine');
+      const beforeTint = await shine.evaluate(el=>getComputedStyle(el,'::before').backgroundImage);
+      await first.evaluate(el=>el.style.setProperty('--artist-color','#db0c74'));
+      const afterTint = await shine.evaluate(el=>getComputedStyle(el,'::before').backgroundImage);
+      assert.notEqual(afterTint, beforeTint, mode+' 멤버 상징색에 따라 광택 색 변경');
+      await first.evaluate(el=>el.style.setProperty('--artist-color','#22aeff'));
       await second.click();
       assert.equal(await page.locator('.is-active').count(), artist?1:2);
       if (!artist) {
@@ -84,6 +90,6 @@ const base = path.resolve(__dirname, '../..');
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth), true);
       await page.emulateMedia({reducedMotion:'no-preference'});
     }
-    console.log('통과: 단독/번들/그룹 소개 선택 효과 · 프레임 보존 · 외곽선 고정 · 좌상단→우하단 광택 · transform/opacity만 이동 · 다중선택·키보드 · 모션 감소 · 모바일');
+    console.log('통과: 단독/번들/그룹 소개 선택 효과 · 프레임 보존 · 외곽선 고정 · 상징색 광택 · 긴 반복 간격 · 좌상단→우하단 광택 · transform/opacity만 이동 · 다중선택·키보드 · 모션 감소 · 모바일');
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exit(1);});
