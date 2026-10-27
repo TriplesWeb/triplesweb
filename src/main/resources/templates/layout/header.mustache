@@ -1,6 +1,24 @@
 <script src="/js/image-fallback.js?v=1"></script>
 <script src="/js/about-admin-auth.js?v=1"></script>
 <script src="/js/site-admin-controls.js?v=3" defer></script>
+<style>
+@keyframes sss-mascot-wave {
+    0%, 100% { transform: translateY(0) rotate(-2deg); }
+    25% { transform: translateY(-2.5px) rotate(3deg); }
+    50% { transform: translateY(0.5px) rotate(-1deg); }
+    75% { transform: translateY(-1.5px) rotate(2deg); }
+}
+.sss-mascot-wave {
+    height: 27px;
+    width: auto;
+    transform-origin: center center;
+    animation: sss-mascot-wave 2.8s ease-in-out infinite;
+    will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+    .sss-mascot-wave { animation: none; }
+}
+</style>
 <!-- 헤더 고정 상단 영역 -->
 <header class="sticky top-0 z-50 w-full bg-[#16181f]/80 backdrop-blur-md border-b border-[#3a4a46]/30 transition-transform duration-300" id="top-header">
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
@@ -8,7 +26,8 @@
     <div class="flex items-center gap-6 flex-1 min-w-0">
 
     <!-- 1. 브랜드 로고 -->
-    <a href="/" class="flex items-center shrink-0 text-decoration-none" aria-label="tripleS 홈">
+    <a href="/" class="flex items-center gap-1 shrink-0 text-decoration-none" aria-label="tripleS 홈">
+        <img src="/images/sss-mascot.png" alt="" width="33" height="27" class="sss-mascot-wave block shrink-0" decoding="async" aria-hidden="true">
         <img src="/images/triples-wordmark-white.png" alt="tripleS" width="120" height="36" class="h-7 w-auto block" decoding="async">
     </a>
 
