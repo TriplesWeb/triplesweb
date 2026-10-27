@@ -12,7 +12,7 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
    const url=new URL(route.request().url());if(url.origin!=='https://mobile.test')return route.abort();
    if(url.pathname.startsWith('/preview/')){
     const file=path.basename(url.pathname);let html=fs.readFileSync(path.join(fixtures,file),'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'');
-    html=html.replace('<head>',`<head><base href="https://mobile.test/"><link rel="stylesheet" href="/css/gravity.css">`);
+    html=html.replace('<head>',`<head><base href="https://mobile.test/">${file==='header-bare.html'?'':'<link rel="stylesheet" href="/css/gravity.css">'}`);
     html=html.replace('</body>',`<script>${html.includes('id="top-header"')?(headerScript||''):''}</script><script src="/js/site-mobile.js"></script></body>`);
     return route.fulfill({contentType:'text/html',body:html});
    }
@@ -45,7 +45,8 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
       assert.equal(await page.locator('.article-board-heading').isVisible(),false);
       assert.equal(await page.locator('.article-board-row>div:nth-child(2)').first().evaluate(node=>getComputedStyle(node).whiteSpace),'normal');
     }
-    if(file==='header-auth.html'){
+    if(file==='header-auth.html'||file==='header-bare.html'){
+      assert.equal(await page.locator('#mobile-menu-icon').evaluate(node=>getComputedStyle(node).fontSize),'0px');
       await page.locator('#mobile-menu-btn').click();assert.equal(await page.locator('#mobile-menu').isVisible(),true);
       await page.locator('.mobile-nav-toggle').first().click();assert.equal(await page.locator('.mobile-nav-panel').first().isVisible(),true);
       await page.keyboard.press('Escape');assert.equal(await page.locator('#mobile-menu').isVisible(),false);

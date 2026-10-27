@@ -5,16 +5,28 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .site-table-scroll{max-width:100%;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
 .site-table-scroll:focus-visible{outline:2px solid #8bf5dc;outline-offset:2px}
 @media(max-width:1023px){
-  #top-header{position:sticky;top:0;z-index:50;background:#16181ff5;max-width:100%;transform:translateY(0)}
+  #top-header{position:sticky;top:0;z-index:50;background:#16181ff5;color:#e3e2e8;font-family:Inter,"Noto Sans KR",-apple-system,sans-serif;max-width:100%;transform:translateY(0)}
   #top-header>div:first-child{display:flex;align-items:center;justify-content:space-between;min-height:64px;height:auto;gap:.75rem;padding-left:max(1rem,env(safe-area-inset-left));padding-right:max(1rem,env(safe-area-inset-right))}
   #top-header>div:first-child>div:first-child{flex:1;min-width:0}
+  #top-header>div:first-child>div:last-child{display:flex;align-items:center;gap:.5rem;min-width:0}
+  #top-header a{color:#b9cac4;text-decoration:none}
+  #top-header a:hover{color:#8decd9}
   #navbar,#top-header>div:first-child>form[role=search]{display:none!important}
-  #mobile-menu-btn{display:inline-flex!important;flex:0 0 auto;align-items:center;justify-content:center;width:44px;height:44px}
-  #top-header .site-user-menu{min-width:0}
+  #mobile-menu-btn{display:inline-flex!important;flex:0 0 auto;align-items:center;justify-content:center;width:44px;height:44px;border:1px solid #3a4a4680;border-radius:.75rem;background:#191b22;color:#e3e2e8}
+  #mobile-menu-icon{position:relative;display:block;width:20px;height:20px;max-width:none;font-size:0!important;overflow:visible;background:linear-gradient(currentColor,currentColor) center/20px 2px no-repeat}
+  #mobile-menu-icon::before,#mobile-menu-icon::after{content:"";position:absolute;left:0;width:20px;height:2px;background:currentColor}
+  #mobile-menu-icon::before{top:3px}#mobile-menu-icon::after{bottom:3px}
+  #mobile-menu-btn[aria-expanded=true] #mobile-menu-icon{background:none}
+  #mobile-menu-btn[aria-expanded=true] #mobile-menu-icon::before{top:9px;transform:rotate(45deg)}
+  #mobile-menu-btn[aria-expanded=true] #mobile-menu-icon::after{top:9px;bottom:auto;transform:rotate(-45deg)}
+  #top-header .site-user-menu{position:relative;min-width:0}
+  #top-header .site-user-menu>button{display:flex;align-items:center;gap:.5rem;min-height:44px;padding:.4rem .6rem;border:1px solid #3a4a4680;border-radius:.75rem;background:#191b22;color:inherit}
   #top-header .site-user-menu:not(.site-user-menu-open)>[data-user-menu-panel]{display:none!important}
   #top-header .site-user-menu button>div{max-width:6rem;min-width:0}
   #top-header .site-user-menu button>div>span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #top-header [data-user-menu-panel]{position:absolute;right:0;min-width:12rem;max-width:calc(100vw - 2rem);z-index:60}
+  #top-header [data-user-menu-panel]>div{display:grid;gap:.25rem;padding:.5rem;border:1px solid #3a4a4680;border-radius:.75rem;background:#191b22}
+  #top-header [data-user-menu-panel] a{display:flex;gap:.5rem;align-items:center;min-height:44px;padding:.5rem .7rem}
   #mobile-menu{max-height:calc(100vh - 64px);max-height:calc(100dvh - 64px - env(safe-area-inset-bottom));overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-bottom:env(safe-area-inset-bottom)}
   #mobile-menu.hidden,#mobile-menu .mobile-nav-panel.hidden{display:none!important}
   #mobile-menu:not(.hidden){display:block!important}
@@ -23,7 +35,9 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   #mobile-menu form[role=search]{display:flex!important;position:relative;width:100%;margin-bottom:.75rem}
   #mobile-menu form input{width:100%;min-width:0;padding:.65rem 3rem .65rem .8rem}
   #mobile-menu a,#mobile-menu .mobile-nav-toggle{display:flex;align-items:center;min-height:44px;padding:.65rem .75rem}
-  #mobile-menu .mobile-nav-toggle{width:100%;justify-content:space-between}
+  #mobile-menu .mobile-nav-toggle{width:100%;justify-content:space-between;border:0;border-radius:.5rem;background:transparent;color:#b9cac4}
+  #mobile-menu .mobile-nav-toggle .material-symbols-outlined{width:8px;height:8px;max-width:none;font-size:0!important;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg)!important}
+  #mobile-menu .mobile-nav-toggle[aria-expanded=true] .material-symbols-outlined{transform:rotate(225deg)!important}
 }
 @media(max-width:767px){
   *,*::before,*::after{box-sizing:border-box}

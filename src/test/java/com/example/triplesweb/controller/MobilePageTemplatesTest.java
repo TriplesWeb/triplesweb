@@ -49,6 +49,7 @@ class MobilePageTemplatesTest {
         var auth=new HashMap<>(model);auth.put("member",Map.of("userId",longText,"level",1,"points",100));
         String header=compiler.compile(Files.readString(root.resolve("layout/header.mustache"))).execute(auth);
         Files.writeString(output.resolve("header-auth.html"),"<!doctype html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='/css/gravity.css'><link rel='stylesheet' href='/css/site-mobile.css'></head><body>"+header+"<main><h1>모바일 메뉴</h1><input aria-label='검색' placeholder='검색'></main></body></html>");
+        Files.writeString(output.resolve("header-bare.html"),"<!doctype html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='/css/site-mobile.css'></head><body>"+header+"<main><h1>스타일 체계가 다른 화면의 메뉴</h1><input aria-label='검색' placeholder='검색'></main></body></html>");
     }
     private static Map<String,Object> orbit(String name,int percent,int owned,int total) {
         return Map.of("member",name,"label",name,"percent",percent,"owned",owned,"total",total,"copies",owned,"hasTotal",true,"color","#8decd9","progressUrl","/cosmo/profile/MobileFan?tab=members","isEmpty",owned==0);
