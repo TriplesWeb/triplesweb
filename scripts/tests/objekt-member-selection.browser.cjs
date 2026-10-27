@@ -46,12 +46,24 @@ const base = path.resolve(__dirname, '../..');
         }))
       }));
       assert.notEqual(stable.shadow, 'none');
-      assert.equal(stable.animations.length, 1, mode+' 가장자리 빛 레이어만 반복');
-      assert.deepEqual(stable.animations[0].properties, ['opacity'], mode+' 필터·그림자·두께는 애니메이션하지 않음');
-      assert.ok(stable.animations[0].duration >= 6000, mode+' 느린 반짝임');
+      assert.equal(stable.animations.length, 1, mode+' 광택 레이어만 반복');
+      assert.deepEqual(stable.animations[0].properties.sort(), ['opacity','transform'], mode+' 광택 레이어의 이동과 투명도만 애니메이션');
+      assert.ok(stable.animations[0].duration >= 6000, mode+' 느린 대각선 광택');
       assert.equal(await frame.getAttribute('src'), src, mode+' 프레임 주소 유지');
       assert.equal(await frame.evaluate(el=>getComputedStyle(el).filter), 'none');
-      assert.equal(await first.locator('.artist-tab-shine').isVisible(), false);
+      assert.equal(await first.locator('.artist-tab-shine').isVisible(), true);
+      const direction = await first.locator('.artist-tab-avatar').evaluate(el => {
+        const animation = el.getAnimations({subtree:true}).find(a=>a.animationName==='member-selection-sheen');
+        animation.pause();
+        const layer = el.querySelector('.artist-tab-shine');
+        animation.currentTime = 0;
+        const start = new DOMMatrix(getComputedStyle(layer, '::before').transform);
+        animation.currentTime = animation.effect.getTiming().duration * .70;
+        const end = new DOMMatrix(getComputedStyle(layer, '::before').transform);
+        animation.currentTime = 350; animation.play();
+        return {dx:end.m41-start.m41,dy:end.m42-start.m42};
+      });
+      assert.ok(direction.dx > 0 && direction.dy > 0, mode+' 왼쪽 위에서 오른쪽 아래로 이동');
       assert.equal(await first.locator('.artist-tab-photo').evaluate(el=>getComputedStyle(el).filter), 'none');
       await page.waitForTimeout(850);
       assert.equal(await first.locator('.artist-tab-avatar').evaluate(el=>getComputedStyle(el).boxShadow), stable.shadow, mode+' 외곽선 고정');
@@ -68,10 +80,10 @@ const base = path.resolve(__dirname, '../..');
       await buttons.nth(2).click();
       assert.equal(await buttons.nth(2).locator('.artist-tab-photo').evaluate(el=>getComputedStyle(el).animationName), 'none');
       await page.waitForTimeout(200);
-      assert.equal(await buttons.nth(2).locator('.artist-tab-avatar').evaluate(el=>el.getAnimations({subtree:true}).filter(a=>a.playState==='running').length), 0, mode+' 모션 감소 시 반짝임 정지');
+      assert.equal(await buttons.nth(2).locator('.artist-tab-avatar').evaluate(el=>el.getAnimations({subtree:true}).filter(a=>a.playState==='running').length), 0, mode+' 모션 감소 시 광택 정지');
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth), true);
       await page.emulateMedia({reducedMotion:'no-preference'});
     }
-    console.log('통과: 단독/번들/그룹 소개 선택 효과 · 프레임 보존 · 외곽선 고정 · 가장자리 투명도만 느리게 반짝임 · 다중선택·키보드 · 모션 감소 · 모바일');
+    console.log('통과: 단독/번들/그룹 소개 선택 효과 · 프레임 보존 · 외곽선 고정 · 좌상단→우하단 광택 · transform/opacity만 이동 · 다중선택·키보드 · 모션 감소 · 모바일');
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exit(1);});

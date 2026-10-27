@@ -1,5 +1,5 @@
-/* Page-only overrides: avoid continuously repainting image filters and shimmer. */
-.artist-page .artist-tab-shine{display:none!important}
+/* Page-only overrides: keep image filters static; selected sheen uses transform/opacity only. */
+.artist-page .nav-tab-btn:not(.is-active) .artist-tab-shine{display:none}
 .artist-page .artist-tab-frame{filter:none!important;transition:none!important}
 .artist-page .nav-tab-btn.is-active .artist-tab-avatar{outline:2px solid var(--artist-color,#00f5d4);outline-offset:3px}
 .artist-page .tab-pane[hidden],.artist-page [data-artist-feed-retry][hidden]{display:none!important}

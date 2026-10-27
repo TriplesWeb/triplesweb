@@ -246,30 +246,43 @@
 
 .objekt-member-toggle[hidden] { display: none !important; }
 
-/* 반짝임은 가장자리의 투명도만 바꾼다. 사진·PNG 프레임·외곽선은 고정한다. */
-.member-portrait-picker .mpp-item.is-active .artist-tab-avatar::after,
-.artist-page .nav-tab-btn.is-active .artist-tab-avatar::after {
-    content: "";
+/* 선택한 카드의 좌상단 → 우하단으로 정적인 광택 레이어만 이동한다.
+ * gradient는 고정하고 transform·opacity만 움직여 필터/그림자 재계산을 피한다. */
+.member-portrait-picker .mpp-item.is-active .artist-tab-shine,
+.artist-page .nav-tab-btn.is-active .artist-tab-shine {
+    display: block;
     position: absolute;
     inset: 0;
-    z-index: 4;
+    z-index: 3;
+    overflow: hidden;
     border-radius: inherit;
     pointer-events: none;
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 45%, #f5faf8);
-    opacity: .08;
-    animation: member-selection-glimmer 7.2s ease-in-out infinite;
 }
-@keyframes member-selection-glimmer {
-    0%, 100% { opacity: .08; }
-    45%, 85% { opacity: .12; }
-    65% { opacity: .52; }
+.member-portrait-picker .mpp-item.is-active .artist-tab-shine::before,
+.artist-page .nav-tab-btn.is-active .artist-tab-shine::before {
+    content: "";
+    position: absolute;
+    inset: -50%;
+    background: linear-gradient(135deg,
+        transparent 40%,
+        rgba(235, 248, 245, .025) 46%,
+        rgba(250, 255, 254, .16) 50%,
+        rgba(235, 248, 245, .045) 54%,
+        transparent 60%);
+    opacity: 0;
+    transform: translate3d(-65%, -65%, 0);
+    animation: member-selection-sheen 7.6s ease-in-out infinite;
+}
+@keyframes member-selection-sheen {
+    0%, 26% { transform: translate3d(-65%, -65%, 0); opacity: 0; }
+    33%, 63% { opacity: 1; }
+    70%, 100% { transform: translate3d(65%, 65%, 0); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .member-portrait-picker .mpp-item.is-active .artist-tab-avatar::after,
-    .artist-page .nav-tab-btn.is-active .artist-tab-avatar::after {
-        animation: none;
-        opacity: 0;
-    }
+    .member-portrait-picker .mpp-item.is-active .artist-tab-shine,
+    .artist-page .nav-tab-btn.is-active .artist-tab-shine { display: none; }
+    .member-portrait-picker .mpp-item.is-active .artist-tab-shine::before,
+    .artist-page .nav-tab-btn.is-active .artist-tab-shine::before { animation: none; }
 }
 
 /* 선택 직후 1회만 재생한다. 사진만 움직여 외곽선 두께는 일정하다. */
