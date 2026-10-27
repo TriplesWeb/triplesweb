@@ -54,7 +54,14 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
       await page.keyboard.press('Escape');assert.equal(await page.locator('[data-user-menu-panel]').isVisible(),false);
       assert.ok(await page.locator('main input').evaluate(n=>parseFloat(getComputedStyle(n).fontSize))>=16);
     }
-    if(width===390&&['cosmo_profile.mustache.html','article_article.mustache.html','schedule.mustache.html','shop_shop_detail.mustache.html'].includes(file))await page.screenshot({path:`/tmp/objekt-ui/${engine}-${file}.png`,fullPage:true});
+    if(width===390&&['cosmo_profile.mustache.html','article_article.mustache.html','schedule.mustache.html','shop_shop_detail.mustache.html'].includes(file)){
+      // Preview images are optional artifacts; a slow WebKit screenshot must not fail functional assertions.
+      try{
+        await page.screenshot({path:`/tmp/objekt-ui/${engine}-${file}.png`,fullPage:true,timeout:10000});
+      }catch(error){
+        console.warn(`[preview] Screenshot skipped (${engine}, ${file}): ${error.message}`);
+      }
+    }
    }
   }
   for(const width of [320,430]){
