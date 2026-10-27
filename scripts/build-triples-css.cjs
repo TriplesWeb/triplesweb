@@ -9,9 +9,20 @@ try {
   const input = path.join(dir, 'input.css');
   const output = path.join(dir, 'output.css');
   fs.writeFileSync(input, '@tailwind base;\n@tailwind components;\n@tailwind utilities;\n');
-  execFileSync('npx', ['--yes', '--package=tailwindcss@3.4.17', 'tailwindcss',
-    '--config', 'scripts/tailwind-triples.config.cjs', '--input', input,
-    '--output', output, '--minify'], { stdio: 'inherit' });
+  // CSS 규칙만 바꾼 경우 기존 Tailwind utilities를 재사용한다.
+  // 템플릿 class를 바꿨다면 일반 빌드로 다시 스캔해야 한다.
+  if (process.argv.includes('--styles-only')) {
+    const current = fs.readFileSync('src/main/resources/static/css/triples.css', 'utf8');
+    const lines = current.split('\n');
+    if (!lines[0].startsWith('/* Generated') || !lines[1].startsWith('*,')) {
+      throw new Error('기존 Tailwind utilities를 찾을 수 없습니다. 일반 빌드를 실행하세요.');
+    }
+    fs.writeFileSync(output, lines[1]);
+  } else {
+    execFileSync('npx', ['--yes', '--package=tailwindcss@3.4.17', 'tailwindcss',
+      '--config', 'scripts/tailwind-triples.config.cjs', '--input', input,
+      '--output', output, '--minify'], { stdio: 'inherit' });
+  }
   const base = fs.readFileSync('src/main/resources/static/css/style.css', 'utf8')
     .replace(/^@charset.*$/igm, '').replace(/^@import.*$/igm, '');
   const outPath = 'src/main/resources/static/css/triples.css';

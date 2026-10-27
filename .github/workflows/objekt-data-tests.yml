@@ -50,6 +50,7 @@ jobs:
           node scripts/tests/objekt-modal.browser.cjs
           node scripts/tests/objekt-mobile.browser.cjs
           node scripts/tests/objekt-artist-gravity.browser.cjs
+          node scripts/tests/objekt-member-selection.browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
