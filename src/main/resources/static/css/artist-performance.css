@@ -1,0 +1,9 @@
+/* Page-only overrides: avoid continuously repainting image filters and shimmer. */
+.artist-page .artist-tab-shine{display:none!important}
+.artist-page .artist-tab-frame{filter:none!important;transition:none!important}
+.artist-page .nav-tab-btn.is-active .artist-tab-avatar{outline:2px solid var(--artist-color,#00f5d4);outline-offset:3px}
+.artist-page .tab-pane[hidden],.artist-page [data-artist-feed-retry][hidden]{display:none!important}
+.artist-page .artist-feed-slot{min-height:4rem}
+.artist-page .artist-feed-status{margin-top:2rem;font-size:.85rem;line-height:1.7;color:#b9cac4}
+.artist-page .artist-feed-slot[aria-busy=true]{opacity:.8}
+@media(max-width:767px){.artist-page .card-box{backdrop-filter:none}.artist-page .artist-member-photo{box-shadow:0 0 0 1px #ffffff12}}

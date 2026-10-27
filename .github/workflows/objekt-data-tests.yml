@@ -1,7 +1,7 @@
 name: Objekt data reads
 on:
   push:
-    branches: [main, verify/objekt-modal, verify/cosmo-feedback, verify/mobile-orbits]
+    branches: [main, verify/objekt-modal, verify/cosmo-feedback, verify/mobile-orbits, verify/artist-gravity]
     paths:
       - 'src/**'
       - 'scripts/tests/objekt-*.cjs'
@@ -28,7 +28,7 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew test --tests '*ObjektMarketDataServiceTest' --tests '*ObjektTransferServiceTest' --tests '*CosmoCollectionServiceTest' --tests '*ObjektFeaturesTest' --tests '*ObjektActivityClientTest' --tests '*ObjektIngestStoreTest' --tests '*ArticleObjektOrderingTest' --tests '*CosmoProfileServiceTest' --tests '*CosmoProfileControllerTest' --tests '*CosmoCollectionControllerTest' --tests '*MobilePageTemplatesTest'
+      - run: ./gradlew test --tests '*ObjektMarketDataServiceTest' --tests '*ObjektTransferServiceTest' --tests '*CosmoCollectionServiceTest' --tests '*ObjektFeaturesTest' --tests '*ObjektActivityClientTest' --tests '*ObjektIngestStoreTest' --tests '*ArticleObjektOrderingTest' --tests '*CosmoProfileServiceTest' --tests '*CosmoProfileControllerTest' --tests '*CosmoCollectionControllerTest' --tests '*MobilePageTemplatesTest' --tests '*ArtistPerformanceTest' --tests '*ArtistSpotlightBoundedTest' --tests '*GravityControllerTest'
       - if: failure()
         run: grep -n -A 10 -B 2 -E 'BadSqlGrammarException|JdbcSQLSyntaxErrorException' build/test-results/test/*.xml || true
       - run: node scripts/tests/objekt-detail.test.cjs && node scripts/tests/objekt-transfers.test.cjs
@@ -49,6 +49,7 @@ jobs:
           node scripts/tests/objekt-account-ui.browser.cjs
           node scripts/tests/objekt-modal.browser.cjs
           node scripts/tests/objekt-mobile.browser.cjs
+          node scripts/tests/objekt-artist-gravity.browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

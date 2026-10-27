@@ -115,10 +115,34 @@
     });
   }
 
+
+  async function loadMemberFeeds(pane) {
+    const slot = pane.querySelector('[data-artist-feed-url]');
+    if (!slot || slot.dataset.loaded === 'true' || slot.dataset.loading === 'true') return;
+    slot.dataset.loading = 'true';slot.setAttribute('aria-busy','true');
+    const message=slot.querySelector('.artist-feed-status'), retry=slot.querySelector('[data-artist-feed-retry]');
+    message.textContent='멤버 콘텐츠를 불러오는 중…'; retry.hidden=true;
+    const abort = new AbortController(), timer = setTimeout(() => abort.abort(), 15000);
+    try {
+      const response=await fetch(slot.dataset.artistFeedUrl,{headers:{Accept:'text/html'},credentials:'same-origin',signal:abort.signal});
+      if(!response.ok || !(response.headers.get('Content-Type')||'').includes('text/html'))throw new Error();
+      const html=await response.text();
+      const fragment=document.createRange().createContextualFragment(html);
+      if(!fragment.querySelector('.member-activities'))throw new Error();
+      slot.replaceChildren(fragment);slot.dataset.loaded='true';
+    } catch {
+      message.textContent='콘텐츠를 불러오지 못했습니다. 다시 시도해 주세요.';retry.hidden=false;
+    } finally {clearTimeout(timer);delete slot.dataset.loading;slot.removeAttribute('aria-busy');}
+  }
+
   function bindTabs() {
     const tabButtons = document.querySelectorAll(".nav-tab-btn");
-    const tabPanes = document.querySelectorAll(".tab-pane");
+    const tabPanes = document.querySelectorAll("#memberTabContent > .tab-pane");
+    document.querySelectorAll("[data-artist-feed-retry]").forEach(button => button.addEventListener("click", () => loadMemberFeeds(button.closest(".tab-pane"))));
+    tabPanes.forEach(pane => {pane.hidden = true; pane.classList.add('hidden');});
+    tabButtons.forEach(button => {button.setAttribute('aria-selected','false');button.tabIndex=-1;});
     bindMemberTabFrames();
+    let activePane = null, activeButton = null;
 
     function scrollToMemberContent() {
       const content = document.getElementById("memberTabContent");
@@ -131,27 +155,18 @@
 
     function activateTab(targetId, options) {
       if (!targetId) return;
-      const btn = document.querySelector('.nav-tab-btn[data-target="' + targetId + '"]');
-      const targetPane = document.querySelector(targetId);
-      if (!targetPane) return;
-
-      tabButtons.forEach((b) => {
-        b.classList.remove("is-active");
-        b.setAttribute("aria-selected", "false");
-        b.tabIndex = -1;
-      });
-      if (btn) {
-        btn.classList.add("is-active");
-        btn.setAttribute("aria-selected", "true");
-        btn.tabIndex = 0;
-        const scroller = btn.closest(".artist-member-tabs");
-        if (scroller && scroller.scrollWidth > scroller.clientWidth + 1) {
-          btn.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
-        }
+      const btn = Array.from(tabButtons).find(button => button.getAttribute('data-target') === targetId);
+      const targetPane = Array.from(tabPanes).find(pane => '#' + pane.id === targetId);
+      if (!targetPane || !btn) return;
+      if (activePane !== targetPane) {
+        if (activePane) {activePane.hidden = true; activePane.classList.add('hidden');}
+        if (activeButton) {activeButton.classList.remove('is-active');activeButton.setAttribute('aria-selected','false');activeButton.tabIndex=-1;}
+        targetPane.hidden=false; targetPane.classList.remove('hidden');
+        btn.classList.add('is-active');btn.setAttribute('aria-selected','true');btn.tabIndex=0;
+        activePane=targetPane;activeButton=btn;
       }
-
-      tabPanes.forEach((pane) => pane.classList.add("hidden"));
-      targetPane.classList.remove("hidden");
+      targetPane.querySelectorAll('img[data-member-src]').forEach(image => {image.src = image.dataset.memberSrc;image.removeAttribute('data-member-src');});
+      loadMemberFeeds(targetPane);
       if (options && options.scrollToContent) {
         scrollToMemberContent();
       }
@@ -198,6 +213,7 @@
     } else if (hash && allowedTargets.has(hash)) {
       initial = hash;
     }
+    activeButton = Array.from(tabButtons).find(button => button.classList.contains('is-active')) || null;
     activateTab(initial);
 
     window.__artistActivateTab = activateTab;

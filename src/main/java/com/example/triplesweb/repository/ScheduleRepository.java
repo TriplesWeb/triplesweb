@@ -13,6 +13,7 @@ import java.util.List;
  */
 @Repository
 public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
+    List<Schedule> findTop5ByArtists_ArtistIdOrderByStartDescIdDesc(Long artistId);
     @Query("select distinct s from Schedule s left join fetch s.artists")
     List<Schedule> findAllWithArtists();
 }

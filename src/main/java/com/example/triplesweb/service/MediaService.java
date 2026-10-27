@@ -176,6 +176,13 @@ public class MediaService {
         return MediaDto.builder().tab(m.getTab()).youtubeId(m.getYoutubeId()).title(m.getMediaTitle()).duration(m.getMediaDur()).views(views).viewCountFmt(NumberFormat.getInstance().format(views)).description(m.getDescription()).artistNames(m.getArtistNames()).publishedOn(m.getPublishedOn()==null?"":m.getPublishedOn().toString()).build();
     }
 
+    @Transactional(readOnly = true)
+    public List<MediaDto> byArtist(Long artistId, int limit) {
+        if (artistId == null || limit < 1) return List.of();
+        return mediaRepository.findDistinctByArtists_ArtistIdOrderBySortOrderAscIdAsc(artistId,
+                PageRequest.of(0, Math.min(limit, 5))).stream().map(this::toDto).toList();
+    }
+
     private static LocalDate parseDate(String raw) {
         if (raw == null || raw.isBlank()) return null;
         String value = raw.trim();

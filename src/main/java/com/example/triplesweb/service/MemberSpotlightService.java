@@ -47,6 +47,9 @@ public class MemberSpotlightService {
     @Transactional(readOnly = true)
     public void attach(List<Artist> artists) {
         if (artists == null || artists.isEmpty()) return;
+        boolean single = artists.size() == 1;
+        Artist selected = single ? artists.get(0) : null;
+        if (single && (selected == null || selected.getName() == null || selected.getArtistId() == null)) return;
         List<Map<String, Object>> objekts = loadObjekts();
         List<Map<String, Object>> newestObjekts = objekts.stream()
                 .sorted(Comparator.comparing(
@@ -60,11 +63,11 @@ public class MemberSpotlightService {
                 .toList();
         // 전역 최신 묶음을 멤버별로 한 번만 인덱싱해 24회 선형 스캔을 피한다.
         Map<String, List<Archive>> imageIndex = indexArchives(
-                archiveRepository.findTop2000ByFile_MediaTypeOrderByIdDesc(MediaType.IMAGE));
+                single ? archiveRepository.findTop40ByFile_MediaTypeAndArtistNamesContainingIgnoreCaseOrderByIdDesc(MediaType.IMAGE, selected.getName()) : archiveRepository.findTop2000ByFile_MediaTypeOrderByIdDesc(MediaType.IMAGE));
         Map<String, List<Archive>> videoIndex = indexArchives(
-                archiveRepository.findTop2000ByFile_MediaTypeOrderByIdDesc(MediaType.VIDEO));
-        Map<Long, List<MediaDto>> media = mediaService.byArtistMap(LIMIT);
-        Map<String, List<Schedule>> scheduleIndex = indexSchedules(scheduleRepository.findAllWithArtists());
+                single ? archiveRepository.findTop40ByFile_MediaTypeAndArtistNamesContainingIgnoreCaseOrderByIdDesc(MediaType.VIDEO, selected.getName()) : archiveRepository.findTop2000ByFile_MediaTypeOrderByIdDesc(MediaType.VIDEO));
+        Map<Long, List<MediaDto>> media = single ? Map.of(selected.getArtistId(), mediaService.byArtist(selected.getArtistId(), LIMIT)) : mediaService.byArtistMap(LIMIT);
+        Map<String, List<Schedule>> scheduleIndex = single ? Map.of(normalizeMemberKey(selected.getName()), scheduleRepository.findTop5ByArtists_ArtistIdOrderByStartDescIdDesc(selected.getArtistId())) : indexSchedules(scheduleRepository.findAllWithArtists());
         for (Artist artist : artists) {
             if (artist == null || artist.getName() == null || artist.getName().isBlank()) continue;
             String name = artist.getName().trim();
@@ -81,9 +84,9 @@ public class MemberSpotlightService {
             objektFeed.put("objektFeed", true);
             feeds.add(objektFeed);
             feeds.add(archiveFeed("사진 아카이브", "등록된 사진 최신 5개입니다.", "이 멤버의 사진이 없습니다.",
-                    imageIndex, MediaType.IMAGE, name, "/archive/image_archive?members=" + encoded));
+                    imageIndex, MediaType.IMAGE, name, "/archive/image_archive?members=" + encoded, !single));
             feeds.add(archiveFeed("영상 아카이브", "등록된 영상 최신 5개입니다.", "이 멤버의 영상이 없습니다.",
-                    videoIndex, MediaType.VIDEO, name, "/archive/video_archive?members=" + encoded));
+                    videoIndex, MediaType.VIDEO, name, "/archive/video_archive?members=" + encoded, !single));
             feeds.add(feed(
                     "공식 미디어",
                     "공식 미디어에서 이 멤버가 선택된 최신 5개입니다.",
@@ -103,9 +106,9 @@ public class MemberSpotlightService {
 
     private Map<String, Object> archiveFeed(String title, String description, String emptyText,
                                             Map<String, List<Archive>> index, MediaType type,
-                                            String name, String moreUrl) {
+                                            String name, String moreUrl, boolean allowFallback) {
         List<Archive> matched = takeFromIndex(index, name);
-        if (matched.size() < LIMIT) {
+        if (allowFallback && matched.size() < LIMIT) {
             // 전역 최신 2000 밖에만 있는 멤버 자료를 보완 조회
             List<Archive> fallback = archiveRepository
                     .findTop40ByFile_MediaTypeAndArtistNamesContainingIgnoreCaseOrderByIdDesc(type, name);

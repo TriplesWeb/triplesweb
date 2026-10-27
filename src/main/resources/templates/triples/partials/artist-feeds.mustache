@@ -1,0 +1,124 @@
+{{#artist}}
+                <div class="member-activities mt-10 space-y-8">
+                    <section class="artist-content-section" aria-labelledby="solo-heading-{{artistId}}">
+                        <div class="artist-content-head">
+                            <h2 id="solo-heading-{{artistId}}" class="artist-content-title">멤버 단독 컨텐츠</h2>
+                            <p class="artist-content-desc">개인 콘텐츠·커버·브이로그 등 단독 출연 영상입니다.</p>
+                        </div>
+                        {{#hasSoloLinks}}
+                        <div class="artist-content-grid">
+                            {{#soloLinks}}
+                            {{#youtubeId}}
+                            <article class="artist-content-card">
+                                <a href="{{url}}" target="_blank" rel="noopener noreferrer" class="artist-content-card-link">
+                                    <div class="artist-content-thumb">
+                                        <img src="{{thumbnail}}" loading="lazy" alt="{{title}}">
+                                        <span class="material-symbols-outlined artist-content-play" aria-hidden="true">play_arrow</span>
+                                    </div>
+                                    <div class="artist-content-body">
+                                        <h3 class="artist-content-card-title">{{title}}</h3>
+                                        <p class="artist-content-meta">단독 컨텐츠 · YouTube</p>
+                                    </div>
+                                </a>
+                            </article>
+                            {{/youtubeId}}
+                            {{^youtubeId}}
+                            {{#url}}
+                            <a href="{{url}}" target="_blank" rel="noopener noreferrer" class="artist-content-link-card">
+                                <span class="material-symbols-outlined artist-content-link-icon" aria-hidden="true">link</span>
+                                <span class="artist-content-card-title">{{title}}</span>
+                            </a>
+                            {{/url}}
+                            {{^url}}
+                            <div class="artist-content-link-card is-static">
+                                <span class="material-symbols-outlined artist-content-link-icon" aria-hidden="true">notes</span>
+                                <span class="artist-content-card-title">{{title}}</span>
+                            </div>
+                            {{/url}}
+                            {{/youtubeId}}
+                            {{/soloLinks}}
+                        </div>
+                        {{/hasSoloLinks}}
+                        {{^hasSoloLinks}}
+                        <p class="artist-content-empty">등록된 단독 컨텐츠가 없습니다. 관리자 모드에서 링크를 추가할 수 있습니다.</p>
+                        {{/hasSoloLinks}}
+                    </section>
+
+                    {{#memberFeeds}}
+                    <section class="artist-content-section">
+                        <div class="artist-content-head">
+                            <div>
+                                <h2 class="artist-content-title">{{title}}</h2>
+                                <p class="artist-content-desc">{{description}}</p>
+                            </div>
+                            <a href="{{moreUrl}}" class="artist-content-more">더보기</a>
+                        </div>
+                        {{#hasItems}}
+                        <div class="artist-content-grid{{#objektFeed}} artist-content-grid--objekt{{/objektFeed}}">
+                            {{#items}}
+                            <article class="artist-content-card{{#objektFeed}} artist-content-card--objekt{{/objektFeed}}">
+                                <a href="{{href}}" class="artist-content-card-link" {{#external}}target="_blank" rel="noopener noreferrer"{{/external}}>
+                                    <div class="artist-content-thumb{{#objektFeed}} artist-content-thumb--objekt{{/objektFeed}}">
+                                        {{#hasImage}}<img src="{{image}}" loading="lazy" alt="{{title}}">{{/hasImage}}
+                                        {{^hasImage}}<span class="material-symbols-outlined artist-content-play" aria-hidden="true">{{icon}}</span>{{/hasImage}}
+                                    </div>
+                                    <div class="artist-content-body">
+                                        <h3 class="artist-content-card-title">{{title}}</h3>
+                                        {{#hasMeta}}<p class="artist-content-meta">{{meta}}</p>{{/hasMeta}}
+                                    </div>
+                                </a>
+                            </article>
+                            {{/items}}
+                        </div>
+                        {{/hasItems}}
+                        {{^hasItems}}
+                        <p class="artist-content-empty">{{emptyText}}</p>
+                        {{/hasItems}}
+                    </section>
+                    {{/memberFeeds}}
+
+                    <section class="artist-content-section" aria-labelledby="broadcast-heading-{{artistId}}">
+                        <div class="artist-content-head">
+                            <h2 id="broadcast-heading-{{artistId}}" class="artist-content-title">출연한 방송</h2>
+                            <p class="artist-content-desc">예능·라디오·인터뷰 등 방송 출연 영상입니다.</p>
+                        </div>
+                        {{#hasBroadcastLinks}}
+                        <div class="artist-content-grid">
+                            {{#broadcastLinks}}
+                            {{#youtubeId}}
+                            <article class="artist-content-card">
+                                <a href="{{url}}" target="_blank" rel="noopener noreferrer" class="artist-content-card-link">
+                                    <div class="artist-content-thumb">
+                                        <img src="{{thumbnail}}" loading="lazy" alt="{{title}}">
+                                        <span class="material-symbols-outlined artist-content-play" aria-hidden="true">play_arrow</span>
+                                    </div>
+                                    <div class="artist-content-body">
+                                        <h3 class="artist-content-card-title">{{title}}</h3>
+                                        <p class="artist-content-meta">출연 방송 · YouTube</p>
+                                    </div>
+                                </a>
+                            </article>
+                            {{/youtubeId}}
+                            {{^youtubeId}}
+                            {{#url}}
+                            <a href="{{url}}" target="_blank" rel="noopener noreferrer" class="artist-content-link-card">
+                                <span class="material-symbols-outlined artist-content-link-icon" aria-hidden="true">live_tv</span>
+                                <span class="artist-content-card-title">{{title}}</span>
+                            </a>
+                            {{/url}}
+                            {{^url}}
+                            <div class="artist-content-link-card is-static">
+                                <span class="material-symbols-outlined artist-content-link-icon" aria-hidden="true">notes</span>
+                                <span class="artist-content-card-title">{{title}}</span>
+                            </div>
+                            {{/url}}
+                            {{/youtubeId}}
+                            {{/broadcastLinks}}
+                        </div>
+                        {{/hasBroadcastLinks}}
+                        {{^hasBroadcastLinks}}
+                        <p class="artist-content-empty">등록된 출연 방송이 없습니다. 관리자 모드에서 링크를 추가할 수 있습니다.</p>
+                        {{/hasBroadcastLinks}}
+                    </section>
+                </div>
+{{/artist}}

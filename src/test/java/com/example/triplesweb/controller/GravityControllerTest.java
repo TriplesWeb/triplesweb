@@ -20,6 +20,15 @@ import static org.hamcrest.Matchers.*;
 @AutoConfigureMockMvc(addFilters = false)
 @Import(MustacheConfig.class)
 class GravityControllerTest {
+    @Test void commonFiltersPreview() throws Exception {
+        when(service.hasCosmoToken()).thenReturn(true);
+        java.util.List<java.util.Map<String,Object>> items=new java.util.ArrayList<>();
+        for(int i=1;i<=3;i++)items.add(java.util.Map.of("id",(long)i,"title","그래비티 "+i,"statusLabel",i==1?"진행 중":"종료","type",i==1?"유닛":"타이틀","detailUrl","/cosmo/gravity/"+i,"hasComo",true,"comoUsed",i==1?100L:i==2?300L:200L,"periodLabel","2026-10"));
+        when(service.fetchGravityList("tripleS")).thenReturn(items);
+        var result=mvc.perform(get("/cosmo/gravity")).andExpect(status().isOk()).andExpect(content().string(containsString("data-objekt-dropdown"))).andReturn();
+        java.nio.file.Files.createDirectories(java.nio.file.Path.of("build/perf-pages"));
+        java.nio.file.Files.writeString(java.nio.file.Path.of("build/perf-pages/gravity.html"),result.getResponse().getContentAsString());
+    }
     @Autowired MockMvc mvc;
     @MockitoBean GravityService service;
 

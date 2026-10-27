@@ -18,6 +18,7 @@ public interface MediaRepository extends JpaRepository<Media, Long> {
     List<Media> findByTabOrderBySortOrderAscIdAsc(String tab);
 
     List<Media> findDistinctByArtists_ArtistIdOrderBySortOrderAscIdAsc(Long artistId);
+    List<Media> findDistinctByArtists_ArtistIdOrderBySortOrderAscIdAsc(Long artistId, Pageable pageable);
 
     @EntityGraph(attributePaths = "artists")
     @Query("select distinct m from Media m order by m.sortOrder asc, m.id asc")

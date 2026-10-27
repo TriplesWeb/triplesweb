@@ -20,6 +20,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.http.MediaType;
 
 import java.util.List;
 
@@ -43,7 +44,6 @@ public class TriplesController {
     public String indexTriples(Model model) {
 
         List<Artist> artistList = artistrepository.findAllWithUnits();
-        memberSpotlightService.attach(artistList);
 
         // 그룹 소개 정보
         GroupIntroDto group =
@@ -63,6 +63,16 @@ public class TriplesController {
         );
 
         return "triples/artist";
+    }
+
+    /** 선택한 멤버의 콘텐츠만 요청 시 조회한다. 첫 화면에서는 전체 멤버 자료를 읽지 않는다. */
+    @GetMapping(value = "/artist/{id:[0-9]+}/feeds", produces = MediaType.TEXT_HTML_VALUE)
+    @Transactional(readOnly = true)
+    public String artistFeeds(@PathVariable("id") long id, Model model) {
+        Artist artist = artistrepository.findById(id).orElseThrow(() -> new IllegalArgumentException("해당 멤버가 없습니다."));
+        memberSpotlightService.attach(List.of(artist));
+        model.addAttribute("artist", List.of(artist));
+        return "triples/partials/artist-feeds";
     }
 
     @GetMapping("/album")
