@@ -26,6 +26,7 @@
   }
 
   function fillIfEmpty(img) {
+    if (img.hasAttribute("data-member-src")) return;
     if (isChemistryImage(img) || alreadyPlaceholder(img)) return;
     const src = (img.getAttribute("src") || img.getAttribute("data-unit-src") || "").trim();
     if (!src) applyPlaceholder(img);
