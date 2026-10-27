@@ -1,5 +1,6 @@
 /* Shared mobile foundation. Keep zoom enabled and wide data inside its own scroll area. */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.material-symbols-outlined{max-width:1.5em;overflow:hidden;flex-shrink:0}
 .site-user-menu-open>[data-user-menu-panel]{display:block!important}
 .site-table-scroll{max-width:100%;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
 .site-table-scroll:focus-visible{outline:2px solid #8bf5dc;outline-offset:2px}

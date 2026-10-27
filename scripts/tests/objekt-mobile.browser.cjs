@@ -22,6 +22,7 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
   });
   fs.mkdirSync('/tmp/objekt-ui',{recursive:true});
   const files=fs.readdirSync(fixtures).filter(name=>name.endsWith('.html'));
+  const failures=[];
   for(const width of [360,390]){
    await page.setViewportSize({width,height:844});
    for(const file of files){
@@ -33,8 +34,8 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
       if(n.closest('.site-table-scroll,.table-responsive,.chem-table-wrap,.fc,[role=grid]'))return false;
       for(let p=n.parentElement;p&&p!==document.body;p=p.parentElement){if(['auto','scroll','hidden','clip'].includes(getComputedStyle(p).overflowX))return false;}
       return r.right>innerWidth+1||r.left < -1;
-    }).slice(0,8).map(n=>({tag:n.tagName,cls:n.className,right:n.getBoundingClientRect().right})));
-    assert.deepEqual(offending,[],`${engine} ${width}px ${file}`);
+    }).slice(0,8).map(n=>({tag:n.tagName,cls:n.className,text:n.textContent.slice(0,90),right:n.getBoundingClientRect().right})));
+    if(offending.length)failures.push({engine,width,file,offending});
     if(file==='cosmo_profile.mustache.html'){
       assert.equal(await page.locator('.profile-progress-track').count(),0);
       assert.ok(await page.locator('.profile-orbit').count()>=3);
@@ -60,5 +61,6 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`${engine} profile ${width}`);
   }
   console.log(`PASS: ${engine} · ${files.length}개 페이지 템플릿 · 360/390px · 프로필 320/430px · 터치 메뉴·입력·원형 그래프`);
+  assert.deepEqual(failures,[],JSON.stringify(failures,null,2));
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1)});
