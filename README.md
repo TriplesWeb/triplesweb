@@ -40,12 +40,47 @@ DB에 활성 케미가 하나도 없으면 표 위에 **「등록된 케미명�
 
 ```bash
 cp .env.example .env   # 최초 1회 — DB/API 값 채우기 (.gitignore)
-./gradlew bootRun      # .env를 자동으로 읽어 export 불필요
+./gradlew bootRun      # IntelliJ 메인 클래스 실행과 동일하게 .env를 자동으로 읽음
 ```
 
 브라우저: http://localhost:8080/main
 
-`bootRun`은 프로젝트 루트 `.env`를 로드하고, `MYSQL_*`를 `SPRING_DATASOURCE_*`로 매핑합니다. Docker Compose도 같은 `.env`를 씁니다.
+`bootRun`과 IntelliJ의 메인 클래스 실행 모두 Spring 시작 단계에서 프로젝트 루트 `.env`를 로드하고, `MYSQL_*`를 `SPRING_DATASOURCE_*`로 매핑합니다. 별도 dotenv 플러그인은 필요 없습니다. 명령행·JVM 옵션·실제 환경변수의 같은 설정이 `.env`보다 우선합니다. Docker Compose도 같은 `.env`를 씁니다.
+
+### IntelliJ에서 운영과 같은 DB로 실행
+
+1. 프로젝트 SDK와 Gradle JVM을 **JDK 17**로 지정하고 Gradle 프로젝트를 새로고침합니다.
+2. 프로젝트 루트에 `.env.example`을 복사한 `.env`를 두고, 운영 DB의 `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`를 입력합니다. 값에 공백이나 `#`이 들어가면 전체를 따옴표로 감쌉니다.
+3. PC의 Tailscale에 로그인하고 서버와 같은 Tailnet에 연결합니다.
+4. 공유 실행 구성 **tripleS (공유 DB)**를 선택해 실행합니다. 기존 실행 구성을 사용한다면 메인 클래스는 `com.example.triplesweb.triplesWebApplication`, 작업 디렉터리는 프로젝트 루트로 지정합니다. 기본 URL은 http://localhost:8080/main 입니다.
+
+`.env`가 있으면 기본 프로파일은 `local`이고, `SPRING_PROFILES_ACTIVE`를 지정하면 그 설정이 우선합니다. Docker는 기존 환경변수 설정을 사용하며, `.env`가 없으면 이 로더는 설정을 바꾸지 않습니다.
+
+#### DB 연결 시간 초과가 발생할 때
+
+`SocketTimeoutException: Connect timed out`이 Flyway 초기화에서 발생하면 먼저 **PC → 운영 DB의 TCP 연결**을 확인합니다. Flyway를 끄거나 Hibernate로 운영 스키마를 강제로 생성해서 해결하지 않습니다.
+
+Windows PowerShell:
+
+```powershell
+tailscale status
+tailscale ping <MYSQL_HOST의 Tailscale 주소>
+Test-NetConnection <MYSQL_HOST의 Tailscale 주소> -Port 3306
+```
+
+macOS/Linux:
+
+```bash
+tailscale status
+tailscale ping <MYSQL_HOST의 Tailscale 주소>
+nc -vz -w 5 <MYSQL_HOST의 Tailscale 주소> 3306
+```
+
+- Windows에서 `401 Unauthorized: Tailscale already in use by ...`가 나오면 다른 Windows 사용자가 Tailscale 설정을 소유한 상태입니다. 이 오류는 관리 명령의 권한 오류이므로, DB 접근 여부는 `Test-NetConnection` 결과로 별도 확인합니다. 소유한 사용자 세션에서 연결 Tailnet을 확인하고, 필요하면 해당 세션에서 Tailscale을 종료한 뒤 현재 사용자로 다시 연결합니다. 무인 모드가 켜져 있다면 소유한 사용자만 설정을 변경할 수 있습니다. [공식 안내](https://tailscale.com/docs/how-to/run-unattended#troubleshooting)를 참고합니다.
+- Tailscale ping이 실패하면 로그인 상태, 서버 온라인 상태, Tailnet 접근 권한을 확인합니다.
+- ping은 되지만 TCP 3306이 실패하면 서버 방화벽/Tailscale ACL, MariaDB 컨테이너 실행 상태와 포트 공개 설정을 확인합니다. DB 포트가 다르면 위 명령의 포트도 변경합니다.
+- TCP 연결은 되지만 `Access denied`가 나오면 `.env`의 DB 계정과 해당 계정의 접속 허용 범위를 확인합니다.
+- IntelliJ 실행 구성에 예전 `SPRING_DATASOURCE_URL`이나 VM 옵션 `-Dspring.datasource.url=...`이 남아 있으면 `.env`보다 먼저 적용되므로 함께 확인합니다.
 
 DB를 서버와 같이 쓰면 **파일도 같이** 보여야 합니다.
 
