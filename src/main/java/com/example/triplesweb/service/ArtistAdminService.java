@@ -35,7 +35,7 @@ public class ArtistAdminService {
     public static final String KEY_GROUP_IMAGE = "about.group.image";
     public static final String KEY_GROUP_TAB_IMAGE = "about.group.tabImage";
 
-    private static final String DEFAULT_GROUP_TITLE = "TripleS (트리플에스)";
+    private static final String DEFAULT_GROUP_TITLE = "tripleS (트리플에스)";
     private static final String DEFAULT_GROUP_BODY =
             "tripleS(한국어: 트리플에스)는 모드하우스가 결성한 대한민국의 24인조 걸그룹이다. "
                     + "2022년 5월 시작된 이래 정식 데뷔 9개월 이전의 프로젝트를 통하여 대중에게 소개되었다. "
@@ -52,7 +52,7 @@ public class ArtistAdminService {
     public GroupIntroDto getGroupIntro() {
         String imageUrl = getContent(KEY_GROUP_IMAGE, DEFAULT_GROUP_IMAGE);
         return GroupIntroDto.builder()
-                .title(getContent(KEY_GROUP_TITLE, DEFAULT_GROUP_TITLE))
+                .title(getContent(KEY_GROUP_TITLE, DEFAULT_GROUP_TITLE).replaceAll("(?i)\\btriples\\b", "tripleS"))
                 .body(getContent(KEY_GROUP_BODY, DEFAULT_GROUP_BODY))
                 .imageUrl(imageUrl)
                 // 탭 썸네일도 대표 이미지와 동일하게 노출
