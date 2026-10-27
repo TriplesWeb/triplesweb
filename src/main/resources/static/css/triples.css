@@ -4050,6 +4050,32 @@ a.chem-highlight:hover {
 
 .objekt-member-toggle[hidden] { display: none !important; }
 
+/* 반짝임은 가장자리의 투명도만 바꾼다. 사진·PNG 프레임·외곽선은 고정한다. */
+.member-portrait-picker .mpp-item.is-active .artist-tab-avatar::after,
+.artist-page .nav-tab-btn.is-active .artist-tab-avatar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 45%, #f5faf8);
+    opacity: .08;
+    animation: member-selection-glimmer 7.2s ease-in-out infinite;
+}
+@keyframes member-selection-glimmer {
+    0%, 100% { opacity: .08; }
+    45%, 85% { opacity: .12; }
+    65% { opacity: .52; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .member-portrait-picker .mpp-item.is-active .artist-tab-avatar::after,
+    .artist-page .nav-tab-btn.is-active .artist-tab-avatar::after {
+        animation: none;
+        opacity: 0;
+    }
+}
+
 /* 선택 직후 1회만 재생한다. 사진만 움직여 외곽선 두께는 일정하다. */
 @keyframes member-selection-settle {
     from { transform: scale(.975); }
