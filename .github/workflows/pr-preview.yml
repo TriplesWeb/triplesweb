@@ -1,0 +1,159 @@
+name: PR 미리보기
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, closed]
+
+concurrency:
+  group: pr-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+  actions: read
+
+jobs:
+  changes:
+    if: github.event.pull_request.number == 26 && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.diff.outputs.result }}
+    steps:
+      - uses: actions/github-script@v7
+        id: diff
+        with:
+          script: |
+            if (context.payload.action !== 'synchronize') return true;
+            const head=context.payload.pull_request.head;
+            const {data:runs}=await github.rest.actions.listWorkflowRunsForRepo({
+              ...context.repo,branch:head.ref,status:'success',per_page:100
+            });
+            let deployed=null;
+            for(const run of runs.workflow_runs.filter(run=>run.name==='PR 미리보기')){
+              const {data}=await github.rest.actions.listJobsForWorkflowRun({...context.repo,run_id:run.id});
+              if(data.jobs.some(job=>job.name==='preview'&&job.conclusion==='success')){
+                deployed=run.head_sha;break;
+              }
+            }
+            if(!deployed)return true;
+            const {data}=await github.rest.repos.compareCommitsWithBasehead({...context.repo,basehead:deployed+'...'+head.sha});
+            return (data.files||[]).some(file=>/^(src\/main\/|gradle\/|gradlew|build\.gradle|settings\.gradle|Dockerfile$|scripts\/docker-entrypoint\.sh$)/.test(file.filename));
+  preview:
+    needs: changes
+    if: needs.changes.outputs.deploy == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 35
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: 미리보기 배포 코드 검증
+        run: python3 -m unittest discover -s scripts/tests -p 'test_preview_*.py'
+      - name: 이미지 주소
+        id: image
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: echo "name=ghcr.io/${REPOSITORY,,}:pr-${PR_NUMBER}-${HEAD_SHA}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+        if: github.event.action != 'closed'
+      - uses: docker/login-action@v3
+        if: github.event.action != 'closed'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: 이미 발행한 PR 이미지 재사용
+        id: published
+        if: github.event.action != 'closed'
+        env:
+          IMAGE: ${{ steps.image.outputs.name }}
+        run: |
+          if docker buildx imagetools inspect "$IMAGE" >/dev/null 2>/tmp/preview-image-error.txt; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          elif grep -Eqi 'not found|manifest unknown|name unknown|no such manifest' /tmp/preview-image-error.txt; then
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          else
+            cat /tmp/preview-image-error.txt
+            exit 1
+          fi
+      - name: PR 전용 이미지 빌드
+        if: github.event.action != 'closed' && steps.published.outputs.exists != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.image.outputs.name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+      - name: 필수 검사와 최신 PR 확인
+        if: github.event.action != 'closed'
+        uses: actions/github-script@v7
+        env:
+          HEAD_SHA: ${{ env.HEAD_SHA }}
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const sha = process.env.HEAD_SHA;
+            const names = ['CI tests', 'PR code quality'];
+            for (let attempt = 0; attempt < 90; attempt++) {
+              const {data:pr} = await github.rest.pulls.get({...context.repo, pull_number:prNumber});
+              if (pr.state !== 'open' || pr.head.sha !== sha) throw new Error('최신 PR 커밋이 아니므로 배포하지 않습니다.');
+              const {data} = await github.rest.actions.listWorkflowRunsForRepo({...context.repo, event:'pull_request', per_page:100});
+              const runs = names.map(name => data.workflow_runs.find(run => run.name === name && run.head_sha === sha));
+              if (runs.every(run => run && run.status === 'completed' && run.conclusion === 'success')) return;
+              const failed = runs.find(run => run && run.status === 'completed' && run.conclusion !== 'success');
+              if (failed) throw new Error('필수 검사 실패: ' + failed.name);
+              await new Promise(resolve => setTimeout(resolve,10000));
+            }
+            throw new Error('필수 검사 대기 시간 초과');
+      - name: Tailscale 연결
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          ping: ${{ secrets.PI_HOST }}
+      - name: SSH 준비
+        env:
+          SSH_KEY: ${{ secrets.PI_SSH_KEY }}
+          PI_HOST: ${{ secrets.PI_HOST }}
+          PI_USER: ${{ secrets.PI_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf 'Host pi\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/deploy_key\n  StrictHostKeyChecking accept-new\n' "$PI_HOST" "$PI_USER" > ~/.ssh/config
+      - name: 미리보기 실행 또는 정리
+        env:
+          PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
+          IMAGE: ${{ steps.image.outputs.name }}
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
+          ACTION: ${{ github.event.action }}
+        run: |
+          set -euo pipefail
+          scp scripts/deploy-pr-preview.py "pi:/tmp/deploy-pr-preview-${PR_NUMBER}.py"
+          export REMOTE_COMMAND="$(python3 - <<'PY'
+          import os, shlex
+          e=os.environ
+          args=['python3',f"/tmp/deploy-pr-preview-{e['PR_NUMBER']}.py",'--root',e['PI_DEPLOY_PATH'],'--pr',e['PR_NUMBER']]
+          if e['ACTION']=='closed':
+              args+=['--remove']
+          else:
+              args+=['--image',e['IMAGE'],'--revision',e['HEAD_SHA'],'--registry-user',e['REGISTRY_USER']]
+          print(shlex.join(args))
+          PY
+          )"
+          printf '%s\n' "$REGISTRY_TOKEN" | ssh pi "$REMOTE_COMMAND" | tee /tmp/preview-result.txt
+          if [[ "$ACTION" != "closed" ]]; then
+            URL="$(sed -n 's/^PREVIEW_URL=//p' /tmp/preview-result.txt)"
+            test -n "$URL"
+            printf '### PR #%s 미리보기\n\n주소: %s\n\n커밋: %s\n\n휴대폰에서 Tailscale을 켜고 접속하세요.\n' "$PR_NUMBER" "$URL" "$HEAD_SHA" >> "$GITHUB_STEP_SUMMARY"
+          fi

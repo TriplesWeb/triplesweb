@@ -1,0 +1,26 @@
+.schedule-legend{display:flex;flex-wrap:wrap;gap:.45rem;margin:0 0 .8rem}
+.schedule-legend span,.schedule-category-label{display:inline-flex;align-items:center;gap:.35rem;border:1px solid color-mix(in srgb,var(--schedule-color,#00f5d4) 35%,transparent);border-radius:999px;padding:.18rem .55rem;color:var(--schedule-color,#00f5d4);font-size:.7rem;line-height:1.5;background:color-mix(in srgb,var(--schedule-color,#00f5d4) 8%,transparent);vertical-align:middle}
+.schedule-legend span::before,.schedule-category-label::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+.fc .fc-event{border-color:var(--schedule-color,#00f5d4);background:color-mix(in srgb,var(--schedule-color,#00f5d4) 14%,#101419)!important;color:var(--schedule-color,#00f5d4)}
+.fc .fc-event:hover{background:color-mix(in srgb,var(--schedule-color,#00f5d4) 22%,#101419)!important}
+.fc .fc-event .fc-event-main{color:inherit}
+.schedule-detail-item{border-left:3px solid var(--schedule-color,#00f5d4)!important}
+.schedule-category-preview{--schedule-color:#00f5d4;margin-top:.6rem;padding:.65rem .8rem;border-left:3px solid var(--schedule-color);border-radius:.5rem;background:color-mix(in srgb,var(--schedule-color) 10%,#101419);color:var(--schedule-color);font-size:.85rem;overflow-wrap:anywhere}
+
+/* 월간 달력은 7열을 유지하고 긴 제목을 날짜 칸 안에서 줄바꿈한다. */
+#calendar .fc-daygrid-day-frame{min-height:8.5rem}
+#calendar .fc-daygrid-event{align-items:flex-start;white-space:normal;padding:3px 4px}
+#calendar .fc-daygrid-event .fc-event-title,
+#calendar .fc-daygrid-event .fc-event-title-container{min-width:0;white-space:normal;overflow-wrap:anywhere;word-break:keep-all;text-overflow:clip}
+#calendar .fc-daygrid-dot-event .fc-event-title{font-weight:600}
+#calendar .fc-daygrid-event .fc-event-time{flex:none;font-size:.65rem}
+#calendar .fc-daygrid-event-dot{flex:none;margin-top:5px}
+#calendar .fc-daygrid-more-link{display:inline-block;max-width:100%;font-size:.7rem;white-space:normal}
+@media(max-width:600px){
+    #calendar{padding:.65rem}
+    #calendar .fc-daygrid-day-frame{min-height:7rem}
+    #calendar .fc-daygrid-event{font-size:.65rem;line-height:1.45;padding:3px 2px;margin-inline:1px}
+    #calendar .fc-daygrid-event .fc-event-time{display:none}
+    #calendar .fc-daygrid-event-dot{width:4px;height:4px;border-width:2px;margin-right:3px}
+    #calendar .fc-daygrid-day-number{font-size:.75rem}
+}

@@ -1,0 +1,70 @@
+name: PR 미리보기 접속 진단
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+jobs:
+  network:
+    if: github.event.pull_request.number == 26 && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          ping: ${{ secrets.PI_HOST }}
+      - name: SSH 준비
+        env:
+          SSH_KEY: ${{ secrets.PI_SSH_KEY }}
+          PI_HOST: ${{ secrets.PI_HOST }}
+          PI_USER: ${{ secrets.PI_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf 'Host pi\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/deploy_key\n  StrictHostKeyChecking accept-new\n' "$PI_HOST" "$PI_USER" > ~/.ssh/config
+      - name: 실제 주소와 현재 컨테이너 확인
+        run: |
+          ssh pi python3 - < scripts/inspect-pr-preview-network.py > /tmp/preview-network.json
+          cat /tmp/preview-network.json
+      - name: 다른 장비에서 미리보기 포트 접속
+        run: |
+          python3 - <<'PY'
+          import json,subprocess
+          result=json.load(open("/tmp/preview-network.json"))
+          for label,address in [("actual",result["ip"]),("previous","100.89.171.59")]:
+              p=subprocess.run(["curl","--noproxy","*","--connect-timeout","8","--max-time","20","--silent","--show-error","--output","/dev/null","--write-out","%{http_code}","http://"+address+":18026/api/preview/info"],capture_output=True,text=True)
+              print(label+" external_http="+p.stdout+" exit="+str(p.returncode))
+          if result["dns"]:
+              print("PREVIEW_DNS_URL=http://"+result["dns"]+":18026/cosmo/objekt")
+          PY
+
+      - name: 일반 인터넷에서 모바일 로그인 보호 확인
+        run: |
+          python3 - <<'PY'
+          import json,urllib.request,urllib.error
+          info=json.load(open("/tmp/preview-network.json"))
+          url=info.get("publicPreviewURL")
+          if not url:
+              print("모바일 HTTPS 연결 준비 중")
+              raise SystemExit(0)
+          with urllib.request.urlopen(url+"/__preview/login",timeout=25) as response:
+              html=response.read().decode("utf-8")
+              assert response.status==200 and "모바일 미리보기" in html
+          try:
+              urllib.request.urlopen(url+"/api/preview/info",timeout=15)
+              raise AssertionError("로그인 없이 API 접근 가능")
+          except urllib.error.HTTPError as error:
+              assert error.code==401
+          print("PUBLIC_LOGIN_PAGE_AND_AUTH_VERIFIED="+url+"/cosmo/objekt")
+          PY
+
+      - name: 찜하기 실제 저장 진단
+        run: ssh pi python3 - < scripts/inspect-preview-favorites.py

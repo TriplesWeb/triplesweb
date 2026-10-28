@@ -24,6 +24,10 @@ public class Schedule {
 
     private String title;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 24)
+    private ScheduleCategory category = ScheduleCategory.AUTO;
+
     @Column(name = "start_date")
     private LocalDate start;
 
@@ -37,6 +41,10 @@ public class Schedule {
             inverseJoinColumns = @JoinColumn(name = "artist_id")
     )
     private Set<Artist> artists = new LinkedHashSet<>();
+
+    public Schedule(Long id, String title, LocalDate start, LocalDate end, Set<Artist> artists) {
+        this.id=id; this.title=title; this.start=start; this.end=end; this.artists=artists;
+    }
 
     public Schedule(String title, LocalDate startDate, LocalDate endDate) {
         this.title = title;

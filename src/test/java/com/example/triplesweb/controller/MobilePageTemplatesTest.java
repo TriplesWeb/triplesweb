@@ -26,8 +26,12 @@ class MobilePageTemplatesTest {
         model.put("items",List.of(Map.of("id",1,"name",longText,"price",1000,"imageUrl","/images/no-image.png")));
         model.put("articleForm",Map.of("title",longText,"content",rich));
         model.put("objekt",Map.of("frontImage","","backImage","","thumbnailImage","","collectionId",longText,"member","HaYeon","season","Cream02","class","Special","collectionNo","367Z"));
+        model.put("seasonOptions",List.of("Atom01","Binary01","Cream02"));
+        model.put("seasonChoices",List.of(Map.of("value","Atom01","label","Atom01"),Map.of("value","Binary01","label","Binary01"),Map.of("value","Cream02","label","Cream02")));
+        model.put("objektSeasonOptions",List.of("Atom01","Binary01","Cream02"));
+        model.put("showObjektPicker",true);
         model.put("objektKey","uuid"); model.put("memberUrl","/cosmo/objekt?member=HaYeon");model.put("lookupUrl","/lookup");model.put("favoriteDesired",true);
-        model.put("isOverviewTab",true);model.put("hasProfile",true);model.put("hasMemberProgress",true);model.put("hasStats",true);
+        model.put("isOverviewTab",true);model.put("hasProfile",true);model.put("hasCollection",true);model.put("hasMemberProgress",true);model.put("hasStats",true);
         model.put("nickname","MobileFan");model.put("requestedNickname","MobileFan");model.put("ownedCount",3);model.put("uniqueCount",2);model.put("memberCount",2);
         model.put("overviewUrl","/cosmo/profile/MobileFan?tab=overview");model.put("membersTabUrl","/cosmo/profile/MobileFan?tab=members");model.put("transfersUrl","/cosmo/transfers?nickname=MobileFan");
         model.put("memberProgress",List.of(orbit("HaYeon",50,1,2),orbit("Jiyeon",0,0,2),orbit("SeoYeon",100,2,2)));

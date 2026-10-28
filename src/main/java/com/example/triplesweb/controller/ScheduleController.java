@@ -2,6 +2,11 @@ package com.example.triplesweb.controller;
 
 import com.example.triplesweb.dto.ScheduleForm;
 import com.example.triplesweb.entity.Schedule;
+import com.example.triplesweb.entity.ScheduleCategory;
+import com.example.triplesweb.entity.Artist;
+import com.example.triplesweb.util.SchedulePresentation;
+import java.util.Map;
+import java.util.Comparator;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
@@ -47,23 +52,16 @@ public class ScheduleController {
         List<Schedule> schedules = artist == null || artist.isBlank()
                 ? all
                 : all.stream().filter(s -> splitNames(s.getArtistNames()).contains(artist)).toList();
-        List<ScheduleForm> dtos = schedules.stream().map(s -> {
-            ScheduleForm f = new ScheduleForm(
-                    String.valueOf(s.getId()),
-                    s.getTitle(),
-                    s.getStart(),
-                    s.getEnd() != null ? s.getEnd().plusDays(1) : null,
-                    s.getEnd());
-            f.setArtistNames(s.getArtistNames() == null ? "" : s.getArtistNames());
-            return f;
-        }).toList();
+        List<Artist> artists=artistRepository.findAll().stream().sorted(Comparator.comparing(Artist::getArtistId,Comparator.nullsLast(Comparator.naturalOrder()))).toList();
+        List<ScheduleForm> dtos=schedules.stream().map(schedule->SchedulePresentation.form(schedule,artists)).toList();
         ObjectMapper mapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         model.addAttribute("schedules", dtos);
-        model.addAttribute("schedulesJson", mapper.writeValueAsString(dtos));
+        model.addAttribute("schedulesJson", mapper.writeValueAsString(dtos).replace("<", "\\u003c").replace("&", "\\u0026"));
         model.addAttribute("isAdmin", aboutAdminAuth.isAdmin(request, session));
-        model.addAttribute("artistOptions", artistRepository.findAll());
+        model.addAttribute("artistOptions", artists);
+        model.addAttribute("scheduleCategories", SchedulePresentation.categories());
         model.addAttribute("selectedArtist", artist == null ? "" : artist);
         return "schedule";
     }
@@ -86,11 +84,12 @@ public class ScheduleController {
                                                     @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
                                                     @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
                                                     @RequestParam(value = "artistNames", required = false) List<String> names,
+                                                    @RequestParam(required = false) ScheduleCategory category,
                                                     HttpServletRequest request,
                                                     HttpSession session) {
         aboutAdminAuth.requireAdmin(request, session);
-        scheduleService.save(title, start, end, names == null ? "" : String.join(",", names));
-        return ResponseEntity.ok().build();
+        Schedule saved=scheduleService.save(title,start,end,names==null?"":String.join(",",names),category);
+        return ResponseEntity.ok(SchedulePresentation.form(saved,artistRepository.findAll()));
     }
 
     @GetMapping("/edit/{id}")
@@ -105,11 +104,12 @@ public class ScheduleController {
                                           @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
                                           @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
                                           @RequestParam(value = "artistNames", required = false) List<String> names,
+                                          @RequestParam(required = false) ScheduleCategory category,
                                           HttpServletRequest request,
                                           HttpSession session) {
         aboutAdminAuth.requireAdmin(request, session);
-        scheduleService.update(String.valueOf(id), title, startDate, endDate, names == null ? "" : String.join(",", names));
-        return ResponseEntity.ok().build();
+        Schedule saved=scheduleService.update(String.valueOf(id),title,startDate,endDate,names==null?"":String.join(",",names),category);
+        return ResponseEntity.ok(SchedulePresentation.form(saved,artistRepository.findAll()));
     }
 
     @PostMapping("/delete/{id}")
@@ -119,6 +119,11 @@ public class ScheduleController {
         aboutAdminAuth.requireAdmin(request, session);
         scheduleService.deleteById(id);
         return "redirect:/schedule";
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<?> invalidSchedule(IllegalArgumentException error) {
+        return ResponseEntity.badRequest().body(Map.of("message",error.getMessage()));
     }
 
     private List<String> splitNames(String names) {

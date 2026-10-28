@@ -1,7 +1,7 @@
-/* Page-only overrides: avoid continuously repainting image filters and shimmer. */
-.artist-page .artist-tab-shine{display:none!important}
+/* Page-only overrides: keep image filters static; selected sheen uses transform/opacity only. */
+.artist-page .nav-tab-btn:not(.is-active) .artist-tab-shine{display:none}
 .artist-page .artist-tab-frame{filter:none!important;transition:none!important}
-.artist-page .nav-tab-btn.is-active .artist-tab-avatar{outline:2px solid var(--artist-color,#00f5d4);outline-offset:3px}
+.artist-page .nav-tab-btn.is-active .artist-tab-avatar{outline:none}
 .artist-page .tab-pane[hidden],.artist-page [data-artist-feed-retry][hidden]{display:none!important}
 .artist-page .artist-feed-slot{min-height:4rem}
 .artist-page .artist-feed-status{margin-top:2rem;font-size:.85rem;line-height:1.7;color:#b9cac4}

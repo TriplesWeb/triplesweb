@@ -90,9 +90,9 @@
 .ar-card img, .ar-card video { width: 100%; height: 9.5rem; object-fit: cover; background: #07080b; }
 .archive-page[data-archive-kind="image"] .ar-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 20rem)); justify-content: center; }
 .archive-page[data-archive-kind="image"] .ar-card { width: 100%; max-width: 20rem; justify-self: center; }
-.archive-page[data-archive-kind="image"] .ar-card img,
+.archive-page[data-archive-kind="image"] .ar-card .ar-photo-link > img,
 .archive-page[data-archive-kind="image"] .ar-highlight img { object-fit: contain; object-position: center; }
-.archive-page[data-archive-kind="image"] .ar-card img { height: clamp(16rem, 34vw, 22rem); }
+.archive-page[data-archive-kind="image"] .ar-card .ar-photo-link > img { height: clamp(16rem, 34vw, 22rem); }
 .ar-card .ar-body { padding: 0.95rem 1rem 1rem; display: flex; flex-direction: column; gap: 0.55rem; flex: 1; }
 .ar-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
 .ar-id, .ar-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.55rem; border-radius: 0.45rem; font-family: Sora, Inter, system-ui, sans-serif; font-size: 0.8rem; font-weight: 650; line-height: 1.4; }
@@ -334,3 +334,7 @@
     .archive-page[data-archive-kind="image"] .is-photo-carousel .ar-card.is-photo-before,
     .archive-page[data-archive-kind="image"] .is-photo-carousel .ar-card.is-photo-after { transform: none; }
 }
+
+/* 카드의 큰 사진 규칙과 멤버 배지 이미지를 분리한다. */
+.archive-page .ar-card .archive-member-chip img,
+.archive-page .ar-highlight .archive-member-chip img{width:2.15rem;height:2.15rem;max-width:2.15rem;object-fit:cover;flex:none}

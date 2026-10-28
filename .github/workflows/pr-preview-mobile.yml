@@ -1,0 +1,70 @@
+name: PR 모바일 HTTPS 미리보기
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+concurrency:
+  group: pr-mobile-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  network:
+    if: github.event.pull_request.number == 26 && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          ping: ${{ secrets.PI_HOST }}
+      - name: SSH 준비
+        env:
+          SSH_KEY: ${{ secrets.PI_SSH_KEY }}
+          PI_HOST: ${{ secrets.PI_HOST }}
+          PI_USER: ${{ secrets.PI_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf 'Host pi\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/deploy_key\n  StrictHostKeyChecking accept-new\n' "$PI_HOST" "$PI_USER" > ~/.ssh/config
+      - name: 모바일 게이트웨이 보안 검사
+        run: python3 -m unittest discover -s scripts/tests -p 'test_preview_mobile.py'
+      - name: 암호로 보호된 HTTPS 연결 배포
+        env:
+          PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          scp scripts/pr-preview-mobile-gateway.py scripts/deploy-pr-preview-mobile.py pi:/tmp/
+          COMMAND="$(python3 - <<'PY'
+          import os,shlex
+          print(shlex.join(["python3","/tmp/deploy-pr-preview-mobile.py","--root",os.environ["PI_DEPLOY_PATH"],"--gateway","/tmp/pr-preview-mobile-gateway.py"]))
+          PY
+          )"
+          ssh pi "$COMMAND" | tee /tmp/mobile-preview-result.txt
+          BEFORE="$(ssh pi "docker inspect --format '{{.Id}} {{.State.StartedAt}}' triples-pr26-mobile-gateway triples-pr26-mobile-tunnel")"
+          ssh pi "$COMMAND" > /tmp/mobile-preview-repeat.txt
+          AFTER="$(ssh pi "docker inspect --format '{{.Id}} {{.State.StartedAt}}' triples-pr26-mobile-gateway triples-pr26-mobile-tunnel")"
+          test "$BEFORE" = "$AFTER"
+          echo "반복 적용 후 로그인 게이트웨이·터널 재시작 0회 확인"
+          URL="$(sed -n 's/^PUBLIC_PREVIEW_URL=//p' /tmp/mobile-preview-result.txt)"
+          test -n "$URL"
+          printf '### 휴대폰 미리보기\n\n%s\n\n기존 사이트 관리자 비밀번호로 접속하세요. Tailscale은 필요하지 않습니다.\n' "$URL" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 실제 HTTPS 모바일 Chrome 로그인 검사
+        env:
+          NODE_PATH: /tmp/preview-login-browser/node_modules
+        run: |
+          npm install --prefix /tmp/preview-login-browser --no-package-lock playwright@1.56.1
+          export PUBLIC_PREVIEW_URL="$(sed -n 's/^PUBLIC_PREVIEW_URL=//p' /tmp/mobile-preview-result.txt)"
+          if [ -x /usr/bin/google-chrome ]; then
+            export CHROMIUM_PATH=/usr/bin/google-chrome
+          else
+            /tmp/preview-login-browser/node_modules/.bin/playwright install --with-deps chromium
+          fi
+          node scripts/tests/pr-preview-login.browser.cjs
