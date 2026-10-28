@@ -25,9 +25,21 @@ jobs:
         id: diff
         with:
           script: |
-            if (context.payload.action !== 'synchronize' || !context.payload.before) return true;
-            const {data} = await github.rest.repos.compareCommitsWithBasehead({...context.repo,basehead:context.payload.before+'...'+context.payload.pull_request.head.sha});
-            return (data.files || []).some(file => /^(src\/main\/|gradle\/|gradlew|build\.gradle|settings\.gradle|Dockerfile$|scripts\/docker-entrypoint\.sh$)/.test(file.filename));
+            if (context.payload.action === 'closed') return true;
+            const head=context.payload.pull_request.head;
+            const {data:runs}=await github.rest.actions.listWorkflowRuns({
+              ...context.repo,workflow_id:'pr-preview.yml',branch:head.ref,status:'success',per_page:30
+            });
+            let deployed=null;
+            for(const run of runs.workflow_runs){
+              const {data}=await github.rest.actions.listJobsForWorkflowRun({...context.repo,run_id:run.id});
+              if(data.jobs.some(job=>job.name==='preview'&&job.conclusion==='success')){
+                deployed=run.head_sha;break;
+              }
+            }
+            if(!deployed)return true;
+            const {data}=await github.rest.repos.compareCommitsWithBasehead({...context.repo,basehead:deployed+'...'+head.sha});
+            return (data.files||[]).some(file=>/^(src\/main\/|gradle\/|gradlew|build\.gradle|settings\.gradle|Dockerfile$|scripts\/docker-entrypoint\.sh$)/.test(file.filename));
   preview:
     needs: changes
     if: needs.changes.outputs.deploy == 'true'
