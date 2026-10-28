@@ -59,6 +59,16 @@ class PreviewMobileSecurityTest(unittest.TestCase):
             self.assertIn('미리보기를 준비하고 있어요',body.decode())
             self.assertIn('http-equiv="refresh"',body.decode())
 
+    def test_application_redirect_stays_https_on_the_same_site(self):
+        response=type("Response",(),{"status":302,"getheaders":lambda self:[("Location","http://preview.example/article/group-orders"),("Content-Length","0")],"read":io.BytesIO(b"").read})()
+        with patch.object(self.module.http.client,"HTTPConnection") as upstream:
+            upstream.return_value.getresponse.return_value=response
+            status,headers,_=self.request("GET","/cosmo/group-orders",headers={"Host":"preview.example","Cookie":"PR29MOBILEACCESS=test-session"})
+            self.assertEqual(status,302)
+            self.assertEqual(headers["Location"],"https://preview.example/article/group-orders")
+        self.assertEqual(self.module.secure_preview_location("/article/group-orders", "preview.example"), "/article/group-orders")
+        self.assertEqual(self.module.secure_preview_location("http://other.example/page", "preview.example"), "http://other.example/page")
+
     def test_private_api_requires_login(self):
         status,headers,body=self.request("GET","/api/preview/info")
         self.assertEqual(status,401)

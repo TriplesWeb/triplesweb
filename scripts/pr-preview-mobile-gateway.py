@@ -23,6 +23,13 @@ ATTEMPTS=defaultdict(deque)
 HOP={"connection","keep-alive","proxy-authenticate","proxy-authorization","te","trailer","transfer-encoding","upgrade"}
 PAGE="""<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PR #PRNUMBER 미리보기</title><style>*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;background:#10151b;color:#f0f6f6;font:16px/1.6 system-ui,sans-serif;padding:24px}main{width:min(100%,390px);border:1px solid #35474c;border-radius:24px;padding:28px;background:#172028}small{color:#69d7c8}h1{font-size:25px;margin:8px 0 12px}p{color:#b8c9ce}input,button{font:inherit;width:100%;border-radius:12px;padding:12px;margin-top:12px}input{background:#10151b;border:1px solid #52676f;color:white}button{border:0;background:#69d7c8;color:#0c2724;font-weight:700}label{display:block;margin-top:20px}.error{color:#ffb7b7}</style></head><body><main><small>tripleS · PR #PRNUMBER</small><h1>모바일 미리보기</h1><p>사이트 관리자 비밀번호로 접속하세요.</p>MESSAGE<form method="post" action="/__preview/login"><input type="hidden" name="csrf" value="CSRFVALUE"><label for="password">관리자 비밀번호</label><input id="password" name="password" type="password" autocomplete="current-password" required autofocus><button type="submit">미리보기 열기</button></form></main></body></html>"""
 
+def secure_preview_location(value, host):
+    """TLS가 게이트웨이 앞에서 끝나더라도 같은 사이트의 이동 주소는 HTTPS를 유지한다."""
+    target=urlsplit(value)
+    if target.scheme=="http" and target.netloc.lower()==host.lower():
+        return target._replace(scheme="https").geturl()
+    return value
+
 def password_matches(password):
     digest=hashlib.pbkdf2_hmac("sha256",password.encode(),bytes.fromhex(CONFIG["salt"]),260000).hex()
     return hmac.compare_digest(digest,CONFIG["passwordHash"])
@@ -147,6 +154,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(response.status)
             for key,value in response.getheaders():
                 if key.lower() not in HOP:
+                    if key.lower()=="location":
+                        value=secure_preview_location(value,self.headers.get("Host",""))
                     self.send_header(key,value)
             self.send_header("Connection","close")
             self.send_header("Referrer-Policy","no-referrer")
