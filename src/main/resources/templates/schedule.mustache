@@ -696,7 +696,7 @@
             return bootstrap.Modal.getInstance(element)||new bootstrap.Modal(element);
         }
         // Bootstrap은 열리는 중의 hide()를 무시하므로 열린 뒤 다시 닫는다.
-        function hideScheduleModalThen(element, callback) {
+        function hideScheduleModalThen(element, callback = () => {}) {
             element.addEventListener('hidden.bs.modal', callback, {once:true});
             const modal = scheduleModal(element);
             modal.hide();
@@ -979,7 +979,7 @@
                         const saved=await response.json();
                         calendar.addEvent(toCalendarEvent(saved));
 
-                        scheduleModal(addModalElement).hide();
+                        hideScheduleModalThen(addModalElement);
                         addForm.reset();
                         renderSelectedDate(start, new Date(`${start}T00:00:00`));
                     } catch (error) {
@@ -1029,7 +1029,7 @@
                         if(eventToUpdate)eventToUpdate.remove();
                         calendar.addEvent(saved);
 
-                        scheduleModal(editModalElement).hide();
+                        hideScheduleModalThen(editModalElement);
                         renderSelectedDate(start, new Date(`${start}T00:00:00`));
                     } catch (error) {
                         console.error('스케줄 수정 오류:', error);
