@@ -8,7 +8,7 @@
         .artist-page .artist-edit-inline[hidden] { display: none !important; }
     </style>
 </head>
-<body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen artist-page">
+<body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen artist-page" data-group-overview="{{overviewOnly}}">
 
 {{>layout/header}}
 
@@ -16,7 +16,7 @@
     <div class="card-box bg-[#16181f]/80 backdrop-blur-md border border-[#3a4a46]/30 rounded-2xl p-6 shadow-xl">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <h2 class="text-2xl font-bold text-[#e3e2e8] flex items-center gap-2 m-0">
-                <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4]"></span>ABOUT 트리플에스
+                <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4]"></span>{{#overviewOnly}}개요{{/overviewOnly}}{{^overviewOnly}}ABOUT 트리플에스{{/overviewOnly}}
             </h2>
             <button type="button" id="artistAdminBtn" class="artist-admin-btn hidden" aria-pressed="false">관리자</button>
         </div>

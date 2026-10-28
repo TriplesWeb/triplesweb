@@ -1,4 +1,7 @@
 {{#items}}
 {{^nested}}<a href="{{href}}">{{label}}</a>{{/nested}}
-{{#nested}}<details class="header-submenu"><summary>{{label}}<span class="header-chevron" aria-hidden="true"></span></summary><div>{{#children}}<a href="{{href}}">{{label}}</a>{{/children}}</div></details>{{/nested}}
+{{#nested}}
+{{#linked}}<div class="header-link-group"><a href="{{href}}">{{label}}</a><div class="header-related-links">{{#children}}<a href="{{href}}">{{label}}</a>{{/children}}</div></div>{{/linked}}
+{{^linked}}<details class="header-submenu"><summary>{{label}}<span class="header-chevron" aria-hidden="true"></span></summary><div>{{#children}}<a href="{{href}}">{{label}}</a>{{/children}}</div></details>{{/linked}}
+{{/nested}}
 {{/items}}

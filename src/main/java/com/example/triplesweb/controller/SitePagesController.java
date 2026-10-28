@@ -14,16 +14,13 @@ public class SitePagesController {
     public String voting(Model model) { return pending(model, "투표·노동"); }
 
     @GetMapping("/cosmo/group-orders")
-    public String groupOrders(Model model) { return pending(model, "분철"); }
+    public String groupOrders() { return "redirect:/article/group-orders"; }
 
     @GetMapping("/media/drive")
     public String drive(Model model) { return pending(model, "트리플에스 드라이브"); }
 
     @GetMapping("/community/suggestions")
     public String suggestions(Model model) { return pending(model, "건의게시판 (비밀글)"); }
-
-    @GetMapping("/sns")
-    public String social(Model model) { return pending(model, "소셜 미디어"); }
 
     private String pending(Model model, String title) {
         model.addAttribute("pageTitle", title);

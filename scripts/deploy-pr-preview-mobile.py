@@ -129,15 +129,15 @@ def main():
                     if build.get("pr")!=pr:
                         raise RuntimeError("잘못된 미리보기 응답")
                 if os.environ.get("PREVIEW_VERIFY_NAVIGATION")=="true":
-                    for path,marker in (("/sitemap", "그룹·멤버 통합 소개"), ("/triples/overview", "멤버 만나보기"),
+                    for path,marker in (("/sitemap", "전체 메뉴"), ("/triples/overview", "groupImageDisplay"),
                             ("/triples/members", "member-directory"), ("/activities/voting", "준비 중"),
-                            ("/cosmo/group-orders", "준비 중"), ("/media/drive", "준비 중"),
-                            ("/community/suggestions", "준비 중"), ("/sns", "준비 중")):
+                            ("/cosmo/group-orders", "분철 게시판"), ("/media/drive", "준비 중"),
+                            ("/community/suggestions", "준비 중")):
                         with opener.open(url+path,timeout=30) as page:
                             content=page.read().decode("utf-8")
                             if page.status!=200 or marker not in content or '/js/site-header.js' not in content:
                                 raise RuntimeError("헤더 연결 화면 검증 실패: "+path)
-                    print("PUBLIC_NAVIGATION_PAGES_VERIFIED=8")
+                    print("PUBLIC_NAVIGATION_PAGES_VERIFIED=7")
                 try:
                     urllib.request.urlopen(url+"/api/preview/info",timeout=15)
                     raise RuntimeError("로그인 보호가 적용되지 않았습니다")

@@ -26,7 +26,7 @@
         <div class="absolute -inset-1 rounded-3xl bg-gradient-to-b from-primary-container/20 via-transparent to-secondary-container/30 blur-xl opacity-75 pointer-events-none"></div>
 
         <!-- 메인 컨테이너 카드 -->
-        <div class="article-board-shell relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
+        <div class="article-board-shell {{#hideRecommendations}}article-board-no-likes{{/hideRecommendations}} relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
 
             <!-- 상단 헤더 타이틀 -->
             <div class="flex items-center justify-between mb-8 pb-4 border-b border-outline-variant/30">
@@ -47,7 +47,7 @@
                     <div class="col-span-6 text-left">제목</div>
                     <div class="col-span-2">작성자</div>
                     <div class="col-span-2">날짜</div>
-                    <div class="col-span-1">추천</div>
+                    {{^hideRecommendations}}<div class="col-span-1">추천</div>{{/hideRecommendations}}
                 </div>
 
                 <!-- 테이블 바디 (게시글 목록 루프) -->
@@ -62,7 +62,7 @@
                             </div>
                             <div class="col-span-2 text-on-surface-variant truncate">{{userId}}</div>
                             <div class="col-span-2 text-xs text-outline">{{formattedDate}}</div>
-                            <div class="col-span-1 text-primary-container font-semibold">{{likesCount}}</div>
+                            {{^hideRecommendations}}<div class="col-span-1 text-primary-container font-semibold">{{likesCount}}</div>{{/hideRecommendations}}
                         </div>
                     {{/articleList}}
 

@@ -35,19 +35,20 @@ class SiteNavigationTest {
 
     @Test void primaryOrderAndAllLegacyDestinationsRemainAvailable() throws Exception {
         assertThat(SiteNavigation.PRIMARY).extracting(SiteNavigation.Section::label)
-            .containsExactly("About 트리플에스", "스케줄·활동", "코스모", "미디어");
+            .containsExactly("About 트리플에스", "코스모", "정보", "미디어", "일정");
         String html = mvc.perform(get("/sitemap")).andExpect(status().isOk())
             .andExpect(view().name("navigation/sitemap")).andReturn().getResponse().getContentAsString();
-        for (String path : List.of("/triples/artist", "/triples/chemistry-en", "/cosmo/collection",
-                "/cosmo/transfers", "/cosmo/objekt/favorites", "/sns", "/article/free", "/article/chat", "/popular",
-                "/article/trade", "/article/sell", "/cosmo/group-orders", "/shop")) {
+        for (String path : List.of("/cosmo/collection",
+                "/cosmo/transfers", "/cosmo/objekt/favorites", "/article/free", "/article/chat", "/popular",
+                "/article/trade", "/article/sell", "/article/group-orders", "/shop")) {
             assertThat(html).contains("href=\"" + path + "\"");
         }
+        assertThat(html).doesNotContain("함께 둘러보기", "href=\"/sns\"", "href=\"/triples/chemistry-en\"");
         verifyNoInteractions(artists, artistAdmin, spotlight);
     }
 
     @Test void newDestinationsAreReadOnlyPlaceholders() throws Exception {
-        for (String path : List.of("/activities/voting", "/cosmo/group-orders", "/media/drive", "/community/suggestions", "/sns")) {
+        for (String path : List.of("/activities/voting", "/media/drive", "/community/suggestions")) {
             mvc.perform(get(path)).andExpect(status().isOk()).andExpect(content().string(containsString("준비 중")));
             mvc.perform(post(path)).andExpect(status().isMethodNotAllowed());
         }
@@ -57,7 +58,10 @@ class SiteNavigationTest {
     @Test void overviewReusesGroupDataAndDirectoryDoesNotLoadMemberFeeds() throws Exception {
         when(artistAdmin.getGroupIntro()).thenReturn(GroupIntroDto.builder().title("tripleS").body("기존 그룹 설명").imageUrl("/group.jpg").build());
         mvc.perform(get("/triples/overview")).andExpect(status().isOk())
-            .andExpect(content().string(containsString("기존 그룹 설명")));
+            .andExpect(view().name("triples/artist"))
+            .andExpect(content().string(containsString("기존 그룹 설명")))
+            .andExpect(content().string(containsString("id=\"groupImageDisplay\"")));
+        mvc.perform(get("/cosmo/group-orders")).andExpect(redirectedUrl("/article/group-orders"));
         Artist member = new Artist(); member.setArtistId(1L); member.setName("서연"); member.setEngName("SeoYeon");
         when(artists.findAll(any(Sort.class))).thenReturn(List.of(member));
         mvc.perform(get("/triples/members")).andExpect(status().isOk())

@@ -38,8 +38,13 @@ public class TriplesController {
     @GetMapping("/overview")
     @Transactional(readOnly = true)
     public String overview(Model model) {
-        model.addAttribute("group", artistAdminService.getGroupIntro());
-        return "triples/overview";
+        GroupIntroDto group = artistAdminService.getGroupIntro();
+        model.addAttribute("groupTitle", group.getTitle());
+        model.addAttribute("groupBody", group.getBody());
+        model.addAttribute("groupImage", group.getImageUrl());
+        model.addAttribute("groupTabImage", group.getTabImageUrl());
+        model.addAttribute("overviewOnly", true);
+        return "triples/artist";
     }
 
     @GetMapping("/members")
@@ -56,6 +61,7 @@ public class TriplesController {
     @GetMapping("/artist")
     @Transactional(readOnly = true)
     public String indexTriples(Model model) {
+        model.addAttribute("overviewOnly", false);
 
         List<Artist> artistList = artistrepository.findAllWithUnits();
 

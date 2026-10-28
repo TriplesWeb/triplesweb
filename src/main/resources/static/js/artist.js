@@ -582,7 +582,7 @@
             }
             return;
           }
-          window.location.href = "/triples/artist?tab=triples";
+          window.location.href = document.body.dataset.groupOverview === "true" ? "/triples/overview" : "/triples/artist?tab=triples";
         } catch (_) {
           if (err) {
             err.textContent = "저장에 실패했습니다.";

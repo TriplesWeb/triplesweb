@@ -46,9 +46,13 @@ public class ArticleController {
     private final ObjektService objektService;
 
     private static final Set<String> ALLOWED_CATEGORIES = Set.of(
-            "free", "chat", "trade", "sell", "info", "notice"
+            "free", "chat", "trade", "sell", "group-orders", "info", "notice"
     );
     private static final Set<String> LIKE_ALLOWED_CATEGORIES = Set.of("free", "chat", "info");
+
+    private static boolean isObjektBoard(String category) {
+        return Set.of("trade", "sell", "group-orders").contains(category);
+    }
 
     private boolean isInvalidCategory(String category) {
         return !ALLOWED_CATEGORIES.contains(category);
@@ -109,7 +113,7 @@ public class ArticleController {
 
         try {
             Article savedArticle = articleService.create(article);
-            if ("trade".equals(category) || "sell".equals(category)) {
+            if (isObjektBoard(category)) {
                 articleObjektService.attachSelected(savedArticle, selectedObjektIds);
             }
             if (files != null) {
@@ -139,7 +143,7 @@ public class ArticleController {
     }
 
     private void addObjektOptions(Model model, String category, Set<String> selectedKeys) {
-        if (!("trade".equals(category) || "sell".equals(category))) {
+        if (!(isObjektBoard(category))) {
             return;
         }
         Set<String> selected = selectedKeys == null ? Set.of() : selectedKeys.stream()
@@ -247,6 +251,7 @@ public class ArticleController {
             case "chat" -> "잡담";
             case "trade" -> "교환";
             case "sell" -> "거래";
+            case "group-orders" -> "분철";
             case "info" -> "정보";
             case "notice" -> "공지사항";
             default -> "게시판";
@@ -309,8 +314,9 @@ public class ArticleController {
         model.addAttribute("categoryName", getCategoryName(category));
         model.addAttribute("isNotice", "notice".equals(category));
         model.addAttribute("articleList", articleViewList);
-        model.addAttribute("popularList",
-                articleService.findPopularArticles(category, 5));
+        model.addAttribute("hideRecommendations", "group-orders".equals(category));
+        model.addAttribute("popularList", "group-orders".equals(category) ? List.of()
+                : articleService.findPopularArticles(category, 5));
 
         // 검색 폼에서 사용하는 Mustache 변수
         model.addAttribute("searchKeyword", searchKeyword);
@@ -436,7 +442,7 @@ public class ArticleController {
                     uploadedFiles,
                     deletedFiles);
 
-            if ("trade".equals(category) || "sell".equals(category)) {
+            if (isObjektBoard(category)) {
                 articleObjektService.replaceSelected(saved, selectedObjektIds);
             }
             return "redirect:/article/" + category + "/" + id;
@@ -529,7 +535,7 @@ public class ArticleController {
                 && ArticleHtmlCleaner.fingerprint(existing.getContent())
                 .equals(ArticleHtmlCleaner.fingerprint(incoming.getContent()));
         if (!sameText || hasFileChanges(files, uploadedFiles, deletedFiles)) return null;
-        if (("trade".equals(category) || "sell".equals(category))
+        if ((isObjektBoard(category))
                 && !sameObjektSelection(existing.getId(), selectedObjektIds)) {
             return null;
         }

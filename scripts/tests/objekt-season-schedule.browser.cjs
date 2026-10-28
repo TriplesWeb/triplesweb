@@ -44,6 +44,7 @@ const urls={
    return route.fulfill({status:404,body:''});
   });
   for(const name of ['objekt','collection']){
+   await page.setViewportSize({width:1280,height:900});
    await page.goto('https://filters.test/fixture/'+name);
    const row=page.getByRole('group',{name:'시즌 빠른 선택',exact:true});
    await row.locator('button[data-value="Atom01"]').waitFor({timeout:10000}).catch(async error=>{
@@ -60,7 +61,9 @@ const urls={
      return {sameColumn:!!stack,gap:control?el.getBoundingClientRect().top-control.getBoundingClientRect().bottom:-1};
    });
    assert.equal(position.sameColumn,true,name+' 시즌 컨트롤과 같은 열');
-   assert.ok(position.gap>=0&&position.gap<=12,name+' 드롭다운 바로 아래 버튼');
+   assert.ok(position.gap>=0,name+' 필터 아래 시즌 선택 줄');
+   assert.equal(await row.locator('.season-chip-list').evaluate(el=>getComputedStyle(el).flexWrap),'wrap',name+' 웹에서 시즌 전체 펼침');
+   assert.equal(await row.locator('.season-chip-list').evaluate(el=>el.scrollWidth<=el.clientWidth),true,name+' 웹 가로 스크롤 없음');
    const atom=row.locator('button[data-value="Atom01"]'),binary=row.locator('button[data-value="Binary01"]');
    assert.notEqual(await atom.evaluate(el=>getComputedStyle(el).borderColor),await binary.evaluate(el=>getComputedStyle(el).borderColor));
    await atom.click();await binary.click();
@@ -74,6 +77,7 @@ const urls={
    assert.equal(await row.locator('button[data-value="Cream02"]').getAttribute('aria-pressed'),'true');
    await page.setViewportSize({width:390,height:844});
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,name+' 시즌 버튼 모바일 넘침');
+   assert.equal(await row.locator('.season-chip-list').evaluate(el=>getComputedStyle(el).flexWrap),'nowrap',name+' 모바일 기존 선택 줄 유지');
   }
   await page.goto('https://filters.test/fixture/native');
   assert.equal(await page.evaluate(()=>document.characterSet),'UTF-8');

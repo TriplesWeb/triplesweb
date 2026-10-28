@@ -20,3 +20,11 @@
 .season-filter-stack .objekt-dropdown-menu[hidden]{display:none!important}
 
 .objekt-picker-filter-bar>.season-filter-stack{width:min(100%,14rem);flex:0 1 14rem}
+
+/* 웹에서는 필터 다음 줄 전체를 사용해 모든 시즌을 스크롤 없이 펼친다. */
+@media(min-width:768px){
+ .has-season-stack>.season-filter-stack{display:contents}
+ .has-season-stack .season-quick-filters{grid-column:1/-1;order:2;flex:1 0 100%;width:100%;margin-top:.25rem}
+ .season-chip-list{flex-wrap:wrap;overflow:visible;gap:.45rem;padding:4px 2px}
+ .season-quick-filters .season-chip{min-height:30px;padding:.35rem .8rem}
+}

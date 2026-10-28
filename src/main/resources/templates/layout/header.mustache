@@ -3,18 +3,18 @@
 <script src="/js/site-admin-controls.js?v=3" defer></script>
 <header id="top-header" class="site-header">
     <div class="header-shell">
-        <div class="header-utilities" aria-label="빠른 메뉴">
-            {{#siteCommunity}}{{>navigation/desktop-section}}{{/siteCommunity}}
-            <a href="/sitemap">전체 메뉴</a>
-        </div>
         <div class="header-main">
             <a href="/" class="header-brand" aria-label="tripleS 홈">
                 <img src="/images/sss-mascot.png" alt="" width="33" height="27" class="sss-mascot-wave" decoding="async" aria-hidden="true">
                 <img src="/images/triples-wordmark-white.png" alt="tripleS" width="120" height="36" decoding="async">
             </a>
             <nav id="navbar" class="header-primary" aria-label="주 메뉴">
-                {{#siteNavigation}}{{>navigation/desktop-section}}{{/siteNavigation}}
+                {{#siteNavigation}}{{#direct}}<a class="header-nav-link" href="{{href}}">{{label}}</a>{{/direct}}{{^direct}}{{>navigation/desktop-section}}{{/direct}}{{/siteNavigation}}
             </nav>
+        <div class="header-utilities" aria-label="빠른 메뉴">
+            {{#siteCommunity}}{{>navigation/desktop-section}}{{/siteCommunity}}
+            <a href="/sitemap">전체 메뉴</a>
+        </div>
             <div class="header-actions">
                 <div class="header-search-disclosure">
                     <button type="button" class="header-icon-button" id="header-search-btn" data-header-toggle aria-label="사이트 검색 열기" aria-expanded="false" aria-controls="header-search-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>
@@ -37,7 +37,7 @@
     </div>
     <div id="mobile-menu" hidden>
         <nav aria-label="모바일 주 메뉴">
-            {{#siteNavigation}}{{>navigation/mobile-section}}{{/siteNavigation}}
+            {{#siteNavigation}}{{#direct}}<a class="mobile-direct-link" href="{{href}}">{{label}}</a>{{/direct}}{{^direct}}{{>navigation/mobile-section}}{{/direct}}{{/siteNavigation}}
             {{#siteCommunity}}{{>navigation/mobile-section}}{{/siteCommunity}}
             <a class="mobile-sitemap-link" href="/sitemap">전체 메뉴 <span aria-hidden="true">↗</span></a>
             {{#member}}<div class="mobile-account"><p>{{userId}}님 <span>Lv.{{level}} · {{points}}P</span></p>{{>navigation/account-links}}</div>{{/member}}

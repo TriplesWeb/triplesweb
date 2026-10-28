@@ -86,6 +86,7 @@ public class Article {
             case "notice" -> "공지사항";
             case "trade" -> "교환게시판";
             case "sell" -> "거래게시판";
+            case "group-orders" -> "분철게시판";
             case "info" -> "정보게시판";
             case "popular" -> "인기글";
             default -> "기타";
