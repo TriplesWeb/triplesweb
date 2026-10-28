@@ -19,7 +19,8 @@
   }
 
   function getCsrfToken() {
-    return readCookie("XSRF-TOKEN");
+    const name = document.querySelector('meta[name="csrf-cookie-name"]')?.content || "XSRF-TOKEN";
+    return readCookie(name);
   }
 
   function getToken() {

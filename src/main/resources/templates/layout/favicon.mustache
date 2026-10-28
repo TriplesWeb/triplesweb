@@ -8,3 +8,9 @@
 
 <link rel="stylesheet" href="/css/season-filters.css?v=1">
 <script src="/js/season-filters.js?v=1" defer></script>
+
+{{#isPreview}}
+<meta name="csrf-cookie-name" content="{{previewCsrfCookieName}}">
+<link rel="stylesheet" href="/css/pr-preview.css?v=1">
+<script src="/js/pr-preview.js?v=1"></script>
+{{/isPreview}}

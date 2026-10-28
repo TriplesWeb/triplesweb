@@ -22,6 +22,10 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
+      - name: 미리보기 배포 격리 검사
+        run: |
+          python3 -m unittest discover -s scripts/tests -p 'test_preview_*.py'
+          node --check src/main/resources/static/js/pr-preview.js
       # Full test suite runs on PR's synthetic merge commit, including conflict fixes.
       - name: Full Gradle test suite
         run: ./gradlew test --no-daemon --stacktrace

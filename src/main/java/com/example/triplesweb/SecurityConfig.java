@@ -1,6 +1,7 @@
 package com.example.triplesweb;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,8 +26,9 @@ import java.util.function.Supplier;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, @Value("${app.csrf.cookie-name:XSRF-TOKEN}") String cookieName) throws Exception {
         CookieCsrfTokenRepository tokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        tokenRepository.setCookieName(cookieName);
         http
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(tokenRepository)
