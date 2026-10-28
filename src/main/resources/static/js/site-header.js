@@ -4,7 +4,8 @@
   const toggles = [...header.querySelectorAll('[data-header-toggle]')];
   const mobile = document.getElementById('mobile-menu-btn');
   const search = document.getElementById('header-search-btn');
-  const wide = () => window.innerWidth >= 1280;
+  let searchInline = false;
+  const wide = () => searchInline;
   function setOpen(button, open) {
     const panel = document.getElementById(button.getAttribute('aria-controls'));
     if (!panel) return;
@@ -39,18 +40,21 @@
     const target = focused || active[active.length - 1];
     setOpen(target, false); target.focus(); event.preventDefault();
   });
-  // Close a desktop dropdown when keyboard focus leaves it.
-  header.addEventListener('focusout', () => requestAnimationFrame(() => {
-    header.querySelectorAll('.header-disclosure').forEach(group => {
-      if (!group.contains(document.activeElement)) {
-        const button = group.querySelector('[data-header-toggle]');
-        if (button) setOpen(button, false);
-      }
-    });
-  }));
+  // Safari can blur a button to the document when clicking a native summary.
+  // Only an explicit keyboard focus destination outside this disclosure closes it;
+  // pointer navigation is handled by the outside-click listener above.
+  header.addEventListener('focusout', event => {
+    const group = event.target.closest('.header-disclosure');
+    if (!group || !event.relatedTarget || group.contains(event.relatedTarget)) return;
+    const button = group.querySelector('[data-header-toggle]');
+    if (button) setOpen(button, false);
+  });
   function resize() {
+    // Read the rendered CSS mode: WebKit's matchMedia width can differ by a scrollbar.
+    searchInline = getComputedStyle(search).display === 'none';
+    const desktop = getComputedStyle(mobile).display === 'none';
     closeAll();
-    if (window.innerWidth >= 1024) setOpen(mobile, false);
+    if (desktop) setOpen(mobile, false);
     setOpen(search, wide());
   }
   window.addEventListener('resize', resize);

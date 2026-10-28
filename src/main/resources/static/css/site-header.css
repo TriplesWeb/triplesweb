@@ -1,6 +1,6 @@
 /* Standalone navigation: independent of each page's Tailwind/Bootstrap bundle. */
 .site-header,.site-header *{box-sizing:border-box}
-.site-header{position:sticky;top:0;z-index:50;width:100%;background:#16181ff5;border-bottom:1px solid #3a4a4655;color:#e3e2e8;font-family:Inter,"Noto Sans KR",-apple-system,BlinkMacSystemFont,sans-serif;transition:transform .22s ease}
+.site-header{container:site-header / inline-size;position:sticky;top:0;z-index:50;width:100%;background:#16181ff5;border-bottom:1px solid #3a4a4655;color:#e3e2e8;font-family:Inter,"Noto Sans KR",-apple-system,BlinkMacSystemFont,sans-serif;transition:transform .22s ease}
 .site-header [hidden]{display:none!important}
 .site-header a{color:#b9cac4;text-decoration:none}
 .site-header button,.site-header input,.site-header summary{font:inherit}
@@ -58,7 +58,7 @@
 #mobile-menu-btn[aria-expanded=true] #mobile-menu-icon::after{top:6px;transform:rotate(-45deg)}
 .header-flash{display:flex;justify-content:space-between;gap:16px;max-width:1200px;margin:16px auto;padding:14px 20px;border:1px solid #3a4a46;border-radius:12px;color:#8decd9;background:#16181f}
 .header-flash button{background:none;border:0;color:inherit}
-@media(min-width:1024px){#mobile-menu{display:none!important}}
-@media(max-width:1279px){#header-search-btn{display:flex}.header-search-panel{position:absolute;right:0;top:52px;width:300px;max-width:calc(100vw - 32px);padding:10px;background:#1a1d25;border:1px solid #3a4a4680;border-radius:16px}.header-main{gap:24px}.header-primary{gap:20px}.header-account-level{display:none}}
-@media(max-width:1023px){.header-shell{padding:0 max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left))}.header-main{gap:12px;min-height:64px}.header-utilities,#navbar,.header-account{display:none}.header-actions{gap:2px}#mobile-menu-btn{display:flex}.header-brand img:last-child{width:100px}.header-search-panel{right:-46px}.header-search input{font-size:16px}.header-search button{min-height:44px}}
+@container site-header (min-width:1024px){#mobile-menu{display:none!important}}
+@container site-header (max-width:1279px){#header-search-btn{display:flex}.header-search-panel{position:absolute;right:0;top:52px;width:300px;max-width:calc(100vw - 32px);padding:10px;background:#1a1d25;border:1px solid #3a4a4680;border-radius:16px}.header-main{gap:24px}.header-primary{gap:20px}.header-account-level{display:none}}
+@container site-header (max-width:1023px){.header-shell{padding:0 max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left))}.header-main{gap:12px;min-height:64px}.header-utilities,#navbar,.header-account{display:none}.header-actions{gap:2px}#mobile-menu-btn{display:flex}.header-brand img:last-child{width:100px}.header-search-panel{right:-46px}.header-search input{font-size:16px}.header-search button{min-height:44px}}
 @media(prefers-reduced-motion:reduce){.sss-mascot-wave{animation:none}.site-header,.header-chevron{transition:none}}

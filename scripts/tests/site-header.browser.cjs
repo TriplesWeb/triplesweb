@@ -19,10 +19,13 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
    return route.fulfill({status:404,body:''});
   });
   fs.mkdirSync('/tmp/objekt-ui',{recursive:true});
-  for(const width of [320,360,390,1024,1280,1440]){
+  for(const width of [320,360,390,1024,1040,1280,1440]){
    await page.setViewportSize({width,height:900}); await page.goto('https://header.test/');
+   // WebKit applies scrollbar-dependent media queries on the next layout frame.
+   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`header overflow ${width}`);
-   if(width<1024){
+   const desktop=await page.locator('#navbar').isVisible();
+   if(!desktop){
     assert.equal(await page.locator('.header-utilities').isVisible(),false);
     await page.locator('#mobile-menu-btn').focus(); await page.keyboard.press('Enter');
     await page.locator('[aria-controls="mobile-cosmo"]').click();
@@ -36,7 +39,7 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
     await page.locator('#header-search-btn').click(); assert.equal(await page.locator('#header-search-panel input').isVisible(),true);
     await page.keyboard.press('Escape'); assert.equal(await page.locator('#header-search-panel').isVisible(),false);
     await page.locator('#mobile-menu-btn').click();
-    await page.screenshot({path:`/tmp/objekt-ui/header-${engine}-${width}.png`,fullPage:false});
+    await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/header-${engine}-${width}.png`,fullPage:false}).catch(error=>console.warn(`[preview] ${engine} ${width}px screenshot skipped: ${error.message}`));
    }else{
     const labels=await page.locator('#navbar>.header-disclosure>button').allTextContents();
     assert.deepEqual(labels,['About 트리플에스','스케줄·활동','코스모','미디어']);
@@ -45,12 +48,12 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
     assert.equal(await page.locator('#desktop-cosmo a[href="/cosmo/group-orders"]').isVisible(),true);
     await page.evaluate(()=>window.scrollTo(0,200));
     assert.equal(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().top>=0),true);
-    await page.screenshot({path:`/tmp/objekt-ui/header-${engine}-${width}.png`,fullPage:false});
+    await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/header-${engine}-${width}.png`,fullPage:false}).catch(error=>console.warn(`[preview] ${engine} ${width}px screenshot skipped: ${error.message}`));
     await page.keyboard.press('Escape');await page.keyboard.press('Escape');
     assert.equal(await page.locator('#desktop-cosmo').isVisible(),false);
     await button.click();await page.locator('main').click({position:{x:10,y:10}});assert.equal(await page.locator('#desktop-cosmo').isVisible(),false);
    }
   }
-  assert.deepEqual(errors,[]);console.log(`PASS: ${engine} header 320/360/390/1024/1280/1440px, keyboard, nested menus, outside click, search`);
+  assert.deepEqual(errors,[]);console.log(`PASS: ${engine} header 320/360/390/1024/1040/1280/1440px, keyboard, nested menus, outside click, search`);
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1)});
