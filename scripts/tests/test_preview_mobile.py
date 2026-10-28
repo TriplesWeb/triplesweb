@@ -19,7 +19,7 @@ class PreviewMobileSecurityTest(unittest.TestCase):
         config=Path(cls.temp.name)/"access.json"
         salt=bytes.fromhex("11"*16)
         config.write_text(json.dumps({"salt":salt.hex(),"passwordHash":hashlib.pbkdf2_hmac("sha256",b"preview-test-password",salt,260000).hex(),"session":"test-session"}))
-        with patch.dict(os.environ,{"PREVIEW_ACCESS_CONFIG":str(config)}):
+        with patch.dict(os.environ,{"PREVIEW_ACCESS_CONFIG":str(config),"APP_PREVIEW_NUMBER":"29"}):
             spec=importlib.util.spec_from_file_location("mobile_gateway",Path(__file__).resolve().parents[1]/"pr-preview-mobile-gateway.py")
             cls.module=importlib.util.module_from_spec(spec)
             spec.loader.exec_module(cls.module)
@@ -53,7 +53,7 @@ class PreviewMobileSecurityTest(unittest.TestCase):
     def test_unavailable_app_shows_retry_page_instead_of_bad_gateway(self):
         with patch.object(self.module.http.client,"HTTPConnection") as unavailable:
             unavailable.return_value.request.side_effect=ConnectionRefusedError
-            status,headers,body=self.request("GET","/cosmo/objekt",headers={"Cookie":"PR26MOBILEACCESS=test-session"})
+            status,headers,body=self.request("GET","/cosmo/objekt",headers={"Cookie":"PR29MOBILEACCESS=test-session"})
             self.assertEqual(status,503)
             self.assertEqual(headers["Retry-After"],"5")
             self.assertIn('미리보기를 준비하고 있어요',body.decode())
@@ -72,6 +72,7 @@ class PreviewMobileSecurityTest(unittest.TestCase):
     def test_login_cookie_is_secure_and_http_only(self):
         status,headers,_=self.login_request("preview-test-password")
         self.assertEqual(status,303)
+        self.assertIn("PR29MOBILEACCESS",headers["Set-Cookie"])
         self.assertIn("HttpOnly",headers["Set-Cookie"])
         self.assertIn("Secure",headers["Set-Cookie"])
         self.assertIn("SameSite=Lax",headers["Set-Cookie"])
@@ -82,7 +83,7 @@ class PreviewMobileSecurityTest(unittest.TestCase):
     def test_browser_origin_survives_proxy_host_rewrite(self):
         status,headers,_=self.login_request("preview-test-password",{"Origin":"https://preview.example","Host":"gateway:8080"})
         self.assertEqual(status,303)
-        self.assertIn("PR26MOBILEACCESS",headers["Set-Cookie"])
+        self.assertIn("PR29MOBILEACCESS",headers["Set-Cookie"])
 
     def test_opening_another_login_tab_keeps_original_form_valid(self):
         _,headers,body=self.request("GET","/__preview/login")
@@ -100,17 +101,17 @@ class PreviewMobileSecurityTest(unittest.TestCase):
         self.assertNotIn("Location",headers)
 
     def test_signed_token_cannot_be_forged(self):
-        status,_,_=self.request("POST","/__preview/login",urlencode({"password":"preview-test-password","csrf":"forged.token"}),{"Cookie":"__Host-PR26LOGINCSRF=forged.token"})
+        status,_,_=self.request("POST","/__preview/login",urlencode({"password":"preview-test-password","csrf":"forged.token"}),{"Cookie":"__Host-PR29LOGINCSRF=forged.token"})
         self.assertEqual(status,403)
 
     def test_access_cookie_is_not_sent_to_application(self):
         response=type("Response",(),{"status":200,"getheaders":lambda self:[("Content-Type","application/json"),("Content-Length","2")],"read":io.BytesIO(b"{}").read})()
         with patch.object(self.module.http.client,"HTTPConnection") as upstream:
             upstream.return_value.getresponse.return_value=response
-            status,_,body=self.request("GET","/api/preview/info",headers={"Cookie":"PR26MOBILEACCESS=test-session; JSESSIONID=app-session"})
+            status,_,body=self.request("GET","/api/preview/info",headers={"Cookie":"PR29MOBILEACCESS=test-session; JSESSIONID=app-session"})
             self.assertEqual(status,200)
             forwarded=upstream.return_value.request.call_args.kwargs["headers"]
-            self.assertNotIn("PR26MOBILEACCESS",forwarded.get("Cookie",""))
+            self.assertNotIn("PR29MOBILEACCESS",forwarded.get("Cookie",""))
             self.assertIn("JSESSIONID=app-session",forwarded["Cookie"])
             self.assertEqual(forwarded["X-Forwarded-Proto"],"https")
 

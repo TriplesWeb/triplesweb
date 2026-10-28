@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PR 26 모바일 미리보기 전용 로그인 게이트웨이."""
+"""PR 모바일 미리보기 전용 로그인 게이트웨이."""
 from collections import defaultdict, deque
 import hashlib
 import hmac
@@ -14,11 +14,14 @@ import time
 from urllib.parse import parse_qs, urlsplit
 
 CONFIG=json.loads(Path(os.environ.get("PREVIEW_ACCESS_CONFIG","/config/access.json")).read_text())
-COOKIE="PR26MOBILEACCESS"
-LOGIN_COOKIE="__Host-PR26LOGINCSRF"
+PR=int(os.environ.get("APP_PREVIEW_NUMBER", "26"))
+if not 1<=PR<=9999:
+    raise ValueError("PR 번호 범위 오류")
+COOKIE=f"PR{PR}MOBILEACCESS"
+LOGIN_COOKIE=f"__Host-PR{PR}LOGINCSRF"
 ATTEMPTS=defaultdict(deque)
 HOP={"connection","keep-alive","proxy-authenticate","proxy-authorization","te","trailer","transfer-encoding","upgrade"}
-PAGE="""<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PR #26 미리보기</title><style>*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;background:#10151b;color:#f0f6f6;font:16px/1.6 system-ui,sans-serif;padding:24px}main{width:min(100%,390px);border:1px solid #35474c;border-radius:24px;padding:28px;background:#172028}small{color:#69d7c8}h1{font-size:25px;margin:8px 0 12px}p{color:#b8c9ce}input,button{font:inherit;width:100%;border-radius:12px;padding:12px;margin-top:12px}input{background:#10151b;border:1px solid #52676f;color:white}button{border:0;background:#69d7c8;color:#0c2724;font-weight:700}label{display:block;margin-top:20px}.error{color:#ffb7b7}</style></head><body><main><small>tripleS · PR #26</small><h1>모바일 미리보기</h1><p>사이트 관리자 비밀번호로 접속하세요.</p>MESSAGE<form method="post" action="/__preview/login"><input type="hidden" name="csrf" value="CSRFVALUE"><label for="password">관리자 비밀번호</label><input id="password" name="password" type="password" autocomplete="current-password" required autofocus><button type="submit">미리보기 열기</button></form></main></body></html>"""
+PAGE="""<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PR #PRNUMBER 미리보기</title><style>*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;background:#10151b;color:#f0f6f6;font:16px/1.6 system-ui,sans-serif;padding:24px}main{width:min(100%,390px);border:1px solid #35474c;border-radius:24px;padding:28px;background:#172028}small{color:#69d7c8}h1{font-size:25px;margin:8px 0 12px}p{color:#b8c9ce}input,button{font:inherit;width:100%;border-radius:12px;padding:12px;margin-top:12px}input{background:#10151b;border:1px solid #52676f;color:white}button{border:0;background:#69d7c8;color:#0c2724;font-weight:700}label{display:block;margin-top:20px}.error{color:#ffb7b7}</style></head><body><main><small>tripleS · PR #PRNUMBER</small><h1>모바일 미리보기</h1><p>사이트 관리자 비밀번호로 접속하세요.</p>MESSAGE<form method="post" action="/__preview/login"><input type="hidden" name="csrf" value="CSRFVALUE"><label for="password">관리자 비밀번호</label><input id="password" name="password" type="password" autocomplete="current-password" required autofocus><button type="submit">미리보기 열기</button></form></main></body></html>"""
 
 def password_matches(password):
     digest=hashlib.pbkdf2_hmac("sha256",password.encode(),bytes.fromhex(CONFIG["salt"]),260000).hex()
@@ -55,7 +58,7 @@ class Handler(BaseHTTPRequestHandler):
             nonce=secrets.token_urlsafe(24)
             signature=hmac.new(CONFIG["session"].encode(),nonce.encode(),hashlib.sha256).hexdigest()
             token=nonce+"."+signature
-        page=PAGE.replace("MESSAGE",message).replace("CSRFVALUE",token).encode()
+        page=PAGE.replace("PRNUMBER",str(PR)).replace("MESSAGE",message).replace("CSRFVALUE",token).encode()
         self.reply(status,page,headers=(("Set-Cookie",LOGIN_COOKIE+"="+token+"; Path=/; HttpOnly; Secure; SameSite=Lax"),))
     def valid_login_csrf(self,token):
         try:
@@ -135,7 +138,7 @@ class Handler(BaseHTTPRequestHandler):
             headers["Cookie"]="; ".join(m.OutputString() for m in cookies.values())
         headers["X-Forwarded-Proto"]="https"
         headers["X-Forwarded-Host"]=self.headers.get("Host","")
-        upstream=http.client.HTTPConnection("triples-pr26-preview",8080,timeout=40)
+        upstream=http.client.HTTPConnection(f"triples-pr{PR}-preview",8080,timeout=40)
         headers_sent=False
         try:
             target=path+("?"+parsed.query if parsed.query else "")

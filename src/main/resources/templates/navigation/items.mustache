@@ -1,0 +1,4 @@
+{{#items}}
+{{^nested}}<a href="{{href}}">{{label}}</a>{{/nested}}
+{{#nested}}<details class="header-submenu"><summary>{{label}}<span class="header-chevron" aria-hidden="true"></span></summary><div>{{#children}}<a href="{{href}}">{{label}}</a>{{/children}}</div></details>{{/nested}}
+{{/items}}

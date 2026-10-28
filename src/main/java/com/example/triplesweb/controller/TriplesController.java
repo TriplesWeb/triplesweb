@@ -35,6 +35,20 @@ public class TriplesController {
     private final UnitService unitService;
     private final MemberSpotlightService memberSpotlightService;
 
+    @GetMapping("/overview")
+    @Transactional(readOnly = true)
+    public String overview(Model model) {
+        model.addAttribute("group", artistAdminService.getGroupIntro());
+        return "triples/overview";
+    }
+
+    @GetMapping("/members")
+    @Transactional(readOnly = true)
+    public String members(Model model) {
+        model.addAttribute("artists", artistrepository.findAll(Sort.by(Sort.Direction.ASC, "artistId")));
+        return "triples/members";
+    }
+
     /**
      * 그룹 및 멤버 소개 페이지.
      * 멤버별 오브젝트·아카이브·공식 미디어·일정을 5개씩 연결한다.

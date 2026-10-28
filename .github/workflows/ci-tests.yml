@@ -49,6 +49,7 @@ jobs:
           node scripts/tests/objekt-account-ui.browser.cjs
           node scripts/tests/objekt-modal.browser.cjs
           node scripts/tests/objekt-mobile.browser.cjs
+          node scripts/tests/site-header.browser.cjs
           node scripts/tests/objekt-artist-gravity.browser.cjs
           node scripts/tests/objekt-member-selection.browser.cjs
           node scripts/tests/objekt-season-schedule.browser.cjs
@@ -84,6 +85,7 @@ jobs:
           npm install --prefix /tmp/objekt-browser --no-package-lock playwright@1.56.1
           /tmp/objekt-browser/node_modules/.bin/playwright install webkit
           node scripts/tests/objekt-mobile.browser.cjs
+          node scripts/tests/site-header.browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

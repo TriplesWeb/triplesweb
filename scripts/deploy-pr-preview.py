@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PR 26 전용 미리보기 배포. 운영 스키마는 읽기만 하고 별도 스키마에 공개 데이터만 복사한다."""
+"""PR 전용 미리보기 배포. 운영 스키마는 읽기만 하고 별도 스키마에 공개 데이터만 복사한다."""
 import argparse
 import datetime as dt
 import ipaddress
@@ -153,7 +153,7 @@ def main():
     if args.remove:
         mobile_compose=directory/"mobile"/"compose.json"
         if mobile_compose.exists():
-            run(["docker","compose","-p","triples-pr26-mobile","-f",str(mobile_compose),"down"],cwd=directory)
+            run(["docker","compose","-p",f"triples-pr{args.pr}-mobile","-f",str(mobile_compose),"down"],cwd=directory)
         if compose_file.exists():
             run(["docker","compose","-p",f"triples-pr{args.pr}","-f",str(compose_file),"down"],cwd=directory)
         if state:

@@ -1,6 +1,7 @@
 package com.example.triplesweb.controller;
 
 import com.samskivert.mustache.Mustache;
+import com.example.triplesweb.navigation.SiteNavigation;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import java.io.*;
@@ -20,6 +21,7 @@ class MobilePageTemplatesTest {
         var post=Map.<String,Object>of("id",1,"displayId",1,"title",longText,"userId",longText,"formattedDate","2026-10-27","likesCount",10,"category","trade");
         String rich="<p>"+"https://example.com/"+"longpath".repeat(30)+"</p><table style='width:1200px'><tr><td>가로로 긴 표</td></tr></table>";
         Map<String,Object> model=new HashMap<>();
+        model.put("siteNavigation", SiteNavigation.PRIMARY); model.put("siteCommunity", SiteNavigation.COMMUNITY);
         model.putAll(post); model.put("categoryName","교환"); model.put("member",false);
         model.put("articleList",List.of(post)); model.put("popularArticles",List.of(post)); model.put("article",Map.of("id",1,"title",longText,"content",rich,"userId",longText));
         model.put("item",Map.of("id",1,"name",longText,"price",1000,"description",rich));
@@ -52,8 +54,8 @@ class MobilePageTemplatesTest {
         assertThat(count).isGreaterThanOrEqualTo(30);
         var auth=new HashMap<>(model);auth.put("member",Map.of("userId",longText,"level",1,"points",100));
         String header=compiler.compile(Files.readString(root.resolve("layout/header.mustache"))).execute(auth);
-        Files.writeString(output.resolve("header-auth.html"),"<!doctype html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='/css/gravity.css'><link rel='stylesheet' href='/css/site-mobile.css'></head><body>"+header+"<main><h1>모바일 메뉴</h1><input aria-label='검색' placeholder='검색'></main></body></html>");
-        Files.writeString(output.resolve("header-bare.html"),"<!doctype html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='/css/site-mobile.css'></head><body>"+header+"<main><h1>스타일 체계가 다른 화면의 메뉴</h1><input aria-label='검색' placeholder='검색'></main></body></html>");
+        Files.writeString(output.resolve("header-auth.html"),"<!doctype html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='/css/gravity.css'><link rel='stylesheet' href='/css/site-mobile.css'><link rel='stylesheet' href='/css/site-header.css'></head><body>"+header+"<main><h1>모바일 메뉴</h1><input aria-label='검색' placeholder='검색'></main></body></html>");
+        Files.writeString(output.resolve("header-bare.html"),"<!doctype html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='/css/site-mobile.css'><link rel='stylesheet' href='/css/site-header.css'></head><body>"+header+"<main><h1>스타일 체계가 다른 화면의 메뉴</h1><input aria-label='검색' placeholder='검색'></main></body></html>");
     }
     private static Map<String,Object> orbit(String name,int percent,int owned,int total) {
         return Map.of("member",name,"label",name,"percent",percent,"owned",owned,"total",total,"copies",owned,"hasTotal",true,"color","#8decd9","progressUrl","/cosmo/profile/MobileFan?tab=members","isEmpty",owned==0);
