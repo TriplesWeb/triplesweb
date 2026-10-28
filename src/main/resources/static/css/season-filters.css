@@ -14,3 +14,7 @@
 .season-quick-filters .season-chip:disabled{opacity:.4;cursor:default}
 @media(max-width:600px){.season-chip-list{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:thin;padding:3px 2px 7px}.season-quick-filters{gap:.4rem;margin-top:.35rem}.season-quick-filters .season-chip{min-height:32px;padding:.3rem .65rem}}
 @media(prefers-reduced-motion:reduce){.season-quick-filters .season-chip{transition:none}}
+
+.season-filter-stack>.objekt-filter{position:relative}
+.season-filter-stack .objekt-dropdown-menu.hidden,
+.season-filter-stack .objekt-dropdown-menu[hidden]{display:none!important}
