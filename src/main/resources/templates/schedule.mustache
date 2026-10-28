@@ -789,6 +789,23 @@
 
             bindCategoryPreview('add','titleInput','addArtistNames');
             bindCategoryPreview('edit','editTitleInput','editArtistNames');
+            // Bootstrap의 열림 전환 중에도 닫기·바깥 영역·Escape 요청을 잃지 않는다.
+            document.querySelectorAll('.modal').forEach(element => {
+                element.addEventListener('click', event => {
+                    if (event.target === element || event.target.closest('[data-bs-dismiss="modal"]')) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        hideScheduleModalThen(element);
+                    }
+                }, true);
+                element.addEventListener('keydown', event => {
+                    if (event.key === 'Escape' && element.classList.contains('show')) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        hideScheduleModalThen(element);
+                    }
+                }, true);
+            });
             let selectedEvent = null;
 
             function renderSelectedDate(dateString, dateObject) {

@@ -18,3 +18,5 @@
 .season-filter-stack>.objekt-filter{position:relative}
 .season-filter-stack .objekt-dropdown-menu.hidden,
 .season-filter-stack .objekt-dropdown-menu[hidden]{display:none!important}
+
+.objekt-picker-filter-bar>.season-filter-stack{width:min(100%,14rem);flex:0 1 14rem}
