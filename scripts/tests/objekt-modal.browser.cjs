@@ -21,7 +21,7 @@ const base = path.resolve(__dirname, '../..');
         favoriteAttempts++;
         if(favoriteAttempts===1)return route.fulfill({status:403,body:'{}',contentType:'application/json'});
         if(favoriteAttempts===4)return route.fulfill({status:503,body:'{}',contentType:'application/json'});
-        favorite=url.searchParams.get('favorite')==='true';
+        favorite=(url.searchParams.get('favorite') || new URLSearchParams(req.postData()).get('favorite'))==='true';
         return json({favorite});
       }
       if(p.endsWith('/description') && req.method()==='POST') {
