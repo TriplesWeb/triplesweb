@@ -65,3 +65,6 @@ jobs:
               assert error.code==401
           print("PUBLIC_LOGIN_PAGE_AND_AUTH_VERIFIED="+url+"/cosmo/objekt")
           PY
+
+      - name: 찜하기 실제 저장 진단
+        run: ssh pi python3 - < scripts/inspect-preview-favorites.py

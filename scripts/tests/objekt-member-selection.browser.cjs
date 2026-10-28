@@ -52,7 +52,7 @@ const base = path.resolve(__dirname, '../..');
       assert.notEqual(stable.shadow, 'none');
       assert.equal(stable.animations.length, 1, mode+' 광택 레이어만 반복');
       assert.deepEqual(stable.animations[0].properties.sort(), ['opacity','transform'], mode+' 광택 레이어의 이동과 투명도만 애니메이션');
-      assert.ok(stable.animations[0].duration >= 3150 && stable.animations[0].duration <= 3250, mode+' 3.2초 반복 주기');
+      assert.ok(stable.animations[0].duration >= 2650 && stable.animations[0].duration <= 2750, mode+' 2.7초 반복 주기');
       assert.equal(await frame.getAttribute('src'), src, mode+' 프레임 주소 유지');
       assert.equal(await frame.evaluate(el=>getComputedStyle(el).filter), 'none');
       assert.equal(await first.locator('.artist-tab-shine').isVisible(), true);
