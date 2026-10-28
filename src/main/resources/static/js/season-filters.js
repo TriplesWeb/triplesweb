@@ -79,11 +79,8 @@
       const button=event.target.closest('button');
       if(button&&(button.matches('.objekt-reset-button,[data-reset],#gvReset')||/reset|clear/i.test(button.id)||button.textContent.includes('초기화')))queueMicrotask(syncAll);
     });
-    new MutationObserver(records=>{
-      for(const record of records)for(const node of record.addedNodes) {
-        if(node.nodeType===1&&!node.closest('.season-quick-filters')&&(node.matches(selectSelector+','+checkSelector)||node.querySelector(selectSelector+','+checkSelector)))init(node);
-      }
-    }).observe(document.body,{childList:true,subtree:true});
+    // 선택지 변경은 각 시즌 컨트롤만 관찰한다. 카드/달력 전체 DOM은 감시하지 않는다.
+
   }
   window.SeasonChips={init,colorFor};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();

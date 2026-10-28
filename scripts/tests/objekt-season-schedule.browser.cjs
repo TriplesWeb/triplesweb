@@ -16,7 +16,8 @@ const urls={
  try{
   const page=await browser.newPage({viewport:{width:1280,height:900}});
   await page.addInitScript(()=>{window.tailwind={};});
-  const posts=[];
+  const posts=[], pageErrors=[];
+  page.on('pageerror',error=>pageErrors.push(error.message));
   await page.context().addCookies([{name:'XSRF-TOKEN',value:'fixture-csrf',domain:'filters.test',path:'/'}]);
   page.on('dialog',dialog=>dialog.accept());
   await page.route('**/*',async route=>{
@@ -45,7 +46,15 @@ const urls={
   for(const name of ['objekt','collection']){
    await page.goto('https://filters.test/fixture/'+name);
    const row=page.getByRole('group',{name:'시즌 빠른 선택',exact:true});
-   await row.locator('button[data-value="Atom01"]').waitFor();
+   await row.locator('button[data-value="Atom01"]').waitFor({timeout:10000}).catch(async error=>{
+    console.log('시즌 버튼 진단',name,JSON.stringify(await page.evaluate(()=>({
+      api:typeof window.SeasonChips,
+      source:[...document.querySelectorAll('.season-checkbox')].map(el=>({value:el.value,parent:el.closest('.objekt-dropdown-menu')?.id})),
+      rows:[...document.querySelectorAll('.season-quick-filters')].map(el=>el.outerHTML),
+      assets:[...document.scripts].map(el=>el.src).filter(src=>src.includes('season'))
+    }))),JSON.stringify(pageErrors));
+    throw error;
+   });
    const atom=row.locator('button[data-value="Atom01"]'),binary=row.locator('button[data-value="Binary01"]');
    assert.notEqual(await atom.evaluate(el=>getComputedStyle(el).borderColor),await binary.evaluate(el=>getComputedStyle(el).borderColor));
    await atom.click();await binary.click();
