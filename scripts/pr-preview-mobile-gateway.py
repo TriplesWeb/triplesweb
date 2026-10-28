@@ -41,9 +41,17 @@ class Handler(BaseHTTPRequestHandler):
         if self.command!="HEAD":
             self.wfile.write(body)
     def login_page(self,status=200,message=""):
-        nonce=secrets.token_urlsafe(24)
-        signature=hmac.new(CONFIG["session"].encode(),nonce.encode(),hashlib.sha256).hexdigest()
-        token=nonce+"."+signature
+        token=""
+        try:
+            cookie=SimpleCookie(self.headers.get("Cookie","")).get(LOGIN_COOKIE)
+            if cookie and self.valid_login_csrf(cookie.value):
+                token=cookie.value
+        except Exception:
+            pass
+        if not token:
+            nonce=secrets.token_urlsafe(24)
+            signature=hmac.new(CONFIG["session"].encode(),nonce.encode(),hashlib.sha256).hexdigest()
+            token=nonce+"."+signature
         page=PAGE.replace("MESSAGE",message).replace("CSRFVALUE",token).encode()
         self.reply(status,page,headers=(("Set-Cookie",LOGIN_COOKIE+"="+token+"; Path=/; HttpOnly; Secure; SameSite=Lax"),))
     def valid_login_csrf(self,token):
@@ -67,6 +75,9 @@ class Handler(BaseHTTPRequestHandler):
     def handle_request(self):
         parsed=urlsplit(self.path)
         path=parsed.path
+        if path in {"/favicon.ico","/favicon.png","/apple-touch-icon.png","/apple-touch-icon-precomposed.png"} and not self.authenticated():
+            self.reply(204)
+            return
         if path=="/__preview/login":
             if self.command=="GET":
                 self.login_page()

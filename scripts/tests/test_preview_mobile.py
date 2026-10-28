@@ -75,6 +75,21 @@ class PreviewMobileSecurityTest(unittest.TestCase):
         self.assertEqual(status,303)
         self.assertIn("PR26MOBILEACCESS",headers["Set-Cookie"])
 
+    def test_opening_another_login_tab_keeps_original_form_valid(self):
+        _,headers,body=self.request("GET","/__preview/login")
+        csrf=re.search(rb'name="csrf" value="([^"]+)"',body).group(1).decode()
+        first_cookie=headers["Set-Cookie"].split(";")[0]
+        _,second_headers,_=self.request("GET","/__preview/login",headers={"Cookie":first_cookie})
+        cookie=second_headers["Set-Cookie"].split(";")[0]
+        status,_,_=self.request("POST","/__preview/login",urlencode({"password":"preview-test-password","csrf":csrf}),{"Cookie":cookie,"Content-Type":"application/x-www-form-urlencoded"})
+        self.assertEqual(status,303)
+
+    def test_browser_icon_does_not_redirect_to_login_or_change_cookie(self):
+        status,headers,_=self.request("GET","/favicon.ico")
+        self.assertEqual(status,204)
+        self.assertNotIn("Set-Cookie",headers)
+        self.assertNotIn("Location",headers)
+
     def test_signed_token_cannot_be_forged(self):
         status,_,_=self.request("POST","/__preview/login",urlencode({"password":"preview-test-password","csrf":"forged.token"}),{"Cookie":"__Host-PR26LOGINCSRF=forged.token"})
         self.assertEqual(status,403)
