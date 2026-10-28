@@ -33,3 +33,14 @@ if ips:
     except Exception as error:
         result["localHttpError"]=type(error).__name__
 print(json.dumps(result,ensure_ascii=False))
+for name in ("triples-pr26-mobile-gateway","triples-pr26-mobile-tunnel"):
+    check=command(["docker","inspect",name])
+    if check.returncode:
+        print(name+" MISSING")
+        continue
+    details=json.loads(check.stdout)[0]
+    print(json.dumps({"container":name,"state":details.get("State"),"user":details.get("Config",{}).get("User"),"restartCount":details.get("RestartCount")}))
+    if name.endswith("gateway"):
+        log=command(["docker","logs","--tail","35",name])
+        print(log.stdout+log.stderr)
+
