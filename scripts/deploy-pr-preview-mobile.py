@@ -74,11 +74,12 @@ def main():
     run(["docker","restart","triples-pr26-mobile-gateway"],timeout=30)
     url=None
     for _ in range(60):
-        logs=subprocess.run(["docker","logs","--tail","100","triples-pr26-mobile-tunnel"],stdin=subprocess.DEVNULL,capture_output=True,text=True)
+        logs=subprocess.run(["docker","logs","--tail","500","triples-pr26-mobile-tunnel"],stdin=subprocess.DEVNULL,capture_output=True,text=True)
         text=logs.stdout+logs.stderr
         found=re.findall(r"https://[a-z0-9-]+\.trycloudflare\.com",text)
         if found:
             url=found[-1]
+        if url:
             try:
                 jar=http.cookiejar.CookieJar()
                 opener=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))

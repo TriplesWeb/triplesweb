@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: pr-preview-${{ github.event.pull_request.number }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -15,8 +15,22 @@ permissions:
   actions: read
 
 jobs:
-  preview:
+  changes:
     if: github.event.pull_request.number == 26 && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.diff.outputs.result }}
+    steps:
+      - uses: actions/github-script@v7
+        id: diff
+        with:
+          script: |
+            if (context.payload.action !== 'synchronize' || !context.payload.before) return true;
+            const {data} = await github.rest.repos.compareCommitsWithBasehead({...context.repo,basehead:context.payload.before+'...'+context.payload.pull_request.head.sha});
+            return (data.files || []).some(file => /^(src\/main\/|gradle\/|gradlew|build\.gradle|settings\.gradle|Dockerfile$|scripts\/docker-entrypoint\.sh$|scripts\/deploy-pr-preview\.py$)/.test(file.filename));
+  preview:
+    needs: changes
+    if: needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 35
     env:

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """운영 설정을 변경하지 않고 현재 PR 미리보기 접속 경로만 점검한다."""
 import json
+import sys
 import subprocess
 import urllib.request
 
@@ -33,14 +34,14 @@ if ips:
     except Exception as error:
         result["localHttpError"]=type(error).__name__
 print(json.dumps(result,ensure_ascii=False))
-for name in ("triples-pr26-mobile-gateway","triples-pr26-mobile-tunnel"):
+for name in ("triples-pr26-preview","triples-pr26-mobile-gateway","triples-pr26-mobile-tunnel"):
     check=command(["docker","inspect",name])
     if check.returncode:
-        print(name+" MISSING")
+        print(name+" MISSING",file=sys.stderr)
         continue
     details=json.loads(check.stdout)[0]
-    print(json.dumps({"container":name,"state":details.get("State"),"user":details.get("Config",{}).get("User"),"restartCount":details.get("RestartCount")}))
-    if name.endswith("gateway"):
+    print(json.dumps({"container":name,"state":details.get("State"),"user":details.get("Config",{}).get("User"),"restartCount":details.get("RestartCount")}),file=sys.stderr)
+    if not name.endswith("tunnel"):
         log=command(["docker","logs","--tail","35",name])
-        print(log.stdout+log.stderr)
+        print(log.stdout+log.stderr,file=sys.stderr)
 
