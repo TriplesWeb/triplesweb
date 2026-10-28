@@ -10,8 +10,8 @@
     status.textContent = '저장 중…';
     try {
       const response = await fetch(favorite.action, {
-        method: 'PUT', body: new URLSearchParams({ favorite: input.value }),
-        headers: { Accept: 'application/json' }, credentials: 'same-origin'
+        method: 'PUT', body: new URLSearchParams(new FormData(favorite)),
+        headers: window.AboutAdminAuth?.applyAuthHeaders({Accept:'application/json'}) || {Accept:'application/json'}, credentials: 'same-origin'
       });
       if (!response.ok) throw new Error();
       const data = await response.json();
