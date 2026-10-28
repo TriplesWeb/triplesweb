@@ -12,7 +12,10 @@ function setup(fetch) {
   const form = {action: '/favorite', elements: {namedItem: () => input},
     querySelector: s => s === 'button' ? button : status,
     addEventListener: (type, fn) => { form.submit = fn; }};
-  vm.runInNewContext(code, {document: {querySelector: s => s === '[data-objekt-favorite]' ? form : null}, fetch, URLSearchParams});
+  vm.runInNewContext(code, {document: {querySelector: s => s === '[data-objekt-favorite]' ? form : null}, fetch, URLSearchParams,
+    window: {AboutAdminAuth:{applyAuthHeaders:headers=>({...headers,'X-XSRF-TOKEN':'test-csrf'})}},
+    FormData: function(){ return [['favorite',input.value],['_csrf','test-form-token']]; }
+  });
   return {form, button, input, status, submit: () => form.submit({preventDefault() {}})};
 }
 
@@ -26,13 +29,15 @@ test('duplicate submits send one desired state, then allow explicit removal', as
   await ui.submit();
   assert.equal(calls.length, 1);
   assert.equal(calls[0].method, 'PUT');
-  assert.equal(String(calls[0].body), 'favorite=true');
+  assert.equal(calls[0].body.get('favorite'), 'true');
+  assert.equal(calls[0].body.get('_csrf'),'test-form-token');
+  assert.equal(calls[0].headers['X-XSRF-TOKEN'],'test-csrf');
   finish({ok: true, json: async () => ({favorite: true})});
   await pending;
   assert.equal(ui.input.value, 'false');
   assert.equal(ui.button.attrs['aria-pressed'], 'true');
   const remove = ui.submit();
-  assert.equal(String(calls[1].body), 'favorite=false');
+  assert.equal(calls[1].body.get('favorite'), 'false');
   finish({ok: true, json: async () => ({favorite: false})});
   await remove;
   assert.equal(ui.input.value, 'true');
