@@ -1,0 +1,76 @@
+import hashlib
+import http.client
+import importlib.util
+import io
+import json
+import os
+from pathlib import Path
+import tempfile
+import threading
+import unittest
+from unittest.mock import patch
+from urllib.parse import urlencode
+
+class PreviewMobileSecurityTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.temp=tempfile.TemporaryDirectory()
+        config=Path(cls.temp.name)/"access.json"
+        salt=bytes.fromhex("11"*16)
+        config.write_text(json.dumps({"salt":salt.hex(),"passwordHash":hashlib.pbkdf2_hmac("sha256",b"preview-test-password",salt,260000).hex(),"session":"test-session"}))
+        with patch.dict(os.environ,{"PREVIEW_ACCESS_CONFIG":str(config)}):
+            spec=importlib.util.spec_from_file_location("mobile_gateway",Path(__file__).resolve().parents[1]/"pr-preview-mobile-gateway.py")
+            cls.module=importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(cls.module)
+        cls.server=cls.module.ThreadingHTTPServer(("127.0.0.1",0),cls.module.Handler)
+        cls.thread=threading.Thread(target=cls.server.serve_forever,daemon=True)
+        cls.thread.start()
+        cls.connection=http.client.HTTPConnection
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+        cls.temp.cleanup()
+
+    def request(self,method,path,body=None,headers=None):
+        conn=self.connection("127.0.0.1",self.server.server_port,timeout=5)
+        conn.request(method,path,body,headers or {})
+        response=conn.getresponse()
+        result=(response.status,dict(response.getheaders()),response.read())
+        conn.close()
+        return result
+
+    def test_private_api_requires_login(self):
+        status,headers,body=self.request("GET","/api/preview/info")
+        self.assertEqual(status,401)
+        self.assertIn(b"preview_login_required",body)
+        self.assertEqual(self.request("GET","/cosmo/objekt")[0],303)
+
+    def test_wrong_password_is_rejected(self):
+        status,_,_=self.request("POST","/__preview/login",urlencode({"password":"wrong"}),{"Content-Type":"application/x-www-form-urlencoded"})
+        self.assertEqual(status,401)
+
+    def test_login_cookie_is_secure_and_http_only(self):
+        status,headers,_=self.request("POST","/__preview/login",urlencode({"password":"preview-test-password"}),{"Content-Type":"application/x-www-form-urlencoded"})
+        self.assertEqual(status,303)
+        self.assertIn("HttpOnly",headers["Set-Cookie"])
+        self.assertIn("Secure",headers["Set-Cookie"])
+        self.assertIn("SameSite=Lax",headers["Set-Cookie"])
+
+    def test_cross_origin_login_is_rejected(self):
+        self.assertEqual(self.request("POST","/__preview/login","password=anything",{"Origin":"https://other.example"})[0],403)
+
+    def test_access_cookie_is_not_sent_to_application(self):
+        response=type("Response",(),{"status":200,"getheaders":lambda self:[("Content-Type","application/json"),("Content-Length","2")],"read":io.BytesIO(b"{}").read})()
+        with patch.object(self.module.http.client,"HTTPConnection") as upstream:
+            upstream.return_value.getresponse.return_value=response
+            status,_,body=self.request("GET","/api/preview/info",headers={"Cookie":"PR26MOBILEACCESS=test-session; JSESSIONID=app-session"})
+            self.assertEqual(status,200)
+            forwarded=upstream.return_value.request.call_args.kwargs["headers"]
+            self.assertNotIn("PR26MOBILEACCESS",forwarded.get("Cookie",""))
+            self.assertIn("JSESSIONID=app-session",forwarded["Cookie"])
+            self.assertEqual(forwarded["X-Forwarded-Proto"],"https")
+
+if __name__=="__main__":
+    unittest.main()

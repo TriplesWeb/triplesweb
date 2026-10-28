@@ -141,6 +141,9 @@ def main():
             raise RuntimeError("같은 이름의 다른 컨테이너는 변경하지 않습니다")
         old_image=old["Config"]["Image"]
     if args.remove:
+        mobile_compose=directory/"mobile"/"compose.json"
+        if mobile_compose.exists():
+            run(["docker","compose","-p","triples-pr26-mobile","-f",str(mobile_compose),"down"],cwd=directory)
         if compose_file.exists():
             run(["docker","compose","-p",f"triples-pr{args.pr}","-f",str(compose_file),"down"],cwd=directory)
         if state:
