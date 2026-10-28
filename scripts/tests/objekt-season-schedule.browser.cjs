@@ -29,7 +29,7 @@ const urls={
     const params=new URLSearchParams(request.postData());posts.push({params,headers:request.headers()});
     const category=params.get('category'),title=params.get('title'),start=params.get('start')||params.get('startDate');
     const color=category==='ANNIVERSARY'?'#22aeff':'#f87171',categoryLabel=category==='ANNIVERSARY'?'기념일':'발매';
-    return route.fulfill({json:{id:'42',title,displayTitle:(category==='ANNIVERSARY'?'🎂 ':'')+title,start,end:null,rawEnd:null,artistNames:'윤서연',category,categoryLabel,color}});
+    return route.fulfill({json:{id:posts.length===3?'43':'42',title,displayTitle:(category==='ANNIVERSARY'?'🎂 ':'')+title,start,end:null,rawEnd:null,artistNames:'윤서연',category,categoryLabel,color}});
    }
    if(url.pathname.startsWith('/fixture/')){
     const name=url.pathname.slice('/fixture/'.length);
@@ -55,6 +55,12 @@ const urls={
     }))),JSON.stringify(pageErrors));
     throw error;
    });
+   const position=await row.evaluate(el=>{
+     const stack=el.closest('.season-filter-stack'),control=stack?.querySelector('.objekt-filter');
+     return {sameColumn:!!stack,gap:control?el.getBoundingClientRect().top-control.getBoundingClientRect().bottom:-1};
+   });
+   assert.equal(position.sameColumn,true,name+' 시즌 컨트롤과 같은 열');
+   assert.ok(position.gap>=0&&position.gap<=12,name+' 드롭다운 바로 아래 버튼');
    const atom=row.locator('button[data-value="Atom01"]'),binary=row.locator('button[data-value="Binary01"]');
    assert.notEqual(await atom.evaluate(el=>getComputedStyle(el).borderColor),await binary.evaluate(el=>getComputedStyle(el).borderColor));
    await atom.click();await binary.click();
@@ -135,6 +141,26 @@ const urls={
   assert.equal(await page.locator('#modalScheduleTitle').textContent(),'새 음원 발매');
   assert.equal(await page.locator('#modalScheduleCategory').textContent(),'발매');
   await page.locator('#viewScheduleModal button[data-bs-dismiss=modal]').first().click();
+  // 실제 등록으로 FullCalendar가 긴 제목의 높이와 배치를 다시 계산하게 한다.
+  const longTitle='윤서연 온라인 팬사인회 및 새 앨범 발매 기념 행사';
+  await page.locator('[onclick="showAddModal()"]').click();
+  await page.locator('#titleInput').fill(longTitle);
+  await page.locator('#startInput').fill(day.slice(0,8)+'01');
+  await page.locator('#addScheduleCategory').selectOption('FANSIGN');
+  await page.locator('#addScheduleForm button[type=submit]').click();
+  await page.waitForFunction(()=>!document.getElementById('addScheduleModal').classList.contains('show'));
+  const title=page.locator('#calendar .fc-event-title').filter({hasText:longTitle}).first();
+  await title.waitFor({state:'visible'});
+  for(const width of [1280,390,360]){
+    await page.setViewportSize({width,height:1000});
+    await page.waitForTimeout(250);
+    const metrics=await title.evaluate(el=>({whiteSpace:getComputedStyle(el).whiteSpace,scroll:el.scrollWidth,width:el.clientWidth,height:el.getBoundingClientRect().height}));
+    assert.equal(metrics.whiteSpace,'normal',width+'px 달력 제목 줄바꿈');
+    assert.ok(metrics.width>0&&metrics.scroll<=metrics.width+1,width+'px 제목 가로 잘림 없음');
+    assert.ok(metrics.height>20,width+'px 긴 제목 여러 줄 표시');
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,width+'px 달력 가로 넘침 없음');
+  }
+  await page.setViewportSize({width:1280,height:1000});
   await page.screenshot({path:'/tmp/objekt-ui/schedule-categories-desktop.png',fullPage:true,timeout:15000});
   await page.setViewportSize({width:390,height:844});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'일정 모바일 넘침');

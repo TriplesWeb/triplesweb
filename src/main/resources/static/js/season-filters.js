@@ -17,11 +17,12 @@
     if (sources.has(source)) return;
     const row=document.createElement('div'); row.className='season-quick-filters';
     row.setAttribute('role','group'); row.setAttribute('aria-label','시즌 빠른 선택');
-    const heading=document.createElement('span');heading.className='season-quick-label';heading.textContent='시즌';
-    const list=document.createElement('div');list.className='season-chip-list';row.append(heading,list);
-    const anchor=source.closest('.objekt-filter-bar,.collection-filter-bar,.tr-facets,.objekt-picker-filter-bar')
-      || source.closest('.objekt-filter,.objekt-picker-filter,label') || source;
-    anchor.insertAdjacentElement('afterend',row);
+    const list=document.createElement('div');list.className='season-chip-list';row.append(list);
+    const control=source.closest('.objekt-filter,.objekt-picker-filter,label') || source;
+    const bar=control.closest('.objekt-filter-bar,.collection-filter-bar,.tr-facets,.objekt-picker-filter-bar');
+    const stack=document.createElement('div');stack.className='season-filter-stack';
+    control.before(stack);stack.append(control,row);
+    bar?.classList.add('has-season-stack');
     const options=()=>checkbox
       ? [...source.querySelectorAll(checkSelector)].filter(input=>input.value!=='all').map(input=>({
           value:input.value,label:input.closest('label')?.querySelector('.objekt-choice-text')?.textContent.trim()||input.value,input,disabled:input.disabled}))

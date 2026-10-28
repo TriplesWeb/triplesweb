@@ -32,6 +32,10 @@ const base = path.resolve(__dirname, '../..');
           MemberPortraitPicker.bindMultiSelect(document.querySelector('.member-portrait-picker'), {onChange:values=>changes.push(values)});
         });
       }
+      if (artist) await page.locator('.nav-tab-btn').first().evaluate(el=>{
+        el.removeAttribute('data-member-tab');
+        el.querySelector('.artist-tab-avatar').classList.add('artist-tab-avatar--group');
+      });
       const buttons = page.locator(artist?'.nav-tab-btn':'.mpp-item');
       const first = buttons.first(), second = buttons.nth(1);
       const frame = first.locator('.artist-tab-frame');
@@ -48,7 +52,7 @@ const base = path.resolve(__dirname, '../..');
       assert.notEqual(stable.shadow, 'none');
       assert.equal(stable.animations.length, 1, mode+' 광택 레이어만 반복');
       assert.deepEqual(stable.animations[0].properties.sort(), ['opacity','transform'], mode+' 광택 레이어의 이동과 투명도만 애니메이션');
-      assert.ok(stable.animations[0].duration >= 3450 && stable.animations[0].duration <= 3550, mode+' 3.5초 반복 주기');
+      assert.ok(stable.animations[0].duration >= 3150 && stable.animations[0].duration <= 3250, mode+' 3.2초 반복 주기');
       assert.equal(await frame.getAttribute('src'), src, mode+' 프레임 주소 유지');
       assert.equal(await frame.evaluate(el=>getComputedStyle(el).filter), 'none');
       assert.equal(await first.locator('.artist-tab-shine').isVisible(), true);

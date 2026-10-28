@@ -4075,12 +4075,12 @@ a.chem-highlight:hover {
         transparent 60%);
     opacity: 0;
     transform: translate3d(-65%, -65%, 0);
-    animation: member-selection-sheen 3.5s ease-in-out infinite;
+    animation: member-selection-sheen 3.2s ease-in-out infinite;
 }
 @keyframes member-selection-sheen {
     0% { transform: translate3d(-65%, -65%, 0); opacity: 0; }
-    6%, 37% { opacity: 1; }
-    42.857143%, 100% { transform: translate3d(65%, 65%, 0); opacity: 0; }
+    6%, 41% { opacity: 1; }
+    46.875%, 100% { transform: translate3d(65%, 65%, 0); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
     .member-portrait-picker .mpp-item.is-active .artist-tab-shine,
