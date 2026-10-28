@@ -82,7 +82,7 @@ def compose_spec(directory, pr, image, revision, bind_ip, network, database_host
     }
 
 def run(args, *, data=None, env=None, cwd=None, sensitive=False, timeout=300, check=True):
-    result = subprocess.run(args, input=data, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+    result = subprocess.run(args, input=data, stdin=subprocess.DEVNULL if data is None else None, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                             env=env, cwd=cwd, timeout=timeout)
     if check and result.returncode:
         # DB 명령의 stderr에는 질의/값이 들어갈 수 있으므로 출력하지 않는다.
@@ -107,6 +107,9 @@ def main():
     parser.add_argument("--image");parser.add_argument("--revision");parser.add_argument("--registry-user")
     parser.add_argument("--remove",action="store_true")
     args=parser.parse_args()
+    token=None if args.remove else sys.stdin.readline().strip()
+    if not args.remove and not token:
+        raise RuntimeError("컨테이너 레지스트리 인증 정보가 없습니다")
     root=Path(args.root).resolve()
     if not (root/"docker-compose.yml").is_file() or not 1<=args.pr<=9999:
         raise ValueError("운영 스택 경로/PR 번호를 확인하세요")
@@ -191,8 +194,6 @@ def main():
     for name in ("uploads","data"):(directory/name).mkdir(exist_ok=True)
     spec=compose_spec(directory,args.pr,args.image,args.revision,bind_ip,network,database_host,database,username,state["password"],admin_password,state["snapshot_at"])
     atomic_json(compose_file,spec)
-    token=sys.stdin.readline().strip()
-    if not token:raise RuntimeError("컨테이너 레지스트리 인증 정보가 없습니다")
     with tempfile.TemporaryDirectory(prefix="preview-docker-auth-",dir=directory) as auth_dir:
         env={**os.environ,"DOCKER_CONFIG":auth_dir}
         run(["docker","login","ghcr.io","-u",args.registry_user,"--password-stdin"],data=token+"\n",env=env,sensitive=True)
