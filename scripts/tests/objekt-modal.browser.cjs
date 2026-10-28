@@ -7,14 +7,23 @@ const base = path.resolve(__dirname, '../..');
   const browser = await chromium.launch({headless:true, executablePath:process.env.CHROMIUM_PATH || (fs.existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined), args:['--no-sandbox']});
   try {
     const page = await browser.newPage({viewport:{width:1280,height:1000}});
+    let favorite=false, favoriteAttempts=0;
     let isAdmin = true, description = '기존 설명', writes = [], failMore = true;
-    const data = () => ({objektKey:'uuid',collectionId:'Cream02 HaYeon 367Z',member:'HaYeon',season:'Cream02',class:'Special',collectionNo:'367Z',description,isAdmin,
+    const data = () => ({isFavorite:favorite,objektKey:'uuid',collectionId:'Cream02 HaYeon 367Z',member:'HaYeon',season:'Cream02',class:'Special',collectionNo:'367Z',description,isAdmin,
       detailUrl:'/cosmo/objekt/detail/hayeoncc367z',memberUrl:'/cosmo/objekt?group=members&member=HaYeon',tradeUrl:'/article/trade/new?selectedObjektIds=uuid',sellUrl:'/article/sell/new?selectedObjektIds=uuid',descriptionUrl:'/cosmo/objekt/detail/hayeoncc367z/description'});
     await page.context().addCookies([{name:'XSRF-TOKEN',value:'test-csrf',domain:'preview.test',path:'/'}]);
     await page.route('**/*', async route => {
       const req=route.request(), url=new URL(req.url()), p=url.pathname;
       if(url.origin!=='https://preview.test') return route.abort();
       const json = body => route.fulfill({contentType:'application/json',body:JSON.stringify(body)});
+      if(p.endsWith('/favorite') && req.method()==='PUT') {
+        assert.equal(req.headers()['x-xsrf-token'],'test-csrf');
+        favoriteAttempts++;
+        if(favoriteAttempts===1)return route.fulfill({status:403,body:'{}',contentType:'application/json'});
+        if(favoriteAttempts===4)return route.fulfill({status:503,body:'{}',contentType:'application/json'});
+        favorite=url.searchParams.get('favorite')==='true';
+        return json({favorite});
+      }
       if(p.endsWith('/description') && req.method()==='POST') {
         assert.equal(req.headers()['x-xsrf-token'],'test-csrf');
         description=new URLSearchParams(req.postData()).get('description'); writes.push(description);
@@ -41,6 +50,15 @@ const base = path.resolve(__dirname, '../..');
     await page.goto('https://preview.test/cosmo/objekt');
     await page.locator('.objekt-open-detail').first().click();
     await page.locator('#objektDetailTitle').filter({hasText:'Cream02 HaYeon 367Z'}).waitFor();
+    await page.locator('#objektDetailFavorite').click();
+    await page.waitForFunction(()=>document.querySelector('#objektDetailFavorite').dataset.favorite==='true');
+    assert.equal(favoriteAttempts,2);
+    await page.locator('#objektDetailFavorite').click();
+    await page.waitForFunction(()=>document.querySelector('#objektDetailFavorite').dataset.favorite==='false');
+    await page.locator('#objektDetailFavorite').click();
+    await page.waitForFunction(()=>document.querySelector('#objektFavoriteStatus').textContent.includes('저장하지 못했습니다'));
+    assert.equal(await page.locator('#objektDetailFavorite').getAttribute('data-favorite'),'false');
+    assert.equal(await page.locator('#objektDetailFavorite').isEnabled(),true);
     assert.equal(await page.locator('#objektDetailFullLink').textContent(),'상세 페이지 보기');
     assert.match(await page.locator('#objektDetailMemberLink').getAttribute('href'),/\/cosmo\/objekt\?group=members&member=HaYeon/);
     assert.match(await page.locator('#objektDetailTradeLink').getAttribute('href'),/selectedObjektIds=uuid/);

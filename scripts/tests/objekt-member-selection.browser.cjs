@@ -105,6 +105,11 @@ const base = path.resolve(__dirname, '../..');
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth), true);
       await page.emulateMedia({reducedMotion:'no-preference'});
     }
+    await page.setContent('<html><head><base href="https://motion.test/"><link rel="stylesheet" href="/css/archive-page.css"></head><body><main class="archive-page" data-archive-kind="image"><article class="ar-card"><a class="ar-photo-link"><img src="/portrait.svg" alt="큰 사진"></a><div class="ar-body"><span class="archive-member-chip"><img src="/portrait.svg" alt="멤버"><span>멤버 이름</span></span></div></article></main></body></html>');
+    await page.locator('.archive-member-chip img').waitFor();
+    const sizes=await page.evaluate(()=>({badge:document.querySelector('.archive-member-chip img').getBoundingClientRect().height,photo:document.querySelector('.ar-photo-link img').getBoundingClientRect().height}));
+    assert.ok(sizes.badge<=40 && sizes.badge>20,'사진 아카이브 멤버 배지 높이 고정');
+    assert.ok(sizes.photo>=250,'원본 사진 크기 유지');
     console.log('통과: 단독/번들/그룹 소개 선택 효과 · 프레임 보존 · 외곽선 고정 · 상징색 광택 · 짧은 반복 간격 · 좌상단→우하단 광택 · transform/opacity만 이동 · 다중선택·키보드 · 모션 감소 · 모바일');
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exit(1);});

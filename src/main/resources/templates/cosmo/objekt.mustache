@@ -15,7 +15,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=19">
+    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=20">
     <style>
         .objekt-head {
             display: flex;
@@ -1003,6 +1003,7 @@
                     <p id="objektDescriptionStatus" role="status" aria-live="polite"></p>
                 </form>
             </details>
+            <p id="objektFavoriteStatus" role="status" aria-live="polite" hidden></p>
             <div class="objekt-detail-actions">
                 <button type="button" class="objekt-fav-toggle" id="objektDetailFavorite">♡ 찜하기</button>
                 <a class="objekt-member-link" id="objektDetailMemberLink" href="/cosmo/objekt">이 멤버의 오브젝트 더 보기</a>
@@ -1511,6 +1512,8 @@
         if (detailImage) detailImage.alt = data.collectionId || '';
         resetModalFlip(data.frontImage || data.thumbnailImage || '', data.backImage || '', Boolean(data.hasBack));
         setFavoriteButton(Boolean(data.isFavorite));
+        detailFavorite.disabled = false;
+        document.getElementById('objektFavoriteStatus').hidden = true;
         if (detailMemberLink) detailMemberLink.href = data.memberUrl || '/cosmo/objekt';
         if (detailFullLink) detailFullLink.href = data.detailUrl || ('/cosmo/objekt/detail/' + encodeURIComponent(key));
         if (detailFavorite) detailFavorite.dataset.key = key;
@@ -1641,21 +1644,34 @@
     detailFlip?.addEventListener('click', flipModalImage);
     detailFavorite?.addEventListener('click', async () => {
         const key = detailFavorite.dataset.key || activeObjektKey;
-        if (!key) return;
+        if (!key || detailFavorite.disabled) return;
+        const desired = detailFavorite.dataset.favorite !== 'true';
+        const status = document.getElementById('objektFavoriteStatus');
+        status.hidden = true;
         detailFavorite.disabled = true;
+        const save = () => fetch('/cosmo/objekt/detail/' + encodeURIComponent(key) + '/favorite?favorite=' + desired, {
+            method: 'PUT', headers: csrfHeaders({Accept:'application/json'}), credentials:'same-origin'
+        });
         try {
-            const res = await fetch('/cosmo/objekt/detail/' + encodeURIComponent(key) + '/favorite', {
-                method: 'POST',
-                headers: csrfHeaders({ Accept: 'application/json' }),
-                credentials: 'same-origin'
-            });
-            if (!res.ok) throw new Error('favorite failed');
-            const data = await res.json();
-            setFavoriteButton(Boolean(data.isFavorite));
-        } catch (_) {
-            /* keep previous state */
+            let response = await save();
+            if (response.status === 403) {
+                await fetch('/api/artist/admin/status', {credentials:'same-origin', cache:'no-store'});
+                response = await save();
+            }
+            if (!response.ok) throw new Error(String(response.status));
+            const data = await response.json();
+            if (activeObjektKey !== key) return;
+            setFavoriteButton(Boolean(data.favorite ?? data.isFavorite));
+            status.textContent = desired ? '찜 목록에 저장했습니다.' : '찜 목록에서 해제했습니다.';
+            status.hidden = false;
+        } catch (error) {
+            if (activeObjektKey !== key) return;
+            status.textContent = error.message === '401' || error.message === '403'
+                ? '페이지를 새로고침하고 로그인 상태를 확인한 뒤 다시 시도해 주세요.'
+                : '찜 상태를 저장하지 못했습니다. 잠시 후 다시 눌러 주세요.';
+            status.hidden = false;
         } finally {
-            detailFavorite.disabled = false;
+            if (activeObjektKey === key) detailFavorite.disabled = false;
         }
     });
 
