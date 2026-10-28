@@ -1,16 +1,15 @@
-name: Objekt data reads
+name: CI tests
+
+# Run full checks only on PRs targeting main, not again after the merge.
 on:
-  push:
-    branches: [main, verify/objekt-modal, verify/cosmo-feedback, verify/mobile-orbits, verify/artist-gravity, verify/intellij-startup]
-    paths:
-      - 'src/**'
-      - 'scripts/tests/objekt-*.cjs'
-      - '.github/workflows/objekt-data-tests.yml'
   pull_request:
-    paths:
-      - 'src/**'
-      - 'scripts/tests/objekt-*.test.cjs'
-      - '.github/workflows/objekt-data-tests.yml'
+    branches: [main]
+
+# Avoid paying for obsolete commits when a PR is updated.
+concurrency:
+  group: ci-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 jobs:
@@ -18,17 +17,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            src
-            scripts
-            gradle
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew test --tests '*ObjektMarketDataServiceTest' --tests '*ObjektTransferServiceTest' --tests '*CosmoCollectionServiceTest' --tests '*ObjektFeaturesTest' --tests '*ObjektActivityClientTest' --tests '*ObjektIngestStoreTest' --tests '*ArticleObjektOrderingTest' --tests '*CosmoProfileServiceTest' --tests '*CosmoProfileControllerTest' --tests '*CosmoCollectionControllerTest' --tests '*MobilePageTemplatesTest' --tests '*ArtistPerformanceTest' --tests '*ArtistSpotlightBoundedTest' --tests '*GravityControllerTest' --tests '*DotenvEnvironmentPostProcessorTest' --tests '*triplesWebApplicationTests'
+      # Full test suite runs on PR's synthetic merge commit, including conflict fixes.
+      - name: Full Gradle test suite
+        run: ./gradlew test --no-daemon --stacktrace
       - if: failure()
         run: grep -n -A 10 -B 2 -E 'BadSqlGrammarException|JdbcSQLSyntaxErrorException' build/test-results/test/*.xml || true
       - run: node scripts/tests/objekt-detail.test.cjs && node scripts/tests/objekt-transfers.test.cjs
@@ -89,3 +85,16 @@ jobs:
           name: iphone-mobile-preview
           path: /tmp/objekt-ui/*.png
           if-no-files-found: ignore
+
+  required:
+    name: required
+    if: ${{ always() }}
+    needs: [test, safari]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail unless Linux and WebKit checks succeeded
+        env:
+          LINUX_RESULT: ${{ needs.test.result }}
+          SAFARI_RESULT: ${{ needs.safari.result }}
+        run: |
+          [[ "$LINUX_RESULT" == "success" && "$SAFARI_RESULT" == "success" ]] || exit 1
