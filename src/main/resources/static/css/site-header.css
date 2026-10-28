@@ -1,6 +1,6 @@
 /* Standalone navigation: independent of each page's Tailwind/Bootstrap bundle. */
 .site-header,.site-header *{box-sizing:border-box}
-.site-header{position:sticky;top:0;z-index:1000;width:100%;background:#16181ff5;border-bottom:1px solid #3a4a4655;color:#e3e2e8;font-family:Inter,"Noto Sans KR",-apple-system,BlinkMacSystemFont,sans-serif;transition:transform .22s ease}
+.site-header{position:sticky;top:0;z-index:50;width:100%;background:#16181ff5;border-bottom:1px solid #3a4a4655;color:#e3e2e8;font-family:Inter,"Noto Sans KR",-apple-system,BlinkMacSystemFont,sans-serif;transition:transform .22s ease}
 .site-header [hidden]{display:none!important}
 .site-header a{color:#b9cac4;text-decoration:none}
 .site-header button,.site-header input,.site-header summary{font:inherit}

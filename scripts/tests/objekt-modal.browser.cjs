@@ -87,6 +87,8 @@ const base = path.resolve(__dirname, '../..');
     await page.waitForFunction(()=>document.querySelector('[data-objekt-favorite] button').getAttribute('aria-pressed')==='true');
     await favoriteForm.locator('button').click();
     await page.waitForFunction(()=>document.querySelector('[data-objekt-favorite] button').getAttribute('aria-pressed')==='false');
+    // Header icons use SVG now; explicitly exercise the local font without relying on an unrelated glyph.
+    await page.evaluate(()=>document.fonts.load('16px "Material Symbols Outlined"'));
     await page.evaluate(()=>document.fonts.ready);
     assert.equal(await page.evaluate(()=>document.fonts.check('16px "Material Symbols Outlined"')),true);
     assert.equal(await page.locator('[data-admin-only]').count(),0);
