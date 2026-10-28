@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 """운영 설정을 변경하지 않고 현재 PR 미리보기 접속 경로만 점검한다."""
+import http.cookiejar
+import urllib.parse
+import urllib.error
 import argparse
 import json
 import re
@@ -46,6 +49,33 @@ mobile_log=command(["docker","logs","--tail","500",f"triples-pr{pr}-mobile-tunne
 urls=re.findall(r"https://[a-z0-9-]+\.trycloudflare\.com",mobile_log.stdout+mobile_log.stderr)
 if urls:
     result["publicPreviewURL"]=urls[-1]
+    if container.returncode==0:
+        # 비밀번호는 메모리에서만 사용하고 상태·경로만 출력한다.
+        environment=dict(value.split("=",1) for value in data.get("Config",{}).get("Env",[]) if "=" in value)
+        password=environment.get("CHEMISTRY_ADMIN_PASSWORD", "")
+        stage="login_page"
+        try:
+            jar=http.cookiejar.CookieJar()
+            public=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+            base=urls[-1]
+            with public.open(base+"/__preview/login",timeout=15) as page:
+                form=page.read().decode()
+            csrf=re.search(r'name="csrf" value="([^"]+)"',form).group(1)
+            stage="login_submit"
+            request=urllib.request.Request(base+"/__preview/login",data=urllib.parse.urlencode({"password":password,"csrf":csrf}).encode())
+            with public.open(request,timeout=20) as page:
+                result["publicLogin"]={"status":page.status,"path":urllib.parse.urlsplit(page.url).path,"previewPage":"/js/pr-preview.js" in page.read().decode()}
+            result["publicPages"]=[]
+            for path in ("/api/preview/info", "/sitemap", "/cosmo/group-orders", "/article/group-orders"):
+                stage=path
+                try:
+                    with public.open(base+path,timeout=15) as page:
+                        body=page.read().decode()
+                        result["publicPages"].append({"path":path,"status":page.status,"finalScheme":urllib.parse.urlsplit(page.url).scheme,"finalPath":urllib.parse.urlsplit(page.url).path,"board":"분철 게시판" in body,"previewAsset":"/js/pr-preview.js" in body})
+                except Exception as error:
+                    result["publicPages"].append({"path":path,"error":type(error).__name__,"status":getattr(error,"code",None)})
+        except Exception as error:
+            result["publicLoginError"]={"stage":stage,"error":type(error).__name__,"status":getattr(error,"code",None)}
 print(json.dumps(result,ensure_ascii=False))
 for name in (f"triples-pr{pr}-preview",f"triples-pr{pr}-mobile-gateway",f"triples-pr{pr}-mobile-tunnel"):
     check=command(["docker","inspect",name])

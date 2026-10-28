@@ -105,7 +105,11 @@ def main():
     else:
         print("로그인 게이트웨이 변경이 없어 재시작을 생략합니다",flush=True)
     url=None
-    deadline=time.monotonic()+600
+    # 앱 HTTP 검증이 끝난 뒤 실행하므로 공개 연결만 제한 시간 안에 확인한다.
+    deadline=time.monotonic()+180
+    last_failure=None
+    stage="tunnel_url"
+    announced_url=None
     while time.monotonic()<deadline:
         logs=subprocess.run(["docker","logs","--tail","500",f"triples-pr{pr}-mobile-tunnel"],stdin=subprocess.DEVNULL,capture_output=True,text=True)
         text=logs.stdout+logs.stderr
@@ -113,17 +117,23 @@ def main():
         if found:
             url=found[-1]
         if url:
+            if url!=announced_url:
+                print("PUBLIC_PREVIEW_CANDIDATE_URL="+url,flush=True)
+                announced_url=url
             try:
+                stage="login_page"
                 jar=http.cookiejar.CookieJar()
                 opener=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
                 with opener.open(url+"/__preview/login",timeout=20) as login_page:
                     form=login_page.read().decode("utf-8")
                 csrf=re.search(r'name="csrf" value="([^"]+)"',form).group(1)
                 request=urllib.request.Request(url+"/__preview/login",data=urllib.parse.urlencode({"password":password,"csrf":csrf}).encode(),headers={"Origin":url})
+                stage="login_submit"
                 with opener.open(request,timeout=25) as response:
                     html=response.read().decode("utf-8")
                     if response.status!=200 or "/js/pr-preview.js" not in html:
                         raise RuntimeError("로그인 후 화면 확인 실패")
+                stage="preview_info"
                 with opener.open(url+"/api/preview/info",timeout=20) as response:
                     build=json.load(response)
                     if build.get("pr")!=pr:
@@ -133,11 +143,13 @@ def main():
                             ("/triples/members", "member-directory"), ("/activities/voting", "준비 중"),
                             ("/cosmo/group-orders", "분철 게시판"), ("/media/drive", "준비 중"),
                             ("/community/suggestions", "준비 중")):
+                        stage=path
                         with opener.open(url+path,timeout=30) as page:
                             content=page.read().decode("utf-8")
                             if page.status!=200 or marker not in content or '/js/site-header.js' not in content:
                                 raise RuntimeError("헤더 연결 화면 검증 실패: "+path)
                     print("PUBLIC_NAVIGATION_PAGES_VERIFIED=7")
+                stage="anonymous_api"
                 try:
                     urllib.request.urlopen(url+"/api/preview/info",timeout=15)
                     raise RuntimeError("로그인 보호가 적용되지 않았습니다")
@@ -148,10 +160,13 @@ def main():
                 print("PUBLIC_PREVIEW_URL="+url+"/cosmo/objekt")
                 print("PUBLIC_PREVIEW_REVISION="+build["revision"])
                 return
-            except (OSError,ValueError,RuntimeError):
-                pass
+            except (OSError,ValueError,RuntimeError) as error:
+                failure={"stage":stage,"reason":type(error).__name__,"status":getattr(error,"code",None)}
+                if failure!=last_failure:
+                    print("HTTPS_PREVIEW_RETRY="+json.dumps(failure),flush=True)
+                    last_failure=failure
         time.sleep(3)
-    raise RuntimeError("HTTPS 연결 또는 로그인 보호 검증이 완료되지 않았습니다")
+    raise RuntimeError("HTTPS 검증 실패: "+json.dumps(last_failure or {"stage":stage}))
 
 if __name__=="__main__":
     main()
