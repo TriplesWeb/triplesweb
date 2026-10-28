@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import http.cookiejar
 import json
+import os
 from pathlib import Path
 import re
 import secrets
@@ -58,7 +59,7 @@ def main():
     labels={"org.triples.preview.mobile":"26"}
     spec={"services":{
         "gateway":{"image":"python:3.12-alpine","container_name":"triples-pr26-mobile-gateway","restart":"unless-stopped","labels":labels,
-                   "command":["python","-u","/app/gateway.py"],"mem_limit":"128m","cpus":"0.5",
+                   "command":["python","-u","/app/gateway.py"],"user":str(os.getuid())+":"+str(os.getgid()),"mem_limit":"128m","cpus":"0.5",
                    "volumes":[str(gateway_file)+":/app/gateway.py:ro",str(access_file)+":/config/access.json:ro"],
                    "networks":["app","mobile"],"read_only":True,"tmpfs":["/tmp"],"cap_drop":["ALL"],"security_opt":["no-new-privileges:true"]},
         "tunnel":{"image":"cloudflare/cloudflared:latest","container_name":"triples-pr26-mobile-tunnel","restart":"unless-stopped","labels":labels,
