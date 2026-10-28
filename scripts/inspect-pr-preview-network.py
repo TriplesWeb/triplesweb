@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """운영 설정을 변경하지 않고 현재 PR 미리보기 접속 경로만 점검한다."""
 import json
+import re
 import sys
 import subprocess
 import urllib.request
@@ -33,6 +34,10 @@ if ips:
             result["build"]=json.load(response)
     except Exception as error:
         result["localHttpError"]=type(error).__name__
+mobile_log=command(["docker","logs","--tail","500","triples-pr26-mobile-tunnel"])
+urls=re.findall(r"https://[a-z0-9-]+\.trycloudflare\.com",mobile_log.stdout+mobile_log.stderr)
+if urls:
+    result["publicPreviewURL"]=urls[-1]
 print(json.dumps(result,ensure_ascii=False))
 for name in ("triples-pr26-preview","triples-pr26-mobile-gateway","triples-pr26-mobile-tunnel"):
     check=command(["docker","inspect",name])

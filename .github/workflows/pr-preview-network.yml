@@ -45,3 +45,23 @@ jobs:
           if result["dns"]:
               print("PREVIEW_DNS_URL=http://"+result["dns"]+":18026/cosmo/objekt")
           PY
+
+      - name: 일반 인터넷에서 모바일 로그인 보호 확인
+        run: |
+          python3 - <<'PY'
+          import json,urllib.request,urllib.error
+          info=json.load(open("/tmp/preview-network.json"))
+          url=info.get("publicPreviewURL")
+          if not url:
+              print("모바일 HTTPS 연결 준비 중")
+              raise SystemExit(0)
+          with urllib.request.urlopen(url+"/__preview/login",timeout=25) as response:
+              html=response.read().decode("utf-8")
+              assert response.status==200 and "모바일 미리보기" in html
+          try:
+              urllib.request.urlopen(url+"/api/preview/info",timeout=15)
+              raise AssertionError("로그인 없이 API 접근 가능")
+          except urllib.error.HTTPError as error:
+              assert error.code==401
+          print("PUBLIC_LOGIN_PAGE_AND_AUTH_VERIFIED="+url+"/cosmo/objekt")
+          PY
