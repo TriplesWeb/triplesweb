@@ -108,9 +108,17 @@ const urls={
   assert.equal(posts[0].params.get('category'),'ANNIVERSARY');
   assert.equal(posts[0].headers['x-xsrf-token'],'fixture-csrf');
   async function openEvent(title){
-   const event=page.locator('.fc-event:visible').filter({hasText:title});
-   if(!await event.count())await page.locator('.fc-more-link').first().click();
-   await page.locator('.fc-event:visible').filter({hasText:title}).first().click();
+   const event=page.locator('.fc-event:visible').filter({hasText:title}).first();
+   try {await event.waitFor({state:'visible',timeout:3000});}
+   catch (_) {
+    const more=page.locator('.fc-more-link:visible').first();
+    if(await more.count())await more.click();
+    await event.waitFor({state:'visible',timeout:5000}).catch(async error=>{
+      console.log('일정 렌더링 진단',title,JSON.stringify(await page.locator('.fc-event').allTextContents()),JSON.stringify(pageErrors));
+      throw error;
+    });
+   }
+   await event.click();
   }
   await openEvent('🎂 새 기념일');
   await page.locator('#editBtn').click();
