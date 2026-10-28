@@ -695,6 +695,15 @@
         function scheduleModal(element) {
             return bootstrap.Modal.getInstance(element)||new bootstrap.Modal(element);
         }
+        // Bootstrap은 열리는 중의 hide()를 무시하므로 열린 뒤 다시 닫는다.
+        function hideScheduleModalThen(element, callback) {
+            element.addEventListener('hidden.bs.modal', callback, {once:true});
+            const modal = scheduleModal(element);
+            modal.hide();
+            if (element.classList.contains('show')) {
+                element.addEventListener('shown.bs.modal', () => modal.hide(), {once:true});
+            }
+        }
         function showAddModal() {
             const modalElement = document.getElementById('addScheduleModal');
             scheduleModal(modalElement).show();
@@ -868,8 +877,7 @@
                         document.querySelectorAll('#editArtistNames option').forEach(option => option.selected = selectedArtists.includes(option.value));
 
                         document.getElementById('editScheduleCategory').dispatchEvent(new Event('change'));
-                        viewModalElement.addEventListener('hidden.bs.modal',()=>scheduleModal(editModalElement).show(),{once:true});
-                        scheduleModal(viewModalElement).hide();
+                        hideScheduleModalThen(viewModalElement, () => scheduleModal(editModalElement).show());
                     };
                 }
 

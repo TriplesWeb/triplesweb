@@ -205,6 +205,13 @@ def main():
             with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(url+"/api/preview/info",timeout=3) as response:
                 info=json.load(response)
             if info.get("revision")==args.revision and info.get("pr")==args.pr:
+                opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
+                for path in ("/cosmo/objekt", "/schedule", "/triples/artist"):
+                    with opener.open(url+path,timeout=15) as page:
+                        html=page.read().decode("utf-8")
+                        if page.status!=200 or "/js/pr-preview.js" not in html:
+                            raise RuntimeError("미리보기 화면 확인 실패: "+path)
+                print("미리보기 오브젝트/일정/아티스트 화면 HTTP 200 확인 완료")
                 print("PREVIEW_URL="+url)
                 print("PR_PREVIEW_REVISION="+args.revision)
                 break
