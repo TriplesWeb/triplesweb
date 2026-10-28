@@ -34,6 +34,7 @@
     </script>
 
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/schedule-categories.css?v=1">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css">
 
@@ -474,7 +475,7 @@
 
         <section class="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
             <div class="lg:col-span-8">
-                <div id="calendar" aria-label="공식 스케줄 캘린더"></div>
+                <div class="schedule-legend" aria-label="일정 분류 색상"><span style="--schedule-color:#a78bfa">팬사인회</span><span style="--schedule-color:#fb923c">방송</span><span style="--schedule-color:#00f5d4">🎂 기념일 · 멤버색</span><span style="--schedule-color:#f87171">발매</span><span style="--schedule-color:#7dd3fc">행사</span></div><div id="calendar" aria-label="공식 스케줄 캘린더"></div>
             </div>
 
             <aside class="space-y-5 lg:col-span-4">
@@ -518,9 +519,9 @@
                             <tbody>
                                 {{#schedules}}
                                 <tr>
-                                    <td class="px-4 py-3 font-medium text-white">{{title}}</td>
+                                    <td class="px-4 py-3 font-medium text-white"><span class="schedule-category-label" style="--schedule-color:{{color}}">{{categoryLabel}}</span> {{displayTitle}}</td>
                                     <td class="px-4 py-3 font-mono text-[#b9cac4]">{{startStr}}</td>
-                                    <td class="px-4 py-3 font-mono text-[#b9cac4]">{{endStr}}</td>
+                                    <td class="px-4 py-3 font-mono text-[#b9cac4]">{{rawEnd}}</td>
                                 </tr>
                                 {{/schedules}}
                                 {{^schedules}}
@@ -553,6 +554,7 @@
                 <div class="modal-body space-y-3 p-4">
                     <div class="schedule-view-card">
                         <span class="schedule-view-label">일정 제목</span>
+                        <span id="modalScheduleCategory" class="schedule-category-label"></span>
                         <h3 id="modalScheduleTitle" class="text-lg font-bold leading-snug text-white"></h3>
                     </div>
                     <div class="schedule-view-dates">
@@ -570,6 +572,7 @@
                     <div>
                         {{#isAdmin}}
                         <form id="deleteForm" method="post" class="m-0 d-inline" data-confirm="이 일정을 삭제하시겠습니까? 삭제하면 되돌릴 수 없습니다.">
+                            {{#_csrf}}<input type="hidden" name="{{parameterName}}" value="{{token}}">{{/_csrf}}
                             <button type="submit" class="btn-custom-danger">삭제</button>
                         </form>
                         {{/isAdmin}}
@@ -603,6 +606,13 @@
                             <input type="text" class="form-control" id="titleInput" name="title" maxlength="200" required>
                         </div>
                         <div>
+                            <label for="addScheduleCategory" class="form-label">일정 분류</label>
+                            <select id="addScheduleCategory" name="category" class="form-control">
+                                {{#scheduleCategories}}<option value="{{value}}" data-color="{{color}}">{{label}}</option>{{/scheduleCategories}}
+                            </select>
+                            <div class="schedule-category-preview" id="addSchedulePreview" aria-live="polite">일정 미리보기</div>
+                        </div>
+                        <div>
                             <label for="startInput" class="form-label">시작 날짜</label>
                             <input type="date" class="form-control font-mono" id="startInput" name="start" required>
                         </div>
@@ -613,7 +623,7 @@
                         <div>
                             <label for="addArtistNames" class="form-label">출연 멤버</label>
                             <select id="addArtistNames" class="form-control" name="artistNames" multiple size="5">
-                                {{#artistOptions}}<option value="{{name}}">{{name}}</option>{{/artistOptions}}
+                                {{#artistOptions}}<option value="{{name}}" data-color="{{color}}">{{name}}</option>{{/artistOptions}}
                             </select>
                         </div>
                     </div>
@@ -645,6 +655,13 @@
                             <input type="text" class="form-control" id="editTitleInput" name="title" maxlength="200" required>
                         </div>
                         <div>
+                            <label for="editScheduleCategory" class="form-label">일정 분류</label>
+                            <select id="editScheduleCategory" name="category" class="form-control">
+                                {{#scheduleCategories}}<option value="{{value}}" data-color="{{color}}">{{label}}</option>{{/scheduleCategories}}
+                            </select>
+                            <div class="schedule-category-preview" id="editSchedulePreview" aria-live="polite">일정 미리보기</div>
+                        </div>
+                        <div>
                             <label for="editStartInput" class="form-label">시작 날짜</label>
                             <input type="date" class="form-control font-mono" id="editStartInput" name="start" required>
                         </div>
@@ -655,7 +672,7 @@
                         <div>
                             <label for="editArtistNames" class="form-label">출연 멤버</label>
                             <select id="editArtistNames" class="form-control" name="artistNames" multiple size="5">
-                                {{#artistOptions}}<option value="{{name}}">{{name}}</option>{{/artistOptions}}
+                                {{#artistOptions}}<option value="{{name}}" data-color="{{color}}">{{name}}</option>{{/artistOptions}}
                             </select>
                         </div>
                     </div>
@@ -675,9 +692,12 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/ko.global.min.js"></script>
 
     <script>
+        function scheduleModal(element) {
+            return bootstrap.Modal.getInstance(element)||new bootstrap.Modal(element);
+        }
         function showAddModal() {
             const modalElement = document.getElementById('addScheduleModal');
-            bootstrap.Modal.getOrCreateInstance(modalElement).show();
+            scheduleModal(modalElement).show();
         }
 
         function formatDate(dateValue) {
@@ -704,10 +724,40 @@
             return event.extendedProps?.rawEnd || event.endStr || '';
         }
 
+        function toCalendarEvent(item) {
+            return {
+                id:item.id,title:item.displayTitle||item.title,start:item.start,end:item.end,
+                borderColor:item.color,textColor:item.color,backgroundColor:'transparent',
+                extendedProps:{...item,rawTitle:item.title}
+            };
+        }
+
+        function scheduleHeaders() {
+            const headers={'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'};
+            return window.AboutAdminAuth?.applyAuthHeaders(headers)||headers;
+        }
+
+        function bindCategoryPreview(prefix,titleId,artistId) {
+            const category=document.getElementById(prefix+'ScheduleCategory');
+            const title=document.getElementById(titleId), artists=document.getElementById(artistId);
+            const preview=document.getElementById(prefix+'SchedulePreview');
+            if(!category||!preview)return;
+            function update() {
+                const option=category.selectedOptions[0];
+                let color=option?.dataset.color||'#00f5d4';
+                if(category.value==='ANNIVERSARY')color=artists.selectedOptions[0]?.dataset.color||color;
+                preview.style.setProperty('--schedule-color',color);
+                const label=title.value.trim()||option?.textContent||'일정 미리보기';
+                preview.textContent=(category.value==='ANNIVERSARY'&&!label.includes('🎂')?'🎂 ':'')+label;
+            }
+            category.addEventListener('change',update);title.addEventListener('input',update);artists.addEventListener('change',update);
+            category.form.addEventListener('reset',()=>requestAnimationFrame(update));update();
+        }
+
         function getCalendarEvents() {
             try {
                 const injectedEvents = {{{schedulesJson}}};
-                return Array.isArray(injectedEvents) ? injectedEvents : [];
+                return Array.isArray(injectedEvents) ? injectedEvents.map(toCalendarEvent) : [];
             } catch (error) {
                 console.error('스케줄 데이터 파싱 실패:', error);
                 return [];
@@ -728,6 +778,8 @@
                 return;
             }
 
+            bindCategoryPreview('add','titleInput','addArtistNames');
+            bindCategoryPreview('edit','editTitleInput','editArtistNames');
             let selectedEvent = null;
 
             function renderSelectedDate(dateString, dateObject) {
@@ -763,6 +815,7 @@
                 dayEvents.forEach(event => {
                     const item = document.createElement('article');
                     item.className = 'schedule-detail-item';
+                    item.style.setProperty('--schedule-color',event.extendedProps.color||'#00f5d4');
 
                     const title = document.createElement('h3');
                     title.className = 'text-sm font-bold leading-snug text-white';
@@ -783,13 +836,17 @@
                     openButton.addEventListener('click', () => openEventDetails(event));
                     actions.appendChild(openButton);
 
-                    item.append(title, dates, actions);
+                    const category=document.createElement('span');
+                    category.className='schedule-category-label';category.textContent=event.extendedProps.categoryLabel||'일정';
+                    item.append(category, title, dates, actions);
                     detailElement.appendChild(item);
                 });
             }
 
             function openEventDetails(event) {
                 selectedEvent = event;
+                viewModalElement.style.setProperty('--schedule-color',event.extendedProps.color||'#00f5d4');
+                document.getElementById('modalScheduleCategory').textContent=event.extendedProps.categoryLabel||'일정';
                 document.getElementById('modalScheduleTitle').textContent = event.title || '';
                 document.getElementById('modalScheduleStart').textContent = formatDate(event.startStr);
                 const endValue = formatDate(getRawEnd(event));
@@ -803,18 +860,20 @@
                     editButton.onclick = function () {
                         if (!selectedEvent) return;
                         document.getElementById('editScheduleId').value = selectedEvent.id;
-                        document.getElementById('editTitleInput').value = selectedEvent.title || '';
+                        document.getElementById('editTitleInput').value = selectedEvent.extendedProps.rawTitle || selectedEvent.title || '';
+                        document.getElementById('editScheduleCategory').value=selectedEvent.extendedProps.category||'AUTO';
                         document.getElementById('editStartInput').value = String(selectedEvent.startStr || '').substring(0, 10);
                         document.getElementById('editEndInput').value = String(getRawEnd(selectedEvent)).substring(0, 10);
                         const selectedArtists = String(selectedEvent.extendedProps.artistNames || '').split(',').map(v => v.trim()).filter(Boolean);
                         document.querySelectorAll('#editArtistNames option').forEach(option => option.selected = selectedArtists.includes(option.value));
 
-                        bootstrap.Modal.getOrCreateInstance(viewModalElement).hide();
-                        bootstrap.Modal.getOrCreateInstance(editModalElement).show();
+                        document.getElementById('editScheduleCategory').dispatchEvent(new Event('change'));
+                        viewModalElement.addEventListener('hidden.bs.modal',()=>scheduleModal(editModalElement).show(),{once:true});
+                        scheduleModal(viewModalElement).hide();
                     };
                 }
 
-                bootstrap.Modal.getOrCreateInstance(viewModalElement).show();
+                scheduleModal(viewModalElement).show();
             }
 
             const calendar = new FullCalendar.Calendar(calendarElement, {
@@ -832,6 +891,9 @@
                     month: '월간'
                 },
                 events: getCalendarEvents(),
+                eventDidMount: function(info) {
+                    info.el.style.setProperty('--schedule-color',info.event.extendedProps.color||'#00f5d4');
+                },
                 dateClick: function (info) {
                     renderSelectedDate(info.dateStr, info.date);
                 },
@@ -886,13 +948,13 @@
                     }
                     if (!window.confirm('이 일정을 추가하시겠습니까?')) return;
 
-                    const body = new URLSearchParams({ title, start, end });
+                    const body = new URLSearchParams({ title, start, end, category:document.getElementById('addScheduleCategory').value });
                     document.querySelectorAll('#addArtistNames option:checked').forEach(option => body.append('artistNames', option.value));
-                    const artistNames = [...document.querySelectorAll('#addArtistNames option:checked')].map(option => option.value).join(',');
                     try {
                         const response = await fetch('/schedule/add', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                            headers: scheduleHeaders(),
+                            credentials: 'same-origin',
                             body: body.toString()
                         });
 
@@ -901,14 +963,10 @@
                             return;
                         }
 
-                        calendar.addEvent({
-                            title,
-                            start,
-                            end: end ? addOneDay(end) : null,
-                            extendedProps: { rawEnd: end, artistNames }
-                        });
+                        const saved=await response.json();
+                        calendar.addEvent(toCalendarEvent(saved));
 
-                        bootstrap.Modal.getOrCreateInstance(addModalElement).hide();
+                        scheduleModal(addModalElement).hide();
                         addForm.reset();
                         renderSelectedDate(start, new Date(`${start}T00:00:00`));
                     } catch (error) {
@@ -938,13 +996,13 @@
                     }
                     if (!window.confirm('이 일정을 수정하시겠습니까?')) return;
 
-                    const body = new URLSearchParams({ title, startDate: start, endDate: end });
+                    const body = new URLSearchParams({ title, startDate: start, endDate: end, category:document.getElementById('editScheduleCategory').value });
                     document.querySelectorAll('#editArtistNames option:checked').forEach(option => body.append('artistNames', option.value));
-                    const artistNames = [...document.querySelectorAll('#editArtistNames option:checked')].map(option => option.value).join(',');
                     try {
                         const response = await fetch(`/edit/${encodeURIComponent(id)}`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                            headers: scheduleHeaders(),
+                            credentials: 'same-origin',
                             body: body.toString()
                         });
 
@@ -953,16 +1011,12 @@
                             return;
                         }
 
-                        const eventToUpdate = calendar.getEventById(id);
-                        if (eventToUpdate) {
-                            eventToUpdate.setProp('title', title);
-                            eventToUpdate.setStart(start);
-                            eventToUpdate.setEnd(end ? addOneDay(end) : null);
-                            eventToUpdate.setExtendedProp('rawEnd', end);
-                            eventToUpdate.setExtendedProp('artistNames', artistNames);
-                        }
+                        const saved=toCalendarEvent(await response.json());
+                        const eventToUpdate=calendar.getEventById(id);
+                        if(eventToUpdate)eventToUpdate.remove();
+                        calendar.addEvent(saved);
 
-                        bootstrap.Modal.getOrCreateInstance(editModalElement).hide();
+                        scheduleModal(editModalElement).hide();
                         renderSelectedDate(start, new Date(`${start}T00:00:00`));
                     } catch (error) {
                         console.error('스케줄 수정 오류:', error);

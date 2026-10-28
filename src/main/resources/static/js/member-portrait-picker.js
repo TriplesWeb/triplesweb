@@ -35,6 +35,10 @@
 
   function ensureFrame(avatar, btn, index) {
     if (!avatar) return null;
+    if (!avatar.querySelector('.artist-tab-shine')) {
+      const shine=document.createElement('span');shine.className='artist-tab-shine';
+      shine.setAttribute('aria-hidden','true');avatar.appendChild(shine);
+    }
     let frame = avatar.querySelector(".artist-tab-frame");
     if (!frame) {
       frame = document.createElement("img");

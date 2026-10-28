@@ -48,7 +48,7 @@ const base = path.resolve(__dirname, '../..');
       assert.notEqual(stable.shadow, 'none');
       assert.equal(stable.animations.length, 1, mode+' 광택 레이어만 반복');
       assert.deepEqual(stable.animations[0].properties.sort(), ['opacity','transform'], mode+' 광택 레이어의 이동과 투명도만 애니메이션');
-      assert.ok(stable.animations[0].duration >= 2750 && stable.animations[0].duration <= 2850, mode+' 2.8초 반복 주기');
+      assert.ok(stable.animations[0].duration >= 3450 && stable.animations[0].duration <= 3550, mode+' 3.5초 반복 주기');
       assert.equal(await frame.getAttribute('src'), src, mode+' 프레임 주소 유지');
       assert.equal(await frame.evaluate(el=>getComputedStyle(el).filter), 'none');
       assert.equal(await first.locator('.artist-tab-shine').isVisible(), true);
@@ -84,6 +84,14 @@ const base = path.resolve(__dirname, '../..');
         assert.deepEqual(await page.evaluate(()=>changes.at(-1)), ['1']);
         await first.focus(); await page.keyboard.press('Enter');
         assert.deepEqual(await page.evaluate(()=>changes.at(-1)), ['0','1']);
+      }
+      if (!artist) {
+        const fallback=buttons.nth(7);
+        await fallback.evaluate(el=>{el.dataset.keepOption='true';el.querySelector('.artist-tab-photo').dispatchEvent(new Event('error'));});
+        assert.equal(await fallback.locator('.artist-tab-shine').count(),1, mode+' 대체 초상화에도 광택 레이어 유지');
+        await fallback.click();
+        await page.waitForTimeout(350);
+        assert.equal(await fallback.locator('.artist-tab-avatar').evaluate(el=>el.getAnimations({subtree:true}).filter(a=>a.playState==='running').length),1);
       }
       await page.emulateMedia({reducedMotion:'reduce'});
       await buttons.nth(2).click();

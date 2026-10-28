@@ -1,0 +1,8 @@
+.schedule-legend{display:flex;flex-wrap:wrap;gap:.45rem;margin:0 0 .8rem}
+.schedule-legend span,.schedule-category-label{display:inline-flex;align-items:center;gap:.35rem;border:1px solid color-mix(in srgb,var(--schedule-color,#00f5d4) 35%,transparent);border-radius:999px;padding:.18rem .55rem;color:var(--schedule-color,#00f5d4);font-size:.7rem;line-height:1.5;background:color-mix(in srgb,var(--schedule-color,#00f5d4) 8%,transparent);vertical-align:middle}
+.schedule-legend span::before,.schedule-category-label::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+.fc .fc-event{border-color:var(--schedule-color,#00f5d4);background:color-mix(in srgb,var(--schedule-color,#00f5d4) 14%,#101419)!important;color:var(--schedule-color,#00f5d4)}
+.fc .fc-event:hover{background:color-mix(in srgb,var(--schedule-color,#00f5d4) 22%,#101419)!important}
+.fc .fc-event .fc-event-main{color:inherit}
+.schedule-detail-item{border-left:3px solid var(--schedule-color,#00f5d4)!important}
+.schedule-category-preview{--schedule-color:#00f5d4;margin-top:.6rem;padding:.65rem .8rem;border-left:3px solid var(--schedule-color);border-radius:.5rem;background:color-mix(in srgb,var(--schedule-color) 10%,#101419);color:var(--schedule-color);font-size:.85rem;overflow-wrap:anywhere}
