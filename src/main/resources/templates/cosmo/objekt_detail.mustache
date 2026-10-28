@@ -8,7 +8,7 @@
 <section class="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-4"><h2 class="text-lg font-semibold">상세 설명</h2>{{#objektDescription}}<p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-300">{{objektDescription}}</p>{{/objektDescription}}{{^objektDescription}}<p class="mt-2 text-sm text-slate-500">아직 등록된 상세 설명이 없습니다.</p>{{/objektDescription}}
 </section>
 <form method="post" action="/cosmo/objekt/detail/{{objektKey}}/favorite" class="mt-6" data-objekt-favorite>
-<input type="hidden" name="favorite" value="{{favoriteDesired}}"><button class="w-full rounded-xl border border-pink-400/40 bg-pink-400/10 px-5 py-3 font-semibold text-pink-200 hover:bg-pink-400/20 disabled:opacity-50" type="submit" aria-pressed="{{isFavorite}}">{{#isFavorite}}♥ 찜 해제{{/isFavorite}}{{^isFavorite}}♡ 찜하기{{/isFavorite}}</button>
+{{#_csrf}}<input type="hidden" name="{{parameterName}}" value="{{token}}">{{/_csrf}}<input type="hidden" name="favorite" value="{{favoriteDesired}}"><button class="w-full rounded-xl border border-pink-400/40 bg-pink-400/10 px-5 py-3 font-semibold text-pink-200 hover:bg-pink-400/20 disabled:opacity-50" type="submit" aria-pressed="{{isFavorite}}">{{#isFavorite}}♥ 찜 해제{{/isFavorite}}{{^isFavorite}}♡ 찜하기{{/isFavorite}}</button>
 <p role="status" class="mt-2 text-sm text-slate-300" data-favorite-status></p></form>
 <a href="/cosmo/objekt/favorites" class="mt-2 block text-right text-sm text-pink-200">♥ 내 찜 목록 보기 →</a>
 <section class="serial-panel" data-serial-panel data-url="{{lookupUrl}}" aria-labelledby="owner-heading">
