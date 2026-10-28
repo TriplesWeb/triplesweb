@@ -37,7 +37,7 @@ class ObjektFeaturesTest {
         item.setObjektKey("uuid");
         item.setCollectionId("sample");
         when(favoriteRepository.findByVisitorKeyOrderByCreatedAtDesc(anyString())).thenReturn(List.of(item));
-        mvc.perform(get("/cosmo/objekt/favorites").requestAttr("_csrf",
+        mvc.perform(get("/cosmo/objekt/favorites").flashAttr("_csrf",
                 new org.springframework.security.web.csrf.DefaultCsrfToken("X-XSRF-TOKEN","_csrf","remove-form-token")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("name=\"_csrf\" value=\"remove-form-token\"")));
@@ -78,7 +78,7 @@ class ObjektFeaturesTest {
         for (String field : List.of("frontImage", "backImage", "thumbnailImage", "season", "class", "collectionNo")) item.put(field, "");
         when(catalog.findCollections("triples")).thenReturn(List.of(item));
         when(descriptions.findByObjektKey("uuid")).thenReturn(java.util.Optional.empty());
-        mvc.perform(get("/cosmo/objekt/detail/sample").requestAttr("_csrf", new org.springframework.security.web.csrf.DefaultCsrfToken("X-XSRF-TOKEN","_csrf","favorite-form-token")).accept(MediaType.TEXT_HTML)).andExpect(status().isOk())
+        mvc.perform(get("/cosmo/objekt/detail/sample").flashAttr("_csrf", new org.springframework.security.web.csrf.DefaultCsrfToken("X-XSRF-TOKEN","_csrf","favorite-form-token")).accept(MediaType.TEXT_HTML)).andExpect(status().isOk())
                 .andExpect(content().string(containsString("data-serial-lookup")))
                 .andExpect(content().string(not(containsString("objektDescriptionInput"))))
                 .andExpect(content().string(not(containsString("data-transfer-history"))))
