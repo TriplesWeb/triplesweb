@@ -49,6 +49,8 @@ mobile_log=command(["docker","logs","--tail","500",f"triples-pr{pr}-mobile-tunne
 urls=re.findall(r"https://[a-z0-9-]+\.trycloudflare\.com",mobile_log.stdout+mobile_log.stderr)
 if urls:
     result["publicPreviewURL"]=urls[-1]
+    # 공개 주소 안의 짧은 문자열이 배포 계정명과 겹쳐 로그에서 가려지는 경우를 위한 전송 형식.
+    result["publicPreviewURLHex"]=urls[-1].encode().hex()
     if container.returncode==0:
         # 비밀번호는 메모리에서만 사용하고 상태·경로만 출력한다.
         environment=dict(value.split("=",1) for value in data.get("Config",{}).get("Env",[]) if "=" in value)
