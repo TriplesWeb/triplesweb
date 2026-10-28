@@ -4,6 +4,7 @@ import importlib.util
 import io
 import json
 import os
+import re
 from pathlib import Path
 import tempfile
 import threading
@@ -41,6 +42,14 @@ class PreviewMobileSecurityTest(unittest.TestCase):
         conn.close()
         return result
 
+    def login_request(self,password,extra_headers=None):
+        _,headers,body=self.request("GET","/__preview/login")
+        csrf=re.search(rb'name="csrf" value="([^"]+)"',body).group(1).decode()
+        cookie=headers["Set-Cookie"].split(";")[0]
+        request_headers={"Content-Type":"application/x-www-form-urlencoded","Cookie":cookie}
+        request_headers.update(extra_headers or {})
+        return self.request("POST","/__preview/login",urlencode({"password":password,"csrf":csrf}),request_headers)
+
     def test_private_api_requires_login(self):
         status,headers,body=self.request("GET","/api/preview/info")
         self.assertEqual(status,401)
@@ -48,11 +57,11 @@ class PreviewMobileSecurityTest(unittest.TestCase):
         self.assertEqual(self.request("GET","/cosmo/objekt")[0],303)
 
     def test_wrong_password_is_rejected(self):
-        status,_,_=self.request("POST","/__preview/login",urlencode({"password":"wrong"}),{"Content-Type":"application/x-www-form-urlencoded"})
+        status,_,_=self.login_request("wrong")
         self.assertEqual(status,401)
 
     def test_login_cookie_is_secure_and_http_only(self):
-        status,headers,_=self.request("POST","/__preview/login",urlencode({"password":"preview-test-password"}),{"Content-Type":"application/x-www-form-urlencoded"})
+        status,headers,_=self.login_request("preview-test-password")
         self.assertEqual(status,303)
         self.assertIn("HttpOnly",headers["Set-Cookie"])
         self.assertIn("Secure",headers["Set-Cookie"])
@@ -60,6 +69,15 @@ class PreviewMobileSecurityTest(unittest.TestCase):
 
     def test_cross_origin_login_is_rejected(self):
         self.assertEqual(self.request("POST","/__preview/login","password=anything",{"Origin":"https://other.example"})[0],403)
+
+    def test_browser_origin_survives_proxy_host_rewrite(self):
+        status,headers,_=self.login_request("preview-test-password",{"Origin":"https://preview.example","Host":"gateway:8080"})
+        self.assertEqual(status,303)
+        self.assertIn("PR26MOBILEACCESS",headers["Set-Cookie"])
+
+    def test_signed_token_cannot_be_forged(self):
+        status,_,_=self.request("POST","/__preview/login",urlencode({"password":"preview-test-password","csrf":"forged.token"}),{"Cookie":"__Host-PR26LOGINCSRF=forged.token"})
+        self.assertEqual(status,403)
 
     def test_access_cookie_is_not_sent_to_application(self):
         response=type("Response",(),{"status":200,"getheaders":lambda self:[("Content-Type","application/json"),("Content-Length","2")],"read":io.BytesIO(b"{}").read})()

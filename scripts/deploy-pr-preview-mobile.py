@@ -83,7 +83,10 @@ def main():
             try:
                 jar=http.cookiejar.CookieJar()
                 opener=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
-                request=urllib.request.Request(url+"/__preview/login",data=urllib.parse.urlencode({"password":password}).encode())
+                with opener.open(url+"/__preview/login",timeout=20) as login_page:
+                    form=login_page.read().decode("utf-8")
+                csrf=re.search(r'name="csrf" value="([^"]+)"',form).group(1)
+                request=urllib.request.Request(url+"/__preview/login",data=urllib.parse.urlencode({"password":password,"csrf":csrf}).encode(),headers={"Origin":url})
                 with opener.open(request,timeout=25) as response:
                     html=response.read().decode("utf-8")
                     if response.status!=200 or "/js/pr-preview.js" not in html:

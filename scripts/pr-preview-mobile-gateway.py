@@ -8,15 +8,17 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import http.client
 import json
 import os
+import secrets
 from pathlib import Path
 import time
 from urllib.parse import parse_qs, urlsplit
 
 CONFIG=json.loads(Path(os.environ.get("PREVIEW_ACCESS_CONFIG","/config/access.json")).read_text())
 COOKIE="PR26MOBILEACCESS"
+LOGIN_COOKIE="__Host-PR26LOGINCSRF"
 ATTEMPTS=defaultdict(deque)
 HOP={"connection","keep-alive","proxy-authenticate","proxy-authorization","te","trailer","transfer-encoding","upgrade"}
-PAGE="""<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PR #26 미리보기</title><style>*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;background:#10151b;color:#f0f6f6;font:16px/1.6 system-ui,sans-serif;padding:24px}main{width:min(100%,390px);border:1px solid #35474c;border-radius:24px;padding:28px;background:#172028}small{color:#69d7c8}h1{font-size:25px;margin:8px 0 12px}p{color:#b8c9ce}input,button{font:inherit;width:100%;border-radius:12px;padding:12px;margin-top:12px}input{background:#10151b;border:1px solid #52676f;color:white}button{border:0;background:#69d7c8;color:#0c2724;font-weight:700}label{display:block;margin-top:20px}.error{color:#ffb7b7}</style></head><body><main><small>tripleS · PR #26</small><h1>모바일 미리보기</h1><p>사이트 관리자 비밀번호로 접속하세요.</p>MESSAGE<form method="post" action="/__preview/login"><label for="password">관리자 비밀번호</label><input id="password" name="password" type="password" autocomplete="current-password" required autofocus><button type="submit">미리보기 열기</button></form></main></body></html>"""
+PAGE="""<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PR #26 미리보기</title><style>*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;background:#10151b;color:#f0f6f6;font:16px/1.6 system-ui,sans-serif;padding:24px}main{width:min(100%,390px);border:1px solid #35474c;border-radius:24px;padding:28px;background:#172028}small{color:#69d7c8}h1{font-size:25px;margin:8px 0 12px}p{color:#b8c9ce}input,button{font:inherit;width:100%;border-radius:12px;padding:12px;margin-top:12px}input{background:#10151b;border:1px solid #52676f;color:white}button{border:0;background:#69d7c8;color:#0c2724;font-weight:700}label{display:block;margin-top:20px}.error{color:#ffb7b7}</style></head><body><main><small>tripleS · PR #26</small><h1>모바일 미리보기</h1><p>사이트 관리자 비밀번호로 접속하세요.</p>MESSAGE<form method="post" action="/__preview/login"><input type="hidden" name="csrf" value="CSRFVALUE"><label for="password">관리자 비밀번호</label><input id="password" name="password" type="password" autocomplete="current-password" required autofocus><button type="submit">미리보기 열기</button></form></main></body></html>"""
 
 def password_matches(password):
     digest=hashlib.pbkdf2_hmac("sha256",password.encode(),bytes.fromhex(CONFIG["salt"]),260000).hex()
@@ -38,6 +40,23 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         if self.command!="HEAD":
             self.wfile.write(body)
+    def login_page(self,status=200,message=""):
+        nonce=secrets.token_urlsafe(24)
+        signature=hmac.new(CONFIG["session"].encode(),nonce.encode(),hashlib.sha256).hexdigest()
+        token=nonce+"."+signature
+        page=PAGE.replace("MESSAGE",message).replace("CSRFVALUE",token).encode()
+        self.reply(status,page,headers=(("Set-Cookie",LOGIN_COOKIE+"="+token+"; Path=/; HttpOnly; Secure; SameSite=Lax"),))
+    def valid_login_csrf(self,token):
+        try:
+            cookies=SimpleCookie(self.headers.get("Cookie",""))
+            cookie=cookies.get(LOGIN_COOKIE)
+            if not cookie or not hmac.compare_digest(cookie.value,token):
+                return False
+            nonce,signature=token.split(".")
+            expected=hmac.new(CONFIG["session"].encode(),nonce.encode(),hashlib.sha256).hexdigest()
+            return hmac.compare_digest(signature,expected)
+        except (ValueError,TypeError):
+            return False
     def authenticated(self):
         try:
             cookies=SimpleCookie(self.headers.get("Cookie",""))
@@ -50,31 +69,31 @@ class Handler(BaseHTTPRequestHandler):
         path=parsed.path
         if path=="/__preview/login":
             if self.command=="GET":
-                self.reply(200,PAGE.replace("MESSAGE","").encode())
+                self.login_page()
                 return
             if self.command!="POST":
                 self.reply(405)
-                return
-            origin=self.headers.get("Origin")
-            if origin and urlsplit(origin).netloc!=self.headers.get("Host"):
-                self.reply(403)
                 return
             size=int(self.headers.get("Content-Length","0"))
             if not 0<size<=2048:
                 self.reply(413)
                 return
-            password=parse_qs(self.rfile.read(size).decode("utf-8",errors="replace")).get("password",[""])[0]
+            fields=parse_qs(self.rfile.read(size).decode("utf-8",errors="replace"))
+            if not self.valid_login_csrf(fields.get("csrf",[""])[0]):
+                self.login_page(403,'<p class="error">로그인 화면을 새로고침한 뒤 다시 시도해 주세요.</p>')
+                return
+            password=fields.get("password",[""])[0]
             key=self.headers.get("CF-Connecting-IP","unknown")[:64]
             now=time.monotonic()
             attempts=ATTEMPTS[key]
             while attempts and now-attempts[0]>60:
                 attempts.popleft()
             if len(attempts)>=8:
-                self.reply(429,PAGE.replace("MESSAGE",'<p class="error">잠시 후 다시 시도해 주세요.</p>').encode())
+                self.login_page(429,'<p class="error">잠시 후 다시 시도해 주세요.</p>')
                 return
             attempts.append(now)
             if not password_matches(password):
-                self.reply(401,PAGE.replace("MESSAGE",'<p class="error">비밀번호를 확인해 주세요.</p>').encode())
+                self.login_page(401,'<p class="error">비밀번호를 확인해 주세요.</p>')
                 return
             attempts.clear()
             self.reply(303,headers=(("Location","/cosmo/objekt"),("Set-Cookie",COOKIE+"="+CONFIG["session"]+"; Path=/; HttpOnly; Secure; SameSite=Lax")))
@@ -95,8 +114,9 @@ class Handler(BaseHTTPRequestHandler):
         body=self.rfile.read(size) if size else None
         headers={key:value for key,value in self.headers.items() if key.lower() not in HOP and key.lower() not in {"authorization","cookie","x-forwarded-proto","x-forwarded-host"}}
         cookies=SimpleCookie(self.headers.get("Cookie",""))
-        if COOKIE in cookies:
-            del cookies[COOKIE]
+        for name in (COOKIE,LOGIN_COOKIE):
+            if name in cookies:
+                del cookies[name]
         if cookies:
             headers["Cookie"]="; ".join(m.OutputString() for m in cookies.values())
         headers["X-Forwarded-Proto"]="https"
