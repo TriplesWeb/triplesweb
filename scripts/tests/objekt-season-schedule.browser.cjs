@@ -33,7 +33,7 @@ const urls={
    }
    if(url.pathname.startsWith('/fixture/')){
     const name=url.pathname.slice('/fixture/'.length);
-    if(name==='native')return route.fulfill({contentType:'text/html',body:'<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/css/season-filters.css"><script defer src="/js/season-filters.js"></script></head><body style="margin:16px;background:#101216;color:white"><form><div class="tr-facets"><div class="objekt-filter"><select data-season aria-label="시즌 필터"><option value="">전체</option><option>Atom01</option><option>Binary01</option></select></div></div><button type="reset">초기화</button><output></output></form><script>document.querySelector("select").addEventListener("change",event=>document.querySelector("output").textContent=event.target.value);</script></body></html>'});
+    if(name==='native')return route.fulfill({contentType:'text/html',body:'<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/css/season-filters.css"><script defer src="/js/season-filters.js"></script></head><body style="margin:16px;background:#101216;color:white"><form><div class="tr-facets"><div class="objekt-filter"><select data-season aria-label="시즌 필터"><option value="">전체</option><option>Atom01</option><option>Binary01</option></select></div></div><button type="reset">초기화</button><output></output></form><script>document.querySelector("select").addEventListener("change",event=>document.querySelector("output").textContent=event.target.value);</script></body></html>'});
     const file=name==='schedule'?path.join(base,'build/filter-pages/schedule.html'):path.join(base,'build/mobile-pages','cosmo_'+name+'.mustache.html');
     return route.fulfill({contentType:'text/html',body:fs.readFileSync(file,'utf8')});
    }
@@ -70,6 +70,7 @@ const urls={
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,name+' 시즌 버튼 모바일 넘침');
   }
   await page.goto('https://filters.test/fixture/native');
+  assert.equal(await page.evaluate(()=>document.characterSet),'UTF-8');
   const nativeRow=page.getByRole('group',{name:'시즌 빠른 선택',exact:true});
   await nativeRow.locator('button[data-value="Binary01"]').click();
   assert.equal(await page.locator('output').textContent(),'Binary01');
@@ -91,6 +92,7 @@ const urls={
   await page.locator('#calendar .fc-view').waitFor();
   assert.equal(await page.locator('#deleteForm input[name="_csrf"]').inputValue(),'fixture-csrf');
   const purple=page.locator('.fc-event:visible').filter({hasText:'팬사인회'}).first();
+  if(!await purple.count())await page.locator('.fc-more-link').first().click();
   await purple.waitFor();
   assert.equal(await purple.evaluate(el=>getComputedStyle(el).borderTopColor),'rgb(167, 139, 250)');
   await page.locator('[onclick="showAddModal()"]').click();
