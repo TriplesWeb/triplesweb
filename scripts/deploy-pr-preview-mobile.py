@@ -2,6 +2,7 @@
 """PR 26의 분리된 미리보기에만 암호로 보호된 임시 HTTPS 연결을 추가한다."""
 import argparse
 import hashlib
+import hmac
 import http.cookiejar
 import json
 import os
@@ -24,6 +25,15 @@ def save(path,value):
     path.write_text(json.dumps(value),encoding="utf-8")
     path.chmod(0o600)
 
+def access_config(previous,password):
+    if previous:
+        digest=hashlib.pbkdf2_hmac("sha256",password.encode(),bytes.fromhex(previous["salt"]),260000).hex()
+        if hmac.compare_digest(digest,previous["passwordHash"]):
+            return previous
+    salt=secrets.token_bytes(16)
+    return {"salt":salt.hex(),"passwordHash":hashlib.pbkdf2_hmac("sha256",password.encode(),salt,260000).hex(),
+            "session":secrets.token_urlsafe(32)}
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--root",required=True)
@@ -43,19 +53,29 @@ def main():
     if not password:
         raise RuntimeError("관리자 비밀번호가 없어 공개 연결을 만들지 않습니다")
     network=next(iter(info["NetworkSettings"]["Networks"]))
+    previous_gateway=None
     for name in ("triples-pr26-mobile-gateway","triples-pr26-mobile-tunnel"):
         old=subprocess.run(["docker","inspect",name],stdin=subprocess.DEVNULL,capture_output=True,text=True)
-        if old.returncode==0 and json.loads(old.stdout)[0]["Config"].get("Labels",{}).get("org.triples.preview.mobile")!="26":
-            raise RuntimeError("다른 컨테이너를 덮어쓰지 않습니다")
+        if old.returncode==0:
+            details=json.loads(old.stdout)[0]
+            if details["Config"].get("Labels",{}).get("org.triples.preview.mobile")!="26":
+                raise RuntimeError("다른 컨테이너를 덮어쓰지 않습니다")
+            if name.endswith("gateway"):
+                previous_gateway=details
     directory.mkdir(parents=True,exist_ok=True,mode=0o700)
     directory.chmod(0o700)
     access_file=directory/"access.json"
-    session=json.loads(access_file.read_text())["session"] if access_file.exists() else secrets.token_urlsafe(32)
-    salt=secrets.token_bytes(16)
-    save(access_file,{"salt":salt.hex(),"passwordHash":hashlib.pbkdf2_hmac("sha256",password.encode(),salt,260000).hex(),"session":session})
+    previous_access=json.loads(access_file.read_text()) if access_file.exists() else None
+    access=access_config(previous_access,password)
+    access_changed=access!=previous_access
+    if access_changed:
+        save(access_file,access)
     gateway_file=directory/"gateway.py"
-    gateway_file.write_text(Path(args.gateway).read_text(),encoding="utf-8")
-    gateway_file.chmod(0o600)
+    source=Path(args.gateway).read_text()
+    code_changed=not gateway_file.exists() or gateway_file.read_text()!=source
+    if code_changed:
+        gateway_file.write_text(source,encoding="utf-8")
+        gateway_file.chmod(0o600)
     labels={"org.triples.preview.mobile":"26"}
     spec={"services":{
         "gateway":{"image":"python:3.12-alpine","container_name":"triples-pr26-mobile-gateway","restart":"unless-stopped","labels":labels,
@@ -69,11 +89,20 @@ def main():
     compose=directory/"compose.json"
     save(compose,spec)
     command=["docker","compose","-p","triples-pr26-mobile","-f",str(compose)]
-    run([*command,"pull"],timeout=300)
+    for image in ("python:3.12-alpine","cloudflare/cloudflared:latest"):
+        found=subprocess.run(["docker","image","inspect",image],stdin=subprocess.DEVNULL,capture_output=True)
+        if found.returncode:
+            run(["docker","pull",image],timeout=300)
     run([*command,"up","-d"],timeout=120)
-    run(["docker","restart","triples-pr26-mobile-gateway"],timeout=30)
+    if previous_gateway and (code_changed or access_changed):
+        current=json.loads(run(["docker","inspect","triples-pr26-mobile-gateway"]))[0]
+        if current["State"]["StartedAt"]==previous_gateway["State"]["StartedAt"]:
+            run(["docker","restart","triples-pr26-mobile-gateway"],timeout=30)
+    else:
+        print("로그인 게이트웨이 변경이 없어 재시작을 생략합니다",flush=True)
     url=None
-    for _ in range(60):
+    deadline=time.monotonic()+600
+    while time.monotonic()<deadline:
         logs=subprocess.run(["docker","logs","--tail","500","triples-pr26-mobile-tunnel"],stdin=subprocess.DEVNULL,capture_output=True,text=True)
         text=logs.stdout+logs.stderr
         found=re.findall(r"https://[a-z0-9-]+\.trycloudflare\.com",text)

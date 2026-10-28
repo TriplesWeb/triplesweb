@@ -7,6 +7,15 @@ preview = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(preview)
 
 class PreviewIsolationTest(unittest.TestCase):
+    def test_same_revision_and_configuration_do_not_restart_app(self):
+        desired=self.make_compose()
+        current={"State":{"Running":True},"Config":{"Labels":{"org.triples.preview.revision":"a"*40}}}
+        self.assertFalse(preview.needs_app_restart(current,desired,desired,"a"*40))
+        self.assertTrue(preview.needs_app_restart(current,desired,desired,"b"*40))
+        self.assertTrue(preview.needs_app_restart(current,{},desired,"a"*40))
+        current["State"]["Running"]=False
+        self.assertTrue(preview.needs_app_restart(current,desired,desired,"a"*40))
+
     def test_private_tables_are_not_copied(self):
         self.assertEqual(preview.public_tables(["artist","schedule","user","account","objekt_transfer","flyway_schema_history"]), ["artist","schedule","flyway_schema_history"])
 

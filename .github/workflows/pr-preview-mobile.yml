@@ -3,6 +3,9 @@ on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
+concurrency:
+  group: pr-mobile-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
 permissions:
   contents: read
 jobs:
@@ -44,6 +47,11 @@ jobs:
           PY
           )"
           ssh pi "$COMMAND" | tee /tmp/mobile-preview-result.txt
+          BEFORE="$(ssh pi "docker inspect --format '{{.Id}} {{.State.StartedAt}}' triples-pr26-mobile-gateway triples-pr26-mobile-tunnel")"
+          ssh pi "$COMMAND" > /tmp/mobile-preview-repeat.txt
+          AFTER="$(ssh pi "docker inspect --format '{{.Id}} {{.State.StartedAt}}' triples-pr26-mobile-gateway triples-pr26-mobile-tunnel")"
+          test "$BEFORE" = "$AFTER"
+          echo "반복 적용 후 로그인 게이트웨이·터널 재시작 0회 확인"
           URL="$(sed -n 's/^PUBLIC_PREVIEW_URL=//p' /tmp/mobile-preview-result.txt)"
           test -n "$URL"
           printf '### 휴대폰 미리보기\n\n%s\n\n기존 사이트 관리자 비밀번호로 접속하세요. Tailscale은 필요하지 않습니다.\n' "$URL" >> "$GITHUB_STEP_SUMMARY"

@@ -50,6 +50,15 @@ class PreviewMobileSecurityTest(unittest.TestCase):
         request_headers.update(extra_headers or {})
         return self.request("POST","/__preview/login",urlencode({"password":password,"csrf":csrf}),request_headers)
 
+    def test_unavailable_app_shows_retry_page_instead_of_bad_gateway(self):
+        with patch.object(self.module.http.client,"HTTPConnection") as unavailable:
+            unavailable.return_value.request.side_effect=ConnectionRefusedError
+            status,headers,body=self.request("GET","/cosmo/objekt",headers={"Cookie":"PR26MOBILEACCESS=test-session"})
+            self.assertEqual(status,503)
+            self.assertEqual(headers["Retry-After"],"5")
+            self.assertIn('미리보기를 준비하고 있어요',body.decode())
+            self.assertIn('http-equiv="refresh"',body.decode())
+
     def test_private_api_requires_login(self):
         status,headers,body=self.request("GET","/api/preview/info")
         self.assertEqual(status,401)

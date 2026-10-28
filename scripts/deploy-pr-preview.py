@@ -81,6 +81,14 @@ def compose_spec(directory, pr, image, revision, bind_ip, network, database_host
         "networks": {"database": {"external": True, "name": network}},
     }
 
+def needs_app_restart(current, previous_spec, desired_spec, revision):
+    if not current:
+        return True
+    labels=current.get("Config",{}).get("Labels",{})
+    return not (current.get("State",{}).get("Running")
+                and labels.get("org.triples.preview.revision")==revision
+                and previous_spec==desired_spec)
+
 def run(args, *, data=None, env=None, cwd=None, sensitive=False, timeout=300, check=True):
     result = subprocess.run(args, input=data, stdin=subprocess.DEVNULL if data is None else None, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                             env=env, cwd=cwd, timeout=timeout)
@@ -135,6 +143,8 @@ def main():
     container=f"triples-pr{args.pr}-preview"
     inspect=run(["docker","inspect",container],check=False)
     old_image=None
+    old=None
+    previous_spec=json.loads(compose_file.read_text()) if compose_file.exists() else None
     if inspect.returncode==0:
         old=json.loads(inspect.stdout)[0]
         if old.get("Config",{}).get("Labels",{}).get("org.triples.preview.pr")!=str(args.pr):
@@ -197,14 +207,18 @@ def main():
     for name in ("uploads","data"):(directory/name).mkdir(exist_ok=True)
     spec=compose_spec(directory,args.pr,args.image,args.revision,bind_ip,network,database_host,database,username,state["password"],admin_password,state["snapshot_at"])
     atomic_json(compose_file,spec)
-    with tempfile.TemporaryDirectory(prefix="preview-docker-auth-",dir=directory) as auth_dir:
-        env={**os.environ,"DOCKER_CONFIG":auth_dir}
-        run(["docker","login","ghcr.io","-u",args.registry_user,"--password-stdin"],data=token+"\n",env=env,sensitive=True)
-        token=None
-        run(["docker","pull",args.image],env=env)
-        run(["docker","compose","-p",f"triples-pr{args.pr}","-f",str(compose_file),"up","-d","--remove-orphans"],env=env,cwd=directory)
+    if needs_app_restart(old,previous_spec,spec,args.revision):
+        with tempfile.TemporaryDirectory(prefix="preview-docker-auth-",dir=directory) as auth_dir:
+            env={**os.environ,"DOCKER_CONFIG":auth_dir}
+            run(["docker","login","ghcr.io","-u",args.registry_user,"--password-stdin"],data=token+"\n",env=env,sensitive=True)
+            token=None
+            run(["docker","pull",args.image],env=env)
+            run(["docker","compose","-p",f"triples-pr{args.pr}","-f",str(compose_file),"up","-d","--remove-orphans"],env=env,cwd=directory)
+    else:
+        print("같은 버전과 설정이 실행 중이므로 앱 재시작을 생략합니다",flush=True)
     url=f"http://{bind_ip}:{18000+args.pr}"
-    for _ in range(100):
+    deadline=time.monotonic()+600
+    while time.monotonic()<deadline:
         try:
             with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(url+"/api/preview/info",timeout=3) as response:
                 info=json.load(response)

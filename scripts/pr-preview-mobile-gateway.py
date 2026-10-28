@@ -24,7 +24,10 @@ def password_matches(password):
     digest=hashlib.pbkdf2_hmac("sha256",password.encode(),bytes.fromhex(CONFIG["salt"]),260000).hex()
     return hmac.compare_digest(digest,CONFIG["passwordHash"])
 
+WARMING_PAGE="""<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="5"><title>미리보기 준비 중</title><style>body{margin:0;min-height:100dvh;display:grid;place-items:center;background:#10151b;color:#edf7f6;font:16px/1.7 system-ui;padding:24px;box-sizing:border-box}main{max-width:390px}h1{font-size:24px}p{color:#b8c9ce}a{color:#69d7c8}</style></head><body><main><h1>미리보기를 준비하고 있어요</h1><p>서버를 시작하고 있습니다. 잠시 기다리면 자동으로 다시 연결합니다.</p><a href="">지금 다시 확인</a></main></body></html>"""
+
 class Handler(BaseHTTPRequestHandler):
+    timeout=30
     protocol_version="HTTP/1.1"
     def log_message(self,*args):
         pass
@@ -152,7 +155,13 @@ class Handler(BaseHTTPRequestHandler):
                     self.wfile.write(chunk)
         except (OSError,http.client.HTTPException):
             if not headers_sent:
-                self.reply(502,"미리보기를 갱신 중입니다. 잠시 후 새로고침해 주세요.".encode())
+                try:
+                    if path.startswith("/api/"):
+                        self.reply(503,b'{"error":"preview_starting"}',"application/json",headers=(("Retry-After","5"),))
+                    else:
+                        self.reply(503,WARMING_PAGE.encode(),headers=(("Retry-After","5"),))
+                except OSError:
+                    pass
             self.close_connection=True
         finally:
             upstream.close()

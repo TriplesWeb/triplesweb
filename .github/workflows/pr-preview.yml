@@ -27,7 +27,7 @@ jobs:
           script: |
             if (context.payload.action !== 'synchronize' || !context.payload.before) return true;
             const {data} = await github.rest.repos.compareCommitsWithBasehead({...context.repo,basehead:context.payload.before+'...'+context.payload.pull_request.head.sha});
-            return (data.files || []).some(file => /^(src\/main\/|gradle\/|gradlew|build\.gradle|settings\.gradle|Dockerfile$|scripts\/docker-entrypoint\.sh$|scripts\/deploy-pr-preview\.py$)/.test(file.filename));
+            return (data.files || []).some(file => /^(src\/main\/|gradle\/|gradlew|build\.gradle|settings\.gradle|Dockerfile$|scripts\/docker-entrypoint\.sh$)/.test(file.filename));
   preview:
     needs: changes
     if: needs.changes.outputs.deploy == 'true'
@@ -55,8 +55,22 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: PR 전용 이미지 빌드
+      - name: 이미 발행한 PR 이미지 재사용
+        id: published
         if: github.event.action != 'closed'
+        env:
+          IMAGE: ${{ steps.image.outputs.name }}
+        run: |
+          if docker buildx imagetools inspect "$IMAGE" >/dev/null 2>/tmp/preview-image-error.txt; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          elif grep -Eqi 'not found|manifest unknown|name unknown|no such manifest' /tmp/preview-image-error.txt; then
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          else
+            cat /tmp/preview-image-error.txt
+            exit 1
+          fi
+      - name: PR 전용 이미지 빌드
+        if: github.event.action != 'closed' && steps.published.outputs.exists != 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
