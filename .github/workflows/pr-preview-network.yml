@@ -45,31 +45,3 @@ jobs:
           if result["dns"]:
               print("PREVIEW_DNS_URL=http://"+result["dns"]+":18026/cosmo/objekt")
           PY
-
-      - name: 비공개 HTTPS 미리보기 준비
-        run: |
-          ssh pi python3 - < scripts/prepare-pr-preview-https.py > /tmp/preview-https.json
-          cat /tmp/preview-https.json
-      - name: HTTPS 인증서와 외부 응답 확인
-        run: |
-          python3 - <<'PY'
-          import json,subprocess,pathlib
-          info=json.load(open("/tmp/preview-https.json"))
-          if not info.get("ready"):
-              print("HTTPS_SETUP_STATUS="+info.get("reason","UNKNOWN"))
-              raise SystemExit(0)
-          base=info["url"]
-          result=subprocess.run(["curl","--noproxy","*","--resolve",info["dns"]+":"+str(info["port"])+":"+info["ip"],"--connect-timeout","10","--max-time","30","--silent","--show-error","--fail",base+"/api/preview/info"],capture_output=True,text=True)
-          if result.returncode:
-              print("HTTPS_CHECK_FAILED="+result.stderr[-800:])
-              raise SystemExit(1)
-          data=json.loads(result.stdout)
-          print("HTTPS_VERIFIED_PR="+str(data["pr"]))
-          print("HTTPS_PREVIEW_URL="+base+"/cosmo/objekt")
-          pathlib.Path("/tmp/preview-link.txt").write_text(base+"/cosmo/objekt\n",encoding="utf-8")
-          PY
-      - uses: actions/upload-artifact@v4
-        with:
-          name: pr-26-https-link
-          path: /tmp/preview-link.txt
-          if-no-files-found: ignore
