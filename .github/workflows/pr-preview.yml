@@ -25,13 +25,13 @@ jobs:
         id: diff
         with:
           script: |
-            if (context.payload.action === 'closed') return true;
+            if (context.payload.action !== 'synchronize') return true;
             const head=context.payload.pull_request.head;
-            const {data:runs}=await github.rest.actions.listWorkflowRuns({
-              ...context.repo,workflow_id:'pr-preview.yml',branch:head.ref,status:'success',per_page:30
+            const {data:runs}=await github.rest.actions.listWorkflowRunsForRepo({
+              ...context.repo,branch:head.ref,status:'success',per_page:100
             });
             let deployed=null;
-            for(const run of runs.workflow_runs){
+            for(const run of runs.workflow_runs.filter(run=>run.name==='PR 미리보기')){
               const {data}=await github.rest.actions.listJobsForWorkflowRun({...context.repo,run_id:run.id});
               if(data.jobs.some(job=>job.name==='preview'&&job.conclusion==='success')){
                 deployed=run.head_sha;break;
