@@ -7,6 +7,7 @@ import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.service.AlbumService;
 import com.example.triplesweb.service.ArtistAdminService;
+import com.example.triplesweb.service.ChemistryViewCache;
 import com.example.triplesweb.service.MemberSpotlightService;
 import com.example.triplesweb.service.UnitService;
 import com.example.triplesweb.util.MemberPortraitOptions;
@@ -20,6 +21,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.http.MediaType;
 
 import java.util.List;
@@ -34,6 +36,7 @@ public class TriplesController {
     private final AlbumService albumService;
     private final UnitService unitService;
     private final MemberSpotlightService memberSpotlightService;
+    private final ChemistryViewCache chemistryViewCache;
 
     /**
      * 그룹 및 멤버 소개 페이지.
@@ -92,20 +95,32 @@ public class TriplesController {
 
     @GetMapping("/chemistry")
     public String indexTriplesChemistry(Model model) {
-        addChemistryMemberPicker(model, false);
+        addChemistryPageData(model, false);
         return "triples/chemistry";
     }
 
     @GetMapping("/chemistry-en")
     public String indexTriplesChemistryEn(Model model) {
-        addChemistryMemberPicker(model, true);
+        addChemistryPageData(model, true);
         return "triples/chemistry-en";
     }
 
-    /** 3인 이상 케미 탭용 멤버 초상화 피커 옵션. */
-    private void addChemistryMemberPicker(Model model, boolean englishLabels) {
+    /** 캐시된 표 HTML만 심는다. 3인 피커는 탭 전환 시 조각으로 불러 첫 응답을 가볍게 유지한다. */
+    private void addChemistryPageData(Model model, boolean englishLabels) {
+        model.addAttribute("chemTheadHtml", chemistryViewCache.thead(englishLabels));
+        model.addAttribute("chemTbodyHtml", chemistryViewCache.tbody(englishLabels));
+    }
+
+    /** 3인 이상 탭용 멤버 피커 HTML 조각. */
+    @GetMapping(value = "/chemistry/picker", produces = MediaType.TEXT_HTML_VALUE)
+    public String chemistryMemberPicker(
+            @RequestParam(value = "lang", defaultValue = "ko") String lang,
+            Model model
+    ) {
+        boolean english = lang != null && lang.toLowerCase().startsWith("en");
         List<Artist> artists = artistrepository.findAll(Sort.by(Sort.Direction.ASC, "artistId"));
-        model.addAttribute("memberPickerOptions", MemberPortraitOptions.fromArtists(artists, englishLabels));
+        model.addAttribute("memberPickerOptions", MemberPortraitOptions.fromArtists(artists, english));
+        return "partials/member-portrait-picker";
     }
 
     /**

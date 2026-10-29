@@ -353,6 +353,7 @@
     const thead = document.getElementById("chemThead");
     const tbody = document.getElementById("chemTbody");
     if (!thead || !tbody) return;
+    delete tbody.dataset.chemBound;
 
     let headHtml = '<tr><th class="chem-corner"><img src="' + BASE + '/logo.png" alt="tripleS"></th>';
     MEMBERS.forEach((name, i) => {
@@ -1155,6 +1156,9 @@
     requestAnimationFrame(syncModalContentWidth);
   }
 
+  /** SSR 표는 비관리자(빈 칸 + 없음) 기준. 관리자 토글 시에만 표를 다시 그린다. */
+  let tableBuiltForAdmin = false;
+
   function setAdminUi() {
     const btn = document.getElementById("chemAdminBtn");
     const hint = document.getElementById("chemAdminHint");
@@ -1169,12 +1173,16 @@
       }
     }
     if (hint) hint.classList.toggle("hidden", !isAdmin);
-    // 관리자 on/off 시 영문 미번역 폴백 칸 포함 여부가 바뀌므로 매트릭스를 다시 만든다
-    if (dbEntries) {
-      applyDbToTable(dbEntries);
-    } else if (pairMatrix && currentMode === "pair") {
-      updateEmptyState(countChemCells(pairMatrix));
-      buildTable(pairMatrix);
+    const adminChanged = tableBuiltForAdmin !== isAdmin;
+    if (adminChanged) {
+      tableBuiltForAdmin = isAdmin;
+      // 관리자 on/off 시 빈 칸(+)·영문 폴백 표시가 바뀌므로 매트릭스를 다시 만든다
+      if (dbEntries) {
+        applyDbToTable(dbEntries);
+      } else if (pairMatrix && currentMode === "pair") {
+        updateEmptyState(countChemCells(pairMatrix));
+        buildTable(pairMatrix);
+      }
     }
     if (currentMode === "trio") {
       renderTrioResults(
@@ -2520,7 +2528,29 @@
     makeOptions(b, b.value);
   }
 
+  function setPairFilterOpen(open) {
+    const toolbar = document.getElementById("chemPairFilter");
+    const toggle = document.getElementById("chemFilterToggle");
+    const panel = document.getElementById("chemPairFilterPanel");
+    if (!toolbar || !toggle || !panel) return;
+    const next = Boolean(open);
+    toggle.setAttribute("aria-expanded", String(next));
+    panel.hidden = !next;
+    toolbar.classList.toggle("is-open", next);
+  }
+
   function bindPairFilter() {
+    const toggle = document.getElementById("chemFilterToggle");
+    if (toggle) {
+      toggle.addEventListener("click", () => {
+        const open = toggle.getAttribute("aria-expanded") === "true";
+        setPairFilterOpen(!open);
+        if (!open) {
+          document.getElementById("chemFilterA")?.focus();
+        }
+      });
+    }
+
     const go = document.getElementById("chemFilterGo");
     if (!go) return;
     go.addEventListener("click", () => {
@@ -2537,20 +2567,23 @@
         alert(IS_EN ? "No cell found for that pair." : "해당 교차 칸을 찾지 못했습니다.");
         return;
       }
-      const wrap = document.querySelector(".chem-table-wrap");
+      setPairFilterOpen(false);
       cell.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
       cell.classList.add("chem-cell-flash");
       setTimeout(() => cell.classList.remove("chem-cell-flash"), 1200);
-      if (wrap) {
-        /* ensure horizontal scroll if needed */
-      }
       cell.focus();
     });
   }
 
+  let trioPickerBound = false;
+
   function bindTrioPicker() {
     const root = document.getElementById("chemTrioView");
     if (!root || !window.MemberPortraitPicker) return;
+    if (trioPickerBound) {
+      MemberPortraitPicker.bindFrames(root);
+      return;
+    }
     MemberPortraitPicker.bindMultiSelect(root, {
       multi: true,
       onChange: (values) => renderTrioResults(values)
@@ -2562,16 +2595,108 @@
         renderTrioResults([]);
       });
     }
+    trioPickerBound = true;
   }
 
-  function setMode(mode) {
-    currentMode = mode === "trio" ? "trio" : "pair";
+  let pairsLoadPromise = null;
+  let groupsLoadPromise = null;
+  let pickerLoadPromise = null;
+  let pairsHydrated = false;
+  let groupsHydrated = false;
+
+  function ensurePairsLoaded() {
+    if (pairsHydrated) return Promise.resolve();
+    if (!pairsLoadPromise) {
+      pairsLoadPromise = chemFetch("/api/chemistry")
+        .then(async (res) => {
+          if (!res.ok) throw new Error("API " + res.status);
+          const pairs = await res.json();
+          dbEntries = Array.isArray(pairs) ? pairs : [];
+          pairMatrix = buildFromDb(dbEntries);
+          pairsHydrated = true;
+          updateEmptyState(countChemCells(pairMatrix));
+          if (hasSsrTable()) {
+            fillPairFilterOptions();
+            bindExistingTableCells(document.getElementById("chemTbody"));
+          } else if (currentMode === "pair") {
+            buildTable(pairMatrix);
+          }
+        })
+        .catch((err) => {
+          pairsLoadPromise = null;
+          throw err;
+        });
+    }
+    return pairsLoadPromise;
+  }
+
+  function ensureGroupsLoaded() {
+    if (groupsHydrated) return Promise.resolve();
+    if (!groupsLoadPromise) {
+      groupsLoadPromise = chemFetch("/api/chemistry/groups")
+        .then(async (res) => {
+          groupEntries = res.ok ? await res.json() : [];
+          groupsHydrated = true;
+        })
+        .catch((err) => {
+          groupsLoadPromise = null;
+          throw err;
+        });
+    }
+    return groupsLoadPromise;
+  }
+
+  function ensureTrioPickerLoaded() {
+    const host = document.getElementById("chemTrioPicker");
+    if (!host) return Promise.resolve();
+    if (host.dataset.loaded === "1") return Promise.resolve();
+    if (!pickerLoadPromise) {
+      pickerLoadPromise = fetch(
+        "/triples/chemistry/picker?lang=" + encodeURIComponent(IS_EN ? "en" : "ko"),
+        { credentials: "same-origin", headers: { Accept: "text/html" } }
+      )
+        .then(async (res) => {
+          if (!res.ok) throw new Error("picker " + res.status);
+          host.innerHTML = await res.text();
+          host.dataset.loaded = "1";
+          bindTrioPicker();
+        })
+        .catch((err) => {
+          pickerLoadPromise = null;
+          throw err;
+        });
+    }
+    return pickerLoadPromise;
+  }
+
+  async function setMode(mode) {
+    const next = mode === "trio" ? "trio" : "pair";
+    const switching = currentMode !== next;
+    currentMode = next;
     setModeButtons(currentMode);
     if (currentMode === "trio") {
       showTrioView();
+      try {
+        await Promise.all([
+          ensureTrioPickerLoaded(),
+          ensureGroupsLoaded(),
+          ensurePairsLoaded()
+        ]);
+        renderTrioResults(
+          window.MemberPortraitPicker
+            ? MemberPortraitPicker.selectedValues(document.getElementById("chemTrioView"))
+            : []
+        );
+      } catch (err) {
+        console.error("3인 이상 케미 로드 실패", err);
+      }
       return;
     }
     showPairView();
+    // 이미 pair 뷰에 SSR/hydrate된 표가 있으면 다시 그리지 않는다
+    if (!switching && (pairMatrix || hasSsrTable())) {
+      if (hasSsrTable()) return;
+    }
     if (pairMatrix) buildTable(pairMatrix);
   }
 
@@ -2643,6 +2768,62 @@
     }
   }
 
+  function hasSsrTable() {
+    const tbody = document.getElementById("chemTbody");
+    return Boolean(tbody && tbody.querySelector(".chem-cell, .chem-self"));
+  }
+
+  function bindExistingTableCells(tbody) {
+    if (!tbody || tbody.dataset.chemBound === "1") return;
+    tbody.dataset.chemBound = "1";
+    tbody.addEventListener("click", (e) => {
+      const el = e.target.closest(".chem-cell");
+      if (!el || !tbody.contains(el)) return;
+      openCellFromEl(el);
+    });
+    tbody.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const el = e.target.closest(".chem-cell");
+      if (!el || !tbody.contains(el)) return;
+      e.preventDefault();
+      openCellFromEl(el);
+    });
+  }
+
+  async function openCellFromEl(el) {
+    editingPair = { member1: el.dataset.m1, member2: el.dataset.m2 };
+    currentView = {
+      person: el.dataset.person,
+      key: el.dataset.key,
+      member1: el.dataset.m1,
+      member2: el.dataset.m2,
+      label: (el.textContent || "").replace(/\s+/g, " ").trim(),
+      labelTone: el.dataset.tone || "NONE",
+      dbId: null
+    };
+    try {
+      await ensurePairsLoaded();
+    } catch (err) {
+      console.error("케미 상세 로드 실패", err);
+      return;
+    }
+    const ri = memberIndex(el.dataset.m1);
+    const ci = memberIndex(el.dataset.m2);
+    const cell = pairMatrix && pairMatrix[ri] && pairMatrix[ri][ci];
+    if (cell) {
+      currentView.label = cell.label || currentView.label;
+      currentView.labelTone = cell.labelTone || currentView.labelTone;
+      currentView.dbId = cell.dbId || null;
+    }
+    openChemistryName(el.dataset.person, el.dataset.key);
+  }
+
+  // SSR 표는 즉시 클릭 가능. 상세 API는 클릭/유휴 시 로드.
+  if (hasSsrTable()) {
+    fillPairFilterOptions();
+    bindExistingTableCells(document.getElementById("chemTbody"));
+  }
+
   document.addEventListener("DOMContentLoaded", async () => {
     const closeBtn = document.querySelector("#chemistryModal .chem-close");
     if (closeBtn) closeBtn.addEventListener("click", closeModal);
@@ -2670,48 +2851,34 @@
     });
 
     bindModeToggle();
-    bindTrioPicker();
     bindPairFilter();
     bindLegendToggle();
     bindChemistryCarousel();
     bindAdminUi();
+    setModeButtons("pair");
 
-    // 영어 페이지에는 로그인 버튼 없음. 한국어에서 로그인된 세션이면 추가/수정 가능.
+    // 관리자 상태만 가볍게. 표/설명 API는 첫 페인트 이후에.
     try {
-      const [statusRes, chemRes, groupRes] = await Promise.all([
-        chemFetch("/api/chemistry/admin/status"),
-        chemFetch("/api/chemistry"),
-        chemFetch("/api/chemistry/groups")
-      ]);
+      const statusRes = await chemFetch("/api/chemistry/admin/status");
       if (statusRes.ok) {
         const status = await statusRes.json();
         adminConfigured = Boolean(status.configured);
         isAdmin = Boolean(status.admin);
         if (!isAdmin) setAdminToken("");
       }
-      if (!chemRes.ok) throw new Error("API " + chemRes.status);
-      applyDbToTable(await chemRes.json());
-      if (groupRes.ok) {
-        groupEntries = await groupRes.json();
-      } else {
-        groupEntries = [];
-      }
       setAdminUi();
-      setMode("pair");
     } catch (err) {
-      console.error("케미 데이터 로드 실패", err);
-      applyDbToTable([]);
-      groupEntries = [];
-      const tbody = document.getElementById("chemTbody");
-      if (tbody) {
-        tbody.innerHTML =
-          '<tr><td colspan="25" class="text-center text-[#b9cac4] py-8">' +
-          escapeHtml(I18N.loadFailed) +
-          "</td></tr>";
-      }
-      const empty = document.getElementById("chemEmptyState");
-      if (empty) empty.classList.add("hidden");
+      console.error("케미 관리자 상태 로드 실패", err);
       setAdminUi();
+    }
+
+    const prefetch = () => {
+      ensurePairsLoaded().catch(() => {});
+    };
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(prefetch, { timeout: 2500 });
+    } else {
+      setTimeout(prefetch, 900);
     }
   });
 

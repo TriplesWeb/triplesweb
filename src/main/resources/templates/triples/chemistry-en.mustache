@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html class="dark" lang="en" data-chem-lang="en">
 <head>
-    {{>layout/triples-head}}
+    {{>layout/site-head}}
+<link rel="stylesheet" href="/css/about-admin.css?v=1">
+    <link rel="stylesheet" href="/css/chemistry.css?v=2">
+    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=1">
     <title>tripleS Community — Chemistry Names</title>
 </head>
 <body class="bg-[#0d0e12] text-[#ffffff] min-h-screen">
@@ -55,27 +58,30 @@
             </div>
         </div>
 
-        <div id="chemPairView">
-            <div class="chem-pair-filter" id="chemPairFilter">
-                <label class="chem-pair-filter-label">
-                    <span>Member A</span>
-                    <select id="chemFilterA" class="chem-pair-filter-select" aria-label="First member"></select>
-                </label>
-                <label class="chem-pair-filter-label">
-                    <span>Member B</span>
-                    <select id="chemFilterB" class="chem-pair-filter-select" aria-label="Second member"></select>
-                </label>
-                <button type="button" id="chemFilterGo" class="chem-mode-btn">Go to cell</button>
-                <p class="chem-pair-filter-hint">Scroll the table sideways, or pick two members to jump to their cell.</p>
+        <div id="chemPairView" class="chem-pair-view">
+            <div class="chem-pair-toolbar" id="chemPairFilter">
+                <button type="button" id="chemFilterToggle" class="chem-pair-filter-toggle" aria-expanded="false" aria-controls="chemPairFilterPanel">
+                    <span>Find by members</span>
+                </button>
+                <div id="chemPairFilterPanel" class="chem-pair-filter-panel" hidden>
+                    <div class="chem-pair-filter-controls">
+                        <label class="chem-pair-filter-label">
+                            <span>Member A</span>
+                            <select id="chemFilterA" class="chem-pair-filter-select" aria-label="First member"></select>
+                        </label>
+                        <label class="chem-pair-filter-label">
+                            <span>Member B</span>
+                            <select id="chemFilterB" class="chem-pair-filter-select" aria-label="Second member"></select>
+                        </label>
+                        <button type="button" id="chemFilterGo" class="chem-mode-btn">Go to cell</button>
+                    </div>
+                    <p class="chem-pair-filter-hint">Pick two members to jump to their cell.</p>
+                </div>
             </div>
             <div class="chem-table-wrap">
                 <table id="chemistryTable" class="chem-table" aria-label="Member chemistry name matrix">
-                    <thead id="chemThead"></thead>
-                    <tbody id="chemTbody">
-                        <tr>
-                            <td colspan="25" class="text-center text-[#b9cac4] py-10 text-sm">Loading chemistry table…</td>
-                        </tr>
-                    </tbody>
+                    <thead id="chemThead">{{{chemTheadHtml}}}</thead>
+                    <tbody id="chemTbody">{{{chemTbodyHtml}}}</tbody>
                 </table>
             </div>
         </div>
@@ -92,9 +98,7 @@
                     <button type="button" class="chem-mode-btn chem-trio-back" data-mode="pair" onclick="window.__chemSetMode&&window.__chemSetMode('pair')">View pairs</button>
                 </div>
             </div>
-            <div class="member-portrait-picker" id="chemTrioPicker" role="group" aria-label="3+ chemistry member picker">
-                {{>partials/member-portrait-picker}}
-            </div>
+            <div class="member-portrait-picker" id="chemTrioPicker" role="group" aria-label="3+ chemistry member picker"></div>
             <div id="chemTrioResults" class="chem-trio-results" aria-live="polite"></div>
         </div>
     </div>
@@ -103,11 +107,10 @@
 {{>triples/partials/chemistry-modals}}
 
 {{>layout/footer}}
-<script src="/js/about-admin-auth.js?v=2"></script>
-<script src="/js/about-modal.js?v=1"></script>
-<script src="/js/triples-members.js?v=1"></script>
-<script src="/js/chemistry-sanitize.js?v=1"></script>
-<script src="/js/member-portrait-picker.js?v=8"></script>
-<script src="/js/chemistry.js?v=62"></script>
+<script src="/js/about-modal.js?v=1" defer></script>
+<script src="/js/triples-members.js?v=1" defer></script>
+<script src="/js/chemistry-sanitize.js?v=1" defer></script>
+<script src="/js/member-portrait-picker.js?v=8" defer></script>
+<script src="/js/chemistry.js?v=66" defer></script>
 </body>
 </html>

@@ -13,6 +13,7 @@ import com.example.triplesweb.util.TripleSMembers;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -30,19 +31,48 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ChemistryService {
 
+    private static final long LIST_CACHE_TTL_MS = 60_000L;
+
     private final ChemistryRepository chemistryRepository;
     private final ArtistRepository artistRepository;
     private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
+    private final ObjectProvider<ChemistryViewCache> viewCache;
+
+    private volatile List<ChemistryDto> listCache;
+    private volatile long listCacheExpiresAt;
 
     @Transactional(readOnly = true)
     public List<ChemistryDto> findAll() {
-        return chemistryRepository.findAllWithArtists().stream()
-                .sorted(Comparator
-                        .comparing((Chemistry c) -> indexOf(c.getArtistA().getName()))
-                        .thenComparing(c -> indexOf(c.getArtistB().getName())))
-                .map(this::toDto)
-                .toList();
+        long now = System.currentTimeMillis();
+        List<ChemistryDto> cached = listCache;
+        if (cached != null && now < listCacheExpiresAt) {
+            return cached;
+        }
+        synchronized (this) {
+            cached = listCache;
+            if (cached != null && System.currentTimeMillis() < listCacheExpiresAt) {
+                return cached;
+            }
+            List<ChemistryDto> fresh = chemistryRepository.findAllWithArtists().stream()
+                    .sorted(Comparator
+                            .comparing((Chemistry c) -> indexOf(c.getArtistA().getName()))
+                            .thenComparing(c -> indexOf(c.getArtistB().getName())))
+                    .map(this::toDto)
+                    .toList();
+            listCache = fresh;
+            listCacheExpiresAt = System.currentTimeMillis() + LIST_CACHE_TTL_MS;
+            return fresh;
+        }
+    }
+
+    private void invalidateListCache() {
+        listCache = null;
+        listCacheExpiresAt = 0L;
+        ChemistryViewCache cache = viewCache.getIfAvailable();
+        if (cache != null) {
+            cache.invalidate();
+        }
     }
 
     @Transactional
@@ -81,7 +111,9 @@ public class ChemistryService {
 
         applyImages(entity, image, images, keepImageUrlsJson, clearImage);
 
-        return toDto(chemistryRepository.save(entity));
+        ChemistryDto saved = toDto(chemistryRepository.save(entity));
+        invalidateListCache();
+        return saved;
     }
 
     private void applyImages(Chemistry entity, MultipartFile image, List<MultipartFile> images,
@@ -124,6 +156,7 @@ public class ChemistryService {
     private void hardDelete(Chemistry entity) {
         List<String> previous = ChemistryImages.resolve(entity.getImagesJson(), entity.getImageUrl(), objectMapper);
         chemistryRepository.delete(entity);
+        invalidateListCache();
         for (String url : previous) {
             deleteManagedImageAfterCommit(url);
         }

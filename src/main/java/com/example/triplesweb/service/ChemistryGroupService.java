@@ -34,19 +34,43 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ChemistryGroupService {
 
+    private static final long LIST_CACHE_TTL_MS = 60_000L;
+
     private final ChemistryGroupRepository chemistryGroupRepository;
     private final ArtistRepository artistRepository;
     private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
 
+    private volatile List<ChemistryGroupDto> listCache;
+    private volatile long listCacheExpiresAt;
+
     @Transactional(readOnly = true)
     public List<ChemistryGroupDto> findAll() {
-        return chemistryGroupRepository.findAll().stream()
-                .map(this::toDto)
-                .sorted(Comparator
-                        .comparing((ChemistryGroupDto d) -> d.getMembers().size())
-                        .thenComparing(d -> String.join(",", d.getMembers())))
-                .toList();
+        long now = System.currentTimeMillis();
+        List<ChemistryGroupDto> cached = listCache;
+        if (cached != null && now < listCacheExpiresAt) {
+            return cached;
+        }
+        synchronized (this) {
+            cached = listCache;
+            if (cached != null && System.currentTimeMillis() < listCacheExpiresAt) {
+                return cached;
+            }
+            List<ChemistryGroupDto> fresh = chemistryGroupRepository.findAll().stream()
+                    .map(this::toDto)
+                    .sorted(Comparator
+                            .comparing((ChemistryGroupDto d) -> d.getMembers().size())
+                            .thenComparing(d -> String.join(",", d.getMembers())))
+                    .toList();
+            listCache = fresh;
+            listCacheExpiresAt = System.currentTimeMillis() + LIST_CACHE_TTL_MS;
+            return fresh;
+        }
+    }
+
+    private void invalidateListCache() {
+        listCache = null;
+        listCacheExpiresAt = 0L;
     }
 
     @Transactional
@@ -84,7 +108,9 @@ public class ChemistryGroupService {
 
         applyImages(entity, image, images, keepImageUrlsJson, clearImage);
 
-        return toDto(chemistryGroupRepository.save(entity));
+        ChemistryGroupDto saved = toDto(chemistryGroupRepository.save(entity));
+        invalidateListCache();
+        return saved;
     }
 
     private void applyImages(ChemistryGroup entity, MultipartFile image, List<MultipartFile> images,
@@ -126,6 +152,7 @@ public class ChemistryGroupService {
     private void hardDelete(ChemistryGroup entity) {
         List<String> previous = ChemistryImages.resolve(entity.getImagesJson(), entity.getImageUrl(), objectMapper);
         chemistryGroupRepository.delete(entity);
+        invalidateListCache();
         for (String url : previous) {
             deleteManagedImageAfterCommit(url);
         }
