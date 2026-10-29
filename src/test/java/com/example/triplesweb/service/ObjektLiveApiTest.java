@@ -4,13 +4,31 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+import java.io.IOException;
 import java.util.HashSet;
 import static org.assertj.core.api.Assertions.*;
 
 /** Explicit live smoke test: no credentials or account snapshots. */
 @EnabledIfEnvironmentVariable(named = "OBJEKT_LIVE_TEST", matches = "true")
 class ObjektLiveApiTest {
-    @Test void publicActivityPaginationAndCatalogMatchProductionAdapters() {
+    @Test void publicActivityPaginationAndCatalogMatchProductionAdapters() throws InterruptedException {
+        for (int attempt = 1; ; attempt++) {
+            try {
+                verifyPublicApis();
+                return;
+            } catch (RestClientException failure) {
+                Throwable cause = failure;
+                while (cause != null && !(cause instanceof IOException)) cause = cause.getCause();
+                // 연결 종료·시간 초과만 한정 재시도한다. HTTP 오류와 검증 실패는 그대로 실패한다.
+                if (cause == null || attempt >= 3) throw failure;
+                System.out.println("Live API transport retry " + attempt + "/2: " + cause.getClass().getSimpleName());
+                Thread.sleep(attempt * 500L);
+            }
+        }
+    }
+
+    private void verifyPublicApis() {
         var client = new ObjektActivityClient("https://objekt.top/api/v1");
         var first = client.fetch(null);
         assertThat(first.events()).isNotEmpty();
