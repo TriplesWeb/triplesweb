@@ -58,7 +58,10 @@ class CosmoCollectionLookupTest {
     @AfterEach void close() { continuePage.countDown(); service.close(); server.stop(0); }
 
     private Map<String, Object> completed() {
-        await().atMost(Duration.ofSeconds(5)).until(() -> {\n            var snapshot = service.search("테스트", 0);\n            return Boolean.FALSE.equals(snapshot.get("loading")) && Integer.valueOf(26).equals(snapshot.get("ownedCount"));\n        });
+        await().atMost(Duration.ofSeconds(5)).until(() -> {
+            var snapshot = service.search("테스트", 0);
+            return Boolean.FALSE.equals(snapshot.get("loading")) && Integer.valueOf(26).equals(snapshot.get("ownedCount"));
+        });
         return service.search("테스트", 0);
     }
 
