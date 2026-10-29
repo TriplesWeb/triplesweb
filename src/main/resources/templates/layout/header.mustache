@@ -1,6 +1,7 @@
-<script src="/js/image-fallback.js?v=1"></script>
-<script src="/js/about-admin-auth.js?v=2"></script>
-<script src="/js/site-admin-controls.js?v=3" defer></script>
+<script src="/js/image-fallback.js?v=1" defer></script>
+<script src="/js/about-admin-auth.js?v=2" defer></script>
+<script src="/js/site-admin-controls.js?v=4" defer></script>
+<script src="/js/site-header.js?v=2" defer></script>
 <style>
 @keyframes sss-mascot-wave {
     0%, 100% { transform: translateY(0) rotate(-2deg); }
@@ -8,15 +9,65 @@
     50% { transform: translateY(0.5px) rotate(-1deg); }
     75% { transform: translateY(-1.5px) rotate(2deg); }
 }
+@keyframes sss-mascot-fly-in {
+    0% {
+        transform: translate(92px, 14px) rotate(18deg) scale(0.72);
+        opacity: 0;
+    }
+    12% { opacity: 1; }
+    45% {
+        transform: translate(48px, 20px) rotate(4deg) scale(0.88);
+    }
+    72% {
+        transform: translate(14px, 6px) rotate(-6deg) scale(0.96);
+    }
+    100% {
+        transform: translate(0, 0) rotate(-2deg) scale(1);
+        opacity: 1;
+    }
+}
+@keyframes sss-mascot-trail-fade {
+    0% { opacity: 0.55; transform: translate(var(--tx), var(--ty)) scale(0.78) rotate(12deg); }
+    100% { opacity: 0; transform: translate(calc(var(--tx) * 0.35), calc(var(--ty) * 0.55)) scale(0.9) rotate(0deg); }
+}
+.sss-mascot-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    height: 27px;
+    width: 33px;
+    flex-shrink: 0;
+}
 .sss-mascot-wave {
     height: 27px;
     width: auto;
     transform-origin: center center;
-    animation: sss-mascot-wave 2.8s ease-in-out infinite;
     will-change: transform;
 }
+.sss-mascot-wrap.is-ready .sss-mascot-wave {
+    animation: sss-mascot-wave 2.8s ease-in-out infinite;
+}
+.sss-mascot-wrap.is-intro .sss-mascot-wave {
+    animation: sss-mascot-fly-in 0.85s cubic-bezier(0.22, 0.9, 0.28, 1) forwards;
+}
+.sss-mascot-trail {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 27px;
+    width: auto;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 0;
+}
+.sss-mascot-wrap.is-intro .sss-mascot-trail {
+    animation: sss-mascot-trail-fade 0.7s ease-out forwards;
+}
+.sss-mascot-wrap .sss-mascot-wave { position: relative; z-index: 1; }
 @media (prefers-reduced-motion: reduce) {
-    .sss-mascot-wave { animation: none; }
+    .sss-mascot-wrap.is-ready .sss-mascot-wave,
+    .sss-mascot-wrap.is-intro .sss-mascot-wave,
+    .sss-mascot-wrap.is-intro .sss-mascot-trail { animation: none; }
 }
 </style>
 <!-- 헤더 고정 상단 영역 -->
@@ -27,66 +78,53 @@
 
     <!-- 1. 브랜드 로고 -->
     <a href="/" class="flex items-center gap-1 shrink-0 text-decoration-none" aria-label="tripleS 홈">
-        <img src="/images/sss-mascot.png" alt="" width="33" height="27" class="sss-mascot-wave block shrink-0" decoding="async" aria-hidden="true">
+        <span class="sss-mascot-wrap" id="sss-mascot-wrap">
+            <img src="/images/sss-mascot.png" alt="" width="33" height="27" class="sss-mascot-wave block" id="sss-mascot" decoding="async" aria-hidden="true">
+        </span>
         <img src="/images/triples-wordmark-white.png" alt="tripleS" width="120" height="36" class="h-7 w-auto block" decoding="async">
     </a>
 
     <!-- 2. 네비게이션 메뉴 (데스크톱) -->
-    <nav id="navbar" class="hidden lg:flex items-center gap-6 text-xs tracking-wider">
+    <nav id="navbar" class="hidden lg:flex items-center gap-5 text-xs tracking-wider">
         <!-- ABOUT 트리플에스 드롭다운 -->
-        <div class="relative group py-4">
-            <button class="text-[#b9cac4] hover:text-[#00f5d4] flex items-center gap-1 bg-transparent border-0 cursor-pointer">
+        <div class="relative group flex items-center">
+            <button type="button" class="nav-item-link text-[#b9cac4] hover:text-[#00f5d4] cursor-pointer">
                 ABOUT 트리플에스
-                <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-180">expand_more</span>
+                <span class="material-symbols-outlined transition-transform group-hover:rotate-180" aria-hidden="true">expand_more</span>
             </button>
             <div class="absolute left-0 top-full pt-1 hidden group-hover:block w-48 z-50">
                 <div class="bg-[#191b22]/95 border border-[#3a4a46]/50 rounded-xl shadow-2xl backdrop-blur-lg p-1.5 flex flex-col gap-0.5">
-                    <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none transition-colors" href="/triples/artist">그룹 소개</a>
-                    <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none transition-colors" href="/triples/album">발매 앨범</a>
-                    <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none transition-colors" href="/triples/unit">역대 유닛</a>
-                    <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none transition-colors" href="/triples/chemistry">캐미씃트리</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- 게시판 드롭다운 -->
-        <div class="relative group py-4">
-            <button class="text-[#b9cac4] hover:text-[#00f5d4] flex items-center gap-1 bg-transparent border-0 cursor-pointer">
-                게시판
-                <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-180">expand_more</span>
-            </button>
-            <div class="absolute left-0 top-full pt-1 hidden group-hover:block w-48 z-50">
-                <div class="bg-[#191b22]/95 border border-[#3a4a46]/50 rounded-xl shadow-2xl p-1.5 backdrop-blur-lg flex flex-col gap-0.5">
-                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/article/trade">교환</a>
-                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/article/sell">거래</a>
-                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/article/info">정보</a>
-                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/article/notice">공지</a>
+                    <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/triples/guide">그룹 입문</a>
+                    <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/triples/artist">그룹 소개</a>
+                    <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/triples/album">발매 앨범</a>
+                    <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/triples/unit">역대 유닛</a>
+                    <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/triples/chemistry">캐미씃트리</a>
+                    <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/cosmo/event">역대 공연 및 이벤트</a>
                 </div>
             </div>
         </div>
 
         <!-- 코스모 드롭다운 -->
-        <div class="relative group py-4">
-            <button class="text-[#b9cac4] hover:text-[#00f5d4] flex items-center gap-1 bg-transparent border-0 cursor-pointer">
+        <div class="relative group flex items-center">
+            <button type="button" class="nav-item-link text-[#b9cac4] hover:text-[#00f5d4] cursor-pointer">
                 코스모
-                <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-180">expand_more</span>
+                <span class="material-symbols-outlined transition-transform group-hover:rotate-180" aria-hidden="true">expand_more</span>
             </button>
             <div class="absolute left-0 top-full pt-1 hidden group-hover:block w-48 z-50">
                 <div class="bg-[#191b22]/95 border border-[#3a4a46]/50 rounded-xl shadow-2xl p-1.5 backdrop-blur-lg flex flex-col gap-0.5">
                     <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/cosmo/objekt">오브젝트</a>
                     <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/cosmo/collection">내 오브젝트 검색</a>
                     <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/cosmo/gravity">역대 그래비티</a>
-                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/cosmo/event">역대 공연 및 이벤트</a>
-                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/cosmo/update">코스모 업데이트 현황</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="/article/trade">교환/거래</a>
                 </div>
             </div>
         </div>
 
         <!-- 미디어 드롭다운 -->
-        <div class="relative group py-4">
-            <button class="text-[#b9cac4] hover:text-[#00f5d4] flex items-center gap-1 bg-transparent border-0 cursor-pointer">
+        <div class="relative group flex items-center">
+            <button type="button" class="nav-item-link text-[#b9cac4] hover:text-[#00f5d4] cursor-pointer">
                 미디어
-                <span class="material-symbols-outlined text-sm transition-transform group-hover:rotate-180">expand_more</span>
+                <span class="material-symbols-outlined transition-transform group-hover:rotate-180" aria-hidden="true">expand_more</span>
             </button>
             <div class="absolute left-0 top-full pt-1 hidden group-hover:block w-48 z-50">
                 <div class="bg-surface-container-high/95 border border-outline-variant/50 rounded-xl shadow-2xl p-1.5 backdrop-blur-lg flex flex-col gap-0.5">
@@ -98,20 +136,13 @@
             </div>
         </div>
 
-        <a class="text-[#b9cac4] hover:text-[#00f5d4] transition-colors text-decoration-none" href="/schedule">일정</a>
-        <a class="text-[#b9cac4] hover:text-[#00f5d4] transition-colors text-decoration-none" href="/shop">굿즈샵</a>
-        <a class="text-[#b9cac4] hover:text-[#00f5d4] transition-colors text-decoration-none" href="/sitemap">전체 게시판</a>
+        <a class="nav-item-link text-[#b9cac4] hover:text-[#00f5d4] transition-colors" href="/schedule">일정</a>
+        <a class="nav-item-link text-[#b9cac4] hover:text-[#00f5d4] transition-colors" href="/shop">굿즈샵</a>
     </nav>
-    <form action="/search" method="get" role="search" class="relative hidden lg:flex items-center flex-1" style="max-width: 28rem; min-width: 16rem;">
-        <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" class="w-full bg-[#0d0e12]/80 border border-[#3a4a46]/50 rounded-full px-4 py-2 pr-11 text-sm text-[#e3e2e8] placeholder-[#b9cac4]/50 focus:outline-none focus:border-[#00f5d4] transition-all" type="search" placeholder="멤버·게시글 검색" />
-        <button type="submit" class="absolute right-1.5 p-1.5 bg-[#00f5d4] hover:bg-[#00f5d4]/80 text-[#0d0e12] rounded-full flex items-center justify-center transition-colors border-0 cursor-pointer" title="검색">
-            <span class="material-symbols-outlined text-base">search</span>
-        </button>
-    </form>
     </div>
 
-    <!-- 3. 검색바 & 유저 프로필 섹션 -->
-<div class="flex items-center gap-3">
+    <!-- 3. 유저 메뉴 + 검색(우측 끝) -->
+<div class="flex items-center gap-3 shrink-0 ml-auto">
     <!-- 로그인한 회원 메뉴 -->
 {{#member}}
         <div class="relative group site-user-menu">
@@ -147,6 +178,13 @@
 {{^member}}
     {{/member}}
 
+    <form action="/search" method="get" role="search" class="site-header-search relative hidden lg:flex items-center shrink-0">
+        <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" class="w-full bg-[#0d0e12]/80 border border-[#3a4a46]/50 rounded-full px-4 py-2 pr-11 text-sm text-[#e3e2e8] placeholder-[#b9cac4]/50 focus:outline-none focus:border-[#00f5d4] transition-all" type="search" placeholder="멤버·게시글 검색" />
+        <button type="submit" class="absolute right-1.5 p-1.5 bg-[#00f5d4] hover:bg-[#00f5d4]/80 text-[#0d0e12] rounded-full flex items-center justify-center transition-colors border-0 cursor-pointer" title="검색">
+            <span class="material-symbols-outlined text-base">search</span>
+        </button>
+    </form>
+
     <!-- 모바일 햄버거 버튼 -->
     <button type="button" id="mobile-menu-btn" class="lg:hidden flex items-center justify-center w-10 h-10 rounded-xl border border-[#3a4a46]/50 bg-[#191b22] text-[#e3e2e8] hover:border-[#00f5d4] hover:text-[#00f5d4] transition-colors cursor-pointer" aria-label="메뉴 열기" aria-expanded="false" aria-controls="mobile-menu">
         <span class="material-symbols-outlined text-xl" id="mobile-menu-icon">menu</span>
@@ -157,10 +195,10 @@
     <!-- 모바일 메뉴 패널 -->
     <div id="mobile-menu" class="lg:hidden hidden border-t border-[#3a4a46]/30 bg-[#16181f]/95 backdrop-blur-md">
         <nav class="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-1 text-sm">
-            <form action="/search" method="get" role="search" class="relative flex items-center mb-2 sm:hidden">
-                <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" class="w-full bg-[#0d0e12]/80 border border-[#3a4a46]/50 rounded-full px-3 py-2 pr-10 text-xs text-[#e3e2e8] placeholder-[#b9cac4]/50 focus:outline-none focus:border-[#00f5d4]" type="search" placeholder="멤버·게시글 검색" />
-                <button type="submit" class="absolute right-1 p-1 bg-[#00f5d4] text-[#0d0e12] rounded-full flex items-center justify-center border-0 cursor-pointer" title="검색">
-                    <span class="material-symbols-outlined text-sm">search</span>
+            <form action="/search" method="get" role="search" class="site-search w-full">
+                <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" class="site-field site-search__input" type="search" placeholder="멤버·게시글 검색" />
+                <button type="submit" class="site-search__submit" title="검색" aria-label="검색">
+                    <span class="material-symbols-outlined">search</span>
                 </button>
             </form>
 
@@ -170,23 +208,12 @@
                     <span class="material-symbols-outlined text-sm transition-transform">expand_more</span>
                 </button>
                 <div class="mobile-nav-panel hidden pl-3 pb-1 flex flex-col gap-0.5">
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/triples/guide">그룹 입문</a>
                     <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/triples/artist">그룹 소개</a>
                     <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/triples/album">발매 앨범</a>
                     <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/triples/unit">역대 유닛</a>
                     <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/triples/chemistry">캐미씃트리</a>
-                </div>
-            </div>
-
-            <div class="mobile-nav-group">
-                <button type="button" class="mobile-nav-toggle w-full flex items-center justify-between px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] bg-transparent border-0 cursor-pointer rounded-lg hover:bg-white/5">
-                    <span>게시판</span>
-                    <span class="material-symbols-outlined text-sm transition-transform">expand_more</span>
-                </button>
-                <div class="mobile-nav-panel hidden pl-3 pb-1 flex flex-col gap-0.5">
-                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/article/trade">교환</a>
-                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/article/sell">거래</a>
-                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/article/info">정보</a>
-                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/article/notice">공지</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/cosmo/event">역대 공연 및 이벤트</a>
                 </div>
             </div>
 
@@ -199,8 +226,7 @@
                     <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/cosmo/objekt">오브젝트</a>
                     <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/cosmo/collection">내 오브젝트 검색</a>
                     <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/cosmo/gravity">역대 그래비티</a>
-                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/cosmo/event">역대 공연 및 이벤트</a>
-                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/cosmo/update">코스모 업데이트 현황</a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/article/trade">교환/거래</a>
                 </div>
             </div>
 
@@ -219,7 +245,6 @@
 
             <a class="px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/schedule">일정</a>
             <a class="px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/shop">굿즈샵</a>
-            <a class="px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="/sitemap">전체 게시판</a>
         </nav>
     </div>
 </header>
@@ -234,60 +259,3 @@
             </div>
         {{/msg}}
 
-        <!-- 스크롤 시 상단 헤더 보이기/숨기기 + 모바일 메뉴 스크립트 -->
-        <script>
-            let lastScrollTop = 0;
-            const header = document.getElementById("top-header");
-            const mobileMenuBtn = document.getElementById("mobile-menu-btn");
-            const mobileMenu = document.getElementById("mobile-menu");
-            const mobileMenuIcon = document.getElementById("mobile-menu-icon");
-
-            function setMobileMenuOpen(open) {
-                if (!mobileMenu || !mobileMenuBtn || !mobileMenuIcon) return;
-                mobileMenu.classList.toggle("hidden", !open);
-                mobileMenuBtn.setAttribute("aria-expanded", open ? "true" : "false");
-                mobileMenuBtn.setAttribute("aria-label", open ? "메뉴 닫기" : "메뉴 열기");
-                mobileMenuIcon.textContent = open ? "close" : "menu";
-            }
-
-            if (mobileMenuBtn && mobileMenu) {
-                mobileMenuBtn.addEventListener("click", function () {
-                    const willOpen = mobileMenu.classList.contains("hidden");
-                    setMobileMenuOpen(willOpen);
-                });
-
-                mobileMenu.querySelectorAll(".mobile-nav-toggle").forEach(function (btn) {
-                    btn.setAttribute("aria-expanded", "false");
-                    btn.addEventListener("click", function () {
-                        const group = btn.closest(".mobile-nav-group");
-                        const panel = group && group.querySelector(".mobile-nav-panel");
-                        const icon = btn.querySelector(".material-symbols-outlined");
-                        if (!panel) return;
-                        const willOpen = panel.classList.contains("hidden");
-                        panel.classList.toggle("hidden", !willOpen);
-                        btn.setAttribute("aria-expanded", String(willOpen));
-                        if (icon) icon.style.transform = willOpen ? "rotate(180deg)" : "";
-                    });
-                });
-            }
-
-            document.addEventListener("keydown", function(event) { if (event.key === "Escape" && mobileMenu && !mobileMenu.classList.contains("hidden")) { setMobileMenuOpen(false); mobileMenuBtn.focus(); } });
-            window.addEventListener("resize", function () {
-                if (window.innerWidth >= 1024) setMobileMenuOpen(false);
-            });
-
-            window.addEventListener("scroll", function () {
-                let currentScroll = window.pageYOffset || document.documentElement.scrollTop;
-
-                if (mobileMenu && !mobileMenu.classList.contains("hidden")) { header.style.transform = "translateY(0)"; lastScrollTop = currentScroll; return; }
-                if (currentScroll > lastScrollTop && currentScroll > 100) {
-                    // 아래로 스크롤 시 헤더 올리기
-                    header.style.transform = "translateY(-100%)";
-                    setMobileMenuOpen(false);
-                } else {
-                    // 위로 스크롤 시 헤더 다시 내리기
-                    header.style.transform = "translateY(0)";
-                }
-                lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
-            }, false);
-        </script>
