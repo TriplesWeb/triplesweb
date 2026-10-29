@@ -2,21 +2,27 @@ package com.example.triplesweb.service;
 
 import com.example.triplesweb.dto.ObjektCatalogDto;
 import com.example.triplesweb.entity.ObjektCatalog;
+import com.example.triplesweb.infra.GzipRestClients;
+import com.example.triplesweb.util.MemberPortraitOptions;
+import com.example.triplesweb.util.ObjektFilterOrder;
+import com.example.triplesweb.util.ObjektLinks;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
-import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Objekt 외부 API 어댑터.
@@ -31,27 +37,24 @@ public class ObjektService {
     private final RestClient restClient;
     private final ObjektCatalogStore catalogStore;
 
-    private volatile List<Map<String, Object>> cachedCollections;
+    private volatile List<Map<String, Object>> cachedCollections = List.of();
+    private volatile Map<String, Map<String, Object>> byKey = Map.of();
+    private volatile FilterFacets facets = FilterFacets.empty();
     private volatile long lastSuccessfulRefreshMillis;
 
     public ObjektService(
             @Value("${objekt.api.base-url:https://objekt.top/api/v1}")
             String baseUrl,
+            @Value("${objekt.cache.read-timeout-ms:30000}")
+            long readTimeoutMs,
             ObjektCatalogStore catalogStore
     ) {
         this.catalogStore = catalogStore;
-        HttpClient httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(3))
-                .build();
-
-        JdkClientHttpRequestFactory requestFactory =
-                new JdkClientHttpRequestFactory(httpClient);
-        requestFactory.setReadTimeout(Duration.ofSeconds(6));
-
-        this.restClient = RestClient.builder()
-                .baseUrl(baseUrl)
-                .requestFactory(requestFactory)
-                .build();
+        // 카탈로그는 gzip 기준 ~1MB·수 초가 걸린다. 비압축이면 10MB+/30초를 넘긴다.
+        this.restClient = GzipRestClients.create(
+                baseUrl,
+                Duration.ofSeconds(3),
+                Duration.ofMillis(Math.max(1_000, readTimeoutMs)));
     }
 
     /**
@@ -60,18 +63,29 @@ public class ObjektService {
      */
     @PostConstruct
     void loadStoredCatalog() {
-        cachedCollections = loadFromDatabase("triples");
+        install(loadFromDatabase("triples"));
     }
 
     public List<Map<String, Object>> findCollections(String artist) {
         List<Map<String, Object>> snapshot = cachedCollections;
-        // 빈 결과도 정상적으로 적재된 캐시다. 빈 테이블일 때 페이지 요청마다
-        // DB 전체 조회가 반복되지 않도록 null인 최초 상태에서만 다시 읽는다.
         if (snapshot == null) {
             snapshot = loadFromDatabase(artist);
-            cachedCollections = snapshot;
+            install(snapshot);
         }
         return snapshot;
+    }
+
+    /** O(1) lookup by id, collectionId, slug, or ObjektLinks.key. */
+    public Map<String, Object> findByKey(String key) {
+        if (key == null || key.isBlank()) return null;
+        Map<String, Map<String, Object>> index = byKey;
+        Map<String, Object> found = index.get(key);
+        if (found != null) return found;
+        return index.get(key.toLowerCase(Locale.ROOT));
+    }
+
+    public FilterFacets filterFacets() {
+        return facets;
     }
 
     /**
@@ -121,7 +135,7 @@ public class ObjektService {
             // DB는 다음 시작 시 복구할 스냅샷으로만 저장한다. 갱신 직후 다시
             // SELECT 하지 않고, 이미 받은 API 응답으로 메모리 캐시를 교체한다.
             catalogStore.replace("triples", rows);
-            cachedCollections = rows.stream().map(ObjektCatalogDto::toView).toList();
+            install(rows.stream().map(ObjektCatalogDto::toView).toList());
             lastSuccessfulRefreshMillis = System.currentTimeMillis();
 
             log.info("Objekt 카탈로그 저장 완료: {}개", cachedCollections.size());
@@ -131,7 +145,7 @@ public class ObjektService {
             // 캐시가 이미 있다면 기존 데이터를 그대로 유지한다.
             log.warn(
                     "Objekt 캐시 갱신 실패. 기존 캐시를 유지하고 다음 주기에 재시도합니다: {}",
-                    ex.getMessage()
+                    detail(ex)
             );
         }
     }
@@ -140,9 +154,95 @@ public class ObjektService {
         return lastSuccessfulRefreshMillis;
     }
 
+    private void install(List<Map<String, Object>> views) {
+        List<Map<String, Object>> snapshot = views == null ? List.of() : List.copyOf(views);
+        cachedCollections = snapshot;
+        byKey = buildIndex(snapshot);
+        facets = FilterFacets.from(snapshot);
+    }
+
+    private static Map<String, Map<String, Object>> buildIndex(List<Map<String, Object>> views) {
+        Map<String, Map<String, Object>> index = new HashMap<>(Math.max(16, views.size() * 4));
+        for (Map<String, Object> item : views) {
+            putIndex(index, string(item, "id"), item);
+            putIndex(index, string(item, "collectionId"), item);
+            putIndex(index, string(item, "slug"), item);
+            String slugLower = string(item, "slug").toLowerCase(Locale.ROOT);
+            if (!slugLower.isBlank()) index.putIfAbsent(slugLower, item);
+            putIndex(index, ObjektLinks.key(item), item);
+            putIndex(index, ObjektLinks.id(item), item);
+        }
+        return Map.copyOf(index);
+    }
+
+    private static void putIndex(Map<String, Map<String, Object>> index, String key, Map<String, Object> item) {
+        if (key == null || key.isBlank()) return;
+        index.putIfAbsent(key, item);
+    }
+
+    private static String string(Map<String, Object> item, String key) {
+        Object value = item.get(key);
+        return value == null ? "" : value.toString().trim();
+    }
+
     private List<Map<String, Object>> loadFromDatabase(String artist) {
         String key = artist == null || artist.isBlank() ? "triples" : artist;
         return catalogStore.load(key).stream().map(ObjektCatalogDto::toView).toList();
     }
-}
 
+    private static String detail(Throwable error) {
+        Throwable root = error;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        if (root == error || root.getMessage() == null || root.getMessage().isBlank()) {
+            return error.getMessage();
+        }
+        return error.getMessage() + " (" + root.getClass().getSimpleName() + ": " + root.getMessage() + ")";
+    }
+
+    public record FilterFacets(
+            List<String> members,
+            List<String> seasons,
+            List<String> classes,
+            List<String> collectionNumbers
+    ) {
+        public static FilterFacets empty() {
+            return new FilterFacets(List.of(), List.of(), List.of(), List.of());
+        }
+
+        public static FilterFacets from(List<Map<String, Object>> views) {
+            Set<String> members = new LinkedHashSet<>();
+            Set<String> seasons = new LinkedHashSet<>();
+            Set<String> classes = new LinkedHashSet<>();
+            Set<String> numbers = new LinkedHashSet<>();
+            for (Map<String, Object> item : views) {
+                for (String member : MemberPortraitOptions.objektMembers(first(item, "member", "memberName"))) {
+                    if (!member.isBlank()) members.add(member);
+                }
+                String season = first(item, "seasonKey", "season");
+                if (!season.isBlank()) seasons.add(season.trim());
+                String klass = first(item, "classKey", "class");
+                if (!klass.isBlank()) classes.add(klass.trim());
+                String number = first(item, "collectionNo", "collectionNumber");
+                if (!number.isBlank()) numbers.add(number.trim());
+            }
+            return new FilterFacets(
+                    ObjektFilterOrder.sortedMembers(members),
+                    ObjektFilterOrder.sortedSeasons(seasons),
+                    classes.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList(),
+                    numbers.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList()
+            );
+        }
+
+        private static String first(Map<String, Object> item, String... keys) {
+            for (String key : keys) {
+                Object value = item.get(key);
+                if (value != null && !value.toString().isBlank() && !"null".equalsIgnoreCase(value.toString())) {
+                    return value.toString();
+                }
+            }
+            return "";
+        }
+    }
+}

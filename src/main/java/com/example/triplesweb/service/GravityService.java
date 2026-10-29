@@ -15,16 +15,30 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 public class GravityService {
     private static final TypeReference<Map<String, Object>> MAP_TYPE =
             new TypeReference<>() {};
+    private static final long LIST_TTL_MS = 60_000L;
+    private static final long DETAIL_TTL_MS = 30_000L;
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
     private final String cosmoApiBaseUrl;
     private final CosmoTokenProvider tokens;
+    private final ConcurrentHashMap<String, CachedList> listCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, CachedDetail> detailCache = new ConcurrentHashMap<>();
+    private final ExecutorService refreshExecutor = Executors.newFixedThreadPool(2, r -> {
+        Thread t = new Thread(r, "gravity-cache-refresh");
+        t.setDaemon(true);
+        return t;
+    });
 
     @org.springframework.beans.factory.annotation.Autowired
     public GravityService(
@@ -51,10 +65,38 @@ public class GravityService {
     /**
      * Loads Gravity metadata from COSMO. Requires a valid, authorized access token.
      * The API response has upcoming, ongoing and past arrays.
+     * Fresh for {@link #LIST_TTL_MS}; after expiry returns stale while refreshing in background.
      */
     public List<Map<String, Object>> fetchGravityList(String artistId) {
         requireCosmoToken();
+        String key = artistId == null ? "" : artistId;
+        long now = System.currentTimeMillis();
+        CachedList cached = listCache.get(key);
+        if (cached != null) {
+            if (cached.expiresAt > now) {
+                return copyList(cached.value);
+            }
+            // stale-while-revalidate
+            if (cached.refreshing.compareAndSet(false, true)) {
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        listCache.put(key, new CachedList(loadGravityList(key), System.currentTimeMillis() + LIST_TTL_MS));
+                    } catch (RuntimeException ignored) {
+                        // keep stale
+                    } finally {
+                        CachedList current = listCache.get(key);
+                        if (current != null) current.refreshing.set(false);
+                    }
+                }, refreshExecutor);
+            }
+            return copyList(cached.value);
+        }
+        CachedList fresh = new CachedList(loadGravityList(key), now + LIST_TTL_MS);
+        listCache.put(key, fresh);
+        return copyList(fresh.value);
+    }
 
+    private List<Map<String, Object>> loadGravityList(String artistId) {
         String encodedArtist = UriUtils.encodeQueryParam(artistId, StandardCharsets.UTF_8);
         JsonNode root = cosmoGet("/bff/v3/gravities?artistId=" + encodedArtist);
         if (!root.path("ongoing").isArray() || !root.path("upcoming").isArray() || !root.path("past").isArray()) {
@@ -66,7 +108,7 @@ public class GravityService {
         appendGravityGroup(result, root.path("upcoming"), "예정", artistId);
         appendGravityGroup(result, root.path("past"), "종료", artistId);
 
-        return result;
+        return List.copyOf(result);
     }
 
     private void appendGravityGroup(
@@ -132,6 +174,33 @@ public class GravityService {
 
     public JsonNode fetchGravityDetails(long gravityId) {
         if (gravityId <= 0) throw new IllegalArgumentException("Invalid gravity ID");
+        long now = System.currentTimeMillis();
+        CachedDetail cached = detailCache.get(gravityId);
+        if (cached != null) {
+            if (cached.expiresAt > now) {
+                return cached.value;
+            }
+            if (cached.refreshing.compareAndSet(false, true)) {
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        detailCache.put(gravityId, new CachedDetail(loadGravityDetails(gravityId),
+                                System.currentTimeMillis() + DETAIL_TTL_MS));
+                    } catch (RuntimeException ignored) {
+                        // keep stale
+                    } finally {
+                        CachedDetail current = detailCache.get(gravityId);
+                        if (current != null) current.refreshing.set(false);
+                    }
+                }, refreshExecutor);
+            }
+            return cached.value;
+        }
+        JsonNode fresh = loadGravityDetails(gravityId);
+        detailCache.put(gravityId, new CachedDetail(fresh, now + DETAIL_TTL_MS));
+        return fresh;
+    }
+
+    private JsonNode loadGravityDetails(long gravityId) {
         JsonNode response = cosmoGet("/bff/v3/gravities/" + gravityId);
         JsonNode gravity = response.path("gravity");
         if (!gravity.isObject()) throw new IllegalStateException("COSMO 그래비티 응답을 확인할 수 없습니다.");
@@ -188,10 +257,12 @@ public class GravityService {
         return url.startsWith("https://") ? url : "";
     }
 
-    private static String firstNonBlank(String first, String second, String fallback) {
-        if (first != null && !first.isBlank()) return first;
-        if (second != null && !second.isBlank()) return second;
-        return fallback;
+    private static List<Map<String, Object>> copyList(List<Map<String, Object>> source) {
+        List<Map<String, Object>> copy = new ArrayList<>(source.size());
+        for (Map<String, Object> item : source) {
+            copy.add(new LinkedHashMap<>(item));
+        }
+        return copy;
     }
 
     private static String trimTrailingSlash(String value) {
@@ -213,5 +284,27 @@ public class GravityService {
             return "올바른 양의 숫자 투표 ID를 입력해 주세요.";
         }
         return "외부 API에 연결하지 못했습니다. 네트워크 또는 운영 서버의 API 접근 정책을 확인해 주세요.";
+    }
+
+    private static final class CachedList {
+        final List<Map<String, Object>> value;
+        final long expiresAt;
+        final AtomicBoolean refreshing = new AtomicBoolean(false);
+
+        CachedList(List<Map<String, Object>> value, long expiresAt) {
+            this.value = value;
+            this.expiresAt = expiresAt;
+        }
+    }
+
+    private static final class CachedDetail {
+        final JsonNode value;
+        final long expiresAt;
+        final AtomicBoolean refreshing = new AtomicBoolean(false);
+
+        CachedDetail(JsonNode value, long expiresAt) {
+            this.value = value;
+            this.expiresAt = expiresAt;
+        }
     }
 }
