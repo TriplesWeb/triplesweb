@@ -24,6 +24,7 @@ jobs:
       - name: 같은 커밋의 격리 미리보기 배포 완료 대기
         uses: actions/github-script@v7
         with:
+          retries: 3
           script: |
             const sha=context.payload.pull_request.head.sha;
             for(let attempt=0;attempt<200;attempt++){
