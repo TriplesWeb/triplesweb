@@ -38,7 +38,7 @@
       if(!response.ok)throw Error();const data=await response.json();
       cards.forEach(card=>{const state=data[card.dataset.objektKey],label=card.querySelector('[data-supply-count]');if(state?.status==='available'&&number(state.count)){label.textContent='발행량 '+state.count.toLocaleString('ko-KR')+'개';label.title='시리얼 목록 확인 · '+new Date(state.observedAt).toLocaleString('ko-KR');card.dataset.supplyDone='true';}else if(state?.status==='unavailable'||Number(card.dataset.supplyTries)>=8)label.textContent='발행량 미확인';});
     }catch{cards.forEach(card=>{if(Number(card.dataset.supplyTries)>=8)card.querySelector('[data-supply-count]').textContent='발행량 미확인';});}
-    finally{hydrating=false;clearTimeout(hydrationTimer);if(cards.some(card=>card.dataset.supplyDone!=='true'&&Number(card.dataset.supplyTries)<8))hydrationTimer=setTimeout(hydrate,2000);}
+    finally{hydrating=false;clearTimeout(hydrationTimer);if([...document.querySelectorAll('.objekt-card[data-objekt-key]')].some(card=>card.querySelector('[data-supply-count]')&&card.dataset.supplyDone!=='true'&&Number(card.dataset.supplyTries||0)<8))hydrationTimer=setTimeout(hydrate,2000);}
   }
   document.addEventListener('visibilitychange',()=>{if(document.hidden)clearTimeout(hydrationTimer);else hydrate();});
   window.ObjektIssued={show,close,hydrate};hydrate();

@@ -102,6 +102,12 @@ const base = path.resolve(__dirname, '../..');
     await page.goto('https://preview.test/cosmo/objekt?objekt=hayeoncc367z');
     await page.locator('#objektDetailTitle').filter({hasText:'Cream02 HaYeon 367Z'}).waitFor();
     assert.equal(await page.locator('#objektDetailModal').isVisible(),true);
+    await page.evaluate(()=>{
+      const original=document.querySelector('.objekt-card[data-objekt-key]');
+      for(let i=0;i<49;i++){const card=original.cloneNode(true);delete card.dataset.supplyDone;delete card.dataset.supplyTries;original.parentElement.append(card);}
+      window.ObjektIssued.hydrate();
+    });
+    await page.waitForFunction(()=>document.querySelectorAll('.objekt-card[data-supply-done="true"]').length===50);
     console.log('PASS: 모달 설명 저장·삭제·CSRF, 비관리자 숨김, 선택 유지 링크, 통합 시리얼 조회와 실패 후 이어받기');
   } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1)});
