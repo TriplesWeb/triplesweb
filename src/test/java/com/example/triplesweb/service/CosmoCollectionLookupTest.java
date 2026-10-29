@@ -55,7 +55,7 @@ class CosmoCollectionLookupTest {
     }
 
     @Test @SuppressWarnings("unchecked") void loadsEveryCursorPageSerialsAndReusesCache() {
-        var first = awaitLoaded("테스트");
+        var first = awaitLoaded("테스트", 26);
         assertThat(first).containsEntry("ownedCount", 26).containsEntry("totalPages", 2);
         var cards = (List<Map<String, Object>>) first.get("cards");
         assertThat(cards).hasSize(24);
@@ -91,12 +91,16 @@ class CosmoCollectionLookupTest {
         indexFailure = true;
         assertThatThrownBy(() -> service.search("테스트", 0)).isInstanceOf(RuntimeException.class);
         indexFailure = false;
-        assertThat(awaitLoaded("테스트")).containsEntry("ownedCount", 26);
+        assertThat(awaitLoaded("테스트", 26)).containsEntry("ownedCount", 26);
     }
 
-    private Map<String, Object> awaitLoaded(String nickname) {
+    private Map<String, Object> awaitLoaded(String nickname, int expectedOwnedCount) {
         Map<String, Object> snapshot = service.search(nickname, 0);
-        for (int i = 0; i < 100 && Boolean.TRUE.equals(snapshot.get("loading")); i++) {
+        for (int i = 0; i < 100; i++) {
+            if (!Boolean.TRUE.equals(snapshot.get("loading"))
+                    && Integer.valueOf(expectedOwnedCount).equals(snapshot.get("ownedCount"))) {
+                return snapshot;
+            }
             try {
                 Thread.sleep(20L);
             } catch (InterruptedException ex) {
@@ -105,7 +109,7 @@ class CosmoCollectionLookupTest {
             }
             snapshot = service.search(nickname, 0);
         }
-        assertThat(snapshot).containsEntry("loading", false);
+        assertThat(snapshot).containsEntry("loading", false).containsEntry("ownedCount", expectedOwnedCount);
         return snapshot;
     }
 }
