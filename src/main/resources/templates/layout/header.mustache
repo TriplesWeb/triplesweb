@@ -38,7 +38,6 @@
     <div id="mobile-menu" hidden>
         <nav aria-label="모바일 주 메뉴">
             {{#siteNavigation}}{{#direct}}<a class="mobile-direct-link" href="{{href}}">{{label}}</a>{{/direct}}{{^direct}}{{>navigation/mobile-section}}{{/direct}}{{/siteNavigation}}
-            {{#siteCommunity}}{{>navigation/mobile-section}}{{/siteCommunity}}
             <a class="mobile-sitemap-link" href="/sitemap">전체 메뉴 <span aria-hidden="true">↗</span></a>
             {{#member}}<div class="mobile-account"><p>{{userId}}님 <span>Lv.{{level}} · {{points}}P</span></p>{{>navigation/account-links}}</div>{{/member}}
         </nav>

@@ -22,10 +22,8 @@
 .header-chevron{display:inline-block;width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);margin-left:auto;flex-shrink:0;transition:transform .15s}
 [aria-expanded=true]>.header-chevron,details[open]>summary>.header-chevron{transform:rotate(225deg)}
 .header-dropdown{position:absolute;top:100%;left:-12px;min-width:220px;padding:8px;border:1px solid #3a4a4680;border-radius:14px;background:#1a1d25;box-shadow:0 18px 48px #0006;z-index:5}
-.header-dropdown a,.header-submenu summary{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:8px;font-size:13px;line-height:1.5}
-.header-dropdown a:hover,.header-submenu summary:hover{background:#8decd909}
-.header-submenu summary{list-style:none;cursor:pointer;color:#b9cac4}
-.header-submenu summary::-webkit-details-marker{display:none}
+.header-dropdown a{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:8px;font-size:13px;line-height:1.5}
+.header-dropdown a:hover{background:#8decd909}
 .header-actions{display:flex;align-items:center;gap:10px;margin-left:auto;min-width:0}
 .header-icon-button{width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:12px!important}
 .header-icon-button:hover{background:#ffffff08!important}
@@ -67,3 +65,5 @@
 @container site-header (max-width:1023px){.header-brand img:last-child{height:28px;width:auto}}
 
 @container site-header (max-width:1023px){.header-related-links a{min-height:44px}}
+
+.header-link-group>.header-group-heading{display:flex;align-items:center;min-height:44px;padding:11px 12px;border-radius:8px;font-size:13px;line-height:1.5;color:#b9cac4}
