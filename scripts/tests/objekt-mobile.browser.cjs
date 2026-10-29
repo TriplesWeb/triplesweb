@@ -6,14 +6,12 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
  const browser=await (engine==='webkit'?webkit:chromium).launch(engine==='webkit'?{headless:true}:{headless:true,executablePath:process.env.CHROMIUM_PATH || (fs.existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined),args:['--no-sandbox']});
  try{
   const page=await browser.newPage({...devices[engine==='webkit'?'iPhone 13':'Pixel 7'],viewport:{width:390,height:844},deviceScaleFactor:2});
-  const headerSource=fs.readFileSync(path.join(base,'src/main/resources/templates/layout/header.mustache'),'utf8');
-  const headerScript=[...headerSource.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(s=>s.includes('setMobileMenuOpen'))[0];
   await page.route('**/*',async route=>{
    const url=new URL(route.request().url());if(url.origin!=='https://mobile.test')return route.abort();
    if(url.pathname.startsWith('/preview/')){
     const file=path.basename(url.pathname);let html=fs.readFileSync(path.join(fixtures,file),'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'');
     html=html.replace('<head>',`<head><base href="https://mobile.test/">${file==='header-bare.html'?'':'<link rel="stylesheet" href="/css/gravity.css">'}`);
-    html=html.replace('</body>',`<script>${html.includes('id="top-header"')?(headerScript||''):''}</script><script src="/js/site-mobile.js"></script></body>`);
+    html=html.replace('</body>',`${html.includes('id="top-header"')?'<script src="/js/site-header.js"></script>':''}<script src="/js/site-mobile.js"></script></body>`);
     return route.fulfill({contentType:'text/html',body:html});
    }
    const file=path.resolve(base,'src/main/resources/static','.'+url.pathname);
