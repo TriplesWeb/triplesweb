@@ -48,6 +48,7 @@ jobs:
           fi
           node scripts/tests/objekt-account-ui.browser.cjs
           node scripts/tests/objekt-modal.browser.cjs
+          node scripts/tests/profile-board.browser.cjs
           node scripts/tests/objekt-mobile.browser.cjs
           node scripts/tests/site-header.browser.cjs
           node scripts/tests/objekt-artist-gravity.browser.cjs

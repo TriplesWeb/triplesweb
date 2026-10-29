@@ -91,6 +91,8 @@ class CosmoProfileControllerTest {
                 .andExpect(content().string(containsString("profile-checklist-card is-owned")))
                 .andExpect(content().string(containsString("profile-checklist-card is-missing")))
                 .andExpect(content().string(containsString("완료한 시즌 숨기기")))
+                .andExpect(content().string(containsString("profile-summary-orbit")))
+                .andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(content().string(not(containsString("시즌별")))).andReturn();
         java.nio.file.Files.writeString(java.nio.file.Path.of("build/profile-checklist-preview.html"), result.getResponse().getContentAsString());
     }

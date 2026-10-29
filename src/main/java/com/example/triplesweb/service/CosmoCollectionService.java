@@ -11,7 +11,6 @@ import java.net.http.HttpClient;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -19,14 +18,22 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class CosmoCollectionService {
     private static final int PAGE_SIZE = 24;
+    private static final long HOLDINGS_TTL_SECONDS = 20;
+    private final java.time.Clock clock;
     private static final String NOT_FOUND = "없는 닉네임 입니다.";
     private final RestClient cosmo;
     private final RestClient index;
     private final ConcurrentHashMap<String, Cached> cache = new ConcurrentHashMap<>();
 
+    @org.springframework.beans.factory.annotation.Autowired
     public CosmoCollectionService(
             @Value("${gravity.cosmo-api-base-url:https://api.cosmo.fans}") String cosmoUrl,
             @Value("${objekt.api.base-url:https://objekt.top/api/v1}") String indexUrl) {
+        this(cosmoUrl, indexUrl, java.time.Clock.systemUTC());
+    }
+
+    CosmoCollectionService(String cosmoUrl, String indexUrl, java.time.Clock clock) {
+        this.clock = clock;
         var factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(3)).build());
         factory.setReadTimeout(Duration.ofSeconds(10));
@@ -64,7 +71,7 @@ public class CosmoCollectionService {
         if (nickname.isBlank()) throw new IllegalArgumentException(NOT_FOUND);
         if (nickname.length() > 40 || nickname.contains("/") || nickname.contains(" "))
             throw new IllegalArgumentException("닉네임을 올바르게 입력해 주세요.");
-        long now = Instant.now().getEpochSecond();
+        long now = clock.instant().getEpochSecond();
         cache.entrySet().removeIf(entry -> entry.getValue().expiresAt <= now);
         Cached found = cache.compute(nickname.toLowerCase(Locale.ROOT), (key, current) -> {
             if (current != null && current.expiresAt > now) return current;
@@ -265,11 +272,11 @@ public class CosmoCollectionService {
             }
         } while (cursor != null && !cursor.isNull());
         return new Cached(profile.path("nickname").asText(nickname), address,
-                profile.path("profileImageUrl").asText(""), List.copyOf(cards), Instant.now().getEpochSecond() + 600);
+                profile.path("profileImageUrl").asText(""), List.copyOf(cards), clock.instant().getEpochSecond() + HOLDINGS_TTL_SECONDS);
     }
 
-    private static Cached missing(String nickname) {
-        return new Cached(nickname, "", "", List.of(), Instant.now().getEpochSecond() + 60);
+    private Cached missing(String nickname) {
+        return new Cached(nickname, "", "", List.of(), clock.instant().getEpochSecond() + 60);
     }
 
     private static String collectionNo(JsonNode objekt, String collectionId) {

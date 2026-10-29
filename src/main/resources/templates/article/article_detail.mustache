@@ -16,6 +16,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/article-page.css?v=1">
 
     <style>
         /* 본문 내용(HTML) 내부 이미지/영상 반응형 스타일 정돈 */
@@ -35,7 +36,7 @@
         }
     </style>
 </head>
-<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+<body class="article-page bg-surface text-on-surface min-h-screen flex flex-col">
 
 {{>layout/header}}
 
@@ -50,10 +51,10 @@
         <div class="absolute -inset-1 rounded-3xl bg-gradient-to-b from-primary-container/20 via-transparent to-secondary-container/30 blur-xl opacity-75 pointer-events-none"></div>
 
         <!-- 메인 게시글 컨테이너 카드 -->
-        <div class="relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
+        <div class="article-detail-shell relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
 
             <!-- 게시글 헤더 (작성자 및 날짜) -->
-            <div class="flex items-center justify-between pb-6 mb-6 border-b border-outline-variant/30">
+            <div class="article-detail-meta flex items-center justify-between pb-6 mb-6 border-b border-outline-variant/30">
                 <div class="flex items-center gap-2 text-on-surface-variant font-medium">
                     <span class="material-symbols-outlined text-[20px]" data-icon="person">person</span>
                     <span>작성자: <strong class="text-on-surface">{{article.userId}}</strong></span>
@@ -111,7 +112,7 @@
                 {{/isLikeAllowed}}
 
                 <!-- 버튼 그룹 (수정, 삭제, 목록으로) -->
-                <div class="flex items-center justify-between pt-2">
+                <div class="article-detail-actions flex items-center justify-between pt-2">
                     <div class="flex items-center gap-2">
 {{#isOwner}}
                                 <a href="/article/{{category}}/{{article.id}}/edit" class="py-2 px-4 rounded-xl bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/40 text-on-surface text-sm font-medium transition-all">

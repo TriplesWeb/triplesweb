@@ -19,7 +19,8 @@ public class CosmoProfileController {
                           @RequestParam(defaultValue = "") String member,
                           @RequestParam(defaultValue = "all") String group,
                           @RequestParam(defaultValue = "all") String ownership,
-                          @RequestParam(defaultValue = "0") int page, Model model) {
+                          @RequestParam(defaultValue = "0") int page, Model model, jakarta.servlet.http.HttpServletResponse response) {
+        response.setHeader("Cache-Control", "no-store");
         if (tab.isBlank()) {
             String base = "/cosmo/profile/" + URLEncoder.encode(nickname, StandardCharsets.UTF_8).replace("+", "%20");
             return "redirect:" + base + (member.isBlank() && "all".equals(group) ? "?tab=overview" : "?tab=members&member=" + URLEncoder.encode(member, StandardCharsets.UTF_8) + "&group=" + URLEncoder.encode(group, StandardCharsets.UTF_8) + "&ownership=" + URLEncoder.encode(ownership, StandardCharsets.UTF_8));

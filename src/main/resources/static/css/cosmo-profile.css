@@ -191,3 +191,28 @@
 .profile-member.is-empty .orbit-value{stroke:#ffffff35}
 .profile-ownership-list .is-missing:focus-visible img,.profile-ownership-list .is-missing:hover img{filter:brightness(.9) saturate(.95)}
 @media(max-width:480px){.profile-orbit{width:6.75rem}.profile-orbit-stat{gap:.8rem}.profile-breakdown{padding:1rem}}
+
+/* Compact, static SVG gauges: no chart runtime or continuous animation. */
+.profile-summary-orbit{position:relative;display:grid;place-items:center;width:3.6rem;aspect-ratio:1;flex:0 0 auto;margin:0!important;min-width:0!important}
+.profile-summary-orbit svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.profile-summary-orbit circle{fill:none;stroke-width:2.8}
+.profile-summary-orbit .orbit-track{stroke:#ffffff15}
+.profile-summary-orbit .orbit-value{stroke:#8decd9}
+.profile-summary-orbit>strong{font-size:.85rem!important;color:#e6f6f0!important;margin:0!important;font-variant-numeric:tabular-nums}
+.profile-summary-orbit small{font-size:.55rem;margin-left:.08rem;color:#acbcb6}
+.profile-season-heading{flex-wrap:nowrap;justify-content:flex-start;gap:.8rem;padding:.65rem}
+.profile-summary-copy{display:grid;gap:.3rem;min-width:0!important;color:#e2eee9!important}
+.profile-summary-copy>strong{margin:0;font-size:.9rem;color:inherit;overflow-wrap:anywhere}
+.profile-summary-copy>span{font-size:.73rem;line-height:1.5;color:#a9bdb5;font-variant-numeric:tabular-nums}
+.profile-fold-chevron{margin-left:auto;flex-shrink:0;font-size:1.25rem;color:#9ebbb1!important;transition:transform .15s ease}
+.profile-season-fold[open]>.profile-season-heading>.profile-fold-chevron,.profile-checklist-group[open]>summary>.profile-fold-chevron{transform:rotate(180deg)}
+.profile-checklist-group>summary{flex-wrap:nowrap;gap:.8rem;padding:.7rem .8rem}
+.profile-checklist-group>summary>.profile-summary-orbit{width:3rem}
+.profile-checklist-season{border-radius:1rem;padding:.25rem .35rem}
+.profile-season-grid{gap:.8rem}
+.profile-refresh{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:.5rem .8rem;color:#a5b8b0;font-size:.75rem}
+.profile-refresh button{border:1px solid #ffffff24;background:#151c20;color:#b4f1df;border-radius:.65rem;padding:.5rem .75rem;cursor:pointer;font:inherit;min-height:2.4rem}
+.profile-refresh button:disabled{opacity:.55;cursor:wait}
+.profile-refresh button:focus-visible{outline:2px solid #8decd9;outline-offset:2px}
+@media(max-width:600px){.profile-refresh{justify-content:space-between}.profile-refresh>[role=status]{flex:1;min-width:0;line-height:1.5}.profile-season-heading{padding:.65rem .45rem}.profile-summary-orbit{width:3.25rem}.profile-checklist-group>summary{padding:.65rem;gap:.65rem}}
+@media(prefers-reduced-motion:reduce){.profile-fold-chevron{transition:none}}

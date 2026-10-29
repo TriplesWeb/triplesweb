@@ -51,6 +51,14 @@ class MobilePageTemplatesTest {
                 Files.writeString(output.resolve(name+".html"),result);count++;
             }
         }
+        for (String category : List.of("trade", "sell", "group-orders")) {
+            var board = new HashMap<>(model);
+            board.put("category", category); board.put("hideRecommendations", "group-orders".equals(category));
+            board.put("categoryName", Map.of("trade","교환","sell","거래","group-orders","분철").get(category));
+            board.put("articleList", List.of(new HashMap<>(post)));
+            Files.writeString(output.resolve("board-" + category + ".html"),
+                compiler.compile(Files.readString(root.resolve("article/article.mustache"))).execute(board));
+        }
         assertThat(count).isGreaterThanOrEqualTo(30);
         var auth=new HashMap<>(model);auth.put("member",Map.of("userId",longText,"level",1,"points",100));
         String header=compiler.compile(Files.readString(root.resolve("layout/header.mustache"))).execute(auth);
