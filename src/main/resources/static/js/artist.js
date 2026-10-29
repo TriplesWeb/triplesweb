@@ -207,7 +207,7 @@
     const params = new URLSearchParams(window.location.search);
     const tab = params.get("tab");
     const hash = window.location.hash;
-    let initial = "#triples";
+    let initial = allowedTargets.has("#triples") ? "#triples" : allowedTargets.values().next().value;
     if (tab && allowedTargets.has("#" + tab)) {
       initial = "#" + tab;
     } else if (hash && allowedTargets.has(hash)) {
@@ -536,7 +536,7 @@
             return;
           }
           const tab = "member-" + id;
-          window.location.href = "/triples/artist?tab=" + encodeURIComponent(tab);
+          window.location.href = (document.body.dataset.membersOnly === "true" ? "/triples/members" : "/triples/artist") + "?tab=" + encodeURIComponent(tab);
         } catch (_) {
           if (err) {
             err.textContent = "저장에 실패했습니다.";

@@ -49,20 +49,7 @@ public class ObjektFeatureController {
     public String detail(@PathVariable String key, HttpServletRequest request, HttpSession session, Model model) {
         Map<String, Object> item = findObjekt(key);
         if (item == null) return "redirect:/cosmo/objekt";
-        if (!key.equals(ObjektLinks.key(item))) return "redirect:" + ObjektLinks.detail(item);
-        model.addAttribute("objekt", item);
-        model.addAttribute("objektKey", ObjektLinks.id(item));
-        model.addAttribute("memberUrl", ObjektLinks.member(item));
-        model.addAttribute("tradeUrl", ObjektLinks.compose(item, "trade"));
-        model.addAttribute("sellUrl", ObjektLinks.compose(item, "sell"));
-        model.addAttribute("lookupUrl", ObjektLinks.detail(item) + "/lookup");
-        model.addAttribute("transfersUrl", "/cosmo/objekt/detail/" + encodePath(key) + "/transfers");
-        boolean isFavorite = favorites.contains(session.getId(), item);
-        model.addAttribute("isFavorite", isFavorite);
-        model.addAttribute("favoriteDesired", !isFavorite);
-        model.addAttribute("objektDescription", description(item, key));
-        model.addAttribute("isAdmin", aboutAdminAuth.isAdmin(request, session));
-        return "cosmo/objekt_detail";
+        return "redirect:/cosmo/objekt?objekt=" + ObjektLinks.encode(ObjektLinks.key(item));
     }
 
     /** 목록 모달용 상세 JSON. */
@@ -97,7 +84,28 @@ public class ObjektFeatureController {
         body.put("tradeUrl", ObjektLinks.compose(item, "trade"));
         body.put("sellUrl", ObjektLinks.compose(item, "sell"));
         body.put("descriptionUrl", ObjektLinks.detail(item) + "/description");
+        body.put("lookupUrl", ObjektLinks.detail(item) + "/lookup");
+        body.put("issuedUrl", ObjektLinks.detail(item) + "/issued");
         return body;
+    }
+
+    @GetMapping("/detail/{key}/issued")
+    @ResponseBody
+    public Map<String,Object> issued(@PathVariable String key,@RequestParam(defaultValue="0") int offset) {
+        Map<String,Object> item=findObjekt(key);
+        if(item==null)throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        return marketData.issuedSupply(item,Math.max(0,offset),40);
+    }
+
+    @GetMapping("/supplies")
+    @ResponseBody
+    public Map<String,Object> supplies(@RequestParam(name="key") List<String> keys) {
+        Map<String,Object> result=new LinkedHashMap<>();
+        for(String key:keys.stream().distinct().limit(24).toList()) {
+            Map<String,Object> item=findObjekt(key);
+            if(item!=null)result.put(key,marketData.issuedSupply(item,0,1));
+        }
+        return result;
     }
 
     @PostMapping(value = "/detail/{key}/description", produces = MediaType.TEXT_HTML_VALUE)

@@ -18,6 +18,8 @@
   }
 
   function bindFrameSrc(frame, n) {
+    if (frame.dataset.boundFrame === String(n)) return;
+    frame.dataset.boundFrame = String(n);
     let attempt = 0;
     const tryNext = () => {
       if (attempt >= FRAME_BASES.length) {
@@ -93,7 +95,7 @@
         drop();
         return;
       }
-      img.addEventListener("error", drop);
+      if (!img.__memberErrorBound) { img.addEventListener("error", drop); img.__memberErrorBound = true; }
     });
   }
 
@@ -139,7 +141,8 @@
 
     bindFrames(picker);
 
-    picker.addEventListener("click", (e) => {
+    if (picker.__memberClickHandler) picker.removeEventListener("click", picker.__memberClickHandler);
+    const handleClick = (e) => {
       const btn = e.target.closest(".mpp-item");
       if (!btn || !picker.contains(btn)) return;
       e.preventDefault();
@@ -153,7 +156,9 @@
       if (typeof options.onChange === "function") {
         options.onChange(selectedValues(picker));
       }
-    });
+    };
+    picker.__memberClickHandler = handleClick;
+    picker.addEventListener("click", handleClick);
   }
 
   global.MemberPortraitPicker = {

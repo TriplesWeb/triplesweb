@@ -44,14 +44,16 @@ public class TriplesController {
         model.addAttribute("groupImage", group.getImageUrl());
         model.addAttribute("groupTabImage", group.getTabImageUrl());
         model.addAttribute("overviewOnly", true);
+        model.addAttribute("membersOnly", false);
         return "triples/artist";
     }
 
     @GetMapping("/members")
     @Transactional(readOnly = true)
     public String members(Model model) {
-        model.addAttribute("artists", artistrepository.findAll(Sort.by(Sort.Direction.ASC, "artistId")));
-        return "triples/members";
+        indexTriples(model);
+        model.addAttribute("membersOnly", true);
+        return "triples/artist";
     }
 
     /**
@@ -62,6 +64,7 @@ public class TriplesController {
     @Transactional(readOnly = true)
     public String indexTriples(Model model) {
         model.addAttribute("overviewOnly", false);
+        model.addAttribute("membersOnly", false);
 
         List<Artist> artistList = artistrepository.findAllWithUnits();
 

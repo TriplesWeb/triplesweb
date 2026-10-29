@@ -63,9 +63,10 @@ class SiteNavigationTest {
             .andExpect(content().string(containsString("id=\"groupImageDisplay\"")));
         mvc.perform(get("/cosmo/group-orders")).andExpect(redirectedUrl("/article/group-orders"));
         Artist member = new Artist(); member.setArtistId(1L); member.setName("서연"); member.setEngName("SeoYeon");
-        when(artists.findAll(any(Sort.class))).thenReturn(List.of(member));
+        when(artists.findAllWithUnits()).thenReturn(List.of(member));
         mvc.perform(get("/triples/members")).andExpect(status().isOk())
-            .andExpect(content().string(containsString("href=\"/triples/artist/1\"")));
+            .andExpect(content().string(containsString("data-target=\"#member-1\"")))
+            .andExpect(content().string(org.hamcrest.Matchers.not(containsString("id=\"triples-tab\""))));
         when(artists.existsByArtistId(1L)).thenReturn(true);
         mvc.perform(get("/triples/artist/1")).andExpect(redirectedUrl("/triples/artist?tab=member-1"));
         verifyNoInteractions(spotlight);

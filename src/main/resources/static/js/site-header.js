@@ -49,26 +49,18 @@
     const button = group.querySelector('[data-header-toggle]');
     if (button) setOpen(button, false);
   });
+  let currentMode = "";
   function resize() {
     // Read the rendered CSS mode: WebKit's matchMedia width can differ by a scrollbar.
-    searchInline = getComputedStyle(search).display === 'none';
+    const inline = getComputedStyle(search).display === 'none';
     const desktop = getComputedStyle(mobile).display === 'none';
+    const mode = `${inline}:${desktop}`;
+    if (mode === currentMode) return;
+    currentMode = mode; searchInline = inline;
     closeAll();
     if (desktop) setOpen(mobile, false);
     setOpen(search, wide());
   }
   window.addEventListener('resize', resize);
   resize();
-  let lastScroll = window.scrollY;
-  let scheduled = false;
-  window.addEventListener('scroll', () => {
-    if (scheduled) return;
-    scheduled = true;
-    requestAnimationFrame(() => {
-      const current = Math.max(0, window.scrollY);
-      const menuOpen = toggles.some(button => button.getAttribute('aria-expanded') === 'true' && !(button === search && wide()));
-      header.style.transform = menuOpen || header.contains(document.activeElement) || current <= lastScroll || current < 100 ? 'translateY(0)' : 'translateY(-100%)';
-      lastScroll = current; scheduled = false;
-    });
-  }, { passive: true });
 })();

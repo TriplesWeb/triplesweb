@@ -36,7 +36,7 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
     await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
     assert.equal(await page.locator('#mobile-menu').isVisible(),false);
     assert.equal(await page.locator('#mobile-menu-btn').evaluate(n=>n===document.activeElement),true);
-    await page.locator('#header-search-btn').click(); assert.equal(await page.locator('#header-search-panel input').isVisible(),true);
+    await page.locator('#header-search-btn').click(); await page.setViewportSize({width,height:760}); assert.equal(await page.locator('#header-search-panel input').isVisible(),true);
     await page.keyboard.press('Escape'); assert.equal(await page.locator('#header-search-panel').isVisible(),false);
     await page.locator('#mobile-menu-btn').click();
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/header-${engine}-${width}.png`,fullPage:false}).catch(error=>console.warn(`[preview] ${engine} ${width}px screenshot skipped: ${error.message}`));

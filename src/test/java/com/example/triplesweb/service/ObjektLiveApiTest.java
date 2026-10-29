@@ -45,6 +45,13 @@ class ObjektLiveApiTest {
         assertThat(rarity).isNotNull();
         assertThat(rarity.isArray()).isTrue();
         assertThat(rarity.size()).isPositive();
+        JsonNode serials=http.get().uri("/collections/{slug}/serials",target.path("slug").asText()).retrieve().body(JsonNode.class);
+        var supply=ObjektSerialSupplyService.analyze(serials,System.currentTimeMillis());
+        assertThat(supply.count()).isPositive();
+        long last=supply.ranges().get(supply.ranges().size()-1).last();
+        JsonNode lastHistory=http.get().uri("/collections/{slug}/serials/{serial}/transfers",target.path("slug").asText(),last).retrieve().body(JsonNode.class);
+        assertThat(lastHistory.path("tokenId").asText()).matches("[0-9]+");
+        System.out.println("Live issued serials: unique="+supply.count()+", maximum="+last+", actual last token=OK");
         var event = first.events().get(0);
         JsonNode metadata = RestClient.create("https://api.cosmo.fans").get()
                 .uri("/bff/v3/objekts/nft-metadata/{id}", event.tokenId()).retrieve().body(JsonNode.class);

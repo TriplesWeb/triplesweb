@@ -140,7 +140,7 @@ def main():
                         raise RuntimeError("잘못된 미리보기 응답")
                 if os.environ.get("PREVIEW_VERIFY_NAVIGATION")=="true":
                     for path,marker in (("/sitemap", "전체 메뉴"), ("/triples/overview", "groupImageDisplay"),
-                            ("/triples/members", "member-directory"), ("/activities/voting", "준비 중"),
+                            ("/triples/members", "artist-member-tabs"), ("/activities/voting", "준비 중"),
                             ("/cosmo/group-orders", "분철 게시판"), ("/media/drive", "준비 중"),
                             ("/community/suggestions", "준비 중")):
                         stage=path

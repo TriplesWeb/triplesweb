@@ -27,6 +27,7 @@ public class ObjektMarketDataService {
     private final RestClient cosmo;
     private final RestClient rpc;
     private final String contract;
+    private final ObjektSerialSupplyService serialSupply;
     private volatile Map<String, Long> mintCounts = Map.of();
     private final ConcurrentHashMap<String, NicknameCache> nicknames = new ConcurrentHashMap<>();
 
@@ -36,7 +37,7 @@ public class ObjektMarketDataService {
             @Value("${cosmo.api.base-url:https://api.cosmo.fans}") String cosmoUrl,
             @Value("${abstract.indexer.rpc-url:https://api.mainnet.abs.xyz}") String rpcUrl,
             @Value("${abstract.indexer.contract:0x99Bb83AE9bb0C0A6be865CaCF67760947f91Cb70}") String contract,
-            ObjektIndexClient historyIndex) {
+            ObjektIndexClient historyIndex, ObjektSerialSupplyService serialSupply) {
         var factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(3)).build());
         factory.setReadTimeout(Duration.ofSeconds(6));
@@ -45,15 +46,16 @@ public class ObjektMarketDataService {
         this.rpc = RestClient.builder().baseUrl(rpcUrl).requestFactory(factory).build();
         this.contract = contract;
         this.historyIndex = historyIndex;
+        this.serialSupply = serialSupply;
     }
 
     ObjektMarketDataService(String indexUrl, String cosmoUrl, String rpcUrl, String contract) {
-        this(indexUrl, cosmoUrl, rpcUrl, contract, new ObjektIndexClient(indexUrl));
+        this(indexUrl, cosmoUrl, rpcUrl, contract, new ObjektIndexClient(indexUrl), new ObjektSerialSupplyService(indexUrl));
     }
 
     // One bulk request, never one request per card or an on-demand whole-chain scan.
-    @Scheduled(fixedDelayString = "${objekt.mints.refresh-ms:60000}",
-            initialDelayString = "${objekt.mints.initial-delay-ms:1000}")
+
+    @Scheduled(fixedDelayString = "${objekt.mints.refresh-ms:60000}", initialDelayString = "${objekt.mints.initial-delay-ms:1000}")
     public void refreshMintCounts() {
         try {
             JsonNode rows = index.get().uri("/collections/rarity").retrieve().body(JsonNode.class);
@@ -82,6 +84,11 @@ public class ObjektMarketDataService {
             }
             return copy;
         }).toList();
+    }
+
+    public List<Map<String,Object>> withIssuedSupply(List<Map<String,Object>> items) { return serialSupply.decorate(items); }
+    public Map<String,Object> issuedSupply(Map<String,Object> item,int offset,int limit) {
+        return serialSupply.view(String.valueOf(item.getOrDefault("slug","")),offset,limit);
     }
 
     public Map<String, Object> owner(Map<String, Object> collection, long serial) {

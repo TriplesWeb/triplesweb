@@ -35,6 +35,8 @@ const base = path.resolve(__dirname, '../..');
         const transfers=Array.from({length:next?1:20},(_,i)=>({timestamp:`2026-10-${next?'01':'26'}T10:00:00Z`,nickname:i===0?'Current':'Previous'}));
         return json({status:'available',serial:1,page:next?1:0,total:21,hasNext:!next,owner:{status:'indexed',nickname:'Current',timestamp:'2026-10-26T10:00:00Z',basis:'latest_transfer'},transfers});
       }
+      if(p.endsWith('/issued'))return json({status:'available',count:4,ranges:[{first:1,last:2},{first:4,last:5}],hasMore:false,nextOffset:2,observedAt:'2026-10-29T00:00:00Z'});
+      if(p==='/cosmo/objekt/supplies')return json({uuid:{status:'available',count:4,observedAt:'2026-10-29T00:00:00Z'}});
       if(p.startsWith('/cosmo/objekt/detail/') && (req.headers().accept||'').includes('application/json')) return json(data());
       if(p==='/cosmo/objekt' || p==='/cosmo/objekt/detail/hayeoncc367z') {
         const file=p==='/cosmo/objekt'?'objekt-modal-preview.html':'objekt-detail-preview.html';
@@ -59,7 +61,9 @@ const base = path.resolve(__dirname, '../..');
     await page.waitForFunction(()=>document.querySelector('#objektFavoriteStatus').textContent.includes('저장하지 못했습니다'));
     assert.equal(await page.locator('#objektDetailFavorite').getAttribute('data-favorite'),'false');
     assert.equal(await page.locator('#objektDetailFavorite').isEnabled(),true);
-    assert.equal(await page.locator('#objektDetailFullLink').textContent(),'상세 페이지 보기');
+    assert.equal(await page.locator('#objektDetailFullLink').count(),0);
+    await page.waitForFunction(()=>document.querySelector('#objektIssuedCount').textContent==='4개');
+    assert.equal(await page.locator('#objektIssuedRanges').textContent(),'#00001–#00002#00004–#00005');
     assert.match(await page.locator('#objektDetailMemberLink').getAttribute('href'),/\/cosmo\/objekt\?group=members&member=HaYeon/);
     assert.match(await page.locator('#objektDetailTradeLink').getAttribute('href'),/selectedObjektIds=uuid/);
     assert.match(await page.locator('#objektDetailSellLink').getAttribute('href'),/\/article\/sell\/new\?selectedObjektIds=uuid/);
@@ -81,17 +85,7 @@ const base = path.resolve(__dirname, '../..');
     await page.locator('.objekt-open-detail').first().click();
     await page.waitForFunction(()=>document.querySelector('#objektDetailTitle').textContent==='Cream02 HaYeon 367Z');
     assert.equal(await page.locator('#objektDescriptionEditor').isVisible(),false);
-    await page.goto('https://preview.test/cosmo/objekt/detail/hayeoncc367z');
-    const favoriteForm=page.locator('[data-objekt-favorite]');
-    await favoriteForm.locator('button').click();
-    await page.waitForFunction(()=>document.querySelector('[data-objekt-favorite] button').getAttribute('aria-pressed')==='true');
-    await favoriteForm.locator('button').click();
-    await page.waitForFunction(()=>document.querySelector('[data-objekt-favorite] button').getAttribute('aria-pressed')==='false');
-    // Header icons use SVG now; explicitly exercise the local font without relying on an unrelated glyph.
-    await page.evaluate(()=>document.fonts.load('16px "Material Symbols Outlined"'));
-    await page.evaluate(()=>document.fonts.ready);
-    assert.equal(await page.evaluate(()=>document.fonts.check('16px "Material Symbols Outlined"')),true);
-    assert.equal(await page.locator('[data-admin-only]').count(),0);
+    // 소유자 조회·전송 내역은 별도 페이지가 아니라 같은 모달 안에 존재한다.
     assert.equal(await page.locator('[data-serial-lookup]').count(),1);
     await page.locator('[data-serial-lookup] button').click();
     await page.locator('.serial-owner-name').filter({hasText:'Current'}).waitFor();
@@ -102,6 +96,12 @@ const base = path.resolve(__dirname, '../..');
     await page.locator('[data-serial-more]').click();
     await page.waitForFunction(()=>document.querySelectorAll('[data-serial-rows] li').length===21);
     await page.screenshot({path:'/tmp/objekt-ui/serial-mobile.png',fullPage:true});
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#objektDetailModal').isVisible(),false);
+    assert.equal(new URL(page.url()).searchParams.has('objekt'),false);
+    await page.goto('https://preview.test/cosmo/objekt?objekt=hayeoncc367z');
+    await page.locator('#objektDetailTitle').filter({hasText:'Cream02 HaYeon 367Z'}).waitFor();
+    assert.equal(await page.locator('#objektDetailModal').isVisible(),true);
     console.log('PASS: 모달 설명 저장·삭제·CSRF, 비관리자 숨김, 선택 유지 링크, 통합 시리얼 조회와 실패 후 이어받기');
   } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1)});

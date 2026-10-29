@@ -42,6 +42,20 @@ class ArtistPerformanceTest {
   verifyNoInteractions(spotlight);
   Files.createDirectories(Path.of("build/perf-pages"));Files.writeString(Path.of("build/perf-pages/artist.html"),result.getResponse().getContentAsString());
  }
+ @Test void separatedMemberPageKeepsMainTabsAndOverviewKeepsOnlyGroup() throws Exception {
+  givenArtists();
+  var members=mvc.perform(get("/triples/members")).andExpect(status().isOk())
+   .andExpect(content().string(containsString("artist-member-tabs")))
+   .andExpect(content().string(not(containsString("id=\"triples-tab\""))))
+   .andExpect(content().string(not(containsString("member-directory-card")))).andReturn();
+  var overview=mvc.perform(get("/triples/overview")).andExpect(status().isOk())
+   .andExpect(content().string(containsString("id=\"groupImageDisplay\"")))
+   .andExpect(content().string(not(containsString("data-member-tab")))).andReturn();
+  Files.createDirectories(Path.of("build/perf-pages"));
+  Files.writeString(Path.of("build/perf-pages/members.html"),members.getResponse().getContentAsString());
+  Files.writeString(Path.of("build/perf-pages/overview.html"),overview.getResponse().getContentAsString());
+  verifyNoInteractions(spotlight);
+ }
  @Test void requestedFeedOnlyLoadsOneArtistAndUnknownIdIs404() throws Exception{
   var list=givenArtists();mvc.perform(get("/triples/artist/1/feeds")).andExpect(status().isOk()).andExpect(content().string(containsString("member-activities")));
   verify(spotlight).attach(List.of(list.get(0)));verify(artists,never()).findAllWithUnits();
