@@ -45,6 +45,36 @@ if ips:
             result["build"]=json.load(response)
     except Exception as error:
         result["localHttpError"]=type(error).__name__
+# 인증값·계정 데이터 없이 실제 PR의 그래비티 조회 결과만 분류한다.
+if ips and result.get("running"):
+    result["gravityCredentialsStored"]=command(["docker","exec",f"triples-pr{pr}-preview","sh","-c","test -s /app/data/cosmo/credentials.json"]).returncode==0
+    try:
+        with opener.open("http://"+ips[0]+f":{port}/api/gravity",timeout=25) as response:
+            payload=json.load(response)
+            result["gravityApi"]={"status":response.status,"items":len(payload) if isinstance(payload,list) else None}
+    except urllib.error.HTTPError as error:
+        diagnostic={"status":error.code,"reason":"unclassified"}
+        try:
+            message=str(json.load(error).get("message",""))
+            for fragment,reason in (
+                ("아직 연결되지", "not_configured"),
+                ("관리자가 이메일로 다시 연결", "refresh_expired"),
+                ("인증 파일을 읽을 수", "credentials_unreadable"),
+                ("인증 실패 (HTTP", "authentication_rejected"),
+                ("외부 API 응답 오류 (HTTP", "upstream_rejected"),
+                ("응답 형식", "schema_mismatch"),
+                ("올바른 응답", "invalid_response"),
+                ("인증에 연결하지 못", "authentication_connection_failed"),
+                ("인증 응답이 올바르지", "invalid_credentials_response")):
+                if fragment in message:
+                    diagnostic["reason"]=reason
+                    break
+            match=re.search(r"HTTP (\d{3})",message)
+            if match:diagnostic["upstreamStatus"]=int(match.group(1))
+        except (ValueError,AttributeError,TypeError):pass
+        result["gravityApi"]=diagnostic
+    except Exception as error:
+        result["gravityApi"]={"error":type(error).__name__}
 mobile_log=command(["docker","logs","--tail","500",f"triples-pr{pr}-mobile-tunnel"])
 urls=re.findall(r"https://[a-z0-9-]+\.trycloudflare\.com",mobile_log.stdout+mobile_log.stderr)
 if urls:
