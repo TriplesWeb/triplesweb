@@ -26,7 +26,6 @@
 .header-dropdown a:hover,.header-submenu summary:hover{background:#8decd909}
 .header-submenu summary{list-style:none;cursor:pointer;color:#b9cac4}
 .header-submenu summary::-webkit-details-marker{display:none}
-.header-submenu>div{margin:2px 8px 8px 14px;padding-left:8px;border-left:1px solid #3a4a46}
 .header-actions{display:flex;align-items:center;gap:10px;margin-left:auto;min-width:0}
 .header-icon-button{width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:12px!important}
 .header-icon-button:hover{background:#ffffff08!important}
@@ -63,6 +62,8 @@
 @container site-header (max-width:1023px){.header-shell{padding:0 max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left))}.header-main{gap:12px;min-height:64px}.header-utilities,#navbar,.header-account{display:none}.header-actions{gap:2px}#mobile-menu-btn{display:flex}.header-brand img:last-child{width:100px}.header-search-panel{right:-46px}.header-search input{font-size:16px}.header-search button{min-height:44px}}
 @media(prefers-reduced-motion:reduce){.sss-mascot-wave{animation:none}.site-header,.header-chevron{transition:none}}
 
-.header-utilities{order:3;flex-shrink:0;gap:12px}.header-utilities .header-nav-toggle{font-size:11px!important}.header-nav-link{font-size:12px;white-space:nowrap}.header-related-links{margin:0 10px 8px;padding-left:10px;border-left:1px solid #3a4a4680}.header-related-links a{font-size:12px;color:#93a5a1;padding:8px 12px}.mobile-direct-link{padding:14px 12px;min-height:48px;font-size:14px}.header-account-name{max-width:80px}
+.header-utilities{order:3;flex-shrink:0;gap:12px}.header-utilities .header-nav-toggle{font-size:11px!important}.header-nav-link{font-size:12px;white-space:nowrap}.header-related-links{display:grid;gap:4px;margin:0 10px 8px;padding-left:10px;border-left:1px solid #3a4a4680}.header-related-links a{display:flex;align-items:center;min-height:36px;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.5;color:#93a5a1}.header-related-links a:hover{background:#8decd909;color:#8decd9}.mobile-direct-link{padding:14px 12px;min-height:48px;font-size:14px}.header-account-name{max-width:80px}
 @container site-header (max-width:1279px){.header-search-panel{width:300px}.header-brand img:last-child{height:28px}.header-utilities{gap:10px}}
 @container site-header (max-width:1023px){.header-brand img:last-child{height:28px;width:auto}}
+
+@container site-header (max-width:1023px){.header-related-links a{min-height:44px}}

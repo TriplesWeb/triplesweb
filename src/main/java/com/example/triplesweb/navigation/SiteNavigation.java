@@ -26,7 +26,7 @@ public final class SiteNavigation {
         new Section("about", "About 트리플에스", List.of(
             link("개요", "/triples/overview"), link("멤버", "/triples/members"),
             link("앨범", "/triples/album"), link("유닛", "/triples/unit"),
-            link("케미스토리", "/triples/chemistry")
+            link("케미씃트리", "/triples/chemistry")
         ), List.of()),
         new Section("cosmo", "코스모", List.of(
             new Item("objekt", "오브젝트", "/cosmo/objekt", List.of(
