@@ -1,27 +1,11 @@
 <!DOCTYPE html>
 <html class="dark" lang="ko">
 <head>
-    {{>layout/favicon}}
-    <meta charset="UTF-8">
+{{>layout/site-head}}
+<meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>tripleS 커뮤</title>
 
-    <!-- Google Material Symbols & Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
-
-    <!-- FullCalendar -->
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/ko.global.min.js"></script>
-
-    <!-- Tailwind CSS Engine & Custom Theme Config -->
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script src="/js/tailwind.config.js"></script>
-
-    <!-- Custom Style Overrides -->
-    <link rel="stylesheet" href="/css/style.css">
     <style>
         /* FullCalendar Dark Customization */
         .fc { --fc-border-color: rgba(45, 49, 62, 0.6); --fc-page-bg-color: transparent; }
@@ -62,9 +46,34 @@
                 </div>
                 <span class="text-xs text-on-surface-variant font-mono">LOVE &amp; POP Pt.2 : Andless</span>
             </div>
-            <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-outline-variant/30">
-                <iframe class="w-full h-full" src="https://www.youtube.com/embed/uqJ6GDJSyfY?si=L_IVf7HVVG5Ol3mo" title="tripleS LOVE &amp; POP Pt.2 : Andless" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+            <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-outline-variant/30" id="home-yt-facade"
+                 data-youtube-id="uqJ6GDJSyfY" data-youtube-title="tripleS LOVE &amp; POP Pt.2 : Andless">
+                <button type="button" class="absolute inset-0 w-full h-full group cursor-pointer border-0 p-0 bg-transparent" aria-label="영상 재생">
+                    <img src="https://i.ytimg.com/vi/uqJ6GDJSyfY/hqdefault.jpg" alt="" width="1280" height="720"
+                         class="absolute inset-0 w-full h-full object-cover" loading="lazy" decoding="async">
+                    <span class="absolute inset-0 bg-black/35 group-hover:bg-black/20 transition-colors"></span>
+                    <span class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-red-600/95 text-white flex items-center justify-center shadow-lg">
+                        <span class="material-symbols-outlined text-3xl leading-none" style="margin-left:2px">play_arrow</span>
+                    </span>
+                </button>
             </div>
+            <script>
+            (function () {
+                var box = document.getElementById('home-yt-facade');
+                if (!box) return;
+                box.addEventListener('click', function () {
+                    var id = box.getAttribute('data-youtube-id');
+                    var title = box.getAttribute('data-youtube-title') || '';
+                    var iframe = document.createElement('iframe');
+                    iframe.className = 'w-full h-full';
+                    iframe.title = title;
+                    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+                    iframe.allowFullscreen = true;
+                    iframe.src = 'https://www.youtube.com/embed/' + id + '?autoplay=1&rel=0';
+                    box.replaceChildren(iframe);
+                }, { once: true });
+            })();
+            </script>
         </div>
 
         <!-- 메인 이미지 캐러셀 배너 -->
@@ -171,28 +180,53 @@
 <!-- 푸터 레이아웃 포함 -->
 {{>layout/footer}}
 
-<!-- JS 스크립트 -->
+<!-- FullCalendar: 미니 캘린더가 보일 때만 로드 -->
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const calendarEl = document.getElementById("miniCalendar");
-        const schedules = {{{schedulesJson}}} || [];
+(function () {
+    const calendarEl = document.getElementById("miniCalendar");
+    if (!calendarEl) return;
+    const schedules = {{{schedulesJson}}} || [];
+    let started = false;
 
+    function loadScript(src) {
+        return new Promise((resolve, reject) => {
+            const s = document.createElement("script");
+            s.src = src;
+            s.async = true;
+            s.onload = resolve;
+            s.onerror = reject;
+            document.head.appendChild(s);
+        });
+    }
+
+    async function initMiniCalendar() {
+        if (started) return;
+        started = true;
+        await loadScript("https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js");
+        await loadScript("https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/ko.global.min.js");
         const miniCalendar = new FullCalendar.Calendar(calendarEl, {
             initialView: "dayGridMonth",
             locale: "ko",
             height: 280,
-            headerToolbar: {
-                left: "",
-                center: "title",
-                right: "prev,next"
-            },
+            headerToolbar: { left: "", center: "title", right: "prev,next" },
             events: schedules,
-            eventClick: function(info) {
-                window.location.href = '/schedule';
-            }
+            eventClick: function () { window.location.href = "/schedule"; }
         });
         miniCalendar.render();
-    });
+    }
+
+    if ("IntersectionObserver" in window) {
+        const io = new IntersectionObserver((entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+                io.disconnect();
+                initMiniCalendar();
+            }
+        }, { rootMargin: "120px" });
+        io.observe(calendarEl);
+    } else {
+        window.addEventListener("load", initMiniCalendar);
+    }
+})();
 </script>
 </body>
 </html>

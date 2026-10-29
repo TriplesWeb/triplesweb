@@ -36,10 +36,9 @@
                 <!-- 2. 수정 버튼을 누르면 나타나는 인라인 수정 폼 영역 (초기 숨김) -->
                 <div class="comment-edit-form-area hidden mt-2" id="comment-edit-area-{{id}}">
                     <div class="mb-3">
-                        <textarea class="form-control w-full edit-comment-textarea"
+                        <textarea class="form-control site-field w-full edit-comment-textarea"
                                   rows="3"
-                                  data-original-body="{{body}}"
-                                  style="width: 100% !important; background-color: rgba(13, 14, 18, 0.8) !important; border: 1px solid rgba(58, 74, 70, 0.4) !important; color: #e3e2e8 !important; border-radius: 0.5rem !important; padding: 0.75rem !important;">{{body}}</textarea>
+                                  data-original-body="{{body}}">{{body}}</textarea>
                     </div>
                     <div class="text-end pt-1 flex justify-end gap-2">
                         <button type="button" class="btn btn-custom-secondary comment-cancel-edit-btn text-xs" data-comment-id="{{id}}">취소</button>
@@ -65,54 +64,6 @@
         </div>
     {{/commentDtos}}
 </div>
-
-<!-- 커스텀 버튼 및 스타일 -->
-<style>
-    .btn-custom-primary {
-        background-color: #00f5d4 !important;
-        border: none !important;
-        color: #07080b !important;
-        font-weight: 600 !important;
-        border-radius: 9999px !important;
-        padding: 0.4rem 1.2rem !important;
-        transition: all 0.2s;
-    }
-    .btn-custom-primary:hover {
-        background-color: #00dabf !important;
-    }
-
-    .btn-custom-secondary {
-        background-color: rgba(41, 42, 46, 0.8) !important;
-        border: 1px solid rgba(58, 74, 70, 0.4) !important;
-        color: #e3e2e8 !important;
-        border-radius: 9999px !important;
-        padding: 0.4rem 1.2rem !important;
-        transition: all 0.2s;
-    }
-    .btn-custom-secondary:hover {
-        background-color: rgba(58, 74, 70, 0.8) !important;
-        color: #ffffff !important;
-    }
-
-    .btn-custom-danger {
-        background-color: rgba(255, 180, 171, 0.2) !important;
-        border: 1px solid rgba(255, 180, 171, 0.4) !important;
-        color: #ffb4ab !important;
-        border-radius: 9999px !important;
-        padding: 0.4rem 1.2rem !important;
-        transition: all 0.2s;
-    }
-    .btn-custom-danger:hover {
-        background-color: rgba(255, 180, 171, 0.35) !important;
-        color: #ffffff !important;
-    }
-
-    .edit-comment-textarea:focus {
-        border-color: #00f5d4 !important;
-        box-shadow: 0 0 0 3px rgba(0, 245, 212, 0.2) !important;
-        outline: none !important;
-    }
-</style>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {

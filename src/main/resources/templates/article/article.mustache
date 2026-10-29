@@ -1,22 +1,12 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    {{>layout/favicon}}
-    <meta charset="UTF-8" />
+{{>layout/site-head}}
+<meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
 
-    <!-- 폰트 및 아이콘 연결 -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-
-    <!-- Tailwind CSS 스크립트 -->
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script src="/js/tailwind.config.js"></script>
-    <link rel="stylesheet" href="/css/style.css">
-</head>
+    </head>
 <body class="bg-surface text-on-surface min-h-screen flex flex-col">
 {{>layout/header}}
 
@@ -29,13 +19,21 @@
         <div class="article-board-shell relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
 
             <!-- 상단 헤더 타이틀 -->
-            <div class="flex items-center justify-between mb-8 pb-4 border-b border-outline-variant/30">
+            <div class="flex flex-col gap-4 mb-8 pb-4 border-b border-outline-variant/30">
                 <div class="flex items-center gap-3">
                     <span class="material-symbols-outlined text-primary-container text-3xl" data-icon="forum">forum</span>
                     <h1 class="font-headline-lg text-headline-md font-bold text-on-surface tracking-tight">
                         {{categoryName}} 게시판
                     </h1>
                 </div>
+                {{#isTradeBoard}}
+                <div class="flex items-center gap-2" role="tablist" aria-label="교환/거래 구분">
+                    <a href="/article/trade" role="tab" aria-selected="{{#isTradeTab}}true{{/isTradeTab}}{{^isTradeTab}}false{{/isTradeTab}}"
+                       class="px-4 py-1.5 rounded-full text-sm font-semibold transition-colors text-decoration-none {{#isTradeTab}}bg-primary-container text-on-primary{{/isTradeTab}}{{^isTradeTab}}bg-surface-container-high/70 text-on-surface-variant hover:text-primary-container{{/isTradeTab}}">교환</a>
+                    <a href="/article/sell" role="tab" aria-selected="{{#isSellTab}}true{{/isSellTab}}{{^isSellTab}}false{{/isSellTab}}"
+                       class="px-4 py-1.5 rounded-full text-sm font-semibold transition-colors text-decoration-none {{#isSellTab}}bg-primary-container text-on-primary{{/isSellTab}}{{^isSellTab}}bg-surface-container-high/70 text-on-surface-variant hover:text-primary-container{{/isSellTab}}">거래</a>
+                </div>
+                {{/isTradeBoard}}
             </div>
 
             <!-- 게시판 테이블 영역 -->
@@ -81,15 +79,15 @@
 
                 <!-- 왼쪽: 게시글 검색 폼 -->
                 <form action="/article/{{category}}" method="get" class="flex items-center gap-2 w-full sm:w-auto">
-                    <select name="type" class="py-2.5 px-3 border border-outline-variant/60 rounded-xl text-sm focus:outline-none focus:border-primary-container" style="color:#111;background:#fff;">
+                    <select name="type" class="site-field" style="width:auto;min-width:6.5rem;">
                         <option value="title" {{#isSearchTitle}}selected{{/isSearchTitle}}>제목</option>
                         <option value="content" {{#isSearchContent}}selected{{/isSearchContent}}>내용</option>
                         <option value="writer" {{#isSearchWriter}}selected{{/isSearchWriter}}>작성자</option>
                     </select>
-                    <div class="relative flex-1 sm:w-60">
-                        <input type="text" name="keyword" value="{{searchKeyword}}" placeholder="검색어를 입력하세요" class="w-full py-2.5 pl-3 pr-10 bg-white border border-outline-variant/60 rounded-xl text-sm text-black placeholder:text-neutral-500 focus:outline-none focus:border-primary-container" style="color:#111;background:#fff;" />
-                        <button type="submit" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-outline">
-                            <span class="material-symbols-outlined text-[18px]" data-icon="search">search</span>
+                    <div class="site-search flex-1 sm:w-60">
+                        <input type="search" name="keyword" value="{{searchKeyword}}" placeholder="검색어를 입력하세요" class="site-field site-search__input" />
+                        <button type="submit" class="site-search__submit" aria-label="검색">
+                            <span class="material-symbols-outlined" data-icon="search">search</span>
                         </button>
                     </div>
                 </form>
@@ -98,7 +96,7 @@
                 <div class="flex items-center justify-end w-full sm:w-auto">
                     {{#isNotice}}
                         {{#isAdmin}}
-                            <a href="/article/{{category}}/new" class="py-2.5 px-5 rounded-full bg-primary-container text-on-primary font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
+                            <a href="/article/{{category}}/new" class="site-btn site-btn--primary btn-glow">
                                 <span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
                                 <span>공지 작성</span>
                             </a>
@@ -106,9 +104,9 @@
                     {{/isNotice}}
                     {{^isNotice}}
                         {{#isAdmin}}
-                            <a href="/article/{{category}}/new" class="py-2.5 px-5 rounded-full bg-primary-container text-on-primary font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
+                            <a href="/article/{{category}}/new" class="site-btn site-btn--primary btn-glow">
                                 <span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
-                                <span>글 쓰기</span>
+                                <span>{{#isTradeTab}}교환 글쓰기{{/isTradeTab}}{{#isSellTab}}거래 글쓰기{{/isSellTab}}{{^isTradeBoard}}글 쓰기{{/isTradeBoard}}</span>
                             </a>
                         {{/isAdmin}}
                     {{/isNotice}}

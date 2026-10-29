@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-{{>layout/favicon}}
-{{>layout/gravity-fonts}}
+{{>layout/site-head}}
 <link rel="stylesheet" href="/css/gravity-page.css?v=2">
-<link rel="stylesheet" href="/css/archive-page.css?v=3">
+<link rel="stylesheet" href="/css/archive-page.css?v=14">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=20">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=10">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=12">
+<link rel="stylesheet" href="/css/season-filters.css?v=2">
+<script src="/js/season-filters.js?v=2" defer></script>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}내 오브젝트 검색{{/nickname}}</title>
 </head>
@@ -18,11 +19,12 @@
         <h1>내 오브젝트 검색</h1>
         <p>닉네임을 검색하면 보유 오브젝트와 시리얼 번호를 확인할 수 있습니다.</p>
         <form class="ar-filters" method="get" action="/cosmo/collection" style="margin-top:1rem">
-            <label class="ar-search-wrap">
-                <span class="material-symbols-outlined">search</span>
-                <input class="ar-search" type="search" name="nickname" value="{{query}}" placeholder="닉네임 입력" aria-label="COSMO 닉네임">
-            </label>
-            <button class="ar-submit" type="submit">검색</button>
+            <div class="ar-search-wrap site-search">
+                <input class="ar-search site-search__input" type="search" name="nickname" value="{{query}}" placeholder="닉네임 입력" aria-label="COSMO 닉네임">
+                <button type="submit" class="site-search__submit" aria-label="검색">
+                    <span class="material-symbols-outlined">search</span>
+                </button>
+            </div>
         </form>
     </section>
     {{#collectionError}}<p class="gv-notice" role="status">{{collectionError}}</p>{{/collectionError}}
@@ -147,16 +149,14 @@
                 </div>
             </div>
             <div class="objekt-search-row">
-                <div class="objekt-search">
-                    <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                <div class="objekt-search site-search">
                     <label class="w-full min-w-0">
-                        <input type="search" name="q" value="{{searchQuery}}" placeholder="전체 오브젝트에서 검색..." aria-label="보유 오브젝트 검색" autocomplete="off" class="objekt-search-input">
+                        <input type="search" name="q" value="{{searchQuery}}" placeholder="전체 오브젝트에서 검색..." aria-label="보유 오브젝트 검색" autocomplete="off" class="objekt-search-input site-search__input">
                     </label>
+                    <button type="submit" class="objekt-search-button site-search__submit" aria-label="검색">
+                        <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                    </button>
                 </div>
-                <button type="submit" class="objekt-search-button">
-                    <span class="material-symbols-outlined" aria-hidden="true">search</span>
-                    검색
-                </button>
                 <a class="objekt-reset-button" href="/cosmo/collection?nickname={{nicknameEncoded}}">
                     <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
                     초기화

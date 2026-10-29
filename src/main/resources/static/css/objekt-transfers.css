@@ -46,8 +46,8 @@
 .tr-tabs { display: inline-flex; flex-wrap: wrap; gap: .3rem; padding: .25rem; border: 1px solid var(--tr-border); border-radius: .85rem; background: #10141a; }
 .tr-tabs button { min-height: 2.2rem; padding: .4rem .9rem; border: 0; border-radius: .65rem; background: transparent; color: #a9b8b3; font: inherit; font-size: .82rem; font-weight: 650; cursor: pointer; }
 .tr-tabs button.is-active { background: #8decd9; color: #071310; }
-.tr-search { display: flex; align-items: center; gap: .5rem; min-height: 2.7rem; padding: .5rem .95rem; border: 1px solid #3a4258b8; border-radius: 999px; background: #080a10b8; color: var(--tr-soft); }
-.tr-search input { width: 14rem; min-width: 0; outline: 0; border: 0; background: transparent; font: inherit; font-size: .82rem; color: #f1f5f9; }
+.tr-search { flex: 0 1 16rem; }
+.tr-search input { width: 14rem; min-width: 0; font: inherit; }
 .tr-facets { display: flex; flex-wrap: wrap; gap: .6rem; padding: 1rem 0; }
 .tr-facets label { display: inline-flex; align-items: center; gap: .65rem; min-height: 2.5rem; padding: .3rem .7rem .3rem .9rem; border: 1px solid #3a4258b8; border-radius: 999px; background: #12141ce6; color: #9aa3b5; font-size: .75rem; font-weight: 700; }
 .tr-facets select { max-width: 11rem; min-width: 5rem; border: 0; border-radius: 999px; padding: .3rem .5rem; background: #ffffff0b; font: inherit; color: #e8ebf2; cursor: pointer; }

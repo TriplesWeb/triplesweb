@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko"><head>{{>layout/favicon}}{{>layout/gravity-fonts}}<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{objekt.collectionId}} · 오브젝트 상세</title><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="/css/objekt-serial.css?v=1"></head>
+<html lang="ko"><head>{{>layout/site-head}}<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{objekt.collectionId}} · 오브젝트 상세</title><link rel="stylesheet" href="/css/objekt-serial.css?v=1"></head>
 <body class="min-h-screen bg-[#0d0e12] text-white">{{>layout/header}}<main class="mx-auto max-w-5xl px-4 py-8">
 <a href="/cosmo/objekt" class="text-sm text-teal-300">← 오브젝트 목록</a><div class="mt-5 grid gap-8 md:grid-cols-2">
 <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04]"><img id="objekt-image" src="{{objekt.frontImage}}" data-front="{{objekt.frontImage}}" data-back="{{objekt.backImage}}" alt="{{objekt.collectionId}}" class="aspect-[2/3] w-full object-contain" onerror="this.onerror=null;this.src='{{objekt.thumbnailImage}}'"><button type="button" id="flip-image" class="w-full border-t border-white/10 px-4 py-3 text-sm text-teal-200">앞면 / 뒷면 전환</button></div>
