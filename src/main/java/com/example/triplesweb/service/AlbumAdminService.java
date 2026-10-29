@@ -36,6 +36,7 @@ public class AlbumAdminService {
     private final UnitRepository unitRepository;
     private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
+    private final AlbumService albumService;
 
     @Transactional(readOnly = true)
     public AlbumAdminDto get(long albumId) {
@@ -78,7 +79,9 @@ public class AlbumAdminService {
                 .max()
                 .orElse(-1) + 1;
         AlbumSection section = new AlbumSection(null, trimmed, nextOrder);
-        return toSectionDto(albumSectionRepository.save(section));
+        AlbumSectionDto dto = toSectionDto(albumSectionRepository.save(section));
+        albumService.invalidateListCache();
+        return dto;
     }
 
     @Transactional
@@ -97,7 +100,9 @@ public class AlbumAdminService {
         if (sortOrder != null) {
             section.setSortOrder(sortOrder);
         }
-        return toSectionDto(albumSectionRepository.save(section));
+        AlbumSectionDto dto = toSectionDto(albumSectionRepository.save(section));
+        albumService.invalidateListCache();
+        return dto;
     }
 
     @Transactional
@@ -110,6 +115,7 @@ public class AlbumAdminService {
             }
         }
         albumSectionRepository.delete(section);
+        albumService.invalidateListCache();
     }
 
     @Transactional
@@ -142,9 +148,11 @@ public class AlbumAdminService {
         }
         albumSectionRepository.save(a);
         albumSectionRepository.save(b);
-        return albumSectionRepository.findAllByOrderBySortOrderAscSectionIdAsc().stream()
+        List<AlbumSectionDto> result = albumSectionRepository.findAllByOrderBySortOrderAscSectionIdAsc().stream()
                 .map(this::toSectionDto)
                 .collect(Collectors.toList());
+        albumService.invalidateListCache();
+        return result;
     }
 
     @Transactional
@@ -163,7 +171,9 @@ public class AlbumAdminService {
         Album album = new Album();
         applyFields(album, null, albumName, releaseDate, albumInfo, albumType, albumFormat, unitId, sectionId,
                 tracksJson, image, imageUrl, false);
-        return toDto(albumRepository.save(album));
+        AlbumAdminDto dto = toDto(albumRepository.save(album));
+        albumService.invalidateListCache();
+        return dto;
     }
 
     @Transactional
@@ -185,7 +195,9 @@ public class AlbumAdminService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 앨범이 존재하지 않습니다. id=" + albumId));
         applyFields(album, albumId, albumName, releaseDate, albumInfo, albumType, albumFormat, unitId, sectionId,
                 tracksJson, image, imageUrl, clearImage);
-        return toDto(albumRepository.save(album));
+        AlbumAdminDto dto = toDto(albumRepository.save(album));
+        albumService.invalidateListCache();
+        return dto;
     }
 
     @Transactional
@@ -194,6 +206,7 @@ public class AlbumAdminService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 앨범이 존재하지 않습니다. id=" + albumId));
         deleteManagedImage(album.getAlbumImage());
         albumRepository.delete(album);
+        albumService.invalidateListCache();
     }
 
     private void applyFields(

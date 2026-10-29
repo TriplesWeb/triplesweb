@@ -305,9 +305,14 @@ public class ArticleController {
             articleViewList.add(dto);
         }
 
+        boolean isTradeBoard = "trade".equals(category) || "sell".equals(category);
+
         model.addAttribute("category", category);
-        model.addAttribute("categoryName", getCategoryName(category));
+        model.addAttribute("categoryName", isTradeBoard ? "교환/거래" : getCategoryName(category));
         model.addAttribute("isNotice", "notice".equals(category));
+        model.addAttribute("isTradeBoard", isTradeBoard);
+        model.addAttribute("isTradeTab", "trade".equals(category));
+        model.addAttribute("isSellTab", "sell".equals(category));
         model.addAttribute("articleList", articleViewList);
         model.addAttribute("popularList",
                 articleService.findPopularArticles(category, 5));
@@ -350,7 +355,7 @@ public class ArticleController {
         model.addAttribute("isOwner", true); // 로그인 제거: 누구나 수정/삭제 가능
         model.addAttribute("isLoggedIn", true);
         model.addAttribute("userId", "익명");
-        model.addAttribute("likeCount", articleService.getLikesCount(id));
+        model.addAttribute("likeCount", article.getLikesCount());
         model.addAttribute("liked", false);
 
         List<ArticleFileDto> fileDtos = toFileDtos(article);

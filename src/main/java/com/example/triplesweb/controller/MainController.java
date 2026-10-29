@@ -14,8 +14,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Controller
@@ -23,10 +24,17 @@ import java.util.stream.Collectors;
 public class MainController {
 
     private static final int HOME_LIMIT = 5;
+    private static final long HOME_CACHE_TTL_MS = 30_000L;
 
     private final ArticleServiceImpl articleService;
     private final ScheduleRepository scheduleRepository;
     private final ArchiveService archiveService;
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+    private volatile HomeSnapshot homeSnapshot;
+    private volatile long homeSnapshotExpiresAt;
 
     /** 이전 URL 호환: {@code /main} → {@code /} */
     @GetMapping("/main")
@@ -36,35 +44,56 @@ public class MainController {
 
     @GetMapping("/")
     public String mainPage(Model model) {
-
-        List<Schedule> scheduleList = scheduleRepository.findAll();
-
-        List<ScheduleForm> scheduleForms = scheduleList.stream()
-                .map(s -> new ScheduleForm(String.valueOf(s.getId()),
-                        s.getTitle(),
-                        s.getStart(),
-                        s.getEnd() != null ? s.getEnd().plusDays(1) : null,
-                        s.getEnd()))
-                .collect(Collectors.toList());
-
-        scheduleForms.forEach(f -> { Schedule source = scheduleList.stream().filter(s -> String.valueOf(s.getId()).equals(f.getId())).findFirst().orElse(null); if (source != null) f.setArtistNames(source.getArtistNames() == null ? "" : source.getArtistNames()); });
-
-        ObjectMapper mapper = new ObjectMapper()
-                .registerModule(new JavaTimeModule())
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
-        String schedulesJson = "";
-        try {
-            schedulesJson = mapper.writeValueAsString(scheduleForms);
-        } catch (Exception ignored) {}
-
-        model.addAttribute("noticePosts", articleService.findRecentByCategory("notice", HOME_LIMIT));
-        model.addAttribute("recentPhotos", archiveService.pageByType(MediaType.IMAGE, 0, HOME_LIMIT, null)
-                .getContent().stream()
-                .filter(photo -> photo.getFile() != null && photo.getFile().getUrl() != null)
-                .toList());
-        model.addAttribute("schedulesJson", schedulesJson);
-
+        HomeSnapshot snapshot = homeSnapshot();
+        model.addAttribute("noticePosts", snapshot.noticePosts());
+        model.addAttribute("recentPhotos", snapshot.recentPhotos());
+        model.addAttribute("schedulesJson", snapshot.schedulesJson());
         return "main";
     }
+
+    private HomeSnapshot homeSnapshot() {
+        long now = System.currentTimeMillis();
+        HomeSnapshot cached = homeSnapshot;
+        if (cached != null && now < homeSnapshotExpiresAt) {
+            return cached;
+        }
+        synchronized (this) {
+            if (homeSnapshot != null && System.currentTimeMillis() < homeSnapshotExpiresAt) {
+                return homeSnapshot;
+            }
+            HomeSnapshot fresh = buildHome();
+            homeSnapshot = fresh;
+            homeSnapshotExpiresAt = System.currentTimeMillis() + HOME_CACHE_TTL_MS;
+            return fresh;
+        }
+    }
+
+    private HomeSnapshot buildHome() {
+        List<Schedule> scheduleList = scheduleRepository.findAll();
+        List<ScheduleForm> scheduleForms = new ArrayList<>(scheduleList.size());
+        for (Schedule s : scheduleList) {
+            ScheduleForm form = new ScheduleForm(
+                    String.valueOf(s.getId()),
+                    s.getTitle(),
+                    s.getStart(),
+                    s.getEnd() != null ? s.getEnd().plusDays(1) : null,
+                    s.getEnd());
+            form.setArtistNames(s.getArtistNames() == null ? "" : s.getArtistNames());
+            scheduleForms.add(form);
+        }
+
+        String schedulesJson = "[]";
+        try {
+            schedulesJson = objectMapper.writeValueAsString(scheduleForms);
+        } catch (Exception ignored) {}
+
+        List<?> noticePosts = articleService.findRecentByCategory("notice", HOME_LIMIT);
+        List<?> recentPhotos = archiveService.pageByType(MediaType.IMAGE, 0, HOME_LIMIT, null)
+                .getContent().stream()
+                .filter(photo -> photo.getFile() != null && photo.getFile().getUrl() != null)
+                .toList();
+        return new HomeSnapshot(noticePosts, recentPhotos, schedulesJson);
+    }
+
+    private record HomeSnapshot(List<?> noticePosts, List<?> recentPhotos, String schedulesJson) {}
 }

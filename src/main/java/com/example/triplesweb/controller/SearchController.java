@@ -2,11 +2,11 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.entity.Article;
-import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.repository.ArticleRepository;
-import com.example.triplesweb.repository.ArtistRepository;
+import com.example.triplesweb.service.ArtistSnapshotService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -22,11 +22,13 @@ import java.util.regex.Pattern;
 @Controller
 public class SearchController {
 
+    private static final int SEARCH_LIMIT = 50;
+
     @Autowired
     private ArticleRepository articleRepository;
 
     @Autowired
-    private ArtistRepository artistRepository;
+    private ArtistSnapshotService artistSnapshotService;
 
     @GetMapping("/search")
     public String search(
@@ -47,16 +49,17 @@ public class SearchController {
             return "search";
         }
 
-        // 게시글 검색
+        // 게시글 검색 (상위 50건)
         List<Article> result =
                 articleRepository
                         .findByTitleContainingIgnoreCaseOrContentContainingIgnoreCaseOrUserIdContainingIgnoreCase(
                                 searchKeyword,
                                 searchKeyword,
                                 searchKeyword,
-                                Sort.by(
-                                        Sort.Direction.DESC,
-                                        "formattedCreatedAt"
+                                PageRequest.of(
+                                        0,
+                                        SEARCH_LIMIT,
+                                        Sort.by(Sort.Direction.DESC, "formattedCreatedAt")
                                 )
                         );
 
@@ -109,7 +112,7 @@ public class SearchController {
 
         // 멤버 이름 검색: 한국어 이름과 영어 이름 모두 검색
         List<Map<String, Object>> memberResults =
-                artistRepository.findAll()
+                artistSnapshotService.findAll()
                         .stream()
                         .filter(artist ->
                                 containsIgnoreCase(
