@@ -233,6 +233,10 @@ html[lang="en"] .chem-member-name {
     min-height: 0;
 }
 
+.chem-pair-view.hidden {
+    display: none;
+}
+
 .chem-pair-toolbar {
     flex-shrink: 0;
     display: flex;

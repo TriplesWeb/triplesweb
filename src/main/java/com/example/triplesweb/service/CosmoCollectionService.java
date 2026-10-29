@@ -27,6 +27,7 @@ public class CosmoCollectionService {
     private static final String NOT_FOUND = "없는 닉네임 입니다.";
     private static final long CACHE_TTL_SEC = 600;
     private static final long MISSING_TTL_SEC = 60;
+    private static final int MAX_CACHE_ENTRIES = 100;
 
     private final RestClient cosmo;
     private final RestClient index;
@@ -79,7 +80,10 @@ public class CosmoCollectionService {
             throw new IllegalArgumentException("닉네임을 올바르게 입력해 주세요.");
         Cached found = resolve(nickname);
         if (found.address.isBlank()) throw new IllegalArgumentException(NOT_FOUND);
-        List<Map<String, Object>> snapshot = found.snapshotCards();
+        if (found.failure != null) throw new IllegalStateException("보유 오브젝트 로딩에 실패했습니다.", found.failure);
+        // Read completion before copying: a completed response must contain the final cards.
+        boolean loading = !found.complete;
+        List<Map<String, Object>> snapshot = found.cards.snapshot();
         String memberKey = member == null ? "" : member.trim();
         List<String> seasonKeys = cleanSelections(seasons);
         List<String> classKeys = cleanSelections(classes);
@@ -106,12 +110,11 @@ public class CosmoCollectionService {
         }).collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         filtered.sort(sortComparator(sortKey));
         int totalPages = Math.max(1, (int) Math.ceil(filtered.size() / (double) PAGE_SIZE));
-        int safePage = Math.min(Math.max(0, page), totalPages - 1);
-        int from = safePage * PAGE_SIZE;
+        int safePage = loading ? 0 : Math.max(0, page);
+        int from = (int) Math.min(filtered.size(), (long) safePage * PAGE_SIZE);
         List<Map<String, Object>> cards = filtered.subList(from, Math.min(filtered.size(), from + PAGE_SIZE));
         String nickEnc = URLEncoder.encode(found.nickname, StandardCharsets.UTF_8);
         String filterQuery = filterQuery(memberKey, seasonKeys, classKeys, query == null ? "" : query.trim(), selectedGroup, kindKey, sortKey);
-        boolean loading = !found.complete;
         Map<String, Object> view = new LinkedHashMap<>();
         view.put("nickname", found.nickname);
         view.put("nicknameEncoded", nickEnc);
@@ -129,12 +132,12 @@ public class CosmoCollectionService {
         view.put("loadedCount", cards.size());
         view.put("totalPages", totalPages);
         view.put("hasPrev", safePage > 0);
-        boolean hasMore = safePage + 1 < totalPages || loading;
+        boolean hasMore = !loading && (long) safePage + 1 < totalPages;
         view.put("hasNext", hasMore);
         view.put("hasMore", hasMore);
         view.put("loading", loading);
         view.put("prevPage", Math.max(0, safePage - 1));
-        view.put("nextPage", safePage + 1);
+        view.put("nextPage", loading ? 0 : Math.min(Integer.MAX_VALUE, (long) safePage + 1));
         view.put("selectedMember", "other".equals(selectedGroup) ? "" : memberKey);
         view.put("selectedSeasons", seasonKeys);
         view.put("selectedClasses", classKeys);
@@ -159,7 +162,14 @@ public class CosmoCollectionService {
     private Cached resolve(String nickname) {
         String key = nickname.toLowerCase(Locale.ROOT);
         long now = Instant.now().getEpochSecond();
+        cache.entrySet().removeIf(entry -> entry.getValue().lastAccessAt + CACHE_TTL_SEC <= now);
         Cached current = cache.get(key);
+        if (current != null && current.failure != null) {
+            cache.remove(key, current);
+            current = null;
+        }
+        if (current != null) current.lastAccessAt = now;
+        final Cached existing = current;
         if (current != null) {
             if (current.expiresAt > now) {
                 return current;
@@ -169,18 +179,24 @@ public class CosmoCollectionService {
                 CompletableFuture.runAsync(() -> {
                     try {
                         Cached fresh = loadProgressive(nickname);
-                        cache.put(key, fresh);
+                        cache.replace(key, existing, fresh);
                     } catch (RuntimeException ignored) {
-                        current.expiresAt = Instant.now().getEpochSecond() + 30;
+                        existing.expiresAt = Instant.now().getEpochSecond() + 30;
                     } finally {
-                        current.refreshing.set(false);
+                        existing.refreshing.set(false);
                     }
                 }, loadExecutor);
             }
             return current;
         }
         Cached fresh = loadProgressive(nickname);
-        cache.put(key, fresh);
+        synchronized (cache) {
+            while (cache.size() >= MAX_CACHE_ENTRIES) {
+                cache.entrySet().stream().min(Comparator.comparingLong(entry -> entry.getValue().lastAccessAt))
+                        .ifPresent(entry -> cache.remove(entry.getKey(), entry.getValue()));
+            }
+            cache.put(key, fresh);
+        }
         return fresh;
     }
 
@@ -282,7 +298,7 @@ public class CosmoCollectionService {
         String addrLower = address.toLowerCase(Locale.ROOT);
         Set<String> seenTokens = ConcurrentHashMap.newKeySet();
         Set<String> seenCursors = ConcurrentHashMap.newKeySet();
-        List<Map<String, Object>> cards = Collections.synchronizedList(new ArrayList<>());
+        CardBuffer cards = new CardBuffer();
 
         JsonNode first = fetchOwnedPage(addrLower, null);
         appendObjekts(first, cards, seenTokens);
@@ -322,8 +338,8 @@ public class CosmoCollectionService {
                     break;
                 }
             }
-        } catch (RuntimeException ignored) {
-            // keep partial list; mark complete so clients stop waiting
+        } catch (RuntimeException ex) {
+            cached.failure = ex;
         } finally {
             cached.complete = true;
             cached.expiresAt = Instant.now().getEpochSecond() + CACHE_TTL_SEC;
@@ -344,20 +360,18 @@ public class CosmoCollectionService {
         return response;
     }
 
-    private void appendObjekts(JsonNode response, List<Map<String, Object>> cards, Set<String> seenTokens) {
+    private void appendObjekts(JsonNode response, CardBuffer cards, Set<String> seenTokens) {
         for (JsonNode objekt : response.path("objekts")) {
             String token = objekt.path("tokenId").asText(objekt.path("id").asText());
             if (token.isBlank()) throw new IllegalStateException("잘못된 보유 오브젝트 응답입니다.");
             if (seenTokens.add(token)) {
-                synchronized (cards) {
-                    cards.add(card(objekt, cards.size()));
-                }
+                cards.append(objekt);
             }
         }
     }
 
     private static Cached missing(String nickname) {
-        return new Cached(nickname, "", "", List.of(), Instant.now().getEpochSecond() + MISSING_TTL_SEC, true);
+        return new Cached(nickname, "", "", new CardBuffer(), Instant.now().getEpochSecond() + MISSING_TTL_SEC, true);
     }
 
     private static String collectionNo(JsonNode objekt, String collectionId) {
@@ -406,16 +420,35 @@ public class CosmoCollectionService {
                 .thenComparingInt(AbstractTransferLog::logIndex).reversed()).map(AbstractTransferLog::tokenId).toList();
     }
 
+    private static final class CardBuffer {
+        private final List<Map<String, Object>> cards = new ArrayList<>();
+
+        synchronized void append(JsonNode objekt) {
+            cards.add(card(objekt, cards.size()));
+        }
+
+        synchronized List<Map<String, Object>> snapshot() {
+            return List.copyOf(cards);
+        }
+    }
+
+    @jakarta.annotation.PreDestroy
+    void close() {
+        loadExecutor.shutdownNow();
+    }
+
     private static final class Cached {
         final String nickname;
         final String address;
         final String image;
-        final List<Map<String, Object>> cards;
+        final CardBuffer cards;
+        volatile RuntimeException failure;
+        volatile long lastAccessAt = Instant.now().getEpochSecond();
         volatile long expiresAt;
         volatile boolean complete;
         final AtomicBoolean refreshing = new AtomicBoolean(false);
 
-        Cached(String nickname, String address, String image, List<Map<String, Object>> cards,
+        Cached(String nickname, String address, String image, CardBuffer cards,
                long expiresAt, boolean complete) {
             this.nickname = nickname;
             this.address = address;
@@ -423,12 +456,6 @@ public class CosmoCollectionService {
             this.cards = cards;
             this.expiresAt = expiresAt;
             this.complete = complete;
-        }
-
-        List<Map<String, Object>> snapshotCards() {
-            synchronized (cards) {
-                return List.copyOf(cards);
-            }
         }
     }
 }

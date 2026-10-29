@@ -184,6 +184,7 @@
     <p class="gv-panel gv-empty{{#hasCards}} is-hidden{{/hasCards}}" id="collection-empty">이 조건에 표시할 보유 오브젝트가 없습니다.</p>
     <div class="collection-scroll-footer" id="collection-scroll-sentinel"
          data-has-more="{{#hasMore}}true{{/hasMore}}{{^hasMore}}false{{/hasMore}}"
+         data-loading="{{#loading}}true{{/loading}}{{^loading}}false{{/loading}}"
          data-next-page="{{nextPage}}">
         <p id="collection-scroll-status" class="collection-scroll-status" aria-live="polite"></p>
         <span id="collection-scroll-spinner" class="collection-scroll-spinner is-hidden" aria-hidden="true"></span>
@@ -342,7 +343,11 @@
   let ownedCount = Number(grid.dataset.owned || 0);
   let nextPage = Number(sentinel.dataset.nextPage || 1);
   let hasMore = sentinel.dataset.hasMore === 'true';
+  let pending = sentinel.dataset.loading === 'true';
   let loading = false;
+  let pollTimer;
+  let loadError = '';
+  let sentinelVisible = false;
 
   function escapeHtml(value) {
     return String(value ?? '')
@@ -354,10 +359,11 @@
   }
 
   function updateStatus() {
-    if (empty) empty.classList.toggle('is-hidden', loadedCount > 0);
+    if (empty) empty.classList.toggle('is-hidden', loadedCount > 0 || pending);
     if (filteredCountEl) filteredCountEl.textContent = String(filteredCount);
     if (!statusEl) return;
-    if (loading) statusEl.textContent = '불러오는 중…';
+    if (loadError) statusEl.textContent = loadError;
+    else if (loading || pending) statusEl.textContent = '불러오는 중…';
     else if (hasMore) statusEl.textContent = '스크롤하면 더 불러옵니다';
     else if (loadedCount > 0) statusEl.textContent = `모두 불러왔습니다 · ${loadedCount} / ${filteredCount || ownedCount}`;
     else statusEl.textContent = '';
@@ -389,12 +395,14 @@
   }
 
   async function loadMore() {
-    if (!hasMore || loading) return;
+    if ((!hasMore && !pending) || loading) return;
+    clearTimeout(pollTimer);
+    loadError = "";
     loading = true;
     updateStatus();
     try {
       const params = new URLSearchParams(new FormData(form));
-      params.set('page', String(nextPage));
+      params.set('page', String(pending ? 0 : nextPage));
       const res = await fetch(`/cosmo/collection/more?${params.toString()}`, {
         headers: { Accept: 'application/json' },
         credentials: 'same-origin',
@@ -403,6 +411,12 @@
       if (!res.ok) throw new Error('load failed');
       const data = await res.json();
       const items = Array.isArray(data.items) ? data.items : [];
+      // While upstream pages arrive, sorting and filters can move cards.
+      // Replace the first page until loading finishes, then append stable pages.
+      if (pending || data.loading) {
+        grid.replaceChildren();
+        loadedCount = 0;
+      }
       if (items.length) {
         const wrap = document.createElement('div');
         wrap.innerHTML = items.map(buildCard).join('');
@@ -413,27 +427,33 @@
       loadedCount += items.length;
       filteredCount = Number(data.filteredCount ?? filteredCount);
       ownedCount = Number(data.ownedCount ?? ownedCount);
-      hasMore = Boolean(data.hasMore) && items.length > 0;
+      hasMore = Boolean(data.hasMore);
+      pending = Boolean(data.loading);
       nextPage = data.nextPage == null ? nextPage + 1 : Number(data.nextPage);
       grid.dataset.loaded = String(loadedCount);
       grid.dataset.filtered = String(filteredCount);
       grid.dataset.owned = String(ownedCount);
     } catch (_) {
       hasMore = false;
-      if (statusEl) statusEl.textContent = '더 불러오지 못했습니다. 잠시 후 다시 스크롤해 주세요.';
+      pending = false;
+      loadError = '더 불러오지 못했습니다. 페이지를 새로고침해 주세요.';
     } finally {
       loading = false;
       updateStatus();
+      if (pending || (hasMore && sentinelVisible)) {
+        pollTimer = setTimeout(loadMore, pending ? 1000 : 100);
+      }
     }
   }
 
   updateStatus();
   if ('IntersectionObserver' in window) {
     const io = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) loadMore();
+      sentinelVisible = entries.some((entry) => entry.isIntersecting);
+      if (sentinelVisible) loadMore();
     }, { rootMargin: '400px 0px' });
     io.observe(sentinel);
-  } else if (hasMore) {
+  } else if (hasMore || pending) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'collection-load-more';
@@ -441,6 +461,8 @@
     btn.addEventListener('click', loadMore);
     sentinel.appendChild(btn);
   }
+  if (pending) pollTimer = setTimeout(loadMore, 1000);
+  window.addEventListener('pagehide', () => clearTimeout(pollTimer), { once: true });
 })();
 </script>
 </body>

@@ -1174,7 +1174,7 @@
     }
     if (hint) hint.classList.toggle("hidden", !isAdmin);
     const adminChanged = tableBuiltForAdmin !== isAdmin;
-    if (adminChanged) {
+    if (adminChanged && pairsHydrated) {
       tableBuiltForAdmin = isAdmin;
       // 관리자 on/off 시 빈 칸(+)·영문 폴백 표시가 바뀌므로 매트릭스를 다시 만든다
       if (dbEntries) {
@@ -2615,7 +2615,10 @@
           pairMatrix = buildFromDb(dbEntries);
           pairsHydrated = true;
           updateEmptyState(countChemCells(pairMatrix));
-          if (hasSsrTable()) {
+          if (isAdmin || tableBuiltForAdmin !== isAdmin) {
+            tableBuiltForAdmin = isAdmin;
+            applyDbToTable(dbEntries);
+          } else if (hasSsrTable()) {
             fillPairFilterOptions();
             bindExistingTableCells(document.getElementById("chemTbody"));
           } else if (currentMode === "pair") {
