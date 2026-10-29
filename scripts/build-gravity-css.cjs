@@ -14,7 +14,7 @@ try {
     '--output', output, '--minify'], { stdio: 'inherit' });
   const base = fs.readFileSync('src/main/resources/static/css/style.css', 'utf8')
     .replace(/^@charset.*$/igm, '').replace(/^@import.*$/igm, '');
-  const icons = `@font-face{font-family:'Material Symbols Outlined';font-style:normal;font-weight:400;font-display:block;src:url('/fonts/gravity-icons.ttf') format('truetype')}\n`;
+  const icons = `@font-face{font-family:'Material Symbols Outlined';font-style:normal;font-weight:400;font-display:block;src:url('/fonts/site-icons.ttf') format('truetype')}\n`;
   fs.writeFileSync('src/main/resources/static/css/gravity.css',
     '/* Generated with scripts/build-gravity-css.cjs; do not edit directly. */\n'
       + fs.readFileSync(output, 'utf8') + '\n' + icons + base
