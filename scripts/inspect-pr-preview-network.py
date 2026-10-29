@@ -7,6 +7,7 @@ import argparse
 import json
 import re
 import sys
+import socket
 import subprocess
 import urllib.request
 
@@ -38,6 +39,11 @@ else:
     result.update(containerExists=True,running=state.get("Running"),oomKilled=state.get("OOMKilled"),
                   restartCount=data.get("RestartCount"),ports=data.get("NetworkSettings",{}).get("Ports",{}))
 if ips:
+    try:
+        with socket.create_connection((ips[0],3306),timeout=5):
+            result["databaseTcp"]={"port":3306,"reachable":True}
+    except OSError as error:
+        result["databaseTcp"]={"port":3306,"reachable":False,"error":type(error).__name__}
     opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
     try:
         with opener.open("http://"+ips[0]+f":{port}/api/preview/info",timeout=15) as response:

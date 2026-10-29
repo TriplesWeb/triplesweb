@@ -39,8 +39,13 @@ jobs:
       - name: 다른 장비에서 미리보기 포트 접속
         run: |
           python3 - <<'PY'
-          import json,subprocess,os
+          import json,subprocess,os,socket
           result=json.load(open("/tmp/preview-network.json"))
+          try:
+              with socket.create_connection((result["ip"],3306),timeout=5):
+                  print("DATABASE_TCP_FROM_TAILSCALE_RUNNER=true")
+          except OSError as error:
+              print("DATABASE_TCP_FROM_TAILSCALE_RUNNER=false error="+type(error).__name__)
           port=18000+int(os.environ["PR_NUMBER"])
           for label,address in [("actual",result["ip"]),("previous","100.89.171.59")]:
               p=subprocess.run(["curl","--noproxy","*","--connect-timeout","8","--max-time","20","--silent","--show-error","--output","/dev/null","--write-out","%{http_code}","http://"+address+f":{port}/api/preview/info"],capture_output=True,text=True)
