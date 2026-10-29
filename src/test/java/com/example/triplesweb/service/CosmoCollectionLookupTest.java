@@ -55,7 +55,7 @@ class CosmoCollectionLookupTest {
     }
 
     @Test @SuppressWarnings("unchecked") void loadsEveryCursorPageSerialsAndReusesCache() {
-        var first = service.search("테스트", 0);
+        var first = awaitLoaded("테스트");
         assertThat(first).containsEntry("ownedCount", 26).containsEntry("totalPages", 2);
         var cards = (List<Map<String, Object>>) first.get("cards");
         assertThat(cards).hasSize(24);
@@ -91,6 +91,21 @@ class CosmoCollectionLookupTest {
         indexFailure = true;
         assertThatThrownBy(() -> service.search("테스트", 0)).isInstanceOf(RuntimeException.class);
         indexFailure = false;
-        assertThat(service.search("테스트", 0)).containsEntry("ownedCount", 26);
+        assertThat(awaitLoaded("테스트")).containsEntry("ownedCount", 26);
+    }
+
+    private Map<String, Object> awaitLoaded(String nickname) {
+        Map<String, Object> snapshot = service.search(nickname, 0);
+        for (int i = 0; i < 100 && Boolean.TRUE.equals(snapshot.get("loading")); i++) {
+            try {
+                Thread.sleep(20L);
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                throw new AssertionError("비동기 로딩 대기 중 인터럽트가 발생했습니다.", ex);
+            }
+            snapshot = service.search(nickname, 0);
+        }
+        assertThat(snapshot).containsEntry("loading", false);
+        return snapshot;
     }
 }

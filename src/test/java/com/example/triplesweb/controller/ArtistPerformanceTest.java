@@ -29,6 +29,7 @@ class ArtistPerformanceTest {
  @MockitoBean AlbumService albums;
  @MockitoBean UnitService units;
  @MockitoBean MemberSpotlightService spotlight;
+ @MockitoBean ChemistryViewCache chemistryViewCache;
  private List<Artist> givenArtists(){
   List<Artist> list=new ArrayList<>();
   for(long i=1;i<=24;i++){Artist a=new Artist();a.setArtistId(i);a.setName("멤버 "+i);a.setEngName("member"+i);a.setColor("#8decd9");a.setProfileImage("https://image.test/portrait-"+i+".jpg");a.setSoloContent("[{\"title\":\"테스트 영상\",\"url\":\"https://youtu.be/abcdefghijk\"}]");list.add(a);}
