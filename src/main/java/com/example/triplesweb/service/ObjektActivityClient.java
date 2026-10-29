@@ -1,11 +1,10 @@
 package com.example.triplesweb.service;
 
+import com.example.triplesweb.infra.GzipRestClients;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-import java.net.http.HttpClient;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -20,9 +19,7 @@ public class ObjektActivityClient {
     private final RestClient client;
 
     public ObjektActivityClient(@Value("${objekt.api.base-url:https://objekt.top/api/v1}") String url) {
-        var factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build());
-        factory.setReadTimeout(Duration.ofSeconds(6));
-        client = RestClient.builder().baseUrl(url).requestFactory(factory).build();
+        client = GzipRestClients.create(url, Duration.ofSeconds(3), Duration.ofSeconds(15));
     }
 
     public Page fetch(Cursor cursor) {
