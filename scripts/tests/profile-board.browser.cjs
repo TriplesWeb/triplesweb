@@ -48,7 +48,8 @@ const base=path.resolve(__dirname,'../..');
   fs.mkdirSync('/tmp/objekt-ui',{recursive:true});
   for(const width of [320,390,768,1280]){
    await page.setViewportSize({width,height:900});
-   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'profile width '+width);
+   const overflow = await page.evaluate(() => [...document.querySelectorAll('body *')].filter(e => { const r=e.getBoundingClientRect(); const st=getComputedStyle(e); return st.display!=='none' && st.visibility!=='hidden' && (r.right>innerWidth+1 || r.left < -1); }).slice(0,15).map(e => ({tag:e.tagName,classes:e.className,right:Math.round(e.getBoundingClientRect().right),width:Math.round(e.getBoundingClientRect().width)})));
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'profile width '+width+' '+JSON.stringify(overflow));
    await page.screenshot({path:`/tmp/objekt-ui/profile-gauges-${width}.png`,fullPage:true});
    for(const category of ['trade','sell','group-orders']){
     await page.goto('https://profile.test/board/'+category);await page.waitForLoadState('load');

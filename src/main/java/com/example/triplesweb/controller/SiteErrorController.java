@@ -18,28 +18,17 @@ public class SiteErrorController implements ErrorController {
     public String handleError(HttpServletRequest request, Model model) {
         Object statusObj = request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
         Object pathObj = request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI);
-        Object messageObj = request.getAttribute(RequestDispatcher.ERROR_MESSAGE);
-        Object exceptionObj = request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
-
         int status = statusObj instanceof Integer ? (Integer) statusObj : 500;
         HttpStatus httpStatus = HttpStatus.resolve(status);
         String reason = httpStatus != null ? httpStatus.getReasonPhrase() : "Error";
 
         String path = pathObj != null ? pathObj.toString() : "";
-        String detail = messageObj != null ? messageObj.toString().trim() : "";
-        if (detail.isEmpty() && exceptionObj instanceof Throwable throwable) {
-            String exceptionMessage = throwable.getMessage();
-            if (exceptionMessage != null && !exceptionMessage.isBlank()) {
-                detail = exceptionMessage.trim();
-            }
-        }
-
         model.addAttribute("status", status);
         model.addAttribute("error", reason);
         model.addAttribute("path", path);
         model.addAttribute("hasPath", !path.isBlank());
-        model.addAttribute("detail", detail);
-        model.addAttribute("hasDetail", !detail.isBlank());
+        model.addAttribute("detail", "");
+        model.addAttribute("hasDetail", false);
         model.addAttribute("title", titleFor(status));
         model.addAttribute("description", descriptionFor(status));
 
