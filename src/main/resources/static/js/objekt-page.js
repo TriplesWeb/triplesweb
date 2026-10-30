@@ -730,6 +730,7 @@
                 const fragment = document.createDocumentFragment();
                 while (wrap.firstChild) fragment.appendChild(wrap.firstChild);
                 grid.appendChild(fragment);
+                window.ObjektIssued?.hydrate();
             }
             loadedCount += items.length;
             resultCount = Number(data.resultCount ?? resultCount);
@@ -750,6 +751,11 @@
         }
     }
 
+    const initialObjekt = new URLSearchParams(location.search).get('objekt');
+    if (initialObjekt) {
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => openObjektDetail(initialObjekt), { once: true });
+        else openObjektDetail(initialObjekt);
+    }
     if (empty) empty.classList.toggle('hidden', cards.length > 0);
     updateSummary();
 
