@@ -114,9 +114,10 @@ def main():
     parser.add_argument("--root",required=True);parser.add_argument("--pr",type=int,required=True)
     parser.add_argument("--image");parser.add_argument("--revision");parser.add_argument("--registry-user")
     parser.add_argument("--remove",action="store_true")
+    parser.add_argument("--database-only",action="store_true")
     args=parser.parse_args()
-    token=None if args.remove else sys.stdin.readline().strip()
-    if not args.remove and not token:
+    token=None if args.remove or args.database_only else sys.stdin.readline().strip()
+    if not args.remove and not args.database_only and not token:
         raise RuntimeError("컨테이너 레지스트리 인증 정보가 없습니다")
     root=Path(args.root).resolve()
     if not (root/"docker-compose.yml").is_file() or not 1<=args.pr<=9999:
@@ -161,10 +162,10 @@ def main():
             state_file.unlink(missing_ok=True);compose_file.unlink(missing_ok=True)
         print(f"PR {args.pr} 미리보기 정리 완료 (운영 스택 유지)")
         return
-    if not args.image or not args.revision or not args.registry_user:
+    if not args.database_only and (not args.image or not args.revision or not args.registry_user):
         raise ValueError("이미지/커밋/레지스트리 사용자 값이 필요합니다")
-    match=IMAGE.fullmatch(args.image)
-    if not match or int(match[1])!=args.pr or match[2]!=args.revision:
+    match=IMAGE.fullmatch(args.image or "")
+    if not args.database_only and (not match or int(match[1])!=args.pr or match[2]!=args.revision):
         raise ValueError("미리보기 이미지 검증 실패")
     bind_ip=run(["tailscale","ip","-4"]).stdout.strip().splitlines()[0]
     if ipaddress.ip_address(bind_ip) not in ipaddress.ip_network("100.64.0.0/10"):
@@ -204,6 +205,11 @@ def main():
         state["initialized"]=True;atomic_json(state_file,state)
         print(f"공개 데이터 {len(selected)}개 테이블 복사 완료")
     admin_password=run(["docker","exec",app,"printenv","CHEMISTRY_ADMIN_PASSWORD"],sensitive=True,check=False).stdout.rstrip("\n")
+    if args.database_only:
+        print(json.dumps({"host":bind_ip,"database":database,"username":username,
+                          "password":state["password"],"adminPassword":admin_password,
+                          "snapshotAt":state["snapshot_at"]}))
+        return
     for name in ("uploads","data"):(directory/name).mkdir(exist_ok=True)
     spec=compose_spec(directory,args.pr,args.image,args.revision,bind_ip,network,database_host,database,username,state["password"],admin_password,state["snapshot_at"])
     atomic_json(compose_file,spec)

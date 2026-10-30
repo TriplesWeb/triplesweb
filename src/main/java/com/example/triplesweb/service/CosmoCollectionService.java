@@ -314,6 +314,8 @@ public class CosmoCollectionService {
                 && !nextCursor.path("receivedAt").asText().isBlank()
                 && !nextCursor.path("id").asText().isBlank();
 
+        if (nextCursor != null && !nextCursor.isNull() && !hasMore)
+            throw new IllegalStateException("보유 목록의 다음 페이지 정보가 올바르지 않습니다.");
         long now = clock.instant().getEpochSecond();
         Cached cached = new Cached(resolvedNick, address, image, cards,
                 now, now + HOLDINGS_TTL_SECONDS, !hasMore);
@@ -336,14 +338,14 @@ public class CosmoCollectionService {
         int pages = 1;
         try {
             while (cursor != null && !cursor.isNull()) {
-                if (++pages > 1000) break;
+                if (++pages > 1000) throw new IllegalStateException("보유 목록의 페이지 수가 제한을 초과했습니다.");
                 JsonNode response = fetchOwnedPage(address, cursor);
                 appendObjekts(response, cached.cards, seenTokens);
                 cursor = response.get("nextCursor");
                 if (cursor == null || cursor.isNull()) break;
                 if (cursor.path("receivedAt").asText().isBlank() || cursor.path("id").asText().isBlank()
                         || !seenCursors.add(cursor.toString())) {
-                    break;
+                    throw new IllegalStateException("보유 목록의 다음 페이지 정보가 올바르지 않습니다.");
                 }
             }
         } catch (RuntimeException ex) {

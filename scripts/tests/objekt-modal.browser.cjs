@@ -10,7 +10,7 @@ const base = path.resolve(__dirname, '../..');
     let favorite=false, favoriteAttempts=0;
     let isAdmin = true, description = '기존 설명', writes = [], failMore = true;
     const data = () => ({isFavorite:favorite,objektKey:'uuid',collectionId:'Cream02 HaYeon 367Z',member:'HaYeon',season:'Cream02',class:'Special',collectionNo:'367Z',description,isAdmin,
-      detailUrl:'/cosmo/objekt/detail/hayeoncc367z',memberUrl:'/cosmo/objekt?group=members&member=HaYeon',tradeUrl:'/article/trade/new?selectedObjektIds=uuid',sellUrl:'/article/sell/new?selectedObjektIds=uuid',descriptionUrl:'/cosmo/objekt/detail/hayeoncc367z/description',issuedUrl:'/cosmo/objekt/detail/hayeoncc367z/issued'});
+      detailUrl:'/cosmo/objekt/detail/hayeoncc367z',memberUrl:'/cosmo/objekt?group=members&member=HaYeon',tradeUrl:'/article/trade/new?selectedObjektIds=uuid',sellUrl:'/article/sell/new?selectedObjektIds=uuid',descriptionUrl:'/cosmo/objekt/detail/hayeoncc367z/description',issuedUrl:'/cosmo/objekt/detail/hayeoncc367z/issued',lookupUrl:'/cosmo/objekt/detail/hayeoncc367z/lookup'});
     await page.context().addCookies([{name:'XSRF-TOKEN',value:'test-csrf',domain:'preview.test',path:'/'}]);
     await page.route('**/*', async route => {
       const req=route.request(), url=new URL(req.url()), p=url.pathname;

@@ -34,7 +34,18 @@ public class CosmoProfileService {
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> profile(String nickname, String member, String group, String tab, String ownership) {
-        Map<String, Object> view = new LinkedHashMap<>(collections.search(nickname, 0));
+        Map<String, Object> snapshot = collections.search(nickname, 0);
+        long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(30);
+        while (Boolean.TRUE.equals(snapshot.get("loading"))) {
+            if (System.nanoTime() >= deadline) throw new IllegalStateException("보유 목록을 불러오는 중입니다.");
+            try { Thread.sleep(100); }
+            catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("보유 목록 조회가 중단되었습니다.", interrupted);
+            }
+            snapshot = collections.search(nickname, 0);
+        }
+        Map<String, Object> view = new LinkedHashMap<>(snapshot);
         List<Map<String, Object>> all = (List<Map<String, Object>>) view.remove("allCards");
         String base = String.valueOf(view.get("profileUrl"));
         view.put("nicknameEncoded", URLEncoder.encode(String.valueOf(view.get("nickname")), StandardCharsets.UTF_8));
