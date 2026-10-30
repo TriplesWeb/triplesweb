@@ -77,7 +77,7 @@ class CosmoCollectionControllerTest {
         view.put("allCards", view.get("cards"));
         when(collections.search("테스트", 0, "", List.of(), List.of(), "", "all", "all", "latest")).thenReturn(view);
         when(artists.findAll()).thenReturn(List.of());
-        mvc.perform(get("/cosmo/collection").param("nickname", "테스트")).andExpect(status().isOk())
+        var result = mvc.perform(get("/cosmo/collection").param("nickname", "테스트")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("#27")))
                 .andExpect(content().string(containsString("collection-image")))
                 .andExpect(content().string(containsString("내 오브젝트 검색")))
@@ -87,7 +87,11 @@ class CosmoCollectionControllerTest {
                 .andExpect(content().string(containsString("보유 오브젝트 필터")))
                 .andExpect(content().string(not(containsString("오브젝트 상세 보기"))))
                 .andExpect(content().string(containsString("collection-scroll-sentinel")))
-                .andExpect(content().string(not(containsString("#30000001"))));
+                .andExpect(content().string(not(containsString("#30000001"))))
+                .andExpect(content().string(not(containsString("전송 내역 보기"))))
+                .andReturn();
+        java.nio.file.Files.createDirectories(java.nio.file.Path.of("build/mobile-pages"));
+        java.nio.file.Files.writeString(java.nio.file.Path.of("build/mobile-pages/feedback-collection.html"), result.getResponse().getContentAsString());
     }
 
     @Test void moreEndpointReturnsJsonPagePayload() throws Exception {
