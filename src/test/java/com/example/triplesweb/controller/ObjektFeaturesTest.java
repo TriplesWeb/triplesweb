@@ -223,6 +223,17 @@ class ObjektFeaturesTest {
         java.nio.file.Files.writeString(java.nio.file.Path.of("build/objekt-members-preview.html"), membersPage.getResponse().getContentAsString());
     }
 
+    @Test void memberSortingFollowsDebutOrder() throws Exception {
+        var items = List.<Map<String,Object>>of(Map.of("id","last","member","Jiyeon"), Map.of("id","first","member","SeoYeon"), Map.of("id","middle","member","Kotone"), Map.of("id","other","member","Unknown"));
+        when(catalog.findCollections("triples")).thenReturn(items);
+        mvc.perform(get("/cosmo/objekt/more").param("page","0").param("sort","first_member"))
+            .andExpect(jsonPath("$.items[0].id").value("first")).andExpect(jsonPath("$.items[1].id").value("middle"))
+            .andExpect(jsonPath("$.items[2].id").value("last")).andExpect(jsonPath("$.items[3].id").value("other"));
+        mvc.perform(get("/cosmo/objekt/more").param("page","0").param("sort","last_member"))
+            .andExpect(jsonPath("$.items[0].id").value("last")).andExpect(jsonPath("$.items[1].id").value("middle"))
+            .andExpect(jsonPath("$.items[2].id").value("first")).andExpect(jsonPath("$.items[3].id").value("other"));
+    }
+
     @Test void unitObjectsMatchEitherSelectedMemberAndOthersPaginateSeparately() throws Exception {
         List<Map<String, Object>> items = new java.util.ArrayList<>(List.of(
                 Map.of("id", "duo", "member", "S5 X S20"), Map.of("id", "five", "member", "Yooyeon"),
