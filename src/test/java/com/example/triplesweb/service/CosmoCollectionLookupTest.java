@@ -122,6 +122,26 @@ class CosmoCollectionLookupTest {
         });
     }
 
+    @Test void failedRefreshKeepsThePreviousCompleteSnapshot() throws Exception {
+        completed();
+        var field = CosmoCollectionService.class.getDeclaredField("cache");
+        field.setAccessible(true);
+        var old = ((Map<?, ?>) field.get(service)).values().iterator().next();
+        var refreshingField = old.getClass().getDeclaredField("refreshing");
+        refreshingField.setAccessible(true);
+        var refreshing = (java.util.concurrent.atomic.AtomicBoolean) refreshingField.get(old);
+        laterPageFailure = true;
+        now.addAndGet(21);
+        assertThat(service.search("테스트", 0)).containsEntry("ownedCount", 26).containsEntry("loading", false);
+        await().atMost(Duration.ofSeconds(5)).until(() -> profiles.get() >= 2 && !refreshing.get());
+        assertThat(service.search("테스트", 0)).containsEntry("ownedCount", 26).containsEntry("loading", false);
+        laterPageFailure = false;
+        now.addAndGet(31);
+        service.search("테스트", 0);
+        await().atMost(Duration.ofSeconds(5)).until(() -> profiles.get() >= 3 && !refreshing.get());
+        assertThat(service.search("테스트", 0)).containsEntry("ownedCount", 26).containsEntry("loading", false);
+    }
+
     @Test void failedBackgroundPageIsRetriedInsteadOfCachingPartialSuccess() throws Exception {
         laterPageFailure = true;
         service.search("테스트", 0);
