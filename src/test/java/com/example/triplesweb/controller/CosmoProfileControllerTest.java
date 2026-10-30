@@ -76,6 +76,9 @@ class CosmoProfileControllerTest {
 
     @Test void memberChecklistRendersOwnedAndMissingKindsWithFullImages() throws Exception {
         givenProfile();
+        var member = new com.example.triplesweb.entity.Artist();
+        member.setName("정하연"); member.setEngName("HaYeon"); member.setColor("#d81055");
+        when(artists.findAll()).thenReturn(List.of(member));
         when(catalog.findCollections("triples")).thenReturn(List.of(
                 Map.of("slug", "cream02-hayeon-367z", "member", "HaYeon", "class", "Double", "season", "Cream02",
                         "collectionNo", "367Z", "collectionId", "Cream02 HaYeon 367Z", "thumbnailImage", "https://example.com/owned.webp"),
@@ -94,6 +97,8 @@ class CosmoProfileControllerTest {
                 .andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(content().string(not(containsString("시즌별")))).andReturn();
         java.nio.file.Files.writeString(java.nio.file.Path.of("build/profile-checklist-preview.html"), result.getResponse().getContentAsString());
+        java.nio.file.Files.createDirectories(java.nio.file.Path.of("build/mobile-pages"));
+        java.nio.file.Files.writeString(java.nio.file.Path.of("build/mobile-pages/feedback-profile-progress.html"), result.getResponse().getContentAsString());
     }
 
     @Test void allTabShowsOwnedAndMissingCardsGroupedBySeason() throws Exception {
@@ -101,12 +106,14 @@ class CosmoProfileControllerTest {
         when(catalog.findCollections("triples")).thenReturn(List.of(
             Map.of("slug","cream02-hayeon-367z","member","HaYeon","class","Double","season","Cream02","collectionNo","367Z"),
             Map.of("slug","other","member","HaYeon","class","First","season","Atom01","collectionNo","001A")));
-        mvc.perform(get("/cosmo/profile/Fan").param("tab","members").param("member","hayeon"))
+        var result = mvc.perform(get("/cosmo/profile/Fan").param("tab","members").param("member","hayeon"))
             .andExpect(status().isOk())
             .andExpect(content().string(containsString("시즌별 목록")))
             .andExpect(content().string(containsString("profile-checklist-card is-owned")))
             .andExpect(content().string(containsString("profile-checklist-card is-missing")))
-            .andExpect(content().string(containsString(">진행도</a>")));
+            .andExpect(content().string(containsString(">진행도</a>"))).andReturn();
+        java.nio.file.Files.createDirectories(java.nio.file.Path.of("build/mobile-pages"));
+        java.nio.file.Files.writeString(java.nio.file.Path.of("build/mobile-pages/feedback-profile-all.html"), result.getResponse().getContentAsString());
     }
 
     @Test void ownershipOwnedFilterHidesMissingCardsOnMemberChecklist() throws Exception {
