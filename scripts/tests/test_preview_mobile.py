@@ -75,6 +75,25 @@ class PreviewMobileSecurityTest(unittest.TestCase):
         self.assertIn(b"preview_login_required",body)
         self.assertEqual(self.request("GET","/cosmo/objekt")[0],303)
 
+    def test_attempt_limits_are_atomic_and_expire(self):
+        module = self.module
+        with module.ATTEMPT_LOCK:
+            module.ATTEMPTS.clear()
+            module.GLOBAL_ATTEMPTS.clear()
+        try:
+            for index in range(60):
+                self.assertTrue(module.record_attempt("ip-" + str(index), 100.0))
+            self.assertFalse(module.record_attempt("another", 100.0))
+            self.assertTrue(module.record_attempt("another", 161.0))
+            for _ in range(7):
+                self.assertTrue(module.record_attempt("same", 161.0))
+            self.assertTrue(module.record_attempt("same", 161.0))
+            self.assertFalse(module.record_attempt("same", 161.0))
+        finally:
+            with module.ATTEMPT_LOCK:
+                module.ATTEMPTS.clear()
+                module.GLOBAL_ATTEMPTS.clear()
+
     def test_wrong_password_is_rejected(self):
         status,_,_=self.login_request("wrong")
         self.assertEqual(status,401)

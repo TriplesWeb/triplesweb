@@ -16,7 +16,10 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Resolve a COSMO account and cache its indexed holdings, including collection serials. */
@@ -33,7 +36,8 @@ public class CosmoCollectionService {
     private final RestClient cosmo;
     private final RestClient index;
     private final ConcurrentHashMap<String, Cached> cache = new ConcurrentHashMap<>();
-    private final ExecutorService loadExecutor = Executors.newFixedThreadPool(4, r -> {
+    private final ExecutorService loadExecutor = new ThreadPoolExecutor(4, 4, 0, TimeUnit.MILLISECONDS,
+            new ArrayBlockingQueue<>(64), r -> {
         Thread t = new Thread(r, "cosmo-collection-load");
         t.setDaemon(true);
         return t;
@@ -183,16 +187,33 @@ public class CosmoCollectionService {
             }
             // stale-while-revalidate: keep serving until background refresh finishes
             if (current.refreshing.compareAndSet(false, true)) {
-                CompletableFuture.runAsync(() -> {
-                    try {
-                        Cached fresh = loadProgressive(nickname);
-                        cache.replace(key, existing, fresh);
-                    } catch (RuntimeException ignored) {
-                        existing.expiresAt = clock.instant().getEpochSecond() + 30;
-                    } finally {
-                        existing.refreshing.set(false);
-                    }
-                }, loadExecutor);
+                try {
+                    CompletableFuture.runAsync(() -> {
+                        try {
+                            Cached fresh = loadProgressive(nickname);
+                            Runnable finish = () -> {
+                                try {
+                                    if (fresh.failure == null) cache.replace(key, existing, fresh);
+                                    else existing.expiresAt = clock.instant().getEpochSecond() + 30;
+                                } finally {
+                                    existing.refreshing.set(false);
+                                }
+                            };
+                            boolean complete;
+                            synchronized (fresh) {
+                                complete = fresh.complete;
+                                if (!complete) fresh.onComplete = finish;
+                            }
+                            if (complete) finish.run();
+                        } catch (RuntimeException failure) {
+                            existing.expiresAt = clock.instant().getEpochSecond() + 30;
+                            existing.refreshing.set(false);
+                        }
+                    }, loadExecutor);
+                } catch (RejectedExecutionException busy) {
+                    existing.expiresAt = now + 5;
+                    existing.refreshing.set(false);
+                }
             }
             return current;
         }
@@ -351,8 +372,14 @@ public class CosmoCollectionService {
         } catch (RuntimeException ex) {
             cached.failure = ex;
         } finally {
-            cached.complete = true;
-            cached.expiresAt = clock.instant().getEpochSecond() + HOLDINGS_TTL_SECONDS;
+            Runnable callback;
+            synchronized (cached) {
+                cached.complete = true;
+                cached.expiresAt = clock.instant().getEpochSecond() + HOLDINGS_TTL_SECONDS;
+                callback = cached.onComplete;
+                cached.onComplete = null;
+            }
+            if (callback != null) callback.run();
         }
     }
 
@@ -458,6 +485,7 @@ public class CosmoCollectionService {
         volatile long lastAccessAt;
         volatile long expiresAt;
         volatile boolean complete;
+        Runnable onComplete; // guarded by this Cached instance
         final AtomicBoolean refreshing = new AtomicBoolean(false);
 
         Cached(String nickname, String address, String image, CardBuffer cards,

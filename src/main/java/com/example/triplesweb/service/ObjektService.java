@@ -36,6 +36,8 @@ public class ObjektService {
 
     private final RestClient restClient;
     private final ObjektCatalogStore catalogStore;
+    @Value("${objekt.cache.persist:true}")
+    private boolean persistCatalog = true;
 
     private volatile List<Map<String, Object>> cachedCollections = List.of();
     private volatile Map<String, Map<String, Object>> byKey = Map.of();
@@ -134,11 +136,11 @@ public class ObjektService {
             List<ObjektCatalog> rows = new ArrayList<>(unique.values());
             // DB는 다음 시작 시 복구할 스냅샷으로만 저장한다. 갱신 직후 다시
             // SELECT 하지 않고, 이미 받은 API 응답으로 메모리 캐시를 교체한다.
-            catalogStore.replace("triples", rows);
+            if (persistCatalog) catalogStore.replace("triples", rows);
             install(rows.stream().map(ObjektCatalogDto::toView).toList());
             lastSuccessfulRefreshMillis = System.currentTimeMillis();
 
-            log.info("Objekt 카탈로그 저장 완료: {}개", cachedCollections.size());
+            log.info("Objekt 카탈로그 갱신 완료: {}개 (DB 저장: {})", cachedCollections.size(), persistCatalog);
 
         } catch (RuntimeException ex) {
             // 최초 적재 실패를 포함해 페이지 요청으로 예외를 전파하지 않는다.

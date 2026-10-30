@@ -26,21 +26,19 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Value("${upload.fallback-base-url:}")
     private String uploadFallbackBaseUrl;
 
+    @Value("${spring.web.resources.cache.cachecontrol.no-cache:false}")
+    private boolean noCache;
+
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        CacheControl immutableWeek = CacheControl.maxAge(7, TimeUnit.DAYS).cachePublic().immutable();
-        registry.addResourceHandler("/css/**")
-                .addResourceLocations("classpath:/static/css/", "file:./src/main/resources/static/css/")
-                .setCacheControl(immutableWeek);
-        registry.addResourceHandler("/js/**")
-                .addResourceLocations("classpath:/static/js/", "file:./src/main/resources/static/js/")
-                .setCacheControl(immutableWeek);
-        registry.addResourceHandler("/fonts/**")
-                .addResourceLocations("classpath:/static/fonts/", "file:./src/main/resources/static/fonts/")
-                .setCacheControl(immutableWeek);
-        registry.addResourceHandler("/images/**")
-                .addResourceLocations("classpath:/static/images/", "file:./src/main/resources/static/images/")
-                .setCacheControl(immutableWeek);
+        CacheControl policy = noCache ? CacheControl.noStore() : CacheControl.maxAge(5, TimeUnit.MINUTES).cachePublic();
+        for (String type : new String[]{"css", "js", "fonts", "images"}) {
+            String source = "file:./src/main/resources/static/" + type + "/";
+            String packaged = "classpath:/static/" + type + "/";
+            registry.addResourceHandler("/" + type + "/**")
+                    .addResourceLocations(noCache ? new String[]{source, packaged} : new String[]{packaged})
+                    .setCacheControl(policy);
+        }
     }
 
     @jakarta.annotation.PostConstruct

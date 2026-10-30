@@ -11,6 +11,7 @@ import os
 import secrets
 from pathlib import Path
 import time
+import threading
 from urllib.parse import parse_qs, urlsplit
 
 CONFIG=json.loads(Path(os.environ.get("PREVIEW_ACCESS_CONFIG","/config/access.json")).read_text())
@@ -20,6 +21,32 @@ if not 1<=PR<=9999:
 COOKIE=f"PR{PR}MOBILEACCESS"
 LOGIN_COOKIE=f"__Host-PR{PR}LOGINCSRF"
 ATTEMPTS=defaultdict(deque)
+GLOBAL_ATTEMPTS=deque()
+ATTEMPT_LOCK=threading.Lock()
+
+def record_attempt(key, now):
+    # 전역 제한으로 여러 IP에서의 추측과 과도한 메모리 사용을 제한한다.
+    with ATTEMPT_LOCK:
+        while GLOBAL_ATTEMPTS and now-GLOBAL_ATTEMPTS[0]>60:
+            GLOBAL_ATTEMPTS.popleft()
+        for old in list(ATTEMPTS):
+            attempts=ATTEMPTS[old]
+            while attempts and now-attempts[0]>60:
+                attempts.popleft()
+            if not attempts:
+                del ATTEMPTS[old]
+        if len(GLOBAL_ATTEMPTS)>=60 or (key not in ATTEMPTS and len(ATTEMPTS)>=1000):
+            return False
+        attempts=ATTEMPTS[key]
+        if len(attempts)>=8:
+            return False
+        attempts.append(now)
+        GLOBAL_ATTEMPTS.append(now)
+        return True
+
+def clear_attempts(key):
+    with ATTEMPT_LOCK:
+        ATTEMPTS.pop(key,None)
 HOP={"connection","keep-alive","proxy-authenticate","proxy-authorization","te","trailer","transfer-encoding","upgrade"}
 PAGE="""<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PR #PRNUMBER 미리보기</title><style>*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;background:#10151b;color:#f0f6f6;font:16px/1.6 system-ui,sans-serif;padding:24px}main{width:min(100%,390px);border:1px solid #35474c;border-radius:24px;padding:28px;background:#172028}small{color:#69d7c8}h1{font-size:25px;margin:8px 0 12px}p{color:#b8c9ce}input,button{font:inherit;width:100%;border-radius:12px;padding:12px;margin-top:12px}input{background:#10151b;border:1px solid #52676f;color:white}button{border:0;background:#69d7c8;color:#0c2724;font-weight:700}label{display:block;margin-top:20px}.error{color:#ffb7b7}</style></head><body><main><small>tripleS · PR #PRNUMBER</small><h1>모바일 미리보기</h1><p>사이트 관리자 비밀번호로 접속하세요.</p>MESSAGE<form method="post" action="/__preview/login"><input type="hidden" name="csrf" value="CSRFVALUE"><label for="password">관리자 비밀번호</label><input id="password" name="password" type="password" autocomplete="current-password" required autofocus><button type="submit">미리보기 열기</button></form></main></body></html>"""
 
@@ -109,17 +136,13 @@ class Handler(BaseHTTPRequestHandler):
             password=fields.get("password",[""])[0]
             key=self.headers.get("CF-Connecting-IP","unknown")[:64]
             now=time.monotonic()
-            attempts=ATTEMPTS[key]
-            while attempts and now-attempts[0]>60:
-                attempts.popleft()
-            if len(attempts)>=8:
+            if not record_attempt(key, now):
                 self.login_page(429,'<p class="error">잠시 후 다시 시도해 주세요.</p>')
                 return
-            attempts.append(now)
             if not password_matches(password):
                 self.login_page(401,'<p class="error">비밀번호를 확인해 주세요.</p>')
                 return
-            attempts.clear()
+            clear_attempts(key)
             self.reply(303,headers=(("Location","/cosmo/objekt"),("Set-Cookie",COOKIE+"="+CONFIG["session"]+"; Path=/; HttpOnly; Secure; SameSite=Lax")))
             return
         if not self.authenticated():

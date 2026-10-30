@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "schema.improve.enabled", havingValue = "true", matchIfMissing = true)
 @Order(2)
 @Profile("!test")
 public class SchemaImproveRunner implements ApplicationRunner {

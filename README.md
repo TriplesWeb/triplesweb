@@ -56,9 +56,11 @@ cp .env.example .env   # 최초 1회 — DB/API 값 채우기 (.gitignore)
 
 `.env`가 있으면 기본 프로파일은 `local`이고, `SPRING_PROFILES_ACTIVE`를 지정하면 그 설정이 우선합니다. Docker는 기존 환경변수 설정을 사용하며, `.env`가 없으면 이 로더는 설정을 바꾸지 않습니다.
 
+로컬 프로파일은 공유 DB 보호를 위해 자동 Flyway 마이그레이션, 스키마 정리, 시드, 오브젝트 백그라운드 수집과 카탈로그 DB 저장을 기본적으로 끕니다. 화면에서 사용자가 직접 수행하는 쓰기는 공유 DB에 반영됩니다. 전용 개발 DB에서만 필요한 작업의 `LOCAL_FLYWAY_ENABLED`, `LOCAL_SCHEMA_IMPROVE_ENABLED`, `LOCAL_DATA_INITIALIZER_ENABLED`, `LOCAL_CHEMISTRY_SEED_ENABLED`, `LOCAL_OBJEKT_INGEST_ENABLED`, `LOCAL_OBJEKT_CACHE_PERSIST` 환경 변수를 `true`로 지정할 수 있습니다.
+
 #### DB 연결 시간 초과가 발생할 때
 
-`SocketTimeoutException: Connect timed out`이 Flyway 초기화에서 발생하면 먼저 **PC → 운영 DB의 TCP 연결**을 확인합니다. Flyway를 끄거나 Hibernate로 운영 스키마를 강제로 생성해서 해결하지 않습니다.
+`SocketTimeoutException: Connect timed out`이 Flyway 초기화에서 발생하면 먼저 **PC → 운영 DB의 TCP 연결**을 확인합니다. DB 연결 시간 초과는 Flyway 설정과 무관하므로 네트워크를 먼저 확인합니다. Hibernate로 운영 스키마를 강제로 생성하지 않습니다.
 
 Windows PowerShell:
 

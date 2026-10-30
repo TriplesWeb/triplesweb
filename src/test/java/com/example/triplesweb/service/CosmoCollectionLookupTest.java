@@ -21,7 +21,7 @@ class CosmoCollectionLookupTest {
     private int profileStatus = 200;
     private boolean missingSerial;
     private boolean indexFailure;
-    private int holdingsPhase;
+    private volatile int holdingsPhase;
     private final java.util.concurrent.atomic.AtomicLong now = new java.util.concurrent.atomic.AtomicLong(1700000000L);
     private volatile boolean laterPageFailure;
     private CountDownLatch continuePage = new CountDownLatch(0);
@@ -100,6 +100,26 @@ class CosmoCollectionLookupTest {
         assertThat(completed()).containsEntry("ownedCount", 26);
         assertThat(service.search("테스트", 0, "", "", "", "26")).containsEntry("filteredCount", 1);
         assertThat(service.search("테스트", Integer.MAX_VALUE)).containsEntry("cards", List.of()).containsEntry("hasMore", false);
+    }
+
+    @Test @SuppressWarnings("unchecked") void refreshKeepsCompleteSnapshotUntilEveryPageIsReady() {
+        completed();
+        continuePage = new CountDownLatch(1);
+        holdingsPhase = 1;
+        now.addAndGet(21);
+        assertThat(service.search("테스트", 0)).containsEntry("ownedCount", 26).containsEntry("loading", false);
+        await().atMost(Duration.ofSeconds(5)).until(() -> holdings.get() >= 4);
+        var during = service.search("테스트", 0);
+        assertThat(during).containsEntry("ownedCount", 26).containsEntry("loading", false);
+        assertThat((List<Map<String, Object>>) during.get("allCards"))
+                .noneMatch(card -> "cream02-hayeon-368z".equals(card.get("slug")));
+        continuePage.countDown();
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+            var after = service.search("테스트", 0);
+            assertThat(after).containsEntry("ownedCount", 26).containsEntry("loading", false);
+            assertThat((List<Map<String, Object>>) after.get("allCards"))
+                    .anyMatch(card -> "cream02-hayeon-368z".equals(card.get("slug")));
+        });
     }
 
     @Test void failedBackgroundPageIsRetriedInsteadOfCachingPartialSuccess() throws Exception {

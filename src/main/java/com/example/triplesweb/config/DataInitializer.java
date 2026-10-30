@@ -20,6 +20,7 @@ import java.util.List;
  * {@link com.example.triplesweb.service.ChemistrySeedService}보다 먼저 실행되어야 한다.
  */
 @Component
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "app.data-initializer.enabled", havingValue = "true", matchIfMissing = true)
 @Order(1)
 @RequiredArgsConstructor
 public class DataInitializer implements ApplicationRunner {
