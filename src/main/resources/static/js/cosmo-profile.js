@@ -12,9 +12,8 @@
   });
   applyCompletedFilter();
   const main = document.querySelector('[data-profile-version]');
-  const button = document.querySelector('[data-profile-refresh]');
   const status = document.querySelector('[data-profile-refresh-status]');
-  if (!main?.dataset.profileVersion || !button || !status) return;
+  if (!main?.dataset.profileVersion || !status) return;
   let timer, controller, busy = false;
   const schedule = delay => {
     clearTimeout(timer);
@@ -22,7 +21,7 @@
   };
   async function refresh() {
     if (busy || document.hidden) return;
-    busy = true; button.disabled = true; button.setAttribute('aria-busy', 'true');
+    busy = true;
     controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 25000);
     let delay = 30000;
@@ -66,10 +65,9 @@
       if (!document.hidden) status.textContent = '갱신 지연 · 기존 목록을 유지하고 다시 확인합니다';
       delay = 60000;
     } finally {
-      clearTimeout(timeout); busy = false; button.disabled = false; button.removeAttribute('aria-busy'); schedule(delay);
+      clearTimeout(timeout); busy = false; schedule(delay);
     }
   }
-  button.addEventListener('click', refresh);
   document.addEventListener('visibilitychange', () => {
     clearTimeout(timer);
     if (document.hidden) controller?.abort(); else refresh();
