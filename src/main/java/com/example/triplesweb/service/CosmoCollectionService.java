@@ -1,5 +1,6 @@
 package com.example.triplesweb.service;
 
+import com.example.triplesweb.infra.GzipRestClients;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,7 +13,11 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Resolve a COSMO account and cache its indexed holdings, including collection serials. */
 @Service
@@ -21,9 +26,18 @@ public class CosmoCollectionService {
     private static final long HOLDINGS_TTL_SECONDS = 20;
     private final java.time.Clock clock;
     private static final String NOT_FOUND = "없는 닉네임 입니다.";
+    private static final long CACHE_TTL_SEC = 600;
+    private static final long MISSING_TTL_SEC = 60;
+    private static final int MAX_CACHE_ENTRIES = 100;
+
     private final RestClient cosmo;
     private final RestClient index;
     private final ConcurrentHashMap<String, Cached> cache = new ConcurrentHashMap<>();
+    private final ExecutorService loadExecutor = Executors.newFixedThreadPool(4, r -> {
+        Thread t = new Thread(r, "cosmo-collection-load");
+        t.setDaemon(true);
+        return t;
+    });
 
     @org.springframework.beans.factory.annotation.Autowired
     public CosmoCollectionService(
@@ -38,7 +52,7 @@ public class CosmoCollectionService {
                 .connectTimeout(Duration.ofSeconds(3)).build());
         factory.setReadTimeout(Duration.ofSeconds(10));
         cosmo = RestClient.builder().baseUrl(cosmoUrl).requestFactory(factory).build();
-        index = RestClient.builder().baseUrl(indexUrl).requestFactory(factory).build();
+        index = GzipRestClients.create(indexUrl, Duration.ofSeconds(3), Duration.ofSeconds(15));
     }
 
     public Map<String, Object> search(String rawNickname, int page) {
@@ -71,13 +85,12 @@ public class CosmoCollectionService {
         if (nickname.isBlank()) throw new IllegalArgumentException(NOT_FOUND);
         if (nickname.length() > 40 || nickname.contains("/") || nickname.contains(" "))
             throw new IllegalArgumentException("닉네임을 올바르게 입력해 주세요.");
-        long now = clock.instant().getEpochSecond();
-        cache.entrySet().removeIf(entry -> entry.getValue().expiresAt <= now);
-        Cached found = cache.compute(nickname.toLowerCase(Locale.ROOT), (key, current) -> {
-            if (current != null && current.expiresAt > now) return current;
-            return load(nickname);
-        });
+        Cached found = resolve(nickname);
         if (found.address.isBlank()) throw new IllegalArgumentException(NOT_FOUND);
+        if (found.failure != null) throw new IllegalStateException("보유 오브젝트 로딩에 실패했습니다.", found.failure);
+        // Read completion before copying: a completed response must contain the final cards.
+        boolean loading = !found.complete;
+        List<Map<String, Object>> snapshot = found.cards.snapshot();
         String memberKey = member == null ? "" : member.trim();
         List<String> seasonKeys = cleanSelections(seasons);
         List<String> classKeys = cleanSelections(classes);
@@ -87,8 +100,8 @@ public class CosmoCollectionService {
         String kindKey = kind == null ? "" : kind.trim();
         boolean kindFiltered = !kindKey.isBlank() && !"all".equalsIgnoreCase(kindKey);
         String sortKey = sort == null || sort.isBlank() ? "latest" : sort.trim().toLowerCase(Locale.ROOT);
-        List<Map<String, Object>> filtered = found.cards.stream().filter(card -> {
-            if (!com.example.triplesweb.util.MemberPortraitOptions.matchesMemberGroup(
+        List<Map<String, Object>> filtered = snapshot.stream().filter(card -> {
+            if (!MemberPortraitOptions.matchesMemberGroup(
                     selectedGroup, selectedMembers, text(card, "member"))) return false;
             if (!matchesSelection(seasonKeys, text(card, "season"))) return false;
             if (!matchesSelection(classKeys, text(card, "objektClass"))) return false;
@@ -104,8 +117,8 @@ public class CosmoCollectionService {
         }).collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         filtered.sort(sortComparator(sortKey));
         int totalPages = Math.max(1, (int) Math.ceil(filtered.size() / (double) PAGE_SIZE));
-        int safePage = Math.min(Math.max(0, page), totalPages - 1);
-        int from = safePage * PAGE_SIZE;
+        int safePage = loading ? 0 : Math.max(0, page);
+        int from = (int) Math.min(filtered.size(), (long) safePage * PAGE_SIZE);
         List<Map<String, Object>> cards = filtered.subList(from, Math.min(filtered.size(), from + PAGE_SIZE));
         String nickEnc = URLEncoder.encode(found.nickname, StandardCharsets.UTF_8);
         String filterQuery = filterQuery(memberKey, seasonKeys, classKeys, query == null ? "" : query.trim(), selectedGroup, kindKey, sortKey);
@@ -114,23 +127,24 @@ public class CosmoCollectionService {
         view.put("nicknameEncoded", nickEnc);
         view.put("profileImageUrl", GravityService.safeImage(found.image));
         view.put("hasProfileImage", !GravityService.safeImage(found.image).isBlank());
-        view.put("ownedCount", found.cards.size());
+        view.put("ownedCount", snapshot.size());
         view.put("filteredCount", filtered.size());
         view.put("cards", cards);
-        view.put("allCards", found.cards);
+        view.put("allCards", snapshot);
         view.put("profileUrl", "/cosmo/profile/" + nickEnc.replace("+", "%20"));
         view.put("hasCards", !cards.isEmpty());
         view.put("page", safePage);
-        view.put("pageDisplay", safePage + 1);
+        view.put("pageDisplay", safePage == Integer.MAX_VALUE ? Integer.MAX_VALUE : safePage + 1);
         view.put("pageSize", PAGE_SIZE);
         view.put("loadedCount", cards.size());
         view.put("totalPages", totalPages);
         view.put("hasPrev", safePage > 0);
-        boolean hasMore = safePage + 1 < totalPages;
+        boolean hasMore = !loading && (long) safePage + 1 < totalPages;
         view.put("hasNext", hasMore);
         view.put("hasMore", hasMore);
+        view.put("loading", loading);
         view.put("prevPage", Math.max(0, safePage - 1));
-        view.put("nextPage", safePage + 1);
+        view.put("nextPage", loading ? 0 : safePage == Integer.MAX_VALUE ? Integer.MAX_VALUE : safePage + 1);
         view.put("selectedMember", "other".equals(selectedGroup) ? "" : memberKey);
         view.put("selectedSeasons", seasonKeys);
         view.put("selectedClasses", classKeys);
@@ -143,13 +157,54 @@ public class CosmoCollectionService {
         view.put("searchQuery", query == null ? "" : query.trim());
         view.put("selectedKind", kindFiltered ? kindKey : "all");
         view.put("selectedSort", sortKey);
-        view.put("kindOptions", found.cards.stream().map(card -> text(card, "collectionNo"))
+        view.put("kindOptions", snapshot.stream().map(card -> text(card, "collectionNo"))
                 .filter(value -> !value.isBlank()).distinct().sorted(String.CASE_INSENSITIVE_ORDER).toList());
         view.put("filterQuery", filterQuery);
         view.put("hasActiveFilters", !"all".equals(selectedGroup) || !memberKey.isBlank() || !seasonKeys.isEmpty()
                 || !classKeys.isEmpty() || kindFiltered || !"latest".equals(sortKey)
                 || !(query == null || query.isBlank()));
         return view;
+    }
+
+    private Cached resolve(String nickname) {
+        String key = nickname.toLowerCase(Locale.ROOT);
+        long now = clock.instant().getEpochSecond();
+        cache.entrySet().removeIf(entry -> entry.getValue().lastAccessAt + CACHE_TTL_SEC <= now);
+        Cached current = cache.get(key);
+        if (current != null && current.failure != null) {
+            cache.remove(key, current);
+            current = null;
+        }
+        if (current != null) current.lastAccessAt = now;
+        final Cached existing = current;
+        if (current != null) {
+            if (current.expiresAt > now) {
+                return current;
+            }
+            // stale-while-revalidate: keep serving until background refresh finishes
+            if (current.refreshing.compareAndSet(false, true)) {
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        Cached fresh = loadProgressive(nickname);
+                        cache.replace(key, existing, fresh);
+                    } catch (RuntimeException ignored) {
+                        existing.expiresAt = clock.instant().getEpochSecond() + 30;
+                    } finally {
+                        existing.refreshing.set(false);
+                    }
+                }, loadExecutor);
+            }
+            return current;
+        }
+        Cached fresh = loadProgressive(nickname);
+        synchronized (cache) {
+            while (cache.size() >= MAX_CACHE_ENTRIES) {
+                cache.entrySet().stream().min(Comparator.comparingLong(entry -> entry.getValue().lastAccessAt))
+                        .ifPresent(entry -> cache.remove(entry.getKey(), entry.getValue()));
+            }
+            cache.put(key, fresh);
+        }
+        return fresh;
     }
 
     private static Comparator<Map<String, Object>> sortComparator(String sort) {
@@ -229,7 +284,10 @@ public class CosmoCollectionService {
         return value == null ? "" : value.toString();
     }
 
-    private Cached load(String nickname) {
+    /**
+     * Nickname resolve + first index page synchronously; remaining pages in background.
+     */
+    private Cached loadProgressive(String nickname) {
         JsonNode profile;
         try {
             profile = cosmo.get().uri("/bff/v3/users/by-nickname/{nickname}", nickname)
@@ -241,42 +299,87 @@ public class CosmoCollectionService {
         String address = profile == null ? "" : profile.path("address").asText("");
         if (address.isBlank()) return missing(nickname);
         if (!address.matches("0x[0-9a-fA-F]{40}")) throw new IllegalStateException("잘못된 계정 응답입니다.");
-        List<Map<String, Object>> cards = new ArrayList<>();
-        var seenTokens = new HashSet<String>();
-        var seenCursors = new HashSet<String>();
-        JsonNode cursor = null;
-        int pages = 0;
-        do {
-            if (++pages > 1000) throw new IllegalStateException("보유 목록이 너무 큽니다. 잠시 후 다시 조회해 주세요.");
-            JsonNode currentCursor = cursor;
-            JsonNode response = index.get().uri(builder -> {
-                builder.path("/objekts/owned-by/{address}");
-                if (currentCursor != null) {
-                    builder.queryParam("cursor[receivedAt]", currentCursor.path("receivedAt").asText());
-                    builder.queryParam("cursor[id]", currentCursor.path("id").asText());
-                }
-                return builder.build(address.toLowerCase(Locale.ROOT));
-            }).retrieve().body(JsonNode.class);
-            if (response == null || !response.path("objekts").isArray())
-                throw new IllegalStateException("보유 오브젝트 응답이 올바르지 않습니다.");
-            for (JsonNode objekt : response.path("objekts")) {
-                String token = objekt.path("tokenId").asText(objekt.path("id").asText());
-                if (token.isBlank()) throw new IllegalStateException("잘못된 보유 오브젝트 응답입니다.");
-                if (seenTokens.add(token)) cards.add(card(objekt, cards.size()));
-            }
-            cursor = response.get("nextCursor");
-            if (cursor != null && !cursor.isNull()) {
+
+        String resolvedNick = profile.path("nickname").asText(nickname);
+        String image = profile.path("profileImageUrl").asText("");
+        String addrLower = address.toLowerCase(Locale.ROOT);
+        Set<String> seenTokens = ConcurrentHashMap.newKeySet();
+        Set<String> seenCursors = ConcurrentHashMap.newKeySet();
+        CardBuffer cards = new CardBuffer();
+
+        JsonNode first = fetchOwnedPage(addrLower, null);
+        appendObjekts(first, cards, seenTokens);
+        JsonNode nextCursor = first.get("nextCursor");
+        boolean hasMore = nextCursor != null && !nextCursor.isNull()
+                && !nextCursor.path("receivedAt").asText().isBlank()
+                && !nextCursor.path("id").asText().isBlank();
+
+        Cached cached = new Cached(resolvedNick, address, image, cards,
+                clock.instant().getEpochSecond() + HOLDINGS_TTL_SECONDS, !hasMore);
+        if (!hasMore) {
+            return cached;
+        }
+        if (!seenCursors.add(nextCursor.toString())) {
+            cached.complete = true;
+            return cached;
+        }
+        JsonNode startCursor = nextCursor;
+        CompletableFuture.runAsync(() -> continueLoad(cached, addrLower, startCursor, seenTokens, seenCursors),
+                loadExecutor);
+        return cached;
+    }
+
+    private void continueLoad(Cached cached, String address, JsonNode startCursor,
+                              Set<String> seenTokens, Set<String> seenCursors) {
+        JsonNode cursor = startCursor;
+        int pages = 1;
+        try {
+            while (cursor != null && !cursor.isNull()) {
+                if (++pages > 1000) break;
+                JsonNode response = fetchOwnedPage(address, cursor);
+                appendObjekts(response, cached.cards, seenTokens);
+                cursor = response.get("nextCursor");
+                if (cursor == null || cursor.isNull()) break;
                 if (cursor.path("receivedAt").asText().isBlank() || cursor.path("id").asText().isBlank()
-                        || !seenCursors.add(cursor.toString()))
-                    throw new IllegalStateException("보유 목록의 다음 페이지를 불러오지 못했습니다.");
+                        || !seenCursors.add(cursor.toString())) {
+                    break;
+                }
             }
-        } while (cursor != null && !cursor.isNull());
-        return new Cached(profile.path("nickname").asText(nickname), address,
-                profile.path("profileImageUrl").asText(""), List.copyOf(cards), clock.instant().getEpochSecond() + HOLDINGS_TTL_SECONDS);
+        } catch (RuntimeException ex) {
+            cached.failure = ex;
+        } finally {
+            cached.complete = true;
+            cached.expiresAt = clock.instant().getEpochSecond() + HOLDINGS_TTL_SECONDS;
+        }
+    }
+
+    private JsonNode fetchOwnedPage(String address, JsonNode cursor) {
+        JsonNode response = index.get().uri(builder -> {
+            builder.path("/objekts/owned-by/{address}");
+            if (cursor != null) {
+                builder.queryParam("cursor[receivedAt]", cursor.path("receivedAt").asText());
+                builder.queryParam("cursor[id]", cursor.path("id").asText());
+            }
+            return builder.build(address);
+        }).retrieve().body(JsonNode.class);
+        if (response == null || !response.path("objekts").isArray())
+            throw new IllegalStateException("보유 오브젝트 응답이 올바르지 않습니다.");
+        return response;
+    }
+
+    private void appendObjekts(JsonNode response, CardBuffer cards, Set<String> seenTokens) {
+        for (JsonNode objekt : response.path("objekts")) {
+            String token = objekt.path("tokenId").asText(objekt.path("id").asText());
+            if (token.isBlank()) throw new IllegalStateException("잘못된 보유 오브젝트 응답입니다.");
+            if (seenTokens.add(token)) {
+                cards.append(objekt);
+            }
+        }
     }
 
     private Cached missing(String nickname) {
-        return new Cached(nickname, "", "", List.of(), clock.instant().getEpochSecond() + 60);
+        return new Cached(nickname, "", "", new CardBuffer(),
+                clock.instant().getEpochSecond() + MISSING_TTL_SEC, true);
     }
 
     private static String collectionNo(JsonNode objekt, String collectionId) {
@@ -325,6 +428,43 @@ public class CosmoCollectionService {
                 .thenComparingInt(AbstractTransferLog::logIndex).reversed()).map(AbstractTransferLog::tokenId).toList();
     }
 
-    private record Cached(String nickname, String address, String image, List<Map<String, Object>> cards, long expiresAt) {}
-}
+    private static final class CardBuffer {
+        private final List<Map<String, Object>> cards = new ArrayList<>();
 
+        synchronized void append(JsonNode objekt) {
+            cards.add(card(objekt, cards.size()));
+        }
+
+        synchronized List<Map<String, Object>> snapshot() {
+            return List.copyOf(cards);
+        }
+    }
+
+    @jakarta.annotation.PreDestroy
+    void close() {
+        loadExecutor.shutdownNow();
+    }
+
+    private static final class Cached {
+        final String nickname;
+        final String address;
+        final String image;
+        final CardBuffer cards;
+        volatile RuntimeException failure;
+        volatile long lastAccessAt;
+        volatile long expiresAt;
+        volatile boolean complete;
+        final AtomicBoolean refreshing = new AtomicBoolean(false);
+
+        Cached(String nickname, String address, String image, CardBuffer cards,
+               long expiresAt, boolean complete) {
+            this.nickname = nickname;
+            this.address = address;
+            this.image = image;
+            this.cards = cards;
+            this.expiresAt = expiresAt;
+            this.complete = complete;
+            this.lastAccessAt = CosmoCollectionService.this.clock.instant().getEpochSecond();
+        }
+    }
+}

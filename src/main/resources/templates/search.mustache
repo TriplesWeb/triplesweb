@@ -1,19 +1,11 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    {{>layout/favicon}}
-    <meta charset="UTF-8" />
+{{>layout/site-head}}
+<meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{#keyword}}‘{{keyword}}’ 검색 결과{{/keyword}}{{^keyword}}검색{{/keyword}} - 트리플에스 커뮤니티</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script src="/js/tailwind.config.js"></script>
-    <link rel="stylesheet" href="/css/style.css">
     <style>
         .search-highlight b {
             color: #00f5d4;
@@ -50,11 +42,11 @@
                 </div>
 
                 <form action="/search" method="get" class="flex w-full sm:w-auto items-center gap-2">
-                    <div class="relative flex-1 sm:w-64">
+                    <div class="site-search flex-1 sm:w-64">
                         <input type="search" name="keyword" value="{{keyword}}" placeholder="검색어를 입력하세요"
-                               class="w-full py-2.5 pl-3 pr-10 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl text-sm text-on-surface placeholder:text-outline/60 focus:outline-none focus:border-primary-container" />
-                        <button type="submit" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-outline hover:text-primary-container" aria-label="검색">
-                            <span class="material-symbols-outlined text-[18px]" data-icon="search">search</span>
+                               class="site-field site-search__input" />
+                        <button type="submit" class="site-search__submit" aria-label="검색">
+                            <span class="material-symbols-outlined" data-icon="search">search</span>
                         </button>
                     </div>
                 </form>

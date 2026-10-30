@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    {{>layout/favicon}}
-    <meta charset="UTF-8"/>
+{{>layout/site-head}}
+<link rel="stylesheet" href="/css/bootstrap-compat.css?v=2">
+<meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>{{item.name}} - 굿즈샵</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
     <style>
         /* 설명 박스 안의 이미지는 전부 숨김 */
         .desc-body img,
@@ -55,6 +55,6 @@
     </div>
 
 </div>
+<script src="/js/bootstrap-compat.js?v=1" defer></script>
 </body>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 </html>

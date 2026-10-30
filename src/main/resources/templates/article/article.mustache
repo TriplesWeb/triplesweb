@@ -1,24 +1,15 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    {{>layout/favicon}}
-    <meta charset="UTF-8" />
+{{>layout/site-head}}
+<meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
 
-    <!-- 폰트 및 아이콘 연결 -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-
-    <!-- Tailwind CSS 스크립트 -->
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script src="/js/tailwind.config.js"></script>
-    <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/article-page.css?v=1">
 </head>
 <body class="article-page bg-surface text-on-surface min-h-screen flex flex-col">
+
 {{>layout/header}}
 
 <main class="flex-1 flex items-start justify-center px-4 sm:px-6 py-6 z-10 relative">
@@ -31,12 +22,21 @@
 
             <!-- 상단 헤더 타이틀 -->
             <div class="article-board-title flex items-center justify-between mb-8 pb-4 border-b border-outline-variant/30">
+
                 <div class="flex items-center gap-3">
                     <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:#8decd9;flex-shrink:0"><path d="M20 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.95L3 21l1.95-4.5A9 9 0 0 1 4 12.5 8.5 8.5 0 1 1 20 11.5Z"/><path d="M8 10h8M8 14h5"/></svg>
                     <h1 class="font-headline-lg text-headline-md font-bold text-on-surface tracking-tight">
                         {{categoryName}} 게시판
                     </h1>
                 </div>
+                {{#isTradeBoard}}
+                <div class="flex items-center gap-2" role="tablist" aria-label="교환/거래 구분">
+                    <a href="/article/trade" role="tab" aria-selected="{{#isTradeTab}}true{{/isTradeTab}}{{^isTradeTab}}false{{/isTradeTab}}"
+                       class="px-4 py-1.5 rounded-full text-sm font-semibold transition-colors text-decoration-none {{#isTradeTab}}bg-primary-container text-on-primary{{/isTradeTab}}{{^isTradeTab}}bg-surface-container-high/70 text-on-surface-variant hover:text-primary-container{{/isTradeTab}}">교환</a>
+                    <a href="/article/sell" role="tab" aria-selected="{{#isSellTab}}true{{/isSellTab}}{{^isSellTab}}false{{/isSellTab}}"
+                       class="px-4 py-1.5 rounded-full text-sm font-semibold transition-colors text-decoration-none {{#isSellTab}}bg-primary-container text-on-primary{{/isSellTab}}{{^isSellTab}}bg-surface-container-high/70 text-on-surface-variant hover:text-primary-container{{/isSellTab}}">거래</a>
+                </div>
+                {{/isTradeBoard}}
             </div>
 
             <!-- 게시판 테이블 영역 -->
@@ -83,6 +83,7 @@
                 <!-- 왼쪽: 게시글 검색 폼 -->
                 <form action="/article/{{category}}" method="get" class="article-board-search flex items-center gap-2 w-full sm:w-auto">
                     <select name="type" class="py-2.5 px-3 border border-outline-variant/60 rounded-xl text-sm focus:outline-none focus:border-primary-container" style="color:#111;background:#fff;">
+
                         <option value="title" {{#isSearchTitle}}selected{{/isSearchTitle}}>제목</option>
                         <option value="content" {{#isSearchContent}}selected{{/isSearchContent}}>내용</option>
                         <option value="writer" {{#isSearchWriter}}selected{{/isSearchWriter}}>작성자</option>
@@ -91,6 +92,7 @@
                         <input type="text" name="keyword" value="{{searchKeyword}}" placeholder="검색어를 입력하세요" class="w-full py-2.5 pl-3 pr-10 bg-white border border-outline-variant/60 rounded-xl text-sm text-black placeholder:text-neutral-500 focus:outline-none focus:border-primary-container" style="color:#111;background:#fff;" />
                         <button type="submit" aria-label="게시글 검색" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-outline">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+
                         </button>
                     </div>
                 </form>
@@ -99,7 +101,7 @@
                 <div class="flex items-center justify-end w-full sm:w-auto">
                     {{#isNotice}}
                         {{#isAdmin}}
-                            <a href="/article/{{category}}/new" class="py-2.5 px-5 rounded-full bg-primary-container text-on-primary font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
+                            <a href="/article/{{category}}/new" class="site-btn site-btn--primary btn-glow">
                                 <span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
                                 <span>공지 작성</span>
                             </a>
@@ -107,9 +109,9 @@
                     {{/isNotice}}
                     {{^isNotice}}
                         {{#isAdmin}}
-                            <a href="/article/{{category}}/new" class="py-2.5 px-5 rounded-full bg-primary-container text-on-primary font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
+                            <a href="/article/{{category}}/new" class="site-btn site-btn--primary btn-glow">
                                 <span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
-                                <span>글 쓰기</span>
+                                <span>{{#isTradeTab}}교환 글쓰기{{/isTradeTab}}{{#isSellTab}}거래 글쓰기{{/isSellTab}}{{^isTradeBoard}}글 쓰기{{/isTradeBoard}}</span>
                             </a>
                         {{/isAdmin}}
                     {{/isNotice}}

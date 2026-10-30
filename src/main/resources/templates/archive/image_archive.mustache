@@ -1,23 +1,14 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    {{>layout/favicon}}
-    <meta charset="UTF-8" />
+{{>layout/site-head}}
+<meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>트리플에스 커뮤니티 - 사진 아카이브</title>
 
-    <!-- 폰트 및 아이콘 연결 -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/archive-page.css?v=14">
+    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=20">
 
-    <!-- Tailwind CSS 스크립트 -->
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script src="/js/tailwind.config.js"></script>
-    <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/archive-page.css?v=12">
-    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=9">
     {{#_csrf}}
     <meta name="_csrf" content="{{token}}">
     <meta name="_csrf_header" content="{{headerName}}">
@@ -83,12 +74,13 @@
                 </select>
                 <span class="material-symbols-outlined">sort</span>
             </label>
-            <label class="ar-search-wrap">
-                <span class="material-symbols-outlined">search</span>
-                <input class="ar-search" type="search" name="q" value="{{query}}" placeholder="사진 제목 검색" aria-label="사진 제목 검색">
-            </label>
+            <div class="ar-search-wrap site-search">
+                <input class="ar-search site-search__input" type="search" name="q" value="{{query}}" placeholder="사진 제목 검색" aria-label="사진 제목 검색">
+                <button type="submit" class="site-search__submit" aria-label="검색">
+                    <span class="material-symbols-outlined">search</span>
+                </button>
+            </div>
             {{>partials/date-range-filter}}
-            <button class="ar-submit" type="submit">검색</button>
             <button type="button" class="ar-submit" data-admin-only onclick="showAddModal()">사진 추가</button>
         </form>
         <div class="ar-member-row">

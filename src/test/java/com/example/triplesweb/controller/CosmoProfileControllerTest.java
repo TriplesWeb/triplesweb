@@ -1,7 +1,6 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.service.*;
-import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.config.MustacheConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +21,7 @@ class CosmoProfileControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean CosmoCollectionService collections;
     @MockitoBean ObjektService catalog;
-    @MockitoBean ArtistRepository artists;
+    @MockitoBean ArtistSnapshotService artists;
 
     private void givenProfile() {
         Map<String, Object> card = new LinkedHashMap<>(Map.of("slug", "cream02-hayeon-367z", "member", "HaYeon",

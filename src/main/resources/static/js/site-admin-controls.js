@@ -2,6 +2,8 @@
   const auth = window.AboutAdminAuth;
   if (!auth || document.body.classList.contains("artist-page")) return;
 
+  const CACHE_KEY = "site-admin-status-v1";
+  const CACHE_TTL_MS = 60_000;
   const protectedSelector = "[data-admin-only], .admin-only";
   const style = document.createElement("style");
   style.textContent = `
@@ -15,21 +17,58 @@
 
   const headers = (extra) => auth.applyAuthHeaders(extra || {});
 
+  function applyState(state) {
+    const configured = Boolean(state && state.configured);
+    const admin = configured && Boolean(state.admin);
+    document.body.classList.toggle("site-admin-enabled", admin);
+    document.querySelectorAll(protectedSelector).forEach((el) => {
+      if (admin) el.removeAttribute("aria-hidden");
+      else el.setAttribute("aria-hidden", "true");
+    });
+    return { configured, admin };
+  }
+
+  function readCache() {
+    try {
+      const raw = sessionStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed.expiresAt !== "number" || parsed.expiresAt < Date.now()) return null;
+      return parsed.state;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function writeCache(state) {
+    try {
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+        expiresAt: Date.now() + CACHE_TTL_MS,
+        state
+      }));
+    } catch (_) {}
+  }
+
   async function refresh() {
     try {
       const res = await fetch("/api/artist/admin/status", { credentials: "same-origin", headers: headers() });
       const state = res.ok ? await res.json() : { configured: false, admin: false };
-      const configured = Boolean(state.configured);
-      const admin = configured && Boolean(state.admin);
-      document.body.classList.toggle("site-admin-enabled", admin);
-      document.querySelectorAll(protectedSelector).forEach((el) => {
-        if (admin) el.removeAttribute("aria-hidden");
-        else el.setAttribute("aria-hidden", "true");
-      });
-      return { configured, admin };
+      writeCache(state);
+      return applyState(state);
     } catch (_) {
       document.body.classList.remove("site-admin-enabled");
       return { configured: false, admin: false };
+    }
+  }
+
+  function scheduleRefresh() {
+    const cached = readCache();
+    if (cached) applyState(cached);
+    const run = () => { refresh(); };
+    if (typeof requestIdleCallback === "function") {
+      requestIdleCallback(run, { timeout: 2500 });
+    } else {
+      setTimeout(run, 200);
     }
   }
 
@@ -75,5 +114,9 @@
     }
   });
 
-  document.addEventListener("DOMContentLoaded", refresh);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", scheduleRefresh);
+  } else {
+    scheduleRefresh();
+  }
 })();

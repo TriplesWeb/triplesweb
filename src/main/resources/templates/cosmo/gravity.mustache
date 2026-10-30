@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-{{>layout/favicon}}
-{{>layout/gravity-fonts}}
+{{>layout/site-head}}
+<link rel="stylesheet" href="/css/about-admin.css?v=1">
+<link rel="stylesheet" href="/css/gravity-admin.css?v=1">
 <link rel="stylesheet" href="/css/gravity-page.css?v=2">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=10">
-<link rel="stylesheet" href="/css/gravity-filters.css?v=1">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=12">
+<link rel="stylesheet" href="/css/gravity-filters.css?v=2">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>역대 그래비티 - 트리플에스 커뮤니티</title>
 </head>
@@ -86,7 +87,7 @@
                 <option value="oldest">오래된 순</option>
                 <option value="como">COMO 많은 순</option>
             </select></div>
-            <label class="objekt-search"><span aria-hidden="true">⌕</span><input id="gvSearch" class="objekt-search-input" type="search" placeholder="그래비티 제목 검색" aria-label="그래비티 제목 검색"></label>
+            <label class="objekt-search site-search"><input id="gvSearch" class="objekt-search-input site-search__input" type="search" placeholder="그래비티 제목 검색" aria-label="그래비티 제목 검색"></label>
         </div>
         <div class="gv-toolbar-meta">
             <span>표시 중 <strong id="gvVisible">{{gravityCount}}</strong> / {{gravityCount}}</span>
@@ -120,8 +121,7 @@
 </main>
 {{>cosmo/partials/gravity-admin-login}}
 {{>layout/footer}}
-<script src="/js/about-admin-auth.js?v=1"></script>
-<script src="/js/gravity-connect.js?v=4"></script>
+<script src="/js/gravity-connect.js?v=4" defer></script>
 <script src="/js/objekt-dropdown.js?v=1" defer></script>
 <script>
 (function () {

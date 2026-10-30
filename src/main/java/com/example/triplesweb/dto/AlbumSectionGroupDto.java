@@ -1,6 +1,5 @@
 package com.example.triplesweb.dto;
 
-import com.example.triplesweb.entity.Album;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,5 +22,5 @@ public class AlbumSectionGroupDto {
     /** 탭/패널 DOM id (예: album-section-1, album-section-other) */
     private String tabKey;
     @Builder.Default
-    private List<Album> albums = new ArrayList<>();
+    private List<AlbumListCard> albums = new ArrayList<>();
 }

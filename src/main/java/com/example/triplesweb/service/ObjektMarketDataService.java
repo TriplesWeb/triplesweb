@@ -1,5 +1,6 @@
 package com.example.triplesweb.service;
 
+import com.example.triplesweb.infra.GzipRestClients;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,7 +42,7 @@ public class ObjektMarketDataService {
         var factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(3)).build());
         factory.setReadTimeout(Duration.ofSeconds(6));
-        this.index = RestClient.builder().baseUrl(indexUrl).requestFactory(factory).build();
+        this.index = GzipRestClients.create(indexUrl, Duration.ofSeconds(3), Duration.ofSeconds(15));
         this.cosmo = RestClient.builder().baseUrl(cosmoUrl).requestFactory(factory).build();
         this.rpc = RestClient.builder().baseUrl(rpcUrl).requestFactory(factory).build();
         this.contract = contract;
@@ -75,15 +76,23 @@ public class ObjektMarketDataService {
 
     public List<Map<String, Object>> withMintCounts(List<Map<String, Object>> items) {
         Map<String, Long> snapshot = mintCounts;
-        return items.stream().map(item -> {
-            Map<String, Object> copy = new LinkedHashMap<>(item);
-            Long count = snapshot.get(String.valueOf(item.get("slug")));
-            if (count != null) {
-                copy.put("mintCount", count);
-                copy.put("mintCountKnown", true);
-            }
-            return copy;
-        }).toList();
+        return items.stream().map(item -> applyMint(item, snapshot)).toList();
+    }
+
+    /** Mint lookup without copying the full catalog — used by sort comparators. */
+    public Long mintCount(String slug) {
+        if (slug == null || slug.isBlank()) return null;
+        return mintCounts.get(slug);
+    }
+
+    private static Map<String, Object> applyMint(Map<String, Object> item, Map<String, Long> snapshot) {
+        Map<String, Object> copy = new LinkedHashMap<>(item);
+        Long count = snapshot.get(String.valueOf(item.get("slug")));
+        if (count != null) {
+            copy.put("mintCount", count);
+            copy.put("mintCountKnown", true);
+        }
+        return copy;
     }
 
     public List<Map<String,Object>> withIssuedSupply(List<Map<String,Object>> items) { return serialSupply.decorate(items); }
