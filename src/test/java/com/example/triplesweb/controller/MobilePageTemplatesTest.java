@@ -21,7 +21,7 @@ class MobilePageTemplatesTest {
         var post=Map.<String,Object>of("id",1,"displayId",1,"title",longText,"userId",longText,"formattedDate","2026-10-27","likesCount",10,"category","trade");
         String rich="<p>"+"https://example.com/"+"longpath".repeat(30)+"</p><table style='width:1200px'><tr><td>가로로 긴 표</td></tr></table>";
         Map<String,Object> model=new HashMap<>();
-        model.put("siteNavigation", SiteNavigation.PRIMARY); model.put("siteCommunity", SiteNavigation.COMMUNITY);
+        model.put("siteNavigation", SiteNavigation.PRIMARY);
         model.putAll(post); model.put("categoryName","교환"); model.put("member",false);
         model.put("articleList",List.of(post)); model.put("popularArticles",List.of(post)); model.put("article",Map.of("id",1,"title",longText,"content",rich,"userId",longText));
         model.put("item",Map.of("id",1,"name",longText,"price",1000,"description",rich));
@@ -47,7 +47,7 @@ class MobilePageTemplatesTest {
                 assertThat(source).containsAnyOf("{{>layout/favicon}}","{{>layout/triples-head}}");
                 String result=compiler.compile(source).execute(model);
                 assertThat(result).contains("/css/site-mobile.css", "name=\"viewport\"");
-                String name=root.relativize(path).toString().replace('/', '_');
+                String name=root.relativize(path).toString().replace('/', '_').replace('\\', '_');
                 Files.writeString(output.resolve(name+".html"),result);count++;
             }
         }

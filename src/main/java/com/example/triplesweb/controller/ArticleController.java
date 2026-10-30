@@ -46,9 +46,9 @@ public class ArticleController {
     private final ObjektService objektService;
 
     private static final Set<String> ALLOWED_CATEGORIES = Set.of(
-            "free", "chat", "trade", "sell", "group-orders", "info", "notice"
+            "trade", "sell", "group-orders", "info"
     );
-    private static final Set<String> LIKE_ALLOWED_CATEGORIES = Set.of("free", "chat", "info");
+    private static final Set<String> LIKE_ALLOWED_CATEGORIES = Set.of("info");
 
     private static boolean isObjektBoard(String category) {
         return Set.of("trade", "sell", "group-orders").contains(category);
@@ -247,13 +247,10 @@ public class ArticleController {
 
     private String getCategoryName(String category) {
         return switch (category) {
-            case "free" -> "자유";
-            case "chat" -> "잡담";
             case "trade" -> "교환";
             case "sell" -> "거래";
             case "group-orders" -> "분철";
             case "info" -> "정보";
-            case "notice" -> "공지사항";
             default -> "게시판";
         };
     }
@@ -312,7 +309,10 @@ public class ArticleController {
 
         model.addAttribute("category", category);
         model.addAttribute("categoryName", getCategoryName(category));
-        model.addAttribute("isNotice", "notice".equals(category));
+        model.addAttribute("isMarketBoard", isObjektBoard(category));
+        model.addAttribute("isTrade", "trade".equals(category));
+        model.addAttribute("isSell", "sell".equals(category));
+        model.addAttribute("isGroupOrders", "group-orders".equals(category));
         model.addAttribute("articleList", articleViewList);
         model.addAttribute("hideRecommendations", "group-orders".equals(category));
         model.addAttribute("popularList", "group-orders".equals(category) ? List.of()

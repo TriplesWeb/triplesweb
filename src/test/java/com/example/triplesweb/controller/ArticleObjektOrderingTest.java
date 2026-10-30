@@ -105,7 +105,7 @@ class ArticleObjektOrderingTest {
         existing.setId(4L);
         existing.setTitle("같은 제목");
         existing.setContent("<p>같은 내용</p>");
-        existing.setCategory("free");
+        existing.setCategory("info");
         when(articles.showWithFiles(4L)).thenReturn(existing);
         when(links.findForArticle(4L)).thenReturn(List.of());
 
@@ -113,7 +113,7 @@ class ArticleObjektOrderingTest {
         blankTitle.setTitle("  ");
         blankTitle.setContent("<p>본문</p>");
         var missingTitle = new ExtendedModelMap();
-        assertThat(controller.updateArticle("free", 4L, blankTitle, null, null, null, null, missingTitle))
+        assertThat(controller.updateArticle("info", 4L, blankTitle, null, null, null, null, missingTitle))
                 .isEqualTo("article/article_edit");
         assertThat(missingTitle.get("errorMessage")).isEqualTo("제목을 입력해주세요.");
 
@@ -121,7 +121,7 @@ class ArticleObjektOrderingTest {
         blankBody.setTitle("제목");
         blankBody.setContent("<p><br></p>");
         var missingBody = new ExtendedModelMap();
-        assertThat(controller.updateArticle("free", 4L, blankBody, null, null, null, null, missingBody))
+        assertThat(controller.updateArticle("info", 4L, blankBody, null, null, null, null, missingBody))
                 .isEqualTo("article/article_edit");
         assertThat(missingBody.get("errorMessage")).isEqualTo("내용을 입력해주세요.");
 
@@ -131,7 +131,7 @@ class ArticleObjektOrderingTest {
         same.setTitle("같은 제목");
         same.setContent("<p>같은 내용</p>");
         var unchanged = new ExtendedModelMap();
-        assertThat(controller.updateArticle("free", 4L, same, null, null, null, null, unchanged))
+        assertThat(controller.updateArticle("info", 4L, same, null, null, null, null, unchanged))
                 .isEqualTo("article/article_edit");
         assertThat(unchanged.get("errorMessage")).isEqualTo("게시글을 수정해주세요.");
     }

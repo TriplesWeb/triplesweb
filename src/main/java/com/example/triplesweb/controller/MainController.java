@@ -58,7 +58,7 @@ public class MainController {
             schedulesJson = mapper.writeValueAsString(scheduleForms);
         } catch (Exception ignored) {}
 
-        model.addAttribute("noticePosts", articleService.findRecentByCategory("notice", HOME_LIMIT));
+        model.addAttribute("infoPosts", articleService.findRecentByCategory("info", HOME_LIMIT));
         model.addAttribute("recentPhotos", archiveService.pageByType(MediaType.IMAGE, 0, HOME_LIMIT, null)
                 .getContent().stream()
                 .filter(photo -> photo.getFile() != null && photo.getFile().getUrl() != null)

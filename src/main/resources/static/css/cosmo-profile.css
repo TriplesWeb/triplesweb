@@ -216,3 +216,5 @@
 .profile-refresh button:focus-visible{outline:2px solid #8decd9;outline-offset:2px}
 @media(max-width:600px){.profile-refresh{justify-content:space-between}.profile-refresh>[role=status]{flex:1;min-width:0;line-height:1.5}.profile-season-heading{padding:.65rem .45rem}.profile-summary-orbit{width:3.25rem}.profile-checklist-group>summary{padding:.65rem;gap:.65rem}}
 @media(prefers-reduced-motion:reduce){.profile-fold-chevron{transition:none}}
+
+.profile-owned-group{padding-top:1rem}.profile-owned-group h4{color:#a9beb8;font-size:.8rem;font-weight:700}.profile-owned-group .profile-checklist-grid{padding-top:.65rem}.profile-breakdown-row strong,.profile-summary-copy>span{font-size:1rem;font-weight:750;color:#eafff8!important}.profile-orbit-stat>div:last-child strong{font-size:1rem;font-weight:800;color:#eafff8;font-variant-numeric:tabular-nums}

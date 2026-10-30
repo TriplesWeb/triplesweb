@@ -104,28 +104,28 @@
         </div>
     </section>
 
-    <!-- 3. 공지 · 스케줄 · 사진 -->
+    <!-- 3. 정보 · 스케줄 · 사진 -->
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl h-full">
                 <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
                     <div class="flex items-center gap-2">
                         <span class="material-symbols-outlined text-secondary text-xl">campaign</span>
-                        <h3 class="text-base font-bold text-on-surface">공지사항</h3>
+                        <h3 class="text-base font-bold text-on-surface">기사/그외</h3>
                     </div>
-                    <a href="/article/notice" class="text-xs text-on-surface-variant hover:text-secondary flex items-center gap-0.5 transition-colors">
+                    <a href="/article/info" class="text-xs text-on-surface-variant hover:text-secondary flex items-center gap-0.5 transition-colors">
                         더보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
                     </a>
                 </div>
                 <ul class="divide-y divide-outline-variant/20 text-xs">
-                    {{#noticePosts}}
+                    {{#infoPosts}}
                         <li class="py-2.5 flex items-center justify-between gap-4 hover:bg-surface-container-high/40 px-2 rounded-lg transition-colors">
-                            <a href="/article/notice/{{id}}" class="truncate text-on-surface hover:text-secondary font-medium flex-1">{{title}}</a>
+                            <a href="/article/info/{{id}}" class="truncate text-on-surface hover:text-secondary font-medium flex-1">{{title}}</a>
                             <div class="text-on-surface-variant/80 font-mono text-[11px] shrink-0">{{userId}} · {{formattedDate}}</div>
                         </li>
-                    {{/noticePosts}}
-                    {{^noticePosts}}
-                        <li class="py-4 text-center text-on-surface-variant/60">등록된 공지사항이 없습니다.</li>
-                    {{/noticePosts}}
+                    {{/infoPosts}}
+                    {{^infoPosts}}
+                        <li class="py-4 text-center text-on-surface-variant/60">등록된 정보가 없습니다.</li>
+                    {{/infoPosts}}
                 </ul>
             </div>
 

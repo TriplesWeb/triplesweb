@@ -16,7 +16,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/article-page.css?v=1">
+    <link rel="stylesheet" href="/css/article-page.css?v=2">
 </head>
 <body class="article-page bg-surface text-on-surface min-h-screen flex flex-col">
 {{>layout/header}}
@@ -38,6 +38,14 @@
                     </h1>
                 </div>
             </div>
+
+            {{#isMarketBoard}}
+            <nav class="market-tabs" aria-label="교환/거래 게시판 분류">
+                <a href="/article/trade" {{#isTrade}}aria-current="page"{{/isTrade}}>교환</a>
+                <a href="/article/sell" {{#isSell}}aria-current="page"{{/isSell}}>거래</a>
+                <a href="/article/group-orders" {{#isGroupOrders}}aria-current="page"{{/isGroupOrders}}>분철</a>
+            </nav>
+            {{/isMarketBoard}}
 
             <!-- 게시판 테이블 영역 -->
             <div class="article-board-list w-full overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface-container-lowest/40 mb-8">
@@ -97,22 +105,13 @@
 
                 <!-- 오른쪽: 권한별 글쓰기 버튼 -->
                 <div class="flex items-center justify-end w-full sm:w-auto">
-                    {{#isNotice}}
-                        {{#isAdmin}}
-                            <a href="/article/{{category}}/new" class="py-2.5 px-5 rounded-full bg-primary-container text-on-primary font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
-                                <span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
-                                <span>공지 작성</span>
-                            </a>
-                        {{/isAdmin}}
-                    {{/isNotice}}
-                    {{^isNotice}}
-                        {{#isAdmin}}
+                    {{#isAdmin}}
                             <a href="/article/{{category}}/new" class="py-2.5 px-5 rounded-full bg-primary-container text-on-primary font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
                                 <span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
                                 <span>글 쓰기</span>
                             </a>
                         {{/isAdmin}}
-                    {{/isNotice}}
+
                 </div>
             </div>
 

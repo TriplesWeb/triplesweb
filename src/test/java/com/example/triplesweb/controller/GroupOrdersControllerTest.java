@@ -49,6 +49,21 @@ class GroupOrdersControllerTest {
         mvc.perform(get("/article/group-orders/new")).andExpect(status().isOk())
             .andExpect(model().attribute("showObjektPicker",true));
     }
+    @Test void marketTabsKeepEachBoardAndItsSearch() throws Exception {
+        for (String category : List.of("trade", "sell", "group-orders")) {
+            mvc.perform(get("/article/" + category)).andExpect(status().isOk())
+                .andExpect(content().string(containsString("href=\"/article/trade\"")))
+                .andExpect(content().string(containsString("href=\"/article/sell\"")))
+                .andExpect(content().string(containsString("href=\"/article/group-orders\"")))
+                .andExpect(content().string(containsString("href=\"/article/" + category + "\" aria-current=\"page\"")));
+        }
+        mvc.perform(get("/article/info")).andExpect(status().isOk())
+            .andExpect(content().string(not(containsString("class=\"market-tabs\""))));
+        for (String category : List.of("free", "chat", "notice", "all")) {
+            mvc.perform(get("/article/" + category)).andExpect(redirectedUrl("/article/trade"));
+        }
+    }
+
     @Test void createIncludesAttachmentsAndSelectedObjekts() throws Exception {
         when(articles.create(any())).thenReturn(article());
         var upload=new MockMultipartFile("uploadFiles","photo.jpg","image/jpeg",new byte[]{1,2,3});

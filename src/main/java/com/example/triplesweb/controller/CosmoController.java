@@ -296,6 +296,4 @@ public class CosmoController {
     @GetMapping("/event")
     public String indexCosmoEvent() { return "cosmo/event"; }
 
-    @GetMapping("/update")
-    public String indexCosmoUpdate() { return "cosmo/update"; }
 }

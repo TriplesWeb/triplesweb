@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="/css/archive-page.css?v=3">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=9">
 <link rel="stylesheet" href="/css/cosmo-collection.css?v=10">
-<link rel="stylesheet" href="/css/cosmo-profile.css?v=12">
+<link rel="stylesheet" href="/css/cosmo-profile.css?v=13">
 </head>
 <body class="collection-page min-h-screen flex flex-col">
 {{>layout/header}}
@@ -104,35 +104,38 @@
 <div data-profile-live="checklist">
 {{#hasChecklist}}
 <section class="profile-checklist" aria-labelledby="checklist-heading">
-    <div class="profile-section-heading"><div><h2 id="checklist-heading">{{selectedMember}} · {{#isOwnershipOwned}}보유{{/isOwnershipOwned}}{{#isOwnershipMissing}}미보유{{/isOwnershipMissing}}{{#isOwnershipAll}}수집{{/isOwnershipAll}} 오브젝트</h2>{{#isOwnershipSubset}}<p>{{checklistVisible}}종 · 클래스별 목록</p>{{/isOwnershipSubset}}{{^isOwnershipSubset}}<p>{{checklistTotal}}종 중 {{checklistOwned}}종 보유 · {{checklistMissing}}종 미보유{{#isOwnershipOwned}} · 보유 {{checklistVisible}}종 표시{{/isOwnershipOwned}}{{#isOwnershipMissing}} · 미보유 {{checklistVisible}}종 표시{{/isOwnershipMissing}}</p>{{/isOwnershipSubset}}</div>
-        {{#isOwnershipAll}}<label class="profile-hide-complete" data-hide-complete-label hidden><input type="checkbox" data-hide-complete>완료한 시즌 숨기기</label>{{/isOwnershipAll}}
+    <div class="profile-section-heading"><div><h2 id="checklist-heading">{{selectedMember}} · {{#isOwnershipOwned}}보유{{/isOwnershipOwned}}{{#isOwnershipMissing}}미보유{{/isOwnershipMissing}}{{#isOwnershipAll}}수집{{/isOwnershipAll}}{{#isOwnershipProgress}}수집{{/isOwnershipProgress}} 오브젝트</h2>{{#isOwnershipSubset}}<p>{{checklistVisible}}종 · 시즌별 목록</p>{{/isOwnershipSubset}}{{^isOwnershipSubset}}<p>{{checklistTotal}}종 중 {{checklistOwned}}종 보유 · {{checklistMissing}}종 미보유{{#isOwnershipOwned}} · 보유 {{checklistVisible}}종 표시{{/isOwnershipOwned}}{{#isOwnershipMissing}} · 미보유 {{checklistVisible}}종 표시{{/isOwnershipMissing}}</p>{{/isOwnershipSubset}}</div>
+        {{#isOwnershipProgress}}<label class="profile-hide-complete" data-hide-complete-label hidden><input type="checkbox" data-hide-complete>완료한 시즌 숨기기</label>{{/isOwnershipProgress}}
     </div>
     {{#hasOwnershipFilter}}
     <nav class="profile-ownership-tabs" aria-label="보유 여부 모아보기">
         <a class="profile-ownership-tab{{#isOwnershipAll}} is-active{{/isOwnershipAll}}" href="{{ownershipAllUrl}}" {{#isOwnershipAll}}aria-current="page"{{/isOwnershipAll}}>전체</a>
+        <a class="profile-ownership-tab{{#isOwnershipProgress}} is-active{{/isOwnershipProgress}}" href="{{ownershipProgressUrl}}" {{#isOwnershipProgress}}aria-current="page"{{/isOwnershipProgress}}>진행도</a>
         <a class="profile-ownership-tab{{#isOwnershipOwned}} is-active{{/isOwnershipOwned}}" href="{{ownershipOwnedUrl}}" {{#isOwnershipOwned}}aria-current="page"{{/isOwnershipOwned}}>보유</a>
         <a class="profile-ownership-tab{{#isOwnershipMissing}} is-active{{/isOwnershipMissing}}" href="{{ownershipMissingUrl}}" {{#isOwnershipMissing}}aria-current="page"{{/isOwnershipMissing}}>미보유</a>
     </nav>
     {{/hasOwnershipFilter}}
     {{#isOwnershipSubset}}
-    {{^checklistClasses}}<p class="gv-panel gv-empty">이 조건에 해당하는 오브젝트가 없습니다.</p>{{/checklistClasses}}
+    {{^checklistSeasons}}<p class="gv-panel gv-empty">이 조건에 해당하는 오브젝트가 없습니다.</p>{{/checklistSeasons}}
     <div class="profile-ownership-list">
-    {{#checklistClasses}}
+    {{#checklistSeasons}}
     <section class="ar-panel profile-owned-class">
-        <header class="profile-section-heading"><h3>{{klass}}</h3><p>{{count}}종</p></header>
-        <div class="profile-checklist-grid">
+        <header class="profile-section-heading"><h3>{{season}}</h3><p>{{total}}종</p></header>
+        {{#groups}}
+        <div class="profile-owned-group"><h4>{{klass}}</h4><div class="profile-checklist-grid">
         {{#cards}}
         <a href="{{detailUrl}}" class="profile-checklist-card {{#owned}}is-owned{{/owned}}{{^owned}}is-missing{{/owned}}" aria-label="{{name}}">
             <div class="profile-checklist-image">{{#hasImage}}<img src="{{image}}" alt="{{name}}" loading="lazy" decoding="async" referrerpolicy="no-referrer">{{/hasImage}}{{^hasImage}}<span>이미지 준비 중</span>{{/hasImage}}</div>
-            <div class="profile-checklist-caption"><strong>{{number}}</strong><span>{{season}}{{#owned}} · {{copies}}개{{/owned}}</span></div>
+            <div class="profile-checklist-caption"><strong>{{number}}</strong><span>{{#owned}}보유 · {{copies}}개{{/owned}}{{^owned}}미보유{{/owned}}</span></div>
         </a>
         {{/cards}}
-        </div>
+        </div></div>
+        {{/groups}}
     </section>
-    {{/checklistClasses}}
+    {{/checklistSeasons}}
     </div>
     {{/isOwnershipSubset}}
-    {{#isOwnershipAll}}
+    {{#isOwnershipProgress}}
     <div class="profile-season-grid">
     {{#checklistSeasons}}
     <section class="ar-panel profile-checklist-season" data-checklist-season data-complete="{{complete}}">
@@ -156,7 +159,7 @@
     </section>
     {{/checklistSeasons}}
     </div>
-    {{/isOwnershipAll}}
+    {{/isOwnershipProgress}}
 </section>
 {{/hasChecklist}}
 {{^hasChecklist}}
@@ -187,7 +190,7 @@
   const base = {{#profileUrl}}"{{profileUrl}}"{{/profileUrl}}{{^profileUrl}}""{{/profileUrl}};
   if (!picker || !base || !window.MemberPortraitPicker) return;
   const ownership = new URLSearchParams(window.location.search).get('ownership') || '';
-  const ownershipQuery = (ownership === 'owned' || ownership === 'missing') ? '&ownership=' + encodeURIComponent(ownership) : '';
+  const ownershipQuery = (ownership === 'owned' || ownership === 'missing' || ownership === 'progress') ? '&ownership=' + encodeURIComponent(ownership) : '';
   MemberPortraitPicker.bindMultiSelect(picker, {
     multi: false,
     onChange: (values) => {

@@ -71,6 +71,7 @@ public class CosmoProfileService {
         view.put("membersTabUrl", base + "?tab=members");
         view.put("selectedOwnership", ownershipFilter);
         view.put("isOwnershipAll", "all".equals(ownershipFilter));
+        view.put("isOwnershipProgress", "progress".equals(ownershipFilter));
         view.put("isOwnershipOwned", "owned".equals(ownershipFilter));
         view.put("isOwnershipMissing", "missing".equals(ownershipFilter));
         if (membersTab) {
@@ -110,6 +111,7 @@ public class CosmoProfileService {
     private static String normalizeOwnership(String ownership) {
         if (ownership == null || ownership.isBlank()) return "all";
         String value = ownership.trim().toLowerCase(Locale.ROOT);
+        if ("progress".equals(value)) return "progress";
         if ("owned".equals(value) || "have".equals(value) || "collected".equals(value)) return "owned";
         if ("missing".equals(value) || "want".equals(value) || "unowned".equals(value)) return "missing";
         return "all";
@@ -120,6 +122,7 @@ public class CosmoProfileService {
         String checklistBase = checklistBaseUrl(base, member, group);
         view.put("hasOwnershipFilter", true);
         view.put("ownershipAllUrl", checklistBase);
+        view.put("ownershipProgressUrl", checklistBase + "&ownership=progress");
         view.put("ownershipOwnedUrl", checklistBase + "&ownership=owned");
         view.put("ownershipMissingUrl", checklistBase + "&ownership=missing");
         view.put("checklistBaseUrl", checklistBase);
@@ -371,7 +374,7 @@ public class CosmoProfileService {
         int totalKinds = unique.size();
         int ownedKinds = (int) unique.keySet().stream().filter(slug -> copies.getOrDefault(slug, 0L) > 0).count();
         Map<String, Object> result = new LinkedHashMap<>();
-        boolean subset = !"all".equals(ownership);
+        boolean subset = !"progress".equals(ownership);
         Map<String, List<Map<String, Object>>> byClass = new TreeMap<>(classes);
         for (Map<String, Object> seasonRow : seasonRows) {
             @SuppressWarnings("unchecked") var groupList = (List<Map<String, Object>>) seasonRow.get("groups");

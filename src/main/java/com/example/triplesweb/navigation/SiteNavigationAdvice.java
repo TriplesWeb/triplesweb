@@ -8,7 +8,4 @@ import java.util.List;
 public class SiteNavigationAdvice {
     @ModelAttribute("siteNavigation")
     public List<SiteNavigation.Section> navigation() { return SiteNavigation.PRIMARY; }
-
-    @ModelAttribute("siteCommunity")
-    public SiteNavigation.Section community() { return SiteNavigation.COMMUNITY; }
 }

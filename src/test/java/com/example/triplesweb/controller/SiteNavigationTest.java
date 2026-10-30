@@ -33,25 +33,17 @@ class SiteNavigationTest {
     @MockitoBean UnitService units;
     @MockitoBean MemberSpotlightService spotlight;
 
-    @Test void primaryOrderAndAllLegacyDestinationsRemainAvailable() throws Exception {
+    @Test void navigationHasRequestedOrderAndDestinations() throws Exception {
         assertThat(SiteNavigation.PRIMARY).extracting(SiteNavigation.Section::label)
-            .containsExactly("About 트리플에스", "코스모", "정보", "미디어", "일정");
-        String html = mvc.perform(get("/sitemap")).andExpect(status().isOk())
-            .andExpect(view().name("navigation/sitemap")).andReturn().getResponse().getContentAsString();
-        for (String path : List.of("/cosmo/collection",
-                "/cosmo/transfers", "/cosmo/objekt/favorites", "/article/free", "/article/chat", "/popular",
-                "/article/trade", "/article/sell", "/article/group-orders", "/shop")) {
-            assertThat(html).contains("href=\"" + path + "\"");
-        }
-        assertThat(html).doesNotContain("함께 둘러보기", "href=\"/sns\"", "href=\"/triples/chemistry-en\"");
-        verifyNoInteractions(artists, artistAdmin, spotlight);
-    }
-
-    @Test void newDestinationsAreReadOnlyPlaceholders() throws Exception {
-        for (String path : List.of("/activities/voting", "/media/drive", "/community/suggestions")) {
-            mvc.perform(get(path)).andExpect(status().isOk()).andExpect(content().string(containsString("준비 중")));
-            mvc.perform(post(path)).andExpect(status().isMethodNotAllowed());
-        }
+            .containsExactly("About 트리플에스", "정보", "코스모", "미디어", "일정");
+        assertThat(SiteNavigation.PRIMARY.get(1).items()).extracting(SiteNavigation.Item::label)
+            .containsExactly("공연/이벤트", "굿즈리스트", "총공", "기사/그외");
+        assertThat(SiteNavigation.PRIMARY.get(2).items()).extracting(SiteNavigation.Item::href)
+            .containsExactly("/cosmo/objekt", "/cosmo/collection", "/article/trade", "/cosmo/gravity");
+        mvc.perform(get("/sitemap")).andExpect(status().isNotFound());
+        mvc.perform(get("/media/drive")).andExpect(status().isNotFound());
+        mvc.perform(get("/community/suggestions")).andExpect(status().isNotFound());
+        mvc.perform(get("/activities/voting")).andExpect(status().isOk()).andExpect(content().string(containsString("총공")));
         verifyNoInteractions(artists, artistAdmin, spotlight);
     }
 

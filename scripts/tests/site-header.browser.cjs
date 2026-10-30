@@ -26,17 +26,12 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`header overflow ${width}`);
    const desktop=await page.locator('#navbar').isVisible();
    if(!desktop){
-    assert.equal(await page.locator('.header-utilities').isVisible(),false);
+    assert.equal(await page.locator('.header-utilities').count(),0);
     await page.locator('#mobile-menu-btn').focus(); await page.keyboard.press('Enter');
     await page.locator('[aria-controls="mobile-cosmo"]').click();
     assert.equal(await page.locator('#mobile-cosmo summary').count(),0);
-    assert.equal(await page.locator('#mobile-cosmo a[href="/article/group-orders"]').isVisible(),true);
-    assert.equal(await page.locator('#mobile-cosmo .header-link-group').count(),2);
-    const headingStyles=await page.locator('#mobile-cosmo .header-group-heading').evaluateAll(nodes=>nodes.map(node=>{const s=getComputedStyle(node);return [s.display,s.padding,s.fontSize,s.lineHeight];}));
-    assert.deepEqual(headingStyles[0],headingStyles[1]);
-    const marketLinks=page.locator('#mobile-cosmo .header-link-group').nth(1).locator('.header-related-links a');
-    const boxes=await Promise.all([0,1,2].map(i=>marketLinks.nth(i).boundingBox()));
-    for(let i=1;i<boxes.length;i++)assert.ok(boxes[i].y>=boxes[i-1].y+boxes[i-1].height+3);
+    assert.equal(await page.locator('#mobile-cosmo a[href="/article/trade"]').isVisible(),true);
+    assert.equal(await page.locator('#mobile-cosmo .header-link-group').count(),0);
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/flat-menu-${engine}-${width}.png`}).catch(error=>console.warn(`[preview] ${engine} ${width}px screenshot skipped: ${error.message}`));
     assert.equal(await page.locator('[aria-controls="mobile-community"]').count(),0);
     await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
@@ -48,20 +43,15 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/header-${engine}-${width}.png`,fullPage:false}).catch(error=>console.warn(`[preview] ${engine} ${width}px screenshot skipped: ${error.message}`));
    }else{
     const labels=await page.locator('#navbar>.header-disclosure>button,#navbar>.header-nav-link').allTextContents();
-    assert.deepEqual(labels,['About 트리플에스','코스모','정보','미디어','일정']);
+    assert.deepEqual(labels,['About 트리플에스','정보','코스모','미디어','일정']);
     const button=page.locator('[aria-controls="desktop-cosmo"]');await button.focus();await page.keyboard.press('Space');
     assert.equal(await page.locator('#desktop-cosmo summary').count(),0);
-    assert.equal(await page.locator('#desktop-cosmo a[href="/article/group-orders"]').isVisible(),true);
-    assert.equal(await page.locator('#desktop-cosmo .header-link-group').count(),2);
-    const headingStyles=await page.locator('#desktop-cosmo .header-group-heading').evaluateAll(nodes=>nodes.map(node=>{const s=getComputedStyle(node);return [s.display,s.padding,s.fontSize,s.lineHeight];}));
-    assert.deepEqual(headingStyles[0],headingStyles[1]);
-    const marketLinks=page.locator('#desktop-cosmo .header-link-group').nth(1).locator('.header-related-links a');
-    const boxes=await Promise.all([0,1,2].map(i=>marketLinks.nth(i).boundingBox()));
-    for(let i=1;i<boxes.length;i++)assert.ok(boxes[i].y>=boxes[i-1].y+boxes[i-1].height+3);
+    assert.equal(await page.locator('#desktop-cosmo a[href="/article/trade"]').isVisible(),true);
+    assert.equal(await page.locator('#desktop-cosmo .header-link-group').count(),0);
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/flat-menu-${engine}-${width}.png`}).catch(error=>console.warn(`[preview] ${engine} ${width}px screenshot skipped: ${error.message}`));
     assert.equal(await page.locator('#desktop-cosmo a[href="/cosmo/transfers"]').count(),0);
     assert.equal(await page.locator('#desktop-cosmo a[href="/cosmo/collection"]').isVisible(),true);
-    assert.equal(await page.locator('.header-utilities [aria-controls="desktop-community"]').isVisible(),true);
+    assert.equal(await page.locator('.header-utilities').count(),0);
     assert.ok(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().height)<=66, 'main처럼 한 줄 헤더 유지');
     await page.evaluate(()=>window.scrollTo(0,200));
     assert.equal(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().top>=0),true);
@@ -71,6 +61,6 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
     await button.click();await page.locator('main').click({position:{x:10,y:10}});assert.equal(await page.locator('#desktop-cosmo').isVisible(),false);
    }
   }
-  assert.deepEqual(errors,[]);console.log(`PASS: ${engine} header 320/360/390/1024/1040/1280/1440px, keyboard, grouped links, mobile community hidden, outside click, search`);
+  assert.deepEqual(errors,[]);console.log(`PASS: ${engine} header 320/360/390/1024/1040/1280/1440px, keyboard, navigation, community removed, outside click, search`);
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1)});
