@@ -37,7 +37,10 @@ jobs:
               const runs = (await github.rest.actions.listWorkflowRunsForRepo({...context.repo,event:'pull_request',per_page:100})).data.workflow_runs;
               const required = ['CI tests','PR code quality'].map(name => runs.find(r => r.name===name && r.head_sha===process.env.REVISION));
               if (required.some(r => r && r.status==='completed' && r.conclusion!=='success')) throw Error('필수 검사 실패');
-              if (required.every(r => r && r.status==='completed' && r.conclusion==='success')) return;
+              if (required[0] && required[1] && required[1].status==='completed' && required[1].conclusion==='success') {
+                const jobs = (await github.rest.actions.listJobsForWorkflowRun({...context.repo,run_id:required[0].id,per_page:100})).data.jobs;
+                if (jobs.some(job => job.name==='test' && job.conclusion==='success')) return;
+              }
               await new Promise(resolve => setTimeout(resolve,10000));
             }
             throw Error('필수 검사 대기 시간 초과');
