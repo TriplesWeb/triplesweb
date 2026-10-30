@@ -248,7 +248,7 @@ class ObjektFeaturesTest {
 
     @Test void memberSortingFollowsDebutOrder() throws Exception {
         var items = List.<Map<String,Object>>of(Map.of("id","last","member","Jiyeon"), Map.of("id","first","member","SeoYeon"), Map.of("id","middle","member","Kotone"), Map.of("id","other","member","Unknown"));
-        when(catalog.findCollections("triples")).thenReturn(items);
+        stubCatalog(items);
         mvc.perform(get("/cosmo/objekt/more").param("page","0").param("sort","first_member"))
             .andExpect(jsonPath("$.items[0].id").value("first")).andExpect(jsonPath("$.items[1].id").value("middle"))
             .andExpect(jsonPath("$.items[2].id").value("last")).andExpect(jsonPath("$.items[3].id").value("other"));
