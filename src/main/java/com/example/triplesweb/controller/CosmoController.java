@@ -148,6 +148,7 @@ public class CosmoController {
 
         // 전체 캐시에서 검색어와 모든 필터를 먼저 적용하고, 그 결과에만 정렬과 페이지네이션을 적용한다.
         // mintCount는 정렬 비교자에만 조회하고, 표시용 복사는 페이지 슬라이스에만 적용한다.
+        Map<String, Integer> memberOrderCache = new java.util.HashMap<>();
         List<Map<String, Object>> filtered = allObjekts.stream()
                 .filter(objekt -> query.isBlank() || searchableText(objekt).contains(query))
                 .filter(objekt -> "all".equals(selectedGroup) || matchesMember(selectedGroup, selectedNames,
@@ -156,7 +157,7 @@ public class CosmoController {
                 .filter(objekt -> matchesSelection(selectedClasses, firstValue(objekt, "classKey", "class")))
                 .filter(objekt -> selectedKind.isBlank() || "all".equals(selectedKind)
                         || normalize(firstValue(objekt, "collectionNo", "collectionNumber")).equals(selectedKind))
-                .sorted(sortComparator(selectedSort))
+                .sorted(sortComparator(selectedSort, memberOrderCache))
                 .collect(Collectors.toList());
 
         int resultCount = filtered.size();
@@ -218,7 +219,7 @@ public class CosmoController {
         return selected.stream().map(CosmoController::normalize).anyMatch(normalizedActual::equals);
     }
 
-    private Comparator<Map<String, Object>> sortComparator(String sort) {
+    private Comparator<Map<String, Object>> sortComparator(String sort, Map<String, Integer> memberOrderCache) {
         Comparator<Map<String, Object>> byDate = Comparator.comparing(
                 objekt -> firstValue(objekt, "createdAt", "created_at", "date"),
                 Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
@@ -233,16 +234,17 @@ public class CosmoController {
             case "number_high" -> byNumber.reversed();
             case "mint_low" -> mintComparator(false);
             case "mint_high" -> mintComparator(true);
-            case "first_member" -> Comparator.<Map<String, Object>>comparingInt(CosmoController::memberOrder).thenComparing(byMember);
-            case "last_member" -> Comparator.<Map<String, Object>>comparingInt(item -> { int order = memberOrder(item); return order == 24 ? 24 : 23 - order; }).thenComparing(byMember);
+            case "first_member" -> Comparator.<Map<String, Object>>comparingInt(item -> memberOrder(item, memberOrderCache)).thenComparing(byMember);
+            case "last_member" -> Comparator.<Map<String, Object>>comparingInt(item -> { int order = memberOrder(item, memberOrderCache); return order == 24 ? 24 : 23 - order; }).thenComparing(byMember);
             case "latest" -> byDate.reversed();
             default -> byDate.reversed();
         };
     }
 
-    private static int memberOrder(Map<String, Object> item) {
-        return MemberPortraitOptions.objektMembers(firstValue(item, "member", "memberName")).stream()
-                .mapToInt(MemberPortraitOptions::memberIndex).min().orElse(24);
+    private static int memberOrder(Map<String, Object> item, Map<String, Integer> cache) {
+        return cache.computeIfAbsent(firstValue(item, "member", "memberName"), member ->
+                MemberPortraitOptions.objektMembers(member).stream()
+                        .mapToInt(MemberPortraitOptions::memberIndex).min().orElse(24));
     }
 
     private Comparator<Map<String, Object>> mintComparator(boolean descending) {
