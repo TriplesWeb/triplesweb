@@ -70,4 +70,64 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
   console.log(`PASS: ${engine} · ${files.length}개 페이지 템플릿 · 360/390px · 프로필 320/430px · 터치 메뉴·입력·원형 그래프`);
   assert.deepEqual(failures,[],JSON.stringify(failures,null,2));
  }finally{await browser.close();}
-})().catch(error=>{console.error(error);process.exit(1)});
+})().then(async () => {
+const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
+const {chromium, webkit} = require('playwright');
+const root = path.resolve(__dirname, '../..');
+const engine = process.env.BROWSER_ENGINE === 'webkit' ? 'webkit' : 'chromium';
+await (async () => {
+  const browser = await (engine === 'webkit' ? webkit : chromium).launch(engine === 'webkit'
+    ? {headless:true} : {headless:true, executablePath:process.env.CHROMIUM_PATH || '/usr/bin/chromium', args:['--no-sandbox']});
+  try {
+    const page = await browser.newPage();
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.route('**/*', route => {
+      const url = new URL(route.request().url());
+      if (url.origin !== 'https://feedback.test') return route.abort();
+      if (url.pathname.startsWith('/fixture/')) {
+        const fixture = path.join(root, 'build/mobile-pages', path.basename(url.pathname));
+        return route.fulfill({path:fixture, contentType:'text/html; charset=utf-8'});
+      }
+      if (url.pathname.startsWith('/api/')) return route.fulfill({json:{}});
+      const file = path.resolve(root, 'src/main/resources/static', '.' + url.pathname);
+      if (file.startsWith(path.join(root, 'src/main/resources/static') + path.sep) && fs.existsSync(file) && fs.statSync(file).isFile())
+        return route.fulfill({path:file, contentType:url.pathname.endsWith('.css') ? 'text/css' : url.pathname.endsWith('.js') ? 'application/javascript' : undefined});
+      return route.fulfill({status:404, body:''});
+    });
+    for (const width of [320, 390, 1280]) {
+      await page.setViewportSize({width,height:844});
+      await page.goto('https://feedback.test/fixture/feedback-profile-all.html');
+      assert.equal(await page.locator('.profile-ownership-tabs a').count(),4);
+      assert.equal(await page.locator('.profile-checklist-card.is-owned').count(),1);
+      assert.equal(await page.locator('.profile-checklist-card.is-missing').count(),1);
+      assert.equal(await page.locator('.profile-owned-class').count(),2);
+      assert.equal(await page.locator('[data-profile-refresh]').count(),0);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),true,'전체 목록 '+width);
+      await page.goto('https://feedback.test/fixture/feedback-profile-progress.html');
+      const orbit = page.locator('.profile-summary-orbit .orbit-value').first();
+      assert.equal(await orbit.evaluate(el => getComputedStyle(el).stroke),'rgb(216, 16, 85)');
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),true,'진행도 '+width);
+      await page.goto('https://feedback.test/fixture/feedback-collection.html');
+      const wrap = page.locator('.collection-image-wrap').first();
+      const badge = wrap.locator('.collection-card-serial');
+      assert.equal(await badge.textContent(),'#27');
+      const rectangles = await Promise.all([wrap.boundingBox(),badge.boundingBox()]);
+      assert.ok(rectangles[1].x >= rectangles[0].x && rectangles[1].y >= rectangles[0].y);
+      assert.equal(await page.getByText('전송 내역 보기').count(),0);
+      assert.equal(await page.locator('.collection-card .ar-badge').count(),0);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),true,'컬렉션 '+width);
+      await page.goto('https://feedback.test/fixture/feedback-objekt.html');
+      assert.equal(await page.locator('[data-objekt-group="members"]').count(),0);
+      await page.locator('[data-objekt-group="other"]').click();
+      assert.equal(await page.locator('#objekt-member-picker').isVisible(),false);
+      await page.locator('[data-objekt-group="all"]').click();
+      assert.equal(await page.locator('#objekt-member-picker').isVisible(),true);
+      assert.equal(await page.locator('[data-objekt-group="all"]').getAttribute('aria-pressed'),'true');
+    }
+    assert.deepEqual(errors,[]);
+    console.log('통과: 전체·진행도·시즌별 목록·상징색·자동 갱신·시리얼 카드·멤버 필터 ('+engine+')');
+  } finally { await browser.close(); }
+})();
+
+}).catch(error => { console.error(error); process.exit(1); });
