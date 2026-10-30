@@ -506,6 +506,7 @@
         descriptionInput.value = data.description || '';
         descriptionStatus.textContent = '';
         descriptionUrl = data.descriptionUrl || '';
+        window.ObjektSerialLookup?.setCollection(data.lookupUrl || '');
         if (window.ObjektIssued) {
             if (data.issuedUrl) window.ObjektIssued.show(data.issuedUrl);
             else window.ObjektIssued.close();
@@ -523,6 +524,7 @@
             document.body.style.overflow = '';
         }
         detailModal.setAttribute('aria-hidden', 'true');
+        window.ObjektSerialLookup?.setCollection('');
         if (window.ObjektIssued) window.ObjektIssued.close();
         activeObjektKey = ''; detailRequest++;
     }
