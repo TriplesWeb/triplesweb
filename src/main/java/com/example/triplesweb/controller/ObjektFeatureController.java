@@ -117,8 +117,9 @@ public class ObjektFeatureController {
         Map<String, Object> item = findObjekt(key);
         if (item == null) return "redirect:/cosmo/objekt";
         if (description != null && description.length() > 10000) throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        ObjektDescription entity = descriptionEntity(item, key).orElseGet(ObjektDescription::new);
-        if (entity.getObjektKey() == null) entity.setObjektKey(ObjektLinks.id(item));
+        String descriptionKey = descriptionKey(item);
+        ObjektDescription entity = descriptionRepository.findByObjektKey(descriptionKey).orElseGet(ObjektDescription::new);
+        if (entity.getObjektKey() == null) entity.setObjektKey(descriptionKey);
         entity.setDescription(description == null ? "" : description.trim());
         descriptionRepository.save(entity);
         return "redirect:" + ObjektLinks.detail(item);
@@ -132,8 +133,9 @@ public class ObjektFeatureController {
         Map<String, Object> item = findObjekt(key);
         if (item == null) return ResponseEntity.notFound().build();
         if (description.length() > 10000) return ResponseEntity.badRequest().body(Map.of("message", "설명은 10,000자까지 입력할 수 있습니다."));
-        ObjektDescription entity = descriptionEntity(item, key).orElseGet(ObjektDescription::new);
-        if (entity.getObjektKey() == null) entity.setObjektKey(ObjektLinks.id(item));
+        String descriptionKey = descriptionKey(item);
+        ObjektDescription entity = descriptionRepository.findByObjektKey(descriptionKey).orElseGet(ObjektDescription::new);
+        if (entity.getObjektKey() == null) entity.setObjektKey(descriptionKey);
         entity.setDescription(description.trim()); descriptionRepository.save(entity);
         return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
                 .body(Map.of("description", description.trim()));
@@ -154,8 +156,16 @@ public class ObjektFeatureController {
         }
     }
 
+    private static String descriptionKey(Map<String, Object> item) {
+        String season = value(item, "season").trim().toLowerCase(java.util.Locale.ROOT);
+        String number = value(item, "collectionNo").trim().toLowerCase(java.util.Locale.ROOT);
+        if (season.isEmpty() || number.isEmpty()) return ObjektLinks.id(item);
+        String identity = season.length() + ":" + season + ":" + number;
+        return "group-" + java.util.UUID.nameUUIDFromBytes(identity.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
     private Optional<ObjektDescription> descriptionEntity(Map<String, Object> item, String requested) {
-        return java.util.stream.Stream.of(ObjektLinks.id(item), value(item, "slug"), value(item, "collectionId"), requested)
+        return java.util.stream.Stream.of(descriptionKey(item), ObjektLinks.id(item), value(item, "slug"), value(item, "collectionId"), requested)
                 .filter(s -> !s.isBlank()).distinct().map(descriptionRepository::findByObjektKey)
                 .flatMap(Optional::stream).findFirst();
     }
