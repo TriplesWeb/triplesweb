@@ -80,7 +80,8 @@ jobs:
       - name: 임시 HTTPS 연결 설치
         run: |
           set -euo pipefail
-          curl --fail --location --retry 3 --silent --show-error https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 --output "$RUNNER_TEMP/cloudflared"
+          curl --fail --location --retry 3 --silent --show-error https://github.com/cloudflare/cloudflared/releases/download/2026.10.6/cloudflared-linux-amd64 --output "$RUNNER_TEMP/cloudflared"
+          echo "1d356dac769d0dbf62ebe588c4034824bbff98d5790c2f844cc99e0e2f57462d  $RUNNER_TEMP/cloudflared" | sha256sum --check --status
           chmod 700 "$RUNNER_TEMP/cloudflared"
       - name: 비밀번호 보호 HTTPS 연결 확인
         id: https
