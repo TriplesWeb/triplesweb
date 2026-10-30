@@ -7,3 +7,5 @@
 .artist-page .artist-feed-status{margin-top:2rem;font-size:.85rem;line-height:1.7;color:#b9cac4}
 .artist-page .artist-feed-slot[aria-busy=true]{opacity:.8}
 @media(max-width:767px){.artist-page .card-box{backdrop-filter:none}.artist-page .artist-member-photo{box-shadow:0 0 0 1px #ffffff12}}
+
+.artist-page .artist-member-tabs{padding-top:.4rem;padding-bottom:.7rem}.artist-page .card-box{backdrop-filter:none}.artist-page .artist-member-pane{contain:layout style}

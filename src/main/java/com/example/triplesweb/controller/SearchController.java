@@ -95,6 +95,7 @@ public class SearchController {
                                         case "free" -> "자유게시판";
                                         case "trade" -> "교환게시판";
                                         case "sell" -> "거래게시판";
+            case "group-orders" -> "분철게시판";
                                         case "chat" -> "잡담게시판";
                                         case "info" -> "정보게시판";
                                         case "notice" -> "공지사항";

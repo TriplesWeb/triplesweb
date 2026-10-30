@@ -16,8 +16,9 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/article-page.css?v=1">
 </head>
-<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+<body class="article-page bg-surface text-on-surface min-h-screen flex flex-col">
 {{>layout/header}}
 
 <main class="flex-1 flex items-start justify-center px-4 sm:px-6 py-6 z-10 relative">
@@ -26,12 +27,12 @@
         <div class="absolute -inset-1 rounded-3xl bg-gradient-to-b from-primary-container/20 via-transparent to-secondary-container/30 blur-xl opacity-75 pointer-events-none"></div>
 
         <!-- 메인 컨테이너 카드 -->
-        <div class="article-board-shell relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
+        <div class="article-board-shell {{#hideRecommendations}}article-board-no-likes{{/hideRecommendations}} relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
 
             <!-- 상단 헤더 타이틀 -->
-            <div class="flex items-center justify-between mb-8 pb-4 border-b border-outline-variant/30">
+            <div class="article-board-title flex items-center justify-between mb-8 pb-4 border-b border-outline-variant/30">
                 <div class="flex items-center gap-3">
-                    <span class="material-symbols-outlined text-primary-container text-3xl" data-icon="forum">forum</span>
+                    <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:#8decd9;flex-shrink:0"><path d="M20 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.95L3 21l1.95-4.5A9 9 0 0 1 4 12.5 8.5 8.5 0 1 1 20 11.5Z"/><path d="M8 10h8M8 14h5"/></svg>
                     <h1 class="font-headline-lg text-headline-md font-bold text-on-surface tracking-tight">
                         {{categoryName}} 게시판
                     </h1>
@@ -39,7 +40,7 @@
             </div>
 
             <!-- 게시판 테이블 영역 -->
-            <div class="w-full overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface-container-lowest/40 mb-8">
+            <div class="article-board-list w-full overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface-container-lowest/40 mb-8">
 
                 <!-- 테이블 헤더 -->
                 <div class="article-board-heading grid grid-cols-12 gap-4 px-6 py-3.5 bg-surface-container-high/60 border-b border-outline-variant/40 text-on-surface-variant font-semibold text-sm text-center">
@@ -47,7 +48,7 @@
                     <div class="col-span-6 text-left">제목</div>
                     <div class="col-span-2">작성자</div>
                     <div class="col-span-2">날짜</div>
-                    <div class="col-span-1">추천</div>
+                    {{^hideRecommendations}}<div class="col-span-1">추천</div>{{/hideRecommendations}}
                 </div>
 
                 <!-- 테이블 바디 (게시글 목록 루프) -->
@@ -55,14 +56,14 @@
                     {{#articleList}}
                         <div class="article-board-row grid grid-cols-12 gap-4 px-6 py-4 items-center text-center text-sm text-on-surface hover:bg-surface-container-highest/30 transition-colors">
                             <div class="col-span-1 text-outline font-mono">{{displayId}}</div>
-                            <div class="col-span-6 text-left font-medium truncate">
+                            <div class="article-board-subject col-span-6 text-left font-medium truncate">
                                 <a href="/article/{{#category}}{{category}}{{/category}}{{^category}}trade{{/category}}/{{id}}" class="hover:text-primary-container transition-colors">
                                     {{title}}
                                 </a>
                             </div>
-                            <div class="col-span-2 text-on-surface-variant truncate">{{userId}}</div>
-                            <div class="col-span-2 text-xs text-outline">{{formattedDate}}</div>
-                            <div class="col-span-1 text-primary-container font-semibold">{{likesCount}}</div>
+                            <div class="article-board-author col-span-2 text-on-surface-variant truncate">{{userId}}</div>
+                            <div class="article-board-date col-span-2 text-xs text-outline">{{formattedDate}}</div>
+                            {{^hideRecommendations}}<div class="article-board-likes col-span-1 text-primary-container font-semibold">{{likesCount}}</div>{{/hideRecommendations}}
                         </div>
                     {{/articleList}}
 
@@ -77,10 +78,10 @@
             </div>
 
             <!-- 하단 컨트롤 영역 (왼쪽: 검색 기능 / 오른쪽: 글쓰기 버튼) -->
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+            <div class="article-board-controls flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
 
                 <!-- 왼쪽: 게시글 검색 폼 -->
-                <form action="/article/{{category}}" method="get" class="flex items-center gap-2 w-full sm:w-auto">
+                <form action="/article/{{category}}" method="get" class="article-board-search flex items-center gap-2 w-full sm:w-auto">
                     <select name="type" class="py-2.5 px-3 border border-outline-variant/60 rounded-xl text-sm focus:outline-none focus:border-primary-container" style="color:#111;background:#fff;">
                         <option value="title" {{#isSearchTitle}}selected{{/isSearchTitle}}>제목</option>
                         <option value="content" {{#isSearchContent}}selected{{/isSearchContent}}>내용</option>
@@ -88,8 +89,8 @@
                     </select>
                     <div class="relative flex-1 sm:w-60">
                         <input type="text" name="keyword" value="{{searchKeyword}}" placeholder="검색어를 입력하세요" class="w-full py-2.5 pl-3 pr-10 bg-white border border-outline-variant/60 rounded-xl text-sm text-black placeholder:text-neutral-500 focus:outline-none focus:border-primary-container" style="color:#111;background:#fff;" />
-                        <button type="submit" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-outline">
-                            <span class="material-symbols-outlined text-[18px]" data-icon="search">search</span>
+                        <button type="submit" aria-label="게시글 검색" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-outline">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
                         </button>
                     </div>
                 </form>

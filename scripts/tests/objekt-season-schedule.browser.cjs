@@ -44,8 +44,11 @@ const urls={
    return route.fulfill({status:404,body:''});
   });
   for(const name of ['objekt','collection']){
+   await page.setViewportSize({width:1280,height:900});
    await page.goto('https://filters.test/fixture/'+name);
-   const row=page.getByRole('group',{name:'시즌 빠른 선택',exact:true});
+   assert.equal(await page.locator('.season-quick-filters').isVisible(),false,'시즌 버튼은 열었을 때만 표시');
+   await page.locator(name==='objekt'?'#season-dropdown>button':'#collection-season-toggle').click();
+   const row=page.getByRole('group',{name:'시즌 선택',exact:true});
    await row.locator('button[data-value="Atom01"]').waitFor({timeout:10000}).catch(async error=>{
     console.log('시즌 버튼 진단',name,JSON.stringify(await page.evaluate(()=>({
       api:typeof window.SeasonChips,
@@ -55,12 +58,9 @@ const urls={
     }))),JSON.stringify(pageErrors));
     throw error;
    });
-   const position=await row.evaluate(el=>{
-     const stack=el.closest('.season-filter-stack'),control=stack?.querySelector('.objekt-filter');
-     return {sameColumn:!!stack,gap:control?el.getBoundingClientRect().top-control.getBoundingClientRect().bottom:-1};
-   });
-   assert.equal(position.sameColumn,true,name+' 시즌 컨트롤과 같은 열');
-   assert.ok(position.gap>=0&&position.gap<=12,name+' 드롭다운 바로 아래 버튼');
+   assert.equal(await page.locator('.season-native-options').isVisible(),false,'기존 체크 표시 UI 숨김');
+   assert.equal(await row.locator('.season-chip-list').evaluate(el=>getComputedStyle(el).flexWrap),'wrap',name+' 웹에서 시즌 전체 펼침');
+   assert.equal(await row.locator('.season-chip-list').evaluate(el=>el.scrollWidth<=el.clientWidth),true,name+' 웹 가로 스크롤 없음');
    const atom=row.locator('button[data-value="Atom01"]'),binary=row.locator('button[data-value="Binary01"]');
    assert.notEqual(await atom.evaluate(el=>getComputedStyle(el).borderColor),await binary.evaluate(el=>getComputedStyle(el).borderColor));
    await atom.click();await binary.click();
@@ -73,23 +73,29 @@ const urls={
    await input.evaluate(el=>{el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}));});
    assert.equal(await row.locator('button[data-value="Cream02"]').getAttribute('aria-pressed'),'true');
    await page.setViewportSize({width:390,height:844});
+   if(!await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))console.log('시즌 배치 진단',await page.evaluate(()=>({w:innerWidth,scroll:document.documentElement.scrollWidth,items:[...document.querySelectorAll('.season-control,.season-choice-panel,.season-chip-list')].map(n=>({cls:n.className,rect:JSON.stringify(n.getBoundingClientRect()),min:getComputedStyle(n).minWidth,max:getComputedStyle(n).maxWidth,box:getComputedStyle(n).boxSizing}))})));
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,name+' 시즌 버튼 모바일 넘침');
+   assert.equal(await row.locator('.season-chip-list').evaluate(el=>getComputedStyle(el).flexWrap),'wrap',name+' 모바일도 메뉴 안에서 버튼 줄바꿈');
   }
   await page.goto('https://filters.test/fixture/native');
   assert.equal(await page.evaluate(()=>document.characterSet),'UTF-8');
-  const nativeRow=page.getByRole('group',{name:'시즌 빠른 선택',exact:true});
+  const nativeRow=page.locator('.season-quick-filters');
+  await page.locator('.season-toggle').click();
   await nativeRow.locator('button[data-value="Binary01"]').click();
   assert.equal(await page.locator('output').textContent(),'Binary01');
-  await page.locator('select').selectOption('Atom01');
+  await page.locator('select').evaluate(el=>{el.value='Atom01';el.dispatchEvent(new Event('change',{bubbles:true}));});
   assert.equal(await nativeRow.locator('button[data-value="Atom01"]').getAttribute('aria-pressed'),'true');
   await page.locator('select').evaluate(el=>el.add(new Option('Ever02','Ever02')));
+  await page.locator('.season-toggle').click();
   await nativeRow.locator('button[data-value="Ever02"]').waitFor();
   await nativeRow.locator('button[data-value="Ever02"]').click();
   assert.equal(await page.locator('select').inputValue(),'Ever02');
   await page.getByRole('button',{name:'초기화',exact:true}).click();
   await page.waitForFunction(()=>document.querySelector('.season-chip[data-value=""]').getAttribute('aria-pressed')==='true');
+  await page.locator('.season-toggle').click();
   await nativeRow.locator('button[data-value="Atom01"]').focus();await page.keyboard.press('Enter');
   assert.equal(await page.locator('select').inputValue(),'Atom01');
+  assert.deepEqual(await page.evaluate(()=>Object.fromEntries(['Atom01','Binary01','Cream01','Divine01','Ever01','Atom02','Binary02','Cream02'].map(k=>[k,window.SeasonChips.colorFor(k)]))),{Atom01:'#FFDD00',Binary01:'#00FF00',Cream01:'#FF7477',Divine01:'#B400FF',Ever01:'#33ECFD',Atom02:'#FFD13E',Binary02:'#83FF00',Cream02:'#FF8389'});
   fs.mkdirSync('/tmp/objekt-ui',{recursive:true});
   await page.screenshot({path:'/tmp/objekt-ui/season-chips-mobile.png',fullPage:true,timeout:15000});
   await page.setViewportSize({width:1280,height:1000});

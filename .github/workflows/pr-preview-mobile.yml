@@ -8,15 +8,37 @@ concurrency:
   cancel-in-progress: false
 permissions:
   contents: read
+  actions: read
+  pull-requests: read
 jobs:
   network:
-    if: github.event.pull_request.number == 26 && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.number == 26 || github.event.pull_request.head.ref == 'ui/header-navigation-restructure')
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 50
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+      - name: 같은 커밋의 격리 미리보기 배포 완료 대기
+        uses: actions/github-script@v7
+        with:
+          retries: 3
+          script: |
+            const sha=context.payload.pull_request.head.sha;
+            for(let attempt=0;attempt<200;attempt++){
+              const {data:pr}=await github.rest.pulls.get({...context.repo,pull_number:context.payload.pull_request.number});
+              if(pr.state!=='open'||pr.head.sha!==sha)throw new Error('최신 PR이 아니므로 공개 연결을 변경하지 않습니다');
+              const {data}=await github.rest.actions.listWorkflowRunsForRepo({...context.repo,event:'pull_request',per_page:100});
+              const run=data.workflow_runs.find(run=>run.name==='PR 미리보기'&&run.head_sha===sha);
+              if(run?.status==='completed'){
+                if(run.conclusion==='success')return;
+                throw new Error('격리 미리보기 배포 실패');
+              }
+              await new Promise(resolve=>setTimeout(resolve,10000));
+            }
+            throw new Error('격리 미리보기 배포 대기 시간 초과');
       - uses: tailscale/github-action@v4
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
@@ -40,16 +62,17 @@ jobs:
           PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
         run: |
           set -euo pipefail
-          scp scripts/pr-preview-mobile-gateway.py scripts/deploy-pr-preview-mobile.py pi:/tmp/
+          scp scripts/pr-preview-mobile-gateway.py "pi:/tmp/pr-preview-mobile-gateway-${PR_NUMBER}.py"
+          scp scripts/deploy-pr-preview-mobile.py "pi:/tmp/deploy-pr-preview-mobile-${PR_NUMBER}.py"
           COMMAND="$(python3 - <<'PY'
           import os,shlex
-          print(shlex.join(["python3","/tmp/deploy-pr-preview-mobile.py","--root",os.environ["PI_DEPLOY_PATH"],"--gateway","/tmp/pr-preview-mobile-gateway.py"]))
+          print(shlex.join(["env","PREVIEW_VERIFY_NAVIGATION=true","python3",f"/tmp/deploy-pr-preview-mobile-{os.environ['PR_NUMBER']}.py","--pr",os.environ["PR_NUMBER"],"--root",os.environ["PI_DEPLOY_PATH"],"--gateway",f"/tmp/pr-preview-mobile-gateway-{os.environ['PR_NUMBER']}.py"]))
           PY
           )"
           ssh pi "$COMMAND" | tee /tmp/mobile-preview-result.txt
-          BEFORE="$(ssh pi "docker inspect --format '{{.Id}} {{.State.StartedAt}}' triples-pr26-mobile-gateway triples-pr26-mobile-tunnel")"
+          BEFORE="$(ssh pi "docker inspect --format '{{.Id}} {{.State.StartedAt}}' triples-pr${PR_NUMBER}-mobile-gateway triples-pr${PR_NUMBER}-mobile-tunnel")"
           ssh pi "$COMMAND" > /tmp/mobile-preview-repeat.txt
-          AFTER="$(ssh pi "docker inspect --format '{{.Id}} {{.State.StartedAt}}' triples-pr26-mobile-gateway triples-pr26-mobile-tunnel")"
+          AFTER="$(ssh pi "docker inspect --format '{{.Id}} {{.State.StartedAt}}' triples-pr${PR_NUMBER}-mobile-gateway triples-pr${PR_NUMBER}-mobile-tunnel")"
           test "$BEFORE" = "$AFTER"
           echo "반복 적용 후 로그인 게이트웨이·터널 재시작 0회 확인"
           URL="$(sed -n 's/^PUBLIC_PREVIEW_URL=//p' /tmp/mobile-preview-result.txt)"

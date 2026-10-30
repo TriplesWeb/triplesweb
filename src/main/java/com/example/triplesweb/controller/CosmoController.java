@@ -130,7 +130,9 @@ public class CosmoController {
         try {
             allObjekts = objektService.findCollections("triples");
             if (allObjekts == null) allObjekts = Collections.emptyList();
+            // 정렬용 벌크 통계. 화면의 발행량은 아래 시리얼 집합 결과로 교체한다.
             allObjekts = marketData.withMintCounts(allObjekts);
+
             if (allObjekts.isEmpty()) error = "API 응답에 표시할 컬렉션이 없습니다.";
         } catch (RestClientException ex) {
             allObjekts = Collections.emptyList();
@@ -170,7 +172,8 @@ public class CosmoController {
         }
         int fromIndex = safePage * PAGE_SIZE;
         int toIndex = Math.min(fromIndex + PAGE_SIZE, resultCount);
-        List<Map<String, Object>> pageObjekts = filtered.subList(fromIndex, toIndex);
+        List<Map<String, Object>> pageObjekts = marketData.withIssuedSupply(filtered.subList(fromIndex, toIndex));
+        if (pageObjekts == null) pageObjekts = filtered.subList(fromIndex, toIndex);
         boolean hasMore = toIndex < resultCount;
 
         return new ObjektPageResult(

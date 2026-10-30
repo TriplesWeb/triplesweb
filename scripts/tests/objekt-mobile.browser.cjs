@@ -6,14 +6,12 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
  const browser=await (engine==='webkit'?webkit:chromium).launch(engine==='webkit'?{headless:true}:{headless:true,executablePath:process.env.CHROMIUM_PATH || (fs.existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined),args:['--no-sandbox']});
  try{
   const page=await browser.newPage({...devices[engine==='webkit'?'iPhone 13':'Pixel 7'],viewport:{width:390,height:844},deviceScaleFactor:2});
-  const headerSource=fs.readFileSync(path.join(base,'src/main/resources/templates/layout/header.mustache'),'utf8');
-  const headerScript=[...headerSource.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(s=>s.includes('setMobileMenuOpen'))[0];
   await page.route('**/*',async route=>{
    const url=new URL(route.request().url());if(url.origin!=='https://mobile.test')return route.abort();
    if(url.pathname.startsWith('/preview/')){
     const file=path.basename(url.pathname);let html=fs.readFileSync(path.join(fixtures,file),'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'');
     html=html.replace('<head>',`<head><base href="https://mobile.test/">${file==='header-bare.html'?'':'<link rel="stylesheet" href="/css/gravity.css">'}`);
-    html=html.replace('</body>',`<script>${html.includes('id="top-header"')?(headerScript||''):''}</script><script src="/js/site-mobile.js"></script></body>`);
+    html=html.replace('</body>',`<script></script><script src="/js/site-mobile.js"></script><script src="/js/site-header.js"></script></body>`);
     return route.fulfill({contentType:'text/html',body:html});
    }
    const file=path.resolve(base,'src/main/resources/static','.'+url.pathname);
@@ -46,12 +44,13 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
       assert.equal(await page.locator('.article-board-row>div:nth-child(2)').first().evaluate(node=>getComputedStyle(node).whiteSpace),'normal');
     }
     if(file==='header-auth.html'||file==='header-bare.html'){
-      assert.equal(await page.locator('#mobile-menu-icon').evaluate(node=>getComputedStyle(node).fontSize),'0px');
       await page.locator('#mobile-menu-btn').click();assert.equal(await page.locator('#mobile-menu').isVisible(),true);
       await page.locator('.mobile-nav-toggle').first().click();assert.equal(await page.locator('.mobile-nav-panel').first().isVisible(),true);
+      await page.keyboard.press('Escape');
       await page.keyboard.press('Escape');assert.equal(await page.locator('#mobile-menu').isVisible(),false);
-      await page.locator('[data-user-menu-toggle]').click();assert.equal(await page.locator('[data-user-menu-panel]').isVisible(),true);
-      await page.keyboard.press('Escape');assert.equal(await page.locator('[data-user-menu-panel]').isVisible(),false);
+      await page.locator('#mobile-menu-btn').click();
+      assert.equal(await page.locator('.mobile-account a[href="/mypage"]').isVisible(),true);
+      await page.keyboard.press('Escape');
       assert.ok(await page.locator('main input').evaluate(n=>parseFloat(getComputedStyle(n).fontSize))>=16);
     }
     if(width===390&&['cosmo_profile.mustache.html','article_article.mustache.html','schedule.mustache.html','shop_shop_detail.mustache.html'].includes(file)){

@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.not;
 @AutoConfigureMockMvc(addFilters = false)
 @Import(MustacheConfig.class)
 class ObjektFeaturesTest {
+    @org.junit.jupiter.api.BeforeEach void decorateVisibleCards() { when(market.withIssuedSupply(anyList())).thenAnswer(call -> call.getArgument(0)); }
     @Autowired MockMvc mvc;
     @MockitoBean ObjektService catalog;
     @MockitoBean ArtistRepository artists;
@@ -73,25 +74,17 @@ class ObjektFeaturesTest {
                 .andExpect(status().isServiceUnavailable()).andExpect(jsonPath("$.message").exists());
     }
 
-    @Test void detailRendersOwnerFormAndExplicitFavoriteState() throws Exception {
-        Map<String, Object> item = new java.util.LinkedHashMap<>(Map.of("id", "uuid", "slug", "sample", "collectionId", "Cream02 HaYeon 367Z", "member", "HaYeon"));
-        for (String field : List.of("frontImage", "backImage", "thumbnailImage", "season", "class", "collectionNo")) item.put(field, "");
-        when(catalog.findCollections("triples")).thenReturn(List.of(item));
-        when(descriptions.findByObjektKey("uuid")).thenReturn(java.util.Optional.empty());
-        mvc.perform(get("/cosmo/objekt/detail/sample").flashAttr("_csrf", new org.springframework.security.web.csrf.DefaultCsrfToken("X-XSRF-TOKEN","_csrf","favorite-form-token")).accept(MediaType.TEXT_HTML)).andExpect(status().isOk())
-                .andExpect(content().string(containsString("data-serial-lookup")))
-                .andExpect(content().string(not(containsString("objektDescriptionInput"))))
-                .andExpect(content().string(not(containsString("data-transfer-history"))))
-                .andExpect(content().string(containsString("name=\"_csrf\" value=\"favorite-form-token\"")))
-                .andExpect(content().string(containsString("name=\"favorite\" value=\"true\"")))
-                .andExpect(content().string(containsString("/js/objekt-detail.js")));
+    @Test void oldDetailPageOpensSharedCatalogModal() throws Exception {
+        when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("id","uuid","slug","sample")));
+        mvc.perform(get("/cosmo/objekt/detail/sample").accept(MediaType.TEXT_HTML))
+            .andExpect(redirectedUrl("/cosmo/objekt?objekt=sample"));
     }
 
     @Test void readableUrlsModalActionsAndLegacyMemberRouteAreConnected() throws Exception {
         Map<String, Object> item = Map.of("id", "uuid", "slug", "hayeoncc367z", "collectionId", "Cream02 HaYeon 367Z", "member", "HaYeon");
         when(catalog.findCollections("triples")).thenReturn(List.of(item));
         mvc.perform(get("/cosmo/objekt/detail/uuid").accept(MediaType.TEXT_HTML))
-                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/cosmo/objekt/detail/hayeoncc367z"));
+                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc367z"));
         mvc.perform(get("/cosmo/objekt/detail/uuid").accept(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.objektKey").value("uuid"))
                 .andExpect(jsonPath("$.detailUrl").value("/cosmo/objekt/detail/hayeoncc367z"))
@@ -108,7 +101,7 @@ class ObjektFeaturesTest {
         mvc.perform(get("/cosmo/objekt/detail/hayeoncc367z").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.detailUrl").value("/cosmo/objekt/detail/hayeoncc367z"));
         mvc.perform(get("/cosmo/objekt/detail/cream02-hayeon-367z").accept(MediaType.TEXT_HTML))
-                .andExpect(redirectedUrl("/cosmo/objekt/detail/hayeoncc367z"));
+                .andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc367z"));
     }
 
     @Test void modalDescriptionWritesKeepStableKeyAndRequireAdmin() throws Exception {
@@ -144,8 +137,10 @@ class ObjektFeaturesTest {
         when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
         var result = mvc.perform(get("/cosmo/objekt")).andExpect(status().isOk()).andReturn();
         java.nio.file.Files.writeString(java.nio.file.Path.of("build/objekt-modal-preview.html"), result.getResponse().getContentAsString());
-        var detail = mvc.perform(get("/cosmo/objekt/detail/hayeoncc367z").accept(MediaType.TEXT_HTML)).andExpect(status().isOk()).andReturn();
-        java.nio.file.Files.writeString(java.nio.file.Path.of("build/objekt-detail-preview.html"), detail.getResponse().getContentAsString());
+        mvc.perform(get("/cosmo/objekt/detail/hayeoncc367z").accept(MediaType.TEXT_HTML))
+            .andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc367z"));
+        org.assertj.core.api.Assertions.assertThat(result.getResponse().getContentAsString())
+            .contains("data-serial-panel", "objektIssuedRanges").doesNotContain("id=\"objektDetailFullLink\"");
     }
 
     @Test void ownerResponseDoesNotExposeInternalVerificationFields() throws Exception {
