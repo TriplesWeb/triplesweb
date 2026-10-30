@@ -21,6 +21,7 @@ class PreviewIsolationTest(unittest.TestCase):
 
     def test_isolated_database_names(self):
         self.assertEqual(preview.names("triples",26), ("triples_pr26_preview","pr_preview_26"))
+        self.assertEqual(preview.names("triples",31), ("triples_pr31_preview","pr_preview_31"))
         for database,pr in [("triples;DROP",26),("triples",0),("triples",10000)]:
             with self.assertRaises(ValueError):
                 preview.names(database,pr)
