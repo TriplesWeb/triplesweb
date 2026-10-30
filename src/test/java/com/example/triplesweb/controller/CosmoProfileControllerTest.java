@@ -120,7 +120,7 @@ class CosmoProfileControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("profile-checklist-card is-owned")))
                 .andExpect(content().string(not(containsString("profile-checklist-card is-missing"))))
-                .andExpect(content().string(containsString("1종 · 클래스별 목록")))
+                .andExpect(content().string(containsString("1종 · 시즌별 목록")))
                 .andExpect(content().string(not(containsString("profile-season-heading"))))
                 .andExpect(content().string(not(containsString("role=\"progressbar\""))))
                 .andExpect(content().string(not(containsString("100%</strong>"))))
