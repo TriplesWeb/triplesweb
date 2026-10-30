@@ -233,11 +233,16 @@ public class CosmoController {
             case "number_high" -> byNumber.reversed();
             case "mint_low" -> mintComparator(false);
             case "mint_high" -> mintComparator(true);
-            case "first_member" -> byMember;
-            case "last_member" -> byMember.reversed();
+            case "first_member" -> Comparator.<Map<String, Object>>comparingInt(CosmoController::memberOrder).thenComparing(byMember);
+            case "last_member" -> Comparator.<Map<String, Object>>comparingInt(item -> { int order = memberOrder(item); return order == 24 ? 24 : 23 - order; }).thenComparing(byMember);
             case "latest" -> byDate.reversed();
             default -> byDate.reversed();
         };
+    }
+
+    private static int memberOrder(Map<String, Object> item) {
+        return MemberPortraitOptions.objektMembers(firstValue(item, "member", "memberName")).stream()
+                .mapToInt(MemberPortraitOptions::memberIndex).min().orElse(24);
     }
 
     private Comparator<Map<String, Object>> mintComparator(boolean descending) {
