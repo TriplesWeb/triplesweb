@@ -63,7 +63,7 @@ const base = path.resolve(__dirname, '../..');
     assert.equal(await page.locator('#objektDetailFavorite').isEnabled(),true);
     assert.equal(await page.locator('#objektDetailFullLink').count(),0);
     await page.waitForFunction(()=>document.querySelector('#objektIssuedCount').textContent==='4개');
-    assert.equal(await page.locator('#objektIssuedRanges').textContent(),'#00001–#00002#00004–#00005');
+    assert.equal(await page.locator('#objektIssuedRanges').count(),0);
     assert.match(await page.locator('#objektDetailMemberLink').getAttribute('href'),/\/cosmo\/objekt\?group=members&member=HaYeon/);
     assert.match(await page.locator('#objektDetailTradeLink').getAttribute('href'),/selectedObjektIds=uuid/);
     assert.match(await page.locator('#objektDetailSellLink').getAttribute('href'),/\/article\/sell\/new\?selectedObjektIds=uuid/);
