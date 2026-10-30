@@ -75,3 +75,13 @@
 @container site-header (max-width:1023px){.header-related-links a{min-height:44px}}
 
 .header-link-group>.header-group-heading{display:flex;align-items:center;min-height:44px;padding:11px 12px;border-radius:8px;font-size:13px;line-height:1.5;color:#b9cac4}
+
+/* 뷰포트가 좁은 경우 다른 페이지 스타일이 컨테이너 계산에 영향을 주어도 모바일 메뉴를 유지한다. */
+@media (max-width: 1023px) {
+  .site-header .header-utilities, .site-header #navbar, .site-header .header-account { display: none; }
+  .site-header #mobile-menu-btn, .site-header #header-search-btn { display: flex; }
+  .site-header .header-shell { padding-inline: max(12px, env(safe-area-inset-left)); }
+  .site-header .header-main { gap: 12px; }
+  .site-header .header-actions { gap: 2px; }
+  .site-header .header-search-panel { position:absolute; right:-46px; top:52px; width:300px; max-width:calc(100vw - 32px); padding:10px; background:#1a1d25; border:1px solid #3a4a4680; border-radius:16px; }
+}
