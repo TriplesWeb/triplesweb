@@ -144,6 +144,29 @@ class ObjektFeaturesTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test void descriptionIsSharedBySeasonAndNumberWithoutOverwritingOtherGroups() throws Exception {
+        var a = Map.<String,Object>of("id","a","slug","a","season","Cream02","collectionNo","367Z");
+        var b = Map.<String,Object>of("id","b","slug","b","season","Cream02","collectionNo","367Z");
+        var c = Map.<String,Object>of("id","c","slug","c","season","Cream02","collectionNo","368Z");
+        stubCatalog(List.of(a,b,c));
+        var stored = new java.util.HashMap<String,com.example.triplesweb.entity.ObjektDescription>();
+        when(descriptions.findByObjektKey(anyString())).thenAnswer(call -> java.util.Optional.ofNullable(stored.get(call.getArgument(0))));
+        when(descriptions.save(any())).thenAnswer(call -> {
+            com.example.triplesweb.entity.ObjektDescription value=call.getArgument(0);
+            stored.put(value.getObjektKey(),value); return value;
+        });
+        mvc.perform(post("/cosmo/objekt/detail/a/description").accept(MediaType.APPLICATION_JSON).param("description","공통 설명"))
+                .andExpect(status().isOk());
+        mvc.perform(get("/cosmo/objekt/detail/b").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.description").value("공통 설명"));
+        mvc.perform(get("/cosmo/objekt/detail/c").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.description").value(""));
+        mvc.perform(post("/cosmo/objekt/detail/b/description").accept(MediaType.APPLICATION_JSON).param("description",""))
+                .andExpect(status().isOk());
+        mvc.perform(get("/cosmo/objekt/detail/a").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.description").value(""));
+    }
+
     @Test void combinedLookupUsesIndexAndNotLiveRpc() throws Exception {
         var item = Map.<String,Object>of("id", "uuid", "slug", "hayeoncc367z");
         stubCatalog(List.of(item));
