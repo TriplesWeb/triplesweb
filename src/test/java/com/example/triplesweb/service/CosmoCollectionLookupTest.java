@@ -161,8 +161,9 @@ class CosmoCollectionLookupTest {
         assertThat(completed()).containsEntry("ownedCount", 26);
     }
     @Test void incomingAndOutgoingHoldingsMoveBetweenMissingAndOwnedAfterShortCacheExpiry() {
+        completed();
         var catalog = org.mockito.Mockito.mock(ObjektService.class);
-        var artists = org.mockito.Mockito.mock(com.example.triplesweb.repository.ArtistRepository.class);
+        var artists = org.mockito.Mockito.mock(com.example.triplesweb.service.ArtistSnapshotService.class);
         org.mockito.Mockito.when(artists.findAll()).thenReturn(List.of());
         org.mockito.Mockito.when(catalog.findCollections("triples")).thenReturn(List.of(
             Map.of("slug","cream02-hayeon-367z","member","HaYeon","season","Cream02","class","Double","collectionNo","367Z"),
@@ -173,14 +174,17 @@ class CosmoCollectionLookupTest {
         holdingsPhase = 1;
         assertThat(profiles.profile("테스트", "HaYeon", "members", "members", "missing")).containsEntry("checklistMissing", 1);
         now.addAndGet(21);
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() ->
+            assertThat(profiles.profile("테스트", "HaYeon", "members", "members", "missing"))
+                .containsEntry("checklistOwned", 2).containsEntry("checklistMissing", 0).containsEntry("checklistVisible", 0));
         var incoming = profiles.profile("테스트", "HaYeon", "members", "members", "missing");
-        assertThat(incoming).containsEntry("checklistOwned", 2).containsEntry("checklistMissing", 0).containsEntry("checklistVisible", 0);
         assertThat(incoming.get("profileVersion")).isNotEqualTo(before.get("profileVersion"));
         assertThat(profiles.profile("테스트", "HaYeon", "members", "members", "owned")).containsEntry("checklistVisible", 2);
         holdingsPhase = 2;
         now.addAndGet(21);
-        assertThat(profiles.profile("테스트", "HaYeon", "members", "members", "missing"))
-            .containsEntry("checklistOwned", 1).containsEntry("checklistMissing", 1).containsEntry("checklistVisible", 1);
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() ->
+            assertThat(profiles.profile("테스트", "HaYeon", "members", "members", "missing"))
+                .containsEntry("checklistOwned", 1).containsEntry("checklistMissing", 1).containsEntry("checklistVisible", 1));
     }
 
 }

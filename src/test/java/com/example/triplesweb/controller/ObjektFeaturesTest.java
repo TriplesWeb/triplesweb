@@ -99,7 +99,7 @@ class ObjektFeaturesTest {
     }
 
     @Test void oldDetailPageOpensSharedCatalogModal() throws Exception {
-        when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("id","uuid","slug","sample")));
+        stubCatalog(List.of(Map.of("id","uuid","slug","sample")));
         mvc.perform(get("/cosmo/objekt/detail/sample").accept(MediaType.TEXT_HTML))
             .andExpect(redirectedUrl("/cosmo/objekt?objekt=sample"));
     }

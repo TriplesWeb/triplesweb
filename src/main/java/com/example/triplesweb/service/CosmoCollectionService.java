@@ -314,8 +314,9 @@ public class CosmoCollectionService {
                 && !nextCursor.path("receivedAt").asText().isBlank()
                 && !nextCursor.path("id").asText().isBlank();
 
+        long now = clock.instant().getEpochSecond();
         Cached cached = new Cached(resolvedNick, address, image, cards,
-                clock.instant().getEpochSecond() + HOLDINGS_TTL_SECONDS, !hasMore);
+                now, now + HOLDINGS_TTL_SECONDS, !hasMore);
         if (!hasMore) {
             return cached;
         }
@@ -378,8 +379,9 @@ public class CosmoCollectionService {
     }
 
     private Cached missing(String nickname) {
+        long now = clock.instant().getEpochSecond();
         return new Cached(nickname, "", "", new CardBuffer(),
-                clock.instant().getEpochSecond() + MISSING_TTL_SEC, true);
+                now, now + MISSING_TTL_SEC, true);
     }
 
     private static String collectionNo(JsonNode objekt, String collectionId) {
@@ -457,14 +459,14 @@ public class CosmoCollectionService {
         final AtomicBoolean refreshing = new AtomicBoolean(false);
 
         Cached(String nickname, String address, String image, CardBuffer cards,
-               long expiresAt, boolean complete) {
+               long lastAccessAt, long expiresAt, boolean complete) {
             this.nickname = nickname;
             this.address = address;
             this.image = image;
             this.cards = cards;
+            this.lastAccessAt = lastAccessAt;
             this.expiresAt = expiresAt;
             this.complete = complete;
-            this.lastAccessAt = CosmoCollectionService.this.clock.instant().getEpochSecond();
         }
     }
 }

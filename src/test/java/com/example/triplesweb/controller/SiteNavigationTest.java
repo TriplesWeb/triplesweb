@@ -32,6 +32,7 @@ class SiteNavigationTest {
     @MockitoBean AlbumService albums;
     @MockitoBean UnitService units;
     @MockitoBean MemberSpotlightService spotlight;
+    @MockitoBean ChemistryViewCache chemistryViewCache;
 
     @Test void primaryOrderAndAllLegacyDestinationsRemainAvailable() throws Exception {
         assertThat(SiteNavigation.PRIMARY).extracting(SiteNavigation.Section::label)
