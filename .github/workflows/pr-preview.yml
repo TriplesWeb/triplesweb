@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   changes:
-    if: github.event.pull_request.number == 26 && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.number == 26 || github.event.pull_request.head.ref == 'ui/header-navigation-restructure')
     runs-on: ubuntu-latest
     outputs:
       deploy: ${{ steps.diff.outputs.result }}
@@ -24,6 +24,7 @@ jobs:
       - uses: actions/github-script@v7
         id: diff
         with:
+          retries: 3
           script: |
             if (context.payload.action !== 'synchronize') return true;
             const head=context.payload.pull_request.head;
@@ -98,6 +99,7 @@ jobs:
         env:
           HEAD_SHA: ${{ env.HEAD_SHA }}
         with:
+          retries: 3
           script: |
             const prNumber = context.payload.pull_request.number;
             const sha = process.env.HEAD_SHA;

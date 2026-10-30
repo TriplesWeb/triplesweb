@@ -45,6 +45,7 @@ public class CosmoProfileService {
                 .distinct().count());
         List<Map<String, Object>> catalogSnapshot = catalog.findCollections("triples");
         ProgressBuckets buckets = buckets(all, catalogSnapshot);
+        view.put("profileVersion", Integer.toHexString(Objects.hash(all, catalogSnapshot)));
         view.put("seasonStats", catalogBreakdown(catalogSnapshot, all, "season", "season"));
         view.put("classStats", catalogBreakdown(catalogSnapshot, all, "class", "objektClass"));
         view.put("hasStats", !catalogSnapshot.isEmpty() || !all.isEmpty());

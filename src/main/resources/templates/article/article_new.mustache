@@ -16,6 +16,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/article-page.css?v=1">
     <style>
         /* 에디터 내부 영역 스타일 및 미디어 미리보기 서식 정리 */
         #content {
@@ -132,7 +133,7 @@
         .objekt-picker-reset:hover { background: rgba(0, 245, 212, .08); }
     </style>
 </head>
-<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+<body class="article-page bg-surface text-on-surface min-h-screen flex flex-col">
 {{>layout/header}}
 
 {{#_csrf}}

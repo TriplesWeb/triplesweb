@@ -7,9 +7,11 @@ permissions:
   contents: read
 jobs:
   network:
-    if: github.event.pull_request.number == 26 && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.number == 26 || github.event.pull_request.head.ref == 'ui/header-navigation-restructure')
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,18 +34,24 @@ jobs:
           printf 'Host pi\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/deploy_key\n  StrictHostKeyChecking accept-new\n' "$PI_HOST" "$PI_USER" > ~/.ssh/config
       - name: 실제 주소와 현재 컨테이너 확인
         run: |
-          ssh pi python3 - < scripts/inspect-pr-preview-network.py > /tmp/preview-network.json
+          ssh pi python3 - --pr "$PR_NUMBER" < scripts/inspect-pr-preview-network.py > /tmp/preview-network.json
           cat /tmp/preview-network.json
       - name: 다른 장비에서 미리보기 포트 접속
         run: |
           python3 - <<'PY'
-          import json,subprocess
+          import json,subprocess,os,socket
           result=json.load(open("/tmp/preview-network.json"))
+          try:
+              with socket.create_connection((result["ip"],3306),timeout=5):
+                  print("DATABASE_TCP_FROM_TAILSCALE_RUNNER=true")
+          except OSError as error:
+              print("DATABASE_TCP_FROM_TAILSCALE_RUNNER=false error="+type(error).__name__)
+          port=18000+int(os.environ["PR_NUMBER"])
           for label,address in [("actual",result["ip"]),("previous","100.89.171.59")]:
-              p=subprocess.run(["curl","--noproxy","*","--connect-timeout","8","--max-time","20","--silent","--show-error","--output","/dev/null","--write-out","%{http_code}","http://"+address+":18026/api/preview/info"],capture_output=True,text=True)
+              p=subprocess.run(["curl","--noproxy","*","--connect-timeout","8","--max-time","20","--silent","--show-error","--output","/dev/null","--write-out","%{http_code}","http://"+address+f":{port}/api/preview/info"],capture_output=True,text=True)
               print(label+" external_http="+p.stdout+" exit="+str(p.returncode))
           if result["dns"]:
-              print("PREVIEW_DNS_URL=http://"+result["dns"]+":18026/cosmo/objekt")
+              print("PREVIEW_DNS_URL=http://"+result["dns"]+f":{port}/cosmo/objekt")
           PY
 
       - name: 일반 인터넷에서 모바일 로그인 보호 확인
@@ -65,6 +73,3 @@ jobs:
               assert error.code==401
           print("PUBLIC_LOGIN_PAGE_AND_AUTH_VERIFIED="+url+"/cosmo/objekt")
           PY
-
-      - name: 찜하기 실제 저장 진단
-        run: ssh pi python3 - < scripts/inspect-preview-favorites.py

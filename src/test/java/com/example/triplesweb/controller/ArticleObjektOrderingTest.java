@@ -15,7 +15,7 @@ class ArticleObjektOrderingTest {
         var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
                 mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog);
         when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("id","uuid","slug","hayeoncc367z","collectionId","Cream02 HaYeon 367Z","member","HaYeon")));
-        for (String category : List.of("trade","sell")) {
+        for (String category : List.of("trade","sell","group-orders")) {
             var model = new ExtendedModelMap();
             controller.showArticleForm(category, List.of("uuid","invalid"), model);
             assertThat((List<Map<String,Object>>)model.get("objektSelected")).hasSize(1)
@@ -36,7 +36,7 @@ class ArticleObjektOrderingTest {
         Article article = new Article(); article.setId(3L); article.setTitle("test"); article.setContent("test");
         when(articles.showWithFiles(3L)).thenReturn(article);
         when(links.findForArticle(3L)).thenReturn(List.of());
-        for (String category : List.of("trade", "sell")) {
+        for (String category : List.of("trade", "sell", "group-orders")) {
             var fresh = new ExtendedModelMap();
             controller.showArticleForm(category, fresh);
             var edited = new ExtendedModelMap();

@@ -4,13 +4,31 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+import java.io.IOException;
 import java.util.HashSet;
 import static org.assertj.core.api.Assertions.*;
 
 /** Explicit live smoke test: no credentials or account snapshots. */
 @EnabledIfEnvironmentVariable(named = "OBJEKT_LIVE_TEST", matches = "true")
 class ObjektLiveApiTest {
-    @Test void publicActivityPaginationAndCatalogMatchProductionAdapters() {
+    @Test void publicActivityPaginationAndCatalogMatchProductionAdapters() throws InterruptedException {
+        for (int attempt = 1; ; attempt++) {
+            try {
+                verifyPublicApis();
+                return;
+            } catch (RestClientException failure) {
+                Throwable cause = failure;
+                while (cause != null && !(cause instanceof IOException)) cause = cause.getCause();
+                // 연결 종료·시간 초과만 한정 재시도한다. HTTP 오류와 검증 실패는 그대로 실패한다.
+                if (cause == null || attempt >= 3) throw failure;
+                System.out.println("Live API transport retry " + attempt + "/2: " + cause.getClass().getSimpleName());
+                Thread.sleep(attempt * 500L);
+            }
+        }
+    }
+
+    private void verifyPublicApis() {
         var client = new ObjektActivityClient("https://objekt.top/api/v1");
         var first = client.fetch(null);
         assertThat(first.events()).isNotEmpty();
@@ -45,6 +63,13 @@ class ObjektLiveApiTest {
         assertThat(rarity).isNotNull();
         assertThat(rarity.isArray()).isTrue();
         assertThat(rarity.size()).isPositive();
+        JsonNode serials=http.get().uri("/collections/{slug}/serials",target.path("slug").asText()).retrieve().body(JsonNode.class);
+        var supply=ObjektSerialSupplyService.analyze(serials,System.currentTimeMillis());
+        assertThat(supply.count()).isPositive();
+        long last=supply.ranges().get(supply.ranges().size()-1).last();
+        JsonNode lastHistory=http.get().uri("/collections/{slug}/serials/{serial}/transfers",target.path("slug").asText(),last).retrieve().body(JsonNode.class);
+        assertThat(lastHistory.path("tokenId").asText()).matches("[0-9]+");
+        System.out.println("Live issued serials: unique="+supply.count()+", maximum="+last+", actual last token=OK");
         var event = first.events().get(0);
         JsonNode metadata = RestClient.create("https://api.cosmo.fans").get()
                 .uri("/bff/v3/objekts/nft-metadata/{id}", event.tokenId()).retrieve().body(JsonNode.class);

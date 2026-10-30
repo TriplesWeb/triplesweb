@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PR 26의 분리된 미리보기에만 암호로 보호된 임시 HTTPS 연결을 추가한다."""
+"""PR의 분리된 미리보기에만 암호로 보호된 임시 HTTPS 연결을 추가한다."""
 import argparse
 import hashlib
 import hmac
@@ -37,28 +37,32 @@ def access_config(previous,password):
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--root",required=True)
+    parser.add_argument("--pr",type=int,required=True)
     parser.add_argument("--gateway",required=True)
     args=parser.parse_args()
+    pr=args.pr
+    if not 1<=pr<=9999:
+        raise ValueError("PR 번호 범위 오류")
     root=Path(args.root).resolve()
     if not (root/"docker-compose.yml").is_file():
         raise RuntimeError("배포 스택 경로 확인 필요")
-    directory=(root/"previews"/"pr-26"/"mobile").resolve()
+    directory=(root/"previews"/f"pr-{pr}"/"mobile").resolve()
     if root not in directory.parents:
         raise RuntimeError("미리보기 경로 오류")
-    info=json.loads(run(["docker","inspect","triples-pr26-preview"]))[0]
-    if info["Config"].get("Labels",{}).get("org.triples.preview.pr")!="26" or not info["State"]["Running"]:
-        raise RuntimeError("PR 26 미리보기 컨테이너가 필요합니다")
+    info=json.loads(run(["docker","inspect",f"triples-pr{pr}-preview"]))[0]
+    if info["Config"].get("Labels",{}).get("org.triples.preview.pr")!=str(pr) or not info["State"]["Running"]:
+        raise RuntimeError(f"PR {pr} 미리보기 컨테이너가 필요합니다")
     env=dict(value.split("=",1) for value in info["Config"].get("Env",[]) if "=" in value)
     password=env.get("CHEMISTRY_ADMIN_PASSWORD","")
     if not password:
         raise RuntimeError("관리자 비밀번호가 없어 공개 연결을 만들지 않습니다")
     network=next(iter(info["NetworkSettings"]["Networks"]))
     previous_gateway=None
-    for name in ("triples-pr26-mobile-gateway","triples-pr26-mobile-tunnel"):
+    for name in (f"triples-pr{pr}-mobile-gateway",f"triples-pr{pr}-mobile-tunnel"):
         old=subprocess.run(["docker","inspect",name],stdin=subprocess.DEVNULL,capture_output=True,text=True)
         if old.returncode==0:
             details=json.loads(old.stdout)[0]
-            if details["Config"].get("Labels",{}).get("org.triples.preview.mobile")!="26":
+            if details["Config"].get("Labels",{}).get("org.triples.preview.mobile")!=str(pr):
                 raise RuntimeError("다른 컨테이너를 덮어쓰지 않습니다")
             if name.endswith("gateway"):
                 previous_gateway=details
@@ -76,68 +80,93 @@ def main():
     if code_changed:
         gateway_file.write_text(source,encoding="utf-8")
         gateway_file.chmod(0o600)
-    labels={"org.triples.preview.mobile":"26"}
+    labels={"org.triples.preview.mobile":str(pr)}
     spec={"services":{
-        "gateway":{"image":"python:3.12-alpine","container_name":"triples-pr26-mobile-gateway","restart":"unless-stopped","labels":labels,
+        "gateway":{"image":"python:3.12-alpine","container_name":f"triples-pr{pr}-mobile-gateway","restart":"unless-stopped","labels":labels,
                    "command":["python","-u","/app/gateway.py"],"user":str(os.getuid())+":"+str(os.getgid()),"mem_limit":"128m","cpus":"0.5",
                    "volumes":[str(gateway_file)+":/app/gateway.py:ro",str(access_file)+":/config/access.json:ro"],
-                   "networks":["app","mobile"],"read_only":True,"tmpfs":["/tmp"],"cap_drop":["ALL"],"security_opt":["no-new-privileges:true"]},
-        "tunnel":{"image":"cloudflare/cloudflared:latest","container_name":"triples-pr26-mobile-tunnel","restart":"unless-stopped","labels":labels,
+                   "environment":{"APP_PREVIEW_NUMBER":str(pr)},"networks":["app","mobile"],"read_only":True,"tmpfs":["/tmp"],"cap_drop":["ALL"],"security_opt":["no-new-privileges:true"]},
+        "tunnel":{"image":"cloudflare/cloudflared:latest","container_name":f"triples-pr{pr}-mobile-tunnel","restart":"unless-stopped","labels":labels,
                   "command":["tunnel","--no-autoupdate","--protocol","http2","--url","http://gateway:8080"],
                   "depends_on":["gateway"],"mem_limit":"128m","cpus":"0.5","networks":["mobile"],"cap_drop":["ALL"],"security_opt":["no-new-privileges:true"]}
     },"networks":{"app":{"external":True,"name":network},"mobile":{}}}
     compose=directory/"compose.json"
     save(compose,spec)
-    command=["docker","compose","-p","triples-pr26-mobile","-f",str(compose)]
+    command=["docker","compose","-p",f"triples-pr{pr}-mobile","-f",str(compose)]
     for image in ("python:3.12-alpine","cloudflare/cloudflared:latest"):
         found=subprocess.run(["docker","image","inspect",image],stdin=subprocess.DEVNULL,capture_output=True)
         if found.returncode:
             run(["docker","pull",image],timeout=300)
     run([*command,"up","-d"],timeout=120)
     if previous_gateway and (code_changed or access_changed):
-        current=json.loads(run(["docker","inspect","triples-pr26-mobile-gateway"]))[0]
+        current=json.loads(run(["docker","inspect",f"triples-pr{pr}-mobile-gateway"]))[0]
         if current["State"]["StartedAt"]==previous_gateway["State"]["StartedAt"]:
-            run(["docker","restart","triples-pr26-mobile-gateway"],timeout=30)
+            run(["docker","restart",f"triples-pr{pr}-mobile-gateway"],timeout=30)
     else:
         print("로그인 게이트웨이 변경이 없어 재시작을 생략합니다",flush=True)
     url=None
-    deadline=time.monotonic()+600
+    # 앱 HTTP 검증이 끝난 뒤 실행하므로 공개 연결만 제한 시간 안에 확인한다.
+    deadline=time.monotonic()+180
+    last_failure=None
+    stage="tunnel_url"
+    announced_url=None
     while time.monotonic()<deadline:
-        logs=subprocess.run(["docker","logs","--tail","500","triples-pr26-mobile-tunnel"],stdin=subprocess.DEVNULL,capture_output=True,text=True)
+        logs=subprocess.run(["docker","logs","--tail","500",f"triples-pr{pr}-mobile-tunnel"],stdin=subprocess.DEVNULL,capture_output=True,text=True)
         text=logs.stdout+logs.stderr
         found=re.findall(r"https://[a-z0-9-]+\.trycloudflare\.com",text)
         if found:
             url=found[-1]
         if url:
+            if url!=announced_url:
+                print("PUBLIC_PREVIEW_CANDIDATE_URL="+url,flush=True)
+                announced_url=url
             try:
+                stage="login_page"
                 jar=http.cookiejar.CookieJar()
                 opener=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
                 with opener.open(url+"/__preview/login",timeout=20) as login_page:
                     form=login_page.read().decode("utf-8")
                 csrf=re.search(r'name="csrf" value="([^"]+)"',form).group(1)
                 request=urllib.request.Request(url+"/__preview/login",data=urllib.parse.urlencode({"password":password,"csrf":csrf}).encode(),headers={"Origin":url})
+                stage="login_submit"
                 with opener.open(request,timeout=25) as response:
                     html=response.read().decode("utf-8")
                     if response.status!=200 or "/js/pr-preview.js" not in html:
                         raise RuntimeError("로그인 후 화면 확인 실패")
+                stage="preview_info"
                 with opener.open(url+"/api/preview/info",timeout=20) as response:
                     build=json.load(response)
-                    if build.get("pr")!=26:
+                    if build.get("pr")!=pr:
                         raise RuntimeError("잘못된 미리보기 응답")
+                if os.environ.get("PREVIEW_VERIFY_NAVIGATION")=="true":
+                    for path,marker in (("/sitemap", "전체 메뉴"), ("/triples/overview", "groupImageDisplay"),
+                            ("/triples/members", "artist-member-tabs"), ("/activities/voting", "준비 중"),
+                            ("/cosmo/group-orders", "분철 게시판"), ("/media/drive", "준비 중"),
+                            ("/community/suggestions", "준비 중")):
+                        stage=path
+                        with opener.open(url+path,timeout=30) as page:
+                            content=page.read().decode("utf-8")
+                            if page.status!=200 or marker not in content or '/js/site-header.js' not in content:
+                                raise RuntimeError("헤더 연결 화면 검증 실패: "+path)
+                    print("PUBLIC_NAVIGATION_PAGES_VERIFIED=7")
+                stage="anonymous_api"
                 try:
                     urllib.request.urlopen(url+"/api/preview/info",timeout=15)
                     raise RuntimeError("로그인 보호가 적용되지 않았습니다")
                 except urllib.error.HTTPError as error:
                     if error.code!=401:
                         raise
-                print("HTTPS_PREVIEW_LOGIN_AND_PAGE_VERIFIED=26")
+                print(f"HTTPS_PREVIEW_LOGIN_AND_PAGE_VERIFIED={pr}")
                 print("PUBLIC_PREVIEW_URL="+url+"/cosmo/objekt")
                 print("PUBLIC_PREVIEW_REVISION="+build["revision"])
                 return
-            except (OSError,ValueError,RuntimeError):
-                pass
+            except (OSError,ValueError,RuntimeError) as error:
+                failure={"stage":stage,"reason":type(error).__name__,"status":getattr(error,"code",None)}
+                if failure!=last_failure:
+                    print("HTTPS_PREVIEW_RETRY="+json.dumps(failure),flush=True)
+                    last_failure=failure
         time.sleep(3)
-    raise RuntimeError("HTTPS 연결 또는 로그인 보호 검증이 완료되지 않았습니다")
+    raise RuntimeError("HTTPS 검증 실패: "+json.dumps(last_failure or {"stage":stage}))
 
 if __name__=="__main__":
     main()

@@ -9,7 +9,7 @@ const {chromium}=require('playwright');
     const page=await context.newPage();
     await page.goto(url.origin+'/__preview/login',{waitUntil:'domcontentloaded'});
     await page.locator('input[name="csrf"]').waitFor({state:'attached'});
-    assert.ok((await context.cookies()).some(cookie=>cookie.name==='__Host-PR26LOGINCSRF'&&cookie.secure&&cookie.httpOnly));
+    assert.ok((await context.cookies()).some(cookie=>cookie.name===`__Host-PR${process.env.PR_NUMBER||26}LOGINCSRF`&&cookie.secure&&cookie.httpOnly));
     const icon=await context.request.get(url.origin+'/favicon.ico');
     assert.equal(icon.status(),204);
     const secondTab=await context.newPage();
