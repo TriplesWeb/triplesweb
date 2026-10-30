@@ -186,7 +186,7 @@ class ObjektFeaturesTest {
         mvc.perform(get("/cosmo/objekt/detail/hayeoncc367z").accept(MediaType.TEXT_HTML))
             .andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc367z"));
         org.assertj.core.api.Assertions.assertThat(result.getResponse().getContentAsString())
-            .contains("data-serial-panel", "objektIssuedRanges").doesNotContain("id=\"objektDetailFullLink\"");
+            .contains("data-serial-panel", "objektIssuedCount").doesNotContain("id=\"objektDetailFullLink\"");
     }
 
     @Test void ownerResponseDoesNotExposeInternalVerificationFields() throws Exception {
