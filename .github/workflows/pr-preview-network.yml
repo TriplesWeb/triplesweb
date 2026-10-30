@@ -7,7 +7,7 @@ permissions:
   contents: read
 jobs:
   network:
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'cursor/pr29-pr30-isolated-preview-b562'
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
