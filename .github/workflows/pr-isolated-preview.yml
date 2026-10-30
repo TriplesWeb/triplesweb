@@ -77,17 +77,29 @@ jobs:
       - name: 별도 실행기에서 앱 실행
         id: start
         run: python3 scripts/run-isolated-preview.py --runtime "$RUNNER_TEMP/preview-runtime.json" --pr "$PR_NUMBER" --revision "$REVISION"
+      - name: 임시 HTTPS 연결 설치
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --silent --show-error https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 --output "$RUNNER_TEMP/cloudflared"
+          chmod 700 "$RUNNER_TEMP/cloudflared"
+      - name: 비밀번호 보호 HTTPS 연결 확인
+        id: https
+        env:
+          CLOUDFLARED_BIN: ${{ runner.temp }}/cloudflared
+          PREVIEW_UPSTREAM_URL: ${{ steps.start.outputs.url }}
+        run: python3 scripts/start-isolated-https.py --runtime "$RUNNER_TEMP/preview-runtime.json" --upstream "$PREVIEW_UPSTREAM_URL" --pr "$PR_NUMBER" --revision "$REVISION"
       - name: PR에 미리보기 주소 표시
         uses: actions/github-script@v7
         env:
           PREVIEW_URL: ${{ steps.start.outputs.url }}
+          PREVIEW_HTTPS: ${{ steps.https.outputs.url }}
         with:
           script: |
             const pr = (await github.rest.pulls.get({...context.repo,pull_number:context.payload.pull_request.number})).data;
             if (pr.state !== 'open' || pr.head.sha !== process.env.REVISION) throw Error('PR이 변경되었습니다');
             const marker = /<!-- isolated-preview-start -->[\s\S]*?<!-- isolated-preview-end -->/g;
             const body = (pr.body || '').replace(marker,'').trimEnd();
-            const section = '<!-- isolated-preview-start -->\n별도 실행기 Tailscale 미리보기: ' + process.env.PREVIEW_URL + '/cosmo/objekt\n커밋: ' + process.env.REVISION + '\n이 주소는 실행기 종료 시 만료됩니다.\n<!-- isolated-preview-end -->';
+            const section = '<!-- isolated-preview-start -->\n별도 실행기 Tailscale 미리보기: ' + process.env.PREVIEW_URL + '/cosmo/objekt\n암호 보호 HTTPS 미리보기: ' + process.env.PREVIEW_HTTPS + '/cosmo/objekt\n커밋: ' + process.env.REVISION + '\n이 주소는 실행기 종료 시 만료됩니다.\n<!-- isolated-preview-end -->';
             await github.rest.pulls.update({...context.repo,pull_number:pr.number,body:body+'\n\n'+section});
       - name: 미리보기 유지
         run: |
@@ -95,6 +107,8 @@ jobs:
           end=$((SECONDS+19000))
           while [ "$SECONDS" -lt "$end" ]; do
             kill -0 "$(cat "$root/pid")" || exit 1
+            kill -0 "$(cat "$root/gateway.pid")" || exit 1
+            kill -0 "$(cat "$root/tunnel.pid")" || exit 1
             sleep 30
           done
 

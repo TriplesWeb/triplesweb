@@ -145,7 +145,7 @@ class Handler(BaseHTTPRequestHandler):
             headers["Cookie"]="; ".join(m.OutputString() for m in cookies.values())
         headers["X-Forwarded-Proto"]="https"
         headers["X-Forwarded-Host"]=self.headers.get("Host","")
-        upstream=http.client.HTTPConnection(f"triples-pr{PR}-preview",8080,timeout=40)
+        upstream=http.client.HTTPConnection(os.environ.get("PREVIEW_UPSTREAM_HOST",f"triples-pr{PR}-preview"),int(os.environ.get("PREVIEW_UPSTREAM_PORT","8080")),timeout=40)
         headers_sent=False
         try:
             target=path+("?"+parsed.query if parsed.query else "")
@@ -186,4 +186,4 @@ class Handler(BaseHTTPRequestHandler):
     do_HEAD=handle_request
 
 if __name__=="__main__":
-    ThreadingHTTPServer(("0.0.0.0",8080),Handler).serve_forever()
+    ThreadingHTTPServer((os.environ.get("PREVIEW_GATEWAY_BIND","0.0.0.0"),int(os.environ.get("PREVIEW_GATEWAY_PORT","8080"))),Handler).serve_forever()
