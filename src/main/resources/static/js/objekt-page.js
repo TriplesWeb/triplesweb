@@ -235,7 +235,7 @@
     const memberGroupInput = document.getElementById('objekt-member-group');
     function syncMemberGroup() {
         const group = memberGroupInput.value;
-        document.querySelectorAll('[data-objekt-group]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.objektGroup === group)));
+        document.querySelectorAll('[data-objekt-group]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.objektGroup === group || (button.dataset.objektGroup === 'all' && group === 'members'))));
         document.getElementById('objekt-member-picker').hidden = group === 'other';
         document.getElementById('objekt-other-notice').hidden = group !== 'other';
         const memberToggle = document.getElementById('objekt-member-toggle');
@@ -255,7 +255,7 @@
     }
 
     function syncMemberChecks(values, { apply = false } = {}) {
-        if (apply) memberGroupInput.value = 'members';
+        if (apply) memberGroupInput.value = values?.length ? 'members' : 'all';
         const selected = new Set((values || []).map(v => String(v).toLocaleLowerCase()));
         document.querySelectorAll('.member-checkbox').forEach((cb) => {
             cb.checked = selected.has(String(cb.value).toLocaleLowerCase());
@@ -299,7 +299,7 @@
             window.MemberPortraitPicker?.clear(memberRoot);
             syncMemberChecks([]);
         } else { syncMemberGroup(); syncMemberLabel(); }
-        setMemberPickerOpen(group === 'members');
+        setMemberPickerOpen(group !== 'other');
         markActiveFilters();
     }));
     memberToggle?.addEventListener('click', () => {
