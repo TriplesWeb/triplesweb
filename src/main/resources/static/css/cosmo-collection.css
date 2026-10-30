@@ -306,3 +306,5 @@
 .collection-card-serial{left:.5rem;background:#171a24dc;color:#e8ebf2}.collection-card-serial .ar-id{border:0;padding:0;color:inherit}
 .collection-card-season{right:.5rem;background:#00e8cb;color:#071513}.collection-card .ar-body{gap:.35rem}
 .collection-page .collection-filter-panel{position:relative;z-index:5}.collection-page .objekt-filter:focus-within{z-index:70}.collection-page .objekt-dropdown-menu{z-index:80}
+
+.collection-page .objekt-choice{font-family:Inter,"Noto Sans KR",-apple-system,sans-serif}.collection-page .objekt-choice-mark{flex:0 0 auto;line-height:1}
