@@ -167,11 +167,11 @@
         {{#cards}}
         <article class="ar-panel ar-card collection-card">
             <div class="collection-image-wrap">
+            <span class="collection-card-serial">{{#hasSerial}}#{{serial}}{{/hasSerial}}{{^hasSerial}}시리얼 확인 중{{/hasSerial}}</span><span class="collection-card-season">{{season}}</span>
             {{#hasImage}}<img class="collection-image" src="{{thumbnailImage}}" alt="{{collectionId}}" referrerpolicy="no-referrer" loading="lazy" decoding="async">{{/hasImage}}
             {{^hasImage}}<span class="ar-muted">이미지 준비 중</span>{{/hasImage}}
             </div>
             <div class="ar-body">
-                <div class="ar-meta">{{#hasSerial}}<span class="ar-id" aria-label="시리얼 {{serial}}">#{{serial}}</span>{{/hasSerial}}{{^hasSerial}}<span class="ar-id">시리얼 확인 중</span>{{/hasSerial}}{{#objektClass}}<span class="ar-badge">{{objektClass}}</span>{{/objektClass}}</div>
                 {{#hasDetail}}<h3><a class="collection-title-link" href="{{detailUrl}}">{{collectionId}}</a></h3>{{/hasDetail}}
                 {{^hasDetail}}<h3>{{collectionId}}</h3>{{/hasDetail}}
                 <p class="ar-muted">{{member}}{{#season}} · {{season}}{{/season}}</p>
@@ -372,7 +372,6 @@
     const title = escapeHtml(item.collectionId || '오브젝트');
     const member = escapeHtml(item.member || '');
     const season = item.season ? ' · ' + escapeHtml(item.season) : '';
-    const klass = item.objektClass ? `<span class="ar-badge">${escapeHtml(item.objektClass)}</span>` : '';
     const serial = item.hasSerial
       ? `<span class="ar-id" aria-label="시리얼 ${escapeHtml(item.serial)}">#${escapeHtml(item.serial)}</span>`
       : '<span class="ar-id">시리얼 확인 중</span>';
@@ -383,9 +382,8 @@
       ? `<h3><a class="collection-title-link" href="${escapeHtml(item.detailUrl)}">${title}</a></h3>`
       : `<h3>${title}</h3>`;
     return `<article class="ar-panel ar-card collection-card">
-      <div class="collection-image-wrap">${image}</div>
+      <div class="collection-image-wrap"><span class="collection-card-serial">${serial}</span><span class="collection-card-season">${escapeHtml(item.season || '')}</span>${image}</div>
       <div class="ar-body">
-        <div class="ar-meta">${serial}${klass}</div>
         ${heading}
         <p class="ar-muted">${member}${season}</p>
       </div>
