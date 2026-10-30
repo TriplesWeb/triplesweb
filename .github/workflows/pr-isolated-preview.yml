@@ -97,3 +97,47 @@ jobs:
             kill -0 "$(cat "$root/pid")" || exit 1
             sleep 30
           done
+
+  peer-check:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'cursor/pr29-pr30-isolated-preview-b562'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      REVISION: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          ping: ${{ secrets.PI_HOST }}
+      - name: 실행기 주소 확인
+        id: address
+        uses: actions/github-script@v7
+        with:
+          script: |
+            for (let i=0; i<180; i++) {
+              const pr=(await github.rest.pulls.get({...context.repo,pull_number:context.payload.pull_request.number})).data;
+              if (pr.state!=='open' || pr.head.sha!==process.env.REVISION) throw Error('PR이 변경되었습니다');
+              const body=pr.body||'';
+              if (body.includes('커밋: '+process.env.REVISION)) {
+                const match=body.match(/http:\/\/(100\.\d+\.\d+\.\d+:18031)\/cosmo\/objekt/);
+                if (match) { core.setOutput('url','http://'+match[1]); return; }
+              }
+              await new Promise(resolve=>setTimeout(resolve,10000));
+            }
+            throw Error('별도 실행기 주소를 받지 못했습니다');
+      - name: 다른 Tailscale 기기에서 접속 검사
+        env:
+          TARGET: ${{ steps.address.outputs.url }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "다른 Tailscale 실행기에서 HTTP 검사"
+          curl --noproxy '*' --connect-timeout 10 --max-time 20 --fail --silent --show-error "$TARGET/api/preview/info" > /tmp/preview-info.json
+          python3 - <<'PY'
+          import json,os
+          info=json.load(open('/tmp/preview-info.json'))
+          if info.get('revision') != os.environ['REVISION'] or info.get('pr') != 31:
+              raise SystemExit('미리보기 커밋 불일치')
+          print('별도 Tailscale 기기에서 미리보기 연결 확인')
+          PY
