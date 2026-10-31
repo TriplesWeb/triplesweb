@@ -9,7 +9,7 @@ const base = path.resolve(__dirname, '../..');
     const page = await browser.newPage({viewport:{width:1280,height:1000}});
     let favorite=false, favoriteAttempts=0;
     let isAdmin = true, description = '기존 설명', writes = [], failMore = true;
-    const data = () => ({isFavorite:favorite,objektKey:'uuid',collectionId:'Cream02 HaYeon 367Z',member:'HaYeon',season:'Cream02',class:'Special',collectionNo:'367Z',description,isAdmin,
+    const data = () => ({isFavorite:favorite,objektKey:'hayeoncc367z',collectionId:'Cream02 HaYeon 367Z',member:'HaYeon',season:'Cream02',class:'Special',collectionNo:'367Z',description,isAdmin,
       detailUrl:'/cosmo/objekt/detail/hayeoncc367z',memberUrl:'/cosmo/objekt?group=members&member=HaYeon',tradeUrl:'/article/trade/new?selectedObjektIds=uuid',sellUrl:'/article/sell/new?selectedObjektIds=uuid',descriptionUrl:'/cosmo/objekt/detail/hayeoncc367z/description'});
     await page.context().addCookies([{name:'XSRF-TOKEN',value:'test-csrf',domain:'preview.test',path:'/'}]);
     await page.route('**/*', async route => {
@@ -36,7 +36,7 @@ const base = path.resolve(__dirname, '../..');
         return json({status:'available',serial:1,page:next?1:0,total:21,hasNext:!next,owner:{status:'indexed',nickname:'Current',timestamp:'2026-10-26T10:00:00Z',basis:'latest_transfer'},transfers});
       }
       if(p.endsWith('/issued'))return json({status:'available',count:4,ranges:[{first:1,last:2},{first:4,last:5}],hasMore:false,nextOffset:2,observedAt:'2026-10-29T00:00:00Z'});
-      if(p==='/cosmo/objekt/supplies')return json({uuid:{status:'available',count:4,observedAt:'2026-10-29T00:00:00Z'}});
+      if(p==='/cosmo/objekt/supplies')return json({hayeoncc367z:{status:'available',count:4,observedAt:'2026-10-29T00:00:00Z'}});
       if(p.startsWith('/cosmo/objekt/detail/') && (req.headers().accept||'').includes('application/json')) return json(data());
       if(p==='/cosmo/objekt' || p==='/cosmo/objekt/detail/hayeoncc367z') {
         const file=p==='/cosmo/objekt'?'objekt-modal-preview.html':'objekt-detail-preview.html';

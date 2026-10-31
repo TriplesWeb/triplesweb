@@ -18,7 +18,7 @@ public class CosmoProfileController {
     public String profile(@PathVariable String nickname, @RequestParam(defaultValue = "") String tab,
                           @RequestParam(defaultValue = "") String member,
                           @RequestParam(defaultValue = "all") String group,
-                          @RequestParam(defaultValue = "all") String ownership,
+                          @RequestParam(defaultValue = "progress") String ownership,
                           @RequestParam(defaultValue = "0") int page, Model model, jakarta.servlet.http.HttpServletResponse response) {
         response.setHeader("Cache-Control", "no-store");
         if (tab.isBlank()) {

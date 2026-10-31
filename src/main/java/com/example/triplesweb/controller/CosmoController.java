@@ -6,6 +6,7 @@ import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.ObjektMarketDataService;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektFilterOrder;
+import com.example.triplesweb.util.ObjektLinks;
 import com.example.triplesweb.util.ObjektSeasonCodes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
@@ -114,7 +115,7 @@ public class CosmoController {
         body.put("hasMore", result.hasMore());
         body.put("nextPage", result.hasMore() ? result.page() + 1 : null);
         body.put("error", result.error().isBlank() ? null : result.error());
-        body.put("items", result.items());
+        body.put("items", withMemberLinks(result.items()));
         return ResponseEntity.ok(body);
     }
 
@@ -152,7 +153,7 @@ public class CosmoController {
         Map<String, java.util.Set<String>> membershipCache = new java.util.HashMap<>();
         List<String> selectedSeasons = cleanSelections(season);
         List<String> selectedClasses = cleanSelections(classFilters);
-        String selectedKind = normalize(kind);
+        String selectedKind = "전체".equals(normalize(kind)) ? "all" : normalize(kind);
         String selectedSort = normalize(sort);
 
         // 전체 캐시에서 검색어와 모든 필터를 먼저 적용하고, 그 결과에만 정렬과 페이지네이션을 적용한다.
@@ -314,6 +315,7 @@ public class CosmoController {
             String member = firstValue(item, "member", "memberName");
             copy.put("memberHref", "/cosmo/objekt/member?name="
                     + URLEncoder.encode(member, StandardCharsets.UTF_8).replace("+", "%20"));
+            copy.put("publicKey", ObjektLinks.key(item));
             out.add(copy);
         }
         return out;

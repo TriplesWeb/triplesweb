@@ -19,6 +19,8 @@
   }
   function enhance(source, checkbox) {
     if(sources.has(source))return;
+    // 게시글 작성/수정 오브젝트 픽커는 멤버·클래스와 같은 네이티브 select를 유지한다.
+    if(source.closest('.objekt-picker-filter'))return;
     const control=source.closest('.objekt-filter,.objekt-picker-filter,label')||source.parentElement;
     if(!control)return;
     control.classList.add("season-control");

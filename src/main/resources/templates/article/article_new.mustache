@@ -15,9 +15,8 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/article-page.css?v=2">
+    <link rel="stylesheet" href="/css/article-page.css?v=6">
     <style>
-        /* 에디터 내부 영역 스타일 및 미디어 미리보기 서식 정리 */
         #content {
             min-height: 250px;
             max-height: 500px;
@@ -31,24 +30,8 @@
             max-width: 100%;
         }
         .content-media img, .content-media video {
-            max-width: 100%;
             border-radius: 0.75rem;
             display: block;
-        }
-        .content-media .remove-btn, .preview-item .remove-btn {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background: rgba(0, 0, 0, 0.6);
-            border: none;
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 10;
         }
         .preview-item {
             position: relative;
@@ -65,71 +48,6 @@
             object-fit: cover;
         }
         .objekt-option[hidden] { display: none !important; }
-        .objekt-picker-filter-bar {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 6px;
-        }
-        .objekt-picker-filter {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            min-height: 32px;
-            padding: 3px 8px;
-            border: 1px solid rgba(48, 54, 74, .9);
-            border-radius: 8px;
-            background: rgba(26, 29, 40, .88);
-        }
-        .objekt-picker-filter-label {
-            color: #9aa3b5;
-            font-size: 11px;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-        .objekt-picker-filter-control {
-            min-width: 72px;
-            min-height: 26px;
-            border: 0;
-            border-radius: 6px;
-            background: #00e8cb;
-            color: #071513;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 2px 8px;
-            cursor: pointer;
-        }
-        .objekt-picker-search {
-            flex: 1 1 120px;
-            min-width: 110px;
-            min-height: 32px;
-            display: flex;
-            align-items: center;
-            padding: 0 8px;
-            border: 1px solid rgba(48, 54, 74, .9);
-            border-radius: 8px;
-            background: rgba(10, 12, 18, .72);
-        }
-        .objekt-picker-search-input {
-            width: 100%;
-            border: 0;
-            outline: 0;
-            background: transparent;
-            color: #f1f5f9;
-            font-size: 12px;
-        }
-        .objekt-picker-reset {
-            min-height: 32px;
-            padding: 0 10px;
-            border: 1px solid rgba(0, 245, 212, .35);
-            border-radius: 8px;
-            background: transparent;
-            color: #7df9e8;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .objekt-picker-reset:hover { background: rgba(0, 245, 212, .08); }
     </style>
 </head>
 <body class="article-page bg-surface text-on-surface min-h-screen flex flex-col">
@@ -171,19 +89,21 @@
                         <input type="text" class="w-full px-3 pr-4 py-3 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md placeholder:text-outline/60 focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all text-black" name="title" required>
                     </div>
                 </div>
+
+                {{>article/objekt_picker}}
+
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">내용</label>
                     <div id="content" contenteditable="true" class="w-full p-4 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" aria-multiline="true"></div>
                     <input type="hidden" name="content" id="hiddenContent" />
                 </div>
 
-
-                {{>article/objekt_picker}}
-
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">첨부 파일 (이미지 또는 영상)</label>
-                    <div class="relative group">
-                        <input type="file" name="uploadFiles" id="fileInput" multiple accept="image/*,video/*" class="w-full py-2.5 px-4 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl text-sm text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-container file:text-on-primary hover:file:opacity-90 cursor-pointer" />
+                    <div class="file-chooser-row relative">
+                        <input type="file" name="__fileChooser" id="fileInput" multiple accept="image/*,video/*" />
+                        <label for="fileInput" class="file-chooser-btn">파일 선택</label>
+                        <span id="uploadFileNames" class="upload-file-names" aria-live="polite" hidden></span>
                     </div>
                 </div>
                 <div class="space-y-2">
@@ -205,7 +125,7 @@
 </main>
 <script src="/js/site-ui.js?v=3"></script>
 <script src="/js/article-content.js"></script>
-<script src="/js/article-objekt-picker.js?v=6"></script>
+<script src="/js/article-objekt-picker.js?v=7"></script>
 <script>
     window.beforeSubmit = function(form) {
     const titleInput    = form.querySelector('input[name="title"]');
@@ -291,20 +211,111 @@
        return { url, storedName, fileType };
      }
 
+     function placeCaretIn(node) {
+       const sel = window.getSelection?.();
+       if (!sel || !node) return;
+       const r = document.createRange();
+       r.selectNodeContents(node);
+       r.collapse(true);
+       sel.removeAllRanges();
+       sel.addRange(r);
+     }
+
      function insertNodeAtCaret(container, node) {
        const sel = window.getSelection?.();
        if (sel && sel.rangeCount) {
          let range = sel.getRangeAt(0);
          if (!container.contains(range.commonAncestorContainer)) container.appendChild(node);
          else { range.deleteContents(); range.insertNode(node); }
-         const r = document.createRange(); r.setStartAfter(node); r.collapse(true);
-         sel.removeAllRanges(); sel.addRange(r);
        } else container.appendChild(node);
      }
 
-     function insertMediaAtCaret(url, mime, key) {
+     function insertLineBreakAfter(mediaNode) {
+       const line = document.createElement('div');
+       line.style.textAlign = 'left';
+       line.appendChild(document.createElement('br'));
+       if (mediaNode.nextSibling) mediaNode.parentNode.insertBefore(line, mediaNode.nextSibling);
+       else mediaNode.parentNode.appendChild(line);
+       placeCaretIn(line);
+       return line;
+     }
+
+     function editorHasContent(editor) {
+       if (!editor) return false;
+       if (editor.querySelector('.content-media')) return true;
+       return (editor.innerText || '').replace(/\u00a0/g, ' ').trim().length > 0;
+     }
+
+     function placeMediaInEditor(editor, wrap) {
+       if (editorHasContent(editor)) {
+         const leftovers = [...editor.childNodes];
+         editor.insertBefore(wrap, editor.firstChild);
+         const line = document.createElement('div');
+         line.style.textAlign = 'left';
+         leftovers.forEach((node) => {
+           if (node !== wrap) line.appendChild(node);
+         });
+         if (!line.childNodes.length) line.appendChild(document.createElement('br'));
+         if (wrap.nextSibling) editor.insertBefore(line, wrap.nextSibling);
+         else editor.appendChild(line);
+         placeCaretIn(line);
+         return line;
+       }
+       editor.appendChild(wrap);
+       return insertLineBreakAfter(wrap);
+     }
+
+     const fileNamesEl = document.getElementById('uploadFileNames');
+     function refreshFileNames() {
+       const names = [...previewArea.querySelectorAll('.preview-item')].map((item) => item.dataset.fileName || item.dataset.key || '').filter(Boolean);
+       if (!fileNamesEl) return;
+       if (names.length) {
+         fileNamesEl.textContent = names.join(', ');
+         fileNamesEl.hidden = false;
+       } else {
+         fileNamesEl.textContent = '';
+         fileNamesEl.hidden = true;
+       }
+     }
+     function selectMedia(key) {
+       if (!key) return;
+       contentDiv.querySelectorAll('.content-media').forEach((el) => el.classList.toggle('is-selected', el.dataset.key === key));
+       previewArea.querySelectorAll('.preview-item').forEach((el) => el.classList.toggle('is-selected', el.dataset.key === key));
+       const wrap = contentDiv.querySelector(`.content-media[data-key="${CSS.escape(key)}"]`);
+       if (!wrap) return;
+       wrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+       contentDiv.focus({ preventScroll: true });
+       if (wrap.nextElementSibling) placeCaretIn(wrap.nextElementSibling);
+       else insertLineBreakAfter(wrap);
+     }
+
+     function clearEditorCaret() {
+       contentDiv.blur();
+       const sel = window.getSelection?.();
+       if (sel) sel.removeAllRanges();
+       if (document.activeElement && typeof document.activeElement.blur === 'function') {
+         document.activeElement.blur();
+       }
+     }
+
+     function bindMediaRemove(btn, onRemove) {
+       btn.addEventListener('mousedown', (event) => {
+         event.preventDefault();
+         event.stopPropagation();
+       });
+       btn.addEventListener('click', (event) => {
+         event.preventDefault();
+         event.stopPropagation();
+         onRemove();
+         clearEditorCaret();
+       });
+     }
+
+     function insertMediaAtCaret(url, mime, key, fileName) {
        // 본문
        const wrap = document.createElement('div'); wrap.className='content-media'; wrap.dataset.key=key;
+       wrap.dataset.fileName = fileName || key;
+       wrap.contentEditable = 'false';
        let media;
        if (mime?.startsWith('video')) {
          media = document.createElement('video'); media.controls = true;
@@ -314,27 +325,38 @@
          media.onerror = function(){ this.onerror=null; this.src=FALLBACK_IMG; };
        }
        const removeBtn = document.createElement('button');
-       removeBtn.type='button'; removeBtn.className='remove-btn';
-       removeBtn.textContent='×'; removeBtn.style.cssText='font-size:18px;color:#fff;line-height:1;';
-       removeBtn.addEventListener('click', () => {
+       removeBtn.type='button'; removeBtn.className='remove-btn'; removeBtn.setAttribute('aria-label', '미디어 삭제');
+       removeBtn.textContent='×';
+       bindMediaRemove(removeBtn, () => {
          wrap.remove();
          previewArea.querySelector(`[data-key="${key}"]`)?.remove();
          form.querySelector(`input[name="uploadedFiles"][data-key="${key}"]`)?.remove();
+         refreshFileNames();
        });
        wrap.appendChild(media); wrap.appendChild(removeBtn);
-       insertNodeAtCaret(contentDiv, wrap);
+       wrap.addEventListener('click', (event) => {
+         if (event.target.closest('.remove-btn')) return;
+         selectMedia(key);
+       });
+       placeMediaInEditor(contentDiv, wrap);
+       contentDiv.focus({ preventScroll: true });
 
        // 미리보기
-       const thumbBox = document.createElement('div'); thumbBox.className='preview-item'; thumbBox.dataset.key=key;
+       const thumbBox = document.createElement('div'); thumbBox.className='preview-item'; thumbBox.dataset.key=key; thumbBox.dataset.fileName = fileName || key;
        const thumb = mime?.startsWith('video') ? document.createElement('video') : document.createElement('img');
        thumb.src=url; if (thumb.tagName==='VIDEO') thumb.controls=true;
        thumb.onerror=function(){ this.onerror=null; this.src=FALLBACK_IMG; };
        const tr = document.createElement('button');
-       tr.type='button'; tr.className='remove-btn';
-       tr.textContent='×'; tr.style.cssText='font-size:18px;color:#dc3545;line-height:1;';
-       tr.addEventListener('click', () => removeBtn.click());
+       tr.type='button'; tr.className='remove-btn'; tr.setAttribute('aria-label', '미디어 삭제');
+       tr.textContent='×';
+       bindMediaRemove(tr, () => removeBtn.click());
        thumbBox.appendChild(thumb); thumbBox.appendChild(tr);
+       thumbBox.addEventListener('click', (event) => {
+         if (event.target.closest('.remove-btn')) return;
+         selectMedia(key);
+       });
        previewArea.appendChild(thumbBox);
+       refreshFileNames();
      }
 
      function addHiddenUploadedFile(storedName, key) {
@@ -362,7 +384,7 @@
        }
 
        const key = storedName;
-       insertMediaAtCaret(url, file.type, key);
+       insertMediaAtCaret(url, file.type, key, file.name);
        addHiddenUploadedFile(storedName, key);
      }
 

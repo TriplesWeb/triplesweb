@@ -3,6 +3,7 @@ package com.example.triplesweb.service;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektFilterOrder;
+import com.example.triplesweb.util.ObjektLinks;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.net.URLEncoder;
@@ -20,17 +21,17 @@ public class CosmoProfileService {
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> profile(String nickname, String member) {
-        return profile(nickname, member, "all", "progress", "all");
+        return profile(nickname, member, "all", "progress", "progress");
     }
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> profile(String nickname, String member, String group) {
-        return profile(nickname, member, group, "progress", "all");
+        return profile(nickname, member, group, "progress", "progress");
     }
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> profile(String nickname, String member, String group, String tab) {
-        return profile(nickname, member, group, tab, "all");
+        return profile(nickname, member, group, tab, "progress");
     }
 
     @SuppressWarnings("unchecked")
@@ -50,6 +51,9 @@ public class CosmoProfileService {
         List<Map<String, Object>> memberRows = memberProgressRows(buckets, base);
         view.put("memberProgress", memberRows);
         view.put("hasMemberProgress", !memberRows.isEmpty());
+        List<Map<String, Object>> topMembers = topMemberProgressRows(memberRows, 5);
+        view.put("topMemberProgress", topMembers);
+        view.put("hasTopMemberProgress", !topMembers.isEmpty());
         Map<String, Object> otherRow = otherProgressRow(buckets, base);
         view.put("otherProgress", otherRow == null ? List.of() : List.of(otherRow));
         view.put("hasOtherProgress", otherRow != null);
@@ -117,24 +121,35 @@ public class CosmoProfileService {
     }
 
     private static String normalizeOwnership(String ownership) {
-        if (ownership == null || ownership.isBlank()) return "all";
+        if (ownership == null || ownership.isBlank()) return "progress";
         String value = ownership.trim().toLowerCase(Locale.ROOT);
-        if ("progress".equals(value)) return "progress";
+        if ("all".equals(value) || "every".equals(value)) return "all";
         if ("owned".equals(value) || "have".equals(value) || "collected".equals(value)) return "owned";
         if ("missing".equals(value) || "want".equals(value) || "unowned".equals(value)) return "missing";
-        return "all";
+        return "progress";
     }
 
     private static void putOwnershipUrls(Map<String, Object> view, String base, String member,
                                          String group, String ownership) {
         String checklistBase = checklistBaseUrl(base, member, group);
         view.put("hasOwnershipFilter", true);
-        view.put("ownershipAllUrl", checklistBase);
-        view.put("ownershipProgressUrl", checklistBase + "&ownership=progress");
+        view.put("ownershipProgressUrl", checklistBase);
+        view.put("ownershipAllUrl", checklistBase + "&ownership=all");
         view.put("ownershipOwnedUrl", checklistBase + "&ownership=owned");
         view.put("ownershipMissingUrl", checklistBase + "&ownership=missing");
         view.put("checklistBaseUrl", checklistBase);
-        view.put("ownershipQuery", "all".equals(ownership) ? "" : "&ownership=" + ownership);
+        view.put("ownershipQuery", "progress".equals(ownership) ? "" : "&ownership=" + ownership);
+    }
+
+    private static List<Map<String, Object>> topMemberProgressRows(List<Map<String, Object>> rows, int limit) {
+        if (rows == null || rows.isEmpty() || limit <= 0) return List.of();
+        List<Map<String, Object>> top = new ArrayList<>(rows.subList(0, Math.min(limit, rows.size())));
+        for (int i = 0; i < top.size(); i++) {
+            Map<String, Object> ranked = new LinkedHashMap<>(top.get(i));
+            ranked.put("rank", i + 1);
+            top.set(i, ranked);
+        }
+        return top;
     }
 
     private static String checklistBaseUrl(String base, String member, String group) {
@@ -156,7 +171,8 @@ public class CosmoProfileService {
         if ("members".equalsIgnoreCase(group) || (member != null && !member.isBlank()
                 && !MemberPortraitOptions.isOtherMember(member))) return "members";
         if (member != null && !member.isBlank() && MemberPortraitOptions.isOtherMember(member)) return "other";
-        return "all";
+        // 분류 탭에서 전체를 없애 빈/all 도 멤버로 본다.
+        return "members";
     }
 
     private ProgressBuckets buckets(List<Map<String, Object>> held, List<Map<String, Object>> catalogSnapshot) {
@@ -391,7 +407,7 @@ public class CosmoProfileService {
                     card.put("hasImage", !image.isBlank());
                     card.put("owned", have);
                     card.put("copies", count);
-                    card.put("detailUrl", "/cosmo/objekt/detail/" + encode(slug));
+                    card.put("detailUrl", ObjektLinks.detail(item));
                     cards.add(card);
                 }
                 if (cards.isEmpty()) continue;

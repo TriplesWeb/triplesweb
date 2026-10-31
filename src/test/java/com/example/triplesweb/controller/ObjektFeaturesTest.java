@@ -103,7 +103,7 @@ class ObjektFeaturesTest {
         mvc.perform(get("/cosmo/objekt/detail/uuid").accept(MediaType.TEXT_HTML))
                 .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc367z"));
         mvc.perform(get("/cosmo/objekt/detail/uuid").accept(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.objektKey").value("uuid"))
+                .andExpect(jsonPath("$.objektKey").value("hayeoncc367z"))
                 .andExpect(jsonPath("$.detailUrl").value("/cosmo/objekt/detail/hayeoncc367z"))
                 .andExpect(jsonPath("$.memberUrl").value("/cosmo/objekt?group=members&member=HaYeon"))
                 .andExpect(jsonPath("$.tradeUrl").value("/article/trade/new?selectedObjektIds=uuid"))
@@ -119,6 +119,18 @@ class ObjektFeaturesTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.detailUrl").value("/cosmo/objekt/detail/hayeoncc367z"));
         mvc.perform(get("/cosmo/objekt/detail/cream02-hayeon-367z").accept(MediaType.TEXT_HTML))
                 .andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc367z"));
+    }
+
+    @Test void uuidCatalogIdOpensReadableModalAddress() throws Exception {
+        String uuid = "01a17092-abe1-72c0-925d-d7058df81a1f";
+        var item = Map.<String, Object>of("id", uuid, "slug", uuid, "member", "HaYeon",
+                "season", "Cream02", "collectionNo", "368Z");
+        when(catalog.findCollections("triples")).thenReturn(List.of(item));
+        mvc.perform(get("/cosmo/objekt/detail/" + uuid).accept(MediaType.TEXT_HTML))
+                .andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc368z"));
+        mvc.perform(get("/cosmo/objekt/detail/" + uuid).accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.objektKey").value("hayeoncc368z"))
+                .andExpect(jsonPath("$.detailUrl").value("/cosmo/objekt/detail/hayeoncc368z"));
     }
 
     @Test void modalDescriptionWritesKeepStableKeyAndRequireAdmin() throws Exception {

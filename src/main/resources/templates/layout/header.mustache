@@ -16,8 +16,8 @@
                     <button type="button" class="header-icon-button" id="header-search-btn" data-header-toggle aria-label="사이트 검색 열기" aria-expanded="false" aria-controls="header-search-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>
                     <div id="header-search-panel" class="header-search-panel" hidden>
                         <form action="/search" method="get" role="search" class="header-search">
-                            <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" type="search" placeholder="멤버·게시글 검색">
-                            <button type="submit" aria-label="검색"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>
+                            <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" type="search" placeholder="멤버·게시글 검색" autocomplete="off">
+                            <button type="submit" class="header-search-submit" aria-label="검색"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>
                         </form>
                     </div>
                 </div>
@@ -33,6 +33,10 @@
     </div>
     <div id="mobile-menu" hidden>
         <nav aria-label="모바일 주 메뉴">
+            <form action="/search" method="get" role="search" class="header-search mobile-menu-search">
+                <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" type="search" placeholder="멤버·게시글 검색" autocomplete="off">
+                <button type="submit" class="header-search-submit" aria-label="검색"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>
+            </form>
             {{#siteNavigation}}{{#direct}}<a class="mobile-direct-link" href="{{href}}">{{label}}</a>{{/direct}}{{^direct}}{{>navigation/mobile-section}}{{/direct}}{{/siteNavigation}}
             {{#member}}<div class="mobile-account"><p>{{userId}}님 <span>Lv.{{level}} · {{points}}P</span></p>{{>navigation/account-links}}</div>{{/member}}
         </nav>

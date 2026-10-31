@@ -5,8 +5,8 @@
 {{>layout/gravity-fonts}}
 <link rel="stylesheet" href="/css/gravity-page.css?v=2">
 <link rel="stylesheet" href="/css/archive-page.css?v=13">
-<link rel="stylesheet" href="/css/member-portrait-picker.css?v=12">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=11">
+<link rel="stylesheet" href="/css/member-portrait-picker.css?v=13">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=13">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}내 오브젝트 검색{{/nickname}}</title>
 </head>
@@ -89,21 +89,29 @@
                 </div>
                 <div class="objekt-filter relative" id="collection-kind-dropdown">
                     <span class="objekt-filter-label">종류</span>
-                    <button type="button" class="objekt-filter-control" id="collection-kind-toggle" aria-expanded="false" aria-controls="collection-kind-menu">
-                        <span id="collection-kind-label" class="truncate">전체</span>
-                        <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
-                    </button>
-                    <div id="collection-kind-menu" class="objekt-dropdown-menu" hidden>
-                        <button type="button" class="objekt-choice" data-value="all">
-                            <span class="objekt-choice-mark" aria-hidden="true"></span>
-                            <span class="objekt-choice-text">전체 종류</span>
+                    <div class="objekt-filter-control objekt-kind-combo">
+                        <input type="text"
+                               id="collection-kind-select"
+                               class="objekt-kind-select"
+                               value="{{selectedKind}}"
+                               placeholder="전체"
+                               autocomplete="off"
+                               spellcheck="false"
+                               role="combobox"
+                               aria-expanded="false"
+                               aria-controls="collection-kind-menu"
+                               aria-autocomplete="list"
+                               aria-label="옵젝 종류 필터 (입력 또는 선택)">
+                        <button type="button" class="objekt-kind-toggle" id="collection-kind-toggle" aria-label="종류 목록 열기" tabindex="-1">
+                            <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
                         </button>
+                    </div>
+                    <div id="collection-kind-menu" class="objekt-dropdown-menu hidden" hidden role="listbox" aria-label="종류 목록">
+                        <button type="button" class="objekt-kind-option" data-value="all" role="option">전체</button>
                         {{#kindOptions}}
-                        <button type="button" class="objekt-choice" data-value="{{.}}">
-                            <span class="objekt-choice-mark" aria-hidden="true"></span>
-                            <span class="objekt-choice-text">{{.}}</span>
-                        </button>
+                        <button type="button" class="objekt-kind-option" data-value="{{.}}" role="option">{{.}}</button>
                         {{/kindOptions}}
+                        <p class="objekt-kind-empty" id="collection-kind-empty" hidden>일치하는 종류 없음</p>
                     </div>
                 </div>
                 <div class="objekt-filter relative" id="collection-class-dropdown">
@@ -191,6 +199,7 @@
 </main>
 {{>layout/footer}}
 <script src="/js/member-portrait-picker.js?v=9"></script>
+<script src="/js/objekt-kind-combo.js?v=1"></script>
 <script>
 (() => {
   const form = document.getElementById('collection-filter-form');
@@ -249,8 +258,22 @@
   if (form) {
     bindChoiceMenu('season', 'collection-season');
     bindChoiceMenu('class', 'collection-class');
-    bindSingleMenu('collection-kind', 'collection-kind-input', 'all');
     bindSingleMenu('collection-sort', 'collection-sort-input', 'latest');
+    const kindCombo = window.ObjektKindCombo?.bindKindCombo({
+      input: document.getElementById('collection-kind-select'),
+      menu: document.getElementById('collection-kind-menu'),
+      toggle: document.getElementById('collection-kind-toggle'),
+      hiddenInput: document.getElementById('collection-kind-input'),
+      empty: document.getElementById('collection-kind-empty'),
+      closeOthers() {
+        document.querySelectorAll('.objekt-dropdown-menu').forEach((other) => {
+          if (other.id !== 'collection-kind-menu') other.hidden = true;
+        });
+      }
+    });
+    form.addEventListener('submit', () => {
+      kindCombo?.commit(document.getElementById('collection-kind-select')?.value);
+    });
   }
 
   function bindSingleMenu(prefix, inputId, fallback) {

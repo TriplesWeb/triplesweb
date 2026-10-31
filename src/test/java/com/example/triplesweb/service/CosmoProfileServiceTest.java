@@ -46,6 +46,7 @@ class CosmoProfileServiceTest {
                 .containsEntry("overallTotal", 2).containsEntry("overallPercent", 50)
                 .containsEntry("hasOverallProgress", true)
                 .containsEntry("hasMemberProgress", true)
+                .containsEntry("hasTopMemberProgress", true)
                 .doesNotContainKeys("memberCount");
         assertThat((List<Map<String, Object>>) view.get("memberProgress")).isNotEmpty()
                 .first().satisfies(row -> assertThat(row)
@@ -53,6 +54,10 @@ class CosmoProfileServiceTest {
                         .containsEntry("owned", 1L)
                         .containsEntry("total", 2)
                         .containsEntry("percent", 50));
+        assertThat((List<Map<String, Object>>) view.get("topMemberProgress")).isNotEmpty()
+                .first().satisfies(row -> assertThat(row)
+                        .containsEntry("rank", 1)
+                        .containsEntry("member", "정하연"));
         var classStats = (List<Map<String, Object>>) view.get("classStats");
         assertThat(classStats).extracting(r -> r.get("label")).containsExactlyInAnyOrder("Double", "First");
         assertThat(classStats).filteredOn(r -> "Double".equals(r.get("label")))
@@ -71,6 +76,7 @@ class CosmoProfileServiceTest {
                 .containsEntry("uniqueCount", 0L).containsEntry("hasOverallProgress", false)
                 .containsEntry("hasOtherProgress", false)
                 .containsEntry("hasMemberProgress", false)
+                .containsEntry("hasTopMemberProgress", false)
                 .doesNotContainKeys("memberCount");
     }
 
