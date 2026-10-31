@@ -6,6 +6,7 @@ import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.ObjektMarketDataService;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektFilterOrder;
+import com.example.triplesweb.util.ObjektLinks;
 import com.example.triplesweb.util.ObjektSeasonCodes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
@@ -114,7 +115,7 @@ public class CosmoController {
         body.put("hasMore", result.hasMore());
         body.put("nextPage", result.hasMore() ? result.page() + 1 : null);
         body.put("error", result.error().isBlank() ? null : result.error());
-        body.put("items", result.items());
+        body.put("items", withMemberLinks(result.items()));
         return ResponseEntity.ok(body);
     }
 
@@ -314,6 +315,7 @@ public class CosmoController {
             String member = firstValue(item, "member", "memberName");
             copy.put("memberHref", "/cosmo/objekt/member?name="
                     + URLEncoder.encode(member, StandardCharsets.UTF_8).replace("+", "%20"));
+            copy.put("publicKey", ObjektLinks.key(item));
             out.add(copy);
         }
         return out;

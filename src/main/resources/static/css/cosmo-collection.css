@@ -94,10 +94,10 @@
     background: transparent !important;
     padding: 0 !important;
     color: #e8ebf2 !important;
-    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-family: Inter, "Noto Sans KR", -apple-system, sans-serif;
     font-size: .8rem;
     font-weight: 650;
-    letter-spacing: .02em;
+    letter-spacing: 0;
     line-height: 2.1rem;
     caret-color: #6ee7d8;
 }
@@ -132,7 +132,7 @@
     border-radius: .5rem;
     background: transparent;
     color: #e8ebf2;
-    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-family: Inter, "Noto Sans KR", -apple-system, sans-serif;
     font-size: .82rem;
     text-align: left;
     cursor: pointer;

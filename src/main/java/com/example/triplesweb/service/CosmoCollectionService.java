@@ -1,6 +1,7 @@
 package com.example.triplesweb.service;
 
 import com.example.triplesweb.util.MemberPortraitOptions;
+import com.example.triplesweb.util.ObjektLinks;
 import com.example.triplesweb.util.ObjektSeasonCodes;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
@@ -328,8 +329,8 @@ public class CosmoCollectionService {
         card.put("hasSerial", serial > 0);
         card.put("serial", serial > 0 ? Long.toString(serial) : "");
         String slug = objekt.path("slug").asText("");
-        card.put("detailUrl", "/cosmo/objekt/detail/" + URLEncoder.encode(slug, StandardCharsets.UTF_8).replace("+", "%20"));
-        card.put("hasDetail", !slug.isBlank());
+        card.put("detailUrl", ObjektLinks.detail(card));
+        card.put("hasDetail", !ObjektLinks.key(card).isBlank() || !slug.isBlank());
         return Map.copyOf(card);
     }
 

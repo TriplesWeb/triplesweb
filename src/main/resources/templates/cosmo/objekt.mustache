@@ -281,10 +281,10 @@
             background-color: transparent !important;
             padding: 0 !important;
             color: #e8ebf2 !important;
-            font-family: "JetBrains Mono", ui-monospace, monospace;
+            font-family: Inter, "Noto Sans KR", -apple-system, sans-serif;
             font-size: .8rem;
             font-weight: 650;
-            letter-spacing: .02em;
+            letter-spacing: 0;
             line-height: 2.1rem;
             text-transform: none;
             caret-color: #6ee7d8;
@@ -323,7 +323,7 @@
             border-radius: .5rem;
             background: transparent;
             color: #e8ebf2;
-            font-family: "JetBrains Mono", ui-monospace, monospace;
+            font-family: Inter, "Noto Sans KR", -apple-system, sans-serif;
             font-size: .82rem;
             text-align: left;
             cursor: pointer;
@@ -676,14 +676,30 @@
         }
         .objekt-detail-meta dt { color: #8b93a7; margin: 0; }
         .objekt-detail-meta dd { margin: 0; color: #e8edf5; font-weight: 600; text-align: right; }
+        .objekt-detail-story {
+            margin: 0;
+            padding: 1rem 1.1rem 1.15rem;
+            border: 1px solid rgba(141, 236, 217, .32);
+            border-radius: 1rem;
+            background: linear-gradient(180deg, rgba(141, 236, 217, .14), rgba(255, 255, 255, .03));
+        }
+        .objekt-detail-story-title {
+            margin: 0 0 .55rem;
+            color: #8decd9;
+            font-size: .72rem;
+            font-weight: 800;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+        }
         .objekt-detail-desc {
             margin: 0;
-            color: #b7c0d0;
-            font-size: .88rem;
-            line-height: 1.65;
+            color: #f4f7fb;
+            font-size: 1.05rem;
+            line-height: 1.75;
+            font-weight: 600;
             white-space: pre-wrap;
         }
-        .objekt-detail-desc.is-empty { color: #6b7388; }
+        .objekt-detail-desc.is-empty { color: #9aa3b5; font-weight: 500; }
         .objekt-description-editor { border: 1px solid #ffffff18; border-radius: .8rem; background: #ffffff04; padding: .7rem .8rem; }
         .objekt-description-editor[hidden] { display: none !important; }
         .objekt-description-editor summary { cursor: pointer; color: #8decd9; font-size: .78rem; font-weight: 650; }
@@ -949,7 +965,7 @@
     <div id="objekt-card-grid" class="objekt-card-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 py-2 mt-3">
         {{#objekts}}
         <article class="objekt-card objekt-item group relative border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
-                 data-objekt-key="{{id}}"
+                 data-objekt-key="{{publicKey}}"
                  data-season="{{seasonKey}}" data-class="{{classKey}}" data-artist="{{artist}}" data-collection-no="{{collectionNo}}"
                  data-number="{{numberValue}}" data-date="{{createdAt}}" data-member="{{member}}" data-search="{{searchText}}">
             <button type="button" class="objekt-open-detail relative block aspect-[2/3] w-full overflow-hidden bg-[#1c1f2e]" aria-label="{{collectionId}} 상세 보기">
@@ -958,7 +974,7 @@
                 <span class="absolute right-2 top-2 rounded-md bg-[#00e8cb] px-2 py-1 text-[10px] font-bold text-[#071513]">{{season}}</span>
             </button>
             <div class="p-3">
-                <a href="/cosmo/objekt/detail/{{id}}" class="objekt-detail-link block truncate text-sm font-semibold text-slate-100 hover:text-[#00f5d4]" title="{{collectionId}}">{{collectionId}}</a>
+                <a href="/cosmo/objekt/detail/{{publicKey}}" class="objekt-detail-link block truncate text-sm font-semibold text-slate-100 hover:text-[#00f5d4]" title="{{collectionId}}">{{collectionId}}</a>
                 <div class="mt-1 flex items-center justify-between gap-2 text-xs text-slate-400">
                     <a href="{{memberHref}}" class="objekt-member-chip truncate text-teal-200 hover:underline">{{member}}</a><span class="shrink-0 font-mono">{{collectionNo}}</span>
                 </div>
@@ -996,7 +1012,10 @@
                 <div><dt>번호</dt><dd id="objektDetailNo">—</dd></div>
                 <div><dt>발행량</dt><dd id="objektIssuedCount" aria-live="polite">확인 중</dd></div>
             </dl>
-            <p class="objekt-detail-desc is-empty" id="objektDetailDesc">불러오는 중…</p>
+            <section class="objekt-detail-story" aria-labelledby="objektDetailStoryTitle">
+                <h3 class="objekt-detail-story-title" id="objektDetailStoryTitle">상세 설명</h3>
+                <p class="objekt-detail-desc is-empty" id="objektDetailDesc">불러오는 중…</p>
+            </section>
             <details id="objektDescriptionEditor" class="objekt-description-editor" hidden>
                 <summary>관리자 · 상세 설명 편집</summary>
                 <form id="objektDescriptionForm">
@@ -1613,7 +1632,7 @@
         const collectionId = item.collectionId || '';
         const member = item.member || item.memberName || '';
         const collectionNo = item.collectionNo || item.collectionNumber || '';
-        const id = item.id || '';
+        const id = item.publicKey || item.objektKey || item.slug || item.id || '';
         const thumb = item.thumbnailImage || item.frontImage || '';
         const front = item.frontImage || thumb;
         const klass = item.class || item.classKey || '';

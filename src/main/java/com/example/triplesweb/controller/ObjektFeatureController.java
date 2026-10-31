@@ -66,7 +66,7 @@ public class ObjektFeatureController {
         String back = value(item, "backImage");
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("id", value(item, "id"));
-        body.put("objektKey", ObjektLinks.id(item));
+        body.put("objektKey", ObjektLinks.key(item));
         body.put("collectionId", value(item, "collectionId", "slug"));
         body.put("member", value(item, "member", "memberName"));
         body.put("season", value(item, "season"));

@@ -3,6 +3,7 @@ package com.example.triplesweb.service;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektFilterOrder;
+import com.example.triplesweb.util.ObjektLinks;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.net.URLEncoder;
@@ -406,7 +407,7 @@ public class CosmoProfileService {
                     card.put("hasImage", !image.isBlank());
                     card.put("owned", have);
                     card.put("copies", count);
-                    card.put("detailUrl", "/cosmo/objekt/detail/" + encode(slug));
+                    card.put("detailUrl", ObjektLinks.detail(item));
                     cards.add(card);
                 }
                 if (cards.isEmpty()) continue;
