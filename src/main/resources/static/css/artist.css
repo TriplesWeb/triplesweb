@@ -660,18 +660,31 @@
     object-fit: contain;
     pointer-events: none;
     z-index: 2;
+    opacity: 0.88;
     filter: none;
+    transition: filter 160ms ease, opacity 160ms ease;
 }
 
-/* 프레임·외곽선은 고정하고 사진에만 짧은 선택 반응을 준다. */
+/* 선택: 윤곽 PNG drop-shadow 발광 (사각 링 대신) */
 .artist-page .artist-tab-shine { display: none; }
 .artist-page .nav-tab-btn.is-active .artist-tab-avatar {
     border-radius: 0.4rem;
-    box-shadow: inset 0 0 0 2px #c5d0de,
-        0 0 0 2px color-mix(in srgb, var(--artist-color, #9ad0ff) 62%, #b7c4d4);
+    overflow: visible;
+    background: transparent;
+    box-shadow: none;
 }
 .artist-page .nav-tab-btn.is-active .artist-tab-photo {
     animation: member-selection-settle 220ms cubic-bezier(.2,.8,.2,1);
+    border-radius: 0.4rem;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 28%, transparent);
+}
+.artist-page .nav-tab-btn.is-active .artist-tab-frame {
+    opacity: 1;
+    filter:
+        drop-shadow(0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 95%, #fff))
+        drop-shadow(0 0 4px color-mix(in srgb, var(--artist-color, #00f5d4) 88%, transparent))
+        drop-shadow(0 0 10px color-mix(in srgb, var(--artist-color, #00f5d4) 70%, transparent))
+        drop-shadow(0 0 18px color-mix(in srgb, var(--artist-color, #00f5d4) 42%, transparent));
 }
 .artist-page .nav-tab-btn:focus-visible {
     outline: 2px solid #a8e6dc;

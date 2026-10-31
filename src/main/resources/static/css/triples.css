@@ -1609,18 +1609,31 @@ body {
     object-fit: contain;
     pointer-events: none;
     z-index: 2;
+    opacity: 0.88;
     filter: none;
+    transition: filter 160ms ease, opacity 160ms ease;
 }
 
-/* 프레임·외곽선은 고정하고 사진에만 짧은 선택 반응을 준다. */
+/* 선택: 윤곽 PNG drop-shadow 발광 (사각 링 대신) */
 .artist-page .artist-tab-shine { display: none; }
 .artist-page .nav-tab-btn.is-active .artist-tab-avatar {
     border-radius: 0.4rem;
-    box-shadow: inset 0 0 0 2px #c5d0de,
-        0 0 0 2px color-mix(in srgb, var(--artist-color, #9ad0ff) 62%, #b7c4d4);
+    overflow: visible;
+    background: transparent;
+    box-shadow: none;
 }
 .artist-page .nav-tab-btn.is-active .artist-tab-photo {
     animation: member-selection-settle 220ms cubic-bezier(.2,.8,.2,1);
+    border-radius: 0.4rem;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 28%, transparent);
+}
+.artist-page .nav-tab-btn.is-active .artist-tab-frame {
+    opacity: 1;
+    filter:
+        drop-shadow(0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 95%, #fff))
+        drop-shadow(0 0 4px color-mix(in srgb, var(--artist-color, #00f5d4) 88%, transparent))
+        drop-shadow(0 0 10px color-mix(in srgb, var(--artist-color, #00f5d4) 70%, transparent))
+        drop-shadow(0 0 18px color-mix(in srgb, var(--artist-color, #00f5d4) 42%, transparent));
 }
 .artist-page .nav-tab-btn:focus-visible {
     outline: 2px solid #a8e6dc;
@@ -3813,9 +3826,10 @@ a.chem-highlight:hover {
     grid-auto-flow: row;
     gap: var(--mpp-gap);
     margin: 0 auto;
-    padding: 3px;
+    padding: 8px 3px;
     width: min(100%, 56rem);
     list-style: none;
+    overflow: visible;
 }
 
 @media (max-width: 639px) {
@@ -3882,17 +3896,29 @@ a.chem-highlight:hover {
     object-fit: contain;
     pointer-events: none;
     z-index: 2;
+    opacity: 0.88;
     filter: none;
+    transition: filter 160ms ease, opacity 160ms ease;
 }
 
-/* PNG 프레임과 기존 외곽선 두께·색은 유지하고 반복 발광만 제거한다. */
+/* 선택: 사각 링 대신 윤곽 PNG 알파를 따라 drop-shadow 발광 */
 .member-portrait-picker .artist-tab-shine { display: none; }
 .member-portrait-picker .mpp-item.is-active .artist-tab-avatar {
-    box-shadow: inset 0 0 0 2px #c5d0de,
-        0 0 0 2px color-mix(in srgb, var(--artist-color, #9ad0ff) 62%, #b7c4d4);
+    overflow: visible;
+    background: transparent;
+    box-shadow: none;
 }
 .member-portrait-picker .mpp-item.is-active .artist-tab-photo {
     animation: member-selection-settle 220ms cubic-bezier(.2,.8,.2,1);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 28%, transparent);
+}
+.member-portrait-picker .mpp-item.is-active .artist-tab-frame {
+    opacity: 1;
+    filter:
+        drop-shadow(0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 95%, #fff))
+        drop-shadow(0 0 4px color-mix(in srgb, var(--artist-color, #00f5d4) 88%, transparent))
+        drop-shadow(0 0 10px color-mix(in srgb, var(--artist-color, #00f5d4) 70%, transparent))
+        drop-shadow(0 0 18px color-mix(in srgb, var(--artist-color, #00f5d4) 42%, transparent));
 }
 .member-portrait-picker .mpp-item.is-active .artist-tab-avatar::before {
     content: "";
@@ -3905,7 +3931,8 @@ a.chem-highlight:hover {
     transform: translate(-50%, -1px);
     border-left: 7px solid transparent;
     border-right: 7px solid transparent;
-    border-top: 8px solid #f4fbff;
+    border-top: 8px solid color-mix(in srgb, var(--artist-color, #00f5d4) 55%, #f4fbff);
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--artist-color, #00f5d4) 75%, transparent));
     pointer-events: none;
 }
 .member-portrait-picker .mpp-item:focus-visible {
@@ -3956,6 +3983,7 @@ a.chem-highlight:hover {
     flex-wrap: wrap;
     align-items: center;
     gap: 0.45rem;
+    margin-left: auto;
 }
 
 .mpp-tool-btn {
@@ -4067,11 +4095,11 @@ a.chem-highlight:hover {
     position: absolute;
     inset: -50%;
     background: linear-gradient(135deg,
-        transparent 40%,
-        color-mix(in srgb, var(--artist-color, #00f5d4) 10%, transparent) 46%,
-        color-mix(in srgb, color-mix(in srgb, var(--artist-color, #00f5d4) 70%, #fff) 24%, transparent) 50%,
-        color-mix(in srgb, var(--artist-color, #00f5d4) 12%, transparent) 54%,
-        transparent 60%);
+        transparent 36%,
+        color-mix(in srgb, var(--artist-color, #00f5d4) 22%, transparent) 44%,
+        color-mix(in srgb, color-mix(in srgb, var(--artist-color, #00f5d4) 82%, #fff) 42%, transparent) 50%,
+        color-mix(in srgb, var(--artist-color, #00f5d4) 26%, transparent) 56%,
+        transparent 64%);
     opacity: 0;
     transform: translate3d(-65%, -65%, 0);
     animation: member-selection-sheen 2.7s ease-in-out infinite;
@@ -4098,4 +4126,6 @@ a.chem-highlight:hover {
     .member-portrait-picker .mpp-item.is-active .artist-tab-photo { animation: none; }
 }
 
-.objekt-member-picker-panel:not(.is-collapsed) .mpp-toolbar{margin-bottom:1rem}.member-portrait-picker .mpp-item{contain:layout style}
+.objekt-member-picker-panel:not(.is-collapsed) .mpp-toolbar{margin-bottom:1rem}
+/* paint 미포함: active drop-shadow가 그리드 셀 밖으로 보이도록 */
+.member-portrait-picker .mpp-item{contain:layout style}

@@ -44,17 +44,17 @@ const base = path.resolve(__dirname, '../..');
       await page.waitForTimeout(350);
       const stable = await first.locator('.artist-tab-avatar').evaluate(el => ({
         shadow:getComputedStyle(el).boxShadow, bounds:el.getBoundingClientRect().width,
+        frameFilter:getComputedStyle(el.querySelector('.artist-tab-frame')).filter,
         animations:el.getAnimations({subtree:true}).filter(a=>a.playState==='running').map(a=>({
           properties:[...new Set(a.effect.getKeyframes().flatMap(frame=>Object.keys(frame)).filter(key=>!['offset','computedOffset','easing','composite'].includes(key)))],
           duration:a.effect.getTiming().duration
         }))
       }));
-      assert.notEqual(stable.shadow, 'none');
+      assert.ok(String(stable.frameFilter).includes('drop-shadow'), mode+' 윤곽 PNG drop-shadow 발광');
       assert.equal(stable.animations.length, 1, mode+' 광택 레이어만 반복');
       assert.deepEqual(stable.animations[0].properties.sort(), ['opacity','transform'], mode+' 광택 레이어의 이동과 투명도만 애니메이션');
       assert.ok(stable.animations[0].duration >= 2650 && stable.animations[0].duration <= 2750, mode+' 2.7초 반복 주기');
       assert.equal(await frame.getAttribute('src'), src, mode+' 프레임 주소 유지');
-      assert.equal(await frame.evaluate(el=>getComputedStyle(el).filter), 'none');
       assert.equal(await first.locator('.artist-tab-shine').isVisible(), true);
       const direction = await first.locator('.artist-tab-avatar').evaluate(el => {
         const animation = el.getAnimations({subtree:true}).find(a=>a.animationName==='member-selection-sheen');
@@ -73,7 +73,7 @@ const base = path.resolve(__dirname, '../..');
       assert.ok(Math.abs(direction.restDx)<.01 && Math.abs(direction.restDy)<.01, mode+' 1.5초 이동 후 대기');
       assert.equal(await first.locator('.artist-tab-photo').evaluate(el=>getComputedStyle(el).filter), 'none');
       await page.waitForTimeout(850);
-      assert.equal(await first.locator('.artist-tab-avatar').evaluate(el=>getComputedStyle(el).boxShadow), stable.shadow, mode+' 외곽선 고정');
+      assert.equal(await frame.evaluate(el=>getComputedStyle(el).filter), stable.frameFilter, mode+' 윤곽 발광 고정');
       const shine = first.locator('.artist-tab-shine');
       const beforeTint = await shine.evaluate(el=>getComputedStyle(el,'::before').backgroundImage);
       await first.evaluate(el=>el.style.setProperty('--artist-color','#db0c74'));
@@ -110,6 +110,6 @@ const base = path.resolve(__dirname, '../..');
     const sizes=await page.evaluate(()=>({badge:document.querySelector('.archive-member-chip img').getBoundingClientRect().height,photo:document.querySelector('.ar-photo-link img').getBoundingClientRect().height}));
     assert.ok(sizes.badge<=40 && sizes.badge>20,'사진 아카이브 멤버 배지 높이 고정');
     assert.ok(sizes.photo>=250,'원본 사진 크기 유지');
-    console.log('통과: 단독/번들/그룹 소개 선택 효과 · 프레임 보존 · 외곽선 고정 · 상징색 광택 · 짧은 반복 간격 · 좌상단→우하단 광택 · transform/opacity만 이동 · 다중선택·키보드 · 모션 감소 · 모바일');
+    console.log('통과: 단독/번들/그룹 소개 선택 효과 · 프레임 보존 · 윤곽 drop-shadow · 상징색 광택 · 짧은 반복 간격 · 좌상단→우하단 광택 · transform/opacity만 이동 · 다중선택·키보드 · 모션 감소 · 모바일');
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exit(1);});

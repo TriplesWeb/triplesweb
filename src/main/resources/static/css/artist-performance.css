@@ -1,6 +1,6 @@
-/* Page-only overrides: keep image filters static; selected sheen uses transform/opacity only. */
+/* Page-only overrides: 비선택 프레임 필터는 끄고, 선택 윤곽 drop-shadow는 허용한다. */
 .artist-page .nav-tab-btn:not(.is-active) .artist-tab-shine{display:none}
-.artist-page .artist-tab-frame{filter:none!important;transition:none!important}
+.artist-page .nav-tab-btn:not(.is-active) .artist-tab-frame{filter:none;transition:none}
 .artist-page .nav-tab-btn.is-active .artist-tab-avatar{outline:none}
 .artist-page .tab-pane[hidden],.artist-page [data-artist-feed-retry][hidden]{display:none!important}
 .artist-page .artist-feed-slot{min-height:4rem}
