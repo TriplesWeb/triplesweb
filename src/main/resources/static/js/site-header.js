@@ -52,8 +52,10 @@
   let currentMode = "";
   function resize() {
     // Read the rendered CSS mode: WebKit's matchMedia width can differ by a scrollbar.
-    const inline = getComputedStyle(search).display === 'none';
     const desktop = getComputedStyle(mobile).display === 'none';
+    // 데스크톱(햄버거 숨김)에서만 검색 토글이 없으면 인라인 검색으로 연다.
+    // 모바일은 메뉴 안 검색을 쓰므로 토글이 숨겨져도 인라인으로 보지 않는다.
+    const inline = desktop && getComputedStyle(search).display === 'none';
     const mode = `${inline}:${desktop}`;
     if (mode === currentMode) return;
     currentMode = mode; searchInline = inline;
