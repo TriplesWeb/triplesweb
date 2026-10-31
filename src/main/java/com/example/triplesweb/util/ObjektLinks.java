@@ -21,8 +21,8 @@ public final class ObjektLinks {
         String number = String.valueOf(item.getOrDefault("collectionNo", "")).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
         if (!season.isEmpty() && !number.isEmpty() && slug.startsWith(season + "-") && slug.endsWith("-" + number)) {
             String member = slug.substring(season.length() + 1, slug.length() - number.length() - 1).replaceAll("[^a-z0-9]", "");
-            // Keep the requested Cream02 short form, e.g. hayeoncc367z.
-            String seasonCode = season.equals("cream02") ? "cc" : season;
+            String seasonCode = ObjektSeasonCodes.code(season);
+            if (seasonCode.isEmpty()) seasonCode = season;
             if (!member.isEmpty()) return member + seasonCode + number;
         }
         return slug.matches("[a-z0-9][a-z0-9-]{0,199}") ? slug : id(item);

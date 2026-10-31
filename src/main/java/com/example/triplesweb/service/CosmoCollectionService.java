@@ -1,6 +1,7 @@
 package com.example.triplesweb.service;
 
 import com.example.triplesweb.util.MemberPortraitOptions;
+import com.example.triplesweb.util.ObjektSeasonCodes;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -97,7 +98,9 @@ public class CosmoCollectionService {
                 String haystack = (text(card, "collectionId") + " " + text(card, "member") + " "
                         + text(card, "season") + " " + text(card, "objektClass") + " "
                         + text(card, "collectionNo") + " "
-                        + text(card, "serial") + " " + text(card, "slug")).toLowerCase(Locale.ROOT);
+                        + text(card, "serial") + " " + text(card, "slug") + " "
+                        + ObjektSeasonCodes.searchTokens(text(card, "season"), text(card, "collectionNo")))
+                        .toLowerCase(Locale.ROOT);
                 if (!haystack.contains(search)) return false;
             }
             return true;

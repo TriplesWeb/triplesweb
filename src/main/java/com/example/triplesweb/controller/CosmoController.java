@@ -6,6 +6,7 @@ import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.ObjektMarketDataService;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektFilterOrder;
+import com.example.triplesweb.util.ObjektSeasonCodes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
@@ -271,11 +272,14 @@ public class CosmoController {
     }
 
     private static String searchableText(Map<String, Object> objekt) {
+        String season = firstValue(objekt, "season", "seasonKey");
+        String collectionNo = firstValue(objekt, "collectionNo", "numberValue");
         return String.join(" ",
                 value(objekt, "searchText"), value(objekt, "collectionId"), value(objekt, "slug"),
                 value(objekt, "season"), value(objekt, "seasonKey"), value(objekt, "member"),
                 value(objekt, "memberName"), value(objekt, "artist"), value(objekt, "collectionNo"),
-                value(objekt, "class"), value(objekt, "classKey"), value(objekt, "numberValue"))
+                value(objekt, "class"), value(objekt, "classKey"), value(objekt, "numberValue"),
+                ObjektSeasonCodes.searchTokens(season, collectionNo))
                 .toLowerCase(Locale.ROOT);
     }
 

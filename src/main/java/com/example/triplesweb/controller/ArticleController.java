@@ -13,6 +13,7 @@ import com.example.triplesweb.service.CommentService;
 import com.example.triplesweb.service.DateTimeFormatService;
 import com.example.triplesweb.util.ArticleHtmlCleaner;
 import com.example.triplesweb.util.ObjektFilterOrder;
+import com.example.triplesweb.util.ObjektSeasonCodes;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -212,7 +213,9 @@ public class ArticleController {
             if (!query.isEmpty()) {
                 String haystack = (stringValue(item.get("collectionId")) + " " + stringValue(item.get("member"))
                         + " " + stringValue(item.get("collectionNo")) + " " + stringValue(item.get("season"))
-                        + " " + stringValue(item.get("class"))).toLowerCase();
+                        + " " + stringValue(item.get("class")) + " "
+                        + ObjektSeasonCodes.searchTokens(
+                                stringValue(item.get("season")), stringValue(item.get("collectionNo")))).toLowerCase();
                 if (!haystack.contains(query)) continue;
             }
             matched.add(item);
