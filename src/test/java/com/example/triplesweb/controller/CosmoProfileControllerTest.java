@@ -77,6 +77,9 @@ class CosmoProfileControllerTest {
 
     @Test void memberChecklistRendersOwnedAndMissingKindsWithFullImages() throws Exception {
         givenProfile();
+        var member = new com.example.triplesweb.entity.Artist();
+        member.setName("정하연"); member.setEngName("HaYeon"); member.setColor("#d81055");
+        when(artists.findAll()).thenReturn(List.of(member));
         when(catalog.findCollections("triples")).thenReturn(List.of(
                 Map.of("slug", "cream02-hayeon-367z", "member", "HaYeon", "class", "Double", "season", "Cream02",
                         "collectionNo", "367Z", "collectionId", "Cream02 HaYeon 367Z", "thumbnailImage", "https://example.com/owned.webp"),
@@ -84,6 +87,7 @@ class CosmoProfileControllerTest {
                         "collectionNo", "003Z", "collectionId", "Cream02 HaYeon 003Z", "thumbnailImage", "https://example.com/missing.webp")));
         var result = mvc.perform(get("/cosmo/profile/Fan").param("tab", "members").param("member", "hayeon").param("ownership", "progress"))
                 .andExpect(status().isOk()).andExpect(content().string(containsString("2종 중 1종 보유 · 1종 미보유")))
+                .andExpect(content().string(containsString("--member-color:#d81055")))
                 .andExpect(content().string(containsString("profile-member-picker")))
                 .andExpect(content().string(containsString("profile-ownership-tabs")))
                 .andExpect(content().string(containsString(">보유</a>")))

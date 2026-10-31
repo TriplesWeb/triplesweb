@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="/css/objekt-modal.css?v=1">
     <script src="/js/about-modal.js?v=1" defer></script>
     <script src="/js/objekt-serial.js?v=2" defer></script>
-    <script src="/js/objekt-issued.js?v=1" defer></script>
+    <script src="/js/objekt-issued.js?v=2" defer></script>
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=9">
     <style>
         .objekt-head {
@@ -795,8 +795,7 @@
                     <span class="material-symbols-outlined objekt-member-toggle-caret" aria-hidden="true">expand_more</span>
                 </button>
                 <div class="mpp-toolbar-actions" role="group" aria-label="오브젝트 분류">
-                    <button type="button" class="mpp-tool-btn objekt-group-tab" id="objekt-member-clear" data-objekt-group="all" aria-pressed="false">전체</button>
-                    <button type="button" class="mpp-tool-btn objekt-group-tab" data-objekt-group="members" aria-pressed="false">멤버</button>
+                    <button type="button" class="mpp-tool-btn objekt-group-tab" id="objekt-member-clear" data-objekt-group="all" aria-pressed="false">전체 / 멤버</button>
                     <button type="button" class="mpp-tool-btn objekt-group-tab" data-objekt-group="other" aria-pressed="false">기타 옵젝</button>
                 </div>
             </div>
@@ -995,13 +994,8 @@
                 <div><dt>시즌</dt><dd id="objektDetailSeason">—</dd></div>
                 <div><dt>클래스</dt><dd id="objektDetailClass">—</dd></div>
                 <div><dt>번호</dt><dd id="objektDetailNo">—</dd></div>
+                <div><dt>발행량</dt><dd id="objektIssuedCount" aria-live="polite">확인 중</dd></div>
             </dl>
-            <section class="objekt-issued-panel" aria-labelledby="objektIssuedHeading">
-                <div class="objekt-issued-heading"><h3 id="objektIssuedHeading">발행 시리얼</h3><span id="objektIssuedCount"></span></div>
-                <div id="objektIssuedRanges" class="objekt-issued-ranges" role="status">시리얼 목록을 확인하고 있습니다.</div>
-                <button type="button" id="objektIssuedMore" hidden>시리얼 구간 더 보기</button>
-                <small id="objektIssuedTime"></small>
-            </section>
             <p class="objekt-detail-desc is-empty" id="objektDetailDesc">불러오는 중…</p>
             <details id="objektDescriptionEditor" class="objekt-description-editor" hidden>
                 <summary>관리자 · 상세 설명 편집</summary>
@@ -1271,7 +1265,7 @@
     const memberGroupInput = document.getElementById('objekt-member-group');
     function syncMemberGroup() {
         const group = memberGroupInput.value;
-        document.querySelectorAll('[data-objekt-group]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.objektGroup === group)));
+        document.querySelectorAll('[data-objekt-group]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.objektGroup === group || (button.dataset.objektGroup === 'all' && group === 'members'))));
         document.getElementById('objekt-member-picker').hidden = group === 'other';
         document.getElementById('objekt-other-notice').hidden = group !== 'other';
         const memberToggle = document.getElementById('objekt-member-toggle');
@@ -1291,7 +1285,7 @@
     }
 
     function syncMemberChecks(values, { apply = false } = {}) {
-        if (apply) memberGroupInput.value = 'members';
+        if (apply) memberGroupInput.value = values?.length ? 'members' : 'all';
         const selected = new Set((values || []).map(v => String(v).toLocaleLowerCase()));
         document.querySelectorAll('.member-checkbox').forEach((cb) => {
             cb.checked = selected.has(String(cb.value).toLocaleLowerCase());
@@ -1335,7 +1329,7 @@
             window.MemberPortraitPicker?.clear(memberRoot);
             syncMemberChecks([]);
         } else { syncMemberGroup(); syncMemberLabel(); }
-        setMemberPickerOpen(group === 'members');
+        setMemberPickerOpen(group !== 'other');
         markActiveFilters();
     }));
     memberToggle?.addEventListener('click', () => {

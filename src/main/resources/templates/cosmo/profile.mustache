@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="/css/archive-page.css?v=3">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=9">
 <link rel="stylesheet" href="/css/cosmo-collection.css?v=10">
-<link rel="stylesheet" href="/css/cosmo-profile.css?v=13">
+<link rel="stylesheet" href="/css/cosmo-profile.css?v=14">
 </head>
 <body class="collection-page min-h-screen flex flex-col">
 {{>layout/header}}
@@ -30,7 +30,7 @@
     </dl>
 </section>
 
-<div class="profile-refresh"><span data-profile-refresh-status role="status" aria-live="polite">보유 목록 자동 갱신</span><button type="button" data-profile-refresh>새로고침</button></div>
+<div class="profile-refresh"><span data-profile-refresh-status role="status" aria-live="polite">보유 목록 자동 갱신</span></div>
 <nav class="profile-progress-tabs" aria-label="수집 현황 보기">
     <a class="profile-progress-tab{{#isOverviewTab}} is-active{{/isOverviewTab}}" href="{{overviewUrl}}" {{#isOverviewTab}}aria-current="page"{{/isOverviewTab}}>전체 현황</a>
     <a class="profile-progress-tab" href="{{transfersUrl}}">전송 내역</a>
@@ -103,7 +103,7 @@
 </section>
 <div data-profile-live="checklist">
 {{#hasChecklist}}
-<section class="profile-checklist" aria-labelledby="checklist-heading">
+<section class="profile-checklist" aria-labelledby="checklist-heading" style="--member-color:{{memberColor}}">
     <div class="profile-section-heading"><div><h2 id="checklist-heading">{{selectedMember}} · {{#isOwnershipOwned}}보유{{/isOwnershipOwned}}{{#isOwnershipMissing}}미보유{{/isOwnershipMissing}}{{#isOwnershipAll}}수집{{/isOwnershipAll}}{{#isOwnershipProgress}}수집{{/isOwnershipProgress}} 오브젝트</h2>{{#isOwnershipSubset}}<p>{{checklistVisible}}종 · 시즌별 목록</p>{{/isOwnershipSubset}}{{^isOwnershipSubset}}<p>{{checklistTotal}}종 중 {{checklistOwned}}종 보유 · {{checklistMissing}}종 미보유{{#isOwnershipOwned}} · 보유 {{checklistVisible}}종 표시{{/isOwnershipOwned}}{{#isOwnershipMissing}} · 미보유 {{checklistVisible}}종 표시{{/isOwnershipMissing}}</p>{{/isOwnershipSubset}}</div>
         {{#isOwnershipProgress}}<label class="profile-hide-complete" data-hide-complete-label hidden><input type="checkbox" data-hide-complete>완료한 시즌 숨기기</label>{{/isOwnershipProgress}}
     </div>
@@ -180,7 +180,7 @@
 {{/hasProfile}}
 </main>
 {{>layout/footer}}
-<script src="/js/cosmo-profile.js?v=4" defer></script>
+<script src="/js/cosmo-profile.js?v=5" defer></script>
 {{#isMembersTab}}
 <script src="/js/member-portrait-picker.js?v=9"></script>
 

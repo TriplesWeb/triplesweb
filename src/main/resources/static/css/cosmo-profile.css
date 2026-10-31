@@ -218,3 +218,5 @@
 @media(prefers-reduced-motion:reduce){.profile-fold-chevron{transition:none}}
 
 .profile-owned-group{padding-top:1rem}.profile-owned-group h4{color:#a9beb8;font-size:.8rem;font-weight:700}.profile-owned-group .profile-checklist-grid{padding-top:.65rem}.profile-breakdown-row strong,.profile-summary-copy>span{font-size:1rem;font-weight:750;color:#eafff8!important}.profile-orbit-stat>div:last-child strong{font-size:1rem;font-weight:800;color:#eafff8;font-variant-numeric:tabular-nums}
+
+.profile-checklist .profile-summary-orbit{--orbit-color:var(--member-color,#8decd9)}.profile-checklist .profile-summary-orbit .orbit-value{stroke:var(--member-color,#8decd9)}

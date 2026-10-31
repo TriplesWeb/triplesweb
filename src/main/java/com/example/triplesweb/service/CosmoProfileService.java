@@ -93,8 +93,18 @@ public class CosmoProfileService {
                 String name = text(item, "member");
                 if (!name.isBlank()) rawMembers.add(name);
             }
+            var artistRows = artists.findAll();
             List<Map<String, Object>> picker = MemberPortraitOptions.forObjektFilter(
-                    MemberPortraitOptions.soloMemberNames(rawMembers), artists.findAll());
+                    MemberPortraitOptions.soloMemberNames(rawMembers), artistRows);
+            String memberColor = "#8decd9";
+            for (var artist : artistRows) {
+                if (MemberPortraitOptions.sameMember(selected, artist.getName()) || MemberPortraitOptions.sameMember(selected, artist.getEngName())) {
+                    String color = artist.getColor();
+                    if (color != null && color.matches("#[0-9a-fA-F]{6}")) memberColor = color;
+                    break;
+                }
+            }
+            view.put("memberColor", memberColor);
             for (Map<String, Object> option : picker) {
                 option.put("active", MemberPortraitOptions.sameMember(selected, String.valueOf(option.get("value"))));
             }

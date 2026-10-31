@@ -1,32 +1,22 @@
 (() => {
-  const ranges=document.getElementById('objektIssuedRanges'),count=document.getElementById('objektIssuedCount');
-  const more=document.getElementById('objektIssuedMore'),time=document.getElementById('objektIssuedTime');
-  let url='',generation=0,abort,timer,nextOffset=0,busy=false;
+  const count=document.getElementById('objektIssuedCount');
+  let url='', generation=0, abort, timer;
   const number=value=>Number.isSafeInteger(value)&&value>=0;
-  const format=value=>'#'+String(value).padStart(5,'0');
-  function close(){generation++;abort?.abort();clearTimeout(timer);url='';busy=false;}
-  async function load(append=false,attempt=0){
-    if(!url||busy)return;
-    const version=generation;busy=true;more.disabled=true;abort=new AbortController();
+  function close(){generation++;abort?.abort();clearTimeout(timer);url='';}
+  async function load(attempt=0){
+    if(!url||!count)return;
+    const version=generation;abort=new AbortController();
     try{
-      const target=new URL(url,location.origin);target.searchParams.set('offset',String(append?nextOffset:0));
-      const response=await fetch(target.pathname+target.search,{headers:{Accept:'application/json'},credentials:'same-origin',cache:'no-store',signal:abort.signal});
-      if(!response.ok)throw Error();const data=await response.json();if(version!==generation)return;
-      if(data.status==='loading'&&attempt<8){busy=false;timer=setTimeout(()=>load(append,attempt+1),1500);return;}
-      if(data.status!=='available'||!number(data.count)||!Array.isArray(data.ranges)||!number(data.nextOffset))throw Error();
-      const nodes=data.ranges.map(range=>{if(!number(range.first)||range.first<1||!number(range.last)||range.last<range.first)throw Error();const node=document.createElement('span');node.textContent=range.first===range.last?format(range.first):`${format(range.first)}–${format(range.last)}`;return node;});
-      if(!append)ranges.replaceChildren();nodes.forEach(node=>ranges.append(node));
-      if(!data.count)ranges.textContent='확인된 발행 시리얼이 없습니다.';
+      const response=await fetch(url,{headers:{Accept:'application/json'},credentials:'same-origin',cache:'no-store',signal:abort.signal});
+      if(!response.ok)throw Error();
+      const data=await response.json();
+      if(version!==generation)return;
+      if(data.status==='loading'&&attempt<8){timer=setTimeout(()=>load(attempt+1),1500);return;}
+      if(data.status!=='available'||!number(data.count))throw Error();
       count.textContent=data.count.toLocaleString('ko-KR')+'개';
-      time.textContent=(data.stale?'마지막 확인 · ':'시리얼 목록 확인 · ')+new Date(data.observedAt).toLocaleString('ko-KR');
-      nextOffset=data.nextOffset;more.hidden=!data.hasMore;
-      if(!append&&data.ranges.length){const input=document.querySelector('[data-serial-lookup] input[name="serial"]');if(input&&input.value==='1'&&document.activeElement!==input)input.value=String(data.ranges[0].first);}
-    }catch(error){if(version===generation&&error.name!=='AbortError'){if(!append){ranges.textContent='발행 시리얼을 확인하지 못했습니다.';count.textContent='미확인';}time.textContent='잠시 후 다시 열어 확인해 주세요.';}}
-    finally{if(version===generation){busy=false;more.disabled=false;}}
+    }catch(error){if(version===generation&&error.name!=='AbortError')count.textContent='미확인';}
   }
-  function show(value){close();if(!ranges)return;url=value;ranges.textContent='실제 발행된 시리얼 목록을 확인하고 있습니다.';count.textContent='';time.textContent='';more.hidden=true;load();}
-  more?.addEventListener('click',()=>load(true));
-
+  function show(value){close();if(!count)return;url=value;count.textContent='확인 중';load();}
   let hydrationTimer,hydrating=false;
   async function hydrate(){
     if(hydrating||document.hidden)return;

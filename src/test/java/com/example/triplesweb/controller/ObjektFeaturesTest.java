@@ -64,6 +64,23 @@ class ObjektFeaturesTest {
                 .andExpect(jsonPath("$.items[3].id").value("unknown"));
     }
 
+    @Test void memberSortingUsesDebutOrderAndKeepsUnknownLast() throws Exception {
+        var items = List.<Map<String, Object>>of(Map.of("id","unknown","member","unknown"),
+            Map.of("id","s24","member","SeoAh"), Map.of("id","s2","member","HyeRin"), Map.of("id","s1","member","SeoYeon"));
+        when(catalog.findCollections("triples")).thenReturn(items);
+        when(market.withMintCounts(items)).thenReturn(items);
+        mvc.perform(get("/cosmo/objekt/more").param("page","0").param("sort","first_member"))
+            .andExpect(jsonPath("$.items[0].id").value("s1"))
+            .andExpect(jsonPath("$.items[1].id").value("s2"))
+            .andExpect(jsonPath("$.items[2].id").value("s24"))
+            .andExpect(jsonPath("$.items[3].id").value("unknown"));
+        mvc.perform(get("/cosmo/objekt/more").param("page","0").param("sort","last_member"))
+            .andExpect(jsonPath("$.items[0].id").value("s24"))
+            .andExpect(jsonPath("$.items[1].id").value("s2"))
+            .andExpect(jsonPath("$.items[2].id").value("s1"))
+            .andExpect(jsonPath("$.items[3].id").value("unknown"));
+    }
+
     @Test void ownerEndpointValidatesSerialAndReturnsRecoverableFailure() throws Exception {
         Map<String, Object> item = Map.of("id", "uuid", "slug", "sample");
         when(catalog.findCollections("triples")).thenReturn(List.of(item));
@@ -120,6 +137,29 @@ class ObjektFeaturesTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test void descriptionIsSharedBySeasonAndNumberWithoutOverwritingOtherGroups() throws Exception {
+        var a = Map.<String,Object>of("id","a","slug","a","season","Cream02","collectionNo","367Z");
+        var b = Map.<String,Object>of("id","b","slug","b","season","Cream02","collectionNo","367Z");
+        var c = Map.<String,Object>of("id","c","slug","c","season","Cream02","collectionNo","368Z");
+        when(catalog.findCollections("triples")).thenReturn(List.of(a,b,c));
+        var stored = new java.util.HashMap<String,com.example.triplesweb.entity.ObjektDescription>();
+        when(descriptions.findByObjektKey(anyString())).thenAnswer(call -> java.util.Optional.ofNullable(stored.get(call.getArgument(0))));
+        when(descriptions.save(any())).thenAnswer(call -> {
+            com.example.triplesweb.entity.ObjektDescription value=call.getArgument(0);
+            stored.put(value.getObjektKey(),value); return value;
+        });
+        mvc.perform(post("/cosmo/objekt/detail/a/description").accept(MediaType.APPLICATION_JSON).param("description","공통 설명"))
+                .andExpect(status().isOk());
+        mvc.perform(get("/cosmo/objekt/detail/b").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.description").value("공통 설명"));
+        mvc.perform(get("/cosmo/objekt/detail/c").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.description").value(""));
+        mvc.perform(post("/cosmo/objekt/detail/b/description").accept(MediaType.APPLICATION_JSON).param("description",""))
+                .andExpect(status().isOk());
+        mvc.perform(get("/cosmo/objekt/detail/a").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.description").value(""));
+    }
+
     @Test void combinedLookupUsesIndexAndNotLiveRpc() throws Exception {
         var item = Map.<String,Object>of("id", "uuid", "slug", "hayeoncc367z");
         when(catalog.findCollections("triples")).thenReturn(List.of(item));
@@ -140,7 +180,7 @@ class ObjektFeaturesTest {
         mvc.perform(get("/cosmo/objekt/detail/hayeoncc367z").accept(MediaType.TEXT_HTML))
             .andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc367z"));
         org.assertj.core.api.Assertions.assertThat(result.getResponse().getContentAsString())
-            .contains("data-serial-panel", "objektIssuedRanges").doesNotContain("id=\"objektDetailFullLink\"");
+            .contains("data-serial-panel", "objektIssuedCount").doesNotContain("objektIssuedRanges", "objektIssuedTime").doesNotContain("id=\"objektDetailFullLink\"");
     }
 
     @Test void ownerResponseDoesNotExposeInternalVerificationFields() throws Exception {

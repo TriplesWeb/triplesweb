@@ -160,7 +160,7 @@ public class CosmoController {
                 .filter(objekt -> matchesSelection(selectedClasses, firstValue(objekt, "classKey", "class")))
                 .filter(objekt -> selectedKind.isBlank() || "all".equals(selectedKind)
                         || normalize(firstValue(objekt, "collectionNo", "collectionNumber")).equals(selectedKind))
-                .sorted(sortComparator(selectedSort))
+                .sorted(sortComparator(selectedSort, new java.util.HashMap<>()))
                 .collect(Collectors.toList());
 
         int resultCount = filtered.size();
@@ -230,7 +230,7 @@ public class CosmoController {
                 .collect(Collectors.toList());
     }
 
-    private static Comparator<Map<String, Object>> sortComparator(String sort) {
+    private static Comparator<Map<String, Object>> sortComparator(String sort, Map<String, Integer> memberOrderCache) {
         Comparator<Map<String, Object>> byDate = Comparator.comparing(
                 objekt -> firstValue(objekt, "createdAt", "created_at", "date"),
                 Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
@@ -245,11 +245,16 @@ public class CosmoController {
             case "number_high" -> byNumber.reversed();
             case "mint_low" -> mintComparator(false);
             case "mint_high" -> mintComparator(true);
-            case "first_member" -> byMember;
-            case "last_member" -> byMember.reversed();
+            case "first_member" -> Comparator.<Map<String, Object>>comparingInt(item -> memberOrder(item, memberOrderCache)).thenComparing(byMember);
+            case "last_member" -> Comparator.<Map<String, Object>>comparingInt(item -> { int order = memberOrder(item, memberOrderCache); return order == 24 ? 24 : 23 - order; }).thenComparing(byMember);
             case "latest" -> byDate.reversed();
             default -> byDate.reversed();
         };
+    }
+
+    private static int memberOrder(Map<String, Object> item, Map<String, Integer> cache) {
+        return cache.computeIfAbsent(firstValue(item, "member", "memberName"), member ->
+                MemberPortraitOptions.objektMembers(member).stream().mapToInt(MemberPortraitOptions::memberIndex).min().orElse(24));
     }
 
     private static Comparator<Map<String, Object>> mintComparator(boolean descending) {
