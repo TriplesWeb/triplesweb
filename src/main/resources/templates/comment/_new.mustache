@@ -86,7 +86,7 @@
             errorMessageDiv.style.display = "none";
             errorMessageDiv.textContent = "";
 
-            const userId = userIdInput ? userIdInput.value.trim() : "";
+            let userId = userIdInput ? userIdInput.value.trim() : "";
             const body = bodyInput ? bodyInput.value.trim() : "";
             const articleId = articleIdInput ? articleIdInput.value.trim() : "";
 
@@ -109,12 +109,14 @@
             };
 
             const url = "/api/articles/" + articleId + "/comments";
+            const headers = (window.SiteUi && window.SiteUi.csrfHeaders)
+                ? window.SiteUi.csrfHeaders({ "Content-Type": "application/json" })
+                : { "Content-Type": "application/json" };
 
             fetch(url, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                credentials: "same-origin",
+                headers: headers,
                 body: JSON.stringify(comment)
             })
                     .then(function (response) {

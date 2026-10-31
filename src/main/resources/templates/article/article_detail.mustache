@@ -140,6 +140,7 @@
 
     <!-- 댓글 영역 컨테이너 -->
     <div class="w-full max-w-3xl mt-6">
+        <script src="/js/site-ui.js?v=3"></script>
         {{>comment/_comments}}
     </div>
 </main>
@@ -148,8 +149,6 @@
 
 <script>
     (function () {
-        const CSRF_TOKEN = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
-        const CSRF_HEADER = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content') || 'X-CSRF-TOKEN';
         const likeBtn = document.getElementById('likeButton');
         const likeCountElem = document.getElementById('likeCount');
         if (!likeBtn || !likeCountElem) return;
@@ -158,8 +157,9 @@
         likeBtn.addEventListener('click', function () {
             if (pending) return;
             pending = true;
-            const headers = { 'Content-Type': 'application/json' };
-            if (CSRF_TOKEN) headers[CSRF_HEADER] = CSRF_TOKEN;
+            const headers = (window.SiteUi && window.SiteUi.csrfHeaders)
+                ? window.SiteUi.csrfHeaders({ 'Content-Type': 'application/json' })
+                : { 'Content-Type': 'application/json' };
 
             fetch('/article/{{category}}/{{article.id}}/like', {
                 method: 'POST',

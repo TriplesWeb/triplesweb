@@ -198,12 +198,14 @@
                 if (!window.confirm("이 댓글을 수정하시겠습니까?")) return;
 
                 const url = `/api/articles/${articleId}/comments/${commentId}`;
+                const headers = (window.SiteUi && window.SiteUi.csrfHeaders)
+                    ? window.SiteUi.csrfHeaders({ "Content-Type": "application/json" })
+                    : { "Content-Type": "application/json" };
 
                 fetch(url, {
                     method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
+                    credentials: "same-origin",
+                    headers: headers,
                     body: JSON.stringify({
                         id: commentId,
                         body: newBody
@@ -234,9 +236,14 @@
                 const articleId = this.getAttribute("data-article-id");
 
                 const url = `/api/articles/${articleId}/comments/${commentId}`;
+                const headers = (window.SiteUi && window.SiteUi.csrfHeaders)
+                    ? window.SiteUi.csrfHeaders()
+                    : {};
 
                 fetch(url, {
-                    method: "DELETE"
+                    method: "DELETE",
+                    credentials: "same-origin",
+                    headers: headers
                 })
                         .then(res => {
                             if (!res.ok) {
