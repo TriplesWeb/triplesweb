@@ -3,6 +3,7 @@ package com.example.triplesweb.controller;
 import com.example.triplesweb.repository.*;
 import com.example.triplesweb.service.*;
 import com.example.triplesweb.config.MustacheConfig;
+import com.example.triplesweb.util.ObjektLinks;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -11,7 +12,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -33,6 +36,37 @@ class ObjektFeaturesTest {
     @MockitoBean ObjektDescriptionRepository descriptions;
     @MockitoBean AboutAdminAuth admin;
 
+    /** Mirrors ObjektService.findByKey indexing so detail routes resolve under the mock catalog. */
+    private void stubCatalog(List<Map<String, Object>> items) {
+        when(catalog.findCollections("triples")).thenReturn(items);
+        Map<String, Map<String, Object>> index = new HashMap<>();
+        for (Map<String, Object> item : items) {
+            putIndex(index, string(item, "id"), item);
+            putIndex(index, string(item, "collectionId"), item);
+            putIndex(index, string(item, "slug"), item);
+            String slugLower = string(item, "slug").toLowerCase(Locale.ROOT);
+            if (!slugLower.isBlank()) index.putIfAbsent(slugLower, item);
+            putIndex(index, ObjektLinks.key(item), item);
+            putIndex(index, ObjektLinks.id(item), item);
+        }
+        when(catalog.findByKey(anyString())).thenAnswer(inv -> {
+            String key = inv.getArgument(0);
+            if (key == null || key.isBlank()) return null;
+            Map<String, Object> found = index.get(key);
+            return found != null ? found : index.get(key.toLowerCase(Locale.ROOT));
+        });
+    }
+
+    private static void putIndex(Map<String, Map<String, Object>> index, String key, Map<String, Object> item) {
+        if (key == null || key.isBlank()) return;
+        index.putIfAbsent(key, item);
+    }
+
+    private static String string(Map<String, Object> item, String key) {
+        Object value = item.get(key);
+        return value == null ? "" : value.toString().trim();
+    }
+
     @Test void favoriteListRemoveFormIncludesCsrfToken() throws Exception {
         var item = new com.example.triplesweb.entity.ObjektFavorite();
         item.setObjektKey("uuid");
@@ -50,7 +84,7 @@ class ObjektFeaturesTest {
                 Map.of("id", "many", "slug", "many", "numberValue", 2, "mintCount", 90L),
                 Map.of("id", "few", "slug", "few", "numberValue", 999, "mintCount", 5L),
                 Map.of("id", "zero", "slug", "zero", "mintCount", 0L));
-        when(catalog.findCollections("triples")).thenReturn(items);
+        stubCatalog(items);
         when(market.withMintCounts(items)).thenReturn(items);
         mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("sort", "mint_low"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].id").value("zero"))
@@ -67,7 +101,7 @@ class ObjektFeaturesTest {
     @Test void memberSortingUsesDebutOrderAndKeepsUnknownLast() throws Exception {
         var items = List.<Map<String, Object>>of(Map.of("id","unknown","member","unknown"),
             Map.of("id","s24","member","SeoAh"), Map.of("id","s2","member","HyeRin"), Map.of("id","s1","member","SeoYeon"));
-        when(catalog.findCollections("triples")).thenReturn(items);
+        stubCatalog(items);
         when(market.withMintCounts(items)).thenReturn(items);
         mvc.perform(get("/cosmo/objekt/more").param("page","0").param("sort","first_member"))
             .andExpect(jsonPath("$.items[0].id").value("s1"))
@@ -83,7 +117,7 @@ class ObjektFeaturesTest {
 
     @Test void ownerEndpointValidatesSerialAndReturnsRecoverableFailure() throws Exception {
         Map<String, Object> item = Map.of("id", "uuid", "slug", "sample");
-        when(catalog.findCollections("triples")).thenReturn(List.of(item));
+        stubCatalog(List.of(item));
         mvc.perform(get("/cosmo/objekt/detail/uuid/owner").param("serial", "0")).andExpect(status().isBadRequest());
         verifyNoInteractions(market);
         when(market.owner(item, 1)).thenThrow(new IllegalStateException("RPC unavailable"));
@@ -92,14 +126,14 @@ class ObjektFeaturesTest {
     }
 
     @Test void oldDetailPageOpensSharedCatalogModal() throws Exception {
-        when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("id","uuid","slug","sample")));
+        stubCatalog(List.of(Map.of("id","uuid","slug","sample")));
         mvc.perform(get("/cosmo/objekt/detail/sample").accept(MediaType.TEXT_HTML))
             .andExpect(redirectedUrl("/cosmo/objekt?objekt=sample"));
     }
 
     @Test void readableUrlsModalActionsAndLegacyMemberRouteAreConnected() throws Exception {
         Map<String, Object> item = Map.of("id", "uuid", "slug", "hayeoncc367z", "collectionId", "Cream02 HaYeon 367Z", "member", "HaYeon");
-        when(catalog.findCollections("triples")).thenReturn(List.of(item));
+        stubCatalog(List.of(item));
         mvc.perform(get("/cosmo/objekt/detail/uuid").accept(MediaType.TEXT_HTML))
                 .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc367z"));
         mvc.perform(get("/cosmo/objekt/detail/uuid").accept(MediaType.APPLICATION_JSON))
@@ -114,7 +148,7 @@ class ObjektFeaturesTest {
 
     @Test void realIndexSlugResolvesShortPublicAliasAndPreservesUpstreamAlias() throws Exception {
         var item = Map.<String,Object>of("id","uuid","slug","cream02-hayeon-367z","season","Cream02","collectionNo","367Z","member","HaYeon");
-        when(catalog.findCollections("triples")).thenReturn(List.of(item));
+        stubCatalog(List.of(item));
         mvc.perform(get("/cosmo/objekt/detail/hayeoncc367z").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.detailUrl").value("/cosmo/objekt/detail/hayeoncc367z"));
         mvc.perform(get("/cosmo/objekt/detail/cream02-hayeon-367z").accept(MediaType.TEXT_HTML))
@@ -125,7 +159,7 @@ class ObjektFeaturesTest {
         String uuid = "01a17092-abe1-72c0-925d-d7058df81a1f";
         var item = Map.<String, Object>of("id", uuid, "slug", uuid, "member", "HaYeon",
                 "season", "Cream02", "collectionNo", "368Z");
-        when(catalog.findCollections("triples")).thenReturn(List.of(item));
+        stubCatalog(List.of(item));
         mvc.perform(get("/cosmo/objekt/detail/" + uuid).accept(MediaType.TEXT_HTML))
                 .andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc368z"));
         mvc.perform(get("/cosmo/objekt/detail/" + uuid).accept(MediaType.APPLICATION_JSON))
@@ -135,7 +169,7 @@ class ObjektFeaturesTest {
 
     @Test void modalDescriptionWritesKeepStableKeyAndRequireAdmin() throws Exception {
         var item = Map.<String,Object>of("id", "uuid", "slug", "hayeoncc367z");
-        when(catalog.findCollections("triples")).thenReturn(List.of(item));
+        stubCatalog(List.of(item));
         mvc.perform(post("/cosmo/objekt/detail/hayeoncc367z/description").accept(MediaType.APPLICATION_JSON).param("description", " 새 설명 "))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.description").value("새 설명"));
         verify(admin).requireAdmin(any(), any());
@@ -153,7 +187,7 @@ class ObjektFeaturesTest {
         var a = Map.<String,Object>of("id","a","slug","a","season","Cream02","collectionNo","367Z");
         var b = Map.<String,Object>of("id","b","slug","b","season","Cream02","collectionNo","367Z");
         var c = Map.<String,Object>of("id","c","slug","c","season","Cream02","collectionNo","368Z");
-        when(catalog.findCollections("triples")).thenReturn(List.of(a,b,c));
+        stubCatalog(List.of(a,b,c));
         var stored = new java.util.HashMap<String,com.example.triplesweb.entity.ObjektDescription>();
         when(descriptions.findByObjektKey(anyString())).thenAnswer(call -> java.util.Optional.ofNullable(stored.get(call.getArgument(0))));
         when(descriptions.save(any())).thenAnswer(call -> {
@@ -174,7 +208,7 @@ class ObjektFeaturesTest {
 
     @Test void combinedLookupUsesIndexAndNotLiveRpc() throws Exception {
         var item = Map.<String,Object>of("id", "uuid", "slug", "hayeoncc367z");
-        when(catalog.findCollections("triples")).thenReturn(List.of(item));
+        stubCatalog(List.of(item));
         when(market.serialLookup(item, 1, 0)).thenReturn(Map.of("status","available","owner",Map.of("status","indexed","nickname","A"),"transfers",List.of()));
         mvc.perform(get("/cosmo/objekt/detail/hayeoncc367z/lookup").param("serial","1"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.owner.nickname").value("A"));
@@ -185,7 +219,7 @@ class ObjektFeaturesTest {
         var item = new java.util.LinkedHashMap<String,Object>();
         for (String field : List.of("frontImage","backImage","thumbnailImage","seasonKey","classKey","artist","createdAt","searchText","backgroundColor","textColor")) item.put(field, "");
         item.putAll(Map.of("id","uuid","slug","hayeoncc367z","collectionId","Cream02 HaYeon 367Z","member","HaYeon","season","Cream02","class","Special","collectionNo","367Z","numberValue",367));
-        when(catalog.findCollections("triples")).thenReturn(List.of(item));
+        stubCatalog(List.of(item));
         when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
         var result = mvc.perform(get("/cosmo/objekt")).andExpect(status().isOk()).andReturn();
         java.nio.file.Files.writeString(java.nio.file.Path.of("build/objekt-modal-preview.html"), result.getResponse().getContentAsString());
@@ -197,7 +231,7 @@ class ObjektFeaturesTest {
 
     @Test void ownerResponseDoesNotExposeInternalVerificationFields() throws Exception {
         Map<String, Object> item = Map.of("id", "uuid", "slug", "sample");
-        when(catalog.findCollections("triples")).thenReturn(List.of(item));
+        stubCatalog(List.of(item));
         when(market.owner(item, 1)).thenReturn(Map.of("status", "found", "serial", 1, "nickname", "테스트",
                 "address", "0xprivate", "tokenId", "30000001", "verifiedAt", "time", "explorerUrl", "https://abscan.org"));
         mvc.perform(get("/cosmo/objekt/detail/uuid/owner").param("serial", "1")).andExpect(status().isOk())
@@ -209,7 +243,7 @@ class ObjektFeaturesTest {
 
     @Test void historyEndpointDoesNotRequireLiveOwnerVerification() throws Exception {
         Map<String, Object> item = Map.of("id", "uuid", "slug", "sample");
-        when(catalog.findCollections("triples")).thenReturn(List.of(item));
+        stubCatalog(List.of(item));
         when(market.transfers(item, 1, 0)).thenReturn(Map.of("status", "available", "transfers", List.of()));
         mvc.perform(get("/cosmo/objekt/detail/uuid/transfers").param("serial", "1"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("available"))
@@ -230,7 +264,7 @@ class ObjektFeaturesTest {
             item.put("id", "id" + i); item.put("member", members[i % members.length]);
             item.put("season", seasons[i]); item.put("seasonKey", seasons[i]); items.add(item);
         }
-        when(catalog.findCollections("triples")).thenReturn(items);
+        stubCatalog(items);
         when(market.withMintCounts(items)).thenReturn(items);
         var result = mvc.perform(get("/cosmo/objekt")).andExpect(status().isOk())
                 .andExpect(model().attribute("memberOptions", List.of("윤서연", "정혜린", "카에데", "김채원", "지연")))
@@ -258,7 +292,7 @@ class ObjektFeaturesTest {
                 Map.of("id", "duo", "member", "S5 X S20"), Map.of("id", "five", "member", "Yooyeon"),
                 Map.of("id", "twenty", "member", "Shion"), Map.of("id", "one", "member", "S1")));
         for (int i = 0; i < 25; i++) items.add(Map.of("id", "other" + i, "member", "Other" + i));
-        when(catalog.findCollections("triples")).thenReturn(items);
+        stubCatalog(items);
         when(market.withMintCounts(items)).thenReturn(items);
         for (String member : List.of("김유연", "박시온")) mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("member", member))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.resultCount").value(2))
