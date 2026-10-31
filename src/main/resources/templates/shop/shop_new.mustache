@@ -60,6 +60,7 @@
     </div>
     <button type="submit" class="site-btn site-btn-primary">작성하기</button>
 </form>
+<script src="/js/site-ui.js?v=3"></script>
 <script>
     document.getElementById("imageUpload").addEventListener("change", function () {
         let file = this.files[0];
@@ -71,7 +72,8 @@
         fetch("/shop/uploadFile", {
             method: "POST",
             body: formData,
-            credentials: "same-origin"
+            credentials: "same-origin",
+            headers: (window.SiteUi && window.SiteUi.csrfHeaders) ? window.SiteUi.csrfHeaders() : {}
         })
         .then(async response => {
             if (!response.ok) {

@@ -203,6 +203,7 @@
     </div>
     </div>
 </main>
+<script src="/js/site-ui.js?v=3"></script>
 <script src="/js/article-content.js"></script>
 <script>
     window.beforeSubmit = function(form) {
@@ -248,10 +249,9 @@
      const UPLOAD_ENDPOINT = `/api/article/${category}/uploadFile`;
      const FALLBACK_IMG    = '/images/no-image.png';
 
-     // CSRF (있는 경우에만 헤더 세팅)
-     const _csrf  = document.querySelector('meta[name="_csrf"]')?.content;
-     const _ch    = document.querySelector('meta[name="_csrf_header"]')?.content;
-     const buildHeaders = () => (_csrf && _ch) ? { [_ch]: _csrf } : {};
+     const buildHeaders = () => (window.SiteUi && window.SiteUi.csrfHeaders)
+       ? window.SiteUi.csrfHeaders()
+       : {};
      let uploadsInFlight = 0;
      const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
 

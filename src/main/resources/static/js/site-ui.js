@@ -1,4 +1,27 @@
 (function () {
+  function readCookie(name) {
+    const encoded = encodeURIComponent(name);
+    const parts = document.cookie ? document.cookie.split('; ') : [];
+    for (const part of parts) {
+      const eq = part.indexOf('=');
+      if (eq < 0) continue;
+      const key = part.slice(0, eq);
+      if (key === name || key === encoded) {
+        return decodeURIComponent(part.slice(eq + 1));
+      }
+    }
+    return '';
+  }
+
+  /** CookieCsrfTokenRepository용: 쿠키 raw 토큰을 X-XSRF-TOKEN으로 보낸다. */
+  function csrfHeaders(extra) {
+    const headers = Object.assign({}, extra || {});
+    const cookieName = document.querySelector('meta[name="csrf-cookie-name"]')?.content || 'XSRF-TOKEN';
+    const token = readCookie(cookieName);
+    if (token) headers['X-XSRF-TOKEN'] = token;
+    return headers;
+  }
+
   function modalApi(element) {
     if (!element) return { show() {}, hide() {}, get isOpen() { return false; } };
     return {
@@ -83,7 +106,7 @@
     });
   }
 
-  window.SiteUi = { modal: modalApi, hideThen, bindModals, bindCarousels };
+  window.SiteUi = { modal: modalApi, hideThen, bindModals, bindCarousels, csrfHeaders, readCookie };
   document.addEventListener('DOMContentLoaded', () => {
     bindModals(document);
     bindCarousels(document);

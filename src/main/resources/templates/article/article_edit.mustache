@@ -222,6 +222,7 @@
 
 {{>layout/footer}}
 
+<script src="/js/site-ui.js?v=3"></script>
 <script src="/js/article-content.js"></script>
 <script>
     /* -------------------- helpers -------------------- */
@@ -299,9 +300,9 @@
             return null;
         }
 
-        const _csrf  = document.querySelector('meta[name="_csrf"]')?.content;
-        const _ch    = document.querySelector('meta[name="_csrf_header"]')?.content;
-        const buildHeaders = () => (_csrf && _ch) ? { [_ch]: _csrf } : {};
+        const buildHeaders = () => (window.SiteUi && window.SiteUi.csrfHeaders)
+            ? window.SiteUi.csrfHeaders()
+            : {};
         let uploadsInFlight = 0;
         const submitBtn = editForm.querySelector('button[type="submit"], input[type="submit"]');
         function setUploadBusy(busy) {
