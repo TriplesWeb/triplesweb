@@ -71,11 +71,7 @@
         sideWantBtn.disabled = !unlocked;
         if (!unlocked && activeSide === 'want') setActiveSide('have');
       }
-      if (!unlocked) {
-        selectedNodes('want').forEach((input) => input.remove());
-        renderPreviews();
-        refreshOptionChecks();
-      }
+      // Want는 Have가 비어도 유지한다. Want부터 개별 삭제 가능.
     }
 
     function setActiveSide(side) {
@@ -159,10 +155,11 @@
       return true;
     }
 
-    function chip(item) {
+    function chip(item, side) {
       const el = document.createElement('div');
       el.className = 'objekt-trade-chip';
       el.dataset.objektId = item.id;
+      el.dataset.side = side || 'have';
       if (item.thumbnailImage) {
         const img = document.createElement('img');
         img.src = item.thumbnailImage;
@@ -173,6 +170,24 @@
       const span = document.createElement('span');
       span.textContent = item.collectionId || item.id || '';
       el.appendChild(span);
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'objekt-trade-chip-remove';
+      remove.setAttribute('aria-label', '선택 해제');
+      remove.textContent = '×';
+      remove.addEventListener('mousedown', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+      });
+      remove.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setSelected(item.id, false, side || 'have', item);
+        updateSummary();
+        refreshOptionChecks();
+        if (status) status.textContent = statusText();
+      });
+      el.appendChild(remove);
       return el;
     }
 
@@ -182,7 +197,7 @@
         havePreview.replaceChildren();
         selectedNodes('have').forEach((input) => {
           const meta = itemCache.get(input.value) || { id: input.value, collectionId: input.value };
-          havePreview.appendChild(chip(meta));
+          havePreview.appendChild(chip(meta, 'have'));
         });
       }
       if (wantPreview) {
@@ -192,12 +207,14 @@
           const hint = document.createElement('p');
           hint.className = 'objekt-trade-zone-empty';
           hint.id = 'objektWantEmptyHint';
-          hint.textContent = haveCount() > 0 ? 'Want 오브젝트를 선택하세요' : 'Have를 고른 뒤 Want를 선택하세요';
+          hint.textContent = haveCount() > 0
+            ? 'Want 오브젝트를 선택하세요'
+            : 'Have를 고른 뒤 Want를 선택하세요';
           wantPreview.appendChild(hint);
         } else {
           wants.forEach((input) => {
             const meta = itemCache.get(input.value) || { id: input.value, collectionId: input.value };
-            wantPreview.appendChild(chip(meta));
+            wantPreview.appendChild(chip(meta, 'want'));
           });
         }
       }
@@ -350,6 +367,21 @@
       searchFilter.addEventListener('input', () => {
         window.clearTimeout(searchTimer);
         searchTimer = window.setTimeout(() => { if (open) load(true); }, 250);
+      });
+      searchFilter.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          window.clearTimeout(searchTimer);
+          if (open) load(true);
+        }
+      });
+    }
+    const searchBtn = document.getElementById('objektFilterSearchBtn');
+    if (searchBtn) {
+      searchBtn.addEventListener('click', () => {
+        window.clearTimeout(searchTimer);
+        if (open) load(true);
+        else setOpen(true);
       });
     }
     if (resetBtn) {

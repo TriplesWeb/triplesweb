@@ -16,9 +16,8 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/article-page.css?v=2">
+    <link rel="stylesheet" href="/css/article-page.css?v=3">
     <style>
-        /* 에디터 영역 스타일 */
         #content {
             min-height: 250px;
             max-height: 500px;
@@ -36,22 +35,6 @@
             border-radius: 0.75rem;
             display: block;
         }
-        .content-media .remove-btn, .preview-item .remove-btn {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background: rgba(0, 0, 0, 0.7);
-            border: none;
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 10;
-            transition: background 0.2s;
-        }
         .preview-item {
             position: relative;
             width: 90px;
@@ -67,71 +50,6 @@
             object-fit: cover;
         }
         .objekt-option[hidden] { display: none !important; }
-        .objekt-picker-filter-bar {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 6px;
-        }
-        .objekt-picker-filter {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            min-height: 32px;
-            padding: 3px 8px;
-            border: 1px solid rgba(48, 54, 74, .9);
-            border-radius: 8px;
-            background: rgba(26, 29, 40, .88);
-        }
-        .objekt-picker-filter-label {
-            color: #9aa3b5;
-            font-size: 11px;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-        .objekt-picker-filter-control {
-            min-width: 72px;
-            min-height: 26px;
-            border: 0;
-            border-radius: 6px;
-            background: #00e8cb;
-            color: #071513;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 2px 8px;
-            cursor: pointer;
-        }
-        .objekt-picker-search {
-            flex: 1 1 120px;
-            min-width: 110px;
-            min-height: 32px;
-            display: flex;
-            align-items: center;
-            padding: 0 8px;
-            border: 1px solid rgba(48, 54, 74, .9);
-            border-radius: 8px;
-            background: rgba(10, 12, 18, .72);
-        }
-        .objekt-picker-search-input {
-            width: 100%;
-            border: 0;
-            outline: 0;
-            background: transparent;
-            color: #f1f5f9;
-            font-size: 12px;
-        }
-        .objekt-picker-reset {
-            min-height: 32px;
-            padding: 0 10px;
-            border: 1px solid rgba(0, 245, 212, .35);
-            border-radius: 8px;
-            background: transparent;
-            color: #7df9e8;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .objekt-picker-reset:hover { background: rgba(0, 245, 212, .08); }
     </style>
 </head>
 <body class="article-page bg-surface text-on-surface min-h-screen flex flex-col">
@@ -224,7 +142,7 @@
 
 <script src="/js/site-ui.js?v=3"></script>
 <script src="/js/article-content.js"></script>
-<script src="/js/article-objekt-picker.js?v=6"></script>
+<script src="/js/article-objekt-picker.js?v=7"></script>
 <script>
     /* -------------------- helpers -------------------- */
     function savedFromUrl(u) {
@@ -320,11 +238,16 @@
         enhanceContentMediaFromDOM();
         syncPreviewFromContent();
 
-        document.body.addEventListener('click', (e) => {
-            const btn = e.target.closest('.remove-btn');
-            if (!btn) return;
-            e.preventDefault();
+        function clearEditorCaret() {
+            contentDiv.blur();
+            const sel = window.getSelection?.();
+            if (sel) sel.removeAllRanges();
+            if (document.activeElement && typeof document.activeElement.blur === 'function') {
+                document.activeElement.blur();
+            }
+        }
 
+        function deleteMediaFromButton(btn) {
             const wrapper = btn.closest('.content-media') || btn.closest('.preview-item');
             const media = wrapper?.querySelector('img, video') || null;
             const source = media?.tagName?.toLowerCase() === 'video'
@@ -357,6 +280,21 @@
                     if (v === saved || v === base || basenamePath(v) === base) up.remove();
                 });
             }
+            clearEditorCaret();
+        }
+
+        document.body.addEventListener('mousedown', (e) => {
+            const btn = e.target.closest('.remove-btn');
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+        });
+        document.body.addEventListener('click', (e) => {
+            const btn = e.target.closest('.remove-btn');
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            deleteMediaFromButton(btn);
         });
 
         fileInput.addEventListener('change', async (e) => {
@@ -454,12 +392,23 @@
         };
 
         function attachRemoveBtn(host, saved, fileId) {
+            host.contentEditable = 'false';
             let btn = host.querySelector('.remove-btn');
             if (!btn) {
-                btn = document.createElement('span');
+                btn = document.createElement('button');
+                btn.type = 'button';
                 btn.className = 'remove-btn';
-                btn.textContent = '×'; btn.style.cssText = 'font-size:18px;color:#fff;line-height:1;';
+                btn.setAttribute('aria-label', '미디어 삭제');
+                btn.textContent = '×';
                 host.appendChild(btn);
+            } else if (btn.tagName !== 'BUTTON') {
+                const next = document.createElement('button');
+                next.type = 'button';
+                next.className = 'remove-btn';
+                next.setAttribute('aria-label', '미디어 삭제');
+                next.textContent = '×';
+                btn.replaceWith(next);
+                btn = next;
             }
             if (saved) btn.dataset.savedName = saved;
             if (fileId) btn.dataset.fileId = String(fileId);
