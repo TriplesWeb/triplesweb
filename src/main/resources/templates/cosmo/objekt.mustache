@@ -960,7 +960,7 @@
             <div class="p-3">
                 <a href="/cosmo/objekt/detail/{{id}}" class="objekt-detail-link block truncate text-sm font-semibold text-slate-100 hover:text-[#00f5d4]" title="{{collectionId}}">{{collectionId}}</a>
                 <div class="mt-1 flex items-center justify-between gap-2 text-xs text-slate-400">
-                    <a href="/cosmo/objekt/member?name={{member}}" class="objekt-member-chip truncate text-teal-200 hover:underline">{{member}}</a><span class="shrink-0 font-mono">{{collectionNo}}</span>
+                    <a href="{{memberHref}}" class="objekt-member-chip truncate text-teal-200 hover:underline">{{member}}</a><span class="shrink-0 font-mono">{{collectionNo}}</span>
                 </div>
                 <p class="mt-2 text-xs text-slate-300" data-supply-count>{{#mintCountKnown}}발행량 {{mintCount}}개{{/mintCountKnown}}{{^mintCountKnown}}발행량 확인 중{{/mintCountKnown}}</p>
             </div>
@@ -1733,11 +1733,13 @@
         </article>`;
     }
 
+    // 무한 스크롤은 제출된 URL 필터만 유지한다(폼 미제출 변경 무시).
+    const submittedFilters = new URLSearchParams(window.location.search);
+    submittedFilters.delete('page');
+    submittedFilters.delete('objekt');
+
     function currentFilterParams() {
-        const params = new URLSearchParams(new FormData(form));
-        params.delete('page');
-        // FormData에 미체크 member가 없을 수 있음 — 체크된 것만 유지
-        return params;
+        return new URLSearchParams(submittedFilters);
     }
 
     async function loadMore() {

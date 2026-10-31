@@ -233,7 +233,7 @@
         multi: false,
         onChange: (values) => {
           if (memberInput) memberInput.value = values[0] || '';
-          setGroup(values[0] ? 'members' : (groupInput?.value === 'other' ? 'other' : 'members'), false);
+          setGroup(values[0] ? 'members' : (groupInput?.value === 'other' ? 'other' : 'all'), false);
         }
       });
     }
@@ -385,12 +385,16 @@
     </article>`;
   }
 
+  // 무한 스크롤은 제출된 URL 필터만 유지한다(폼 미제출 변경 무시).
+  const submittedFilters = new URLSearchParams(window.location.search);
+  submittedFilters.delete('page');
+
   async function loadMore() {
     if (!hasMore || loading) return;
     loading = true;
     updateStatus();
     try {
-      const params = new URLSearchParams(new FormData(form));
+      const params = new URLSearchParams(submittedFilters);
       params.set('page', String(nextPage));
       const res = await fetch(`/cosmo/collection/more?${params.toString()}`, {
         headers: { Accept: 'application/json' },

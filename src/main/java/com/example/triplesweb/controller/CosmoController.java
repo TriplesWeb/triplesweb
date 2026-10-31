@@ -18,6 +18,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.client.RestClientException;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -70,7 +73,7 @@ public class CosmoController {
         model.addAttribute("classOptions", uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "classKey", "class")));
         model.addAttribute("objektNumbers", uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "collectionNo", "collectionNumber")));
 
-        model.addAttribute("objekts", page.items());
+        model.addAttribute("objekts", withMemberLinks(page.items()));
         model.addAttribute("objektCount", page.resultCount());
         model.addAttribute("objektPageCount", page.items().size());
         model.addAttribute("objektAllCount", page.allCount());
@@ -154,7 +157,7 @@ public class CosmoController {
 
         // 전체 캐시에서 검색어와 모든 필터를 먼저 적용하고, 그 결과에만 정렬과 페이지네이션을 적용한다.
         List<Map<String, Object>> filtered = allObjekts.stream()
-                .filter(objekt -> query.isBlank() || searchableText(objekt).contains(query))
+                .filter(objekt -> matchesSearch(query, objekt))
                 .filter(objekt -> "all".equals(selectedGroup) || matchesMember(selectedGroup, selectedNames,
                         membershipCache.computeIfAbsent(firstValue(objekt, "member", "memberName"), MemberPortraitOptions::objektMembers)))
                 .filter(objekt -> matchesSelection(selectedSeasons, firstValue(objekt, "seasonKey", "season")))
@@ -209,8 +212,8 @@ public class CosmoController {
 
     private static String memberGroup(String group, List<String> selected) {
         if ("other".equalsIgnoreCase(group)) return "other";
-        if ("members".equalsIgnoreCase(group) || selected.stream().anyMatch(value -> !MemberPortraitOptions.objektMembers(value).isEmpty())) return "members";
-        return selected.isEmpty() ? "all" : "other";
+        if ("members".equalsIgnoreCase(group) || (selected != null && !selected.isEmpty())) return "members";
+        return "all";
     }
 
     private static boolean matchesMember(String group, java.util.Set<String> selected, java.util.Set<String> actual) {
@@ -271,16 +274,17 @@ public class CosmoController {
         catch (Exception ignored) { return 0; }
     }
 
-    private static String searchableText(Map<String, Object> objekt) {
+    private static boolean matchesSearch(String query, Map<String, Object> objekt) {
+        if (query == null || query.isBlank()) return true;
         String season = firstValue(objekt, "season", "seasonKey");
-        String collectionNo = firstValue(objekt, "collectionNo", "numberValue");
-        return String.join(" ",
+        String collectionNo = firstValue(objekt, "collectionNo");
+        String base = String.join(" ",
                 value(objekt, "searchText"), value(objekt, "collectionId"), value(objekt, "slug"),
                 value(objekt, "season"), value(objekt, "seasonKey"), value(objekt, "member"),
                 value(objekt, "memberName"), value(objekt, "artist"), value(objekt, "collectionNo"),
-                value(objekt, "class"), value(objekt, "classKey"), value(objekt, "numberValue"),
-                ObjektSeasonCodes.searchTokens(season, collectionNo))
+                value(objekt, "class"), value(objekt, "classKey"), value(objekt, "numberValue"))
                 .toLowerCase(Locale.ROOT);
+        return ObjektSeasonCodes.matches(query, base, season, collectionNo);
     }
 
     private static String firstValue(Map<String, Object> objekt, String... keys) {
@@ -300,6 +304,19 @@ public class CosmoController {
 
     private static String normalize(String value) {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static List<Map<String, Object>> withMemberLinks(List<Map<String, Object>> items) {
+        if (items == null || items.isEmpty()) return items == null ? List.of() : items;
+        List<Map<String, Object>> out = new ArrayList<>(items.size());
+        for (Map<String, Object> item : items) {
+            Map<String, Object> copy = new LinkedHashMap<>(item);
+            String member = firstValue(item, "member", "memberName");
+            copy.put("memberHref", "/cosmo/objekt/member?name="
+                    + URLEncoder.encode(member, StandardCharsets.UTF_8).replace("+", "%20"));
+            out.add(copy);
+        }
+        return out;
     }
 
     @GetMapping("/event")

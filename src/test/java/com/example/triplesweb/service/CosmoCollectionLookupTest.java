@@ -110,13 +110,13 @@ class CosmoCollectionLookupTest {
         assertThat(before).containsEntry("checklistOwned", 1).containsEntry("checklistMissing", 1).containsEntry("checklistVisible", 1);
         holdingsPhase = 1;
         assertThat(profiles.profile("테스트", "HaYeon", "members", "members", "missing")).containsEntry("checklistMissing", 1);
-        now.addAndGet(21);
+        now.addAndGet(601);
         var incoming = profiles.profile("테스트", "HaYeon", "members", "members", "missing");
         assertThat(incoming).containsEntry("checklistOwned", 2).containsEntry("checklistMissing", 0).containsEntry("checklistVisible", 0);
         assertThat(incoming.get("profileVersion")).isNotEqualTo(before.get("profileVersion"));
         assertThat(profiles.profile("테스트", "HaYeon", "members", "members", "owned")).containsEntry("checklistVisible", 2);
         holdingsPhase = 2;
-        now.addAndGet(21);
+        now.addAndGet(601);
         assertThat(profiles.profile("테스트", "HaYeon", "members", "members", "missing"))
             .containsEntry("checklistOwned", 1).containsEntry("checklistMissing", 1).containsEntry("checklistVisible", 1);
     }

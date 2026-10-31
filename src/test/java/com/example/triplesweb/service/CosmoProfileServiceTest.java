@@ -41,10 +41,11 @@ class CosmoProfileServiceTest {
                         Map.of("slug", "b", "member", "HaYeon", "class", "First", "season", "Cream02"),
                         Map.of("slug", "welcome", "member", "HaYeon", "class", "Welcome", "season", "Cream02")));
         var view = profiles.profile("테스트", "");
-        var rows = (List<Map<String, Object>>) view.get("memberProgress");
-        assertThat(view).containsEntry("uniqueCount", 2L).containsEntry("ownedCount", 3);
-        assertThat(rows).hasSize(1);
-        assertThat(rows.get(0)).containsEntry("owned", 1L).containsEntry("total", 2).containsEntry("percent", 50).containsEntry("copies", 2);
+        assertThat(view).containsEntry("uniqueCount", 2L).containsEntry("ownedCount", 3)
+                .containsEntry("overallOwned", 1).containsEntry("overallMissing", 1)
+                .containsEntry("overallTotal", 2).containsEntry("overallPercent", 50)
+                .containsEntry("hasOverallProgress", true)
+                .doesNotContainKeys("memberCount", "memberProgress", "hasMemberProgress");
         var classStats = (List<Map<String, Object>>) view.get("classStats");
         assertThat(classStats).extracting(r -> r.get("label")).containsExactlyInAnyOrder("Double", "First");
         assertThat(classStats).filteredOn(r -> "Double".equals(r.get("label")))
@@ -52,16 +53,17 @@ class CosmoProfileServiceTest {
         assertThat(classStats).filteredOn(r -> "First".equals(r.get("label")))
                 .first().satisfies(r -> assertThat(r).containsEntry("owned", 0).containsEntry("total", 1).containsEntry("percent", 0));
     }
-    @Test @SuppressWarnings("unchecked") void missingCatalogDoesNotFabricateACompletionRate() {
+    @Test void missingCatalogDoesNotFabricateOverallProgress() {
         given(List.of(card("a", "HaYeon", "Double")), List.of());
         var view = profiles.profile("테스트", "");
-        assertThat(((List<Map<String, Object>>) view.get("memberProgress")).get(0)).containsEntry("hasTotal", false);
+        assertThat(view).containsEntry("hasOverallProgress", false).containsEntry("overallTotal", 0);
     }
     @Test void emptyProfileHasNoInventedStatistics() {
         given(List.of(), List.of());
         assertThat(profiles.profile("테스트", "")).containsEntry("hasStats", false)
-                .containsEntry("uniqueCount", 0L).containsEntry("memberCount", 0L).containsEntry("hasMemberProgress", false)
-                .containsEntry("hasOtherProgress", false);
+                .containsEntry("uniqueCount", 0L).containsEntry("hasOverallProgress", false)
+                .containsEntry("hasOtherProgress", false)
+                .doesNotContainKeys("memberCount", "memberProgress", "hasMemberProgress");
     }
 
     private static Map<String, Object> kind(String slug, String member, String season, String klass, String number) {
@@ -100,10 +102,9 @@ class CosmoProfileServiceTest {
                 .containsEntry("selectedMember", "공유빈");
         assertThat((List<Map<String, Object>>) view.get("checklistSeasons")).extracting(row -> row.get("season"))
                 .containsExactly("Cream02", "Atom01");
-        var progress = (List<Map<String, Object>>) view.get("memberProgress");
-        assertThat(progress).hasSize(1);
-        assertThat(progress.get(0)).containsEntry("member", "공유빈").containsEntry("owned", 0L)
-                .containsEntry("total", 2).containsEntry("percent", 0).containsEntry("isEmpty", true);
+        var overview = profiles.profile("테스트", "");
+        assertThat(overview).containsEntry("overallOwned", 0).containsEntry("overallTotal", 2)
+                .containsEntry("overallPercent", 0).containsEntry("hasOverallProgress", true);
     }
 
     @Test @SuppressWarnings("unchecked") void seasonCompletionUsesDistinctCatalogKindsNotCopyCount() {
@@ -115,35 +116,31 @@ class CosmoProfileServiceTest {
                 .containsEntry("complete", true).containsEntry("percent", 100);
     }
 
-    @Test @SuppressWarnings("unchecked") void profileMergesAliasesAndLegacyMemberUrlsSelectTheUnifiedName() {
+    @Test void profileMergesAliasesAndLegacyMemberUrlsSelectTheUnifiedName() {
         given(List.of(card("a", "S21", "First"), card("b", "ChaeWon", "First")), List.of(
                 kind("a", "S21", "Cream02", "First", "101Z"),
                 kind("b", "ChaeWon", "Cream02", "First", "102Z"),
                 kind("c", "김채원", "Cream02", "First", "103Z")));
         var view = profiles.profile("테스트", "S21");
         assertThat(view).containsEntry("selectedMember", "김채원").containsEntry("checklistTotal", 3)
-                .containsEntry("checklistOwned", 2).containsEntry("memberCount", 1L);
-        var progress = (List<Map<String, Object>>) view.get("memberProgress");
-        assertThat(progress).hasSize(1);
-        assertThat(progress.get(0)).containsEntry("member", "김채원").containsEntry("total", 3).containsEntry("owned", 2L)
-                .containsEntry("progressUrl", "/cosmo/profile/%ED%85%8C%EC%8A%A4%ED%8A%B8?tab=members&member=%EA%B9%80%EC%B1%84%EC%9B%90");
+                .containsEntry("checklistOwned", 2);
+        var overview = profiles.profile("테스트", "");
+        assertThat(overview).containsEntry("overallOwned", 2).containsEntry("overallTotal", 3)
+                .containsEntry("overallPercent", 66);
     }
 
-    @Test @SuppressWarnings("unchecked") void unitObjektsCountTowardEachSoloMemberAndNeverAsUnitRow() {
+    @Test @SuppressWarnings("unchecked") void unitObjektsCountTowardEachSoloMemberChecklist() {
         given(List.of(card("unit", "S19 X S24", "Unit")), List.of(
                 kind("solo19", "HaYeon", "Cream02", "First", "101Z"),
                 kind("solo24", "Jiyeon", "Cream02", "First", "102Z"),
                 kind("unit", "S19 X S24", "Cream02", "Unit", "201Z")));
-        var view = profiles.profile("테스트", "");
-        var progress = (List<Map<String, Object>>) view.get("memberProgress");
-        assertThat(progress).extracting(r -> r.get("member")).containsExactlyInAnyOrder("정하연", "지연");
-        assertThat(progress).noneMatch(r -> String.valueOf(r.get("member")).contains("S19"));
-        assertThat(progress).filteredOn(r -> "정하연".equals(r.get("member"))).first()
-                .satisfies(r -> assertThat(r).containsEntry("owned", 1L).containsEntry("total", 2).containsEntry("copies", 1));
-        assertThat(progress).filteredOn(r -> "지연".equals(r.get("member"))).first()
-                .satisfies(r -> assertThat(r).containsEntry("owned", 1L).containsEntry("total", 2).containsEntry("copies", 1));
-        var checklist = profiles.profile("테스트", "정하연");
-        assertThat(checklist).containsEntry("checklistTotal", 2).containsEntry("checklistOwned", 1);
+        var hayeon = profiles.profile("테스트", "정하연");
+        assertThat(hayeon).containsEntry("checklistTotal", 2).containsEntry("checklistOwned", 1);
+        var jiyeon = profiles.profile("테스트", "지연");
+        assertThat(jiyeon).containsEntry("checklistTotal", 2).containsEntry("checklistOwned", 1);
+        var overview = profiles.profile("테스트", "");
+        assertThat(overview).containsEntry("overallOwned", 1).containsEntry("overallTotal", 3)
+                .containsEntry("overallPercent", 33);
     }
 
     @Test @SuppressWarnings("unchecked") void otherObjektsLikeZenithAreMergedIntoOtherProgress() {
@@ -152,8 +149,8 @@ class CosmoProfileServiceTest {
                 kind("z2", "zenith", "Cream02", "Special", "002Z"),
                 kind("alpha", "Alpha", "Cream02", "Special", "003Z")));
         var view = profiles.profile("테스트", "");
-        assertThat((List<?>) view.get("memberProgress")).isEmpty();
-        assertThat(view).containsEntry("hasOtherProgress", true);
+        assertThat(view).containsEntry("hasOtherProgress", true)
+                .containsEntry("overallOwned", 1).containsEntry("overallTotal", 3);
         var other = ((List<Map<String, Object>>) view.get("otherProgress")).get(0);
         assertThat(other).containsEntry("member", "기타 옵젝").containsEntry("owned", 1L).containsEntry("total", 3)
                 .containsEntry("percent", 33).containsEntry("progressUrl",

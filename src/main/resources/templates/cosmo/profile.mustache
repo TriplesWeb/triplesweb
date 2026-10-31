@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="/css/archive-page.css?v=3">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=11">
 <link rel="stylesheet" href="/css/cosmo-collection.css?v=10">
-<link rel="stylesheet" href="/css/cosmo-profile.css?v=14">
+<link rel="stylesheet" href="/css/cosmo-profile.css?v=15">
 </head>
 <body class="collection-page min-h-screen flex flex-col">
 {{>layout/header}}
@@ -26,7 +26,6 @@
     <dl class="profile-totals" data-profile-live="totals">
         <div><dt>보유 오브젝트</dt><dd>{{ownedCount}}<span>개</span></dd></div>
         <div><dt>수집한 종류</dt><dd>{{uniqueCount}}<span>종</span></dd></div>
-        <div><dt>수집한 멤버</dt><dd>{{memberCount}}<span>명</span></dd></div>
     </dl>
 </section>
 
@@ -39,20 +38,25 @@
 
 {{#isOverviewTab}}
 <div data-profile-live="overview">
-<section class="profile-progress-section" aria-labelledby="member-progress-heading">
-    <div class="profile-section-heading"><h2 id="member-progress-heading">멤버별 수집 현황</h2><p>tripleS · Welcome·Zero 제외 · 유닛은 구성 멤버에 합산 · 미수집도 함께 표시</p></div>
-    <div class="profile-member-grid">
-    {{#memberProgress}}
-    <article class="ar-panel profile-member{{#isEmpty}} is-empty{{/isEmpty}}" style="--member-color: {{color}}">
-        <div class="profile-member-name">{{#hasImage}}<img src="{{image}}" alt="" loading="lazy">{{/hasImage}}<h3>{{member}}</h3></div>
-        {{#hasTotal}}<div class="profile-orbit" role="progressbar" aria-label="{{member}} 수집률" aria-valuenow="{{percent}}" aria-valuemin="0" aria-valuemax="100"><svg viewBox="0 0 40 40" aria-hidden="true"><circle class="orbit-track" cx="20" cy="20" r="16" pathLength="100"></circle><circle class="orbit-value" cx="20" cy="20" r="16" pathLength="100" stroke-dasharray="{{percent}} 100"></circle></svg><strong>{{percent}}<span>%</span></strong></div>
-        <p class="ar-muted">{{owned}} / {{total}}종 · 보유 {{copies}}개</p>{{/hasTotal}}
-        {{^hasTotal}}<p class="ar-muted">전체 목록 준비 중 · 보유 {{copies}}개</p>{{/hasTotal}}
-        <a class="profile-progress-link" href="{{progressUrl}}"><span aria-hidden="true">→</span> 수집 현황</a>
-    </article>
-    {{/memberProgress}}
+<section class="profile-progress-section" aria-labelledby="overall-progress-heading">
+    <div class="profile-section-heading"><h2 id="overall-progress-heading">전체 수집 현황</h2><p>tripleS · Welcome·Zero 제외 · 카탈로그 종류 기준</p></div>
+    {{#hasOverallProgress}}
+    <div class="ar-panel profile-overall-panel">
+        <div class="profile-overall-pie" style="--owned-pct: {{overallPercent}}" role="img" aria-label="전체 수집률 {{overallPercent}}퍼센트, 수집 {{overallOwned}}종, 미수집 {{overallMissing}}종">
+            <svg viewBox="0 0 40 40" aria-hidden="true">
+                <circle class="orbit-track" cx="20" cy="20" r="16" pathLength="100"></circle>
+                <circle class="orbit-value" cx="20" cy="20" r="16" pathLength="100" stroke-dasharray="{{overallPercent}} 100"></circle>
+            </svg>
+            <strong>{{overallPercent}}<span>%</span></strong>
+        </div>
+        <ul class="profile-pie-legend">
+            <li><span class="profile-pie-swatch is-owned" aria-hidden="true"></span>수집 <strong>{{overallOwned}}</strong>종</li>
+            <li><span class="profile-pie-swatch is-missing" aria-hidden="true"></span>미수집 <strong>{{overallMissing}}</strong>종</li>
+            <li class="profile-pie-total">총 <strong>{{overallTotal}}</strong>종</li>
+        </ul>
     </div>
-    {{^hasMemberProgress}}<p class="gv-panel gv-empty">표시할 멤버 수집 현황이 없습니다.</p>{{/hasMemberProgress}}
+    {{/hasOverallProgress}}
+    {{^hasOverallProgress}}<p class="gv-panel gv-empty">표시할 전체 수집 현황이 없습니다.</p>{{/hasOverallProgress}}
 </section>
 {{#hasOtherProgress}}
 <section class="profile-progress-section" aria-labelledby="other-progress-heading">

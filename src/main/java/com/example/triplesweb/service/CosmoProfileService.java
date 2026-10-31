@@ -40,19 +40,14 @@ public class CosmoProfileService {
         String base = String.valueOf(view.get("profileUrl"));
         view.put("nicknameEncoded", URLEncoder.encode(String.valueOf(view.get("nickname")), StandardCharsets.UTF_8));
         view.put("uniqueCount", all.stream().map(card -> text(card, "slug")).filter(s -> !s.isBlank()).distinct().count());
-        view.put("memberCount", all.stream()
-                .flatMap(card -> MemberPortraitOptions.objektMembers(text(card, "member")).stream())
-                .distinct().count());
         List<Map<String, Object>> catalogSnapshot = catalog.findCollections("triples");
         ProgressBuckets buckets = buckets(all, catalogSnapshot);
         view.put("profileVersion", Integer.toHexString(Objects.hash(all, catalogSnapshot)));
         view.put("seasonStats", catalogBreakdown(catalogSnapshot, all, "season", "season"));
         view.put("classStats", catalogBreakdown(catalogSnapshot, all, "class", "objektClass"));
         view.put("hasStats", !catalogSnapshot.isEmpty() || !all.isEmpty());
-        List<Map<String, Object>> memberRows = memberProgressRows(buckets, base);
+        view.putAll(overallProgress(catalogSnapshot, all));
         Map<String, Object> otherRow = otherProgressRow(buckets, base);
-        view.put("memberProgress", memberRows);
-        view.put("hasMemberProgress", !memberRows.isEmpty());
         view.put("otherProgress", otherRow == null ? List.of() : List.of(otherRow));
         view.put("hasOtherProgress", otherRow != null);
         String selected = MemberPortraitOptions.memberName(member);
@@ -194,24 +189,38 @@ public class CosmoProfileService {
         return solos;
     }
 
-    private List<Map<String, Object>> memberProgressRows(ProgressBuckets buckets, String profileUrl) {
-        Set<String> members = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-        for (String key : buckets.totals.keySet()) if (!OTHER_KEY.equalsIgnoreCase(key)) members.add(key);
-        for (String key : buckets.owned.keySet()) if (!OTHER_KEY.equalsIgnoreCase(key)) members.add(key);
-        Map<String, Map<String, Object>> portraits = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (Map<String, Object> option : MemberPortraitOptions.forObjektFilter(new ArrayList<>(members), artists.findAll())) {
-            portraits.put(text(option, "value"), option);
+    /** Welcome·Zero 제외 카탈로그 기준 전체 수집/미수집. */
+    private static Map<String, Object> overallProgress(List<Map<String, Object>> catalog, List<Map<String, Object>> held) {
+        Set<String> totals = new HashSet<>();
+        Set<String> ownedSlugs = new HashSet<>();
+        for (Map<String, Object> card : held) {
+            if (!"triples".equalsIgnoreCase(text(card, "artist")) || excluded(text(card, "objektClass"))) continue;
+            String slug = text(card, "slug");
+            if (!slug.isBlank()) ownedSlugs.add(slug);
         }
-        List<Map<String, Object>> rows = new ArrayList<>();
-        for (String member : members) {
-            rows.add(progressRow(member, buckets.forKey(member), portraits.getOrDefault(member, Map.of()),
-                    profileUrl + "?tab=members&member=" + encode(member), false));
+        for (Map<String, Object> item : catalog) {
+            if (excluded(text(item, "class"))) continue;
+            String slug = text(item, "slug");
+            if (!slug.isBlank()) totals.add(slug);
         }
-        rows.sort(Comparator.<Map<String, Object>>comparingInt(row -> (Integer) row.get("percent")).reversed()
-                .thenComparing(Comparator.comparingInt((Map<String, Object> row) -> (Integer) row.get("copies")).reversed())
-                .thenComparingInt(row -> MemberPortraitOptions.memberIndex(text(row, "member")))
-                .thenComparing(row -> text(row, "member")));
-        return rows;
+        Map<String, Object> row = new LinkedHashMap<>();
+        if (totals.isEmpty()) {
+            row.put("overallOwned", 0);
+            row.put("overallMissing", 0);
+            row.put("overallTotal", 0);
+            row.put("overallPercent", 0);
+            row.put("hasOverallProgress", false);
+            return row;
+        }
+        int owned = 0;
+        for (String slug : totals) if (ownedSlugs.contains(slug)) owned++;
+        int missing = totals.size() - owned;
+        row.put("overallOwned", owned);
+        row.put("overallMissing", missing);
+        row.put("overallTotal", totals.size());
+        row.put("overallPercent", owned * 100 / totals.size());
+        row.put("hasOverallProgress", true);
+        return row;
     }
 
     private Map<String, Object> otherProgressRow(ProgressBuckets buckets, String profileUrl) {

@@ -213,10 +213,9 @@ public class ArticleController {
             if (!query.isEmpty()) {
                 String haystack = (stringValue(item.get("collectionId")) + " " + stringValue(item.get("member"))
                         + " " + stringValue(item.get("collectionNo")) + " " + stringValue(item.get("season"))
-                        + " " + stringValue(item.get("class")) + " "
-                        + ObjektSeasonCodes.searchTokens(
-                                stringValue(item.get("season")), stringValue(item.get("collectionNo")))).toLowerCase();
-                if (!haystack.contains(query)) continue;
+                        + " " + stringValue(item.get("class"))).toLowerCase();
+                if (!ObjektSeasonCodes.matches(query, haystack,
+                        stringValue(item.get("season")), stringValue(item.get("collectionNo")))) continue;
             }
             matched.add(item);
         }

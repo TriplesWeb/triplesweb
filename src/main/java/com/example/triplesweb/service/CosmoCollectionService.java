@@ -19,12 +19,13 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class CosmoCollectionService {
     private static final int PAGE_SIZE = 24;
-    private static final long HOLDINGS_TTL_SECONDS = 20;
+    private static final long HOLDINGS_TTL_SECONDS = 600;
     private final java.time.Clock clock;
     private static final String NOT_FOUND = "없는 닉네임 입니다.";
     private final RestClient cosmo;
     private final RestClient index;
     private final ConcurrentHashMap<String, Cached> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Object> loadLocks = new ConcurrentHashMap<>();
 
     @org.springframework.beans.factory.annotation.Autowired
     public CosmoCollectionService(
@@ -74,10 +75,7 @@ public class CosmoCollectionService {
             throw new IllegalArgumentException("닉네임을 올바르게 입력해 주세요.");
         long now = clock.instant().getEpochSecond();
         cache.entrySet().removeIf(entry -> entry.getValue().expiresAt <= now);
-        Cached found = cache.compute(nickname.toLowerCase(Locale.ROOT), (key, current) -> {
-            if (current != null && current.expiresAt > now) return current;
-            return load(nickname);
-        });
+        Cached found = holdings(nickname, now);
         if (found.address.isBlank()) throw new IllegalArgumentException(NOT_FOUND);
         String memberKey = member == null ? "" : member.trim();
         List<String> seasonKeys = cleanSelections(seasons);
@@ -98,10 +96,10 @@ public class CosmoCollectionService {
                 String haystack = (text(card, "collectionId") + " " + text(card, "member") + " "
                         + text(card, "season") + " " + text(card, "objektClass") + " "
                         + text(card, "collectionNo") + " "
-                        + text(card, "serial") + " " + text(card, "slug") + " "
-                        + ObjektSeasonCodes.searchTokens(text(card, "season"), text(card, "collectionNo")))
-                        .toLowerCase(Locale.ROOT);
-                if (!haystack.contains(search)) return false;
+                        + text(card, "serial") + " " + text(card, "slug")).toLowerCase(Locale.ROOT);
+                if (!ObjektSeasonCodes.matches(search, haystack, text(card, "season"), text(card, "collectionNo"))) {
+                    return false;
+                }
             }
             return true;
         }).collect(java.util.stream.Collectors.toCollection(ArrayList::new));
@@ -163,22 +161,42 @@ public class CosmoCollectionService {
         Comparator<Map<String, Object>> byNumber = Comparator
                 .comparingLong((Map<String, Object> card) -> leadingNumber(text(card, "collectionNo")))
                 .thenComparing(card -> text(card, "collectionNo"), String.CASE_INSENSITIVE_ORDER);
-        Comparator<Map<String, Object>> byMember = Comparator.comparing(
-                card -> text(card, "member"), String.CASE_INSENSITIVE_ORDER);
-        Comparator<Map<String, Object>> bySerial = Comparator.comparingLong(card -> {
-            try { return Long.parseLong(text(card, "serial")); }
-            catch (NumberFormatException ex) { return Long.MAX_VALUE; }
-        });
+        Comparator<Map<String, Object>> byMemberOrder = Comparator
+                .comparingInt((Map<String, Object> card) -> MemberPortraitOptions.objektMembers(text(card, "member"))
+                        .stream().mapToInt(MemberPortraitOptions::memberIndex).min().orElse(24))
+                .thenComparing(card -> text(card, "member"), String.CASE_INSENSITIVE_ORDER);
+        Comparator<Map<String, Object>> byMint = Comparator
+                .comparingLong((Map<String, Object> card) -> {
+                    Object mint = card.get("mintCount");
+                    if (mint instanceof Number number) return number.longValue();
+                    return leadingNumber(text(card, "collectionNo"));
+                })
+                .thenComparing(byNumber);
         return switch (sort) {
             case "oldest" -> byReceived.reversed();
             case "number_low" -> byNumber;
             case "number_high" -> byNumber.reversed();
-            case "first_member" -> byMember;
-            case "last_member" -> byMember.reversed();
-            case "mint_low" -> bySerial;
-            case "mint_high" -> bySerial.reversed();
+            case "first_member" -> byMemberOrder;
+            case "last_member" -> byMemberOrder.reversed();
+            case "mint_low" -> byMint;
+            case "mint_high" -> byMint.reversed();
             default -> byReceived;
         };
+    }
+
+    /** 동일 닉네임 동시 miss 시 한 번만 load 한다. */
+    private Cached holdings(String nickname, long now) {
+        String key = nickname.toLowerCase(Locale.ROOT);
+        Cached cached = cache.get(key);
+        if (cached != null && cached.expiresAt > now) return cached;
+        Object lock = loadLocks.computeIfAbsent(key, ignored -> new Object());
+        synchronized (lock) {
+            Cached again = cache.get(key);
+            if (again != null && again.expiresAt > now) return again;
+            Cached loaded = load(nickname);
+            cache.put(key, loaded);
+            return loaded;
+        }
     }
 
     private static long leadingNumber(String value) {

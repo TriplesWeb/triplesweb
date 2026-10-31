@@ -2,7 +2,6 @@ package com.example.triplesweb.dto;
 
 import com.example.triplesweb.entity.ObjektCatalog;
 import com.example.triplesweb.util.MemberPortraitOptions;
-import com.example.triplesweb.util.ObjektSeasonCodes;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.LinkedHashMap;
@@ -80,8 +79,7 @@ public record ObjektCatalogDto(
         row.setOriginalBackImage(originalBackImage);
         row.setFrontMedia(frontMedia);
         row.setBandImageUrl(bandImageUrl);
-        row.setSearchText(String.join(" ", collectionId, slug, season, member, artist, collectionNo, objektClass,
-                ObjektSeasonCodes.searchTokens(season, collectionNo)).trim());
+        row.setSearchText(String.join(" ", collectionId, slug, season, member, artist, collectionNo, objektClass).trim());
         row.setSeasonKey(season.toLowerCase());
         row.setClassKey(objektClass.toLowerCase());
         row.setNumberValue(extractNumber(collectionNo));
