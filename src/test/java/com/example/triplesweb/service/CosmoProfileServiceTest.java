@@ -45,7 +45,14 @@ class CosmoProfileServiceTest {
                 .containsEntry("overallOwned", 1).containsEntry("overallMissing", 1)
                 .containsEntry("overallTotal", 2).containsEntry("overallPercent", 50)
                 .containsEntry("hasOverallProgress", true)
-                .doesNotContainKeys("memberCount", "memberProgress", "hasMemberProgress");
+                .containsEntry("hasMemberProgress", true)
+                .doesNotContainKeys("memberCount");
+        assertThat((List<Map<String, Object>>) view.get("memberProgress")).isNotEmpty()
+                .first().satisfies(row -> assertThat(row)
+                        .containsEntry("member", "정하연")
+                        .containsEntry("owned", 1L)
+                        .containsEntry("total", 2)
+                        .containsEntry("percent", 50));
         var classStats = (List<Map<String, Object>>) view.get("classStats");
         assertThat(classStats).extracting(r -> r.get("label")).containsExactlyInAnyOrder("Double", "First");
         assertThat(classStats).filteredOn(r -> "Double".equals(r.get("label")))
@@ -63,7 +70,8 @@ class CosmoProfileServiceTest {
         assertThat(profiles.profile("테스트", "")).containsEntry("hasStats", false)
                 .containsEntry("uniqueCount", 0L).containsEntry("hasOverallProgress", false)
                 .containsEntry("hasOtherProgress", false)
-                .doesNotContainKeys("memberCount", "memberProgress", "hasMemberProgress");
+                .containsEntry("hasMemberProgress", false)
+                .doesNotContainKeys("memberCount");
     }
 
     private static Map<String, Object> kind(String slug, String member, String season, String klass, String number) {
@@ -82,7 +90,8 @@ class CosmoProfileServiceTest {
                 kind("other", "YuBin", "Cream02", "First", "001Z")));
         var view = profiles.profile("테스트", "hayeon");
         assertThat(view).containsEntry("checklistOwned", 1).containsEntry("checklistTotal", 5)
-                .containsEntry("checklistMissing", 4).containsEntry("hasProgressMember", true);
+                .containsEntry("checklistMissing", 4).containsEntry("checklistPercent", 20)
+                .containsEntry("hasProgressMember", true);
         var seasons = (List<Map<String, Object>>) view.get("checklistSeasons");
         assertThat(seasons).hasSize(1);
         var groups = (List<Map<String, Object>>) seasons.get(0).get("groups");

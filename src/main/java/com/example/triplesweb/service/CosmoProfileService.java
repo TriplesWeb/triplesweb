@@ -47,6 +47,9 @@ public class CosmoProfileService {
         view.put("classStats", catalogBreakdown(catalogSnapshot, all, "class", "objektClass"));
         view.put("hasStats", !catalogSnapshot.isEmpty() || !all.isEmpty());
         view.putAll(overallProgress(catalogSnapshot, all));
+        List<Map<String, Object>> memberRows = memberProgressRows(buckets, base);
+        view.put("memberProgress", memberRows);
+        view.put("hasMemberProgress", !memberRows.isEmpty());
         Map<String, Object> otherRow = otherProgressRow(buckets, base);
         view.put("otherProgress", otherRow == null ? List.of() : List.of(otherRow));
         view.put("hasOtherProgress", otherRow != null);
@@ -187,6 +190,26 @@ public class CosmoProfileService {
         Set<String> solos = MemberPortraitOptions.objektMembers(memberField);
         if (solos.isEmpty()) return Set.of(OTHER_KEY);
         return solos;
+    }
+
+    private List<Map<String, Object>> memberProgressRows(ProgressBuckets buckets, String profileUrl) {
+        Set<String> members = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        for (String key : buckets.totals.keySet()) if (!OTHER_KEY.equalsIgnoreCase(key)) members.add(key);
+        for (String key : buckets.owned.keySet()) if (!OTHER_KEY.equalsIgnoreCase(key)) members.add(key);
+        Map<String, Map<String, Object>> portraits = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (Map<String, Object> option : MemberPortraitOptions.forObjektFilter(new ArrayList<>(members), artists.findAll())) {
+            portraits.put(text(option, "value"), option);
+        }
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (String member : members) {
+            rows.add(progressRow(member, buckets.forKey(member), portraits.getOrDefault(member, Map.of()),
+                    profileUrl + "?tab=members&member=" + encode(member), false));
+        }
+        rows.sort(Comparator.<Map<String, Object>>comparingInt(row -> (Integer) row.get("percent")).reversed()
+                .thenComparing(Comparator.comparingInt((Map<String, Object> row) -> (Integer) row.get("copies")).reversed())
+                .thenComparingInt(row -> MemberPortraitOptions.memberIndex(text(row, "member")))
+                .thenComparing(row -> text(row, "member")));
+        return rows;
     }
 
     /** Welcome·Zero 제외 카탈로그 기준 전체 수집/미수집. */
@@ -413,6 +436,7 @@ public class CosmoProfileService {
         result.put("checklistSeasons", seasonRows); result.put("hasChecklist", !unique.isEmpty());
         result.put("checklistOwned", ownedKinds); result.put("checklistTotal", totalKinds);
         result.put("checklistMissing", totalKinds - ownedKinds);
+        result.put("checklistPercent", totalKinds == 0 ? 0 : ownedKinds * 100 / totalKinds);
         result.put("checklistVisible", visible);
         result.put("checklistFilterOwned", collected);
         return result;
