@@ -8,9 +8,6 @@
 .article-board-search-type select{padding-right:1.6rem;cursor:pointer}
 .article-board-search-keyword{position:relative;min-width:0}
 .article-board-search-keyword input{padding-right:2.75rem!important}
-.article-board-search-submit{appearance:none;position:absolute;top:50%;right:.25rem;transform:translateY(-50%);display:grid;place-items:center;width:2.5rem;height:2.5rem;border:0;background:transparent;color:#9eb0aa;cursor:pointer}
-.article-board-search-keyword:hover .article-board-search-submit{color:#0d0e12}
-.article-board-search-keyword:focus-within .article-board-search-submit{color:#8decd9}
 .article-detail-shell h1{overflow-wrap:anywhere;line-height:1.55}
 .article-detail-meta{gap:.6rem 1rem;flex-wrap:wrap}
 .article-detail-meta>div{min-width:0;overflow-wrap:anywhere}
@@ -40,7 +37,7 @@
  .article-board-search-type{max-width:6.5rem}
  .article-board-search-type select{min-height:44px}
  .article-board-search-keyword{flex:1;width:auto!important}
- .article-board-search-submit{min-width:44px;min-height:44px}
+ .article-board-search-keyword .site-search-submit{min-width:44px;min-height:44px}
  .article-board-controls>div>a{min-height:44px;justify-content:center}
  .article-detail-meta{padding-bottom:1rem!important;margin-bottom:1rem!important;font-size:.82rem}
  .article-detail-meta>div:first-child{flex:1 1 100%}
