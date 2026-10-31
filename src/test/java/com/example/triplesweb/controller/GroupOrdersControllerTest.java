@@ -79,6 +79,30 @@ class GroupOrdersControllerTest {
         verify(files).uploadFile(eq(upload),any(Article.class));
         verify(links).attachSelected(any(Article.class),eq(List.of("uuid")));
     }
+
+    @Test void tradeCreateRequiresHaveAndWantThenStoresBoth() throws Exception {
+        Article trade = new Article();
+        trade.setId(7L);
+        trade.setTitle("교환");
+        trade.setContent("<p>내용</p>");
+        trade.setCategory("trade");
+        when(articles.create(any())).thenReturn(trade);
+        mvc.perform(multipart("/article/trade/new")
+                .param("title", "교환")
+                .param("content", "<p>내용</p>")
+                .param("selectedHaveObjektIds", "have-uuid")
+                .param("selectedWantObjektIds", "want-uuid"))
+            .andExpect(redirectedUrl("/article/trade/7"));
+        verify(links).attachSelected(any(Article.class), eq(List.of("have-uuid")), eq(List.of("want-uuid")));
+
+        mvc.perform(multipart("/article/trade/new")
+                .param("title", "교환")
+                .param("content", "<p>내용</p>")
+                .param("selectedHaveObjektIds", "have-uuid"))
+            .andExpect(status().isOk())
+            .andExpect(model().attribute("errorMessage", "Want 오브젝트를 1개 이상 선택해주세요."));
+        verify(articles, times(1)).create(any());
+    }
     @Test void detailEditDeleteAndDisabledLikeUseExistingContracts() throws Exception {
         when(articles.showWithFiles(5L)).thenReturn(article());
         when(links.findForArticle(5L)).thenReturn(List.of());

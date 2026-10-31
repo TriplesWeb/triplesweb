@@ -16,7 +16,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/article-page.css?v=1">
+    <link rel="stylesheet" href="/css/article-page.css?v=2">
     <style>
         /* 에디터 영역 스타일 */
         #content {
@@ -224,6 +224,7 @@
 
 <script src="/js/site-ui.js?v=3"></script>
 <script src="/js/article-content.js"></script>
+<script src="/js/article-objekt-picker.js?v=6"></script>
 <script>
     /* -------------------- helpers -------------------- */
     function savedFromUrl(u) {
@@ -412,8 +413,10 @@
         }
         const initialTitle = (editForm.querySelector('input[name="title"]')?.value || '').trim();
         const initialFingerprint = articleFingerprint(window.ArticleContent?.cleanEditorHtml(contentDiv.innerHTML) || contentDiv.innerHTML);
-        const initialObjekts = [...document.querySelectorAll('#objektSelectedInputs input[name="selectedObjektIds"]')]
-            .map((input) => input.value).sort().join('\n');
+        const initialObjekts = window.ArticleObjektPicker
+            ? window.ArticleObjektPicker.fingerprint()
+            : [...document.querySelectorAll('#objektSelectedInputs input[name="selectedObjektIds"], #objektSelectedInputs input[name="selectedHaveObjektIds"], #objektSelectedInputs input[name="selectedWantObjektIds"]')]
+                .map((input) => (input.dataset.side ? input.dataset.side[0].toUpperCase() + ':' : '') + input.value).sort().join('\n');
 
         window.beforeSubmit = function(form) {
             if (uploadsInFlight > 0) {
@@ -431,7 +434,13 @@
                 alert('내용을 입력해주세요.');
                 return false;
             }
-            const objekts = [...form.querySelectorAll('input[name="selectedObjektIds"]')].map((input) => input.value).sort().join('\n');
+            if (window.ArticleObjektPicker && !window.ArticleObjektPicker.validateTrade()) {
+                return false;
+            }
+            const objekts = window.ArticleObjektPicker
+                ? window.ArticleObjektPicker.fingerprint()
+                : [...form.querySelectorAll('input[name="selectedObjektIds"], input[name="selectedHaveObjektIds"], input[name="selectedWantObjektIds"]')]
+                    .map((input) => (input.dataset.side ? input.dataset.side[0].toUpperCase() + ':' : '') + input.value).sort().join('\n');
             const changedFiles = (form.querySelector('#fileInput')?.files?.length || 0) > 0
                 || form.querySelector('input[name="uploadedFiles"], input[name="deletedFiles"]');
             if (title === initialTitle
@@ -579,6 +588,5 @@
         }
     });
 </script>
-<script src="/js/article-objekt-picker.js?v=5"></script>
 </body>
 </html>

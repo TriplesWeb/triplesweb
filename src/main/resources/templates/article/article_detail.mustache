@@ -16,7 +16,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/article-page.css?v=1">
+    <link rel="stylesheet" href="/css/article-page.css?v=2">
 
     <style>
         /* 본문 내용(HTML) 내부 이미지/영상 반응형 스타일 정돈 */
@@ -78,6 +78,52 @@
             {{#hasLinkedObjekts}}
             <section class="my-6 rounded-2xl border border-teal-400/30 bg-teal-400/[0.04] p-4">
                 <h2 class="mb-3 font-semibold text-teal-200">교환/거래 오브젝트</h2>
+                {{#isTradeObjektSplit}}
+                <div class="objekt-trade-zones objekt-trade-zones--detail" aria-label="Have와 Want 오브젝트">
+                    <div class="objekt-trade-zone" data-zone="have">
+                        <div class="objekt-trade-zone-head">
+                            <span class="objekt-trade-zone-label">Have</span>
+                            <span class="objekt-trade-zone-hint">가진 오브젝트</span>
+                        </div>
+                        <div class="objekt-trade-zone-cards">
+                            {{#linkedHaveObjekts}}
+                            <a href="/cosmo/objekt/detail/{{objektKey}}" class="objekt-trade-card">
+                                <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" onerror="this.onerror=null;this.src='{{frontImage}}'">
+                                <div class="objekt-trade-card-meta">
+                                    <p class="truncate text-sm font-semibold">{{collectionId}}</p>
+                                    <p class="mt-1 truncate text-xs text-slate-400">{{memberName}} · {{collectionNo}}</p>
+                                </div>
+                            </a>
+                            {{/linkedHaveObjekts}}
+                            {{^hasLinkedHaveObjekts}}
+                            <p class="objekt-trade-zone-empty">등록된 Have 오브젝트가 없습니다</p>
+                            {{/hasLinkedHaveObjekts}}
+                        </div>
+                    </div>
+                    <div class="objekt-trade-zone-divider" aria-hidden="true">↔</div>
+                    <div class="objekt-trade-zone" data-zone="want">
+                        <div class="objekt-trade-zone-head">
+                            <span class="objekt-trade-zone-label">Want</span>
+                            <span class="objekt-trade-zone-hint">원하는 오브젝트</span>
+                        </div>
+                        <div class="objekt-trade-zone-cards">
+                            {{#linkedWantObjekts}}
+                            <a href="/cosmo/objekt/detail/{{objektKey}}" class="objekt-trade-card">
+                                <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" onerror="this.onerror=null;this.src='{{frontImage}}'">
+                                <div class="objekt-trade-card-meta">
+                                    <p class="truncate text-sm font-semibold">{{collectionId}}</p>
+                                    <p class="mt-1 truncate text-xs text-slate-400">{{memberName}} · {{collectionNo}}</p>
+                                </div>
+                            </a>
+                            {{/linkedWantObjekts}}
+                            {{^hasLinkedWantObjekts}}
+                            <p class="objekt-trade-zone-empty">원하는 오브젝트 없음</p>
+                            {{/hasLinkedWantObjekts}}
+                        </div>
+                    </div>
+                </div>
+                {{/isTradeObjektSplit}}
+                {{^isTradeObjektSplit}}
                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {{#linkedObjekts}}
                     <a href="/cosmo/objekt/detail/{{objektKey}}" class="overflow-hidden rounded-xl border border-white/10 bg-black/20">
@@ -86,6 +132,7 @@
                     </a>
                     {{/linkedObjekts}}
                 </div>
+                {{/isTradeObjektSplit}}
             </section>
             {{/hasLinkedObjekts}}
 
