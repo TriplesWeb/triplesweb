@@ -36,8 +36,10 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
     if(offending.length)failures.push({engine,width,file,offending});
     if(file==='cosmo_profile.mustache.html'){
       assert.equal(await page.locator('.profile-progress-track').count(),0);
+      assert.ok(await page.locator('.profile-overall-pie').count()>=1);
       assert.ok(await page.locator('.profile-orbit').count()>=3);
-      assert.equal(await page.locator('.orbit-value').first().getAttribute('stroke-dasharray'),'50 100');
+      assert.equal(await page.locator('.profile-overall-pie .orbit-value').first().getAttribute('stroke-dasharray'),'40 100');
+      assert.equal(await page.locator('.profile-orbit .orbit-value').first().getAttribute('stroke-dasharray'),'50 100');
     }
     if(file==='article_article.mustache.html'){
       assert.equal(await page.locator('.article-board-heading').isVisible(),false);
