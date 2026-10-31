@@ -27,6 +27,7 @@ const fixtures = [
       return route.fulfill({contentType:'text/html',body:html});
     });
     await page.goto('https://preview.test/cosmo/transfers?nickname=lunlun');
+    await page.addScriptTag({content:read('src/main/resources/static/js/season-filters.js')});
     await page.addScriptTag({content:read('src/main/resources/static/js/objekt-dropdown.js')});
     await page.addScriptTag({content:read('src/main/resources/static/js/objekt-account-transfers.js')});
     await page.waitForFunction(()=>document.querySelectorAll('.tr-row').length===3);
@@ -47,13 +48,15 @@ const fixtures = [
     await page.locator('[data-search]').fill('nothingmatches');
     assert.equal(await page.locator('[data-empty]').isVisible(),true);
     await page.locator('[data-search]').fill('');
+    assert.equal(await page.getByRole('button',{name:'시즌 필터',exact:true}).count(),1);
     await page.getByRole('button',{name:'시즌 필터',exact:true}).click();
-    await page.getByRole('option',{name:'Divine01',exact:true}).click();
+    await page.getByRole('button',{name:'시즌 Divine01',exact:true}).click();
     assert.equal(await page.locator('.tr-row').count(),1);
     await page.getByRole('button',{name:'시즌 필터',exact:true}).click();
-    await page.getByRole('option',{name:'전체',exact:true}).click();
-    await page.getByRole('button',{name:'시즌 필터',exact:true}).focus();
-    await page.keyboard.press('ArrowDown'); await page.keyboard.press('Escape');
+    await page.getByRole('button',{name:'시즌 전체',exact:true}).click();
+    await page.getByRole('button',{name:'시즌 필터',exact:true}).click();
+    await page.getByRole('button',{name:'시즌 전체',exact:true}).focus();
+    await page.keyboard.press('Escape');
     assert.equal(await page.getByRole('button',{name:'시즌 필터',exact:true}).getAttribute('aria-expanded'),'false');
     await page.locator('[data-more]').click();
     await page.waitForFunction(()=>!document.querySelector('[data-retry]').hidden);
