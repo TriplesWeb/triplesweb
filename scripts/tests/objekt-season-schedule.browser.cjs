@@ -2,9 +2,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const {chromium}=require('playwright');
 const base=path.resolve(__dirname,'../..'),staticRoot=path.join(base,'src/main/resources/static');
 const urls={
- calendar:'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js',
- bootstrap:'https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js',
- bootstrapCss:'https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css'
+ calendar:'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'
 };
 (async()=>{
  const libraries={};
@@ -146,7 +144,7 @@ const urls={
   await openEvent('새 음원 발매');
   assert.equal(await page.locator('#modalScheduleTitle').textContent(),'새 음원 발매');
   assert.equal(await page.locator('#modalScheduleCategory').textContent(),'발매');
-  await page.locator('#viewScheduleModal button[data-bs-dismiss=modal]').first().click();
+  await page.locator('#viewScheduleModal button[data-site-dismiss=modal]').first().click();
   // 실제 등록으로 FullCalendar가 긴 제목의 높이와 배치를 다시 계산하게 한다.
   const longTitle='윤서연 온라인 팬사인회 및 새 앨범 발매 기념 행사';
   await page.locator('[onclick="showAddModal()"]').click();
@@ -171,6 +169,6 @@ const urls={
   await page.setViewportSize({width:390,height:844});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'일정 모바일 넘침');
   await page.screenshot({path:'/tmp/objekt-ui/schedule-categories-mobile.png',fullPage:true,timeout:15000});
-  console.log('통과: 시즌 버튼 색상·다중/단일 선택·동기화·동적 옵션·초기화·키보드·모바일 / 실제 FullCalendar·Bootstrap 일정 분류·멤버색·케이크·CSRF·저장 후 수정');
+  console.log('통과: 시즌 버튼 색상·다중/단일 선택·동기화·동적 옵션·초기화·키보드·모바일 / 실제 FullCalendar·SiteUi 일정 분류·멤버색·케이크·CSRF·저장 후 수정');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1);});

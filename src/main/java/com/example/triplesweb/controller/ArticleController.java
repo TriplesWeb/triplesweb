@@ -316,9 +316,9 @@ public class ArticleController {
         model.addAttribute("isSell", "sell".equals(category));
         model.addAttribute("isGroupOrders", "group-orders".equals(category));
         model.addAttribute("articleList", articleViewList);
-        model.addAttribute("hideRecommendations", "group-orders".equals(category));
-        model.addAttribute("popularList", "group-orders".equals(category) ? List.of()
-                : articleService.findPopularArticles(category, 5));
+        // 교환/거래/분철: 추천 컬럼·인기글 조회 제거. popularList는 템플릿 미사용.
+        model.addAttribute("hideRecommendations", isObjektBoard(category));
+        model.addAttribute("popularList", List.of());
 
         // 검색 폼에서 사용하는 Mustache 변수
         model.addAttribute("searchKeyword", searchKeyword);

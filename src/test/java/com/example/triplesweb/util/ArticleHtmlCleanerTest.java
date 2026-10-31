@@ -13,7 +13,7 @@ class ArticleHtmlCleanerTest {
         String html = """
                 <div class="content-media">
                   <img src="https://example.com/uploads/images/free/2026-10-24/a.jpg" data-saved-name="a.jpg">
-                  <span class="remove-btn"><i class="bi bi-x"></i></span>
+                  <span class="remove-btn">×</span>
                 </div>
                 <p>본문</p>
                 """;

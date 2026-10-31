@@ -26,9 +26,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   form :is(input,select,textarea){min-width:0;max-width:100%}
   .objekt-detail-panel{max-height:calc(100vh - 2rem)!important;max-height:calc(100dvh - 2rem)!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
   .objekt-detail-title{padding-right:3rem}
-  .modal .modal-dialog{max-width:calc(100% - 1.5rem);margin:.75rem auto}
-  .modal .modal-content{max-height:calc(100vh - 1.5rem);max-height:calc(100dvh - 1.5rem)}
-  .modal .modal-body{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  .site-modal{padding:.75rem;align-items:flex-start}
+  .site-modal-dialog{max-width:calc(100% - 1.5rem);margin:.75rem auto;max-height:calc(100vh - 1.5rem);max-height:calc(100dvh - 1.5rem)}
+  .site-modal-body,.site-modal .modal-body{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  .site-modal-close,.btn-close{min-width:44px;min-height:44px}
   .fc .fc-header-toolbar{flex-wrap:wrap;gap:.75rem}
   .fc .fc-toolbar-chunk{min-width:0;max-width:100%}
   .fc .fc-toolbar-title{font-size:1.1rem}
@@ -50,10 +51,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .article-board-row>div:first-child{display:none}
   .article-board-row>div:nth-child(2){grid-column:1/-1!important;white-space:normal;overflow-wrap:anywhere;font-size:.95rem}
   .article-board-row>div:nth-child(n+3){font-size:.75rem}
-  .article-board-row>div:last-child{color:#8decd9}
-  .article-board-row>div:last-child::before{content:"추천 ";color:#a6b6b1;font-size:.7rem}
+  .article-board-row>.article-board-likes{color:#8decd9}
+  .article-board-row>.article-board-likes::before{content:"추천 ";color:#a6b6b1;font-size:.7rem}
   .btn-close,.objekt-detail-close{min-width:44px;min-height:44px}
 }
 
 .article-board-no-likes .article-board-heading>div:nth-child(2),.article-board-no-likes .article-board-row>div:nth-child(2){grid-column:span 7/span 7}
-@media(max-width:600px){.article-board-no-likes .article-board-row>div:nth-child(2){grid-column:1/-1!important}.article-board-no-likes .article-board-row>div:last-child::before{content:none}}
+@media(max-width:600px){.article-board-no-likes .article-board-row>div:nth-child(2){grid-column:1/-1!important}}

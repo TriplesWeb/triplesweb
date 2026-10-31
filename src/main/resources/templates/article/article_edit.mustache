@@ -11,7 +11,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
     <!-- Tailwind CSS 스크립트 -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -223,7 +222,6 @@
 
 {{>layout/footer}}
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/article-content.js"></script>
 <script>
     /* -------------------- helpers -------------------- */
@@ -304,6 +302,11 @@
         const _csrf  = document.querySelector('meta[name="_csrf"]')?.content;
         const _ch    = document.querySelector('meta[name="_csrf_header"]')?.content;
         const buildHeaders = () => (_csrf && _ch) ? { [_ch]: _csrf } : {};
+        let uploadsInFlight = 0;
+        const submitBtn = editForm.querySelector('button[type="submit"], input[type="submit"]');
+        function setUploadBusy(busy) {
+            if (submitBtn) submitBtn.disabled = busy;
+        }
 
         let syncingPreview = false;
         const mo = new MutationObserver(() => {
@@ -356,34 +359,47 @@
 
         fileInput.addEventListener('change', async (e) => {
             const files = Array.from(e.target.files || []);
-            for (const f of files) {
-                try {
-                    const fd = new FormData();
-                    fd.append('file', f);
-                    const res = await fetch(UPLOAD_ENDPOINT, { method: 'POST', body: fd, headers: buildHeaders() });
-                    if (!res.ok) {
-                        const txt = await res.text().catch(() => String(res.status));
-                        throw new Error(`HTTP ${res.status} - ${txt.substring(0, 200)}`);
+            uploadsInFlight += 1;
+            setUploadBusy(true);
+            try {
+                for (const f of files) {
+                    try {
+                        const fd = new FormData();
+                        fd.append('file', f);
+                        const res = await fetch(UPLOAD_ENDPOINT, {
+                            method: 'POST', body: fd, headers: buildHeaders(), credentials: 'same-origin'
+                        });
+                        if (!res.ok) {
+                            const txt = await res.text().catch(() => String(res.status));
+                            throw new Error(`HTTP ${res.status} - ${txt.substring(0, 200)}`);
+                        }
+                        const ct = res.headers.get('content-type') || '';
+                        const payload = ct.includes('application/json') ? await res.json() : { url: await res.text() };
+                        const rawUrl = payload.url || payload.path || payload.location || payload.href;
+                        if (!rawUrl || typeof rawUrl !== 'string' || !rawUrl.includes('/')) {
+                            throw new Error('업로드 응답에 올바른 url이 없습니다.');
+                        }
+                        const url = toUploadsUrl(rawUrl);
+                        const { saved } = insertMedia(url, f.type);
+                        if (!saved || !saved.includes('/')) {
+                            throw new Error('업로드 경로를 해석하지 못했습니다.');
+                        }
+
+                        const hi = document.createElement('input');
+                        hi.type = 'hidden';
+                        hi.name = 'uploadedFiles';
+                        hi.value = saved;
+                        editForm.appendChild(hi);
+                    } catch (err) {
+                        console.error(err);
+                        alert('업로드 실패: ' + (err.message || err));
                     }
-                    const ct = res.headers.get('content-type') || '';
-                    const payload = ct.includes('application/json') ? await res.json() : { url: await res.text() };
-                    const url = payload.url || payload.path || payload.location || payload.href
-                        || (payload.savedName ? ('/uploads/' + payload.savedName) : null);
-                    if (!url) throw new Error('업로드 응답에 url 없음');
-
-                    const { saved } = insertMedia(url, f.type);
-
-                    const hi = document.createElement('input');
-                    hi.type = 'hidden';
-                    hi.name = 'uploadedFiles';
-                    hi.value = saved;
-                    editForm.appendChild(hi);
-                } catch (err) {
-                    console.error(err);
-                    alert('업로드 실패: ' + (err.message || err));
                 }
+            } finally {
+                uploadsInFlight = Math.max(0, uploadsInFlight - 1);
+                setUploadBusy(uploadsInFlight > 0);
+                fileInput.value = '';
             }
-            fileInput.value = '';
         });
 
         function articleFingerprint(html) {
@@ -399,6 +415,10 @@
             .map((input) => input.value).sort().join('\n');
 
         window.beforeSubmit = function(form) {
+            if (uploadsInFlight > 0) {
+                alert('파일 업로드가 끝날 때까지 기다려 주세요.');
+                return false;
+            }
             const cleaned = window.ArticleContent?.cleanEditorHtml(contentDiv.innerHTML) || contentDiv.innerHTML.trim();
             hiddenContent.value = cleaned;
 
@@ -428,7 +448,7 @@
             if (!btn) {
                 btn = document.createElement('span');
                 btn.className = 'remove-btn';
-                btn.innerHTML = `<i class="bi bi-x" style="font-size:16px;color:#fff;"></i>`;
+                btn.textContent = '×'; btn.style.cssText = 'font-size:18px;color:#fff;line-height:1;';
                 host.appendChild(btn);
             }
             if (saved) btn.dataset.savedName = saved;

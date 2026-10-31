@@ -53,7 +53,7 @@ class MobilePageTemplatesTest {
         }
         for (String category : List.of("trade", "sell", "group-orders")) {
             var board = new HashMap<>(model);
-            board.put("category", category); board.put("hideRecommendations", "group-orders".equals(category));
+            board.put("category", category); board.put("hideRecommendations", true);
             board.put("categoryName", Map.of("trade","교환","sell","거래","group-orders","분철").get(category));
             board.put("articleList", List.of(new HashMap<>(post)));
             Files.writeString(output.resolve("board-" + category + ".html"),

@@ -67,12 +67,18 @@ public class ArticleFileServiceImpl implements ArticleFileService {
 
             String url = toUploadsUrl(token);
             Path path = tryResolve(url);
-            if (path == null) continue;
+            if (path == null) {
+                log.warn("첨부 연결 실패(경로 해석 불가): token={}", token);
+                continue;
+            }
             String relative = fileStorageService.toRelativePath(url);
 
             String savedName = path.getFileName().toString();
             if (!StringUtils.hasText(savedName) || existing.contains(savedName)) continue;
-            if (!Files.exists(path)) continue;
+            if (!Files.exists(path)) {
+                log.warn("첨부 연결 실패(파일 없음): token={} path={}", token, path);
+                continue;
+            }
 
             long size;
             String contentType;
@@ -80,6 +86,7 @@ public class ArticleFileServiceImpl implements ArticleFileService {
                 size = Files.size(path);
                 contentType = Files.probeContentType(path);
             } catch (IOException e) {
+                log.warn("첨부 연결 실패(메타 읽기): token={} err={}", token, e.getMessage());
                 continue;
             }
             if (!StringUtils.hasText(contentType)) {

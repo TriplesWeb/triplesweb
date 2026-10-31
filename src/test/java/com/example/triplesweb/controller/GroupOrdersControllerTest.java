@@ -51,11 +51,15 @@ class GroupOrdersControllerTest {
     }
     @Test void marketTabsKeepEachBoardAndItsSearch() throws Exception {
         for (String category : List.of("trade", "sell", "group-orders")) {
+            when(articles.findRecentByCategory(eq(category), anyInt())).thenReturn(List.of(article()));
             mvc.perform(get("/article/" + category)).andExpect(status().isOk())
                 .andExpect(content().string(containsString("href=\"/article/trade\"")))
                 .andExpect(content().string(containsString("href=\"/article/sell\"")))
                 .andExpect(content().string(containsString("href=\"/article/group-orders\"")))
-                .andExpect(content().string(containsString("href=\"/article/" + category + "\" aria-current=\"page\"")));
+                .andExpect(content().string(containsString("href=\"/article/" + category + "\" aria-current=\"page\"")))
+                .andExpect(content().string(not(containsString(">추천<"))))
+                .andExpect(content().string(not(containsString("article-board-likes"))));
+            verify(articles, never()).findPopularArticles(eq(category), anyInt());
         }
         mvc.perform(get("/article/info")).andExpect(status().isOk())
             .andExpect(content().string(not(containsString("class=\"market-tabs\""))));

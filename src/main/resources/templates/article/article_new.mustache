@@ -11,7 +11,6 @@
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
@@ -204,7 +203,6 @@
     </div>
     </div>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/article-content.js"></script>
 <script>
     window.beforeSubmit = function(form) {
@@ -254,6 +252,15 @@
      const _csrf  = document.querySelector('meta[name="_csrf"]')?.content;
      const _ch    = document.querySelector('meta[name="_csrf_header"]')?.content;
      const buildHeaders = () => (_csrf && _ch) ? { [_ch]: _csrf } : {};
+     let uploadsInFlight = 0;
+     const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+
+     function setUploadBusy(busy) {
+       if (submitBtn) {
+         submitBtn.disabled = busy;
+         submitBtn.dataset.uploadBusy = busy ? '1' : '0';
+       }
+     }
 
      // ---- helpers ----
      const pick = (o, ks) => ks.find(k => o && o[k]) ? o[ks.find(k => o && o[k])] : null;
@@ -265,6 +272,7 @@
          const p = u.pathname.startsWith('/uploads/') ? u.pathname : '/uploads' + (u.pathname.startsWith('/') ? '' : '/') + u.pathname;
          return p.replace(/\/{2,}/g, '/');
        } catch {
+         if (!pathLike.includes('/')) return null; // basename alone is not a valid upload path
          const p = pathLike.startsWith('/uploads/') ? pathLike : '/uploads/' + pathLike.replace(/^\/+/, '');
          return p.replace(/\/{2,}/g, '/');
        }
@@ -272,9 +280,9 @@
 
      function normalizeUploadResponse(payload, mime) {
        const rawUrl  = pick(payload, ['url','path','publicUrl','location','href']);
-       const rawName = pick(payload, ['savedName','storedName','name','filename']);
-       const url = toUploadsUrl(rawUrl || rawName);
-       const storedName = (url || '').replace(/^\/uploads\//,'');
+       const url = toUploadsUrl(rawUrl);
+       if (!url) return { url: null, storedName: '', fileType: '' };
+       const storedName = url.replace(/^\/uploads\//,'');
        const fileType = payload.fileType || (mime?.startsWith('video') ? 'video/mp4' : 'image/jpeg');
        return { url, storedName, fileType };
      }
@@ -303,7 +311,7 @@
        }
        const removeBtn = document.createElement('button');
        removeBtn.type='button'; removeBtn.className='remove-btn';
-       removeBtn.innerHTML='<i class="bi bi-x" style="font-size:16px;color:#fff;"></i>';
+       removeBtn.textContent='×'; removeBtn.style.cssText='font-size:18px;color:#fff;line-height:1;';
        removeBtn.addEventListener('click', () => {
          wrap.remove();
          previewArea.querySelector(`[data-key="${key}"]`)?.remove();
@@ -319,7 +327,7 @@
        thumb.onerror=function(){ this.onerror=null; this.src=FALLBACK_IMG; };
        const tr = document.createElement('button');
        tr.type='button'; tr.className='remove-btn';
-       tr.innerHTML='<i class="bi bi-x" style="font-size:18px;color:#dc3545;"></i>';
+       tr.textContent='×'; tr.style.cssText='font-size:18px;color:#dc3545;line-height:1;';
        tr.addEventListener('click', () => removeBtn.click());
        thumbBox.appendChild(thumb); thumbBox.appendChild(tr);
        previewArea.appendChild(thumbBox);
@@ -333,9 +341,10 @@
 
      async function uploadOne(file) {
        const fd = new FormData(); fd.append('file', file);
-       const res = await fetch(UPLOAD_ENDPOINT, { method:'POST', body:fd, headers:buildHeaders() });
+       const res = await fetch(UPLOAD_ENDPOINT, {
+         method:'POST', body:fd, headers:buildHeaders(), credentials:'same-origin'
+       });
 
-       // 🔴 여기! 응답 실패면 바로 중단(중요)
        if (!res.ok) {
          const txt = await res.text().catch(()=>String(res.status));
          throw new Error(`HTTP ${res.status} - ${txt.substring(0,200)}`);
@@ -344,20 +353,36 @@
        const ct = res.headers.get('content-type') || '';
        const payload = ct.includes('application/json') ? await res.json() : { url: await res.text() };
        const { url, storedName } = normalizeUploadResponse(payload, file.type);
-       if (!url) throw new Error('업로드 응답에 url이 없습니다.');
+       if (!url || !storedName || !storedName.includes('/')) {
+         throw new Error('업로드 응답에 올바른 url이 없습니다.');
+       }
 
-       const key = storedName || url;
+       const key = storedName;
        insertMediaAtCaret(url, file.type, key);
        addHiddenUploadedFile(storedName, key);
      }
 
+     form.addEventListener('submit', (event) => {
+       if (uploadsInFlight > 0) {
+         event.preventDefault();
+         alert('파일 업로드가 끝날 때까지 기다려 주세요.');
+       }
+     });
+
      fileInput.addEventListener('change', async (e) => {
        const files = Array.from(e.target.files || []);
-       for (const f of files) {
-         try { await uploadOne(f); }
-         catch (err) { console.error(err); alert('업로드 실패: ' + (err.message || err)); }
+       uploadsInFlight += 1;
+       setUploadBusy(true);
+       try {
+         for (const f of files) {
+           try { await uploadOne(f); }
+           catch (err) { console.error(err); alert('업로드 실패: ' + (err.message || err)); }
+         }
+       } finally {
+         uploadsInFlight = Math.max(0, uploadsInFlight - 1);
+         setUploadBusy(uploadsInFlight > 0);
+         fileInput.value = '';
        }
-       fileInput.value = '';
      });
    });
 </script>

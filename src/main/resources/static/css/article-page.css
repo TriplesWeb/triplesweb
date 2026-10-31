@@ -4,9 +4,13 @@
 .article-board-title h1{font-size:clamp(1.2rem,3vw,1.75rem);line-height:1.4;overflow-wrap:anywhere}
 .article-board-subject a{display:block;padding:.2rem 0;line-height:1.6}
 .article-board-search{min-width:0;max-width:100%}
-.article-board-search>div{min-width:0;position:relative}
-.article-board-search button{position:absolute;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:2.5rem;height:2.5rem;right:.2rem;color:#34554c}
-.article-board-search input{padding-right:3rem!important}
+.article-board-search-type{min-width:5.5rem}
+.article-board-search-type select{padding-right:1.6rem;cursor:pointer}
+.article-board-search-keyword{position:relative;min-width:0}
+.article-board-search-keyword input{padding-right:2.75rem!important}
+.article-board-search-submit{appearance:none;position:absolute;top:50%;right:.25rem;transform:translateY(-50%);display:grid;place-items:center;width:2.5rem;height:2.5rem;border:0;background:transparent;color:#9eb0aa;cursor:pointer}
+.article-board-search-keyword:hover .article-board-search-submit{color:#0d0e12}
+.article-board-search-keyword:focus-within .article-board-search-submit{color:#8decd9}
 .article-detail-shell h1{overflow-wrap:anywhere;line-height:1.55}
 .article-detail-meta{gap:.6rem 1rem;flex-wrap:wrap}
 .article-detail-meta>div{min-width:0;overflow-wrap:anywhere}
@@ -33,9 +37,10 @@
  .article-board-likes::before{content:"추천 "!important;color:#a6b6b1}
  .article-board-controls{align-items:stretch!important;gap:.85rem!important}
  .article-board-search{width:100%!important;gap:.5rem!important}
- .article-board-search select{max-width:6rem;padding:.6rem!important;min-height:44px}
- .article-board-search>div{flex:1;width:auto!important}
- .article-board-search button{min-width:44px;min-height:44px}
+ .article-board-search-type{max-width:6.5rem}
+ .article-board-search-type select{min-height:44px}
+ .article-board-search-keyword{flex:1;width:auto!important}
+ .article-board-search-submit{min-width:44px;min-height:44px}
  .article-board-controls>div>a{min-height:44px;justify-content:center}
  .article-detail-meta{padding-bottom:1rem!important;margin-bottom:1rem!important;font-size:.82rem}
  .article-detail-meta>div:first-child{flex:1 1 100%}

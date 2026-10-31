@@ -63,17 +63,36 @@
 .ar-filters { display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: center; }
 .ar-select { position: relative; }
 .ar-filters select, .ar-search {
-    appearance: none; background: #fff; border: 1px solid rgba(255, 255, 255, 0.12); color: #111;
-    border-radius: 0.65rem; padding: 0.55rem 2rem 0.55rem 0.85rem; font-size: 0.9rem;
+    appearance: none;
+    background: #0d0e12;
+    border: 1.5px solid rgba(90, 110, 104, 0.85);
+    color: #e3e2e8;
+    border-radius: 24px;
+    padding: 0.55rem 2rem 0.55rem 0.85rem;
+    font-size: 0.9rem;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
 }
-.ar-search { background: #fff; color: #111; padding-left: 2.3rem; min-width: 14rem; }
-.ar-search::placeholder { color: #5c6570; opacity: 1; }
+.ar-search { padding-left: 2.3rem; min-width: 14rem; }
+.ar-search::placeholder { color: #6b7388; opacity: 1; }
+.ar-filters select:hover, .ar-search:hover {
+    border-color: #e8f0ec;
+    background: #f4f6f5;
+    color: #0d0e12;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
 .ar-search-wrap { position: relative; flex: 1; min-width: 14rem; }
-.ar-search-wrap .material-symbols-outlined, .ar-select .material-symbols-outlined { position: absolute; color: #b9cac4; pointer-events: none; font-size: 18px; }
+.ar-search-wrap .material-symbols-outlined, .ar-select .material-symbols-outlined { position: absolute; color: #9eb0aa; pointer-events: none; font-size: 18px; }
 .ar-search-wrap .material-symbols-outlined { left: 0.7rem; top: 0.55rem; }
+.ar-search-wrap:hover .material-symbols-outlined { color: #0d0e12; }
 .ar-search-wrap .ar-search { width: 100%; }
 .ar-select .material-symbols-outlined { right: 0.4rem; top: 0.55rem; font-size: 16px; }
-.ar-filters select:focus, .ar-search:focus { outline: none; border-color: #00f5d4; }
+.ar-filters select:focus, .ar-search:focus {
+    outline: none;
+    border-color: #8decd9;
+    background: #0d0e12;
+    color: #e3e2e8;
+    box-shadow: 0 0 0 1px rgba(141, 236, 217, 0.35);
+}
 .ar-toolbar-meta { display: flex; justify-content: space-between; gap: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 0.7rem; color: #b9cac4; font-size: 0.8rem; }
 .ar-toolbar-meta strong { color: #00f5d4; }
 .ar-text-btn, .ar-submit { background: none; border: 0; color: #b9cac4; cursor: pointer; }
