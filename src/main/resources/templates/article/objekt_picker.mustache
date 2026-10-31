@@ -1,9 +1,17 @@
 {{#showObjektPicker}}
-<section class="space-y-3 rounded-xl border border-teal-400/30 bg-teal-400/[0.04] p-4" id="objektPickerSection" data-objekt-api="/article/{{category}}/objekt-options" data-initial-search="{{objektInitialSearch}}">
+<section class="space-y-3 rounded-xl border border-teal-400/30 bg-teal-400/[0.04] p-4" id="objektPickerSection"
+         data-objekt-api="/article/{{category}}/objekt-options"
+         data-initial-search="{{objektInitialSearch}}"
+         data-trade-split="{{#isTradeObjektSplit}}true{{/isTradeObjektSplit}}{{^isTradeObjektSplit}}false{{/isTradeObjektSplit}}">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
             <h3 class="font-semibold text-teal-200">교환/거래 오브젝트</h3>
+            {{#isTradeObjektSplit}}
+            <p class="mt-1 text-xs text-slate-400">Have와 Want를 각각 1개 이상 선택하세요. 합쳐 최대 20개.</p>
+            {{/isTradeObjektSplit}}
+            {{^isTradeObjektSplit}}
             <p class="mt-1 text-xs text-slate-400">최대 20개까지 연결할 수 있습니다.</p>
+            {{/isTradeObjektSplit}}
         </div>
         <button type="button" id="objektPickerToggle"
                 class="inline-flex items-center gap-1.5 rounded-full border border-teal-300/50 bg-teal-400/10 px-4 py-2 text-xs font-semibold text-teal-100 hover:bg-teal-400/20"
@@ -13,7 +21,50 @@
     </div>
     <p id="objektSelectedSummary" class="text-xs text-slate-400" aria-live="polite">선택된 오브젝트 0개</p>
 
+    {{#isTradeObjektSplit}}
+    <div class="objekt-trade-zones" aria-label="Have와 Want 선택 구역">
+        <div class="objekt-trade-zone" data-zone="have">
+            <div class="objekt-trade-zone-head">
+                <span class="objekt-trade-zone-label">Have</span>
+                <span class="objekt-trade-zone-hint">가진 오브젝트</span>
+            </div>
+            <div id="objektHavePreview" class="objekt-trade-zone-cards">
+                {{#objektHaveSelected}}
+                <div class="objekt-trade-chip" data-objekt-id="{{id}}">
+                    {{#thumbnailImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy">{{/thumbnailImage}}
+                    <span>{{collectionId}}</span>
+                </div>
+                {{/objektHaveSelected}}
+            </div>
+        </div>
+        <div class="objekt-trade-zone-divider" aria-hidden="true">↔</div>
+        <div class="objekt-trade-zone" data-zone="want" id="objektWantZone">
+            <div class="objekt-trade-zone-head">
+                <span class="objekt-trade-zone-label">Want</span>
+                <span class="objekt-trade-zone-hint">원하는 오브젝트</span>
+            </div>
+            <div id="objektWantPreview" class="objekt-trade-zone-cards">
+                {{#objektWantSelected}}
+                <div class="objekt-trade-chip" data-objekt-id="{{id}}">
+                    {{#thumbnailImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy">{{/thumbnailImage}}
+                    <span>{{collectionId}}</span>
+                </div>
+                {{/objektWantSelected}}
+                {{^objektWantSelected}}
+                <p class="objekt-trade-zone-empty" id="objektWantEmptyHint">Have를 고른 뒤 Want를 선택하세요</p>
+                {{/objektWantSelected}}
+            </div>
+        </div>
+    </div>
+    {{/isTradeObjektSplit}}
+
     <div id="objektPickerPanel" class="hidden space-y-3" hidden>
+        {{#isTradeObjektSplit}}
+        <div class="objekt-side-toggle" role="group" aria-label="선택 구역">
+            <button type="button" id="objektSideHave" class="objekt-side-btn is-active" data-side="have" aria-pressed="true">Have에 담기</button>
+            <button type="button" id="objektSideWant" class="objekt-side-btn" data-side="want" aria-pressed="false" disabled>Want에 담기</button>
+        </div>
+        {{/isTradeObjektSplit}}
         <p class="text-xs text-slate-400">멤버·시즌·클래스로 필터하거나 검색한 뒤 체크하세요.</p>
 
         <div class="objekt-picker-filter-bar">
@@ -54,9 +105,19 @@
         </div>
 
         <div id="objektSelectedInputs">
+            {{#isTradeObjektSplit}}
+            {{#objektHaveSelected}}
+            <input type="hidden" name="selectedHaveObjektIds" value="{{id}}" data-objekt-id="{{id}}" data-side="have">
+            {{/objektHaveSelected}}
+            {{#objektWantSelected}}
+            <input type="hidden" name="selectedWantObjektIds" value="{{id}}" data-objekt-id="{{id}}" data-side="want">
+            {{/objektWantSelected}}
+            {{/isTradeObjektSplit}}
+            {{^isTradeObjektSplit}}
             {{#objektSelected}}
             <input type="hidden" name="selectedObjektIds" value="{{id}}" data-objekt-id="{{id}}">
             {{/objektSelected}}
+            {{/isTradeObjektSplit}}
         </div>
         <div id="objektOptionsList" class="grid max-h-72 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-4"></div>
         <div class="mt-1 flex flex-wrap items-center justify-between gap-2">
