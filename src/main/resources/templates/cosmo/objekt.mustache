@@ -1122,20 +1122,7 @@
         return window.ObjektKindCombo ? window.ObjektKindCombo.normalizeKindValue(raw) : String(raw || '').trim() || 'all';
     }
 
-    const kindCombo = window.ObjektKindCombo?.bindKindCombo({
-        input: kindSelect,
-        menu: kindMenu,
-        toggle: kindToggle,
-        empty: kindEmpty,
-        closeOthers() {
-            closeSortMenu();
-            document.getElementById('season-menu')?.classList.add('hidden');
-            document.getElementById('class-menu')?.classList.add('hidden');
-        },
-        onChange() {
-            if (typeof markActiveFilters === 'function') markActiveFilters();
-        }
-    });
+    let kindCombo = null;
 
     function setKindValue(raw) {
         kindCombo?.commit(raw);
@@ -1264,6 +1251,21 @@
             markActiveFilters();
         }));
         updateDropdownLabel(type);
+    });
+
+    kindCombo = window.ObjektKindCombo?.bindKindCombo({
+        input: kindSelect,
+        menu: kindMenu,
+        toggle: kindToggle,
+        empty: kindEmpty,
+        closeOthers() {
+            closeSortMenu();
+            document.getElementById('season-menu')?.classList.add('hidden');
+            document.getElementById('class-menu')?.classList.add('hidden');
+        },
+        onChange() {
+            markActiveFilters();
+        }
     });
 
     function markActiveFilters() {
