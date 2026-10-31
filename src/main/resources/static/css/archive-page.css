@@ -81,6 +81,7 @@
     background: #f4f6f5;
     color: #0d0e12;
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
 .ar-search-wrap { position: relative; flex: 1; min-width: 14rem; }
 .ar-search-wrap .material-symbols-outlined, .ar-select .material-symbols-outlined { position: absolute; color: #9eb0aa; pointer-events: none; font-size: 18px; }
 .ar-search-wrap .material-symbols-outlined { left: 0.7rem; top: 0.55rem; }
@@ -91,6 +92,7 @@
     outline: none;
     border-color: #8decd9;
     box-shadow: 0 0 0 1px rgba(141, 236, 217, 0.35);
+}
 .ar-toolbar-meta { display: flex; justify-content: space-between; gap: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 0.7rem; color: #b9cac4; font-size: 0.8rem; }
 .ar-toolbar-meta strong { color: #00f5d4; }
 
