@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-{{>layout/site-head}}
-<meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {{>layout/site-head}}
     <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
-
-    </head>
-<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+    <link rel="stylesheet" href="/css/site-ui.css?v=2">
+    <link rel="stylesheet" href="/css/article-page.css?v=1">
+    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=6">
+</head>
+<body class="article-page bg-surface text-on-surface min-h-screen flex flex-col">
 {{>layout/header}}
 
 <main class="flex-1 flex items-start justify-center px-4 sm:px-6 py-6 z-10 relative">
@@ -16,28 +16,28 @@
         <div class="absolute -inset-1 rounded-3xl bg-gradient-to-b from-primary-container/20 via-transparent to-secondary-container/30 blur-xl opacity-75 pointer-events-none"></div>
 
         <!-- 메인 컨테이너 카드 -->
-        <div class="article-board-shell relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
+        <div class="article-board-shell {{#hideRecommendations}}article-board-no-likes{{/hideRecommendations}} relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
 
             <!-- 상단 헤더 타이틀 -->
-            <div class="flex flex-col gap-4 mb-8 pb-4 border-b border-outline-variant/30">
+            <div class="article-board-title flex items-center justify-between mb-8 pb-4 border-b border-outline-variant/30">
                 <div class="flex items-center gap-3">
-                    <span class="material-symbols-outlined text-primary-container text-3xl" data-icon="forum">forum</span>
+                    <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:#8decd9;flex-shrink:0"><path d="M20 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.95L3 21l1.95-4.5A9 9 0 0 1 4 12.5 8.5 8.5 0 1 1 20 11.5Z"/><path d="M8 10h8M8 14h5"/></svg>
                     <h1 class="font-headline-lg text-headline-md font-bold text-on-surface tracking-tight">
                         {{categoryName}} 게시판
                     </h1>
                 </div>
-                {{#isTradeBoard}}
-                <div class="flex items-center gap-2" role="tablist" aria-label="교환/거래 구분">
-                    <a href="/article/trade" role="tab" aria-selected="{{#isTradeTab}}true{{/isTradeTab}}{{^isTradeTab}}false{{/isTradeTab}}"
-                       class="px-4 py-1.5 rounded-full text-sm font-semibold transition-colors text-decoration-none {{#isTradeTab}}bg-primary-container text-on-primary{{/isTradeTab}}{{^isTradeTab}}bg-surface-container-high/70 text-on-surface-variant hover:text-primary-container{{/isTradeTab}}">교환</a>
-                    <a href="/article/sell" role="tab" aria-selected="{{#isSellTab}}true{{/isSellTab}}{{^isSellTab}}false{{/isSellTab}}"
-                       class="px-4 py-1.5 rounded-full text-sm font-semibold transition-colors text-decoration-none {{#isSellTab}}bg-primary-container text-on-primary{{/isSellTab}}{{^isSellTab}}bg-surface-container-high/70 text-on-surface-variant hover:text-primary-container{{/isSellTab}}">거래</a>
-                </div>
-                {{/isTradeBoard}}
             </div>
 
+            {{#isMarketBoard}}
+            <nav class="market-tabs" aria-label="교환/거래 게시판 분류">
+                <a href="/article/trade" {{#isTrade}}aria-current="page"{{/isTrade}}>교환</a>
+                <a href="/article/sell" {{#isSell}}aria-current="page"{{/isSell}}>거래</a>
+                <a href="/article/group-orders" {{#isGroupOrders}}aria-current="page"{{/isGroupOrders}}>분철</a>
+            </nav>
+            {{/isMarketBoard}}
+
             <!-- 게시판 테이블 영역 -->
-            <div class="w-full overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface-container-lowest/40 mb-8">
+            <div class="article-board-list w-full overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface-container-lowest/40 mb-8">
 
                 <!-- 테이블 헤더 -->
                 <div class="article-board-heading grid grid-cols-12 gap-4 px-6 py-3.5 bg-surface-container-high/60 border-b border-outline-variant/40 text-on-surface-variant font-semibold text-sm text-center">
@@ -45,7 +45,7 @@
                     <div class="col-span-6 text-left">제목</div>
                     <div class="col-span-2">작성자</div>
                     <div class="col-span-2">날짜</div>
-                    <div class="col-span-1">추천</div>
+                    {{^hideRecommendations}}<div class="col-span-1">추천</div>{{/hideRecommendations}}
                 </div>
 
                 <!-- 테이블 바디 (게시글 목록 루프) -->
@@ -53,14 +53,14 @@
                     {{#articleList}}
                         <div class="article-board-row grid grid-cols-12 gap-4 px-6 py-4 items-center text-center text-sm text-on-surface hover:bg-surface-container-highest/30 transition-colors">
                             <div class="col-span-1 text-outline font-mono">{{displayId}}</div>
-                            <div class="col-span-6 text-left font-medium truncate">
+                            <div class="article-board-subject col-span-6 text-left font-medium truncate">
                                 <a href="/article/{{#category}}{{category}}{{/category}}{{^category}}trade{{/category}}/{{id}}" class="hover:text-primary-container transition-colors">
                                     {{title}}
                                 </a>
                             </div>
-                            <div class="col-span-2 text-on-surface-variant truncate">{{userId}}</div>
-                            <div class="col-span-2 text-xs text-outline">{{formattedDate}}</div>
-                            <div class="col-span-1 text-primary-container font-semibold">{{likesCount}}</div>
+                            <div class="article-board-author col-span-2 text-on-surface-variant truncate">{{userId}}</div>
+                            <div class="article-board-date col-span-2 text-xs text-outline">{{formattedDate}}</div>
+                            {{^hideRecommendations}}<div class="article-board-likes col-span-1 text-primary-container font-semibold">{{likesCount}}</div>{{/hideRecommendations}}
                         </div>
                     {{/articleList}}
 
@@ -75,41 +75,34 @@
             </div>
 
             <!-- 하단 컨트롤 영역 (왼쪽: 검색 기능 / 오른쪽: 글쓰기 버튼) -->
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+            <div class="article-board-controls flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
 
                 <!-- 왼쪽: 게시글 검색 폼 -->
-                <form action="/article/{{category}}" method="get" class="flex items-center gap-2 w-full sm:w-auto">
-                    <select name="type" class="site-field" style="width:auto;min-width:6.5rem;">
-                        <option value="title" {{#isSearchTitle}}selected{{/isSearchTitle}}>제목</option>
-                        <option value="content" {{#isSearchContent}}selected{{/isSearchContent}}>내용</option>
-                        <option value="writer" {{#isSearchWriter}}selected{{/isSearchWriter}}>작성자</option>
-                    </select>
-                    <div class="site-search flex-1 sm:w-60">
-                        <input type="search" name="keyword" value="{{searchKeyword}}" placeholder="검색어를 입력하세요" class="site-field site-search__input" />
-                        <button type="submit" class="site-search__submit" aria-label="검색">
-                            <span class="material-symbols-outlined" data-icon="search">search</span>
+                <form action="/article/{{category}}" method="get" class="article-board-search flex items-center gap-2 w-full sm:w-auto">
+                    <label class="site-search-field article-board-search-type shrink-0">
+                        <select name="type" aria-label="검색 유형">
+                            <option value="title" {{#isSearchTitle}}selected{{/isSearchTitle}}>제목</option>
+                            <option value="content" {{#isSearchContent}}selected{{/isSearchContent}}>내용</option>
+                            <option value="writer" {{#isSearchWriter}}selected{{/isSearchWriter}}>작성자</option>
+                        </select>
+                    </label>
+                    <div class="site-search-field article-board-search-keyword relative flex-1 sm:w-60">
+                        <input type="search" name="keyword" value="{{searchKeyword}}" placeholder="검색어를 입력하세요" aria-label="게시글 검색어" autocomplete="off" />
+                        <button type="submit" aria-label="게시글 검색" class="site-search-submit">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
                         </button>
                     </div>
                 </form>
 
                 <!-- 오른쪽: 권한별 글쓰기 버튼 -->
                 <div class="flex items-center justify-end w-full sm:w-auto">
-                    {{#isNotice}}
-                        {{#isAdmin}}
-                            <a href="/article/{{category}}/new" class="site-btn site-btn--primary btn-glow">
+                    {{#isAdmin}}
+                            <a href="/article/{{category}}/new" class="py-2.5 px-5 rounded-full bg-primary-container text-on-primary font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
                                 <span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
-                                <span>공지 작성</span>
+                                <span>글 쓰기</span>
                             </a>
                         {{/isAdmin}}
-                    {{/isNotice}}
-                    {{^isNotice}}
-                        {{#isAdmin}}
-                            <a href="/article/{{category}}/new" class="site-btn site-btn--primary btn-glow">
-                                <span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
-                                <span>{{#isTradeTab}}교환 글쓰기{{/isTradeTab}}{{#isSellTab}}거래 글쓰기{{/isSellTab}}{{^isTradeBoard}}글 쓰기{{/isTradeBoard}}</span>
-                            </a>
-                        {{/isAdmin}}
-                    {{/isNotice}}
+
                 </div>
             </div>
 

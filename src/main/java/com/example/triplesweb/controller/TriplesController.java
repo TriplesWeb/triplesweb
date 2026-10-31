@@ -38,6 +38,27 @@ public class TriplesController {
     private final MemberSpotlightService memberSpotlightService;
     private final ChemistryViewCache chemistryViewCache;
 
+    @GetMapping("/overview")
+    @Transactional(readOnly = true)
+    public String overview(Model model) {
+        GroupIntroDto group = artistAdminService.getGroupIntro();
+        model.addAttribute("groupTitle", group.getTitle());
+        model.addAttribute("groupBody", group.getBody());
+        model.addAttribute("groupImage", group.getImageUrl());
+        model.addAttribute("groupTabImage", group.getTabImageUrl());
+        model.addAttribute("overviewOnly", true);
+        model.addAttribute("membersOnly", false);
+        return "triples/artist";
+    }
+
+    @GetMapping("/members")
+    @Transactional(readOnly = true)
+    public String members(Model model) {
+        indexTriples(model);
+        model.addAttribute("membersOnly", true);
+        return "triples/artist";
+    }
+
     /**
      * 그룹 및 멤버 소개 페이지.
      * 멤버별 오브젝트·아카이브·공식 미디어·일정을 5개씩 연결한다.
@@ -45,6 +66,8 @@ public class TriplesController {
     @GetMapping("/artist")
     @Transactional(readOnly = true)
     public String indexTriples(Model model) {
+        model.addAttribute("overviewOnly", false);
+        model.addAttribute("membersOnly", false);
 
         List<Artist> artistList = artistrepository.findAllWithUnits();
 

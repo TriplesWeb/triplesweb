@@ -34,7 +34,7 @@ public class MyPostController {
         List<Article> myList = articleRepository.findByUserId(userId, Sort.by(Sort.Direction.DESC, "formattedCreatedAt"));
 
         // boardName 같이 넣어야 하므로 map 변환
-        List<Map<String, Object>> mappedResult = myList.stream().map(article -> {
+        List<Map<String, Object>> mappedResult = myList.stream().filter(article -> java.util.Arrays.asList("trade", "sell", "group-orders", "info").contains(article.getCategory())).map(article -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", article.getId());
             map.put("category", article.getCategory());
@@ -43,9 +43,11 @@ public class MyPostController {
             map.put("userId", article.getUserId());
 
             String boardName = switch (article.getCategory()) {
-                case "free" -> "자유게시판";
-                case "notice" -> "공지게시판";
+
                 case "trade" -> "교환게시판";
+                case "sell" -> "거래게시판";
+                case "group-orders" -> "분철게시판";
+                case "info" -> "정보게시판";
                 default -> "기타";
             };
             map.put("boardName", boardName);

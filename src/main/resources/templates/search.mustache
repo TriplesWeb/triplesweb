@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{#keyword}}‘{{keyword}}’ 검색 결과{{/keyword}}{{^keyword}}검색{{/keyword}} - 트리플에스 커뮤니티</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="/css/site-ui.css?v=2">
     <style>
         .search-highlight b {
             color: #00f5d4;
@@ -47,6 +50,10 @@
                                class="site-field site-search__input" />
                         <button type="submit" class="site-search__submit" aria-label="검색">
                             <span class="material-symbols-outlined" data-icon="search">search</span>
+                    <div class="site-search-field relative flex-1 sm:w-64">
+                        <input type="search" name="keyword" value="{{keyword}}" placeholder="검색어를 입력하세요" aria-label="사이트 검색어" autocomplete="off" />
+                        <button type="submit" class="site-search-submit" aria-label="검색">
+                            <span class="material-symbols-outlined text-[18px]" data-icon="search">search</span>
                         </button>
                     </div>
                 </form>

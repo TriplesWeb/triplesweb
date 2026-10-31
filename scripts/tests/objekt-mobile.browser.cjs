@@ -36,20 +36,23 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
     if(offending.length)failures.push({engine,width,file,offending});
     if(file==='cosmo_profile.mustache.html'){
       assert.equal(await page.locator('.profile-progress-track').count(),0);
+      assert.ok(await page.locator('.profile-overall-pie').count()>=1);
       assert.ok(await page.locator('.profile-orbit').count()>=3);
-      assert.equal(await page.locator('.orbit-value').first().getAttribute('stroke-dasharray'),'50 100');
+      assert.equal(await page.locator('.profile-overall-pie .orbit-value').first().getAttribute('stroke-dasharray'),'40 100');
+      assert.equal(await page.locator('.profile-orbit .orbit-value').first().getAttribute('stroke-dasharray'),'50 100');
     }
     if(file==='article_article.mustache.html'){
       assert.equal(await page.locator('.article-board-heading').isVisible(),false);
       assert.equal(await page.locator('.article-board-row>div:nth-child(2)').first().evaluate(node=>getComputedStyle(node).whiteSpace),'normal');
     }
     if(file==='header-auth.html'||file==='header-bare.html'){
-      assert.equal(await page.locator('#mobile-menu-icon').evaluate(node=>getComputedStyle(node).fontSize),'0px');
       await page.locator('#mobile-menu-btn').click();assert.equal(await page.locator('#mobile-menu').isVisible(),true);
       await page.locator('.mobile-nav-toggle').first().click();assert.equal(await page.locator('.mobile-nav-panel').first().isVisible(),true);
+      await page.keyboard.press('Escape');
       await page.keyboard.press('Escape');assert.equal(await page.locator('#mobile-menu').isVisible(),false);
-      await page.locator('[data-user-menu-toggle]').click();assert.equal(await page.locator('[data-user-menu-panel]').isVisible(),true);
-      await page.keyboard.press('Escape');assert.equal(await page.locator('[data-user-menu-panel]').isVisible(),false);
+      await page.locator('#mobile-menu-btn').click();
+      assert.equal(await page.locator('.mobile-account a[href="/mypage"]').isVisible(),true);
+      await page.keyboard.press('Escape');
       assert.ok(await page.locator('main input').evaluate(n=>parseFloat(getComputedStyle(n).fontSize))>=16);
     }
     if(width===390&&['cosmo_profile.mustache.html','article_article.mustache.html','schedule.mustache.html','shop_shop_detail.mustache.html'].includes(file)){

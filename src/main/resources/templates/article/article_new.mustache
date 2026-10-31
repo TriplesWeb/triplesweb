@@ -1,136 +1,13 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-{{>layout/site-head}}
-<link rel="stylesheet" href="/css/bootstrap-compat.css?v=2">
-<meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+    {{>layout/site-head}}
     <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
-
-    <style>
-        /* 에디터 내부 영역 스타일 및 미디어 미리보기 서식 정리 */
-        #content {
-            min-height: 250px;
-            max-height: 500px;
-            overflow-y: auto;
-            outline: none;
-        }
-        .content-media {
-            position: relative;
-            display: inline-block;
-            margin: 0.5rem 0;
-            max-width: 100%;
-        }
-        .content-media img, .content-media video {
-            max-width: 100%;
-            border-radius: 0.75rem;
-            display: block;
-        }
-        .content-media .remove-btn, .preview-item .remove-btn {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background: rgba(0, 0, 0, 0.6);
-            border: none;
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 10;
-        }
-        .preview-item {
-            position: relative;
-            width: 90px;
-            height: 90px;
-            border-radius: 0.75rem;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: #111;
-        }
-        .preview-item img, .preview-item video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .objekt-option[hidden] { display: none !important; }
-        .objekt-picker-filter-bar {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 6px;
-        }
-        .objekt-picker-filter {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            min-height: 2.625rem;
-            padding: 0.25rem 0.65rem;
-            border: 1px solid rgba(58, 74, 70, 0.6);
-            border-radius: 0.75rem;
-            background: rgba(13, 14, 18, 0.7);
-        }
-        .objekt-picker-filter-label {
-            color: #b9cac4;
-            font-size: 11px;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-        .objekt-picker-filter-control {
-            appearance: none;
-            min-width: 72px;
-            min-height: 2rem;
-            border: 0;
-            border-radius: 0.5rem;
-            background: transparent;
-            color: #e3e2e8;
-            font-size: 12px;
-            font-weight: 600;
-            padding: 0.2rem 0.35rem;
-            cursor: pointer;
-        }
-        .objekt-picker-filter-control:focus { outline: none; }
-        .objekt-picker-search {
-            flex: 1 1 120px;
-            min-width: 110px;
-            min-height: 2.625rem;
-            display: flex;
-            align-items: center;
-            padding: 0 0.75rem;
-            border: 1px solid rgba(58, 74, 70, 0.6);
-            border-radius: 0.75rem;
-            background: rgba(13, 14, 18, 0.7);
-        }
-        .objekt-picker-search:focus-within { border-color: #00f5d4; }
-        .objekt-picker-search-input {
-            width: 100%;
-            border: 0;
-            outline: 0;
-            background: transparent;
-            color: #e3e2e8;
-            font-size: 0.875rem;
-        }
-        .objekt-picker-reset {
-            min-height: 2.625rem;
-            padding: 0 1rem;
-            border: 1px solid rgba(58, 74, 70, 0.55);
-            border-radius: 9999px;
-            background: transparent;
-            color: #b9cac4;
-            font-size: 0.75rem;
-            font-weight: 650;
-            cursor: pointer;
-        }
-        .objekt-picker-reset:hover {
-            border-color: rgba(0, 245, 212, 0.45);
-            color: #00f5d4;
-        }
-    </style>
+    <link rel="stylesheet" href="/css/site-ui.css?v=2">
+    <link rel="stylesheet" href="/css/article-page.css?v=1">
+    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=6">
 </head>
-<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+<body class="article-page bg-surface text-on-surface min-h-screen flex flex-col">
 {{>layout/header}}
 
 {{#_csrf}}
@@ -155,33 +32,35 @@
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">작성자</label>
                     <div class="relative group">
-                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-black">
                             <span class="material-symbols-outlined text-[20px]" data-icon="person">person</span>
                         </div>
 
-                        <input type="text" class="site-field" style="padding-left:2.75rem" name="userid" value="로그인 필요" readonly>
+                        <input type="text" class="w-full px-11 pr-4 py-3 bg-surface-container-lowest/50 border border-outline-variant/40 rounded-xl font-body-md text-body-md focus:outline-none" name="userid" value="로그인 필요" readonly>
                     </div>
                 </div>
 
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">제목</label>
                     <div class="relative group">
-                        <input type="text" class="site-field" name="title" required>
+                        <input type="text" class="w-full px-3 pr-4 py-3 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md placeholder:text-outline/60 focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all text-black" name="title" required>
                     </div>
                 </div>
+
+                {{>article/objekt_picker}}
+
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">내용</label>
                     <div id="content" contenteditable="true" class="w-full p-4 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" aria-multiline="true"></div>
                     <input type="hidden" name="content" id="hiddenContent" />
                 </div>
 
-
-                {{>article/objekt_picker}}
-
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">첨부 파일 (이미지 또는 영상)</label>
-                    <div class="relative group">
-                        <input type="file" name="uploadFiles" id="fileInput" multiple accept="image/*,video/*" class="w-full py-2.5 px-4 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl text-sm text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-container file:text-on-primary hover:file:opacity-90 cursor-pointer" />
+                    <div class="file-chooser-row relative">
+                        <input type="file" name="__fileChooser" id="fileInput" multiple accept="image/*,video/*" />
+                        <label for="fileInput" class="file-chooser-btn">파일 선택</label>
+                        <span id="uploadFileNames" class="upload-file-names" aria-live="polite" hidden></span>
                     </div>
                 </div>
                 <div class="space-y-2">
@@ -192,7 +71,7 @@
                     <input type="hidden" name="{{parameterName}}" value="{{token}}">
                 {{/_csrf}}
                 <div class="flex items-center gap-3 pt-4">
-                    <button type="submit" class="site-btn site-btn--primary btn-glow flex-1">작성하기</button>
+                    <button type="submit" class="flex-1 py-3.5 px-6 rounded-full bg-primary-container text-on-primary font-headline-sm text-headline-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center justify-center gap-2">작성하기</button>
                     <a href="/article/{{category}}" class="px-6 py-3.5 rounded-full bg-surface-container-high/40 hover:bg-surface-container-high border border-outline-variant/40 hover:border-outline-variant text-on-surface font-body-md text-body-md font-medium text-center transition-all duration-200">
                         목록으로
                     </a>
@@ -201,7 +80,9 @@
     </div>
     </div>
 </main>
+<script src="/js/site-ui.js?v=3"></script>
 <script src="/js/article-content.js"></script>
+<script src="/js/article-objekt-picker.js?v=7"></script>
 <script>
     window.beforeSubmit = function(form) {
     const titleInput    = form.querySelector('input[name="title"]');
@@ -226,6 +107,9 @@
             alert('내용을 입력해주세요.');
             return false;
         }
+    if (window.ArticleObjektPicker && !window.ArticleObjektPicker.validateTrade()) {
+            return false;
+        }
 
         return window.confirm('이 글을 등록하시겠습니까?');
   };
@@ -246,10 +130,18 @@
      const UPLOAD_ENDPOINT = `/api/article/${category}/uploadFile`;
      const FALLBACK_IMG    = '/images/no-image.png';
 
-     // CSRF (있는 경우에만 헤더 세팅)
-     const _csrf  = document.querySelector('meta[name="_csrf"]')?.content;
-     const _ch    = document.querySelector('meta[name="_csrf_header"]')?.content;
-     const buildHeaders = () => (_csrf && _ch) ? { [_ch]: _csrf } : {};
+     const buildHeaders = () => (window.SiteUi && window.SiteUi.csrfHeaders)
+       ? window.SiteUi.csrfHeaders()
+       : {};
+     let uploadsInFlight = 0;
+     const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+
+     function setUploadBusy(busy) {
+       if (submitBtn) {
+         submitBtn.disabled = busy;
+         submitBtn.dataset.uploadBusy = busy ? '1' : '0';
+       }
+     }
 
      // ---- helpers ----
      const pick = (o, ks) => ks.find(k => o && o[k]) ? o[ks.find(k => o && o[k])] : null;
@@ -261,6 +153,7 @@
          const p = u.pathname.startsWith('/uploads/') ? u.pathname : '/uploads' + (u.pathname.startsWith('/') ? '' : '/') + u.pathname;
          return p.replace(/\/{2,}/g, '/');
        } catch {
+         if (!pathLike.includes('/')) return null; // basename alone is not a valid upload path
          const p = pathLike.startsWith('/uploads/') ? pathLike : '/uploads/' + pathLike.replace(/^\/+/, '');
          return p.replace(/\/{2,}/g, '/');
        }
@@ -268,11 +161,21 @@
 
      function normalizeUploadResponse(payload, mime) {
        const rawUrl  = pick(payload, ['url','path','publicUrl','location','href']);
-       const rawName = pick(payload, ['savedName','storedName','name','filename']);
-       const url = toUploadsUrl(rawUrl || rawName);
-       const storedName = (url || '').replace(/^\/uploads\//,'');
+       const url = toUploadsUrl(rawUrl);
+       if (!url) return { url: null, storedName: '', fileType: '' };
+       const storedName = url.replace(/^\/uploads\//,'');
        const fileType = payload.fileType || (mime?.startsWith('video') ? 'video/mp4' : 'image/jpeg');
        return { url, storedName, fileType };
+     }
+
+     function placeCaretIn(node) {
+       const sel = window.getSelection?.();
+       if (!sel || !node) return;
+       const r = document.createRange();
+       r.selectNodeContents(node);
+       r.collapse(true);
+       sel.removeAllRanges();
+       sel.addRange(r);
      }
 
      function insertNodeAtCaret(container, node) {
@@ -281,14 +184,95 @@
          let range = sel.getRangeAt(0);
          if (!container.contains(range.commonAncestorContainer)) container.appendChild(node);
          else { range.deleteContents(); range.insertNode(node); }
-         const r = document.createRange(); r.setStartAfter(node); r.collapse(true);
-         sel.removeAllRanges(); sel.addRange(r);
        } else container.appendChild(node);
      }
 
-     function insertMediaAtCaret(url, mime, key) {
+     function insertLineBreakAfter(mediaNode) {
+       const line = document.createElement('div');
+       line.style.textAlign = 'left';
+       line.appendChild(document.createElement('br'));
+       if (mediaNode.nextSibling) mediaNode.parentNode.insertBefore(line, mediaNode.nextSibling);
+       else mediaNode.parentNode.appendChild(line);
+       placeCaretIn(line);
+       return line;
+     }
+
+     function editorHasContent(editor) {
+       if (!editor) return false;
+       if (editor.querySelector('.content-media')) return true;
+       return (editor.innerText || '').replace(/\u00a0/g, ' ').trim().length > 0;
+     }
+
+     function placeMediaInEditor(editor, wrap) {
+       if (editorHasContent(editor)) {
+         const leftovers = [...editor.childNodes];
+         editor.insertBefore(wrap, editor.firstChild);
+         const line = document.createElement('div');
+         line.style.textAlign = 'left';
+         leftovers.forEach((node) => {
+           if (node !== wrap) line.appendChild(node);
+         });
+         if (!line.childNodes.length) line.appendChild(document.createElement('br'));
+         if (wrap.nextSibling) editor.insertBefore(line, wrap.nextSibling);
+         else editor.appendChild(line);
+         placeCaretIn(line);
+         return line;
+       }
+       editor.appendChild(wrap);
+       return insertLineBreakAfter(wrap);
+     }
+
+     const fileNamesEl = document.getElementById('uploadFileNames');
+     function refreshFileNames() {
+       const names = [...previewArea.querySelectorAll('.preview-item')].map((item) => item.dataset.fileName || item.dataset.key || '').filter(Boolean);
+       if (!fileNamesEl) return;
+       if (names.length) {
+         fileNamesEl.textContent = names.join(', ');
+         fileNamesEl.hidden = false;
+       } else {
+         fileNamesEl.textContent = '';
+         fileNamesEl.hidden = true;
+       }
+     }
+     function selectMedia(key) {
+       if (!key) return;
+       contentDiv.querySelectorAll('.content-media').forEach((el) => el.classList.toggle('is-selected', el.dataset.key === key));
+       previewArea.querySelectorAll('.preview-item').forEach((el) => el.classList.toggle('is-selected', el.dataset.key === key));
+       const wrap = contentDiv.querySelector(`.content-media[data-key="${CSS.escape(key)}"]`);
+       if (!wrap) return;
+       wrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+       contentDiv.focus({ preventScroll: true });
+       if (wrap.nextElementSibling) placeCaretIn(wrap.nextElementSibling);
+       else insertLineBreakAfter(wrap);
+     }
+
+     function clearEditorCaret() {
+       contentDiv.blur();
+       const sel = window.getSelection?.();
+       if (sel) sel.removeAllRanges();
+       if (document.activeElement && typeof document.activeElement.blur === 'function') {
+         document.activeElement.blur();
+       }
+     }
+
+     function bindMediaRemove(btn, onRemove) {
+       btn.addEventListener('mousedown', (event) => {
+         event.preventDefault();
+         event.stopPropagation();
+       });
+       btn.addEventListener('click', (event) => {
+         event.preventDefault();
+         event.stopPropagation();
+         onRemove();
+         clearEditorCaret();
+       });
+     }
+
+     function insertMediaAtCaret(url, mime, key, fileName) {
        // 본문
        const wrap = document.createElement('div'); wrap.className='content-media'; wrap.dataset.key=key;
+       wrap.dataset.fileName = fileName || key;
+       wrap.contentEditable = 'false';
        let media;
        if (mime?.startsWith('video')) {
          media = document.createElement('video'); media.controls = true;
@@ -298,27 +282,38 @@
          media.onerror = function(){ this.onerror=null; this.src=FALLBACK_IMG; };
        }
        const removeBtn = document.createElement('button');
-       removeBtn.type='button'; removeBtn.className='remove-btn';
-       removeBtn.innerHTML='<span class="material-symbols-outlined" style="font-size:16px;color:#fff;">close</span>';
-       removeBtn.addEventListener('click', () => {
+       removeBtn.type='button'; removeBtn.className='remove-btn'; removeBtn.setAttribute('aria-label', '미디어 삭제');
+       removeBtn.textContent='×';
+       bindMediaRemove(removeBtn, () => {
          wrap.remove();
          previewArea.querySelector(`[data-key="${key}"]`)?.remove();
          form.querySelector(`input[name="uploadedFiles"][data-key="${key}"]`)?.remove();
+         refreshFileNames();
        });
        wrap.appendChild(media); wrap.appendChild(removeBtn);
-       insertNodeAtCaret(contentDiv, wrap);
+       wrap.addEventListener('click', (event) => {
+         if (event.target.closest('.remove-btn')) return;
+         selectMedia(key);
+       });
+       placeMediaInEditor(contentDiv, wrap);
+       contentDiv.focus({ preventScroll: true });
 
        // 미리보기
-       const thumbBox = document.createElement('div'); thumbBox.className='preview-item'; thumbBox.dataset.key=key;
+       const thumbBox = document.createElement('div'); thumbBox.className='preview-item'; thumbBox.dataset.key=key; thumbBox.dataset.fileName = fileName || key;
        const thumb = mime?.startsWith('video') ? document.createElement('video') : document.createElement('img');
        thumb.src=url; if (thumb.tagName==='VIDEO') thumb.controls=true;
        thumb.onerror=function(){ this.onerror=null; this.src=FALLBACK_IMG; };
        const tr = document.createElement('button');
-       tr.type='button'; tr.className='remove-btn';
-       tr.innerHTML='<span class="material-symbols-outlined" style="font-size:18px;color:#dc3545;">close</span>';
-       tr.addEventListener('click', () => removeBtn.click());
+       tr.type='button'; tr.className='remove-btn'; tr.setAttribute('aria-label', '미디어 삭제');
+       tr.textContent='×';
+       bindMediaRemove(tr, () => removeBtn.click());
        thumbBox.appendChild(thumb); thumbBox.appendChild(tr);
+       thumbBox.addEventListener('click', (event) => {
+         if (event.target.closest('.remove-btn')) return;
+         selectMedia(key);
+       });
        previewArea.appendChild(thumbBox);
+       refreshFileNames();
      }
 
      function addHiddenUploadedFile(storedName, key) {
@@ -329,9 +324,10 @@
 
      async function uploadOne(file) {
        const fd = new FormData(); fd.append('file', file);
-       const res = await fetch(UPLOAD_ENDPOINT, { method:'POST', body:fd, headers:buildHeaders() });
+       const res = await fetch(UPLOAD_ENDPOINT, {
+         method:'POST', body:fd, headers:buildHeaders(), credentials:'same-origin'
+       });
 
-       // 🔴 여기! 응답 실패면 바로 중단(중요)
        if (!res.ok) {
          const txt = await res.text().catch(()=>String(res.status));
          throw new Error(`HTTP ${res.status} - ${txt.substring(0,200)}`);
@@ -340,25 +336,39 @@
        const ct = res.headers.get('content-type') || '';
        const payload = ct.includes('application/json') ? await res.json() : { url: await res.text() };
        const { url, storedName } = normalizeUploadResponse(payload, file.type);
-       if (!url) throw new Error('업로드 응답에 url이 없습니다.');
+       if (!url || !storedName || !storedName.includes('/')) {
+         throw new Error('업로드 응답에 올바른 url이 없습니다.');
+       }
 
-       const key = storedName || url;
-       insertMediaAtCaret(url, file.type, key);
+       const key = storedName;
+       insertMediaAtCaret(url, file.type, key, file.name);
        addHiddenUploadedFile(storedName, key);
      }
 
+     form.addEventListener('submit', (event) => {
+       if (uploadsInFlight > 0) {
+         event.preventDefault();
+         alert('파일 업로드가 끝날 때까지 기다려 주세요.');
+       }
+     });
+
      fileInput.addEventListener('change', async (e) => {
        const files = Array.from(e.target.files || []);
-       for (const f of files) {
-         try { await uploadOne(f); }
-         catch (err) { console.error(err); alert('업로드 실패: ' + (err.message || err)); }
+       uploadsInFlight += 1;
+       setUploadBusy(true);
+       try {
+         for (const f of files) {
+           try { await uploadOne(f); }
+           catch (err) { console.error(err); alert('업로드 실패: ' + (err.message || err)); }
+         }
+       } finally {
+         uploadsInFlight = Math.max(0, uploadsInFlight - 1);
+         setUploadBusy(uploadsInFlight > 0);
+         fileInput.value = '';
        }
-       fileInput.value = '';
      });
    });
 </script>
-<script src="/js/article-objekt-picker.js?v=5"></script>
 
-<script src="/js/bootstrap-compat.js?v=1" defer></script>
 </body>
 </html>

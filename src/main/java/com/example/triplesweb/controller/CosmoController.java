@@ -1,11 +1,15 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.entity.Artist;
-import com.example.triplesweb.service.ArtistSnapshotService;
+import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.ObjektMarketDataService;
 import com.example.triplesweb.util.MemberPortraitOptions;
+import com.example.triplesweb.util.ObjektFilterOrder;
+import com.example.triplesweb.util.ObjektLinks;
+import com.example.triplesweb.util.ObjektSeasonCodes;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,6 +19,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.client.RestClientException;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -22,6 +29,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Controller
@@ -31,7 +39,7 @@ public class CosmoController {
 
     private static final int PAGE_SIZE = 20;
     private final ObjektService objektService;
-    private final ArtistSnapshotService artists;
+    private final ArtistRepository artistRepository;
     private final ObjektMarketDataService marketData;
 
     @GetMapping("/objekt")
@@ -48,11 +56,12 @@ public class CosmoController {
         // 무한 스크롤: 최초 HTML은 항상 첫 페이지(20개)만 렌더한다.
         ObjektPageResult page = loadObjektPage(0, search, member, season, classFilters, kind, sort, group);
 
-        ObjektService.FilterFacets facets = objektService.filterFacets();
-        List<String> memberOptions = facets.members();
-        List<Artist> artistRows = artists.findAll();
+        List<String> memberOptions = ObjektFilterOrder.sortedMembers(
+                uniqueValues(page.allObjekts(), item -> firstValue(item, "member", "memberName")).stream()
+                        .flatMap(value -> MemberPortraitOptions.objektMembers(value).stream()).toList());
+        List<Artist> artists = artistRepository.findAll(Sort.by(Sort.Direction.ASC, "artistId"));
         model.addAttribute("memberOptions", memberOptions);
-        List<Map<String, Object>> pickerOptions = MemberPortraitOptions.forObjektFilter(memberOptions, artistRows);
+        List<Map<String, Object>> pickerOptions = MemberPortraitOptions.forObjektFilter(memberOptions, artists);
         String selectedGroup = memberGroup(group, cleanSelections(member));
         List<String> selectedMembers = "other".equals(selectedGroup) ? List.of() : cleanSelections(member).stream()
                 .flatMap(value -> MemberPortraitOptions.objektMembers(value).stream()).distinct().toList();
@@ -61,11 +70,11 @@ public class CosmoController {
         model.addAttribute("memberPickerOptions", pickerOptions);
         model.addAttribute("selectedGroup", selectedGroup);
         model.addAttribute("isOtherGroup", "other".equals(selectedGroup));
-        model.addAttribute("seasonOptions", facets.seasons());
-        model.addAttribute("classOptions", facets.classes());
-        model.addAttribute("objektNumbers", facets.collectionNumbers());
+        model.addAttribute("seasonOptions", ObjektFilterOrder.sortedSeasons(uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "seasonKey", "season"))));
+        model.addAttribute("classOptions", uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "classKey", "class")));
+        model.addAttribute("objektNumbers", uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "collectionNo", "collectionNumber")));
 
-        model.addAttribute("objekts", page.items());
+        model.addAttribute("objekts", withMemberLinks(page.items()));
         model.addAttribute("objektCount", page.resultCount());
         model.addAttribute("objektPageCount", page.items().size());
         model.addAttribute("objektAllCount", page.allCount());
@@ -106,7 +115,7 @@ public class CosmoController {
         body.put("hasMore", result.hasMore());
         body.put("nextPage", result.hasMore() ? result.page() + 1 : null);
         body.put("error", result.error().isBlank() ? null : result.error());
-        body.put("items", result.items());
+        body.put("items", withMemberLinks(result.items()));
         return ResponseEntity.ok(body);
     }
 
@@ -126,6 +135,9 @@ public class CosmoController {
         try {
             allObjekts = objektService.findCollections("triples");
             if (allObjekts == null) allObjekts = Collections.emptyList();
+            // 정렬용 벌크 통계. 화면의 발행량은 아래 시리얼 집합 결과로 교체한다.
+            allObjekts = marketData.withMintCounts(allObjekts);
+
             if (allObjekts.isEmpty()) error = "API 응답에 표시할 컬렉션이 없습니다.";
         } catch (RestClientException ex) {
             allObjekts = Collections.emptyList();
@@ -141,20 +153,19 @@ public class CosmoController {
         Map<String, java.util.Set<String>> membershipCache = new java.util.HashMap<>();
         List<String> selectedSeasons = cleanSelections(season);
         List<String> selectedClasses = cleanSelections(classFilters);
-        String selectedKind = normalize(kind);
+        String selectedKind = "전체".equals(normalize(kind)) ? "all" : normalize(kind);
         String selectedSort = normalize(sort);
 
         // 전체 캐시에서 검색어와 모든 필터를 먼저 적용하고, 그 결과에만 정렬과 페이지네이션을 적용한다.
-        // mintCount는 정렬 비교자에만 조회하고, 표시용 복사는 페이지 슬라이스에만 적용한다.
         List<Map<String, Object>> filtered = allObjekts.stream()
-                .filter(objekt -> query.isBlank() || searchableText(objekt).contains(query))
+                .filter(objekt -> matchesSearch(query, objekt))
                 .filter(objekt -> "all".equals(selectedGroup) || matchesMember(selectedGroup, selectedNames,
                         membershipCache.computeIfAbsent(firstValue(objekt, "member", "memberName"), MemberPortraitOptions::objektMembers)))
                 .filter(objekt -> matchesSelection(selectedSeasons, firstValue(objekt, "seasonKey", "season")))
                 .filter(objekt -> matchesSelection(selectedClasses, firstValue(objekt, "classKey", "class")))
                 .filter(objekt -> selectedKind.isBlank() || "all".equals(selectedKind)
                         || normalize(firstValue(objekt, "collectionNo", "collectionNumber")).equals(selectedKind))
-                .sorted(sortComparator(selectedSort))
+                .sorted(sortComparator(selectedSort, new java.util.HashMap<>()))
                 .collect(Collectors.toList());
 
         int resultCount = filtered.size();
@@ -162,15 +173,17 @@ public class CosmoController {
         int safePage = Math.max(0, page);
         if (resultCount == 0 || safePage >= totalPages) {
             return new ObjektPageResult(
-                    List.of(), safePage, resultCount, allObjekts.size(), totalPages, false, error);
+                    List.of(), allObjekts, safePage, resultCount, allObjekts.size(), totalPages, false, error);
         }
         int fromIndex = safePage * PAGE_SIZE;
         int toIndex = Math.min(fromIndex + PAGE_SIZE, resultCount);
-        List<Map<String, Object>> pageObjekts = marketData.withMintCounts(filtered.subList(fromIndex, toIndex));
+        List<Map<String, Object>> pageObjekts = marketData.withIssuedSupply(filtered.subList(fromIndex, toIndex));
+        if (pageObjekts == null) pageObjekts = filtered.subList(fromIndex, toIndex);
         boolean hasMore = toIndex < resultCount;
 
         return new ObjektPageResult(
                 pageObjekts,
+                allObjekts,
                 safePage,
                 resultCount,
                 allObjekts.size(),
@@ -182,6 +195,7 @@ public class CosmoController {
 
     private record ObjektPageResult(
             List<Map<String, Object>> items,
+            List<Map<String, Object>> allObjekts,
             int page,
             int resultCount,
             int allCount,
@@ -199,8 +213,8 @@ public class CosmoController {
 
     private static String memberGroup(String group, List<String> selected) {
         if ("other".equalsIgnoreCase(group)) return "other";
-        if ("members".equalsIgnoreCase(group) || selected.stream().anyMatch(value -> !MemberPortraitOptions.objektMembers(value).isEmpty())) return "members";
-        return selected.isEmpty() ? "all" : "other";
+        if ("members".equalsIgnoreCase(group) || (selected != null && !selected.isEmpty())) return "members";
+        return "all";
     }
 
     private static boolean matchesMember(String group, java.util.Set<String> selected, java.util.Set<String> actual) {
@@ -215,7 +229,13 @@ public class CosmoController {
         return selected.stream().map(CosmoController::normalize).anyMatch(normalizedActual::equals);
     }
 
-    private Comparator<Map<String, Object>> sortComparator(String sort) {
+    private static List<String> uniqueValues(List<Map<String, Object>> source, Function<Map<String, Object>, String> extractor) {
+        return source.stream().map(extractor).filter(value -> value != null && !value.isBlank())
+                .map(String::trim).distinct().sorted(String.CASE_INSENSITIVE_ORDER.thenComparing(Comparator.naturalOrder()))
+                .collect(Collectors.toList());
+    }
+
+    private static Comparator<Map<String, Object>> sortComparator(String sort, Map<String, Integer> memberOrderCache) {
         Comparator<Map<String, Object>> byDate = Comparator.comparing(
                 objekt -> firstValue(objekt, "createdAt", "created_at", "date"),
                 Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
@@ -230,19 +250,23 @@ public class CosmoController {
             case "number_high" -> byNumber.reversed();
             case "mint_low" -> mintComparator(false);
             case "mint_high" -> mintComparator(true);
-            case "first_member" -> byMember;
-            case "last_member" -> byMember.reversed();
+            case "first_member" -> Comparator.<Map<String, Object>>comparingInt(item -> memberOrder(item, memberOrderCache)).thenComparing(byMember);
+            case "last_member" -> Comparator.<Map<String, Object>>comparingInt(item -> { int order = memberOrder(item, memberOrderCache); return order == 24 ? 24 : 23 - order; }).thenComparing(byMember);
             case "latest" -> byDate.reversed();
             default -> byDate.reversed();
         };
     }
 
-    private Comparator<Map<String, Object>> mintComparator(boolean descending) {
+    private static int memberOrder(Map<String, Object> item, Map<String, Integer> cache) {
+        return cache.computeIfAbsent(firstValue(item, "member", "memberName"), member ->
+                MemberPortraitOptions.objektMembers(member).stream().mapToInt(MemberPortraitOptions::memberIndex).min().orElse(24));
+    }
+
+    private static Comparator<Map<String, Object>> mintComparator(boolean descending) {
         Comparator<Long> counts = descending ? Comparator.reverseOrder() : Comparator.naturalOrder();
-        return Comparator.<Map<String, Object>, Long>comparing(item -> {
-                    if (item.get("mintCount") instanceof Number n) return n.longValue();
-                    return marketData.mintCount(firstValue(item, "slug"));
-                }, Comparator.nullsLast(counts))
+        return Comparator.<Map<String, Object>, Long>comparing(item ->
+                        item.get("mintCount") instanceof Number n ? n.longValue() : null,
+                        Comparator.nullsLast(counts))
                 .thenComparing(item -> firstValue(item, "slug", "id"));
     }
 
@@ -251,13 +275,17 @@ public class CosmoController {
         catch (Exception ignored) { return 0; }
     }
 
-    private static String searchableText(Map<String, Object> objekt) {
-        return String.join(" ",
+    private static boolean matchesSearch(String query, Map<String, Object> objekt) {
+        if (query == null || query.isBlank()) return true;
+        String season = firstValue(objekt, "season", "seasonKey");
+        String collectionNo = firstValue(objekt, "collectionNo");
+        String base = String.join(" ",
                 value(objekt, "searchText"), value(objekt, "collectionId"), value(objekt, "slug"),
                 value(objekt, "season"), value(objekt, "seasonKey"), value(objekt, "member"),
                 value(objekt, "memberName"), value(objekt, "artist"), value(objekt, "collectionNo"),
                 value(objekt, "class"), value(objekt, "classKey"), value(objekt, "numberValue"))
                 .toLowerCase(Locale.ROOT);
+        return ObjektSeasonCodes.matches(query, base, season, collectionNo);
     }
 
     private static String firstValue(Map<String, Object> objekt, String... keys) {
@@ -279,9 +307,21 @@ public class CosmoController {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
     }
 
+    private static List<Map<String, Object>> withMemberLinks(List<Map<String, Object>> items) {
+        if (items == null || items.isEmpty()) return items == null ? List.of() : items;
+        List<Map<String, Object>> out = new ArrayList<>(items.size());
+        for (Map<String, Object> item : items) {
+            Map<String, Object> copy = new LinkedHashMap<>(item);
+            String member = firstValue(item, "member", "memberName");
+            copy.put("memberHref", "/cosmo/objekt/member?name="
+                    + URLEncoder.encode(member, StandardCharsets.UTF_8).replace("+", "%20"));
+            copy.put("publicKey", ObjektLinks.key(item));
+            out.add(copy);
+        }
+        return out;
+    }
+
     @GetMapping("/event")
     public String indexCosmoEvent() { return "cosmo/event"; }
 
-    @GetMapping("/update")
-    public String indexCosmoUpdate() { return "cosmo/update"; }
 }

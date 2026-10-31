@@ -1,0 +1,10 @@
+{{#items}}
+{{^nested}}<a href="{{href}}">{{label}}</a>{{/nested}}
+{{#nested}}
+<div class="header-link-group">
+    {{#linked}}<a class="header-group-heading" href="{{href}}">{{label}}</a>{{/linked}}
+    {{^linked}}<span class="header-group-heading">{{label}}</span>{{/linked}}
+    <div class="header-related-links">{{#children}}<a href="{{href}}">{{label}}</a>{{/children}}</div>
+</div>
+{{/nested}}
+{{/items}}

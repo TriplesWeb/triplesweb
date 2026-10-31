@@ -8,6 +8,9 @@
 <link rel="stylesheet" href="/css/cosmo-collection.css?v=12">
 <link rel="stylesheet" href="/css/season-filters.css?v=2">
 <script src="/js/season-filters.js?v=2" defer></script>
+<link rel="stylesheet" href="/css/archive-page.css?v=13">
+<link rel="stylesheet" href="/css/member-portrait-picker.css?v=13">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=13">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}내 오브젝트 검색{{/nickname}}</title>
 </head>
@@ -36,7 +39,6 @@
                 <h1>{{nickname}}</h1>
                 <p>보유 오브젝트 <strong>{{ownedCount}}</strong>개{{#hasActiveFilters}} · 필터 결과 <strong id="collection-filtered-count">{{filteredCount}}</strong>개{{/hasActiveFilters}}</p>
                 {{#profileUrl}}<a class="collection-action-btn" href="{{profileUrl}}?tab=overview">프로필 보기</a>{{/profileUrl}}
-                <a class="collection-action-btn" href="/cosmo/transfers?nickname={{nicknameEncoded}}">전송 내역 보기</a>
             </div>
         </div>
     </section>
@@ -92,21 +94,29 @@
                 </div>
                 <div class="objekt-filter relative" id="collection-kind-dropdown">
                     <span class="objekt-filter-label">종류</span>
-                    <button type="button" class="objekt-filter-control" id="collection-kind-toggle" aria-expanded="false" aria-controls="collection-kind-menu">
-                        <span id="collection-kind-label" class="truncate">전체</span>
-                        <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
-                    </button>
-                    <div id="collection-kind-menu" class="objekt-dropdown-menu" hidden>
-                        <button type="button" class="objekt-choice" data-value="all">
-                            <span class="objekt-choice-mark" aria-hidden="true"></span>
-                            <span class="objekt-choice-text">전체 종류</span>
+                    <div class="objekt-filter-control objekt-kind-combo">
+                        <input type="text"
+                               id="collection-kind-select"
+                               class="objekt-kind-select"
+                               value="{{selectedKind}}"
+                               placeholder="전체"
+                               autocomplete="off"
+                               spellcheck="false"
+                               role="combobox"
+                               aria-expanded="false"
+                               aria-controls="collection-kind-menu"
+                               aria-autocomplete="list"
+                               aria-label="옵젝 종류 필터 (입력 또는 선택)">
+                        <button type="button" class="objekt-kind-toggle" id="collection-kind-toggle" aria-label="종류 목록 열기" tabindex="-1">
+                            <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
                         </button>
+                    </div>
+                    <div id="collection-kind-menu" class="objekt-dropdown-menu hidden" hidden role="listbox" aria-label="종류 목록">
+                        <button type="button" class="objekt-kind-option" data-value="all" role="option">전체</button>
                         {{#kindOptions}}
-                        <button type="button" class="objekt-choice" data-value="{{.}}">
-                            <span class="objekt-choice-mark" aria-hidden="true"></span>
-                            <span class="objekt-choice-text">{{.}}</span>
-                        </button>
+                        <button type="button" class="objekt-kind-option" data-value="{{.}}" role="option">{{.}}</button>
                         {{/kindOptions}}
+                        <p class="objekt-kind-empty" id="collection-kind-empty" hidden>일치하는 종류 없음</p>
                     </div>
                 </div>
                 <div class="objekt-filter relative" id="collection-class-dropdown">
@@ -158,7 +168,7 @@
                     </button>
                 </div>
                 <a class="objekt-reset-button" href="/cosmo/collection?nickname={{nicknameEncoded}}">
-                    <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2.6 8.4M3 4v6h6"/></svg>
                     초기화
                 </a>
             </div>
@@ -169,11 +179,11 @@
         {{#cards}}
         <article class="ar-panel ar-card collection-card">
             <div class="collection-image-wrap">
+            <span class="collection-card-serial">{{#hasSerial}}#{{serial}}{{/hasSerial}}{{^hasSerial}}시리얼 확인 중{{/hasSerial}}</span><span class="collection-card-season">{{season}}</span>
             {{#hasImage}}<img class="collection-image" src="{{thumbnailImage}}" alt="{{collectionId}}" referrerpolicy="no-referrer" loading="lazy" decoding="async">{{/hasImage}}
             {{^hasImage}}<span class="ar-muted">이미지 준비 중</span>{{/hasImage}}
             </div>
             <div class="ar-body">
-                <div class="ar-meta">{{#hasSerial}}<span class="ar-id" aria-label="시리얼 {{serial}}">#{{serial}}</span>{{/hasSerial}}{{^hasSerial}}<span class="ar-id">시리얼 확인 중</span>{{/hasSerial}}{{#objektClass}}<span class="ar-badge">{{objektClass}}</span>{{/objektClass}}</div>
                 {{#hasDetail}}<h3><a class="collection-title-link" href="{{detailUrl}}">{{collectionId}}</a></h3>{{/hasDetail}}
                 {{^hasDetail}}<h3>{{collectionId}}</h3>{{/hasDetail}}
                 <p class="ar-muted">{{member}}{{#season}} · {{season}}{{/season}}</p>
@@ -192,7 +202,8 @@
     {{/hasCollection}}
 </main>
 {{>layout/footer}}
-<script src="/js/member-portrait-picker.js?v=8"></script>
+<script src="/js/member-portrait-picker.js?v=9"></script>
+<script src="/js/objekt-kind-combo.js?v=1"></script>
 <script>
 (() => {
   const form = document.getElementById('collection-filter-form');
@@ -235,7 +246,7 @@
         multi: false,
         onChange: (values) => {
           if (memberInput) memberInput.value = values[0] || '';
-          setGroup(values[0] ? 'members' : (groupInput?.value === 'other' ? 'other' : 'members'), false);
+          setGroup(values[0] ? 'members' : (groupInput?.value === 'other' ? 'other' : 'all'), false);
         }
       });
     }
@@ -251,8 +262,22 @@
   if (form) {
     bindChoiceMenu('season', 'collection-season');
     bindChoiceMenu('class', 'collection-class');
-    bindSingleMenu('collection-kind', 'collection-kind-input', 'all');
     bindSingleMenu('collection-sort', 'collection-sort-input', 'latest');
+    const kindCombo = window.ObjektKindCombo?.bindKindCombo({
+      input: document.getElementById('collection-kind-select'),
+      menu: document.getElementById('collection-kind-menu'),
+      toggle: document.getElementById('collection-kind-toggle'),
+      hiddenInput: document.getElementById('collection-kind-input'),
+      empty: document.getElementById('collection-kind-empty'),
+      closeOthers() {
+        document.querySelectorAll('.objekt-dropdown-menu').forEach((other) => {
+          if (other.id !== 'collection-kind-menu') other.hidden = true;
+        });
+      }
+    });
+    form.addEventListener('submit', () => {
+      kindCombo?.commit(document.getElementById('collection-kind-select')?.value);
+    });
   }
 
   function bindSingleMenu(prefix, inputId, fallback) {
@@ -374,7 +399,6 @@
     const title = escapeHtml(item.collectionId || '오브젝트');
     const member = escapeHtml(item.member || '');
     const season = item.season ? ' · ' + escapeHtml(item.season) : '';
-    const klass = item.objektClass ? `<span class="ar-badge">${escapeHtml(item.objektClass)}</span>` : '';
     const serial = item.hasSerial
       ? `<span class="ar-id" aria-label="시리얼 ${escapeHtml(item.serial)}">#${escapeHtml(item.serial)}</span>`
       : '<span class="ar-id">시리얼 확인 중</span>';
@@ -385,14 +409,17 @@
       ? `<h3><a class="collection-title-link" href="${escapeHtml(item.detailUrl)}">${title}</a></h3>`
       : `<h3>${title}</h3>`;
     return `<article class="ar-panel ar-card collection-card">
-      <div class="collection-image-wrap">${image}</div>
+      <div class="collection-image-wrap"><span class="collection-card-serial">${serial}</span><span class="collection-card-season">${escapeHtml(item.season || '')}</span>${image}</div>
       <div class="ar-body">
-        <div class="ar-meta">${serial}${klass}</div>
         ${heading}
         <p class="ar-muted">${member}${season}</p>
       </div>
     </article>`;
   }
+
+  // 무한 스크롤은 제출된 URL 필터만 유지한다(폼 미제출 변경 무시).
+  const submittedFilters = new URLSearchParams(window.location.search);
+  submittedFilters.delete('page');
 
   async function loadMore() {
     if ((!hasMore && !pending) || loading) return;
@@ -403,6 +430,8 @@
     try {
       const params = new URLSearchParams(new FormData(form));
       params.set('page', String(pending ? 0 : nextPage));
+      const params = new URLSearchParams(submittedFilters);
+      params.set('page', String(nextPage));
       const res = await fetch(`/cosmo/collection/more?${params.toString()}`, {
         headers: { Accept: 'application/json' },
         credentials: 'same-origin',

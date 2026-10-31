@@ -1,9 +1,11 @@
-/* Page-only overrides: keep image filters static; selected sheen uses transform/opacity only. */
+/* Page-only overrides: 비선택 프레임 필터는 끄고, 선택 윤곽 drop-shadow는 허용한다. */
 .artist-page .nav-tab-btn:not(.is-active) .artist-tab-shine{display:none}
-.artist-page .artist-tab-frame{filter:none!important;transition:none!important}
+.artist-page .nav-tab-btn:not(.is-active) .artist-tab-frame{filter:none;transition:none}
 .artist-page .nav-tab-btn.is-active .artist-tab-avatar{outline:none}
 .artist-page .tab-pane[hidden],.artist-page [data-artist-feed-retry][hidden]{display:none!important}
 .artist-page .artist-feed-slot{min-height:4rem}
 .artist-page .artist-feed-status{margin-top:2rem;font-size:.85rem;line-height:1.7;color:#b9cac4}
 .artist-page .artist-feed-slot[aria-busy=true]{opacity:.8}
 @media(max-width:767px){.artist-page .card-box{backdrop-filter:none}.artist-page .artist-member-photo{box-shadow:0 0 0 1px #ffffff12}}
+
+.artist-page .artist-member-tabs{padding-top:.4rem;padding-bottom:.7rem}.artist-page .card-box{backdrop-filter:none}.artist-page .artist-member-pane{contain:layout style}

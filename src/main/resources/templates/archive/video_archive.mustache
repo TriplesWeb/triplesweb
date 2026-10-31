@@ -8,7 +8,12 @@
 
     <link rel="stylesheet" href="/css/archive-page.css?v=14">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=20">
-
+    <!-- 폰트 및 아이콘 연결 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Tailwind CSS 스크립트 -->
+    <link rel="stylesheet" href="/css/archive-page.css?v=13">
+    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=13">
     {{#_csrf}}
     <meta name="_csrf" content="{{token}}">
     <meta name="_csrf_header" content="{{headerName}}">
@@ -257,7 +262,7 @@
 
 {{>layout/footer}}
 
-<script src="/js/member-portrait-picker.js?v=8"></script>
+<script src="/js/member-portrait-picker.js?v=9"></script>
 <script src="/js/archive-manage.js?v=5"></script>
 <script src="/js/date-range-filter.js?v=1"></script>
 <script src="/js/archive-browse.js?v=6"></script>

@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    {{>layout/site-head}}
-<link rel="stylesheet" href="/css/about-admin.css?v=1">
+    {{>layout/triples-head}}
     <title>트리플에스 커뮤니티 - 트리플에스 디멘션</title>
 </head>
 <body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen about-admin-page">
@@ -15,7 +14,7 @@
                 <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4]"></span>트리플에스 디멘션
             </h2>
             <div class="flex flex-wrap items-center gap-2 shrink-0">
-                <button type="button" id="unitAddBtn" class="about-mode-btn about-admin-only is-active">유닛 추가</button>
+                <button type="button" id="unitAddBtn" class="about-mode-btn about-admin-only is-active">유닛 (디멘션) 추가</button>
                 <button type="button" id="unitAdminBtn" class="about-admin-btn hidden" aria-pressed="false">관리자</button>
             </div>
         </div>
@@ -32,7 +31,7 @@
             </div>
         </div>
         {{^unit}}
-        <p class="text-sm text-[#b9cac4]/70 py-8 text-center" role="status">등록된 유닛이 없습니다.</p>
+        <p class="text-sm text-[#b9cac4]/70 py-8 text-center" role="status">등록된 디멘션이 없습니다.</p>
         {{/unit}}
 
         <div class="tab-content mt-6" id="unitTabContent">
@@ -104,6 +103,6 @@
 <script src="/js/about-admin-auth.js?v=2"></script>
 <script src="/js/about-tabs.js?v=1"></script>
 <script src="/js/about-modal.js?v=1"></script>
-<script src="/js/unit.js?v=11" defer></script>
+<script src="/js/unit.js?v=11"></script>
 </body>
 </html>

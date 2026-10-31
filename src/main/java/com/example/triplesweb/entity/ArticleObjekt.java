@@ -14,6 +14,8 @@ public class ArticleObjekt {
     @JoinColumn(name = "article_id", nullable = false, foreignKey = @ForeignKey(name = "fk_article_objekt_article"))
     private Article article;
     @Column(name = "objekt_key", nullable = false, length = 255) private String objektKey;
+    /** HAVE = offering, WANT = looking for. Non-trade boards store HAVE only. */
+    @Column(name = "side", nullable = false, length = 10) private String side = "HAVE";
     @Column(name = "collection_id", length = 255) private String collectionId;
     @Column(name = "member_name", length = 100) private String memberName;
     @Column(name = "thumbnail_image", length = 1000) private String thumbnailImage;

@@ -15,12 +15,19 @@ class ArticleObjektOrderingTest {
         var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
                 mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog);
         when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("id","uuid","slug","hayeoncc367z","collectionId","Cream02 HaYeon 367Z","member","HaYeon")));
-        for (String category : List.of("trade","sell")) {
+        for (String category : List.of("trade","sell","group-orders")) {
             var model = new ExtendedModelMap();
             controller.showArticleForm(category, List.of("uuid","invalid"), model);
             assertThat((List<Map<String,Object>>)model.get("objektSelected")).hasSize(1)
                     .first().extracting(row -> row.get("id")).isEqualTo("uuid");
             assertThat(model.get("objektInitialSearch")).isEqualTo("Cream02 HaYeon 367Z");
+            if ("trade".equals(category)) {
+                assertThat(model.get("isTradeObjektSplit")).isEqualTo(true);
+                assertThat((List<Map<String,Object>>)model.get("objektHaveSelected")).hasSize(1);
+                assertThat((List<Map<String,Object>>)model.get("objektWantSelected")).isEmpty();
+            } else {
+                assertThat(model.get("isTradeObjektSplit")).isEqualTo(false);
+            }
         }
     }
     @Test void tradeAndSellNewAndEditFormsShareMemberAndSeasonOrder() {
@@ -36,7 +43,7 @@ class ArticleObjektOrderingTest {
         Article article = new Article(); article.setId(3L); article.setTitle("test"); article.setContent("test");
         when(articles.showWithFiles(3L)).thenReturn(article);
         when(links.findForArticle(3L)).thenReturn(List.of());
-        for (String category : List.of("trade", "sell")) {
+        for (String category : List.of("trade", "sell", "group-orders")) {
             var fresh = new ExtendedModelMap();
             controller.showArticleForm(category, fresh);
             var edited = new ExtendedModelMap();
@@ -105,7 +112,7 @@ class ArticleObjektOrderingTest {
         existing.setId(4L);
         existing.setTitle("같은 제목");
         existing.setContent("<p>같은 내용</p>");
-        existing.setCategory("free");
+        existing.setCategory("info");
         when(articles.showWithFiles(4L)).thenReturn(existing);
         when(links.findForArticle(4L)).thenReturn(List.of());
 
@@ -113,7 +120,7 @@ class ArticleObjektOrderingTest {
         blankTitle.setTitle("  ");
         blankTitle.setContent("<p>본문</p>");
         var missingTitle = new ExtendedModelMap();
-        assertThat(controller.updateArticle("free", 4L, blankTitle, null, null, null, null, missingTitle))
+        assertThat(controller.updateArticle("info", 4L, blankTitle, null, null, null, null, null, null, missingTitle))
                 .isEqualTo("article/article_edit");
         assertThat(missingTitle.get("errorMessage")).isEqualTo("제목을 입력해주세요.");
 
@@ -121,7 +128,7 @@ class ArticleObjektOrderingTest {
         blankBody.setTitle("제목");
         blankBody.setContent("<p><br></p>");
         var missingBody = new ExtendedModelMap();
-        assertThat(controller.updateArticle("free", 4L, blankBody, null, null, null, null, missingBody))
+        assertThat(controller.updateArticle("info", 4L, blankBody, null, null, null, null, null, null, missingBody))
                 .isEqualTo("article/article_edit");
         assertThat(missingBody.get("errorMessage")).isEqualTo("내용을 입력해주세요.");
 
@@ -131,8 +138,42 @@ class ArticleObjektOrderingTest {
         same.setTitle("같은 제목");
         same.setContent("<p>같은 내용</p>");
         var unchanged = new ExtendedModelMap();
-        assertThat(controller.updateArticle("free", 4L, same, null, null, null, null, unchanged))
+        assertThat(controller.updateArticle("info", 4L, same, null, null, null, null, null, null, unchanged))
                 .isEqualTo("article/article_edit");
         assertThat(unchanged.get("errorMessage")).isEqualTo("게시글을 수정해주세요.");
+    }
+
+    @Test @SuppressWarnings("unchecked") void tradeDetailSplitsHaveAndWantZones() {
+        var articles = mock(ArticleService.class);
+        var links = mock(ArticleObjektService.class);
+        var controller = new ArticleController(articles, mock(CommentService.class), mock(ArticleFileServiceImpl.class),
+                mock(DateTimeFormatService.class), links, mock(ObjektService.class));
+        ArticleObjekt have = new ArticleObjekt();
+        have.setObjektKey("have-key");
+        have.setSide(ArticleObjektService.SIDE_HAVE);
+        have.setCollectionId("Have Card");
+        have.setMemberName("JiYeon");
+        ArticleObjekt want = new ArticleObjekt();
+        want.setObjektKey("want-key");
+        want.setSide(ArticleObjektService.SIDE_WANT);
+        want.setCollectionId("Want Card");
+        want.setMemberName("HaYeon");
+        when(links.findForArticle(11L)).thenReturn(List.of(have, want));
+        when(links.findHaveForArticle(11L)).thenReturn(List.of(have));
+        when(links.findWantForArticle(11L)).thenReturn(List.of(want));
+        Article article = new Article();
+        article.setId(11L);
+        article.setTitle("교환");
+        article.setContent("<p>내용</p>");
+        article.setCategory("trade");
+        when(articles.showWithFiles(11L)).thenReturn(article);
+        when(articles.getLikesCount(11L)).thenReturn(0L);
+        var model = new ExtendedModelMap();
+        controller.showArticle("trade", 11L, null, model);
+        assertThat(model.get("isTradeObjektSplit")).isEqualTo(true);
+        assertThat((List<Map<String, Object>>) model.get("linkedHaveObjekts"))
+                .extracting(row -> row.get("collectionId")).containsExactly("Have Card");
+        assertThat((List<Map<String, Object>>) model.get("linkedWantObjekts"))
+                .extracting(row -> row.get("collectionId")).containsExactly("Want Card");
     }
 }

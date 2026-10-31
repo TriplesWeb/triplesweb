@@ -1,31 +1,12 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-{{>layout/site-head}}
-<link rel="stylesheet" href="/css/bootstrap-compat.css?v=2">
-<meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {{>layout/site-head}}
     <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
-
-    <style>
-        /* 본문 내용(HTML) 내부 이미지/영상 반응형 스타일 정돈 */
-        .detail-content img,
-        .detail-content video {
-            max-width: 100%;
-            border-radius: 0.75rem;
-            margin: 1rem 0;
-            display: block;
-        }
-        /* 과거 편집 UI가 본문에 남아 있어도 상세에서는 숨김 */
-        .detail-content .remove-btn { display: none !important; }
-        .detail-content .content-media {
-            position: static;
-            display: block;
-            margin: 0;
-        }
-    </style>
+    <link rel="stylesheet" href="/css/site-ui.css?v=2">
+    <link rel="stylesheet" href="/css/article-page.css?v=1">
 </head>
-<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+<body class="article-page bg-surface text-on-surface min-h-screen flex flex-col">
 
 {{>layout/header}}
 
@@ -40,10 +21,10 @@
         <div class="absolute -inset-1 rounded-3xl bg-gradient-to-b from-primary-container/20 via-transparent to-secondary-container/30 blur-xl opacity-75 pointer-events-none"></div>
 
         <!-- 메인 게시글 컨테이너 카드 -->
-        <div class="relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
+        <div class="article-detail-shell relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
 
             <!-- 게시글 헤더 (작성자 및 날짜) -->
-            <div class="flex items-center justify-between pb-6 mb-6 border-b border-outline-variant/30">
+            <div class="article-detail-meta flex items-center justify-between pb-6 mb-6 border-b border-outline-variant/30">
                 <div class="flex items-center gap-2 text-on-surface-variant font-medium">
                     <span class="material-symbols-outlined text-[20px]" data-icon="person">person</span>
                     <span>작성자: <strong class="text-on-surface">{{article.userId}}</strong></span>
@@ -67,6 +48,52 @@
             {{#hasLinkedObjekts}}
             <section class="my-6 rounded-2xl border border-teal-400/30 bg-teal-400/[0.04] p-4">
                 <h2 class="mb-3 font-semibold text-teal-200">교환/거래 오브젝트</h2>
+                {{#isTradeObjektSplit}}
+                <div class="objekt-trade-zones objekt-trade-zones--detail" aria-label="Have와 Want 오브젝트">
+                    <div class="objekt-trade-zone" data-zone="have">
+                        <div class="objekt-trade-zone-head">
+                            <span class="objekt-trade-zone-label">Have</span>
+                            <span class="objekt-trade-zone-hint">가진 오브젝트</span>
+                        </div>
+                        <div class="objekt-trade-zone-cards">
+                            {{#linkedHaveObjekts}}
+                            <a href="/cosmo/objekt/detail/{{objektKey}}" class="objekt-trade-card">
+                                <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" onerror="this.onerror=null;this.src='{{frontImage}}'">
+                                <div class="objekt-trade-card-meta">
+                                    <p class="truncate text-sm font-semibold">{{collectionId}}</p>
+                                    <p class="mt-1 truncate text-xs text-slate-400">{{memberName}} · {{collectionNo}}</p>
+                                </div>
+                            </a>
+                            {{/linkedHaveObjekts}}
+                            {{^hasLinkedHaveObjekts}}
+                            <p class="objekt-trade-zone-empty">등록된 Have 오브젝트가 없습니다</p>
+                            {{/hasLinkedHaveObjekts}}
+                        </div>
+                    </div>
+                    <div class="objekt-trade-zone-divider" aria-hidden="true">↔</div>
+                    <div class="objekt-trade-zone" data-zone="want">
+                        <div class="objekt-trade-zone-head">
+                            <span class="objekt-trade-zone-label">Want</span>
+                            <span class="objekt-trade-zone-hint">원하는 오브젝트</span>
+                        </div>
+                        <div class="objekt-trade-zone-cards">
+                            {{#linkedWantObjekts}}
+                            <a href="/cosmo/objekt/detail/{{objektKey}}" class="objekt-trade-card">
+                                <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" onerror="this.onerror=null;this.src='{{frontImage}}'">
+                                <div class="objekt-trade-card-meta">
+                                    <p class="truncate text-sm font-semibold">{{collectionId}}</p>
+                                    <p class="mt-1 truncate text-xs text-slate-400">{{memberName}} · {{collectionNo}}</p>
+                                </div>
+                            </a>
+                            {{/linkedWantObjekts}}
+                            {{^hasLinkedWantObjekts}}
+                            <p class="objekt-trade-zone-empty">원하는 오브젝트 없음</p>
+                            {{/hasLinkedWantObjekts}}
+                        </div>
+                    </div>
+                </div>
+                {{/isTradeObjektSplit}}
+                {{^isTradeObjektSplit}}
                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {{#linkedObjekts}}
                     <a href="/cosmo/objekt/detail/{{objektKey}}" class="overflow-hidden rounded-xl border border-white/10 bg-black/20">
@@ -75,6 +102,7 @@
                     </a>
                     {{/linkedObjekts}}
                 </div>
+                {{/isTradeObjektSplit}}
             </section>
             {{/hasLinkedObjekts}}
 
@@ -101,7 +129,7 @@
                 {{/isLikeAllowed}}
 
                 <!-- 버튼 그룹 (수정, 삭제, 목록으로) -->
-                <div class="flex items-center justify-between pt-2">
+                <div class="article-detail-actions flex items-center justify-between pt-2">
                     <div class="flex items-center gap-2">
 {{#isOwner}}
                                 <a href="/article/{{category}}/{{article.id}}/edit" class="py-2 px-4 rounded-xl bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/40 text-on-surface text-sm font-medium transition-all">
@@ -129,6 +157,7 @@
 
     <!-- 댓글 영역 컨테이너 -->
     <div class="w-full max-w-3xl mt-6">
+        <script src="/js/site-ui.js?v=3"></script>
         {{>comment/_comments}}
     </div>
 </main>
@@ -137,8 +166,6 @@
 
 <script>
     (function () {
-        const CSRF_TOKEN = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
-        const CSRF_HEADER = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content') || 'X-CSRF-TOKEN';
         const likeBtn = document.getElementById('likeButton');
         const likeCountElem = document.getElementById('likeCount');
         if (!likeBtn || !likeCountElem) return;
@@ -147,8 +174,9 @@
         likeBtn.addEventListener('click', function () {
             if (pending) return;
             pending = true;
-            const headers = { 'Content-Type': 'application/json' };
-            if (CSRF_TOKEN) headers[CSRF_HEADER] = CSRF_TOKEN;
+            const headers = (window.SiteUi && window.SiteUi.csrfHeaders)
+                ? window.SiteUi.csrfHeaders({ 'Content-Type': 'application/json' })
+                : { 'Content-Type': 'application/json' };
 
             fetch('/article/{{category}}/{{article.id}}/like', {
                 method: 'POST',
@@ -175,6 +203,5 @@
     })();
 </script>
 
-<script src="/js/bootstrap-compat.js?v=1" defer></script>
 </body>
 </html>

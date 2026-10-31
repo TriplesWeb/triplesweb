@@ -13,7 +13,7 @@ const {chromium}=require('playwright');const base=path.resolve(__dirname,'../..'
     return route.fulfill({contentType:'text/html',body:'<div class="member-activities"><h2>선택한 멤버 콘텐츠</h2><article class="artist-content-card">최근 콘텐츠</article></div>'});
    }
    if(u.pathname.endsWith('/admin/status'))return route.fulfill({contentType:'application/json',body:'{"configured":false,"isAdmin":false}'});
-   if(u.pathname==='/triples/artist'||u.pathname==='/cosmo/gravity')return route.fulfill({contentType:'text/html',body:fs.readFileSync(path.join(base,'build/perf-pages',u.pathname.includes('artist')?'artist.html':'gravity.html'),'utf8')});
+   if(['/triples/artist','/triples/members','/triples/overview','/cosmo/gravity'].includes(u.pathname))return route.fulfill({contentType:'text/html',body:fs.readFileSync(path.join(base,'build/perf-pages',u.pathname.includes('artist')?'artist.html':u.pathname.includes('members')?'members.html':u.pathname.includes('overview')?'overview.html':'gravity.html'),'utf8')});
    const file=path.resolve(base,'src/main/resources/static','.'+u.pathname);
    if(file.startsWith(path.join(base,'src/main/resources/static')+path.sep)&&fs.existsSync(file)&&fs.statSync(file).isFile())return route.fulfill({path:file,contentType:u.pathname.endsWith('.css')?'text/css':u.pathname.endsWith('.js')?'application/javascript':undefined});
    return route.fulfill({status:404,body:''});
@@ -43,6 +43,15 @@ const {chromium}=require('playwright');const base=path.resolve(__dirname,'../..'
   await page.goto('https://perf.test/triples/artist?tab=member-3');await page.locator('#member-3 .member-activities').waitFor();
   await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   await page.screenshot({path:'/tmp/objekt-ui/artist-mobile.png',fullPage:true});
+  await page.goto('https://perf.test/triples/members?tab=member-3');
+  await page.locator('#member-3 .member-activities').waitFor();
+  assert.equal(await page.locator('#triples-tab').count(),0);assert.equal(await page.locator('[data-member-tab]').count(),24);
+  assert.equal(await page.locator('.member-directory-card').count(),0);
+  await page.screenshot({path:'/tmp/objekt-ui/members-restored-mobile.png',fullPage:true});
+  await page.setViewportSize({width:1280,height:1000});
+  await page.screenshot({path:'/tmp/objekt-ui/members-restored-desktop.png',fullPage:true});
+  const beforeOverview=calls.length;await page.goto('https://perf.test/triples/overview');
+  assert.equal(await page.locator('[data-member-tab]').count(),0);assert.equal(await page.locator('#groupImageDisplay').count(),1);assert.equal(calls.length,beforeOverview);
   await page.goto('https://perf.test/cosmo/gravity');
   const shown=()=>page.locator('#gvGrid .gv-card:not([hidden])');
   await page.getByRole('button',{name:'진행 상태',exact:true}).click();await page.getByRole('option',{name:'진행 중',exact:true}).click();assert.equal(await shown().count(),1);

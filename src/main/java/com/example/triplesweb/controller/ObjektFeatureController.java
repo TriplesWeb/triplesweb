@@ -49,20 +49,7 @@ public class ObjektFeatureController {
     public String detail(@PathVariable String key, HttpServletRequest request, HttpSession session, Model model) {
         Map<String, Object> item = findObjekt(key);
         if (item == null) return "redirect:/cosmo/objekt";
-        if (!key.equals(ObjektLinks.key(item))) return "redirect:" + ObjektLinks.detail(item);
-        model.addAttribute("objekt", item);
-        model.addAttribute("objektKey", ObjektLinks.id(item));
-        model.addAttribute("memberUrl", ObjektLinks.member(item));
-        model.addAttribute("tradeUrl", ObjektLinks.compose(item, "trade"));
-        model.addAttribute("sellUrl", ObjektLinks.compose(item, "sell"));
-        model.addAttribute("lookupUrl", ObjektLinks.detail(item) + "/lookup");
-        model.addAttribute("transfersUrl", "/cosmo/objekt/detail/" + encodePath(key) + "/transfers");
-        boolean isFavorite = favorites.contains(session.getId(), item);
-        model.addAttribute("isFavorite", isFavorite);
-        model.addAttribute("favoriteDesired", !isFavorite);
-        model.addAttribute("objektDescription", description(item, key));
-        model.addAttribute("isAdmin", aboutAdminAuth.isAdmin(request, session));
-        return "cosmo/objekt_detail";
+        return "redirect:/cosmo/objekt?objekt=" + ObjektLinks.encode(ObjektLinks.key(item));
     }
 
     /** 목록 모달용 상세 JSON. */
@@ -79,7 +66,7 @@ public class ObjektFeatureController {
         String back = value(item, "backImage");
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("id", value(item, "id"));
-        body.put("objektKey", ObjektLinks.id(item));
+        body.put("objektKey", ObjektLinks.key(item));
         body.put("collectionId", value(item, "collectionId", "slug"));
         body.put("member", value(item, "member", "memberName"));
         body.put("season", value(item, "season"));
@@ -97,7 +84,28 @@ public class ObjektFeatureController {
         body.put("tradeUrl", ObjektLinks.compose(item, "trade"));
         body.put("sellUrl", ObjektLinks.compose(item, "sell"));
         body.put("descriptionUrl", ObjektLinks.detail(item) + "/description");
+        body.put("lookupUrl", ObjektLinks.detail(item) + "/lookup");
+        body.put("issuedUrl", ObjektLinks.detail(item) + "/issued");
         return body;
+    }
+
+    @GetMapping("/detail/{key}/issued")
+    @ResponseBody
+    public Map<String,Object> issued(@PathVariable String key,@RequestParam(defaultValue="0") int offset) {
+        Map<String,Object> item=findObjekt(key);
+        if(item==null)throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        return marketData.issuedSupply(item,Math.max(0,offset),40);
+    }
+
+    @GetMapping("/supplies")
+    @ResponseBody
+    public Map<String,Object> supplies(@RequestParam(name="key") List<String> keys) {
+        Map<String,Object> result=new LinkedHashMap<>();
+        for(String key:keys.stream().distinct().limit(24).toList()) {
+            Map<String,Object> item=findObjekt(key);
+            if(item!=null)result.put(key,marketData.issuedSupply(item,0,1));
+        }
+        return result;
     }
 
     @PostMapping(value = "/detail/{key}/description", produces = MediaType.TEXT_HTML_VALUE)
@@ -109,8 +117,9 @@ public class ObjektFeatureController {
         Map<String, Object> item = findObjekt(key);
         if (item == null) return "redirect:/cosmo/objekt";
         if (description != null && description.length() > 10000) throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        ObjektDescription entity = descriptionEntity(item, key).orElseGet(ObjektDescription::new);
-        if (entity.getObjektKey() == null) entity.setObjektKey(ObjektLinks.id(item));
+        String descriptionKey = descriptionKey(item);
+        ObjektDescription entity = descriptionRepository.findByObjektKey(descriptionKey).orElseGet(ObjektDescription::new);
+        if (entity.getObjektKey() == null) entity.setObjektKey(descriptionKey);
         entity.setDescription(description == null ? "" : description.trim());
         descriptionRepository.save(entity);
         return "redirect:" + ObjektLinks.detail(item);
@@ -124,8 +133,9 @@ public class ObjektFeatureController {
         Map<String, Object> item = findObjekt(key);
         if (item == null) return ResponseEntity.notFound().build();
         if (description.length() > 10000) return ResponseEntity.badRequest().body(Map.of("message", "설명은 10,000자까지 입력할 수 있습니다."));
-        ObjektDescription entity = descriptionEntity(item, key).orElseGet(ObjektDescription::new);
-        if (entity.getObjektKey() == null) entity.setObjektKey(ObjektLinks.id(item));
+        String descriptionKey = descriptionKey(item);
+        ObjektDescription entity = descriptionRepository.findByObjektKey(descriptionKey).orElseGet(ObjektDescription::new);
+        if (entity.getObjektKey() == null) entity.setObjektKey(descriptionKey);
         entity.setDescription(description.trim()); descriptionRepository.save(entity);
         return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
                 .body(Map.of("description", description.trim()));
@@ -146,8 +156,16 @@ public class ObjektFeatureController {
         }
     }
 
+    private static String descriptionKey(Map<String, Object> item) {
+        String season = value(item, "season").trim().toLowerCase(java.util.Locale.ROOT);
+        String number = value(item, "collectionNo").trim().toLowerCase(java.util.Locale.ROOT);
+        if (season.isEmpty() || number.isEmpty()) return ObjektLinks.id(item);
+        String identity = season.length() + ":" + season + ":" + number;
+        return "group-" + java.util.UUID.nameUUIDFromBytes(identity.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
     private Optional<ObjektDescription> descriptionEntity(Map<String, Object> item, String requested) {
-        return java.util.stream.Stream.of(ObjektLinks.id(item), value(item, "slug"), value(item, "collectionId"), requested)
+        return java.util.stream.Stream.of(descriptionKey(item), ObjektLinks.id(item), value(item, "slug"), value(item, "collectionId"), requested)
                 .filter(s -> !s.isBlank()).distinct().map(descriptionRepository::findByObjektKey)
                 .flatMap(Optional::stream).findFirst();
     }

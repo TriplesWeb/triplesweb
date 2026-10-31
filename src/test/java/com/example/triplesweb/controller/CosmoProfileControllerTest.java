@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import java.util.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -39,10 +40,14 @@ class CosmoProfileControllerTest {
                 .andExpect(content().string(containsString("Fan")))
                 .andExpect(content().string(containsString("전체 현황")))
                 .andExpect(content().string(containsString("멤버별 상세")))
-                .andExpect(content().string(containsString("멤버별 수집 현황")))
+                .andExpect(content().string(containsString("전체 수집 현황")))
+                .andExpect(content().string(containsString("profile-overall-pie")))
+                .andExpect(content().string(containsString("전체 수집률 100퍼센트")))
                 .andExpect(content().string(containsString("aria-valuenow=\"100\"")))
                 .andExpect(content().string(containsString("1 / 1종")))
-                .andExpect(content().string(containsString("profile-progress-link")))
+                .andExpect(content().string(containsString("멤버별 진행도 TOP 5")))
+                .andExpect(content().string(containsString("profile-top-member-grid")))
+                .andExpect(content().string(not(containsString("profile-overview-fold"))))
                 .andExpect(content().string(not(containsString("profile-member-picker"))))
                 .andExpect(content().string(not(containsString("보유 카드만 보기"))))
                 .andExpect(content().string(not(containsString("보유 오브젝트</a>"))))
@@ -76,13 +81,17 @@ class CosmoProfileControllerTest {
 
     @Test void memberChecklistRendersOwnedAndMissingKindsWithFullImages() throws Exception {
         givenProfile();
+        var member = new com.example.triplesweb.entity.Artist();
+        member.setName("정하연"); member.setEngName("HaYeon"); member.setColor("#d81055");
+        when(artists.findAll()).thenReturn(List.of(member));
         when(catalog.findCollections("triples")).thenReturn(List.of(
                 Map.of("slug", "cream02-hayeon-367z", "member", "HaYeon", "class", "Double", "season", "Cream02",
                         "collectionNo", "367Z", "collectionId", "Cream02 HaYeon 367Z", "thumbnailImage", "https://example.com/owned.webp"),
                 Map.of("slug", "cream02-hayeon-003z", "member", "HaYeon", "class", "Double", "season", "Cream02",
                         "collectionNo", "003Z", "collectionId", "Cream02 HaYeon 003Z", "thumbnailImage", "https://example.com/missing.webp")));
-        var result = mvc.perform(get("/cosmo/profile/Fan").param("tab", "members").param("member", "hayeon"))
+        var result = mvc.perform(get("/cosmo/profile/Fan").param("tab", "members").param("member", "hayeon").param("ownership", "progress"))
                 .andExpect(status().isOk()).andExpect(content().string(containsString("2종 중 1종 보유 · 1종 미보유")))
+                .andExpect(content().string(containsString("--member-color:#d81055")))
                 .andExpect(content().string(containsString("profile-member-picker")))
                 .andExpect(content().string(containsString("profile-ownership-tabs")))
                 .andExpect(content().string(containsString(">보유</a>")))
@@ -90,8 +99,52 @@ class CosmoProfileControllerTest {
                 .andExpect(content().string(containsString("profile-checklist-card is-owned")))
                 .andExpect(content().string(containsString("profile-checklist-card is-missing")))
                 .andExpect(content().string(containsString("완료한 시즌 숨기기")))
+                .andExpect(content().string(containsString("profile-summary-orbit")))
+                .andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(content().string(not(containsString("시즌별")))).andReturn();
         java.nio.file.Files.writeString(java.nio.file.Path.of("build/profile-checklist-preview.html"), result.getResponse().getContentAsString());
+    }
+
+    @Test void allTabShowsBothOwnershipStatesBySeason() throws Exception {
+        givenProfile();
+        when(catalog.findCollections("triples")).thenReturn(List.of(
+            Map.of("slug", "cream02-hayeon-367z", "member", "HaYeon", "class", "Double", "season", "Cream02", "collectionNo", "367Z"),
+            Map.of("slug", "other", "member", "HaYeon", "class", "First", "season", "Atom01", "collectionNo", "001A")));
+        mvc.perform(get("/cosmo/profile/Fan").param("tab", "members").param("member", "hayeon").param("ownership", "all"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("시즌별 목록")))
+            .andExpect(content().string(containsString("profile-checklist-card is-owned")))
+            .andExpect(content().string(containsString("profile-checklist-card is-missing")))
+            .andExpect(content().string(containsString(">진행도</a>")));
+    }
+
+    @Test void membersGroupToolbarOmitsAllFilter() throws Exception {
+        givenProfile();
+        var html = mvc.perform(get("/cosmo/profile/Fan").param("tab", "members"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("profile-member-picker")))
+                .andReturn().getResponse().getContentAsString();
+        int actionsAt = html.indexOf("mpp-toolbar-actions");
+        assertThat(actionsAt).isGreaterThanOrEqualTo(0);
+        String actions = html.substring(actionsAt, html.indexOf("</div>", actionsAt));
+        assertThat(actions).contains(">멤버</a>").contains(">기타 옵젝</a>").doesNotContain(">전체</a>");
+    }
+
+    @Test void membersDefaultOwnershipShowsProgressBeforeAllTab() throws Exception {
+        givenProfile();
+        when(catalog.findCollections("triples")).thenReturn(List.of(
+                Map.of("slug", "cream02-hayeon-367z", "member", "HaYeon", "class", "Double", "season", "Cream02",
+                        "collectionNo", "367Z", "collectionId", "Cream02 HaYeon 367Z", "thumbnailImage", "https://example.com/owned.webp"),
+                Map.of("slug", "cream02-hayeon-003z", "member", "HaYeon", "class", "Double", "season", "Cream02",
+                        "collectionNo", "003Z", "collectionId", "Cream02 HaYeon 003Z", "thumbnailImage", "https://example.com/missing.webp")));
+        var html = mvc.perform(get("/cosmo/profile/Fan").param("tab", "members").param("member", "hayeon"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("profile-member-overall")))
+                .andExpect(content().string(containsString("profile-season-grid")))
+                .andReturn().getResponse().getContentAsString();
+        int tabsAt = html.indexOf("profile-ownership-tabs");
+        assertThat(tabsAt).isGreaterThanOrEqualTo(0);
+        assertThat(html.indexOf(">진행도</a>", tabsAt)).isLessThan(html.indexOf(">전체</a>", tabsAt));
     }
 
     @Test void ownershipOwnedFilterHidesMissingCardsOnMemberChecklist() throws Exception {
@@ -105,7 +158,7 @@ class CosmoProfileControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("profile-checklist-card is-owned")))
                 .andExpect(content().string(not(containsString("profile-checklist-card is-missing"))))
-                .andExpect(content().string(containsString("1종 · 클래스별 목록")))
+                .andExpect(content().string(containsString("1종 · 시즌별 목록")))
                 .andExpect(content().string(not(containsString("profile-season-heading"))))
                 .andExpect(content().string(not(containsString("role=\"progressbar\""))))
                 .andExpect(content().string(not(containsString("100%</strong>"))))
