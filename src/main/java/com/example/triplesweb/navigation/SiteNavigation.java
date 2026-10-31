@@ -24,7 +24,7 @@ public final class SiteNavigation {
 
     public static final List<Section> PRIMARY = List.of(
         new Section("about", "About 트리플에스", List.of(
-            link("개요", "/triples/overview"), link("멤버", "/triples/members"),
+            link("그룹 입문", "/triples/overview"), link("멤버", "/triples/members"),
             link("앨범", "/triples/album"), link("유닛", "/triples/unit"),
             link("케미씃트리", "/triples/chemistry")
         ), List.of()),
