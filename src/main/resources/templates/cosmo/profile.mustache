@@ -114,7 +114,6 @@
                 <span class="mpp-toolbar-meta" id="progress-member-meta">{{#isOtherGroup}}기타 옵젝{{/isOtherGroup}}{{^isOtherGroup}}{{#hasProgressMember}}{{selectedMember}} 선택됨{{/hasProgressMember}}{{^hasProgressMember}}멤버를 고르면 전체 종류 수집 현황을 볼 수 있어요.{{/hasProgressMember}}{{/isOtherGroup}}</span>
             </div>
             <div class="mpp-toolbar-actions" role="group" aria-label="오브젝트 분류">
-                <a class="mpp-tool-btn" href="{{membersTabUrl}}" aria-pressed="{{#isAllGroup}}true{{/isAllGroup}}{{^isAllGroup}}false{{/isAllGroup}}">전체</a>
                 <a class="mpp-tool-btn" href="{{membersTabUrl}}&amp;group=members" aria-pressed="{{#isMembersGroup}}true{{/isMembersGroup}}{{^isMembersGroup}}false{{/isMembersGroup}}">멤버</a>
                 <a class="mpp-tool-btn" href="{{membersTabUrl}}&amp;group=other" aria-pressed="{{#isOtherGroup}}true{{/isOtherGroup}}{{^isOtherGroup}}false{{/isOtherGroup}}">기타 옵젝</a>
             </div>

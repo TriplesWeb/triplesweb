@@ -79,8 +79,10 @@
 .objekt-picker-filter-control:focus-visible{outline:2px solid #8decd9;outline-offset:1px}
 .objekt-picker-filter-control option{background:#12151c;color:#e3e2e8}
 .objekt-picker-search{flex:1 1 11rem;min-width:10rem;max-width:22rem}
-.objekt-picker-search.header-search{width:100%}
-.objekt-picker-search .header-search-submit{width:2.15rem;height:2.15rem;min-width:2.15rem;min-height:2.15rem}
+.objekt-picker-search.header-search{width:100%;padding:3px 3px 3px 12px}
+.objekt-picker-search .header-search-submit{width:1.95rem;height:1.95rem;min-width:1.95rem;min-height:1.95rem;background:#8decd9!important;color:#0b1210!important;box-shadow:0 3px 10px #8decd933}
+.objekt-picker-search .header-search-submit:hover{background:#a6f3e4!important;color:#07110e!important}
+.objekt-picker-search .header-search-submit svg{width:.9rem;height:.9rem;fill:none!important;stroke:#0b1210;stroke-width:2.1}
 .objekt-picker-search input{font-size:.8125rem}
 .objekt-picker-reset{min-height:2.5rem;padding:0 .95rem;border:1px solid #8decd955;border-radius:999px;background:transparent;color:#8decd9;font-size:.75rem;font-weight:650;cursor:pointer}
 .objekt-picker-reset:hover{background:#8decd914}

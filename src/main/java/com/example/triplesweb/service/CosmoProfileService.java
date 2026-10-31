@@ -170,7 +170,8 @@ public class CosmoProfileService {
         if ("members".equalsIgnoreCase(group) || (member != null && !member.isBlank()
                 && !MemberPortraitOptions.isOtherMember(member))) return "members";
         if (member != null && !member.isBlank() && MemberPortraitOptions.isOtherMember(member)) return "other";
-        return "all";
+        // 분류 탭에서 전체를 없애 빈/all 도 멤버로 본다.
+        return "members";
     }
 
     private ProgressBuckets buckets(List<Map<String, Object>> held, List<Map<String, Object>> catalogSnapshot) {

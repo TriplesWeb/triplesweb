@@ -16,7 +16,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/article-page.css?v=3">
+    <link rel="stylesheet" href="/css/article-page.css?v=4">
     <style>
         #content {
             min-height: 250px;
@@ -529,6 +529,18 @@
                 wrapper.appendChild(media);
                 attachRemoveBtn(wrapper, saved, null);
                 contentDiv.appendChild(wrapper);
+                const line = document.createElement('div');
+                line.appendChild(document.createElement('br'));
+                contentDiv.appendChild(line);
+                const sel = window.getSelection?.();
+                if (sel) {
+                    const range = document.createRange();
+                    range.selectNodeContents(line);
+                    range.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+                contentDiv.focus({ preventScroll: true });
             } finally {
                 syncingPreview = false;
             }

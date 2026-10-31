@@ -119,6 +119,18 @@ class CosmoProfileControllerTest {
             .andExpect(content().string(containsString(">진행도</a>")));
     }
 
+    @Test void membersGroupToolbarOmitsAllFilter() throws Exception {
+        givenProfile();
+        var html = mvc.perform(get("/cosmo/profile/Fan").param("tab", "members"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("profile-member-picker")))
+                .andReturn().getResponse().getContentAsString();
+        int actionsAt = html.indexOf("mpp-toolbar-actions");
+        assertThat(actionsAt).isGreaterThanOrEqualTo(0);
+        String actions = html.substring(actionsAt, html.indexOf("</div>", actionsAt));
+        assertThat(actions).contains(">멤버</a>").contains(">기타 옵젝</a>").doesNotContain(">전체</a>");
+    }
+
     @Test void membersDefaultOwnershipShowsProgressBeforeAllTab() throws Exception {
         givenProfile();
         when(catalog.findCollections("triples")).thenReturn(List.of(

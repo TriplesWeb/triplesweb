@@ -15,7 +15,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/article-page.css?v=3">
+    <link rel="stylesheet" href="/css/article-page.css?v=4">
     <style>
         #content {
             min-height: 250px;
@@ -210,15 +210,32 @@
        return { url, storedName, fileType };
      }
 
+     function placeCaretIn(node) {
+       const sel = window.getSelection?.();
+       if (!sel || !node) return;
+       const r = document.createRange();
+       r.selectNodeContents(node);
+       r.collapse(true);
+       sel.removeAllRanges();
+       sel.addRange(r);
+     }
+
      function insertNodeAtCaret(container, node) {
        const sel = window.getSelection?.();
        if (sel && sel.rangeCount) {
          let range = sel.getRangeAt(0);
          if (!container.contains(range.commonAncestorContainer)) container.appendChild(node);
          else { range.deleteContents(); range.insertNode(node); }
-         const r = document.createRange(); r.setStartAfter(node); r.collapse(true);
-         sel.removeAllRanges(); sel.addRange(r);
        } else container.appendChild(node);
+     }
+
+     function insertLineBreakAfter(mediaNode) {
+       const line = document.createElement('div');
+       line.appendChild(document.createElement('br'));
+       if (mediaNode.nextSibling) mediaNode.parentNode.insertBefore(line, mediaNode.nextSibling);
+       else mediaNode.parentNode.appendChild(line);
+       placeCaretIn(line);
+       return line;
      }
 
      function clearEditorCaret() {
@@ -265,6 +282,8 @@
        });
        wrap.appendChild(media); wrap.appendChild(removeBtn);
        insertNodeAtCaret(contentDiv, wrap);
+       insertLineBreakAfter(wrap);
+       contentDiv.focus({ preventScroll: true });
 
        // 미리보기
        const thumbBox = document.createElement('div'); thumbBox.className='preview-item'; thumbBox.dataset.key=key;
