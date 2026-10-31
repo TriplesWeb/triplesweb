@@ -88,6 +88,11 @@
 .objekt-picker-reset:hover{background:#8decd914}
 .article-page .content-media .remove-btn,.article-page .preview-item .remove-btn{position:absolute;top:8px;right:8px;z-index:10;appearance:none;display:grid;place-items:center;width:2rem;height:2rem;min-width:2rem;min-height:2rem;padding:0;border:0;border-radius:999px;background:rgba(0,0,0,.72);color:#fff;font-size:1.15rem;line-height:1;cursor:pointer}
 .article-page .content-media .remove-btn:hover,.article-page .preview-item .remove-btn:hover{background:rgba(220,60,60,.85)}
+.article-page .content-media img,.article-page .content-media video,.article-page .detail-content img,.article-page .detail-content video{width:auto;height:auto;max-width:min(100%,22rem);max-height:18rem;object-fit:contain;display:block}
+.article-page .content-media.is-selected{outline:2px solid #8decd9;outline-offset:3px;border-radius:.85rem}
+.article-page .preview-item{cursor:pointer}
+.article-page .preview-item.is-selected{box-shadow:0 0 0 2px #8decd9}
+.article-page .upload-file-names{margin:.45rem 0 0;color:#93a5a1;font-size:.78rem;line-height:1.45;overflow-wrap:anywhere}
 .objekt-trade-card{display:block;width:calc(50% - .35rem);min-width:5.5rem;max-width:8.5rem;overflow:hidden;border:1px solid #ffffff1a;border-radius:.85rem;background:#00000033;text-decoration:none;color:inherit}
 .objekt-trade-card img{display:block;width:100%;aspect-ratio:2/3;object-fit:cover}
 .objekt-trade-card-meta{padding:.45rem .55rem .55rem}

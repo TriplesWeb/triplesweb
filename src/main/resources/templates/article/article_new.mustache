@@ -15,7 +15,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/article-page.css?v=4">
+    <link rel="stylesheet" href="/css/article-page.css?v=5">
     <style>
         #content {
             min-height: 250px;
@@ -30,7 +30,6 @@
             max-width: 100%;
         }
         .content-media img, .content-media video {
-            max-width: 100%;
             border-radius: 0.75rem;
             display: block;
         }
@@ -90,20 +89,21 @@
                         <input type="text" class="w-full px-3 pr-4 py-3 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md placeholder:text-outline/60 focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all text-black" name="title" required>
                     </div>
                 </div>
+
+                {{>article/objekt_picker}}
+
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">내용</label>
                     <div id="content" contenteditable="true" class="w-full p-4 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" aria-multiline="true"></div>
                     <input type="hidden" name="content" id="hiddenContent" />
                 </div>
 
-
-                {{>article/objekt_picker}}
-
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">첨부 파일 (이미지 또는 영상)</label>
                     <div class="relative group">
-                        <input type="file" name="uploadFiles" id="fileInput" multiple accept="image/*,video/*" class="w-full py-2.5 px-4 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl text-sm text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-container file:text-on-primary hover:file:opacity-90 cursor-pointer" />
+                        <input type="file" name="__fileChooser" id="fileInput" multiple accept="image/*,video/*" class="w-full py-2.5 px-4 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl text-sm text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-container file:text-on-primary hover:file:opacity-90 cursor-pointer" />
                     </div>
+                    <p id="uploadFileNames" class="upload-file-names" aria-live="polite">선택된 파일 없음</p>
                 </div>
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">미리보기</label>
@@ -238,6 +238,23 @@
        return line;
      }
 
+     const fileNamesEl = document.getElementById('uploadFileNames');
+     function refreshFileNames() {
+       const names = [...previewArea.querySelectorAll('.preview-item')].map((item) => item.dataset.fileName || item.dataset.key || '').filter(Boolean);
+       if (fileNamesEl) fileNamesEl.textContent = names.length ? names.join(', ') : '선택된 파일 없음';
+     }
+     function selectMedia(key) {
+       if (!key) return;
+       contentDiv.querySelectorAll('.content-media').forEach((el) => el.classList.toggle('is-selected', el.dataset.key === key));
+       previewArea.querySelectorAll('.preview-item').forEach((el) => el.classList.toggle('is-selected', el.dataset.key === key));
+       const wrap = contentDiv.querySelector(`.content-media[data-key="${CSS.escape(key)}"]`);
+       if (!wrap) return;
+       wrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+       contentDiv.focus({ preventScroll: true });
+       if (wrap.nextElementSibling) placeCaretIn(wrap.nextElementSibling);
+       else insertLineBreakAfter(wrap);
+     }
+
      function clearEditorCaret() {
        contentDiv.blur();
        const sel = window.getSelection?.();
@@ -260,9 +277,10 @@
        });
      }
 
-     function insertMediaAtCaret(url, mime, key) {
+     function insertMediaAtCaret(url, mime, key, fileName) {
        // 본문
        const wrap = document.createElement('div'); wrap.className='content-media'; wrap.dataset.key=key;
+       wrap.dataset.fileName = fileName || key;
        wrap.contentEditable = 'false';
        let media;
        if (mime?.startsWith('video')) {
@@ -279,14 +297,19 @@
          wrap.remove();
          previewArea.querySelector(`[data-key="${key}"]`)?.remove();
          form.querySelector(`input[name="uploadedFiles"][data-key="${key}"]`)?.remove();
+         refreshFileNames();
        });
        wrap.appendChild(media); wrap.appendChild(removeBtn);
+       wrap.addEventListener('click', (event) => {
+         if (event.target.closest('.remove-btn')) return;
+         selectMedia(key);
+       });
        insertNodeAtCaret(contentDiv, wrap);
        insertLineBreakAfter(wrap);
        contentDiv.focus({ preventScroll: true });
 
        // 미리보기
-       const thumbBox = document.createElement('div'); thumbBox.className='preview-item'; thumbBox.dataset.key=key;
+       const thumbBox = document.createElement('div'); thumbBox.className='preview-item'; thumbBox.dataset.key=key; thumbBox.dataset.fileName = fileName || key;
        const thumb = mime?.startsWith('video') ? document.createElement('video') : document.createElement('img');
        thumb.src=url; if (thumb.tagName==='VIDEO') thumb.controls=true;
        thumb.onerror=function(){ this.onerror=null; this.src=FALLBACK_IMG; };
@@ -295,7 +318,12 @@
        tr.textContent='×';
        bindMediaRemove(tr, () => removeBtn.click());
        thumbBox.appendChild(thumb); thumbBox.appendChild(tr);
+       thumbBox.addEventListener('click', (event) => {
+         if (event.target.closest('.remove-btn')) return;
+         selectMedia(key);
+       });
        previewArea.appendChild(thumbBox);
+       refreshFileNames();
      }
 
      function addHiddenUploadedFile(storedName, key) {
@@ -323,7 +351,7 @@
        }
 
        const key = storedName;
-       insertMediaAtCaret(url, file.type, key);
+       insertMediaAtCaret(url, file.type, key, file.name);
        addHiddenUploadedFile(storedName, key);
      }
 

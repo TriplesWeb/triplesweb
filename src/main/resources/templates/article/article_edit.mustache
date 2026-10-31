@@ -16,7 +16,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/article-page.css?v=4">
+    <link rel="stylesheet" href="/css/article-page.css?v=5">
     <style>
         #content {
             min-height: 250px;
@@ -31,7 +31,6 @@
             max-width: 100%;
         }
         .content-media img, .content-media video {
-            max-width: 100%;
             border-radius: 0.75rem;
             display: block;
         }
@@ -99,6 +98,8 @@
                     <input type="text" class="w-full px-4 py-3 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md placeholder:text-outline/60 focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all text-black" name="title" value="{{article.title}}" required>
                 </div>
 
+                {{>article/objekt_picker}}
+
                 <!-- 내용 -->
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">내용</label>
@@ -108,12 +109,11 @@
                     <input type="hidden" name="content" id="hiddenContent">
                 </div>
 
-                {{>article/objekt_picker}}
-
                 <!-- 첨부 파일 -->
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">첨부 파일 (이미지 또는 영상)</label>
                     <input type="file" id="fileInput" name="__fileChooser" multiple accept="image/*,video/*" class="w-full py-2.5 px-4 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl text-sm text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-container file:text-on-primary hover:file:opacity-90 cursor-pointer" />
+                    <p id="uploadFileNames" class="upload-file-names" aria-live="polite">선택된 파일 없음</p>
                 </div>
 
                 <!-- 미리보기 -->
@@ -192,6 +192,42 @@
         const hiddenContent = document.getElementById('hiddenContent');
         const fileInput     = document.getElementById('fileInput');
         const previewArea   = document.getElementById('previewArea');
+        const fileNamesEl   = document.getElementById('uploadFileNames');
+
+        function placeCaretIn(node) {
+            const sel = window.getSelection?.();
+            if (!sel || !node) return;
+            const r = document.createRange();
+            r.selectNodeContents(node);
+            r.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(r);
+        }
+        function insertLineBreakAfter(mediaNode) {
+            const line = document.createElement('div');
+            line.appendChild(document.createElement('br'));
+            if (mediaNode.nextSibling) mediaNode.parentNode.insertBefore(line, mediaNode.nextSibling);
+            else mediaNode.parentNode.appendChild(line);
+            placeCaretIn(line);
+            return line;
+        }
+        function refreshFileNames() {
+            const names = [...previewArea.querySelectorAll('.preview-item')]
+                .map((item) => item.dataset.fileName || item.dataset.key || '')
+                .filter(Boolean);
+            if (fileNamesEl) fileNamesEl.textContent = names.length ? names.join(', ') : '선택된 파일 없음';
+        }
+        function selectMedia(key) {
+            if (!key) return;
+            contentDiv.querySelectorAll('.content-media').forEach((el) => el.classList.toggle('is-selected', el.dataset.key === key));
+            previewArea.querySelectorAll('.preview-item').forEach((el) => el.classList.toggle('is-selected', el.dataset.key === key));
+            const wrap = contentDiv.querySelector(`.content-media[data-key="${CSS.escape(key)}"]`);
+            if (!wrap) return;
+            wrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            contentDiv.focus({ preventScroll: true });
+            if (wrap.nextElementSibling) placeCaretIn(wrap.nextElementSibling);
+            else insertLineBreakAfter(wrap);
+        }
 
         // DB savedName은 파일명만, 본문 URL은 images/.../파일명 경로 → 둘 다 매핑
         const fileIdMap = Object.create(null);
@@ -281,6 +317,7 @@
                 });
             }
             clearEditorCaret();
+            refreshFileNames();
         }
 
         document.body.addEventListener('mousedown', (e) => {
@@ -320,7 +357,7 @@
                             throw new Error('업로드 응답에 올바른 url이 없습니다.');
                         }
                         const url = toUploadsUrl(rawUrl);
-                        const { saved } = insertMedia(url, f.type);
+                        const { saved } = insertMedia(url, f.type, f.name);
                         if (!saved || !saved.includes('/')) {
                             throw new Error('업로드 경로를 해석하지 못했습니다.');
                         }
@@ -433,7 +470,13 @@
                     el.dataset.savedName = saved;
                     const id = lookupFileId(saved);
                     if (id) el.dataset.fileId = id;
+                    wrapper.dataset.key = saved;
+                    wrapper.dataset.fileName = basenamePath(saved);
                     attachRemoveBtn(wrapper, saved, id);
+                    wrapper.addEventListener('click', (event) => {
+                        if (event.target.closest('.remove-btn')) return;
+                        selectMedia(saved);
+                    });
                 });
             } finally {
                 syncingPreview = false;
@@ -454,6 +497,10 @@
 
                     const thumbBox = document.createElement('div');
                     thumbBox.className = 'preview-item';
+                    if (saved) {
+                        thumbBox.dataset.key = saved;
+                        thumbBox.dataset.fileName = el.closest('.content-media')?.dataset.fileName || basenamePath(saved);
+                    }
 
                     let pv;
                     if (isImg) {
@@ -468,11 +515,16 @@
                     if (fileId) pv.dataset.fileId = fileId;
                     thumbBox.appendChild(pv);
                     if (saved) attachRemoveBtn(thumbBox, saved, fileId);
+                    thumbBox.addEventListener('click', (event) => {
+                        if (event.target.closest('.remove-btn')) return;
+                        selectMedia(saved);
+                    });
                     previewArea.appendChild(thumbBox);
                 });
             } finally {
                 syncingPreview = false;
             }
+            refreshFileNames();
         }
 
         function removeMediaEverywhere(saved) {
@@ -503,7 +555,7 @@
             syncPreviewFromContent();
         }
 
-        function insertMedia(url, mimeOrType) {
+        function insertMedia(url, mimeOrType, fileName) {
             const mediaUrl = toUploadsUrl(url);
             const saved = savedFromUrl(mediaUrl) || (mediaUrl.split('/uploads/')[1] || '');
 
@@ -511,6 +563,8 @@
             try {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'content-media';
+                wrapper.dataset.key = saved;
+                wrapper.dataset.fileName = fileName || basenamePath(saved);
 
                 let media;
                 const treatAsVideo = isVideoType(mimeOrType || mediaUrl);
@@ -528,18 +582,12 @@
                 media.dataset.savedName = saved;
                 wrapper.appendChild(media);
                 attachRemoveBtn(wrapper, saved, null);
+                wrapper.addEventListener('click', (event) => {
+                    if (event.target.closest('.remove-btn')) return;
+                    selectMedia(saved);
+                });
                 contentDiv.appendChild(wrapper);
-                const line = document.createElement('div');
-                line.appendChild(document.createElement('br'));
-                contentDiv.appendChild(line);
-                const sel = window.getSelection?.();
-                if (sel) {
-                    const range = document.createRange();
-                    range.selectNodeContents(line);
-                    range.collapse(true);
-                    sel.removeAllRanges();
-                    sel.addRange(range);
-                }
+                insertLineBreakAfter(wrapper);
                 contentDiv.focus({ preventScroll: true });
             } finally {
                 syncingPreview = false;
