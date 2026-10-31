@@ -286,7 +286,7 @@
             font-weight: 650;
             letter-spacing: .02em;
             line-height: 2.1rem;
-            text-transform: uppercase;
+            text-transform: none;
             caret-color: #6ee7d8;
         }
         .objekt-filter input.objekt-kind-select::placeholder {
@@ -844,7 +844,7 @@
                            id="objekt-kind-input"
                            class="objekt-kind-select"
                            value="{{selectedKind}}"
-                           placeholder="all"
+                           placeholder="전체"
                            autocomplete="off"
                            spellcheck="false"
                            role="combobox"
@@ -857,7 +857,7 @@
                     </button>
                 </div>
                 <div id="kind-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 min-w-[9rem] max-h-60 overflow-y-auto rounded-xl border z-50 p-1.5" role="listbox" aria-label="종류 목록">
-                    <button type="button" class="objekt-kind-option" data-value="all" role="option">all</button>
+                    <button type="button" class="objekt-kind-option" data-value="all" role="option">전체</button>
                     {{#objektNumbers}}
                     <button type="button" class="objekt-kind-option" data-value="{{.}}" role="option">{{.}}</button>
                     {{/objektNumbers}}
@@ -1028,6 +1028,7 @@
 </div>
 
 <script src="/js/member-portrait-picker.js?v=9"></script>
+<script src="/js/objekt-kind-combo.js?v=1"></script>
 <script>
 (() => {
     const form = document.getElementById('objekt-search-form');
@@ -1116,139 +1117,40 @@
     const kindMenu = document.getElementById('kind-menu');
     const kindToggle = document.getElementById('objekt-kind-toggle');
     const kindEmpty = document.getElementById('kind-empty');
-    const kindOptions = kindMenu ? [...kindMenu.querySelectorAll('.objekt-kind-option')] : [];
-    let kindActiveIndex = -1;
 
     function normalizeKindValue(raw) {
-        const value = String(raw || '').trim();
-        if (!value || value.toLowerCase() === 'all') return 'all';
-        return value.toUpperCase();
+        return window.ObjektKindCombo ? window.ObjektKindCombo.normalizeKindValue(raw) : String(raw || '').trim() || 'all';
     }
+
+    const kindCombo = window.ObjektKindCombo?.bindKindCombo({
+        input: kindSelect,
+        menu: kindMenu,
+        toggle: kindToggle,
+        empty: kindEmpty,
+        closeOthers() {
+            closeSortMenu();
+            document.getElementById('season-menu')?.classList.add('hidden');
+            document.getElementById('class-menu')?.classList.add('hidden');
+        },
+        onChange() {
+            if (typeof markActiveFilters === 'function') markActiveFilters();
+        }
+    });
 
     function setKindValue(raw) {
-        if (!kindSelect) return;
-        kindSelect.value = normalizeKindValue(raw);
-        markActiveFilters();
-    }
-
-    function filterKindOptions(query) {
-        const q = normalizeKindValue(query);
-        const needle = q === 'all' ? '' : q.toLowerCase();
-        let shown = 0;
-        kindOptions.forEach((opt) => {
-            const value = String(opt.dataset.value || '').toLowerCase();
-            const match = !needle || value.includes(needle);
-            opt.hidden = !match;
-            if (match) shown += 1;
-        });
-        if (kindEmpty) kindEmpty.hidden = shown > 0;
-        kindActiveIndex = -1;
-        kindOptions.forEach((opt) => opt.classList.remove('is-active'));
-        return shown;
-    }
-
-    function openKindMenu(showAll) {
-        if (!kindMenu || !kindSelect) return;
-        closeSortMenu();
-        filterKindOptions(showAll ? '' : kindSelect.value);
-        kindMenu.classList.remove('hidden');
-        kindSelect.setAttribute('aria-expanded', 'true');
-        document.getElementById('season-menu')?.classList.add('hidden');
-        document.getElementById('class-menu')?.classList.add('hidden');
+        kindCombo?.commit(raw);
     }
 
     function closeKindMenu() {
-        if (!kindMenu || !kindSelect) return;
-        kindMenu.classList.add('hidden');
-        kindSelect.setAttribute('aria-expanded', 'false');
-        kindActiveIndex = -1;
-        kindOptions.forEach((opt) => opt.classList.remove('is-active'));
+        kindCombo?.closeMenu();
     }
 
-    function visibleKindOptions() {
-        return kindOptions.filter((opt) => !opt.hidden);
-    }
-
-    function moveKindActive(delta) {
-        const visible = visibleKindOptions();
-        if (!visible.length) return;
-        kindActiveIndex = (kindActiveIndex + delta + visible.length) % visible.length;
-        visible.forEach((opt, i) => opt.classList.toggle('is-active', i === kindActiveIndex));
-        visible[kindActiveIndex]?.scrollIntoView({ block: 'nearest' });
-    }
-
-    const initialKind = normalizeKindValue(params.get('kind') || kindSelect?.value || 'all');
-    if (kindSelect) kindSelect.value = initialKind;
     sortSelect.value = params.get('sort') || 'latest';
     if (!sortSelect.value) sortSelect.value = 'latest';
     syncSortMenu();
     sortSelect.addEventListener('change', syncSortMenu);
     document.getElementById('sort-native-control').hidden = true;
     sortToggle.hidden = false;
-
-    if (kindSelect && kindMenu) {
-        kindSelect.addEventListener('focus', () => openKindMenu(false));
-        kindSelect.addEventListener('click', () => openKindMenu(false));
-        kindSelect.addEventListener('input', () => {
-            openKindMenu(false);
-            markActiveFilters();
-        });
-        kindSelect.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                if (kindMenu.classList.contains('hidden')) openKindMenu(false);
-                else moveKindActive(1);
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                if (kindMenu.classList.contains('hidden')) openKindMenu(false);
-                else moveKindActive(-1);
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                const visible = visibleKindOptions().filter((opt) => opt.dataset.value !== 'all');
-                if (!kindMenu.classList.contains('hidden') && kindActiveIndex >= 0) {
-                    const allVisible = visibleKindOptions();
-                    if (allVisible[kindActiveIndex]) {
-                        setKindValue(allVisible[kindActiveIndex].dataset.value);
-                        closeKindMenu();
-                        return;
-                    }
-                }
-                const typed = normalizeKindValue(kindSelect.value);
-                const exact = kindOptions.find((opt) => normalizeKindValue(opt.dataset.value) === typed);
-                if (exact) setKindValue(exact.dataset.value);
-                else if (visible.length === 1) setKindValue(visible[0].dataset.value);
-                else setKindValue(typed);
-                closeKindMenu();
-            } else if (e.key === 'Escape') {
-                closeKindMenu();
-            }
-        });
-        kindSelect.addEventListener('blur', () => {
-            // 옵션 클릭이 blur보다 먼저 처리되도록 약간 지연
-            setTimeout(() => {
-                if (!kindMenu.contains(document.activeElement) && document.activeElement !== kindToggle) {
-                    setKindValue(kindSelect.value);
-                    closeKindMenu();
-                }
-            }, 120);
-        });
-        kindToggle?.addEventListener('mousedown', (e) => e.preventDefault());
-        kindToggle?.addEventListener('click', () => {
-            if (kindMenu.classList.contains('hidden')) {
-                kindSelect.focus();
-                openKindMenu(true);
-            } else {
-                closeKindMenu();
-            }
-        });
-        kindOptions.forEach((opt) => {
-            opt.addEventListener('mousedown', (e) => e.preventDefault());
-            opt.addEventListener('click', () => {
-                setKindValue(opt.dataset.value);
-                closeKindMenu();
-            });
-        });
-    }
 
     function updateDropdownLabel(type) {
         const checks = [...document.querySelectorAll(`.${type}-checkbox:checked`)];

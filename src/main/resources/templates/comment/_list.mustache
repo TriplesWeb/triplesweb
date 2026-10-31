@@ -9,10 +9,15 @@
         <div class="card m-0 mb-3 shadow-sm comment-card" id="comments-{{id}}" style="background: rgba(26, 27, 32, 0.7); border: 1px solid rgba(58, 74, 70, 0.3); border-radius: 1rem; backdrop-filter: blur(12px);">
             <div class="card-header d-flex justify-content-between align-items-center" style="background: transparent; border-bottom: 1px solid rgba(58, 74, 70, 0.3); padding: 1rem 1.25rem;">
                 <span class="text-[#00f5d4] font-semibold text-sm font-['JetBrains_Mono']">{{userId}}</span>
+            </div>
 
+            <div class="card-body" style="padding: 1.25rem;">
+                <!-- 1. 평소에 보이는 댓글 내용 뷰 영역 -->
+                <div class="comment-body-view text-[#e3e2e8]" id="comment-view-{{id}}" style="word-break: break-all;">
+                    {{body}}
+                </div>
                 {{#isOwner}}
-                    <!-- 수정/삭제 버튼 바깥 노출 -->
-                    <div class="flex items-center gap-2">
+                    <div class="comment-owner-actions flex items-center justify-end gap-2 mt-2">
                         <button type="button"
                                 class="btn btn-sm btn-custom-secondary comment-toggle-edit-btn text-xs py-1.5 px-3 flex items-center gap-1 cursor-pointer"
                                 data-comment-id="{{id}}">
@@ -25,13 +30,6 @@
                         </button>
                     </div>
                 {{/isOwner}}
-            </div>
-
-            <div class="card-body" style="padding: 1.25rem;">
-                <!-- 1. 평소에 보이는 댓글 내용 뷰 영역 -->
-                <div class="comment-body-view text-[#e3e2e8]" id="comment-view-{{id}}" style="word-break: break-all;">
-                    {{body}}
-                </div>
 
                 <!-- 2. 수정 버튼을 누르면 나타나는 인라인 수정 폼 영역 (초기 숨김) -->
                 <div class="comment-edit-form-area hidden mt-2" id="comment-edit-area-{{id}}">

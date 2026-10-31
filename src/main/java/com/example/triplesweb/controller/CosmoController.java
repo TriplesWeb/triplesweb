@@ -152,7 +152,7 @@ public class CosmoController {
         Map<String, java.util.Set<String>> membershipCache = new java.util.HashMap<>();
         List<String> selectedSeasons = cleanSelections(season);
         List<String> selectedClasses = cleanSelections(classFilters);
-        String selectedKind = normalize(kind);
+        String selectedKind = "전체".equals(normalize(kind)) ? "all" : normalize(kind);
         String selectedSort = normalize(sort);
 
         // 전체 캐시에서 검색어와 모든 필터를 먼저 적용하고, 그 결과에만 정렬과 페이지네이션을 적용한다.

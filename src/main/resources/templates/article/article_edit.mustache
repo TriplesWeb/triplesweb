@@ -16,7 +16,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/article-page.css?v=5">
+    <link rel="stylesheet" href="/css/article-page.css?v=6">
     <style>
         #content {
             min-height: 250px;
@@ -112,8 +112,11 @@
                 <!-- 첨부 파일 -->
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">첨부 파일 (이미지 또는 영상)</label>
-                    <input type="file" id="fileInput" name="__fileChooser" multiple accept="image/*,video/*" class="w-full py-2.5 px-4 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl text-sm text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-container file:text-on-primary hover:file:opacity-90 cursor-pointer" />
-                    <p id="uploadFileNames" class="upload-file-names" aria-live="polite">선택된 파일 없음</p>
+                    <div class="file-chooser-row relative">
+                        <input type="file" id="fileInput" name="__fileChooser" multiple accept="image/*,video/*" />
+                        <label for="fileInput" class="file-chooser-btn">파일 선택</label>
+                        <span id="uploadFileNames" class="upload-file-names" aria-live="polite" hidden></span>
+                    </div>
                 </div>
 
                 <!-- 미리보기 -->
@@ -205,17 +208,48 @@
         }
         function insertLineBreakAfter(mediaNode) {
             const line = document.createElement('div');
+            line.style.textAlign = 'left';
             line.appendChild(document.createElement('br'));
             if (mediaNode.nextSibling) mediaNode.parentNode.insertBefore(line, mediaNode.nextSibling);
             else mediaNode.parentNode.appendChild(line);
             placeCaretIn(line);
             return line;
         }
+        function editorHasContent(editor) {
+            if (!editor) return false;
+            if (editor.querySelector('.content-media')) return true;
+            return (editor.innerText || '').replace(/\u00a0/g, ' ').trim().length > 0;
+        }
+        function placeMediaInEditor(editor, wrap) {
+            if (editorHasContent(editor)) {
+                const leftovers = [...editor.childNodes];
+                editor.insertBefore(wrap, editor.firstChild);
+                const line = document.createElement('div');
+                line.style.textAlign = 'left';
+                leftovers.forEach((node) => {
+                    if (node !== wrap) line.appendChild(node);
+                });
+                if (!line.childNodes.length) line.appendChild(document.createElement('br'));
+                if (wrap.nextSibling) editor.insertBefore(line, wrap.nextSibling);
+                else editor.appendChild(line);
+                placeCaretIn(line);
+                return line;
+            }
+            editor.appendChild(wrap);
+            return insertLineBreakAfter(wrap);
+        }
         function refreshFileNames() {
             const names = [...previewArea.querySelectorAll('.preview-item')]
                 .map((item) => item.dataset.fileName || item.dataset.key || '')
                 .filter(Boolean);
-            if (fileNamesEl) fileNamesEl.textContent = names.length ? names.join(', ') : '선택된 파일 없음';
+            if (!fileNamesEl) return;
+            if (names.length) {
+                fileNamesEl.textContent = names.join(', ');
+                fileNamesEl.hidden = false;
+            } else {
+                fileNamesEl.textContent = '';
+                fileNamesEl.hidden = true;
+            }
         }
         function selectMedia(key) {
             if (!key) return;
@@ -586,8 +620,7 @@
                     if (event.target.closest('.remove-btn')) return;
                     selectMedia(saved);
                 });
-                contentDiv.appendChild(wrapper);
-                insertLineBreakAfter(wrapper);
+                placeMediaInEditor(contentDiv, wrapper);
                 contentDiv.focus({ preventScroll: true });
             } finally {
                 syncingPreview = false;

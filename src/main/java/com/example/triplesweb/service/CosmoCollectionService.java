@@ -84,7 +84,7 @@ public class CosmoCollectionService {
         String selectedGroup = normalizeGroup(group, memberKey);
         List<String> selectedMembers = memberKey.isBlank() ? List.of() : List.of(memberKey);
         String kindKey = kind == null ? "" : kind.trim();
-        boolean kindFiltered = !kindKey.isBlank() && !"all".equalsIgnoreCase(kindKey);
+        boolean kindFiltered = !kindKey.isBlank() && !"all".equalsIgnoreCase(kindKey) && !"전체".equals(kindKey);
         String sortKey = sort == null || sort.isBlank() ? "latest" : sort.trim().toLowerCase(Locale.ROOT);
         List<Map<String, Object>> filtered = found.cards.stream().filter(card -> {
             if (!com.example.triplesweb.util.MemberPortraitOptions.matchesMemberGroup(
@@ -223,7 +223,7 @@ public class CosmoCollectionService {
             out.append("&season=").append(URLEncoder.encode(season, StandardCharsets.UTF_8));
         for (String klass : classes)
             out.append("&class=").append(URLEncoder.encode(klass, StandardCharsets.UTF_8));
-        if (kind != null && !kind.isBlank() && !"all".equalsIgnoreCase(kind))
+        if (kind != null && !kind.isBlank() && !"all".equalsIgnoreCase(kind) && !"전체".equals(kind))
             out.append("&kind=").append(URLEncoder.encode(kind, StandardCharsets.UTF_8));
         if (sort != null && !sort.isBlank() && !"latest".equalsIgnoreCase(sort))
             out.append("&sort=").append(URLEncoder.encode(sort, StandardCharsets.UTF_8));

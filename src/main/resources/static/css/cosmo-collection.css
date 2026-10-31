@@ -69,6 +69,80 @@
 }
 .collection-page .objekt-filter-label { font-size: .75rem; font-weight: 700; color: #9aa3b5; }
 .collection-page .objekt-filter.is-filtered .objekt-filter-label { color: #7df9e8; }
+.collection-page .objekt-kind-combo {
+    min-width: 6.5rem;
+    gap: 0;
+    padding: 0 .2rem 0 .65rem;
+    cursor: text;
+}
+.collection-page .objekt-filter input.objekt-kind-select,
+.collection-page .objekt-filter input.objekt-kind-select:hover,
+.collection-page .objekt-filter input.objekt-kind-select:focus,
+.collection-page .objekt-filter input.objekt-kind-select:focus-visible {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    flex: 1 1 auto;
+    height: 2.1rem;
+    margin: 0;
+    border: 0 !important;
+    border-radius: 0 !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    color: #e8ebf2 !important;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: .8rem;
+    font-weight: 650;
+    letter-spacing: .02em;
+    line-height: 2.1rem;
+    caret-color: #6ee7d8;
+}
+.collection-page .objekt-filter input.objekt-kind-select::placeholder {
+    color: #6b7388 !important;
+    opacity: 1;
+    text-transform: none;
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: 0;
+}
+.collection-page .objekt-kind-toggle {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 1.45rem;
+    height: 1.45rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #6ee7d8;
+    cursor: pointer;
+}
+.collection-page .objekt-kind-toggle:hover { background: rgba(255,255,255,.06); }
+.collection-page .objekt-kind-toggle .material-symbols-outlined { font-size: 1.1rem; line-height: 1; }
+.collection-page .objekt-kind-option {
+    display: block;
+    width: 100%;
+    padding: .45rem .7rem;
+    border: 0;
+    border-radius: .5rem;
+    background: transparent;
+    color: #e8ebf2;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: .82rem;
+    text-align: left;
+    cursor: pointer;
+}
+.collection-page .objekt-kind-option:hover,
+.collection-page .objekt-kind-option:focus-visible,
+.collection-page .objekt-kind-option.is-active { background: #1a1d28; }
+.collection-page .objekt-kind-option[hidden] { display: none; }
+.collection-page .objekt-kind-empty { margin: .35rem .5rem; color: #8b93a7; font-size: .75rem; }
+.collection-page .objekt-kind-empty[hidden] { display: none; }
 .collection-page .objekt-filter-control {
     display: inline-flex;
     align-items: center;
