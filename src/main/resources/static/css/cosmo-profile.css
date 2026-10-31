@@ -75,15 +75,14 @@
 .profile-member-overall{margin:0 0 1rem}
 .profile-member-overall .profile-overall-pie{--orbit-color:var(--member-color,#8decd9);width:min(11rem,55vw)}
 .profile-member-overall .profile-pie-swatch.is-owned{background:var(--member-color,#8decd9);box-shadow:0 0 0 1px color-mix(in srgb,var(--member-color,#8decd9) 40%,transparent)}
-.profile-overview-fold{padding:0;overflow:hidden}
-.profile-overview-fold>.profile-member-grid{padding:0 1rem 1rem}
-.profile-overview-fold-summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 1.15rem;cursor:pointer}
-.profile-overview-fold-summary::-webkit-details-marker{display:none}
-.profile-overview-fold-copy{display:grid;gap:.35rem;margin:0;min-width:0}
-.profile-overview-fold-copy h2{margin:0;font-size:1.05rem}
-.profile-overview-fold-copy p{margin:0}
-.profile-overview-fold-summary .profile-fold-chevron{flex:0 0 auto;transition:transform .18s ease}
-.profile-overview-fold[open]>.profile-overview-fold-summary .profile-fold-chevron{transform:rotate(180deg)}
+.profile-top-member-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,11.5rem),1fr));gap:.85rem}
+.profile-top-member{position:relative;padding:1.15rem 1.1rem .95rem;gap:.7rem}
+.profile-top-member-rank{position:absolute;top:.7rem;right:.8rem;min-width:1.55rem;height:1.55rem;padding:0 .35rem;border-radius:999px;display:grid;place-items:center;font-size:.72rem;font-weight:750;font-variant-numeric:tabular-nums;color:#07110e;background:color-mix(in srgb,var(--member-color,#8decd9) 82%,#edfff8);box-shadow:0 0 0 1px color-mix(in srgb,var(--member-color,#8decd9) 35%,transparent)}
+.profile-top-member .profile-member-name{padding-right:1.8rem}
+.profile-top-member .profile-orbit{width:4.6rem;height:4.6rem;margin:.1rem auto 0}
+.profile-top-member .profile-orbit strong{font-size:1.05rem}
+.profile-top-member .ar-muted{font-size:.78rem;text-align:center}
+.profile-top-member .profile-progress-link{margin-top:auto;justify-content:center}
 .profile-overall-pie{--orbit-color:#8decd9;position:relative;width:min(14rem,70vw);aspect-ratio:1;display:grid;place-items:center}
 .profile-overall-pie svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
 .profile-overall-pie circle{fill:none;stroke-width:3.4}
