@@ -2019,7 +2019,7 @@ textarea.form-control {
     transition: filter 160ms ease, opacity 160ms ease;
 }
 .artist-page .artist-tab-avatar.has-frame-mask .artist-tab-frame {
-    opacity: 0;
+    opacity: 1;
 }
 .artist-page .artist-tab-avatar.has-frame-mask::after {
     content: "";
@@ -2027,8 +2027,8 @@ textarea.form-control {
     inset: 0;
     z-index: 3;
     pointer-events: none;
-    background: var(--artist-color, #00f5d4);
-    opacity: 0;
+    background: color-mix(in srgb, var(--artist-color, #00f5d4) 18%, transparent);
+    opacity: .55;
     --badge-cut: linear-gradient(#000, #000);
     -webkit-mask-image: var(--frame-mask), var(--badge-cut);
     -webkit-mask-size: contain, 30% 16.8%;
@@ -2040,6 +2040,15 @@ textarea.form-control {
     mask-position: center, right 4.4% bottom 4.4%;
     mask-repeat: no-repeat;
     mask-composite: subtract;
+}
+
+/* 멤버 탭이 선택됐을 때만 미선택 윤곽을 숨긴다(그룹 입문 활성 = idle, 연한 테두리 유지) */
+.artist-page .artist-member-tabs:has(.nav-tab-btn.is-active[data-member-tab]) .nav-tab-btn:not(.is-active) .artist-tab-frame {
+    opacity: 0;
+}
+.artist-page .artist-member-tabs:has(.nav-tab-btn.is-active[data-member-tab]) .nav-tab-btn:not(.is-active) .artist-tab-avatar.has-frame-mask::after {
+    opacity: 0;
+    filter: none;
 }
 
 /* 선택: 윤곽 PNG drop-shadow 발광 (사각 링 대신) */
@@ -4429,8 +4438,8 @@ a.chem-highlight:hover {
     transition: filter 160ms ease, opacity 160ms ease;
 }
 .member-portrait-picker .artist-tab-avatar.has-frame-mask .artist-tab-frame {
-    /* 미선택: 원본 윤곽·뱃지까지 숨겨 테두리가 거의 안 보이게 */
-    opacity: 0;
+    /* 미선택: 상징색 연한 윤곽이 보이도록 프레임을 유지한다 */
+    opacity: 1;
 }
 .member-portrait-picker .artist-tab-avatar.has-frame-mask::after {
     content: "";
@@ -4438,8 +4447,8 @@ a.chem-highlight:hover {
     inset: 0;
     z-index: 3;
     pointer-events: none;
-    background: var(--artist-color, #00f5d4);
-    opacity: 0;
+    background: color-mix(in srgb, var(--artist-color, #00f5d4) 18%, transparent);
+    opacity: .55;
     /* 뱃지 안쪽만 직사각으로 빼 외곽선이 직선으로 뱃지에 붙게 한다 */
     --badge-cut: linear-gradient(#000, #000);
     -webkit-mask-image: var(--frame-mask), var(--badge-cut);
@@ -4452,6 +4461,15 @@ a.chem-highlight:hover {
     mask-position: center, right 4.4% bottom 4.4%;
     mask-repeat: no-repeat;
     mask-composite: subtract;
+}
+
+/* 선택이 있으면 미선택 멤버의 연한 윤곽을 완전히 숨긴다 */
+.member-portrait-picker:has(.mpp-item.is-active) .mpp-item:not(.is-active) .artist-tab-frame {
+    opacity: 0;
+}
+.member-portrait-picker:has(.mpp-item.is-active) .mpp-item:not(.is-active) .artist-tab-avatar.has-frame-mask::after {
+    opacity: 0;
+    filter: none;
 }
 
 /* 선택: 사각 링 대신 윤곽 PNG 알파를 따라 drop-shadow 발광 */

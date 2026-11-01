@@ -50,18 +50,33 @@ const base = path.resolve(__dirname, '../..');
         el.querySelector('.artist-tab-avatar').classList.add('artist-tab-avatar--group');
       });
       const buttons = page.locator(artist?'.nav-tab-btn':'.mpp-item');
-      const first = buttons.first(), second = buttons.nth(1);
-      const frame = first.locator('.artist-tab-frame');
+      const first = buttons.first(), second = buttons.nth(1), third = buttons.nth(2);
+      // About/artist: 그룹 탭이 기본 활성이어도 멤버는 연한 테두리(idle). 선택 효과는 멤버 탭으로 검증한다.
+      const selected = artist ? second : first;
+      const sibling = artist ? third : second;
+      const frame = selected.locator('.artist-tab-frame');
       const src = await frame.getAttribute('src');
-      await first.click();
+      if (artist) {
+        await first.click();
+        await page.waitForTimeout(50);
+      }
+      await selected.locator('.artist-tab-avatar.has-frame-mask').waitFor();
+      const idleOverlay = await selected.locator('.artist-tab-avatar').evaluate(el => {
+        const overlay = getComputedStyle(el, '::after');
+        return { opacity: Number(overlay.opacity), filter: overlay.filter };
+      });
+      assert.ok(idleOverlay.opacity > 0 && idleOverlay.opacity < 1, mode+' 미선택 ::after는 연한 상징색 윤곽');
+      assert.doesNotMatch(String(idleOverlay.filter), /drop-shadow/, mode+' 미선택에는 발광 없음');
+      await selected.click();
       await page.waitForTimeout(350);
-      await first.locator('.artist-tab-avatar.has-frame-mask').waitFor();
-      const stable = await first.locator('.artist-tab-avatar').evaluate(el => {
+      await selected.locator('.artist-tab-avatar.has-frame-mask').waitFor();
+      const stable = await selected.locator('.artist-tab-avatar').evaluate(el => {
         const overlay = getComputedStyle(el, '::after');
         return {
         shadow:getComputedStyle(el).boxShadow, bounds:el.getBoundingClientRect().width,
         overlayBg: overlay.backgroundColor,
         overlayFilter: overlay.filter,
+        overlayOpacity: Number(overlay.opacity),
         frameFilter:getComputedStyle(el.querySelector('.artist-tab-frame')).filter,
         animations:el.getAnimations({subtree:true}).filter(a=>a.playState==='running').map(a=>({
           properties:[...new Set(a.effect.getKeyframes().flatMap(frame=>Object.keys(frame)).filter(key=>!['offset','computedOffset','easing','composite'].includes(key)))],
@@ -70,7 +85,7 @@ const base = path.resolve(__dirname, '../..');
         };
       });
       if (artist) {
-        const rgb = await second.locator('.artist-tab-label').evaluate(el => {
+        const rgb = await selected.locator('.artist-tab-label').evaluate(el => {
           const c = getComputedStyle(el).color;
           if (c.startsWith('color(srgb')) return [...c.matchAll(/[0-9.]+/g)].slice(0, 3).map(n => Math.round(Number(n)*255));
           return (c.match(/\d+/g) || []).map(Number);
@@ -79,9 +94,20 @@ const base = path.resolve(__dirname, '../..');
       }
       const glowCount = (String(stable.overlayFilter).match(/drop-shadow/g) || []).length;
       assert.ok(glowCount >= 1 && glowCount <= 3, mode+' 선택 테두리 빛은 3겹까지');
+      assert.equal(stable.overlayOpacity, 1, mode+' 선택 ::after는 완전 불투명');
       assert.match(String(stable.overlayBg), /34,\s*174,\s*255|#22aeff/i, mode+' 윤곽을 상징색으로 칠함');
       assert.doesNotMatch(String(stable.overlayFilter), /255,\s*255,\s*255|#fff\b/i, mode+' 빛 색에 흰색을 섞지 않음');
-      const overlayMask = await first.locator('.artist-tab-avatar').evaluate(el => {
+      const siblingIdle = await sibling.locator('.artist-tab-avatar').evaluate(el => {
+        const overlay = getComputedStyle(el, '::after');
+        const frameEl = el.querySelector('.artist-tab-frame');
+        return {
+          overlayOpacity: Number(overlay.opacity),
+          frameOpacity: frameEl ? Number(getComputedStyle(frameEl).opacity) : null
+        };
+      });
+      assert.equal(siblingIdle.overlayOpacity, 0, mode+' 선택 후 미선택 ::after는 숨김');
+      assert.equal(siblingIdle.frameOpacity, 0, mode+' 선택 후 미선택 프레임은 숨김');
+      const overlayMask = await selected.locator('.artist-tab-avatar').evaluate(el => {
         const overlay = getComputedStyle(el, '::after');
         return {
           composite: overlay.maskComposite || overlay.webkitMaskComposite,
@@ -94,8 +120,8 @@ const base = path.resolve(__dirname, '../..');
       assert.deepEqual(stable.animations[0].properties.sort(), ['opacity','transform'], mode+' 광택 레이어의 이동과 투명도만 애니메이션');
       assert.ok(stable.animations[0].duration >= 6800 && stable.animations[0].duration <= 6900, mode+' 6.85초 반복 주기');
       assert.equal(await frame.getAttribute('src'), src, mode+' 프레임 주소 유지');
-      assert.equal(await first.locator('.artist-tab-shine').isVisible(), true);
-      const direction = await first.locator('.artist-tab-avatar').evaluate(el => {
+      assert.equal(await selected.locator('.artist-tab-shine').isVisible(), true);
+      const direction = await selected.locator('.artist-tab-avatar').evaluate(el => {
         const animation = el.getAnimations({subtree:true}).find(a=>a.animationName==='member-selection-sheen');
         animation.pause();
         const layer = el.querySelector('.artist-tab-shine');
@@ -112,16 +138,27 @@ const base = path.resolve(__dirname, '../..');
       });
       assert.ok(direction.dx > 0 && direction.dy > 0, mode+' 왼쪽 위에서 오른쪽 아래로 이동');
       assert.ok(Math.abs(direction.restDx)<.01 && Math.abs(direction.restDy)<.01, mode+' 이동 후 대기');
-      assert.equal(await first.locator('.artist-tab-photo').evaluate(el=>getComputedStyle(el).filter), 'none');
+      assert.equal(await selected.locator('.artist-tab-photo').evaluate(el=>getComputedStyle(el).filter), 'none');
       await page.waitForTimeout(850);
-      assert.equal(await first.locator('.artist-tab-avatar').evaluate(el=>getComputedStyle(el,'::after').filter), stable.overlayFilter, mode+' 윤곽 발광 고정');
-      const shine = first.locator('.artist-tab-shine');
+      assert.equal(await selected.locator('.artist-tab-avatar').evaluate(el=>getComputedStyle(el,'::after').filter), stable.overlayFilter, mode+' 윤곽 발광 고정');
+      const shine = selected.locator('.artist-tab-shine');
       const beforeTint = await shine.evaluate(el=>getComputedStyle(el,'::before').backgroundImage);
-      await first.evaluate(el=>el.style.setProperty('--artist-color','#db0c74'));
+      await selected.evaluate(el=>el.style.setProperty('--artist-color','#db0c74'));
       const afterTint = await shine.evaluate(el=>getComputedStyle(el,'::before').backgroundImage);
       assert.notEqual(afterTint, beforeTint, mode+' 멤버 상징색에 따라 광택 색 변경');
-      await first.evaluate(el=>el.style.setProperty('--artist-color','#22aeff'));
-      await second.click();
+      await selected.evaluate(el=>el.style.setProperty('--artist-color','#22aeff'));
+      if (artist) {
+        await first.click();
+        const restored = await selected.locator('.artist-tab-avatar').evaluate(el => {
+          const overlay = getComputedStyle(el, '::after');
+          return { opacity: Number(overlay.opacity), filter: overlay.filter };
+        });
+        assert.ok(restored.opacity > 0 && restored.opacity < 1, mode+' 그룹 입문으로 돌아가면 연한 윤곽 복구');
+        assert.doesNotMatch(String(restored.filter), /drop-shadow/, mode+' 그룹 idle에는 발광 없음');
+        await selected.click();
+      } else {
+        await second.click();
+      }
       assert.equal(await page.locator('.is-active').count(), artist?1:2);
       if (!artist) {
         assert.deepEqual(await page.evaluate(()=>changes.at(-1)), ['0','1']);
