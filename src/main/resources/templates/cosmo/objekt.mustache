@@ -183,7 +183,7 @@
         <p id="objekt-result-summary" class="text-sm text-slate-400"
            data-result-count="{{objektCount}}" data-all-count="{{objektAllCount}}" data-loaded="{{objektPageCount}}">
             검색 결과 <strong class="text-[#00f5d4]">{{objektCount}}</strong>개
-            <span class="text-slate-500">(전체 {{objektAllCount}}개 중 · <span id="objekt-loaded-count">{{objektPageCount}}</span>개 표시)</span>
+            <span class="text-slate-500">(전체 <span id="objekt-all-count">{{objektAllCount}}</span>개 중 · <span id="objekt-loaded-count">{{objektPageCount}}</span>개 표시)</span>
         </p>
     </div>
     {{#objektError}}
@@ -276,5 +276,5 @@
 
 <script src="/js/member-portrait-picker.js?v=9"></script>
 <script src="/js/objekt-kind-combo.js?v=1"></script>
-<script src="/js/objekt-page.js?v=3" defer></script>
+<script src="/js/objekt-page.js?v=4" defer></script>
 {{>layout/page-end}}
