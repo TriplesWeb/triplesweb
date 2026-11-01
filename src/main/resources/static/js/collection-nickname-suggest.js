@@ -5,6 +5,7 @@
   if (!form || !input || !menu) return;
 
   const STORAGE_KEY = 'cosmo-nickname-recents';
+  const MIN_QUERY = 3;
   const saved = (form.dataset.savedNickname || '').trim();
 
   function loadRecents() {
@@ -65,23 +66,31 @@
     input.setAttribute('aria-expanded', 'false');
   }
 
+  function choose(name) {
+    input.value = name;
+    closeMenu();
+    form.requestSubmit();
+  }
+
   function render(items) {
     menu.innerHTML = '';
     if (!items.length) {
       closeMenu();
       return;
     }
+    const label = document.createElement('p');
+    label.className = 'collection-nickname-suggest-label';
+    label.textContent = '연관닉';
+    menu.appendChild(label);
     items.forEach((name) => {
       const option = document.createElement('button');
       option.type = 'button';
       option.className = 'collection-nickname-option';
       option.setAttribute('role', 'option');
       option.textContent = name;
-      option.addEventListener('mousedown', (event) => event.preventDefault());
-      option.addEventListener('click', () => {
-        input.value = name;
-        closeMenu();
-        form.requestSubmit();
+      option.addEventListener('mousedown', (event) => {
+        event.preventDefault();
+        choose(name);
       });
       menu.appendChild(option);
     });
@@ -91,14 +100,16 @@
 
   let timer = 0;
   let abort = null;
+  let seq = 0;
   async function refresh() {
     const query = input.value.trim();
-    const recents = uniqueNames([loadRecents()], query);
-    if (query.length < 3) {
-      render(recents);
+    const requestId = ++seq;
+    if (query.length < MIN_QUERY) {
+      abort?.abort();
+      closeMenu();
       return;
     }
-    if (recents.length) render(recents);
+    const recents = uniqueNames([loadRecents()], query);
     abort?.abort();
     abort = new AbortController();
     let remote = [];
@@ -114,11 +125,14 @@
     } catch (error) {
       if (error && error.name === 'AbortError') return;
     }
+    if (requestId !== seq || input.value.trim() !== query) return;
     render(mergeNames(remote, recents));
   }
 
   input.addEventListener('input', () => {
     window.clearTimeout(timer);
+    abort?.abort();
+    if (input.value.trim().length < MIN_QUERY) closeMenu();
     timer = window.setTimeout(refresh, 180);
   });
   input.addEventListener('focus', refresh);

@@ -396,6 +396,10 @@ public class CosmoCollectionService {
         }
     }
 
+    /**
+     * COSMO {@code /bff/v3/users/search} requires a logged-in token, so related Cosmo IDs
+     * are read from the public objekt.top user index instead.
+     */
     private List<String> searchCosmoNicknames(String prefix, int cap) {
         if (prefix.contains("/") || prefix.contains(" ")) return List.of();
         long now = Instant.now().getEpochSecond();
@@ -404,9 +408,9 @@ public class CosmoCollectionService {
         CachedNames cached = nicknameSearchCache.get(key);
         if (cached != null && cached.expiresAt > now) return cached.names;
         try {
-            JsonNode node = cosmo.get()
-                    .uri(builder -> builder.path("/bff/v3/users/search")
-                            .queryParam("nickname", prefix)
+            JsonNode node = index.get()
+                    .uri(builder -> builder.path("/users/search")
+                            .queryParam("query", prefix)
                             .queryParam("skip", 0)
                             .queryParam("take", cap)
                             .build())

@@ -220,6 +220,9 @@ html[data-theme="light"] .collection-page .objekt-filter {
 html[data-theme="light"] .objekt-search-input,
 html[data-theme="light"] .collection-page .objekt-search-input,
 html[data-theme="light"] .collection-page .objekt-filter input.objekt-kind-select,
+html[data-theme="light"] .collection-nickname-suggest-label {
+    color: var(--site-ui-muted);
+}
 html[data-theme="light"] .collection-nickname-option {
     color: var(--site-ui-text) !important;
 }

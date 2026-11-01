@@ -27,7 +27,9 @@ class CosmoCollectionControllerTest {
 
     @Test void initialPageAndEmptySubmittedNicknameHaveDifferentMessages() throws Exception {
         mvc.perform(get("/cosmo/collection")).andExpect(status().isOk())
-                .andExpect(content().string(not(containsString("없는 닉네임 입니다."))));
+                .andExpect(content().string(not(containsString("없는 닉네임 입니다."))))
+                .andExpect(content().string(containsString("aria-label=\"연관닉\"")))
+                .andExpect(content().string(containsString("collection-nickname-suggest.js?v=4")));
         mvc.perform(get("/cosmo/collection").param("nickname", "")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("없는 닉네임 입니다.")));
         verifyNoInteractions(collections);
@@ -104,6 +106,13 @@ class CosmoCollectionControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0]").value("hayeonfan"))
                 .andExpect(jsonPath("$.items[1]").value("hayoon"));
+    }
+
+    @Test void suggestReturnsEmptyItemsWhenServiceHasNoMatches() throws Exception {
+        when(collections.suggestNicknames("ha", 8)).thenReturn(List.of());
+        mvc.perform(get("/cosmo/collection/suggest").param("q", "ha"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isEmpty());
     }
 
     @Test void moreEndpointReturnsJsonPagePayload() throws Exception {

@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="/css/gravity-page.css?v=3">
 <link rel="stylesheet" href="/css/archive-page.css?v=15">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=20">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=18">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=19">
 <title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}내 오브젝트 검색{{/nickname}}</title>
 </head><body class="site-page collection-page min-h-screen flex flex-col">
 {{>layout/header}}
@@ -16,7 +16,7 @@
             <label class="ar-search-wrap">
                 <span class="material-symbols-outlined">search</span>
                 <input class="ar-search" id="collection-nickname-input" type="search" name="nickname" value="{{query}}" placeholder="닉네임 입력" aria-label="COSMO 닉네임" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="collection-nickname-suggest" aria-autocomplete="list">
-                <div id="collection-nickname-suggest" class="collection-nickname-suggest" hidden role="listbox" aria-label="닉네임 제안"></div>
+                <div id="collection-nickname-suggest" class="collection-nickname-suggest" hidden role="listbox" aria-label="연관닉"></div>
             </label>
             <button class="ar-submit" type="submit">검색</button>
         </form>
@@ -194,7 +194,7 @@
 </main>
 <script src="/js/member-portrait-picker.js?v=9"></script>
 <script src="/js/objekt-kind-combo.js?v=1"></script>
-<script src="/js/collection-nickname-suggest.js?v=2"></script>
+<script src="/js/collection-nickname-suggest.js?v=4"></script>
 <script>
 (() => {
   const form = document.getElementById('collection-filter-form');
