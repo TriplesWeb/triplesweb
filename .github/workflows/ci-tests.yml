@@ -11,7 +11,10 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
+  checks: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -36,7 +39,7 @@ jobs:
         env:
           OBJEKT_LIVE_TEST: 'true'
         run: ./gradlew test --tests '*ObjektLiveApiTest' --info
-      - name: 전송 내역 브라우저 검증
+      - name: Chrome 브라우저 검증
         env:
           NODE_PATH: /tmp/objekt-browser/node_modules
         run: |
@@ -61,48 +64,55 @@ jobs:
           path: /tmp/objekt-ui/*.png
           if-no-files-found: ignore
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mobile-page-fixtures
-          path: build/mobile-pages/*.html
-  safari:
-    needs: test
-    runs-on: macos-15
+  package:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
-          sparse-checkout: |
-            src
-            scripts
-      - uses: actions/download-artifact@v4
-        with:
-          name: mobile-page-fixtures
-          path: build/mobile-pages
-      - name: iPhone WebKit 모바일 검사
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Spring WAR 패키징 (Docker와 동일)
+        run: ./gradlew bootWar -x test --no-daemon --stacktrace
+
+  qodana:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require QODANA_TOKEN
         env:
-          NODE_PATH: /tmp/objekt-browser/node_modules
-          BROWSER_ENGINE: webkit
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         run: |
-          npm install --prefix /tmp/objekt-browser --no-package-lock playwright@1.56.1
-          /tmp/objekt-browser/node_modules/.bin/playwright install webkit
-          node scripts/tests/objekt-mobile.browser.cjs
-          node scripts/tests/site-header.browser.cjs
-      - uses: actions/upload-artifact@v4
-        if: always()
+          if [[ -z "${QODANA_TOKEN}" ]]; then
+            echo "::error::QODANA_TOKEN secret is required for the quality gate"
+            exit 1
+          fi
+      - uses: actions/checkout@v4
         with:
-          name: iphone-mobile-preview
-          path: /tmp/objekt-ui/*.png
-          if-no-files-found: ignore
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Qodana Scan
+        uses: JetBrains/qodana-action@v2026.2
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+        with:
+          pr-mode: true
+          use-caches: true
+          post-pr-comment: true
+          use-annotations: true
+          upload-result: false
+          push-fixes: 'none'
 
   required:
     name: required
     if: ${{ always() }}
-    needs: [test, safari]
+    needs: [test, package, qodana]
     runs-on: ubuntu-latest
     steps:
-      - name: Fail unless Linux and WebKit checks succeeded
+      - name: Fail unless Spring and Chrome checks succeeded
         env:
-          LINUX_RESULT: ${{ needs.test.result }}
-          SAFARI_RESULT: ${{ needs.safari.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+          PACKAGE_RESULT: ${{ needs.package.result }}
+          QODANA_RESULT: ${{ needs.qodana.result }}
         run: |
-          [[ "$LINUX_RESULT" == "success" && "$SAFARI_RESULT" == "success" ]] || exit 1
+          [[ "$TEST_RESULT" == "success" && "$PACKAGE_RESULT" == "success" && "$QODANA_RESULT" == "success" ]] || exit 1

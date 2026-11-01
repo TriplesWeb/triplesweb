@@ -182,7 +182,10 @@ docker compose up -d
 2. Actions가 arm64 빌드 → GHCR 푸시 → Tailscale 조인 → `PI_HOST`로 SSH
 3. Pi에서 `IMAGE` 갱신 후 `docker compose pull app && up -d`
 
-워크플로: [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)
+워크플로: [`.github/workflows/deploy-main.yml`](.github/workflows/deploy-main.yml)
+
+PR 머지 게이트: Ruleset **`main-ci`**의 required status check **`required`**
+(`CI tests` 워크플로의 `test` + `package` + `qodana` 집계).
 
 ### 5. 로컬에서 compose만 쓸 때
 

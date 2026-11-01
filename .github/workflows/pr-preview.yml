@@ -103,7 +103,7 @@ jobs:
           script: |
             const prNumber = context.payload.pull_request.number;
             const sha = process.env.HEAD_SHA;
-            const names = ['CI tests', 'PR code quality'];
+            const names = ['CI tests'];
             for (let attempt = 0; attempt < 90; attempt++) {
               const {data:pr} = await github.rest.pulls.get({...context.repo, pull_number:prNumber});
               if (pr.state !== 'open' || pr.head.sha !== sha) throw new Error('최신 PR 커밋이 아니므로 배포하지 않습니다.');
