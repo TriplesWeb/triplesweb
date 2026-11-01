@@ -79,14 +79,6 @@ jobs:
   qodana:
     runs-on: ubuntu-latest
     steps:
-      - name: Require QODANA_TOKEN
-        env:
-          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
-        run: |
-          if [[ -z "${QODANA_TOKEN}" ]]; then
-            echo "::error::QODANA_TOKEN secret is required for the quality gate"
-            exit 1
-          fi
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
@@ -94,11 +86,12 @@ jobs:
       - name: Qodana Scan
         uses: JetBrains/qodana-action@v2026.2
         env:
+          # Optional: cloud upload/PR comment. Community linter still enforces qodana.yaml gates without it.
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
           pr-mode: true
           use-caches: true
-          post-pr-comment: true
+          post-pr-comment: false
           use-annotations: true
           upload-result: false
           push-fixes: 'none'
