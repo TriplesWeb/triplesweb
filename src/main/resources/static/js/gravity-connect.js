@@ -1,5 +1,10 @@
 (() => {
-  const auth = window.AboutAdminAuth;
+  // Resolve at call time: deferred header auth must not be captured as undefined at parse.
+  const auth = () => {
+    const api = window.AboutAdminAuth;
+    if (!api) throw new Error("관리자 인증 스크립트를 불러오지 못했습니다.");
+    return api;
+  };
   const byId = id => document.getElementById(id);
   const adminButton = byId("gravityAdminBtn");
   const modal = byId("gravityLoginModal");
@@ -63,7 +68,7 @@
     returnFocus?.focus();
   }
   async function api(path, body) {
-    const headers = auth.applyAuthHeaders({ "X-Gravity-Connect": "1" });
+    const headers = auth().applyAuthHeaders({ "X-Gravity-Connect": "1" });
     const options = { headers, credentials: "same-origin", cache: "no-store" };
     if (body) { options.method = "POST"; headers.set("Content-Type", "application/json"); options.body = JSON.stringify(body); }
     let response;
@@ -76,7 +81,7 @@
     if (!response.ok) {
       if (path === "email" && response.status === 429 && result.retryAfterSeconds) startResend(result.retryAfterSeconds);
       if (response.status === 401) throw new Error("비밀번호가 올바르지 않습니다.");
-      if (response.status === 403) { auth.clearToken(); isAdmin = false; render(); openLogin(); }
+      if (response.status === 403) { auth().clearToken(); isAdmin = false; render(); openLogin(); }
       const fallback = response.status === 401 ? "비밀번호가 올바르지 않습니다."
         : response.status === 403 ? "관리자 로그인이 만료되었습니다. 다시 로그인해 주세요."
         : response.status === 429 ? "잠시 후 다시 시도해 주세요." : "요청에 실패했습니다. 입력 내용과 연결 상태를 확인해 주세요.";
@@ -89,7 +94,7 @@
       const result = await api("status");
       configured = Boolean(result.configured);
       isAdmin = Boolean(result.admin);
-      if (!isAdmin) auth.clearToken();
+      if (!isAdmin) auth().clearToken();
       render();
       if (panel) message(!configured ? "사이트 관리자 설정이 필요합니다." : !isAdmin
         ? "케미명 페이지와 같은 관리자 계정으로 로그인하세요." : result.connected
@@ -114,7 +119,7 @@
     if (!isAdmin) { openLogin(); return; }
     try {
       await api("admin-logout", {});
-      auth.clearToken();
+      auth().clearToken();
       isAdmin = false;
       render();
       message("관리자 로그아웃되었습니다. 케미명 페이지와 로그인 상태가 함께 변경됩니다.");
@@ -163,7 +168,7 @@
     message("계정 연결이 완료됐습니다. 그래비티 목록으로 이동합니다.");
     window.location.replace("/cosmo/gravity");
   }));
-  window.addEventListener("storage", event => { if (event.key === auth.TOKEN_KEY) refresh(); });
+  window.addEventListener("storage", event => { if (event.key === auth().TOKEN_KEY) refresh(); });
   window.addEventListener("pageshow", event => { if (event.persisted) refresh(); });
   refresh();
 })();

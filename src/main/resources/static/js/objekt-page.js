@@ -495,12 +495,23 @@
         resetModalFlip(data.frontImage || data.thumbnailImage || '', data.backImage || '', Boolean(data.hasBack));
         setFavoriteButton(Boolean(data.isFavorite));
         detailFavorite.disabled = false;
+        const actions = document.querySelector('.objekt-detail-actions');
+        if (actions) actions.inert = false;
         document.getElementById('objektFavoriteStatus').hidden = true;
         if (detailMemberLink) detailMemberLink.href = data.memberUrl || '/cosmo/objekt';
         if (detailFullLink) detailFullLink.href = data.detailUrl || ('/cosmo/objekt/detail/' + encodeURIComponent(key));
         if (detailFavorite) detailFavorite.dataset.key = key;
         if (detailTradeLink) detailTradeLink.href = data.tradeUrl || '/article/trade/new';
         if (detailSellLink) detailSellLink.href = data.sellUrl || '/article/sell/new';
+        window.ObjektSerialLookup?.setCollection(
+            data.lookupUrl || ('/cosmo/objekt/detail/' + encodeURIComponent(key) + '/lookup')
+        );
+        window.ObjektIssued?.show(
+            data.issuedUrl || ('/cosmo/objekt/detail/' + encodeURIComponent(key) + '/issued')
+        );
+        const address = new URL(location.href);
+        address.searchParams.set('objekt', key);
+        history.replaceState(null, '', address.pathname + address.search);
         descriptionEditor.hidden = !data.isAdmin;
         descriptionEditor.open = false;
         descriptionInput.value = data.description || '';
@@ -511,6 +522,8 @@
 
     function closeDetailModal() {
         if (!detailModal) return;
+        window.ObjektIssued?.close();
+        window.ObjektSerialLookup?.setCollection('');
         detailModal.classList.remove('is-open');
         if (window.AboutModal) {
             window.AboutModal.closeModal(detailModal);
@@ -521,6 +534,9 @@
         }
         detailModal.setAttribute('aria-hidden', 'true');
         activeObjektKey = ''; detailRequest++;
+        const address = new URL(location.href);
+        address.searchParams.delete('objekt');
+        history.replaceState(null, '', address.pathname + address.search);
     }
 
     function openDetailModalShell() {
@@ -542,6 +558,18 @@
         if (!key || detailLoading) return;
         detailLoading = true;
         const request = ++detailRequest;
+        activeObjektKey = '';
+        if (detailFavorite) {
+            detailFavorite.dataset.key = '';
+            detailFavorite.disabled = true;
+        }
+        const actions = document.querySelector('.objekt-detail-actions');
+        if (actions) actions.inert = true;
+        [detailMember, detailSeason, detailClass, detailNo].forEach((node) => {
+            if (node) node.textContent = '—';
+        });
+        window.ObjektIssued?.show('');
+        window.ObjektSerialLookup?.setCollection('');
         descriptionEditor.hidden = true;
         openDetailModalShell();
         if (detailDesc) {
