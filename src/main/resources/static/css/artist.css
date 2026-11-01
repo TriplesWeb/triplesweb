@@ -706,9 +706,12 @@
 }
 .artist-page .nav-tab-btn.is-active .artist-tab-avatar.has-frame-mask::after {
     background: var(--artist-color, #00f5d4);
+    transform: scale(1.014);
+    transform-origin: center;
     filter:
-        drop-shadow(0 0 1.1px var(--artist-color, #00f5d4))
-        drop-shadow(0 0 8px color-mix(in srgb, var(--artist-color, #00f5d4) 78%, transparent));
+        drop-shadow(0 0 1.5px var(--artist-color, #00f5d4))
+        drop-shadow(0 0 6.5px color-mix(in srgb, var(--artist-color, #00f5d4) 70%, transparent))
+        drop-shadow(0 0 11px color-mix(in srgb, var(--artist-color, #00f5d4) 78%, #0a0c12 22%));
 }
 .artist-page .nav-tab-btn.is-active .artist-tab-avatar--group .artist-tab-photo {
     border-color: var(--artist-color, #00f5d4);

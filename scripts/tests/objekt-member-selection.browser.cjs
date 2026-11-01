@@ -15,12 +15,17 @@ const base = path.resolve(__dirname, '../..');
         return route.fulfill({path:file,contentType:url.pathname.endsWith('.css')?'text/css':'application/javascript'});
       return route.fulfill({status:404,body:''});
     });
-    for (const mode of ['standalone','bundle','artist']) {
-      const artist = mode === 'artist';
-      const css = mode === 'standalone' ? 'member-portrait-picker.css' : 'triples.css';
+    for (const mode of ['standalone','bundle','artist','about']) {
+      const artist = mode === 'artist' || mode === 'about';
+      // About/멤버 소개는 artist.css + member-portrait-picker.css 를 함께 쓴다.
+      const cssLinks = mode === 'standalone'
+        ? '<link rel="stylesheet" href="/css/member-portrait-picker.css">'
+        : mode === 'about'
+          ? '<link rel="stylesheet" href="/css/artist.css"><link rel="stylesheet" href="/css/member-portrait-picker.css"><link rel="stylesheet" href="/css/artist-performance.css">'
+          : '<link rel="stylesheet" href="/css/triples.css">'+(artist?'<link rel="stylesheet" href="/css/artist-performance.css">':'');
       const markup = Array.from({length:8}, (_, i) => '<button type="button" class="'+(artist?'nav-tab-btn':'mpp-item')+'" data-member-tab data-value="'+i+'" data-frame="'+(i+1)+'" style="--artist-color:#22aeff" aria-pressed="false"><span class="artist-tab-avatar"><img class="artist-tab-photo" src="https://motion.test/portrait.svg" alt="멤버 '+i+'"><img class="artist-tab-frame" src="https://motion.test/uploads/images/artist-tab-frames/'+(i+1)+'.png" alt=""><span class="artist-tab-shine"></span></span><span class="artist-tab-label">멤버 '+i+'</span></button>').join('');
       await page.setViewportSize({width:390,height:844});
-      await page.setContent('<html><head><base href="https://motion.test/"><link rel="stylesheet" href="/css/'+css+'">'+(artist?'<link rel="stylesheet" href="/css/artist-performance.css">':'')+'</head><body style="margin:20px;background:#101216" class="'+(artist?'artist-page':'')+'"><div class="'+(artist?'artist-member-tabs':'member-portrait-picker')+'">'+markup+'</div><script src="/js/member-portrait-picker.js"></script></body></html>');
+      await page.setContent('<html><head><base href="https://motion.test/">'+cssLinks+'</head><body style="margin:20px;background:#101216" class="'+(artist?'artist-page':'')+'"><div class="'+(artist?'artist-member-tabs':'member-portrait-picker')+'">'+markup+'</div><script src="/js/member-portrait-picker.js"></script></body></html>');
       await page.waitForFunction(()=>!!window.MemberPortraitPicker);
       if (artist) {
         await page.evaluate(() => document.querySelectorAll('.nav-tab-btn').forEach(button => {
@@ -73,7 +78,7 @@ const base = path.resolve(__dirname, '../..');
         assert.ok(rgb[2] > rgb[0] + 80, mode+' 멤버 이름이 상징색으로 부각');
       }
       const glowCount = (String(stable.overlayFilter).match(/drop-shadow/g) || []).length;
-      assert.ok(glowCount >= 1 && glowCount <= 2, mode+' 선택 테두리 빛은 얇게');
+      assert.ok(glowCount >= 1 && glowCount <= 3, mode+' 선택 테두리 빛은 얇게');
       assert.match(String(stable.overlayBg), /34,\s*174,\s*255|#22aeff/i, mode+' 윤곽을 상징색으로 칠함');
       assert.doesNotMatch(String(stable.overlayFilter), /255,\s*255,\s*255|#fff\b/i, mode+' 빛 색에 흰색을 섞지 않음');
       const overlayMask = await first.locator('.artist-tab-avatar').evaluate(el => {
@@ -87,7 +92,7 @@ const base = path.resolve(__dirname, '../..');
       assert.match(String(overlayMask.size), /30%/, mode+' 뱃지 구멍은 직선 외곽선만 남김');
       assert.equal(stable.animations.length, 1, mode+' 광택 레이어만 반복');
       assert.deepEqual(stable.animations[0].properties.sort(), ['opacity','transform'], mode+' 광택 레이어의 이동과 투명도만 애니메이션');
-      assert.ok(stable.animations[0].duration >= 6900 && stable.animations[0].duration <= 7100, mode+' 7초 반복 주기');
+      assert.ok(stable.animations[0].duration >= 6800 && stable.animations[0].duration <= 6900, mode+' 6.85초 반복 주기');
       assert.equal(await frame.getAttribute('src'), src, mode+' 프레임 주소 유지');
       assert.equal(await first.locator('.artist-tab-shine').isVisible(), true);
       const direction = await first.locator('.artist-tab-avatar').evaluate(el => {
@@ -96,11 +101,11 @@ const base = path.resolve(__dirname, '../..');
         const layer = el.querySelector('.artist-tab-shine');
         animation.currentTime = 0;
         const start = new DOMMatrix(getComputedStyle(layer, '::before').transform);
-        animation.currentTime = 1800;
+        animation.currentTime = 1750;
         const mid = new DOMMatrix(getComputedStyle(layer, '::before').transform);
-        animation.currentTime = 5800;
+        animation.currentTime = 5600;
         const end = new DOMMatrix(getComputedStyle(layer, '::before').transform);
-        animation.currentTime = 6500;
+        animation.currentTime = 6400;
         const rest = new DOMMatrix(getComputedStyle(layer, '::before').transform);
         animation.currentTime = 350; animation.play();
         return {dx:mid.m41-start.m41,dy:mid.m42-start.m42,restDx:rest.m41-end.m41,restDy:rest.m42-end.m42};
@@ -146,6 +151,6 @@ const base = path.resolve(__dirname, '../..');
     const sizes=await page.evaluate(()=>({badge:document.querySelector('.archive-member-chip img').getBoundingClientRect().height,photo:document.querySelector('.ar-photo-link img').getBoundingClientRect().height}));
     assert.ok(sizes.badge<=40 && sizes.badge>20,'사진 아카이브 멤버 배지 높이 고정');
     assert.ok(sizes.photo>=250,'원본 사진 크기 유지');
-    console.log('통과: 단독/번들/그룹 소개 선택 효과 · 프레임 보존 · 윤곽 drop-shadow · 상징색 광택 · 7초 반복 · 좌상단→우하단 광택 · transform/opacity만 이동 · 다중선택·키보드 · 모션 감소 · 모바일');
+    console.log('통과: 단독/번들/그룹 소개/About CSS 선택 효과 · 프레임 보존 · 윤곽 drop-shadow · 상징색 광택 · 6.85초 반복 · 좌상단→우하단 광택 · transform/opacity만 이동 · 다중선택·키보드 · 모션 감소 · 모바일');
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exit(1);});

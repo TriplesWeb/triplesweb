@@ -125,9 +125,12 @@
 }
 .member-portrait-picker .mpp-item.is-active .artist-tab-avatar.has-frame-mask::after {
     background: var(--artist-color, #00f5d4);
+    transform: scale(1.014);
+    transform-origin: center;
     filter:
-        drop-shadow(0 0 1.1px var(--artist-color, #00f5d4))
-        drop-shadow(0 0 8px color-mix(in srgb, var(--artist-color, #00f5d4) 78%, transparent));
+        drop-shadow(0 0 1.5px var(--artist-color, #00f5d4))
+        drop-shadow(0 0 6.5px color-mix(in srgb, var(--artist-color, #00f5d4) 70%, transparent))
+        drop-shadow(0 0 11px color-mix(in srgb, var(--artist-color, #00f5d4) 78%, #0a0c12 22%));
 }
 .member-portrait-picker .mpp-item.is-active .artist-tab-avatar::before {
     content: "";
@@ -311,7 +314,7 @@
         transparent 68%);
     opacity: 0;
     transform: translate3d(-65%, -65%, 0);
-    animation: member-selection-sheen 7s ease-in-out infinite;
+    animation: member-selection-sheen 6.85s ease-in-out infinite;
 }
 @keyframes member-selection-sheen {
     0% { transform: translate3d(-65%, -65%, 0); opacity: 0; }
