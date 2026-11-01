@@ -153,9 +153,23 @@ const urls={
   await page.locator('#addScheduleCategory').selectOption('FANSIGN');
   await page.locator('#addScheduleForm button[type=submit]').click();
   await page.waitForFunction(()=>!document.getElementById('addScheduleModal').classList.contains('show'));
-  // fc-event-title.fc-sticky는 overflow 클립 때문에 hidden으로 남을 수 있어 이벤트 칩 기준으로 기다린다.
-  const event=page.locator('#calendar .fc-event').filter({hasText:longTitle}).first();
-  await event.waitFor({state:'visible'});
+  async function visibleScheduleEvent(title){
+   let event=page.locator('#calendar .fc-event:visible, .fc-popover .fc-event:visible').filter({hasText:title}).first();
+   try{await event.waitFor({state:'visible',timeout:3000});}
+   catch(_){
+    await page.locator('#calendar .fc-event').filter({hasText:title}).first().waitFor({state:'attached'});
+    const day=page.locator('#calendar .fc-daygrid-day').filter({has:page.locator('.fc-event').filter({hasText:title})}).first();
+    const more=day.locator('.fc-more-link:visible');
+    if(await more.count())await more.click();
+    event=page.locator('#calendar .fc-event:visible, .fc-popover .fc-event:visible').filter({hasText:title}).first();
+    await event.waitFor({state:'visible',timeout:10000}).catch(async error=>{
+     console.log('일정 렌더링 진단',title,JSON.stringify(await page.locator('.fc-event').allTextContents()),JSON.stringify(pageErrors));
+     throw error;
+    });
+   }
+   return event;
+  }
+  const event=await visibleScheduleEvent(longTitle);
   await event.scrollIntoViewIfNeeded();
   const title=event.locator('.fc-event-title').first();
   for(const width of [1280,390,360]){
