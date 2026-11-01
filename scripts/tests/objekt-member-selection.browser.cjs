@@ -23,8 +23,16 @@ const base = path.resolve(__dirname, '../..');
       await page.setContent('<html><head><base href="https://motion.test/"><link rel="stylesheet" href="/css/'+css+'">'+(artist?'<link rel="stylesheet" href="/css/artist-performance.css">':'')+'</head><body style="margin:20px;background:#101216" class="'+(artist?'artist-page':'')+'"><div class="'+(artist?'artist-member-tabs':'member-portrait-picker')+'">'+markup+'</div><script src="/js/member-portrait-picker.js"></script></body></html>');
       await page.waitForFunction(()=>!!window.MemberPortraitPicker);
       if (artist) {
-        await page.evaluate(() => document.querySelectorAll('.nav-tab-btn').forEach(button => button.onclick=()=>{
-          document.querySelectorAll('.nav-tab-btn').forEach(other=>other.classList.toggle('is-active', other===button));
+        await page.evaluate(() => document.querySelectorAll('.nav-tab-btn').forEach(button => {
+          button.onclick=()=>{
+            document.querySelectorAll('.nav-tab-btn').forEach(other=>other.classList.toggle('is-active', other===button));
+          };
+          const avatar=button.querySelector('.artist-tab-avatar');
+          const frame=button.querySelector('.artist-tab-frame');
+          if (avatar && frame && frame.src) {
+            avatar.style.setProperty('--frame-mask','url("'+frame.src+'")');
+            avatar.classList.add('has-frame-mask');
+          }
         }));
       } else {
         await page.evaluate(() => {
@@ -42,14 +50,20 @@ const base = path.resolve(__dirname, '../..');
       const src = await frame.getAttribute('src');
       await first.click();
       await page.waitForTimeout(350);
-      const stable = await first.locator('.artist-tab-avatar').evaluate(el => ({
+      await first.locator('.artist-tab-avatar.has-frame-mask').waitFor();
+      const stable = await first.locator('.artist-tab-avatar').evaluate(el => {
+        const overlay = getComputedStyle(el, '::after');
+        return {
         shadow:getComputedStyle(el).boxShadow, bounds:el.getBoundingClientRect().width,
+        overlayBg: overlay.backgroundColor,
+        overlayFilter: overlay.filter,
         frameFilter:getComputedStyle(el.querySelector('.artist-tab-frame')).filter,
         animations:el.getAnimations({subtree:true}).filter(a=>a.playState==='running').map(a=>({
           properties:[...new Set(a.effect.getKeyframes().flatMap(frame=>Object.keys(frame)).filter(key=>!['offset','computedOffset','easing','composite'].includes(key)))],
           duration:a.effect.getTiming().duration
         }))
-      }));
+        };
+      });
       if (artist) {
         const rgb = await second.locator('.artist-tab-label').evaluate(el => {
           const c = getComputedStyle(el).color;
@@ -57,12 +71,11 @@ const base = path.resolve(__dirname, '../..');
           return (c.match(/\d+/g) || []).map(Number);
         });
         assert.ok(rgb[2] > rgb[0] + 80, mode+' 멤버 이름이 상징색으로 부각');
-        assert.ok((stable.frameFilter.match(/drop-shadow/g) || []).length >= 5, mode+' 선택 테두리 빛을 더 강조');
-        assert.ok(String(stable.frameFilter).includes('saturate'), mode+' 선택 테두리 색을 진하게');
-        assert.ok(!/255,\s*255,\s*255|#fff\b/i.test(stable.frameFilter), mode+' 빛 색에 흰색을 섞지 않음');
       }
-      assert.ok(String(stable.frameFilter).includes('drop-shadow'), mode+' 윤곽 PNG drop-shadow 발광');
-      assert.ok(String(stable.frameFilter).includes('saturate'), mode+' 테두리 색 채도');
+      const glowCount = (String(stable.overlayFilter).match(/drop-shadow/g) || []).length;
+      assert.ok(glowCount >= 1 && glowCount <= 2, mode+' 선택 테두리 빛은 얇게');
+      assert.match(String(stable.overlayBg), /34,\s*174,\s*255|#22aeff/i, mode+' 윤곽을 상징색으로 칠함');
+      assert.doesNotMatch(String(stable.overlayFilter), /255,\s*255,\s*255|#fff\b/i, mode+' 빛 색에 흰색을 섞지 않음');
       assert.equal(stable.animations.length, 1, mode+' 광택 레이어만 반복');
       assert.deepEqual(stable.animations[0].properties.sort(), ['opacity','transform'], mode+' 광택 레이어의 이동과 투명도만 애니메이션');
       assert.ok(stable.animations[0].duration >= 6400 && stable.animations[0].duration <= 6600, mode+' 6.5초 반복 주기');
@@ -87,7 +100,7 @@ const base = path.resolve(__dirname, '../..');
       assert.ok(Math.abs(direction.restDx)<.01 && Math.abs(direction.restDy)<.01, mode+' 이동 후 대기');
       assert.equal(await first.locator('.artist-tab-photo').evaluate(el=>getComputedStyle(el).filter), 'none');
       await page.waitForTimeout(850);
-      assert.equal(await frame.evaluate(el=>getComputedStyle(el).filter), stable.frameFilter, mode+' 윤곽 발광 고정');
+      assert.equal(await first.locator('.artist-tab-avatar').evaluate(el=>getComputedStyle(el,'::after').filter), stable.overlayFilter, mode+' 윤곽 발광 고정');
       const shine = first.locator('.artist-tab-shine');
       const beforeTint = await shine.evaluate(el=>getComputedStyle(el,'::before').backgroundImage);
       await first.evaluate(el=>el.style.setProperty('--artist-color','#db0c74'));

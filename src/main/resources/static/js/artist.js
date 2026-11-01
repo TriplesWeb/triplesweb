@@ -101,17 +101,28 @@
     if (input) input.focus();
   }
 
+  function paintFrameMask(avatar, frame) {
+    if (!avatar || !frame) return;
+    const src = frame.currentSrc || frame.src;
+    if (!src) return;
+    avatar.style.setProperty("--frame-mask", 'url("' + src.replace(/"/g, "") + '")');
+    avatar.classList.add("has-frame-mask");
+  }
+
   function bindMemberTabFrames() {
     document.querySelectorAll(".nav-tab-btn[data-member-tab]").forEach((btn, index) => {
       const n = index + 1;
       const frame = btn.querySelector(".artist-tab-frame");
+      const avatar = btn.querySelector(".artist-tab-avatar");
       if (!frame) return;
       if (n > 24) {
         frame.hidden = true;
         return;
       }
+      frame.onload = () => paintFrameMask(avatar, frame);
       frame.src = "/uploads/images/artist-tab-frames/" + n + ".png";
       frame.hidden = false;
+      if (frame.complete && frame.naturalWidth) paintFrameMask(avatar, frame);
     });
   }
 

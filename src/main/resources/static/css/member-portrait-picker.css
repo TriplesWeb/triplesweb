@@ -81,8 +81,21 @@
     pointer-events: none;
     z-index: 2;
     opacity: 1;
-    filter: saturate(1.45) contrast(1.12);
+    filter: none;
     transition: filter 160ms ease, opacity 160ms ease;
+}
+.member-portrait-picker .artist-tab-avatar.has-frame-mask .artist-tab-frame {
+    opacity: 0;
+}
+.member-portrait-picker .artist-tab-avatar.has-frame-mask::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    background: var(--artist-color, #00f5d4);
+    -webkit-mask: var(--frame-mask) center / contain no-repeat;
+    mask: var(--frame-mask) center / contain no-repeat;
 }
 
 /* 선택: 사각 링 대신 윤곽 PNG 알파를 따라 drop-shadow 발광 */
@@ -97,14 +110,13 @@
     box-shadow: none;
 }
 .member-portrait-picker .mpp-item.is-active .artist-tab-frame {
-    opacity: 1;
+    opacity: 0;
+    filter: none;
+}
+.member-portrait-picker .mpp-item.is-active .artist-tab-avatar.has-frame-mask::after {
     filter:
-        saturate(1.65) contrast(1.18)
-        drop-shadow(0 0 0.4px var(--artist-color, #00f5d4))
-        drop-shadow(0 0 1.5px var(--artist-color, #00f5d4))
-        drop-shadow(0 0 5px var(--artist-color, #00f5d4))
-        drop-shadow(0 0 12px color-mix(in srgb, var(--artist-color, #00f5d4) 95%, transparent))
-        drop-shadow(0 0 22px color-mix(in srgb, var(--artist-color, #00f5d4) 75%, transparent));
+        drop-shadow(0 0 1px var(--artist-color, #00f5d4))
+        drop-shadow(0 0 6px color-mix(in srgb, var(--artist-color, #00f5d4) 50%, transparent));
 }
 .member-portrait-picker .mpp-item.is-active .artist-tab-avatar::before {
     content: "";
@@ -118,7 +130,7 @@
     border-left: 7px solid transparent;
     border-right: 7px solid transparent;
     border-top: 8px solid var(--artist-color, #00f5d4);
-    filter: drop-shadow(0 0 7px var(--artist-color, #00f5d4));
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--artist-color, #00f5d4) 55%, transparent));
     pointer-events: none;
 }
 .member-portrait-picker .mpp-item:focus-visible {
