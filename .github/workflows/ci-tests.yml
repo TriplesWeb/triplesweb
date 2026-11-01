@@ -16,7 +16,53 @@ permissions:
   checks: write
 
 jobs:
+  changes:
+    name: detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: filter
+        name: Decide whether app checks are needed
+        run: |
+          set -euo pipefail
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          mapfile -t files < <(git diff --name-only "$BASE"..."$HEAD")
+          printf 'Changed files:\n'
+          printf '  %s\n' "${files[@]:-}"
+
+          app=false
+          for f in "${files[@]:-}"; do
+            # App/test code still needs the full suite.
+            if [[ "$f" == scripts/tests/* ]]; then
+              app=true
+              break
+            fi
+            # Docs, deploy/CI scripts, editor/meta files can skip heavy checks.
+            case "$f" in
+              *.md|docs/*|.github/*|.githooks/*|.cursor/*|.vscode/*|.gitignore|.gitattributes|.dockerignore|.env.example|LICENSE*|scripts/*)
+                ;;
+              *)
+                app=true
+                break
+                ;;
+            esac
+          done
+
+          echo "app=$app" >> "$GITHUB_OUTPUT"
+          if [[ "$app" == "true" ]]; then
+            echo "App-related paths changed — running full checks."
+          else
+            echo "Docs/scripts/meta only — skipping test, package, and qodana."
+          fi
+
   test:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -61,6 +107,8 @@ jobs:
           if-no-files-found: ignore
 
   package:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -73,6 +121,8 @@ jobs:
         run: ./gradlew bootWar -x test --no-daemon --stacktrace
 
   qodana:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -95,13 +145,24 @@ jobs:
   required:
     name: required
     if: ${{ always() }}
-    needs: [test, package, qodana]
+    needs: [changes, test, package, qodana]
     runs-on: ubuntu-latest
     steps:
-      - name: Fail unless Spring and Chrome checks succeeded
+      - name: Enforce merge gate
         env:
+          APP: ${{ needs.changes.outputs.app }}
+          CHANGES_RESULT: ${{ needs.changes.result }}
           TEST_RESULT: ${{ needs.test.result }}
           PACKAGE_RESULT: ${{ needs.package.result }}
           QODANA_RESULT: ${{ needs.qodana.result }}
         run: |
+          set -euo pipefail
+          if [[ "$CHANGES_RESULT" != "success" ]]; then
+            echo "Change detection failed."
+            exit 1
+          fi
+          if [[ "$APP" != "true" ]]; then
+            echo "Docs/scripts/meta-only PR — full checks skipped."
+            exit 0
+          fi
           [[ "$TEST_RESULT" == "success" && "$PACKAGE_RESULT" == "success" && "$QODANA_RESULT" == "success" ]] || exit 1
