@@ -1,14 +1,9 @@
-<!DOCTYPE html>
-<html lang="ko" class="dark">
-<head>
-    {{>layout/site-head}}
-    <title>트리플에스 커뮤니티 스케줄</title>
-    <link rel="stylesheet" href="/css/site-ui.css?v=2">
-    <link rel="stylesheet" href="/css/triples.css?v=18">
-    <link rel="stylesheet" href="/css/schedule-categories.css?v=2">
-</head>
+{{>layout/head-open}}
 
-<body class="dark selection:bg-brand selection:text-black">
+    <title>트리플에스 커뮤니티 스케줄</title>
+    <link rel="stylesheet" href="/css/triples.css?v=19">
+    <link rel="stylesheet" href="/css/schedule-categories.css?v=4">
+</head><body class="site-page dark selection:bg-brand selection:text-black">
     <div class="ambient-glow-container" aria-hidden="true">
         <div class="glow-accent-1"></div>
         <div class="glow-accent-2"></div>
@@ -16,9 +11,9 @@
 
     {{>layout/header}}
 
-    <main class="main-content space-y-6">
-        <section class="flex flex-col gap-4 border-b border-white/10 pb-4 md:flex-row md:items-end md:justify-between">
-            <div>
+    <main class="main-content mx-auto w-full max-w-7xl space-y-6 px-4 py-8">
+        <section class="schedule-page-header">
+            <div class="schedule-page-header__body">
                 <div class="mb-2 flex items-center gap-2">
                     <span class="rounded border border-brand/30 bg-brand/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-brand">OFFICIAL SCHEDULE</span>
                     <span class="font-mono text-xs text-[#b9cac4]">tripleS TIMELINE</span>
@@ -30,18 +25,14 @@
                 {{#selectedArtist}}<p class="mt-2 text-sm text-[#b9cac4]">{{selectedArtist}}만 보는 중입니다. <a class="text-[#00f5d4]" href="/schedule">전체 일정</a></p>{{/selectedArtist}}
             </div>
 
-            <div class="flex shrink-0 items-center gap-2.5">
-                <button type="button" class="btn-custom-secondary" data-site-toggle="modal" data-site-target="#scheduleListModal">
-                    <span class="material-symbols-outlined">format_list_bulleted</span>
-                    스케줄 목록
-                </button>
-                {{#isAdmin}}
+            {{#isAdmin}}
+            <div class="schedule-page-actions">
                 <button type="button" class="btn-custom-primary" onclick="showAddModal()">
                     <span class="material-symbols-outlined">add</span>
                     스케줄 추가
                 </button>
-                {{/isAdmin}}
             </div>
+            {{/isAdmin}}
         </section>
 
         <section class="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
@@ -65,51 +56,6 @@
             </aside>
         </section>
     </main>
-
-    <!-- 전체 일정 목록 -->
-    <div class="site-modal" id="scheduleListModal" tabindex="-1" aria-labelledby="scheduleListLabel" aria-hidden="true">
-        <div class="site-modal-dialog site-modal-lg">
-            <div class="site-modal-panel">
-                <div class="site-modal-header">
-                    <h2 class="site-modal-title flex items-center gap-2 font-sora text-brand" id="scheduleListLabel">
-                        <span class="material-symbols-outlined">calendar_month</span>
-                        전체 일정 목록
-                    </h2>
-                    <button type="button" class="site-modal-close" data-site-dismiss="modal" aria-label="닫기"></button>
-                </div>
-                <div class="site-modal-body p-4">
-                    <div class="site-table-wrap overflow-hidden rounded-xl border border-white/10">
-                        <table class="site-table site-table mb-0">
-                            <thead>
-                                <tr>
-                                    <th class="px-4 py-3">제목</th>
-                                    <th class="px-4 py-3" style="width: 25%">시작일</th>
-                                    <th class="px-4 py-3" style="width: 25%">종료일</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {{#schedules}}
-                                <tr>
-                                    <td class="px-4 py-3 font-medium text-white"><span class="schedule-category-label" style="--schedule-color:{{color}}">{{categoryLabel}}</span> {{displayTitle}}</td>
-                                    <td class="px-4 py-3 font-mono text-[#b9cac4]">{{startStr}}</td>
-                                    <td class="px-4 py-3 font-mono text-[#b9cac4]">{{rawEnd}}</td>
-                                </tr>
-                                {{/schedules}}
-                                {{^schedules}}
-                                <tr>
-                                    <td colspan="3" class="py-6 text-center text-[#b9cac4]">등록된 일정이 없습니다.</td>
-                                </tr>
-                                {{/schedules}}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="site-modal-footer">
-                    <button type="button" class="btn-custom-secondary" data-site-dismiss="modal">닫기</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- 일정 상세 -->
     <div class="site-modal" id="viewScheduleModal" tabindex="-1" aria-labelledby="viewScheduleLabel" aria-hidden="true">
@@ -255,8 +201,6 @@
             </form>
         </div>
     </div>
-
-    {{>layout/footer}}
 
     <script src="/js/site-ui.js?v=1"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
@@ -621,5 +565,4 @@
             }
         });
     </script>
-</body>
-</html>
+{{>layout/page-end}}

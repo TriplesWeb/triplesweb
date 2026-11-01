@@ -44,7 +44,7 @@ public class ScheduleController {
     }
 
     @GetMapping("/schedule")
-    public String showSchedulePage(@RequestParam(required = false) String artist,
+    public String showSchedulePage(@RequestParam(value = "artist", required = false) String artist,
                                    HttpServletRequest request,
                                    HttpSession session,
                                    Model model) throws Exception {
@@ -62,7 +62,8 @@ public class ScheduleController {
         model.addAttribute("isAdmin", aboutAdminAuth.isAdmin(request, session));
         model.addAttribute("artistOptions", artists);
         model.addAttribute("scheduleCategories", SchedulePresentation.categories());
-        model.addAttribute("selectedArtist", artist == null ? "" : artist);
+        // Mustache는 빈 문자열도 section을 렌더하므로, 필터 없을 때는 null로 둔다.
+        model.addAttribute("selectedArtist", artist == null || artist.isBlank() ? null : artist);
         return "schedule";
     }
 

@@ -74,4 +74,14 @@ class ScheduleCategoryControllerTest {
         assertThat(html).doesNotContain("</script><script>window.scheduleInjected=true");
         assertThat(html).contains("\\u003c/script>");
     }
+
+    @Test void artistFilterBannerOnlyWhenArtistSelected() throws Exception {
+        String all=mvc.perform(get("/schedule")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        assertThat(all).doesNotContain("만 보는 중입니다").doesNotContain("스케줄 목록").doesNotContain("scheduleListModal");
+        assertThat(all).contains("schedule-page-header").contains("스케줄 추가");
+
+        String filtered=mvc.perform(get("/schedule").param("artist","윤서연")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        assertThat(filtered).contains("윤서연만 보는 중입니다");
+    }
 }
