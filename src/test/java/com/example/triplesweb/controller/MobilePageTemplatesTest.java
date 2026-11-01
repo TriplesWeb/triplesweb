@@ -28,20 +28,10 @@ class MobilePageTemplatesTest {
         model.put("items",List.of(Map.of("id",1,"name",longText,"price",1000,"imageUrl","/images/no-image.png")));
         model.put("articleForm",Map.of("title",longText,"content",rich));
         model.put("objekt",Map.of("frontImage","","backImage","","thumbnailImage","","collectionId",longText,"member","HaYeon","season","Cream02","class","Special","collectionNo","367Z"));
-        Map<String,Object> objektCard=new LinkedHashMap<>();
-        objektCard.put("publicKey","hayeoncc367z");objektCard.put("seasonKey","Cream02");objektCard.put("classKey","Special");
-        objektCard.put("collectionNo","367Z");objektCard.put("member","HaYeon");objektCard.put("thumbnailImage","");
-        objektCard.put("frontImage","");objektCard.put("collectionId","Cream02 HaYeon 367Z");objektCard.put("class","Special");
-        objektCard.put("season","Cream02");objektCard.put("memberHref","/cosmo/objekt/member?name=HaYeon");
-        objektCard.put("seasonColor","#FF8389");
-        model.put("objekts",List.of(objektCard));
-        model.put("cards",List.of(Map.of("serial","27","hasSerial",true,"collectionId","Cream02 HaYeon 367Z",
-                "member","HaYeon","season","Cream02","seasonColor","#FF8389","hasImage",false,"hasDetail",false)));
         model.put("seasonOptions",List.of("Atom01","Binary01","Cream02"));
         model.put("seasonChoices",List.of(Map.of("value","Atom01","label","Atom01"),Map.of("value","Binary01","label","Binary01"),Map.of("value","Cream02","label","Cream02")));
         model.put("objektSeasonOptions",List.of("Atom01","Binary01","Cream02"));
         model.put("showObjektPicker",true);
-        model.put("selectedKind","all"); model.put("selectedKindLabel","전체");
         model.put("objektKey","uuid"); model.put("memberUrl","/cosmo/objekt?member=HaYeon");model.put("lookupUrl","/lookup");model.put("favoriteDesired",true);
         model.put("isOverviewTab",true);model.put("hasProfile",true);model.put("hasCollection",true);model.put("hasOverallProgress",true);model.put("hasStats",true);
         model.put("nickname","MobileFan");model.put("requestedNickname","MobileFan");model.put("ownedCount",3);model.put("uniqueCount",2);
@@ -62,10 +52,10 @@ class MobilePageTemplatesTest {
                 Files.writeString(output.resolve(name+".html"),result);count++;
             }
         }
-        for (String category : List.of("trade", "sell")) {
+        for (String category : List.of("trade", "sell", "group-orders")) {
             var board = new HashMap<>(model);
             board.put("category", category); board.put("hideRecommendations", true);
-            board.put("categoryName", Map.of("trade","교환","sell","거래").get(category));
+            board.put("categoryName", Map.of("trade","교환","sell","거래","group-orders","분철").get(category));
             board.put("articleList", List.of(new HashMap<>(post)));
             Files.writeString(output.resolve("board-" + category + ".html"),
                 compiler.compile(Files.readString(root.resolve("article/article.mustache"))).execute(board));

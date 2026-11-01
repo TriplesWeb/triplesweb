@@ -4,9 +4,9 @@ import com.example.triplesweb.dto.MediaDto;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.Schedule;
 import com.example.triplesweb.media.MediaTab;
+import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
-import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.MediaService;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.YoutubeIdExtractor;
@@ -33,7 +33,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class MediaArchiveController {
     private final MediaService media;
-    private final ArtistSnapshotService artistSnapshot;
+    private final ArtistRepository artistRepository;
     private final ScheduleRepository scheduleRepository;
     private final AboutAdminAuth aboutAdminAuth;
 
@@ -134,7 +134,7 @@ public class MediaArchiveController {
                         && splitNames(s.getArtistNames()).stream().anyMatch(names::contains))
                 .toList();
         model.addAttribute("relatedSchedules", relatedSchedules);
-        model.addAttribute("taggedArtists", artistSnapshot.findAll().stream()
+        model.addAttribute("taggedArtists", artistRepository.findAll().stream()
                 .filter(a -> names.contains(a.getName()))
                 .toList());
         return "archive/media_detail";
@@ -256,7 +256,7 @@ public class MediaArchiveController {
     private List<Map<String, Object>> artistFilterOptions(String selectedArtist) {
         List<Map<String, Object>> options = new ArrayList<>();
         String selected = selectedArtist == null ? "" : selectedArtist.trim();
-        for (Artist artist : artistSnapshot.findAll()) {
+        for (Artist artist : artistRepository.findAll()) {
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("name", artist.getName());
             row.put("selected", selected.equals(artist.getName()));
@@ -267,7 +267,7 @@ public class MediaArchiveController {
 
     private List<Map<String, Object>> portraitOptions(List<String> selectedNames) {
         List<String> selected = selectedNames == null ? List.of() : selectedNames;
-        List<Map<String, Object>> options = MemberPortraitOptions.fromArtists(artistSnapshot.findAll(), false);
+        List<Map<String, Object>> options = MemberPortraitOptions.fromArtists(artistRepository.findAll(), false);
         for (Map<String, Object> option : options) {
             option.put("active", selected.contains(String.valueOf(option.get("value"))));
         }
@@ -277,7 +277,7 @@ public class MediaArchiveController {
     private List<Map<String, Object>> artistPickerOptions(List<String> selectedNames) {
         List<String> selected = selectedNames == null ? List.of() : selectedNames;
         List<Map<String, Object>> options = new ArrayList<>();
-        for (Artist artist : artistSnapshot.findAll()) {
+        for (Artist artist : artistRepository.findAll()) {
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("name", artist.getName());
             row.put("selected", selected.contains(artist.getName()));
