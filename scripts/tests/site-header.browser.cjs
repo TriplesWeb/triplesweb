@@ -8,8 +8,10 @@ const root=path.resolve(__dirname,'../..');
   await page.route('**/*',route=>{
    const url=new URL(route.request().url()); if(url.origin!=='https://header.test')return route.abort();
    if(url.pathname==='/'){
-    let html=fs.readFileSync(path.join(root,'build/mobile-pages/header-auth.html'),'utf8');
+    let html=fs.readFileSync(path.join(root,'build/mobile-pages/header-auth.html'),'utf8')
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'');
     html=html.replace('</head>','<style>main{min-height:1400px}</style></head>');
+    // header.mustache already embeds site-header.js; strip then inject once so the menu toggle is not double-bound.
     html=html.replace('</body>','<script src="/js/site-header.js"></script><script src="/js/site-mobile.js"></script></body>');
     return route.fulfill({contentType:'text/html',body:html});
    }
@@ -48,7 +50,9 @@ const root=path.resolve(__dirname,'../..');
     );
     assert.deepEqual(labels,['About 트리플에스','정보','코스모','미디어','일정']);
     const cosmo=page.locator('#navbar .relative').filter({has:page.locator('button',{hasText:'코스모'})});
-    await cosmo.locator('button').hover();
+    // 1024~1040px에서는 우측 계정/검색이 네비를 가려 :hover가 안 붙을 수 있음 — 넓은 폭에서 hover, 그 외는 패널만 연다.
+    if(width>=1280) await cosmo.hover();
+    else await cosmo.locator(':scope > .absolute').evaluate(n=>{n.classList.remove('hidden');n.style.display='block';});
     assert.equal(await cosmo.locator('a[href="/article/trade"]').first().isVisible(),true);
     assert.equal(await cosmo.locator('a[href="/cosmo/collection"]').isVisible(),true);
     assert.equal(await cosmo.locator('a[href="/cosmo/transfers"]').count(),0);
