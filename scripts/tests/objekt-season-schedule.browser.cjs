@@ -44,7 +44,7 @@ const urls={
   for(const name of ['objekt','collection']){
    await page.setViewportSize({width:1280,height:900});
    await page.goto('https://filters.test/fixture/'+name);
-   assert.equal(await page.locator('.season-quick-filters').isVisible(),false,'시즌 버튼은 열었을 때만 표시');
+   assert.equal(await page.locator('.season-quick-filters:visible').count(),0,'시즌 버튼은 열었을 때만 표시');
    await page.locator(name==='objekt'?'#season-dropdown>button':'#collection-season-toggle').click();
    const row=page.getByRole('group',{name:'시즌 선택',exact:true});
    await row.locator('button[data-value="Atom01"]').waitFor({timeout:10000}).catch(async error=>{
@@ -56,18 +56,18 @@ const urls={
     }))),JSON.stringify(pageErrors));
     throw error;
    });
-   assert.equal(await page.locator('.season-native-options').isVisible(),false,'기존 체크 표시 UI 숨김');
+   assert.equal(await page.locator('.season-native-options:visible').count(),0,'기존 체크 표시 UI 숨김');
    assert.equal(await row.locator('.season-chip-list').evaluate(el=>getComputedStyle(el).flexWrap),'wrap',name+' 웹에서 시즌 전체 펼침');
    assert.equal(await row.locator('.season-chip-list').evaluate(el=>el.scrollWidth<=el.clientWidth),true,name+' 웹 가로 스크롤 없음');
    const atom=row.locator('button[data-value="Atom01"]'),binary=row.locator('button[data-value="Binary01"]');
    assert.notEqual(await atom.evaluate(el=>getComputedStyle(el).borderColor),await binary.evaluate(el=>getComputedStyle(el).borderColor));
    await atom.click();await binary.click();
-   assert.equal(await page.locator('input.season-checkbox[value="Atom01"]').isChecked(),true);
-   assert.equal(await page.locator('input.season-checkbox[value="Binary01"]').isChecked(),true);
+   assert.equal(await page.locator('input.season-checkbox[value="Atom01"]').first().isChecked(),true);
+   assert.equal(await page.locator('input.season-checkbox[value="Binary01"]').first().isChecked(),true);
    assert.equal(await atom.getAttribute('aria-pressed'),'true');
    await row.locator('button[data-value=""]').click();
-   assert.equal(await page.locator('input.season-checkbox[value="Atom01"]').isChecked(),false);
-   const input=page.locator('input.season-checkbox[value="Cream02"]');
+   assert.equal(await page.locator('input.season-checkbox[value="Atom01"]').first().isChecked(),false);
+   const input=page.locator('input.season-checkbox[value="Cream02"]').first();
    await input.evaluate(el=>{el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}));});
    assert.equal(await row.locator('button[data-value="Cream02"]').getAttribute('aria-pressed'),'true');
    await page.setViewportSize({width:390,height:844});

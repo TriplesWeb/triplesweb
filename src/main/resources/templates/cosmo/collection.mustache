@@ -6,8 +6,6 @@
 <link rel="stylesheet" href="/css/archive-page.css?v=14">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=20">
 <link rel="stylesheet" href="/css/cosmo-collection.css?v=12">
-<link rel="stylesheet" href="/css/season-filters.css?v=2">
-<script src="/js/season-filters.js?v=2" defer></script>
 <link rel="stylesheet" href="/css/archive-page.css?v=13">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=13">
 <link rel="stylesheet" href="/css/cosmo-collection.css?v=13">
@@ -428,10 +426,8 @@
     loading = true;
     updateStatus();
     try {
-      const params = new URLSearchParams(new FormData(form));
-      params.set('page', String(pending ? 0 : nextPage));
       const params = new URLSearchParams(submittedFilters);
-      params.set('page', String(nextPage));
+      params.set('page', String(pending ? 0 : nextPage));
       const res = await fetch(`/cosmo/collection/more?${params.toString()}`, {
         headers: { Accept: 'application/json' },
         credentials: 'same-origin',

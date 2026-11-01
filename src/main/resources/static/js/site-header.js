@@ -1,4 +1,6 @@
 (() => {
+  if (window.__siteHeaderBound) return;
+  window.__siteHeaderBound = true;
   let lastScrollTop = 0;
   const header = document.getElementById("top-header");
   const mobileMenuBtn = document.getElementById("mobile-menu-btn");
