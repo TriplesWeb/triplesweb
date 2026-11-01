@@ -93,16 +93,17 @@
     inset: 0;
     z-index: 3;
     pointer-events: none;
-    background: var(--artist-color, #00f5d4);
-    --badge-cut: linear-gradient(to top left, #000 50%, transparent 51%);
+    background: color-mix(in srgb, var(--artist-color, #00f5d4) 58%, transparent);
+    /* 뱃지 안쪽만 직사각으로 빼 외곽선이 직선으로 뱃지에 붙게 한다 */
+    --badge-cut: linear-gradient(#000, #000);
     -webkit-mask-image: var(--frame-mask), var(--badge-cut);
-    -webkit-mask-size: contain, 26% 26%;
-    -webkit-mask-position: center, right 1.6% bottom 1.6%;
+    -webkit-mask-size: contain, 30% 16.8%;
+    -webkit-mask-position: center, right 4.4% bottom 4.4%;
     -webkit-mask-repeat: no-repeat;
     -webkit-mask-composite: source-out;
     mask-image: var(--frame-mask), var(--badge-cut);
-    mask-size: contain, 26% 26%;
-    mask-position: center, right 1.6% bottom 1.6%;
+    mask-size: contain, 30% 16.8%;
+    mask-position: center, right 4.4% bottom 4.4%;
     mask-repeat: no-repeat;
     mask-composite: subtract;
 }
@@ -123,9 +124,10 @@
     filter: none;
 }
 .member-portrait-picker .mpp-item.is-active .artist-tab-avatar.has-frame-mask::after {
+    background: var(--artist-color, #00f5d4);
     filter:
-        drop-shadow(0 0 1px var(--artist-color, #00f5d4))
-        drop-shadow(0 0 7px color-mix(in srgb, var(--artist-color, #00f5d4) 86%, #0a0c12 14%));
+        drop-shadow(0 0 0.7px var(--artist-color, #00f5d4))
+        drop-shadow(0 0 4px color-mix(in srgb, var(--artist-color, #00f5d4) 62%, transparent));
 }
 .member-portrait-picker .mpp-item.is-active .artist-tab-avatar::before {
     content: "";

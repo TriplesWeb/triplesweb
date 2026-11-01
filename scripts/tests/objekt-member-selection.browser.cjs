@@ -84,7 +84,7 @@ const base = path.resolve(__dirname, '../..');
         };
       });
       assert.match(String(overlayMask.composite), /subtract|source-out/i, mode+' S번호 뱃지는 마스크에서 뺌');
-      assert.match(String(overlayMask.size), /26%/, mode+' 뱃지 구멍은 외곽선만 남김');
+      assert.match(String(overlayMask.size), /30%/, mode+' 뱃지 구멍은 직선 외곽선만 남김');
       assert.equal(stable.animations.length, 1, mode+' 광택 레이어만 반복');
       assert.deepEqual(stable.animations[0].properties.sort(), ['opacity','transform'], mode+' 광택 레이어의 이동과 투명도만 애니메이션');
       assert.ok(stable.animations[0].duration >= 6400 && stable.animations[0].duration <= 6600, mode+' 6.5초 반복 주기');
