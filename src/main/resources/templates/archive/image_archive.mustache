@@ -1,16 +1,9 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-{{>layout/site-head}}
-<meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+{{>layout/head-open}}
     <title>트리플에스 커뮤니티 - 사진 아카이브</title>
 
-    <link rel="stylesheet" href="/css/archive-page.css?v=14">
+    <link rel="stylesheet" href="/css/archive-page.css?v=15">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=20">
     <!-- 폰트 및 아이콘 연결 -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!-- Tailwind CSS 스크립트 -->
     <link rel="stylesheet" href="/css/archive-page.css?v=13">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=13">
@@ -18,8 +11,7 @@
     <meta name="_csrf" content="{{token}}">
     <meta name="_csrf_header" content="{{headerName}}">
     {{/_csrf}}
-</head>
-<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+</head><body class="site-page bg-surface text-on-surface min-h-screen flex flex-col">
 <div class="ar-glow ar-glow-violet"></div>
 <div class="ar-glow ar-glow-mint"></div>
 {{>layout/header}}
@@ -251,12 +243,9 @@
     </div>
 </div>
 
-{{>layout/footer}}
-
 <script src="/js/member-portrait-picker.js?v=9"></script>
 <script src="/js/archive-manage.js?v=5"></script>
 <script src="/js/date-range-filter.js?v=1"></script>
 <script src="/js/archive-browse.js?v=6"></script>
 <script src="/js/archive-photo-carousel.js?v=1"></script>
-</body>
-</html>
+{{>layout/page-end}}

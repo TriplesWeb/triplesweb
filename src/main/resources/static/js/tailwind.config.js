@@ -17,9 +17,9 @@ secondary: '#60a5fa',
 error: '#f87171'
 },
 fontFamily: {
-    sans: ['Inter', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+    sans: ['Pretendard Variable', 'Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
     mono: ['JetBrains Mono', 'monospace'],
-    display: ['Sora', 'sans-serif'],
+    display: ['Pretendard Variable', 'Pretendard', 'sans-serif'],
 },
 }
 }

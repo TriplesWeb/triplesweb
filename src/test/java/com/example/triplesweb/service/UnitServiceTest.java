@@ -34,7 +34,8 @@ class UnitServiceTest {
             artist.setNationality("KR");
             artist.setBirthDate("2000-01-01");
             artist.setBirthPlace("Seoul");
-            artist.setDebutDate("2022-01-01");
+            artist.setRevealDate("2022-01-01");
+            artist.setDormEntryDate("2022-01-02");
             artist.setColor("#fff");
             em.persist(artist);
             em.persist(new UnitMember(null, artist, unit));
@@ -84,7 +85,8 @@ class UnitServiceTest {
         artist.setNationality("KR");
         artist.setBirthDate("2000-01-01");
         artist.setBirthPlace("Seoul");
-        artist.setDebutDate("2022-01-01");
+        artist.setRevealDate("2022-01-01");
+        artist.setDormEntryDate("2022-01-02");
         artist.setColor("#fff");
         return artist;
     }

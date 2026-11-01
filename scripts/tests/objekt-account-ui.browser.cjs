@@ -23,8 +23,12 @@ const fixtures = [
         return route.fulfill({contentType:'application/json',body:JSON.stringify({status:'available',transfers:calls===1?fixtures:[],hasNext:calls===1,cursorTimestamp:'2026-10-25T10:00:00Z',cursorId:'opaque+id'})});
       }
       let html=read('src/main/resources/templates/cosmo/transfers.mustache').replace(/{{>[^}]+}}/g,'').replaceAll('{{nickname}}','lunlun').replace(/<link[^>]+>/g,'').replace(/<script[^>]+><\/script>/g,'');
+      // head-open partial을 제거하면 doctype/html/head·charset이 사라지므로 픽스처용 셸을 다시 붙인다.
+      if (!/<html[\s>]/i.test(html)) {
+        html = '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">' + html;
+      }
       html=html.replace('</head>',`<style>body{margin:0;font-family:Arial,sans-serif}${['gravity-page','archive-page','cosmo-profile','cosmo-collection','objekt-transfers'].map(name=>read('src/main/resources/static/css/'+name+'.css')).join('\n')}</style></head>`);
-      return route.fulfill({contentType:'text/html',body:html});
+      return route.fulfill({contentType:'text/html; charset=utf-8',body:html});
     });
     await page.goto('https://preview.test/cosmo/transfers?nickname=lunlun');
     await page.addScriptTag({content:read('src/main/resources/static/js/season-filters.js')});

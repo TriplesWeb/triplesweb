@@ -1,12 +1,8 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    {{>layout/site-head}}
+{{>layout/head-open}}
+
     <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
-    <link rel="stylesheet" href="/css/site-ui.css?v=2">
     <link rel="stylesheet" href="/css/article-page.css?v=1">
-</head>
-<body class="article-page bg-surface text-on-surface min-h-screen flex flex-col">
+</head><body class="site-page article-page bg-surface text-on-surface min-h-screen flex flex-col">
 
 {{>layout/header}}
 
@@ -162,8 +158,6 @@
     </div>
 </main>
 
-{{>layout/footer}}
-
 <script>
     (function () {
         const likeBtn = document.getElementById('likeButton');
@@ -202,6 +196,4 @@
         });
     })();
 </script>
-
-</body>
-</html>
+{{>layout/page-end}}

@@ -1,10 +1,7 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    {{>layout/site-head}}
+{{>layout/head-open}}
+
     <title>{{status}} · {{title}} - 트리플에스 커뮤니티</title>
-</head>
-<body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
+</head><body class="site-page bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
 {{>layout/header}}
 
 <main class="main-content max-w-xl mx-auto px-4 py-16">
@@ -44,7 +41,6 @@
     </div>
 </main>
 
-{{>layout/footer}}
 <script>
 (function () {
     var btn = document.getElementById('error-go-back');
@@ -58,5 +54,4 @@
     });
 })();
 </script>
-</body>
-</html>
+{{>layout/page-end}}

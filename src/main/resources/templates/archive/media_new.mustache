@@ -1,15 +1,8 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-{{>layout/site-head}}
+{{>layout/head-open}}
+
 <link rel="stylesheet" href="/css/bootstrap-compat.css?v=2">
-<meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="/css/archive-page.css?v=14">
+    <link rel="stylesheet" href="/css/archive-page.css?v=15">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=20">
-    <link rel="stylesheet" href="/css/site-ui.css?v=1">
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="/css/archive-page.css?v=4">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=13">
 
@@ -19,7 +12,7 @@
         body.other-page {
             background-color: #0d0e12;
             color: #e3e2e8;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -66,8 +59,7 @@
         }
         .member-chip input { accent-color: #00f5d4; }
     </style>
-</head>
-<body class="other-page">
+</head><body class="site-page other-page">
 
 {{>layout/header}}
 
@@ -228,5 +220,4 @@
   });
 })();
 </script>
-</body>
-</html>
+{{>layout/page-end}}

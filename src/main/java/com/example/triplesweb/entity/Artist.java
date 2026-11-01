@@ -53,8 +53,13 @@ public class Artist {
     @Column(length = 16)
     private String mbti;
 
+    /** 멤버 공개일. */
     @Column(nullable = false)
-    private String debutDate;
+    private String revealDate;
+
+    /** 숙소 입주일. */
+    @Column(nullable = false)
+    private String dormEntryDate;
 
     @Transient
     public boolean isHasBornPlace() {
@@ -118,11 +123,19 @@ public class Artist {
 
     /**
      * DataInitializer와 기존 호출부를 위한 호환 생성자(미디어 목록은 페이지에서 채운다).
-     * main의 본명·MBTI·싸인 이미지 필드를 포함하며, {@code mediaContents}는 넣지 않는다.
+     * {@code dormEntryDate}는 마이그레이션 V40과 같이 빈 문자열로 두고, {@code mediaContents}는 넣지 않는다.
      */
     public Artist(Long artistId, String name, String engName, String nationality, String birthDate,
-                  String bornPlace, String birthPlace, String realName, String mbti, String debutDate,
+                  String bornPlace, String birthPlace, String realName, String mbti, String revealDate,
                   List<UnitMember> affiliatedUnit, String profileImage, String signatureImage,
+                  String color, String soloContent, String broadcastContent) {
+        this(artistId, name, engName, nationality, birthDate, bornPlace, birthPlace, realName, mbti,
+                revealDate, "", affiliatedUnit, profileImage, signatureImage, color, soloContent, broadcastContent);
+    }
+
+    public Artist(Long artistId, String name, String engName, String nationality, String birthDate,
+                  String bornPlace, String birthPlace, String realName, String mbti, String revealDate,
+                  String dormEntryDate, List<UnitMember> affiliatedUnit, String profileImage, String signatureImage,
                   String color, String soloContent, String broadcastContent) {
         this.artistId = artistId;
         this.name = name;
@@ -133,7 +146,8 @@ public class Artist {
         this.birthPlace = birthPlace;
         this.realName = realName;
         this.mbti = mbti;
-        this.debutDate = debutDate;
+        this.revealDate = revealDate;
+        this.dormEntryDate = dormEntryDate;
         this.affiliatedUnit = affiliatedUnit != null ? affiliatedUnit : new ArrayList<>();
         this.profileImage = profileImage;
         this.signatureImage = signatureImage;

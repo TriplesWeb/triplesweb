@@ -1,11 +1,7 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    {{>layout/site-head}}
+{{>layout/head-open}}
+
     <title>굿즈샵 작성폼</title>
-    <link rel="stylesheet" href="/css/site-ui.css?v=2">
-</head>
-<body class="other_page">
+</head><body class="site-page other_page">
 {{>layout/header}}
 <form id="editForm" class="shop-form-wrap" action="/shop/shop_new" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit()">
     {{#errorMessage}}<p class="site-alert-danger" role="alert">{{errorMessage}}</p>{{/errorMessage}}
@@ -90,6 +86,4 @@
         return window.confirm("이 상품을 등록하시겠습니까?");
     }
 </script>
-{{>layout/footer}}
-</body>
-</html>
+{{>layout/page-end}}

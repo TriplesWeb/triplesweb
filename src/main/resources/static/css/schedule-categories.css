@@ -1,3 +1,27 @@
+/* site.css + triples.css 이중 Tailwind 로드 시 .flex-col이 .md:flex-row를 덮어
+   align-items:flex-end만 남아 헤더가 오른쪽으로 쏠리는 것을 막기 위한 전용 레이아웃 */
+.schedule-page-header{
+    display:flex;
+    flex-direction:column;
+    gap:1rem;
+    border-bottom:1px solid rgba(255,255,255,.1);
+    padding-bottom:1rem;
+}
+@media(min-width:768px){
+    .schedule-page-header{
+        flex-direction:row;
+        align-items:flex-end;
+        justify-content:space-between;
+    }
+}
+.schedule-page-header__body{min-width:0}
+.schedule-page-actions{
+    display:flex;
+    flex-shrink:0;
+    align-items:center;
+    gap:.625rem;
+}
+
 .schedule-legend{display:flex;flex-wrap:wrap;gap:.45rem;margin:0 0 .8rem}
 .schedule-legend span,.schedule-category-label{display:inline-flex;align-items:center;gap:.35rem;border:1px solid color-mix(in srgb,var(--schedule-color,#00f5d4) 35%,transparent);border-radius:999px;padding:.18rem .55rem;color:var(--schedule-color,#00f5d4);font-size:.7rem;line-height:1.5;background:color-mix(in srgb,var(--schedule-color,#00f5d4) 8%,transparent);vertical-align:middle}
 .schedule-legend span::before,.schedule-category-label::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}

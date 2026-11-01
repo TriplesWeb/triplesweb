@@ -6,7 +6,7 @@
 body {
     background-color: #07080b;
     color: #e3e2e8;
-    font-family: 'Inter', 'Noto Sans KR', -apple-system, sans-serif !important;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
     overflow-x: hidden;
     min-height: 100vh;
     display: flex;
@@ -59,13 +59,13 @@ body {
 #navbar *:not(.material-symbols-outlined),
 .nav-dropdown-btn,
 .nav-item-link {
-    font-family: 'Inter', 'Noto Sans KR', -apple-system, sans-serif !important;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
 }
 
-/* 브랜드 로고는 Sora 폰트 유지 */
+/* 브랜드 로고도 Pretendard 사용 */
 #top-header a.text-2xl,
 .navbar-brand {
-    font-family: 'Sora', sans-serif !important;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
 }
 
 /* 드롭다운 메뉴 활성화 CSS */
@@ -87,7 +87,7 @@ body {
 }
 
 .dropdown-link {
-    font-family: 'Inter', 'Noto Sans KR', -apple-system, sans-serif !important;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
 }
 
 /* ==========================================================================
@@ -104,7 +104,7 @@ body {
 }
 
 .fc .fc-toolbar-title {
-    font-family: 'Sora', sans-serif;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     font-size: 1.25rem;
     font-weight: 700;
     color: #00f5d4;
@@ -114,7 +114,7 @@ body {
     background-color: rgba(41, 42, 46, 0.8);
     border: 1px solid rgba(58, 74, 70, 0.4);
     color: #e3e2e8;
-    font-family: 'Inter', 'Noto Sans KR', sans-serif !important;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
     font-size: 12px;
     border-radius: 0.5rem;
     transition: all 0.2s;
@@ -180,7 +180,7 @@ body {
 #navbar a,
 #mobile-menu button,
 #mobile-menu a {
-    font-family: 'Inter', 'Noto Sans KR', -apple-system, sans-serif !important;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
 }
 
 #navbar {

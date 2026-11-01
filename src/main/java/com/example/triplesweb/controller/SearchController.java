@@ -173,8 +173,12 @@ public class SearchController {
                                     artist.getBirthDate()
                             );
                             member.put(
-                                    "debutDate",
-                                    artist.getDebutDate()
+                                    "revealDate",
+                                    artist.getRevealDate()
+                            );
+                            member.put(
+                                    "dormEntryDate",
+                                    artist.getDormEntryDate()
                             );
 
                             return member;

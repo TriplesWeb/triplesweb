@@ -1,12 +1,9 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    {{>layout/site-head}}
+{{>layout/head-open}}
+
 <link rel="stylesheet" href="/css/about-admin.css?v=1">
     <title>트리플에스 커뮤니티 - 발매 앨범</title>
 <style>[data-album-edit][hidden], #albumAddBtn[hidden], #albumSectionBtn[hidden]{display:none!important}</style>
-</head>
-<body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen about-admin-page">
+</head><body class="site-page bg-[#0d0e12] text-[#e3e2e8] min-h-screen about-admin-page">
 {{>layout/header}}
 
 <main class="main-content max-w-7xl mx-auto px-4 py-8">
@@ -62,9 +59,7 @@
     </div>
 </main>
 {{>triples/partials/album-admin-modals}}
-{{>layout/footer}}
 <script src="/js/about-tabs.js?v=1" defer></script>
 <script src="/js/about-modal.js?v=1" defer></script>
 <script src="/js/album.js?v=13" defer></script>
-</body>
-</html>
+{{>layout/page-end}}

@@ -1,14 +1,11 @@
-<!DOCTYPE html>
-<html lang="ko"><head>{{>layout/site-head}}
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+{{>layout/head-open}}
 <title>전송 내역 · 오브젝트</title>
-<link rel="stylesheet" href="/css/gravity-page.css?v=2">
-<link rel="stylesheet" href="/css/archive-page.css?v=14">
+<link rel="stylesheet" href="/css/gravity-page.css?v=3">
+<link rel="stylesheet" href="/css/archive-page.css?v=15">
 <link rel="stylesheet" href="/css/cosmo-profile.css?v=10">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=12">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=14">
 <link rel="stylesheet" href="/css/objekt-transfers.css?v=4">
-</head>
-<body class="collection-page tr-site"><div>{{>layout/header}}</div>
+</head><body class="site-page collection-page tr-site"><div>{{>layout/header}}</div>
 <main class="gravity-page cosmo-profile tr-page" data-account-transfers data-account="{{nickname}}" data-url="/api/objekt/transfers">
 <nav class="tr-breadcrumb" aria-label="현재 위치"><a href="/cosmo/collection">오브젝트</a><span aria-hidden="true">/</span><span>전송 내역</span></nav>
 <header class="tr-hero"><div><p class="tr-eyebrow">OBJEKT ACTIVITY</p><h1>전송 내역</h1><p class="tr-intro">내 컬렉션에 오고 간 오브젝트를 확인하세요.</p></div>
@@ -36,4 +33,5 @@
 <div class="tr-pagination"><button type="button" class="tr-more" data-more hidden>이전 내역 더 보기 ↓</button><button type="button" class="tr-retry" data-retry hidden>다시 시도</button></div>
 </section>
 <aside class="tr-note"><span aria-hidden="true">ⓘ</span><p>공개 인덱스에 반영된 전송 내역입니다. 반영이 늦을 수 있으며, 표시된 계정이 현재 소유자임을 뜻하지 않습니다. 시리얼은 인덱스 보고값으로 추정치가 포함될 수 있습니다.</p></aside>
-</main>{{>layout/footer}}<script src="/js/objekt-dropdown.js?v=1" defer></script><script src="/js/objekt-account-transfers.js?v=2" defer></script></body></html>
+</main><script src="/js/objekt-dropdown.js?v=1" defer></script><script src="/js/objekt-account-transfers.js?v=2" defer></script>
+{{>layout/page-end}}

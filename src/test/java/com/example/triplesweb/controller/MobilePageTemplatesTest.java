@@ -43,8 +43,9 @@ class MobilePageTemplatesTest {
         try(var files=Files.walk(root)) {
             for(Path path:files.filter(p->p.toString().endsWith(".mustache")).toList()) {
                 String source=Files.readString(path);
-                if(!source.contains("<html"))continue;
-                assertThat(source).containsAnyOf("{{>layout/favicon}}","{{>layout/triples-head}}","{{>layout/site-head}}");
+                if(!source.contains("<html") && !source.contains("{{>layout/head-open}}"))continue;
+                assertThat(source).containsAnyOf(
+                        "{{>layout/head-open}}","{{>layout/favicon}}","{{>layout/triples-head}}","{{>layout/site-head}}");
                 String result=compiler.compile(source).execute(model);
                 assertThat(result).contains("/css/site-mobile.css", "name=\"viewport\"");
                 String name=root.relativize(path).toString().replace('/', '_').replace('\\', '_');

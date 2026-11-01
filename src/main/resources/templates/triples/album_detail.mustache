@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    {{>layout/site-head}}
+{{>layout/head-open}}
+
     <link rel="stylesheet" href="/css/album-detail.css?v=1">
     <title>트리플에스 커뮤니티 - 발매 앨범</title>
-</head>
-<body class="bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
+</head><body class="site-page bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
 {{>layout/header}}
 <main class="main-content max-w-7xl mx-auto px-4 py-8">
     {{#album}}
@@ -103,14 +100,8 @@
                         {{#youtubeVideoId}}
                         <a href="https://www.youtube.com/watch?v={{youtubeVideoId}}" target="_blank" rel="noopener noreferrer" aria-label="{{title}} 유튜브 시청" class="album-track-link album-track-link-yt">YouTube</a>
                         {{/youtubeVideoId}}
-                        {{^youtubeVideoId}}
-                        <a href="{{youtubeSearchUrl}}" target="_blank" rel="noopener noreferrer" aria-label="{{title}} 유튜브 검색" class="album-track-link album-track-link-yt">YouTube</a>
-                        {{/youtubeVideoId}}
                         {{#melonSongId}}
                         <a href="https://www.melon.com/song/detail.htm?songId={{melonSongId}}" target="_blank" rel="noopener noreferrer" aria-label="{{title}} 멜론 듣기" class="album-track-link">Melon</a>
-                        {{/melonSongId}}
-                        {{^melonSongId}}
-                        <a href="{{melonSearchUrl}}" target="_blank" rel="noopener noreferrer" aria-label="{{title}} 멜론 검색" class="album-track-link">Melon</a>
                         {{/melonSongId}}
                     </div>
                 </td>
@@ -130,7 +121,6 @@
             {{/album}}
 
 </main>
-{{>layout/footer}}
 <script>
 (function () {
   var text = document.getElementById("albumInfoText");
@@ -149,5 +139,4 @@
   });
 })();
 </script>
-</body>
-</html>
+{{>layout/page-end}}
