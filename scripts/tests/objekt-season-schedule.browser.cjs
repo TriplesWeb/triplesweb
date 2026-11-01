@@ -70,6 +70,11 @@ const urls={
    const input=page.locator('input.season-checkbox[value="Cream02"]').first();
    await input.evaluate(el=>{el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}));});
    assert.equal(await row.locator('button[data-value="Cream02"]').getAttribute('aria-pressed'),'true');
+   const creamChip=row.locator('button[data-value="Cream02"]');
+   const creamColor=await creamChip.evaluate(el=>getComputedStyle(el).borderTopColor);
+   const badge=page.locator(name==='objekt'?'.objekt-card-season':'.collection-card-season').filter({hasText:'Cream02'}).first();
+   assert.equal(await badge.count(),1,name+' 카드에 Cream02 뱃지');
+   assert.equal(await badge.evaluate(el=>getComputedStyle(el).backgroundColor),creamColor,name+' 카드 시즌 색이 드롭다운과 같음');
    await page.setViewportSize({width:390,height:844});
    if(!await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))console.log('시즌 배치 진단',await page.evaluate(()=>({w:innerWidth,scroll:document.documentElement.scrollWidth,items:[...document.querySelectorAll('.season-control,.season-choice-panel,.season-chip-list')].map(n=>({cls:n.className,rect:JSON.stringify(n.getBoundingClientRect()),min:getComputedStyle(n).minWidth,max:getComputedStyle(n).maxWidth,box:getComputedStyle(n).boxSizing}))})));
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,name+' 시즌 버튼 모바일 넘침');

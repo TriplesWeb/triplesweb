@@ -291,6 +291,12 @@ class ObjektFeaturesTest {
                 .andExpect(content().string(containsString("data-objekt-group=\"other\"")))
                 .andExpect(content().string(containsString("artist-tab-fallback"))).andReturn();
         java.nio.file.Files.writeString(java.nio.file.Path.of("build/objekt-all-preview.html"), result.getResponse().getContentAsString());
+        org.assertj.core.api.Assertions.assertThat(result.getResponse().getContentAsString())
+                .contains("background:#FF8389").contains("background:#83FF00")
+                .doesNotContain("bg-[#00e8cb]");
+        mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("season", "Cream02"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].seasonColor").value("#FF8389"));
         mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("member", "S1 X S9"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.resultCount").value(2));
         var legacy = mvc.perform(get("/cosmo/objekt").param("member", "S21"))

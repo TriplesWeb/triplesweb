@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="/css/gravity-page.css?v=3">
 <link rel="stylesheet" href="/css/archive-page.css?v=15">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=20">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=17">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=18">
 <title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}내 오브젝트 검색{{/nickname}}</title>
 </head><body class="site-page collection-page min-h-screen flex flex-col">
 {{>layout/header}}
@@ -374,6 +374,12 @@
       .replace(/'/g, '&#39;');
   }
 
+  function seasonBadgeColor(item) {
+    const fromItem = typeof item?.seasonColor === 'string' ? item.seasonColor.trim() : '';
+    if (fromItem) return fromItem;
+    return window.SeasonChips?.colorFor(item?.season) || '#A4B7B4';
+  }
+
   function updateStatus() {
     if (empty) empty.classList.toggle('is-hidden', loadedCount > 0 || pending);
     if (filteredCountEl) filteredCountEl.textContent = String(filteredCount);
@@ -400,7 +406,7 @@
       ? `<h3><a class="collection-title-link" href="${escapeHtml(item.detailUrl)}">${title}</a></h3>`
       : `<h3>${title}</h3>`;
     return `<article class="ar-panel ar-card collection-card">
-      <div class="collection-image-wrap"><span class="collection-card-serial">${serial}</span><span class="collection-card-season" data-season-color="${escapeHtml(item.season || '')}"${item.season ? ` style="background:${escapeHtml(item.seasonColor || '#00e8cb')}"` : ''}>${escapeHtml(item.season || '')}</span>${image}</div>
+      <div class="collection-image-wrap"><span class="collection-card-serial">${serial}</span><span class="collection-card-season" data-season-color="${escapeHtml(item.season || '')}"${item.season ? ` style="background:${escapeHtml(seasonBadgeColor(item))}"` : ''}>${escapeHtml(item.season || '')}</span>${image}</div>
       <div class="ar-body">
         ${heading}
         <p class="ar-muted">${member}${season}</p>

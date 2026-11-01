@@ -55,6 +55,7 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
 <div id="objekt-empty" class="hidden">없음</div>
 <div id="objekt-card-grid"><article class="objekt-card objekt-item" data-objekt-key="first">초기카드</article></div>
 <div id="objekt-scroll-sentinel" data-has-more="false" data-next-page="1"><p id="objekt-scroll-status"></p><div id="objekt-scroll-spinner" class="hidden"></div></div>
+<script src="/js/season-filters.js"></script>
 <script src="/js/member-portrait-picker.js"></script>
 <script src="/js/objekt-page.js"></script>
 </body></html>`;
@@ -99,6 +100,7 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
   await page.locator('.season-checkbox[value="Atom01"]').evaluate(el=>{el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}));});
   await page.waitForFunction(()=>document.querySelector('[data-objekt-key="Atom01"]'));
   assert.ok(moreCalls.some(call=>call.season==='Atom01'));
+  assert.equal(await page.locator('.objekt-card-season').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 221, 0)');
 
   moreCalls.length=0;
   const kindWait=page.waitForResponse(res=>{try{return new URL(res.url()).searchParams.get('kind')==='101Z';}catch{return false;}});

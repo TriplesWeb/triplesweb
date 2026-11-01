@@ -419,6 +419,12 @@
         return escapeHtml(value);
     }
 
+    function seasonBadgeColor(item, season) {
+        const fromItem = typeof item?.seasonColor === 'string' ? item.seasonColor.trim() : '';
+        if (fromItem) return fromItem;
+        return window.SeasonChips?.colorFor(season) || '#A4B7B4';
+    }
+
     const detailModal = document.getElementById('objektDetailModal');
     const detailImage = document.getElementById('objektDetailImage');
     const detailFlip = document.getElementById('objektDetailFlip');
@@ -740,7 +746,7 @@
             <button type="button" class="objekt-open-detail relative block aspect-[2/3] w-full overflow-hidden bg-[#1c1f2e]" aria-label="${attr(collectionId)} 상세 보기">
                 <img src="${attr(thumb)}" alt="${attr(collectionId)}" loading="lazy" decoding="async" class="objekt-image h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null;this.src='${attr(front)}';">
                 <span class="absolute left-2 top-2 rounded-md border border-white/15 bg-black/65 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur">${escapeHtml(klass)}</span>
-                <span class="absolute right-2 top-2 rounded-md bg-[#00e8cb] px-2 py-1 text-[10px] font-bold text-[#071513]">${escapeHtml(season)}</span>
+                <span class="objekt-card-season absolute right-2 top-2 rounded-md px-2 py-1 text-[10px] font-bold text-[#071513]" style="background:${attr(seasonBadgeColor(item, season))}">${escapeHtml(season)}</span>
             </button>
             <div class="p-3">
                 <a href="/cosmo/objekt/detail/${attr(id)}" class="objekt-detail-link block truncate text-sm font-semibold text-slate-100 hover:text-[#00f5d4]" title="${attr(collectionId)}">${escapeHtml(collectionId)}</a>

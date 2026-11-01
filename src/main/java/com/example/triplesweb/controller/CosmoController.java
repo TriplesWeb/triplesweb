@@ -8,6 +8,7 @@ import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektFilterOrder;
 import com.example.triplesweb.util.ObjektLinks;
 import com.example.triplesweb.util.ObjektSeasonCodes;
+import com.example.triplesweb.util.ObjektSeasonColors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -318,6 +319,7 @@ public class CosmoController {
             copy.put("memberHref", "/cosmo/objekt/member?name="
                     + URLEncoder.encode(member, StandardCharsets.UTF_8).replace("+", "%20"));
             copy.put("publicKey", ObjektLinks.key(item));
+            copy.put("seasonColor", ObjektSeasonColors.colorFor(firstValue(item, "season", "seasonKey")));
             out.add(copy);
         }
         return out;

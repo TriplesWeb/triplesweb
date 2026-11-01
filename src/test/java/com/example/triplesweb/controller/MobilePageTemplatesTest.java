@@ -28,6 +28,15 @@ class MobilePageTemplatesTest {
         model.put("items",List.of(Map.of("id",1,"name",longText,"price",1000,"imageUrl","/images/no-image.png")));
         model.put("articleForm",Map.of("title",longText,"content",rich));
         model.put("objekt",Map.of("frontImage","","backImage","","thumbnailImage","","collectionId",longText,"member","HaYeon","season","Cream02","class","Special","collectionNo","367Z"));
+        Map<String,Object> objektCard=new LinkedHashMap<>();
+        objektCard.put("publicKey","hayeoncc367z");objektCard.put("seasonKey","Cream02");objektCard.put("classKey","Special");
+        objektCard.put("collectionNo","367Z");objektCard.put("member","HaYeon");objektCard.put("thumbnailImage","");
+        objektCard.put("frontImage","");objektCard.put("collectionId","Cream02 HaYeon 367Z");objektCard.put("class","Special");
+        objektCard.put("season","Cream02");objektCard.put("memberHref","/cosmo/objekt/member?name=HaYeon");
+        objektCard.put("seasonColor","#FF8389");
+        model.put("objekts",List.of(objektCard));
+        model.put("cards",List.of(Map.of("serial","27","hasSerial",true,"collectionId","Cream02 HaYeon 367Z",
+                "member","HaYeon","season","Cream02","seasonColor","#FF8389","hasImage",false,"hasDetail",false)));
         model.put("seasonOptions",List.of("Atom01","Binary01","Cream02"));
         model.put("seasonChoices",List.of(Map.of("value","Atom01","label","Atom01"),Map.of("value","Binary01","label","Binary01"),Map.of("value","Cream02","label","Cream02")));
         model.put("objektSeasonOptions",List.of("Atom01","Binary01","Cream02"));

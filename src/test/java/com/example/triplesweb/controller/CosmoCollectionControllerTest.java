@@ -72,8 +72,8 @@ class CosmoCollectionControllerTest {
         view.put("filterQuery", "");
         view.put("hasActiveFilters", false);
         view.put("cards", List.of(Map.of("serial", "27", "hasSerial", true, "collectionId", "Cream02 HaYeon 367Z",
-                "member", "HaYeon", "season", "Cream02", "objektClass", "Double", "hasImage", true,
-                "thumbnailImage", "https://example.com/card.webp", "hasDetail", false)));
+                "member", "HaYeon", "season", "Cream02", "seasonColor", "#FF8389", "objektClass", "Double",
+                "hasImage", true, "thumbnailImage", "https://example.com/card.webp", "hasDetail", false)));
         view.put("filterMembers", List.of("HaYeon"));
         view.put("filterSeasons", List.of("Cream02"));
         view.put("filterClasses", List.of("Double"));
@@ -82,6 +82,7 @@ class CosmoCollectionControllerTest {
         mvc.perform(get("/cosmo/collection").param("nickname", "테스트")).andExpect(status().isOk())
                 .andExpect(model().attributeDoesNotExist("allCards"))
                 .andExpect(content().string(containsString("#27")))
+                .andExpect(content().string(containsString("background:#FF8389")))
                 .andExpect(content().string(containsString("collection-image")))
                 .andExpect(content().string(containsString("내 오브젝트 검색")))
                 .andExpect(content().string(containsString("프로필 보기")))
