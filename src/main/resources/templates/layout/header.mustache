@@ -203,6 +203,16 @@
             {{/direct}}
             {{/siteNavigation}}
 
+            {{#member}}
+            <div class="mobile-account">
+                <p>{{userId}}님<span>Lv.{{level}} {{points}}P</span></p>
+                <a href="/mypage">마이페이지</a>
+                <a href="/myposts">작성한 글</a>
+                <a href="/mycomments">작성한 댓글</a>
+                <a href="/logout">로그아웃</a>
+            </div>
+            {{/member}}
+
         </nav>
     </div>
 </header>
