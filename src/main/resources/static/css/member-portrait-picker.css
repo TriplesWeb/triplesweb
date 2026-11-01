@@ -85,7 +85,8 @@
     transition: filter 160ms ease, opacity 160ms ease;
 }
 .member-portrait-picker .artist-tab-avatar.has-frame-mask .artist-tab-frame {
-    opacity: 1;
+    /* 미선택: 원본 윤곽·뱃지까지 숨겨 테두리가 거의 안 보이게 */
+    opacity: 0;
 }
 .member-portrait-picker .artist-tab-avatar.has-frame-mask::after {
     content: "";
@@ -93,8 +94,8 @@
     inset: 0;
     z-index: 3;
     pointer-events: none;
-    background: color-mix(in srgb, var(--artist-color, #00f5d4) 18%, transparent);
-    opacity: .55;
+    background: var(--artist-color, #00f5d4);
+    opacity: 0;
     /* 뱃지 안쪽만 직사각으로 빼 외곽선이 직선으로 뱃지에 붙게 한다 */
     --badge-cut: linear-gradient(#000, #000);
     -webkit-mask-image: var(--frame-mask), var(--badge-cut);

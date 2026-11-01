@@ -665,7 +665,7 @@
     transition: filter 160ms ease, opacity 160ms ease;
 }
 .artist-page .artist-tab-avatar.has-frame-mask .artist-tab-frame {
-    opacity: 1;
+    opacity: 0;
 }
 .artist-page .artist-tab-avatar.has-frame-mask::after {
     content: "";
@@ -673,8 +673,8 @@
     inset: 0;
     z-index: 3;
     pointer-events: none;
-    background: color-mix(in srgb, var(--artist-color, #00f5d4) 18%, transparent);
-    opacity: .55;
+    background: var(--artist-color, #00f5d4);
+    opacity: 0;
     --badge-cut: linear-gradient(#000, #000);
     -webkit-mask-image: var(--frame-mask), var(--badge-cut);
     -webkit-mask-size: contain, 30% 16.8%;
