@@ -1,0 +1,44 @@
+/* Standalone footer: independent of each page's Tailwind/Bootstrap/site-ui bundle. */
+.site-footer,
+.site-footer * {
+    box-sizing: border-box;
+}
+.site-footer {
+    margin-top: auto;
+    padding: 1.5rem 1rem max(1.5rem, env(safe-area-inset-bottom));
+    border-top: 1px solid rgba(58, 74, 70, 0.33);
+    background: #0b0d11;
+    color: #c5d0cc;
+    text-align: center;
+    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+}
+.site-footer__copy {
+    margin: 0 0 0.55rem;
+    color: #c5d0cc;
+}
+.site-footer__links {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem 0;
+}
+.site-footer__links a {
+    color: #c5d0cc;
+    text-decoration: none;
+    margin: 0 0.5rem;
+}
+.site-footer__links a:hover {
+    color: #8decd9;
+}
+.site-footer__links a:focus-visible {
+    outline: 2px solid #8decd9;
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+.site-footer__sep {
+    color: #6f7f79;
+    user-select: none;
+}

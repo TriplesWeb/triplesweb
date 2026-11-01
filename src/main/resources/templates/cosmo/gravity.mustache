@@ -1,16 +1,12 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-{{>layout/site-head}}
+{{>layout/head-open}}
+
 <link rel="stylesheet" href="/css/about-admin.css?v=1">
 <link rel="stylesheet" href="/css/gravity-admin.css?v=1">
-<link rel="stylesheet" href="/css/gravity-page.css?v=2">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=12">
+<link rel="stylesheet" href="/css/gravity-page.css?v=3">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=14">
 <link rel="stylesheet" href="/css/gravity-filters.css?v=2">
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>역대 그래비티 - 트리플에스 커뮤니티</title>
-</head>
-<body class="collection-page min-h-screen flex flex-col">
+</head><body class="site-page collection-page min-h-screen flex flex-col">
 <div class="gv-glow gv-glow-violet"></div>
 <div class="gv-glow gv-glow-mint"></div>
 {{>layout/header}}
@@ -120,7 +116,6 @@
     {{#emptyList}}<p class="gv-panel gv-empty">등록된 그래비티가 없습니다.</p>{{/emptyList}}
 </main>
 {{>cosmo/partials/gravity-admin-login}}
-{{>layout/footer}}
 <script src="/js/gravity-connect.js?v=5" defer></script>
 <script src="/js/objekt-dropdown.js?v=1" defer></script>
 <script>
@@ -173,5 +168,4 @@
     document.getElementById('gvNext').addEventListener('click', () => track.scrollBy({ left: 360, behavior: 'smooth' }));
 })();
 </script>
-</body>
-</html>
+{{>layout/page-end}}

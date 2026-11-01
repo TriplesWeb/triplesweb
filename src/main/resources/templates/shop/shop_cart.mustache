@@ -1,21 +1,15 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-{{>layout/site-head}}
+{{>layout/head-open}}
 <link rel="stylesheet" href="/css/bootstrap-compat.css?v=2">
-<meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>장바구니 - 굿즈샵</title>
-    </head>
-    <link rel="stylesheet" href="/css/site-ui.css?v=1"/>
-    <style>
-        body.other-page { background: #0d0e12; color: #e3e2e8; }
-        .cart-row { display: flex; align-items: center; gap: .85rem; padding: .75rem 0; border-bottom: 1px solid #ffffff14; }
-        .cart-row img { width: 80px; height: 80px; object-fit: cover; border-radius: .65rem; }
-        .cart-price { color: #8decd9; }
-        .cart-empty { color: #b9cac4; }
-    </style>
-<body class="other-page">
+<title>장바구니 - 굿즈샵</title>
+<style>
+    body.other-page { background: #0d0e12; color: #e3e2e8; }
+    .cart-row { display: flex; align-items: center; gap: .85rem; padding: .75rem 0; border-bottom: 1px solid #ffffff14; }
+    .cart-row img { width: 80px; height: 80px; object-fit: cover; border-radius: .65rem; }
+    .cart-price { color: #8decd9; }
+    .cart-empty { color: #b9cac4; }
+</style>
+</head>
+<body class="site-page other-page">
 {{>layout/header}}
 
 <div class="site-container">
@@ -34,6 +28,4 @@
     {{/items}}
 </div>
 <script src="/js/bootstrap-compat.js?v=1" defer></script>
-{{>layout/footer}}
-</body>
-</html>
+{{>layout/page-end}}

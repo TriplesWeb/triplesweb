@@ -1,9 +1,4 @@
-<!DOCTYPE html>
-<html class="dark" lang="ko">
-<head>
-{{>layout/site-head}}
-<meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+{{>layout/head-open}}
     <title>tripleS 커뮤</title>
 
     <style>
@@ -18,9 +13,7 @@
         .fc-col-header-cell:nth-child(1) .fc-col-header-cell-cushion { color: #f87171 !important; }
         .fc-col-header-cell:nth-child(7) .fc-col-header-cell-cushion { color: #60a5fa !important; }
     </style>
-</head>
-
-<body class="main-page min-h-screen flex flex-col bg-background text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
+</head><body class="site-page main-page min-h-screen flex flex-col bg-background text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
 
 <!-- 엠비언트 배경 은은한 빛 효과 -->
 <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -178,8 +171,6 @@
 </main>
 
 <!-- 푸터 레이아웃 포함 -->
-{{>layout/footer}}
-
 <!-- FullCalendar: 미니 캘린더가 보일 때만 로드 -->
 <script>
 (function () {
@@ -228,5 +219,4 @@
     }
 })();
 </script>
-</body>
-</html>
+{{>layout/page-end}}

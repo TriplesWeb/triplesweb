@@ -1,13 +1,10 @@
-<!DOCTYPE html>
-<html class="dark" lang="ko">
-<head>
-    {{>layout/site-head}}
+{{>layout/head-open}}
+
     <link rel="stylesheet" href="/css/about-admin.css?v=1">
-    <link rel="stylesheet" href="/css/chemistry.css?v=3">
+    <link rel="stylesheet" href="/css/chemistry.css?v=4">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=1">
     <title>트리플에스 커뮤니티 - 케미명 모음</title>
-</head>
-<body class="bg-[#0d0e12] text-[#ffffff] min-h-screen">
+</head><body class="site-page bg-[#0d0e12] text-[#ffffff] min-h-screen">
 {{>layout/header}}
 
 <main class="main-content chem-page-main">
@@ -106,7 +103,6 @@
 
 {{>triples/partials/chemistry-modals}}
 
-{{>layout/footer}}
 <script src="/js/about-modal.js?v=1" defer></script>
 <script src="/js/triples-members.js?v=1" defer></script>
 <script src="/js/chemistry-sanitize.js?v=1" defer></script>
@@ -118,5 +114,4 @@
 <script src="/js/chemistry-sanitize.js?v=1"></script>
 <script src="/js/member-portrait-picker.js?v=9"></script>
 <script src="/js/chemistry.js?v=62"></script>
-</body>
-</html>
+{{>layout/page-end}}

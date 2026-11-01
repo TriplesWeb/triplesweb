@@ -789,7 +789,7 @@ html[lang="en"] .chem-member-name {
     height: 100%;
     min-width: 0;
     font-size: clamp(13px, 0.85vw, 18px);
-    font-family: 'Noto Sans KR', 'Inter', sans-serif;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
 }
 
@@ -989,7 +989,7 @@ html[lang="en"] .chem-member-name {
 }
 
 .chem-modal-title {
-    font-family: 'Sora', 'Inter', sans-serif;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     font-size: clamp(1.5rem, 2.2vw, 2.15rem);
     font-weight: 800;
     color: var(--chem-white);
@@ -1012,7 +1012,7 @@ html[lang="en"] .chem-member-name {
 
 .chem-modal-pair {
     margin: 0;
-    font-family: 'Noto Sans KR', 'Inter', sans-serif;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     font-size: clamp(0.92rem, 1.2vw, 1.05rem);
     font-weight: 600;
     line-height: 1.3;

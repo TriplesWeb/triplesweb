@@ -1,0 +1,18 @@
+/* Global page shell: keeps header/footer chrome consistent across templates. */
+html.dark {
+    color-scheme: dark;
+}
+body.site-page {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #0d0e12;
+    color: #e3e2e8;
+    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+body.site-page > .main-content,
+body.site-page > main {
+    flex: 1 0 auto;
+    width: 100%;
+}

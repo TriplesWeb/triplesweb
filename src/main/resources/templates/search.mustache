@@ -1,14 +1,5 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-{{>layout/site-head}}
-<meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+{{>layout/head-open}}
     <title>{{#keyword}}‘{{keyword}}’ 검색 결과{{/keyword}}{{^keyword}}검색{{/keyword}} - 트리플에스 커뮤니티</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="/css/site-ui.css?v=2">
     <style>
         .search-highlight b {
             color: #00f5d4;
@@ -22,8 +13,7 @@
             overflow-wrap: anywhere;
         }
     </style>
-</head>
-<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+</head><body class="site-page bg-surface text-on-surface min-h-screen flex flex-col">
 {{>layout/header}}
 
 <main class="flex-1 flex items-start justify-center px-4 sm:px-6 py-6 z-10 relative">
@@ -141,6 +131,4 @@
     </div>
 </main>
 
-{{>layout/footer}}
-</body>
-</html>
+{{>layout/page-end}}

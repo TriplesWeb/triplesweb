@@ -1,20 +1,15 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-{{>layout/site-head}}
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+{{>layout/head-open}}
 <title>{{requestedNickname}} · COSMO 닉네임 상세</title>
-<link rel="stylesheet" href="/css/gravity-page.css?v=2">
-<link rel="stylesheet" href="/css/archive-page.css?v=14">
+<link rel="stylesheet" href="/css/gravity-page.css?v=3">
+<link rel="stylesheet" href="/css/archive-page.css?v=15">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=20">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=12">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=14">
 <link rel="stylesheet" href="/css/cosmo-profile.css?v=11">
 <link rel="stylesheet" href="/css/archive-page.css?v=3">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=13">
 <link rel="stylesheet" href="/css/cosmo-collection.css?v=10">
 <link rel="stylesheet" href="/css/cosmo-profile.css?v=17">
-</head>
-<body class="collection-page min-h-screen flex flex-col">
+</head><body class="site-page collection-page min-h-screen flex flex-col">
 {{>layout/header}}
 <main class="gravity-page cosmo-profile" data-profile-version="{{#hasProfile}}{{profileVersion}}{{/hasProfile}}">
 <a href="/cosmo/collection?nickname={{requestedNickname}}" class="collection-detail-link">← 내 오브젝트 검색</a>
@@ -219,7 +214,6 @@
 {{/isMembersTab}}
 {{/hasProfile}}
 </main>
-{{>layout/footer}}
 <script src="/js/cosmo-profile.js?v=5" defer></script>
 {{#isMembersTab}}
 <script src="/js/member-portrait-picker.js?v=9"></script>
@@ -243,5 +237,4 @@
 })();
 </script>
 {{/isMembersTab}}
-</body></html>
-
+{{>layout/page-end}}

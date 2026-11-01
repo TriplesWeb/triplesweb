@@ -1,5 +1,5 @@
 .gravity-page {
-    font-family: Inter, "Noto Sans KR", -apple-system, sans-serif;
+    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     position: relative;
     z-index: 1;
     width: 100%;
@@ -51,7 +51,7 @@
 }
 .gv-headline { padding: 1.75rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1.5rem; }
 .gv-headline h1 {
-    font-family: Sora, sans-serif;
+    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     font-size: clamp(1.75rem, 3vw, 2.6rem);
     line-height: 1.15;
     font-weight: 700;
@@ -79,7 +79,7 @@
 .gv-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .gv-stat { padding: 1.1rem; min-height: 7.5rem; display: flex; flex-direction: column; justify-content: space-between; }
 .gv-stat span { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.06em; color: #b9cac4; }
-.gv-stat strong { display: block; margin-top: 0.75rem; font-family: Sora, sans-serif; font-size: 1.7rem; color: #d7fff3; }
+.gv-stat strong { display: block; margin-top: 0.75rem; font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 1.7rem; color: #d7fff3; }
 .gv-stat em { font-style: normal; color: #00f5d4; font-size: 0.85rem; }
 
 .gv-section-title {
@@ -88,7 +88,7 @@
     justify-content: space-between;
     gap: 1rem;
 }
-.gv-section-title h2 { font-family: Sora, sans-serif; font-size: 1.25rem; font-weight: 650; }
+.gv-section-title h2 { font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 1.25rem; font-weight: 650; }
 .gv-icon-btn {
     width: 2.25rem; height: 2.25rem; border-radius: 9999px;
     border: 1px solid rgba(255, 255, 255, 0.12);
