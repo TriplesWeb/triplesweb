@@ -31,6 +31,31 @@ class MobilePageTemplatesTest {
         model.put("seasonOptions",List.of("Atom01","Binary01","Cream02"));
         model.put("seasonChoices",List.of(Map.of("value","Atom01","label","Atom01"),Map.of("value","Binary01","label","Binary01"),Map.of("value","Cream02","label","Cream02")));
         model.put("objektSeasonOptions",List.of("Atom01","Binary01","Cream02"));
+        // 시즌 뱃지 브라우저 픽스처: Cream02 카드가 렌더되어야 objekt-season-schedule 검사가 통과한다.
+        Map<String,Object> creamObjekt=new LinkedHashMap<>();
+        creamObjekt.put("publicKey","hayeoncc367z");
+        creamObjekt.put("seasonKey","Cream02");
+        creamObjekt.put("classKey","special");
+        creamObjekt.put("artist","triples");
+        creamObjekt.put("collectionNo","367Z");
+        creamObjekt.put("numberValue",367);
+        creamObjekt.put("createdAt","2026-01-01");
+        creamObjekt.put("member","HaYeon");
+        creamObjekt.put("searchText","Cream02 HaYeon 367Z");
+        creamObjekt.put("collectionId","Cream02 HaYeon 367Z");
+        creamObjekt.put("thumbnailImage","/images/no-image.png");
+        creamObjekt.put("frontImage","/images/no-image.png");
+        creamObjekt.put("class","Special");
+        creamObjekt.put("season","Cream02");
+        creamObjekt.put("seasonColor","#FF8389");
+        creamObjekt.put("memberHref","/cosmo/objekt/member?name=HaYeon");
+        creamObjekt.put("mintCountKnown",false);
+        model.put("objekts",List.of(creamObjekt));
+        model.put("cards",List.of(Map.of(
+                "serial","27","hasSerial",true,"collectionId","Cream02 HaYeon 367Z","member","HaYeon",
+                "season","Cream02","seasonColor","#FF8389","objektClass","Double",
+                "hasImage",true,"thumbnailImage","/images/no-image.png","hasDetail",false)));
+        model.put("hasCards",true);
         model.put("showObjektPicker",true);
         model.put("objektKey","uuid"); model.put("memberUrl","/cosmo/objekt?member=HaYeon");model.put("lookupUrl","/lookup");model.put("favoriteDesired",true);
         model.put("isOverviewTab",true);model.put("hasProfile",true);model.put("hasCollection",true);model.put("hasOverallProgress",true);model.put("hasStats",true);
