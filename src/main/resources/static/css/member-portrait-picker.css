@@ -131,8 +131,20 @@
     box-shadow: none;
 }
 .member-portrait-picker .mpp-item.is-active .artist-tab-frame {
+    /* 연한 PNG 윤곽은 숨기고 S번호 뱃지 영역만 남긴다 */
     opacity: 1;
     filter: none;
+    transform: scale(1.045);
+    transform-origin: center;
+    --badge-only: linear-gradient(#000, #000);
+    -webkit-mask-image: var(--badge-only);
+    -webkit-mask-size: 30% 16.8%;
+    -webkit-mask-position: right 4.4% bottom 4.4%;
+    -webkit-mask-repeat: no-repeat;
+    mask-image: var(--badge-only);
+    mask-size: 30% 16.8%;
+    mask-position: right 4.4% bottom 4.4%;
+    mask-repeat: no-repeat;
 }
 .member-portrait-picker .mpp-item.is-active .artist-tab-avatar.has-frame-mask::after {
     background: var(--artist-color, #00f5d4);
