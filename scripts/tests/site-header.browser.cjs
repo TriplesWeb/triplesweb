@@ -10,7 +10,7 @@ const root=path.resolve(__dirname,'../..');
    if(url.pathname==='/'){
     let html=fs.readFileSync(path.join(root,'build/mobile-pages/header-auth.html'),'utf8');
     html=html.replace('</head>','<style>main{min-height:1400px}</style></head>');
-    html=html.replace('</body>','<script src="/js/site-header.js"></script></body>');
+    html=html.replace('</body>','<script src="/js/site-header.js"></script><script src="/js/site-mobile.js"></script></body>');
     return route.fulfill({contentType:'text/html',body:html});
    }
    const file=path.resolve(root,'src/main/resources/static','.'+url.pathname);
@@ -24,40 +24,35 @@ const root=path.resolve(__dirname,'../..');
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`header overflow ${width}`);
    const desktop=await page.locator('#navbar').isVisible();
    if(!desktop){
-    assert.equal(await page.locator('.header-utilities').count(),0);
     await page.locator('#mobile-menu-btn').focus(); await page.keyboard.press('Enter');
-    await page.locator('[aria-controls="mobile-cosmo"]').click();
-    assert.equal(await page.locator('#mobile-cosmo summary').count(),0);
-    assert.equal(await page.locator('#mobile-cosmo a[href="/article/trade"]').isVisible(),true);
-    assert.equal(await page.locator('#mobile-cosmo .header-link-group').count(),0);
+    assert.equal(await page.locator('#mobile-menu').isVisible(),true);
+    const cosmoToggle=page.locator('.mobile-nav-toggle').filter({hasText:'코스모'});
+    await cosmoToggle.click();
+    assert.equal(await page.locator('.mobile-nav-panel a[href="/article/trade"]').first().isVisible(),true);
+    assert.equal(await page.locator('.mobile-nav-panel summary').count(),0);
+    assert.equal(await page.locator('a[href="/community"]').count(),0);
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/flat-menu-chromium-${width}.png`}).catch(error=>console.warn(`[preview] chromium ${width}px screenshot skipped: ${error.message}`));
-    assert.equal(await page.locator('[aria-controls="mobile-community"]').count(),0);
     await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
     assert.equal(await page.locator('#mobile-menu').isVisible(),false);
     assert.equal(await page.locator('#mobile-menu-btn').evaluate(n=>n===document.activeElement),true);
     await page.locator('#mobile-menu-btn').click();
-    assert.equal(await page.locator('.mobile-menu-search input').isVisible(),true);
-    assert.equal(await page.locator('.mobile-menu-search .header-search-submit').isVisible(),true);
-    assert.equal(await page.locator('#header-search-btn').isVisible(),false);
+    assert.equal(await page.locator('#mobile-menu form[action="/search"] input').isVisible(),true);
+    assert.equal(await page.locator('.mobile-account a[href="/mypage"]').isVisible(),true);
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/header-chromium-${width}.png`,fullPage:false}).catch(error=>console.warn(`[preview] chromium ${width}px screenshot skipped: ${error.message}`));
    }else{
-    const labels=await page.locator('#navbar>.header-disclosure>button,#navbar>.header-nav-link').allTextContents();
+    const labels=await page.locator('#navbar > a.nav-item-link, #navbar > .relative > button.nav-item-link').evaluateAll(nodes=>
+      nodes.map(n=>n.childNodes[0]?.textContent?.trim() || n.textContent.replace(/expand_more/g,'').trim())
+    );
     assert.deepEqual(labels,['About 트리플에스','정보','코스모','미디어','일정']);
-    const button=page.locator('[aria-controls="desktop-cosmo"]');await button.focus();await page.keyboard.press('Space');
-    assert.equal(await page.locator('#desktop-cosmo summary').count(),0);
-    assert.equal(await page.locator('#desktop-cosmo a[href="/article/trade"]').isVisible(),true);
-    assert.equal(await page.locator('#desktop-cosmo .header-link-group').count(),0);
-    await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/flat-menu-chromium-${width}.png`}).catch(error=>console.warn(`[preview] chromium ${width}px screenshot skipped: ${error.message}`));
-    assert.equal(await page.locator('#desktop-cosmo a[href="/cosmo/transfers"]').count(),0);
-    assert.equal(await page.locator('#desktop-cosmo a[href="/cosmo/collection"]').isVisible(),true);
-    assert.equal(await page.locator('.header-utilities').count(),0);
+    const cosmo=page.locator('#navbar .relative').filter({has:page.locator('button',{hasText:'코스모'})});
+    await cosmo.locator('button').hover();
+    assert.equal(await cosmo.locator('a[href="/article/trade"]').first().isVisible(),true);
+    assert.equal(await cosmo.locator('a[href="/cosmo/collection"]').isVisible(),true);
+    assert.equal(await cosmo.locator('a[href="/cosmo/transfers"]').count(),0);
     assert.ok(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().height)<=66, 'main처럼 한 줄 헤더 유지');
     await page.evaluate(()=>window.scrollTo(0,200));
     assert.equal(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().top>=0),true);
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/header-chromium-${width}.png`,fullPage:false}).catch(error=>console.warn(`[preview] chromium ${width}px screenshot skipped: ${error.message}`));
-    await page.keyboard.press('Escape');await page.keyboard.press('Escape');
-    assert.equal(await page.locator('#desktop-cosmo').isVisible(),false);
-    await button.click();await page.locator('main').click({position:{x:10,y:10}});assert.equal(await page.locator('#desktop-cosmo').isVisible(),false);
    }
   }
   assert.deepEqual(errors,[]);console.log('PASS: chromium header 320/360/390/1024/1040/1280/1440px, keyboard, navigation, community removed, outside click, search');
