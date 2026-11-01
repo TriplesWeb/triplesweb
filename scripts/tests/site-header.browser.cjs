@@ -24,7 +24,7 @@ const root=path.resolve(__dirname,'../..');
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`header overflow ${width}`);
    const desktop=await page.locator('#navbar').isVisible();
    if(!desktop){
-    await page.locator('#mobile-menu-btn').focus(); await page.keyboard.press('Enter');
+    await page.locator('#mobile-menu-btn').click();
     assert.equal(await page.locator('#mobile-menu').isVisible(),true);
     const cosmoToggle=page.locator('.mobile-nav-toggle').filter({hasText:'코스모'});
     await cosmoToggle.click();
