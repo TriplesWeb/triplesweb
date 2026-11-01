@@ -707,8 +707,8 @@
 .artist-page .nav-tab-btn.is-active .artist-tab-avatar.has-frame-mask::after {
     background: var(--artist-color, #00f5d4);
     filter:
-        drop-shadow(0 0 0.7px var(--artist-color, #00f5d4))
-        drop-shadow(0 0 4px color-mix(in srgb, var(--artist-color, #00f5d4) 62%, transparent));
+        drop-shadow(0 0 1.1px var(--artist-color, #00f5d4))
+        drop-shadow(0 0 8px color-mix(in srgb, var(--artist-color, #00f5d4) 78%, transparent));
 }
 .artist-page .nav-tab-btn.is-active .artist-tab-avatar--group .artist-tab-photo {
     border-color: var(--artist-color, #00f5d4);
