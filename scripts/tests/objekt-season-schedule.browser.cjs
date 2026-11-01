@@ -153,11 +153,15 @@ const urls={
   await page.locator('#addScheduleCategory').selectOption('FANSIGN');
   await page.locator('#addScheduleForm button[type=submit]').click();
   await page.waitForFunction(()=>!document.getElementById('addScheduleModal').classList.contains('show'));
-  const title=page.locator('#calendar .fc-event-title').filter({hasText:longTitle}).first();
-  await title.waitFor({state:'visible'});
+  // fc-event-title.fc-sticky는 overflow 클립 때문에 hidden으로 남을 수 있어 이벤트 칩 기준으로 기다린다.
+  const event=page.locator('#calendar .fc-event').filter({hasText:longTitle}).first();
+  await event.waitFor({state:'visible'});
+  await event.scrollIntoViewIfNeeded();
+  const title=event.locator('.fc-event-title').first();
   for(const width of [1280,390,360]){
     await page.setViewportSize({width,height:1000});
     await page.waitForTimeout(250);
+    await event.scrollIntoViewIfNeeded();
     const metrics=await title.evaluate(el=>({whiteSpace:getComputedStyle(el).whiteSpace,scroll:el.scrollWidth,width:el.clientWidth,height:el.getBoundingClientRect().height}));
     assert.equal(metrics.whiteSpace,'normal',width+'px 달력 제목 줄바꿈');
     assert.ok(metrics.width>0&&metrics.scroll<=metrics.width+1,width+'px 제목 가로 잘림 없음');
