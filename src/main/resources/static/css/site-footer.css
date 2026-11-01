@@ -42,3 +42,17 @@
     color: #6f7f79;
     user-select: none;
 }
+@media (max-width: 767px) {
+    .site-footer {
+        margin-top: 1.25rem;
+        padding: 0.7rem 0.75rem max(0.7rem, env(safe-area-inset-bottom));
+        font-size: 0.72rem;
+        line-height: 1.45;
+    }
+    .site-footer__copy {
+        margin-bottom: 0.35rem;
+    }
+    .site-footer__links a {
+        margin: 0 0.32rem;
+    }
+}

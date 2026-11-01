@@ -4,16 +4,13 @@ import com.example.triplesweb.config.MustacheConfig;
 import com.example.triplesweb.entity.Article;
 import com.example.triplesweb.service.*;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.*;
@@ -31,54 +28,49 @@ class GroupOrdersControllerTest {
     @MockitoBean DateTimeFormatService dates;
     @MockitoBean ArticleObjektService links;
     @MockitoBean ObjektService objekts;
-    @MockitoBean com.example.triplesweb.repository.ArtistRepository artists;
+    @MockitoBean ArtistSnapshotService artists;
 
-    private Article article() {
-        Article a=new Article(); a.setId(5L); a.setTitle("분철 모집"); a.setContent("<p>내용</p>"); a.setCategory("group-orders");
+    private Article article(String category) {
+        Article a=new Article(); a.setId(5L); a.setTitle("글"); a.setContent("<p>내용</p>"); a.setCategory(category);
         return a;
     }
-    @Test void listSearchAndComposeReuseBoardWithoutRecommendations() throws Exception {
-        when(articles.findRecentByCategory("group-orders",10)).thenReturn(List.of(article()));
-        mvc.perform(get("/article/group-orders")).andExpect(status().isOk())
-            .andExpect(content().string(containsString("분철 게시판")))
-            .andExpect(content().string(not(containsString(">추천<"))))
-            .andExpect(content().string(containsString("/article/group-orders/new")));
+
+    @Test void groupOrdersRoutesRedirectToTrade() throws Exception {
+        mvc.perform(get("/article/group-orders")).andExpect(redirectedUrl("/article/trade"));
         mvc.perform(get("/article/group-orders").param("type","content").param("keyword","모집"))
-            .andExpect(status().isOk());
-        verify(articles).searchByCategory("group-orders","content","모집",10);
-        verify(articles,never()).findPopularArticles(eq("group-orders"),anyInt());
-        mvc.perform(get("/article/group-orders/new")).andExpect(status().isOk())
-            .andExpect(model().attribute("showObjektPicker",true));
+            .andExpect(redirectedUrl("/article/trade"));
+        mvc.perform(get("/article/group-orders/new")).andExpect(redirectedUrl("/article/trade"));
+        mvc.perform(get("/article/group-orders/5")).andExpect(redirectedUrl("/article/trade"));
+        mvc.perform(get("/article/group-orders/5/edit")).andExpect(redirectedUrl("/article/trade"));
+        mvc.perform(post("/article/group-orders/new").param("title","분철").param("content","<p>본문</p>"))
+            .andExpect(redirectedUrl("/article/trade"));
+        verifyNoInteractions(articles);
     }
-    @Test void marketTabsKeepEachBoardAndItsSearch() throws Exception {
-        for (String category : List.of("trade", "sell", "group-orders")) {
-            when(articles.findRecentByCategory(eq(category), anyInt())).thenReturn(List.of(article()));
+
+    @Test void marketTabsKeepTradeAndSellWithoutGroupOrders() throws Exception {
+        for (String category : List.of("trade", "sell")) {
+            when(articles.findRecentByCategory(eq(category), anyInt())).thenReturn(List.of(article(category)));
             mvc.perform(get("/article/" + category)).andExpect(status().isOk())
                 .andExpect(content().string(containsString("href=\"/article/trade\"")))
                 .andExpect(content().string(containsString("href=\"/article/sell\"")))
-                .andExpect(content().string(containsString("href=\"/article/group-orders\"")))
+                .andExpect(content().string(not(containsString("href=\"/article/group-orders\""))))
+                .andExpect(content().string(not(containsString("분철"))))
                 .andExpect(content().string(containsString("href=\"/article/" + category + "\" aria-current=\"page\"")))
-                .andExpect(content().string(not(containsString(">추천<"))))
-                .andExpect(content().string(not(containsString("article-board-likes"))));
+                .andExpect(content().string(not(containsString(">추천<"))));
             verify(articles, never()).findPopularArticles(eq(category), anyInt());
         }
         mvc.perform(get("/article/info")).andExpect(status().isOk())
             .andExpect(content().string(not(containsString("class=\"market-tabs\""))));
-        for (String category : List.of("free", "chat", "notice", "all")) {
+        for (String category : List.of("free", "chat", "all")) {
             mvc.perform(get("/article/" + category)).andExpect(redirectedUrl("/article/trade"));
         }
     }
 
-    @Test void createIncludesAttachmentsAndSelectedObjekts() throws Exception {
-        when(articles.create(any())).thenReturn(article());
-        var upload=new MockMultipartFile("uploadFiles","photo.jpg","image/jpeg",new byte[]{1,2,3});
-        mvc.perform(multipart("/article/group-orders/new").file(upload)
-                .param("title","분철 모집").param("content","<p>모집 내용</p>").param("selectedObjektIds","uuid"))
-            .andExpect(redirectedUrl("/article/group-orders/5"));
-        var saved=ArgumentCaptor.forClass(Article.class);verify(articles).create(saved.capture());
-        assertThat(saved.getValue().getCategory()).isEqualTo("group-orders");
-        verify(files).uploadFile(eq(upload),any(Article.class));
-        verify(links).attachSelected(any(Article.class),eq(List.of("uuid")));
+    @Test void noticeBoardIsAllowed() throws Exception {
+        when(articles.findRecentByCategory("notice",10)).thenReturn(List.of(article("notice")));
+        mvc.perform(get("/article/notice")).andExpect(status().isOk())
+            .andExpect(content().string(containsString("공지사항 게시판")))
+            .andExpect(content().string(not(containsString("class=\"market-tabs\""))));
     }
 
     @Test void tradeCreateRequiresHaveAndWantThenStoresBoth() throws Exception {
@@ -103,23 +95,5 @@ class GroupOrdersControllerTest {
             .andExpect(status().isOk())
             .andExpect(model().attribute("errorMessage", "Want 오브젝트를 1개 이상 선택해주세요."));
         verify(articles, times(1)).create(any());
-    }
-    @Test void detailEditDeleteAndDisabledLikeUseExistingContracts() throws Exception {
-        when(articles.showWithFiles(5L)).thenReturn(article());
-        when(links.findForArticle(5L)).thenReturn(List.of());
-        mvc.perform(get("/article/group-orders/5")).andExpect(status().isOk())
-            .andExpect(model().attribute("isLikeAllowed",false))
-            .andExpect(content().string(not(containsString("id=\"likeButton\""))));
-        verify(comments).show(5L);
-        mvc.perform(get("/article/group-orders/5/edit")).andExpect(status().isOk());
-        when(articles.updateWithFiles(eq(5L),anyString(),anyString(),any(),any(),any())).thenReturn(article());
-        mvc.perform(post("/article/group-orders/5").param("title","수정한 모집").param("content","<p>수정 내용</p>"))
-            .andExpect(redirectedUrl("/article/group-orders/5"));
-        verify(links).replaceSelected(any(Article.class),isNull());
-        mvc.perform(post("/article/group-orders/5/like")).andExpect(content().string("false"));
-        verify(articles,never()).toggleLike(anyLong(),anyString());
-        when(files.findFileIdsByArticleId(5L)).thenReturn(List.of(9L));
-        mvc.perform(post("/article/group-orders/5/delete")).andExpect(redirectedUrl("/article/group-orders"));
-        verify(files).deleteFileById(9L);verify(articles).delete(5L);
     }
 }

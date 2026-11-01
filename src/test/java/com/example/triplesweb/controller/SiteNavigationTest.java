@@ -51,7 +51,7 @@ class SiteNavigationTest {
     @Test void overviewIsNotFoundAndMembersIncludesGroupIntro() throws Exception {
         when(artistAdmin.getGroupIntro()).thenReturn(GroupIntroDto.builder().title("tripleS").body("기존 그룹 설명").imageUrl("/group.jpg").build());
         mvc.perform(get("/triples/overview")).andExpect(status().isNotFound());
-        mvc.perform(get("/cosmo/group-orders")).andExpect(redirectedUrl("/article/group-orders"));
+        mvc.perform(get("/cosmo/group-orders")).andExpect(redirectedUrl("/article/trade"));
         Artist member = new Artist(); member.setArtistId(1L); member.setName("서연"); member.setEngName("SeoYeon");
         when(artists.findAllWithUnits()).thenReturn(List.of(member));
         mvc.perform(get("/triples/members")).andExpect(status().isOk())

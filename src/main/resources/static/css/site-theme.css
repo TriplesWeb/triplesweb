@@ -11,6 +11,9 @@
     --objekt-surface: #171a24;
     --objekt-surface-border: rgba(67, 75, 100, .52);
     --objekt-surface-hover: rgba(0, 245, 212, .04);
+    --schedule-panel: #16181f;
+    --schedule-border: rgba(58, 74, 70, 0.55);
+    --schedule-text: #e3e2e8;
     color-scheme: dark;
 }
 html[data-theme="light"] {
@@ -500,7 +503,7 @@ html[data-theme="light"] .mpp-item .artist-tab-label {
     padding: 0.5rem 1.15rem;
     border-radius: 20px;
     border: 0;
-    font-family: Inter, "Noto Sans KR", sans-serif;
+    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     font-size: 14px;
     font-weight: 500;
     letter-spacing: 0.01em;
@@ -556,4 +559,29 @@ html[data-theme="light"] .btn-custom-secondary {
     background: #e7f3ef !important;
     color: var(--site-ui-text) !important;
     border-color: var(--site-ui-border) !important;
+}
+
+.schedule-panel {
+    background: var(--schedule-panel);
+    border: 1px solid var(--schedule-border);
+    color: var(--schedule-text);
+    border-radius: 1rem;
+    padding: 1.1rem;
+}
+html[data-theme="light"] .media-tab a,
+html[data-theme="light"] .video-card-box,
+html[data-theme="light"] #artist-filter {
+    background: var(--site-ui-panel) !important;
+    color: var(--site-ui-text) !important;
+    border-color: var(--site-ui-border) !important;
+}
+html[data-theme="light"] .media-tab a.active {
+    color: var(--site-ui-accent) !important;
+    border-color: var(--site-ui-accent) !important;
+    background: color-mix(in srgb, var(--site-ui-accent) 12%, #fff) !important;
+}
+html[data-theme="light"] .main-page .fc .fc-toolbar-title,
+html[data-theme="light"] .main-page .fc .fc-daygrid-day-number,
+html[data-theme="light"] .main-page .fc .fc-col-header-cell-cushion {
+    color: var(--site-ui-text) !important;
 }

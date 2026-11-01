@@ -7,7 +7,7 @@ import com.example.triplesweb.dto.ArticleViewMapper;
 import com.example.triplesweb.entity.Article;
 import com.example.triplesweb.entity.ArticleObjekt;
 import com.example.triplesweb.entity.Artist;
-import com.example.triplesweb.repository.ArtistRepository;
+import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.ArticleFileServiceImpl;
 import com.example.triplesweb.service.ArticleService;
 import com.example.triplesweb.service.ArticleObjektService;
@@ -49,15 +49,15 @@ public class ArticleController {
     private final DateTimeFormatService dateTimeFormatService;
     private final ArticleObjektService articleObjektService;
     private final ObjektService objektService;
-    private final ArtistRepository artistRepository;
+    private final ArtistSnapshotService artistSnapshot;
 
     private static final Set<String> ALLOWED_CATEGORIES = Set.of(
-            "trade", "sell", "group-orders", "info"
+            "trade", "sell", "info", "notice"
     );
     private static final Set<String> LIKE_ALLOWED_CATEGORIES = Set.of("info");
 
     private static boolean isObjektBoard(String category) {
-        return Set.of("trade", "sell", "group-orders").contains(category);
+        return Set.of("trade", "sell").contains(category);
     }
 
     private static boolean isTradeBoard(String category) {
@@ -303,8 +303,8 @@ public class ArticleController {
         return switch (category) {
             case "trade" -> "교환";
             case "sell" -> "거래";
-            case "group-orders" -> "분철";
             case "info" -> "정보";
+            case "notice" -> "공지사항";
             default -> "게시판";
         };
     }
@@ -347,7 +347,7 @@ public class ArticleController {
                     category, searchType, searchKeyword, fetchLimit);
         }
 
-        List<Artist> artists = artistRepository.findAll();
+        List<Artist> artists = artistSnapshot.findAll();
         Map<Long, List<ArticleObjekt>> linkedByArticle = articleObjektService.groupByArticleId(
                 articles.stream().map(Article::getId).filter(Objects::nonNull).toList());
         if (linkedByArticle == null) linkedByArticle = Map.of();
@@ -439,7 +439,7 @@ public class ArticleController {
 
         model.addAttribute("article", article);
         List<ArticleObjekt> linkedObjekts = articleObjektService.findForArticle(id);
-        List<Artist> artists = artistRepository.findAll();
+        List<Artist> artists = artistSnapshot.findAll();
         List<Map<String, Object>> linkedViews = linkedObjekts.stream()
                 .map(link -> linkedObjektView(link, artists)).toList();
         model.addAttribute("linkedObjekts", linkedViews);

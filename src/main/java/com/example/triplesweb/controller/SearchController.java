@@ -65,7 +65,7 @@ public class SearchController {
 
         List<Map<String, Object>> mappedResult =
                 result.stream()
-                        .filter(article -> java.util.Arrays.asList("trade", "sell", "group-orders", "info").contains(article.getCategory()))
+                        .filter(article -> java.util.Arrays.asList("trade", "sell", "info", "notice").contains(article.getCategory()))
                         .map(article -> {
                             Map<String, Object> map =
                                     new HashMap<>();
@@ -98,8 +98,9 @@ public class SearchController {
                                     switch (article.getCategory()) {
                                         case "trade" -> "교환게시판";
                                         case "sell" -> "거래게시판";
-            case "group-orders" -> "분철게시판";
                                         case "info" -> "정보게시판";
+                                        case "notice" -> "공지사항";
+                                        case "group-orders" -> "기타";
                                         default -> "기타";
                                     };
 

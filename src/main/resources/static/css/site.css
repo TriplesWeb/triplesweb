@@ -557,9 +557,9 @@ textarea.form-control {
 }
 
 .objekt-search {
-    border: 1px solid rgba(58, 74, 70, 0.6);
+    border: 1px solid var(--objekt-surface-border, rgba(58, 74, 70, 0.6));
     border-radius: 0.75rem;
-    background: rgba(13, 14, 18, 0.7);
+    background: var(--objekt-surface, #171a24);
     padding: 0;
     color: #e3e2e8;
 }

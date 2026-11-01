@@ -272,8 +272,32 @@
 @media (max-width: 900px) {
     .collection-filter-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-@media (max-width: 560px) {
-    .collection-filter-bar { grid-template-columns: 1fr; }
+@media (max-width: 767px) {
+    .collection-page .collection-filter-bar {
+        display: grid !important;
+        grid-auto-flow: column;
+        grid-auto-columns: max-content;
+        grid-template-columns: none !important;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        width: 100%;
+    }
+    .collection-page .collection-filter-bar .objekt-filter {
+        min-width: 10.5rem;
+    }
+    .collection-page .objekt-search-row,
+    .collection-page .collection-nickname-form.ar-filters {
+        flex-wrap: nowrap !important;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+    }
+    .collection-page .objekt-search-row > .objekt-search,
+    .collection-page .objekt-search-row > .objekt-reset-button,
+    .collection-page .collection-nickname-form > * {
+        flex: 0 0 auto !important;
+        width: auto !important;
+        max-width: none;
+    }
 }
 .collection-filter {
     display: inline-flex;
@@ -281,9 +305,9 @@
     gap: .45rem;
     min-height: 2.625rem;
     padding: .25rem .65rem;
-    border: 1px solid rgba(58, 74, 70, .6);
+    border: 1px solid var(--objekt-surface-border, rgba(58, 74, 70, .6));
     border-radius: .75rem;
-    background: rgba(13, 14, 18, .7);
+    background: var(--objekt-surface, #171a24);
     color: #b9cac4;
     font-size: .75rem;
     font-weight: 650;
