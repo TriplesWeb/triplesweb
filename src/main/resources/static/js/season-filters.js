@@ -1,5 +1,6 @@
 /* 시즌 컨트롤을 열면 색상 버튼만 표시한다. 기존 폼 값과 change 계약은 유지한다. */
 (() => {
+  if (window.SeasonChips) return;
   const sources = new WeakMap(), controllers = new Set();
   const selectSelector = 'select[data-season],select[name="season"],#objektFilterSeason,select[aria-label*="시즌"]';
   const checkSelector = 'input.season-checkbox';

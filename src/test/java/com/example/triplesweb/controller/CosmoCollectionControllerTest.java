@@ -100,12 +100,14 @@ class CosmoCollectionControllerTest {
         view.put("ownedCount", 30);
         view.put("filteredCount", 30);
         view.put("hasMore", true);
+        view.put("loading", true);
         view.put("nextPage", 2);
         when(collections.search("테스트", 1, "", List.of(), List.of(), "", "all", "all", "latest")).thenReturn(view);
         mvc.perform(get("/cosmo/collection/more").param("nickname", "테스트").param("page", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].member").value("정하연"))
                 .andExpect(jsonPath("$.hasMore").value(true))
+                .andExpect(jsonPath("$.loading").value(true))
                 .andExpect(jsonPath("$.nextPage").value(2))
                 .andExpect(jsonPath("$.filteredCount").value(30));
     }

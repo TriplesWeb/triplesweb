@@ -1,45 +1,228 @@
-<script src="/js/image-fallback.js?v=1"></script>
-<script src="/js/about-admin-auth.js?v=2"></script>
-<script src="/js/site-admin-controls.js?v=3" defer></script>
-<header id="top-header" class="site-header">
-    <div class="header-shell">
-        <div class="header-main">
-            <a href="/" class="header-brand" aria-label="tripleS 홈">
-                <img src="/images/sss-mascot.png" alt="" width="33" height="27" class="sss-mascot-wave" decoding="async" aria-hidden="true">
-                <img src="/images/triples-wordmark-white.png" alt="tripleS" width="120" height="36" decoding="async">
-            </a>
-            <nav id="navbar" class="header-primary" aria-label="주 메뉴">
-                {{#siteNavigation}}{{#direct}}<a class="header-nav-link" href="{{href}}">{{label}}</a>{{/direct}}{{^direct}}{{>navigation/desktop-section}}{{/direct}}{{/siteNavigation}}
-            </nav>
-            <div class="header-actions">
-                <div class="header-search-disclosure">
-                    <button type="button" class="header-icon-button" id="header-search-btn" data-header-toggle aria-label="사이트 검색 열기" aria-expanded="false" aria-controls="header-search-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>
-                    <div id="header-search-panel" class="header-search-panel" hidden>
-                        <form action="/search" method="get" role="search" class="header-search">
-                            <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" type="search" placeholder="멤버·게시글 검색" autocomplete="off">
-                            <button type="submit" class="header-search-submit" aria-label="검색"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>
-                        </form>
-                    </div>
+<script src="/js/image-fallback.js?v=1" defer></script>
+<script src="/js/about-admin-auth.js?v=2" defer></script>
+<script src="/js/site-admin-controls.js?v=4" defer></script>
+<style>
+@keyframes sss-mascot-wave {
+    0%, 100% { transform: translateY(0) rotate(-2deg); }
+    25% { transform: translateY(-2.5px) rotate(3deg); }
+    50% { transform: translateY(0.5px) rotate(-1deg); }
+    75% { transform: translateY(-1.5px) rotate(2deg); }
+}
+@keyframes sss-mascot-fly-in {
+    0% {
+        transform: translate(92px, 14px) rotate(18deg) scale(0.72);
+        opacity: 0;
+    }
+    12% { opacity: 1; }
+    45% {
+        transform: translate(48px, 20px) rotate(4deg) scale(0.88);
+    }
+    72% {
+        transform: translate(14px, 6px) rotate(-6deg) scale(0.96);
+    }
+    100% {
+        transform: translate(0, 0) rotate(-2deg) scale(1);
+        opacity: 1;
+    }
+}
+@keyframes sss-mascot-trail-fade {
+    0% { opacity: 0.55; transform: translate(var(--tx), var(--ty)) scale(0.78) rotate(12deg); }
+    100% { opacity: 0; transform: translate(calc(var(--tx) * 0.35), calc(var(--ty) * 0.55)) scale(0.9) rotate(0deg); }
+}
+.sss-mascot-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    height: 27px;
+    width: 33px;
+    flex-shrink: 0;
+}
+.sss-mascot-wave {
+    height: 27px;
+    width: auto;
+    transform-origin: center center;
+    will-change: transform;
+}
+.sss-mascot-wrap.is-ready .sss-mascot-wave {
+    animation: sss-mascot-wave 2.8s ease-in-out infinite;
+}
+.sss-mascot-wrap.is-intro .sss-mascot-wave {
+    animation: sss-mascot-fly-in 0.85s cubic-bezier(0.22, 0.9, 0.28, 1) forwards;
+}
+.sss-mascot-trail {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 27px;
+    width: auto;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 0;
+}
+.sss-mascot-wrap.is-intro .sss-mascot-trail {
+    animation: sss-mascot-trail-fade 0.7s ease-out forwards;
+}
+.sss-mascot-wrap .sss-mascot-wave { position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) {
+    .sss-mascot-wrap.is-ready .sss-mascot-wave,
+    .sss-mascot-wrap.is-intro .sss-mascot-wave,
+    .sss-mascot-wrap.is-intro .sss-mascot-trail { animation: none; }
+}
+</style>
+<!-- 헤더 고정 상단 영역 -->
+<header class="sticky top-0 z-50 w-full bg-[#16181f]/80 backdrop-blur-md border-b border-[#3a4a46]/30 transition-transform duration-300" id="top-header">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+
+    <div class="flex items-center gap-6 flex-1 min-w-0">
+
+    <!-- 1. 브랜드 로고 -->
+    <a href="/" class="flex items-center gap-1 shrink-0 text-decoration-none" aria-label="tripleS 홈">
+        <span class="sss-mascot-wrap" id="sss-mascot-wrap">
+            <img src="/images/sss-mascot.png" alt="" width="33" height="27" class="sss-mascot-wave block" id="sss-mascot" decoding="async" aria-hidden="true">
+        </span>
+        <img src="/images/triples-wordmark-white.png" alt="tripleS" width="120" height="36" class="h-7 w-auto block" decoding="async">
+    </a>
+
+    <!-- 2. 네비게이션 메뉴 (데스크톱) — 항목은 main SiteNavigation -->
+    <nav id="navbar" class="hidden lg:flex items-center gap-5 text-xs tracking-wider" aria-label="주 메뉴">
+        {{#siteNavigation}}
+        {{#direct}}
+        <a class="nav-item-link text-[#b9cac4] hover:text-[#00f5d4] transition-colors text-decoration-none" href="{{href}}">{{label}}</a>
+        {{/direct}}
+        {{^direct}}
+        <div class="relative group flex items-center">
+            <button type="button" class="nav-item-link text-[#b9cac4] hover:text-[#00f5d4] cursor-pointer">
+                {{label}}
+                <span class="material-symbols-outlined transition-transform group-hover:rotate-180" aria-hidden="true">expand_more</span>
+            </button>
+            <div class="absolute left-0 top-full pt-1 hidden group-hover:block w-48 z-50">
+                <div class="bg-[#191b22]/95 border border-[#3a4a46]/50 rounded-xl shadow-2xl backdrop-blur-lg p-1.5 flex flex-col gap-0.5">
+                    {{#items}}
+                    {{^nested}}
+                    <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="{{href}}">{{label}}</a>
+                    {{/nested}}
+                    {{#nested}}
+                    {{#children}}
+                    <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="{{href}}">{{label}}</a>
+                    {{/children}}
+                    {{/nested}}
+                    {{/items}}
                 </div>
-                {{#member}}
-                <div class="header-disclosure header-account">
-                    <button type="button" data-header-toggle aria-expanded="false" aria-controls="site-user-menu-panel"><span class="header-account-identity"><span class="header-account-name">{{userId}}님</span><span class="header-account-level">Lv.{{level}} · {{points}}P</span></span><span class="header-chevron" aria-hidden="true"></span></button>
-                    <div id="site-user-menu-panel" class="header-dropdown" hidden>{{>navigation/account-links}}</div>
-                </div>
-                {{/member}}
-                <button type="button" id="mobile-menu-btn" class="header-icon-button" data-header-toggle aria-label="메뉴 열기" aria-expanded="false" aria-controls="mobile-menu"><span id="mobile-menu-icon" aria-hidden="true"></span></button>
             </div>
         </div>
+        {{/direct}}
+        {{/siteNavigation}}
+    </nav>
     </div>
-    <div id="mobile-menu" hidden>
-        <nav aria-label="모바일 주 메뉴">
-            <form action="/search" method="get" role="search" class="header-search mobile-menu-search">
-                <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" type="search" placeholder="멤버·게시글 검색" autocomplete="off">
-                <button type="submit" class="header-search-submit" aria-label="검색"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>
+
+    <!-- 3. 유저 메뉴 + 검색(우측 끝) -->
+<div class="flex items-center gap-3 shrink-0 ml-auto">
+    <!-- 로그인한 회원 메뉴 -->
+{{#member}}
+        <div class="relative group site-user-menu">
+            <button type="button" data-user-menu-toggle aria-expanded="false" aria-controls="site-user-menu-panel" class="flex items-center gap-2 px-3 py-1.5 bg-[#191b22] border border-[#3a4a46]/50 rounded-xl hover:border-[#00f5d4] transition-all bg-transparent cursor-pointer">
+                <div class="flex flex-col text-left min-w-0 max-w-[6rem]">
+                    <span class="text-xs font-semibold text-[#e3e2e8] leading-tight block truncate">{{userId}}님</span>
+                    <span class="text-[10px] text-[#00f5d4] font-mono leading-none truncate">Lv.{{level}} {{points}}P</span>
+                </div>
+                <span class="material-symbols-outlined text-sm text-[#b9cac4] group-hover:rotate-180 transition-transform">arrow_drop_down</span>
+            </button>
+
+            <div id="site-user-menu-panel" data-user-menu-panel class="absolute right-0 top-full pt-1 hidden group-hover:block w-48 z-50">
+                <div class="bg-[#191b22]/95 border border-[#3a4a46]/50 rounded-xl shadow-2xl p-1.5 backdrop-blur-lg flex flex-col gap-0.5">
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2 text-decoration-none" href="/mypage">
+                        <span class="material-symbols-outlined text-[16px]">account_circle</span> 마이페이지
+                    </a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2 text-decoration-none" href="/myposts">
+                        <span class="material-symbols-outlined text-[16px]">edit_note</span> 작성한 글
+                    </a>
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2 text-decoration-none" href="/mycomments">
+                        <span class="material-symbols-outlined text-[16px]">chat_bubble_outline</span> 작성한 댓글
+                    </a>
+                    <div class="h-px bg-[#3a4a46]/30 my-1"></div>
+                    <a href="/logout" class="px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex items-center gap-2 text-decoration-none">
+                        <span class="material-symbols-outlined text-sm">logout</span> 로그아웃
+                    </a>
+                </div>
+            </div>
+        </div>
+{{/member}}
+
+    <!-- 로그인 기능 비활성화 — 비로그인 메뉴 숨김 -->
+{{^member}}
+    {{/member}}
+
+    <form action="/search" method="get" role="search" class="site-header-search relative hidden lg:flex items-center shrink-0">
+        <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" class="w-full bg-[#0d0e12]/80 border border-[#3a4a46]/50 rounded-full px-4 py-2 pr-11 text-sm text-[#e3e2e8] placeholder-[#b9cac4]/50 focus:outline-none focus:border-[#00f5d4] transition-all" type="search" placeholder="멤버·게시글 검색" />
+        <button type="submit" class="absolute right-1.5 p-1.5 bg-[#00f5d4] hover:bg-[#00f5d4]/80 text-[#0d0e12] rounded-full flex items-center justify-center transition-colors border-0 cursor-pointer" title="검색">
+            <span class="material-symbols-outlined text-base">search</span>
+        </button>
+    </form>
+
+    <!-- 모바일 햄버거 버튼 -->
+    <button type="button" id="mobile-menu-btn" class="lg:hidden flex items-center justify-center w-10 h-10 rounded-xl border border-[#3a4a46]/50 bg-[#191b22] text-[#e3e2e8] hover:border-[#00f5d4] hover:text-[#00f5d4] transition-colors cursor-pointer" aria-label="메뉴 열기" aria-expanded="false" aria-controls="mobile-menu">
+        <span class="material-symbols-outlined text-xl" id="mobile-menu-icon">menu</span>
+    </button>
+        </div>
+    </div>
+
+    <!-- 모바일 메뉴 패널 -->
+    <div id="mobile-menu" class="lg:hidden hidden border-t border-[#3a4a46]/30 bg-[#16181f]/95 backdrop-blur-md">
+        <nav class="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-1 text-sm">
+            <form action="/search" method="get" role="search" class="site-search w-full">
+                <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" class="site-field site-search__input" type="search" placeholder="멤버·게시글 검색" />
+                <button type="submit" class="site-search__submit" title="검색" aria-label="검색">
+                    <span class="material-symbols-outlined">search</span>
+                </button>
             </form>
-            {{#siteNavigation}}{{#direct}}<a class="mobile-direct-link" href="{{href}}">{{label}}</a>{{/direct}}{{^direct}}{{>navigation/mobile-section}}{{/direct}}{{/siteNavigation}}
-            {{#member}}<div class="mobile-account"><p>{{userId}}님 <span>Lv.{{level}} · {{points}}P</span></p>{{>navigation/account-links}}</div>{{/member}}
+
+            {{#siteNavigation}}
+            {{#direct}}
+            <a class="px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="{{href}}">{{label}}</a>
+            {{/direct}}
+            {{^direct}}
+            <div class="mobile-nav-group">
+                <button type="button" class="mobile-nav-toggle w-full flex items-center justify-between px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] bg-transparent border-0 cursor-pointer rounded-lg hover:bg-white/5">
+                    <span>{{label}}</span>
+                    <span class="material-symbols-outlined text-sm transition-transform">expand_more</span>
+                </button>
+                <div class="mobile-nav-panel hidden pl-3 pb-1 flex flex-col gap-0.5">
+                    {{#items}}
+                    {{^nested}}
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="{{href}}">{{label}}</a>
+                    {{/nested}}
+                    {{#nested}}
+                    {{#children}}
+                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="{{href}}">{{label}}</a>
+                    {{/children}}
+                    {{/nested}}
+                    {{/items}}
+                </div>
+            </div>
+            {{/direct}}
+            {{/siteNavigation}}
+
+            {{#member}}
+            <div class="mobile-account">
+                <p>{{userId}}님<span>Lv.{{level}} {{points}}P</span></p>
+                <a href="/mypage">마이페이지</a>
+                <a href="/myposts">작성한 글</a>
+                <a href="/mycomments">작성한 댓글</a>
+                <a href="/logout">로그아웃</a>
+            </div>
+            {{/member}}
+
         </nav>
     </div>
 </header>
-{{#msg}}<div class="header-flash" role="status"><span>{{msg}}</span><button type="button" aria-label="알림 닫기" onclick="this.parentElement.remove()">×</button></div>{{/msg}}
+
+        <!-- Flash Message 알림 메시지 영역 -->
+        {{#msg}}
+            <div class="max-w-7xl mx-auto px-4 mt-4">
+                <div class="bg-primary-container/10 border border-primary-container/30 text-primary-container px-4 py-3 rounded-xl flex items-center justify-between text-xs">
+                    <span>{{msg}}</span>
+                    <button type="button" class="bg-transparent border-0 text-primary-container cursor-pointer font-bold text-base" onclick="this.parentElement.remove();">&times;</button>
+                </div>
+            </div>
+        {{/msg}}
+

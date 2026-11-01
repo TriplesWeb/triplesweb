@@ -1,6 +1,5 @@
 package com.example.triplesweb.service;
 
-import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektFilterOrder;
 import com.example.triplesweb.util.ObjektLinks;
@@ -17,7 +16,7 @@ public class CosmoProfileService {
     private static final String OTHER_KEY = "__other__";
     private final CosmoCollectionService collections;
     private final ObjektService catalog;
-    private final ArtistRepository artists;
+    private final ArtistSnapshotService artists;
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> profile(String nickname, String member) {

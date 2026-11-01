@@ -1,12 +1,11 @@
 package com.example.triplesweb.service;
 
+import com.example.triplesweb.infra.GzipRestClients;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
-import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 
@@ -21,10 +20,7 @@ public class ObjektIndexClient {
     private record Entry(JsonNode body, long expiresAt) {}
 
     public ObjektIndexClient(@Value("${objekt.api.base-url:https://objekt.top/api/v1}") String baseUrl) {
-        var factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(3)).build());
-        factory.setReadTimeout(Duration.ofSeconds(6));
-        client = RestClient.builder().baseUrl(baseUrl).requestFactory(factory).build();
+        client = GzipRestClients.create(baseUrl, Duration.ofSeconds(3), Duration.ofSeconds(15));
     }
 
     public JsonNode serialHistory(String slug, long serial) {

@@ -4,6 +4,7 @@ import com.example.triplesweb.config.MustacheConfig;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.service.AlbumService;
 import com.example.triplesweb.service.ArtistAdminService;
+import com.example.triplesweb.service.ChemistryViewCache;
 import com.example.triplesweb.service.MemberSpotlightService;
 import com.example.triplesweb.service.UnitService;
 import com.example.triplesweb.web.TriplesMvcExceptionHandler;
@@ -31,6 +32,7 @@ class TriplesControllerNotFoundTest {
     @MockitoBean AlbumService albumService;
     @MockitoBean UnitService unitService;
     @MockitoBean MemberSpotlightService memberSpotlightService;
+    @MockitoBean ChemistryViewCache chemistryViewCache;
 
     @Test
     void missingAlbumReturns404View() throws Exception {

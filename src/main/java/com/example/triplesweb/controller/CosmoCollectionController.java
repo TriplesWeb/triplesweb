@@ -131,6 +131,7 @@ public class CosmoCollectionController {
             body.put("filteredCount", view.get("filteredCount"));
             body.put("hasMore", Boolean.TRUE.equals(view.get("hasMore")));
             body.put("nextPage", view.get("nextPage"));
+            body.put("loading", Boolean.TRUE.equals(view.get("loading")));
             return ResponseEntity.ok(body);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(Map.of(

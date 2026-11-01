@@ -1,5 +1,6 @@
 package com.example.triplesweb.service;
 
+import com.example.triplesweb.dto.AlbumListCard;
 import com.example.triplesweb.dto.AlbumSectionGroupDto;
 import com.example.triplesweb.entity.Album;
 import com.example.triplesweb.entity.AlbumSection;
@@ -22,8 +23,13 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AlbumService {
 
+    private static final long LIST_CACHE_TTL_MS = 120_000L;
+
     private final AlbumRepository albumRepository;
     private final AlbumSectionRepository albumSectionRepository;
+
+    private volatile List<AlbumSectionGroupDto> listCache;
+    private volatile long listCacheExpiresAt;
 
     @Transactional(readOnly = true)
     public List<Album> listAll() {
@@ -33,10 +39,31 @@ public class AlbumService {
 
     @Transactional(readOnly = true)
     public List<AlbumSectionGroupDto> listGroupedBySection() {
+        long now = System.currentTimeMillis();
+        List<AlbumSectionGroupDto> cached = listCache;
+        if (cached != null && now < listCacheExpiresAt) {
+            return cached;
+        }
+        synchronized (this) {
+            if (listCache != null && System.currentTimeMillis() < listCacheExpiresAt) {
+                return listCache;
+            }
+            List<AlbumSectionGroupDto> fresh = buildGroupedBySection();
+            listCache = fresh;
+            listCacheExpiresAt = System.currentTimeMillis() + LIST_CACHE_TTL_MS;
+            return fresh;
+        }
+    }
+
+    /** 관리자 저장·삭제 후 목록 캐시를 바로 비운다. */
+    public void invalidateListCache() {
+        listCache = null;
+        listCacheExpiresAt = 0L;
+    }
+
+    private List<AlbumSectionGroupDto> buildGroupedBySection() {
         List<AlbumSection> sections = albumSectionRepository.findAllByOrderBySortOrderAscSectionIdAsc();
-        // 목록은 최신 발매일이 먼저 오도록 내림차순
-        List<Album> albums = albumRepository.findAll(Sort.by("releaseDate").descending()
-                .and(Sort.by("albumId").descending()));
+        List<AlbumListCard> albums = albumRepository.findAllListCards();
 
         Map<Long, AlbumSectionGroupDto> byId = new LinkedHashMap<>();
         for (AlbumSection section : sections) {
@@ -49,14 +76,11 @@ public class AlbumService {
                     .build());
         }
 
-        List<Album> unassigned = new ArrayList<>();
-        for (Album album : albums) {
-            if (album.getUnit() != null) {
-                album.getUnit().getUnitName();
-            }
-            AlbumSection section = album.getSection();
-            if (section != null && section.getSectionId() != null && byId.containsKey(section.getSectionId())) {
-                byId.get(section.getSectionId()).getAlbums().add(album);
+        List<AlbumListCard> unassigned = new ArrayList<>();
+        for (AlbumListCard album : albums) {
+            Long sectionId = album.getSectionId();
+            if (sectionId != null && byId.containsKey(sectionId)) {
+                byId.get(sectionId).getAlbums().add(album);
             } else {
                 unassigned.add(album);
             }

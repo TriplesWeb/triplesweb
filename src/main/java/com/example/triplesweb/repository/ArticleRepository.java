@@ -19,6 +19,9 @@ public interface ArticleRepository extends JpaRepository<Article,Long> {
 
     List<Article> findByTitleContainingIgnoreCaseOrContentContainingIgnoreCaseOrUserIdContainingIgnoreCase(
             String title, String content, String userId, Sort sort);
+
+    List<Article> findByTitleContainingIgnoreCaseOrContentContainingIgnoreCaseOrUserIdContainingIgnoreCase(
+            String title, String content, String userId, Pageable pageable);
     List<Article> findByUserId(String userId, Sort sort);
     @Query("""
        select distinct a

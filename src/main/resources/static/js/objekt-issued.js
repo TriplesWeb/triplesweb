@@ -1,9 +1,10 @@
 (() => {
-  const count=document.getElementById('objektIssuedCount');
   let url='', generation=0, abort, timer;
   const number=value=>Number.isSafeInteger(value)&&value>=0;
+  const countEl=()=>document.getElementById('objektIssuedCount');
   function close(){generation++;abort?.abort();clearTimeout(timer);url='';}
   async function load(attempt=0){
+    const count=countEl();
     if(!url||!count)return;
     const version=generation;abort=new AbortController();
     try{
@@ -14,9 +15,9 @@
       if(data.status==='loading'&&attempt<8){timer=setTimeout(()=>load(attempt+1),1500);return;}
       if(data.status!=='available'||!number(data.count))throw Error();
       count.textContent=data.count.toLocaleString('ko-KR')+'개';
-    }catch(error){if(version===generation&&error.name!=='AbortError')count.textContent='미확인';}
+    }catch(error){if(version===generation&&error.name!=='AbortError'){const el=countEl();if(el)el.textContent='미확인';}}
   }
-  function show(value){close();if(!count)return;url=value;count.textContent='확인 중';load();}
+  function show(value){close();const count=countEl();if(!count)return;url=value;count.textContent='확인 중';load();}
   let hydrationTimer,hydrating=false;
   async function hydrate(){
     if(hydrating||document.hidden)return;

@@ -10,7 +10,7 @@ const base=path.resolve(__dirname,'../..'), fixtures=path.join(base,'build/mobil
    if(url.pathname.startsWith('/preview/')){
     const file=path.basename(url.pathname);let html=fs.readFileSync(path.join(fixtures,file),'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'');
     html=html.replace('<head>',`<head><base href="https://mobile.test/">${file==='header-bare.html'?'':'<link rel="stylesheet" href="/css/gravity.css">'}`);
-    html=html.replace('</body>',`<script></script><script src="/js/site-mobile.js"></script><script src="/js/site-header.js"></script></body>`);
+    html=html.replace('</body>',`${html.includes('id="top-header"')?'<script src="/js/site-header.js"></script>':''}<script src="/js/site-mobile.js"></script></body>`);
     return route.fulfill({contentType:'text/html',body:html});
    }
    const file=path.resolve(base,'src/main/resources/static','.'+url.pathname);

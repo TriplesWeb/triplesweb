@@ -1,6 +1,5 @@
 package com.example.triplesweb.service;
 
-import com.example.triplesweb.repository.ArtistRepository;
 import org.junit.jupiter.api.Test;
 import java.util.*;
 import static org.assertj.core.api.Assertions.*;
@@ -23,7 +22,7 @@ class CosmoProfileServiceTest {
     }
     private final CosmoCollectionService collections = mock(CosmoCollectionService.class);
     private final ObjektService catalog = mock(ObjektService.class);
-    private final ArtistRepository artists = mock(ArtistRepository.class);
+    private final ArtistSnapshotService artists = mock(ArtistSnapshotService.class);
     private final CosmoProfileService profiles = new CosmoProfileService(collections, catalog, artists);
 
     private static Map<String, Object> card(String slug, String member, String klass) {

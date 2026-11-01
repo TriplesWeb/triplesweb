@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    {{>layout/favicon}}
-    <meta charset="UTF-8"/>
+{{>layout/site-head}}
+<link rel="stylesheet" href="/css/bootstrap-compat.css?v=2">
+<meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>장바구니 - 굿즈샵</title>
+    </head>
     <link rel="stylesheet" href="/css/site-ui.css?v=1"/>
     <style>
         body.other-page { background: #0d0e12; color: #e3e2e8; }
@@ -13,7 +15,6 @@
         .cart-price { color: #8decd9; }
         .cart-empty { color: #b9cac4; }
     </style>
-</head>
 <body class="other-page">
 {{>layout/header}}
 
@@ -32,6 +33,7 @@
         <p class="cart-empty">장바구니가 비어 있습니다.</p>
     {{/items}}
 </div>
+<script src="/js/bootstrap-compat.js?v=1" defer></script>
 {{>layout/footer}}
 </body>
 </html>
