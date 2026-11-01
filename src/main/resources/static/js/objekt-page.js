@@ -520,23 +520,29 @@
 
     }
 
-    function closeDetailModal() {
-        if (!detailModal) return;
+    function finishDetailClose() {
         window.ObjektIssued?.close();
         window.ObjektSerialLookup?.setCollection('');
         detailModal.classList.remove('is-open');
+        detailModal.setAttribute('aria-hidden', 'true');
+        activeObjektKey = '';
+        detailRequest++;
+        if (detailFavorite) detailFavorite.dataset.key = '';
+        const address = new URL(location.href);
+        address.searchParams.delete('objekt');
+        history.replaceState(null, '', address.pathname + address.search);
+    }
+
+    function closeDetailModal() {
+        if (!detailModal) return;
         if (window.AboutModal) {
-            window.AboutModal.closeModal(detailModal);
+            window.AboutModal.closeModal(detailModal, { onClose: finishDetailClose });
         } else {
             detailModal.hidden = true;
             detailModal.classList.remove('flex');
             document.body.style.overflow = '';
+            finishDetailClose();
         }
-        detailModal.setAttribute('aria-hidden', 'true');
-        activeObjektKey = ''; detailRequest++;
-        const address = new URL(location.href);
-        address.searchParams.delete('objekt');
-        history.replaceState(null, '', address.pathname + address.search);
     }
 
     function openDetailModalShell() {
@@ -545,7 +551,10 @@
         detailModal.classList.add('is-open');
         detailModal.setAttribute('aria-hidden', 'false');
         if (window.AboutModal) {
-            window.AboutModal.openModal(detailModal, { focusSelector: '#objektDetailClose' });
+            window.AboutModal.openModal(detailModal, {
+                focusSelector: '#objektDetailClose',
+                onClose: finishDetailClose
+            });
             detailModal.classList.add('is-open');
         } else {
             detailModal.classList.add('flex');
