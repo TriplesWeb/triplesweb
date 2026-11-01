@@ -2,7 +2,7 @@ package com.example.triplesweb.controller;
 
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.ObjektDescription;
-import com.example.triplesweb.repository.ArtistRepository;
+import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.repository.ObjektDescriptionRepository;
 import com.example.triplesweb.repository.ObjektFavoriteRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
@@ -38,7 +38,7 @@ public class ObjektFeatureController {
     private final AboutAdminAuth aboutAdminAuth;
     private final ObjektFavoriteService favorites;
     private final ObjektMarketDataService marketData;
-    private final ArtistRepository artistRepository;
+    private final ArtistSnapshotService artistSnapshot;
 
     @GetMapping("/member")
     public String memberObjekts(@RequestParam String name,
@@ -85,7 +85,7 @@ public class ObjektFeatureController {
         body.put("isAdmin", aboutAdminAuth.isAdmin(request, session));
         body.put("detailUrl", ObjektLinks.detail(item));
         body.put("memberUrl", ObjektLinks.member(item));
-        Artist matched = MemberPortraitOptions.findArtist(rawMember, artistRepository.findAll());
+        Artist matched = MemberPortraitOptions.findArtist(rawMember, artistSnapshot.findAll());
         if (matched != null && matched.getArtistId() != null) {
             body.put("artistId", matched.getArtistId());
             body.put("memberColor", matched.getColor() != null && !matched.getColor().isBlank() ? matched.getColor() : "#00f5d4");

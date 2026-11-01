@@ -1,7 +1,7 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.entity.Artist;
-import com.example.triplesweb.repository.ArtistRepository;
+import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.ObjektMarketDataService;
 import com.example.triplesweb.util.MemberPortraitOptions;
@@ -9,7 +9,6 @@ import com.example.triplesweb.util.ObjektFilterOrder;
 import com.example.triplesweb.util.ObjektLinks;
 import com.example.triplesweb.util.ObjektSeasonCodes;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -39,7 +38,7 @@ public class CosmoController {
 
     private static final int PAGE_SIZE = 20;
     private final ObjektService objektService;
-    private final ArtistRepository artistRepository;
+    private final ArtistSnapshotService artistSnapshot;
     private final ObjektMarketDataService marketData;
 
     @GetMapping("/objekt")
@@ -59,7 +58,7 @@ public class CosmoController {
         List<String> memberOptions = ObjektFilterOrder.sortedMembers(
                 uniqueValues(page.allObjekts(), item -> firstValue(item, "member", "memberName")).stream()
                         .flatMap(value -> MemberPortraitOptions.objektMembers(value).stream()).toList());
-        List<Artist> artists = artistRepository.findAll(Sort.by(Sort.Direction.ASC, "artistId"));
+        List<Artist> artists = artistSnapshot.findAll();
         model.addAttribute("memberOptions", memberOptions);
         List<Map<String, Object>> pickerOptions = MemberPortraitOptions.forObjektFilter(memberOptions, artists);
         String selectedGroup = memberGroup(group, cleanSelections(member));
@@ -135,9 +134,6 @@ public class CosmoController {
         try {
             allObjekts = objektService.findCollections("triples");
             if (allObjekts == null) allObjekts = Collections.emptyList();
-            // 정렬용 벌크 통계. 화면의 발행량은 아래 시리얼 집합 결과로 교체한다.
-            allObjekts = marketData.withMintCounts(allObjekts);
-
             if (allObjekts.isEmpty()) error = "API 응답에 표시할 컬렉션이 없습니다.";
         } catch (RestClientException ex) {
             allObjekts = Collections.emptyList();
@@ -166,7 +162,7 @@ public class CosmoController {
                 .filter(objekt -> selectedKind.isBlank() || "all".equals(selectedKind)
                         || normalize(firstValue(objekt, "collectionNo", "collectionNumber")).equals(selectedKind))
                 .sorted(sortComparator(selectedSort, new java.util.HashMap<>()))
-                .collect(Collectors.toList());
+                .toList();
 
         int resultCount = filtered.size();
         int totalPages = Math.max(1, (int) Math.ceil(resultCount / (double) PAGE_SIZE));
@@ -177,8 +173,9 @@ public class CosmoController {
         }
         int fromIndex = safePage * PAGE_SIZE;
         int toIndex = Math.min(fromIndex + PAGE_SIZE, resultCount);
-        List<Map<String, Object>> pageObjekts = marketData.withIssuedSupply(filtered.subList(fromIndex, toIndex));
-        if (pageObjekts == null) pageObjekts = filtered.subList(fromIndex, toIndex);
+        List<Map<String, Object>> pageSlice = filtered.subList(fromIndex, toIndex);
+        List<Map<String, Object>> pageObjekts = marketData.withIssuedSupply(marketData.withMintCounts(pageSlice));
+        if (pageObjekts == null) pageObjekts = pageSlice;
         boolean hasMore = toIndex < resultCount;
 
         return new ObjektPageResult(
@@ -235,7 +232,7 @@ public class CosmoController {
                 .collect(Collectors.toList());
     }
 
-    private static Comparator<Map<String, Object>> sortComparator(String sort, Map<String, Integer> memberOrderCache) {
+    private Comparator<Map<String, Object>> sortComparator(String sort, Map<String, Integer> memberOrderCache) {
         Comparator<Map<String, Object>> byDate = Comparator.comparing(
                 objekt -> firstValue(objekt, "createdAt", "created_at", "date"),
                 Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
@@ -262,12 +259,17 @@ public class CosmoController {
                 MemberPortraitOptions.objektMembers(member).stream().mapToInt(MemberPortraitOptions::memberIndex).min().orElse(24));
     }
 
-    private static Comparator<Map<String, Object>> mintComparator(boolean descending) {
+    private Comparator<Map<String, Object>> mintComparator(boolean descending) {
         Comparator<Long> counts = descending ? Comparator.reverseOrder() : Comparator.naturalOrder();
-        return Comparator.<Map<String, Object>, Long>comparing(item ->
-                        item.get("mintCount") instanceof Number n ? n.longValue() : null,
-                        Comparator.nullsLast(counts))
+        return Comparator.<Map<String, Object>, Long>comparing(this::mintOf, Comparator.nullsLast(counts))
                 .thenComparing(item -> firstValue(item, "slug", "id"));
+    }
+
+    private Long mintOf(Map<String, Object> item) {
+        Long fromStore = marketData.mintCount(firstValue(item, "slug", "id"));
+        if (fromStore != null) return fromStore;
+        Object existing = item.get("mintCount");
+        return existing instanceof Number n ? n.longValue() : null;
     }
 
     private static double numberValue(String value) {

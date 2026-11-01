@@ -28,7 +28,7 @@ class ScheduleCategoryControllerTest {
     @Autowired MockMvc mvc;
     @MockBean ScheduleService service;
     @MockBean ScheduleRepository repository;
-    @MockBean ArtistRepository artists;
+    @MockBean ArtistSnapshotService artists;
     @MockBean AboutAdminAuth auth;
     Artist artist;
     LocalDate day=LocalDate.now();

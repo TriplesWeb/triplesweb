@@ -29,7 +29,7 @@ class ObjektFeaturesTest {
     @org.junit.jupiter.api.BeforeEach void decorateVisibleCards() { when(market.withIssuedSupply(anyList())).thenAnswer(call -> call.getArgument(0)); }
     @Autowired MockMvc mvc;
     @MockitoBean ObjektService catalog;
-    @MockitoBean ArtistRepository artists;
+    @MockitoBean ArtistSnapshotService artists;
     @MockitoBean ObjektMarketDataService market;
     @MockitoBean ObjektFavoriteService favorites;
     @MockitoBean ObjektFavoriteRepository favoriteRepository;
@@ -85,7 +85,16 @@ class ObjektFeaturesTest {
                 Map.of("id", "few", "slug", "few", "numberValue", 999, "mintCount", 5L),
                 Map.of("id", "zero", "slug", "zero", "mintCount", 0L));
         stubCatalog(items);
-        when(market.withMintCounts(items)).thenReturn(items);
+        when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
+        when(market.mintCount(anyString())).thenAnswer(call -> {
+            String slug = call.getArgument(0);
+            return switch (slug) {
+                case "many" -> 90L;
+                case "few" -> 5L;
+                case "zero" -> 0L;
+                default -> null;
+            };
+        });
         mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("sort", "mint_low"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].id").value("zero"))
                 .andExpect(jsonPath("$.items[1].id").value("few"))
@@ -102,7 +111,7 @@ class ObjektFeaturesTest {
         var items = List.<Map<String, Object>>of(Map.of("id","unknown","member","unknown"),
             Map.of("id","s24","member","SeoAh"), Map.of("id","s2","member","HyeRin"), Map.of("id","s1","member","SeoYeon"));
         stubCatalog(items);
-        when(market.withMintCounts(items)).thenReturn(items);
+        when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
         mvc.perform(get("/cosmo/objekt/more").param("page","0").param("sort","first_member"))
             .andExpect(jsonPath("$.items[0].id").value("s1"))
             .andExpect(jsonPath("$.items[1].id").value("s2"))
@@ -273,7 +282,7 @@ class ObjektFeaturesTest {
             item.put("season", seasons[i]); item.put("seasonKey", seasons[i]); items.add(item);
         }
         stubCatalog(items);
-        when(market.withMintCounts(items)).thenReturn(items);
+        when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
         var result = mvc.perform(get("/cosmo/objekt")).andExpect(status().isOk())
                 .andExpect(model().attribute("memberOptions", List.of("윤서연", "정혜린", "카에데", "김채원", "지연")))
                 .andExpect(model().attribute("seasonOptions", List.of("Cream02", "Binary02", "Atom02", "Ever01", "Divine01", "Cream01", "Binary01", "Atom01")))
@@ -301,7 +310,7 @@ class ObjektFeaturesTest {
                 Map.of("id", "twenty", "member", "Shion"), Map.of("id", "one", "member", "S1")));
         for (int i = 0; i < 25; i++) items.add(Map.of("id", "other" + i, "member", "Other" + i));
         stubCatalog(items);
-        when(market.withMintCounts(items)).thenReturn(items);
+        when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
         for (String member : List.of("김유연", "박시온")) mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("member", member))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.resultCount").value(2))
                 .andExpect(jsonPath("$.items[0].id").value("duo"));
@@ -317,6 +326,25 @@ class ObjektFeaturesTest {
         mvc.perform(get("/cosmo/objekt/more").param("page", "1").param("group", "other"))
                 .andExpect(jsonPath("$.loaded").value(5)).andExpect(jsonPath("$.hasMore").value(false))
                 .andExpect(jsonPath("$.items[0].id").value("other20"));
+    }
+
+    @Test void mintCountsCopyOnlyTheVisiblePage() throws Exception {
+        List<Map<String, Object>> items = new java.util.ArrayList<>();
+        for (int i = 0; i < 45; i++) {
+            items.add(Map.of("id", "id" + i, "slug", "slug" + i, "member", "SeoYeon"));
+        }
+        stubCatalog(items);
+        when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
+        mvc.perform(get("/cosmo/objekt/more").param("page", "0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.loaded").value(20));
+        org.mockito.ArgumentCaptor<List<Map<String, Object>>> copied =
+                org.mockito.ArgumentCaptor.forClass(List.class);
+        verify(market, atLeastOnce()).withMintCounts(copied.capture());
+        for (List<Map<String, Object>> slice : copied.getAllValues()) {
+            org.assertj.core.api.Assertions.assertThat(slice).hasSizeLessThanOrEqualTo(20);
+        }
+        verify(market, never()).withMintCounts(argThat(list -> list != null && list.size() > 20));
     }
 }
 

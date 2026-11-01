@@ -7,9 +7,9 @@ import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.util.SchedulePresentation;
 import java.util.Map;
 import java.util.Comparator;
-import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
+import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.ScheduleService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -30,16 +30,16 @@ import java.util.List;
 public class ScheduleController {
     private final ScheduleRepository scheduleRepository;
     private final ScheduleService scheduleService;
-    private final ArtistRepository artistRepository;
+    private final ArtistSnapshotService artistSnapshot;
     private final AboutAdminAuth aboutAdminAuth;
 
     public ScheduleController(ScheduleService scheduleService,
                               ScheduleRepository scheduleRepository,
-                              ArtistRepository artistRepository,
+                              ArtistSnapshotService artistSnapshot,
                               AboutAdminAuth aboutAdminAuth) {
         this.scheduleService = scheduleService;
         this.scheduleRepository = scheduleRepository;
-        this.artistRepository = artistRepository;
+        this.artistSnapshot = artistSnapshot;
         this.aboutAdminAuth = aboutAdminAuth;
     }
 
@@ -52,7 +52,7 @@ public class ScheduleController {
         List<Schedule> schedules = artist == null || artist.isBlank()
                 ? all
                 : all.stream().filter(s -> splitNames(s.getArtistNames()).contains(artist)).toList();
-        List<Artist> artists=artistRepository.findAll().stream().sorted(Comparator.comparing(Artist::getArtistId,Comparator.nullsLast(Comparator.naturalOrder()))).toList();
+        List<Artist> artists=artistSnapshot.findAll().stream().sorted(Comparator.comparing(Artist::getArtistId,Comparator.nullsLast(Comparator.naturalOrder()))).toList();
         List<ScheduleForm> dtos=schedules.stream().map(schedule->SchedulePresentation.form(schedule,artists)).toList();
         ObjectMapper mapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
@@ -90,7 +90,7 @@ public class ScheduleController {
                                                     HttpSession session) {
         aboutAdminAuth.requireAdmin(request, session);
         Schedule saved=scheduleService.save(title,start,end,names==null?"":String.join(",",names),category);
-        return ResponseEntity.ok(SchedulePresentation.form(saved,artistRepository.findAll()));
+        return ResponseEntity.ok(SchedulePresentation.form(saved,artistSnapshot.findAll()));
     }
 
     @GetMapping("/edit/{id}")
@@ -110,7 +110,7 @@ public class ScheduleController {
                                           HttpSession session) {
         aboutAdminAuth.requireAdmin(request, session);
         Schedule saved=scheduleService.update(String.valueOf(id),title,startDate,endDate,names==null?"":String.join(",",names),category);
-        return ResponseEntity.ok(SchedulePresentation.form(saved,artistRepository.findAll()));
+        return ResponseEntity.ok(SchedulePresentation.form(saved,artistSnapshot.findAll()));
     }
 
     @PostMapping("/delete/{id}")

@@ -142,6 +142,9 @@ public class CosmoCollectionService {
         view.put("filteredCount", filtered.size());
         view.put("cards", cards);
         view.put("allCards", snapshot);
+        view.put("filterMembers", uniqueValues(snapshot, "member"));
+        view.put("filterSeasons", uniqueValues(snapshot, "season"));
+        view.put("filterClasses", uniqueValues(snapshot, "objektClass"));
         view.put("profileUrl", "/cosmo/profile/" + nickEnc.replace("+", "%20"));
         view.put("hasCards", !cards.isEmpty());
         view.put("page", safePage);
@@ -293,6 +296,10 @@ public class CosmoCollectionService {
     private static String text(Map<String, Object> card, String key) {
         Object value = card.get(key);
         return value == null ? "" : value.toString();
+    }
+
+    private static List<String> uniqueValues(List<Map<String, Object>> cards, String key) {
+        return cards.stream().map(card -> text(card, key)).filter(value -> !value.isBlank()).distinct().toList();
     }
 
     /**

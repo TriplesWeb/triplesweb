@@ -1,7 +1,7 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.config.MustacheConfig;
-import com.example.triplesweb.repository.ArtistRepository;
+import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.CosmoCollectionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +23,7 @@ import static org.hamcrest.Matchers.*;
 class CosmoCollectionControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean CosmoCollectionService collections;
-    @MockitoBean ArtistRepository artists;
+    @MockitoBean ArtistSnapshotService artists;
 
     @Test void initialPageAndEmptySubmittedNicknameHaveDifferentMessages() throws Exception {
         mvc.perform(get("/cosmo/collection")).andExpect(status().isOk())
@@ -74,10 +74,13 @@ class CosmoCollectionControllerTest {
         view.put("cards", List.of(Map.of("serial", "27", "hasSerial", true, "collectionId", "Cream02 HaYeon 367Z",
                 "member", "HaYeon", "season", "Cream02", "objektClass", "Double", "hasImage", true,
                 "thumbnailImage", "https://example.com/card.webp", "hasDetail", false)));
-        view.put("allCards", view.get("cards"));
+        view.put("filterMembers", List.of("HaYeon"));
+        view.put("filterSeasons", List.of("Cream02"));
+        view.put("filterClasses", List.of("Double"));
         when(collections.search("테스트", 0, "", List.of(), List.of(), "", "all", "all", "latest")).thenReturn(view);
         when(artists.findAll()).thenReturn(List.of());
         mvc.perform(get("/cosmo/collection").param("nickname", "테스트")).andExpect(status().isOk())
+                .andExpect(model().attributeDoesNotExist("allCards"))
                 .andExpect(content().string(containsString("#27")))
                 .andExpect(content().string(containsString("collection-image")))
                 .andExpect(content().string(containsString("내 오브젝트 검색")))
