@@ -78,7 +78,7 @@ const base = path.resolve(__dirname, '../..');
         assert.ok(rgb[2] > rgb[0] + 80, mode+' 멤버 이름이 상징색으로 부각');
       }
       const glowCount = (String(stable.overlayFilter).match(/drop-shadow/g) || []).length;
-      assert.ok(glowCount >= 1 && glowCount <= 3, mode+' 선택 테두리 빛은 얇게');
+      assert.ok(glowCount >= 1 && glowCount <= 3, mode+' 선택 테두리 빛은 3겹까지');
       assert.match(String(stable.overlayBg), /34,\s*174,\s*255|#22aeff/i, mode+' 윤곽을 상징색으로 칠함');
       assert.doesNotMatch(String(stable.overlayFilter), /255,\s*255,\s*255|#fff\b/i, mode+' 빛 색에 흰색을 섞지 않음');
       const overlayMask = await first.locator('.artist-tab-avatar').evaluate(el => {

@@ -673,7 +673,8 @@
     inset: 0;
     z-index: 3;
     pointer-events: none;
-    background: color-mix(in srgb, var(--artist-color, #00f5d4) 58%, transparent);
+    background: color-mix(in srgb, var(--artist-color, #00f5d4) 18%, transparent);
+    opacity: .55;
     --badge-cut: linear-gradient(#000, #000);
     -webkit-mask-image: var(--frame-mask), var(--badge-cut);
     -webkit-mask-size: contain, 30% 16.8%;
@@ -706,12 +707,13 @@
 }
 .artist-page .nav-tab-btn.is-active .artist-tab-avatar.has-frame-mask::after {
     background: var(--artist-color, #00f5d4);
-    transform: scale(1.014);
+    opacity: 1;
+    transform: scale(1.045);
     transform-origin: center;
     filter:
-        drop-shadow(0 0 1.5px var(--artist-color, #00f5d4))
-        drop-shadow(0 0 6.5px color-mix(in srgb, var(--artist-color, #00f5d4) 70%, transparent))
-        drop-shadow(0 0 11px color-mix(in srgb, var(--artist-color, #00f5d4) 78%, #0a0c12 22%));
+        drop-shadow(0 0 2px var(--artist-color, #00f5d4))
+        drop-shadow(0 0 10px color-mix(in srgb, var(--artist-color, #00f5d4) 85%, transparent))
+        drop-shadow(0 0 18px color-mix(in srgb, var(--artist-color, #00f5d4) 82%, #0a0c12 18%));
 }
 .artist-page .nav-tab-btn.is-active .artist-tab-avatar--group .artist-tab-photo {
     border-color: var(--artist-color, #00f5d4);
