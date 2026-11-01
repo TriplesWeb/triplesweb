@@ -1,0 +1,24 @@
+{
+  "name": "triplesweb",
+  "private": true,
+  "description": "CSS build tooling for Spring Boot + Mustache templates",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "setup:css": "bash scripts/setup-css.sh",
+    "dev": "bash scripts/setup-css.sh",
+    "build:css": "node scripts/build-css.cjs",
+    "build:css:site": "node scripts/build-site-css.cjs",
+    "build:css:triples": "node scripts/build-triples-css.cjs",
+    "build:css:objekt": "node scripts/build-objekt-css.cjs",
+    "build:css:gravity": "node scripts/build-gravity-css.cjs",
+    "check:css": "node scripts/check-css-drift.cjs",
+    "migrate:tokens": "node scripts/migrate-token-classes.cjs"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "daisyui": "^5.7.50",
+    "tailwindcss": "^4.3.3"
+  }
+}

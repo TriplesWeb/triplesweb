@@ -1,0 +1,114 @@
+/* Shared design tokens + daisyUI theme for all CSS bundles. */
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: triplesdark --default;
+  /* tab 제외: Bootstrap식 .tab-content 와 daisyUI .tab-content(display:none) 충돌 방지.
+     탭 UI는 AboutTabs / .nav-tab-btn / .about-tab-panels 자체 구현을 사용한다. */
+  include: button, input, select, modal, alert, badge, fieldset, label, dropdown, menu, navbar, checkbox, radio, toggle, loading, textarea, swap;
+}
+
+@plugin "daisyui/theme" {
+  name: "triplesdark";
+  default: true;
+  prefersdark: true;
+  color-scheme: "dark";
+  --color-base-100: #0d0e12;
+  --color-base-200: #13141a;
+  --color-base-300: #1a1b22;
+  --color-base-content: #e3e2e8;
+  --color-primary: #00f5d4;
+  --color-primary-content: #00382f;
+  --color-secondary: #60a5fa;
+  --color-secondary-content: #0b1220;
+  --color-accent: #8decd9;
+  --color-accent-content: #00382f;
+  --color-neutral: #23242e;
+  --color-neutral-content: #e3e2e8;
+  --color-info: #60a5fa;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-error: #f87171;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-background: #0d0e12;
+  --color-surface: #16181f;
+  --color-surface-container-low: #13141a;
+  --color-surface-container-high: #1a1b22;
+  --color-surface-container-highest: #23242e;
+  --color-primary-container: #00f5d4;
+  --color-on-primary-container: #00382f;
+  --color-primary-soft: #8decd9;
+  --color-secondary: #60a5fa;
+  --color-secondary-container: #9333ea;
+  --color-on-surface: #e3e2e8;
+  --color-on-surface-variant: #b9cac4;
+  --color-muted: #8b9b95;
+  --color-outline: #3a4a46;
+  --color-outline-variant: #2d313e;
+  --color-error: #f87171;
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --font-display: "Pretendard Variable", Pretendard, sans-serif;
+  --shadow-card: 0 18px 50px rgba(0, 0, 0, 0.22);
+}
+
+/* Dynamically assembled classes (JS) + design-system helpers */
+@source inline("bg-background");
+@source inline("bg-surface");
+@source inline("bg-surface-container-low");
+@source inline("bg-surface-container-high");
+@source inline("bg-surface-container-highest");
+@source inline("bg-primary-container");
+@source inline("text-primary-container");
+@source inline("text-on-primary-container");
+@source inline("text-on-surface");
+@source inline("text-on-surface-variant");
+@source inline("text-primary-soft");
+@source inline("text-muted");
+@source inline("border-outline");
+@source inline("border-outline-variant");
+@source inline("border-primary-container");
+@source inline("btn");
+@source inline("btn-primary");
+@source inline("btn-secondary");
+@source inline("btn-ghost");
+@source inline("btn-soft");
+@source inline("btn-error");
+@source inline("btn-neutral");
+@source inline("btn-outline");
+@source inline("btn-sm");
+@source inline("btn-xs");
+@source inline("btn-circle");
+@source inline("modal");
+@source inline("modal-box");
+@source inline("modal-open");
+@source inline("modal-action");
+@source inline("modal-backdrop");
+@source inline("alert");
+@source inline("alert-error");
+@source inline("alert-info");
+@source inline("alert-success");
+@source inline("alert-warning");
+@source inline("input");
+@source inline("input-bordered");
+@source inline("input-sm");
+@source inline("select");
+@source inline("select-bordered");
+@source inline("textarea");
+@source inline("textarea-bordered");
+@source inline("navbar");
+@source inline("dropdown");
+@source inline("dropdown-content");
+@source inline("dropdown-open");
+@source inline("menu");
+@source inline("menu-sm");
+@source inline("form-control");
+@source inline("label");
+@source inline("label-text");
+@source inline("swap");
+@source inline("swap-on");
+@source inline("swap-off");
+@source inline("sr-only");

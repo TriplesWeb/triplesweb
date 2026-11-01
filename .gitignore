@@ -52,3 +52,7 @@ uploads/**/.bundle-version
 
 # Rotating COSMO account credentials
 data/cosmo/
+
+### Node / frontend tooling ###
+node_modules/
+package-lock.json.bak

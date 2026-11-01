@@ -28,7 +28,15 @@
 | `triples-head` | site-head + triples 번들 CSS |
 | `gravity-fonts` | site-head + gravity 번들 CSS |
 
+## 디자인 시스템 / CSS 빌드
+
+- **토큰 소스:** [`scripts/css/tokens.css`](../../../../../scripts/css/tokens.css)
+- **빌드:** `./scripts/setup-css.sh --no-run` (`npm ci` + `build:css`; 로컬 기본은 `bootRun`까지)
+- **CI:** `./scripts/setup-css.sh --check` / `--no-run` · **Docker:** `--no-run --skip-install`
+- **번들:** `site.css` / `triples.css` / `objekt.css` / `gravity.css` (생성물 — 직접 수정 금지)
+
 ## 규칙
+
 
 - `charset` / `viewport` / Pretendard / `site-ui.css` / 헤더·푸터 CSS는 페이지에 다시 넣지 않습니다.
 - `body`에는 항상 `site-page`를 포함해 푸터가 아래로 붙게 합니다.

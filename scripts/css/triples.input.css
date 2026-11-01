@@ -1,0 +1,11 @@
+@import "./tokens.css";
+
+@source "../../src/main/resources/templates/layout/**/*.mustache";
+@source "../../src/main/resources/templates/triples/**/*.mustache";
+@source "../../src/main/resources/templates/partials/**/*.mustache";
+@source "../../src/main/resources/static/js/artist.js";
+@source "../../src/main/resources/static/js/album.js";
+@source "../../src/main/resources/static/js/unit.js";
+@source "../../src/main/resources/static/js/chemistry.js";
+@source "../../src/main/resources/static/js/about-*.js";
+@source "../../src/main/resources/static/js/member-portrait-picker.js";

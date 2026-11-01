@@ -1,0 +1,7 @@
+@import "./tokens.css";
+
+@source "../../src/main/resources/templates/layout/header.mustache";
+@source "../../src/main/resources/templates/layout/footer.mustache";
+@source "../../src/main/resources/templates/cosmo/gravity*.mustache";
+@source "../../src/main/resources/templates/cosmo/partials/gravity*.mustache";
+@source "../../src/main/resources/static/js/gravity-*.js";

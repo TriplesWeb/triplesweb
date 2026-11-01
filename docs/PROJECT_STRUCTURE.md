@@ -335,19 +335,24 @@ flowchart LR
 
 ```
 templates/
-├── layout/header.mustache, footer.mustache
+├── layout/       head-open, site-head, header, footer, triples-head, objekt-head, gravity-fonts
 ├── main.mustache
 ├── schedule.mustache, search.mustache
-├── members/     login, signup, mypage, mypage_edit, myposts, mycomments
-├── article/     article, article_new, article_edit, article_detail, popular
-├── comment/     부분 템플릿 (_list, _comments, _new)
-├── triples/     artist, album, unit, *_detail, chemistry(+en), partials/
-├── archive/     image/video archive, media*, media_detail
-└── shop/        shop, shop_detail, shop_new, shop_cart
+├── article/      article, article_new, article_edit, article_detail
+├── comment/      부분 템플릿 (_list, _comments, _new)
+├── triples/      artist, album, unit, *_detail, chemistry(+en), not-found
+├── cosmo/        objekt*, gravity*, profile, collection, transfers
+├── archive/      image/video archive, media*, media_detail
+└── shop/         shop, shop_detail, shop_new, shop_cart
 ```
 
-프론트: Tailwind (`static/js/tailwind.config.js`) + `static/css/style.css`.  
-헤더 브랜딩 컬러 톤: dark + cyan accent (`#00f5d4`).
+프론트엔드 (2026-11 UI 디자인 시스템):
+
+- **빌드:** `./scripts/setup-css.sh --no-run` (`npm ci` + `build:css`) → `site.css` / `triples.css` / `objekt.css` / `gravity.css` (로컬 기본은 `bootRun`까지; CI `--check`/`--no-run`, Docker `--no-run --skip-install`)
+- **스택:** Tailwind CSS 4 + daisyUI 5 (`triplesdark` 테마) + 자체 토큰 (`scripts/css/tokens.css`)
+- **핸드 소스:** `static/css/style.css` (번들에 append), `site-ui.css` / `site-header.css` 등 레거시 컴포넌트는 점진 축소
+- **규칙:** [`templates/layout/README.md`](../src/main/resources/templates/layout/README.md), 기준선 [`docs/UI_DESIGN_BASELINE.md`](UI_DESIGN_BASELINE.md)
+- 헤더 브랜딩: dark + primary `#00f5d4` (`primary-container` 토큰)
 
 ---
 

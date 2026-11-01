@@ -1,5 +1,14 @@
 # syntax=docker/dockerfile:1
 
+FROM node:20-bookworm-slim AS css
+WORKDIR /workspace
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY scripts ./scripts
+COPY src/main/resources ./src/main/resources
+RUN chmod +x scripts/setup-css.sh \
+    && ./scripts/setup-css.sh --no-run --skip-install
+
 FROM eclipse-temurin:17-jdk-jammy AS build
 WORKDIR /workspace
 
@@ -10,6 +19,10 @@ RUN chmod +x gradlew \
     && ./gradlew dependencies --no-daemon || true
 
 COPY src ./src
+COPY --from=css /workspace/src/main/resources/static/css/site.css ./src/main/resources/static/css/site.css
+COPY --from=css /workspace/src/main/resources/static/css/triples.css ./src/main/resources/static/css/triples.css
+COPY --from=css /workspace/src/main/resources/static/css/objekt.css ./src/main/resources/static/css/objekt.css
+COPY --from=css /workspace/src/main/resources/static/css/gravity.css ./src/main/resources/static/css/gravity.css
 # 검증은 CI verify job에서 수행. 이미지 빌드는 패키징만 (arm 빌드 시간 단축).
 RUN ./gradlew bootWar -x test --no-daemon
 

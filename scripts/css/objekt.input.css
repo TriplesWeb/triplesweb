@@ -1,0 +1,6 @@
+@import "./tokens.css";
+
+@source "../../src/main/resources/templates/layout/**/*.mustache";
+@source "../../src/main/resources/templates/partials/**/*.mustache";
+@source "../../src/main/resources/templates/cosmo/objekt*.mustache";
+@source "../../src/main/resources/static/js/objekt-*.js";
