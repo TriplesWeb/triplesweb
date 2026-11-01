@@ -677,13 +677,13 @@
     opacity: .55;
     --badge-cut: linear-gradient(#000, #000);
     -webkit-mask-image: var(--frame-mask), var(--badge-cut);
-    -webkit-mask-size: contain, 30% 16.8%;
-    -webkit-mask-position: center, right 4.4% bottom 4.4%;
+    -webkit-mask-size: contain, 26% 13%;
+    -webkit-mask-position: center, right 7.2% bottom 7.2%;
     -webkit-mask-repeat: no-repeat;
     -webkit-mask-composite: source-out;
     mask-image: var(--frame-mask), var(--badge-cut);
-    mask-size: contain, 30% 16.8%;
-    mask-position: center, right 4.4% bottom 4.4%;
+    mask-size: contain, 26% 13%;
+    mask-position: center, right 7.2% bottom 7.2%;
     mask-repeat: no-repeat;
     mask-composite: subtract;
 }
@@ -717,12 +717,12 @@
     transform-origin: center;
     --badge-only: linear-gradient(#000, #000);
     -webkit-mask-image: var(--badge-only);
-    -webkit-mask-size: 30% 16.8%;
-    -webkit-mask-position: right 4.4% bottom 4.4%;
+    -webkit-mask-size: 26% 13%;
+    -webkit-mask-position: right 7.2% bottom 7.2%;
     -webkit-mask-repeat: no-repeat;
     mask-image: var(--badge-only);
-    mask-size: 30% 16.8%;
-    mask-position: right 4.4% bottom 4.4%;
+    mask-size: 26% 13%;
+    mask-position: right 7.2% bottom 7.2%;
     mask-repeat: no-repeat;
 }
 .artist-page .nav-tab-btn.is-active .artist-tab-avatar.has-frame-mask::after {

@@ -97,15 +97,16 @@
     background: color-mix(in srgb, var(--artist-color, #00f5d4) 18%, transparent);
     opacity: .55;
     /* 뱃지 안쪽만 직사각으로 빼 외곽선이 직선으로 뱃지에 붙게 한다 */
+    /* 바깥 모서리 윤곽은 남기고 뱃지 안쪽만 빼 오른쪽 아래 흰 잔여선이 안 비치게 한다 */
     --badge-cut: linear-gradient(#000, #000);
     -webkit-mask-image: var(--frame-mask), var(--badge-cut);
-    -webkit-mask-size: contain, 30% 16.8%;
-    -webkit-mask-position: center, right 4.4% bottom 4.4%;
+    -webkit-mask-size: contain, 26% 13%;
+    -webkit-mask-position: center, right 7.2% bottom 7.2%;
     -webkit-mask-repeat: no-repeat;
     -webkit-mask-composite: source-out;
     mask-image: var(--frame-mask), var(--badge-cut);
-    mask-size: contain, 30% 16.8%;
-    mask-position: center, right 4.4% bottom 4.4%;
+    mask-size: contain, 26% 13%;
+    mask-position: center, right 7.2% bottom 7.2%;
     mask-repeat: no-repeat;
     mask-composite: subtract;
 }
@@ -131,19 +132,19 @@
     box-shadow: none;
 }
 .member-portrait-picker .mpp-item.is-active .artist-tab-frame {
-    /* 연한 PNG 윤곽은 숨기고 S번호 뱃지 영역만 남긴다 */
+    /* 연한 PNG 윤곽·바깥 흰 모서리는 숨기고 어두운 S번호 뱃지만 남긴다 */
     opacity: 1;
     filter: none;
     transform: scale(1.045);
     transform-origin: center;
     --badge-only: linear-gradient(#000, #000);
     -webkit-mask-image: var(--badge-only);
-    -webkit-mask-size: 30% 16.8%;
-    -webkit-mask-position: right 4.4% bottom 4.4%;
+    -webkit-mask-size: 26% 13%;
+    -webkit-mask-position: right 7.2% bottom 7.2%;
     -webkit-mask-repeat: no-repeat;
     mask-image: var(--badge-only);
-    mask-size: 30% 16.8%;
-    mask-position: right 4.4% bottom 4.4%;
+    mask-size: 26% 13%;
+    mask-position: right 7.2% bottom 7.2%;
     mask-repeat: no-repeat;
 }
 .member-portrait-picker .mpp-item.is-active .artist-tab-avatar.has-frame-mask::after {
