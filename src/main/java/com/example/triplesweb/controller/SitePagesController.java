@@ -11,7 +11,7 @@ public class SitePagesController {
     public String voting(Model model) { return pending(model, "총공"); }
 
     @GetMapping("/cosmo/group-orders")
-    public String groupOrders() { return "redirect:/article/group-orders"; }
+    public String groupOrders() { return "redirect:/article/trade"; }
 
     private String pending(Model model, String title) {
         model.addAttribute("pageTitle", title);
