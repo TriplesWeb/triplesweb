@@ -798,4 +798,7 @@
         btn.addEventListener('click', loadMore);
         sentinel?.appendChild(btn);
     }
+
+    const initialObjekt = new URLSearchParams(location.search).get('objekt');
+    if (initialObjekt) openObjektDetail(initialObjekt);
 })();
