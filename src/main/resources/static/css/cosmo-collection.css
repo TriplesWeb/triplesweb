@@ -244,7 +244,7 @@
     flex: 1 1 16rem;
 }
 .collection-page .objekt-member-toggle[hidden] { display: none !important; }
-.collection-filter-form { display: grid; gap: .9rem; }
+.collection-filter-form { display: grid; gap: .9rem; width: 100%; max-width: 100%; min-width: 0; }
 .collection-filter-bar {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -273,6 +273,13 @@
     .collection-filter-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 767px) {
+    .collection-page .collection-filter-form,
+    .collection-page .collection-filter-panel {
+        display: grid !important;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
     .collection-page .collection-filter-bar {
         display: grid !important;
         grid-auto-flow: column;
@@ -281,6 +288,8 @@
         overflow-x: auto;
         overscroll-behavior-x: contain;
         width: 100%;
+        max-width: 100%;
+        min-width: 0;
     }
     .collection-page .collection-filter-bar .objekt-filter {
         min-width: 10.5rem;
@@ -290,6 +299,8 @@
         flex-wrap: nowrap !important;
         overflow-x: auto;
         overscroll-behavior-x: contain;
+        max-width: 100%;
+        min-width: 0;
     }
     .collection-page .objekt-search-row > .objekt-search,
     .collection-page .objekt-search-row > .objekt-reset-button,
