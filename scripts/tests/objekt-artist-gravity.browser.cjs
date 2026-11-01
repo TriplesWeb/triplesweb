@@ -51,8 +51,8 @@ const {chromium}=require('playwright');const base=path.resolve(__dirname,'../..'
   await page.screenshot({path:'/tmp/objekt-ui/members-restored-mobile.png',fullPage:true});
   await page.setViewportSize({width:1280,height:1000});
   await page.screenshot({path:'/tmp/objekt-ui/members-restored-desktop.png',fullPage:true});
-  const overviewResponse=await page.goto('https://perf.test/triples/overview');
-  assert.equal(overviewResponse.status(),404);
+  // Chromium은 HTTP 404 네비게이션을 예외로 올려 page.goto가 실패하므로 fetch로 상태를 확인한다.
+  assert.equal(await page.evaluate(async () => (await fetch('/triples/overview')).status),404);
   await page.goto('https://perf.test/cosmo/gravity');
   const shown=()=>page.locator('#gvGrid .gv-card:not([hidden])');
   await page.getByRole('button',{name:'진행 상태',exact:true}).click();await page.getByRole('option',{name:'진행 중',exact:true}).click();assert.equal(await shown().count(),1);
