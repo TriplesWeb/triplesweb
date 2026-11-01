@@ -45,6 +45,11 @@ const urls={
    await page.setViewportSize({width:1280,height:900});
    await page.goto('https://filters.test/fixture/'+name);
    assert.equal(await page.locator('.season-quick-filters:visible').count(),0,'시즌 버튼은 열었을 때만 표시');
+   const kindInput=page.locator(name==='objekt'?'#objekt-kind-input':'#collection-kind-select');
+   assert.equal(await kindInput.inputValue(),'전체',name+' 종류 기본 표시는 전체');
+   assert.match(await kindInput.evaluate(el=>getComputedStyle(el).fontFamily),/Pretendard/i,name+' 종류 입력 사이트 폰트');
+   const kindOption=page.locator(name==='objekt'?'#kind-menu .objekt-kind-option':'#collection-kind-menu .objekt-kind-option').first();
+   assert.match(await kindOption.evaluate(el=>getComputedStyle(el).fontFamily),/Pretendard/i,name+' 종류 목록 사이트 폰트');
    await page.locator(name==='objekt'?'#season-dropdown>button':'#collection-season-toggle').click();
    const row=page.getByRole('group',{name:'시즌 선택',exact:true});
    await row.locator('button[data-value="Atom01"]').waitFor({timeout:10000}).catch(async error=>{

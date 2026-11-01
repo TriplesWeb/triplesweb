@@ -293,7 +293,9 @@ class ObjektFeaturesTest {
         java.nio.file.Files.writeString(java.nio.file.Path.of("build/objekt-all-preview.html"), result.getResponse().getContentAsString());
         org.assertj.core.api.Assertions.assertThat(result.getResponse().getContentAsString())
                 .contains("background:#FF8389").contains("background:#83FF00")
-                .doesNotContain("bg-[#00e8cb]");
+                .doesNotContain("bg-[#00e8cb]")
+                .contains("id=\"objekt-kind-input\"").contains("value=\"전체\"")
+                .doesNotContain("value=\"ALL\"");
         mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("season", "Cream02"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].seasonColor").value("#FF8389"));

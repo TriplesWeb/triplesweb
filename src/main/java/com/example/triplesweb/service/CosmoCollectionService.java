@@ -170,6 +170,7 @@ public class CosmoCollectionService {
         view.put("isAllGroup", "all".equals(selectedGroup));
         view.put("searchQuery", query == null ? "" : query.trim());
         view.put("selectedKind", kindFiltered ? kindKey : "all");
+        view.put("selectedKindLabel", kindFiltered ? kindKey : "전체");
         view.put("selectedSort", sortKey);
         view.put("kindOptions", snapshot.stream().map(card -> text(card, "collectionNo"))
                 .filter(value -> !value.isBlank()).distinct().sorted(String.CASE_INSENSITIVE_ORDER).toList());

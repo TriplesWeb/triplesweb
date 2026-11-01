@@ -63,6 +63,7 @@ public class CosmoCollectionController {
             model.addAllAttributes(view);
             model.asMap().remove("allCards");
             if (view.get("selectedKind") == null) model.addAttribute("selectedKind", "all");
+            if (view.get("selectedKindLabel") == null) model.addAttribute("selectedKindLabel", "전체");
             if (view.get("selectedSort") == null) model.addAttribute("selectedSort", "latest");
             if (view.get("kindOptions") == null) model.addAttribute("kindOptions", List.of());
             model.addAttribute("hasCollection", true);

@@ -90,16 +90,24 @@
     let kindActiveIndex = -1;
 
     function normalizeKindValue(raw) {
+        if (window.ObjektKindCombo) return ObjektKindCombo.normalizeKindValue(raw);
         const value = String(raw || '').trim();
-        if (!value || value.toLowerCase() === 'all') return 'all';
+        if (!value || value.toLowerCase() === 'all' || value === '전체') return 'all';
         return value.toUpperCase();
+    }
+
+    function displayKindValue(raw) {
+        if (window.ObjektKindCombo) return ObjektKindCombo.displayKindValue(raw);
+        const value = normalizeKindValue(raw);
+        return value === 'all' ? '전체' : value;
     }
 
     function setKindValue(raw, { apply = true } = {}) {
         if (!kindSelect) return;
         const next = normalizeKindValue(raw);
         const changed = normalizeKindValue(kindSelect.value) !== next;
-        kindSelect.value = next;
+        kindSelect.value = displayKindValue(next);
+        kindSelect.dataset.kindValue = next;
         markActiveFilters();
         if (apply && changed) scheduleApplyFilters();
     }
@@ -151,7 +159,10 @@
     }
 
     const initialKind = normalizeKindValue(params.get('kind') || kindSelect?.value || 'all');
-    if (kindSelect) kindSelect.value = initialKind;
+    if (kindSelect) {
+        kindSelect.value = displayKindValue(initialKind);
+        kindSelect.dataset.kindValue = initialKind;
+    }
     sortSelect.value = params.get('sort') || 'latest';
     if (!sortSelect.value) sortSelect.value = 'latest';
     syncSortMenu();
@@ -382,7 +393,7 @@
         event.preventDefault();
         const page = form.querySelector('input[name="page"]');
         if (page) page.value = '0';
-        if (kindSelect) kindSelect.value = normalizeKindValue(kindSelect.value);
+        if (kindSelect) kindSelect.value = displayKindValue(kindSelect.value);
         applyFilters();
     });
 

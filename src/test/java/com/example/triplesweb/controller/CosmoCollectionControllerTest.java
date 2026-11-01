@@ -71,6 +71,8 @@ class CosmoCollectionControllerTest {
         view.put("searchQuery", "");
         view.put("filterQuery", "");
         view.put("hasActiveFilters", false);
+        view.put("selectedKind", "all");
+        view.put("selectedKindLabel", "전체");
         view.put("cards", List.of(Map.of("serial", "27", "hasSerial", true, "collectionId", "Cream02 HaYeon 367Z",
                 "member", "HaYeon", "season", "Cream02", "seasonColor", "#FF8389", "objektClass", "Double",
                 "hasImage", true, "thumbnailImage", "https://example.com/card.webp", "hasDetail", false)));
@@ -89,6 +91,8 @@ class CosmoCollectionControllerTest {
                 .andExpect(content().string(containsString("?tab=overview")))
                 .andExpect(content().string(containsString("기타 옵젝")))
                 .andExpect(content().string(containsString("보유 오브젝트 필터")))
+                .andExpect(content().string(containsString("id=\"collection-kind-select\"")))
+                .andExpect(content().string(containsString("value=\"전체\"")))
                 .andExpect(content().string(not(containsString("오브젝트 상세 보기"))))
                 .andExpect(content().string(containsString("collection-scroll-sentinel")))
                 .andExpect(content().string(not(containsString("#30000001"))));

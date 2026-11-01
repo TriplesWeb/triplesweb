@@ -85,6 +85,7 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
    return route.fulfill({status:404,body:''});
   });
   await page.goto('https://filters.test/cosmo/objekt',{waitUntil:'load'});
+  assert.equal(await page.locator('.objekt-kind-select').inputValue(),'전체');
   await page.locator('.mpp-item').click();
   await page.waitForFunction(()=>document.querySelector('[data-objekt-key="윤서연"]'));
   assert.equal(await page.locator('#objekt-card-grid .objekt-item').count(),1);

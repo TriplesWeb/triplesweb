@@ -80,6 +80,7 @@ public class CosmoController {
         model.addAttribute("objektAllCount", page.allCount());
         model.addAttribute("searchQuery", search == null ? "" : search);
         model.addAttribute("selectedKind", kind);
+        model.addAttribute("selectedKindLabel", kindLabel(kind));
         model.addAttribute("selectedSort", sort);
         model.addAttribute("objektPageDisplay", 1);
         model.addAttribute("objektTotalPages", page.totalPages());
@@ -308,6 +309,12 @@ public class CosmoController {
 
     private static String normalize(String value) {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static String kindLabel(String kind) {
+        String value = kind == null ? "" : kind.trim();
+        if (value.isEmpty() || "all".equalsIgnoreCase(value) || "전체".equals(value)) return "전체";
+        return value;
     }
 
     private static List<Map<String, Object>> withMemberLinks(List<Map<String, Object>> items) {

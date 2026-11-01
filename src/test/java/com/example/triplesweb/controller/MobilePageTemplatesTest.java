@@ -41,6 +41,7 @@ class MobilePageTemplatesTest {
         model.put("seasonChoices",List.of(Map.of("value","Atom01","label","Atom01"),Map.of("value","Binary01","label","Binary01"),Map.of("value","Cream02","label","Cream02")));
         model.put("objektSeasonOptions",List.of("Atom01","Binary01","Cream02"));
         model.put("showObjektPicker",true);
+        model.put("selectedKind","all"); model.put("selectedKindLabel","전체");
         model.put("objektKey","uuid"); model.put("memberUrl","/cosmo/objekt?member=HaYeon");model.put("lookupUrl","/lookup");model.put("favoriteDesired",true);
         model.put("isOverviewTab",true);model.put("hasProfile",true);model.put("hasCollection",true);model.put("hasOverallProgress",true);model.put("hasStats",true);
         model.put("nickname","MobileFan");model.put("requestedNickname","MobileFan");model.put("ownedCount",3);model.put("uniqueCount",2);
