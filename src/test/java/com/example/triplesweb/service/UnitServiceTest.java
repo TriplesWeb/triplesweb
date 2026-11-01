@@ -35,6 +35,7 @@ class UnitServiceTest {
             artist.setBirthDate("2000-01-01");
             artist.setBirthPlace("Seoul");
             artist.setRevealDate("2022-01-01");
+            artist.setDormEntryDate("2022-01-02");
             artist.setColor("#fff");
             em.persist(artist);
             em.persist(new UnitMember(null, artist, unit));
@@ -85,6 +86,7 @@ class UnitServiceTest {
         artist.setBirthDate("2000-01-01");
         artist.setBirthPlace("Seoul");
         artist.setRevealDate("2022-01-01");
+        artist.setDormEntryDate("2022-01-02");
         artist.setColor("#fff");
         return artist;
     }

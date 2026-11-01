@@ -140,6 +140,7 @@ class UnitAdminServiceTest {
         artist.setBirthDate("2000-01-01");
         artist.setBirthPlace("Seoul");
         artist.setRevealDate("2022-01-01");
+        artist.setDormEntryDate("2022-01-02");
         artist.setColor("#ffffff");
         em.persist(artist);
         return artist;
