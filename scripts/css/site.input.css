@@ -1,0 +1,4 @@
+@import "./tokens.css";
+
+@source "../../src/main/resources/templates/**/*.mustache";
+@source "../../src/main/resources/static/js/**/*.js";

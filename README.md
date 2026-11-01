@@ -7,8 +7,28 @@ tripleS 팬 커뮤니티 웹사이트 (Spring Boot 3.5 + Mustache + MariaDB).
 - **[프로젝트 구조 / 인수인계 가이드](docs/PROJECT_STRUCTURE.md)** — 스택, 레이어·URL 매핑, ERD·시퀀스
 - **[도메인별 역할·기능·흐름](docs/DOMAINS.md)** — 회원 / 게시판 / tripleS / 미디어 / 아카이브 / 일정 / 샵 / 메인
 - **[레이어 가이드](docs/LAYER_ARCHITECTURE.md)** — C→S→R→E는 권장(비강제). Must / Should / Optional
+- **[UI 디자인 시스템 기준선](docs/UI_DESIGN_BASELINE.md)** — Tailwind 4 + daisyUI 빌드·토큰
+- **[레이아웃 partial 규칙](src/main/resources/templates/layout/README.md)** — head / 토큰 / daisyUI 사용법
 - PDF: [`docs/PROJECT_STRUCTURE.pdf`](docs/PROJECT_STRUCTURE.pdf) (생성: `python3 docs/md_to_pdf.py`)
 - **[Pi Docker 배포 체크리스트](docs/DEPLOY_PI.md)** — Tailscale + GHCR + Secrets
+
+## 프론트 CSS 빌드
+
+템플릿·토큰(`scripts/css/tokens.css`)을 바꾼 뒤에는 정적 CSS를 다시 생성합니다. CI와 Docker 이미지 빌드에도 동일 명령이 들어 있습니다.
+
+```bash
+./scripts/setup-css.sh          # npm ci + build:css + bootRun (로컬)
+./scripts/setup-css.sh --no-run # CSS만 (CI package / Docker)
+# 또는
+npm run setup:css
+npm run dev                     # 동일
+
+./scripts/setup-css.sh --check  # CI test: 빌드 + drift 검사 (서버 미기동)
+```
+
+CI PR(`ci-tests.yml`)은 `--check` / `--no-run`, main 배포 이미지(`Dockerfile`)는 `--no-run --skip-install`로 동일 스크립트를 씁니다.
+
+수동 단계: `npm ci` → `npm run build:css` (site / triples / objekt / gravity) → `./gradlew bootRun`.
 
 ---
 

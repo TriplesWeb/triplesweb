@@ -44,6 +44,10 @@ jobs:
             fi
             # Docs, deploy/CI scripts, editor/meta files can skip heavy checks.
             case "$f" in
+              package.json|package-lock.json|scripts/setup-css.sh|scripts/build-*-css.cjs|scripts/build-css.cjs|scripts/build-tw4.cjs|scripts/check-css-drift.cjs|scripts/tailwind*.cjs|scripts/css/*)
+                app=true
+                break
+                ;;
               *.md|docs/*|.github/*|.githooks/*|.cursor/*|.vscode/*|.gitignore|.gitattributes|.dockerignore|.env.example|LICENSE*|scripts/*)
                 ;;
               *)
@@ -66,11 +70,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
+      - name: CSS setup + drift check
+        run: ./scripts/setup-css.sh --check
       # Full test suite runs on PR's synthetic merge commit, including conflict fixes.
       - name: Full Gradle test suite
         run: ./gradlew test --no-daemon --stacktrace
@@ -112,11 +122,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
+      - name: CSS setup (npm ci + build:css)
+        run: ./scripts/setup-css.sh --no-run
       - name: Spring WAR 패키징 (Docker와 동일)
         run: ./gradlew bootWar -x test --no-daemon --stacktrace
 
