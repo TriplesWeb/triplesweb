@@ -57,9 +57,12 @@ const base = path.resolve(__dirname, '../..');
           return (c.match(/\d+/g) || []).map(Number);
         });
         assert.ok(rgb[2] > rgb[0] + 80, mode+' 멤버 이름이 상징색으로 부각');
-        assert.ok((stable.frameFilter.match(/drop-shadow/g) || []).length >= 4, mode+' 선택 테두리 빛을 더 강조');
+        assert.ok((stable.frameFilter.match(/drop-shadow/g) || []).length >= 5, mode+' 선택 테두리 빛을 더 강조');
+        assert.ok(String(stable.frameFilter).includes('saturate'), mode+' 선택 테두리 색을 진하게');
+        assert.ok(!/255,\s*255,\s*255|#fff\b/i.test(stable.frameFilter), mode+' 빛 색에 흰색을 섞지 않음');
       }
       assert.ok(String(stable.frameFilter).includes('drop-shadow'), mode+' 윤곽 PNG drop-shadow 발광');
+      assert.ok(String(stable.frameFilter).includes('saturate'), mode+' 테두리 색 채도');
       assert.equal(stable.animations.length, 1, mode+' 광택 레이어만 반복');
       assert.deepEqual(stable.animations[0].properties.sort(), ['opacity','transform'], mode+' 광택 레이어의 이동과 투명도만 애니메이션');
       assert.ok(stable.animations[0].duration >= 6400 && stable.animations[0].duration <= 6600, mode+' 6.5초 반복 주기');

@@ -2014,8 +2014,8 @@ textarea.form-control {
     object-fit: contain;
     pointer-events: none;
     z-index: 2;
-    opacity: 0.88;
-    filter: none;
+    opacity: 1;
+    filter: saturate(1.45) contrast(1.12);
     transition: filter 160ms ease, opacity 160ms ease;
 }
 
@@ -2030,25 +2030,24 @@ textarea.form-control {
 .artist-page .nav-tab-btn.is-active .artist-tab-photo {
     animation: member-selection-settle 220ms cubic-bezier(.2,.8,.2,1);
     border-radius: 0.4rem;
-    box-shadow:
-        inset 0 0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 55%, transparent),
-        0 0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 42%, transparent);
+    box-shadow: none;
 }
 .artist-page .nav-tab-btn.is-active .artist-tab-frame {
     opacity: 1;
     filter:
-        drop-shadow(0 0 0.6px #fff)
-        drop-shadow(0 0 2px var(--artist-color, #00f5d4))
-        drop-shadow(0 0 6px color-mix(in srgb, var(--artist-color, #00f5d4) 95%, transparent))
-        drop-shadow(0 0 14px color-mix(in srgb, var(--artist-color, #00f5d4) 80%, transparent))
-        drop-shadow(0 0 26px color-mix(in srgb, var(--artist-color, #00f5d4) 55%, transparent));
+        saturate(1.65) contrast(1.18)
+        drop-shadow(0 0 0.4px var(--artist-color, #00f5d4))
+        drop-shadow(0 0 1.5px var(--artist-color, #00f5d4))
+        drop-shadow(0 0 5px var(--artist-color, #00f5d4))
+        drop-shadow(0 0 12px color-mix(in srgb, var(--artist-color, #00f5d4) 95%, transparent))
+        drop-shadow(0 0 22px color-mix(in srgb, var(--artist-color, #00f5d4) 75%, transparent));
 }
 .artist-page .nav-tab-btn.is-active .artist-tab-avatar--group .artist-tab-photo {
-    border-color: color-mix(in srgb, var(--artist-color, #00f5d4) 90%, #fff);
+    border-color: var(--artist-color, #00f5d4);
     box-shadow:
-        0 0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 75%, transparent),
-        0 0 12px color-mix(in srgb, var(--artist-color, #00f5d4) 70%, transparent),
-        0 0 24px color-mix(in srgb, var(--artist-color, #00f5d4) 42%, transparent);
+        0 0 0 1px var(--artist-color, #00f5d4),
+        0 0 12px color-mix(in srgb, var(--artist-color, #00f5d4) 85%, transparent),
+        0 0 24px color-mix(in srgb, var(--artist-color, #00f5d4) 60%, transparent);
 }
 .artist-page .nav-tab-btn:focus-visible {
     outline: 2px solid #a8e6dc;
@@ -4399,8 +4398,8 @@ a.chem-highlight:hover {
     object-fit: contain;
     pointer-events: none;
     z-index: 2;
-    opacity: 0.88;
-    filter: none;
+    opacity: 1;
+    filter: saturate(1.45) contrast(1.12);
     transition: filter 160ms ease, opacity 160ms ease;
 }
 
@@ -4413,15 +4412,17 @@ a.chem-highlight:hover {
 }
 .member-portrait-picker .mpp-item.is-active .artist-tab-photo {
     animation: member-selection-settle 220ms cubic-bezier(.2,.8,.2,1);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 28%, transparent);
+    box-shadow: none;
 }
 .member-portrait-picker .mpp-item.is-active .artist-tab-frame {
     opacity: 1;
     filter:
-        drop-shadow(0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 95%, #fff))
-        drop-shadow(0 0 4px color-mix(in srgb, var(--artist-color, #00f5d4) 88%, transparent))
-        drop-shadow(0 0 10px color-mix(in srgb, var(--artist-color, #00f5d4) 70%, transparent))
-        drop-shadow(0 0 18px color-mix(in srgb, var(--artist-color, #00f5d4) 42%, transparent));
+        saturate(1.65) contrast(1.18)
+        drop-shadow(0 0 0.4px var(--artist-color, #00f5d4))
+        drop-shadow(0 0 1.5px var(--artist-color, #00f5d4))
+        drop-shadow(0 0 5px var(--artist-color, #00f5d4))
+        drop-shadow(0 0 12px color-mix(in srgb, var(--artist-color, #00f5d4) 95%, transparent))
+        drop-shadow(0 0 22px color-mix(in srgb, var(--artist-color, #00f5d4) 75%, transparent));
 }
 .member-portrait-picker .mpp-item.is-active .artist-tab-avatar::before {
     content: "";
@@ -4434,8 +4435,8 @@ a.chem-highlight:hover {
     transform: translate(-50%, -1px);
     border-left: 7px solid transparent;
     border-right: 7px solid transparent;
-    border-top: 8px solid color-mix(in srgb, var(--artist-color, #00f5d4) 55%, #f4fbff);
-    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--artist-color, #00f5d4) 75%, transparent));
+    border-top: 8px solid var(--artist-color, #00f5d4);
+    filter: drop-shadow(0 0 7px var(--artist-color, #00f5d4));
     pointer-events: none;
 }
 .member-portrait-picker .mpp-item:focus-visible {
