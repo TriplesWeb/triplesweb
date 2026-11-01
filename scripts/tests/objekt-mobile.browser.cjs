@@ -1,11 +1,10 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-const {chromium,webkit,devices}=require('playwright');
+const {chromium,devices}=require('playwright');
 const base=path.resolve(__dirname,'../..'), fixtures=path.join(base,'build/mobile-pages');
-const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
 (async()=>{
- const browser=await (engine==='webkit'?webkit:chromium).launch(engine==='webkit'?{headless:true}:{headless:true,executablePath:process.env.CHROMIUM_PATH || (fs.existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined),args:['--no-sandbox']});
+ const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH || (fs.existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined),args:['--no-sandbox']});
  try{
-  const page=await browser.newPage({...devices[engine==='webkit'?'iPhone 13':'Pixel 7'],viewport:{width:390,height:844},deviceScaleFactor:2});
+  const page=await browser.newPage({...devices['Pixel 7'],viewport:{width:390,height:844},deviceScaleFactor:2});
   await page.route('**/*',async route=>{
    const url=new URL(route.request().url());if(url.origin!=='https://mobile.test')return route.abort();
    if(url.pathname.startsWith('/preview/')){
@@ -33,7 +32,7 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
       for(let p=n.parentElement;p&&p!==document.body;p=p.parentElement){if(['auto','scroll','hidden','clip'].includes(getComputedStyle(p).overflowX))return false;}
       return r.right>innerWidth+1||r.left < -1;
     }).slice(0,8).map(n=>({tag:n.tagName,cls:n.className,text:n.textContent.slice(0,90),right:n.getBoundingClientRect().right})));
-    if(offending.length)failures.push({engine,width,file,offending});
+    if(offending.length)failures.push({engine:'chromium',width,file,offending});
     if(file==='cosmo_profile.mustache.html'){
       assert.equal(await page.locator('.profile-progress-track').count(),0);
       assert.ok(await page.locator('.profile-overall-pie').count()>=1);
@@ -56,20 +55,19 @@ const engine=process.env.BROWSER_ENGINE==='webkit'?'webkit':'chromium';
       assert.ok(await page.locator('main input').evaluate(n=>parseFloat(getComputedStyle(n).fontSize))>=16);
     }
     if(width===390&&['cosmo_profile.mustache.html','article_article.mustache.html','schedule.mustache.html','shop_shop_detail.mustache.html'].includes(file)){
-      // Preview images are optional artifacts; a slow WebKit screenshot must not fail functional assertions.
       try{
-        await page.screenshot({path:`/tmp/objekt-ui/${engine}-${file}.png`,fullPage:true,timeout:10000});
+        await page.screenshot({path:`/tmp/objekt-ui/chromium-${file}.png`,fullPage:true,timeout:10000});
       }catch(error){
-        console.warn(`[preview] Screenshot skipped (${engine}, ${file}): ${error.message}`);
+        console.warn(`[preview] Screenshot skipped (chromium, ${file}): ${error.message}`);
       }
     }
    }
   }
   for(const width of [320,430]){
     await page.setViewportSize({width,height:844});await page.goto('https://mobile.test/preview/cosmo_profile.mustache.html');
-    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`${engine} profile ${width}`);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`chromium profile ${width}`);
   }
-  console.log(`PASS: ${engine} · ${files.length}개 페이지 템플릿 · 360/390px · 프로필 320/430px · 터치 메뉴·입력·원형 그래프`);
+  console.log(`PASS: chromium · ${files.length}개 페이지 템플릿 · 360/390px · 프로필 320/430px · 터치 메뉴·입력·원형 그래프`);
   assert.deepEqual(failures,[],JSON.stringify(failures,null,2));
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1)});

@@ -18,3 +18,8 @@
 6. [ ] GHCR: 패키지를 Public으로 두거나, Secret `GHCR_TOKEN`(PAT `read:packages`) 등록  
        (워크플로가 배포 직전에 Pi에서 `docker login` 수행)
 7. [ ] `main` 푸시 후 Actions 성공, Pi에서 `docker compose ps` 확인
+8. [ ] Ruleset **`main-ci`** (`Settings → Rules → Rulesets → main-ci`):
+       - Require a pull request before merging
+       - Require status checks to pass → status check **`required`** 만
+         (`CI tests`의 test + package + qodana 집계; 예전 safari / PR code quality 제거)
+       - Require branches to be up to date (권장)
