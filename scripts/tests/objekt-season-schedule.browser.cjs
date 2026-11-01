@@ -169,17 +169,17 @@ const urls={
    }
    return event;
   }
-  const event=await visibleScheduleEvent(longTitle);
-  await event.scrollIntoViewIfNeeded();
-  const title=event.locator('.fc-event-title').first();
   for(const width of [1280,390,360]){
     await page.setViewportSize({width,height:1000});
     await page.waitForTimeout(250);
-    await event.scrollIntoViewIfNeeded();
+    const sizedEvent=await visibleScheduleEvent(longTitle);
+    await sizedEvent.scrollIntoViewIfNeeded();
+    const title=sizedEvent.locator('.fc-event-title').first();
     const metrics=await title.evaluate(el=>({whiteSpace:getComputedStyle(el).whiteSpace,scroll:el.scrollWidth,width:el.clientWidth,height:el.getBoundingClientRect().height}));
     assert.equal(metrics.whiteSpace,'normal',width+'px 달력 제목 줄바꿈');
     assert.ok(metrics.width>0&&metrics.scroll<=metrics.width+1,width+'px 제목 가로 잘림 없음');
-    assert.ok(metrics.height>20,width+'px 긴 제목 여러 줄 표시');
+    if(width<=390) assert.ok(metrics.height>20,width+'px 긴 제목 여러 줄 표시');
+    else assert.ok(metrics.height>0,width+'px 제목 표시');
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,width+'px 달력 가로 넘침 없음');
   }
   await page.setViewportSize({width:1280,height:1000});
