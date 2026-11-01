@@ -677,13 +677,13 @@
     opacity: .55;
     --badge-cut: linear-gradient(#000, #000);
     -webkit-mask-image: var(--frame-mask), var(--badge-cut);
-    -webkit-mask-size: contain, 26% 13%;
-    -webkit-mask-position: center, right 7.2% bottom 7.2%;
+    -webkit-mask-size: contain, 30% 16.8%;
+    -webkit-mask-position: center, right 4.4% bottom 4.4%;
     -webkit-mask-repeat: no-repeat;
     -webkit-mask-composite: source-out;
     mask-image: var(--frame-mask), var(--badge-cut);
-    mask-size: contain, 26% 13%;
-    mask-position: center, right 7.2% bottom 7.2%;
+    mask-size: contain, 30% 16.8%;
+    mask-position: center, right 4.4% bottom 4.4%;
     mask-repeat: no-repeat;
     mask-composite: subtract;
 }
@@ -713,16 +713,17 @@
 .artist-page .nav-tab-btn.is-active .artist-tab-frame {
     opacity: 1;
     filter: none;
+    z-index: 4;
     transform: scale(1.045);
     transform-origin: center;
     --badge-only: linear-gradient(#000, #000);
     -webkit-mask-image: var(--badge-only);
-    -webkit-mask-size: 26% 13%;
-    -webkit-mask-position: right 7.2% bottom 7.2%;
+    -webkit-mask-size: 24% 12%;
+    -webkit-mask-position: right 5.5% bottom 5.5%;
     -webkit-mask-repeat: no-repeat;
     mask-image: var(--badge-only);
-    mask-size: 26% 13%;
-    mask-position: right 7.2% bottom 7.2%;
+    mask-size: 24% 12%;
+    mask-position: right 5.5% bottom 5.5%;
     mask-repeat: no-repeat;
 }
 .artist-page .nav-tab-btn.is-active .artist-tab-avatar.has-frame-mask::after {
@@ -730,6 +731,16 @@
     opacity: 1;
     transform: scale(1.045);
     transform-origin: center;
+    -webkit-mask-image: var(--frame-mask);
+    -webkit-mask-size: contain;
+    -webkit-mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-composite: source-over;
+    mask-image: var(--frame-mask);
+    mask-size: contain;
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-composite: add;
     filter:
         drop-shadow(0 0 2px var(--artist-color, #00f5d4))
         drop-shadow(0 0 10px color-mix(in srgb, var(--artist-color, #00f5d4) 85%, transparent))

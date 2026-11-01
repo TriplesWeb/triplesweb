@@ -109,13 +109,20 @@ const base = path.resolve(__dirname, '../..');
       assert.equal(siblingIdle.frameOpacity, 0, mode+' 선택 후 미선택 프레임은 숨김');
       const overlayMask = await selected.locator('.artist-tab-avatar').evaluate(el => {
         const overlay = getComputedStyle(el, '::after');
+        const frame = getComputedStyle(el.querySelector('.artist-tab-frame'));
         return {
-          composite: overlay.maskComposite || overlay.webkitMaskComposite,
-          size: overlay.maskSize || overlay.webkitMaskSize
+          overlayComposite: overlay.maskComposite || overlay.webkitMaskComposite,
+          overlaySize: overlay.maskSize || overlay.webkitMaskSize,
+          overlayZ: overlay.zIndex,
+          frameZ: frame.zIndex,
+          frameSize: frame.maskSize || frame.webkitMaskSize
         };
       });
-      assert.match(String(overlayMask.composite), /subtract|source-out/i, mode+' S번호 뱃지는 마스크에서 뺌');
-      assert.match(String(overlayMask.size), /30%/, mode+' 뱃지 구멍은 직선 외곽선만 남김');
+      // 선택 시 사각 구멍을 없애 흰 모서리까지 상징색으로 칠하고, S번호 프레임만 위에 올린다.
+      assert.doesNotMatch(String(overlayMask.overlayComposite), /subtract|source-out/i, mode+' 선택 ::after는 테두리 전체를 칠함');
+      assert.match(String(overlayMask.overlaySize), /^contain$/i, mode+' 선택 ::after는 프레임 전체 마스크');
+      assert.match(String(overlayMask.frameSize), /24%/, mode+' 선택 프레임은 S번호 뱃지만 남김');
+      assert.ok(Number(overlayMask.frameZ) > Number(overlayMask.overlayZ), mode+' S번호가 상징색 위에 있음');
       assert.equal(stable.animations.length, 1, mode+' 광택 레이어만 반복');
       assert.deepEqual(stable.animations[0].properties.sort(), ['opacity','transform'], mode+' 광택 레이어의 이동과 투명도만 애니메이션');
       assert.ok(stable.animations[0].duration >= 6800 && stable.animations[0].duration <= 6900, mode+' 6.85초 반복 주기');
