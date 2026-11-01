@@ -76,6 +76,15 @@ const base = path.resolve(__dirname, '../..');
       assert.ok(glowCount >= 1 && glowCount <= 2, mode+' 선택 테두리 빛은 얇게');
       assert.match(String(stable.overlayBg), /34,\s*174,\s*255|#22aeff/i, mode+' 윤곽을 상징색으로 칠함');
       assert.doesNotMatch(String(stable.overlayFilter), /255,\s*255,\s*255|#fff\b/i, mode+' 빛 색에 흰색을 섞지 않음');
+      const overlayMask = await first.locator('.artist-tab-avatar').evaluate(el => {
+        const overlay = getComputedStyle(el, '::after');
+        return {
+          composite: overlay.maskComposite || overlay.webkitMaskComposite,
+          size: overlay.maskSize || overlay.webkitMaskSize
+        };
+      });
+      assert.match(String(overlayMask.composite), /subtract|source-out/i, mode+' S번호 뱃지는 마스크에서 뺌');
+      assert.match(String(overlayMask.size), /26%/, mode+' 뱃지 구멍은 외곽선만 남김');
       assert.equal(stable.animations.length, 1, mode+' 광택 레이어만 반복');
       assert.deepEqual(stable.animations[0].properties.sort(), ['opacity','transform'], mode+' 광택 레이어의 이동과 투명도만 애니메이션');
       assert.ok(stable.animations[0].duration >= 6400 && stable.animations[0].duration <= 6600, mode+' 6.5초 반복 주기');
