@@ -30,7 +30,7 @@ class ScheduleCategoryPersistenceTest {
 
     @Test void categoryAndMemberColorSurviveReloadAndLegacyEditKeepsCategory() {
         Artist artist=new Artist();artist.setName("윤서연");artist.setEngName("seoyeon");
-        artist.setNationality("대한민국");artist.setBirthDate("2003-08-06");artist.setDebutDate("2022-05-01");artist.setColor("#22aeff");
+        artist.setNationality("대한민국");artist.setBirthDate("2003-08-06");artist.setRevealDate("2022-05-01");artist.setColor("#22aeff");
         artists.saveAndFlush(artist);
         LocalDate date=LocalDate.of(2026,10,28);
         Schedule saved=service.save("윤서연 생일",date,date,"윤서연",ScheduleCategory.ANNIVERSARY);

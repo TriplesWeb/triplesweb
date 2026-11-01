@@ -38,56 +38,36 @@ public class TriplesController {
     private final MemberSpotlightService memberSpotlightService;
     private final ChemistryViewCache chemistryViewCache;
 
-    @GetMapping("/overview")
+    /**
+     * 멤버 소개(그룹 탭 포함).
+     * 멤버별 오브젝트·아카이브·공식 미디어·일정은 탭 선택 시 로드한다.
+     * `/triples/overview`(그룹 입문 메뉴)는 단독 페이지가 없어 404 → 공통 에러 화면으로 간다.
+     */
+    @GetMapping("/members")
     @Transactional(readOnly = true)
-    public String overview(Model model) {
+    public String members(Model model) {
+        return renderArtistPage(model, "멤버", "/triples/members");
+    }
+
+    /** 북마크 호환용. 내용은 /triples/members 와 동일. */
+    @GetMapping("/artist")
+    @Transactional(readOnly = true)
+    public String indexTriples(Model model) {
+        return renderArtistPage(model, "ABOUT 트리플에스", "/triples/artist");
+    }
+
+    private String renderArtistPage(Model model, String pageHeading, String artistBase) {
+        List<Artist> artistList = artistrepository.findAllWithUnits();
         GroupIntroDto group = artistAdminService.getGroupIntro();
+
+        model.addAttribute("pageHeading", pageHeading);
+        model.addAttribute("artistBase", artistBase);
+        model.addAttribute("artist", artistList);
+        model.addAttribute("allUnits", artistAdminService.listUnitOptions());
         model.addAttribute("groupTitle", group.getTitle());
         model.addAttribute("groupBody", group.getBody());
         model.addAttribute("groupImage", group.getImageUrl());
         model.addAttribute("groupTabImage", group.getTabImageUrl());
-        model.addAttribute("overviewOnly", true);
-        model.addAttribute("membersOnly", false);
-        return "triples/artist";
-    }
-
-    @GetMapping("/members")
-    @Transactional(readOnly = true)
-    public String members(Model model) {
-        indexTriples(model);
-        model.addAttribute("membersOnly", true);
-        return "triples/artist";
-    }
-
-    /**
-     * 그룹 및 멤버 소개 페이지.
-     * 멤버별 오브젝트·아카이브·공식 미디어·일정을 5개씩 연결한다.
-     */
-    @GetMapping("/artist")
-    @Transactional(readOnly = true)
-    public String indexTriples(Model model) {
-        model.addAttribute("overviewOnly", false);
-        model.addAttribute("membersOnly", false);
-
-        List<Artist> artistList = artistrepository.findAllWithUnits();
-
-        // 그룹 소개 정보
-        GroupIntroDto group =
-                artistAdminService.getGroupIntro();
-
-        model.addAttribute("artist", artistList);
-        model.addAttribute(
-                "allUnits",
-                artistAdminService.listUnitOptions()
-        );
-        model.addAttribute("groupTitle", group.getTitle());
-        model.addAttribute("groupBody", group.getBody());
-        model.addAttribute("groupImage", group.getImageUrl());
-        model.addAttribute(
-                "groupTabImage",
-                group.getTabImageUrl()
-        );
-
         return "triples/artist";
     }
 
@@ -125,6 +105,8 @@ public class TriplesController {
     @GetMapping("/chemistry-en")
     public String indexTriplesChemistryEn(Model model) {
         addChemistryPageData(model, true);
+        model.addAttribute("pageLang", "en");
+        model.addAttribute("pageHtmlExtraAttrs", "data-chem-lang=\"en\"");
         return "triples/chemistry-en";
     }
 

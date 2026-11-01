@@ -320,7 +320,8 @@
       document.getElementById("artistEditRealName").value = data.realName || "";
       document.getElementById("artistEditMbti").value = data.mbti || "";
       document.getElementById("artistEditNationality").value = data.nationality || "";
-      document.getElementById("artistEditDebutDate").value = data.debutDate || "";
+      document.getElementById("artistEditRevealDate").value = data.revealDate || "";
+      document.getElementById("artistEditDormEntryDate").value = data.dormEntryDate || "";
       document.getElementById("artistEditColor").value = data.color || "#00f5d4";
       renderLinkRows("artistEditSoloLinks", data.soloLinks || []);
       renderLinkRows("artistEditBroadcastLinks", data.broadcastLinks || []);
@@ -508,7 +509,8 @@
         fd.append("realName", document.getElementById("artistEditRealName").value);
         fd.append("mbti", document.getElementById("artistEditMbti").value);
         fd.append("nationality", document.getElementById("artistEditNationality").value);
-        fd.append("debutDate", document.getElementById("artistEditDebutDate").value);
+        fd.append("revealDate", document.getElementById("artistEditRevealDate").value);
+        fd.append("dormEntryDate", document.getElementById("artistEditDormEntryDate").value);
         fd.append("color", document.getElementById("artistEditColor").value);
         fd.append("soloContent", collectLinksJson("artistEditSoloLinks"));
         fd.append("broadcastContent", collectLinksJson("artistEditBroadcastLinks"));
@@ -536,7 +538,8 @@
             return;
           }
           const tab = "member-" + id;
-          window.location.href = (document.body.dataset.membersOnly === "true" ? "/triples/members" : "/triples/artist") + "?tab=" + encodeURIComponent(tab);
+          const base = document.body.dataset.artistBase || "/triples/members";
+          window.location.href = base + "?tab=" + encodeURIComponent(tab);
         } catch (_) {
           if (err) {
             err.textContent = "저장에 실패했습니다.";
@@ -582,7 +585,8 @@
             }
             return;
           }
-          window.location.href = document.body.dataset.groupOverview === "true" ? "/triples/overview" : "/triples/artist?tab=triples";
+          const base = document.body.dataset.artistBase || "/triples/members";
+          window.location.href = base + "?tab=triples";
         } catch (_) {
           if (err) {
             err.textContent = "저장에 실패했습니다.";

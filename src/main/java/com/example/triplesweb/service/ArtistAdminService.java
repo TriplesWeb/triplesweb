@@ -119,7 +119,8 @@ public class ArtistAdminService {
             String birthPlace,
             String realName,
             String mbti,
-            String debutDate,
+            String revealDate,
+            String dormEntryDate,
             String color,
             String soloContent,
             String broadcastContent,
@@ -140,7 +141,8 @@ public class ArtistAdminService {
         String trimmedBirthPlace = birthPlace != null ? birthPlace.trim() : "";
         String trimmedRealName = realName != null ? realName.trim() : "";
         String trimmedMbti = normalizeMbti(mbti);
-        String trimmedDebut = requireText(debutDate, "데뷔일은 필수입니다.");
+        String trimmedReveal = requireText(revealDate, "공개일은 필수입니다.");
+        String trimmedDormEntry = requireText(dormEntryDate, "숙소 입주일은 필수입니다.");
         String trimmedColor = normalizeColor(color);
 
         artistRepository.findByName(trimmedName).ifPresent(other -> {
@@ -162,7 +164,8 @@ public class ArtistAdminService {
         artist.setBirthPlace(trimmedBirthPlace.isEmpty() ? null : trimmedBirthPlace);
         artist.setRealName(trimmedRealName.isEmpty() ? null : trimmedRealName);
         artist.setMbti(trimmedMbti);
-        artist.setDebutDate(trimmedDebut);
+        artist.setRevealDate(trimmedReveal);
+        artist.setDormEntryDate(trimmedDormEntry);
         artist.setColor(trimmedColor);
         artist.setSoloContent(ContentLinks.normalizeJson(soloContent));
         artist.setBroadcastContent(ContentLinks.normalizeJson(broadcastContent));
@@ -251,7 +254,8 @@ public class ArtistAdminService {
                 .birthPlace(artist.getBirthPlace())
                 .realName(artist.getRealName())
                 .mbti(artist.getMbti())
-                .debutDate(artist.getDebutDate())
+                .revealDate(artist.getRevealDate())
+                .dormEntryDate(artist.getDormEntryDate())
                 .color(artist.getColor())
                 .profileImage(artist.getProfileImage())
                 .signatureImage(artist.getSignatureImage())

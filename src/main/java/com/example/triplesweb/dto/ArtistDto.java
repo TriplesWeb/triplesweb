@@ -20,7 +20,8 @@ public class ArtistDto {
     private String nationality;
     private String birthDate;
     private String birthPlace;
-    private String DebutDate;
+    private String revealDate;
+    private String dormEntryDate;
     private String affiliatedUnit;
     private String color;
     private String profileImage;

@@ -89,6 +89,7 @@ class ArtistAdminServiceTest {
                 "",
                 "",
                 "2022-01-01",
+                "2022-01-02",
                 "#ffffff",
                 "",
                 "",
@@ -119,7 +120,8 @@ class ArtistAdminServiceTest {
         artist.setNationality("KR");
         artist.setBirthDate("2000-01-01");
         artist.setBirthPlace("Seoul");
-        artist.setDebutDate("2022-01-01");
+        artist.setRevealDate("2022-01-01");
+        artist.setDormEntryDate("2022-01-02");
         artist.setColor("#ffffff");
         em.persist(artist);
         for (Unit unit : units) {

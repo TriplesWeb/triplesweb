@@ -48,18 +48,17 @@ class SiteNavigationTest {
         verifyNoInteractions(artists, artistAdmin, spotlight);
     }
 
-    @Test void overviewReusesGroupDataAndDirectoryDoesNotLoadMemberFeeds() throws Exception {
+    @Test void overviewIsNotFoundAndMembersIncludesGroupIntro() throws Exception {
         when(artistAdmin.getGroupIntro()).thenReturn(GroupIntroDto.builder().title("tripleS").body("기존 그룹 설명").imageUrl("/group.jpg").build());
-        mvc.perform(get("/triples/overview")).andExpect(status().isOk())
-            .andExpect(view().name("triples/artist"))
-            .andExpect(content().string(containsString("기존 그룹 설명")))
-            .andExpect(content().string(containsString("id=\"groupImageDisplay\"")));
+        mvc.perform(get("/triples/overview")).andExpect(status().isNotFound());
         mvc.perform(get("/cosmo/group-orders")).andExpect(redirectedUrl("/article/group-orders"));
         Artist member = new Artist(); member.setArtistId(1L); member.setName("서연"); member.setEngName("SeoYeon");
         when(artists.findAllWithUnits()).thenReturn(List.of(member));
         mvc.perform(get("/triples/members")).andExpect(status().isOk())
-            .andExpect(content().string(containsString("data-target=\"#member-1\"")))
-            .andExpect(content().string(org.hamcrest.Matchers.not(containsString("id=\"triples-tab\""))));
+            .andExpect(content().string(containsString("기존 그룹 설명")))
+            .andExpect(content().string(containsString("id=\"groupImageDisplay\"")))
+            .andExpect(content().string(containsString("id=\"triples-tab\"")))
+            .andExpect(content().string(containsString("data-target=\"#member-1\"")));
         when(artists.existsByArtistId(1L)).thenReturn(true);
         mvc.perform(get("/triples/artist/1")).andExpect(redirectedUrl("/triples/artist?tab=member-1"));
         verifyNoInteractions(spotlight);

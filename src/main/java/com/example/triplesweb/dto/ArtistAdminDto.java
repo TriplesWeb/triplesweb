@@ -18,7 +18,8 @@ public class ArtistAdminDto {
     private String birthPlace;
     private String realName;
     private String mbti;
-    private String debutDate;
+    private String revealDate;
+    private String dormEntryDate;
     private String color;
     private String profileImage;
     private String signatureImage;
