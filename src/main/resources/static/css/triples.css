@@ -1948,10 +1948,10 @@ textarea.form-control {
     appearance: none;
     background: transparent;
     border: 0;
-    color: #b9cac4;
+    color: var(--artist-color, #00f5d4);
     cursor: pointer;
     border-radius: 0.75rem;
-    transition: color 0.2s ease, transform 0.2s ease;
+    transition: color 0.2s ease, transform 0.2s ease, text-shadow 0.2s ease;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1961,9 +1961,9 @@ textarea.form-control {
     margin: 0;
 }
 
-.artist-page .nav-tab-btn[data-member-tab] .artist-tab-label {
-    /* 이름은 밝은 공통색으로 가독성 확보. 상징색은 프레임·테두리로 구분 */
-    color: #e3e2e8;
+.artist-page .nav-tab-btn .artist-tab-label {
+    color: color-mix(in srgb, var(--artist-color, #00f5d4) 88%, #fff 12%);
+    font-weight: 700;
 }
 
 .artist-page .nav-tab-btn:hover,
@@ -1971,10 +1971,10 @@ textarea.form-control {
     color: var(--artist-color, #00f5d4);
 }
 
-.artist-page .nav-tab-btn[data-member-tab]:hover .artist-tab-label,
-.artist-page .nav-tab-btn[data-member-tab].is-active .artist-tab-label {
-    color: #ffffff;
-    text-shadow: none;
+.artist-page .nav-tab-btn:hover .artist-tab-label,
+.artist-page .nav-tab-btn.is-active .artist-tab-label {
+    color: var(--artist-color, #00f5d4);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--artist-color, #00f5d4) 58%, transparent);
 }
 
 .artist-page .nav-tab-btn.is-active {
@@ -2030,15 +2030,25 @@ textarea.form-control {
 .artist-page .nav-tab-btn.is-active .artist-tab-photo {
     animation: member-selection-settle 220ms cubic-bezier(.2,.8,.2,1);
     border-radius: 0.4rem;
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 28%, transparent);
+    box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 55%, transparent),
+        0 0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 42%, transparent);
 }
 .artist-page .nav-tab-btn.is-active .artist-tab-frame {
     opacity: 1;
     filter:
-        drop-shadow(0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 95%, #fff))
-        drop-shadow(0 0 4px color-mix(in srgb, var(--artist-color, #00f5d4) 88%, transparent))
-        drop-shadow(0 0 10px color-mix(in srgb, var(--artist-color, #00f5d4) 70%, transparent))
-        drop-shadow(0 0 18px color-mix(in srgb, var(--artist-color, #00f5d4) 42%, transparent));
+        drop-shadow(0 0 0.6px #fff)
+        drop-shadow(0 0 2px var(--artist-color, #00f5d4))
+        drop-shadow(0 0 6px color-mix(in srgb, var(--artist-color, #00f5d4) 95%, transparent))
+        drop-shadow(0 0 14px color-mix(in srgb, var(--artist-color, #00f5d4) 80%, transparent))
+        drop-shadow(0 0 26px color-mix(in srgb, var(--artist-color, #00f5d4) 55%, transparent));
+}
+.artist-page .nav-tab-btn.is-active .artist-tab-avatar--group .artist-tab-photo {
+    border-color: color-mix(in srgb, var(--artist-color, #00f5d4) 90%, #fff);
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 75%, transparent),
+        0 0 12px color-mix(in srgb, var(--artist-color, #00f5d4) 70%, transparent),
+        0 0 24px color-mix(in srgb, var(--artist-color, #00f5d4) 42%, transparent);
 }
 .artist-page .nav-tab-btn:focus-visible {
     outline: 2px solid #a8e6dc;

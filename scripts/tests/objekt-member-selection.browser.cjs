@@ -50,6 +50,15 @@ const base = path.resolve(__dirname, '../..');
           duration:a.effect.getTiming().duration
         }))
       }));
+      if (artist) {
+        const rgb = await second.locator('.artist-tab-label').evaluate(el => {
+          const c = getComputedStyle(el).color;
+          if (c.startsWith('color(srgb')) return [...c.matchAll(/[0-9.]+/g)].slice(0, 3).map(n => Math.round(Number(n)*255));
+          return (c.match(/\d+/g) || []).map(Number);
+        });
+        assert.ok(rgb[2] > rgb[0] + 80, mode+' 멤버 이름이 상징색으로 부각');
+        assert.ok((stable.frameFilter.match(/drop-shadow/g) || []).length >= 4, mode+' 선택 테두리 빛을 더 강조');
+      }
       assert.ok(String(stable.frameFilter).includes('drop-shadow'), mode+' 윤곽 PNG drop-shadow 발광');
       assert.equal(stable.animations.length, 1, mode+' 광택 레이어만 반복');
       assert.deepEqual(stable.animations[0].properties.sort(), ['opacity','transform'], mode+' 광택 레이어의 이동과 투명도만 애니메이션');
