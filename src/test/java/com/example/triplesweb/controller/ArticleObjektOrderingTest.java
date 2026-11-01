@@ -13,7 +13,7 @@ class ArticleObjektOrderingTest {
     @Test void composePrefillsOnlyKnownSelectedObjectsForTradeAndSell() {
         var catalog = mock(ObjektService.class);
         var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
-                mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog);
+                mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog, mock(com.example.triplesweb.repository.ArtistRepository.class));
         when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("id","uuid","slug","hayeoncc367z","collectionId","Cream02 HaYeon 367Z","member","HaYeon")));
         for (String category : List.of("trade","sell","group-orders")) {
             var model = new ExtendedModelMap();
@@ -35,7 +35,7 @@ class ArticleObjektOrderingTest {
         var objekts = mock(ObjektService.class);
         var links = mock(ArticleObjektService.class);
         var controller = new ArticleController(articles, mock(CommentService.class), mock(ArticleFileServiceImpl.class),
-                mock(DateTimeFormatService.class), links, objekts);
+                mock(DateTimeFormatService.class), links, objekts, mock(com.example.triplesweb.repository.ArtistRepository.class));
         when(objekts.findCollections("triples")).thenReturn(List.of(
                 Map.of("member", "Jiyeon", "season", "Atom01"), Map.of("member", "Alpha", "season", "Cream02"),
                 Map.of("member", "HyeRin", "season", "Ever01"), Map.of("member", "SeoYeon", "season", "Binary02"),
@@ -63,7 +63,7 @@ class ArticleObjektOrderingTest {
     @Test void mergedMemberOptionSearchesAllOriginalAliases() {
         var catalog = mock(ObjektService.class);
         var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
-                mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog);
+                mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog, mock(com.example.triplesweb.repository.ArtistRepository.class));
         when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("member", "S21"),
                 Map.of("member", "ChaeWon"), Map.of("member", "김채원"), Map.of("member", "S22"),
                 Map.of("member", "zenith")));
@@ -79,7 +79,7 @@ class ArticleObjektOrderingTest {
         var articles = mock(ArticleService.class);
         var links = mock(ArticleObjektService.class);
         var controller = new ArticleController(articles, mock(CommentService.class), mock(ArticleFileServiceImpl.class),
-                mock(DateTimeFormatService.class), links, mock(ObjektService.class));
+                mock(DateTimeFormatService.class), links, mock(ObjektService.class), mock(com.example.triplesweb.repository.ArtistRepository.class));
         ArticleObjekt duo = new ArticleObjekt();
         duo.setObjektKey("duo");
         duo.setCollectionId("Cream02");
@@ -107,7 +107,7 @@ class ArticleObjektOrderingTest {
         var articles = mock(ArticleService.class);
         var links = mock(ArticleObjektService.class);
         var controller = new ArticleController(articles, mock(CommentService.class), mock(ArticleFileServiceImpl.class),
-                mock(DateTimeFormatService.class), links, mock(ObjektService.class));
+                mock(DateTimeFormatService.class), links, mock(ObjektService.class), mock(com.example.triplesweb.repository.ArtistRepository.class));
         Article existing = new Article();
         existing.setId(4L);
         existing.setTitle("같은 제목");
@@ -147,7 +147,7 @@ class ArticleObjektOrderingTest {
         var articles = mock(ArticleService.class);
         var links = mock(ArticleObjektService.class);
         var controller = new ArticleController(articles, mock(CommentService.class), mock(ArticleFileServiceImpl.class),
-                mock(DateTimeFormatService.class), links, mock(ObjektService.class));
+                mock(DateTimeFormatService.class), links, mock(ObjektService.class), mock(com.example.triplesweb.repository.ArtistRepository.class));
         ArticleObjekt have = new ArticleObjekt();
         have.setObjektKey("have-key");
         have.setSide(ArticleObjektService.SIDE_HAVE);

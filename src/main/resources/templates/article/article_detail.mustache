@@ -1,7 +1,7 @@
 {{>layout/head-open}}
 
     <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
-    <link rel="stylesheet" href="/css/article-page.css?v=1">
+    <link rel="stylesheet" href="/css/article-page.css?v=2">
 </head><body class="site-page article-page bg-surface text-on-surface min-h-screen flex flex-col">
 
 {{>layout/header}}
@@ -44,6 +44,13 @@
             {{#hasLinkedObjekts}}
             <section class="my-6 rounded-2xl border border-teal-400/30 bg-teal-400/[0.04] p-4">
                 <h2 class="mb-3 font-semibold text-teal-200">교환/거래 오브젝트</h2>
+                {{#hasMemberSwap}}
+                <p class="objekt-trade-summary">
+                    {{#hasHaveLead}}<span class="article-swap-name" style="--artist-color:{{haveLeadColor}}">{{haveLeadName}}</span>{{#hasHaveMore}} 외 {{haveMoreCount}}명{{/hasHaveMore}}{{/hasHaveLead}}
+                    {{#showTradeSwap}} <span class="article-swap-arrow">&lt;-&gt;</span> {{/showTradeSwap}}
+                    {{#hasWantLead}}<span class="article-swap-name" style="--artist-color:{{wantLeadColor}}">{{wantLeadName}}</span>{{#hasWantMore}} 외 {{wantMoreCount}}명{{/hasWantMore}}{{/hasWantLead}}
+                </p>
+                {{/hasMemberSwap}}
                 {{#isTradeObjektSplit}}
                 <div class="objekt-trade-zones objekt-trade-zones--detail" aria-label="Have와 Want 오브젝트">
                     <div class="objekt-trade-zone" data-zone="have">
@@ -57,7 +64,8 @@
                                 <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" onerror="this.onerror=null;this.src='{{frontImage}}'">
                                 <div class="objekt-trade-card-meta">
                                     <p class="truncate text-sm font-semibold">{{collectionId}}</p>
-                                    <p class="mt-1 truncate text-xs text-slate-400">{{memberName}} · {{collectionNo}}</p>
+                                    <p class="objekt-trade-member mt-1 truncate" style="--artist-color:{{memberColor}}">{{memberName}}</p>
+                                    <p class="mt-0.5 truncate text-xs objekt-trade-no">{{collectionNo}}</p>
                                 </div>
                             </a>
                             {{/linkedHaveObjekts}}
@@ -78,7 +86,8 @@
                                 <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" onerror="this.onerror=null;this.src='{{frontImage}}'">
                                 <div class="objekt-trade-card-meta">
                                     <p class="truncate text-sm font-semibold">{{collectionId}}</p>
-                                    <p class="mt-1 truncate text-xs text-slate-400">{{memberName}} · {{collectionNo}}</p>
+                                    <p class="objekt-trade-member mt-1 truncate" style="--artist-color:{{memberColor}}">{{memberName}}</p>
+                                    <p class="mt-0.5 truncate text-xs objekt-trade-no">{{collectionNo}}</p>
                                 </div>
                             </a>
                             {{/linkedWantObjekts}}
@@ -94,7 +103,7 @@
                     {{#linkedObjekts}}
                     <a href="/cosmo/objekt/detail/{{objektKey}}" class="overflow-hidden rounded-xl border border-white/10 bg-black/20">
                         <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" class="aspect-[2/3] w-full object-cover" onerror="this.onerror=null;this.src='{{frontImage}}'">
-                        <div class="p-2"><p class="truncate text-sm font-semibold">{{collectionId}}</p><p class="mt-1 text-xs text-slate-400">{{memberName}} · {{collectionNo}}</p></div>
+                        <div class="p-2"><p class="truncate text-sm font-semibold">{{collectionId}}</p><p class="objekt-trade-member mt-1 truncate" style="--artist-color:{{memberColor}}">{{memberName}}</p><p class="mt-0.5 text-xs objekt-trade-no">{{collectionNo}}</p></div>
                     </a>
                     {{/linkedObjekts}}
                 </div>

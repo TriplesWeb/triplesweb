@@ -107,6 +107,12 @@ public class CosmoCollectionController {
         return "cosmo/collection";
     }
 
+    @GetMapping("/cosmo/collection/suggest")
+    @ResponseBody
+    public Map<String, Object> suggest(@RequestParam(defaultValue = "") String q) {
+        return Map.of("items", collections.suggestNicknames(q, 8));
+    }
+
     @GetMapping("/cosmo/collection/more")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> more(@RequestParam String nickname,

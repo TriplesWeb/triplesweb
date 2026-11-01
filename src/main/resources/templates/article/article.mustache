@@ -1,7 +1,7 @@
 {{>layout/head-open}}
 
     <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
-    <link rel="stylesheet" href="/css/article-page.css?v=1">
+    <link rel="stylesheet" href="/css/article-page.css?v=2">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=6">
 </head><body class="site-page article-page bg-surface text-on-surface min-h-screen flex flex-col">
 {{>layout/header}}
@@ -30,6 +30,18 @@
                 <a href="/article/sell" {{#isSell}}aria-current="page"{{/isSell}}>거래</a>
                 <a href="/article/group-orders" {{#isGroupOrders}}aria-current="page"{{/isGroupOrders}}>분철</a>
             </nav>
+            <section class="market-member-filter" aria-label="멤버별 검색">
+                <div class="market-side-seg" role="group" aria-label="Have Want 구분">
+                    <a class="market-side-link{{#isObjektSideAll}} is-active{{/isObjektSideAll}}" href="/article/{{category}}?objektSide=all{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">전체</a>
+                    <a class="market-side-link{{#isObjektSideHave}} is-active{{/isObjektSideHave}}" href="/article/{{category}}?objektSide=have{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Have</a>
+                    {{#isTrade}}
+                    <a class="market-side-link{{#isObjektSideWant}} is-active{{/isObjektSideWant}}" href="/article/{{category}}?objektSide=want{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Want</a>
+                    {{/isTrade}}
+                </div>
+                <div class="member-portrait-picker" id="market-member-picker" role="group" aria-label="멤버 선택">
+                    {{>partials/member-portrait-picker}}
+                </div>
+            </section>
             {{/isMarketBoard}}
 
             <!-- 게시판 테이블 영역 -->
@@ -49,7 +61,18 @@
                     {{#articleList}}
                         <div class="article-board-row grid grid-cols-12 gap-4 px-6 py-4 items-center text-center text-sm text-on-surface hover:bg-surface-container-highest/30 transition-colors">
                             <div class="col-span-1 text-outline font-mono">{{displayId}}</div>
-                            <div class="article-board-subject col-span-6 text-left font-medium truncate">
+                            {{#isMarketBoard}}
+                            <div class="article-board-swap col-span-2">
+                                {{#hasMemberSwap}}
+                                <span class="article-swap">
+                                    {{#hasHaveLead}}<span class="article-swap-name" style="--artist-color:{{haveLeadColor}}">{{haveLeadName}}</span>{{#hasHaveMore}} 외 {{haveMoreCount}}명{{/hasHaveMore}}{{/hasHaveLead}}
+                                    {{#showTradeSwap}} <span class="article-swap-arrow" aria-hidden="true">&lt;-&gt;</span> {{/showTradeSwap}}
+                                    {{#hasWantLead}}<span class="article-swap-name" style="--artist-color:{{wantLeadColor}}">{{wantLeadName}}</span>{{#hasWantMore}} 외 {{wantMoreCount}}명{{/hasWantMore}}{{/hasWantLead}}
+                                </span>
+                                {{/hasMemberSwap}}
+                            </div>
+                            {{/isMarketBoard}}
+                            <div class="article-board-subject {{#isMarketBoard}}col-span-4{{/isMarketBoard}}{{^isMarketBoard}}col-span-6{{/isMarketBoard}} text-left font-medium truncate">
                                 <a href="/article/{{#category}}{{category}}{{/category}}{{^category}}trade{{/category}}/{{id}}" class="hover:text-primary-container transition-colors">
                                     {{title}}
                                 </a>
@@ -82,6 +105,10 @@
                             <option value="writer" {{#isSearchWriter}}selected{{/isSearchWriter}}>작성자</option>
                         </select>
                     </label>
+                    {{#isMarketBoard}}
+                    <input type="hidden" name="member" value="{{selectedMember}}">
+                    <input type="hidden" name="objektSide" value="{{selectedObjektSide}}">
+                    {{/isMarketBoard}}
                     <div class="site-search-field article-board-search-keyword relative flex-1 sm:w-60">
                         <input type="search" name="keyword" value="{{searchKeyword}}" placeholder="검색어를 입력하세요" aria-label="게시글 검색어" autocomplete="off" />
                         <button type="submit" aria-label="게시글 검색" class="site-search-submit">
@@ -106,8 +133,21 @@
     </div>
 </main>
 
+<script src="/js/member-portrait-picker.js?v=9"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        const picker = document.getElementById("market-member-picker");
+        if (picker && window.MemberPortraitPicker) {
+            window.MemberPortraitPicker.bindMultiSelect(picker, {
+                multi: false,
+                onChange: function (values) {
+                    const url = new URL(window.location.href);
+                    if (values.length) url.searchParams.set("member", values[0]);
+                    else url.searchParams.delete("member");
+                    window.location.href = url.pathname + url.search;
+                }
+            });
+        }
         // 테이블의 tbody 안에 있는 모든 행(tr)을 가져옵니다.
         const rows = document.querySelectorAll(".table-article tr");
 

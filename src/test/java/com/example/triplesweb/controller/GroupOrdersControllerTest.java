@@ -31,6 +31,7 @@ class GroupOrdersControllerTest {
     @MockitoBean DateTimeFormatService dates;
     @MockitoBean ArticleObjektService links;
     @MockitoBean ObjektService objekts;
+    @MockitoBean com.example.triplesweb.repository.ArtistRepository artists;
 
     private Article article() {
         Article a=new Article(); a.setId(5L); a.setTitle("분철 모집"); a.setContent("<p>내용</p>"); a.setCategory("group-orders");

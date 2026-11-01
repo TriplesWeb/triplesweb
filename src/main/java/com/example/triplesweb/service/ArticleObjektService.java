@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +67,17 @@ public class ArticleObjektService {
     @Transactional(readOnly = true)
     public List<ArticleObjekt> findWantForArticle(Long articleId) {
         return filterSide(findForArticle(articleId), SIDE_WANT);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, List<ArticleObjekt>> groupByArticleId(Collection<Long> articleIds) {
+        Map<Long, List<ArticleObjekt>> grouped = new java.util.LinkedHashMap<>();
+        if (articleIds == null || articleIds.isEmpty()) return grouped;
+        for (ArticleObjekt row : repository.findByArticle_IdInOrderByIdAsc(articleIds)) {
+            if (row.getArticle() == null || row.getArticle().getId() == null) continue;
+            grouped.computeIfAbsent(row.getArticle().getId(), ignored -> new ArrayList<>()).add(row);
+        }
+        return grouped;
     }
 
     @Transactional

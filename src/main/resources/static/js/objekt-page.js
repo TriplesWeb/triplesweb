@@ -482,7 +482,17 @@
         const key = data.objektKey || data.id || activeObjektKey;
         activeObjektKey = key;
         if (detailTitle) detailTitle.textContent = data.collectionId || '—';
-        if (detailMember) detailMember.textContent = data.member || '—';
+        if (detailMember) {
+            const memberName = data.member || '—';
+            detailMember.textContent = memberName;
+            if (data.membersTabUrl) {
+                detailMember.href = data.membersTabUrl;
+                detailMember.style.setProperty('--artist-color', data.memberColor || '#00f5d4');
+            } else {
+                detailMember.removeAttribute('href');
+                detailMember.style.removeProperty('--artist-color');
+            }
+        }
         if (detailSeason) detailSeason.textContent = data.season || '—';
         if (detailClass) detailClass.textContent = data.class || '—';
         if (detailNo) detailNo.textContent = data.collectionNo || '—';

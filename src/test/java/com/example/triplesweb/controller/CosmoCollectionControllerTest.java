@@ -90,6 +90,14 @@ class CosmoCollectionControllerTest {
                 .andExpect(content().string(not(containsString("#30000001"))));
     }
 
+    @Test void suggestReturnsCosmoNicknameMatches() throws Exception {
+        when(collections.suggestNicknames("hay", 8)).thenReturn(List.of("hayeonfan", "hayoon"));
+        mvc.perform(get("/cosmo/collection/suggest").param("q", "hay"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0]").value("hayeonfan"))
+                .andExpect(jsonPath("$.items[1]").value("hayoon"));
+    }
+
     @Test void moreEndpointReturnsJsonPagePayload() throws Exception {
         var view = new java.util.LinkedHashMap<String, Object>();
         view.put("cards", List.of(Map.of("serial", "28", "hasSerial", true, "collectionId", "Cream02 HaYeon 368Z",

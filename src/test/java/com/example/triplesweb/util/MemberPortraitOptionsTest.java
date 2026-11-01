@@ -31,4 +31,15 @@ class MemberPortraitOptionsTest {
         for (String other : java.util.List.of("AAA", "TokyoHaus", "sun", "+(KR)E", ""))
             assertThat(MemberPortraitOptions.objektMembers(other)).isEmpty();
     }
+
+    @Test void findArtistUsesSoloColorFromEitherName() {
+        var artist = new com.example.triplesweb.entity.Artist();
+        artist.setArtistId(1L);
+        artist.setName("윤서연");
+        artist.setEngName("SeoYeon");
+        artist.setColor("#111111");
+        assertThat(MemberPortraitOptions.findArtist("S1", java.util.List.of(artist)).getArtistId()).isEqualTo(1L);
+        assertThat(MemberPortraitOptions.artistColor("서연", java.util.List.of(artist))).isEqualTo("#111111");
+        assertThat(MemberPortraitOptions.artistColor("없는멤버", java.util.List.of(artist))).isEqualTo("#00f5d4");
+    }
 }

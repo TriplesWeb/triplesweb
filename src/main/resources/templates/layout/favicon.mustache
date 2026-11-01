@@ -1,3 +1,15 @@
+<script>
+(function () {
+  var theme = 'dark';
+  try {
+    var stored = localStorage.getItem('site-theme');
+    if (stored === 'light' || stored === 'dark') theme = stored;
+  } catch (e) {}
+  document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.classList.toggle('dark', theme !== 'light');
+  document.documentElement.classList.toggle('theme-light', theme === 'light');
+})();
+</script>
 <link rel="icon" href="/favicon.ico?v=3" sizes="any">
 <link rel="icon" href="/favicon.png?v=3" type="image/png" sizes="32x32">
 <link rel="shortcut icon" href="/favicon.ico?v=3">
@@ -11,5 +23,7 @@
 
 <link rel="stylesheet" href="/css/site-header.css?v=7">
 <script src="/js/site-header.js?v=4" defer></script>
+<link rel="stylesheet" href="/css/site-theme.css?v=5">
+<script src="/js/site-theme.js?v=1" defer></script>
 <link rel="stylesheet" href="/css/site-footer.css?v=2">
 <link rel="stylesheet" href="/css/site-chrome.css?v=2">
