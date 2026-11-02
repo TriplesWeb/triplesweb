@@ -2,11 +2,8 @@
 
 <link rel="stylesheet" href="/css/gravity-page.css?v=3">
 <link rel="stylesheet" href="/css/archive-page.css?v=15">
-<link rel="stylesheet" href="/css/member-portrait-picker.css?v=20">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=14">
-<link rel="stylesheet" href="/css/archive-page.css?v=13">
-<link rel="stylesheet" href="/css/member-portrait-picker.css?v=13">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=14">
+<link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=20">
 <title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}내 오브젝트 검색{{/nickname}}</title>
 </head><body class="site-page collection-page min-h-screen flex flex-col">
 {{>layout/header}}
@@ -15,13 +12,13 @@
     <section class="gv-panel gv-headline">
         <h1>내 오브젝트 검색</h1>
         <p>닉네임을 검색하면 보유 오브젝트와 시리얼 번호를 확인할 수 있습니다.</p>
-        <form class="ar-filters" method="get" action="/cosmo/collection" style="margin-top:1rem">
-            <div class="ar-search-wrap site-search">
-                <input class="ar-search site-search__input" type="search" name="nickname" value="{{query}}" placeholder="닉네임 입력" aria-label="COSMO 닉네임">
-                <button type="submit" class="site-search__submit" aria-label="검색">
-                    <span class="material-symbols-outlined">search</span>
-                </button>
-            </div>
+        <form class="ar-filters collection-nickname-form" method="get" action="/cosmo/collection" style="margin-top:1rem" data-saved-nickname="{{#hasCollection}}{{nickname}}{{/hasCollection}}">
+            <label class="ar-search-wrap">
+                <span class="material-symbols-outlined">search</span>
+                <input class="ar-search" id="collection-nickname-input" type="search" name="nickname" value="{{query}}" placeholder="닉네임 입력" aria-label="COSMO 닉네임" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="collection-nickname-suggest" aria-autocomplete="list">
+                <div id="collection-nickname-suggest" class="collection-nickname-suggest" hidden role="listbox" aria-label="연관닉"></div>
+            </label>
+            <button class="ar-submit" type="submit">검색</button>
         </form>
     </section>
     {{#collectionError}}<p class="gv-notice" role="status">{{collectionError}}</p>{{/collectionError}}
@@ -92,7 +89,7 @@
                         <input type="text"
                                id="collection-kind-select"
                                class="objekt-kind-select"
-                               value="{{selectedKind}}"
+                               value="{{selectedKindLabel}}"
                                placeholder="전체"
                                autocomplete="off"
                                spellcheck="false"
@@ -173,7 +170,7 @@
         {{#cards}}
         <article class="ar-panel ar-card collection-card">
             <div class="collection-image-wrap">
-            <span class="collection-card-serial">{{#hasSerial}}#{{serial}}{{/hasSerial}}{{^hasSerial}}시리얼 확인 중{{/hasSerial}}</span><span class="collection-card-season">{{season}}</span>
+            <span class="collection-card-serial">{{#hasSerial}}#{{serial}}{{/hasSerial}}{{^hasSerial}}시리얼 확인 중{{/hasSerial}}</span><span class="collection-card-season" data-season-color="{{season}}"{{#seasonColor}} style="background:{{seasonColor}}"{{/seasonColor}}>{{season}}</span>
             {{#hasImage}}<img class="collection-image" src="{{thumbnailImage}}" alt="{{collectionId}}" referrerpolicy="no-referrer" loading="lazy" decoding="async">{{/hasImage}}
             {{^hasImage}}<span class="ar-muted">이미지 준비 중</span>{{/hasImage}}
             </div>
@@ -195,8 +192,9 @@
     </div>
     {{/hasCollection}}
 </main>
-<script src="/js/member-portrait-picker.js?v=9"></script>
+<script src="/js/member-portrait-picker.js?v=10"></script>
 <script src="/js/objekt-kind-combo.js?v=1"></script>
+<script src="/js/collection-nickname-suggest.js?v=4"></script>
 <script>
 (() => {
   const form = document.getElementById('collection-filter-form');
@@ -376,6 +374,12 @@
       .replace(/'/g, '&#39;');
   }
 
+  function seasonBadgeColor(item) {
+    const fromItem = typeof item?.seasonColor === 'string' ? item.seasonColor.trim() : '';
+    if (fromItem) return fromItem;
+    return window.SeasonChips?.colorFor(item?.season) || '#A4B7B4';
+  }
+
   function updateStatus() {
     if (empty) empty.classList.toggle('is-hidden', loadedCount > 0 || pending);
     if (filteredCountEl) filteredCountEl.textContent = String(filteredCount);
@@ -402,7 +406,7 @@
       ? `<h3><a class="collection-title-link" href="${escapeHtml(item.detailUrl)}">${title}</a></h3>`
       : `<h3>${title}</h3>`;
     return `<article class="ar-panel ar-card collection-card">
-      <div class="collection-image-wrap"><span class="collection-card-serial">${serial}</span><span class="collection-card-season">${escapeHtml(item.season || '')}</span>${image}</div>
+      <div class="collection-image-wrap"><span class="collection-card-serial">${serial}</span><span class="collection-card-season" data-season-color="${escapeHtml(item.season || '')}"${item.season ? ` style="background:${escapeHtml(seasonBadgeColor(item))}"` : ''}>${escapeHtml(item.season || '')}</span>${image}</div>
       <div class="ar-body">
         ${heading}
         <p class="ar-muted">${member}${season}</p>

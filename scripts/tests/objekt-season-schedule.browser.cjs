@@ -45,6 +45,11 @@ const urls={
    await page.setViewportSize({width:1280,height:900});
    await page.goto('https://filters.test/fixture/'+name);
    assert.equal(await page.locator('.season-quick-filters:visible').count(),0,'시즌 버튼은 열었을 때만 표시');
+   const kindInput=page.locator(name==='objekt'?'#objekt-kind-input':'#collection-kind-select');
+   assert.equal(await kindInput.inputValue(),'전체',name+' 종류 기본 표시는 전체');
+   assert.match(await kindInput.evaluate(el=>getComputedStyle(el).fontFamily),/Pretendard/i,name+' 종류 입력 사이트 폰트');
+   const kindOption=page.locator(name==='objekt'?'#kind-menu .objekt-kind-option':'#collection-kind-menu .objekt-kind-option').first();
+   assert.match(await kindOption.evaluate(el=>getComputedStyle(el).fontFamily),/Pretendard/i,name+' 종류 목록 사이트 폰트');
    await page.locator(name==='objekt'?'#season-dropdown>button':'#collection-season-toggle').click();
    const row=page.getByRole('group',{name:'시즌 선택',exact:true});
    await row.locator('button[data-value="Atom01"]').waitFor({timeout:10000}).catch(async error=>{
@@ -70,6 +75,11 @@ const urls={
    const input=page.locator('input.season-checkbox[value="Cream02"]').first();
    await input.evaluate(el=>{el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}));});
    assert.equal(await row.locator('button[data-value="Cream02"]').getAttribute('aria-pressed'),'true');
+   const creamChip=row.locator('button[data-value="Cream02"]');
+   const creamColor=await creamChip.evaluate(el=>getComputedStyle(el).borderTopColor);
+   const badge=page.locator(name==='objekt'?'.objekt-card-season':'.collection-card-season').filter({hasText:'Cream02'}).first();
+   assert.equal(await badge.count(),1,name+' 카드에 Cream02 뱃지');
+   assert.equal(await badge.evaluate(el=>getComputedStyle(el).backgroundColor),creamColor,name+' 카드 시즌 색이 드롭다운과 같음');
    await page.setViewportSize({width:390,height:844});
    if(!await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))console.log('시즌 배치 진단',await page.evaluate(()=>({w:innerWidth,scroll:document.documentElement.scrollWidth,items:[...document.querySelectorAll('.season-control,.season-choice-panel,.season-chip-list')].map(n=>({cls:n.className,rect:JSON.stringify(n.getBoundingClientRect()),min:getComputedStyle(n).minWidth,max:getComputedStyle(n).maxWidth,box:getComputedStyle(n).boxSizing}))})));
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,name+' 시즌 버튼 모바일 넘침');

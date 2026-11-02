@@ -90,15 +90,26 @@
     let kindActiveIndex = -1;
 
     function normalizeKindValue(raw) {
+        if (window.ObjektKindCombo) return ObjektKindCombo.normalizeKindValue(raw);
         const value = String(raw || '').trim();
-        if (!value || value.toLowerCase() === 'all') return 'all';
+        if (!value || value.toLowerCase() === 'all' || value === '전체') return 'all';
         return value.toUpperCase();
     }
 
-    function setKindValue(raw) {
+    function displayKindValue(raw) {
+        if (window.ObjektKindCombo) return ObjektKindCombo.displayKindValue(raw);
+        const value = normalizeKindValue(raw);
+        return value === 'all' ? '전체' : value;
+    }
+
+    function setKindValue(raw, { apply = true } = {}) {
         if (!kindSelect) return;
-        kindSelect.value = normalizeKindValue(raw);
+        const next = normalizeKindValue(raw);
+        const changed = normalizeKindValue(kindSelect.value) !== next;
+        kindSelect.value = displayKindValue(next);
+        kindSelect.dataset.kindValue = next;
         markActiveFilters();
+        if (apply && changed) scheduleApplyFilters();
     }
 
     function filterKindOptions(query) {
@@ -148,11 +159,17 @@
     }
 
     const initialKind = normalizeKindValue(params.get('kind') || kindSelect?.value || 'all');
-    if (kindSelect) kindSelect.value = initialKind;
+    if (kindSelect) {
+        kindSelect.value = displayKindValue(initialKind);
+        kindSelect.dataset.kindValue = initialKind;
+    }
     sortSelect.value = params.get('sort') || 'latest';
     if (!sortSelect.value) sortSelect.value = 'latest';
     syncSortMenu();
-    sortSelect.addEventListener('change', syncSortMenu);
+    sortSelect.addEventListener('change', () => {
+        syncSortMenu();
+        scheduleApplyFilters();
+    });
     document.getElementById('sort-native-control').hidden = true;
     sortToggle.hidden = false;
 
@@ -263,6 +280,7 @@
         syncMemberGroup();
         syncMemberLabel();
         if (typeof markActiveFilters === 'function') markActiveFilters();
+        if (apply) scheduleApplyFilters();
     }
 
     // 멤버 초상화 다중선택
@@ -301,11 +319,12 @@
         } else { syncMemberGroup(); syncMemberLabel(); }
         setMemberPickerOpen(group === 'members');
         markActiveFilters();
+        scheduleApplyFilters();
     }));
     memberToggle?.addEventListener('click', () => {
         if (memberGroupInput.value === 'other') {
             memberGroupInput.value = 'members'; syncMemberGroup(); syncMemberLabel();
-            setMemberPickerOpen(true); markActiveFilters(); return;
+            setMemberPickerOpen(true); markActiveFilters(); scheduleApplyFilters(); return;
         }
         setMemberPickerOpen(memberRoot.classList.contains('is-collapsed'));
     });
@@ -330,6 +349,7 @@
             if (all && !chosen) all.checked = true;
             updateDropdownLabel(type);
             markActiveFilters();
+            scheduleApplyFilters();
         }));
         updateDropdownLabel(type);
     });
@@ -369,14 +389,12 @@
         }
     });
 
-    form.addEventListener('submit', () => {
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
         const page = form.querySelector('input[name="page"]');
         if (page) page.value = '0';
-        if (kindSelect) kindSelect.value = normalizeKindValue(kindSelect.value);
-        // 미선택(전체)일 때는 member 파라미터를 보내지 않는다.
-        document.querySelectorAll('.member-checkbox').forEach((cb) => {
-            if (!cb.checked) cb.disabled = true;
-        });
+        if (kindSelect) kindSelect.value = displayKindValue(kindSelect.value);
+        applyFilters();
     });
 
     document.getElementById('objekt-reset').addEventListener('click', () => {
@@ -396,6 +414,8 @@
     let nextPage = Number(sentinel?.dataset.nextPage || 1);
     let hasMore = sentinel?.dataset.hasMore === 'true';
     let loading = false;
+    let listGeneration = 0;
+    let filterTimer = 0;
 
     function escapeHtml(value) {
         return String(value ?? '')
@@ -408,6 +428,12 @@
 
     function attr(value) {
         return escapeHtml(value);
+    }
+
+    function seasonBadgeColor(item, season) {
+        const fromItem = typeof item?.seasonColor === 'string' ? item.seasonColor.trim() : '';
+        if (fromItem) return fromItem;
+        return window.SeasonChips?.colorFor(season) || '#A4B7B4';
     }
 
     const detailModal = document.getElementById('objektDetailModal');
@@ -482,7 +508,17 @@
         const key = data.objektKey || data.id || activeObjektKey;
         activeObjektKey = key;
         if (detailTitle) detailTitle.textContent = data.collectionId || '—';
-        if (detailMember) detailMember.textContent = data.member || '—';
+        if (detailMember) {
+            const memberName = data.member || '—';
+            detailMember.textContent = memberName;
+            if (data.membersTabUrl) {
+                detailMember.href = data.membersTabUrl;
+                detailMember.style.setProperty('--artist-color', data.memberColor || '#00f5d4');
+            } else {
+                detailMember.removeAttribute('href');
+                detailMember.style.removeProperty('--artist-color');
+            }
+        }
         if (detailSeason) detailSeason.textContent = data.season || '—';
         if (detailClass) detailClass.textContent = data.class || '—';
         if (detailNo) detailNo.textContent = data.collectionNo || '—';
@@ -709,7 +745,7 @@
         const collectionId = item.collectionId || '';
         const member = item.member || item.memberName || '';
         const collectionNo = item.collectionNo || item.collectionNumber || '';
-        const id = item.id || '';
+        const id = item.publicKey || item.id || '';
         const thumb = item.thumbnailImage || item.frontImage || '';
         const front = item.frontImage || thumb;
         const klass = item.class || item.classKey || '';
@@ -721,7 +757,7 @@
             <button type="button" class="objekt-open-detail relative block aspect-[2/3] w-full overflow-hidden bg-[#1c1f2e]" aria-label="${attr(collectionId)} 상세 보기">
                 <img src="${attr(thumb)}" alt="${attr(collectionId)}" loading="lazy" decoding="async" class="objekt-image h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null;this.src='${attr(front)}';">
                 <span class="absolute left-2 top-2 rounded-md border border-white/15 bg-black/65 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur">${escapeHtml(klass)}</span>
-                <span class="absolute right-2 top-2 rounded-md bg-[#00e8cb] px-2 py-1 text-[10px] font-bold text-[#071513]">${escapeHtml(season)}</span>
+                <span class="objekt-card-season absolute right-2 top-2 rounded-md px-2 py-1 text-[10px] font-bold text-[#071513]" style="background:${attr(seasonBadgeColor(item, season))}">${escapeHtml(season)}</span>
             </button>
             <div class="p-3">
                 <a href="/cosmo/objekt/detail/${attr(id)}" class="objekt-detail-link block truncate text-sm font-semibold text-slate-100 hover:text-[#00f5d4]" title="${attr(collectionId)}">${escapeHtml(collectionId)}</a>
@@ -736,12 +772,87 @@
     function currentFilterParams() {
         const params = new URLSearchParams(new FormData(form));
         params.delete('page');
-        // FormData에 미체크 member가 없을 수 있음 — 체크된 것만 유지
+        if (kindSelect) params.set('kind', normalizeKindValue(kindSelect.value));
         return params;
+    }
+
+    function scheduleApplyFilters() {
+        clearTimeout(filterTimer);
+        filterTimer = setTimeout(applyFilters, 80);
+    }
+
+    function syncFilterAddress(params) {
+        const address = new URL(location.href);
+        const objekt = address.searchParams.get('objekt');
+        address.search = params.toString();
+        if (objekt) address.searchParams.set('objekt', objekt);
+        history.replaceState(null, '', address.pathname + address.search);
+    }
+
+    function renderLoadedCards(items) {
+        if (!grid) return;
+        const wrap = document.createElement('div');
+        wrap.innerHTML = items.map(buildCard).join('');
+        const fragment = document.createDocumentFragment();
+        while (wrap.firstChild) fragment.appendChild(wrap.firstChild);
+        grid.replaceChildren(fragment);
+    }
+
+    function rememberCounts() {
+        if (loadedEl) loadedEl.textContent = String(loadedCount);
+        const allEl = document.getElementById('objekt-all-count');
+        if (allEl) allEl.textContent = String(allCount);
+        if (summary) {
+            summary.dataset.loaded = String(loadedCount);
+            summary.dataset.resultCount = String(resultCount);
+            summary.dataset.allCount = String(allCount);
+            const strong = summary.querySelector('strong');
+            if (strong) strong.textContent = String(resultCount);
+        }
+        if (empty) empty.classList.toggle('hidden', loadedCount > 0);
+    }
+
+    async function applyFilters() {
+        if (!grid) return;
+        const request = ++listGeneration;
+        loading = true;
+        hasMore = false;
+        updateSummary();
+        const params = currentFilterParams();
+        params.set('page', '0');
+        try {
+            const res = await fetch(`/cosmo/objekt/more?${params.toString()}`, {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+                cache: 'no-store'
+            });
+            if (!res.ok) throw new Error('load failed');
+            const data = await res.json();
+            if (request !== listGeneration) return;
+            const items = Array.isArray(data.items) ? data.items : [];
+            renderLoadedCards(items);
+            loadedCount = items.length;
+            resultCount = Number(data.resultCount ?? 0);
+            allCount = Number(data.allCount ?? allCount);
+            hasMore = Boolean(data.hasMore) && items.length > 0;
+            nextPage = data.nextPage == null ? 1 : Number(data.nextPage);
+            rememberCounts();
+            params.delete('page');
+            syncFilterAddress(params);
+        } catch (_) {
+            if (request !== listGeneration) return;
+            if (statusEl) statusEl.textContent = '검색 결과를 바꾸지 못했습니다. 잠시 후 다시 시도해 주세요.';
+        } finally {
+            if (request === listGeneration) {
+                loading = false;
+                updateSummary();
+            }
+        }
     }
 
     async function loadMore() {
         if (!hasMore || loading || !grid) return;
+        const request = listGeneration;
         loading = true;
         updateSummary();
         try {
@@ -754,6 +865,7 @@
             });
             if (!res.ok) throw new Error('load failed');
             const data = await res.json();
+            if (request !== listGeneration) return;
             const items = Array.isArray(data.items) ? data.items : [];
             if (items.length) {
                 const wrap = document.createElement('div');
@@ -767,17 +879,16 @@
             allCount = Number(data.allCount ?? allCount);
             hasMore = Boolean(data.hasMore) && items.length > 0;
             nextPage = data.nextPage == null ? nextPage + 1 : Number(data.nextPage);
-            if (summary) {
-                summary.dataset.loaded = String(loadedCount);
-                summary.dataset.resultCount = String(resultCount);
-                summary.dataset.allCount = String(allCount);
-            }
+            rememberCounts();
         } catch (_) {
+            if (request !== listGeneration) return;
             hasMore = false;
             if (statusEl) statusEl.textContent = '더 불러오지 못했습니다. 잠시 후 다시 스크롤해 주세요.';
         } finally {
-            loading = false;
-            updateSummary();
+            if (request === listGeneration) {
+                loading = false;
+                updateSummary();
+            }
         }
     }
 

@@ -44,4 +44,18 @@ class ArticleObjektServiceTest {
                 .extracting(ArticleObjekt::getSide)
                 .containsExactly(ArticleObjektService.SIDE_HAVE, ArticleObjektService.SIDE_WANT);
     }
+
+    @Test
+    void groupByArticleIdUsesBatchLookup() {
+        var repo = mock(ArticleObjektRepository.class);
+        var catalog = mock(ObjektService.class);
+        Article first = new Article();
+        first.setId(1L);
+        ArticleObjekt row = new ArticleObjekt();
+        row.setArticle(first);
+        when(repo.findByArticle_IdInOrderByIdAsc(List.of(1L, 2L))).thenReturn(List.of(row));
+        var service = new ArticleObjektService(repo, catalog);
+        assertThat(service.groupByArticleId(List.of(1L, 2L))).containsOnlyKeys(1L);
+        assertThat(service.groupByArticleId(List.of())).isEmpty();
+    }
 }

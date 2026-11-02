@@ -1,5 +1,7 @@
 {{>layout/head-open}}
     <title>tripleS 커뮤</title>
+    <link rel="stylesheet" href="/css/schedule-categories.css?v=5">
+    <link rel="stylesheet" href="/css/main-page.css?v=1">
 
     <style>
         /* FullCalendar Dark Customization */
@@ -70,21 +72,23 @@
         </div>
 
         <!-- 메인 이미지 캐러셀 배너 -->
-        <div class="lg:col-span-5 bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-4 backdrop-blur-md shadow-xl flex flex-col relative overflow-hidden group">
-            <div class="relative w-full h-full min-h-[240px] rounded-xl overflow-hidden flex flex-col justify-end p-5 bg-cover bg-center" style="background-image: url('../../../uploads/images/andless.webp');">
+        <a href="{{albumHref}}" class="main-hero-card lg:col-span-5 bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-4 backdrop-blur-md shadow-xl flex flex-col relative overflow-hidden group no-underline">
+            <div class="main-hero-visual relative w-full h-full min-h-[240px] rounded-xl overflow-hidden flex flex-col justify-end p-5 bg-cover bg-center" style="background-image: url('../../../uploads/images/andless.webp');">
                 <div class="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent"></div>
+                <span class="main-hero-sheen" aria-hidden="true"></span>
 
                 <div class="relative z-10 space-y-1.5">
                     <span class="inline-block px-2.5 py-0.5 rounded-full bg-primary-container/20 border border-primary-container text-primary-container text-[11px] font-semibold">컴백</span>
                     <h3 class="text-xl font-bold text-on-surface">LOVE &amp; POP Pt.2 : Andless</h3>
                     <p class="text-xs text-on-surface-variant line-clamp-2">끝나지 않을 영원한 트리플에스의 스토리</p>
+                    <span class="main-hero-cta">발매 앨범 보기 <span class="material-symbols-outlined text-sm">arrow_forward</span></span>
                 </div>
             </div>
-        </div>
+        </a>
     </section>
 
     <!-- 2. 아티스트 소개 섹션 -->
-    <section class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-6 backdrop-blur-md shadow-xl">
+    <section class="main-fade-up bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-6 backdrop-blur-md shadow-xl">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
             <div class="md:col-span-4 rounded-xl overflow-hidden border border-outline-variant/30 aspect-video md:aspect-[4/3]">
                 <img src="/../../uploads/images/tripleS.jpg" alt="tripleS" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
@@ -108,26 +112,26 @@
 
     <!-- 3. 정보 · 스케줄 · 사진 -->
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl h-full">
+            <div class="main-fade-up bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl h-full">
                 <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
                     <div class="flex items-center gap-2">
                         <span class="material-symbols-outlined text-secondary text-xl">campaign</span>
-                        <h3 class="text-base font-bold text-on-surface">기사/그외</h3>
+                        <h3 class="text-base font-bold text-on-surface">공지사항</h3>
                     </div>
-                    <a href="/article/info" class="text-xs text-on-surface-variant hover:text-secondary flex items-center gap-0.5 transition-colors">
+                    <a href="/article/notice" class="text-xs text-on-surface-variant hover:text-secondary flex items-center gap-0.5 transition-colors">
                         더보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
                     </a>
                 </div>
                 <ul class="divide-y divide-outline-variant/20 text-xs">
-                    {{#infoPosts}}
+                    {{#noticePosts}}
                         <li class="py-2.5 flex items-center justify-between gap-4 hover:bg-surface-container-high/40 px-2 rounded-lg transition-colors">
-                            <a href="/article/info/{{id}}" class="truncate text-on-surface hover:text-secondary font-medium flex-1">{{title}}</a>
+                            <a href="/article/notice/{{id}}" class="truncate text-on-surface hover:text-secondary font-medium flex-1">{{title}}</a>
                             <div class="text-on-surface-variant/80 font-mono text-[11px] shrink-0">{{userId}} · {{formattedDate}}</div>
                         </li>
-                    {{/infoPosts}}
-                    {{^infoPosts}}
-                        <li class="py-4 text-center text-on-surface-variant/60">등록된 정보가 없습니다.</li>
-                    {{/infoPosts}}
+                    {{/noticePosts}}
+                    {{^noticePosts}}
+                        <li class="py-4 text-center text-on-surface-variant/60">등록된 공지가 없습니다.</li>
+                    {{/noticePosts}}
                 </ul>
             </div>
 
@@ -145,26 +149,51 @@
             </div>
     </section>
 
-    <section class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
-        <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-4">
-            <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary-container text-xl">photo_library</span>
-                <h3 class="text-base font-bold text-on-surface">사진 아카이브</h3>
-            </div>
-            <a href="/archive/image_archive" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
-                전체보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
-            </a>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {{#recentPhotos}}
-                <a href="/archive/image_archive" class="group block rounded-xl overflow-hidden border border-outline-variant/30 bg-black/30 no-underline">
-                    <img src="{{file.url}}" alt="{{title}}" referrerpolicy="no-referrer" loading="lazy" class="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-105">
-                    <span class="block truncate px-2.5 py-2 text-xs font-medium text-on-surface">{{title}}</span>
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <div class="main-fade-up bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
+            <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary-container text-xl">photo_library</span>
+                    <h3 class="text-base font-bold text-on-surface">사진 아카이브</h3>
+                </div>
+                <a href="/archive/image_archive" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
+                    전체보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
                 </a>
-            {{/recentPhotos}}
-            {{^recentPhotos}}
-                <p class="col-span-full py-6 text-center text-sm text-on-surface-variant/60">등록된 사진이 없습니다.</p>
-            {{/recentPhotos}}
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                {{#recentPhotos}}
+                    <a href="/archive/image_archive" class="main-archive-card group block rounded-xl overflow-hidden border border-outline-variant/30 bg-black/30 no-underline">
+                        <img src="{{file.url}}" alt="{{title}}" referrerpolicy="no-referrer" loading="lazy" class="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-105">
+                        <span class="block truncate px-2.5 py-2 text-xs font-medium text-on-surface">{{title}}</span>
+                    </a>
+                {{/recentPhotos}}
+                {{^recentPhotos}}
+                    <p class="col-span-full py-6 text-center text-sm text-on-surface-variant/60">등록된 사진이 없습니다.</p>
+                {{/recentPhotos}}
+            </div>
+        </div>
+        <div class="main-fade-up bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
+            <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary-container text-xl">movie</span>
+                    <h3 class="text-base font-bold text-on-surface">영상 아카이브</h3>
+                </div>
+                <a href="/archive/video_archive" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
+                    전체보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
+                </a>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                {{#recentVideos}}
+                    <a href="/archive/video_archive" class="main-archive-card group block rounded-xl overflow-hidden border border-outline-variant/30 bg-black/30 no-underline">
+                        {{#thumbnailUrl}}<img src="{{thumbnailUrl}}" alt="{{title}}" referrerpolicy="no-referrer" loading="lazy" class="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-105">{{/thumbnailUrl}}
+                        {{^thumbnailUrl}}<span class="main-video-placeholder aspect-[4/3] w-full flex items-center justify-center text-xs text-on-surface-variant">영상 아카이브</span>{{/thumbnailUrl}}
+                        <span class="block truncate px-2.5 py-2 text-xs font-medium text-on-surface">{{title}}</span>
+                    </a>
+                {{/recentVideos}}
+                {{^recentVideos}}
+                    <p class="col-span-full py-6 text-center text-sm text-on-surface-variant/60">등록된 영상이 없습니다.</p>
+                {{/recentVideos}}
+            </div>
         </div>
     </section>
 
@@ -198,9 +227,23 @@
         const miniCalendar = new FullCalendar.Calendar(calendarEl, {
             initialView: "dayGridMonth",
             locale: "ko",
-            height: 280,
+            height: "auto",
+            fixedWeekCount: false,
+            dayMaxEvents: false,
             headerToolbar: { left: "", center: "title", right: "prev,next" },
-            events: schedules,
+            events: (schedules || []).map(function (item) {
+                return {
+                    id: item.id,
+                    title: item.displayTitle || item.title,
+                    start: item.start,
+                    end: item.end,
+                    color: item.color,
+                    extendedProps: item
+                };
+            }),
+            eventDidMount: function (info) {
+                info.el.style.setProperty("--schedule-color", info.event.extendedProps.color || "#00f5d4");
+            },
             eventClick: function () { window.location.href = "/schedule"; }
         });
         miniCalendar.render();
@@ -219,4 +262,5 @@
     }
 })();
 </script>
+<script src="/js/main-page.js?v=1" defer></script>
 {{>layout/page-end}}

@@ -28,7 +28,8 @@ const {chromium}=require('playwright');const base=path.resolve(__dirname,'../..'
   assert.equal(calls.filter(x=>x.includes('/7/')).length,1);
   assert.equal(await page.locator('.tab-pane:not([hidden])').count(),1);
   assert.equal(await page.locator('#member-6 img[data-member-src]').first().getAttribute('src'),null);
-  assert.equal(await page.locator('.artist-tab-frame').first().evaluate(n=>getComputedStyle(n).filter),'none');
+  const idleAfter=await page.locator('.artist-tab-avatar').first().evaluate(n=>getComputedStyle(n,'::after').filter);
+  assert.doesNotMatch(idleAfter,/drop-shadow/);
   assert.equal(await page.locator('.artist-tab-shine').first().isVisible(),false);
   await page.locator('[data-target="#member-8"]').click();
   await page.locator('#member-8 [data-artist-feed-retry]').waitFor({state:'visible'});

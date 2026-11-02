@@ -20,4 +20,16 @@ public class ArticleViewDto {
     private String category;
     private String formattedDate;   // ← 템플릿에서 top-level로도 넣어줄 거지만, 보관도 해둠
     private List<ArticleFileDto> files;
+    private boolean hasMemberSwap;
+    private boolean showTradeSwap;
+    private boolean hasHaveLead;
+    private String haveLeadName;
+    private String haveLeadColor;
+    private boolean hasHaveMore;
+    private int haveMoreCount;
+    private boolean hasWantLead;
+    private String wantLeadName;
+    private String wantLeadColor;
+    private boolean hasWantMore;
+    private int wantMoreCount;
 }

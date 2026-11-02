@@ -594,10 +594,10 @@
     appearance: none;
     background: transparent;
     border: 0;
-    color: #b9cac4;
+    color: var(--artist-color, #00f5d4);
     cursor: pointer;
     border-radius: 0.75rem;
-    transition: color 0.2s ease, transform 0.2s ease;
+    transition: color 0.2s ease, transform 0.2s ease, text-shadow 0.2s ease;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -607,9 +607,9 @@
     margin: 0;
 }
 
-.artist-page .nav-tab-btn[data-member-tab] .artist-tab-label {
-    /* 이름은 밝은 공통색으로 가독성 확보. 상징색은 프레임·테두리로 구분 */
-    color: #e3e2e8;
+.artist-page .nav-tab-btn .artist-tab-label {
+    color: color-mix(in srgb, var(--artist-color, #00f5d4) 88%, #fff 12%);
+    font-weight: 700;
 }
 
 .artist-page .nav-tab-btn:hover,
@@ -617,10 +617,10 @@
     color: var(--artist-color, #00f5d4);
 }
 
-.artist-page .nav-tab-btn[data-member-tab]:hover .artist-tab-label,
-.artist-page .nav-tab-btn[data-member-tab].is-active .artist-tab-label {
-    color: #ffffff;
-    text-shadow: none;
+.artist-page .nav-tab-btn:hover .artist-tab-label,
+.artist-page .nav-tab-btn.is-active .artist-tab-label {
+    color: var(--artist-color, #00f5d4);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--artist-color, #00f5d4) 58%, transparent);
 }
 
 .artist-page .nav-tab-btn.is-active {
@@ -660,9 +660,41 @@
     object-fit: contain;
     pointer-events: none;
     z-index: 2;
-    opacity: 0.88;
+    opacity: 1;
     filter: none;
     transition: filter 160ms ease, opacity 160ms ease;
+}
+.artist-page .artist-tab-avatar.has-frame-mask .artist-tab-frame {
+    opacity: 1;
+}
+.artist-page .artist-tab-avatar.has-frame-mask::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--artist-color, #00f5d4) 18%, transparent);
+    opacity: .55;
+    --badge-cut: linear-gradient(#000, #000);
+    -webkit-mask-image: var(--frame-mask), var(--badge-cut);
+    -webkit-mask-size: contain, 30% 16.8%;
+    -webkit-mask-position: center, right 4.4% bottom 4.4%;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-composite: source-out;
+    mask-image: var(--frame-mask), var(--badge-cut);
+    mask-size: contain, 30% 16.8%;
+    mask-position: center, right 4.4% bottom 4.4%;
+    mask-repeat: no-repeat;
+    mask-composite: subtract;
+}
+
+/* 멤버 탭이 선택됐을 때만 미선택 윤곽을 숨긴다(그룹 입문 활성 = idle, 연한 테두리 유지) */
+.artist-page .artist-member-tabs:has(.nav-tab-btn.is-active[data-member-tab]) .nav-tab-btn:not(.is-active) .artist-tab-frame {
+    opacity: 0;
+}
+.artist-page .artist-member-tabs:has(.nav-tab-btn.is-active[data-member-tab]) .nav-tab-btn:not(.is-active) .artist-tab-avatar.has-frame-mask::after {
+    opacity: 0;
+    filter: none;
 }
 
 /* 선택: 윤곽 PNG drop-shadow 발광 (사각 링 대신) */
@@ -676,15 +708,49 @@
 .artist-page .nav-tab-btn.is-active .artist-tab-photo {
     animation: member-selection-settle 220ms cubic-bezier(.2,.8,.2,1);
     border-radius: 0.4rem;
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 28%, transparent);
+    box-shadow: none;
 }
 .artist-page .nav-tab-btn.is-active .artist-tab-frame {
     opacity: 1;
+    filter: none;
+    z-index: 4;
+    transform: scale(1.045);
+    transform-origin: center;
+    --badge-only: linear-gradient(#000, #000);
+    -webkit-mask-image: var(--badge-only);
+    -webkit-mask-size: 24% 12%;
+    -webkit-mask-position: right 5.5% bottom 5.5%;
+    -webkit-mask-repeat: no-repeat;
+    mask-image: var(--badge-only);
+    mask-size: 24% 12%;
+    mask-position: right 5.5% bottom 5.5%;
+    mask-repeat: no-repeat;
+}
+.artist-page .nav-tab-btn.is-active .artist-tab-avatar.has-frame-mask::after {
+    background: var(--artist-color, #00f5d4);
+    opacity: 1;
+    transform: scale(1.045);
+    transform-origin: center;
+    -webkit-mask-image: var(--frame-mask);
+    -webkit-mask-size: contain;
+    -webkit-mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-composite: source-over;
+    mask-image: var(--frame-mask);
+    mask-size: contain;
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-composite: add;
     filter:
-        drop-shadow(0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 95%, #fff))
-        drop-shadow(0 0 4px color-mix(in srgb, var(--artist-color, #00f5d4) 88%, transparent))
-        drop-shadow(0 0 10px color-mix(in srgb, var(--artist-color, #00f5d4) 70%, transparent))
-        drop-shadow(0 0 18px color-mix(in srgb, var(--artist-color, #00f5d4) 42%, transparent));
+        drop-shadow(0 0 2px var(--artist-color, #00f5d4))
+        drop-shadow(0 0 10px color-mix(in srgb, var(--artist-color, #00f5d4) 85%, transparent))
+        drop-shadow(0 0 18px color-mix(in srgb, var(--artist-color, #00f5d4) 82%, #0a0c12 18%));
+}
+.artist-page .nav-tab-btn.is-active .artist-tab-avatar--group .artist-tab-photo {
+    border-color: var(--artist-color, #00f5d4);
+    box-shadow:
+        0 0 0 1px var(--artist-color, #00f5d4),
+        0 0 6px color-mix(in srgb, var(--artist-color, #00f5d4) 45%, transparent);
 }
 .artist-page .nav-tab-btn:focus-visible {
     outline: 2px solid #a8e6dc;

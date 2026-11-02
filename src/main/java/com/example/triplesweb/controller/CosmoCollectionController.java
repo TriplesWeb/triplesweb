@@ -1,6 +1,6 @@
 package com.example.triplesweb.controller;
 
-import com.example.triplesweb.repository.ArtistRepository;
+import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.CosmoCollectionService;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektFilterOrder;
@@ -31,15 +31,14 @@ public class CosmoCollectionController {
     }
 
     private final CosmoCollectionService collections;
-    private final ArtistRepository artists;
+    private final ArtistSnapshotService artists;
 
-    public CosmoCollectionController(CosmoCollectionService collections, ArtistRepository artists) {
+    public CosmoCollectionController(CosmoCollectionService collections, ArtistSnapshotService artists) {
         this.collections = collections;
         this.artists = artists;
     }
 
     @GetMapping("/cosmo/collection")
-    @SuppressWarnings("unchecked")
     public String collection(@RequestParam(required = false) String nickname,
                              @RequestParam(defaultValue = "0") int page,
                              @RequestParam(defaultValue = "") String member,
@@ -62,22 +61,15 @@ public class CosmoCollectionController {
                     objektClass == null ? List.of() : objektClass,
                     query, group, kind, sort);
             model.addAllAttributes(view);
+            model.asMap().remove("allCards");
             if (view.get("selectedKind") == null) model.addAttribute("selectedKind", "all");
+            if (view.get("selectedKindLabel") == null) model.addAttribute("selectedKindLabel", "전체");
             if (view.get("selectedSort") == null) model.addAttribute("selectedSort", "latest");
             if (view.get("kindOptions") == null) model.addAttribute("kindOptions", List.of());
             model.addAttribute("hasCollection", true);
-            List<Map<String, Object>> allCards = (List<Map<String, Object>>) view.getOrDefault("allCards", List.of());
-            Set<String> rawMembers = new LinkedHashSet<>();
-            Set<String> seasons = new LinkedHashSet<>();
-            Set<String> classes = new LinkedHashSet<>();
-            for (Map<String, Object> card : allCards) {
-                Object m = card.get("member");
-                Object s = card.get("season");
-                Object c = card.get("objektClass");
-                if (m != null && !m.toString().isBlank()) rawMembers.add(m.toString());
-                if (s != null && !s.toString().isBlank()) seasons.add(s.toString());
-                if (c != null && !c.toString().isBlank()) classes.add(c.toString());
-            }
+            Set<String> rawMembers = new LinkedHashSet<>(stringList(view.get("filterMembers")));
+            Set<String> seasons = new LinkedHashSet<>(stringList(view.get("filterSeasons")));
+            Set<String> classes = new LinkedHashSet<>(stringList(view.get("filterClasses")));
             List<Map<String, Object>> picker = MemberPortraitOptions.forObjektFilter(
                     MemberPortraitOptions.soloMemberNames(rawMembers), artists.findAll());
             String selectedMember = String.valueOf(view.getOrDefault("selectedMember", ""));
@@ -105,6 +97,12 @@ public class CosmoCollectionController {
             model.addAttribute("collectionError", "소유 오브젝트를 바로 불러오지 못했습니다. 잠시 후 다시 검색해 주세요.");
         }
         return "cosmo/collection";
+    }
+
+    @GetMapping("/cosmo/collection/suggest")
+    @ResponseBody
+    public Map<String, Object> suggest(@RequestParam(defaultValue = "") String q) {
+        return Map.of("items", collections.suggestNicknames(q, 8));
     }
 
     @GetMapping("/cosmo/collection/more")

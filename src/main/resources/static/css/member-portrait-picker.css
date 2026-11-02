@@ -80,9 +80,43 @@
     object-fit: contain;
     pointer-events: none;
     z-index: 2;
-    opacity: 0.88;
+    opacity: 1;
     filter: none;
     transition: filter 160ms ease, opacity 160ms ease;
+}
+.member-portrait-picker .artist-tab-avatar.has-frame-mask .artist-tab-frame {
+    /* 미선택: 상징색 연한 윤곽이 보이도록 프레임을 유지한다 */
+    opacity: 1;
+}
+.member-portrait-picker .artist-tab-avatar.has-frame-mask::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--artist-color, #00f5d4) 18%, transparent);
+    opacity: .55;
+    /* idle: 뱃지 안쪽만 직사각으로 빼 연한 윤곽이 직선으로 뱃지에 붙게 한다 */
+    --badge-cut: linear-gradient(#000, #000);
+    -webkit-mask-image: var(--frame-mask), var(--badge-cut);
+    -webkit-mask-size: contain, 30% 16.8%;
+    -webkit-mask-position: center, right 4.4% bottom 4.4%;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-composite: source-out;
+    mask-image: var(--frame-mask), var(--badge-cut);
+    mask-size: contain, 30% 16.8%;
+    mask-position: center, right 4.4% bottom 4.4%;
+    mask-repeat: no-repeat;
+    mask-composite: subtract;
+}
+
+/* 선택이 있으면 미선택 멤버의 연한 윤곽을 완전히 숨긴다 */
+.member-portrait-picker:has(.mpp-item.is-active) .mpp-item:not(.is-active) .artist-tab-frame {
+    opacity: 0;
+}
+.member-portrait-picker:has(.mpp-item.is-active) .mpp-item:not(.is-active) .artist-tab-avatar.has-frame-mask::after {
+    opacity: 0;
+    filter: none;
 }
 
 /* 선택: 사각 링 대신 윤곽 PNG 알파를 따라 drop-shadow 발광 */
@@ -94,15 +128,45 @@
 }
 .member-portrait-picker .mpp-item.is-active .artist-tab-photo {
     animation: member-selection-settle 220ms cubic-bezier(.2,.8,.2,1);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 28%, transparent);
+    box-shadow: none;
 }
 .member-portrait-picker .mpp-item.is-active .artist-tab-frame {
+    /* 어두운 S번호만 위에 두고, 흰 프레임·바깥 모서리는 ::after 상징색이 덮는다 */
     opacity: 1;
+    filter: none;
+    z-index: 4;
+    transform: scale(1.045);
+    transform-origin: center;
+    --badge-only: linear-gradient(#000, #000);
+    -webkit-mask-image: var(--badge-only);
+    -webkit-mask-size: 24% 12%;
+    -webkit-mask-position: right 5.5% bottom 5.5%;
+    -webkit-mask-repeat: no-repeat;
+    mask-image: var(--badge-only);
+    mask-size: 24% 12%;
+    mask-position: right 5.5% bottom 5.5%;
+    mask-repeat: no-repeat;
+}
+.member-portrait-picker .mpp-item.is-active .artist-tab-avatar.has-frame-mask::after {
+    /* 사각 구멍을 없애 아래·오른쪽 선이 끊기지 않게 테두리 전체를 상징색으로 칠한다 */
+    background: var(--artist-color, #00f5d4);
+    opacity: 1;
+    transform: scale(1.045);
+    transform-origin: center;
+    -webkit-mask-image: var(--frame-mask);
+    -webkit-mask-size: contain;
+    -webkit-mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-composite: source-over;
+    mask-image: var(--frame-mask);
+    mask-size: contain;
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-composite: add;
     filter:
-        drop-shadow(0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 95%, #fff))
-        drop-shadow(0 0 4px color-mix(in srgb, var(--artist-color, #00f5d4) 88%, transparent))
-        drop-shadow(0 0 10px color-mix(in srgb, var(--artist-color, #00f5d4) 70%, transparent))
-        drop-shadow(0 0 18px color-mix(in srgb, var(--artist-color, #00f5d4) 42%, transparent));
+        drop-shadow(0 0 2px var(--artist-color, #00f5d4))
+        drop-shadow(0 0 10px color-mix(in srgb, var(--artist-color, #00f5d4) 85%, transparent))
+        drop-shadow(0 0 18px color-mix(in srgb, var(--artist-color, #00f5d4) 82%, #0a0c12 18%));
 }
 .member-portrait-picker .mpp-item.is-active .artist-tab-avatar::before {
     content: "";
@@ -115,8 +179,8 @@
     transform: translate(-50%, -1px);
     border-left: 7px solid transparent;
     border-right: 7px solid transparent;
-    border-top: 8px solid color-mix(in srgb, var(--artist-color, #00f5d4) 55%, #f4fbff);
-    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--artist-color, #00f5d4) 75%, transparent));
+    border-top: 8px solid var(--artist-color, #00f5d4);
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--artist-color, #00f5d4) 55%, transparent));
     pointer-events: none;
 }
 .member-portrait-picker .mpp-item:focus-visible {
@@ -279,20 +343,20 @@
     position: absolute;
     inset: -50%;
     background: linear-gradient(135deg,
-        transparent 36%,
-        color-mix(in srgb, var(--artist-color, #00f5d4) 22%, transparent) 44%,
-        color-mix(in srgb, color-mix(in srgb, var(--artist-color, #00f5d4) 82%, #fff) 42%, transparent) 50%,
-        color-mix(in srgb, var(--artist-color, #00f5d4) 26%, transparent) 56%,
-        transparent 64%);
+        transparent 32%,
+        color-mix(in srgb, var(--artist-color, #00f5d4) 32%, transparent) 42%,
+        color-mix(in srgb, color-mix(in srgb, var(--artist-color, #00f5d4) 82%, #fff) 58%, transparent) 50%,
+        color-mix(in srgb, var(--artist-color, #00f5d4) 34%, transparent) 58%,
+        transparent 68%);
     opacity: 0;
     transform: translate3d(-65%, -65%, 0);
-    animation: member-selection-sheen 6.5s ease-in-out infinite;
+    animation: member-selection-sheen 6.85s ease-in-out infinite;
 }
 @keyframes member-selection-sheen {
     0% { transform: translate3d(-65%, -65%, 0); opacity: 0; }
-    8% { opacity: 1; }
-    42% { transform: translate3d(65%, 65%, 0); opacity: .55; }
-    52%, 100% { transform: translate3d(65%, 65%, 0); opacity: 0; }
+    6% { opacity: 1; }
+    80% { transform: translate3d(65%, 65%, 0); opacity: .72; }
+    90%, 100% { transform: translate3d(65%, 65%, 0); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
     .member-portrait-picker .mpp-item.is-active .artist-tab-shine,

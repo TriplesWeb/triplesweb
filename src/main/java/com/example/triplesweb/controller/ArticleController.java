@@ -5,6 +5,9 @@ import com.example.triplesweb.dto.ArticleForm;
 import com.example.triplesweb.dto.ArticleViewDto;
 import com.example.triplesweb.dto.ArticleViewMapper;
 import com.example.triplesweb.entity.Article;
+import com.example.triplesweb.entity.ArticleObjekt;
+import com.example.triplesweb.entity.Artist;
+import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.ArticleFileServiceImpl;
 import com.example.triplesweb.service.ArticleService;
 import com.example.triplesweb.service.ArticleObjektService;
@@ -12,6 +15,7 @@ import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.CommentService;
 import com.example.triplesweb.service.DateTimeFormatService;
 import com.example.triplesweb.util.ArticleHtmlCleaner;
+import com.example.triplesweb.util.ArticleMemberSwap;
 import com.example.triplesweb.util.ObjektFilterOrder;
 import com.example.triplesweb.util.ObjektSeasonCodes;
 import com.example.triplesweb.util.MemberPortraitOptions;
@@ -45,14 +49,15 @@ public class ArticleController {
     private final DateTimeFormatService dateTimeFormatService;
     private final ArticleObjektService articleObjektService;
     private final ObjektService objektService;
+    private final ArtistSnapshotService artistSnapshot;
 
     private static final Set<String> ALLOWED_CATEGORIES = Set.of(
-            "trade", "sell", "group-orders", "info"
+            "trade", "sell", "info", "notice"
     );
     private static final Set<String> LIKE_ALLOWED_CATEGORIES = Set.of("info");
 
     private static boolean isObjektBoard(String category) {
-        return Set.of("trade", "sell", "group-orders").contains(category);
+        return Set.of("trade", "sell").contains(category);
     }
 
     private static boolean isTradeBoard(String category) {
@@ -298,8 +303,8 @@ public class ArticleController {
         return switch (category) {
             case "trade" -> "교환";
             case "sell" -> "거래";
-            case "group-orders" -> "분철";
             case "info" -> "정보";
+            case "notice" -> "공지사항";
             default -> "게시판";
         };
     }
@@ -313,7 +318,9 @@ public class ArticleController {
             Model model,
             @RequestParam(name = "limit", required = false, defaultValue = "10") Integer limit,
             @RequestParam(name = "type", required = false, defaultValue = "title") String type,
-            @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword) {
+            @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword,
+            @RequestParam(name = "member", required = false, defaultValue = "") String member,
+            @RequestParam(name = "objektSide", required = false, defaultValue = "all") String objektSide) {
 
         if (isInvalidCategory(category)) {
             return "redirect:/article/trade";
@@ -326,14 +333,32 @@ public class ArticleController {
         }
 
         String searchKeyword = keyword == null ? "" : keyword.trim();
+        String selectedMember = member == null ? "" : member.trim();
+        String selectedSide = normalizeObjektSide(category, objektSide);
+        boolean marketBoard = isObjektBoard(category);
+        int fetchLimit = marketBoard && !selectedMember.isEmpty() ? Math.max(limit, 200) : limit;
 
         // 검색어가 있으면 검색, 없으면 최신 게시글 조회
         List<Article> articles;
         if (searchKeyword.isEmpty()) {
-            articles = articleService.findRecentByCategory(category, limit);
+            articles = articleService.findRecentByCategory(category, fetchLimit);
         } else {
             articles = articleService.searchByCategory(
-                    category, searchType, searchKeyword, limit);
+                    category, searchType, searchKeyword, fetchLimit);
+        }
+
+        List<Artist> artists = artistSnapshot.findAll();
+        Map<Long, List<ArticleObjekt>> linkedByArticle = articleObjektService.groupByArticleId(
+                articles.stream().map(Article::getId).filter(Objects::nonNull).toList());
+        if (linkedByArticle == null) linkedByArticle = Map.of();
+
+        if (marketBoard && !selectedMember.isEmpty()) {
+            Map<Long, List<ArticleObjekt>> links = linkedByArticle;
+            articles = articles.stream()
+                    .filter(art -> ArticleMemberSwap.matchesMember(
+                            links.getOrDefault(art.getId(), List.of()), selectedMember, selectedSide))
+                    .limit(limit)
+                    .toList();
         }
 
         List<ArticleViewDto> articleViewList = new ArrayList<>();
@@ -352,16 +377,31 @@ public class ArticleController {
                                     art.getFormattedCreatedAt()))
                     .likesCount(art.getLikesCount())
                     .build();
+            if (marketBoard) {
+                List<ArticleObjekt> links = linkedByArticle.getOrDefault(art.getId(), List.of());
+                List<ArticleObjekt> have = links.stream()
+                        .filter(row -> ArticleObjektService.SIDE_HAVE.equalsIgnoreCase(
+                                row.getSide() == null ? ArticleObjektService.SIDE_HAVE : row.getSide()))
+                        .toList();
+                List<ArticleObjekt> want = links.stream()
+                        .filter(row -> ArticleObjektService.SIDE_WANT.equalsIgnoreCase(row.getSide()))
+                        .toList();
+                ArticleMemberSwap.copyOnto(
+                        ArticleMemberSwap.summarize(have, want, artists, isTradeBoard(category)), dto);
+            }
 
             articleViewList.add(dto);
         }
 
         model.addAttribute("category", category);
         model.addAttribute("categoryName", getCategoryName(category));
-        model.addAttribute("isMarketBoard", isObjektBoard(category));
+        model.addAttribute("isMarketBoard", marketBoard);
         model.addAttribute("isTrade", "trade".equals(category));
         model.addAttribute("isSell", "sell".equals(category));
         model.addAttribute("isGroupOrders", "group-orders".equals(category));
+        if (marketBoard) {
+            addMarketMemberFilter(model, selectedMember, selectedSide, artists);
+        }
         model.addAttribute("articleList", articleViewList);
         // 교환/거래/분철: 추천 컬럼·인기글 조회 제거. popularList는 템플릿 미사용.
         model.addAttribute("hideRecommendations", isObjektBoard(category));
@@ -372,6 +412,8 @@ public class ArticleController {
         model.addAttribute("isSearchTitle", "title".equals(searchType));
         model.addAttribute("isSearchContent", "content".equals(searchType));
         model.addAttribute("isSearchWriter", "writer".equals(searchType));
+        model.addAttribute("selectedMember", selectedMember);
+        model.addAttribute("selectedObjektSide", selectedSide);
 
         model.addAttribute("limit", limit);
 
@@ -396,21 +438,28 @@ public class ArticleController {
         if (article == null) return "redirect:/article/" + category;
 
         model.addAttribute("article", article);
-        List<com.example.triplesweb.entity.ArticleObjekt> linkedObjekts = articleObjektService.findForArticle(id);
-        List<Map<String, Object>> linkedViews = linkedObjekts.stream().map(ArticleController::linkedObjektView).toList();
+        List<ArticleObjekt> linkedObjekts = articleObjektService.findForArticle(id);
+        List<Artist> artists = artistSnapshot.findAll();
+        List<Map<String, Object>> linkedViews = linkedObjekts.stream()
+                .map(link -> linkedObjektView(link, artists)).toList();
         model.addAttribute("linkedObjekts", linkedViews);
         model.addAttribute("hasLinkedObjekts", !linkedObjekts.isEmpty());
         boolean tradeSplit = isTradeBoard(category);
         model.addAttribute("isTradeObjektSplit", tradeSplit);
         if (tradeSplit) {
-            List<Map<String, Object>> haveViews = articleObjektService.findHaveForArticle(id).stream()
-                    .map(ArticleController::linkedObjektView).toList();
-            List<Map<String, Object>> wantViews = articleObjektService.findWantForArticle(id).stream()
-                    .map(ArticleController::linkedObjektView).toList();
+            List<ArticleObjekt> haveLinks = articleObjektService.findHaveForArticle(id);
+            List<ArticleObjekt> wantLinks = articleObjektService.findWantForArticle(id);
+            List<Map<String, Object>> haveViews = haveLinks.stream()
+                    .map(link -> linkedObjektView(link, artists)).toList();
+            List<Map<String, Object>> wantViews = wantLinks.stream()
+                    .map(link -> linkedObjektView(link, artists)).toList();
             model.addAttribute("linkedHaveObjekts", haveViews);
             model.addAttribute("linkedWantObjekts", wantViews);
             model.addAttribute("hasLinkedHaveObjekts", !haveViews.isEmpty());
             model.addAttribute("hasLinkedWantObjekts", !wantViews.isEmpty());
+            model.addAllAttributes(ArticleMemberSwap.summarize(haveLinks, wantLinks, artists, true));
+        } else if (isObjektBoard(category)) {
+            model.addAllAttributes(ArticleMemberSwap.summarize(linkedObjekts, List.of(), artists, false));
         }
         model.addAttribute("category", category);
         model.addAttribute("commentDtos", commentService.show(id));
@@ -678,14 +727,40 @@ public class ArticleController {
         return null;
     }
 
-    private static Map<String, Object> linkedObjektView(com.example.triplesweb.entity.ArticleObjekt link) {
+    private static Map<String, Object> linkedObjektView(ArticleObjekt link, List<Artist> artists) {
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("objektKey", link.getObjektKey());
         row.put("collectionId", link.getCollectionId());
-        row.put("memberName", com.example.triplesweb.util.MemberPortraitOptions.displayMember(link.getMemberName()));
+        row.put("memberName", MemberPortraitOptions.displayMember(link.getMemberName()));
+        row.put("memberColor", MemberPortraitOptions.artistColor(link.getMemberName(), artists));
         row.put("thumbnailImage", link.getThumbnailImage());
         row.put("frontImage", link.getFrontImage());
         row.put("collectionNo", link.getCollectionNo());
         return row;
+    }
+
+    private void addMarketMemberFilter(Model model, String selectedMember, String selectedSide, List<Artist> artists) {
+        List<String> names = artists == null ? List.of() : artists.stream()
+                .map(Artist::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .toList();
+        List<Map<String, Object>> picker = MemberPortraitOptions.forObjektFilter(
+                MemberPortraitOptions.soloMemberNames(names), artists);
+        for (Map<String, Object> option : picker) {
+            option.put("active", !selectedMember.isBlank()
+                    && MemberPortraitOptions.sameMember(selectedMember, String.valueOf(option.get("value"))));
+        }
+        model.addAttribute("memberPickerOptions", picker);
+        model.addAttribute("isObjektSideAll", "all".equals(selectedSide));
+        model.addAttribute("isObjektSideHave", "have".equals(selectedSide));
+        model.addAttribute("isObjektSideWant", "want".equals(selectedSide));
+    }
+
+    private static String normalizeObjektSide(String category, String objektSide) {
+        if (!isTradeBoard(category)) return "have";
+        if (objektSide == null) return "all";
+        String normalized = objektSide.trim().toLowerCase();
+        if ("have".equals(normalized) || "want".equals(normalized)) return normalized;
+        return "all";
     }
 }

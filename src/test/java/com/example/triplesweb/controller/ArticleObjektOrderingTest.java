@@ -13,9 +13,9 @@ class ArticleObjektOrderingTest {
     @Test void composePrefillsOnlyKnownSelectedObjectsForTradeAndSell() {
         var catalog = mock(ObjektService.class);
         var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
-                mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog);
+                mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog, mock(ArtistSnapshotService.class));
         when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("id","uuid","slug","hayeoncc367z","collectionId","Cream02 HaYeon 367Z","member","HaYeon")));
-        for (String category : List.of("trade","sell","group-orders")) {
+        for (String category : List.of("trade","sell")) {
             var model = new ExtendedModelMap();
             controller.showArticleForm(category, List.of("uuid","invalid"), model);
             assertThat((List<Map<String,Object>>)model.get("objektSelected")).hasSize(1)
@@ -35,7 +35,7 @@ class ArticleObjektOrderingTest {
         var objekts = mock(ObjektService.class);
         var links = mock(ArticleObjektService.class);
         var controller = new ArticleController(articles, mock(CommentService.class), mock(ArticleFileServiceImpl.class),
-                mock(DateTimeFormatService.class), links, objekts);
+                mock(DateTimeFormatService.class), links, objekts, mock(ArtistSnapshotService.class));
         when(objekts.findCollections("triples")).thenReturn(List.of(
                 Map.of("member", "Jiyeon", "season", "Atom01"), Map.of("member", "Alpha", "season", "Cream02"),
                 Map.of("member", "HyeRin", "season", "Ever01"), Map.of("member", "SeoYeon", "season", "Binary02"),
@@ -43,7 +43,7 @@ class ArticleObjektOrderingTest {
         Article article = new Article(); article.setId(3L); article.setTitle("test"); article.setContent("test");
         when(articles.showWithFiles(3L)).thenReturn(article);
         when(links.findForArticle(3L)).thenReturn(List.of());
-        for (String category : List.of("trade", "sell", "group-orders")) {
+        for (String category : List.of("trade", "sell")) {
             var fresh = new ExtendedModelMap();
             controller.showArticleForm(category, fresh);
             var edited = new ExtendedModelMap();
@@ -63,7 +63,7 @@ class ArticleObjektOrderingTest {
     @Test void mergedMemberOptionSearchesAllOriginalAliases() {
         var catalog = mock(ObjektService.class);
         var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
-                mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog);
+                mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog, mock(ArtistSnapshotService.class));
         when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("member", "S21"),
                 Map.of("member", "ChaeWon"), Map.of("member", "김채원"), Map.of("member", "S22"),
                 Map.of("member", "zenith")));
@@ -79,7 +79,7 @@ class ArticleObjektOrderingTest {
         var articles = mock(ArticleService.class);
         var links = mock(ArticleObjektService.class);
         var controller = new ArticleController(articles, mock(CommentService.class), mock(ArticleFileServiceImpl.class),
-                mock(DateTimeFormatService.class), links, mock(ObjektService.class));
+                mock(DateTimeFormatService.class), links, mock(ObjektService.class), mock(ArtistSnapshotService.class));
         ArticleObjekt duo = new ArticleObjekt();
         duo.setObjektKey("duo");
         duo.setCollectionId("Cream02");
@@ -107,7 +107,7 @@ class ArticleObjektOrderingTest {
         var articles = mock(ArticleService.class);
         var links = mock(ArticleObjektService.class);
         var controller = new ArticleController(articles, mock(CommentService.class), mock(ArticleFileServiceImpl.class),
-                mock(DateTimeFormatService.class), links, mock(ObjektService.class));
+                mock(DateTimeFormatService.class), links, mock(ObjektService.class), mock(ArtistSnapshotService.class));
         Article existing = new Article();
         existing.setId(4L);
         existing.setTitle("같은 제목");
@@ -147,7 +147,7 @@ class ArticleObjektOrderingTest {
         var articles = mock(ArticleService.class);
         var links = mock(ArticleObjektService.class);
         var controller = new ArticleController(articles, mock(CommentService.class), mock(ArticleFileServiceImpl.class),
-                mock(DateTimeFormatService.class), links, mock(ObjektService.class));
+                mock(DateTimeFormatService.class), links, mock(ObjektService.class), mock(ArtistSnapshotService.class));
         ArticleObjekt have = new ArticleObjekt();
         have.setObjektKey("have-key");
         have.setSide(ArticleObjektService.SIDE_HAVE);

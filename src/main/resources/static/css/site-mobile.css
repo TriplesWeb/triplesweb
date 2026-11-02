@@ -6,12 +6,15 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .site-table-scroll:focus-visible{outline:2px solid #8bf5dc;outline-offset:2px}
 @media(max-width:1023px){
   #top-header{position:sticky;top:0;z-index:50;background:#16181ff5;color:#e3e2e8;font-family:"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;max-width:100%;transform:translateY(0)}
-  #top-header>div:first-child{display:flex;align-items:center;justify-content:space-between;min-height:64px;height:auto;gap:.75rem;padding-left:max(1rem,env(safe-area-inset-left));padding-right:max(1rem,env(safe-area-inset-right))}
+  #top-header>div:first-child{display:flex;align-items:center;justify-content:space-between;min-height:64px;height:auto;gap:.75rem;padding-left:max(1rem,env(safe-area-inset-left));padding-right:max(1rem,env(safe-area-inset-right));min-width:0;max-width:100%}
   #top-header>div:first-child>div:first-child{flex:1;min-width:0}
   #top-header>div:first-child>div:last-child{display:flex;align-items:center;gap:.5rem;min-width:0}
+  #top-header>div:first-child a img{max-height:28px;width:auto;max-width:100px}
+  #site-theme-toggle,#mobile-menu-btn{flex:0 0 auto}
+  #mobile-menu-btn{margin-left:auto}
   #top-header a{color:#b9cac4;text-decoration:none}
   #top-header a:hover{color:#8decd9}
-  #navbar,#top-header>div:first-child>form[role=search]{display:none!important}
+  #navbar,#top-header>div:first-child form[role=search]{display:none!important}
   #mobile-menu-btn{display:inline-flex!important;flex:0 0 auto;align-items:center;justify-content:center;width:44px;height:44px;border:1px solid #3a4a4680;border-radius:.75rem;background:#191b22;color:#e3e2e8}
   #mobile-menu-icon{position:relative;display:block;width:20px;height:20px;max-width:none;font-size:0!important;overflow:visible;background:linear-gradient(currentColor,currentColor) center/20px 2px no-repeat}
   #mobile-menu-icon::before,#mobile-menu-icon::after{content:"";position:absolute;left:0;width:20px;height:2px;background:currentColor}

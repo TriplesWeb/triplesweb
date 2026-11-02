@@ -2,6 +2,7 @@ package com.example.triplesweb.service;
 
 import com.example.triplesweb.infra.GzipRestClients;
 import com.example.triplesweb.util.MemberPortraitOptions;
+import com.example.triplesweb.util.ObjektSeasonColors;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -32,6 +33,7 @@ public class CosmoCollectionService {
     private final RestClient cosmo;
     private final RestClient index;
     private final ConcurrentHashMap<String, Cached> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CachedNames> nicknameSearchCache = new ConcurrentHashMap<>();
     private final ExecutorService loadExecutor = Executors.newFixedThreadPool(4, r -> {
         Thread t = new Thread(r, "cosmo-collection-load");
         t.setDaemon(true);
@@ -69,6 +71,22 @@ public class CosmoCollectionService {
                                       String member, List<String> seasons, List<String> classes,
                                       String query, String group) {
         return search(rawNickname, page, member, seasons, classes, query, group, "all", "latest");
+    }
+
+    public List<String> suggestNicknames(String query, int limit) {
+        String prefix = query == null ? "" : query.trim();
+        if (prefix.length() < 3 || prefix.length() > 40) return List.of();
+        int cap = Math.max(1, Math.min(limit, 12));
+        LinkedHashSet<String> names = new LinkedHashSet<>(searchCosmoNicknames(prefix, cap));
+        long now = Instant.now().getEpochSecond();
+        cache.entrySet().removeIf(entry -> entry.getValue().lastAccessAt + CACHE_TTL_SEC <= now);
+        String needle = prefix.toLowerCase(Locale.ROOT);
+        cache.values().stream()
+                .filter(cached -> cached.expiresAt > now && !cached.address.isBlank())
+                .map(cached -> cached.nickname)
+                .filter(name -> name != null && !name.isBlank() && name.toLowerCase(Locale.ROOT).startsWith(needle))
+                .forEach(names::add);
+        return names.stream().limit(cap).toList();
     }
 
     public Map<String, Object> search(String rawNickname, int page,
@@ -124,6 +142,9 @@ public class CosmoCollectionService {
         view.put("filteredCount", filtered.size());
         view.put("cards", cards);
         view.put("allCards", snapshot);
+        view.put("filterMembers", uniqueValues(snapshot, "member"));
+        view.put("filterSeasons", uniqueValues(snapshot, "season"));
+        view.put("filterClasses", uniqueValues(snapshot, "objektClass"));
         view.put("profileUrl", "/cosmo/profile/" + nickEnc.replace("+", "%20"));
         view.put("hasCards", !cards.isEmpty());
         view.put("page", safePage);
@@ -149,6 +170,7 @@ public class CosmoCollectionService {
         view.put("isAllGroup", "all".equals(selectedGroup));
         view.put("searchQuery", query == null ? "" : query.trim());
         view.put("selectedKind", kindFiltered ? kindKey : "all");
+        view.put("selectedKindLabel", kindFiltered ? kindKey : "전체");
         view.put("selectedSort", sortKey);
         view.put("kindOptions", snapshot.stream().map(card -> text(card, "collectionNo"))
                 .filter(value -> !value.isBlank()).distinct().sorted(String.CASE_INSENSITIVE_ORDER).toList());
@@ -277,6 +299,10 @@ public class CosmoCollectionService {
         return value == null ? "" : value.toString();
     }
 
+    private static List<String> uniqueValues(List<Map<String, Object>> cards, String key) {
+        return cards.stream().map(card -> text(card, key)).filter(value -> !value.isBlank()).distinct().toList();
+    }
+
     /**
      * Nickname resolve + first index page synchronously; remaining pages in background.
      */
@@ -370,6 +396,47 @@ public class CosmoCollectionService {
         }
     }
 
+    /**
+     * COSMO {@code /bff/v3/users/search} requires a logged-in token, so related Cosmo IDs
+     * are read from the public objekt.top user index instead.
+     */
+    private List<String> searchCosmoNicknames(String prefix, int cap) {
+        if (prefix.contains("/") || prefix.contains(" ")) return List.of();
+        long now = Instant.now().getEpochSecond();
+        nicknameSearchCache.entrySet().removeIf(entry -> entry.getValue().expiresAt <= now);
+        String key = prefix.toLowerCase(Locale.ROOT);
+        CachedNames cached = nicknameSearchCache.get(key);
+        if (cached != null && cached.expiresAt > now) return cached.names;
+        try {
+            JsonNode node = index.get()
+                    .uri(builder -> builder.path("/users/search")
+                            .queryParam("query", prefix)
+                            .queryParam("skip", 0)
+                            .queryParam("take", cap)
+                            .build())
+                    .retrieve()
+                    .body(JsonNode.class);
+            List<String> found = nicknamesFromSearch(node, cap);
+            nicknameSearchCache.put(key, new CachedNames(List.copyOf(found), now + 20));
+            return found;
+        } catch (RuntimeException ignored) {
+            return List.of();
+        }
+    }
+
+    private static List<String> nicknamesFromSearch(JsonNode root, int cap) {
+        JsonNode results = root == null ? null : root.path("results");
+        if (results == null || !results.isArray()) return List.of();
+        List<String> names = new ArrayList<>();
+        for (JsonNode user : results) {
+            String name = user.path("nickname").asText("").trim();
+            if (name.isBlank() || name.length() > 40 || name.contains("/") || name.contains(" ")) continue;
+            names.add(name);
+            if (names.size() >= cap) break;
+        }
+        return names;
+    }
+
     private static Cached missing(String nickname) {
         return new Cached(nickname, "", "", new CardBuffer(), Instant.now().getEpochSecond() + MISSING_TTL_SEC, true);
     }
@@ -388,7 +455,9 @@ public class CosmoCollectionService {
         String name = objekt.path("collectionId").asText("").replaceFirst("\\s*#\\d+\\s*$", "").trim();
         card.put("collectionId", name.isBlank() ? "오브젝트" : name);
         card.put("member", MemberPortraitOptions.displayMember(objekt.path("member").asText("")));
-        card.put("season", objekt.path("season").asText(""));
+        String season = objekt.path("season").asText("");
+        card.put("season", season);
+        card.put("seasonColor", ObjektSeasonColors.colorFor(season));
         card.put("objektClass", objekt.path("class").asText(""));
         card.put("collectionNo", collectionNo(objekt, name));
         card.put("receivedIndex", receivedIndex);
@@ -458,4 +527,6 @@ public class CosmoCollectionService {
             this.complete = complete;
         }
     }
+
+    private record CachedNames(List<String> names, long expiresAt) {}
 }

@@ -185,6 +185,24 @@ public final class MemberPortraitOptions {
         return out;
     }
 
+    public static Artist findArtist(String memberField, List<Artist> artists) {
+        if (memberField == null || memberField.isBlank() || artists == null || artists.isEmpty()) return null;
+        Set<String> members = objektMembers(memberField);
+        if (!members.isEmpty()) {
+            for (String name : members) {
+                Artist matched = matchArtist(name, artists);
+                if (matched != null) return matched;
+            }
+        }
+        return matchArtist(memberField, artists);
+    }
+
+    public static String artistColor(String memberField, List<Artist> artists) {
+        Artist artist = findArtist(memberField, artists);
+        if (artist != null && artist.getColor() != null && !artist.getColor().isBlank()) return artist.getColor();
+        return "#00f5d4";
+    }
+
     private static Artist matchArtist(String option, List<Artist> artists) {
         if (artists == null || artists.isEmpty()) return null;
         String normalized = normalize(option);

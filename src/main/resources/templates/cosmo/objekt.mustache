@@ -1,9 +1,9 @@
 {{>layout/head-open}}
     <title>트리플에스 커뮤니티 오브젝트</title>
 
-    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=20">
+    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/objekt-page.css?v=2">
+    <link rel="stylesheet" href="/css/objekt-page.css?v=5">
     <!-- Tailwind CSS 스크립트 -->
     <link rel="stylesheet" href="/css/objekt.css?v=2">
     <link rel="stylesheet" href="/css/objekt-serial.css?v=2">
@@ -89,7 +89,7 @@
                            name="kind"
                            id="objekt-kind-input"
                            class="objekt-kind-select"
-                           value="{{selectedKind}}"
+                           value="{{selectedKindLabel}}"
                            placeholder="전체"
                            autocomplete="off"
                            spellcheck="false"
@@ -183,7 +183,7 @@
         <p id="objekt-result-summary" class="text-sm text-slate-400"
            data-result-count="{{objektCount}}" data-all-count="{{objektAllCount}}" data-loaded="{{objektPageCount}}">
             검색 결과 <strong class="text-[#00f5d4]">{{objektCount}}</strong>개
-            <span class="text-slate-500">(전체 {{objektAllCount}}개 중 · <span id="objekt-loaded-count">{{objektPageCount}}</span>개 표시)</span>
+            <span class="text-slate-500">(전체 <span id="objekt-all-count">{{objektAllCount}}</span>개 중 · <span id="objekt-loaded-count">{{objektPageCount}}</span>개 표시)</span>
         </p>
     </div>
     {{#objektError}}
@@ -199,7 +199,7 @@
             <button type="button" class="objekt-open-detail relative block aspect-[2/3] w-full overflow-hidden bg-[#1c1f2e]" aria-label="{{collectionId}} 상세 보기">
                 <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" class="objekt-image h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null;this.src='{{frontImage}}';">
                 <span class="absolute left-2 top-2 rounded-md border border-white/15 bg-black/65 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur">{{class}}</span>
-                <span class="absolute right-2 top-2 rounded-md bg-[#00e8cb] px-2 py-1 text-[10px] font-bold text-[#071513]">{{season}}</span>
+                <span class="objekt-card-season absolute right-2 top-2 rounded-md px-2 py-1 text-[10px] font-bold text-[#071513]" style="background:{{seasonColor}}">{{season}}</span>
             </button>
             <div class="p-3">
                 <a href="/cosmo/objekt/detail/{{publicKey}}" class="objekt-detail-link block truncate text-sm font-semibold text-slate-100 hover:text-[#00f5d4]" title="{{collectionId}}">{{collectionId}}</a>
@@ -234,7 +234,7 @@
                 <h2 class="objekt-detail-title" id="objektDetailTitle">—</h2>
             </div>
             <dl class="objekt-detail-meta">
-                <div><dt>멤버</dt><dd id="objektDetailMember">—</dd></div>
+                <div><dt>멤버</dt><dd><a class="objekt-detail-member-link" id="objektDetailMember">—</a></dd></div>
                 <div><dt>시즌</dt><dd id="objektDetailSeason">—</dd></div>
                 <div><dt>클래스</dt><dd id="objektDetailClass">—</dd></div>
                 <div><dt>번호</dt><dd id="objektDetailNo">—</dd></div>
@@ -256,7 +256,7 @@
 
             <p id="objektFavoriteStatus" role="status" aria-live="polite" hidden></p>
             <div class="objekt-detail-actions">
-                <button type="button" class="objekt-fav-toggle" id="objektDetailFavorite">♡ 찜하기</button>
+                <button type="button" class="md-btn md-btn-tonal objekt-fav-toggle" id="objektDetailFavorite">♡ 찜하기</button>
                 <a class="objekt-member-link" id="objektDetailMemberLink" href="/cosmo/objekt">이 멤버의 오브젝트 더 보기</a>
                 <a class="objekt-trade-link" id="objektDetailTradeLink" href="/article/trade/new">교환 게시글 작성</a>
                 <a class="objekt-member-link" id="objektDetailSellLink" href="/article/sell/new">거래 게시글 작성</a>
@@ -274,7 +274,7 @@
     </div>
 </div>
 
-<script src="/js/member-portrait-picker.js?v=9"></script>
+<script src="/js/member-portrait-picker.js?v=10"></script>
 <script src="/js/objekt-kind-combo.js?v=1"></script>
-<script src="/js/objekt-page.js?v=3" defer></script>
+<script src="/js/objekt-page.js?v=6" defer></script>
 {{>layout/page-end}}

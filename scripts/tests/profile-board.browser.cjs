@@ -50,20 +50,22 @@ const base=path.resolve(__dirname,'../..');
    await page.setViewportSize({width,height:900});
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'profile width '+width);
    await page.screenshot({path:`/tmp/objekt-ui/profile-gauges-${width}.png`,fullPage:true});
-   for(const category of ['trade','sell','group-orders']){
+   for(const category of ['trade','sell']){
     await page.goto('https://profile.test/board/'+category);await page.waitForLoadState('load');
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,category+' width '+width);
+    assert.equal(await page.locator('a[href="/article/group-orders"]').count(),0);
+    assert.equal(await page.getByText('분철',{exact:true}).count(),0);
     if(width<768){
      assert.equal(await page.locator('.article-board-heading').isVisible(),false);
      assert.equal(await page.locator('.article-board-subject').evaluate(n=>getComputedStyle(n).whiteSpace),'normal');
      const author=await page.locator('.article-board-author').boundingBox(),date=await page.locator('.article-board-date').boundingBox();
      assert.ok(author.x+author.width<=date.x+1,'writer/date separate');
     }
-    if(category==='group-orders')assert.equal(await page.locator('.article-board-likes').count(),0);
+    assert.equal(await page.locator('.article-board-likes').count(),0);
     if(width===390||width===1280)await page.screenshot({path:`/tmp/objekt-ui/board-${category}-${width}.png`,fullPage:true});
    }
    phase=0;await page.goto('https://profile.test/cosmo/profile/Fan?tab=members&member=HaYeon');
   }
-  console.log('통과: 보유 목록 자동 갱신·입고 반영·실패 시 목록 유지·펼침 유지·숨긴 탭 중지 / 시즌·클래스 원형 진행도 / 교환·거래·분철 320·390·768·1280px');
+  console.log('통과: 보유 목록 자동 갱신·입고 반영·실패 시 목록 유지·펼침 유지·숨긴 탭 중지 / 시즌·클래스 원형 진행도 / 교환·거래 320·390·768·1280px');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1);});

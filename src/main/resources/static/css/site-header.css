@@ -1,6 +1,6 @@
 /* Standalone navigation: independent of each page's Tailwind/Bootstrap bundle. */
 .site-header,.site-header *{box-sizing:border-box}
-.site-header{container:site-header / inline-size;position:sticky;top:0;z-index:50;width:100%;background:#16181ff5;backdrop-filter:none;border-bottom:1px solid #3a4a4655;color:#e3e2e8;font-family:"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;transition:none}
+.site-header{position:sticky;top:0;z-index:50;width:100%;background:#16181ff5;backdrop-filter:none;border-bottom:1px solid #3a4a4655;color:#e3e2e8;font-family:"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif}
 .site-header [hidden]{display:none!important}
 .site-header a{color:#b9cac4;text-decoration:none}
 .site-header button,.site-header input,.site-header summary{font:inherit}
@@ -63,15 +63,15 @@
 #mobile-menu-btn[aria-expanded=true] #mobile-menu-icon::after{top:6px;transform:rotate(-45deg)}
 .header-flash{display:flex;justify-content:space-between;gap:16px;max-width:1200px;margin:16px auto;padding:14px 20px;border:1px solid #3a4a46;border-radius:12px;color:#8decd9;background:#16181f}
 .header-flash button{background:none;border:0;color:inherit}
-@container site-header (min-width:1024px){#mobile-menu{display:none!important}}
-@container site-header (max-width:1279px){#header-search-btn{display:flex}.header-search-panel{position:absolute;right:0;top:52px;width:min(320px,calc(100vw - 32px));padding:10px;background:#1a1d25;border:1px solid #3a4a4680;border-radius:16px}.header-search-panel .header-search{width:100%}.header-main{gap:16px}.header-primary{gap:16px}.header-account-level{display:none}}
-@container site-header (max-width:1023px){.header-shell{padding:0 max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left))}.header-main{gap:12px;min-height:64px}.header-utilities,#navbar,.header-account,.header-search-disclosure{display:none}.header-actions{gap:2px}#mobile-menu-btn{display:flex}.header-brand img:last-child{width:100px}}
+@media(min-width:1024px){#mobile-menu{display:none!important}}
+@media(max-width:1279px){#header-search-btn{display:flex}.header-search-panel{position:absolute;right:0;top:52px;width:min(320px,calc(100vw - 32px));padding:10px;background:#1a1d25;border:1px solid #3a4a4680;border-radius:16px}.header-search-panel .header-search{width:100%}.header-main{gap:16px}.header-primary{gap:16px}.header-account-level{display:none}}
+@media(max-width:1023px){.header-shell{padding:0 max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left))}.header-main{gap:12px;min-height:64px}.header-utilities,#navbar,.header-account,.header-search-disclosure,.site-header-search{display:none}.header-actions{gap:2px}#mobile-menu-btn{display:flex;flex:0 0 auto;margin-left:auto}.header-brand img:last-child{width:100px}#site-theme-toggle{flex:0 0 auto}}
 @media(prefers-reduced-motion:reduce){.sss-mascot-wave{animation:none}.site-header,.header-chevron{transition:none}}
 
 .header-utilities{order:3;flex-shrink:0;gap:12px}.header-utilities .header-nav-toggle{font-size:11px!important}.header-nav-link{font-size:12px;white-space:nowrap}.header-related-links{display:grid;gap:4px;margin:0 10px 8px;padding-left:10px;border-left:1px solid #3a4a4680}.header-related-links a{display:flex;align-items:center;min-height:36px;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.5;color:#93a5a1}.header-related-links a:hover{background:#8decd909;color:#8decd9}.mobile-direct-link{padding:14px 12px;min-height:48px;font-size:14px}.header-account-name{max-width:80px}
-@container site-header (max-width:1279px){.header-search-panel{width:300px}.header-brand img:last-child{height:28px}.header-utilities{gap:10px}}
-@container site-header (max-width:1023px){.header-brand img:last-child{height:28px;width:auto}}
+@media(max-width:1279px){.header-search-panel{width:300px}.header-brand img:last-child{height:28px}.header-utilities{gap:10px}}
+@media(max-width:1023px){.header-brand img:last-child{height:28px;width:auto}}
 
-@container site-header (max-width:1023px){.header-related-links a{min-height:44px}}
+@media(max-width:1023px){.header-related-links a{min-height:44px}}
 
 .header-link-group>.header-group-heading{display:flex;align-items:center;min-height:44px;padding:11px 12px;border-radius:8px;font-size:13px;line-height:1.5;color:#b9cac4}

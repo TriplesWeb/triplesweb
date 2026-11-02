@@ -1,7 +1,7 @@
 {{>layout/head-open}}
 
     <title>트리플에스 커뮤니티 스케줄</title>
-    <link rel="stylesheet" href="/css/triples.css?v=19">
+    <link rel="stylesheet" href="/css/triples.css?v=32">
     <link rel="stylesheet" href="/css/schedule-categories.css?v=4">
 </head><body class="site-page dark selection:bg-brand selection:text-black">
     <div class="ambient-glow-container" aria-hidden="true">
@@ -27,7 +27,7 @@
 
             {{#isAdmin}}
             <div class="schedule-page-actions">
-                <button type="button" class="btn-custom-primary" onclick="showAddModal()">
+                <button type="button" class="md-btn md-btn-filled btn-custom-primary" onclick="showAddModal()">
                     <span class="material-symbols-outlined">add</span>
                     스케줄 추가
                 </button>
@@ -47,7 +47,7 @@
                             <span class="mb-1 block font-mono text-[10px] uppercase tracking-wider text-brand">SELECTED DATE</span>
                             <h2 id="sideSelectedDate" class="text-base font-bold text-white">날짜를 선택하세요</h2>
                         </div>
-                        <button type="button" id="showTodayButton" class="btn-custom-secondary !px-3 !py-1.5 text-xs">오늘</button>
+                        <button type="button" id="showTodayButton" class="md-btn md-btn-tonal btn-custom-secondary !px-3 !py-1.5 text-xs">오늘</button>
                     </div>
                     <div id="sideScheduleDetail" class="space-y-3" aria-live="polite">
                         <p class="py-4 text-sm text-[#b9cac4]">캘린더에서 날짜를 선택하면 해당 날짜의 일정이 표시됩니다.</p>
@@ -96,7 +96,7 @@
                     </div>
                     <div class="flex items-center gap-2">
                         {{#isAdmin}}
-                        <button type="button" id="editBtn" class="btn-custom-primary">수정하기</button>
+                        <button type="button" id="editBtn" class="md-btn md-btn-filled btn-custom-primary">수정하기</button>
                         {{/isAdmin}}
                         <button type="button" class="btn-custom-secondary" data-site-dismiss="modal">닫기</button>
                     </div>
@@ -145,8 +145,8 @@
                         </div>
                     </div>
                     <div class="site-modal-footer">
-                        <button type="button" class="btn-custom-secondary" data-site-dismiss="modal">취소</button>
-                        <button type="submit" class="btn-custom-primary">추가하기</button>
+                        <button type="button" class="md-btn md-btn-text btn-custom-secondary" data-site-dismiss="modal">취소</button>
+                        <button type="submit" class="md-btn md-btn-filled btn-custom-primary">추가하기</button>
                     </div>
                 </div>
             </form>
@@ -194,8 +194,8 @@
                         </div>
                     </div>
                     <div class="site-modal-footer">
-                        <button type="button" class="btn-custom-secondary" data-site-dismiss="modal">취소</button>
-                        <button type="submit" class="btn-custom-primary">수정 저장</button>
+                        <button type="button" class="md-btn md-btn-text btn-custom-secondary" data-site-dismiss="modal">취소</button>
+                        <button type="submit" class="md-btn md-btn-filled btn-custom-primary">수정 저장</button>
                     </div>
                 </div>
             </form>

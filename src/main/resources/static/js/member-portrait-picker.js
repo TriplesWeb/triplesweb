@@ -17,20 +17,39 @@
     return root.querySelector(".member-portrait-picker");
   }
 
-  function bindFrameSrc(frame, n) {
-    if (frame.dataset.boundFrame === String(n)) return;
+  function paintFrameMask(avatar, frame) {
+    if (!avatar || !frame) return;
+    const src = frame.currentSrc || frame.src;
+    if (!src) return;
+    avatar.style.setProperty("--frame-mask", 'url("' + src.replace(/"/g, "") + '")');
+    avatar.classList.add("has-frame-mask");
+  }
+
+  function bindFrameSrc(frame, n, avatar) {
+    if (frame.dataset.boundFrame === String(n)) {
+      paintFrameMask(avatar, frame);
+      return;
+    }
     frame.dataset.boundFrame = String(n);
     let attempt = 0;
     const tryNext = () => {
       if (attempt >= FRAME_BASES.length) {
         frame.hidden = true;
+        if (avatar) {
+          avatar.style.removeProperty("--frame-mask");
+          avatar.classList.remove("has-frame-mask");
+        }
         return;
       }
       const src = FRAME_BASES[attempt++] + n + ".png";
       frame.onerror = tryNext;
-      frame.onload = () => { frame.onerror = null; };
+      frame.onload = () => {
+        frame.onerror = null;
+        paintFrameMask(avatar, frame);
+      };
       frame.hidden = false;
       frame.src = src;
+      if (frame.complete && frame.naturalWidth) paintFrameMask(avatar, frame);
     };
     tryNext();
   }
@@ -54,7 +73,7 @@
       frame.hidden = true;
       return frame;
     }
-    bindFrameSrc(frame, n);
+    bindFrameSrc(frame, n, avatar);
     return frame;
   }
 

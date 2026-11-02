@@ -40,6 +40,11 @@
 #calendar .fc-daygrid-event .fc-event-time{flex:none;font-size:.65rem}
 #calendar .fc-daygrid-event-dot{flex:none;margin-top:5px}
 #calendar .fc-daygrid-more-link{display:inline-block;max-width:100%;font-size:.7rem;white-space:normal}
+#miniCalendar .fc-daygrid-day-frame{min-height:4.25rem}
+#miniCalendar .fc-daygrid-event{align-items:flex-start;white-space:normal;padding:2px 3px}
+#miniCalendar .fc-daygrid-event .fc-event-title,
+#miniCalendar .fc-daygrid-event .fc-event-title-container{min-width:0;white-space:normal;overflow-wrap:anywhere;word-break:keep-all;text-overflow:clip;font-size:.65rem}
+#miniCalendar .fc-daygrid-event .fc-event-time{display:none}
 @media(max-width:600px){
     #calendar{padding:.65rem}
     #calendar .fc-daygrid-day-frame{min-height:7rem}

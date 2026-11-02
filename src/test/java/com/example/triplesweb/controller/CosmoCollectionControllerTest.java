@@ -1,7 +1,7 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.config.MustacheConfig;
-import com.example.triplesweb.repository.ArtistRepository;
+import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.CosmoCollectionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,11 +23,13 @@ import static org.hamcrest.Matchers.*;
 class CosmoCollectionControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean CosmoCollectionService collections;
-    @MockitoBean ArtistRepository artists;
+    @MockitoBean ArtistSnapshotService artists;
 
     @Test void initialPageAndEmptySubmittedNicknameHaveDifferentMessages() throws Exception {
         mvc.perform(get("/cosmo/collection")).andExpect(status().isOk())
-                .andExpect(content().string(not(containsString("없는 닉네임 입니다."))));
+                .andExpect(content().string(not(containsString("없는 닉네임 입니다."))))
+                .andExpect(content().string(containsString("aria-label=\"연관닉\"")))
+                .andExpect(content().string(containsString("collection-nickname-suggest.js?v=4")));
         mvc.perform(get("/cosmo/collection").param("nickname", "")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("없는 닉네임 입니다.")));
         verifyNoInteractions(collections);
@@ -71,23 +73,46 @@ class CosmoCollectionControllerTest {
         view.put("searchQuery", "");
         view.put("filterQuery", "");
         view.put("hasActiveFilters", false);
+        view.put("selectedKind", "all");
+        view.put("selectedKindLabel", "전체");
         view.put("cards", List.of(Map.of("serial", "27", "hasSerial", true, "collectionId", "Cream02 HaYeon 367Z",
-                "member", "HaYeon", "season", "Cream02", "objektClass", "Double", "hasImage", true,
-                "thumbnailImage", "https://example.com/card.webp", "hasDetail", false)));
-        view.put("allCards", view.get("cards"));
+                "member", "HaYeon", "season", "Cream02", "seasonColor", "#FF8389", "objektClass", "Double",
+                "hasImage", true, "thumbnailImage", "https://example.com/card.webp", "hasDetail", false)));
+        view.put("filterMembers", List.of("HaYeon"));
+        view.put("filterSeasons", List.of("Cream02"));
+        view.put("filterClasses", List.of("Double"));
         when(collections.search("테스트", 0, "", List.of(), List.of(), "", "all", "all", "latest")).thenReturn(view);
         when(artists.findAll()).thenReturn(List.of());
         mvc.perform(get("/cosmo/collection").param("nickname", "테스트")).andExpect(status().isOk())
+                .andExpect(model().attributeDoesNotExist("allCards"))
                 .andExpect(content().string(containsString("#27")))
+                .andExpect(content().string(containsString("background:#FF8389")))
                 .andExpect(content().string(containsString("collection-image")))
                 .andExpect(content().string(containsString("내 오브젝트 검색")))
                 .andExpect(content().string(containsString("프로필 보기")))
                 .andExpect(content().string(containsString("?tab=overview")))
                 .andExpect(content().string(containsString("기타 옵젝")))
                 .andExpect(content().string(containsString("보유 오브젝트 필터")))
+                .andExpect(content().string(containsString("id=\"collection-kind-select\"")))
+                .andExpect(content().string(containsString("value=\"전체\"")))
                 .andExpect(content().string(not(containsString("오브젝트 상세 보기"))))
                 .andExpect(content().string(containsString("collection-scroll-sentinel")))
                 .andExpect(content().string(not(containsString("#30000001"))));
+    }
+
+    @Test void suggestReturnsCosmoNicknameMatches() throws Exception {
+        when(collections.suggestNicknames("hay", 8)).thenReturn(List.of("hayeonfan", "hayoon"));
+        mvc.perform(get("/cosmo/collection/suggest").param("q", "hay"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0]").value("hayeonfan"))
+                .andExpect(jsonPath("$.items[1]").value("hayoon"));
+    }
+
+    @Test void suggestReturnsEmptyItemsWhenServiceHasNoMatches() throws Exception {
+        when(collections.suggestNicknames("ha", 8)).thenReturn(List.of());
+        mvc.perform(get("/cosmo/collection/suggest").param("q", "ha"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isEmpty());
     }
 
     @Test void moreEndpointReturnsJsonPagePayload() throws Exception {
