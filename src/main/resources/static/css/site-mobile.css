@@ -10,7 +10,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   #top-header>div:first-child>div:first-child{flex:1;min-width:0}
   #top-header>div:first-child>div:last-child{display:flex;align-items:center;gap:.5rem;min-width:0}
   #top-header>div:first-child a img{max-height:28px;width:auto;max-width:100px}
-  #site-theme-toggle,#mobile-menu-btn{flex:0 0 auto}
+  #mobile-menu-btn{flex:0 0 auto}
   #mobile-menu-btn{margin-left:auto}
   #top-header a{color:#b9cac4;text-decoration:none}
   #top-header a:hover{color:#8decd9}
