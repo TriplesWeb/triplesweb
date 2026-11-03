@@ -8,7 +8,9 @@
 {{>layout/header}}
 <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-8 space-y-6">
 
-<a href="/cosmo/gravity" class="text-[#00f5d4]">← 그래비티 목록</a>
+<nav class="site-back" aria-label="그래비티 목록으로">
+    <a href="/cosmo/gravity">← 그래비티 목록</a>
+</nav>
 {{#detailError}}<p role="status" class="gravity-notice">{{detailError}}</p>{{/detailError}}
 {{#gravity}}
 <section class="gravity-card space-y-4">

@@ -1,0 +1,16 @@
+<form action="{{#searchAction}}{{searchAction}}{{/searchAction}}{{^searchAction}}/search{{/searchAction}}" method="get" role="search" class="ui-search-field flex w-full max-w-xl items-center gap-2 {{searchExtraClass}}">
+    <input
+        id="{{#searchId}}{{searchId}}{{/searchId}}{{^searchId}}ui-search-input{{/searchId}}"
+        name="{{#searchName}}{{searchName}}{{/searchName}}{{^searchName}}keyword{{/searchName}}"
+        type="search"
+        {{#searchRequired}}required minlength="1"{{/searchRequired}}
+        value="{{searchValue}}"
+        placeholder="{{#searchPlaceholder}}{{searchPlaceholder}}{{/searchPlaceholder}}{{^searchPlaceholder}}검색{{/searchPlaceholder}}"
+        aria-label="{{#searchAriaLabel}}{{searchAriaLabel}}{{/searchAriaLabel}}{{^searchAriaLabel}}검색{{/searchAriaLabel}}"
+        class="input w-full min-w-0 flex-1"
+        autocomplete="off"
+    />
+    <button type="submit" class="btn btn-primary shrink-0" title="검색" aria-label="검색">
+        <span class="material-symbols-outlined text-[1.25rem] leading-none" aria-hidden="true">search</span>
+    </button>
+</form>

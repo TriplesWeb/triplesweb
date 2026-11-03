@@ -1,0 +1,8 @@
+{{!
+  공통 뒤로가기.
+  필요 값: backHref, backLabel
+  선택: backAriaLabel, backBar(true면 카드 상단 바)
+}}
+<nav class="site-back{{#backBar}} site-back--bar{{/backBar}}" aria-label="{{#backAriaLabel}}{{backAriaLabel}}{{/backAriaLabel}}{{^backAriaLabel}}{{backLabel}}{{/backAriaLabel}}">
+    <a href="{{backHref}}">← {{backLabel}}</a>
+</nav>

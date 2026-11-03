@@ -255,3 +255,55 @@ body.site-modal-open { overflow: hidden; }
 .site-search-field:focus-within .site-search-submit { color: #8decd9; }
 
 .site-modal-panel{display:flex;flex-direction:column;min-height:0;}
+
+/* 공통 뒤로가기 — 상세 페이지 상단 */
+.site-back {
+    margin: 0 0 1.25rem;
+}
+
+.site-back a,
+a.site-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--site-ui-muted, #b9cac4);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.4;
+    transition: color 0.15s ease;
+}
+
+.site-back a:hover,
+.site-back a:focus-visible,
+a.site-back-link:hover,
+a.site-back-link:focus-visible {
+    color: #00f5d4;
+    outline: none;
+}
+
+/* 카드 상단 전체 너비 바 (앨범 상세 등) */
+.site-back--bar {
+    margin: 0;
+    padding: 0.9rem 1.5rem;
+    border-bottom: 1px solid rgba(58, 74, 70, 0.55);
+    background: #12141a;
+}
+
+@media (min-width: 1024px) {
+    .site-back--bar {
+        padding: 1rem 2rem;
+    }
+}
+
+html[data-theme="light"] .site-back--bar {
+    background: #eef1f0;
+    border-bottom-color: rgba(40, 50, 48, 0.28);
+}
+
+html[data-theme="light"] .site-back a:hover,
+html[data-theme="light"] .site-back a:focus-visible,
+html[data-theme="light"] a.site-back-link:hover,
+html[data-theme="light"] a.site-back-link:focus-visible {
+    color: var(--site-ui-accent, #0a8f7c);
+}
