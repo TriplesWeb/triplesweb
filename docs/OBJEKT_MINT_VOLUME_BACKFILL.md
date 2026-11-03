@@ -103,6 +103,14 @@ Polygon 시대 물량은 Abstract RPC/`start-block=6800000`으로는 복원되�
 2. 실패·비용이 크면 Apollo `polygon` 덤프/MEGA SQL을 같은 스키마로 넣는다.
 3. 두 값이 다르면 archive 행을 두 번 남기고 living은 건드리지 않는다.
 
+| 후보 소스 | 방법 | 비고 |
+| --- | --- | --- |
+| Apollo `polygon` 브랜치 / MEGA 덤프 | 컬렉션별 mint·transfer SQL/CSV | 구조화된 아카이브. 시리얼 복원에 유리 |
+| 로컬 재인덱싱 슬라이스 | `scripts/polygon-objekt-slice.py` + (선택) `cosmo-db` `checkpoint/polygon` | **70_000_000–70_000_100 에서 성공.** 공개 RPC가 32M 옛 로그도 반환. 전체 스캔은 메타데이터가 병목. 실험 기록은 `POLYGON_REINDEX.md` |
+| kuiperdog/cosmo-indexer · Nova | Polygon GraphQL·주간 mint 통계 | 호스팅 여부에 의존 |
+| Polygon `eth_getLogs` mint (`from=0x0`) | 구 계약·블록 구간 스캔 | 10k 블록 창. 50k는 HTTP 413. Subsquid 게이트웨이는 API 키 필요 |
+| 커뮤니티 스프레드시트 | one-shot import | provenance 태그 필수 |
+
 ## 병합·구현 순서
 
 1. UI/보드 PR과 분리한다. 대용량 백필이 병합을 막지 않게 한다.
