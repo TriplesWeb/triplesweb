@@ -64,11 +64,11 @@ class GravityControllerTest {
                 .andExpect(content().string(not(containsString("cdn.tailwindcss.com"))));
     }
 
-    @Test void listUsesTripleSAndLoadsHeaderIconFont() throws Exception {
+    @Test void listUsesTripleSAndLoadsV2UtilityCss() throws Exception {
         when(service.hasCosmoToken()).thenReturn(true);
         when(service.fetchGravityList("tripleS")).thenReturn(java.util.List.of());
         mvc.perform(get("/cosmo/gravity?artistId=artms")).andExpect(status().isOk())
-                .andExpect(content().string(containsString("/fonts/site-icons.ttf")))
+                .andExpect(content().string(containsString("/css/v2-utility.css")))
                 .andExpect(content().string(not(containsString("cdn.tailwindcss.com"))))
                 .andExpect(content().string(containsString("gravityAdminLoginForm")))
                 .andExpect(content().string(not(containsString("href=\"?artistId=artms\""))))
