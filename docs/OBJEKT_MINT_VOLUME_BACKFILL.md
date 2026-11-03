@@ -12,7 +12,7 @@
 | 용도 | 서비스 | 원천 | 저장 |
 | --- | --- | --- | --- |
 | 정렬용 mintCount | `ObjektMarketDataService.refreshMintCounts` | `GET /collections/rarity` 60초 | 메모리 스냅샷만 |
-| 카드·모달 발행량 | `ObjektSerialSupplyService` | `GET /collections/{slug}/serials` | TTL 60초, 실패 시 5분 stale |
+| 카드·모달 발행량 | `ObjektSerialSupplyService` | `GET /collections/{slug}/serials` | TTL 30초, 실패 시 2분 stale, rarity 첫 페인트 유지 |
 | Transfer/소유 | `AbstractObjektIndexer` (기본 OFF) | Abstract RPC `eth_getLogs` from block 6800000 | MariaDB (발행량 미사용) |
 
 시리얼 집합 규칙은 `OBJEKT_DATA_READS.md`와 같다. 고유 시리얼만 세고

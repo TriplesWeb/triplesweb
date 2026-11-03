@@ -268,10 +268,9 @@ class ObjektFeaturesTest {
             .andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc367z"));
         org.assertj.core.api.Assertions.assertThat(result.getResponse().getContentAsString())
             .contains("data-serial-panel", "objektIssuedCount")
-            .contains("Polygon 민트 7,193,056")
+            .contains("발행량 7,193,056개 · Polygon 민트")
             .contains("tripleS 5,705,174")
             .contains("ARTMS 1,487,882")
-            .doesNotContain("발행량 7,193,056개")
             .doesNotContain("objektIssuedRanges", "objektIssuedTime").doesNotContain("id=\"objektDetailFullLink\"");
     }
 
@@ -288,9 +287,9 @@ class ObjektFeaturesTest {
         stubCatalog(List.of(item));
         when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
         mvc.perform(get("/cosmo/objekt")).andExpect(status().isOk())
-                .andExpect(content().string(containsString("Polygon 민트 7,193,056")))
-                .andExpect(content().string(containsString("발행량 90개")))
-                .andExpect(content().string(not(containsString("발행량 7,193,056개"))));
+                .andExpect(content().string(containsString("발행량 7,193,056개 · Polygon 민트")))
+                .andExpect(content().string(containsString("objekt-card-supply")))
+                .andExpect(content().string(containsString("발행량 90개")));
     }
 
     @Test void ownerResponseDoesNotExposeInternalVerificationFields() throws Exception {

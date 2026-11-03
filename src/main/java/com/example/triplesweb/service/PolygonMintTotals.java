@@ -39,7 +39,7 @@ public class PolygonMintTotals {
                 throw new IllegalStateException("polygon-mints.json totals are incomplete or inconsistent");
             }
             NumberFormat format = NumberFormat.getIntegerInstance(Locale.KOREA);
-            String caption = "Polygon 민트 " + format.format(total)
+            String caption = "발행량 " + format.format(total) + "개 · Polygon 민트"
                     + " · tripleS " + format.format(triples)
                     + " · ARTMS " + format.format(artms);
             return new Snapshot(triples, artms, total, lastMintBlock, caption);

@@ -13,6 +13,7 @@ class PolygonMintTotalsTest {
         assertThat(snapshot.total()).isEqualTo(7_193_056L);
         assertThat(snapshot.triples() + snapshot.artms()).isEqualTo(snapshot.total());
         assertThat(snapshot.lastMintBlock()).isEqualTo(70_361_022L);
-        assertThat(snapshot.caption()).isEqualTo("Polygon 민트 7,193,056 · tripleS 5,705,174 · ARTMS 1,487,882");
+        assertThat(snapshot.caption())
+                .isEqualTo("발행량 7,193,056개 · Polygon 민트 · tripleS 5,705,174 · ARTMS 1,487,882");
     }
 }
