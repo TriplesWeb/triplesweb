@@ -208,14 +208,20 @@
       sectionOptions.map((s) => `<option value="${s.sectionId}" ${String(s.sectionId) === String(selectedId || "") ? "selected" : ""}>${escapeAttr(s.name)}</option>`).join("");
   }
 
-  async function loadOptions() {
+  async function loadOptions({ requireArtists = false } = {}) {
     if (!unitOptions.length) {
       const res = await apiFetch(API + "/units");
       if (res.ok) unitOptions = await res.json();
     }
     if (!artistOptions.length) {
       const res = await apiFetch(API + "/artists");
-      if (res.ok) artistOptions = await res.json();
+      if (!res.ok) {
+        if (requireArtists) {
+          throw new Error(await readError(res, "참여 멤버 목록을 불러오지 못했습니다."));
+        }
+      } else {
+        artistOptions = await res.json();
+      }
     }
     const secRes = await apiFetch(API + "/sections");
     if (secRes.ok) sectionOptions = await secRes.json();
@@ -269,7 +275,12 @@
     preview.classList.add("hidden");
     preview.removeAttribute("src");
 
-    await loadOptions();
+    try {
+      await loadOptions({ requireArtists: true });
+    } catch (ex) {
+      alert(ex.message || "참여 멤버 목록을 불러오지 못했습니다.");
+      return;
+    }
 
     if (albumId) {
       const res = await apiFetch(API + "/" + albumId);
