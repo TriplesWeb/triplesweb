@@ -41,7 +41,7 @@ function mime(p){const ext=path.extname(p).toLowerCase();return {".css":"text/cs
      await page.waitForTimeout(180);
      const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);
      const file=key+"-"+variant+"-"+device+".png";
-     await page.screenshot({path:path.join(out,file),animations:"disabled",timeout:20000});
+     await page.screenshot({path:path.join(out,file),animations:"disabled",timeout:20000,fullPage:true});
      report.push({key,label,device,variant,file,overflow,pageErrors:errors.slice(0,5)});
     }catch(e){report.push({key,label,device,variant,error:String(e).slice(0,320)})}finally{await page.close()}
    }
