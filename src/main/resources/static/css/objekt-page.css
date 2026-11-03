@@ -441,29 +441,29 @@
         .objekt-card-badges {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: .45rem;
+            gap: .28rem;
+            min-width: 0;
         }
         .objekt-card-season {
-            flex: 0 1 auto;
-            min-width: 0;
+            flex: 0 0 auto;
             border-radius: 999px;
-            padding: .18rem .55rem;
+            padding: .14rem .42rem;
             color: #071513;
-            font-size: .68rem;
+            font-size: .64rem;
             font-weight: 800;
             line-height: 1.2;
         }
         .objekt-card-class {
             flex: 0 0 auto;
             margin-left: auto;
-            border: 0;
-            background: transparent;
+            border-radius: 999px;
+            padding: .14rem .42rem;
+            border: 1px solid rgba(255,255,255,.08);
+            background: #0c0d12;
             color: #f3f4f8;
-            font-size: .75rem;
+            font-size: .64rem;
             font-weight: 800;
-            line-height: 1.15;
-            padding: 0;
+            line-height: 1.2;
         }
         .objekt-card-body {
             display: flex;
@@ -472,11 +472,11 @@
             padding: .7rem .8rem .85rem;
         }
         .objekt-detail-link {
-            display: block;
+            flex: 1 1 auto;
             min-width: 0;
             overflow: hidden;
-            color: #f3f4f8;
-            font-size: .82rem;
+            color: #e8eaef;
+            font-size: .68rem;
             font-weight: 700;
             text-decoration: none;
             text-overflow: ellipsis;

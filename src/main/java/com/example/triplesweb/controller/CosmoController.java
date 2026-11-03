@@ -327,7 +327,8 @@ public class CosmoController {
                     + URLEncoder.encode(member, StandardCharsets.UTF_8).replace("+", "%20"));
             copy.put("publicKey", ObjektLinks.key(item));
             copy.put("seasonColor", ObjektSeasonColors.colorFor(firstValue(item, "season", "seasonKey")));
-            copy.put("displayCollectionId", MemberPortraitOptions.koreanCollectionTitle(firstValue(item, "collectionId")));
+            copy.put("cardTitle", ObjektSeasonCodes.cardTitle(
+                    firstValue(item, "collectionId"), firstValue(item, "season", "seasonKey")));
             out.add(copy);
         }
         return out;

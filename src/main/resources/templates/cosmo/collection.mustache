@@ -171,12 +171,12 @@
         <article class="ar-panel ar-card collection-card">
             <div class="collection-image-wrap">
             <span class="collection-card-serial">{{#hasSerial}}#{{serial}}{{/hasSerial}}{{^hasSerial}}시리얼 확인 중{{/hasSerial}}</span><span class="collection-card-season" data-season-color="{{season}}"{{#seasonColor}} style="background:{{seasonColor}}"{{/seasonColor}}>{{season}}</span>
-            {{#hasImage}}<img class="collection-image" src="{{thumbnailImage}}" alt="{{#displayCollectionId}}{{displayCollectionId}}{{/displayCollectionId}}{{^displayCollectionId}}{{collectionId}}{{/displayCollectionId}}" referrerpolicy="no-referrer" loading="lazy" decoding="async">{{/hasImage}}
+            {{#hasImage}}<img class="collection-image" src="{{thumbnailImage}}" alt="{{collectionId}}" referrerpolicy="no-referrer" loading="lazy" decoding="async">{{/hasImage}}
             {{^hasImage}}<span class="ar-muted">이미지 준비 중</span>{{/hasImage}}
             </div>
             <div class="ar-body">
-                {{#hasDetail}}<h3><a class="collection-title-link" href="{{detailUrl}}">{{#displayCollectionId}}{{displayCollectionId}}{{/displayCollectionId}}{{^displayCollectionId}}{{collectionId}}{{/displayCollectionId}}</a></h3>{{/hasDetail}}
-                {{^hasDetail}}<h3>{{#displayCollectionId}}{{displayCollectionId}}{{/displayCollectionId}}{{^displayCollectionId}}{{collectionId}}{{/displayCollectionId}}</h3>{{/hasDetail}}
+                {{#hasDetail}}<h3><a class="collection-title-link" href="{{detailUrl}}">{{collectionId}}</a></h3>{{/hasDetail}}
+                {{^hasDetail}}<h3>{{collectionId}}</h3>{{/hasDetail}}
                 <p class="ar-muted">{{member}}{{#season}} · {{season}}{{/season}}</p>
             </div>
         </article>
@@ -393,7 +393,7 @@
   }
 
   function buildCard(item) {
-    const title = escapeHtml(item.displayCollectionId || item.collectionId || '오브젝트');
+    const title = escapeHtml(item.collectionId || '오브젝트');
     const member = escapeHtml(item.member || '');
     const season = item.season ? ' · ' + escapeHtml(item.season) : '';
     const serial = item.hasSerial

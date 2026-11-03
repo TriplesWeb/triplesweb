@@ -507,7 +507,7 @@
     function fillDetailModal(data) {
         const key = data.objektKey || data.id || activeObjektKey;
         activeObjektKey = key;
-        if (detailTitle) detailTitle.textContent = data.displayCollectionId || data.collectionId || '—';
+        if (detailTitle) detailTitle.textContent = data.collectionId || '—';
         if (detailMember) {
             const memberName = data.member || '—';
             detailMember.textContent = memberName;
@@ -527,7 +527,7 @@
             detailDesc.textContent = text || '아직 등록된 상세 설명이 없습니다.';
             detailDesc.classList.toggle('is-empty', !text);
         }
-        if (detailImage) detailImage.alt = data.displayCollectionId || data.collectionId || '';
+        if (detailImage) detailImage.alt = data.collectionId || '';
         resetModalFlip(data.frontImage || data.thumbnailImage || '', data.backImage || '', Boolean(data.hasBack));
         setFavoriteButton(Boolean(data.isFavorite));
         detailFavorite.disabled = false;
@@ -741,8 +741,18 @@
         spinner?.classList.toggle('hidden', !loading);
     }
 
+    function cardTitleFrom(collectionId, season) {
+        const title = (collectionId || '').trim();
+        const prefix = (season || '').trim();
+        if (!title || !prefix) return title;
+        if (title.toLowerCase().startsWith(prefix.toLowerCase() + ' ')) {
+            return title.slice(prefix.length).trim() || title;
+        }
+        return title;
+    }
+
     function buildCard(item) {
-        const collectionId = item.displayCollectionId || item.collectionId || '';
+        const collectionId = item.collectionId || '';
         const member = item.member || item.memberName || '';
         const collectionNo = item.collectionNo || item.collectionNumber || '';
         const id = item.publicKey || item.id || '';
@@ -750,6 +760,7 @@
         const front = item.frontImage || thumb;
         const klass = item.class || item.classKey || '';
         const season = item.season || item.seasonKey || '';
+        const title = item.cardTitle || cardTitleFrom(collectionId, season);
         return `<article class="objekt-card objekt-item group relative border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
                  data-objekt-key="${attr(id)}"
                  data-season="${attr(item.seasonKey || season)}" data-class="${attr(item.classKey || klass)}" data-artist="${attr(item.artist || '')}" data-collection-no="${attr(collectionNo)}"
@@ -760,9 +771,9 @@
             <div class="objekt-card-body">
                 <div class="objekt-card-badges">
                     <span class="objekt-card-season" style="background:${attr(seasonBadgeColor(item, season))}">${escapeHtml(season)}</span>
+                    <a href="/cosmo/objekt/detail/${attr(id)}" class="objekt-detail-link" title="${attr(collectionId)}">${escapeHtml(title)}</a>
                     <span class="objekt-card-class">${escapeHtml(klass)}</span>
                 </div>
-                <a href="/cosmo/objekt/detail/${attr(id)}" class="objekt-detail-link" title="${attr(collectionId)}">${escapeHtml(collectionId)}</a>
                 <div class="objekt-card-foot">
                     <a href="/cosmo/objekt/member?name=${encodeURIComponent(member)}" class="objekt-member-chip truncate">${escapeHtml(member)}</a>
                     <span class="objekt-card-no">${escapeHtml(collectionNo)}</span>
