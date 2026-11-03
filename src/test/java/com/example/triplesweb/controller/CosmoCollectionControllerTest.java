@@ -75,9 +75,13 @@ class CosmoCollectionControllerTest {
         view.put("hasActiveFilters", false);
         view.put("selectedKind", "all");
         view.put("selectedKindLabel", "전체");
-        view.put("cards", List.of(Map.of("serial", "27", "hasSerial", true, "collectionId", "Cream02 HaYeon 367Z",
-                "member", "HaYeon", "season", "Cream02", "seasonColor", "#FF8389", "objektClass", "Double",
-                "hasImage", true, "thumbnailImage", "https://example.com/card.webp", "hasDetail", false)));
+        view.put("cards", List.of(Map.ofEntries(
+                Map.entry("serial", "27"), Map.entry("hasSerial", true),
+                Map.entry("collectionId", "Cream02 HaYeon 367Z"), Map.entry("cardTitle", "HaYeon 367Z"),
+                Map.entry("member", "HaYeon"), Map.entry("season", "Cream02"), Map.entry("seasonColor", "#FF8389"),
+                Map.entry("objektClass", "Double"), Map.entry("collectionNo", "367Z"),
+                Map.entry("hasImage", true), Map.entry("thumbnailImage", "https://example.com/card.webp"),
+                Map.entry("hasDetail", false))));
         view.put("filterMembers", List.of("HaYeon"));
         view.put("filterSeasons", List.of("Cream02"));
         view.put("filterClasses", List.of("Double"));
@@ -86,6 +90,10 @@ class CosmoCollectionControllerTest {
         mvc.perform(get("/cosmo/collection").param("nickname", "테스트")).andExpect(status().isOk())
                 .andExpect(model().attributeDoesNotExist("allCards"))
                 .andExpect(content().string(containsString("#27")))
+                .andExpect(content().string(containsString("collection-card-serial")))
+                .andExpect(content().string(containsString("collection-card-season")))
+                .andExpect(content().string(containsString("collection-card-class")))
+                .andExpect(content().string(containsString("HaYeon 367Z")))
                 .andExpect(content().string(containsString("background:#FF8389")))
                 .andExpect(content().string(containsString("collection-image")))
                 .andExpect(content().string(containsString("내 코스모 아이디 검색")))

@@ -759,6 +759,11 @@
             .objekt-search-row { width: 100%; }
             .objekt-reset-button { flex: 0 0 auto; width: 100%; }
             .objekt-card-grid { gap: 10px; }
+            .objekt-card-body { padding: .55rem .55rem .7rem; gap: .3rem; }
+            .objekt-card-badges { flex-wrap: wrap; gap: .22rem .3rem; }
+            .objekt-card-season { order: 1; }
+            .objekt-card-class { order: 2; margin-left: auto; }
+            .objekt-detail-link { order: 3; flex: 1 1 100%; }
         }
         @media (max-width: 420px) {
             .objekt-filter-bar { grid-template-columns: 1fr; }

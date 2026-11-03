@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="/css/gravity-page.css?v=3">
 <link rel="stylesheet" href="/css/archive-page.css?v=15">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=22">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=24">
 <title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}내 코스모 아이디 검색{{/nickname}}</title>
 </head><body class="site-page collection-page min-h-screen flex flex-col">
 {{>layout/header}}
@@ -170,14 +170,21 @@
         {{#cards}}
         <article class="ar-panel ar-card collection-card">
             <div class="collection-image-wrap">
-            <span class="collection-card-serial">{{#hasSerial}}#{{serial}}{{/hasSerial}}{{^hasSerial}}시리얼 확인 중{{/hasSerial}}</span><span class="collection-card-season" data-season-color="{{season}}"{{#seasonColor}} style="background:{{seasonColor}}"{{/seasonColor}}>{{season}}</span>
+            <span class="collection-card-serial">{{#hasSerial}}#{{serial}}{{/hasSerial}}{{^hasSerial}}시리얼 확인 중{{/hasSerial}}</span>
             {{#hasImage}}<img class="collection-image" src="{{thumbnailImage}}" alt="{{collectionId}}" referrerpolicy="no-referrer" loading="lazy" decoding="async">{{/hasImage}}
             {{^hasImage}}<span class="ar-muted">이미지 준비 중</span>{{/hasImage}}
             </div>
-            <div class="ar-body">
-                {{#hasDetail}}<h3><a class="collection-title-link" href="{{detailUrl}}">{{collectionId}}</a></h3>{{/hasDetail}}
-                {{^hasDetail}}<h3>{{collectionId}}</h3>{{/hasDetail}}
-                <p class="ar-muted">{{member}}{{#season}} · {{season}}{{/season}}</p>
+            <div class="collection-card-body">
+                <div class="collection-card-badges">
+                    <span class="collection-card-season" data-season-color="{{season}}"{{#seasonColor}} style="background:{{seasonColor}}"{{/seasonColor}}>{{season}}</span>
+                    {{#hasDetail}}<a class="collection-title-link" href="{{detailUrl}}" title="{{collectionId}}">{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</a>{{/hasDetail}}
+                    {{^hasDetail}}<span class="collection-card-title" title="{{collectionId}}">{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</span>{{/hasDetail}}
+                    <span class="collection-card-class">{{objektClass}}</span>
+                </div>
+                <div class="collection-card-foot">
+                    <span class="collection-card-member truncate">{{member}}</span>
+                    <span class="collection-card-no">{{collectionNo}}</span>
+                </div>
             </div>
         </article>
         {{/cards}}
@@ -392,24 +399,45 @@
     spinner?.classList.toggle('is-hidden', !loading);
   }
 
+  function cardTitleFrom(collectionId, season) {
+    const title = (collectionId || '').trim();
+    const prefix = (season || '').trim();
+    if (!title || !prefix) return title;
+    if (title.toLowerCase().startsWith(prefix.toLowerCase() + ' ')) {
+      return title.slice(prefix.length).trim() || title;
+    }
+    return title;
+  }
+
   function buildCard(item) {
-    const title = escapeHtml(item.collectionId || '오브젝트');
+    const collectionId = item.collectionId || '오브젝트';
+    const title = escapeHtml(item.cardTitle || cardTitleFrom(collectionId, item.season) || collectionId);
     const member = escapeHtml(item.member || '');
-    const season = item.season ? ' · ' + escapeHtml(item.season) : '';
+    const klass = escapeHtml(item.objektClass || item.class || '');
+    const collectionNo = escapeHtml(item.collectionNo || '');
     const serial = item.hasSerial
       ? `<span class="ar-id" aria-label="시리얼 ${escapeHtml(item.serial)}">#${escapeHtml(item.serial)}</span>`
       : '<span class="ar-id">시리얼 확인 중</span>';
     const image = item.hasImage
-      ? `<img class="collection-image" src="${escapeHtml(item.thumbnailImage)}" alt="${title}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
+      ? `<img class="collection-image" src="${escapeHtml(item.thumbnailImage)}" alt="${escapeHtml(collectionId)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
       : '<span class="ar-muted">이미지 준비 중</span>';
     const heading = item.hasDetail
-      ? `<h3><a class="collection-title-link" href="${escapeHtml(item.detailUrl)}">${title}</a></h3>`
-      : `<h3>${title}</h3>`;
+      ? `<a class="collection-title-link" href="${escapeHtml(item.detailUrl)}" title="${escapeHtml(collectionId)}">${title}</a>`
+      : `<span class="collection-card-title" title="${escapeHtml(collectionId)}">${title}</span>`;
+    const season = escapeHtml(item.season || '');
+    const seasonStyle = item.season ? ` style="background:${escapeHtml(seasonBadgeColor(item))}"` : '';
     return `<article class="ar-panel ar-card collection-card">
-      <div class="collection-image-wrap"><span class="collection-card-serial">${serial}</span><span class="collection-card-season" data-season-color="${escapeHtml(item.season || '')}"${item.season ? ` style="background:${escapeHtml(seasonBadgeColor(item))}"` : ''}>${escapeHtml(item.season || '')}</span>${image}</div>
-      <div class="ar-body">
-        ${heading}
-        <p class="ar-muted">${member}${season}</p>
+      <div class="collection-image-wrap"><span class="collection-card-serial">${serial}</span>${image}</div>
+      <div class="collection-card-body">
+        <div class="collection-card-badges">
+          <span class="collection-card-season" data-season-color="${season}"${seasonStyle}>${season}</span>
+          ${heading}
+          <span class="collection-card-class">${klass}</span>
+        </div>
+        <div class="collection-card-foot">
+          <span class="collection-card-member truncate">${member}</span>
+          <span class="collection-card-no">${collectionNo}</span>
+        </div>
       </div>
     </article>`;
   }

@@ -51,10 +51,14 @@ class MobilePageTemplatesTest {
         creamObjekt.put("memberHref","/cosmo/objekt/member?name=HaYeon");
         creamObjekt.put("mintCountKnown",false);
         model.put("objekts",List.of(creamObjekt));
-        model.put("cards",List.of(Map.of(
-                "serial","27","hasSerial",true,"collectionId","Cream02 HaYeon 367Z","member","HaYeon",
-                "season","Cream02","seasonColor","#FF8389","objektClass","Double",
-                "hasImage",true,"thumbnailImage","/images/no-image.png","hasDetail",false)));
+        creamObjekt.put("cardTitle","HaYeon 367Z");
+        model.put("cards",List.of(Map.ofEntries(
+                Map.entry("serial","27"), Map.entry("hasSerial",true),
+                Map.entry("collectionId","Cream02 HaYeon 367Z"), Map.entry("cardTitle","HaYeon 367Z"),
+                Map.entry("member","HaYeon"), Map.entry("season","Cream02"), Map.entry("seasonColor","#FF8389"),
+                Map.entry("objektClass","Double"), Map.entry("collectionNo","367Z"),
+                Map.entry("hasImage",true), Map.entry("thumbnailImage","/images/no-image.png"),
+                Map.entry("hasDetail",false))));
         model.put("hasCards",true);
         model.put("showObjektPicker",true);
         model.put("objektKey","uuid"); model.put("memberUrl","/cosmo/objekt?member=HaYeon");model.put("lookupUrl","/lookup");model.put("favoriteDesired",true);
