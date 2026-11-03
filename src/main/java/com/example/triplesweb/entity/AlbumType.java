@@ -9,5 +9,7 @@ public enum AlbumType {
     /** 10인 완전체 */
     FULL_10,
     /** 24인 완전체 */
-    FULL_24
+    FULL_24,
+    /** 솔로·멀티 멤버 등 기타 */
+    OTHER
 }

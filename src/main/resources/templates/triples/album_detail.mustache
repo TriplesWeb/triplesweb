@@ -31,9 +31,23 @@
                     </span>
                     {{/hasAlbumFormat}}
                 </div>
-        <div class="pt-2">
-                <h3 class="text-xs font-semibold text-[#b9cac4] uppercase tracking-wider mb-2 ">참여 유닛</h3>
+        <div class="pt-2 space-y-4">
+            {{#hasArtists}}
+            <div>
+                <h3 class="text-xs font-semibold text-[#b9cac4] uppercase tracking-wider mb-2">참여 멤버</h3>
+                <div class="flex items-center gap-3 overflow-x-auto pb-1">
+                    {{#orderedArtists}}
+                        <a href="/triples/artist/{{artistId}}" class="bg-white/5 hover:bg-white/10 border border-[#3a4a46]/30 hover:border-[#00f5d4]/50 text-[#b9cac4] hover:text-[#00f5d4] flex items-center gap-3 px-4 py-2 rounded-xl transition-all shrink-0 no-underline">
+                            <img src="{{displayProfileImage}}" class="w-10 h-10 rounded-full object-cover border border-[#3a4a46]/50" alt="{{name}}" style="box-shadow:0 0 0 2px {{color}}33">
+                            <span class="text-sm font-bold">{{name}}</span>
+                        </a>
+                    {{/orderedArtists}}
+                </div>
+            </div>
+            {{/hasArtists}}
             {{#unit}}
+            <div>
+                <h3 class="text-xs font-semibold text-[#b9cac4] uppercase tracking-wider mb-2">참여 유닛</h3>
                 <div class="flex items-center gap-3 overflow-x-auto pb-1">
                     {{#subUnits}}
                         <a href="/triples/unit/{{unitId}}" class="bg-transparent border border-[#3a4a46]/30 text-[#b9cac4] hover:text-[#00f5d4] flex items-center gap-3 px-4 py-2 rounded-xl transition-all shrink-0 no-underline">
@@ -48,19 +62,26 @@
                         </a>
                     {{/subUnits}}
                 </div>
+            </div>
             {{/unit}}
             {{^unit}}
                 {{#full10}}
+            <div>
+                <h3 class="text-xs font-semibold text-[#b9cac4] uppercase tracking-wider mb-2">참여 유닛</h3>
                     <div class="inline-flex items-center gap-2 bg-[#00f5d4]/10 text-[#00f5d4] border border-[#00f5d4]/30 px-3 py-1.5 rounded-xl text-xs font-bold">
                         <span class="material-symbols-outlined text-base">groups</span>
                         <span>10인 완전체 앨범</span>
                     </div>
+            </div>
                 {{/full10}}
                 {{#full24}}
+            <div>
+                <h3 class="text-xs font-semibold text-[#b9cac4] uppercase tracking-wider mb-2">참여 유닛</h3>
                 <div class="inline-flex items-center gap-2 bg-[#00f5d4]/10 text-[#00f5d4] border border-[#00f5d4]/30 px-3 py-1.5 rounded-xl text-xs font-bold">
                     <span class="material-symbols-outlined text-base">groups</span>
                     <span>24명 완전체 앨범</span>
                 </div>
+            </div>
                 {{/full24}}
             {{/unit}}
         </div>

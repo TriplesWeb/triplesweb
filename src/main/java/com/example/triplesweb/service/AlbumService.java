@@ -125,6 +125,9 @@ public class AlbumService {
         if (album.getSection() != null) {
             album.getSection().getName();
         }
+        if (album.getArtists() != null) {
+            album.getArtists().size();
+        }
         return album;
     }
 }

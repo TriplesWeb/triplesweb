@@ -4,6 +4,7 @@
   let adminConfigured = false;
   let isAdmin = false;
   let unitOptions = [];
+  let artistOptions = [];
   let sectionOptions = [];
 
   function getToken() { return auth ? auth.getToken() : ""; }
@@ -131,11 +132,73 @@
     return out;
   }
 
-  function fillUnitSelect(selectedId) {
+  const UNIT_MEMBERS_NONE = "__members__";
+
+  function clearArtistChecks() {
+    document.querySelectorAll("#albumEditArtists input[type=checkbox]").forEach((cb) => {
+      cb.checked = false;
+    });
+  }
+
+  function selectedArtistIds() {
+    return Array.from(document.querySelectorAll("#albumEditArtists input[type=checkbox]:checked"))
+      .map((cb) => cb.value);
+  }
+
+  /** 완전체는 항상 옵션으로 유지. 멤버 선택 중일 때만 '없음'을 현재값으로 쓴다. */
+  function fillUnitSelect(selectedId, options) {
     const sel = document.getElementById("albumEditUnitId");
     if (!sel) return;
-    sel.innerHTML = '<option value="">완전체 (유닛 없음)</option>' +
-      unitOptions.map((u) => `<option value="${u.unitId}" ${String(u.unitId) === String(selectedId || "") ? "selected" : ""}>${escapeAttr(u.unitName)}</option>`).join("");
+    const forMembers = Boolean(options && options.forMembers);
+    let keepId;
+    if (forMembers) keepId = UNIT_MEMBERS_NONE;
+    else if (selectedId != null && selectedId !== "" && selectedId !== UNIT_MEMBERS_NONE) keepId = String(selectedId);
+    else keepId = "";
+    sel.innerHTML =
+      `<option value="">완전체 (유닛 없음)</option>` +
+      (forMembers ? `<option value="${UNIT_MEMBERS_NONE}">없음 (멤버 선택)</option>` : "") +
+      unitOptions.map((u) =>
+        `<option value="${u.unitId}">${escapeAttr(u.unitName)}</option>`
+      ).join("");
+    sel.value = keepId;
+    if (sel.value !== keepId) sel.value = forMembers ? UNIT_MEMBERS_NONE : "";
+    sel.disabled = false;
+    sel.title = forMembers
+      ? "멤버 선택 중에는 유닛이 비어 있습니다. 유닛/완전체를 고르면 멤버 선택이 해제됩니다."
+      : "";
+  }
+
+  function fillArtistChecks(selectedIds) {
+    const wrap = document.getElementById("albumEditArtists");
+    if (!wrap) return;
+    const selected = new Set((selectedIds || []).map(String));
+    wrap.innerHTML = artistOptions.map((a) => `
+      <label class="about-unit-chip">
+        <input type="checkbox" value="${a.artistId}" ${selected.has(String(a.artistId)) ? "checked" : ""}>
+        <span>${escapeAttr(a.name)}</span>
+      </label>`).join("");
+  }
+
+  /** 멤버 ↔ 유닛/완전체 상호 배타 동기화. 멤버 선택 시 유형은 기타. */
+  function syncParticipationUi() {
+    const hasMembers = selectedArtistIds().length > 0;
+    const unitSel = document.getElementById("albumEditUnitId");
+    const typeSel = document.getElementById("albumEditType");
+    if (hasMembers) {
+      fillUnitSelect(null, { forMembers: true });
+      if (typeSel) typeSel.value = "OTHER";
+      return;
+    }
+    if (unitSel) {
+      const current = unitSel.value === UNIT_MEMBERS_NONE ? "" : (unitSel.value || "");
+      fillUnitSelect(current || null);
+    }
+  }
+
+  function selectedUnitIdForSubmit() {
+    const raw = document.getElementById("albumEditUnitId")?.value || "";
+    if (!raw || raw === UNIT_MEMBERS_NONE) return "";
+    return raw;
   }
 
   function fillSectionSelect(selectedId) {
@@ -149,6 +212,10 @@
     if (!unitOptions.length) {
       const res = await apiFetch(API + "/units");
       if (res.ok) unitOptions = await res.json();
+    }
+    if (!artistOptions.length) {
+      const res = await apiFetch(API + "/artists");
+      if (res.ok) artistOptions = await res.json();
     }
     const secRes = await apiFetch(API + "/sections");
     if (secRes.ok) sectionOptions = await secRes.json();
@@ -216,7 +283,16 @@
       document.getElementById("albumEditInfo").value = data.albumInfo || "";
       document.getElementById("albumEditType").value = data.albumType || "SUBUNIT";
       if (formatSel) formatSel.value = data.albumFormat || "";
-      fillUnitSelect(data.unitId);
+      // 유닛·멤버는 상호 배타: 멤버가 있으면 유닛은 비움(완전체 표기 없음)
+      const artistIds = data.artistIds || [];
+      fillArtistChecks(artistIds);
+      if (artistIds.length) {
+        fillUnitSelect(null, { forMembers: true });
+        const typeSel = document.getElementById("albumEditType");
+        if (typeSel) typeSel.value = "OTHER";
+      } else {
+        fillUnitSelect(data.unitId);
+      }
       fillSectionSelect(data.sectionId);
       document.getElementById("albumEditTracks").innerHTML = trackRowsHtml(data.tracks);
       if (/^https?:\/\//i.test(data.albumImage || "")) document.getElementById("albumEditImageUrl").value = data.albumImage;
@@ -226,6 +302,7 @@
       }
     } else {
       fillUnitSelect(null);
+      fillArtistChecks([]);
       fillSectionSelect(null);
       document.getElementById("albumEditTracks").innerHTML = trackRowsHtml([]);
     }
@@ -302,6 +379,31 @@
       if (e.target.closest(".track-remove")) e.target.closest(".album-track-row")?.remove();
     });
 
+    document.getElementById("albumEditUnitId")?.addEventListener("change", () => {
+      const unitSel = document.getElementById("albumEditUnitId");
+      const value = unitSel?.value || "";
+      // 유닛 또는 완전체를 고르면 멤버 선택 해제. '없음(멤버)'만 멤버와 함께 허용.
+      if (value !== UNIT_MEMBERS_NONE) {
+        clearArtistChecks();
+        fillUnitSelect(value === "" ? null : value);
+      }
+    });
+
+    document.getElementById("albumEditArtists")?.addEventListener("change", (e) => {
+      if (!(e.target instanceof HTMLInputElement) || e.target.type !== "checkbox") return;
+      syncParticipationUi();
+    });
+
+    document.getElementById("albumEditType")?.addEventListener("change", () => {
+      const typeSel = document.getElementById("albumEditType");
+      if (!typeSel) return;
+      // 멤버 앨범은 기타만 허용. 다른 유형을 고르면 멤버 선택을 해제한다.
+      if (typeSel.value !== "OTHER" && selectedArtistIds().length) {
+        clearArtistChecks();
+        syncParticipationUi();
+      }
+    });
+
     document.getElementById("albumSectionAddForm")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const err = document.getElementById("albumSectionError");
@@ -375,11 +477,24 @@
       fd.append("albumName", document.getElementById("albumEditName").value.trim());
       fd.append("releaseDate", document.getElementById("albumEditReleaseDate").value.trim());
       fd.append("albumInfo", document.getElementById("albumEditInfo").value);
-      fd.append("albumType", document.getElementById("albumEditType").value);
+      const unitId = selectedUnitIdForSubmit();
+      const artistIds = selectedArtistIds();
+      if (unitId && artistIds.length) {
+        if (err) { err.hidden = false; err.textContent = "참여 유닛과 참여 멤버는 동시에 선택할 수 없습니다."; }
+        return;
+      }
+      let albumType = document.getElementById("albumEditType").value;
+      // 멤버 지정 시 유형은 기타
+      if (artistIds.length) {
+        albumType = "OTHER";
+        const typeSel = document.getElementById("albumEditType");
+        if (typeSel) typeSel.value = "OTHER";
+      }
+      fd.append("albumType", albumType);
       const albumFormat = document.getElementById("albumEditFormat")?.value || "";
       fd.append("albumFormat", albumFormat);
-      const unitId = document.getElementById("albumEditUnitId").value;
       if (unitId) fd.append("unitId", unitId);
+      artistIds.forEach((id) => fd.append("artistIds", id));
       const sectionId = document.getElementById("albumEditSectionId")?.value;
       if (sectionId) fd.append("sectionId", sectionId);
       fd.append("tracksJson", JSON.stringify(collectTracks()));

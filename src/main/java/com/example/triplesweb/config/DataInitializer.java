@@ -106,7 +106,7 @@ public class DataInitializer implements ApplicationRunner {
             Unit glow = new Unit(null, "Glow", "glow", "/uploads/images/glow.jpg", "2024-04-01", "2024-06-21", null);
             Unit vv = new Unit(null, "Visionary Vision", "VV", "/uploads/images/vv.jpg", "2024-06-18", "2024-10-23", null);
             Unit acidEyes = new Unit(null, "Acid Eyes", "acideyes", "/uploads/images/acideyes.jpg", "2022-12-26", "2023-01-06", null);
-            Unit msnz = new Unit (null, "MSNZ", "msnz", "/uploads/images/msnz.jpg", "2025-09-09", "2025-11-24", null);
+            Unit msnz = new Unit (null, "msnz", "msnz", "/uploads/images/msnz.jpg", "2025-09-09", "2025-11-24", null);
             Unit moon = new Unit(null, "msnz Moon","moon","/uploads/images/moon.jpg", "2025-09-09", "2025-11-24", msnz);
             Unit sun = new Unit(null,"msnz Sun","sun","/uploads/images/sun.jpg","2025-09-09","2025-11-24", msnz);
             Unit neptune = new Unit(null,"msnz Neptune", "neptune","/uploads/images/neptune.jpg","2025-09-09","2025-11-24", msnz);
