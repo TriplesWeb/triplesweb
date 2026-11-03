@@ -1,11 +1,12 @@
-{{>layout/head-open}}
+{{>layout/v2/head-open}}
 
 <link rel="stylesheet" href="/css/about-admin.css?v=1">
 <link rel="stylesheet" href="/css/gravity-admin.css?v=1">
 <title>그래비티 - 트리플에스 커뮤니티</title>
 <style>body{background:#0d0e12;color:#e3e2e8} .gravity-card{background:#16181f;border:1px solid #ffffff18;border-radius:16px;padding:24px} .gravity-card a{color:#00f5d4} .gravity-notice{border:1px solid #fbbf2440;background:#fbbf2408;padding:16px;border-radius:12px}</style>
-</head><body class="site-page min-h-screen flex flex-col">
-{{>layout/header}}
+<link rel="stylesheet" href="/css/v2-pages.css?v=1">
+</head><body class="v2-body site-page min-h-screen flex flex-col">
+{{>layout/v2/header}}
 <main class="flex-1 max-w-xl w-full mx-auto px-4 py-8 space-y-6">
 <a href="/cosmo/gravity" class="text-[#00f5d4]">← 그래비티 목록</a>
 <div class="flex flex-wrap items-center justify-between gap-4"><h1 class="text-2xl font-bold">COSMO 계정 연결</h1>{{>cosmo/partials/gravity-admin-controls}}</div>
@@ -35,4 +36,4 @@
 </section>
 </main>{{>cosmo/partials/gravity-admin-login}}<script src="/js/gravity-connect.js?v=5" defer></script>
 <script src="/js/cosmo-objekt-sync.js?v=1" defer></script>
-{{>layout/page-end}}
+{{>layout/v2/footer}}

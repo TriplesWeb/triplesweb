@@ -1,12 +1,13 @@
-{{>layout/head-open}}
+{{>layout/v2/head-open}}
 <title>{{requestedNickname}} · COSMO 닉네임 상세</title>
 <link rel="stylesheet" href="/css/gravity-page.css?v=3">
 <link rel="stylesheet" href="/css/archive-page.css?v=15">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
 <link rel="stylesheet" href="/css/cosmo-collection.css?v=15">
 <link rel="stylesheet" href="/css/cosmo-profile.css?v=17">
-</head><body class="site-page collection-page min-h-screen flex flex-col">
-{{>layout/header}}
+<link rel="stylesheet" href="/css/v2-pages.css?v=1">
+</head><body class="v2-body site-page collection-page min-h-screen flex flex-col">
+{{>layout/v2/header}}
 <main class="gravity-page cosmo-profile" data-profile-version="{{#hasProfile}}{{profileVersion}}{{/hasProfile}}">
 <a href="/cosmo/collection?nickname={{requestedNickname}}" class="collection-detail-link">← 내 오브젝트 검색</a>
 {{#profileError}}<section class="gv-panel gv-headline" role="status"><h1>닉네임 상세</h1><p>{{profileError}}</p></section>{{/profileError}}
@@ -233,4 +234,4 @@
 })();
 </script>
 {{/isMembersTab}}
-{{>layout/page-end}}
+{{>layout/v2/footer}}

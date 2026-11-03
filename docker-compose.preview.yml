@@ -1,0 +1,51 @@
+name: triplesweb-v2-preview
+services:
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${PREVIEW_DB_NAME:-triples_preview}
+      MARIADB_USER: ${PREVIEW_DB_USER:-preview_app}
+      MARIADB_PASSWORD: ${PREVIEW_DB_PASSWORD:?Set PREVIEW_DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${PREVIEW_DB_ROOT_PASSWORD:?Set PREVIEW_DB_ROOT_PASSWORD}
+    volumes: [preview_db:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+  app:
+    build: {context: ., dockerfile: Dockerfile}
+    image: triplesweb-v2-preview:local
+    restart: unless-stopped
+    depends_on:
+      db: {condition: service_healthy}
+    ports: ["${PREVIEW_BIND_IP:-127.0.0.1}:${PREVIEW_PORT:-8091}:8080"]
+    # Bypass production entrypoint that writes bundled chemistry assets into uploads.
+    entrypoint: ["java", "-jar", "/app/app.war"]
+    environment:
+      SERVER_PORT: "8080"
+      SPRING_DATASOURCE_URL: jdbc:mariadb://db:3306/${PREVIEW_DB_NAME:-triples_preview}?useSSL=false
+      SPRING_DATASOURCE_USERNAME: ${PREVIEW_DB_USER:-preview_app}
+      SPRING_DATASOURCE_PASSWORD: ${PREVIEW_DB_PASSWORD:?Set PREVIEW_DB_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      SPRING_FLYWAY_ENABLED: "true"
+      CHEMISTRY_SEED_ENABLED: "false"
+      ABSTRACT_INDEXER_ENABLED: "false"
+      UPLOAD_SYNC_ENABLED: "false"
+      UPLOAD_FALLBACK_BASE_URL: ""
+      COSMO_ACCESS_TOKEN: ""
+      COSMO_REFRESH_TOKEN: ""
+      COSMO_KEY: ""
+      COSMO_CREDENTIALS_FILE: /app/data/cosmo/no-credentials.json
+      YOUTUBE_API_KEY: ""
+      CHEMISTRY_ADMIN_PASSWORD: ""
+      FILE_UPLOAD_DIR: /app/uploads
+      MEDIA_CATALOG_PATH: /app/data/videos.json
+      SERVER_SERVLET_SESSION_COOKIE_NAME: "TRIPLES_V2_PREVIEW"
+    volumes: [preview_uploads:/app/uploads, preview_data:/app/data]
+volumes:
+  preview_db:
+  preview_uploads:
+  preview_data:

@@ -1,0 +1,21 @@
+@import "tailwindcss";
+@source "../../src/main/resources/templates/**/*.mustache";
+@source "../../src/main/resources/static/js/**/*.js";
+@theme {
+ --color-background:var(--bg);
+ --color-surface:var(--paper);
+ --color-surface-container:var(--paper);
+ --color-surface-container-low:var(--paper);
+ --color-surface-container-high:var(--soft);
+ --color-surface-container-highest:var(--soft);
+ --color-primary-container:var(--accent);
+ --color-on-primary-container:var(--paper);
+ --color-on-primary:var(--paper);
+ --color-on-surface:var(--ink);
+ --color-on-surface-variant:var(--muted);
+ --color-outline:var(--rule);
+ --color-outline-variant:var(--rule);
+ --color-brand:var(--accent);
+ --color-secondary-container:var(--soft);
+ --color-primary-soft:var(--accent);
+}

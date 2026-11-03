@@ -56,3 +56,8 @@ data/cosmo/
 ### Node / frontend tooling ###
 node_modules/
 package-lock.json.bak
+
+# Generated v2 Tailwind utility layer, built in npm/Docker CI
+src/main/resources/static/css/v2-utility.css
+# Isolated preview credentials
+.env.preview

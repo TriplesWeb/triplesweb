@@ -1,4 +1,4 @@
-{{>layout/head-open}}
+{{>layout/v2/head-open}}
     <title>트리플에스 커뮤니티 - 사진 아카이브</title>
 
     <link rel="stylesheet" href="/css/archive-page.css?v=15">
@@ -11,10 +11,11 @@
     <meta name="_csrf" content="{{token}}">
     <meta name="_csrf_header" content="{{headerName}}">
     {{/_csrf}}
-</head><body class="site-page bg-surface text-on-surface min-h-screen flex flex-col">
+<link rel="stylesheet" href="/css/v2-pages.css?v=1">
+</head><body class="v2-body site-page bg-surface text-on-surface min-h-screen flex flex-col">
 <div class="ar-glow ar-glow-violet"></div>
 <div class="ar-glow ar-glow-mint"></div>
-{{>layout/header}}
+{{>layout/v2/header}}
 
 <main class="archive-page" data-archive-kind="image">
     <section class="ar-hero">
@@ -248,4 +249,4 @@
 <script src="/js/date-range-filter.js?v=1"></script>
 <script src="/js/archive-browse.js?v=6"></script>
 <script src="/js/archive-photo-carousel.js?v=1"></script>
-{{>layout/page-end}}
+{{>layout/v2/footer}}

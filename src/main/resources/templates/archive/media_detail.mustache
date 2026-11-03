@@ -1,4 +1,4 @@
-{{>layout/head-open}}
+{{>layout/v2/head-open}}
 
 <link rel="stylesheet" href="/css/bootstrap-compat.css?v=2">
     <title>{{video.title}} - 트리플에스 미디어</title>
@@ -15,8 +15,9 @@
         .schedule-box { margin-top:1rem; padding:1rem; border:1px solid #444; border-radius:.75rem }
         .back-link { display:inline-flex; margin-top:1.25rem; padding:.4rem .75rem; border:1px solid #666; border-radius:.5rem; color:#eee; text-decoration:none; font-size:.85rem }
     </style>
-</head><body class="site-page other-page">
-{{>layout/header}}
+<link rel="stylesheet" href="/css/v2-pages.css?v=1">
+</head><body class="v2-body site-page other-page">
+{{>layout/v2/header}}
 
 <div class="site-container">
     {{#video}}
@@ -62,4 +63,4 @@
     <a class="back-link" href="/media?tab={{currentTab}}">목록으로</a>
 </div>
 <script src="/js/bootstrap-compat.js?v=1" defer></script>
-{{>layout/page-end}}
+{{>layout/v2/footer}}

@@ -1,9 +1,10 @@
-{{>layout/head-open}}
+{{>layout/v2/head-open}}
 
     <link rel="stylesheet" href="/css/album-detail.css?v=1">
     <title>트리플에스 커뮤니티 - 발매 앨범</title>
-</head><body class="site-page bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
-{{>layout/header}}
+<link rel="stylesheet" href="/css/v2-pages.css?v=1">
+</head><body class="v2-body site-page bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
+{{>layout/v2/header}}
 <main class="main-content max-w-7xl mx-auto px-4 py-8">
     {{#album}}
 <div class="card-box album-detail-card bg-[#16181f]/80 backdrop-blur-md border border-[#3a4a46]/30 rounded-2xl p-6 lg:p-8 shadow-xl space-y-8">
@@ -139,4 +140,4 @@
   });
 })();
 </script>
-{{>layout/page-end}}
+{{>layout/v2/footer}}

@@ -1,4 +1,4 @@
-{{>layout/head-open}}
+{{>layout/v2/head-open}}
 
 <link rel="stylesheet" href="/css/about-admin.css?v=1">
 <link rel="stylesheet" href="/css/gravity-admin.css?v=1">
@@ -6,10 +6,11 @@
 <link rel="stylesheet" href="/css/cosmo-collection.css?v=15">
 <link rel="stylesheet" href="/css/gravity-filters.css?v=2">
 <title>역대 그래비티 - 트리플에스 커뮤니티</title>
-</head><body class="site-page collection-page min-h-screen flex flex-col">
+<link rel="stylesheet" href="/css/v2-pages.css?v=1">
+</head><body class="v2-body site-page collection-page min-h-screen flex flex-col">
 <div class="gv-glow gv-glow-violet"></div>
 <div class="gv-glow gv-glow-mint"></div>
-{{>layout/header}}
+{{>layout/v2/header}}
 <main class="gravity-page">
     <section class="gv-kicker">
         <div><strong>COSMO GRAVITY</strong> · 역대 그래비티</div>
@@ -168,4 +169,4 @@
     document.getElementById('gvNext').addEventListener('click', () => track.scrollBy({ left: 360, behavior: 'smooth' }));
 })();
 </script>
-{{>layout/page-end}}
+{{>layout/v2/footer}}

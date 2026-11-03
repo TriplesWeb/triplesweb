@@ -32,7 +32,6 @@
     </nav>
     <div class="v2-header-actions">
       <form class="v2-head-search" action="/search" role="search" method="get"><label class="v2-sr" for="v2-search">사이트 검색</label><input id="v2-search" type="search" name="keyword" placeholder="멤버·게시글 검색" required><button type="submit" aria-label="검색"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.5"></circle><path d="m16 16 5 5"></path></svg></button></form>
-      {{#member}}<details class="v2-account"><summary aria-label="내 계정 메뉴">{{userId}}님</summary><div class="v2-account-panel"><span>Lv.{{level}} · {{points}}P</span><a href="/mypage">마이페이지</a><a href="/myposts">작성한 글</a><a href="/mycomments">작성한 댓글</a><a href="/logout">로그아웃</a></div></details>{{/member}}
       <button class="v2-mode-btn" id="v2-theme-toggle" type="button" aria-label="다크 모드 전환" title="테마 변경">◐</button>
       <button class="v2-mobile-btn" id="v2-menu-toggle" type="button" aria-label="메뉴 열기" aria-expanded="false" aria-controls="v2-mobile-menu"><span></span><span></span><span></span></button>
     </div>
@@ -48,4 +47,3 @@
     {{#member}}<div class="v2-mobile-account"><a href="/mypage">마이페이지</a><a href="/myposts">작성한 글</a><a href="/mycomments">작성한 댓글</a><a href="/logout">로그아웃</a></div>{{/member}}
   </nav>
 </header>
-{{#msg}}<aside class="v2-flash v2-container" role="status">{{msg}}</aside>{{/msg}}

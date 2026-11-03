@@ -1,10 +1,11 @@
-{{>layout/head-open}}
+{{>layout/v2/head-open}}
 
     <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
     <link rel="stylesheet" href="/css/article-page.css?v=1">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
-</head><body class="site-page article-page bg-surface text-on-surface min-h-screen flex flex-col">
-{{>layout/header}}
+<link rel="stylesheet" href="/css/v2-pages.css?v=1">
+</head><body class="v2-body site-page article-page bg-surface text-on-surface min-h-screen flex flex-col">
+{{>layout/v2/header}}
 
 {{#_csrf}}
 <meta name="_csrf" content="{{token}}">
@@ -365,4 +366,4 @@
      });
    });
 </script>
-{{>layout/page-end}}
+{{>layout/v2/footer}}

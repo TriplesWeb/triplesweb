@@ -1,4 +1,4 @@
-{{>layout/head-open}}
+{{>layout/v2/head-open}}
     <title>{{#keyword}}‘{{keyword}}’ 검색 결과{{/keyword}}{{^keyword}}검색{{/keyword}} - 트리플에스 커뮤니티</title>
     <style>
         .search-highlight b {
@@ -13,8 +13,9 @@
             overflow-wrap: anywhere;
         }
     </style>
-</head><body class="site-page bg-surface text-on-surface min-h-screen flex flex-col">
-{{>layout/header}}
+<link rel="stylesheet" href="/css/v2-pages.css?v=1">
+</head><body class="v2-body site-page bg-surface text-on-surface min-h-screen flex flex-col">
+{{>layout/v2/header}}
 
 <main class="flex-1 flex items-start justify-center px-4 sm:px-6 py-6 z-10 relative">
     <div class="w-full max-w-4xl relative">
@@ -131,4 +132,4 @@
     </div>
 </main>
 
-{{>layout/page-end}}
+{{>layout/v2/footer}}

@@ -23,6 +23,7 @@ COPY --from=css /workspace/src/main/resources/static/css/site.css ./src/main/res
 COPY --from=css /workspace/src/main/resources/static/css/triples.css ./src/main/resources/static/css/triples.css
 COPY --from=css /workspace/src/main/resources/static/css/objekt.css ./src/main/resources/static/css/objekt.css
 COPY --from=css /workspace/src/main/resources/static/css/gravity.css ./src/main/resources/static/css/gravity.css
+COPY --from=css /workspace/src/main/resources/static/css/v2-utility.css ./src/main/resources/static/css/v2-utility.css
 # 검증은 CI verify job에서 수행. 이미지 빌드는 패키징만 (arm 빌드 시간 단축).
 RUN ./gradlew bootWar -x test --no-daemon
 

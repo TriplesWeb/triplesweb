@@ -8,7 +8,8 @@ const scripts = [
   'build-site-css.cjs',
   'build-triples-css.cjs',
   'build-objekt-css.cjs',
-  'build-gravity-css.cjs'
+  'build-gravity-css.cjs',
+  'build-v2-css.cjs'
 ];
 
 for (const name of scripts) {

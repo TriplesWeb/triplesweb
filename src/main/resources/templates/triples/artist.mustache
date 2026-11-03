@@ -1,4 +1,4 @@
-{{>layout/head-open}}
+{{>layout/v2/head-open}}
 
 <link rel="stylesheet" href="/css/about-admin.css?v=1">
     <link rel="stylesheet" href="/css/artist.css?v=14">
@@ -9,9 +9,10 @@
     <style>
         .artist-page .artist-edit-inline[hidden] { display: none !important; }
     </style>
-</head><body class="site-page bg-[#0d0e12] text-[#e3e2e8] min-h-screen artist-page" data-artist-base="{{artistBase}}">
+<link rel="stylesheet" href="/css/v2-pages.css?v=1">
+</head><body class="v2-body site-page bg-[#0d0e12] text-[#e3e2e8] min-h-screen artist-page" data-artist-base="{{artistBase}}">
 
-{{>layout/header}}
+{{>layout/v2/header}}
 
 <main class="main-content max-w-7xl mx-auto px-4 py-8">
     <div class="card-box bg-[#16181f]/80 backdrop-blur-md border border-[#3a4a46]/30 rounded-2xl p-6 shadow-xl">
@@ -306,4 +307,4 @@
 <script src="/js/about-tabs.js?v=1"></script>
 <script src="/js/about-modal.js?v=1"></script>
 <script src="/js/artist.js?v=18" defer></script>
-{{>layout/page-end}}
+{{>layout/v2/footer}}
