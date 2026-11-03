@@ -23,3 +23,13 @@ MAIN_URL=http://127.0.0.1:8090 V2_URL=http://127.0.0.1:8091 NODE_PATH=/path/to/n
 모바일 390px/데스크톱 1280px, 주요 URL별 screenshots + report.json을 build/v2-compare에 생성. 페이지 에러, 가로 오버플로, HTTP 오류를 수집한다. 그룹 입문 /triples/overview는 계획된 미구현 페이지이므로 오류로 분류하지 않는다.
 
 기능별 구형 CSS는 새 구현 완료 및 브라우저 검증 전까지 임시 호환 자산이다. 현재의 공통 v2 스킨이 적용되더라도 모든 화면의 독립 컴포넌트 재작성이 완료된 것은 아니다.
+
+
+## GitHub Actions 정적 디자인 미리보기 (서버 없이 가능)
+
+1. GitHub > Actions > **V2 design preview screenshots** 선택
+2. **Run workflow**를 누르고 브랜치 **feature/ui-from-scratch-20261103** 선택
+3. 완료한 workflow의 Artifacts에서 **triplesweb-v2-screen-previews** 다운로드
+4. ZIP 압축을 풀고 index.html을 열면 주요 화면의 모바일(390px) / 데스크톱(1280px) 캡처를 한 페이지에서 비교 가능
+
+이 방식은 Mock Mustache fixture의 HTML/CSS를 Chromium으로 렌더링하므로 서버·운영 DB·업로드/작성 기능은 사용하지 않는다. 외부 이미지가 없는 경우 빈 이미지가 나올 수 있다. 실제 기능 확인은 Docker 미리보기에서 해야 한다. Preview workflow는 수동 실행 전용이며 main 자동 배포나 정규 CI 실행에 영향을 주지 않는다.

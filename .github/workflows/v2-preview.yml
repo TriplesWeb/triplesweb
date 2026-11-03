@@ -1,0 +1,39 @@
+name: V2 design preview screenshots
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  render:
+    if: github.ref_name == 'feature/ui-from-scratch-20261103'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Build V2 CSS
+        run: npm ci && npm run build:css
+      - name: Generate deterministic page fixtures
+        run: ./gradlew test --tests '*MobilePageTemplatesTest' --no-daemon
+      - name: Install screenshot engine
+        run: |
+          npm install --prefix /tmp/v2-preview --no-package-lock playwright@1.56.1
+          /tmp/v2-preview/node_modules/.bin/playwright install --with-deps chromium
+      - name: Capture mobile and desktop
+        env:
+          NODE_PATH: /tmp/v2-preview/node_modules
+        run: node scripts/tests/v2-preview-fixtures.browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: triplesweb-v2-screen-previews
+          path: build/v2-preview/
+          if-no-files-found: warn
