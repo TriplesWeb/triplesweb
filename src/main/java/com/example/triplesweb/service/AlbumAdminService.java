@@ -5,16 +5,19 @@ import com.example.triplesweb.dto.AlbumSectionDto;
 import com.example.triplesweb.entity.Album;
 import com.example.triplesweb.entity.AlbumSection;
 import com.example.triplesweb.entity.AlbumType;
+import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.entity.Track;
 import com.example.triplesweb.entity.Unit;
 import com.example.triplesweb.repository.AlbumRepository;
 import com.example.triplesweb.repository.AlbumSectionRepository;
+import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.UnitRepository;
 import com.example.triplesweb.util.YoutubeIdExtractor;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -22,9 +25,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,6 +40,7 @@ public class AlbumAdminService {
     private final AlbumRepository albumRepository;
     private final AlbumSectionRepository albumSectionRepository;
     private final UnitRepository unitRepository;
+    private final ArtistRepository artistRepository;
     private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
     private final AlbumService albumService;
@@ -45,6 +52,7 @@ public class AlbumAdminService {
         if (album.getTracks() != null) album.getTracks().size();
         if (album.getUnit() != null) album.getUnit().getUnitName();
         if (album.getSection() != null) album.getSection().getName();
+        if (album.getArtists() != null) album.getArtists().size();
         return toDto(album);
     }
 
@@ -57,6 +65,16 @@ public class AlbumAdminService {
                 .map(u -> AlbumAdminDto.UnitOption.builder()
                         .unitId(u.getUnitId())
                         .unitName(u.getUnitName())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<AlbumAdminDto.ArtistOption> listArtistOptions() {
+        return artistRepository.findAll(Sort.by(Sort.Direction.ASC, "artistId")).stream()
+                .map(a -> AlbumAdminDto.ArtistOption.builder()
+                        .artistId(a.getArtistId())
+                        .name(a.getName())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -164,13 +182,14 @@ public class AlbumAdminService {
             String albumFormat,
             Long unitId,
             Long sectionId,
+            List<Long> artistIds,
             String tracksJson,
             MultipartFile image,
             String imageUrl
     ) {
         Album album = new Album();
         applyFields(album, null, albumName, releaseDate, albumInfo, albumType, albumFormat, unitId, sectionId,
-                tracksJson, image, imageUrl, false);
+                artistIds, tracksJson, image, imageUrl, false);
         AlbumAdminDto dto = toDto(albumRepository.save(album));
         albumService.invalidateListCache();
         return dto;
@@ -186,6 +205,7 @@ public class AlbumAdminService {
             String albumFormat,
             Long unitId,
             Long sectionId,
+            List<Long> artistIds,
             String tracksJson,
             MultipartFile image,
             String imageUrl,
@@ -194,7 +214,7 @@ public class AlbumAdminService {
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 앨범이 존재하지 않습니다. id=" + albumId));
         applyFields(album, albumId, albumName, releaseDate, albumInfo, albumType, albumFormat, unitId, sectionId,
-                tracksJson, image, imageUrl, clearImage);
+                artistIds, tracksJson, image, imageUrl, clearImage);
         AlbumAdminDto dto = toDto(albumRepository.save(album));
         albumService.invalidateListCache();
         return dto;
@@ -219,6 +239,7 @@ public class AlbumAdminService {
             String albumFormat,
             Long unitId,
             Long sectionId,
+            List<Long> artistIds,
             String tracksJson,
             MultipartFile image,
             String imageUrl,
@@ -234,13 +255,27 @@ public class AlbumAdminService {
             }
         });
 
+        AlbumType parsedType = parseAlbumType(albumType);
+        boolean hasUnit = unitId != null && unitId > 0;
+        boolean hasArtists = artistIds != null && artistIds.stream()
+                .anyMatch(id -> id != null && id > 0);
+        if (hasUnit && hasArtists) {
+            throw new IllegalArgumentException("참여 유닛과 참여 멤버는 동시에 선택할 수 없습니다.");
+        }
+        // 멤버 지정 앨범은 유형을 기타로 저장. (유닛 select의 「완전체」와는 별개)
+        if (hasArtists) {
+            parsedType = AlbumType.OTHER;
+        }
         album.setAlbumName(name);
         album.setReleaseDate(date);
         album.setAlbumInfo(info);
-        album.setAlbumType(parseAlbumType(albumType));
+        album.setAlbumType(parsedType);
         album.setAlbumFormat(normalizeAlbumFormat(albumFormat));
 
-        if (unitId != null && unitId > 0) {
+        // 멤버 선택 시 유닛은 반드시 비움. 유닛 select의 「완전체」와는 별개 상태.
+        if (hasArtists) {
+            album.setUnit(null);
+        } else if (hasUnit) {
             Unit unit = unitRepository.findById(unitId)
                     .orElseThrow(() -> new IllegalArgumentException("유닛이 없습니다. id=" + unitId));
             album.setUnit(unit);
@@ -255,6 +290,8 @@ public class AlbumAdminService {
         } else {
             album.setSection(null);
         }
+
+        syncArtists(album, hasArtists ? artistIds : List.of());
 
         if (image != null && !image.isEmpty()) {
             try {
@@ -278,6 +315,25 @@ public class AlbumAdminService {
         }
 
         replaceTracks(album, parseTracks(tracksJson));
+    }
+
+    private void syncArtists(Album album, List<Long> artistIds) {
+        Set<Long> wanted = new LinkedHashSet<>();
+        if (artistIds != null) {
+            for (Long id : artistIds) {
+                if (id != null && id > 0) wanted.add(id);
+            }
+        }
+        if (album.getArtists() == null) {
+            album.setArtists(new LinkedHashSet<>());
+        } else {
+            album.getArtists().clear();
+        }
+        for (Long artistId : wanted) {
+            Artist artist = artistRepository.findById(artistId)
+                    .orElseThrow(() -> new IllegalArgumentException("멤버가 없습니다. id=" + artistId));
+            album.getArtists().add(artist);
+        }
     }
 
     private static String normalizeExternalImageUrl(String raw) {
@@ -356,6 +412,20 @@ public class AlbumAdminService {
         }
         Unit unit = album.getUnit();
         AlbumSection section = album.getSection();
+        List<Long> artistIds = new ArrayList<>();
+        List<AlbumAdminDto.ArtistOption> artists = new ArrayList<>();
+        if (album.getArtists() != null) {
+            album.getArtists().stream()
+                    .filter(Objects::nonNull)
+                    .sorted(Comparator.comparingLong(a -> a.getArtistId() != null ? a.getArtistId() : 0L))
+                    .forEach(a -> {
+                        artistIds.add(a.getArtistId());
+                        artists.add(AlbumAdminDto.ArtistOption.builder()
+                                .artistId(a.getArtistId())
+                                .name(a.getName())
+                                .build());
+                    });
+        }
         return AlbumAdminDto.builder()
                 .albumId(album.getAlbumId())
                 .albumName(album.getAlbumName())
@@ -368,6 +438,8 @@ public class AlbumAdminService {
                 .unitName(unit != null ? unit.getUnitName() : null)
                 .sectionId(section != null ? section.getSectionId() : null)
                 .sectionName(section != null ? section.getName() : null)
+                .artistIds(artistIds)
+                .artists(artists)
                 .tracks(tracks)
                 .build();
     }

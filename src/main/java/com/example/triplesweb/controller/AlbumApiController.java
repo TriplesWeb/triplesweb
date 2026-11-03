@@ -52,6 +52,11 @@ public class AlbumApiController {
         return albumAdminService.listUnitOptions();
     }
 
+    @GetMapping("/artists")
+    public List<AlbumAdminDto.ArtistOption> artists() {
+        return albumAdminService.listArtistOptions();
+    }
+
     @GetMapping("/sections")
     public List<AlbumSectionDto> sections() {
         return albumAdminService.listSections();
@@ -139,6 +144,7 @@ public class AlbumApiController {
             @RequestParam(required = false) String albumFormat,
             @RequestParam(required = false) Long unitId,
             @RequestParam(required = false) Long sectionId,
+            @RequestParam(required = false) List<Long> artistIds,
             @RequestParam(required = false, defaultValue = "[]") String tracksJson,
             @RequestParam(required = false) MultipartFile image,
             @RequestParam(required = false) String imageUrl,
@@ -149,7 +155,7 @@ public class AlbumApiController {
         try {
             return albumAdminService.create(
                     albumName, releaseDate, albumInfo, albumType, albumFormat, unitId, sectionId,
-                    tracksJson, image, imageUrl);
+                    artistIds, tracksJson, image, imageUrl);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
@@ -165,6 +171,7 @@ public class AlbumApiController {
             @RequestParam(required = false) String albumFormat,
             @RequestParam(required = false) Long unitId,
             @RequestParam(required = false) Long sectionId,
+            @RequestParam(required = false) List<Long> artistIds,
             @RequestParam(required = false, defaultValue = "[]") String tracksJson,
             @RequestParam(required = false) MultipartFile image,
             @RequestParam(required = false) String imageUrl,
@@ -176,7 +183,7 @@ public class AlbumApiController {
         try {
             return albumAdminService.update(
                     id, albumName, releaseDate, albumInfo, albumType, albumFormat, unitId, sectionId,
-                    tracksJson, image, imageUrl, clearImage);
+                    artistIds, tracksJson, image, imageUrl, clearImage);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
