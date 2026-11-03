@@ -1,0 +1,56 @@
+name: Compare main and V2 designs
+on:
+  push:
+    branches: [feature/ui-from-scratch-20261103]
+    paths:
+      - 'src/main/resources/templates/**'
+      - 'src/main/resources/static/**'
+      - 'scripts/**'
+      - '.github/workflows/v2-compare.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare:
+    if: github.ref_name == 'feature/ui-from-scratch-20261103'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout V2 branch
+        uses: actions/checkout@v4
+      - name: Checkout current main independently
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: baseline
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Build V2 styles
+        run: npm ci && npm run build:css
+      - name: Build baseline styles
+        run: cd baseline && npm ci && npm run build:css
+      - name: Render V2 templates with fixtures
+        run: ./gradlew test --tests '*MobilePageTemplatesTest' --no-daemon
+      - name: Render main templates with identical fixtures
+        run: cd baseline && ./gradlew test --tests '*MobilePageTemplatesTest' --no-daemon
+      - name: Install Chromium
+        run: |
+          npm install --prefix /tmp/design-compare --no-package-lock playwright@1.56.1
+          /tmp/design-compare/node_modules/.bin/playwright install --with-deps chromium
+      - name: Generate side-by-side screenshot gallery
+        env:
+          NODE_PATH: /tmp/design-compare/node_modules
+        run: node scripts/tests/v2-compare-fixtures.browser.cjs
+      - name: Upload comparison gallery
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: triplesweb-main-v2-comparison
+          path: build/design-comparison/
+          if-no-files-found: warn
