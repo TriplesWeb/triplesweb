@@ -432,17 +432,79 @@
         }
         .objekt-card-grid { gap: 16px; }
         .objekt-card {
+            display: flex;
+            flex-direction: column;
             border-color: rgba(67,75,100,.52);
             background: linear-gradient(160deg, #191c27, #11131b);
             box-shadow: 0 8px 22px rgba(0,0,0,.2);
         }
+        .objekt-card-badges {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .45rem;
+        }
         .objekt-card-season {
-            left: 0.5rem;
-            right: auto;
+            flex: 0 1 auto;
+            min-width: 0;
+            border-radius: 999px;
+            padding: .18rem .55rem;
+            color: #071513;
+            font-size: .68rem;
+            font-weight: 800;
+            line-height: 1.2;
         }
         .objekt-card-class {
-            right: 0.85rem;
-            left: auto;
+            flex: 0 0 auto;
+            margin-left: auto;
+            border: 0;
+            background: transparent;
+            color: #f3f4f8;
+            font-size: .95rem;
+            font-weight: 800;
+            line-height: 1.15;
+            padding: 0;
+        }
+        .objekt-card-body {
+            display: flex;
+            flex-direction: column;
+            gap: .38rem;
+            padding: .7rem .8rem .85rem;
+        }
+        .objekt-detail-link {
+            display: block;
+            min-width: 0;
+            overflow: hidden;
+            color: #f3f4f8;
+            font-size: .82rem;
+            font-weight: 700;
+            text-decoration: none;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .objekt-detail-link:hover { color: #00f5d4; }
+        .objekt-card-foot {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .5rem;
+            color: #8b93a7;
+            font-size: .72rem;
+        }
+        .objekt-member-chip {
+            min-width: 0;
+            color: #7dd3c7;
+            text-decoration: none;
+        }
+        .objekt-member-chip:hover { text-decoration: underline; }
+        .objekt-card-no {
+            flex: 0 0 auto;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
+        .objekt-card-supply {
+            margin: .15rem 0 0;
+            color: #c5ccd8;
+            font-size: .72rem;
         }
         .objekt-card:hover {
             border-color: rgba(0,245,212,.58);
@@ -452,12 +514,25 @@
             appearance: none;
             display: block;
             width: 100%;
-            padding: 0;
+            padding: .45rem .45rem 0;
             border: 0;
+            overflow: hidden;
             background: transparent;
             cursor: pointer;
             text-align: left;
         }
+        .objekt-open-detail .objekt-image {
+            display: block;
+            width: 100%;
+            aspect-ratio: 2 / 3;
+            object-fit: cover;
+            border-radius: .85rem;
+            background: #1c1f2e;
+            color: transparent;
+            font-size: 0;
+            transition: transform .3s ease;
+        }
+        .objekt-card:hover .objekt-image { transform: scale(1.03); }
         .objekt-detail-modal {
             position: fixed;
             inset: 0;
