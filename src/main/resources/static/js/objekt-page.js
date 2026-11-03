@@ -795,7 +795,7 @@
                     <a href="/cosmo/objekt/detail/${attr(id)}" class="objekt-detail-link" title="${attr(collectionId)}">${escapeHtml(title)}</a>
                 </div>
                 <div class="objekt-card-foot">
-                    <a href="/cosmo/objekt/member?name=${encodeURIComponent(member)}" class="objekt-member-chip truncate">${escapeHtml(member)}</a>
+                    <a href="/cosmo/objekt/member?name=${encodeURIComponent(member)}" class="objekt-member-chip truncate" style="--artist-color:${attr(item.memberColor || '#00f5d4')}">${escapeHtml(member)}</a>
                     ${klass ? `<span class="badge badge-sm badge-neutral objekt-card-class">${escapeHtml(klass)}</span>` : ''}
                 </div>
                 ${Number.isFinite(item.mintCount) ? `<p class="objekt-card-supply">발행량 ${escapeHtml(String(item.mintCount))}개</p>` : ''}

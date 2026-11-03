@@ -505,7 +505,8 @@
         }
         .objekt-member-chip {
             min-width: 0;
-            color: #7dd3c7;
+            color: var(--artist-color, #00f5d4);
+            font-weight: 650;
             text-decoration: none;
         }
         .objekt-member-chip:hover { text-decoration: underline; }

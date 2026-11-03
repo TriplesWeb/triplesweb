@@ -290,12 +290,22 @@ class ObjektFeaturesTest {
         item.put("mintCount", 90L);
         item.put("mintCountKnown", true);
         stubCatalog(List.of(item));
+        var seoyeon = new com.example.triplesweb.entity.Artist();
+        seoyeon.setName("서연");
+        seoyeon.setEngName("SeoYeon");
+        seoyeon.setColor("#7B61FF");
+        when(artists.findAll()).thenReturn(List.of(seoyeon));
         when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
         mvc.perform(get("/cosmo/objekt")).andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("objekt-head-mints"))))
                 .andExpect(content().string(not(containsString("발행량 7,193,056개"))))
                 .andExpect(content().string(containsString("objekt-card-supply")))
-                .andExpect(content().string(containsString("발행량 90개")));
+                .andExpect(content().string(containsString("발행량 90개")))
+                .andExpect(content().string(containsString("objekt-member-chip")))
+                .andExpect(content().string(containsString("--artist-color:#7B61FF")));
+        mvc.perform(get("/cosmo/objekt/more").param("page", "0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].memberColor").value("#7B61FF"));
     }
 
     @Test void ownerResponseDoesNotExposeInternalVerificationFields() throws Exception {

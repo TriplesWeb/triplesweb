@@ -317,14 +317,16 @@ public class CosmoController {
         return value;
     }
 
-    private static List<Map<String, Object>> withMemberLinks(List<Map<String, Object>> items) {
+    private List<Map<String, Object>> withMemberLinks(List<Map<String, Object>> items) {
         if (items == null || items.isEmpty()) return items == null ? List.of() : items;
+        List<Artist> artists = artistSnapshot.findAll();
         List<Map<String, Object>> out = new ArrayList<>(items.size());
         for (Map<String, Object> item : items) {
             Map<String, Object> copy = new LinkedHashMap<>(item);
             String member = firstValue(item, "member", "memberName");
             copy.put("memberHref", "/cosmo/objekt/member?name="
                     + URLEncoder.encode(member, StandardCharsets.UTF_8).replace("+", "%20"));
+            copy.put("memberColor", MemberPortraitOptions.artistColor(member, artists));
             copy.put("publicKey", ObjektLinks.key(item));
             copy.put("seasonColor", ObjektSeasonColors.colorFor(firstValue(item, "season", "seasonKey")));
             copy.put("cardTitle", ObjektSeasonCodes.cardTitle(
