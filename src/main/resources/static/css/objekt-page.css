@@ -437,6 +437,17 @@
             border-color: rgba(67,75,100,.52);
             background: linear-gradient(160deg, #191c27, #11131b);
             box-shadow: 0 8px 22px rgba(0,0,0,.2);
+            outline: none;
+        }
+        .objekt-card .badge {
+            height: auto;
+            min-height: 0;
+            width: auto;
+            gap: 0;
+            border-radius: 999px;
+            font-weight: 800;
+            line-height: 1.2;
+            background-image: none;
         }
         .objekt-card-badges {
             display: flex;

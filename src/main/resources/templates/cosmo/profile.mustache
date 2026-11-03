@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="/css/archive-page.css?v=15">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
 <link rel="stylesheet" href="/css/cosmo-collection.css?v=15">
-<link rel="stylesheet" href="/css/cosmo-profile.css?v=19">
+<link rel="stylesheet" href="/css/cosmo-profile.css?v=20">
 </head><body class="site-page collection-page min-h-screen flex flex-col">
 {{>layout/header}}
 <main class="gravity-page cosmo-profile" data-profile-version="{{#hasProfile}}{{profileVersion}}{{/hasProfile}}">
@@ -136,11 +136,12 @@
     {{^checklistSeasons}}<p class="gv-panel gv-empty">이 조건에 해당하는 오브젝트가 없습니다.</p>{{/checklistSeasons}}
     <div class="profile-ownership-list">
     {{#checklistSeasons}}
-    <details class="ar-panel profile-owned-class" data-fold-key="owned:{{season}}">
-        <summary class="profile-owned-summary">
+    <details class="collapse ar-panel profile-owned-class" data-fold-key="owned:{{season}}">
+        <summary class="collapse-title profile-owned-summary">
             <span class="profile-owned-summary-copy"><strong>{{season}}</strong><span>{{total}}종</span></span>
             <span class="profile-fold-chevron" aria-hidden="true">⌄</span>
         </summary>
+        <div class="collapse-content">
         {{#groups}}
         <div class="profile-owned-group"><h4>{{klass}}</h4><div class="profile-checklist-grid">
         {{#cards}}
@@ -151,6 +152,7 @@
         {{/cards}}
         </div></div>
         {{/groups}}
+        </div>
     </details>
     {{/checklistSeasons}}
     </div>

@@ -761,18 +761,18 @@
         const klass = item.class || item.classKey || '';
         const season = item.season || item.seasonKey || '';
         const title = item.cardTitle || cardTitleFrom(collectionId, season);
-        return `<article class="objekt-card objekt-item group relative border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
+        return `<article class="card objekt-card objekt-item group relative border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
                  data-objekt-key="${attr(id)}"
                  data-season="${attr(item.seasonKey || season)}" data-class="${attr(item.classKey || klass)}" data-artist="${attr(item.artist || '')}" data-collection-no="${attr(collectionNo)}"
                  data-number="${attr(item.numberValue || '')}" data-date="${attr(item.createdAt || '')}" data-member="${attr(member)}" data-search="${attr(item.searchText || '')}">
             <button type="button" class="objekt-open-detail" aria-label="${attr(collectionId)} 상세 보기">
                 <img src="${attr(thumb)}" alt="${attr(collectionId)}" loading="lazy" decoding="async" class="objekt-image" onerror="this.onerror=null;this.src='${attr(front)}';">
             </button>
-            <div class="objekt-card-body">
+            <div class="card-body objekt-card-body">
                 <div class="objekt-card-badges">
-                    <span class="objekt-card-season" style="background:${attr(seasonBadgeColor(item, season))}">${escapeHtml(season)}</span>
+                    <span class="badge badge-sm objekt-card-season" style="background:${attr(seasonBadgeColor(item, season))}">${escapeHtml(season)}</span>
                     <a href="/cosmo/objekt/detail/${attr(id)}" class="objekt-detail-link" title="${attr(collectionId)}">${escapeHtml(title)}</a>
-                    <span class="objekt-card-class">${escapeHtml(klass)}</span>
+                    <span class="badge badge-sm badge-neutral objekt-card-class">${escapeHtml(klass)}</span>
                 </div>
                 <div class="objekt-card-foot">
                     <a href="/cosmo/objekt/member?name=${encodeURIComponent(member)}" class="objekt-member-chip truncate">${escapeHtml(member)}</a>

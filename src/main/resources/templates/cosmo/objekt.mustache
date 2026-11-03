@@ -3,9 +3,9 @@
 
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/objekt-page.css?v=14">
+    <link rel="stylesheet" href="/css/objekt-page.css?v=15">
     <!-- Tailwind CSS 스크립트 -->
-    <link rel="stylesheet" href="/css/objekt.css?v=2">
+    <link rel="stylesheet" href="/css/objekt.css?v=3">
     <link rel="stylesheet" href="/css/objekt-serial.css?v=2">
     <link rel="stylesheet" href="/css/objekt-modal.css?v=2">
     <script src="/js/about-modal.js?v=1" defer></script>
@@ -192,18 +192,18 @@
     <div id="objekt-empty" class="hidden mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-10 text-center text-slate-400">검색 조건에 맞는 오브젝트가 없습니다.</div>
     <div id="objekt-card-grid" class="objekt-card-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 py-2 mt-3">
         {{#objekts}}
-        <article class="objekt-card objekt-item group relative border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
+        <article class="card objekt-card objekt-item group relative border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
                  data-objekt-key="{{publicKey}}"
                  data-season="{{seasonKey}}" data-class="{{classKey}}" data-artist="{{artist}}" data-collection-no="{{collectionNo}}"
                  data-number="{{numberValue}}" data-date="{{createdAt}}" data-member="{{member}}" data-search="{{searchText}}">
             <button type="button" class="objekt-open-detail" aria-label="{{collectionId}} 상세 보기">
                 <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" class="objekt-image" onerror="this.onerror=null;this.src='{{frontImage}}';">
             </button>
-            <div class="objekt-card-body">
+            <div class="card-body objekt-card-body">
                 <div class="objekt-card-badges">
-                    <span class="objekt-card-season" style="background:{{seasonColor}}">{{season}}</span>
+                    <span class="badge badge-sm objekt-card-season" style="background:{{seasonColor}}">{{season}}</span>
                     <a href="/cosmo/objekt/detail/{{publicKey}}" class="objekt-detail-link" title="{{collectionId}}">{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</a>
-                    <span class="objekt-card-class">{{class}}</span>
+                    <span class="badge badge-sm badge-neutral objekt-card-class">{{class}}</span>
                 </div>
                 <div class="objekt-card-foot">
                     <a href="{{memberHref}}" class="objekt-member-chip truncate">{{member}}</a>
@@ -279,5 +279,5 @@
 
 <script src="/js/member-portrait-picker.js?v=10"></script>
 <script src="/js/objekt-kind-combo.js?v=1"></script>
-    <script src="/js/objekt-page.js?v=11" defer></script>
+    <script src="/js/objekt-page.js?v=12" defer></script>
 {{>layout/page-end}}

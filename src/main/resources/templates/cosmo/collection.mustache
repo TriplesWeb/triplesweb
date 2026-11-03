@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="/css/gravity-page.css?v=3">
 <link rel="stylesheet" href="/css/archive-page.css?v=15">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=24">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=25">
 <title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}내 코스모 아이디 검색{{/nickname}}</title>
 </head><body class="site-page collection-page min-h-screen flex flex-col">
 {{>layout/header}}
@@ -168,18 +168,18 @@
     <section class="ar-grid collection-grid" id="collection-grid" aria-label="보유 오브젝트"
              data-loaded="{{loadedCount}}" data-filtered="{{filteredCount}}" data-owned="{{ownedCount}}">
         {{#cards}}
-        <article class="ar-panel ar-card collection-card">
-            <div class="collection-image-wrap">
-            <span class="collection-card-serial">{{#hasSerial}}#{{serial}}{{/hasSerial}}{{^hasSerial}}시리얼 확인 중{{/hasSerial}}</span>
+        <article class="card ar-panel ar-card collection-card">
+            <div class="indicator collection-image-wrap">
+            <span class="indicator-item indicator-start indicator-top collection-card-serial">{{#hasSerial}}#{{serial}}{{/hasSerial}}{{^hasSerial}}시리얼 확인 중{{/hasSerial}}</span>
             {{#hasImage}}<img class="collection-image" src="{{thumbnailImage}}" alt="{{collectionId}}" referrerpolicy="no-referrer" loading="lazy" decoding="async">{{/hasImage}}
             {{^hasImage}}<span class="ar-muted">이미지 준비 중</span>{{/hasImage}}
             </div>
-            <div class="collection-card-body">
+            <div class="card-body collection-card-body">
                 <div class="collection-card-badges">
-                    <span class="collection-card-season" data-season-color="{{season}}"{{#seasonColor}} style="background:{{seasonColor}}"{{/seasonColor}}>{{season}}</span>
+                    <span class="badge badge-sm collection-card-season" data-season-color="{{season}}"{{#seasonColor}} style="background:{{seasonColor}}"{{/seasonColor}}>{{season}}</span>
                     {{#hasDetail}}<a class="collection-title-link" href="{{detailUrl}}" title="{{collectionId}}">{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</a>{{/hasDetail}}
                     {{^hasDetail}}<span class="collection-card-title" title="{{collectionId}}">{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</span>{{/hasDetail}}
-                    <span class="collection-card-class">{{objektClass}}</span>
+                    <span class="badge badge-sm badge-neutral collection-card-class">{{objektClass}}</span>
                 </div>
                 <div class="collection-card-foot">
                     <span class="collection-card-member truncate">{{member}}</span>
@@ -426,13 +426,13 @@
       : `<span class="collection-card-title" title="${escapeHtml(collectionId)}">${title}</span>`;
     const season = escapeHtml(item.season || '');
     const seasonStyle = item.season ? ` style="background:${escapeHtml(seasonBadgeColor(item))}"` : '';
-    return `<article class="ar-panel ar-card collection-card">
-      <div class="collection-image-wrap"><span class="collection-card-serial">${serial}</span>${image}</div>
-      <div class="collection-card-body">
+    return `<article class="card ar-panel ar-card collection-card">
+      <div class="indicator collection-image-wrap"><span class="indicator-item indicator-start indicator-top collection-card-serial">${serial}</span>${image}</div>
+      <div class="card-body collection-card-body">
         <div class="collection-card-badges">
-          <span class="collection-card-season" data-season-color="${season}"${seasonStyle}>${season}</span>
+          <span class="badge badge-sm collection-card-season" data-season-color="${season}"${seasonStyle}>${season}</span>
           ${heading}
-          <span class="collection-card-class">${klass}</span>
+          <span class="badge badge-sm badge-neutral collection-card-class">${klass}</span>
         </div>
         <div class="collection-card-foot">
           <span class="collection-card-member truncate">${member}</span>
