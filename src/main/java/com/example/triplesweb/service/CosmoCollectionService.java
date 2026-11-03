@@ -453,7 +453,9 @@ public class CosmoCollectionService {
     private static Map<String, Object> card(JsonNode objekt, int receivedIndex) {
         Map<String, Object> card = new LinkedHashMap<>();
         String name = objekt.path("collectionId").asText("").replaceFirst("\\s*#\\d+\\s*$", "").trim();
-        card.put("collectionId", name.isBlank() ? "오브젝트" : name);
+        String collectionId = name.isBlank() ? "오브젝트" : name;
+        card.put("collectionId", collectionId);
+        card.put("displayCollectionId", MemberPortraitOptions.koreanCollectionTitle(collectionId));
         card.put("member", MemberPortraitOptions.displayMember(objekt.path("member").asText("")));
         String season = objekt.path("season").asText("");
         card.put("season", season);

@@ -61,6 +61,25 @@ public final class MemberPortraitOptions {
         return String.join(" × ", members);
     }
 
+    /**
+     * 컬렉션 제목의 영어 멤버 이름만 한글로 바꾼다.
+     * Cream02 Xinyu 356A → Cream02 신위 356A. S1 같은 유닛 번호는 그대로 둔다.
+     */
+    public static String koreanCollectionTitle(String title) {
+        if (title == null || title.isBlank()) return title == null ? "" : title.trim();
+        String[] parts = title.trim().split("\\s+");
+        for (int i = 0; i < parts.length; i++) {
+            String normalized = normalize(parts[i]);
+            for (int member = 0; member < ENGLISH_ORDER.size(); member++) {
+                if (normalized.equals(ENGLISH_ORDER.get(member))) {
+                    parts[i] = KOREAN_ORDER.get(member);
+                    break;
+                }
+            }
+        }
+        return String.join(" ", parts);
+    }
+
     public static boolean sameMember(String first, String second) {
         return memberName(first).equalsIgnoreCase(memberName(second));
     }

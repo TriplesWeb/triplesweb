@@ -92,6 +92,7 @@ public record ObjektCatalogDto(
         item.put("createdAt", blank(row.getCreatedAt()));
         item.put("slug", blank(row.getSlug()));
         item.put("collectionId", blank(row.getCollectionId()));
+        item.put("displayCollectionId", MemberPortraitOptions.koreanCollectionTitle(blank(row.getCollectionId())));
         item.put("season", blank(row.getSeason()));
         item.put("member", MemberPortraitOptions.memberName(blank(row.getMember())));
         item.put("artist", blank(row.getArtist()));

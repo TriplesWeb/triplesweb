@@ -68,6 +68,7 @@ public class ObjektFeatureController {
         body.put("id", value(item, "id"));
         body.put("objektKey", ObjektLinks.key(item));
         body.put("collectionId", value(item, "collectionId", "slug"));
+        body.put("displayCollectionId", MemberPortraitOptions.koreanCollectionTitle(value(item, "collectionId", "slug")));
         body.put("member", value(item, "member", "memberName"));
         body.put("season", value(item, "season"));
         body.put("class", value(item, "class"));

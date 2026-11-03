@@ -507,7 +507,7 @@
     function fillDetailModal(data) {
         const key = data.objektKey || data.id || activeObjektKey;
         activeObjektKey = key;
-        if (detailTitle) detailTitle.textContent = data.collectionId || '—';
+        if (detailTitle) detailTitle.textContent = data.displayCollectionId || data.collectionId || '—';
         if (detailMember) {
             const memberName = data.member || '—';
             detailMember.textContent = memberName;
@@ -527,7 +527,7 @@
             detailDesc.textContent = text || '아직 등록된 상세 설명이 없습니다.';
             detailDesc.classList.toggle('is-empty', !text);
         }
-        if (detailImage) detailImage.alt = data.collectionId || '';
+        if (detailImage) detailImage.alt = data.displayCollectionId || data.collectionId || '';
         resetModalFlip(data.frontImage || data.thumbnailImage || '', data.backImage || '', Boolean(data.hasBack));
         setFavoriteButton(Boolean(data.isFavorite));
         detailFavorite.disabled = false;
@@ -742,7 +742,7 @@
     }
 
     function buildCard(item) {
-        const collectionId = item.collectionId || '';
+        const collectionId = item.displayCollectionId || item.collectionId || '';
         const member = item.member || item.memberName || '';
         const collectionNo = item.collectionNo || item.collectionNumber || '';
         const id = item.publicKey || item.id || '';

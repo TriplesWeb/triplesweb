@@ -28,6 +28,12 @@ class MemberPortraitOptionsTest {
         assertThat(MemberPortraitOptions.displayMember("JiYeon")).isEqualTo("지연");
         assertThat(MemberPortraitOptions.displayMember("S5 X S20")).isEqualTo("김유연 × 박시온");
         assertThat(MemberPortraitOptions.displayMember("zenith")).isEqualTo("zenith");
+        assertThat(MemberPortraitOptions.koreanCollectionTitle("Cream02 Xinyu 356A")).isEqualTo("Cream02 신위 356A");
+        assertThat(MemberPortraitOptions.koreanCollectionTitle("Cream02 SeoAh 101A")).isEqualTo("Cream02 서아 101A");
+        assertThat(MemberPortraitOptions.koreanCollectionTitle("Cream02 HaYeon 367Z")).isEqualTo("Cream02 정하연 367Z");
+        assertThat(MemberPortraitOptions.koreanCollectionTitle("Atom01 Kaede 001Z")).isEqualTo("Atom01 카에데 001Z");
+        assertThat(MemberPortraitOptions.koreanCollectionTitle("Cream02 S1 X S14 601A")).isEqualTo("Cream02 S1 X S14 601A");
+        assertThat(MemberPortraitOptions.koreanCollectionTitle("Cream02 신위 356A")).isEqualTo("Cream02 신위 356A");
         for (String other : java.util.List.of("AAA", "TokyoHaus", "sun", "+(KR)E", ""))
             assertThat(MemberPortraitOptions.objektMembers(other)).isEmpty();
     }
