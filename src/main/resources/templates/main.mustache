@@ -1,266 +1,69 @@
-{{>layout/head-open}}
-    <title>tripleS 커뮤</title>
-    <link rel="stylesheet" href="/css/schedule-categories.css?v=5">
-    <link rel="stylesheet" href="/css/main-page.css?v=1">
+{{>layout/v2/head-open}}
+<title>tripleS Web — WAV를 위한 아카이브</title>
+<meta name="description" content="tripleS 멤버·DIMENSION·앨범·Objekt·Gravity·일정과 팬 아카이브를 살펴보세요.">
+</head>
+<body class="v2-body">
+{{>layout/v2/header}}
+<main class="v2-container v2-main" id="main-content">
+  <section class="v2-hero" aria-labelledby="v2-home-title">
+    <div class="v2-hero-copy">
+      <p class="v2-eyebrow">AN INDEPENDENT TRIPLES ARCHIVE</p>
+      <h1 id="v2-home-title">24개의 시작,<br><em>하나의 기록.</em></h1>
+      <p class="v2-lead">tripleS의 모든 순간을 찾고, 모으고, 연결하는 공간. WAV를 위한 아티스트 정보와 Objekt·Gravity 기록을 한곳에서 살펴보세요.</p>
+      <div class="v2-actions"><a class="v2-button v2-button-primary" href="/cosmo/objekt">Objekt 탐색하기 <span aria-hidden="true">↗</span></a><a class="v2-button v2-button-outline" href="/triples/members">24명 멤버 보기</a></div>
+    </div>
+    <div class="v2-hero-image"><img src="/uploads/images/tripleS.jpg" alt="tripleS 단체 사진" width="960" height="640" fetchpriority="high" decoding="async"><div class="v2-hero-image-caption"><span>ABOUT TRIPLES</span><strong>24 MEMBERS / ONE GROUP</strong></div></div>
+  </section>
 
-    <style>
-        /* FullCalendar Dark Customization */
-        .fc { --fc-border-color: rgba(45, 49, 62, 0.6); --fc-page-bg-color: transparent; }
-        .fc .fc-toolbar-title { font-size: 0.9rem !important; font-weight: bold; color: #e3e2e8; }
-        .fc .fc-button-primary { background-color: #1a1b22 !important; border-color: #2d313e !important; color: #b9cac4 !important; }
-        .fc .fc-button-primary:hover { background-color: #23242e !important; color: #00f5d4 !important; }
-        .fc-theme-standard td, .fc-theme-standard th { border-color: rgba(45, 49, 62, 0.4) !important; }
-        .fc .fc-col-header-cell-cushion { color: #b9cac4; font-size: 0.75rem; font-family: monospace; }
-        .fc .fc-daygrid-day-number { color: #e3e2e8; font-size: 0.75rem; font-family: monospace; }
-        .fc-col-header-cell:nth-child(1) .fc-col-header-cell-cushion { color: #f87171 !important; }
-        .fc-col-header-cell:nth-child(7) .fc-col-header-cell-cushion { color: #60a5fa !important; }
-    </style>
-</head><body class="site-page main-page min-h-screen flex flex-col bg-background text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
+  <section class="v2-explore" aria-labelledby="v2-explore-title">
+    <div class="v2-section-heading"><div><p class="v2-eyebrow">EXPLORE</p><h2 id="v2-explore-title">어떤 기록을 찾고 있나요?</h2></div></div>
+    <div class="v2-explore-grid">
+      <a class="v2-explore-link v2-explore-link-objekt" href="/cosmo/objekt"><span class="v2-explore-index">01 / COLLECTION</span><strong>Objekt</strong><span>시즌과 멤버별 오브젝트 도감</span><b aria-hidden="true">↗</b></a>
+      <a class="v2-explore-link v2-explore-link-gravity" href="/cosmo/gravity"><span class="v2-explore-index">02 / PARTICIPATION</span><strong>Gravity</strong><span>공식 투표와 결과 기록</span><b aria-hidden="true">↗</b></a>
+      <a class="v2-explore-link v2-explore-link-dimension" href="/triples/unit"><span class="v2-explore-index">03 / DIMENSION</span><strong>DIMENSION</strong><span>다양한 멤버 조합과 유닛 활동</span><b aria-hidden="true">↗</b></a>
+      <a class="v2-explore-link v2-explore-link-archive" href="/cosmo/collection"><span class="v2-explore-index">04 / COSMO ACCOUNT</span><strong>컬렉션 조회</strong><span>닉네임별 보유 Objekt와 수집 현황</span><b aria-hidden="true">↗</b></a>
+    </div>
+  </section>
 
-<!-- 엠비언트 배경 은은한 빛 효과 -->
-<div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-    <div class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-secondary-container/10 blur-[120px]"></div>
-    <div class="absolute top-1/3 -right-32 w-[30rem] h-[30rem] rounded-full bg-primary-container/5 blur-[140px]"></div>
-    <div class="absolute -bottom-32 left-1/3 w-[36rem] h-[36rem] rounded-full bg-primary-container/5 blur-[160px]"></div>
-</div>
+  <section class="v2-editorial" aria-label="주요 콘텐츠">
+    <article class="v2-editorial-card">
+      <div class="v2-card-label"><span>FEATURED ALBUM</span><a href="/triples/album">전체 앨범 ↗</a></div>
+      <a class="v2-feature-album" href="{{albumHref}}">
+        <img src="/uploads/images/andless.webp" alt="LOVE &amp; POP Pt.2 : Andless 앨범 이미지" width="560" height="560" loading="lazy" decoding="async">
+        <div><p class="v2-eyebrow">DISCOGRAPHY</p><h2>LOVE &amp; POP Pt.2 : Andless</h2><p>앨범 정보와 수록곡 살펴보기</p><span class="v2-text-link">앨범 상세 보기 ↗</span></div>
+      </a>
+    </article>
+    <article class="v2-editorial-card">
+      <div class="v2-card-label"><span>OFFICIAL MEDIA</span><a href="/media">전체 영상 ↗</a></div>
+      <div class="v2-video" id="home-yt-facade" data-youtube-id="uqJ6GDJSyfY" data-youtube-title="tripleS LOVE &amp; POP Pt.2 : Andless">
+        <button type="button" aria-label="공식 영상 재생"><img src="https://i.ytimg.com/vi/uqJ6GDJSyfY/hqdefault.jpg" alt="" width="640" height="360" loading="lazy" decoding="async"><span class="v2-play" aria-hidden="true">▶</span></button>
+      </div>
+      <h2 class="v2-video-title">tripleS Official Media</h2><p class="v2-muted">영상을 선택하면 YouTube 플레이어를 불러옵니다.</p>
+    </article>
+  </section>
 
-<!-- 헤더 레이아웃 포함 -->
-{{>layout/header}}
+  <section class="v2-intro" aria-labelledby="v2-intro-title">
+    <div><p class="v2-eyebrow">ABOUT THE GROUP</p><h2 id="v2-intro-title">Who is tripleS?</h2><p>tripleS는 MODHAUS 소속 24인조 걸그룹입니다. DIMENSION은 다양한 멤버 조합으로 활동하는 그룹·유닛의 개념이며, Gravity는 COMO를 이용해 활동의 방향성에 참여하는 공식 투표입니다.</p>
+      <div class="v2-inline-links"><a href="/triples/artist">멤버 소개 보기 ↗</a><a href="/artist">그룹 정보 ↗</a><a href="/triples/unit">DIMENSION 보기 ↗</a></div>
+    </div>
+    <div class="v2-intro-mark" aria-hidden="true"><span>24</span><small>S — WAV</small></div>
+  </section>
 
-<!-- 메인 레이아웃 컨테이너 -->
-<main class="relative z-10 max-w-7xl w-full mx-auto px-4 py-6 flex flex-col gap-6">
+  <section class="v2-two-column" aria-label="공지와 일정">
+    <div class="v2-panel"><div class="v2-section-heading"><div><p class="v2-eyebrow">UPDATES</p><h2>공지사항</h2></div><a href="/article/notice">모두 보기 ↗</a></div>
+      <ul class="v2-notice-list">{{#noticePosts}}<li><a href="/article/notice/{{id}}">{{title}}</a><time>{{formattedDate}}</time></li>{{/noticePosts}}{{^noticePosts}}<li class="v2-empty">등록된 공지가 없습니다.</li>{{/noticePosts}}</ul>
+    </div>
+    <div class="v2-panel"><div class="v2-section-heading"><div><p class="v2-eyebrow">SCHEDULE</p><h2>이달의 일정</h2></div><a href="/schedule">전체 달력 ↗</a></div><div id="miniCalendar" class="v2-calendar" aria-label="월별 일정 달력"><p class="v2-muted">달력을 준비하고 있습니다.</p></div></div>
+  </section>
 
-    <!-- 1. 미디어 & 비디오 배너 섹션 -->
-    <section class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+  <section class="v2-archive" aria-label="팬 미디어 아카이브">
+    <div class="v2-section-heading"><div><p class="v2-eyebrow">MEMORIES</p><h2>사진 아카이브</h2></div><a href="/archive/image_archive">전체 사진 ↗</a></div>
+    <div class="v2-media-grid">{{#recentPhotos}}<a class="v2-media-item" href="/archive/image_archive"><img src="{{file.url}}" alt="{{title}}" width="320" height="240" referrerpolicy="no-referrer" loading="lazy" decoding="async"><span>{{title}}</span></a>{{/recentPhotos}}{{^recentPhotos}}<p class="v2-empty">등록된 사진이 없습니다.</p>{{/recentPhotos}}</div>
+    <div class="v2-section-heading v2-archive-second"><div><p class="v2-eyebrow">WATCH</p><h2>영상 아카이브</h2></div><a href="/archive/video_archive">전체 영상 ↗</a></div>
+    <div class="v2-media-grid">{{#recentVideos}}<a class="v2-media-item" href="/archive/video_archive">{{#thumbnailUrl}}<img src="{{thumbnailUrl}}" alt="{{title}}" width="320" height="240" referrerpolicy="no-referrer" loading="lazy" decoding="async">{{/thumbnailUrl}}{{^thumbnailUrl}}<span class="v2-video-empty">영상 썸네일 없음</span>{{/thumbnailUrl}}<span>{{title}}</span></a>{{/recentVideos}}{{^recentVideos}}<p class="v2-empty">등록된 영상이 없습니다.</p>{{/recentVideos}}</div>
+  </section>
 
-        <!-- 비디오 영역 -->
-        <div class="lg:col-span-7 bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-4 backdrop-blur-md shadow-xl flex flex-col justify-between">
-            <div class="flex items-center justify-between pb-3 mb-2 border-b border-outline-variant/30">
-                <div class="flex items-center gap-2">
-                    <span class="font-mono text-xs text-on-surface font-semibold tracking-wider">OFFICIAL MEDIA</span>
-                </div>
-                <span class="text-xs text-on-surface-variant font-mono">LOVE &amp; POP Pt.2 : Andless</span>
-            </div>
-            <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-outline-variant/30" id="home-yt-facade"
-                 data-youtube-id="uqJ6GDJSyfY" data-youtube-title="tripleS LOVE &amp; POP Pt.2 : Andless">
-                <button type="button" class="absolute inset-0 w-full h-full group cursor-pointer border-0 p-0 bg-transparent" aria-label="영상 재생">
-                    <img src="https://i.ytimg.com/vi/uqJ6GDJSyfY/hqdefault.jpg" alt="" width="1280" height="720"
-                         class="absolute inset-0 w-full h-full object-cover" loading="lazy" decoding="async">
-                    <span class="absolute inset-0 bg-black/35 group-hover:bg-black/20 transition-colors"></span>
-                    <span class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-red-600/95 text-white flex items-center justify-center shadow-lg">
-                        <span class="material-symbols-outlined text-3xl leading-none" style="margin-left:2px">play_arrow</span>
-                    </span>
-                </button>
-            </div>
-            <script>
-            (function () {
-                var box = document.getElementById('home-yt-facade');
-                if (!box) return;
-                box.addEventListener('click', function () {
-                    var id = box.getAttribute('data-youtube-id');
-                    var title = box.getAttribute('data-youtube-title') || '';
-                    var iframe = document.createElement('iframe');
-                    iframe.className = 'w-full h-full';
-                    iframe.title = title;
-                    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
-                    iframe.allowFullscreen = true;
-                    iframe.src = 'https://www.youtube.com/embed/' + id + '?autoplay=1&rel=0';
-                    box.replaceChildren(iframe);
-                }, { once: true });
-            })();
-            </script>
-        </div>
-
-        <!-- 메인 이미지 캐러셀 배너 -->
-        <a href="{{albumHref}}" class="main-hero-card lg:col-span-5 bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-4 backdrop-blur-md shadow-xl flex flex-col relative overflow-hidden group no-underline">
-            <div class="main-hero-visual relative w-full h-full min-h-[240px] rounded-xl overflow-hidden flex flex-col justify-end p-5 bg-cover bg-center" style="background-image: url('../../../uploads/images/andless.webp');">
-                <div class="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent"></div>
-                <span class="main-hero-sheen" aria-hidden="true"></span>
-
-                <div class="relative z-10 space-y-1.5">
-                    <span class="inline-block px-2.5 py-0.5 rounded-full bg-primary-container/20 border border-primary-container text-primary-container text-[11px] font-semibold">컴백</span>
-                    <h3 class="text-xl font-bold text-on-surface">LOVE &amp; POP Pt.2 : Andless</h3>
-                    <p class="text-xs text-on-surface-variant line-clamp-2">끝나지 않을 영원한 트리플에스의 스토리</p>
-                    <span class="main-hero-cta">발매 앨범 보기 <span class="material-symbols-outlined text-sm">arrow_forward</span></span>
-                </div>
-            </div>
-        </a>
-    </section>
-
-    <!-- 2. 아티스트 소개 섹션 -->
-    <section class="main-fade-up bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-6 backdrop-blur-md shadow-xl">
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-            <div class="md:col-span-4 rounded-xl overflow-hidden border border-outline-variant/30 aspect-video md:aspect-[4/3]">
-                <img src="/../../uploads/images/tripleS.jpg" alt="tripleS" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
-            </div>
-            <div class="md:col-span-8 space-y-3">
-                <div class="flex items-center gap-3">
-                    <span class="w-1.5 h-6 bg-primary-container rounded-full"></span>
-                    <a href="/artist" class="text-2xl font-bold text-on-surface hover:text-primary-container transition-colors">Who is tripleS?</a>
-                </div>
-                <p class="text-sm text-on-surface-variant leading-relaxed text-justify">
-                    tripleS(트리플에스)는 모드하우스가 결성한 대한민국의 24인조 걸그룹이다. 팬들이 직접 멤버 조합과 활동을 결정하는 팬 참여형 투표 시스템 '디멘션(Dimension)'을 바탕으로 국내 최다 인원 걸그룹으로 활동하고 있다.
-                </p>
-                <div>
-                    <a href="/triples/artist" class="inline-flex items-center gap-1 text-xs text-primary-container hover:underline font-medium">
-                        트리플에스에 대해 더 알고 싶다면 <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 3. 정보 · 스케줄 · 사진 -->
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            <div class="main-fade-up bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl h-full">
-                <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-secondary text-xl">campaign</span>
-                        <h3 class="text-base font-bold text-on-surface">공지사항</h3>
-                    </div>
-                    <a href="/article/notice" class="text-xs text-on-surface-variant hover:text-secondary flex items-center gap-0.5 transition-colors">
-                        더보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
-                    </a>
-                </div>
-                <ul class="divide-y divide-outline-variant/20 text-xs">
-                    {{#noticePosts}}
-                        <li class="py-2.5 flex items-center justify-between gap-4 hover:bg-surface-container-high/40 px-2 rounded-lg transition-colors">
-                            <a href="/article/notice/{{id}}" class="truncate text-on-surface hover:text-secondary font-medium flex-1">{{title}}</a>
-                            <div class="text-on-surface-variant/80 font-mono text-[11px] shrink-0">{{userId}} · {{formattedDate}}</div>
-                        </li>
-                    {{/noticePosts}}
-                    {{^noticePosts}}
-                        <li class="py-4 text-center text-on-surface-variant/60">등록된 공지가 없습니다.</li>
-                    {{/noticePosts}}
-                </ul>
-            </div>
-
-            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl h-full">
-                <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary-container text-xl">calendar_month</span>
-                        <h3 class="text-base font-bold text-on-surface">스케줄</h3>
-                    </div>
-                    <a href="/schedule" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
-                        전체 달력 <span class="material-symbols-outlined text-sm">chevron_right</span>
-                    </a>
-                </div>
-                <div id="miniCalendar" class="w-full"></div>
-            </div>
-    </section>
-
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        <div class="main-fade-up bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
-            <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-4">
-                <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary-container text-xl">photo_library</span>
-                    <h3 class="text-base font-bold text-on-surface">사진 아카이브</h3>
-                </div>
-                <a href="/archive/image_archive" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
-                    전체보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
-                </a>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-                {{#recentPhotos}}
-                    <a href="/archive/image_archive" class="main-archive-card group block rounded-xl overflow-hidden border border-outline-variant/30 bg-black/30 no-underline">
-                        <img src="{{file.url}}" alt="{{title}}" referrerpolicy="no-referrer" loading="lazy" class="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-105">
-                        <span class="block truncate px-2.5 py-2 text-xs font-medium text-on-surface">{{title}}</span>
-                    </a>
-                {{/recentPhotos}}
-                {{^recentPhotos}}
-                    <p class="col-span-full py-6 text-center text-sm text-on-surface-variant/60">등록된 사진이 없습니다.</p>
-                {{/recentPhotos}}
-            </div>
-        </div>
-        <div class="main-fade-up bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
-            <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-4">
-                <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary-container text-xl">movie</span>
-                    <h3 class="text-base font-bold text-on-surface">영상 아카이브</h3>
-                </div>
-                <a href="/archive/video_archive" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
-                    전체보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
-                </a>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-                {{#recentVideos}}
-                    <a href="/archive/video_archive" class="main-archive-card group block rounded-xl overflow-hidden border border-outline-variant/30 bg-black/30 no-underline">
-                        {{#thumbnailUrl}}<img src="{{thumbnailUrl}}" alt="{{title}}" referrerpolicy="no-referrer" loading="lazy" class="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-105">{{/thumbnailUrl}}
-                        {{^thumbnailUrl}}<span class="main-video-placeholder aspect-[4/3] w-full flex items-center justify-center text-xs text-on-surface-variant">영상 아카이브</span>{{/thumbnailUrl}}
-                        <span class="block truncate px-2.5 py-2 text-xs font-medium text-on-surface">{{title}}</span>
-                    </a>
-                {{/recentVideos}}
-                {{^recentVideos}}
-                    <p class="col-span-full py-6 text-center text-sm text-on-surface-variant/60">등록된 영상이 없습니다.</p>
-                {{/recentVideos}}
-            </div>
-        </div>
-    </section>
-
+  <section class="v2-bottom-nav" aria-label="더 살펴보기"><div><p class="v2-eyebrow">CONNECT</p><h2>나의 Objekt에서<br>다음 기록으로.</h2></div><div><a href="/article/trade">교환·거래 게시판 ↗</a><a href="/triples/chemistry">케미씃트리 ↗</a><a href="/schedule">스케줄 ↗</a></div></section>
 </main>
-
-<!-- 푸터 레이아웃 포함 -->
-<!-- FullCalendar: 미니 캘린더가 보일 때만 로드 -->
-<script>
-(function () {
-    const calendarEl = document.getElementById("miniCalendar");
-    if (!calendarEl) return;
-    const schedules = {{{schedulesJson}}} || [];
-    let started = false;
-
-    function loadScript(src) {
-        return new Promise((resolve, reject) => {
-            const s = document.createElement("script");
-            s.src = src;
-            s.async = true;
-            s.onload = resolve;
-            s.onerror = reject;
-            document.head.appendChild(s);
-        });
-    }
-
-    async function initMiniCalendar() {
-        if (started) return;
-        started = true;
-        await loadScript("https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js");
-        await loadScript("https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/ko.global.min.js");
-        const miniCalendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: "dayGridMonth",
-            locale: "ko",
-            height: "auto",
-            fixedWeekCount: false,
-            dayMaxEvents: false,
-            headerToolbar: { left: "", center: "title", right: "prev,next" },
-            events: (schedules || []).map(function (item) {
-                return {
-                    id: item.id,
-                    title: item.displayTitle || item.title,
-                    start: item.start,
-                    end: item.end,
-                    color: item.color,
-                    extendedProps: item
-                };
-            }),
-            eventDidMount: function (info) {
-                info.el.style.setProperty("--schedule-color", info.event.extendedProps.color || "#00f5d4");
-            },
-            eventClick: function () { window.location.href = "/schedule"; }
-        });
-        miniCalendar.render();
-    }
-
-    if ("IntersectionObserver" in window) {
-        const io = new IntersectionObserver((entries) => {
-            if (entries.some((e) => e.isIntersecting)) {
-                io.disconnect();
-                initMiniCalendar();
-            }
-        }, { rootMargin: "120px" });
-        io.observe(calendarEl);
-    } else {
-        window.addEventListener("load", initMiniCalendar);
-    }
-})();
-</script>
-<script src="/js/main-page.js?v=1" defer></script>
-{{>layout/page-end}}
+<script type="application/json" id="v2-schedule-data">{{{schedulesJson}}}</script>
+{{>layout/v2/footer}}

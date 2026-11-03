@@ -1,0 +1,49 @@
+<a class="v2-skip" href="#main-content">본문으로 이동</a>
+<header class="v2-header" id="top-header">
+  <div class="v2-header-inner">
+    <a class="v2-brand" href="/" aria-label="tripleS Web 홈"><span class="v2-brand-mark" aria-hidden="true">s</span><span>tripleS<span class="v2-brand-sub"> WEB</span></span></a>
+    <nav class="v2-nav" aria-label="주요 메뉴">
+      <div class="v2-nav-group">
+        <a href="/triples/overview">tripleS</a>
+        <button type="button" class="v2-nav-toggle" aria-label="tripleS 하위 메뉴" aria-expanded="false" aria-controls="v2-triples-sub">⌄</button>
+        <div class="v2-nav-sub" id="v2-triples-sub">
+          <a href="/triples/overview">그룹 입문 (예정)</a><a href="/triples/members">멤버</a><a href="/triples/unit">DIMENSION</a><a href="/triples/album">앨범</a><a href="/triples/chemistry">케미씃트리</a>
+        </div>
+      </div>
+      <div class="v2-nav-group">
+        <a href="/cosmo/objekt">Objekt</a>
+        <button type="button" class="v2-nav-toggle" aria-label="Objekt 하위 메뉴" aria-expanded="false" aria-controls="v2-objekt-sub">⌄</button>
+        <div class="v2-nav-sub" id="v2-objekt-sub">
+          <a href="/cosmo/objekt">도감</a><a href="/cosmo/objekt/favorites">찜 목록</a><a href="/cosmo/collection">COSMO 컬렉션 조회</a>
+        </div>
+      </div>
+      <a href="/cosmo/gravity">Gravity</a>
+      <div class="v2-nav-group">
+        <a href="/media">미디어</a>
+        <button type="button" class="v2-nav-toggle" aria-label="미디어 하위 메뉴" aria-expanded="false" aria-controls="v2-media-sub">⌄</button>
+        <div class="v2-nav-sub" id="v2-media-sub"><a href="/media">공식 미디어</a><a href="/archive/image_archive">사진</a><a href="/archive/video_archive">영상</a></div>
+      </div>
+      <a href="/schedule">일정</a>
+      <a href="/article/trade">교환·거래</a>
+      <div class="v2-nav-group">
+        <a href="/article/info">정보</a><button type="button" class="v2-nav-toggle" aria-label="정보 하위 메뉴" aria-expanded="false" aria-controls="v2-info-sub">⌄</button>
+        <div class="v2-nav-sub" id="v2-info-sub"><a href="/article/notice">공지</a><a href="/article/info">정보</a><a href="/shop">굿즈리스트</a><a href="/cosmo/event">공연·이벤트</a><a href="/activities/voting">총공 (준비 중)</a></div>
+      </div>
+    </nav>
+    <div class="v2-header-actions">
+      <form class="v2-head-search" action="/search" role="search" method="get"><label class="v2-sr" for="v2-search">사이트 검색</label><input id="v2-search" type="search" name="keyword" placeholder="멤버·게시글 검색" required><button type="submit" aria-label="검색"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.5"></circle><path d="m16 16 5 5"></path></svg></button></form>
+      <button class="v2-mode-btn" id="v2-theme-toggle" type="button" aria-label="다크 모드 전환" title="테마 변경">◐</button>
+      <button class="v2-mobile-btn" id="v2-menu-toggle" type="button" aria-label="메뉴 열기" aria-expanded="false" aria-controls="v2-mobile-menu"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+  <nav class="v2-mobile-menu" id="v2-mobile-menu" aria-label="모바일 메뉴" hidden>
+    <form class="v2-mobile-search" action="/search" role="search" method="get"><input name="keyword" type="search" placeholder="멤버·게시글 검색" aria-label="사이트 검색" required><button type="submit">검색</button></form>
+    <div class="v2-mobile-columns">
+      <section><h2>tripleS</h2><a href="/triples/overview">그룹 입문 (예정)</a><a href="/triples/members">멤버</a><a href="/triples/unit">DIMENSION</a><a href="/triples/album">앨범</a><a href="/triples/chemistry">케미씃트리</a></section>
+      <section><h2>Objekt / Gravity</h2><a href="/cosmo/objekt">오브젝트 도감</a><a href="/cosmo/objekt/favorites">찜 목록</a><a href="/cosmo/collection">컬렉션 조회</a><a href="/cosmo/gravity">Gravity</a><a href="/article/trade">교환·거래</a><a href="/article/sell">판매</a></section>
+      <section><h2>미디어 / 일정</h2><a href="/media">공식 미디어</a><a href="/archive/image_archive">사진</a><a href="/archive/video_archive">영상</a><a href="/schedule">일정</a><a href="/cosmo/event">공연·이벤트</a></section>
+      <section><h2>정보</h2><a href="/article/notice">공지</a><a href="/article/info">정보 게시판</a><a href="/shop">굿즈리스트</a><a href="/activities/voting">총공 (준비 중)</a></section>
+    </div>
+    {{#member}}<div class="v2-mobile-account"><a href="/mypage">마이페이지</a><a href="/myposts">작성한 글</a><a href="/mycomments">작성한 댓글</a><a href="/logout">로그아웃</a></div>{{/member}}
+  </nav>
+</header>

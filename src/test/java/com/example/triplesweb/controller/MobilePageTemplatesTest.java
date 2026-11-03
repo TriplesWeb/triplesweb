@@ -68,11 +68,13 @@ class MobilePageTemplatesTest {
         try(var files=Files.walk(root)) {
             for(Path path:files.filter(p->p.toString().endsWith(".mustache")).toList()) {
                 String source=Files.readString(path);
-                if(!source.contains("<html") && !source.contains("{{>layout/head-open}}"))continue;
+                if(path.toString().replace("\\", "/").endsWith("layout/v2/head-open.mustache"))continue;
+                if(!source.contains("<html") && !source.contains("{{>layout/head-open}}") && !source.contains("{{>layout/v2/head-open}}"))continue;
                 assertThat(source).containsAnyOf(
-                        "{{>layout/head-open}}","{{>layout/favicon}}","{{>layout/triples-head}}","{{>layout/site-head}}");
+                        "{{>layout/head-open}}","{{>layout/v2/head-open}}","{{>layout/favicon}}","{{>layout/triples-head}}","{{>layout/site-head}}");
                 String result=compiler.compile(source).execute(model);
-                assertThat(result).contains("/css/site-mobile.css", "name=\"viewport\"");
+                if(source.contains("{{>layout/v2/head-open}}")) assertThat(result).contains("/css/v2-site.css", "name=\"viewport\"");
+                else assertThat(result).contains("/css/site-mobile.css", "name=\"viewport\"");
                 String name=root.relativize(path).toString().replace('/', '_').replace('\\', '_');
                 Files.writeString(output.resolve(name+".html"),result);count++;
             }
