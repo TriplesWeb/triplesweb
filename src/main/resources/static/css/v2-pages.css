@@ -101,3 +101,14 @@
 .v2-body .site-carousel-slide{flex:0 0 100%;min-width:0}
 @media(max-width:700px){.v2-body .site-col-6,.v2-body .site-col-4,.v2-body .site-col-3{flex-basis:100%}}
 @media(prefers-reduced-motion:reduce){.v2-body .site-carousel-track{transition:none}}
+
+/* Rebuilt season-chip controls: preserve original select/checkbox form behavior. */
+.v2-body .season-control{position:relative}
+.v2-body .season-native-options[hidden],.v2-body .season-choice-panel[hidden]{display:none!important}
+.v2-body .season-choice-panel{position:absolute;top:calc(100% + 8px);left:0;width:min(510px,calc(100vw - 32px));max-height:70dvh;overflow:auto;padding:12px!important;border:1px solid var(--rule);border-radius:13px;background:var(--paper)!important;box-shadow:var(--v2-shadow);z-index:80}
+.v2-body .season-quick-filters,.v2-body .season-chip-list{display:flex;flex-wrap:wrap;gap:7px;min-width:0}
+.v2-body .season-chip{display:inline-flex;align-items:center;justify-content:center;padding:7px 12px;min-height:36px;border:1px solid var(--season-color,var(--rule));border-radius:8px;background:var(--paper);color:var(--ink);font-size:12px;font-weight:700;white-space:nowrap}
+.v2-body .season-chip[aria-pressed=true]{background:var(--season-color,var(--accent));color:#11131b}
+.v2-body .season-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.v2-body .site-table-scroll{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain}
+@media(max-width:600px){.v2-body .season-choice-panel{width:min(100%,calc(100vw - 32px))}.v2-body .season-chip{min-height:40px}}
