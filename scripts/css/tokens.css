@@ -4,7 +4,7 @@
   themes: triplesdark --default;
   /* tab 제외: Bootstrap식 .tab-content 와 daisyUI .tab-content(display:none) 충돌 방지.
      탭 UI는 AboutTabs / .nav-tab-btn / .about-tab-panels 자체 구현을 사용한다. */
-  include: button, input, select, modal, alert, badge, fieldset, label, dropdown, menu, navbar, checkbox, radio, toggle, loading, textarea, swap;
+  include: button, input, select, modal, alert, badge, card, collapse, indicator, fieldset, label, dropdown, menu, navbar, checkbox, radio, toggle, loading, textarea, swap;
 }
 
 @plugin "daisyui/theme" {
@@ -112,3 +112,17 @@
 @source inline("swap-on");
 @source inline("swap-off");
 @source inline("sr-only");
+@source inline("card");
+@source inline("card-body");
+@source inline("card-title");
+@source inline("badge");
+@source inline("badge-sm");
+@source inline("badge-xs");
+@source inline("badge-neutral");
+@source inline("collapse");
+@source inline("collapse-title");
+@source inline("collapse-content");
+@source inline("indicator");
+@source inline("indicator-item");
+@source inline("indicator-start");
+@source inline("indicator-top");

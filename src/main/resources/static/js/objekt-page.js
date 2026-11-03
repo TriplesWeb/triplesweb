@@ -504,6 +504,34 @@
         detailFlip.setAttribute('aria-label', showingBack ? '이미지 클릭 시 뒷면으로 전환' : '이미지 클릭 시 앞면으로 전환');
     }
 
+    let lastApollo = null;
+    function fillDetailStory(data) {
+        if (data && Object.prototype.hasOwnProperty.call(data, 'apollo')) {
+            lastApollo = data.apollo && typeof data.apollo === 'object' ? data.apollo : null;
+        }
+        const local = String(data && data.description || '').trim();
+        const apollo = lastApollo || {};
+        const chunks = [];
+        if (local) chunks.push(local);
+        [apollo.description, apollo.eventName, apollo.eventDescription, apollo.eraName]
+            .map(value => String(value || '').trim())
+            .filter(Boolean)
+            .forEach(bit => {
+                if (!chunks.some(existing => existing === bit || existing.includes(bit))) chunks.push(bit);
+            });
+        const text = chunks.join('\n\n');
+        if (detailDesc) {
+            detailDesc.textContent = text || '아직 등록된 상세 설명이 없습니다.';
+            detailDesc.classList.toggle('is-empty', !text);
+        }
+        const eventNode = document.getElementById('objektDetailEvent');
+        if (eventNode) {
+            const type = String(apollo.eventType || '').trim();
+            eventNode.hidden = !type;
+            eventNode.textContent = type;
+        }
+    }
+
     function fillDetailModal(data) {
         const key = data.objektKey || data.id || activeObjektKey;
         activeObjektKey = key;
@@ -511,22 +539,16 @@
         if (detailMember) {
             const memberName = data.member || '—';
             detailMember.textContent = memberName;
-            if (data.membersTabUrl) {
-                detailMember.href = data.membersTabUrl;
-                detailMember.style.setProperty('--artist-color', data.memberColor || '#00f5d4');
-            } else {
-                detailMember.removeAttribute('href');
-                detailMember.style.removeProperty('--artist-color');
-            }
+            detailMember.style.setProperty('--artist-color', data.memberColor || '#00f5d4');
+            const href = data.membersTabUrl || data.memberUrl;
+            if (href) detailMember.href = href;
+            else detailMember.removeAttribute('href');
         }
         if (detailSeason) detailSeason.textContent = data.season || '—';
         if (detailClass) detailClass.textContent = data.class || '—';
         if (detailNo) detailNo.textContent = data.collectionNo || '—';
-        if (detailDesc) {
-            const text = (data.description || '').trim();
-            detailDesc.textContent = text || '아직 등록된 상세 설명이 없습니다.';
-            detailDesc.classList.toggle('is-empty', !text);
-        }
+        lastApollo = data.apollo && typeof data.apollo === 'object' ? data.apollo : null;
+        fillDetailStory(data);
         if (detailImage) detailImage.alt = data.collectionId || '';
         resetModalFlip(data.frontImage || data.thumbnailImage || '', data.backImage || '', Boolean(data.hasBack));
         setFavoriteButton(Boolean(data.isFavorite));
@@ -553,7 +575,6 @@
         descriptionInput.value = data.description || '';
         descriptionStatus.textContent = '';
         descriptionUrl = data.descriptionUrl || '';
-
     }
 
     function finishDetailClose() {
@@ -562,6 +583,7 @@
         detailModal.classList.remove('is-open');
         detailModal.setAttribute('aria-hidden', 'true');
         activeObjektKey = '';
+        lastApollo = null;
         detailRequest++;
         if (detailFavorite) detailFavorite.dataset.key = '';
         const address = new URL(location.href);
@@ -660,8 +682,7 @@
             if (typeof data.description !== 'string') throw new Error();
             if (activeObjektKey !== key) return;
             descriptionInput.value = data.description;
-            detailDesc.textContent = data.description || '아직 등록된 상세 설명이 없습니다.';
-            detailDesc.classList.toggle('is-empty', !data.description);
+            fillDetailStory({description: data.description, apollo: lastApollo});
             descriptionStatus.textContent = clear ? '상세 설명을 삭제했습니다.' : '상세 설명을 저장했습니다.';
         } catch {
             if (activeObjektKey === key) descriptionStatus.textContent = '저장하지 못했습니다. 관리자 로그인 상태를 확인한 뒤 다시 시도해 주세요.';
@@ -741,6 +762,16 @@
         spinner?.classList.toggle('hidden', !loading);
     }
 
+    function cardTitleFrom(collectionId, season) {
+        const title = (collectionId || '').trim();
+        const prefix = (season || '').trim();
+        if (!title || !prefix) return title;
+        if (title.toLowerCase().startsWith(prefix.toLowerCase() + ' ')) {
+            return title.slice(prefix.length).trim() || title;
+        }
+        return title;
+    }
+
     function buildCard(item) {
         const collectionId = item.collectionId || '';
         const member = item.member || item.memberName || '';
@@ -750,21 +781,24 @@
         const front = item.frontImage || thumb;
         const klass = item.class || item.classKey || '';
         const season = item.season || item.seasonKey || '';
-        return `<article class="objekt-card objekt-item group relative border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
+        const title = item.cardTitle || cardTitleFrom(collectionId, season);
+        return `<article class="card objekt-card objekt-item group relative border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
                  data-objekt-key="${attr(id)}"
                  data-season="${attr(item.seasonKey || season)}" data-class="${attr(item.classKey || klass)}" data-artist="${attr(item.artist || '')}" data-collection-no="${attr(collectionNo)}"
                  data-number="${attr(item.numberValue || '')}" data-date="${attr(item.createdAt || '')}" data-member="${attr(member)}" data-search="${attr(item.searchText || '')}">
-            <button type="button" class="objekt-open-detail relative block aspect-[2/3] w-full overflow-hidden bg-[#1c1f2e]" aria-label="${attr(collectionId)} 상세 보기">
-                <img src="${attr(thumb)}" alt="${attr(collectionId)}" loading="lazy" decoding="async" class="objekt-image h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null;this.src='${attr(front)}';">
-                <span class="absolute left-2 top-2 rounded-md border border-white/15 bg-black/65 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur">${escapeHtml(klass)}</span>
-                <span class="objekt-card-season absolute right-2 top-2 rounded-md px-2 py-1 text-[10px] font-bold text-[#071513]" style="background:${attr(seasonBadgeColor(item, season))}">${escapeHtml(season)}</span>
+            <button type="button" class="objekt-open-detail" aria-label="${attr(collectionId)} 상세 보기">
+                <img src="${attr(thumb)}" alt="${attr(collectionId)}" loading="lazy" decoding="async" class="objekt-image" onerror="this.onerror=null;this.src='${attr(front)}';">
             </button>
-            <div class="p-3">
-                <a href="/cosmo/objekt/detail/${attr(id)}" class="objekt-detail-link block truncate text-sm font-semibold text-slate-100 hover:text-[#00f5d4]" title="${attr(collectionId)}">${escapeHtml(collectionId)}</a>
-                <div class="mt-1 flex items-center justify-between gap-2 text-xs text-slate-400">
-                    <a href="/cosmo/objekt/member?name=${encodeURIComponent(member)}" class="objekt-member-chip truncate text-teal-200 hover:underline">${escapeHtml(member)}</a><span class="shrink-0 font-mono">${escapeHtml(collectionNo)}</span>
+            <div class="card-body objekt-card-body">
+                <div class="objekt-card-badges">
+                    <span class="badge badge-sm objekt-card-season" style="background:${attr(seasonBadgeColor(item, season))}">${escapeHtml(season)}</span>
+                    <a href="/cosmo/objekt/detail/${attr(id)}" class="objekt-detail-link" title="${attr(collectionId)}">${escapeHtml(title)}</a>
                 </div>
-                ${Number.isFinite(item.mintCount) ? `<p class="mt-2 text-xs text-slate-300">발행량 ${escapeHtml(String(item.mintCount))}개</p>` : ''}
+                <div class="objekt-card-foot">
+                    <a href="/cosmo/objekt/member?name=${encodeURIComponent(member)}" class="objekt-member-chip truncate" style="--artist-color:${attr(item.memberColor || '#00f5d4')}">${escapeHtml(member)}</a>
+                    ${klass ? `<span class="badge badge-sm badge-neutral objekt-card-class">${escapeHtml(klass)}</span>` : ''}
+                </div>
+                ${Number.isFinite(item.mintCount) ? `<p class="objekt-card-supply">발행량 ${escapeHtml(String(item.mintCount))}개</p>` : ''}
             </div>
         </article>`;
     }

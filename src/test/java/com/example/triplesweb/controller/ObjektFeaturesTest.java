@@ -24,9 +24,12 @@ import static org.hamcrest.Matchers.not;
 
 @WebMvcTest({CosmoController.class, ObjektFeatureController.class})
 @AutoConfigureMockMvc(addFilters = false)
-@Import(MustacheConfig.class)
+@Import({MustacheConfig.class})
 class ObjektFeaturesTest {
-    @org.junit.jupiter.api.BeforeEach void decorateVisibleCards() { when(market.withIssuedSupply(anyList())).thenAnswer(call -> call.getArgument(0)); }
+    @org.junit.jupiter.api.BeforeEach void decorateVisibleCards() {
+        when(market.withIssuedSupply(anyList())).thenAnswer(call -> call.getArgument(0));
+        when(apollo.story(any())).thenReturn(java.util.Optional.empty());
+    }
     @Autowired MockMvc mvc;
     @MockitoBean ObjektService catalog;
     @MockitoBean ArtistSnapshotService artists;
@@ -35,6 +38,7 @@ class ObjektFeaturesTest {
     @MockitoBean ObjektFavoriteRepository favoriteRepository;
     @MockitoBean ObjektDescriptionRepository descriptions;
     @MockitoBean AboutAdminAuth admin;
+    @MockitoBean ApolloObjektMetadataClient apollo;
 
     /** Mirrors ObjektService.findByKey indexing so detail routes resolve under the mock catalog. */
     private void stubCatalog(List<Map<String, Object>> items) {
@@ -143,12 +147,18 @@ class ObjektFeaturesTest {
     @Test void readableUrlsModalActionsAndLegacyMemberRouteAreConnected() throws Exception {
         Map<String, Object> item = Map.of("id", "uuid", "slug", "hayeoncc367z", "collectionId", "Cream02 HaYeon 367Z", "member", "HaYeon");
         stubCatalog(List.of(item));
+        var hayeon = new com.example.triplesweb.entity.Artist();
+        hayeon.setName("하연");
+        hayeon.setEngName("HaYeon");
+        hayeon.setColor("#ff6bb5");
+        when(artists.findAll()).thenReturn(List.of(hayeon));
         mvc.perform(get("/cosmo/objekt/detail/uuid").accept(MediaType.TEXT_HTML))
                 .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc367z"));
         mvc.perform(get("/cosmo/objekt/detail/uuid").accept(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.objektKey").value("hayeoncc367z"))
                 .andExpect(jsonPath("$.detailUrl").value("/cosmo/objekt/detail/hayeoncc367z"))
                 .andExpect(jsonPath("$.memberUrl").value("/cosmo/objekt?group=members&member=HaYeon"))
+                .andExpect(jsonPath("$.memberColor").value("#ff6bb5"))
                 .andExpect(jsonPath("$.tradeUrl").value("/article/trade/new?selectedObjektIds=uuid"))
                 .andExpect(jsonPath("$.sellUrl").value("/article/sell/new?selectedObjektIds=uuid"));
         mvc.perform(get("/cosmo/objekt/member").param("name", "HaYeon"))
@@ -208,11 +218,39 @@ class ObjektFeaturesTest {
         mvc.perform(get("/cosmo/objekt/detail/b").accept(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.description").value("공통 설명"));
         mvc.perform(get("/cosmo/objekt/detail/c").accept(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.description").value(""));
+                .andExpect(jsonPath("$.description").value(""))
+                .andExpect(jsonPath("$.apollo").doesNotExist());
         mvc.perform(post("/cosmo/objekt/detail/b/description").accept(MediaType.APPLICATION_JSON).param("description",""))
                 .andExpect(status().isOk());
         mvc.perform(get("/cosmo/objekt/detail/a").accept(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.description").value(""));
+    }
+
+    @Test void modalAttachesApolloStoryWithoutOverwritingLocalDescription() throws Exception {
+        var item = Map.<String,Object>of("id","uuid","slug","cream02-kotone-356a","season","Cream02","collectionNo","356A","member","Kotone");
+        stubCatalog(List.of(item));
+        when(apollo.story(item)).thenReturn(java.util.Optional.of(new ApolloObjektMetadataClient.Story(
+                "cream02-kotone-356a",
+                "Part of tripleS Official Character byteS Plush Keyring",
+                "tripleS Official Character byteS",
+                "Physical objekts included with the byteS Plush Keyring.",
+                "merch",
+                "<LOVE&POP> pt.1",
+                "https://x.com/soundwave_korea/status/1")));
+        mvc.perform(get("/cosmo/objekt/detail/cream02-kotone-356a").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.description").value(""))
+                .andExpect(jsonPath("$.apollo.slug").value("cream02-kotone-356a"))
+                .andExpect(jsonPath("$.apollo.description").value("Part of tripleS Official Character byteS Plush Keyring"))
+                .andExpect(jsonPath("$.apollo.eventName").value("tripleS Official Character byteS"))
+                .andExpect(jsonPath("$.apollo.eraName").value("<LOVE&POP> pt.1"));
+        var stored = new com.example.triplesweb.entity.ObjektDescription();
+        stored.setObjektKey("group-key");
+        stored.setDescription("관리자 설명");
+        when(descriptions.findByObjektKey(anyString())).thenReturn(java.util.Optional.of(stored));
+        mvc.perform(get("/cosmo/objekt/detail/cream02-kotone-356a").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.description").value("관리자 설명"))
+                .andExpect(jsonPath("$.apollo.eventName").value("tripleS Official Character byteS"));
     }
 
     @Test void combinedLookupUsesIndexAndNotLiveRpc() throws Exception {
@@ -235,7 +273,39 @@ class ObjektFeaturesTest {
         mvc.perform(get("/cosmo/objekt/detail/hayeoncc367z").accept(MediaType.TEXT_HTML))
             .andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc367z"));
         org.assertj.core.api.Assertions.assertThat(result.getResponse().getContentAsString())
-            .contains("data-serial-panel", "objektIssuedCount").doesNotContain("objektIssuedRanges", "objektIssuedTime").doesNotContain("id=\"objektDetailFullLink\"");
+            .contains("data-serial-panel", "objektIssuedCount")
+            .doesNotContain("objekt-head-mints")
+            .doesNotContain("발행량 7,193,056개")
+            .doesNotContain("objektIssuedRanges", "objektIssuedTime").doesNotContain("id=\"objektDetailFullLink\"");
+    }
+
+    @Test void cardSupplyDoesNotShowPolygonPageTotal() throws Exception {
+        var item = new java.util.LinkedHashMap<String, Object>();
+        for (String field : List.of("frontImage", "backImage", "thumbnailImage", "seasonKey", "classKey", "artist",
+                "createdAt", "searchText", "backgroundColor", "textColor", "seasonColor", "publicKey", "memberHref")) {
+            item.put(field, "");
+        }
+        item.putAll(Map.of("id", "uuid", "slug", "few", "collectionId", "Cream02 SeoYeon 367Z", "member", "SeoYeon",
+                "season", "Cream02", "class", "Special", "collectionNo", "367Z", "numberValue", 367));
+        item.put("mintCount", 90L);
+        item.put("mintCountKnown", true);
+        stubCatalog(List.of(item));
+        var seoyeon = new com.example.triplesweb.entity.Artist();
+        seoyeon.setName("서연");
+        seoyeon.setEngName("SeoYeon");
+        seoyeon.setColor("#7B61FF");
+        when(artists.findAll()).thenReturn(List.of(seoyeon));
+        when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
+        mvc.perform(get("/cosmo/objekt")).andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("objekt-head-mints"))))
+                .andExpect(content().string(not(containsString("발행량 7,193,056개"))))
+                .andExpect(content().string(containsString("objekt-card-supply")))
+                .andExpect(content().string(containsString("발행량 90개")))
+                .andExpect(content().string(containsString("objekt-member-chip")))
+                .andExpect(content().string(containsString("--artist-color:#7B61FF")));
+        mvc.perform(get("/cosmo/objekt/more").param("page", "0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].memberColor").value("#7B61FF"));
     }
 
     @Test void ownerResponseDoesNotExposeInternalVerificationFields() throws Exception {

@@ -109,6 +109,7 @@ jobs:
           node scripts/tests/objekt-artist-gravity.browser.cjs
           node scripts/tests/objekt-member-selection.browser.cjs
           node scripts/tests/objekt-live-filters.browser.cjs
+          node scripts/tests/collection-live-filters.browser.cjs
           node scripts/tests/objekt-season-schedule.browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()

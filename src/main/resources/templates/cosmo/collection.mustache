@@ -3,14 +3,14 @@
 <link rel="stylesheet" href="/css/gravity-page.css?v=3">
 <link rel="stylesheet" href="/css/archive-page.css?v=15">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=20">
-<title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}내 오브젝트 검색{{/nickname}}</title>
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=27">
+<title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}내 코스모 아이디 검색{{/nickname}}</title>
 </head><body class="site-page collection-page min-h-screen flex flex-col">
 {{>layout/header}}
 <main class="gravity-page">
     <section class="gv-kicker"><div><strong>COSMO</strong> · 닉네임 컬렉션</div></section>
-    <section class="gv-panel gv-headline">
-        <h1>내 오브젝트 검색</h1>
+    <section class="gv-panel gv-headline collection-search-hero">
+        <h1>내 코스모 아이디 검색</h1>
         <p>닉네임을 검색하면 보유 오브젝트와 시리얼 번호를 확인할 수 있습니다.</p>
         <form class="ar-filters collection-nickname-form" method="get" action="/cosmo/collection" style="margin-top:1rem" data-saved-nickname="{{#hasCollection}}{{nickname}}{{/hasCollection}}">
             <label class="ar-search-wrap">
@@ -168,16 +168,23 @@
     <section class="ar-grid collection-grid" id="collection-grid" aria-label="보유 오브젝트"
              data-loaded="{{loadedCount}}" data-filtered="{{filteredCount}}" data-owned="{{ownedCount}}">
         {{#cards}}
-        <article class="ar-panel ar-card collection-card">
-            <div class="collection-image-wrap">
-            <span class="collection-card-serial">{{#hasSerial}}#{{serial}}{{/hasSerial}}{{^hasSerial}}시리얼 확인 중{{/hasSerial}}</span><span class="collection-card-season" data-season-color="{{season}}"{{#seasonColor}} style="background:{{seasonColor}}"{{/seasonColor}}>{{season}}</span>
+        <article class="card ar-panel ar-card collection-card">
+            <div class="indicator collection-image-wrap">
+            <span class="indicator-item indicator-start indicator-top collection-card-serial">{{#hasSerial}}#{{serial}}{{/hasSerial}}{{^hasSerial}}시리얼 확인 중{{/hasSerial}}</span>
             {{#hasImage}}<img class="collection-image" src="{{thumbnailImage}}" alt="{{collectionId}}" referrerpolicy="no-referrer" loading="lazy" decoding="async">{{/hasImage}}
             {{^hasImage}}<span class="ar-muted">이미지 준비 중</span>{{/hasImage}}
             </div>
-            <div class="ar-body">
-                {{#hasDetail}}<h3><a class="collection-title-link" href="{{detailUrl}}">{{collectionId}}</a></h3>{{/hasDetail}}
-                {{^hasDetail}}<h3>{{collectionId}}</h3>{{/hasDetail}}
-                <p class="ar-muted">{{member}}{{#season}} · {{season}}{{/season}}</p>
+            <div class="card-body collection-card-body">
+                <div class="collection-card-badges">
+                    <span class="badge badge-sm collection-card-season" data-season-color="{{season}}"{{#seasonColor}} style="background:{{seasonColor}}"{{/seasonColor}}>{{season}}</span>
+                    {{#hasDetail}}<a class="collection-title-link" href="{{detailUrl}}" title="{{collectionId}}">{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</a>{{/hasDetail}}
+                    {{^hasDetail}}<span class="collection-card-title" title="{{collectionId}}">{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</span>{{/hasDetail}}
+                    <span class="badge badge-sm badge-neutral collection-card-class">{{objektClass}}</span>
+                </div>
+                <div class="collection-card-foot">
+                    <span class="collection-card-member truncate">{{member}}</span>
+                    <span class="collection-card-no">{{collectionNo}}</span>
+                </div>
             </div>
         </article>
         {{/cards}}
@@ -212,6 +219,22 @@
   const statusEl = document.getElementById('collection-scroll-status');
   const spinner = document.getElementById('collection-scroll-spinner');
   const filteredCountEl = document.getElementById('collection-filtered-count');
+  let filtersReady = false;
+  let filterTimer;
+  let listGeneration = 0;
+  let loadedCount = Number(grid?.dataset.loaded || grid?.querySelectorAll('.collection-card').length || 0);
+  let filteredCount = Number(grid?.dataset.filtered || 0);
+  let ownedCount = Number(grid?.dataset.owned || 0);
+  let nextPage = Number(sentinel?.dataset.nextPage || 1);
+  let hasMore = sentinel?.dataset.hasMore === 'true';
+  let pending = sentinel?.dataset.loading === 'true';
+  let loading = false;
+  let pollTimer;
+  let loadError = '';
+  let sentinelVisible = false;
+  let lastKindValue = document.getElementById('collection-kind-input')?.value || 'all';
+  let activeFilters = new URLSearchParams(window.location.search);
+  activeFilters.delete('page');
 
   function setGroup(group, clearMember) {
     const next = group || 'all';
@@ -229,6 +252,25 @@
       else if (memberInput && memberInput.value) meta.textContent = memberInput.value;
       else meta.textContent = next === 'members' ? '전체 멤버' : '전체 오브젝트';
     }
+    panel?.classList.toggle('is-filtered', next !== 'all' || Boolean(memberInput?.value));
+  }
+
+  function currentFilterParams() {
+    const params = new URLSearchParams(new FormData(form));
+    params.delete('page');
+    return params;
+  }
+
+  function scheduleApplyFilters() {
+    if (!filtersReady || !grid) return;
+    clearTimeout(filterTimer);
+    filterTimer = setTimeout(applyFilters, 80);
+  }
+
+  function syncFilterAddress(params) {
+    const address = new URL(location.href);
+    address.search = params.toString();
+    history.replaceState(null, '', address.pathname + address.search);
   }
 
   if (form && window.MemberPortraitPicker) {
@@ -238,11 +280,13 @@
         onChange: (values) => {
           if (memberInput) memberInput.value = values[0] || '';
           setGroup(values[0] ? 'members' : (groupInput?.value === 'other' ? 'other' : 'all'), false);
+          scheduleApplyFilters();
         }
       });
     }
     tabs.forEach((tab) => tab.addEventListener('click', () => {
       setGroup(tab.dataset.objektGroup || 'all', true);
+      scheduleApplyFilters();
     }));
     toggle?.addEventListener('click', () => {
       const collapsed = panel.classList.toggle('is-collapsed');
@@ -264,6 +308,11 @@
         document.querySelectorAll('.objekt-dropdown-menu').forEach((other) => {
           if (other.id !== 'collection-kind-menu') other.hidden = true;
         });
+      },
+      onChange(value) {
+        if (value === lastKindValue) return;
+        lastKindValue = value;
+        scheduleApplyFilters();
       }
     });
     form.addEventListener('submit', () => {
@@ -298,6 +347,7 @@
       sync();
       menu.hidden = true;
       toggleBtn.setAttribute('aria-expanded', 'false');
+      scheduleApplyFilters();
     }));
     toggleBtn.addEventListener('click', () => {
       const open = menu.hasAttribute('hidden');
@@ -335,6 +385,7 @@
       const chosen = boxes().some((other) => other.value !== 'all' && other.checked);
       if (all && !chosen) all.checked = true;
       syncLabel();
+      scheduleApplyFilters();
     }));
     toggleBtn.addEventListener('click', () => {
       const open = menu.hasAttribute('hidden');
@@ -352,18 +403,8 @@
     document.querySelectorAll('.objekt-dropdown-menu').forEach((menu) => { menu.hidden = true; });
   });
 
-  if (!grid || !sentinel || !form) return;
-
-  let loadedCount = Number(grid.dataset.loaded || grid.querySelectorAll('.collection-card').length || 0);
-  let filteredCount = Number(grid.dataset.filtered || 0);
-  let ownedCount = Number(grid.dataset.owned || 0);
-  let nextPage = Number(sentinel.dataset.nextPage || 1);
-  let hasMore = sentinel.dataset.hasMore === 'true';
-  let pending = sentinel.dataset.loading === 'true';
-  let loading = false;
-  let pollTimer;
-  let loadError = '';
-  let sentinelVisible = false;
+  filtersReady = Boolean(form && grid && sentinel);
+  if (!filtersReady) return;
 
   function escapeHtml(value) {
     return String(value ?? '')
@@ -392,40 +433,115 @@
     spinner?.classList.toggle('is-hidden', !loading);
   }
 
+  function cardTitleFrom(collectionId, season) {
+    const title = (collectionId || '').trim();
+    const prefix = (season || '').trim();
+    if (!title || !prefix) return title;
+    if (title.toLowerCase().startsWith(prefix.toLowerCase() + ' ')) {
+      return title.slice(prefix.length).trim() || title;
+    }
+    return title;
+  }
+
   function buildCard(item) {
-    const title = escapeHtml(item.collectionId || '오브젝트');
+    const collectionId = item.collectionId || '오브젝트';
+    const title = escapeHtml(item.cardTitle || cardTitleFrom(collectionId, item.season) || collectionId);
     const member = escapeHtml(item.member || '');
-    const season = item.season ? ' · ' + escapeHtml(item.season) : '';
+    const klass = escapeHtml(item.objektClass || item.class || '');
+    const collectionNo = escapeHtml(item.collectionNo || '');
     const serial = item.hasSerial
       ? `<span class="ar-id" aria-label="시리얼 ${escapeHtml(item.serial)}">#${escapeHtml(item.serial)}</span>`
       : '<span class="ar-id">시리얼 확인 중</span>';
     const image = item.hasImage
-      ? `<img class="collection-image" src="${escapeHtml(item.thumbnailImage)}" alt="${title}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
+      ? `<img class="collection-image" src="${escapeHtml(item.thumbnailImage)}" alt="${escapeHtml(collectionId)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
       : '<span class="ar-muted">이미지 준비 중</span>';
     const heading = item.hasDetail
-      ? `<h3><a class="collection-title-link" href="${escapeHtml(item.detailUrl)}">${title}</a></h3>`
-      : `<h3>${title}</h3>`;
-    return `<article class="ar-panel ar-card collection-card">
-      <div class="collection-image-wrap"><span class="collection-card-serial">${serial}</span><span class="collection-card-season" data-season-color="${escapeHtml(item.season || '')}"${item.season ? ` style="background:${escapeHtml(seasonBadgeColor(item))}"` : ''}>${escapeHtml(item.season || '')}</span>${image}</div>
-      <div class="ar-body">
-        ${heading}
-        <p class="ar-muted">${member}${season}</p>
+      ? `<a class="collection-title-link" href="${escapeHtml(item.detailUrl)}" title="${escapeHtml(collectionId)}">${title}</a>`
+      : `<span class="collection-card-title" title="${escapeHtml(collectionId)}">${title}</span>`;
+    const season = escapeHtml(item.season || '');
+    const seasonStyle = item.season ? ` style="background:${escapeHtml(seasonBadgeColor(item))}"` : '';
+    return `<article class="card ar-panel ar-card collection-card">
+      <div class="indicator collection-image-wrap"><span class="indicator-item indicator-start indicator-top collection-card-serial">${serial}</span>${image}</div>
+      <div class="card-body collection-card-body">
+        <div class="collection-card-badges">
+          <span class="badge badge-sm collection-card-season" data-season-color="${season}"${seasonStyle}>${season}</span>
+          ${heading}
+          <span class="badge badge-sm badge-neutral collection-card-class">${klass}</span>
+        </div>
+        <div class="collection-card-foot">
+          <span class="collection-card-member truncate">${member}</span>
+          <span class="collection-card-no">${collectionNo}</span>
+        </div>
       </div>
     </article>`;
   }
 
-  // 무한 스크롤은 제출된 URL 필터만 유지한다(폼 미제출 변경 무시).
-  const submittedFilters = new URLSearchParams(window.location.search);
-  submittedFilters.delete('page');
+  async function applyFilters() {
+    if (!grid) return;
+    const request = ++listGeneration;
+    clearTimeout(pollTimer);
+    loadError = '';
+    loading = true;
+    hasMore = false;
+    pending = false;
+    updateStatus();
+    const params = currentFilterParams();
+    params.set('page', '0');
+    try {
+      const res = await fetch(`/cosmo/collection/more?${params.toString()}`, {
+        headers: { Accept: 'application/json' },
+        credentials: 'same-origin',
+        cache: 'no-store'
+      });
+      if (!res.ok) throw new Error('load failed');
+      const data = await res.json();
+      if (request !== listGeneration) return;
+      const items = Array.isArray(data.items) ? data.items : [];
+      grid.replaceChildren();
+      loadedCount = 0;
+      if (items.length) {
+        const wrap = document.createElement('div');
+        wrap.innerHTML = items.map(buildCard).join('');
+        const fragment = document.createDocumentFragment();
+        while (wrap.firstChild) fragment.appendChild(wrap.firstChild);
+        grid.appendChild(fragment);
+        loadedCount = items.length;
+      }
+      filteredCount = Number(data.filteredCount ?? filteredCount);
+      ownedCount = Number(data.ownedCount ?? ownedCount);
+      hasMore = Boolean(data.hasMore);
+      pending = Boolean(data.loading);
+      nextPage = data.nextPage == null ? 1 : Number(data.nextPage);
+      grid.dataset.loaded = String(loadedCount);
+      grid.dataset.filtered = String(filteredCount);
+      grid.dataset.owned = String(ownedCount);
+      params.delete('page');
+      activeFilters = new URLSearchParams(params);
+      syncFilterAddress(params);
+    } catch (_) {
+      if (request !== listGeneration) return;
+      hasMore = false;
+      pending = false;
+      loadError = '검색 결과를 바꾸지 못했습니다. 잠시 후 다시 시도해 주세요.';
+    } finally {
+      if (request !== listGeneration) return;
+      loading = false;
+      updateStatus();
+      if (pending || (hasMore && sentinelVisible)) {
+        pollTimer = setTimeout(loadMore, pending ? 1000 : 100);
+      }
+    }
+  }
 
   async function loadMore() {
     if ((!hasMore && !pending) || loading) return;
+    const request = listGeneration;
     clearTimeout(pollTimer);
     loadError = "";
     loading = true;
     updateStatus();
     try {
-      const params = new URLSearchParams(submittedFilters);
+      const params = new URLSearchParams(activeFilters);
       params.set('page', String(pending ? 0 : nextPage));
       const res = await fetch(`/cosmo/collection/more?${params.toString()}`, {
         headers: { Accept: 'application/json' },
@@ -434,6 +550,7 @@
       });
       if (!res.ok) throw new Error('load failed');
       const data = await res.json();
+      if (request !== listGeneration) return;
       const items = Array.isArray(data.items) ? data.items : [];
       // While upstream pages arrive, sorting and filters can move cards.
       // Replace the first page until loading finishes, then append stable pages.
@@ -458,10 +575,12 @@
       grid.dataset.filtered = String(filteredCount);
       grid.dataset.owned = String(ownedCount);
     } catch (_) {
+      if (request !== listGeneration) return;
       hasMore = false;
       pending = false;
       loadError = '더 불러오지 못했습니다. 페이지를 새로고침해 주세요.';
     } finally {
+      if (request !== listGeneration) return;
       loading = false;
       updateStatus();
       if (pending || (hasMore && sentinelVisible)) {

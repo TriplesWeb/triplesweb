@@ -10,7 +10,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   #top-header>div:first-child>div:first-child{flex:1;min-width:0}
   #top-header>div:first-child>div:last-child{display:flex;align-items:center;gap:.5rem;min-width:0}
   #top-header>div:first-child a img{max-height:28px;width:auto;max-width:100px}
-  #site-theme-toggle,#mobile-menu-btn{flex:0 0 auto}
+  #mobile-menu-btn{flex:0 0 auto}
   #mobile-menu-btn{margin-left:auto}
   #top-header a{color:#b9cac4;text-decoration:none}
   #top-header a:hover{color:#8decd9}
@@ -135,10 +135,14 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .article-board-heading{display:none!important}
   .article-board-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:.45rem .75rem!important;padding:1rem!important;text-align:left!important}
   .article-board-row>div{grid-column:auto!important;min-width:0}
-  .article-board-row>div:first-child{display:none}
-  .article-board-row>div:nth-child(2){grid-column:1/-1!important;white-space:normal;overflow-wrap:anywhere;font-size:.95rem}
-  .article-board-row>div:nth-child(n+3){font-size:.75rem}
-  .article-board-row>div:last-child{color:#8decd9}
-  .article-board-row>div:last-child::before{content:"추천 ";color:#a6b6b1;font-size:.7rem}
+  .article-board-row>.article-board-num{display:none}
+  .article-board-row>.article-board-subject{grid-column:1/-1!important;white-space:normal;overflow-wrap:anywhere;font-size:.95rem}
+  .article-board-row>.article-board-author,
+  .article-board-row>.article-board-date{font-size:.75rem}
+  .article-board-row>.article-board-likes{grid-column:1/-1!important;color:#8decd9;font-size:.75rem}
+  .article-board-likes::before{content:"추천 ";color:#a6b6b1;font-size:.7rem}
+  .article-board-row.is-market{grid-template-columns:minmax(7.25rem,.9fr) minmax(0,1.45fr)!important}
+  .article-board-row.is-market>.article-board-swap{grid-column:1!important}
+  .article-board-row.is-market>.article-board-subject{grid-column:2!important;font-size:.95rem}
   .btn-close,.objekt-detail-close{min-width:44px;min-height:44px}
 }

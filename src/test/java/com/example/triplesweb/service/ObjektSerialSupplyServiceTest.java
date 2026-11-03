@@ -40,4 +40,29 @@ class ObjektSerialSupplyServiceTest {
             var value=json.readTree(body);assertThatThrownBy(()->ObjektSerialSupplyService.analyze(value,1)).isInstanceOf(IllegalStateException.class);
         }
     }
+
+    @Test void decorateKeepsRarityUntilSerialsAreAvailable() throws Exception {
+        var started=new java.util.concurrent.CountDownLatch(1);var release=new java.util.concurrent.CountDownLatch(1);
+        var server=com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1",0),0);
+        server.createContext("/collections/cream02/serials",exchange->{
+            started.countDown();
+            try{release.await(3,java.util.concurrent.TimeUnit.SECONDS);}catch(InterruptedException e){Thread.currentThread().interrupt();}
+            byte[] body="{\"serials\":[1,2,3,4,5]}".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type","application/json");exchange.sendResponseHeaders(200,body.length);exchange.getResponseBody().write(body);exchange.close();
+        });server.start();
+        var service=new ObjektSerialSupplyService("http://127.0.0.1:"+server.getAddress().getPort());
+        try{
+            var rarity=new java.util.LinkedHashMap<String,Object>();
+            rarity.put("slug","cream02");rarity.put("mintCount",90L);rarity.put("mintCountKnown",true);
+            var loading=service.decorate(java.util.List.of(rarity)).get(0);
+            assertThat(loading).containsEntry("mintCount",90L).containsEntry("mintCountKnown",true).containsEntry("supplyStatus","loading");
+            assertThat(started.await(2,java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            release.countDown();
+            long deadline=System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(3);
+            java.util.Map<String,Object> ready;
+            do{Thread.sleep(10);ready=service.decorate(java.util.List.of(rarity)).get(0);}
+            while(!"available".equals(ready.get("supplyStatus"))&&System.nanoTime()<deadline);
+            assertThat(ready).containsEntry("mintCount",5L).containsEntry("mintCountKnown",true).containsEntry("supplyStatus","available");
+        }finally{release.countDown();service.close();server.stop(0);}
+    }
 }

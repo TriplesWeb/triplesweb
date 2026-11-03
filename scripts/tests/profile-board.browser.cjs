@@ -57,8 +57,10 @@ const base=path.resolve(__dirname,'../..');
     assert.equal(await page.getByText('분철',{exact:true}).count(),0);
     if(width<768){
      assert.equal(await page.locator('.article-board-heading').isVisible(),false);
-     assert.equal(await page.locator('.article-board-subject').evaluate(n=>getComputedStyle(n).whiteSpace),'normal');
-     const author=await page.locator('.article-board-author').boundingBox(),date=await page.locator('.article-board-date').boundingBox();
+     // 헤더 '제목'과 행 제목이 같은 클래스를 쓰므로 행만 본다.
+     assert.equal(await page.locator('.article-board-row > .article-board-subject').first().evaluate(n=>getComputedStyle(n).whiteSpace),'normal');
+     const author=await page.locator('.article-board-row > .article-board-author').first().boundingBox();
+     const date=await page.locator('.article-board-row > .article-board-date').first().boundingBox();
      assert.ok(author.x+author.width<=date.x+1,'writer/date separate');
     }
     assert.equal(await page.locator('.article-board-likes').count(),0);

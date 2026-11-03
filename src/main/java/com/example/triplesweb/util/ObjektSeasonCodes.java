@@ -42,6 +42,24 @@ public final class ObjektSeasonCodes {
         return seasonCode + " " + seasonCode + digits;
     }
 
+    /**
+     * 카드 제목에서 시즌을 뺀다. Cream02 SooMin 356A → SooMin 356A.
+     * 시즌 뱃지와 제목이 겹치지 않게 쓴다.
+     */
+    public static String cardTitle(String collectionId, String season) {
+        String title = collectionId == null ? "" : collectionId.trim();
+        if (title.isEmpty()) return "";
+        String seasonKey = season == null ? "" : season.trim();
+        if (!seasonKey.isEmpty()) {
+            String prefix = seasonKey + " ";
+            if (title.regionMatches(true, 0, prefix, 0, prefix.length())) {
+                String rest = title.substring(prefix.length()).trim();
+                if (!rest.isEmpty()) return rest;
+            }
+        }
+        return title;
+    }
+
     /** 시즌 코드+번호 합성어. Cream02 + 401A → {@code cc401}. */
     public static String composite(String season, String collectionNo) {
         String seasonCode = code(season);

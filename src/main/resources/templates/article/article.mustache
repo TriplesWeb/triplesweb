@@ -1,7 +1,7 @@
 {{>layout/head-open}}
 
     <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
-    <link rel="stylesheet" href="/css/article-page.css?v=2">
+    <link rel="stylesheet" href="/css/article-page.css?v=3">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
 </head><body class="site-page article-page bg-surface text-on-surface min-h-screen flex flex-col">
 {{>layout/header}}
@@ -47,21 +47,22 @@
             <div class="article-board-list w-full overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface-container-lowest/40 mb-8">
 
                 <!-- 테이블 헤더 -->
-                <div class="article-board-heading grid grid-cols-12 gap-4 px-6 py-3.5 bg-surface-container-high/60 border-b border-outline-variant/40 text-on-surface-variant font-semibold text-sm text-center">
-                    <div class="col-span-1">번호</div>
-                    <div class="col-span-6 text-left">제목</div>
-                    <div class="col-span-2">작성자</div>
-                    <div class="col-span-2">날짜</div>
-                    {{^hideRecommendations}}<div class="col-span-1">추천</div>{{/hideRecommendations}}
+                <div class="article-board-heading{{#isMarketBoard}} is-market{{/isMarketBoard}}{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-3.5 bg-surface-container-high/60 border-b border-outline-variant/40 text-on-surface-variant font-semibold text-sm text-center">
+                    <div class="article-board-num">번호</div>
+                    {{#isMarketBoard}}<div class="article-board-swap">분류</div>{{/isMarketBoard}}
+                    <div class="article-board-subject">제목</div>
+                    <div class="article-board-author">작성자</div>
+                    <div class="article-board-date">날짜</div>
+                    {{^hideRecommendations}}<div class="article-board-likes">추천</div>{{/hideRecommendations}}
                 </div>
 
                 <!-- 테이블 바디 (게시글 목록 루프) -->
                 <div class="divide-y divide-outline-variant/20">
                     {{#articleList}}
-                        <div class="article-board-row grid grid-cols-12 gap-4 px-6 py-4 items-center text-center text-sm text-on-surface hover:bg-surface-container-highest/30 transition-colors">
-                            <div class="col-span-1 text-outline font-mono">{{displayId}}</div>
+                        <div class="article-board-row{{#isMarketBoard}} is-market{{/isMarketBoard}}{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-4 items-center text-center text-sm text-on-surface hover:bg-surface-container-highest/30 transition-colors">
+                            <div class="article-board-num text-outline font-mono">{{displayId}}</div>
                             {{#isMarketBoard}}
-                            <div class="article-board-swap col-span-2">
+                            <div class="article-board-swap">
                                 {{#hasMemberSwap}}
                                 <span class="article-swap">
                                     {{#hasHaveLead}}<span class="article-swap-name" style="--artist-color:{{haveLeadColor}}">{{haveLeadName}}</span>{{#hasHaveMore}} 외 {{haveMoreCount}}명{{/hasHaveMore}}{{/hasHaveLead}}
@@ -71,14 +72,14 @@
                                 {{/hasMemberSwap}}
                             </div>
                             {{/isMarketBoard}}
-                            <div class="article-board-subject {{#isMarketBoard}}col-span-4{{/isMarketBoard}}{{^isMarketBoard}}col-span-6{{/isMarketBoard}} text-left font-medium truncate">
+                            <div class="article-board-subject text-left font-medium truncate">
                                 <a href="/article/{{#category}}{{category}}{{/category}}{{^category}}trade{{/category}}/{{id}}" class="hover:text-primary-container transition-colors">
                                     {{title}}
                                 </a>
                             </div>
-                            <div class="article-board-author col-span-2 text-on-surface-variant truncate">{{userId}}</div>
-                            <div class="article-board-date col-span-2 text-xs text-outline">{{formattedDate}}</div>
-                            {{^hideRecommendations}}<div class="article-board-likes col-span-1 text-primary-container font-semibold">{{likesCount}}</div>{{/hideRecommendations}}
+                            <div class="article-board-author text-on-surface-variant truncate">{{userId}}</div>
+                            <div class="article-board-date text-xs text-outline">{{formattedDate}}</div>
+                            {{^hideRecommendations}}<div class="article-board-likes text-primary-container font-semibold">{{likesCount}}</div>{{/hideRecommendations}}
                         </div>
                     {{/articleList}}
 

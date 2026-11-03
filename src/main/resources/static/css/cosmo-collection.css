@@ -298,8 +298,7 @@
     .collection-page .collection-filter-bar .objekt-filter {
         min-width: 10.5rem;
     }
-    .collection-page .objekt-search-row,
-    .collection-page .collection-nickname-form.ar-filters {
+    .collection-page .objekt-search-row {
         flex-wrap: nowrap !important;
         overflow-x: auto;
         overscroll-behavior-x: contain;
@@ -307,8 +306,7 @@
         min-width: 0;
     }
     .collection-page .objekt-search-row > .objekt-search,
-    .collection-page .objekt-search-row > .objekt-reset-button,
-    .collection-page .collection-nickname-form > * {
+    .collection-page .objekt-search-row > .objekt-reset-button {
         flex: 0 0 auto !important;
         width: auto !important;
         max-width: none;
@@ -414,15 +412,81 @@
 }
 @keyframes collection-spin { to { transform: rotate(360deg); } }
 
-.collection-card{border-radius:1rem;overflow:hidden;border:1px solid #343b5180;background:#171a24}.collection-image-wrap .collection-card-serial,.collection-image-wrap .collection-card-season{position:absolute;top:.5rem;z-index:1;border-radius:.4rem;padding:.25rem .4rem;font-size:.68rem;font-weight:700;line-height:1.2}.collection-card-serial{left:.5rem;background:#171a24dc;color:#e8ebf2}.collection-card-serial .ar-id{border:0;padding:0;color:inherit}.collection-card-season{right:.5rem;background:#A4B7B4;color:#071513}.collection-card .ar-body{gap:.35rem}.collection-page .collection-filter-panel{position:relative;z-index:5}.collection-page .objekt-filter:focus-within{z-index:70}.collection-page .objekt-dropdown-menu{z-index:80}.collection-page .objekt-choice{font-family:var(--font-sans, "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif)}.collection-page .objekt-choice-mark{flex:0 0 auto;line-height:1}
-.collection-page .collection-nickname-form { position: relative; }
-.collection-page .collection-nickname-form .ar-search-wrap { position: relative; z-index: 6; }
+.collection-card{border-radius:1rem;overflow:hidden;border:1px solid #343b5180;background:linear-gradient(160deg,#191c27,#11131b);box-shadow:0 8px 22px rgba(0,0,0,.2)}.collection-image-wrap .collection-card-serial{position:absolute;top:.5rem;left:.5rem;z-index:1;border-radius:.4rem;padding:.25rem .4rem;font-size:.68rem;font-weight:700;line-height:1.2;background:#171a24dc;color:#e8ebf2}.collection-card-serial .ar-id{border:0;padding:0;color:inherit}.collection-card-body{display:flex;flex-direction:column;gap:.38rem;padding:.7rem .8rem .85rem}.collection-card-badges{display:flex;align-items:center;gap:.28rem;min-width:0}.collection-card-season{flex:0 0 auto;border-radius:999px;padding:.14rem .42rem;color:#071513;font-size:.64rem;font-weight:800;line-height:1.2;background:#A4B7B4}.collection-card-class{flex:0 0 auto;margin-left:auto;border-radius:999px;padding:.14rem .42rem;border:1px solid rgba(255,255,255,.08);background:#0c0d12;color:#f3f4f8;font-size:.64rem;font-weight:800;line-height:1.2}.collection-title-link,.collection-card-title{flex:1 1 auto;min-width:0;overflow:hidden;color:#e8eaef;font-size:.68rem;font-weight:700;text-decoration:none;text-overflow:ellipsis;white-space:nowrap}.collection-title-link:hover{color:#00f5d4;text-decoration:none}.collection-card-foot{display:flex;align-items:center;justify-content:space-between;gap:.5rem;color:#8b93a7;font-size:.72rem}.collection-card-member{min-width:0;overflow:hidden;color:#7dd3c7;text-overflow:ellipsis;white-space:nowrap}.collection-card-no{flex:0 0 auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}@media (max-width:760px){.collection-card-body{padding:.55rem .55rem .7rem;gap:.3rem}.collection-card-badges{flex-wrap:wrap;gap:.22rem .3rem}.collection-card-season{order:1}.collection-card-class{order:2;margin-left:auto}.collection-title-link,.collection-card-title{order:3;flex:1 1 100%}}
+.collection-card.card{outline:none}
+.collection-card .indicator{display:block;width:100%;max-width:none}
+.collection-card .indicator-item{translate:none;top:.5rem;left:.5rem;right:auto;bottom:auto}
+.collection-card .badge{height:auto;min-height:0;width:auto;gap:0;border-radius:999px;font-weight:800;line-height:1.2;background-image:none}.collection-page .collection-filter-panel{position:relative;z-index:5}.collection-page .objekt-filter:focus-within{z-index:70}.collection-page .objekt-dropdown-menu{z-index:80}.collection-page .objekt-choice{font-family:var(--font-sans, "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif)}.collection-page .objekt-choice-mark{flex:0 0 auto;line-height:1}
+@media (min-width: 768px) {
+    .collection-page .collection-search-hero {
+        align-items: center;
+        text-align: center;
+        padding-left: clamp(3rem, 12vw, 9rem);
+        padding-right: clamp(3rem, 12vw, 9rem);
+    }
+    .collection-page .collection-search-hero p {
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+/* PC only: site-mobile stacks this form through 1023px */
+@media (min-width: 1024px) {
+    .collection-page .collection-search-hero .collection-nickname-form {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: center;
+        gap: .55rem;
+        width: max-content;
+        max-width: 100%;
+    }
+    .collection-page .collection-search-hero .collection-nickname-form > .ar-submit {
+        flex: 0 0 auto;
+        width: auto;
+        min-width: 4.5rem;
+    }
+    .collection-page .collection-search-hero .collection-nickname-form > .ar-search-wrap {
+        flex: 0 1 20rem;
+        width: min(20rem, calc(100% - 5.75rem));
+        max-width: 20rem;
+        min-width: 0;
+    }
+}
+.collection-page .collection-nickname-form {
+    position: relative;
+    z-index: 8;
+    overflow: visible;
+    align-items: center;
+}
+.collection-page .collection-nickname-form .ar-search-wrap {
+    position: relative;
+    z-index: 6;
+    flex: 0 1 20rem;
+    width: min(20rem, 100%);
+    max-width: 20rem;
+    min-width: 0;
+}
+.collection-page .collection-nickname-form .ar-search {
+    min-width: 0;
+    width: 100%;
+}
+.collection-page .collection-nickname-form .ar-search-wrap .material-symbols-outlined {
+    top: 50%;
+    transform: translateY(-50%);
+    line-height: 1;
+    display: block;
+}
+.collection-page .collection-nickname-form .ar-submit {
+    flex: 0 0 auto;
+    width: auto;
+}
 .collection-nickname-suggest {
     position: absolute;
     top: calc(100% + .4rem);
     left: 0;
     right: 0;
-    z-index: 50;
+    z-index: 80;
     max-height: 15rem;
     overflow: auto;
     padding: .45rem;

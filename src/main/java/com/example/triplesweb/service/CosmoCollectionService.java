@@ -2,6 +2,7 @@ package com.example.triplesweb.service;
 
 import com.example.triplesweb.infra.GzipRestClients;
 import com.example.triplesweb.util.MemberPortraitOptions;
+import com.example.triplesweb.util.ObjektSeasonCodes;
 import com.example.triplesweb.util.ObjektSeasonColors;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
@@ -453,9 +454,11 @@ public class CosmoCollectionService {
     private static Map<String, Object> card(JsonNode objekt, int receivedIndex) {
         Map<String, Object> card = new LinkedHashMap<>();
         String name = objekt.path("collectionId").asText("").replaceFirst("\\s*#\\d+\\s*$", "").trim();
-        card.put("collectionId", name.isBlank() ? "오브젝트" : name);
-        card.put("member", MemberPortraitOptions.displayMember(objekt.path("member").asText("")));
+        String collectionId = name.isBlank() ? "오브젝트" : name;
         String season = objekt.path("season").asText("");
+        card.put("collectionId", collectionId);
+        card.put("cardTitle", ObjektSeasonCodes.cardTitle(collectionId, season));
+        card.put("member", MemberPortraitOptions.displayMember(objekt.path("member").asText("")));
         card.put("season", season);
         card.put("seasonColor", ObjektSeasonColors.colorFor(season));
         card.put("objektClass", objekt.path("class").asText(""));

@@ -28,6 +28,10 @@ class ObjektSeasonCodesTest {
         assertEquals("bb", ObjektSeasonCodes.searchTokens("Binary02", ""));
         assertEquals("", ObjektSeasonCodes.searchTokens("Welcome", "001Z"));
         assertEquals("cc401", ObjektSeasonCodes.composite("Cream02", "401A"));
+        assertEquals("SooMin 356A", ObjektSeasonCodes.cardTitle("Cream02 SooMin 356A", "Cream02"));
+        assertEquals("S1 X S14 601A", ObjektSeasonCodes.cardTitle("Cream02 S1 X S14 601A", "Cream02"));
+        assertEquals("Welcome", ObjektSeasonCodes.cardTitle("Welcome", "Cream02"));
+        assertEquals("", ObjektSeasonCodes.cardTitle("", "Cream02"));
     }
 
     @Test

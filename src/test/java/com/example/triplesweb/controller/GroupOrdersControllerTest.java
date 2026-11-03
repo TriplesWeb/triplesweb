@@ -56,7 +56,11 @@ class GroupOrdersControllerTest {
                 .andExpect(content().string(not(containsString("href=\"/article/group-orders\""))))
                 .andExpect(content().string(not(containsString("분철"))))
                 .andExpect(content().string(containsString("href=\"/article/" + category + "\" aria-current=\"page\"")))
-                .andExpect(content().string(not(containsString(">추천<"))));
+                .andExpect(content().string(not(containsString(">추천<"))))
+                .andExpect(content().string(containsString("article-board-heading is-market is-no-likes")))
+                .andExpect(content().string(containsString("article-board-row is-market is-no-likes")))
+                .andExpect(content().string(containsString(">분류<")))
+                .andExpect(content().string(containsString("article-board-swap")));
             verify(articles, never()).findPopularArticles(eq(category), anyInt());
         }
         mvc.perform(get("/article/info")).andExpect(status().isOk())

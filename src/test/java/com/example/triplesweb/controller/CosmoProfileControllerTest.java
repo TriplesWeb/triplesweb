@@ -159,6 +159,10 @@ class CosmoProfileControllerTest {
                 .andExpect(content().string(containsString("profile-checklist-card is-owned")))
                 .andExpect(content().string(not(containsString("profile-checklist-card is-missing"))))
                 .andExpect(content().string(containsString("1종 · 시즌별 목록")))
+                .andExpect(content().string(containsString("profile-owned-summary")))
+                .andExpect(content().string(containsString("collapse-title")))
+                .andExpect(content().string(containsString("collapse-content")))
+                .andExpect(content().string(not(containsString("<details open"))))
                 .andExpect(content().string(not(containsString("profile-season-heading"))))
                 .andExpect(content().string(not(containsString("role=\"progressbar\""))))
                 .andExpect(content().string(not(containsString("100%</strong>"))))
@@ -177,6 +181,9 @@ class CosmoProfileControllerTest {
                 Map.of("slug","missing","member","HaYeon","class","Double","season","Binary01","collectionNo","002Z")));
         var result=mvc.perform(get("/cosmo/profile/Fan").param("tab","members").param("member","HaYeon").param("ownership","missing"))
                 .andExpect(status().isOk()).andExpect(content().string(containsString("profile-owned-class")))
+                .andExpect(content().string(containsString("profile-owned-summary")))
+                .andExpect(content().string(containsString("collapse-title")))
+                .andExpect(content().string(not(containsString("<details open"))))
                 .andExpect(content().string(not(containsString("profile-season-fold"))))
                 .andExpect(content().string(not(containsString("%</strong>"))))
                 .andExpect(content().string(not(containsString("✓ 완료")))).andReturn();
