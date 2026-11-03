@@ -220,3 +220,19 @@
 @media(max-width:1000px){.v2-body .collection-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:730px){.v2-body .objekt-filter-bar,.v2-body .collection-filter-bar{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.v2-body .objekt-search-row{grid-column:1/-1}.v2-body .collection-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.v2-body .objekt-workspace{padding:12px}}
 @media(max-width:480px){.v2-body .collection-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.v2-body .objekt-reset-button{padding:7px}.v2-body .objekt-filter-control{min-height:44px}}
+
+/* Calendar category semantics: preserve member colors and readable long events. */
+.v2-body .schedule-legend{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 15px}
+.v2-body .schedule-legend span,.v2-body .schedule-category-label{display:inline-flex;align-items:center;gap:6px;border:1px solid color-mix(in srgb,var(--schedule-color,#a78bfa) 55%,var(--rule));border-radius:8px;padding:5px 10px;color:var(--schedule-color,#a78bfa);font-size:12px;font-weight:750;background:color-mix(in srgb,var(--schedule-color,#a78bfa) 10%,var(--paper))}
+.v2-body .schedule-legend span::before,.v2-body .schedule-category-label::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.v2-body .schedule-category-preview{margin-top:10px;padding:11px 13px;border-left:4px solid var(--schedule-color,#a78bfa)!important;border-radius:8px;background:color-mix(in srgb,var(--schedule-color,#a78bfa) 10%,var(--paper))!important;color:var(--ink)!important;font-size:13px;overflow-wrap:anywhere}
+.v2-body .schedule-detail-item{border-left:3px solid var(--schedule-color,var(--accent))!important}
+.v2-body #calendar .fc-event{border-color:var(--schedule-color,var(--accent));background:color-mix(in srgb,var(--schedule-color,var(--accent)) 15%,var(--paper))!important;color:var(--ink)}
+.v2-body #calendar .fc-event .fc-event-main{color:inherit}
+.v2-body #calendar .fc-daygrid-day-frame{min-height:8rem}
+.v2-body #calendar .fc-daygrid-event{align-items:flex-start;white-space:normal;padding:3px 4px;min-width:0;max-width:100%}
+.v2-body #calendar .fc-daygrid-event .fc-event-title,.v2-body #calendar .fc-daygrid-event .fc-event-title-container{min-width:0;white-space:normal;overflow-wrap:anywhere;word-break:keep-all;text-overflow:clip}
+.v2-body #calendar .fc-daygrid-event .fc-event-time{flex:none;font-size:10px}
+.v2-body #calendar .fc-daygrid-event-dot{flex:none;margin-top:5px}
+.v2-body #calendar .fc-daygrid-more-link{max-width:100%;white-space:normal}
+@media(max-width:600px){.v2-body #calendar{padding:8px}.v2-body #calendar .fc-daygrid-day-frame{min-height:6rem}.v2-body #calendar .fc-daygrid-event{font-size:10px;line-height:1.35;padding:2px}.v2-body #calendar .fc-daygrid-event .fc-event-time{display:none}}

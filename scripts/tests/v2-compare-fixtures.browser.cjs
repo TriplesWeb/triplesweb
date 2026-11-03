@@ -41,6 +41,61 @@ function mime(p){const ext=path.extname(p).toLowerCase();return {".css":"text/cs
     try{
      await page.goto("https://design.test/"+key+".html",{waitUntil:"domcontentloaded",timeout:20000});
      await page.waitForTimeout(180);
+     // Comparison-only example records: exercise populated card layouts without modifying server or DB.
+     await page.evaluate((key)=>{
+       const duplicate=(selector,cardSelector,n)=>{
+         const root=document.querySelector(selector),first=root?.querySelector(cardSelector);
+         if(!root||!first)return;
+         for(let i=1;i<n;i++){
+           const clone=first.cloneNode(true);
+           clone.removeAttribute("id");
+           clone.querySelectorAll("[id]").forEach(el=>el.removeAttribute("id"));
+           const label=clone.querySelector("h3,a[title],.objekt-card-title,.collection-title-link");
+           if(label&&label.textContent.trim())label.textContent=label.textContent.trim()+" · 예시 "+(i+1);
+           root.appendChild(clone);
+         }
+       };
+       if(key==="cosmo_objekt")duplicate("#objekt-card-grid",".objekt-item",9);
+       if(key==="cosmo_collection")duplicate("#collection-grid",".collection-card",9);
+       if(key==="triples_artist"){
+         const tabs=document.querySelector("#triplesTabs");
+         if(tabs&&tabs.children.length<5){
+           const names=["윤서연","정혜린","이지우","김채연","김유연","김수민","김나경","공유빈"];
+           names.forEach((name,i)=>{
+             const b=document.createElement("button");
+             b.type="button";b.className="nav-tab-btn";b.setAttribute("role","tab");
+             const span=document.createElement("span");span.className="artist-tab-avatar";
+             const img=document.createElement("img");img.className="artist-tab-photo";img.src="/uploads/images/tripleS.jpg";img.alt="";
+             span.append(img);const label=document.createElement("span");label.className="artist-tab-label";label.textContent="S"+(i+1)+" "+name;
+             b.append(span,label);tabs.append(b);
+           });
+         }
+       }
+       if(key==="triples_unit"){
+         const tabs=document.querySelector("#triplesUnitTabs");
+         if(tabs&&tabs.children.length===0){
+           ["Acid Angel from Asia","+(KR)ystal Eyes","LOVElution","EVOLution","Aria","Visionary Vision"].forEach(name=>{
+             const b=document.createElement("button");b.type="button";b.className="nav-tab-btn unit-tab-btn";
+             b.textContent=name;b.style.padding="13px";tabs.append(b);
+           });
+         }
+       }
+       if(key==="cosmo_gravity"&&!document.querySelector("#gvGrid")){
+         const main=document.querySelector("main.gravity-page");
+         if(main){
+           const title=document.createElement("h2");title.textContent="그래비티 화면 시연 (가상 데이터)";
+           const section=document.createElement("section");section.className="gv-grid";
+           for(let i=1;i<=6;i++){
+             const card=document.createElement("article");card.className="gv-panel gv-card";
+             const h=document.createElement("h3");h.textContent="Gravity 시연 항목 "+i;
+             const p=document.createElement("p");p.textContent="공식 데이터가 아닌 디자인 비교용 예시입니다.";
+             const link=document.createElement("span");link.className="gv-badge";link.textContent=i%3===1?"종료":i%3===2?"진행 중":"예정";
+             card.append(link,h,p);section.append(card);
+           }
+           main.append(title,section);
+         }
+       }
+     },key);
      const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);
      const file=key+"-"+variant+"-"+device+".png";
      await page.screenshot({path:path.join(out,file),animations:"disabled",timeout:20000,fullPage:true});
