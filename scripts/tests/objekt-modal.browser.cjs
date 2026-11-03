@@ -8,9 +8,10 @@ const base = path.resolve(__dirname, '../..');
   try {
     const page = await browser.newPage({viewport:{width:1280,height:1000}});
     let favorite=false, favoriteAttempts=0;
-    let isAdmin = true, description = '기존 설명', writes = [], failMore = true;
+    let isAdmin = true, description = '기존 설명', writes = [], failMore = true, apolloStory = null;
     const data = () => ({isFavorite:favorite,objektKey:'hayeoncc367z',collectionId:'Cream02 HaYeon 367Z',member:'HaYeon',season:'Cream02',class:'Special',collectionNo:'367Z',description,isAdmin,
-      detailUrl:'/cosmo/objekt/detail/hayeoncc367z',memberUrl:'/cosmo/objekt?group=members&member=HaYeon',tradeUrl:'/article/trade/new?selectedObjektIds=uuid',sellUrl:'/article/sell/new?selectedObjektIds=uuid',descriptionUrl:'/cosmo/objekt/detail/hayeoncc367z/description'});
+      detailUrl:'/cosmo/objekt/detail/hayeoncc367z',memberUrl:'/cosmo/objekt?group=members&member=HaYeon',tradeUrl:'/article/trade/new?selectedObjektIds=uuid',sellUrl:'/article/sell/new?selectedObjektIds=uuid',descriptionUrl:'/cosmo/objekt/detail/hayeoncc367z/description',
+      ...(apolloStory ? {apollo: apolloStory} : {})});
     await page.context().addCookies([{name:'XSRF-TOKEN',value:'test-csrf',domain:'preview.test',path:'/'}]);
     await page.route('**/*', async route => {
       const req=route.request(), url=new URL(req.url()), p=url.pathname;
@@ -102,6 +103,25 @@ const base = path.resolve(__dirname, '../..');
     await page.goto('https://preview.test/cosmo/objekt?objekt=hayeoncc367z');
     await page.locator('#objektDetailTitle').filter({hasText:'Cream02 HaYeon 367Z'}).waitFor();
     assert.equal(await page.locator('#objektDetailModal').isVisible(),true);
+    await page.locator('#objektDetailClose').click();
+    description = '';
+    apolloStory = {
+      slug:'cream02-kotone-356a',
+      description:'Part of tripleS Official Character byteS Plush Keyring',
+      eventName:'tripleS Official Character byteS',
+      eventDescription:'Physical objekts included with the byteS Plush Keyring and Random Figure.',
+      eventType:'merch',
+      eraName:'<LOVE&POP> pt.1',
+      twitterUrl:'https://x.com/soundwave_korea/status/1'
+    };
+    await page.locator('.objekt-open-detail').first().click();
+    await page.waitForFunction(()=>document.querySelector('#objektDetailDesc')?.textContent.includes('byteS Plush Keyring'));
+    assert.match(await page.locator('#objektDetailDesc').textContent(), /LOVE&POP/);
+    assert.equal(await page.locator('#objektDetailApolloLink').isVisible(), true);
+    assert.equal(await page.locator('#objektDetailTwitter').isVisible(), true);
+    fs.mkdirSync('/opt/cursor/artifacts',{recursive:true});
+    await page.screenshot({path:'/opt/cursor/artifacts/objekt-apollo-story.png',fullPage:true});
+    await page.locator('#objektDetailClose').click();
     await page.evaluate(()=>{
       const original=document.querySelector('.objekt-card[data-objekt-key]');
       for(let i=0;i<49;i++){const card=original.cloneNode(true);delete card.dataset.supplyDone;delete card.dataset.supplyTries;original.parentElement.append(card);}

@@ -697,6 +697,23 @@
             font-size: .9rem;
             font-weight: 500;
         }
+        .objekt-detail-event {
+            margin: .65rem 0 0;
+            color: #b9cac4;
+            font-size: .82rem;
+            line-height: 1.55;
+        }
+        .objekt-detail-sources {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .45rem .85rem;
+            margin: .7rem 0 0;
+        }
+        .objekt-detail-sources a {
+            color: #8decd9;
+            font-size: .78rem;
+            font-weight: 650;
+        }
         .objekt-description-editor { border: 1px solid #ffffff18; border-radius: .8rem; background: #ffffff04; padding: .7rem .8rem; }
         .objekt-description-editor[hidden] { display: none !important; }
         .objekt-description-editor summary { cursor: pointer; color: #8decd9; font-size: .78rem; font-weight: 650; }

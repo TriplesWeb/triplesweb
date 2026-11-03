@@ -3,7 +3,7 @@
 
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/objekt-page.css?v=15">
+    <link rel="stylesheet" href="/css/objekt-page.css?v=16">
     <!-- Tailwind CSS 스크립트 -->
     <link rel="stylesheet" href="/css/objekt.css?v=3">
     <link rel="stylesheet" href="/css/objekt-serial.css?v=2">
@@ -246,6 +246,11 @@
             <section class="objekt-detail-story" aria-labelledby="objektDetailStoryTitle">
                 <h3 class="objekt-detail-story-title" id="objektDetailStoryTitle">상세 설명</h3>
                 <p class="objekt-detail-desc is-empty" id="objektDetailDesc">불러오는 중…</p>
+                <p class="objekt-detail-event" id="objektDetailEvent" hidden></p>
+                <div class="objekt-detail-sources" id="objektDetailSources" hidden>
+                    <a id="objektDetailTwitter" hidden target="_blank" rel="noopener noreferrer">관련 공지</a>
+                    <a id="objektDetailApolloLink" hidden target="_blank" rel="noopener noreferrer">Apollo에서 보기</a>
+                </div>
             </section>
             <details id="objektDescriptionEditor" class="objekt-description-editor" hidden>
                 <summary>관리자 · 상세 설명 편집</summary>
@@ -279,5 +284,5 @@
 
 <script src="/js/member-portrait-picker.js?v=10"></script>
 <script src="/js/objekt-kind-combo.js?v=1"></script>
-    <script src="/js/objekt-page.js?v=12" defer></script>
+    <script src="/js/objekt-page.js?v=13" defer></script>
 {{>layout/page-end}}

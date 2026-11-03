@@ -26,7 +26,10 @@ import static org.hamcrest.Matchers.not;
 @AutoConfigureMockMvc(addFilters = false)
 @Import(MustacheConfig.class)
 class ObjektFeaturesTest {
-    @org.junit.jupiter.api.BeforeEach void decorateVisibleCards() { when(market.withIssuedSupply(anyList())).thenAnswer(call -> call.getArgument(0)); }
+    @org.junit.jupiter.api.BeforeEach void decorateVisibleCards() {
+        when(market.withIssuedSupply(anyList())).thenAnswer(call -> call.getArgument(0));
+        when(apollo.story(any())).thenReturn(java.util.Optional.empty());
+    }
     @Autowired MockMvc mvc;
     @MockitoBean ObjektService catalog;
     @MockitoBean ArtistSnapshotService artists;
@@ -35,6 +38,7 @@ class ObjektFeaturesTest {
     @MockitoBean ObjektFavoriteRepository favoriteRepository;
     @MockitoBean ObjektDescriptionRepository descriptions;
     @MockitoBean AboutAdminAuth admin;
+    @MockitoBean ApolloObjektMetadataClient apollo;
 
     /** Mirrors ObjektService.findByKey indexing so detail routes resolve under the mock catalog. */
     private void stubCatalog(List<Map<String, Object>> items) {
@@ -208,11 +212,39 @@ class ObjektFeaturesTest {
         mvc.perform(get("/cosmo/objekt/detail/b").accept(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.description").value("공통 설명"));
         mvc.perform(get("/cosmo/objekt/detail/c").accept(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.description").value(""));
+                .andExpect(jsonPath("$.description").value(""))
+                .andExpect(jsonPath("$.apollo").doesNotExist());
         mvc.perform(post("/cosmo/objekt/detail/b/description").accept(MediaType.APPLICATION_JSON).param("description",""))
                 .andExpect(status().isOk());
         mvc.perform(get("/cosmo/objekt/detail/a").accept(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.description").value(""));
+    }
+
+    @Test void modalAttachesApolloStoryWithoutOverwritingLocalDescription() throws Exception {
+        var item = Map.<String,Object>of("id","uuid","slug","cream02-kotone-356a","season","Cream02","collectionNo","356A","member","Kotone");
+        stubCatalog(List.of(item));
+        when(apollo.story(item)).thenReturn(java.util.Optional.of(new ApolloObjektMetadataClient.Story(
+                "cream02-kotone-356a",
+                "Part of tripleS Official Character byteS Plush Keyring",
+                "tripleS Official Character byteS",
+                "Physical objekts included with the byteS Plush Keyring.",
+                "merch",
+                "<LOVE&POP> pt.1",
+                "https://x.com/soundwave_korea/status/1")));
+        mvc.perform(get("/cosmo/objekt/detail/cream02-kotone-356a").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.description").value(""))
+                .andExpect(jsonPath("$.apollo.slug").value("cream02-kotone-356a"))
+                .andExpect(jsonPath("$.apollo.description").value("Part of tripleS Official Character byteS Plush Keyring"))
+                .andExpect(jsonPath("$.apollo.eventName").value("tripleS Official Character byteS"))
+                .andExpect(jsonPath("$.apollo.eraName").value("<LOVE&POP> pt.1"));
+        var stored = new com.example.triplesweb.entity.ObjektDescription();
+        stored.setObjektKey("group-key");
+        stored.setDescription("관리자 설명");
+        when(descriptions.findByObjektKey(anyString())).thenReturn(java.util.Optional.of(stored));
+        mvc.perform(get("/cosmo/objekt/detail/cream02-kotone-356a").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.description").value("관리자 설명"))
+                .andExpect(jsonPath("$.apollo.eventName").value("tripleS Official Character byteS"));
     }
 
     @Test void combinedLookupUsesIndexAndNotLiveRpc() throws Exception {

@@ -504,6 +504,54 @@
         detailFlip.setAttribute('aria-label', showingBack ? '이미지 클릭 시 뒷면으로 전환' : '이미지 클릭 시 앞면으로 전환');
     }
 
+    let lastApollo = null;
+    function fillDetailStory(data) {
+        if (data && Object.prototype.hasOwnProperty.call(data, 'apollo')) {
+            lastApollo = data.apollo && typeof data.apollo === 'object' ? data.apollo : null;
+        }
+        const local = String(data && data.description || '').trim();
+        const apollo = lastApollo || {};
+        const chunks = [];
+        if (local) chunks.push(local);
+        [apollo.description, apollo.eventName, apollo.eventDescription, apollo.eraName]
+            .map(value => String(value || '').trim())
+            .filter(Boolean)
+            .forEach(bit => {
+                if (!chunks.some(existing => existing === bit || existing.includes(bit))) chunks.push(bit);
+            });
+        const text = chunks.join('\n\n');
+        if (detailDesc) {
+            detailDesc.textContent = text || '아직 등록된 상세 설명이 없습니다.';
+            detailDesc.classList.toggle('is-empty', !text);
+        }
+        const eventNode = document.getElementById('objektDetailEvent');
+        if (eventNode) {
+            const type = String(apollo.eventType || '').trim();
+            eventNode.hidden = !type;
+            eventNode.textContent = type;
+        }
+        const twitter = document.getElementById('objektDetailTwitter');
+        if (twitter) {
+            const href = String(apollo.twitterUrl || '');
+            const ok = href.startsWith('https://x.com/') || href.startsWith('https://twitter.com/');
+            twitter.hidden = !ok;
+            twitter.href = ok ? href : '';
+        }
+        const apolloLink = document.getElementById('objektDetailApolloLink');
+        if (apolloLink) {
+            const slug = String(apollo.slug || '').trim();
+            const ok = /^[a-z0-9]+(?:-[a-z0-9]+)+$/.test(slug);
+            apolloLink.hidden = !ok;
+            apolloLink.href = ok ? ('https://apollo.cafe/?id=' + encodeURIComponent(slug)) : '';
+        }
+        const sources = document.getElementById('objektDetailSources');
+        if (sources) {
+            const twitterHidden = !twitter || twitter.hidden;
+            const apolloHidden = !apolloLink || apolloLink.hidden;
+            sources.hidden = twitterHidden && apolloHidden;
+        }
+    }
+
     function fillDetailModal(data) {
         const key = data.objektKey || data.id || activeObjektKey;
         activeObjektKey = key;
@@ -522,11 +570,8 @@
         if (detailSeason) detailSeason.textContent = data.season || '—';
         if (detailClass) detailClass.textContent = data.class || '—';
         if (detailNo) detailNo.textContent = data.collectionNo || '—';
-        if (detailDesc) {
-            const text = (data.description || '').trim();
-            detailDesc.textContent = text || '아직 등록된 상세 설명이 없습니다.';
-            detailDesc.classList.toggle('is-empty', !text);
-        }
+        lastApollo = data.apollo && typeof data.apollo === 'object' ? data.apollo : null;
+        fillDetailStory(data);
         if (detailImage) detailImage.alt = data.collectionId || '';
         resetModalFlip(data.frontImage || data.thumbnailImage || '', data.backImage || '', Boolean(data.hasBack));
         setFavoriteButton(Boolean(data.isFavorite));
@@ -553,7 +598,6 @@
         descriptionInput.value = data.description || '';
         descriptionStatus.textContent = '';
         descriptionUrl = data.descriptionUrl || '';
-
     }
 
     function finishDetailClose() {
@@ -562,6 +606,7 @@
         detailModal.classList.remove('is-open');
         detailModal.setAttribute('aria-hidden', 'true');
         activeObjektKey = '';
+        lastApollo = null;
         detailRequest++;
         if (detailFavorite) detailFavorite.dataset.key = '';
         const address = new URL(location.href);
@@ -660,8 +705,7 @@
             if (typeof data.description !== 'string') throw new Error();
             if (activeObjektKey !== key) return;
             descriptionInput.value = data.description;
-            detailDesc.textContent = data.description || '아직 등록된 상세 설명이 없습니다.';
-            detailDesc.classList.toggle('is-empty', !data.description);
+            fillDetailStory({description: data.description, apollo: lastApollo});
             descriptionStatus.textContent = clear ? '상세 설명을 삭제했습니다.' : '상세 설명을 저장했습니다.';
         } catch {
             if (activeObjektKey === key) descriptionStatus.textContent = '저장하지 못했습니다. 관리자 로그인 상태를 확인한 뒤 다시 시도해 주세요.';
