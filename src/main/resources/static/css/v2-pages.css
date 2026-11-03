@@ -112,3 +112,12 @@
 .v2-body .season-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .v2-body .site-table-scroll{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain}
 @media(max-width:600px){.v2-body .season-choice-panel{width:min(100%,calc(100vw - 32px))}.v2-body .season-chip{min-height:40px}}
+
+/* Dialog layering must dominate sticky navigation; cover the complete viewport. */
+.v2-body #objektDetailModal:not([hidden]){position:fixed!important;inset:0!important;z-index:1300!important;display:flex!important;align-items:center;justify-content:center;padding:clamp(10px,2vw,26px);background:rgba(8,7,16,.75)!important;overflow-y:auto}
+.v2-body #objektDetailModal .objekt-detail-panel{position:relative;z-index:1;max-height:calc(100dvh - 24px);max-width:960px;overflow-y:auto;background:var(--paper)!important;color:var(--ink)!important;border:1px solid var(--rule)!important}
+.v2-body #objektDetailClose{z-index:3;top:14px;right:14px;color:var(--ink)!important;background:var(--paper)!important}
+.v2-body #objektDetailModal .objekt-detail-media{background:var(--soft)!important}
+.v2-body #objektDetailModal .objekt-detail-body{background:var(--paper)!important;color:var(--ink)!important}
+.v2-body #objektDetailModal .objekt-issued-panel{background:var(--bg)!important;border-color:var(--rule)!important}
+.v2-body #objektDetailModal .objekt-detail-title{color:var(--ink)!important}
