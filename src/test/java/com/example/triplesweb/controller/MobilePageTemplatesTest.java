@@ -84,8 +84,16 @@ class MobilePageTemplatesTest {
         for (String category : List.of("trade", "sell", "group-orders")) {
             var board = new HashMap<>(model);
             board.put("category", category); board.put("hideRecommendations", true);
+            board.put("isMarketBoard", !"group-orders".equals(category));
+            board.put("isTrade", "trade".equals(category));
+            board.put("isSell", "sell".equals(category));
             board.put("categoryName", Map.of("trade","교환","sell","거래","group-orders","분철").get(category));
-            board.put("articleList", List.of(new HashMap<>(post)));
+            var row = new HashMap<>(post);
+            row.put("hasMemberSwap", true); row.put("hasHaveLead", true); row.put("haveLeadName", "서연");
+            row.put("haveLeadColor", "#8decd9"); row.put("showTradeSwap", "trade".equals(category));
+            row.put("hasWantLead", "trade".equals(category)); row.put("wantLeadName", "코토네");
+            row.put("wantLeadColor", "#ff8389");
+            board.put("articleList", List.of(row));
             Files.writeString(output.resolve("board-" + category + ".html"),
                 compiler.compile(Files.readString(root.resolve("article/article.mustache"))).execute(board));
         }
