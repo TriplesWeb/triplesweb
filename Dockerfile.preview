@@ -1,0 +1,24 @@
+# Isolated V2 preview: no production uploads bundled and no production entrypoint.
+FROM node:20-bookworm-slim AS css
+WORKDIR /workspace
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY scripts ./scripts
+COPY src/main/resources ./src/main/resources
+RUN node scripts/build-v2-css.cjs
+
+FROM eclipse-temurin:17-jdk-jammy AS build
+WORKDIR /workspace
+COPY gradlew settings.gradle build.gradle ./
+COPY gradle ./gradle
+RUN chmod +x gradlew && ./gradlew dependencies --no-daemon || true
+COPY src ./src
+COPY --from=css /workspace/src/main/resources/static/css/v2-utility.css ./src/main/resources/static/css/v2-utility.css
+RUN ./gradlew bootWar -x test --no-daemon
+
+FROM eclipse-temurin:17-jre-jammy
+WORKDIR /app
+RUN mkdir -p /app/uploads /app/data
+COPY --from=build /workspace/build/libs/triples.war /app/app.war
+EXPOSE 8080
+ENTRYPOINT ["java","-jar","/app/app.war"]

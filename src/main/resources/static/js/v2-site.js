@@ -21,6 +21,7 @@
     themeButton.addEventListener("click", () => {
       const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
       document.documentElement.dataset.theme = next;
+      document.documentElement.classList.toggle("dark", next === "dark");
       try { localStorage.setItem("v2-theme", next); } catch (_) {}
       themeButton.setAttribute("aria-label", next === "dark" ? "라이트 모드 전환" : "다크 모드 전환");
     });
