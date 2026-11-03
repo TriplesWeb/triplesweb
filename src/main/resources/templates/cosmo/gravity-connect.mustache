@@ -7,29 +7,31 @@
 </head><body class="site-page min-h-screen flex flex-col">
 {{>layout/header}}
 <main class="flex-1 max-w-xl w-full mx-auto px-4 py-8 space-y-6">
-<a href="/cosmo/gravity" class="text-[#00f5d4]">← 그래비티 목록</a>
+<nav class="site-back" aria-label="그래비티 목록으로">
+    <a href="/cosmo/gravity">← 그래비티 목록</a>
+</nav>
 <div class="flex flex-wrap items-center justify-between gap-4"><h1 class="text-2xl font-bold">COSMO 계정 연결</h1>{{>cosmo/partials/gravity-admin-controls}}</div>
 <p class="text-sm text-gray-400">사이트 관리자가 본인 COSMO 계정으로 연결하면 그래비티 정보를 조회할 수 있습니다. 최초 이메일 인증 후 연결은 자동으로 갱신됩니다.</p>
 <p id="connectStatus" role="status" class="gravity-notice">연결 상태 확인 중…</p>
 <section id="gravityLoginRequired" class="gravity-card" hidden>
 <p class="gravity-connect-help">케미명 페이지와 같은 관리자 로그인을 사용합니다. 이미 로그인했다면 별도 비밀번호 입력 없이 연결을 관리할 수 있습니다.</p>
-<button type="button" id="gravityLoginOpen" class="about-mode-btn is-active mt-4">관리자 로그인</button>
+<button type="button" id="gravityLoginOpen" class="about-mode-btn is-active mt-4 btn btn-sm btn-outline btn-primary btn-active">관리자 로그인</button>
 </section>
 <section id="cosmoLogin" class="gravity-card space-y-5" hidden>
 <form method="post" id="emailForm" class="about-edit-form">
 <h2 class="font-bold">COSMO 이메일 인증</h2>
 <p class="text-sm text-gray-400">COSMO에 등록된 본인 이메일을 입력하세요. 계정 연결은 사이트의 Gravity 조회에 사용됩니다.</p>
 <label class="about-edit-label">이메일<input id="cosmoEmail" type="email" autocomplete="email" required maxlength="254" class="block w-full mt-2 bg-black rounded text-white"></label>
-<button id="sendEmailButton" type="submit" class="about-mode-btn is-active">인증번호 받기</button>
+<button id="sendEmailButton" type="submit" class="about-mode-btn is-active btn btn-sm btn-outline btn-primary btn-active">인증번호 받기</button>
 </form>
 <form method="post" id="codeForm" class="space-y-4" hidden>
 <label class="about-edit-label">이메일 인증번호<input id="cosmoCode" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required class="block w-full mt-2 bg-black rounded text-white"></label>
-<button type="submit" class="about-mode-btn is-active">계정 연결</button>
+<button type="submit" class="about-mode-btn is-active btn btn-sm btn-outline btn-primary btn-active">계정 연결</button>
 </form>
 <div class="space-y-3">
 <h2 class="font-bold">내 보유 오브젝트 DB 동기화</h2>
 <p class="text-sm text-gray-400">연결된 COSMO 계정의 보유 카드와 시리얼을 DB에 저장합니다. 전체 오브젝트 카탈로그는 유지됩니다.</p>
-<button type="button" id="cosmoObjektSync" class="about-mode-btn is-active">보유 오브젝트 가져오기</button>
+<button type="button" id="cosmoObjektSync" class="about-mode-btn is-active btn btn-sm btn-outline btn-primary btn-active">보유 오브젝트 가져오기</button>
 <p id="cosmoObjektSyncStatus" role="status" class="text-sm"></p>
 </div>
 </section>

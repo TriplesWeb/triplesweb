@@ -20,7 +20,11 @@
         <div class="absolute -inset-1 rounded-3xl bg-gradient-to-b from-primary-container/20 via-transparent to-secondary-container/30 blur-xl opacity-75 pointer-events-none"></div>
 
         <!-- 메인 수정 카드 컨테이너 -->
-        <div class="relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
+        <div class="relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl overflow-hidden backdrop-blur-2xl shadow-2xl">
+        <nav class="site-back site-back--bar" aria-label="게시판 목록으로">
+            <a href="/article/{{category}}">← {{categoryName}}</a>
+        </nav>
+        <div class="p-6 sm:p-10">
 
             <h1 class="font-headline-lg text-headline-md font-bold text-on-surface tracking-tight mb-6">
                 게시글 수정
@@ -83,12 +87,11 @@
 
                 <!-- 버튼 그룹 -->
                 <div class="flex items-center gap-3 pt-4">
-                    <button type="submit" class="flex-1 py-3.5 px-6 rounded-full bg-primary-container text-on-primary font-headline-sm text-headline-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center justify-center gap-2">수정하기</button>
-                    <a href="/article/{{category}}" class="px-6 py-3.5 rounded-full bg-surface-container-high/40 hover:bg-surface-container-high border border-outline-variant/40 hover:border-outline-variant text-on-surface font-body-md text-body-md font-medium text-center transition-all duration-200">
-                        목록으로
-                    </a>
+                    <button type="submit" class="btn btn-primary flex-1">수정하기</button>
+                    <a href="/article/{{category}}" class="site-back-link">← 목록으로</a>
                 </div>
             </form>
+        </div>
         </div>
     </div>
 </main>

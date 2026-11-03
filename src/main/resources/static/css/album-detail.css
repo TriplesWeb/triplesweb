@@ -7,14 +7,8 @@
     max-width: 100%;
 }
 
-.album-detail-back {
-    margin: 0;
-}
-
-.album-detail-back a {
-    color: #00f5d4;
-    text-decoration: none;
-    font-size: 0.9rem;
+.album-detail-body {
+    min-width: 0;
 }
 
 .album-track-scroll {

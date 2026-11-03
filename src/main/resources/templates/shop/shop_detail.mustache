@@ -15,6 +15,9 @@
 {{>layout/header}}
 
 <div class="site-container">
+    <nav class="site-back" aria-label="굿즈샵 목록으로">
+        <a href="/shop">← 굿즈샵</a>
+    </nav>
     <div class="shop-detail">
         <div class="site-carousel" data-site-carousel>
             <div class="site-carousel-track">
@@ -35,7 +38,7 @@
             <div class="desc-body mt-3">{{{item.description}}}</div>
             {{^item.soldout}}
                 <form method="post" action="/shop/cart/add/{{item.id}}" style="margin-top:1rem">
-                    <button class="site-btn site-btn-dark" type="submit">장바구니 담기</button>
+                    <button class="btn btn-primary" type="submit">장바구니 담기</button>
                 </form>
             {{/item.soldout}}
         </div>

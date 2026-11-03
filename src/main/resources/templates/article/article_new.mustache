@@ -14,7 +14,11 @@
 <main class="flex-1 flex items-center justify-center px-4 sm:px-6 py-12 z-10 relative">
     <div class="w-full max-w-2xl relative">
         <div class="absolute -inset-1 rounded-3xl bg-gradient-to-b from-primary-container/20 via-transparent to-secondary-container/30 blur-xl opacity-75 pointer-events-none"></div>
-        <div class="relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
+        <div class="relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl overflow-hidden backdrop-blur-2xl shadow-2xl">
+        <nav class="site-back site-back--bar" aria-label="게시판 목록으로">
+            <a href="/article/{{category}}">← {{categoryName}}</a>
+        </nav>
+        <div class="p-6 sm:p-10">
         {{#errorMessage}}
             <div class="mb-6 p-3.5 rounded-xl bg-error-container/20 border border-error/40 flex items-start gap-3">
                 <span class="material-symbols-outlined text-error text-[20px] flex-shrink-0 mt-0.5" data-icon="error">error</span>
@@ -67,12 +71,11 @@
                     <input type="hidden" name="{{parameterName}}" value="{{token}}">
                 {{/_csrf}}
                 <div class="flex items-center gap-3 pt-4">
-                    <button type="submit" class="flex-1 py-3.5 px-6 rounded-full bg-primary-container text-on-primary font-headline-sm text-headline-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center justify-center gap-2">작성하기</button>
-                    <a href="/article/{{category}}" class="px-6 py-3.5 rounded-full bg-surface-container-high/40 hover:bg-surface-container-high border border-outline-variant/40 hover:border-outline-variant text-on-surface font-body-md text-body-md font-medium text-center transition-all duration-200">
-                        목록으로
-                    </a>
+                    <button type="submit" class="btn btn-primary flex-1">작성하기</button>
+                    <a href="/article/{{category}}" class="site-back-link">← 목록으로</a>
                 </div>
         </form>
+        </div>
     </div>
     </div>
 </main>
