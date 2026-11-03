@@ -48,7 +48,7 @@ const root=path.resolve(__dirname,'../..');
     const labels=await page.locator('#navbar > a.nav-item-link, #navbar > .relative > button.nav-item-link').evaluateAll(nodes=>
       nodes.map(n=>n.childNodes[0]?.textContent?.trim() || n.textContent.replace(/expand_more/g,'').trim())
     );
-    assert.deepEqual(labels,['About 트리플에스','정보','코스모','미디어','일정']);
+    assert.deepEqual(labels,['About 트리플에스','코스모','정보','미디어','일정']);
     const cosmo=page.locator('#navbar .relative').filter({has:page.locator('button',{hasText:'코스모'})});
     // 1024~1040px에서는 우측 계정/검색이 네비를 가려 :hover가 안 붙을 수 있음 — 넓은 폭에서 hover, 그 외는 패널만 연다.
     if(width>=1280) await cosmo.hover();

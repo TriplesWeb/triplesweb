@@ -28,13 +28,13 @@ public final class SiteNavigation {
             link("앨범", "/triples/album"), link("유닛 (디멘션)", "/triples/unit"),
             link("케미씃트리", "/triples/chemistry")
         ), List.of()),
-        new Section("info", "정보", List.of(
-            link("공연/이벤트", "/cosmo/event"), link("굿즈리스트", "/shop"),
-            link("총공", "/activities/voting"), link("기사/그외", "/article/info")
-        ), List.of()),
         new Section("cosmo", "코스모", List.of(
             link("오브젝트", "/cosmo/objekt"), link("내 컬렉션 검색", "/cosmo/collection"),
             link("교환/거래", "/article/trade"), link("그래비티", "/cosmo/gravity")
+        ), List.of()),
+        new Section("info", "정보", List.of(
+            link("공연/이벤트", "/cosmo/event"), link("굿즈리스트", "/shop"),
+            link("총공", "/activities/voting"), link("기사/그외", "/article/info")
         ), List.of()),
         new Section("media", "미디어", List.of(
             link("사진", "/archive/image_archive"), link("영상", "/archive/video_archive"),
