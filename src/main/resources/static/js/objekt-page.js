@@ -539,13 +539,10 @@
         if (detailMember) {
             const memberName = data.member || '—';
             detailMember.textContent = memberName;
-            if (data.membersTabUrl) {
-                detailMember.href = data.membersTabUrl;
-                detailMember.style.setProperty('--artist-color', data.memberColor || '#00f5d4');
-            } else {
-                detailMember.removeAttribute('href');
-                detailMember.style.removeProperty('--artist-color');
-            }
+            detailMember.style.setProperty('--artist-color', data.memberColor || '#00f5d4');
+            const href = data.membersTabUrl || data.memberUrl;
+            if (href) detailMember.href = href;
+            else detailMember.removeAttribute('href');
         }
         if (detailSeason) detailSeason.textContent = data.season || '—';
         if (detailClass) detailClass.textContent = data.class || '—';

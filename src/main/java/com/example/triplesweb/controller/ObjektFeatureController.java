@@ -5,9 +5,11 @@ import com.example.triplesweb.repository.ObjektDescriptionRepository;
 import com.example.triplesweb.repository.ObjektFavoriteRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.ApolloObjektMetadataClient;
+import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.ObjektFavoriteService;
 import com.example.triplesweb.service.ObjektMarketDataService;
+import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektLinks;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -37,6 +39,7 @@ public class ObjektFeatureController {
     private final ObjektFavoriteService favorites;
     private final ObjektMarketDataService marketData;
     private final ApolloObjektMetadataClient apolloMetadata;
+    private final ArtistSnapshotService artistSnapshot;
 
     @GetMapping("/member")
     public String memberObjekts(@RequestParam String name,
@@ -84,6 +87,8 @@ public class ObjektFeatureController {
         body.put("isAdmin", aboutAdminAuth.isAdmin(request, session));
         body.put("detailUrl", ObjektLinks.detail(item));
         body.put("memberUrl", ObjektLinks.member(item));
+        String member = value(item, "member", "memberName");
+        body.put("memberColor", MemberPortraitOptions.artistColor(member, artistSnapshot.findAll()));
         body.put("tradeUrl", ObjektLinks.compose(item, "trade"));
         body.put("sellUrl", ObjektLinks.compose(item, "sell"));
         body.put("descriptionUrl", ObjektLinks.detail(item) + "/description");

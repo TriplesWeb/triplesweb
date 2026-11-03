@@ -666,6 +666,16 @@
         }
         .objekt-detail-meta dt { color: #8b93a7; margin: 0; }
         .objekt-detail-meta dd { margin: 0; color: #e8edf5; font-weight: 600; text-align: right; }
+        .objekt-detail-meta a.objekt-detail-member-link {
+            color: var(--artist-color, #00f5d4);
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .objekt-detail-meta a.objekt-detail-member-link:hover,
+        .objekt-detail-meta a.objekt-detail-member-link:focus-visible {
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
         .objekt-detail-story {
             margin: .1rem 0;
             padding: .95rem 1rem 1.05rem;

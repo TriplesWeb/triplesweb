@@ -147,12 +147,18 @@ class ObjektFeaturesTest {
     @Test void readableUrlsModalActionsAndLegacyMemberRouteAreConnected() throws Exception {
         Map<String, Object> item = Map.of("id", "uuid", "slug", "hayeoncc367z", "collectionId", "Cream02 HaYeon 367Z", "member", "HaYeon");
         stubCatalog(List.of(item));
+        var hayeon = new com.example.triplesweb.entity.Artist();
+        hayeon.setName("하연");
+        hayeon.setEngName("HaYeon");
+        hayeon.setColor("#ff6bb5");
+        when(artists.findAll()).thenReturn(List.of(hayeon));
         mvc.perform(get("/cosmo/objekt/detail/uuid").accept(MediaType.TEXT_HTML))
                 .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc367z"));
         mvc.perform(get("/cosmo/objekt/detail/uuid").accept(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.objektKey").value("hayeoncc367z"))
                 .andExpect(jsonPath("$.detailUrl").value("/cosmo/objekt/detail/hayeoncc367z"))
                 .andExpect(jsonPath("$.memberUrl").value("/cosmo/objekt?group=members&member=HaYeon"))
+                .andExpect(jsonPath("$.memberColor").value("#ff6bb5"))
                 .andExpect(jsonPath("$.tradeUrl").value("/article/trade/new?selectedObjektIds=uuid"))
                 .andExpect(jsonPath("$.sellUrl").value("/article/sell/new?selectedObjektIds=uuid"));
         mvc.perform(get("/cosmo/objekt/member").param("name", "HaYeon"))
