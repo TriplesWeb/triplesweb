@@ -466,7 +466,8 @@
         }
         .objekt-card-class {
             flex: 0 0 auto;
-            margin-left: auto;
+            align-self: flex-end;
+            margin-top: .18rem;
             border-radius: 999px;
             padding: .14rem .42rem;
             border: 1px solid rgba(255,255,255,.08);
@@ -508,10 +509,6 @@
             text-decoration: none;
         }
         .objekt-member-chip:hover { text-decoration: underline; }
-        .objekt-card-no {
-            flex: 0 0 auto;
-            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-        }
         .objekt-card-supply {
             margin: .15rem 0 0;
             color: #c5ccd8;
@@ -789,8 +786,8 @@
             .objekt-card-body { padding: .55rem .55rem .7rem; gap: .3rem; }
             .objekt-card-badges { flex-wrap: wrap; gap: .22rem .3rem; }
             .objekt-card-season { order: 1; }
-            .objekt-card-class { order: 2; margin-left: auto; }
-            .objekt-detail-link { order: 3; flex: 1 1 100%; }
+            .objekt-detail-link { order: 2; flex: 1 1 auto; min-width: 0; }
+            .objekt-card-class { margin-top: .22rem; font-size: .58rem; padding: .1rem .34rem; }
         }
         @media (max-width: 420px) {
             .objekt-filter-bar { grid-template-columns: 1fr; }

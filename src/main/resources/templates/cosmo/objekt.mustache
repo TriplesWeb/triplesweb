@@ -3,7 +3,7 @@
 
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/objekt-page.css?v=20">
+    <link rel="stylesheet" href="/css/objekt-page.css?v=22">
     <!-- Tailwind CSS 스크립트 -->
     <link rel="stylesheet" href="/css/objekt.css?v=3">
     <link rel="stylesheet" href="/css/objekt-serial.css?v=2">
@@ -203,11 +203,10 @@
                 <div class="objekt-card-badges">
                     <span class="badge badge-sm objekt-card-season" style="background:{{seasonColor}}">{{season}}</span>
                     <a href="/cosmo/objekt/detail/{{publicKey}}" class="objekt-detail-link" title="{{collectionId}}">{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</a>
-                    <span class="badge badge-sm badge-neutral objekt-card-class">{{class}}</span>
                 </div>
                 <div class="objekt-card-foot">
                     <a href="{{memberHref}}" class="objekt-member-chip truncate">{{member}}</a>
-                    <span class="objekt-card-no">{{collectionNo}}</span>
+                    {{#class}}<span class="badge badge-sm badge-neutral objekt-card-class">{{class}}</span>{{/class}}
                 </div>
                 <p class="objekt-card-supply" data-supply-count>{{#mintCountKnown}}발행량 {{mintCount}}개{{/mintCountKnown}}{{^mintCountKnown}}발행량 확인 중{{/mintCountKnown}}</p>
             </div>
@@ -280,5 +279,5 @@
 
 <script src="/js/member-portrait-picker.js?v=10"></script>
 <script src="/js/objekt-kind-combo.js?v=1"></script>
-    <script src="/js/objekt-page.js?v=15" defer></script>
+    <script src="/js/objekt-page.js?v=17" defer></script>
 {{>layout/page-end}}

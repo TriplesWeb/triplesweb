@@ -793,11 +793,10 @@
                 <div class="objekt-card-badges">
                     <span class="badge badge-sm objekt-card-season" style="background:${attr(seasonBadgeColor(item, season))}">${escapeHtml(season)}</span>
                     <a href="/cosmo/objekt/detail/${attr(id)}" class="objekt-detail-link" title="${attr(collectionId)}">${escapeHtml(title)}</a>
-                    <span class="badge badge-sm badge-neutral objekt-card-class">${escapeHtml(klass)}</span>
                 </div>
                 <div class="objekt-card-foot">
                     <a href="/cosmo/objekt/member?name=${encodeURIComponent(member)}" class="objekt-member-chip truncate">${escapeHtml(member)}</a>
-                    <span class="objekt-card-no">${escapeHtml(collectionNo)}</span>
+                    ${klass ? `<span class="badge badge-sm badge-neutral objekt-card-class">${escapeHtml(klass)}</span>` : ''}
                 </div>
                 ${Number.isFinite(item.mintCount) ? `<p class="objekt-card-supply">발행량 ${escapeHtml(String(item.mintCount))}개</p>` : ''}
             </div>
