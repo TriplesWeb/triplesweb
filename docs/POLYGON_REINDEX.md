@@ -29,10 +29,8 @@ Abstract 이전 ever-minted 원천은 **mint 로그(`Transfer` from `0x0`)** 만
 JSONL 순서는 워커 완료 순이라 블록 순이 아니다. 블록 순이 필요하면
 `block` 으로 정렬한다.
 
-사이트 `/cosmo/objekt` 헤드는 이 총량을 **발행량** 캡션으로 보여 준다
-(`data/polygon-mints.json` → `발행량 7,193,056개 · Polygon 민트 · …`).
-카드·모달 발행량은 여전히 objekt.top living 값(rarity 첫 페인트 → serials)이다.
-카드에 페이지 총량을 복사하지 않는다.
+총량 요약은 `data/polygon-mints.json`에 두고, `/cosmo/objekt` 헤드에는 표시하지 않는다.
+카드·모달 발행량은 objekt.top living 값(rarity 첫 페인트 → serials)이다.
 
 ## 재현
 

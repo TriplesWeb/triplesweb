@@ -51,7 +51,6 @@ class MobilePageTemplatesTest {
         creamObjekt.put("memberHref","/cosmo/objekt/member?name=HaYeon");
         creamObjekt.put("mintCountKnown",false);
         model.put("objekts",List.of(creamObjekt));
-        model.put("polygonMintCaption","발행량 7,193,056개 · Polygon 민트 · tripleS 5,705,174 · ARTMS 1,487,882");
         creamObjekt.put("cardTitle","HaYeon 367Z");
         model.put("cards",List.of(Map.ofEntries(
                 Map.entry("serial","27"), Map.entry("hasSerial",true),

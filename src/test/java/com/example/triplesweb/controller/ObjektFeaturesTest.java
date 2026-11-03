@@ -24,7 +24,7 @@ import static org.hamcrest.Matchers.not;
 
 @WebMvcTest({CosmoController.class, ObjektFeatureController.class})
 @AutoConfigureMockMvc(addFilters = false)
-@Import({MustacheConfig.class, PolygonMintTotals.class})
+@Import({MustacheConfig.class})
 class ObjektFeaturesTest {
     @org.junit.jupiter.api.BeforeEach void decorateVisibleCards() {
         when(market.withIssuedSupply(anyList())).thenAnswer(call -> call.getArgument(0));
@@ -268,13 +268,12 @@ class ObjektFeaturesTest {
             .andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc367z"));
         org.assertj.core.api.Assertions.assertThat(result.getResponse().getContentAsString())
             .contains("data-serial-panel", "objektIssuedCount")
-            .contains("발행량 7,193,056개 · Polygon 민트")
-            .contains("tripleS 5,705,174")
-            .contains("ARTMS 1,487,882")
+            .doesNotContain("objekt-head-mints")
+            .doesNotContain("발행량 7,193,056개")
             .doesNotContain("objektIssuedRanges", "objektIssuedTime").doesNotContain("id=\"objektDetailFullLink\"");
     }
 
-    @Test void polygonMintCaptionDoesNotReplaceCardSupply() throws Exception {
+    @Test void cardSupplyDoesNotShowPolygonPageTotal() throws Exception {
         var item = new java.util.LinkedHashMap<String, Object>();
         for (String field : List.of("frontImage", "backImage", "thumbnailImage", "seasonKey", "classKey", "artist",
                 "createdAt", "searchText", "backgroundColor", "textColor", "seasonColor", "publicKey", "memberHref")) {
@@ -287,7 +286,8 @@ class ObjektFeaturesTest {
         stubCatalog(List.of(item));
         when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
         mvc.perform(get("/cosmo/objekt")).andExpect(status().isOk())
-                .andExpect(content().string(containsString("발행량 7,193,056개 · Polygon 민트")))
+                .andExpect(content().string(not(containsString("objekt-head-mints"))))
+                .andExpect(content().string(not(containsString("발행량 7,193,056개"))))
                 .andExpect(content().string(containsString("objekt-card-supply")))
                 .andExpect(content().string(containsString("발행량 90개")));
     }

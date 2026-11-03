@@ -12,7 +12,7 @@ import java.util.Locale;
 
 /**
  * Polygon-era mint totals from the offline scan summary.
- * Does not read the 1.6GB JSONL and does not replace living card supply.
+ * Does not read the 1.6GB JSONL. Not shown on /cosmo/objekt head; living card supply stays on objekt.top.
  */
 @Service
 public class PolygonMintTotals {
