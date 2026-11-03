@@ -449,9 +449,26 @@
         margin-right: auto;
     }
     .collection-page .collection-search-hero .collection-nickname-form {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
         justify-content: center;
-        width: auto;
+        gap: .55rem;
+        width: max-content;
         max-width: 100%;
+    }
+    .collection-page .collection-search-hero .collection-nickname-form > .ar-submit {
+        order: -1;
+        flex: 0 0 auto;
+        width: auto;
+        min-width: 4.5rem;
+    }
+    .collection-page .collection-search-hero .collection-nickname-form > .ar-search-wrap {
+        flex: 0 1 20rem;
+        width: min(20rem, calc(100% - 5.75rem));
+        max-width: 20rem;
+        min-width: 0;
     }
 }
 .collection-page .collection-nickname-form {
