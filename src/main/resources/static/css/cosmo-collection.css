@@ -311,26 +311,6 @@
         width: auto !important;
         max-width: none;
     }
-    .collection-page .collection-nickname-form.ar-filters {
-        flex-wrap: nowrap !important;
-        overflow: visible;
-        max-width: 100%;
-        min-width: 0;
-    }
-    .collection-page .collection-nickname-form > .ar-search-wrap {
-        flex: 0 1 16rem !important;
-        width: min(16rem, calc(100% - 5.75rem)) !important;
-        max-width: 16rem !important;
-        min-width: 0;
-    }
-    .collection-page .collection-nickname-form > .ar-submit {
-        flex: 0 0 auto !important;
-        width: auto !important;
-        max-width: none;
-        min-width: 4.5rem;
-        padding-left: 1.1rem;
-        padding-right: 1.1rem;
-    }
 }
 .collection-filter {
     display: inline-flex;
@@ -448,6 +428,9 @@
         margin-left: auto;
         margin-right: auto;
     }
+}
+/* PC only: site-mobile stacks this form through 1023px */
+@media (min-width: 1024px) {
     .collection-page .collection-search-hero .collection-nickname-form {
         display: flex;
         flex-direction: row;
