@@ -3,7 +3,7 @@
 
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/objekt-page.css?v=16">
+    <link rel="stylesheet" href="/css/objekt-page.css?v=17">
     <!-- Tailwind CSS 스크립트 -->
     <link rel="stylesheet" href="/css/objekt.css?v=3">
     <link rel="stylesheet" href="/css/objekt-serial.css?v=2">
@@ -20,6 +20,7 @@
                 <p class="objekt-head-kicker">Collection</p>
                 <h2 class="objekt-head-title">오브젝트</h2>
                 <p class="objekt-head-sub">Objekt Archive</p>
+                {{#polygonMintCaption}}<p class="objekt-head-mints">{{polygonMintCaption}}</p>{{/polygonMintCaption}}
             </div>
             <a href="/cosmo/objekt/favorites" class="objekt-fav-link">
                 <span class="material-symbols-outlined text-[1rem]" aria-hidden="true">favorite</span>

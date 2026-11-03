@@ -4,6 +4,7 @@ import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.ObjektMarketDataService;
+import com.example.triplesweb.service.PolygonMintTotals;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektFilterOrder;
 import com.example.triplesweb.util.ObjektLinks;
@@ -41,6 +42,7 @@ public class CosmoController {
     private final ObjektService objektService;
     private final ArtistSnapshotService artistSnapshot;
     private final ObjektMarketDataService marketData;
+    private final PolygonMintTotals polygonMints;
 
     @GetMapping("/objekt")
     public String indexCosmoObjekt(
@@ -87,6 +89,11 @@ public class CosmoController {
         model.addAttribute("hasNextPage", page.hasMore());
         model.addAttribute("nextPage", 1);
         model.addAttribute("objektError", page.error().isBlank() ? null : page.error());
+        PolygonMintTotals.Snapshot polygon = polygonMints.snapshot();
+        model.addAttribute("polygonMintTotal", polygon.total());
+        model.addAttribute("polygonMintTriples", polygon.triples());
+        model.addAttribute("polygonMintArtms", polygon.artms());
+        model.addAttribute("polygonMintCaption", polygon.caption());
 
         return "cosmo/objekt";
     }

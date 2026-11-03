@@ -24,7 +24,7 @@ import static org.hamcrest.Matchers.not;
 
 @WebMvcTest({CosmoController.class, ObjektFeatureController.class})
 @AutoConfigureMockMvc(addFilters = false)
-@Import(MustacheConfig.class)
+@Import({MustacheConfig.class, PolygonMintTotals.class})
 class ObjektFeaturesTest {
     @org.junit.jupiter.api.BeforeEach void decorateVisibleCards() {
         when(market.withIssuedSupply(anyList())).thenAnswer(call -> call.getArgument(0));
@@ -267,7 +267,30 @@ class ObjektFeaturesTest {
         mvc.perform(get("/cosmo/objekt/detail/hayeoncc367z").accept(MediaType.TEXT_HTML))
             .andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc367z"));
         org.assertj.core.api.Assertions.assertThat(result.getResponse().getContentAsString())
-            .contains("data-serial-panel", "objektIssuedCount").doesNotContain("objektIssuedRanges", "objektIssuedTime").doesNotContain("id=\"objektDetailFullLink\"");
+            .contains("data-serial-panel", "objektIssuedCount")
+            .contains("Polygon 민트 7,193,056")
+            .contains("tripleS 5,705,174")
+            .contains("ARTMS 1,487,882")
+            .doesNotContain("발행량 7,193,056개")
+            .doesNotContain("objektIssuedRanges", "objektIssuedTime").doesNotContain("id=\"objektDetailFullLink\"");
+    }
+
+    @Test void polygonMintCaptionDoesNotReplaceCardSupply() throws Exception {
+        var item = new java.util.LinkedHashMap<String, Object>();
+        for (String field : List.of("frontImage", "backImage", "thumbnailImage", "seasonKey", "classKey", "artist",
+                "createdAt", "searchText", "backgroundColor", "textColor", "seasonColor", "publicKey", "memberHref")) {
+            item.put(field, "");
+        }
+        item.putAll(Map.of("id", "uuid", "slug", "few", "collectionId", "Cream02 SeoYeon 367Z", "member", "SeoYeon",
+                "season", "Cream02", "class", "Special", "collectionNo", "367Z", "numberValue", 367));
+        item.put("mintCount", 90L);
+        item.put("mintCountKnown", true);
+        stubCatalog(List.of(item));
+        when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
+        mvc.perform(get("/cosmo/objekt")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("Polygon 민트 7,193,056")))
+                .andExpect(content().string(containsString("발행량 90개")))
+                .andExpect(content().string(not(containsString("발행량 7,193,056개"))));
     }
 
     @Test void ownerResponseDoesNotExposeInternalVerificationFields() throws Exception {
