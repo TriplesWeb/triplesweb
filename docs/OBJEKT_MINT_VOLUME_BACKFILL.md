@@ -106,7 +106,7 @@ Polygon 시대 물량은 Abstract RPC/`start-block=6800000`으로는 복원되�
 | 후보 소스 | 방법 | 비고 |
 | --- | --- | --- |
 | Apollo `polygon` 브랜치 / MEGA 덤프 | 컬렉션별 mint·transfer SQL/CSV | 구조화된 아카이브. 시리얼 복원에 유리 |
-| 로컬 재인덱싱 슬라이스 | `scripts/polygon-objekt-slice.py` + (선택) `cosmo-db` `checkpoint/polygon` | **70_000_000–70_000_100 에서 성공.** 공개 RPC가 32M 옛 로그도 반환. 전체 스캔은 메타데이터가 병목. 실험 기록은 `POLYGON_REINDEX.md` |
+| 로컬 Polygon mint 로그 | `scripts/polygon-objekt-mints.py` | **7,193,056 mint 수집 완료** (tripleS 5,705,174 + ARTMS 1,487,882). 메타데이터 없음. 기록은 `POLYGON_REINDEX.md` |
 | kuiperdog/cosmo-indexer · Nova | Polygon GraphQL·주간 mint 통계 | 호스팅 여부에 의존 |
 | Polygon `eth_getLogs` mint (`from=0x0`) | 구 계약·블록 구간 스캔 | 10k 블록 창. 50k는 HTTP 413. Subsquid 게이트웨이는 API 키 필요 |
 | 커뮤니티 스프레드시트 | one-shot import | provenance 태그 필수 |
@@ -115,7 +115,8 @@ Polygon 시대 물량은 Abstract RPC/`start-block=6800000`으로는 복원되�
 
 1. UI/보드 PR과 분리한다. 대용량 백필이 병합을 막지 않게 한다.
 2. 테이블 + 1차 persist는 `cursor/objekt-mint-snapshot-ae55` 같은 별 브랜치에서 연다.
-3. 2·3차는 아카이브 RPC 또는 덤프가 준비된 뒤 별 PR로 진행한다.
+3. Polygon mint 로그(7,193,056건)는 로컬 JSONL로 준비됐다. 테이블에
+   넣는 일과 living persist는 별 PR로 진행한다.
 
 ## 하지 않을 것
 
