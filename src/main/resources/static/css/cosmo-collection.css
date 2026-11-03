@@ -442,7 +442,6 @@
         max-width: 100%;
     }
     .collection-page .collection-search-hero .collection-nickname-form > .ar-submit {
-        order: -1;
         flex: 0 0 auto;
         width: auto;
         min-width: 4.5rem;
