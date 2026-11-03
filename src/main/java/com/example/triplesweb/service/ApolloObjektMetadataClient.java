@@ -2,6 +2,7 @@ package com.example.triplesweb.service;
 
 import com.example.triplesweb.infra.GzipRestClients;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
@@ -56,6 +57,7 @@ public class ApolloObjektMetadataClient {
     private final boolean enabled;
     private final LinkedHashMap<String, Entry> cache = new LinkedHashMap<>(16, .75f, true);
 
+    @Autowired
     public ApolloObjektMetadataClient(
             @Value("${apollo.api.base-url:https://apollo.cafe}") String baseUrl,
             @Value("${apollo.descriptions.enabled:true}") boolean enabled) {
