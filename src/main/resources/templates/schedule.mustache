@@ -4,7 +4,7 @@
     
     
 <link rel="stylesheet" href="/css/v2-pages.css?v=1">
-</head><body class="v2-body site-page dark selection:bg-brand selection:text-black">
+</head><body class="v2-body site-page dark">
     <div class="ambient-glow-container" aria-hidden="true">
         <div class="glow-accent-1"></div>
         <div class="glow-accent-2"></div>
@@ -17,13 +17,13 @@
             <div class="schedule-page-header__body">
                 <div class="mb-2 flex items-center gap-2">
                     <span class="rounded border border-brand/30 bg-brand/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-brand">OFFICIAL SCHEDULE</span>
-                    <span class="font-mono text-xs text-[#b9cac4]">tripleS TIMELINE</span>
+                    <span class="font-mono text-xs">tripleS TIMELINE</span>
                 </div>
-                <h1 class="flex items-center gap-3 font-sora text-2xl font-extrabold text-white sm:text-3xl">
-                    <span class="h-2.5 w-2.5 animate-pulse rounded-full bg-brand shadow-[0_0_10px_#00f5d4]"></span>
+                <h1 class="flex items-center gap-3 font-sora text-2xl font-extrabold sm:text-3xl">
+                    <span class="h-2.5 w-2.5 animate-pulse rounded-full bg-brand"></span>
                     공식 스케줄
                 </h1>
-                {{#selectedArtist}}<p class="mt-2 text-sm text-[#b9cac4]">{{selectedArtist}}만 보는 중입니다. <a class="text-[#00f5d4]" href="/schedule">전체 일정</a></p>{{/selectedArtist}}
+                {{#selectedArtist}}<p class="mt-2 text-sm">{{selectedArtist}}만 보는 중입니다. <a class="" href="/schedule">전체 일정</a></p>{{/selectedArtist}}
             </div>
 
             {{#isAdmin}}
@@ -43,15 +43,15 @@
 
             <aside class="space-y-5 lg:col-span-4">
                 <section class="schedule-panel space-y-4">
-                    <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                    <div class="flex items-center justify-between border-b pb-3">
                         <div>
                             <span class="mb-1 block font-mono text-[10px] uppercase tracking-wider text-brand">SELECTED DATE</span>
-                            <h2 id="sideSelectedDate" class="text-base font-bold text-white">날짜를 선택하세요</h2>
+                            <h2 id="sideSelectedDate" class="text-base font-bold">날짜를 선택하세요</h2>
                         </div>
                         <button type="button" id="showTodayButton" class="md-btn md-btn-tonal btn-custom-secondary !px-3 !py-1.5 text-xs">오늘</button>
                     </div>
                     <div id="sideScheduleDetail" class="space-y-3" aria-live="polite">
-                        <p class="py-4 text-sm text-[#b9cac4]">캘린더에서 날짜를 선택하면 해당 날짜의 일정이 표시됩니다.</p>
+                        <p class="py-4 text-sm">캘린더에서 날짜를 선택하면 해당 날짜의 일정이 표시됩니다.</p>
                     </div>
                 </section>
             </aside>
@@ -73,7 +73,7 @@
                     <div class="schedule-view-card">
                         <span class="schedule-view-label">일정 제목</span>
                         <span id="modalScheduleCategory" class="schedule-category-label"></span>
-                        <h3 id="modalScheduleTitle" class="text-lg font-bold leading-snug text-white"></h3>
+                        <h3 id="modalScheduleTitle" class="text-lg font-bold leading-snug"></h3>
                     </div>
                     <div class="schedule-view-dates">
                         <div class="schedule-view-date">
@@ -82,7 +82,7 @@
                         </div>
                         <div class="schedule-view-date">
                             <span class="schedule-view-label">종료</span>
-                            <strong id="modalScheduleEnd" class="text-white"></strong>
+                            <strong id="modalScheduleEnd" class=""></strong>
                         </div>
                     </div>
                 </div>

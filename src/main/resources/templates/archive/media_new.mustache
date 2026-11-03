@@ -8,66 +8,16 @@
 
     <title>트리플에스 커뮤니티 - 새 미디어 등록</title>
 
-    <style>
-        body.other-page {
-            background-color: #0d0e12;
-            color: #e3e2e8;
-            font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        .container { max-width: 48rem; }
-        .site-field, .site-select, .form-control, .form-select {
-            background-color: rgba(26, 27, 32, 0.7);
-            border: 1px solid rgba(58, 74, 70, 0.4);
-            color: #e3e2e8;
-            border-radius: 0.75rem;
-            padding: 0.75rem 1rem;
-            font-size: 0.95rem;
-        }
-        .site-field:focus, .site-select:focus, .form-control:focus, .form-select:focus {
-            background-color: rgba(26, 27, 32, 0.9);
-            border-color: #00f5d4;
-            color: #e3e2e8;
-            box-shadow: 0 0 0 3px rgba(0, 245, 212, 0.15);
-        }
-        .site-label, .form-label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #b9cac4;
-            margin-bottom: 0.5rem;
-        }
-        .member-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: .35rem;
-            padding: .4rem .75rem;
-            border: 1px solid rgba(58, 74, 70, .55);
-            border-radius: 999px;
-            background: rgba(13, 14, 18, .55);
-            color: #b9cac4;
-            font-size: .8rem;
-            cursor: pointer;
-            user-select: none;
-        }
-        .member-chip:has(input:checked) {
-            border-color: rgba(0, 245, 212, .55);
-            background: rgba(0, 245, 212, .12);
-            color: #00f5d4;
-            font-weight: 700;
-        }
-        .member-chip input { accent-color: #00f5d4; }
-    </style>
+    
 <link rel="stylesheet" href="/css/v2-pages.css?v=1">
 </head><body class="v2-body site-page other-page">
 
 {{>layout/v2/header}}
 
 <div class="container py-5 flex-1">
-    <div class="bg-[rgba(26,27,32,0.7)] border border-[rgba(58,74,70,0.3)] rounded-2xl p-6 lg:p-8 backdrop-blur-xl shadow-2xl">
-        <h2 class="text-2xl font-bold tracking-tight text-[#e3e2e8] mb-6 flex items-center gap-2">
-            <span class="material-symbols-outlined text-[#00f5d4]">add_box</span> 새 유튜브 영상 등록
+    <div class="bg-[rgba(26,27,32,0.7)] border border-[rgba(58,74,70,0.3)] rounded-2xl p-6 lg:p-8">
+        <h2 class="text-2xl font-bold tracking-tight mb-6 flex items-center gap-2">
+            <span class="material-symbols-outlined">add_box</span> 새 유튜브 영상 등록
         </h2>
 
         <form method="post" action="/media_new" class="site-row" id="mediaNewForm">
@@ -86,14 +36,14 @@
                 <label class="site-label">유튜브 URL 또는 ID</label>
                 <div class="input-group">
                     <input id="ytUrl" name="youtubeId" class="site-field" value="{{form.youtubeId}}" placeholder="https://youtu.be/... 또는 영상 ID" required>
-                    <button class="px-4 bg-[#00f5d4]/10 border border-[#00f5d4]/40 text-[#00f5d4] hover:bg-[#00f5d4]/20 font-bold text-sm rounded-r-xl transition-all" type="button" id="btnFetch">정보 가져오기</button>
+                    <button class="px-4 border font-bold text-sm rounded-r-xl transition-all" type="button" id="btnFetch">정보 가져오기</button>
                 </div>
-                <p id="ytFetchStatus" class="mt-1 text-xs text-[#8b9b95]" aria-live="polite"></p>
+                <p id="ytFetchStatus" class="mt-1 text-xs" aria-live="polite"></p>
             </div>
 
             <div class="site-col">
                 <label class="site-label">출연 멤버</label>
-                <p class="mb-2 text-xs text-[#8b9b95]">사진을 눌러 출연 멤버를 고르세요. 목록에 없는 이름은 아래에 쉼표로 추가할 수 있습니다.</p>
+                <p class="mb-2 text-xs">사진을 눌러 출연 멤버를 고르세요. 목록에 없는 이름은 아래에 쉼표로 추가할 수 있습니다.</p>
                 <div class="member-portrait-picker is-compact" id="media-member-picker" role="group" aria-label="출연 멤버">
                     {{>partials/member-portrait-picker}}
                 </div>
@@ -125,8 +75,8 @@
             </div>
 
             <div class="col-12 flex items-center justify-end gap-3 pt-4 border-t border-[rgba(58,74,70,0.3)]">
-                <a href="/media?tab={{tab}}" class="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-[rgba(58,74,70,0.4)] text-[#b9cac4] text-sm font-medium transition-all no-underline">취소</a>
-                <button type="submit" class="px-6 py-2.5 rounded-xl bg-[#00f5d4] text-[#0d0e12] font-bold text-sm hover:opacity-90 transition-all shadow-lg">저장하기</button>
+                <a href="/media?tab={{tab}}" class="px-5 py-2.5 rounded-xl border border-[rgba(58,74,70,0.4)] text-sm font-medium transition-all no-underline">취소</a>
+                <button type="submit" class="px-6 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg">저장하기</button>
             </div>
         </form>
     </div>
@@ -177,7 +127,7 @@
       if (d.thumbnail) {
         document.getElementById('ytThumb').innerHTML = `
           <div class="p-3 bg-[rgba(13,14,18,0.5)] border border-[rgba(58,74,70,0.3)] rounded-xl inline-block">
-            <p class="text-xs text-[#b9cac4] mb-2 font-medium">썸네일 미리보기</p>
+            <p class="text-xs mb-2 font-medium">썸네일 미리보기</p>
             <img src="${d.thumbnail}" style="max-width:240px;border-radius:8px;border:1px solid rgba(58,74,70,0.4)" alt="썸네일">
           </div>`;
       }

@@ -6,147 +6,7 @@
 
     <title>트리플에스 커뮤니티 - 트리플에스 미디어</title>
 
-    <style>
-        .site-media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 1rem; }
-        .site-media-card { min-width: 0; }
-
-        .container {
-            max-width: 80rem;
-            background: transparent;
-        }
-
-        /* 탭 스타일 */
-        .media-tab {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-        .media-tab a {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 8px 20px;
-            height: 42px;
-            border-radius: 9999px;
-            border: 1px solid rgba(58, 74, 70, 0.4);
-            background-color: rgba(26, 27, 32, 0.7);
-            color: #b9cac4;
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            backdrop-filter: blur(12px);
-            transition: all 0.2s ease;
-        }
-        .media-tab a:hover {
-            border-color: rgba(0, 245, 212, 0.5);
-            color: #00f5d4;
-            background-color: rgba(26, 27, 32, 0.9);
-        }
-        .media-tab a.active {
-            border-color: #00f5d4;
-            background-color: rgba(0, 245, 212, 0.1);
-            color: #00f5d4;
-            font-weight: 700;
-        }
-
-        /* 카드 박스 스타일 */
-        .video-card-box {
-            background-color: rgba(26, 27, 32, 0.7);
-            border: 1px solid rgba(58, 74, 70, 0.3);
-            border-radius: 1rem;
-            padding: 0.75rem;
-            backdrop-filter: blur(12px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 100%;
-            transition: transform 0.2s ease, border-color 0.2s ease;
-        }
-        .video-card-box:hover {
-            border-color: rgba(0, 245, 212, 0.4);
-            transform: translateY(-2px);
-        }
-
-        .video-thumb {
-            width: 100%;
-            padding-top: 56.25%;
-            position: relative;
-            background: #0d0e12;
-            border-radius: 0.75rem;
-            overflow: hidden;
-            border: 1px solid rgba(58, 74, 70, 0.2);
-        }
-        .video-thumb img {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .badge-duration {
-            position: absolute;
-            right: 8px;
-            bottom: 8px;
-            background: rgba(13, 14, 18, 0.8);
-            border: 1px solid rgba(58, 74, 70, 0.4);
-            color: #00f5d4;
-            font-family: 'JetBrains Mono', monospace;
-            padding: 2px 6px;
-            border-radius: 6px;
-            font-size: 0.75rem;
-        }
-
-        .video-title {
-            font-size: 0.95rem;
-            font-weight: 600;
-            margin-top: 0.75rem;
-            color: #e3e2e8;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-        }
-
-        .video-meta {
-            font-size: 0.8rem;
-            color: #b9cac4;
-            margin-top: 0.25rem;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .grid-gap {
-            row-gap: 1.5rem;
-        }
-
-        /* 페이지네이션 스타일 */
-        .pagination {
-            background: transparent;
-        }
-        .pagination .page-link {
-            background-color: rgba(26, 27, 32, 0.7);
-            border: 1px solid rgba(58, 74, 70, 0.3);
-            color: #b9cac4;
-            margin: 0 3px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-        }
-        .pagination .page-link:hover {
-            background-color: rgba(0, 245, 212, 0.1);
-            color: #00f5d4;
-            border-color: rgba(0, 245, 212, 0.3);
-        }
-        .pagination .page-item.active .page-link {
-            background-color: #00f5d4;
-            border-color: #00f5d4;
-            color: #0d0e12;
-            font-weight: bold;
-        }
-    </style>
+    
 <link rel="stylesheet" href="/css/v2-pages.css?v=1">
 </head><body class="v2-body site-page">
 
@@ -154,7 +14,7 @@
 
 <div class="container py-4 flex-1">
     <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold tracking-tight text-[#e3e2e8] m-0">공식 미디어</h2>
+        <h2 class="text-2xl font-bold tracking-tight m-0">공식 미디어</h2>
         <a href="/media_new?tab={{currentTab}}" class="site-btn site-btn--primary btn-glow" data-admin-only>
             <span class="material-symbols-outlined">add_box</span>
             <span>미디어 추가</span>
@@ -172,14 +32,14 @@
 
     <form class="mb-4 flex flex-wrap items-center justify-center gap-3" method="get" action="/media">
         <input type="hidden" name="tab" value="{{currentTab}}">
-        <label class="text-sm text-[#b9cac4]" for="artist-filter">출연 멤버</label>
+        <label class="text-sm" for="artist-filter">출연 멤버</label>
         <select id="artist-filter" name="artist" class="site-field" style="width:auto;min-width:9rem;">
             <option value="">전체 멤버</option>
             {{#artistOptions}}<option value="{{name}}" {{#selected}}selected{{/selected}}>{{name}}</option>{{/artistOptions}}
         </select>
         {{>partials/date-range-filter}}
         <button type="submit" class="ar-submit">필터 적용</button>
-        {{#selectedArtist}}<a class="text-xs text-slate-300" href="/media?tab={{currentTab}}">필터 초기화</a>{{/selectedArtist}}
+        {{#selectedArtist}}<a class="text-xs" href="/media?tab={{currentTab}}">필터 초기화</a>{{/selectedArtist}}
     </form>
 
     <!-- 영상 그리드 리스트 -->
@@ -204,7 +64,7 @@
                     <form method="post" action="/media_delete" data-admin-only data-admin-fetch data-confirm="이 영상을 삭제하시겠습니까? 삭제하면 되돌릴 수 없습니다." class="mt-3">
                         <input type="hidden" name="tab" value="{{currentTab}}">
                         <input type="hidden" name="youtubeId" value="{{youtubeId}}">
-                        <button type="submit" class="w-full py-1.5 px-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-xs font-semibold transition-all">삭제</button>
+                        <button type="submit" class="w-full py-1.5 px-3 rounded-lg bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-xs font-semibold transition-all">삭제</button>
                     </form>
                 </div>
             </div>
@@ -212,8 +72,8 @@
     </div>
 
     {{^videos}}
-        <div class="text-center text-[#b9cac4] py-20">
-            <span class="material-symbols-outlined text-5xl mb-3 text-[#3a4a46]">videocam_off</span>
+        <div class="text-center py-20">
+            <span class="material-symbols-outlined text-5xl mb-3">videocam_off</span>
             <p class="font-medium">등록된 영상이 없습니다.</p>
         </div>
     {{/videos}}

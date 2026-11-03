@@ -2,40 +2,40 @@
 
     <title>{{status}} · {{title}} - 트리플에스 커뮤니티</title>
 <link rel="stylesheet" href="/css/v2-pages.css?v=1">
-</head><body class="v2-body site-page bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
+</head><body class="v2-body site-page min-h-screen">
 {{>layout/v2/header}}
 
 <main class="main-content max-w-xl mx-auto px-4 py-16">
-    <p class="text-xs font-mono tracking-widest text-[#00f5d4] mb-3">ERROR {{status}}</p>
+    <p class="text-xs font-mono tracking-widest mb-3">ERROR {{status}}</p>
     <h1 class="text-2xl font-bold tracking-tight mb-3">{{title}}</h1>
-    <p class="text-sm text-[#b9cac4] leading-relaxed mb-6">{{description}}</p>
+    <p class="text-sm leading-relaxed mb-6">{{description}}</p>
 
-    <dl class="rounded-xl border border-[#3a4a46]/40 bg-[#16181f]/80 px-4 py-3 text-xs space-y-2 mb-8">
+    <dl class="rounded-xl border px-4 py-3 text-xs space-y-2 mb-8">
         <div class="flex gap-3">
-            <dt class="shrink-0 text-[#b9cac4]/70 w-16">상태</dt>
-            <dd class="text-[#e3e2e8] mb-0">{{status}} {{error}}</dd>
+            <dt class="shrink-0 w-16">상태</dt>
+            <dd class="mb-0">{{status}} {{error}}</dd>
         </div>
         {{#hasPath}}
         <div class="flex gap-3">
-            <dt class="shrink-0 text-[#b9cac4]/70 w-16">경로</dt>
-            <dd class="text-[#e3e2e8] break-all mb-0 font-mono">{{path}}</dd>
+            <dt class="shrink-0 w-16">경로</dt>
+            <dd class="break-all mb-0 font-mono">{{path}}</dd>
         </div>
         {{/hasPath}}
         {{#hasDetail}}
         <div class="flex gap-3">
-            <dt class="shrink-0 text-[#b9cac4]/70 w-16">상세</dt>
-            <dd class="text-[#b9cac4] break-all mb-0">{{detail}}</dd>
+            <dt class="shrink-0 w-16">상세</dt>
+            <dd class="break-all mb-0">{{detail}}</dd>
         </div>
         {{/hasDetail}}
     </dl>
 
     <div class="flex flex-wrap items-center gap-3">
         <button type="button" id="error-go-back"
-                class="inline-flex items-center gap-1.5 rounded-lg border border-[#00f5d4]/40 bg-transparent px-4 py-2 text-sm text-[#00f5d4] hover:bg-[#00f5d4]/10 cursor-pointer">
+                class="inline-flex items-center gap-1.5 rounded-lg border bg-transparent px-4 py-2 text-sm cursor-pointer">
             <span class="material-symbols-outlined text-base">arrow_back</span>
             이전 페이지
         </button>
-        <a href="/" class="inline-flex items-center gap-1.5 rounded-lg border border-[#3a4a46]/50 px-4 py-2 text-sm text-[#b9cac4] no-underline hover:text-[#00f5d4] hover:border-[#00f5d4]/40">
+        <a href="/" class="inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm no-underline">
             <span class="material-symbols-outlined text-base">home</span>
             홈으로
         </a>

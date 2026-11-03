@@ -12,10 +12,10 @@
     <script src="/js/objekt-serial.js?v=2" defer></script>
     <script src="/js/objekt-issued.js?v=3" defer></script>
 <link rel="stylesheet" href="/css/v2-pages.css?v=1">
-</head><body class="v2-body site-page bg-[#0d0e12] text-[#e3e2e8] min-h-screen flex flex-col gap-3">
+</head><body class="v2-body site-page min-h-screen flex flex-col gap-3">
 {{>layout/v2/header}}
 <main class="main-content w-full max-w-[1440px] mx-auto px-4 sm:px-6 py-6 mb-auto">
-    <section class="card-box w-full bg-[#16181f]/85 backdrop-blur-xl border border-[#303646]/80 rounded-2xl p-4 sm:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)] relative z-30">
+    <section class="card-box w-full border rounded-2xl p-4 sm:p-6 relative z-30">
         <div class="objekt-head">
             <div class="objekt-head-copy">
                 <p class="objekt-head-kicker">Collection</p>
@@ -181,33 +181,33 @@
     </section>
 
     <div class="mt-5 flex items-center justify-between gap-3 px-1">
-        <p id="objekt-result-summary" class="text-sm text-slate-400"
+        <p id="objekt-result-summary" class="text-sm"
            data-result-count="{{objektCount}}" data-all-count="{{objektAllCount}}" data-loaded="{{objektPageCount}}">
-            검색 결과 <strong class="text-[#00f5d4]">{{objektCount}}</strong>개
-            <span class="text-slate-500">(전체 <span id="objekt-all-count">{{objektAllCount}}</span>개 중 · <span id="objekt-loaded-count">{{objektPageCount}}</span>개 표시)</span>
+            검색 결과 <strong class="">{{objektCount}}</strong>개
+            <span class="">(전체 <span id="objekt-all-count">{{objektAllCount}}</span>개 중 · <span id="objekt-loaded-count">{{objektPageCount}}</span>개 표시)</span>
         </p>
     </div>
     {{#objektError}}
     <div class="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{{objektError}}</div>
     {{/objektError}}
-    <div id="objekt-empty" class="hidden mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-10 text-center text-slate-400">검색 조건에 맞는 오브젝트가 없습니다.</div>
+    <div id="objekt-empty" class="hidden mt-8 rounded-2xl border p-10 text-center">검색 조건에 맞는 오브젝트가 없습니다.</div>
     <div id="objekt-card-grid" class="objekt-card-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 py-2 mt-3">
         {{#objekts}}
         <article class="objekt-card objekt-item group relative border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
                  data-objekt-key="{{publicKey}}"
                  data-season="{{seasonKey}}" data-class="{{classKey}}" data-artist="{{artist}}" data-collection-no="{{collectionNo}}"
                  data-number="{{numberValue}}" data-date="{{createdAt}}" data-member="{{member}}" data-search="{{searchText}}">
-            <button type="button" class="objekt-open-detail relative block aspect-[2/3] w-full overflow-hidden bg-[#1c1f2e]" aria-label="{{collectionId}} 상세 보기">
+            <button type="button" class="objekt-open-detail relative block aspect-[2/3] w-full overflow-hidden" aria-label="{{collectionId}} 상세 보기">
                 <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" class="objekt-image h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null;this.src='{{frontImage}}';">
-                <span class="absolute left-2 top-2 rounded-md border border-white/15 bg-black/65 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur">{{class}}</span>
-                <span class="objekt-card-season absolute right-2 top-2 rounded-md px-2 py-1 text-[10px] font-bold text-[#071513]" style="background:{{seasonColor}}">{{season}}</span>
+                <span class="absolute left-2 top-2 rounded-md border px-2 py-1 text-[10px] font-semibold">{{class}}</span>
+                <span class="objekt-card-season absolute right-2 top-2 rounded-md px-2 py-1 text-[10px] font-bold" style="background:{{seasonColor}}">{{season}}</span>
             </button>
             <div class="p-3">
-                <a href="/cosmo/objekt/detail/{{publicKey}}" class="objekt-detail-link block truncate text-sm font-semibold text-slate-100 hover:text-[#00f5d4]" title="{{collectionId}}">{{collectionId}}</a>
-                <div class="mt-1 flex items-center justify-between gap-2 text-xs text-slate-400">
-                    <a href="{{memberHref}}" class="objekt-member-chip truncate text-teal-200 hover:underline">{{member}}</a><span class="shrink-0 font-mono">{{collectionNo}}</span>
+                <a href="/cosmo/objekt/detail/{{publicKey}}" class="objekt-detail-link block truncate text-sm font-semibold" title="{{collectionId}}">{{collectionId}}</a>
+                <div class="mt-1 flex items-center justify-between gap-2 text-xs">
+                    <a href="{{memberHref}}" class="objekt-member-chip truncate hover:underline">{{member}}</a><span class="shrink-0 font-mono">{{collectionNo}}</span>
                 </div>
-                <p class="mt-2 text-xs text-slate-300" data-supply-count>{{#mintCountKnown}}발행량 {{mintCount}}개{{/mintCountKnown}}{{^mintCountKnown}}발행량 확인 중{{/mintCountKnown}}</p>
+                <p class="mt-2 text-xs" data-supply-count>{{#mintCountKnown}}발행량 {{mintCount}}개{{/mintCountKnown}}{{^mintCountKnown}}발행량 확인 중{{/mintCountKnown}}</p>
             </div>
         </article>
         {{/objekts}}
@@ -215,8 +215,8 @@
     <div id="objekt-scroll-sentinel" class="flex flex-col items-center justify-center gap-2 py-8" aria-live="polite"
          data-has-more="{{#hasNextPage}}true{{/hasNextPage}}{{^hasNextPage}}false{{/hasNextPage}}"
          data-next-page="{{nextPage}}">
-        <p id="objekt-scroll-status" class="text-sm text-slate-500">{{#hasNextPage}}스크롤하면 더 불러옵니다{{/hasNextPage}}{{^hasNextPage}}{{#objektCount}}모두 불러왔습니다{{/objektCount}}{{/hasNextPage}}</p>
-        <div id="objekt-scroll-spinner" class="hidden h-6 w-6 animate-spin rounded-full border-2 border-[#00f5d4]/30 border-t-[#00f5d4]" aria-hidden="true"></div>
+        <p id="objekt-scroll-status" class="text-sm">{{#hasNextPage}}스크롤하면 더 불러옵니다{{/hasNextPage}}{{^hasNextPage}}{{#objektCount}}모두 불러왔습니다{{/objektCount}}{{/hasNextPage}}</p>
+        <div id="objekt-scroll-spinner" class="hidden h-6 w-6 animate-spin rounded-full border-2 border-t-[#00f5d4]" aria-hidden="true"></div>
     </div>
 </main>
 

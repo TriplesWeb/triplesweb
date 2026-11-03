@@ -16,7 +16,7 @@
             <div class="mb-2 flex items-center justify-between flex-wrap gap-3">
                 <div>
                     <label class="form-label inline-block mr-2 mb-0" style="color: #b9cac4; font-size: 0.85rem; font-weight: 500; margin-right: 0.5rem;">작성자:</label>
-                    <span class="text-white font-medium" style="font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: #00f5d4 !important;">{{#userId}}{{userId}}{{/userId}}{{^userId}}익명{{/userId}}</span>
+                    <span class="font-medium" style="font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: #00f5d4 !important;">{{#userId}}{{userId}}{{/userId}}{{^userId}}익명{{/userId}}</span>
                     <input type="hidden"
                            id="new-comment-userId"
                            value="{{#userId}}{{userId}}{{/userId}}{{^userId}}익명{{/userId}}"

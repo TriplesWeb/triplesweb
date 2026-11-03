@@ -1,6 +1,6 @@
 <div id="comments-list" class="mt-4">
-    <h4 class="text-white font-sans mb-3 flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-[#00f5d4] shadow-[0_0_6px_#00f5d4]"></span>
+    <h4 class="font-sans mb-3 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full"></span>
         댓글 목록
     </h4>
 
@@ -8,12 +8,12 @@
         <!-- 댓글 카드 영역 -->
         <div class="card m-0 mb-3 shadow-sm comment-card" id="comments-{{id}}" style="background: rgba(26, 27, 32, 0.7); border: 1px solid rgba(58, 74, 70, 0.3); border-radius: 1rem; backdrop-filter: blur(12px);">
             <div class="card-header d-flex justify-content-between align-items-center" style="background: transparent; border-bottom: 1px solid rgba(58, 74, 70, 0.3); padding: 1rem 1.25rem;">
-                <span class="text-[#00f5d4] font-semibold text-sm font-['JetBrains_Mono']">{{userId}}</span>
+                <span class="font-semibold text-sm font-['JetBrains_Mono']">{{userId}}</span>
             </div>
 
             <div class="card-body" style="padding: 1.25rem;">
                 <!-- 1. 평소에 보이는 댓글 내용 뷰 영역 -->
-                <div class="comment-body-view text-[#e3e2e8]" id="comment-view-{{id}}" style="word-break: break-all;">
+                <div class="comment-body-view" id="comment-view-{{id}}" style="word-break: break-all;">
                     {{body}}
                 </div>
                 {{#isOwner}}
@@ -46,7 +46,7 @@
 
                 <!-- 3. 삭제 버튼을 누르면 나타나는 인라인 삭제 확인 영역 (초기 숨김) -->
                 <div class="comment-delete-form-area hidden mt-2 p-3 rounded-xl" id="comment-delete-area-{{id}}" style="background-color: rgba(13, 14, 18, 0.6); border: 1px solid rgba(255, 180, 171, 0.3);">
-                    <p class="text-[#b9cac4] text-sm mb-3">댓글을 정말 삭제하시겠습니까?</p>
+                    <p class="text-sm mb-3">댓글을 정말 삭제하시겠습니까?</p>
                     <div class="text-end flex justify-end gap-2">
                         <button type="button" class="btn btn-custom-secondary comment-cancel-delete-btn text-xs" data-comment-id="{{id}}">취소</button>
                         <button type="button" class="btn btn-custom-danger comment-delete-btn text-xs" data-comment-id="{{id}}" data-article-id="{{articleId}}">삭제 확인</button>
@@ -58,7 +58,7 @@
 
     {{^commentDtos}}
         <div class="card p-4 text-center" style="background: rgba(26, 27, 32, 0.7); border: 1px solid rgba(58, 74, 70, 0.3); border-radius: 1rem;">
-            <p class="text-[#b9cac4] m-0">등록된 댓글이 없습니다.</p>
+            <p class="m-0">등록된 댓글이 없습니다.</p>
         </div>
     {{/commentDtos}}
 </div>

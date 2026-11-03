@@ -5,21 +5,21 @@
          data-trade-split="{{#isTradeObjektSplit}}true{{/isTradeObjektSplit}}{{^isTradeObjektSplit}}false{{/isTradeObjektSplit}}">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-            <h3 class="font-semibold text-teal-200">교환/거래 오브젝트</h3>
+            <h3 class="font-semibold">교환/거래 오브젝트</h3>
             {{#isTradeObjektSplit}}
-            <p class="mt-1 text-xs text-slate-400">Have와 Want를 각각 1개 이상 선택하세요. 합쳐 최대 20개.</p>
+            <p class="mt-1 text-xs">Have와 Want를 각각 1개 이상 선택하세요. 합쳐 최대 20개.</p>
             {{/isTradeObjektSplit}}
             {{^isTradeObjektSplit}}
-            <p class="mt-1 text-xs text-slate-400">최대 20개까지 연결할 수 있습니다.</p>
+            <p class="mt-1 text-xs">최대 20개까지 연결할 수 있습니다.</p>
             {{/isTradeObjektSplit}}
         </div>
         <button type="button" id="objektPickerToggle"
-                class="inline-flex items-center gap-1.5 rounded-full border border-teal-300/50 bg-teal-400/10 px-4 py-2 text-xs font-semibold text-teal-100 hover:bg-teal-400/20"
+                class="inline-flex items-center gap-1.5 rounded-full border border-teal-300/50 bg-teal-400/10 px-4 py-2 text-xs font-semibold hover:bg-teal-400/20"
                 aria-expanded="false" aria-controls="objektPickerPanel">
             오브젝트 선택
         </button>
     </div>
-    <p id="objektSelectedSummary" class="text-xs text-slate-400" aria-live="polite">선택된 오브젝트 0개</p>
+    <p id="objektSelectedSummary" class="text-xs" aria-live="polite">선택된 오브젝트 0개</p>
 
     {{#isTradeObjektSplit}}
     <div class="objekt-trade-zones" aria-label="Have와 Want 선택 구역">
@@ -67,7 +67,7 @@
             <button type="button" id="objektSideWant" class="objekt-side-btn" data-side="want" aria-pressed="false" disabled>Want에 담기</button>
         </div>
         {{/isTradeObjektSplit}}
-        <p class="text-xs text-slate-400">멤버·시즌·클래스로 필터하거나 검색한 뒤 체크하세요.</p>
+        <p class="text-xs">멤버·시즌·클래스로 필터하거나 검색한 뒤 체크하세요.</p>
 
         <div class="objekt-picker-filter-bar">
             <div class="objekt-picker-filter">
@@ -124,9 +124,9 @@
         </div>
         <div id="objektOptionsList" class="grid max-h-72 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-4"></div>
         <div class="mt-1 flex flex-wrap items-center justify-between gap-2">
-            <p id="objektPickerStatus" class="text-xs text-slate-400" aria-live="polite">오브젝트를 불러오는 중...</p>
+            <p id="objektPickerStatus" class="text-xs" aria-live="polite">오브젝트를 불러오는 중...</p>
             <button id="loadMoreObjekts" type="button"
-                    class="rounded-full border border-teal-300/40 px-3 py-1.5 text-[11px] font-semibold text-teal-200 hover:bg-teal-300/10">
+                    class="rounded-full border border-teal-300/40 px-3 py-1.5 text-[11px] font-semibold hover:bg-teal-300/10">
                 오브젝트 더 보기
             </button>
         </div>

@@ -3,14 +3,14 @@
 
     <title>트리플에스 커뮤니티 - 트리플에스 디멘션</title>
 <link rel="stylesheet" href="/css/v2-pages.css?v=1">
-</head><body class="v2-body site-page bg-[#0d0e12] text-[#e3e2e8] min-h-screen about-admin-page">
+</head><body class="v2-body site-page min-h-screen about-admin-page">
 {{>layout/v2/header}}
 
 <main class="main-content w-full max-w-7xl mx-auto px-4 py-8 min-w-0">
-    <div class="card-box bg-[#16181f]/80 backdrop-blur-md border border-[#3a4a46]/30 rounded-2xl p-6 shadow-xl min-w-0">
+    <div class="card-box border rounded-2xl p-6 min-w-0">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-            <h2 class="text-2xl font-bold text-[#e3e2e8] flex items-center gap-2 m-0">
-                <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4]"></span>트리플에스 디멘션
+            <h2 class="text-2xl font-bold flex items-center gap-2 m-0">
+                <span class="w-2.5 h-2.5 rounded-full"></span>트리플에스 디멘션
             </h2>
             <div class="flex flex-wrap items-center gap-2 shrink-0">
                 <button type="button" id="unitAddBtn" class="about-mode-btn about-admin-only is-active">유닛 (디멘션) 추가</button>
@@ -30,7 +30,7 @@
             </div>
         </div>
         {{^unit}}
-        <p class="text-sm text-[#b9cac4]/70 py-8 text-center" role="status">등록된 디멘션이 없습니다.</p>
+        <p class="text-sm py-8 text-center" role="status">등록된 디멘션이 없습니다.</p>
         {{/unit}}
 
         <div class="tab-content mt-6" id="unitTabContent">
@@ -38,46 +38,46 @@
                 <div class="tab-pane hidden" id="unit-{{unitId}}">
                     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                         <div class="lg:col-span-4">
-                            <div class="relative w-full rounded-2xl overflow-hidden border border-[#3a4a46]/40 bg-black/50 shadow-inner">
+                            <div class="relative w-full rounded-2xl overflow-hidden border shadow-inner">
                                 <img data-unit-src="{{displayUnitImage}}" alt="{{unitName}}" class="block w-full h-auto object-contain">
                             </div>
                         </div>
                         <div class="lg:col-span-8 space-y-6">
-                            <div class="border-b border-[#3a4a46]/30 pb-4 flex flex-wrap items-center gap-2">
-                                <span class="w-2.5 h-2.5 inline-block rounded-full bg-[#00f5d4]"></span>
-                                <h3 class="text-2xl sm:text-3xl font-extrabold text-[#e3e2e8] tracking-tight m-0">{{unitName}}</h3>
-                                <span class="text-sm font-mono text-[#b9cac4]">{{smallName}}</span>
+                            <div class="border-b pb-4 flex flex-wrap items-center gap-2">
+                                <span class="w-2.5 h-2.5 inline-block rounded-full"></span>
+                                <h3 class="text-2xl sm:text-3xl font-extrabold tracking-tight m-0">{{unitName}}</h3>
+                                <span class="text-sm font-mono">{{smallName}}</span>
                                 <button type="button" class="about-mode-btn about-edit-inline is-active ml-auto" hidden data-unit-edit="{{unitId}}">수정</button>
                             </div>
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div class="bg-white/5 border border-[#3a4a46]/30 rounded-xl p-3.5 flex items-center justify-between">
-                                    <span class="text-xs font-semibold text-[#b9cac4]">결성일</span>
-                                    <span class="text-sm font-medium text-[#e3e2e8] font-mono">{{formationDate}}</span>
+                                <div class="border rounded-xl p-3.5 flex items-center justify-between">
+                                    <span class="text-xs font-semibold">결성일</span>
+                                    <span class="text-sm font-medium font-mono">{{formationDate}}</span>
                                 </div>
-                                <div class="bg-white/5 border border-[#3a4a46]/30 rounded-xl p-3.5 flex items-center justify-between">
-                                    <span class="text-xs font-semibold text-[#b9cac4]">데뷔일</span>
-                                    <span class="text-sm font-medium text-[#e3e2e8] font-mono">{{debutDate}}</span>
+                                <div class="border rounded-xl p-3.5 flex items-center justify-between">
+                                    <span class="text-xs font-semibold">데뷔일</span>
+                                    <span class="text-sm font-medium font-mono">{{debutDate}}</span>
                                 </div>
                             </div>
 
-                            <div class="space-y-2 pt-2 border-t border-[#3a4a46]/20">
-                                <h4 class="font-semibold text-sm text-[#b9cac4] m-0">발매 앨범</h4>
+                            <div class="space-y-2 pt-2 border-t">
+                                <h4 class="font-semibold text-sm m-0">발매 앨범</h4>
                                 <div class="flex flex-wrap gap-3 pt-1">
                                     {{#displayAlbums}}
-                                        <a href="/triples/album/{{albumId}}" class="bg-white/5 hover:bg-white/10 border border-[#3a4a46]/30 hover:border-[#00f5d4]/40 text-[#b9cac4] hover:text-[#00f5d4] flex flex-col items-center p-2 rounded-xl transition-all shrink-0 no-underline">
-                                            <img data-unit-src="{{displayAlbumImage}}" class="w-16 h-16 rounded-lg object-cover mb-1 border border-[#3a4a46]/30 shadow" alt="{{albumName}}">
+                                        <a href="/triples/album/{{albumId}}" class="border flex flex-col items-center p-2 rounded-xl transition-all shrink-0 no-underline">
+                                            <img data-unit-src="{{displayAlbumImage}}" class="w-16 h-16 rounded-lg object-cover mb-1 border shadow" alt="{{albumName}}">
                                             <span class="text-xs font-semibold text-center max-w-[80px] truncate">{{albumName}}</span>
                                         </a>
                                     {{/displayAlbums}}
                                     {{^displayAlbums}}
-                                        <p class="text-sm text-[#b9cac4]/60 py-1 m-0">발매된 앨범이 없습니다.</p>
+                                        <p class="text-sm py-1 m-0">발매된 앨범이 없습니다.</p>
                                     {{/displayAlbums}}
                                 </div>
                             </div>
 
-                            <div class="space-y-2 pt-2 border-t border-[#3a4a46]/20">
-                                <h4 class="font-semibold text-sm text-[#b9cac4] m-0">소속 멤버</h4>
+                            <div class="space-y-2 pt-2 border-t">
+                                <h4 class="font-semibold text-sm m-0">소속 멤버</h4>
                                 <div class="flex flex-wrap gap-3 pt-1">
                                     {{#unitMembers}}
                                         <a href="/triples/artist/{{artist.artistId}}" class="unit-member-chip" style="--member-color: {{artist.color}};">
@@ -86,7 +86,7 @@
                                         </a>
                                     {{/unitMembers}}
                                     {{^unitMembers}}
-                                        <p class="text-sm text-[#b9cac4]/60 py-1 m-0">소속 멤버 정보가 없습니다.</p>
+                                        <p class="text-sm py-1 m-0">소속 멤버 정보가 없습니다.</p>
                                     {{/unitMembers}}
                                 </div>
                             </div>

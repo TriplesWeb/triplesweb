@@ -5,16 +5,16 @@
     
     <title>tripleS Community — Chemistry Names</title>
 <link rel="stylesheet" href="/css/v2-pages.css?v=1">
-</head><body class="v2-body site-page bg-[#0d0e12] text-[#ffffff] min-h-screen">
+</head><body class="v2-body site-page min-h-screen">
 {{>layout/v2/header}}
 
 <main class="main-content chem-page-main">
-    <div class="card-box chem-page-card bg-[#16181f]/80 backdrop-blur-md border border-[#3a4a46]/30 rounded-2xl p-3 sm:p-4 shadow-xl">
+    <div class="card-box chem-page-card border rounded-2xl p-3 sm:p-4">
         <div class="chem-page-head flex flex-col gap-2">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div class="chem-title-row">
-                    <h2 class="text-xl sm:text-2xl font-bold text-[#ffffff] flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4]"></span> tripleS Chemistry
+                    <h2 class="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full"></span> tripleS Chemistry
                     </h2>
                     <div class="chem-legend-wrap">
                         <button type="button" id="chemLegendToggle" class="chem-legend-btn" aria-expanded="false" aria-controls="chemLegendPanel" title="Color legend" aria-label="Color legend">
@@ -48,7 +48,7 @@
                     <button type="button" id="chemAdminBtn" class="chem-admin-btn hidden" aria-pressed="false">Admin</button>
                 </div>
             </div>
-            <p class="text-base font-semibold text-[#ffffff]">English names/descriptions when set; otherwise Korean chemistry names are shown. Member names open profiles.</p>
+            <p class="text-base font-semibold">English names/descriptions when set; otherwise Korean chemistry names are shown. Member names open profiles.</p>
             <p id="chemAdminHint" class="chem-admin-hint hidden">관리자 모드: 빈 칸을 눌러 추가하고, 케미를 연 뒤 수정할 수 있어요.</p>
             <div id="chemEmptyState" class="chem-empty-state hidden" role="status" aria-hidden="true">
                 <p class="chem-empty-title">No English chemistry names yet</p>
