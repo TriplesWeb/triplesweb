@@ -3,11 +3,11 @@
 
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/objekt-page.css?v=5">
+    <link rel="stylesheet" href="/css/objekt-page.css?v=6">
     <!-- Tailwind CSS 스크립트 -->
     <link rel="stylesheet" href="/css/objekt.css?v=2">
     <link rel="stylesheet" href="/css/objekt-serial.css?v=2">
-    <link rel="stylesheet" href="/css/objekt-modal.css?v=1">
+    <link rel="stylesheet" href="/css/objekt-modal.css?v=2">
     <script src="/js/about-modal.js?v=1" defer></script>
     <script src="/js/objekt-serial.js?v=2" defer></script>
     <script src="/js/objekt-issued.js?v=3" defer></script>
@@ -199,7 +199,7 @@
             <button type="button" class="objekt-open-detail relative block aspect-[2/3] w-full overflow-hidden bg-[#1c1f2e]" aria-label="{{collectionId}} 상세 보기">
                 <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" class="objekt-image h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null;this.src='{{frontImage}}';">
                 <span class="absolute left-2 top-2 rounded-md border border-white/15 bg-black/65 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur">{{class}}</span>
-                <span class="objekt-card-season absolute right-2 top-2 rounded-md px-2 py-1 text-[10px] font-bold text-[#071513]" style="background:{{seasonColor}}">{{season}}</span>
+                <span class="objekt-card-season absolute top-2 rounded-md px-2 py-1 text-[10px] font-bold text-[#071513]" style="background:{{seasonColor}}">{{season}}</span>
             </button>
             <div class="p-3">
                 <a href="/cosmo/objekt/detail/{{publicKey}}" class="objekt-detail-link block truncate text-sm font-semibold text-slate-100 hover:text-[#00f5d4]" title="{{collectionId}}">{{collectionId}}</a>
@@ -276,5 +276,5 @@
 
 <script src="/js/member-portrait-picker.js?v=10"></script>
 <script src="/js/objekt-kind-combo.js?v=1"></script>
-<script src="/js/objekt-page.js?v=6" defer></script>
+<script src="/js/objekt-page.js?v=7" defer></script>
 {{>layout/page-end}}

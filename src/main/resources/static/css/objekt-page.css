@@ -436,6 +436,9 @@
             background: linear-gradient(160deg, #191c27, #11131b);
             box-shadow: 0 8px 22px rgba(0,0,0,.2);
         }
+        .objekt-card-season {
+            right: 0.85rem;
+        }
         .objekt-card:hover {
             border-color: rgba(0,245,212,.58);
             box-shadow: 0 14px 32px rgba(0,0,0,.34), 0 0 0 1px rgba(0,245,212,.06);
@@ -572,14 +575,37 @@
         }
         .objekt-detail-meta dt { color: #8b93a7; margin: 0; }
         .objekt-detail-meta dd { margin: 0; color: #e8edf5; font-weight: 600; text-align: right; }
+        .objekt-detail-story {
+            margin: .1rem 0;
+            padding: .95rem 1rem 1.05rem;
+            border: 1px solid rgba(0, 245, 212, .28);
+            border-left: 3px solid #6ee7d8;
+            border-radius: .95rem;
+            background:
+                linear-gradient(165deg, rgba(0, 245, 212, .12), rgba(0, 245, 212, .035) 55%, rgba(16, 19, 27, .55));
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+        }
+        .objekt-detail-story-title {
+            margin: 0 0 .55rem;
+            color: #7df9e8;
+            font-size: .76rem;
+            font-weight: 750;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+        }
         .objekt-detail-desc {
             margin: 0;
-            color: #b7c0d0;
-            font-size: .88rem;
-            line-height: 1.65;
+            color: #eef4fb;
+            font-size: 1rem;
+            font-weight: 550;
+            line-height: 1.75;
             white-space: pre-wrap;
         }
-        .objekt-detail-desc.is-empty { color: #6b7388; }
+        .objekt-detail-desc.is-empty {
+            color: #8b93a7;
+            font-size: .9rem;
+            font-weight: 500;
+        }
         .objekt-description-editor { border: 1px solid #ffffff18; border-radius: .8rem; background: #ffffff04; padding: .7rem .8rem; }
         .objekt-description-editor[hidden] { display: none !important; }
         .objekt-description-editor summary { cursor: pointer; color: #8decd9; font-size: .78rem; font-weight: 650; }

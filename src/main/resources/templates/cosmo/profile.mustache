@@ -8,7 +8,7 @@
 </head><body class="site-page collection-page min-h-screen flex flex-col">
 {{>layout/header}}
 <main class="gravity-page cosmo-profile" data-profile-version="{{#hasProfile}}{{profileVersion}}{{/hasProfile}}">
-<a href="/cosmo/collection?nickname={{requestedNickname}}" class="collection-detail-link">← 내 오브젝트 검색</a>
+<a href="/cosmo/collection?nickname={{requestedNickname}}" class="collection-detail-link">← 내 코스모 아이디 검색</a>
 {{#profileError}}<section class="gv-panel gv-headline" role="status"><h1>닉네임 상세</h1><p>{{profileError}}</p></section>{{/profileError}}
 {{#hasProfile}}
 <section class="gv-panel profile-hero">
