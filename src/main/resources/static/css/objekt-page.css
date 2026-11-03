@@ -437,7 +437,12 @@
             box-shadow: 0 8px 22px rgba(0,0,0,.2);
         }
         .objekt-card-season {
+            left: 0.5rem;
+            right: auto;
+        }
+        .objekt-card-class {
             right: 0.85rem;
+            left: auto;
         }
         .objekt-card:hover {
             border-color: rgba(0,245,212,.58);

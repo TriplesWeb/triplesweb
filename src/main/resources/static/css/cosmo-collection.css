@@ -433,6 +433,23 @@
 @keyframes collection-spin { to { transform: rotate(360deg); } }
 
 .collection-card{border-radius:1rem;overflow:hidden;border:1px solid #343b5180;background:#171a24}.collection-image-wrap .collection-card-serial,.collection-image-wrap .collection-card-season{position:absolute;top:.5rem;z-index:1;border-radius:.4rem;padding:.25rem .4rem;font-size:.68rem;font-weight:700;line-height:1.2}.collection-card-serial{left:.5rem;background:#171a24dc;color:#e8ebf2}.collection-card-serial .ar-id{border:0;padding:0;color:inherit}.collection-card-season{right:.85rem;background:#A4B7B4;color:#071513}.collection-card .ar-body{gap:.35rem}.collection-page .collection-filter-panel{position:relative;z-index:5}.collection-page .objekt-filter:focus-within{z-index:70}.collection-page .objekt-dropdown-menu{z-index:80}.collection-page .objekt-choice{font-family:var(--font-sans, "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif)}.collection-page .objekt-choice-mark{flex:0 0 auto;line-height:1}
+@media (min-width: 768px) {
+    .collection-page .collection-search-hero {
+        align-items: center;
+        text-align: center;
+        padding-left: clamp(3rem, 12vw, 9rem);
+        padding-right: clamp(3rem, 12vw, 9rem);
+    }
+    .collection-page .collection-search-hero p {
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .collection-page .collection-search-hero .collection-nickname-form {
+        justify-content: center;
+        width: auto;
+        max-width: 100%;
+    }
+}
 .collection-page .collection-nickname-form {
     position: relative;
     z-index: 8;

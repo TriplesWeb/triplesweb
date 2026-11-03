@@ -3,13 +3,13 @@
 <link rel="stylesheet" href="/css/gravity-page.css?v=3">
 <link rel="stylesheet" href="/css/archive-page.css?v=15">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=21">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=22">
 <title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}내 코스모 아이디 검색{{/nickname}}</title>
 </head><body class="site-page collection-page min-h-screen flex flex-col">
 {{>layout/header}}
 <main class="gravity-page">
     <section class="gv-kicker"><div><strong>COSMO</strong> · 닉네임 컬렉션</div></section>
-    <section class="gv-panel gv-headline">
+    <section class="gv-panel gv-headline collection-search-hero">
         <h1>내 코스모 아이디 검색</h1>
         <p>닉네임을 검색하면 보유 오브젝트와 시리얼 번호를 확인할 수 있습니다.</p>
         <form class="ar-filters collection-nickname-form" method="get" action="/cosmo/collection" style="margin-top:1rem" data-saved-nickname="{{#hasCollection}}{{nickname}}{{/hasCollection}}">
