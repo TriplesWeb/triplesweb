@@ -14,6 +14,7 @@ COPY gradle ./gradle
 RUN chmod +x gradlew && ./gradlew dependencies --no-daemon || true
 COPY src ./src
 COPY --from=css /workspace/src/main/resources/static/css/v2-utility.css ./src/main/resources/static/css/v2-utility.css
+COPY --from=css /workspace/src/main/resources/static/css/v2-structure.css ./src/main/resources/static/css/v2-structure.css
 RUN ./gradlew bootWar -x test --no-daemon
 
 FROM eclipse-temurin:17-jre-jammy

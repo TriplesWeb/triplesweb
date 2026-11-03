@@ -11,11 +11,7 @@ const excluded=new Set(["site.css","triples.css","objekt.css","gravity.css","sty
 "site-header.css","site-mobile.css","v2-site.css","v2-pages.css","v2-utility.css","v2-structure.css"]);
 const allowed=new Set(["display","position","float","clear","inset","top","bottom","left","right","width","height","min-width","min-height","max-width","max-height","aspect-ratio","box-sizing","gap","row-gap","column-gap","grid","grid-template-columns","grid-template-rows","grid-template-areas","grid-auto-columns","grid-auto-rows","grid-auto-flow","grid-column","grid-row","grid-area","flex","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","align-items","align-content","align-self","justify-items","justify-content","justify-self","place-items","place-content","order","padding","padding-top","padding-bottom","padding-left","padding-right","padding-block","padding-inline","margin","margin-top","margin-bottom","margin-left","margin-right","margin-block","margin-inline","overflow","overflow-x","overflow-y","overflow-wrap","overflow-anchor","overscroll-behavior","overscroll-behavior-x","overscroll-behavior-y","white-space","word-break","text-overflow","object-fit","object-position","z-index","vertical-align","table-layout","border-collapse","border-spacing","list-style","list-style-type","visibility","opacity","cursor","pointer-events","touch-action","user-select","isolation","scrollbar-width","scroll-snap-type","scroll-snap-align","scroll-margin","scroll-padding","clip","clip-path","content"]);
 function allFiles(dir,ext){let acc=[];for(const f of fs.readdirSync(dir,{withFileTypes:true})){const name=path.join(dir,f.name);if(f.isDirectory())acc.push(...allFiles(name,ext));else if(name.endsWith(ext))acc.push(name)}return acc}
-const references=new Set();
-for(const filename of allFiles(templateRoot,".mustache")){
- const body=fs.readFileSync(filename,"utf8");
- for(const m of body.matchAll(/href=["']\/css\/([^"'?]+\.css)(?:\?[^"']*)?["']/gi)){const css=m[1].split("/").pop();if(!excluded.has(css)&&fs.existsSync(path.join(cssRoot,css)))references.add(css)}
-}
+const references=new Set(fs.readdirSync(cssRoot).filter(file=>file.endsWith(".css")&&!excluded.has(file)));
 const raw=[...references].sort().map(file=>({file,body:fs.readFileSync(path.join(cssRoot,file),"utf8")}));
 function parse(input){
  input=input.replace(/\/\*[\s\S]*?\*\//g,"");

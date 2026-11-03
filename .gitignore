@@ -61,3 +61,5 @@ package-lock.json.bak
 src/main/resources/static/css/v2-utility.css
 # Isolated preview credentials
 .env.preview
+
+src/main/resources/static/css/v2-structure.css
