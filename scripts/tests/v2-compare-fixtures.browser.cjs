@@ -32,8 +32,10 @@ function mime(p){const ext=path.extname(p).toLowerCase();return {".css":"text/cs
       let u;try{u=new URL(route.request().url())}catch(_){return route.abort()}
       if(u.origin!=="https://design.test")return route.abort();
       if(u.pathname==="/"+key+".html")return route.fulfill({contentType:"text/html",body:fs.readFileSync(fixture,"utf8")});
-      const file=path.resolve(staticRoot,"."+u.pathname);
-      if(file.startsWith(staticRoot+path.sep)&&fs.existsSync(file)&&fs.statSync(file).isFile())return route.fulfill({contentType:mime(file),path:file});
+      const useUpload=u.pathname.startsWith("/uploads/");
+      const rootDir=useUpload?root:staticRoot;
+      const file=path.resolve(rootDir,"."+u.pathname);
+      if(file.startsWith(rootDir+path.sep)&&fs.existsSync(file)&&fs.statSync(file).isFile())return route.fulfill({contentType:mime(file),path:file});
       return route.fulfill({status:404,body:""});
     });
     try{
