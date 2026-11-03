@@ -57,5 +57,5 @@
 - 시스템 기능 보호: DB/Controller/Service/Repository와 운영 Compose는 변경하지 않는다.
 - CSS 빌드: 기본 명령은 새 v2 유틸리티만 생성한다. 기존 4개 CSS 생성물은 프리뷰 브랜치에서 동결한다. 필요할 때 `V2_BUILD_LEGACY_CSS=1`로 명시적 재생성.
 - 실제 브라우저 기능·속도 테스트 통과 전에는 레거시 CSS를 제거하지 않는다.
-- 두 종류의 미리보기: `docs/V2_PREVIEW.md`의 (1) 별도 Docker 서버/DB/업로드, (2) Actions 수동 실행 screenshot 아티팩트.
+- 두 종류의 미리보기: `docs/V2_PREVIEW.md`의 (1) 별도 Docker 서버/DB/업로드, (2) Actions 화면 코드 변경 시 screenshot 아티팩트.
 - Draft PR #45로 변경 내역 비교. 사용자의 최종 선택 전에는 머지하지 않는다.

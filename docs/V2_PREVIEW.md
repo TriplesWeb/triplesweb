@@ -27,9 +27,9 @@ MAIN_URL=http://127.0.0.1:8090 V2_URL=http://127.0.0.1:8091 NODE_PATH=/path/to/n
 
 ## GitHub Actions 정적 디자인 미리보기 (서버 없이 가능)
 
-1. GitHub > Actions > **V2 design preview screenshots** 선택
-2. **Run workflow**를 누르고 브랜치 **feature/ui-from-scratch-20261103** 선택
-3. 완료한 workflow의 Artifacts에서 **triplesweb-v2-screen-previews** 다운로드
+1. 디자인 브랜치에서 템플릿/CSS/JS가 변경되어 푸시되면 **V2 design preview screenshots** 작업이 자동 실행됨
+2. GitHub > Actions > **V2 design preview screenshots** 에서 완료한 실행 선택
+3. Artifacts에서 **triplesweb-v2-screen-previews** 다운로드
 4. ZIP 압축을 풀고 index.html을 열면 주요 화면의 모바일(390px) / 데스크톱(1280px) 캡처를 한 페이지에서 비교 가능
 
-이 방식은 Mock Mustache fixture의 HTML/CSS를 Chromium으로 렌더링하므로 서버·운영 DB·업로드/작성 기능은 사용하지 않는다. 외부 이미지가 없는 경우 빈 이미지가 나올 수 있다. 실제 기능 확인은 Docker 미리보기에서 해야 한다. Preview workflow는 수동 실행 전용이며 main 자동 배포나 정규 CI 실행에 영향을 주지 않는다.
+이 방식은 Mock Mustache fixture의 HTML/CSS를 Chromium으로 렌더링하므로 서버·운영 DB·업로드/작성 기능은 사용하지 않는다. 외부 이미지가 없는 경우 빈 이미지가 나올 수 있다. 실제 기능 확인은 Docker 미리보기에서 해야 한다. Preview workflow는 디자인 브랜치의 화면 코드 변경 시에만 실행되며 main 자동 배포에는 영향을 주지 않는다. default 브랜치에 워크플로가 없다면 workflow_dispatch 수동 실행이 표시되지 않을 수 있다.

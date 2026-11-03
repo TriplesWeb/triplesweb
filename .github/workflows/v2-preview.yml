@@ -1,5 +1,12 @@
 name: V2 design preview screenshots
 on:
+  push:
+    branches: [feature/ui-from-scratch-20261103]
+    paths:
+      - 'src/main/resources/templates/**'
+      - 'src/main/resources/static/**'
+      - 'scripts/tests/v2-preview-fixtures.browser.cjs'
+      - '.github/workflows/v2-preview.yml'
   workflow_dispatch:
 permissions:
   contents: read
