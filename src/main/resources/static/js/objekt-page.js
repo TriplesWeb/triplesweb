@@ -530,26 +530,6 @@
             eventNode.hidden = !type;
             eventNode.textContent = type;
         }
-        const twitter = document.getElementById('objektDetailTwitter');
-        if (twitter) {
-            const href = String(apollo.twitterUrl || '');
-            const ok = href.startsWith('https://x.com/') || href.startsWith('https://twitter.com/');
-            twitter.hidden = !ok;
-            twitter.href = ok ? href : '';
-        }
-        const apolloLink = document.getElementById('objektDetailApolloLink');
-        if (apolloLink) {
-            const slug = String(apollo.slug || '').trim();
-            const ok = /^[a-z0-9]+(?:-[a-z0-9]+)+$/.test(slug);
-            apolloLink.hidden = !ok;
-            apolloLink.href = ok ? ('https://apollo.cafe/?id=' + encodeURIComponent(slug)) : '';
-        }
-        const sources = document.getElementById('objektDetailSources');
-        if (sources) {
-            const twitterHidden = !twitter || twitter.hidden;
-            const apolloHidden = !apolloLink || apolloLink.hidden;
-            sources.hidden = twitterHidden && apolloHidden;
-        }
     }
 
     function fillDetailModal(data) {
