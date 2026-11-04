@@ -194,6 +194,8 @@ class CosmoProfileServiceTest {
         var ownedOnly = profiles.profile("테스트", "HaYeon", "members", "members", "owned");
         assertThat(ownedOnly).containsEntry("isOwnershipOwned", true).containsEntry("checklistVisible", 1)
                 .containsEntry("checklistTotal", 2).containsEntry("checklistOwned", 1);
+        assertThat(((List<Map<String, Object>>) ownedOnly.get("checklistSeasons")).get(0))
+                .containsEntry("owned", 1).containsEntry("total", 2);
         var cards = ((List<Map<String, Object>>) ((List<Map<String, Object>>)
                 ((List<Map<String, Object>>) ownedOnly.get("checklistSeasons")).get(0).get("groups")).get(0).get("cards"));
         assertThat(cards).hasSize(1);

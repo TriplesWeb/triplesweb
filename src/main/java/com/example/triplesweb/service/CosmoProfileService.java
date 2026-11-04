@@ -383,19 +383,21 @@ public class CosmoProfileService {
                 groups.computeIfAbsent(text(item, "class"), k -> new ArrayList<>()).add(item);
             List<Map<String, Object>> groupRows = new ArrayList<>();
             int seasonOwned = 0;
+            int seasonTotal = 0;
             int seasonVisible = 0;
             for (var group : groups.entrySet()) {
                 group.getValue().sort(Comparator.comparing((Map<String, Object> item) -> text(item, "collectionNo"), natural)
                         .thenComparing(item -> text(item, "slug")));
                 List<Map<String, Object>> cards = new ArrayList<>();
                 int owned = 0;
+                int groupTotal = group.getValue().size();
                 for (Map<String, Object> item : group.getValue()) {
                     String slug = text(item, "slug");
                     long count = copies.getOrDefault(slug, 0L);
                     boolean have = count > 0;
+                    if (have) owned++;
                     if ("owned".equals(ownership) && !have) continue;
                     if ("missing".equals(ownership) && have) continue;
-                    if (have) owned++;
                     String image = GravityService.safeImage(text(item, "thumbnailImage"));
                     if (image.isBlank()) image = GravityService.safeImage(text(item, "frontImage"));
                     Map<String, Object> card = new LinkedHashMap<>();
@@ -409,22 +411,23 @@ public class CosmoProfileService {
                     card.put("detailUrl", ObjektLinks.detail(item));
                     cards.add(card);
                 }
+                seasonOwned += owned;
+                seasonTotal += groupTotal;
                 if (cards.isEmpty()) continue;
                 Map<String, Object> row = new LinkedHashMap<>();
                 row.put("klass", group.getKey().isBlank() ? "미분류" : group.getKey());
-                row.put("cards", cards); row.put("owned", owned); row.put("total", cards.size());
-                row.put("missing", cards.size() - owned); row.put("complete", owned == cards.size() && !cards.isEmpty());
-                row.put("percent", cards.isEmpty() ? 0 : owned * 100 / cards.size());
+                row.put("cards", cards); row.put("owned", owned); row.put("total", groupTotal);
+                row.put("missing", groupTotal - owned); row.put("complete", owned == groupTotal && groupTotal > 0);
+                row.put("percent", groupTotal == 0 ? 0 : owned * 100 / groupTotal);
                 row.put("open", false);
                 groupRows.add(row);
-                seasonOwned += owned;
                 seasonVisible += cards.size();
             }
             if (groupRows.isEmpty()) continue;
             seasonRows.add(Map.of("season", season.getKey().isBlank() ? "미분류" : season.getKey(),
-                    "groups", groupRows, "owned", seasonOwned, "total", seasonVisible,
-                    "complete", seasonOwned == seasonVisible && seasonVisible > 0,
-                    "percent", seasonVisible == 0 ? 0 : seasonOwned * 100 / seasonVisible));
+                    "groups", groupRows, "owned", seasonOwned, "total", seasonTotal,
+                    "complete", seasonOwned == seasonTotal && seasonTotal > 0,
+                    "percent", seasonTotal == 0 ? 0 : seasonOwned * 100 / seasonTotal));
             collected += seasonOwned;
             visible += seasonVisible;
         }
