@@ -53,6 +53,10 @@ public class Artist {
     @Column(length = 16)
     private String mbti;
 
+    /** byteS 캐릭터 이름(시드). 카드 이미지·별장식은 /images/artist/bite{,-star}/{id}.png 정적 파일. */
+    @Column(length = 80)
+    private String bite;
+
     /** 멤버 공개일. */
     @Column(nullable = false)
     private String revealDate;
@@ -79,6 +83,36 @@ public class Artist {
     @Transient
     public boolean isHasMbti() {
         return mbti != null && !mbti.isBlank();
+    }
+
+    @Transient
+    public boolean isHasBite() {
+        return bite != null && !bite.isBlank();
+    }
+
+    /** 싸인·바이츠 카드 행 표시 여부. */
+    @Transient
+    public boolean isHasSignOrBiteRow() {
+        return isHasSignatureImage() || isHasBite();
+    }
+
+    /**
+     * bytes 카드 이름 글자색. 상징색이 밝으면 검정, 어두우면 흰색.
+     */
+    @Transient
+    public String getBiteNameTextColor() {
+        if (color == null || color.length() < 7 || color.charAt(0) != '#') {
+            return "#ffffff";
+        }
+        try {
+            int r = Integer.parseInt(color.substring(1, 3), 16);
+            int g = Integer.parseInt(color.substring(3, 5), 16);
+            int b = Integer.parseInt(color.substring(5, 7), 16);
+            double luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255.0;
+            return luminance > 0.62 ? "#111111" : "#ffffff";
+        } catch (NumberFormatException ignored) {
+            return "#ffffff";
+        }
     }
 
     @OneToMany(mappedBy = "artist", cascade = CascadeType.ALL, orphanRemoval = true)
