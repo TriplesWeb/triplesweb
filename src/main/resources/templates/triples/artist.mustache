@@ -1,7 +1,7 @@
 {{>layout/head-open}}
 
 <link rel="stylesheet" href="/css/about-admin.css?v=1">
-    <link rel="stylesheet" href="/css/artist.css?v=15">
+    <link rel="stylesheet" href="/css/artist.css?v=16">
     <link rel="stylesheet" href="/css/artist-performance.css?v=7">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
 
@@ -139,10 +139,10 @@
                         {{#hasSignOrBiteRow}}
                         <div class="artist-sign-bytes-row">
                             {{#hasSignatureImage}}
-                            <div class="bg-[#0d0e12]/40 border border-[#3a4a46]/30 rounded-xl p-4 space-y-2.5">
-                                <span class="text-xl font-semibold text-[#b9cac4] block whitespace-nowrap">싸인</span>
-                                <div class="inline-flex items-center justify-center rounded-lg bg-[#f4f5f7] px-4 py-3">
-                                    <img data-member-src="{{signatureImage}}" alt="{{name}} 싸인" class="max-h-28 w-auto object-contain" loading="lazy" decoding="async">
+                            <div class="artist-sign-card">
+                                <span class="artist-sign-card-title">싸인</span>
+                                <div class="artist-sign-card-body">
+                                    <img class="artist-sign-card-image" data-member-src="{{signatureImage}}" alt="{{name}} 싸인" loading="lazy" decoding="async">
                                 </div>
                             </div>
                             {{/hasSignatureImage}}

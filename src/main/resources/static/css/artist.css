@@ -829,6 +829,47 @@
     }
 }
 
+/* 싸인 카드 — 흰 배경, 타이틀 + 중앙 싸인 */
+.artist-sign-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 100%;
+    padding: 0.85rem 1rem 1rem;
+    border-radius: 0.85rem;
+    background: #fff;
+    color: #111;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.artist-sign-card-title {
+    display: block;
+    margin-bottom: 0.55rem;
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: #111;
+    white-space: nowrap;
+}
+
+.artist-sign-card-body {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    min-height: 8.5rem;
+}
+
+.artist-sign-card-image {
+    max-width: 100%;
+    max-height: 9.5rem;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+
 /* bytes 캐릭터 카드 */
 .artist-bytes-card {
     display: flex;
