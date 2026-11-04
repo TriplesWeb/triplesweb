@@ -110,43 +110,18 @@
         </div>
     </section>
 
-    <!-- 3. 정보 · 스케줄 · 사진 -->
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            <div class="main-fade-up bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl h-full">
-                <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-secondary text-xl">campaign</span>
-                        <h3 class="text-base font-bold text-on-surface">공지사항</h3>
-                    </div>
-                    <a href="/article/notice" class="text-xs text-on-surface-variant hover:text-secondary flex items-center gap-0.5 transition-colors">
-                        더보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
-                    </a>
-                </div>
-                <ul class="divide-y divide-outline-variant/20 text-xs">
-                    {{#noticePosts}}
-                        <li class="py-2.5 flex items-center justify-between gap-4 hover:bg-surface-container-high/40 px-2 rounded-lg transition-colors">
-                            <a href="/article/notice/{{id}}" class="truncate text-on-surface hover:text-secondary font-medium flex-1">{{title}}</a>
-                            <div class="text-on-surface-variant/80 font-mono text-[11px] shrink-0">{{userId}} · {{formattedDate}}</div>
-                        </li>
-                    {{/noticePosts}}
-                    {{^noticePosts}}
-                        <li class="py-4 text-center text-on-surface-variant/60">등록된 공지가 없습니다.</li>
-                    {{/noticePosts}}
-                </ul>
+    <!-- 3. 스케줄 -->
+    <section class="main-fade-up bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
+        <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary-container text-xl">calendar_month</span>
+                <h3 class="text-base font-bold text-on-surface">스케줄</h3>
             </div>
-
-            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl h-full">
-                <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary-container text-xl">calendar_month</span>
-                        <h3 class="text-base font-bold text-on-surface">스케줄</h3>
-                    </div>
-                    <a href="/schedule" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
-                        전체 달력 <span class="material-symbols-outlined text-sm">chevron_right</span>
-                    </a>
-                </div>
-                <div id="miniCalendar" class="w-full"></div>
-            </div>
+            <a href="/schedule" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
+                전체 달력 <span class="material-symbols-outlined text-sm">chevron_right</span>
+            </a>
+        </div>
+        <div id="miniCalendar" class="w-full"></div>
     </section>
 
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">

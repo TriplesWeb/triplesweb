@@ -7,7 +7,6 @@ import com.example.triplesweb.entity.Schedule;
 import com.example.triplesweb.repository.AlbumRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.ArchiveService;
-import com.example.triplesweb.service.ArticleServiceImpl;
 import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.util.SchedulePresentation;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,11 +25,9 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MainController {
 
-    private static final int HOME_LIMIT = 5;
     private static final int HOME_ARCHIVE_LIMIT = 4;
     private static final String ANDLESS_ALBUM = "LOVE & POP Pt.2";
 
-    private final ArticleServiceImpl articleService;
     private final ScheduleRepository scheduleRepository;
     private final ArchiveService archiveService;
     private final AlbumRepository albumRepository;
@@ -68,7 +65,6 @@ public class MainController {
                 .orElse("/triples/album");
 
         model.addAttribute("albumHref", albumHref);
-        model.addAttribute("noticePosts", articleService.findRecentByCategory("notice", HOME_LIMIT));
         model.addAttribute("recentPhotos", archiveService.pageByType(MediaType.IMAGE, 0, HOME_ARCHIVE_LIMIT, null)
                 .getContent().stream()
                 .filter(photo -> photo.getFile() != null && photo.getFile().getUrl() != null)
