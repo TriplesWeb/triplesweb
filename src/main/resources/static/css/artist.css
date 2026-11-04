@@ -940,12 +940,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* 세로 합 패딩은 고정(0.9rem). --bite-name-nudge 음수=글자 위로.
-       transform 대신 패딩으로 옮겨 글리프가 잘리지 않게 함. */
-    padding-top: calc(0.45rem + var(--bite-name-nudge, 0px));
-    padding-bottom: calc(0.45rem - var(--bite-name-nudge, 0px));
-    padding-left: 0.55rem;
-    padding-right: 0.55rem;
+    padding: 0.45rem 0.55rem;
     background: var(--artist-color, #22aeff);
     /* 밝은 상징색은 인라인 color(검정)로 덮어씀 */
     color: #fff;
@@ -953,7 +948,7 @@
     font-size: 1.2rem;
     font-weight: normal;
     letter-spacing: 0.02em;
-    line-height: 1.1;
+    line-height: 1.15;
     text-align: center;
     /* overflow:hidden 이면 광학 보정된 글리프가 잘림. 바이츠 이름은 짧아서 visible 유지 */
     overflow: visible;
@@ -964,6 +959,16 @@
     display: inline-block;
     max-width: 100%;
     white-space: nowrap;
+    word-break: keep-all;
+    line-break: strict;
+    /* 배경(보라 박스)은 그대로, 단어 전체만 올림/내림. 음수=위로 */
+    transform: translateY(var(--bite-name-nudge, 0px));
+}
+
+.artist-bytes-card-name-ch {
+    display: inline-block;
+    /* 글자별 추가 보정(받침 등으로 유독 낮은 글자) */
+    transform: translateY(var(--bite-ch-nudge, 0px));
 }
 
 /* 여름물빛체 이름별 글자 세로 광학 보정 */
@@ -987,7 +992,9 @@
 .artist-bytes-card-name[data-bite="쭈아"] { --bite-name-nudge: 0.08em; }
 .artist-bytes-card-name[data-bite="대장각"] { --bite-name-nudge: -0.06em; }
 .artist-bytes-card-name[data-bite="숀숑이"] { --bite-name-nudge: 0.06em; }
-.artist-bytes-card-name[data-bite="딸기"] { --bite-name-nudge: -0.1em; }
+/* 딸: 받침 descent가 기보다 큼 → 글자만 추가 상승. 단어 전체는 박스 중앙 유지 */
+.artist-bytes-card-name[data-bite="딸기"] { --bite-name-nudge: 0.24em; }
+.artist-bytes-card-name[data-bite="딸기"] .artist-bytes-card-name-ch[data-ch="딸"] { --bite-ch-nudge: -0.52em; }
 .artist-bytes-card-name[data-bite="패스블린"] { --bite-name-nudge: 0.08em; }
 .artist-bytes-card-name[data-bite="하트뿡"] { --bite-name-nudge: 0.12em; }
 .artist-bytes-card-name[data-bite="슈와닝"] { --bite-name-nudge: 0.04em; }
