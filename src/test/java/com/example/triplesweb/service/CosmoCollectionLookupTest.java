@@ -20,6 +20,8 @@ class CosmoCollectionLookupTest {
     private final AtomicInteger holdings = new AtomicInteger();
     private int profileStatus = 200;
     private boolean missingSerial;
+    private boolean mixedSeasons;
+    private boolean includeForeignArtist;
     private boolean indexFailure;
     private volatile boolean laterPageFailure;
     private CountDownLatch continuePage = new CountDownLatch(0);
@@ -32,6 +34,8 @@ class CosmoCollectionLookupTest {
             if (exchange.getRequestURI().getPath().contains("by-nickname")) {
                 profiles.incrementAndGet(); status = profileStatus;
                 body = "{\"nickname\":\"테스트\",\"address\":\"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}";
+            } else if (exchange.getRequestURI().getPath().contains("/users/search")) {
+                body = "{\"results\":[{\"nickname\":\"테스트\",\"address\":\"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}]}";
             } else {
                 holdings.incrementAndGet();
                 if (indexFailure) { status = 503; body = "{}"; }
@@ -66,9 +70,18 @@ class CosmoCollectionLookupTest {
     }
 
     private String objekt(int n) {
+        boolean foreign = includeForeignArtist && n == 26;
+        boolean binary = !foreign && mixedSeasons && n % 2 == 0;
+        String artist = foreign ? "artms" : "triples";
+        String season = foreign ? "Drop" : (binary ? "Binary02" : "Cream02");
+        String slug = foreign ? "drop-heejin-101z" : (binary ? "binary02-hayeon-367z" : "cream02-hayeon-367z");
+        String collectionId = foreign ? "Drop HeeJin 101Z #30000001"
+                : (binary ? "Binary02 HaYeon 367Z #30000001" : "Cream02 HaYeon 367Z #30000001");
+        String member = foreign ? "HeeJin" : "HaYeon";
         return "{\"id\":\"" + (30000000 + n) + "\",\"serial\":" + (missingSerial ? "null" : n)
-                + ",\"slug\":\"cream02-hayeon-367z\",\"collectionId\":\"Cream02 HaYeon 367Z #30000001\","
-                + "\"member\":\"HaYeon\",\"season\":\"Cream02\",\"class\":\"Double\",\"frontImage\":\"https://example.com/card.webp\"}";
+                + ",\"slug\":\"" + slug + "\",\"collectionId\":\"" + collectionId + "\","
+                + "\"member\":\"" + member + "\",\"season\":\"" + season + "\",\"artist\":\"" + artist + "\","
+                + "\"class\":\"Double\",\"frontImage\":\"https://example.com/card.webp\"}";
     }
 
     @Test @SuppressWarnings("unchecked") void loadsEveryCursorPageSerialsAndReusesCache() {
@@ -96,6 +109,27 @@ class CosmoCollectionLookupTest {
         assertThat(completed()).containsEntry("ownedCount", 26);
         assertThat(service.search("테스트", 0, "", "", "", "26")).containsEntry("filteredCount", 1);
         assertThat(service.search("테스트", Integer.MAX_VALUE)).containsEntry("cards", List.of()).containsEntry("hasMore", false);
+    }
+
+    @Test void dropsNonTriplesHoldingsFromTheCollection() {
+        includeForeignArtist = true;
+        await().atMost(Duration.ofSeconds(5)).until(() -> {
+            var snapshot = service.search("테스트", 0);
+            return Boolean.FALSE.equals(snapshot.get("loading")) && Integer.valueOf(25).equals(snapshot.get("ownedCount"));
+        });
+        assertThat(service.search("테스트", 0)).containsEntry("ownedCount", 25);
+        assertThat(service.search("테스트", 0, "", "", "", "heejin")).containsEntry("filteredCount", 0);
+        assertThat(service.search("테스트", 0, "", "", "", "artms")).containsEntry("filteredCount", 0);
+    }
+
+    @Test void seasonAliasesMatchCcToCream02AndBbToBinary() {
+        mixedSeasons = true;
+        completed();
+        assertThat(service.search("테스트", 0, "", "", "", "cc")).containsEntry("filteredCount", 13);
+        assertThat(service.search("테스트", 0, "", "", "", "cream")).containsEntry("filteredCount", 13);
+        assertThat(service.search("테스트", 0, "", "", "", "bb")).containsEntry("filteredCount", 13);
+        assertThat(service.search("테스트", 0, "", "", "", "binary")).containsEntry("filteredCount", 13);
+        assertThat(service.search("테스트", 0, "", "", "", "aa")).containsEntry("filteredCount", 0);
     }
 
     @Test void failedBackgroundPageIsRetriedInsteadOfCachingPartialSuccess() throws Exception {
@@ -155,5 +189,17 @@ class CosmoCollectionLookupTest {
         assertThatThrownBy(() -> service.search("테스트", 0)).isInstanceOf(RuntimeException.class);
         indexFailure = false;
         assertThat(completed()).containsEntry("ownedCount", 26);
+    }
+
+    @Test void morePayloadSkipsFacetsAndExactSuggestWarmsTheCache() {
+        assertThat(service.suggestNicknames("테스트", 8)).contains("테스트");
+        await().atMost(Duration.ofSeconds(5)).until(() -> holdings.get() >= 1);
+        var slim = completed();
+        assertThat(slim).containsKeys("allCards", "kindOptions", "filterMembers");
+        assertThat(service.search("테스트", 0, "", List.of(), List.of(), "", "all", "all", "latest", false))
+                .doesNotContainKeys("allCards", "kindOptions", "filterMembers")
+                .containsEntry("ownedCount", 26)
+                .containsEntry("hasCards", true);
+        assertThat(profiles.get()).isEqualTo(1);
     }
 }

@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="/css/archive-page.css?v=15">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
 <link rel="stylesheet" href="/css/cosmo-collection.css?v=15">
-<link rel="stylesheet" href="/css/cosmo-profile.css?v=20">
+<link rel="stylesheet" href="/css/cosmo-profile.css?v=21">
 </head><body class="site-page collection-page min-h-screen flex flex-col">
 {{>layout/header}}
 <main class="gravity-page cosmo-profile" data-profile-version="{{#hasProfile}}{{profileVersion}}{{/hasProfile}}">
@@ -123,15 +123,15 @@
 <div data-profile-live="checklist">
 {{#hasChecklist}}
 <section class="profile-checklist" aria-labelledby="checklist-heading" style="--member-color:{{memberColor}}">
-    <div class="profile-section-heading"><div><h2 id="checklist-heading">{{selectedMember}} · {{#isOwnershipOwned}}보유{{/isOwnershipOwned}}{{#isOwnershipMissing}}미보유{{/isOwnershipMissing}}{{#isOwnershipAll}}수집{{/isOwnershipAll}}{{#isOwnershipProgress}}수집{{/isOwnershipProgress}} 오브젝트</h2>{{#isOwnershipSubset}}<p>{{checklistVisible}}종 · 시즌별 목록</p>{{/isOwnershipSubset}}{{^isOwnershipSubset}}<p>{{checklistTotal}}종 중 {{checklistOwned}}종 보유 · {{checklistMissing}}종 미보유{{#isOwnershipOwned}} · 보유 {{checklistVisible}}종 표시{{/isOwnershipOwned}}{{#isOwnershipMissing}} · 미보유 {{checklistVisible}}종 표시{{/isOwnershipMissing}}</p>{{/isOwnershipSubset}}</div>
+    <div class="profile-section-heading"><div><h2 id="checklist-heading">{{selectedMember}} · {{#isOwnershipOwned}}보유{{/isOwnershipOwned}}{{#isOwnershipMissing}}미보유{{/isOwnershipMissing}}{{#isOwnershipAll}}수집{{/isOwnershipAll}}{{#isOwnershipProgress}}수집{{/isOwnershipProgress}} 오브젝트</h2>{{#isOwnershipOwned}}<p>{{checklistOwned}}/{{checklistTotal}}장</p>{{/isOwnershipOwned}}{{#isOwnershipMissing}}<p>{{checklistMissing}}/{{checklistTotal}}장</p>{{/isOwnershipMissing}}{{#isOwnershipAll}}<p>{{checklistVisible}}종 · 시즌별 목록</p>{{/isOwnershipAll}}{{#isOwnershipProgress}}<p>{{checklistTotal}}종 중 {{checklistOwned}}종 보유 · {{checklistMissing}}종 미보유</p>{{/isOwnershipProgress}}</div>
         {{#isOwnershipProgress}}<label class="profile-hide-complete" data-hide-complete-label hidden><input type="checkbox" data-hide-complete>완료한 시즌 숨기기</label>{{/isOwnershipProgress}}
     </div>
     {{#hasOwnershipFilter}}
     <nav class="profile-ownership-tabs" aria-label="보유 여부 모아보기">
         <a class="profile-ownership-tab{{#isOwnershipProgress}} is-active{{/isOwnershipProgress}}" href="{{ownershipProgressUrl}}" {{#isOwnershipProgress}}aria-current="page"{{/isOwnershipProgress}}>진행도</a>
         <a class="profile-ownership-tab{{#isOwnershipAll}} is-active{{/isOwnershipAll}}" href="{{ownershipAllUrl}}" {{#isOwnershipAll}}aria-current="page"{{/isOwnershipAll}}>전체</a>
-        <a class="profile-ownership-tab{{#isOwnershipOwned}} is-active{{/isOwnershipOwned}}" href="{{ownershipOwnedUrl}}" {{#isOwnershipOwned}}aria-current="page"{{/isOwnershipOwned}}>보유</a>
-        <a class="profile-ownership-tab{{#isOwnershipMissing}} is-active{{/isOwnershipMissing}}" href="{{ownershipMissingUrl}}" {{#isOwnershipMissing}}aria-current="page"{{/isOwnershipMissing}}>미보유</a>
+        <a class="profile-ownership-tab{{#isOwnershipOwned}} is-active{{/isOwnershipOwned}}" href="{{ownershipOwnedUrl}}" {{#isOwnershipOwned}}aria-current="page"{{/isOwnershipOwned}}>보유 {{checklistOwned}}/{{checklistTotal}}장</a>
+        <a class="profile-ownership-tab{{#isOwnershipMissing}} is-active{{/isOwnershipMissing}}" href="{{ownershipMissingUrl}}" {{#isOwnershipMissing}}aria-current="page"{{/isOwnershipMissing}}>미보유 {{checklistMissing}}/{{checklistTotal}}장</a>
     </nav>
     {{/hasOwnershipFilter}}
     {{#isOwnershipSubset}}
@@ -140,7 +140,7 @@
     {{#checklistSeasons}}
     <details class="collapse ar-panel profile-owned-class" data-fold-key="owned:{{season}}">
         <summary class="collapse-title profile-owned-summary">
-            <span class="profile-owned-summary-copy"><strong>{{season}}</strong><span>{{total}}종</span></span>
+            <span class="profile-owned-summary-copy"><strong>{{season}}</strong><span>{{shown}} / {{total}}종</span></span>
             <span class="profile-fold-chevron" aria-hidden="true">⌄</span>
         </summary>
         <div class="collapse-content">

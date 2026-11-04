@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="/css/gravity-page.css?v=3">
 <link rel="stylesheet" href="/css/archive-page.css?v=15">
 <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=27">
+<link rel="stylesheet" href="/css/cosmo-collection.css?v=28">
 <title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}내 코스모 아이디 검색{{/nickname}}</title>
 </head><body class="site-page collection-page min-h-screen flex flex-col">
 {{>layout/header}}
@@ -33,7 +33,7 @@
             </div>
         </div>
     </section>
-    <section class="gv-panel collection-filter-panel" aria-label="보유 오브젝트 필터">
+    <section class="collection-filter-panel" aria-label="보유 오브젝트 필터">
         <form class="collection-filter-form" method="get" action="/cosmo/collection" id="collection-filter-form">
             <input type="hidden" name="nickname" value="{{nickname}}">
             <input type="hidden" name="page" value="0">
@@ -41,6 +41,7 @@
             <input type="hidden" name="member" id="collection-member-input" value="{{selectedMember}}">
             <input type="hidden" name="kind" id="collection-kind-input" value="{{selectedKind}}">
             <input type="hidden" name="sort" id="collection-sort-input" value="{{selectedSort}}">
+            <div class="collection-filter-workspace">
             <div class="objekt-member-picker-panel{{^isOtherGroup}}{{^selectedMember}} is-collapsed{{/selectedMember}}{{/isOtherGroup}}" id="collection-member-panel">
                 <div class="mpp-toolbar">
                     <button type="button" class="objekt-member-toggle" id="collection-member-toggle" aria-expanded="false" aria-controls="collection-member-picker" {{#isOtherGroup}}hidden{{/isOtherGroup}}>
@@ -61,14 +62,14 @@
                 </div>
                 <p class="objekt-other-notice" id="collection-other-notice" {{^isOtherGroup}}hidden{{/isOtherGroup}}>멤버와 연결되지 않은 그룹·기타 오브젝트를 모아 보여줍니다.</p>
             </div>
-            <div class="collection-filter-bar">
+            <div class="objekt-filter-bar collection-filter-bar relative">
                 <div class="objekt-filter relative" id="collection-season-dropdown">
                     <span class="objekt-filter-label">시즌</span>
                     <button type="button" class="objekt-filter-control" id="collection-season-toggle" aria-expanded="false" aria-controls="collection-season-menu">
                         <span id="collection-season-label" class="truncate">전체</span>
                         <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                     </button>
-                    <div id="collection-season-menu" class="objekt-dropdown-menu" hidden>
+                    <div id="collection-season-menu" class="objekt-dropdown-menu absolute top-full left-0 mt-2 rounded-xl border z-50 p-2" hidden>
                         <label class="objekt-choice">
                             <input type="checkbox" value="all" class="season-checkbox" {{^hasSeasonFilter}}checked{{/hasSeasonFilter}}>
                             <span class="objekt-choice-mark" aria-hidden="true"></span>
@@ -102,7 +103,7 @@
                             <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
                         </button>
                     </div>
-                    <div id="collection-kind-menu" class="objekt-dropdown-menu hidden" hidden role="listbox" aria-label="종류 목록">
+                    <div id="collection-kind-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 min-w-[9rem] max-h-60 overflow-y-auto rounded-xl border z-50 p-1.5" hidden role="listbox" aria-label="종류 목록">
                         <button type="button" class="objekt-kind-option" data-value="all" role="option">전체</button>
                         {{#kindOptions}}
                         <button type="button" class="objekt-kind-option" data-value="{{.}}" role="option">{{.}}</button>
@@ -116,7 +117,7 @@
                         <span id="collection-class-label" class="truncate">전체</span>
                         <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                     </button>
-                    <div id="collection-class-menu" class="objekt-dropdown-menu" hidden>
+                    <div id="collection-class-menu" class="objekt-dropdown-menu absolute top-full left-0 mt-2 rounded-xl border z-50 p-2 max-h-60 overflow-y-auto" hidden>
                         <label class="objekt-choice">
                             <input type="checkbox" value="all" class="class-checkbox" {{^hasClassFilter}}checked{{/hasClassFilter}}>
                             <span class="objekt-choice-mark" aria-hidden="true"></span>
@@ -137,7 +138,7 @@
                         <span id="collection-sort-label" class="truncate">최신순</span>
                         <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                     </button>
-                    <div id="collection-sort-menu" class="objekt-dropdown-menu collection-sort-menu" hidden>
+                    <div id="collection-sort-menu" class="objekt-dropdown-menu collection-sort-menu absolute top-full left-0 mt-2 min-w-[10rem] max-h-60 overflow-y-auto rounded-xl border z-50 p-1.5" hidden>
                         <button type="button" class="objekt-choice" data-value="latest"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">최신순</span></button>
                         <button type="button" class="objekt-choice" data-value="oldest"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">오래된순</span></button>
                         <button type="button" class="objekt-choice" data-value="number_low"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">번호 낮은순</span></button>
@@ -148,20 +149,21 @@
                         <button type="button" class="objekt-choice" data-value="mint_high"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">민팅 많은순</span></button>
                     </div>
                 </div>
-            </div>
-            <div class="objekt-search-row">
-                <div class="objekt-search site-search">
-                    <label class="w-full min-w-0">
-                        <input type="search" name="q" value="{{searchQuery}}" placeholder="전체 오브젝트에서 검색..." aria-label="보유 오브젝트 검색" autocomplete="off" class="objekt-search-input site-search__input">
-                    </label>
-                    <button type="submit" class="objekt-search-button site-search__submit" aria-label="검색">
-                        <span class="material-symbols-outlined" aria-hidden="true">search</span>
-                    </button>
+                <div class="objekt-search-row">
+                    <div class="objekt-search site-search">
+                        <label class="w-full min-w-0">
+                            <input type="search" name="q" value="{{searchQuery}}" placeholder="전체 오브젝트에서 검색..." aria-label="보유 오브젝트 검색" autocomplete="off" class="objekt-search-input site-search__input">
+                        </label>
+                        <button type="submit" class="objekt-search-button site-search__submit" aria-label="검색">
+                            <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                        </button>
+                    </div>
+                    <a class="objekt-reset-button" href="/cosmo/collection?nickname={{nicknameEncoded}}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2.6 8.4M3 4v6h6"/></svg>
+                        초기화
+                    </a>
                 </div>
-                <a class="objekt-reset-button" href="/cosmo/collection?nickname={{nicknameEncoded}}">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2.6 8.4M3 4v6h6"/></svg>
-                    초기화
-                </a>
+            </div>
             </div>
         </form>
     </section>
@@ -221,6 +223,8 @@
   const filteredCountEl = document.getElementById('collection-filtered-count');
   let filtersReady = false;
   let filterTimer;
+  let listAbort;
+  let lastFirstPageKey = '';
   let listGeneration = 0;
   let loadedCount = Number(grid?.dataset.loaded || grid?.querySelectorAll('.collection-card').length || 0);
   let filteredCount = Number(grid?.dataset.filtered || 0);
@@ -261,10 +265,12 @@
     return params;
   }
 
-  function scheduleApplyFilters() {
+  function scheduleApplyFilters(delayMs) {
     if (!filtersReady || !grid) return;
     clearTimeout(filterTimer);
-    filterTimer = setTimeout(applyFilters, 80);
+    const wait = delayMs == null ? 0 : delayMs;
+    if (wait <= 0) applyFilters();
+    else filterTimer = setTimeout(applyFilters, wait);
   }
 
   function syncFilterAddress(params) {
@@ -294,6 +300,16 @@
     });
     setGroup(groupInput?.value || 'all', false);
   }
+  function closeMenus(except) {
+    document.querySelectorAll('.objekt-dropdown-menu').forEach((other) => {
+      if (other !== except) other.hidden = true;
+    });
+    document.querySelectorAll('#collection-filter-form .objekt-filter').forEach((filter) => {
+      if (!except || !filter.contains(except)) filter.classList.remove('is-open');
+    });
+    except?.closest('.objekt-filter')?.classList.toggle('is-open', Boolean(except) && !except.hidden);
+  }
+
   if (form) {
     bindChoiceMenu('season', 'collection-season');
     bindChoiceMenu('class', 'collection-class');
@@ -305,9 +321,7 @@
       hiddenInput: document.getElementById('collection-kind-input'),
       empty: document.getElementById('collection-kind-empty'),
       closeOthers() {
-        document.querySelectorAll('.objekt-dropdown-menu').forEach((other) => {
-          if (other.id !== 'collection-kind-menu') other.hidden = true;
-        });
+        closeMenus(document.getElementById('collection-kind-menu'));
       },
       onChange(value) {
         if (value === lastKindValue) return;
@@ -315,9 +329,12 @@
         scheduleApplyFilters();
       }
     });
-    form.addEventListener('submit', () => {
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
       kindCombo?.commit(document.getElementById('collection-kind-select')?.value);
+      applyFilters();
     });
+    form.querySelector('input[name="q"]')?.addEventListener('input', () => scheduleApplyFilters(200));
   }
 
   function bindSingleMenu(prefix, inputId, fallback) {
@@ -347,15 +364,14 @@
       sync();
       menu.hidden = true;
       toggleBtn.setAttribute('aria-expanded', 'false');
+      closeMenus();
       scheduleApplyFilters();
     }));
     toggleBtn.addEventListener('click', () => {
       const open = menu.hasAttribute('hidden');
-      document.querySelectorAll('.objekt-dropdown-menu').forEach((other) => {
-        if (other !== menu) other.hidden = true;
-      });
       menu.hidden = !open;
       toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      closeMenus(open ? menu : null);
     });
     if (!input.value) input.value = fallback;
     sync();
@@ -389,18 +405,16 @@
     }));
     toggleBtn.addEventListener('click', () => {
       const open = menu.hasAttribute('hidden');
-      document.querySelectorAll('.objekt-dropdown-menu').forEach((other) => {
-        if (other !== menu) other.hidden = true;
-      });
       menu.hidden = !open;
       toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      closeMenus(open ? menu : null);
     });
     syncLabel();
   }
 
   document.addEventListener('click', (event) => {
     if (event.target.closest('.objekt-filter')) return;
-    document.querySelectorAll('.objekt-dropdown-menu').forEach((menu) => { menu.hidden = true; });
+    closeMenus();
   });
 
   filtersReady = Boolean(form && grid && sentinel);
@@ -476,10 +490,35 @@
     </article>`;
   }
 
+  function firstPageKey(items) {
+    return items.map((item) => [
+      item.serial || '',
+      item.collectionId || '',
+      item.collectionNo || '',
+      item.thumbnailImage || ''
+    ].join('\t')).join('\n');
+  }
+
+  function renderCards(items, replace) {
+    if (replace) {
+      grid.replaceChildren();
+      loadedCount = 0;
+    }
+    if (!items.length) return;
+    const wrap = document.createElement('div');
+    wrap.innerHTML = items.map(buildCard).join('');
+    const fragment = document.createDocumentFragment();
+    while (wrap.firstChild) fragment.appendChild(wrap.firstChild);
+    grid.appendChild(fragment);
+    loadedCount += items.length;
+  }
+
   async function applyFilters() {
     if (!grid) return;
     const request = ++listGeneration;
     clearTimeout(pollTimer);
+    listAbort?.abort();
+    listAbort = new AbortController();
     loadError = '';
     loading = true;
     hasMore = false;
@@ -491,20 +530,18 @@
       const res = await fetch(`/cosmo/collection/more?${params.toString()}`, {
         headers: { Accept: 'application/json' },
         credentials: 'same-origin',
-        cache: 'no-store'
+        cache: 'no-store',
+        signal: listAbort.signal
       });
       if (!res.ok) throw new Error('load failed');
       const data = await res.json();
       if (request !== listGeneration) return;
       const items = Array.isArray(data.items) ? data.items : [];
-      grid.replaceChildren();
-      loadedCount = 0;
-      if (items.length) {
-        const wrap = document.createElement('div');
-        wrap.innerHTML = items.map(buildCard).join('');
-        const fragment = document.createDocumentFragment();
-        while (wrap.firstChild) fragment.appendChild(wrap.firstChild);
-        grid.appendChild(fragment);
+      const key = firstPageKey(items);
+      if (key !== lastFirstPageKey) {
+        renderCards(items, true);
+        lastFirstPageKey = key;
+      } else {
         loadedCount = items.length;
       }
       filteredCount = Number(data.filteredCount ?? filteredCount);
@@ -518,8 +555,8 @@
       params.delete('page');
       activeFilters = new URLSearchParams(params);
       syncFilterAddress(params);
-    } catch (_) {
-      if (request !== listGeneration) return;
+    } catch (error) {
+      if (request !== listGeneration || (error && error.name === 'AbortError')) return;
       hasMore = false;
       pending = false;
       loadError = '검색 결과를 바꾸지 못했습니다. 잠시 후 다시 시도해 주세요.';
@@ -528,7 +565,7 @@
       loading = false;
       updateStatus();
       if (pending || (hasMore && sentinelVisible)) {
-        pollTimer = setTimeout(loadMore, pending ? 1000 : 100);
+        pollTimer = setTimeout(loadMore, 100);
       }
     }
   }
@@ -537,6 +574,8 @@
     if ((!hasMore && !pending) || loading) return;
     const request = listGeneration;
     clearTimeout(pollTimer);
+    listAbort?.abort();
+    listAbort = new AbortController();
     loadError = "";
     loading = true;
     updateStatus();
@@ -546,26 +585,25 @@
       const res = await fetch(`/cosmo/collection/more?${params.toString()}`, {
         headers: { Accept: 'application/json' },
         credentials: 'same-origin',
-        cache: 'no-store'
+        cache: 'no-store',
+        signal: listAbort.signal
       });
       if (!res.ok) throw new Error('load failed');
       const data = await res.json();
       if (request !== listGeneration) return;
       const items = Array.isArray(data.items) ? data.items : [];
+      const stillLoading = pending || data.loading;
+      const key = firstPageKey(items);
       // While upstream pages arrive, sorting and filters can move cards.
       // Replace the first page until loading finishes, then append stable pages.
-      if (pending || data.loading) {
-        grid.replaceChildren();
-        loadedCount = 0;
+      if (stillLoading) {
+        if (key !== lastFirstPageKey) {
+          renderCards(items, true);
+          lastFirstPageKey = key;
+        }
+      } else if (items.length) {
+        renderCards(items, false);
       }
-      if (items.length) {
-        const wrap = document.createElement('div');
-        wrap.innerHTML = items.map(buildCard).join('');
-        const fragment = document.createDocumentFragment();
-        while (wrap.firstChild) fragment.appendChild(wrap.firstChild);
-        grid.appendChild(fragment);
-      }
-      loadedCount += items.length;
       filteredCount = Number(data.filteredCount ?? filteredCount);
       ownedCount = Number(data.ownedCount ?? ownedCount);
       hasMore = Boolean(data.hasMore);
@@ -574,8 +612,8 @@
       grid.dataset.loaded = String(loadedCount);
       grid.dataset.filtered = String(filteredCount);
       grid.dataset.owned = String(ownedCount);
-    } catch (_) {
-      if (request !== listGeneration) return;
+    } catch (error) {
+      if (request !== listGeneration || (error && error.name === 'AbortError')) return;
       hasMore = false;
       pending = false;
       loadError = '더 불러오지 못했습니다. 페이지를 새로고침해 주세요.';
@@ -584,7 +622,7 @@
       loading = false;
       updateStatus();
       if (pending || (hasMore && sentinelVisible)) {
-        pollTimer = setTimeout(loadMore, pending ? 1000 : 100);
+        pollTimer = setTimeout(loadMore, 100);
       }
     }
   }
@@ -604,8 +642,11 @@
     btn.addEventListener('click', loadMore);
     sentinel.appendChild(btn);
   }
-  if (pending) pollTimer = setTimeout(loadMore, 1000);
-  window.addEventListener('pagehide', () => clearTimeout(pollTimer), { once: true });
+  if (pending) pollTimer = setTimeout(loadMore, 100);
+  window.addEventListener('pagehide', () => {
+    clearTimeout(pollTimer);
+    listAbort?.abort();
+  }, { once: true });
 })();
 </script>
 {{>layout/page-end}}

@@ -772,6 +772,15 @@
         return title;
     }
 
+    function memberChipHtml(item, member) {
+        const color = item.memberColor || '#00f5d4';
+        const logo = typeof item.memberLogo === 'string' ? item.memberLogo.trim() : '';
+        const mark = logo
+            ? `<img class="objekt-member-logo" src="${attr(logo)}" alt="" aria-hidden="true">`
+            : '<span class="objekt-member-logo" aria-hidden="true"></span>';
+        return `<a href="/cosmo/objekt/member?name=${encodeURIComponent(member)}" class="objekt-member-chip" style="--artist-color:${attr(color)}">${mark}<span class="objekt-member-name">${escapeHtml(member)}</span></a>`;
+    }
+
     function buildCard(item) {
         const collectionId = item.collectionId || '';
         const member = item.member || item.memberName || '';
@@ -795,7 +804,7 @@
                     <a href="/cosmo/objekt/detail/${attr(id)}" class="objekt-detail-link" title="${attr(collectionId)}">${escapeHtml(title)}</a>
                 </div>
                 <div class="objekt-card-foot">
-                    <a href="/cosmo/objekt/member?name=${encodeURIComponent(member)}" class="objekt-member-chip truncate" style="--artist-color:${attr(item.memberColor || '#00f5d4')}">${escapeHtml(member)}</a>
+                    ${memberChipHtml(item, member)}
                     ${klass ? `<span class="badge badge-sm badge-neutral objekt-card-class">${escapeHtml(klass)}</span>` : ''}
                 </div>
                 ${Number.isFinite(item.mintCount) ? `<p class="objekt-card-supply">발행량 ${escapeHtml(String(item.mintCount))}개</p>` : ''}

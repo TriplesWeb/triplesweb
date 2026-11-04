@@ -5,7 +5,6 @@ import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.ObjektMarketDataService;
 import com.example.triplesweb.util.MemberPortraitOptions;
-import com.example.triplesweb.util.ObjektFilterOrder;
 import com.example.triplesweb.util.ObjektLinks;
 import com.example.triplesweb.util.ObjektSeasonCodes;
 import com.example.triplesweb.util.ObjektSeasonColors;
@@ -29,7 +28,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Controller
@@ -56,9 +54,9 @@ public class CosmoController {
         // 무한 스크롤: 최초 HTML은 항상 첫 페이지(20개)만 렌더한다.
         ObjektPageResult page = loadObjektPage(0, search, member, season, classFilters, kind, sort, group);
 
-        List<String> memberOptions = ObjektFilterOrder.sortedMembers(
-                uniqueValues(page.allObjekts(), item -> firstValue(item, "member", "memberName")).stream()
-                        .flatMap(value -> MemberPortraitOptions.objektMembers(value).stream()).toList());
+        ObjektService.FilterFacets facets = objektService.filterFacets();
+        if (facets == null) facets = ObjektService.FilterFacets.empty();
+        List<String> memberOptions = facets.members();
         List<Artist> artists = artistSnapshot.findAll();
         model.addAttribute("memberOptions", memberOptions);
         List<Map<String, Object>> pickerOptions = MemberPortraitOptions.forObjektFilter(memberOptions, artists);
@@ -70,9 +68,9 @@ public class CosmoController {
         model.addAttribute("memberPickerOptions", pickerOptions);
         model.addAttribute("selectedGroup", selectedGroup);
         model.addAttribute("isOtherGroup", "other".equals(selectedGroup));
-        model.addAttribute("seasonOptions", ObjektFilterOrder.sortedSeasons(uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "seasonKey", "season"))));
-        model.addAttribute("classOptions", uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "classKey", "class")));
-        model.addAttribute("objektNumbers", uniqueValues(page.allObjekts(), objekt -> firstValue(objekt, "collectionNo", "collectionNumber")));
+        model.addAttribute("seasonOptions", facets.seasons());
+        model.addAttribute("classOptions", facets.classes());
+        model.addAttribute("objektNumbers", facets.collectionNumbers());
 
         model.addAttribute("objekts", withMemberLinks(page.items()));
         model.addAttribute("objektCount", page.resultCount());
@@ -228,12 +226,6 @@ public class CosmoController {
         return selected.stream().map(CosmoController::normalize).anyMatch(normalizedActual::equals);
     }
 
-    private static List<String> uniqueValues(List<Map<String, Object>> source, Function<Map<String, Object>, String> extractor) {
-        return source.stream().map(extractor).filter(value -> value != null && !value.isBlank())
-                .map(String::trim).distinct().sorted(String.CASE_INSENSITIVE_ORDER.thenComparing(Comparator.naturalOrder()))
-                .collect(Collectors.toList());
-    }
-
     private Comparator<Map<String, Object>> sortComparator(String sort, Map<String, Integer> memberOrderCache) {
         Comparator<Map<String, Object>> byDate = Comparator.comparing(
                 objekt -> firstValue(objekt, "createdAt", "created_at", "date"),
@@ -327,6 +319,9 @@ public class CosmoController {
             copy.put("memberHref", "/cosmo/objekt/member?name="
                     + URLEncoder.encode(member, StandardCharsets.UTF_8).replace("+", "%20"));
             copy.put("memberColor", MemberPortraitOptions.artistColor(member, artists));
+            String memberLogo = MemberPortraitOptions.objektMemberLogo(member);
+            copy.put("memberLogo", memberLogo);
+            copy.put("hasMemberLogo", !memberLogo.isBlank());
             copy.put("publicKey", ObjektLinks.key(item));
             copy.put("seasonColor", ObjektSeasonColors.colorFor(firstValue(item, "season", "seasonKey")));
             copy.put("cardTitle", ObjektSeasonCodes.cardTitle(

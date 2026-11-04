@@ -82,9 +82,10 @@ const fixtures = [
     await page.addStyleTag({content:['gravity-page','archive-page','cosmo-profile'].map(name=>read('src/main/resources/static/css/'+name+'.css')).join('\n')});
     assert.equal(await page.locator('.profile-owned-class').count(),1);
     assert.equal(await page.locator('.profile-season-fold, [role=progressbar]').count(),0);
-    assert.equal(await page.locator('.profile-checklist-card.is-missing').count(),1);
+    assert.equal(await page.locator('.profile-checklist-card.is-missing').count(),2);
+    assert.match(await page.locator('.profile-owned-summary-copy span').first().textContent(),/2 \/ 3종/);
     await page.mouse.move(0,0);
-    assert.match(await page.locator('.profile-checklist-card.is-missing').evaluate(card=>{const image=document.createElement('img');card.querySelector('.profile-checklist-image').append(image);return getComputedStyle(image).filter;}),/brightness\(0\.72\)/);
+    assert.match(await page.locator('.profile-checklist-card.is-missing').first().evaluate(card=>{const image=document.createElement('img');card.querySelector('.profile-checklist-image').append(image);return getComputedStyle(image).filter;}),/brightness\(0\.72\)/);
     await page.screenshot({path:'/tmp/objekt-ui/profile-missing.png',fullPage:true});
     console.log('PASS: 날짜 묶음, 방향 필터, 검색, 빈 결과, 오류 재시도, 안전한 텍스트 렌더링, 모바일 가로 넘침 검사');
   } finally { await browser.close(); }

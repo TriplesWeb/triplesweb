@@ -2,6 +2,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'../..');
 const html=`<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="/css/objekt-page.css">
 <style>.hidden{display:none}#objekt-card-grid{min-height:40px}</style>
 </head><body>
 <form id="objekt-search-form" action="/cosmo/objekt" method="get">
@@ -74,14 +75,17 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
     const group=url.searchParams.get('group')||'all';
     const kind=url.searchParams.get('kind')||'all';
     const label=members[0]||seasons[0]||(group==='other'?'other':kind!=='all'?kind:'filtered');
+    const member=members[0]||'';
     return route.fulfill({contentType:'application/json',body:JSON.stringify({
-      items:[{id:label,publicKey:label,collectionId:label+' 카드',member:members[0]||'',season:seasons[0]||'',class:'First',collectionNo:'1'}],
+      items:[{id:label,publicKey:label,collectionId:label+' 카드',member,memberLogo:member==='윤서연'?'/images/objekt-member-logos/s01.png':'',season:seasons[0]||'',class:'First',collectionNo:'1'}],
       resultCount:3,allCount:8,hasMore:false,nextPage:null
     })});
    }
    const file=path.resolve(root,'src/main/resources/static','.'+url.pathname);
-   if(file.startsWith(path.join(root,'src/main/resources/static')+path.sep)&&fs.existsSync(file))
-    return route.fulfill({path:file,contentType:url.pathname.endsWith('.js')?'application/javascript':'text/css'});
+   if(file.startsWith(path.join(root,'src/main/resources/static')+path.sep)&&fs.existsSync(file)){
+    const type=url.pathname.endsWith('.js')?'application/javascript':url.pathname.endsWith('.png')?'image/png':'text/css';
+    return route.fulfill({path:file,contentType:type});
+   }
    return route.fulfill({status:404,body:''});
   });
   await page.goto('https://filters.test/cosmo/objekt',{waitUntil:'load'});
@@ -91,6 +95,10 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
   assert.equal(await page.locator('#objekt-card-grid .objekt-item').count(),1);
   assert.equal(await page.locator('#objekt-result-summary strong').textContent(),'3');
   assert.ok(moreCalls.some(call=>call.member==='윤서연'&&call.group==='members'));
+  assert.equal(await page.locator('img.objekt-member-logo').count(),1);
+  assert.equal(await page.locator('img.objekt-member-logo').getAttribute('src'),'/images/objekt-member-logos/s01.png');
+  assert.equal(await page.locator('.objekt-member-name').textContent(),'윤서연');
+  assert.equal(await page.locator('.objekt-member-name').evaluate(el=>getComputedStyle(el).color),'rgb(244, 246, 251)');
 
   moreCalls.length=0;
   await page.locator('[data-objekt-group="other"]').click();

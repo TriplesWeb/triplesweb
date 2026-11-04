@@ -42,4 +42,20 @@ class MemberPortraitOptionsTest {
         assertThat(MemberPortraitOptions.artistColor("서연", java.util.List.of(artist))).isEqualTo("#111111");
         assertThat(MemberPortraitOptions.artistColor("없는멤버", java.util.List.of(artist))).isEqualTo("#00f5d4");
     }
+
+    @Test void objektMemberLogoCoversS1ThroughS24SoloCards() {
+        assertThat(MemberPortraitOptions.objektMemberLogo("윤서연")).isEqualTo("/images/objekt-member-logos/s01.png");
+        assertThat(MemberPortraitOptions.objektMemberLogo("SeoYeon")).isEqualTo("/images/objekt-member-logos/s01.png");
+        assertThat(MemberPortraitOptions.objektMemberLogo("S1")).isEqualTo("/images/objekt-member-logos/s01.png");
+        assertThat(MemberPortraitOptions.objektMemberLogo("서다현")).isEqualTo("/images/objekt-member-logos/s10.png");
+        assertThat(MemberPortraitOptions.objektMemberLogo("코토네")).isEqualTo("/images/objekt-member-logos/s11.png");
+        assertThat(MemberPortraitOptions.objektMemberLogo("Kotone")).isEqualTo("/images/objekt-member-logos/s11.png");
+        assertThat(MemberPortraitOptions.objektMemberLogo("S11")).isEqualTo("/images/objekt-member-logos/s11.png");
+        assertThat(MemberPortraitOptions.objektMemberLogo("설린")).isEqualTo("/images/objekt-member-logos/s22.png");
+        assertThat(MemberPortraitOptions.objektMemberLogo("지연")).isEqualTo("/images/objekt-member-logos/s24.png");
+        assertThat(MemberPortraitOptions.objektMemberLogo("JiYeon")).isEqualTo("/images/objekt-member-logos/s24.png");
+        assertThat(MemberPortraitOptions.objektMemberLogo("S24")).isEqualTo("/images/objekt-member-logos/s24.png");
+        assertThat(MemberPortraitOptions.objektMemberLogo("S1 X S9")).isEmpty();
+        assertThat(MemberPortraitOptions.objektMemberLogo("zenith")).isEmpty();
+    }
 }

@@ -74,7 +74,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   }
   .site-search,.ar-search-wrap,.objekt-search,.tr-search{width:100%;max-width:100%;min-width:0;flex:1 1 100%}
   .site-search__submit,.objekt-search-button.site-search__submit{min-height:auto;min-width:auto;padding:0;background:transparent;color:#b9cac4;border-radius:0}
-  main form:has(.site-search),main form:has(.ar-search),.ar-filters,.objekt-search-row,.tr-toolbar,.tr-facets,.gv-filters,.collection-filter-bar{
+  main form:has(.site-search),main form:has(.ar-search),.ar-filters,.objekt-search-row,.tr-toolbar,.tr-facets,.gv-filters{
     width:100%;display:flex;flex-wrap:wrap;gap:.55rem;align-items:stretch
   }
   main form:has(.site-search)>.site-field,

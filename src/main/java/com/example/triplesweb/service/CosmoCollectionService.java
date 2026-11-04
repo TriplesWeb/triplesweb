@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,12 +30,15 @@ public class CosmoCollectionService {
     private static final String NOT_FOUND = "없는 닉네임 입니다.";
     private static final long CACHE_TTL_SEC = 600;
     private static final long MISSING_TTL_SEC = 60;
+    private static final long USER_HINT_TTL_SEC = 120;
     private static final int MAX_CACHE_ENTRIES = 100;
 
     private final RestClient cosmo;
     private final RestClient index;
     private final ConcurrentHashMap<String, Cached> cache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CachedNames> nicknameSearchCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CachedUser> userHints = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CompletableFuture<Cached>> inflight = new ConcurrentHashMap<>();
     private final ExecutorService loadExecutor = Executors.newFixedThreadPool(4, r -> {
         Thread t = new Thread(r, "cosmo-collection-load");
         t.setDaemon(true);
@@ -93,6 +97,13 @@ public class CosmoCollectionService {
     public Map<String, Object> search(String rawNickname, int page,
                                       String member, List<String> seasons, List<String> classes,
                                       String query, String group, String kind, String sort) {
+        return search(rawNickname, page, member, seasons, classes, query, group, kind, sort, true);
+    }
+
+    public Map<String, Object> search(String rawNickname, int page,
+                                      String member, List<String> seasons, List<String> classes,
+                                      String query, String group, String kind, String sort,
+                                      boolean includeFacets) {
         String nickname = rawNickname == null ? "" : rawNickname.trim();
         if (nickname.isBlank()) throw new IllegalArgumentException(NOT_FOUND);
         if (nickname.length() > 40 || nickname.contains("/") || nickname.contains(" "))
@@ -123,7 +134,8 @@ public class CosmoCollectionService {
                         + text(card, "season") + " " + text(card, "objektClass") + " "
                         + text(card, "collectionNo") + " "
                         + text(card, "serial") + " " + text(card, "slug")).toLowerCase(Locale.ROOT);
-                if (!haystack.contains(search)) return false;
+                if (!ObjektSeasonCodes.matches(search, haystack, text(card, "season"), text(card, "collectionNo")))
+                    return false;
             }
             return true;
         }).collect(java.util.stream.Collectors.toCollection(ArrayList::new));
@@ -142,10 +154,14 @@ public class CosmoCollectionService {
         view.put("ownedCount", snapshot.size());
         view.put("filteredCount", filtered.size());
         view.put("cards", cards);
-        view.put("allCards", snapshot);
-        view.put("filterMembers", uniqueValues(snapshot, "member"));
-        view.put("filterSeasons", uniqueValues(snapshot, "season"));
-        view.put("filterClasses", uniqueValues(snapshot, "objektClass"));
+        if (includeFacets) {
+            CardFacets facets = found.cards.facets();
+            view.put("allCards", snapshot);
+            view.put("filterMembers", facets.members());
+            view.put("filterSeasons", facets.seasons());
+            view.put("filterClasses", facets.classes());
+            view.put("kindOptions", facets.kindOptions());
+        }
         view.put("profileUrl", "/cosmo/profile/" + nickEnc.replace("+", "%20"));
         view.put("hasCards", !cards.isEmpty());
         view.put("page", safePage);
@@ -173,8 +189,6 @@ public class CosmoCollectionService {
         view.put("selectedKind", kindFiltered ? kindKey : "all");
         view.put("selectedKindLabel", kindFiltered ? kindKey : "전체");
         view.put("selectedSort", sortKey);
-        view.put("kindOptions", snapshot.stream().map(card -> text(card, "collectionNo"))
-                .filter(value -> !value.isBlank()).distinct().sorted(String.CASE_INSENSITIVE_ORDER).toList());
         view.put("filterQuery", filterQuery);
         view.put("hasActiveFilters", !"all".equals(selectedGroup) || !memberKey.isBlank() || !seasonKeys.isEmpty()
                 || !classKeys.isEmpty() || kindFiltered || !"latest".equals(sortKey)
@@ -212,15 +226,32 @@ public class CosmoCollectionService {
             }
             return current;
         }
-        Cached fresh = loadProgressive(nickname);
-        synchronized (cache) {
-            while (cache.size() >= MAX_CACHE_ENTRIES) {
-                cache.entrySet().stream().min(Comparator.comparingLong(entry -> entry.getValue().lastAccessAt))
-                        .ifPresent(entry -> cache.remove(entry.getKey(), entry.getValue()));
+        CompletableFuture<Cached> created = new CompletableFuture<>();
+        CompletableFuture<Cached> pending = inflight.putIfAbsent(key, created);
+        if (pending != null) {
+            try {
+                return pending.join();
+            } catch (CompletionException ex) {
+                throw unwrap(ex);
             }
-            cache.put(key, fresh);
         }
-        return fresh;
+        try {
+            Cached fresh = loadProgressive(nickname);
+            synchronized (cache) {
+                while (cache.size() >= MAX_CACHE_ENTRIES) {
+                    cache.entrySet().stream().min(Comparator.comparingLong(entry -> entry.getValue().lastAccessAt))
+                            .ifPresent(entry -> cache.remove(entry.getKey(), entry.getValue()));
+                }
+                cache.put(key, fresh);
+            }
+            created.complete(fresh);
+            return fresh;
+        } catch (RuntimeException ex) {
+            created.completeExceptionally(ex);
+            throw ex;
+        } finally {
+            inflight.remove(key, created);
+        }
     }
 
     private static Comparator<Map<String, Object>> sortComparator(String sort) {
@@ -306,28 +337,40 @@ public class CosmoCollectionService {
 
     /**
      * Nickname resolve + first index page synchronously; remaining pages in background.
+     * Suggest에서 받은 주소가 있으면 COSMO 조회와 보유 목록을 겹쳐서 불러온다.
      */
     private Cached loadProgressive(String nickname) {
+        CachedUser hint = knownUser(nickname);
+        CompletableFuture<JsonNode> hintedHoldings = null;
+        if (hint != null && isAddress(hint.address())) {
+            hintedHoldings = CompletableFuture.supplyAsync(
+                    () -> fetchOwnedPage(hint.address().toLowerCase(Locale.ROOT), null));
+        }
         JsonNode profile;
         try {
             profile = cosmo.get().uri("/bff/v3/users/by-nickname/{nickname}", nickname)
                     .retrieve().body(JsonNode.class);
         } catch (RestClientResponseException ex) {
+            if (hintedHoldings != null) hintedHoldings.cancel(true);
             if (ex.getStatusCode().value() != 404) throw ex;
             return missing(nickname);
         }
         String address = profile == null ? "" : profile.path("address").asText("");
-        if (address.isBlank()) return missing(nickname);
-        if (!address.matches("0x[0-9a-fA-F]{40}")) throw new IllegalStateException("잘못된 계정 응답입니다.");
+        if (address.isBlank()) {
+            if (hintedHoldings != null) hintedHoldings.cancel(true);
+            return missing(nickname);
+        }
+        if (!isAddress(address)) throw new IllegalStateException("잘못된 계정 응답입니다.");
 
         String resolvedNick = profile.path("nickname").asText(nickname);
         String image = profile.path("profileImageUrl").asText("");
         String addrLower = address.toLowerCase(Locale.ROOT);
+        rememberUser(resolvedNick, address, image);
         Set<String> seenTokens = ConcurrentHashMap.newKeySet();
         Set<String> seenCursors = ConcurrentHashMap.newKeySet();
         CardBuffer cards = new CardBuffer();
 
-        JsonNode first = fetchOwnedPage(addrLower, null);
+        JsonNode first = firstOwnedPage(addrLower, hint, hintedHoldings);
         appendObjekts(first, cards, seenTokens);
         JsonNode nextCursor = first.get("nextCursor");
         boolean hasMore = nextCursor != null && !nextCursor.isNull()
@@ -371,6 +414,24 @@ public class CosmoCollectionService {
             cached.complete = true;
             cached.expiresAt = Instant.now().getEpochSecond() + CACHE_TTL_SEC;
         }
+    }
+
+    private JsonNode firstOwnedPage(String address, CachedUser hint, CompletableFuture<JsonNode> hintedHoldings) {
+        if (hintedHoldings != null && hint != null && hint.address().equalsIgnoreCase(address)) {
+            try {
+                return hintedHoldings.join();
+            } catch (CompletionException ex) {
+                RuntimeException cause = unwrap(ex);
+                if (cause instanceof RestClientResponseException rest && rest.getStatusCode().value() == 404) {
+                    throw cause;
+                }
+            } catch (RuntimeException ignored) {
+                // 힌트 주소로 받은 응답이 실패하면 COSMO 주소로 다시 조회한다.
+            }
+        } else if (hintedHoldings != null) {
+            hintedHoldings.cancel(true);
+        }
+        return fetchOwnedPage(address, null);
     }
 
     private JsonNode fetchOwnedPage(String address, JsonNode cursor) {
@@ -417,25 +478,74 @@ public class CosmoCollectionService {
                             .build())
                     .retrieve()
                     .body(JsonNode.class);
-            List<String> found = nicknamesFromSearch(node, cap);
-            nicknameSearchCache.put(key, new CachedNames(List.copyOf(found), now + 20));
-            return found;
+            List<IndexedUser> found = usersFromSearch(node, cap);
+            List<String> names = new ArrayList<>(found.size());
+            boolean exactPrefetch = false;
+            for (IndexedUser user : found) {
+                names.add(user.nickname());
+                rememberUser(user.nickname(), user.address(), user.image());
+                if (!exactPrefetch && user.nickname().equalsIgnoreCase(prefix) && isAddress(user.address())) {
+                    exactPrefetch = true;
+                    prefetch(user.nickname());
+                }
+            }
+            nicknameSearchCache.put(key, new CachedNames(List.copyOf(names), now + 20));
+            return names;
         } catch (RuntimeException ignored) {
             return List.of();
         }
     }
 
-    private static List<String> nicknamesFromSearch(JsonNode root, int cap) {
+    private void prefetch(String nickname) {
+        loadExecutor.execute(() -> {
+            try {
+                resolve(nickname);
+            } catch (RuntimeException ignored) {
+                // 검색 제출 전에 데우기만 한다. 실패는 실제 검색에서 다시 처리한다.
+            }
+        });
+    }
+
+    private void rememberUser(String nickname, String address, String image) {
+        String name = nickname == null ? "" : nickname.trim();
+        if (name.isBlank() || name.length() > 40 || name.contains("/") || name.contains(" ")) return;
+        userHints.entrySet().removeIf(entry -> entry.getValue().expiresAt() <= Instant.now().getEpochSecond());
+        userHints.put(name.toLowerCase(Locale.ROOT), new CachedUser(
+                name,
+                address == null ? "" : address.trim(),
+                image == null ? "" : image.trim(),
+                Instant.now().getEpochSecond() + USER_HINT_TTL_SEC));
+    }
+
+    private CachedUser knownUser(String nickname) {
+        if (nickname == null || nickname.isBlank()) return null;
+        long now = Instant.now().getEpochSecond();
+        userHints.entrySet().removeIf(entry -> entry.getValue().expiresAt() <= now);
+        CachedUser hint = userHints.get(nickname.trim().toLowerCase(Locale.ROOT));
+        return hint == null || hint.expiresAt() <= now ? null : hint;
+    }
+
+    private static boolean isAddress(String address) {
+        return address != null && address.matches("0x[0-9a-fA-F]{40}");
+    }
+
+    private static RuntimeException unwrap(CompletionException ex) {
+        Throwable cause = ex.getCause();
+        if (cause instanceof RuntimeException runtime) return runtime;
+        return ex;
+    }
+
+    private static List<IndexedUser> usersFromSearch(JsonNode root, int cap) {
         JsonNode results = root == null ? null : root.path("results");
         if (results == null || !results.isArray()) return List.of();
-        List<String> names = new ArrayList<>();
+        List<IndexedUser> users = new ArrayList<>();
         for (JsonNode user : results) {
             String name = user.path("nickname").asText("").trim();
             if (name.isBlank() || name.length() > 40 || name.contains("/") || name.contains(" ")) continue;
-            names.add(name);
-            if (names.size() >= cap) break;
+            users.add(new IndexedUser(name, user.path("address").asText(""), user.path("profileImageUrl").asText("")));
+            if (users.size() >= cap) break;
         }
-        return names;
+        return users;
     }
 
     private static Cached missing(String nickname) {
@@ -494,13 +604,38 @@ public class CosmoCollectionService {
 
     private static final class CardBuffer {
         private final List<Map<String, Object>> cards = new ArrayList<>();
+        private int facetSize = -1;
+        private CardFacets facets = CardFacets.EMPTY;
 
         synchronized void append(JsonNode objekt) {
+            String artist = objekt.path("artist").asText("");
+            if (!artist.isBlank() && !"triples".equalsIgnoreCase(artist)) return;
             cards.add(card(objekt, cards.size()));
         }
 
         synchronized List<Map<String, Object>> snapshot() {
             return List.copyOf(cards);
+        }
+
+        synchronized CardFacets facets() {
+            if (facetSize != cards.size()) {
+                facets = CardFacets.from(cards);
+                facetSize = cards.size();
+            }
+            return facets;
+        }
+    }
+
+    private record CardFacets(List<String> members, List<String> seasons, List<String> classes, List<String> kindOptions) {
+        static final CardFacets EMPTY = new CardFacets(List.of(), List.of(), List.of(), List.of());
+
+        static CardFacets from(List<Map<String, Object>> cards) {
+            return new CardFacets(
+                    uniqueValues(cards, "member"),
+                    uniqueValues(cards, "season"),
+                    uniqueValues(cards, "objektClass"),
+                    cards.stream().map(card -> text(card, "collectionNo"))
+                            .filter(value -> !value.isBlank()).distinct().sorted(String.CASE_INSENSITIVE_ORDER).toList());
         }
     }
 
@@ -532,4 +667,6 @@ public class CosmoCollectionService {
     }
 
     private record CachedNames(List<String> names, long expiresAt) {}
+    private record CachedUser(String nickname, String address, String image, long expiresAt) {}
+    private record IndexedUser(String nickname, String address, String image) {}
 }

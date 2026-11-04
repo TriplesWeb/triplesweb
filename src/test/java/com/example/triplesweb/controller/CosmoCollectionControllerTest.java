@@ -104,6 +104,8 @@ class CosmoCollectionControllerTest {
                 .andExpect(content().string(containsString("?tab=overview")))
                 .andExpect(content().string(containsString("기타 옵젝")))
                 .andExpect(content().string(containsString("보유 오브젝트 필터")))
+                .andExpect(content().string(containsString("collection-filter-workspace")))
+                .andExpect(content().string(containsString("objekt-filter-bar")))
                 .andExpect(content().string(containsString("id=\"collection-kind-select\"")))
                 .andExpect(content().string(containsString("value=\"전체\"")))
                 .andExpect(content().string(not(containsString("오브젝트 상세 보기"))))
@@ -139,7 +141,7 @@ class CosmoCollectionControllerTest {
         view.put("hasMore", true);
         view.put("loading", true);
         view.put("nextPage", 2);
-        when(collections.search("테스트", 1, "", List.of(), List.of(), "", "all", "all", "latest")).thenReturn(view);
+        when(collections.search("테스트", 1, "", List.of(), List.of(), "", "all", "all", "latest", false)).thenReturn(view);
         mvc.perform(get("/cosmo/collection/more").param("nickname", "테스트").param("page", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].member").value("정하연"))

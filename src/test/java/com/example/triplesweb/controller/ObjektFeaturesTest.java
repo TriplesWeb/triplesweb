@@ -43,6 +43,7 @@ class ObjektFeaturesTest {
     /** Mirrors ObjektService.findByKey indexing so detail routes resolve under the mock catalog. */
     private void stubCatalog(List<Map<String, Object>> items) {
         when(catalog.findCollections("triples")).thenReturn(items);
+        when(catalog.filterFacets()).thenReturn(ObjektService.FilterFacets.from(items));
         Map<String, Map<String, Object>> index = new HashMap<>();
         for (Map<String, Object> item : items) {
             putIndex(index, string(item, "id"), item);
@@ -274,6 +275,8 @@ class ObjektFeaturesTest {
             .andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc367z"));
         org.assertj.core.api.Assertions.assertThat(result.getResponse().getContentAsString())
             .contains("data-serial-panel", "objektIssuedCount")
+            .contains("objekt-member-logo")
+            .contains("/images/objekt-member-logos/s19.png")
             .doesNotContain("objekt-head-mints")
             .doesNotContain("발행량 7,193,056개")
             .doesNotContain("objektIssuedRanges", "objektIssuedTime").doesNotContain("id=\"objektDetailFullLink\"");
@@ -302,10 +305,15 @@ class ObjektFeaturesTest {
                 .andExpect(content().string(containsString("objekt-card-supply")))
                 .andExpect(content().string(containsString("발행량 90개")))
                 .andExpect(content().string(containsString("objekt-member-chip")))
-                .andExpect(content().string(containsString("--artist-color:#7B61FF")));
+                .andExpect(content().string(containsString("objekt-member-logo")))
+                .andExpect(content().string(containsString("objekt-member-name")))
+                .andExpect(content().string(containsString("--artist-color:#7B61FF")))
+                .andExpect(content().string(containsString("/images/objekt-member-logos/s01.png")));
         mvc.perform(get("/cosmo/objekt/more").param("page", "0"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].memberColor").value("#7B61FF"));
+                .andExpect(jsonPath("$.items[0].memberColor").value("#7B61FF"))
+                .andExpect(jsonPath("$.items[0].memberLogo").value("/images/objekt-member-logos/s01.png"))
+                .andExpect(jsonPath("$.items[0].hasMemberLogo").value(true));
     }
 
     @Test void ownerResponseDoesNotExposeInternalVerificationFields() throws Exception {

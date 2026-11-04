@@ -120,7 +120,7 @@ public class CosmoCollectionController {
             Map<String, Object> view = collections.search(nickname, Math.max(0, page), member,
                     season == null ? List.of() : season,
                     objektClass == null ? List.of() : objektClass,
-                    query, group, kind, sort);
+                    query, group, kind, sort, false);
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("items", view.getOrDefault("cards", List.of()));
             body.put("page", view.get("page"));

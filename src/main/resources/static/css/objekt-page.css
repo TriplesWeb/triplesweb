@@ -466,29 +466,28 @@
         }
         .objekt-card-class {
             flex: 0 0 auto;
-            align-self: flex-end;
-            margin-top: .18rem;
+            align-self: center;
             border-radius: 999px;
-            padding: .14rem .42rem;
-            border: 1px solid rgba(255,255,255,.08);
-            background: #0c0d12;
+            padding: .18rem .52rem;
+            border: 1px solid rgba(255,255,255,.1);
+            background: #0a0b10;
             color: #f3f4f8;
-            font-size: .64rem;
+            font-size: .62rem;
             font-weight: 800;
             line-height: 1.2;
         }
         .objekt-card-body {
             display: flex;
             flex-direction: column;
-            gap: .38rem;
-            padding: .7rem .8rem .85rem;
+            gap: .5rem;
+            padding: .78rem .85rem 1rem;
         }
         .objekt-detail-link {
             flex: 1 1 auto;
             min-width: 0;
             overflow: hidden;
-            color: #e8eaef;
-            font-size: .68rem;
+            color: #f4f6fb;
+            font-size: .72rem;
             font-weight: 700;
             text-decoration: none;
             text-overflow: ellipsis;
@@ -501,19 +500,57 @@
             justify-content: space-between;
             gap: .5rem;
             color: #8b93a7;
-            font-size: .72rem;
+            font-size: .88rem;
         }
         .objekt-member-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: .32rem;
             min-width: 0;
-            color: var(--artist-color, #00f5d4);
-            font-weight: 650;
+            color: #f4f6fb;
+            font-weight: 700;
             text-decoration: none;
         }
-        .objekt-member-chip:hover { text-decoration: underline; }
+        .objekt-member-logo {
+            display: block;
+            flex: 0 0 auto;
+        }
+        span.objekt-member-logo {
+            width: 1.12rem;
+            height: 1.12rem;
+            color: #00f5d4;
+            background: currentColor;
+            -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='black' d='M210.3 56.34l-80-24A8 8 0 0 0 120 40v108.26A48 48 0 1 0 136 184V98.75l69.7 20.91A8 8 0 0 0 216 112V64a8 8 0 0 0-5.7-7.66zM88 216a32 32 0 1 1 32-32 32 32 0 0 1-32 32z'/%3E%3C/svg%3E");
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='black' d='M210.3 56.34l-80-24A8 8 0 0 0 120 40v108.26A48 48 0 1 0 136 184V98.75l69.7 20.91A8 8 0 0 0 216 112V64a8 8 0 0 0-5.7-7.66zM88 216a32 32 0 1 1 32-32 32 32 0 0 1-32 32z'/%3E%3C/svg%3E");
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+            -webkit-mask-size: contain;
+            mask-size: contain;
+        }
+        img.objekt-member-logo {
+            width: .95rem;
+            height: 1.48rem;
+            object-fit: contain;
+            object-position: center;
+            filter: drop-shadow(0 0 .7px rgba(255,255,255,.45));
+        }
+        .objekt-member-name {
+            min-width: 0;
+            overflow: hidden;
+            color: #f4f6fb;
+            font-size: .92rem;
+            font-weight: 700;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .objekt-member-chip:hover .objekt-member-name,
+        .objekt-member-chip:focus-visible .objekt-member-name { text-decoration: underline; }
         .objekt-card-supply {
-            margin: .15rem 0 0;
+            margin: .08rem 0 0;
             color: #c5ccd8;
-            font-size: .72rem;
+            font-size: .75rem;
         }
         .objekt-card:hover {
             border-color: rgba(0,245,212,.58);
@@ -665,14 +702,22 @@
         .objekt-detail-meta dt { color: #8b93a7; margin: 0; }
         .objekt-detail-meta dd { margin: 0; color: #e8edf5; font-weight: 600; text-align: right; }
         .objekt-detail-meta a.objekt-detail-member-link {
-            color: var(--artist-color, #00f5d4);
+            color: color-mix(in srgb, var(--artist-color, #00f5d4) 72%, #ffffff 28%);
             font-weight: 700;
             text-decoration: none;
+            text-shadow:
+                0 0 4px rgba(255, 255, 255, .72),
+                0 0 10px rgba(255, 255, 255, .38),
+                0 0 18px color-mix(in srgb, var(--artist-color, #00f5d4) 55%, #ffffff);
         }
         .objekt-detail-meta a.objekt-detail-member-link:hover,
         .objekt-detail-meta a.objekt-detail-member-link:focus-visible {
             text-decoration: underline;
             text-underline-offset: 2px;
+            text-shadow:
+                0 0 6px rgba(255, 255, 255, .85),
+                0 0 14px rgba(255, 255, 255, .45),
+                0 0 22px color-mix(in srgb, var(--artist-color, #00f5d4) 45%, #ffffff);
         }
         .objekt-detail-story {
             margin: .1rem 0;
@@ -784,11 +829,14 @@
             .objekt-search-row { width: 100%; }
             .objekt-reset-button { flex: 0 0 auto; width: 100%; }
             .objekt-card-grid { gap: 10px; }
-            .objekt-card-body { padding: .55rem .55rem .7rem; gap: .3rem; }
+            .objekt-card-body { padding: .6rem .6rem .8rem; gap: .42rem; }
             .objekt-card-badges { flex-wrap: wrap; gap: .22rem .3rem; }
             .objekt-card-season { order: 1; }
             .objekt-detail-link { order: 2; flex: 1 1 auto; min-width: 0; }
-            .objekt-card-class { margin-top: .22rem; font-size: .58rem; padding: .1rem .34rem; }
+            .objekt-card-class { font-size: .58rem; padding: .12rem .4rem; }
+            .objekt-member-name { font-size: .82rem; }
+            span.objekt-member-logo { width: 1rem; height: 1rem; }
+            img.objekt-member-logo { width: .86rem; height: 1.34rem; }
         }
         @media (max-width: 420px) {
             .objekt-filter-bar { grid-template-columns: 1fr; }
