@@ -1,19 +1,26 @@
 {{>layout/head-open}}
     <title>tripleS 커뮤</title>
-    <link rel="stylesheet" href="/css/schedule-categories.css?v=5">
+    <link rel="stylesheet" href="/css/schedule-categories.css?v=6">
     <link rel="stylesheet" href="/css/main-page.css?v=1">
 
     <style>
-        /* FullCalendar Dark Customization */
+        /* FullCalendar Dark Customization — 홈 미니 캘린더 */
         .fc { --fc-border-color: rgba(45, 49, 62, 0.6); --fc-page-bg-color: transparent; }
-        .fc .fc-toolbar-title { font-size: 0.9rem !important; font-weight: bold; color: #e3e2e8; }
-        .fc .fc-button-primary { background-color: #1a1b22 !important; border-color: #2d313e !important; color: #b9cac4 !important; }
+        .fc .fc-toolbar-title { font-size: 0.85rem !important; font-weight: bold; color: #e3e2e8; }
+        .fc .fc-button-primary { background-color: #1a1b22 !important; border-color: #2d313e !important; color: #b9cac4 !important; padding: 0.15rem 0.45rem !important; font-size: 0.7rem !important; }
         .fc .fc-button-primary:hover { background-color: #23242e !important; color: #00f5d4 !important; }
         .fc-theme-standard td, .fc-theme-standard th { border-color: rgba(45, 49, 62, 0.4) !important; }
-        .fc .fc-col-header-cell-cushion { color: #b9cac4; font-size: 0.75rem; font-family: monospace; }
-        .fc .fc-daygrid-day-number { color: #e3e2e8; font-size: 0.75rem; font-family: monospace; }
+        .fc .fc-col-header-cell-cushion { color: #b9cac4; font-size: 0.65rem; font-family: monospace; padding: 2px 0 !important; }
+        .fc .fc-daygrid-day-number { color: #e3e2e8; font-size: 0.7rem; font-family: monospace; padding: 2px 4px !important; }
         .fc-col-header-cell:nth-child(1) .fc-col-header-cell-cushion { color: #f87171 !important; }
         .fc-col-header-cell:nth-child(7) .fc-col-header-cell-cushion { color: #60a5fa !important; }
+        .main-mini-calendar .fc-daygrid-day-frame { min-height: 1.85rem !important; }
+        .main-mini-calendar .fc-daygrid-day-events { min-height: 0.55rem !important; margin: 0 !important; }
+        .main-mini-calendar .fc-daygrid-event-dot { margin: 0 auto; }
+        .main-mini-calendar .fc-daygrid-event { margin: 0 !important; padding: 0 !important; justify-content: center; }
+        .main-mini-calendar .fc-event-title,
+        .main-mini-calendar .fc-event-time { display: none !important; }
+        .main-mini-calendar .fc-scrollgrid { border-radius: 0.75rem; overflow: hidden; }
     </style>
 </head><body class="site-page main-page min-h-screen flex flex-col bg-background text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
 
@@ -121,7 +128,7 @@
                 전체 달력 <span class="material-symbols-outlined text-sm">chevron_right</span>
             </a>
         </div>
-        <div id="miniCalendar" class="w-full"></div>
+        <div id="miniCalendar" class="main-mini-calendar" style="width:100%;max-width:22rem;min-height:12rem" aria-label="이번 달 미니 캘린더"></div>
     </section>
 
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
@@ -175,66 +182,45 @@
 </main>
 
 <!-- 푸터 레이아웃 포함 -->
-<!-- FullCalendar: 미니 캘린더가 보일 때만 로드 -->
+<!-- FullCalendar: 홈 미니 캘린더 (컴팩트 · 일정은 점만 표시) -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/ko.global.min.js"></script>
 <script>
 (function () {
     const calendarEl = document.getElementById("miniCalendar");
-    if (!calendarEl) return;
+    if (!calendarEl || typeof FullCalendar === "undefined") return;
     const schedules = {{{schedulesJson}}} || [];
-    let started = false;
 
-    function loadScript(src) {
-        return new Promise((resolve, reject) => {
-            const s = document.createElement("script");
-            s.src = src;
-            s.async = true;
-            s.onload = resolve;
-            s.onerror = reject;
-            document.head.appendChild(s);
-        });
-    }
-
-    async function initMiniCalendar() {
-        if (started) return;
-        started = true;
-        await loadScript("https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js");
-        await loadScript("https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/ko.global.min.js");
-        const miniCalendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: "dayGridMonth",
-            locale: "ko",
-            height: "auto",
-            fixedWeekCount: false,
-            dayMaxEvents: false,
-            headerToolbar: { left: "", center: "title", right: "prev,next" },
-            events: (schedules || []).map(function (item) {
-                return {
-                    id: item.id,
-                    title: item.displayTitle || item.title,
-                    start: item.start,
-                    end: item.end,
-                    color: item.color,
-                    extendedProps: item
-                };
-            }),
-            eventDidMount: function (info) {
-                info.el.style.setProperty("--schedule-color", info.event.extendedProps.color || "#00f5d4");
-            },
-            eventClick: function () { window.location.href = "/schedule"; }
-        });
-        miniCalendar.render();
-    }
-
-    if ("IntersectionObserver" in window) {
-        const io = new IntersectionObserver((entries) => {
-            if (entries.some((e) => e.isIntersecting)) {
-                io.disconnect();
-                initMiniCalendar();
-            }
-        }, { rootMargin: "120px" });
-        io.observe(calendarEl);
-    } else {
-        window.addEventListener("load", initMiniCalendar);
-    }
+    const miniCalendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: "dayGridMonth",
+        locale: "ko",
+        height: "auto",
+        contentHeight: 240,
+        fixedWeekCount: false,
+        showNonCurrentDates: false,
+        dayMaxEvents: 3,
+        eventDisplay: "list-item",
+        headerToolbar: { left: "", center: "title", right: "prev,next" },
+        events: (schedules || []).map(function (item) {
+            const event = {
+                id: item.id,
+                title: item.displayTitle || item.title,
+                start: item.start,
+                color: item.color,
+                display: "list-item",
+                extendedProps: item
+            };
+            if (item.end) event.end = item.end;
+            return event;
+        }),
+        eventDidMount: function (info) {
+            info.el.style.setProperty("--schedule-color", info.event.extendedProps.color || "#00f5d4");
+            info.el.title = info.event.title || "";
+        },
+        dateClick: function () { window.location.href = "/schedule"; },
+        eventClick: function () { window.location.href = "/schedule"; }
+    });
+    miniCalendar.render();
 })();
 </script>
 <script src="/js/main-page.js?v=1" defer></script>
