@@ -1,3 +1,6 @@
+/* Hallmark · checked: 2026-11-04 · genre: atmospheric (inferred)
+ * floor: 0 FAIL · fixed: 20,26a,34 · structural: none
+ * built: the project · redesign: polish · v2.0.0 */
 /* Site color tokens. Dark only — light theme deferred. Loaded on every public page. */
 :root {
     --site-ui-page: #07080b;
@@ -8,6 +11,7 @@
     --site-ui-muted: #b9cac4;
     --site-ui-accent: #8decd9;
     --site-ui-footer-bg: #0b0d11;
+    --site-ui-focus: #8decd9;
     --objekt-surface: #171a24;
     --objekt-surface-border: rgba(67, 75, 100, .52);
     --objekt-surface-hover: rgba(0, 245, 212, .04);
@@ -19,6 +23,14 @@
 html, body {
     background-color: var(--site-ui-page);
     color: var(--site-ui-text);
+    overflow-x: clip;
+}
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--site-ui-focus);
+    outline-offset: 2px;
 }
 .site-footer {
     margin-top: 3rem;

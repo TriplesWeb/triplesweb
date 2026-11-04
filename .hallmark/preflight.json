@@ -1,0 +1,12 @@
+{
+  "scanned": "2026-11-04",
+  "findings": {
+    "fonts": "Pretendard Variable (site-head) + Material Symbols",
+    "palette": "site-theme.css :root --site-ui-* mint accent #8decd9 / #00f5d4 on dark #0d0e12",
+    "motion": "CSS transitions + main-page.js fade-up IntersectionObserver",
+    "spacing": "Tailwind + max-w-7xl page shell",
+    "framework": "Spring Boot Mustache + Tailwind/daisyUI CSS bundles"
+  },
+  "preserve": ["site-theme tokens", "mint accent", "header/footer chrome", "home section order", "youtube facade", "mini calendar wiring"],
+  "introduce": ["Hallmark check stamp", "tokenized main-page polish", "focus-visible", "reduced-motion", "copy/label gate fixes"]
+}

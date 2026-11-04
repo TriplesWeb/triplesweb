@@ -1,0 +1,29 @@
+[
+ {
+  "mode": "redesign",
+  "depth": "polish",
+  "scope": "page",
+  "theme": "project",
+  "genre": "atmospheric",
+  "prompt": "tripleS community home polish",
+  "shape": "kept",
+  "hero": "kept",
+  "nav": "kept",
+  "footer": "kept",
+  "imagery": "kept",
+  "photos": [],
+  "entry": "home polish",
+  "fingerprint": "home-polish-2026-11-04",
+  "sections": [
+   "media",
+   "about",
+   "schedule",
+   "archives"
+  ],
+  "signature": "kept album hero",
+  "waived": [
+   "48-header-arbitrary"
+  ],
+  "date": "2026-11-04"
+ }
+]
