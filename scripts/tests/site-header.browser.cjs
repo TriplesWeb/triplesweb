@@ -62,8 +62,12 @@ const root=path.resolve(__dirname,'../..');
       assert.equal(await search.evaluate(n=>n.classList.contains('is-open')),false);
       assert.equal(await search.locator('[data-header-search-input]').evaluate(n=>getComputedStyle(n).opacity==='0'),true);
       await search.locator('[data-header-search-open]').click();
-      await page.waitForFunction(()=>document.querySelector('[data-header-search]')?.classList.contains('is-open'));
-      assert.equal(await search.locator('[data-header-search-input]').evaluate(n=>getComputedStyle(n).opacity==='1'),true);
+      // is-open 직후에도 opacity 0.15s transition 중일 수 있어 완전히 펼쳐질 때까지 기다린다.
+      await page.waitForFunction(()=>{
+        const root=document.querySelector('[data-header-search]');
+        const input=root&&root.querySelector('[data-header-search-input]');
+        return !!(root&&root.classList.contains('is-open')&&input&&getComputedStyle(input).opacity==='1');
+      });
       assert.equal(await search.locator('[data-header-search-input]').evaluate(n=>n===document.activeElement),true);
     }
     await page.evaluate(()=>window.scrollTo(0,200));
