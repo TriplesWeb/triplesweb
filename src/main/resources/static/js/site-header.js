@@ -119,9 +119,14 @@
         searchOpen.setAttribute("aria-expanded", open ? "true" : "false");
         searchOpen.setAttribute("aria-label", open ? "검색 닫기" : "검색 열기");
       }
-      if (open && searchInput) {
+      if (!searchInput) return;
+      if (open) {
+        searchInput.removeAttribute("tabindex");
         searchInput.focus();
         searchInput.select();
+      } else {
+        searchInput.setAttribute("tabindex", "-1");
+        searchInput.blur();
       }
     }
 
