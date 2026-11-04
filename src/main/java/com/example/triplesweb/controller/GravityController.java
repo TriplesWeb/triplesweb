@@ -1,5 +1,6 @@
 package com.example.triplesweb.controller;
 
+import com.example.triplesweb.navigation.SectionNavView;
 import com.example.triplesweb.service.GravityService;
 import com.example.triplesweb.util.GravityDisplay;
 import org.springframework.stereotype.Controller;
@@ -43,6 +44,7 @@ public class GravityController {
         } catch (Exception e) {
             model.addAttribute("gravityListError", GravityService.describeApiError(e));
         }
+        model.addAttribute("sectionNav", SectionNavView.of("gravity", "/cosmo/gravity"));
         return "cosmo/gravity";
     }
 

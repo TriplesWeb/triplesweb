@@ -10,6 +10,7 @@ import com.example.triplesweb.service.ArtistAdminService;
 import com.example.triplesweb.service.ChemistryViewCache;
 import com.example.triplesweb.service.MemberSpotlightService;
 import com.example.triplesweb.service.UnitService;
+import com.example.triplesweb.navigation.SectionNavView;
 import com.example.triplesweb.util.MemberPortraitOptions;
 
 import lombok.RequiredArgsConstructor;
@@ -38,10 +39,27 @@ public class TriplesController {
     private final MemberSpotlightService memberSpotlightService;
     private final ChemistryViewCache chemistryViewCache;
 
+    /** About 섹션 허브. */
+    @GetMapping({"", "/"})
+    public String aboutHub(Model model) {
+        model.addAttribute("sectionNav", SectionNavView.of("about", "/triples"));
+        model.addAttribute("hubTitle", "About 트리플에스");
+        model.addAttribute("hubLead", "멤버와 디멘션, 앨범·케미를 한곳에서 살펴보세요.");
+        return "hubs/section-hub";
+    }
+
+    /** 그룹 입문 leaf. 본문 구체화는 추후 — 셸과 서브내비만 제공한다. */
+    @GetMapping("/overview")
+    public String overview(Model model) {
+        model.addAttribute("sectionNav", SectionNavView.of("about", "/triples/overview"));
+        model.addAttribute("hubTitle", "그룹 입문");
+        model.addAttribute("hubLead", "tripleS 세계관과 그룹 소개는 곧 이 페이지에서 이어집니다.");
+        return "hubs/section-hub";
+    }
+
     /**
      * 멤버 소개(그룹 탭 포함).
      * 멤버별 오브젝트·아카이브·공식 미디어·일정은 탭 선택 시 로드한다.
-     * `/triples/overview`(그룹 입문 메뉴)는 단독 페이지가 없어 404 → 공통 에러 화면으로 간다.
      */
     @GetMapping("/members")
     @Transactional(readOnly = true)
@@ -68,6 +86,7 @@ public class TriplesController {
         model.addAttribute("groupBody", group.getBody());
         model.addAttribute("groupImage", group.getImageUrl());
         model.addAttribute("groupTabImage", group.getTabImageUrl());
+        model.addAttribute("sectionNav", SectionNavView.of("about", artistBase));
         return "triples/artist";
     }
 
@@ -87,18 +106,21 @@ public class TriplesController {
                 "albumSections",
                 albumService.listGroupedBySection()
         );
+        model.addAttribute("sectionNav", SectionNavView.of("about", "/triples/album"));
         return "triples/album";
     }
 
     @GetMapping("/unit")
     public String indexTriplesUnit(Model model) {
         model.addAttribute("unit", unitService.listVisible());
+        model.addAttribute("sectionNav", SectionNavView.of("about", "/triples/unit"));
         return "triples/unit";
     }
 
     @GetMapping("/chemistry")
     public String indexTriplesChemistry(Model model) {
         addChemistryPageData(model, false);
+        model.addAttribute("sectionNav", SectionNavView.of("about", "/triples/chemistry"));
         return "triples/chemistry";
     }
 
@@ -107,6 +129,7 @@ public class TriplesController {
         addChemistryPageData(model, true);
         model.addAttribute("pageLang", "en");
         model.addAttribute("pageHtmlExtraAttrs", "data-chem-lang=\"en\"");
+        model.addAttribute("sectionNav", SectionNavView.of("about", "/triples/chemistry"));
         return "triples/chemistry-en";
     }
 

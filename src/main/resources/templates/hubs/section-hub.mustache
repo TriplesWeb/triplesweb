@@ -1,0 +1,30 @@
+{{>layout/head-open}}
+    <title>{{hubTitle}} · tripleS</title>
+    <link rel="stylesheet" href="/css/hallmark-hub.css?v=1">
+</head>
+<body class="site-page hub-page">
+{{>layout/header}}
+<main class="hub-main">
+    <div class="hub-shell">
+        <header class="hub-header">
+            <h1 class="hub-title">{{hubTitle}}</h1>
+            {{#hubLead}}<p class="hub-lead">{{hubLead}}</p>{{/hubLead}}
+        </header>
+        {{>layout/section-subnav}}
+        {{#sectionNav}}
+        {{#hasSubnav}}
+        <ul class="hub-cards">
+            {{#items}}
+            <li>
+                <a class="hub-card" href="{{href}}">
+                    <span class="hub-card__label">{{label}}</span>
+                    <span class="hub-card__go" aria-hidden="true">열기</span>
+                </a>
+            </li>
+            {{/items}}
+        </ul>
+        {{/hasSubnav}}
+        {{/sectionNav}}
+    </div>
+</main>
+{{>layout/page-end}}

@@ -13,7 +13,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.data.domain.Sort;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,21 +35,27 @@ class SiteNavigationTest {
 
     @Test void navigationHasRequestedOrderAndDestinations() throws Exception {
         assertThat(SiteNavigation.PRIMARY).extracting(SiteNavigation.Section::label)
-            .containsExactly("About 트리플에스", "코스모", "미디어", "정보", "일정");
+            .containsExactly("About 트리플에스", "오브젝트", "그래비티", "미디어", "정보", "일정");
+        assertThat(SiteNavigation.PRIMARY).allMatch(SiteNavigation.Section::isDirect);
+        assertThat(SiteNavigation.PRIMARY).extracting(SiteNavigation.Section::href)
+            .containsExactly("/triples", "/cosmo/objekt", "/cosmo/gravity", "/media", "/info", "/schedule");
         assertThat(SiteNavigation.PRIMARY.get(1).items()).extracting(SiteNavigation.Item::href)
-            .containsExactly("/cosmo/objekt", "/cosmo/collection", "/article/trade", "/cosmo/gravity");
-        assertThat(SiteNavigation.PRIMARY.get(3).items()).extracting(SiteNavigation.Item::label)
+            .containsExactly("/cosmo/objekt", "/cosmo/collection", "/article/trade");
+        assertThat(SiteNavigation.PRIMARY.get(4).items()).extracting(SiteNavigation.Item::label)
             .containsExactly("공연/이벤트", "굿즈리스트", "총공", "기사/그외");
         mvc.perform(get("/sitemap")).andExpect(status().isNotFound());
         mvc.perform(get("/media/drive")).andExpect(status().isNotFound());
         mvc.perform(get("/community/suggestions")).andExpect(status().isNotFound());
         mvc.perform(get("/activities/voting")).andExpect(status().isOk()).andExpect(content().string(containsString("총공")));
+        mvc.perform(get("/info")).andExpect(status().isOk()).andExpect(content().string(containsString("정보")));
+        mvc.perform(get("/triples")).andExpect(status().isOk()).andExpect(content().string(containsString("About 트리플에스")));
         verifyNoInteractions(artists, artistAdmin, spotlight);
     }
 
-    @Test void overviewIsNotFoundAndMembersIncludesGroupIntro() throws Exception {
+    @Test void overviewIsHubLeafAndMembersIncludesGroupIntro() throws Exception {
         when(artistAdmin.getGroupIntro()).thenReturn(GroupIntroDto.builder().title("tripleS").body("기존 그룹 설명").imageUrl("/group.jpg").build());
-        mvc.perform(get("/triples/overview")).andExpect(status().isNotFound());
+        mvc.perform(get("/triples/overview")).andExpect(status().isOk())
+            .andExpect(content().string(containsString("그룹 입문")));
         mvc.perform(get("/cosmo/group-orders")).andExpect(redirectedUrl("/article/trade"));
         Artist member = new Artist(); member.setArtistId(1L); member.setName("서연"); member.setEngName("SeoYeon");
         when(artists.findAllWithUnits()).thenReturn(List.of(member));

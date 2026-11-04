@@ -18,6 +18,7 @@ import com.example.triplesweb.util.ArticleHtmlCleaner;
 import com.example.triplesweb.util.ArticleMemberSwap;
 import com.example.triplesweb.util.ObjektFilterOrder;
 import com.example.triplesweb.util.ObjektSeasonCodes;
+import com.example.triplesweb.navigation.SectionNavView;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -420,6 +421,11 @@ public class ArticleController {
         // 기존 화면 표시 설정 유지
         model.addAttribute("isLoggedIn", true);
         model.addAttribute("isAdmin", true);
+        if (isObjektBoard(category)) {
+            model.addAttribute("sectionNav", SectionNavView.of("objekt", "/article/trade"));
+        } else if ("info".equals(category)) {
+            model.addAttribute("sectionNav", SectionNavView.of("info", "/article/info"));
+        }
 
         return "article/article";
     }

@@ -51,7 +51,7 @@ class ArtistPerformanceTest {
    .andExpect(content().string(containsString("id=\"groupImageDisplay\"")))
    .andExpect(content().string(containsString("data-member-tab")))
    .andExpect(content().string(not(containsString("member-directory-card")))).andReturn();
-  mvc.perform(get("/triples/overview")).andExpect(status().isNotFound());
+  mvc.perform(get("/triples/overview")).andExpect(status().isOk());
   Files.createDirectories(Path.of("build/perf-pages"));
   Files.writeString(Path.of("build/perf-pages/members.html"),members.getResponse().getContentAsString());
   verifyNoInteractions(spotlight);

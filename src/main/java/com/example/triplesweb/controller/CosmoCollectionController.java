@@ -1,5 +1,6 @@
 package com.example.triplesweb.controller;
 
+import com.example.triplesweb.navigation.SectionNavView;
 import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.CosmoCollectionService;
 import com.example.triplesweb.util.MemberPortraitOptions;
@@ -50,6 +51,7 @@ public class CosmoCollectionController {
                              @RequestParam(defaultValue = "latest") String sort,
                              Model model) {
         model.addAttribute("query", nickname == null ? "" : nickname.trim());
+        model.addAttribute("sectionNav", SectionNavView.of("objekt", "/cosmo/collection"));
         if (nickname == null) return "cosmo/collection";
         if (nickname.isBlank()) {
             model.addAttribute("collectionError", "없는 닉네임 입니다.");

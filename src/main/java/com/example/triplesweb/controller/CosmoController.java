@@ -7,6 +7,7 @@ import com.example.triplesweb.service.ObjektMarketDataService;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektFilterOrder;
 import com.example.triplesweb.util.ObjektLinks;
+import com.example.triplesweb.navigation.SectionNavView;
 import com.example.triplesweb.util.ObjektSeasonCodes;
 import com.example.triplesweb.util.ObjektSeasonColors;
 import lombok.RequiredArgsConstructor;
@@ -87,6 +88,7 @@ public class CosmoController {
         model.addAttribute("hasNextPage", page.hasMore());
         model.addAttribute("nextPage", 1);
         model.addAttribute("objektError", page.error().isBlank() ? null : page.error());
+        model.addAttribute("sectionNav", SectionNavView.of("objekt", "/cosmo/objekt"));
 
         return "cosmo/objekt";
     }
@@ -337,6 +339,9 @@ public class CosmoController {
     }
 
     @GetMapping("/event")
-    public String indexCosmoEvent() { return "cosmo/event"; }
+    public String indexCosmoEvent(Model model) {
+        model.addAttribute("sectionNav", SectionNavView.of("info", "/cosmo/event"));
+        return "cosmo/event";
+    }
 
 }

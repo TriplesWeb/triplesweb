@@ -10,19 +10,18 @@
 <div class="gv-glow gv-glow-violet"></div>
 <div class="gv-glow gv-glow-mint"></div>
 {{>layout/header}}
+{{>layout/section-subnav}}
 <main class="gravity-page">
-    <section class="gv-kicker">
-        <div><strong>COSMO GRAVITY</strong> · 역대 그래비티</div>
-        {{>cosmo/partials/gravity-admin-controls}}
-    </section>
     <p id="gravityAdminHint" class="about-admin-hint" hidden>관리자 모드: COSMO 계정 연결을 관리할 수 있습니다.</p>
     <p id="gravityAdminMessage" role="status" class="gv-muted" hidden></p>
     {{#gravityListError}}<p role="status" class="gv-notice">{{gravityListError}}</p>{{/gravityListError}}
-
     <section class="gv-hero">
         <div class="gv-panel gv-headline">
             <div>
-                <h1>역대 그래비티 <span>(Grand Gravity)</span></h1>
+                <div class="flex items-center justify-between gap-3 flex-wrap">
+                    <h1>그래비티</h1>
+                    {{>cosmo/partials/gravity-admin-controls}}
+                </div>
                 <p>tripleS의 투표와 역대 그래비티 공식 결과를 확인하세요.</p>
             </div>
             <div class="gv-pills">

@@ -150,6 +150,7 @@
 </head><body class="site-page">
 
 {{>layout/header}}
+{{>layout/section-subnav}}
 
 <div class="container py-4 flex-1">
     <div class="flex items-center justify-between mb-6">
@@ -162,14 +163,14 @@
 
     <!-- 미디어 카테고리 탭 -->
     <div class="media-tab">
-        <a class="media-mv {{#isMV}}active{{/isMV}}" href="/media?tab=mv">MV</a>
-        <a class="media-signal {{#isSIGNAL}}active{{/isSIGNAL}}" href="/media?tab=signal">SIGNAL</a>
-        <a class="media-behind {{#isBehind}}active{{/isBehind}}" href="/media?tab=behind">비하인드</a>
-        <a class="media-secret {{#isSecret}}active{{/isSecret}}" href="/media?tab=secret">시크릿베이스</a>
-        <a class="media-contents {{#isContents}}active{{/isContents}}" href="/media?tab=contents">기타 컨텐츠</a>
+        <a class="media-mv {{#isMV}}active{{/isMV}}" href="/media/signal?tab=mv">MV</a>
+        <a class="media-signal {{#isSIGNAL}}active{{/isSIGNAL}}" href="/media/signal?tab=signal">SIGNAL</a>
+        <a class="media-behind {{#isBehind}}active{{/isBehind}}" href="/media/signal?tab=behind">비하인드</a>
+        <a class="media-secret {{#isSecret}}active{{/isSecret}}" href="/media/signal?tab=secret">시크릿베이스</a>
+        <a class="media-contents {{#isContents}}active{{/isContents}}" href="/media/signal?tab=contents">기타 컨텐츠</a>
     </div>
 
-    <form class="mb-4 flex flex-wrap items-center justify-center gap-3" method="get" action="/media">
+    <form class="mb-4 flex flex-wrap items-center justify-center gap-3" method="get" action="/media/signal">
         <input type="hidden" name="tab" value="{{currentTab}}">
         <label class="text-sm text-[#b9cac4]" for="artist-filter">출연 멤버</label>
         <select id="artist-filter" name="artist" class="site-field" style="width:auto;min-width:9rem;">
@@ -178,7 +179,7 @@
         </select>
         {{>partials/date-range-filter}}
         <button type="submit" class="ar-submit">필터 적용</button>
-        {{#selectedArtist}}<a class="text-xs text-slate-300" href="/media?tab={{currentTab}}">필터 초기화</a>{{/selectedArtist}}
+        {{#selectedArtist}}<a class="text-xs text-slate-300" href="/media/signal?tab={{currentTab}}">필터 초기화</a>{{/selectedArtist}}
     </form>
 
     <!-- 영상 그리드 리스트 -->
@@ -187,7 +188,7 @@
             <div class="site-media-card">
                 <div class="video-card-box">
                     <a class="video-card text-decoration-none"
-                       href="/media/{{currentTab}}/{{youtubeId}}"
+                       href="/media/signal/{{currentTab}}/{{youtubeId}}"
                        data-site-toggle="modal"
                        data-site-target="#ytModal"
                        data-ytid="{{youtubeId}}"
@@ -222,13 +223,13 @@
         <nav class="mt-5" aria-label="미디어 페이지">
             <ul class="site-pagination">
                 {{#hasPrev}}
-                    <li><a href="/media?tab={{currentTab}}&page={{prevPage}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}{{dateQuery}}">&laquo;</a></li>
+                    <li><a href="/media/signal?tab={{currentTab}}&page={{prevPage}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}{{dateQuery}}">&laquo;</a></li>
                 {{/hasPrev}}
                 {{#pages}}
-                    <li class="{{#active}}is-active{{/active}}"><a href="/media?tab={{currentTab}}&page={{num}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}{{dateQuery}}">{{num}}</a></li>
+                    <li class="{{#active}}is-active{{/active}}"><a href="/media/signal?tab={{currentTab}}&page={{num}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}{{dateQuery}}">{{num}}</a></li>
                 {{/pages}}
                 {{#hasNext}}
-                    <li><a href="/media?tab={{currentTab}}&page={{nextPage}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}{{dateQuery}}">&raquo;</a></li>
+                    <li><a href="/media/signal?tab={{currentTab}}&page={{nextPage}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}{{dateQuery}}">&raquo;</a></li>
                 {{/hasNext}}
             </ul>
         </nav>

@@ -84,32 +84,10 @@
     </a>
 
     <!-- 2. 네비게이션 메뉴 (데스크톱) — 항목은 main SiteNavigation -->
-    <nav id="navbar" class="hidden lg:flex items-center gap-5 text-xs tracking-wider" aria-label="주 메뉴">
+    <nav id="navbar" class="hidden lg:flex items-center gap-5 text-sm" aria-label="주 메뉴">
         {{#siteNavigation}}
         {{#direct}}
-        <a class="nav-item-link text-[#b9cac4] hover:text-[#00f5d4] transition-colors text-decoration-none" href="{{href}}">{{label}}</a>
-        {{/direct}}
-        {{^direct}}
-        <div class="relative group flex items-center">
-            <button type="button" class="nav-item-link text-[#b9cac4] hover:text-[#00f5d4] cursor-pointer">
-                {{label}}
-                <span class="material-symbols-outlined transition-transform group-hover:rotate-180" aria-hidden="true">expand_more</span>
-            </button>
-            <div class="absolute left-0 top-full pt-1 hidden group-hover:block w-48 z-50">
-                <div class="bg-[#191b22]/95 border border-[#3a4a46]/50 rounded-xl shadow-2xl backdrop-blur-lg p-1.5 flex flex-col gap-0.5">
-                    {{#items}}
-                    {{^nested}}
-                    <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="{{href}}">{{label}}</a>
-                    {{/nested}}
-                    {{#nested}}
-                    {{#children}}
-                    <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="{{href}}">{{label}}</a>
-                    {{/children}}
-                    {{/nested}}
-                    {{/items}}
-                </div>
-            </div>
-        </div>
+        <a class="nav-item-link site-nav-link" href="{{href}}">{{label}}</a>
         {{/direct}}
         {{/siteNavigation}}
     </nav>
@@ -178,27 +156,7 @@
 
             {{#siteNavigation}}
             {{#direct}}
-            <a class="px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="{{href}}">{{label}}</a>
-            {{/direct}}
-            {{^direct}}
-            <div class="mobile-nav-group">
-                <button type="button" class="mobile-nav-toggle w-full flex items-center justify-between px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] bg-transparent border-0 cursor-pointer rounded-lg hover:bg-white/5">
-                    <span>{{label}}</span>
-                    <span class="material-symbols-outlined text-sm transition-transform">expand_more</span>
-                </button>
-                <div class="mobile-nav-panel hidden pl-3 pb-1 flex flex-col gap-0.5">
-                    {{#items}}
-                    {{^nested}}
-                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="{{href}}">{{label}}</a>
-                    {{/nested}}
-                    {{#nested}}
-                    {{#children}}
-                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="{{href}}">{{label}}</a>
-                    {{/children}}
-                    {{/nested}}
-                    {{/items}}
-                </div>
-            </div>
+            <a class="px-3 py-2.5 site-nav-link rounded-lg" href="{{href}}">{{label}}</a>
             {{/direct}}
             {{/siteNavigation}}
 

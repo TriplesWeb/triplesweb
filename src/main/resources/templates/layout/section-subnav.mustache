@@ -1,0 +1,13 @@
+{{#sectionNav}}
+{{#hasSubnav}}
+<nav class="section-subnav" aria-label="{{label}} 하위 메뉴">
+    <ul class="section-subnav__list">
+        {{#items}}
+        <li>
+            <a class="section-subnav__link{{#active}} is-active{{/active}}" href="{{href}}">{{label}}</a>
+        </li>
+        {{/items}}
+    </ul>
+</nav>
+{{/hasSubnav}}
+{{/sectionNav}}

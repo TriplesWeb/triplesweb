@@ -6,6 +6,7 @@ import com.example.triplesweb.service.ArchiveService;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.entity.Artist;
+import com.example.triplesweb.navigation.SectionNavView;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -91,6 +92,8 @@ public class ArchiveController {
         model.addAttribute("hasDateFilter", fromDate != null || toDate != null);
         model.addAttribute("dateQuery", dateQuery(fromText, toText));
         addArchivePage(model, archives, type, q, memberQuery(selectedMembers), cards);
+        String archivePath = (type == MediaType.IMAGE) ? "/archive/image_archive" : "/archive/video_archive";
+        model.addAttribute("sectionNav", SectionNavView.of("media", archivePath));
         return (type == MediaType.IMAGE) ? "archive/image_archive" : "archive/video_archive";
     }
 

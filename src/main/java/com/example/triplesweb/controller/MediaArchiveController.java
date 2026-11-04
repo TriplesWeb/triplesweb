@@ -8,6 +8,7 @@ import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.MediaService;
+import com.example.triplesweb.navigation.SectionNavView;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.YoutubeIdExtractor;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,6 +20,8 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.view.RedirectView;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -37,7 +40,34 @@ public class MediaArchiveController {
     private final ScheduleRepository scheduleRepository;
     private final AboutAdminAuth aboutAdminAuth;
 
+    /** 미디어 섹션 허브. 옛 목록 쿼리는 /media/signal 로 보낸다. */
     @GetMapping("/media")
+    public Object mediaHub(@RequestParam(name = "tab", required = false) String tab,
+                           @RequestParam(required = false) Integer page,
+                           @RequestParam(required = false) Integer size,
+                           @RequestParam(required = false) String artist,
+                           @RequestParam(required = false) String from,
+                           @RequestParam(required = false) String to,
+                           Model model) {
+        if (tab != null || page != null || size != null || artist != null || from != null || to != null) {
+            UriComponentsBuilder toSignal = UriComponentsBuilder.fromPath("/media/signal");
+            if (tab != null) toSignal.queryParam("tab", tab);
+            if (page != null) toSignal.queryParam("page", page);
+            if (size != null) toSignal.queryParam("size", size);
+            if (artist != null) toSignal.queryParam("artist", artist);
+            if (from != null) toSignal.queryParam("from", from);
+            if (to != null) toSignal.queryParam("to", to);
+            RedirectView redirect = new RedirectView(toSignal.build(true).toUriString());
+            redirect.setStatusCode(HttpStatus.FOUND);
+            return redirect;
+        }
+        model.addAttribute("sectionNav", SectionNavView.of("media", "/media"));
+        model.addAttribute("hubTitle", "미디어");
+        model.addAttribute("hubLead", "SIGNAL과 사진·영상 아카이브로 이동하세요.");
+        return "hubs/section-hub";
+    }
+
+    @GetMapping("/media/signal")
     public String mediaPage(@RequestParam(name = "tab", defaultValue = "mv") String tab,
                             @RequestParam(defaultValue = "1") int page,
                             @RequestParam(defaultValue = "10") int size,
@@ -113,10 +143,18 @@ public class MediaArchiveController {
             pages.add(Map.of("num", i, "active", i == page));
         }
         model.addAttribute("pages", pages);
+        model.addAttribute("sectionNav", SectionNavView.of("media", "/media/signal"));
+        model.addAttribute("mediaBase", "/media/signal");
         return "archive/media";
     }
 
+    /** 옛 상세 URL → /media/signal/{tab}/{id} */
     @GetMapping("/media/{tab}/{youtubeId}")
+    public String mediaDetailLegacy(@PathVariable String tab, @PathVariable String youtubeId) {
+        return "redirect:/media/signal/" + tab + "/" + youtubeId;
+    }
+
+    @GetMapping("/media/signal/{tab}/{youtubeId}")
     public String mediaDetail(@PathVariable String tab,
                               @PathVariable String youtubeId,
                               Model model) throws IOException {
@@ -127,6 +165,8 @@ public class MediaArchiveController {
         model.addAttribute("tabNameKo", t.getKor());
         model.addAttribute("video", video);
         model.addAttribute("related", media.related(t, youtubeId, 8));
+        model.addAttribute("sectionNav", SectionNavView.of("media", "/media/signal"));
+        model.addAttribute("mediaBase", "/media/signal");
 
         List<String> names = splitNames(video.getArtistNames());
         List<Schedule> relatedSchedules = scheduleRepository.findAll().stream()
@@ -218,7 +258,7 @@ public class MediaArchiveController {
         }
 
         media.registerMedia(tab, form, String.join(",", selectedArtists));
-        return "redirect:/media?tab=" + tab;
+        return "redirect:/media/signal?tab=" + tab;
     }
 
     @PostMapping("/media_delete")
@@ -229,7 +269,7 @@ public class MediaArchiveController {
         aboutAdminAuth.requireAdmin(request, session);
         String t = MediaTab.from(tab).getKey();
         media.remove(t, youtubeId);
-        return "redirect:/media?tab=" + t;
+        return "redirect:/media/signal?tab=" + t;
     }
 
     private static LocalDate parseDate(String raw) {

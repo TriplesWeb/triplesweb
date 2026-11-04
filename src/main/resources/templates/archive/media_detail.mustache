@@ -19,7 +19,7 @@
 
 <div class="site-container">
     <nav class="site-back" aria-label="미디어 목록으로">
-        <a href="/media?tab={{currentTab}}">← 미디어 목록</a>
+        <a href="/media/signal?tab={{currentTab}}">← 미디어 목록</a>
     </nav>
     {{#video}}
         <div class="site-ratio-16x9">
@@ -50,7 +50,7 @@
     <h5 style="margin-bottom:1rem">다른 영상</h5>
     <div class="related-grid">
         {{#related}}
-            <a class="related-card" href="/media/{{../currentTab}}/{{youtubeId}}">
+            <a class="related-card" href="/media/signal/{{../currentTab}}/{{youtubeId}}">
                 <div class="related-thumb">
                     <img src="https://img.youtube.com/vi/{{youtubeId}}/hqdefault.jpg" alt="{{title}}">
                 </div>

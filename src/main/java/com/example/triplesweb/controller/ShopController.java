@@ -6,6 +6,7 @@ import com.example.triplesweb.entity.ShopImage;
 import com.example.triplesweb.repository.ShopItemRepository;
 import com.example.triplesweb.service.FileStorageService;
 import com.example.triplesweb.service.ShopService;
+import com.example.triplesweb.navigation.SectionNavView;
 import com.example.triplesweb.util.ShopCategory;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ public class ShopController {
         model.addAttribute("category", cat);
         model.addAttribute("isAlbum", "album".equals(cat));
         model.addAttribute("items", items);
+        model.addAttribute("sectionNav", SectionNavView.of("info", "/shop"));
         return "shop/shop";
     }
 

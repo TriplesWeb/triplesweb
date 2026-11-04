@@ -1,45 +1,44 @@
 {{>layout/head-open}}
     <title>tripleS 커뮤</title>
     <link rel="stylesheet" href="/css/schedule-categories.css?v=5">
-    <link rel="stylesheet" href="/css/main-page.css?v=1">
-
+    <link rel="stylesheet" href="/css/main-page.css?v=2">
     <style>
-        /* FullCalendar Dark Customization */
-        .fc { --fc-border-color: rgba(45, 49, 62, 0.6); --fc-page-bg-color: transparent; }
-        .fc .fc-toolbar-title { font-size: 0.9rem !important; font-weight: bold; color: #e3e2e8; }
-        .fc .fc-button-primary { background-color: #1a1b22 !important; border-color: #2d313e !important; color: #b9cac4 !important; }
-        .fc .fc-button-primary:hover { background-color: #23242e !important; color: #00f5d4 !important; }
-        .fc-theme-standard td, .fc-theme-standard th { border-color: rgba(45, 49, 62, 0.4) !important; }
-        .fc .fc-col-header-cell-cushion { color: #b9cac4; font-size: 0.75rem; font-family: monospace; }
-        .fc .fc-daygrid-day-number { color: #e3e2e8; font-size: 0.75rem; font-family: monospace; }
-        .fc-col-header-cell:nth-child(1) .fc-col-header-cell-cushion { color: #f87171 !important; }
-        .fc-col-header-cell:nth-child(7) .fc-col-header-cell-cushion { color: #60a5fa !important; }
+        .fc { --fc-border-color: var(--color-rule); --fc-page-bg-color: transparent; }
+        .fc .fc-toolbar-title { font-size: 0.9rem !important; font-weight: bold; color: var(--color-ink); }
+        .fc .fc-button-primary { background-color: var(--color-paper-2) !important; border-color: var(--color-rule) !important; color: var(--color-muted) !important; }
+        .fc .fc-button-primary:hover { background-color: var(--color-paper-3) !important; color: var(--color-accent) !important; }
+        .fc-theme-standard td, .fc-theme-standard th { border-color: color-mix(in oklab, var(--color-rule) 70%, transparent) !important; }
+        .fc .fc-col-header-cell-cushion { color: var(--color-muted); font-size: 0.75rem; }
+        .fc .fc-daygrid-day-number { color: var(--color-ink); font-size: 0.75rem; }
     </style>
-</head><body class="site-page main-page min-h-screen flex flex-col bg-background text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
+</head><body class="site-page main-page min-h-screen flex flex-col">
 
-<!-- 엠비언트 배경 은은한 빛 효과 -->
-<div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-    <div class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-secondary-container/10 blur-[120px]"></div>
-    <div class="absolute top-1/3 -right-32 w-[30rem] h-[30rem] rounded-full bg-primary-container/5 blur-[140px]"></div>
-    <div class="absolute -bottom-32 left-1/3 w-[36rem] h-[36rem] rounded-full bg-primary-container/5 blur-[160px]"></div>
-</div>
-
-<!-- 헤더 레이아웃 포함 -->
 {{>layout/header}}
 
-<!-- 메인 레이아웃 컨테이너 -->
-<main class="relative z-10 max-w-7xl w-full mx-auto px-4 py-6 flex flex-col gap-6">
+<main class="relative z-10 w-full mx-auto flex flex-col">
+    <section class="hub-shell home-hero" aria-label="소개">
+        <div>
+            <p class="home-hero__brand">tripleS</p>
+            <p class="home-hero__lead">오브젝트와 그래비티, 일정과 미디어를 한곳에서.</p>
+            <div class="home-hero__actions">
+                <a class="home-cta" href="/cosmo/objekt">오브젝트</a>
+                <a class="home-cta home-cta--ghost" href="/cosmo/gravity">그래비티</a>
+                <a class="home-cta home-cta--ghost" href="/schedule">일정</a>
+            </div>
+        </div>
+        <div class="home-hero__panel">
+            <img src="/uploads/images/andless.webp" alt="LOVE &amp; POP Pt.2 : Andless" width="960" height="720" loading="eager" decoding="async">
+        </div>
+    </section>
 
-    <!-- 1. 미디어 & 비디오 배너 섹션 -->
-    <section class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-
-        <!-- 비디오 영역 -->
+    <div class="hub-shell flex flex-col gap-6 pb-10">
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-5 home-section" style="border-top:none;padding-top:0">
         <div class="lg:col-span-7 bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-4 backdrop-blur-md shadow-xl flex flex-col justify-between">
             <div class="flex items-center justify-between pb-3 mb-2 border-b border-outline-variant/30">
                 <div class="flex items-center gap-2">
-                    <span class="font-mono text-xs text-on-surface font-semibold tracking-wider">OFFICIAL MEDIA</span>
+                    <span class="text-xs text-on-surface font-semibold">공식 미디어</span>
                 </div>
-                <span class="text-xs text-on-surface-variant font-mono">LOVE &amp; POP Pt.2 : Andless</span>
+                <span class="text-xs text-on-surface-variant">LOVE &amp; POP Pt.2 : Andless</span>
             </div>
             <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-outline-variant/30" id="home-yt-facade"
                  data-youtube-id="uqJ6GDJSyfY" data-youtube-title="tripleS LOVE &amp; POP Pt.2 : Andless">
@@ -69,14 +68,13 @@
                 }, { once: true });
             })();
             </script>
+            <p class="mt-3 text-xs"><a class="text-primary-container" href="/media/signal">SIGNAL 목록</a></p>
         </div>
 
-        <!-- 메인 이미지 캐러셀 배너 -->
         <a href="{{albumHref}}" class="main-hero-card lg:col-span-5 bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-4 backdrop-blur-md shadow-xl flex flex-col relative overflow-hidden group no-underline">
-            <div class="main-hero-visual relative w-full h-full min-h-[240px] rounded-xl overflow-hidden flex flex-col justify-end p-5 bg-cover bg-center" style="background-image: url('../../../uploads/images/andless.webp');">
+            <div class="main-hero-visual relative w-full h-full min-h-[240px] rounded-xl overflow-hidden flex flex-col justify-end p-5 bg-cover bg-center" style="background-image: url('/uploads/images/andless.webp');">
                 <div class="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent"></div>
                 <span class="main-hero-sheen" aria-hidden="true"></span>
-
                 <div class="relative z-10 space-y-1.5">
                     <span class="inline-block px-2.5 py-0.5 rounded-full bg-primary-container/20 border border-primary-container text-primary-container text-[11px] font-semibold">컴백</span>
                     <h3 class="text-xl font-bold text-on-surface">LOVE &amp; POP Pt.2 : Andless</h3>
@@ -87,11 +85,10 @@
         </a>
     </section>
 
-    <!-- 2. 아티스트 소개 섹션 -->
     <section class="main-fade-up bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-6 backdrop-blur-md shadow-xl">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
             <div class="md:col-span-4 rounded-xl overflow-hidden border border-outline-variant/30 aspect-video md:aspect-[4/3]">
-                <img src="/../../uploads/images/tripleS.jpg" alt="tripleS" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+                <img src="/uploads/images/tripleS.jpg" alt="tripleS" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
             </div>
             <div class="md:col-span-8 space-y-3">
                 <div class="flex items-center gap-3">
@@ -110,7 +107,6 @@
         </div>
     </section>
 
-    <!-- 3. 정보 · 스케줄 · 사진 -->
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             <div class="main-fade-up bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl h-full">
                 <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
@@ -196,11 +192,9 @@
             </div>
         </div>
     </section>
-
+    </div>
 </main>
 
-<!-- 푸터 레이아웃 포함 -->
-<!-- FullCalendar: 미니 캘린더가 보일 때만 로드 -->
 <script>
 (function () {
     const calendarEl = document.getElementById("miniCalendar");
