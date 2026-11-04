@@ -20,7 +20,21 @@ const members = [
   ['김나경', 'NaKyoung', '#6799a0', 's07'],
   ['공유빈', 'YuBin', '#ffe3e2', 's08'],
   ['카에데', 'Kaede', '#ffc935', 's09'],
-  ['서다현', 'DaHyun', '#ff9ad6', 's10']
+  ['서다현', 'DaHyun', '#ff9ad6', 's10'],
+  ['코토네', 'Kotone', '#ffde00', 's11'],
+  ['곽연지', 'YeonJi', '#5974ff', 's12'],
+  ['니엔', 'Nien', '#ff953f', 's13'],
+  ['박소현', 'SoHyun', '#1222b5', 's14'],
+  ['신위', 'XinYu', '#d51313', 's15'],
+  ['마유', 'Mayu', '#fe8e76', 's16'],
+  ['린', 'Lynn', '#ac62b7', 's17'],
+  ['주빈', 'JooBin', '#b7f54c', 's18'],
+  ['정하연', 'HaYeon', '#52d9bb', 's19'],
+  ['박시온', 'ShiOn', '#ff428a', 's20'],
+  ['김채원', 'ChaeWon', '#c7a3e0', 's21'],
+  ['설린', 'Sullin', '#7bba8d', 's22'],
+  ['서아', 'SeoAh', '#cff3ff', 's23'],
+  ['지연', 'JiYeon', '#ffab62', 's24']
 ];
 
 function cardHtml({member, english, color, logo, klass, season, title}) {
@@ -66,7 +80,7 @@ ${css}
 </style></head><body>
 <div class="objekt-card-grid">
 ${members.map(([member, english, color, logo]) => cardHtml({member, english, color, logo})).join('\n')}
-${cardHtml({member: '설린', english: 'Sullin', color: '#7bba8d', logo: '', title: 'Sullin 356A'})}
+${cardHtml({member: 'zenith', english: 'zenith', color: '#00f5d4', logo: '', title: 'zenith 001Z'})}
 </div>
 </body></html>`;
 
@@ -76,7 +90,7 @@ ${cardHtml({member: '설린', english: 'Sullin', color: '#7bba8d', logo: '', tit
     args: ['--no-sandbox']
   });
   try {
-    const page = await browser.newPage({viewport: {width: 1100, height: 900}});
+    const page = await browser.newPage({viewport: {width: 1100, height: 1600}});
     await page.route('**/*', async route => {
       const url = new URL(route.request().url());
       if (url.pathname === '/' || url.pathname === '/preview/card') {
@@ -96,7 +110,7 @@ ${cardHtml({member: '설린', english: 'Sullin', color: '#7bba8d', logo: '', tit
     await page.goto('https://preview.test/preview/card', {waitUntil: 'load'});
     await page.waitForFunction(() => [...document.querySelectorAll('img.objekt-member-logo')]
       .every(img => img.complete && img.naturalWidth > 0));
-    assert.equal(await page.locator('img.objekt-member-logo').count(), 10);
+    assert.equal(await page.locator('img.objekt-member-logo').count(), 24);
     assert.equal(await page.locator('span.objekt-member-logo').count(), 1);
     for (const [member, , , logo] of members) {
       const src = await page.locator(`[data-member="${member}"] img.objekt-member-logo`).getAttribute('src');
@@ -104,17 +118,18 @@ ${cardHtml({member: '설린', english: 'Sullin', color: '#7bba8d', logo: '', tit
       const nameColor = await page.locator(`[data-member="${member}"] .objekt-member-name`).evaluate(el => getComputedStyle(el).color);
       assert.equal(nameColor, 'rgb(244, 246, 251)');
     }
-    assert.equal(await page.locator('[data-member="설린"] .objekt-member-name').textContent(), '설린');
+    assert.equal(await page.locator('[data-member="설린"] img.objekt-member-logo').getAttribute('src'), '/images/objekt-member-logos/s22.png');
     assert.equal(await page.locator('span.objekt-member-logo').evaluate(el => getComputedStyle(el).color), 'rgb(0, 245, 212)');
     fs.mkdirSync('/tmp/objekt-ui', {recursive: true});
     fs.mkdirSync('/opt/cursor/artifacts', {recursive: true});
-    await page.screenshot({path: '/tmp/objekt-ui/objekt-card-chrome.png'});
-    await page.screenshot({path: '/opt/cursor/artifacts/objekt-card-s1-s10-logos.png'});
-    await page.locator('[data-member="윤서연"]').screenshot({path: '/opt/cursor/artifacts/objekt-card-seoyeon-logo.png'});
-    await page.locator('[data-member="설린"]').screenshot({path: '/opt/cursor/artifacts/objekt-card-sullin-fallback.png'});
-    await page.setViewportSize({width: 390, height: 2400});
-    await page.screenshot({path: '/opt/cursor/artifacts/objekt-card-s1-s10-logos-mobile.png', fullPage: true});
-    console.log('PASS: 오브젝트 카드 S1~S10 음표 로고 · S11+ 기본 음표');
+    await page.screenshot({path: '/tmp/objekt-ui/objekt-card-chrome.png', fullPage: true});
+    await page.screenshot({path: '/opt/cursor/artifacts/objekt-card-s1-s24-logos.png', fullPage: true});
+    await page.locator('[data-member="코토네"]').screenshot({path: '/opt/cursor/artifacts/objekt-card-kotone-logo.png'});
+    await page.locator('[data-member="설린"]').screenshot({path: '/opt/cursor/artifacts/objekt-card-sullin-logo.png'});
+    await page.locator('[data-member="지연"]').screenshot({path: '/opt/cursor/artifacts/objekt-card-jiyeon-logo.png'});
+    await page.setViewportSize({width: 390, height: 4200});
+    await page.screenshot({path: '/opt/cursor/artifacts/objekt-card-s1-s24-logos-mobile.png', fullPage: true});
+    console.log('PASS: 오브젝트 카드 S1~S24 음표 로고 · 유닛/기타 기본 음표');
   } finally {
     await browser.close();
   }

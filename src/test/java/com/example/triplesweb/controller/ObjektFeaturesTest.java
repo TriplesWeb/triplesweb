@@ -275,7 +275,7 @@ class ObjektFeaturesTest {
         org.assertj.core.api.Assertions.assertThat(result.getResponse().getContentAsString())
             .contains("data-serial-panel", "objektIssuedCount")
             .contains("objekt-member-logo")
-            .doesNotContain("/images/objekt-member-logos/")
+            .contains("/images/objekt-member-logos/s19.png")
             .doesNotContain("objekt-head-mints")
             .doesNotContain("발행량 7,193,056개")
             .doesNotContain("objektIssuedRanges", "objektIssuedTime").doesNotContain("id=\"objektDetailFullLink\"");
