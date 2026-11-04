@@ -1,3 +1,5 @@
+/* Tailwind @layer utilities(h-full 등)가 이기도록 리셋은 base 레이어에 둔다. */
+@layer base {
 *, *::before, *::after { box-sizing: border-box; }
 html, body { overflow-x: clip; }
 html { scrollbar-color: var(--color-muted) var(--color-paper); scroll-padding-top: var(--space-3xl); }
@@ -25,3 +27,4 @@ button, input, select, textarea { font: inherit; }
 @media (prefers-reduced-motion: reduce) { *:not(.keep-motion), *:not(.keep-motion)::before, *:not(.keep-motion)::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }
 /* photographs: mono high=-20 shad=-12 */
 [data-slot] > img { filter: grayscale(1) contrast(1.18) brightness(0.97); }
+}

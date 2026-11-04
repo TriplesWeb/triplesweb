@@ -57,7 +57,8 @@ public class MediaArchiveController {
             if (artist != null) toSignal.queryParam("artist", artist);
             if (from != null) toSignal.queryParam("from", from);
             if (to != null) toSignal.queryParam("to", to);
-            RedirectView redirect = new RedirectView(toSignal.build(true).toUriString());
+            // Spring이 이미 디코딩한 쿼리 값(한글 멤버명 등)을 다시 인코딩한다.
+            RedirectView redirect = new RedirectView(toSignal.build().encode().toUriString());
             redirect.setStatusCode(HttpStatus.FOUND);
             return redirect;
         }
