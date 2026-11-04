@@ -424,8 +424,11 @@ public class CosmoProfileService {
                 seasonVisible += cards.size();
             }
             if (groupRows.isEmpty()) continue;
+            int seasonMissing = seasonTotal - seasonOwned;
+            boolean missingTab = "missing".equals(ownership);
             seasonRows.add(Map.of("season", season.getKey().isBlank() ? "미분류" : season.getKey(),
                     "groups", groupRows, "owned", seasonOwned, "total", seasonTotal,
+                    "missing", seasonMissing, "shown", missingTab ? seasonMissing : seasonOwned,
                     "complete", seasonOwned == seasonTotal && seasonTotal > 0,
                     "percent", seasonTotal == 0 ? 0 : seasonOwned * 100 / seasonTotal));
             collected += seasonOwned;
