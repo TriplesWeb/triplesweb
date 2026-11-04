@@ -26,21 +26,32 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Value("${upload.fallback-base-url:}")
     private String uploadFallbackBaseUrl;
 
+    /**
+     * 로컬은 {@code application-local.properties}에서 0으로 두어 src 변경이 바로 보이게 한다.
+     * 운영 기본은 7일(초).
+     */
+    @Value("${spring.web.resources.cache.period:604800}")
+    private long staticCachePeriodSeconds;
+
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        CacheControl immutableWeek = CacheControl.maxAge(7, TimeUnit.DAYS).cachePublic().immutable();
+        CacheControl cacheControl = staticCachePeriodSeconds <= 0
+                ? CacheControl.noStore()
+                : CacheControl.maxAge(staticCachePeriodSeconds, TimeUnit.SECONDS).cachePublic().immutable();
+        // file: 을 classpath 보다 앞에 둔다. bootRun 중 src 수정이 옛 build/ 산출물에 가려지지 않게.
+        // 운영 jar 에는 src 경로가 없어 자연스럽게 classpath 로 넘어간다.
         registry.addResourceHandler("/css/**")
-                .addResourceLocations("classpath:/static/css/", "file:./src/main/resources/static/css/")
-                .setCacheControl(immutableWeek);
+                .addResourceLocations("file:./src/main/resources/static/css/", "classpath:/static/css/")
+                .setCacheControl(cacheControl);
         registry.addResourceHandler("/js/**")
-                .addResourceLocations("classpath:/static/js/", "file:./src/main/resources/static/js/")
-                .setCacheControl(immutableWeek);
+                .addResourceLocations("file:./src/main/resources/static/js/", "classpath:/static/js/")
+                .setCacheControl(cacheControl);
         registry.addResourceHandler("/fonts/**")
-                .addResourceLocations("classpath:/static/fonts/", "file:./src/main/resources/static/fonts/")
-                .setCacheControl(immutableWeek);
+                .addResourceLocations("file:./src/main/resources/static/fonts/", "classpath:/static/fonts/")
+                .setCacheControl(cacheControl);
         registry.addResourceHandler("/images/**")
-                .addResourceLocations("classpath:/static/images/", "file:./src/main/resources/static/images/")
-                .setCacheControl(immutableWeek);
+                .addResourceLocations("file:./src/main/resources/static/images/", "classpath:/static/images/")
+                .setCacheControl(cacheControl);
     }
 
     @jakarta.annotation.PostConstruct
