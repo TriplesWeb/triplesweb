@@ -1,3 +1,12 @@
+/* HS여름물빛체 — 바이츠 이름 표시용 (토끼네활자공장, 상업용 무료) */
+@font-face {
+    font-family: 'HS여름물빛체';
+    src: url('/fonts/HSYeolumMulbit.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
 /* About 트리플에스 — 관리자 모달 (케미 편집 UI와 톤 맞춤) */
 .artist-admin-btn {
     appearance: none;
@@ -895,7 +904,7 @@
     align-items: center;
     justify-content: flex-start;
     gap: 0.15rem;
-    padding: 0.4rem 0.55rem 0.4rem 1.55rem;
+    padding: 0.3rem 0.55rem 0.3rem 1.55rem;
     background: #000;
     color: #fff;
 }
@@ -913,32 +922,31 @@
     mix-blend-mode: screen;
 }
 
-.artist-bytes-card-label {
+.artist-bytes-card-logo {
     position: relative;
     z-index: 1;
-    font-size: 0.95rem;
-    font-weight: 800;
-    letter-spacing: 0.01em;
-    line-height: 1;
-}
-
-.artist-bytes-card-label-s {
-    font-size: 1.12em;
-    font-weight: 900;
+    display: block;
+    height: 1.7rem;
+    width: auto;
+    max-width: calc(100% - 0.25rem);
+    object-fit: contain;
+    object-position: left center;
 }
 
 .artist-bytes-card-name {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0.35rem 0.55rem;
+    /* 여름물빛체 글자마다 높이가 달라 약한 광학 보정만 둠 */
+    padding: 0.32rem 0.55rem 0.4rem;
     background: var(--artist-color, #22aeff);
     /* 밝은 상징색은 인라인 color(검정)로 덮어씀 */
     color: #fff;
-    font-size: 1.05rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    line-height: 1.1;
+    font-family: 'HS여름물빛체', Pretendard, sans-serif;
+    font-size: 1.2rem;
+    font-weight: normal;
+    letter-spacing: 0.02em;
+    line-height: 1;
     text-align: center;
     overflow: hidden;
     text-overflow: ellipsis;
