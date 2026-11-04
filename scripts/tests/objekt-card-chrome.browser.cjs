@@ -37,7 +37,7 @@ ${css}
     </div>
     <div class="objekt-card-foot">
       <a href="/cosmo/objekt/member?name=%EC%84%A4%EB%A6%B0" class="objekt-member-chip" style="--artist-color:#7bba8d">
-        <svg class="objekt-member-logo" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+        <span class="objekt-member-logo" aria-hidden="true"></span>
         <span class="objekt-member-name">설린</span>
       </a>
       <span class="badge badge-sm badge-neutral objekt-card-class">Double</span>
@@ -73,9 +73,9 @@ ${css}
     fs.mkdirSync('/tmp/objekt-ui', {recursive: true});
     fs.mkdirSync('/opt/cursor/artifacts', {recursive: true});
     await page.screenshot({path: '/tmp/objekt-ui/objekt-card-chrome.png'});
-    await page.screenshot({path: '/opt/cursor/artifacts/objekt-card-member-logo.png'});
+    await page.screenshot({path: '/opt/cursor/artifacts/objekt-card-layout-update.png'});
     await page.setViewportSize({width: 360, height: 720});
-    await page.screenshot({path: '/opt/cursor/artifacts/objekt-card-member-logo-mobile.png'});
+    await page.screenshot({path: '/opt/cursor/artifacts/objekt-card-layout-update-mobile.png'});
     console.log('PASS: 오브젝트 카드 멤버 이름 흰색 · 음표 로고');
   } finally {
     await browser.close();
