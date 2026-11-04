@@ -123,7 +123,8 @@ public class CosmoCollectionService {
                         + text(card, "season") + " " + text(card, "objektClass") + " "
                         + text(card, "collectionNo") + " "
                         + text(card, "serial") + " " + text(card, "slug")).toLowerCase(Locale.ROOT);
-                if (!haystack.contains(search)) return false;
+                if (!ObjektSeasonCodes.matches(search, haystack, text(card, "season"), text(card, "collectionNo")))
+                    return false;
             }
             return true;
         }).collect(java.util.stream.Collectors.toCollection(ArrayList::new));

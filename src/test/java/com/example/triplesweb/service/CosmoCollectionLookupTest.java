@@ -20,6 +20,7 @@ class CosmoCollectionLookupTest {
     private final AtomicInteger holdings = new AtomicInteger();
     private int profileStatus = 200;
     private boolean missingSerial;
+    private boolean mixedSeasons;
     private boolean indexFailure;
     private volatile boolean laterPageFailure;
     private CountDownLatch continuePage = new CountDownLatch(0);
@@ -66,9 +67,13 @@ class CosmoCollectionLookupTest {
     }
 
     private String objekt(int n) {
+        boolean binary = mixedSeasons && n % 2 == 0;
+        String season = binary ? "Binary02" : "Cream02";
+        String slug = binary ? "binary02-hayeon-367z" : "cream02-hayeon-367z";
+        String collectionId = binary ? "Binary02 HaYeon 367Z #30000001" : "Cream02 HaYeon 367Z #30000001";
         return "{\"id\":\"" + (30000000 + n) + "\",\"serial\":" + (missingSerial ? "null" : n)
-                + ",\"slug\":\"cream02-hayeon-367z\",\"collectionId\":\"Cream02 HaYeon 367Z #30000001\","
-                + "\"member\":\"HaYeon\",\"season\":\"Cream02\",\"class\":\"Double\",\"frontImage\":\"https://example.com/card.webp\"}";
+                + ",\"slug\":\"" + slug + "\",\"collectionId\":\"" + collectionId + "\","
+                + "\"member\":\"HaYeon\",\"season\":\"" + season + "\",\"class\":\"Double\",\"frontImage\":\"https://example.com/card.webp\"}";
     }
 
     @Test @SuppressWarnings("unchecked") void loadsEveryCursorPageSerialsAndReusesCache() {
@@ -96,6 +101,16 @@ class CosmoCollectionLookupTest {
         assertThat(completed()).containsEntry("ownedCount", 26);
         assertThat(service.search("테스트", 0, "", "", "", "26")).containsEntry("filteredCount", 1);
         assertThat(service.search("테스트", Integer.MAX_VALUE)).containsEntry("cards", List.of()).containsEntry("hasMore", false);
+    }
+
+    @Test void seasonAliasesMatchCcToCream02AndBbToBinary() {
+        mixedSeasons = true;
+        completed();
+        assertThat(service.search("테스트", 0, "", "", "", "cc")).containsEntry("filteredCount", 13);
+        assertThat(service.search("테스트", 0, "", "", "", "cream")).containsEntry("filteredCount", 13);
+        assertThat(service.search("테스트", 0, "", "", "", "bb")).containsEntry("filteredCount", 13);
+        assertThat(service.search("테스트", 0, "", "", "", "binary")).containsEntry("filteredCount", 13);
+        assertThat(service.search("테스트", 0, "", "", "", "aa")).containsEntry("filteredCount", 0);
     }
 
     @Test void failedBackgroundPageIsRetriedInsteadOfCachingPartialSuccess() throws Exception {
