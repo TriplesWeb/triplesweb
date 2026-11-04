@@ -514,6 +514,8 @@
         .objekt-member-logo {
             display: block;
             flex: 0 0 auto;
+        }
+        span.objekt-member-logo {
             width: 1.12rem;
             height: 1.12rem;
             color: #00f5d4;
@@ -526,6 +528,13 @@
             mask-position: center;
             -webkit-mask-size: contain;
             mask-size: contain;
+        }
+        img.objekt-member-logo {
+            width: .95rem;
+            height: 1.48rem;
+            object-fit: contain;
+            object-position: center;
+            filter: drop-shadow(0 0 .7px rgba(255,255,255,.45));
         }
         .objekt-member-name {
             min-width: 0;
@@ -818,7 +827,8 @@
             .objekt-detail-link { order: 2; flex: 1 1 auto; min-width: 0; }
             .objekt-card-class { font-size: .58rem; padding: .12rem .4rem; }
             .objekt-member-name { font-size: .82rem; }
-            .objekt-member-logo { width: 1rem; height: 1rem; }
+            span.objekt-member-logo { width: 1rem; height: 1rem; }
+            img.objekt-member-logo { width: .86rem; height: 1.34rem; }
         }
         @media (max-width: 420px) {
             .objekt-filter-bar { grid-template-columns: 1fr; }

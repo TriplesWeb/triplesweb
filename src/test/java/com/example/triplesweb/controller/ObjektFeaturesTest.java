@@ -274,6 +274,8 @@ class ObjektFeaturesTest {
             .andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc367z"));
         org.assertj.core.api.Assertions.assertThat(result.getResponse().getContentAsString())
             .contains("data-serial-panel", "objektIssuedCount")
+            .contains("objekt-member-logo")
+            .doesNotContain("/images/objekt-member-logos/")
             .doesNotContain("objekt-head-mints")
             .doesNotContain("발행량 7,193,056개")
             .doesNotContain("objektIssuedRanges", "objektIssuedTime").doesNotContain("id=\"objektDetailFullLink\"");
@@ -304,10 +306,13 @@ class ObjektFeaturesTest {
                 .andExpect(content().string(containsString("objekt-member-chip")))
                 .andExpect(content().string(containsString("objekt-member-logo")))
                 .andExpect(content().string(containsString("objekt-member-name")))
-                .andExpect(content().string(containsString("--artist-color:#7B61FF")));
+                .andExpect(content().string(containsString("--artist-color:#7B61FF")))
+                .andExpect(content().string(containsString("/images/objekt-member-logos/s01.png")));
         mvc.perform(get("/cosmo/objekt/more").param("page", "0"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].memberColor").value("#7B61FF"));
+                .andExpect(jsonPath("$.items[0].memberColor").value("#7B61FF"))
+                .andExpect(jsonPath("$.items[0].memberLogo").value("/images/objekt-member-logos/s01.png"))
+                .andExpect(jsonPath("$.items[0].hasMemberLogo").value(true));
     }
 
     @Test void ownerResponseDoesNotExposeInternalVerificationFields() throws Exception {

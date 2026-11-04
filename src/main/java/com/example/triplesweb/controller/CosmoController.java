@@ -327,6 +327,9 @@ public class CosmoController {
             copy.put("memberHref", "/cosmo/objekt/member?name="
                     + URLEncoder.encode(member, StandardCharsets.UTF_8).replace("+", "%20"));
             copy.put("memberColor", MemberPortraitOptions.artistColor(member, artists));
+            String memberLogo = MemberPortraitOptions.objektMemberLogo(member);
+            copy.put("memberLogo", memberLogo);
+            copy.put("hasMemberLogo", !memberLogo.isBlank());
             copy.put("publicKey", ObjektLinks.key(item));
             copy.put("seasonColor", ObjektSeasonColors.colorFor(firstValue(item, "season", "seasonKey")));
             copy.put("cardTitle", ObjektSeasonCodes.cardTitle(

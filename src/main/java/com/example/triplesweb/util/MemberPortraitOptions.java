@@ -33,6 +33,9 @@ public final class MemberPortraitOptions {
             "서연", "혜린", "지우", "채연", "유연", "수민", "나경", "유빈",
             "카에데", "다현", "코토네", "연지", "니엔", "소현", "신위", "마유",
             "린", "주빈", "하연", "시온", "채원", "설린", "서아", "지연");
+    /** S1 윤서연 ~ S10 다현까지 커스텀 음표 로고. 이후 멤버는 기본 음표를 쓴다. */
+    private static final int CUSTOM_OBJEKT_LOGO_COUNT = 10;
+    private static final String OBJEKT_MEMBER_LOGO_PATH = "/images/objekt-member-logos/s%02d.png";
 
     /** Exact solo identity only: S1 X S9 is an extra entry, not S1. */
     public static int memberIndex(String value) {
@@ -201,6 +204,18 @@ public final class MemberPortraitOptions {
         Artist artist = findArtist(memberField, artists);
         if (artist != null && artist.getColor() != null && !artist.getColor().isBlank()) return artist.getColor();
         return "#00f5d4";
+    }
+
+    /**
+     * 솔로 S1~S10 카드에만 커스텀 음표 로고 경로를 준다.
+     * 유닛·기타·S11 이후는 빈 문자열이라 기본 음표 마크업을 쓴다.
+     */
+    public static String objektMemberLogo(String memberField) {
+        Set<String> members = objektMembers(memberField);
+        if (members.size() != 1) return "";
+        int index = memberIndex(members.iterator().next());
+        if (index >= CUSTOM_OBJEKT_LOGO_COUNT) return "";
+        return OBJEKT_MEMBER_LOGO_PATH.formatted(index + 1);
     }
 
     private static Artist matchArtist(String option, List<Artist> artists) {
