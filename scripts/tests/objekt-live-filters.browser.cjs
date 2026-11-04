@@ -2,6 +2,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'../..');
 const html=`<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="/css/objekt-page.css">
 <style>.hidden{display:none}#objekt-card-grid{min-height:40px}</style>
 </head><body>
 <form id="objekt-search-form" action="/cosmo/objekt" method="get">
@@ -91,6 +92,10 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
   assert.equal(await page.locator('#objekt-card-grid .objekt-item').count(),1);
   assert.equal(await page.locator('#objekt-result-summary strong').textContent(),'3');
   assert.ok(moreCalls.some(call=>call.member==='윤서연'&&call.group==='members'));
+  assert.equal(await page.locator('.objekt-member-logo').count(),1);
+  assert.equal(await page.locator('.objekt-member-name').textContent(),'윤서연');
+  assert.equal(await page.locator('.objekt-member-name').evaluate(el=>getComputedStyle(el).color),'rgb(244, 246, 251)');
+  assert.equal(await page.locator('.objekt-member-logo').evaluate(el=>getComputedStyle(el).color),'rgb(0, 245, 212)');
 
   moreCalls.length=0;
   await page.locator('[data-objekt-group="other"]').click();

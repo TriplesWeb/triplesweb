@@ -302,6 +302,8 @@ class ObjektFeaturesTest {
                 .andExpect(content().string(containsString("objekt-card-supply")))
                 .andExpect(content().string(containsString("발행량 90개")))
                 .andExpect(content().string(containsString("objekt-member-chip")))
+                .andExpect(content().string(containsString("objekt-member-logo")))
+                .andExpect(content().string(containsString("objekt-member-name")))
                 .andExpect(content().string(containsString("--artist-color:#7B61FF")));
         mvc.perform(get("/cosmo/objekt/more").param("page", "0"))
                 .andExpect(status().isOk())

@@ -504,12 +504,29 @@
             font-size: .72rem;
         }
         .objekt-member-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: .28rem;
             min-width: 0;
-            color: var(--artist-color, #00f5d4);
+            color: #f4f6fb;
             font-weight: 650;
             text-decoration: none;
         }
-        .objekt-member-chip:hover { text-decoration: underline; }
+        .objekt-member-logo {
+            flex: 0 0 auto;
+            width: .92rem;
+            height: .92rem;
+            color: #00f5d4;
+        }
+        .objekt-member-name {
+            min-width: 0;
+            overflow: hidden;
+            color: #f4f6fb;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .objekt-member-chip:hover .objekt-member-name,
+        .objekt-member-chip:focus-visible .objekt-member-name { text-decoration: underline; }
         .objekt-card-supply {
             margin: .15rem 0 0;
             color: #c5ccd8;
