@@ -1,7 +1,7 @@
 {{>layout/head-open}}
 
 <link rel="stylesheet" href="/css/about-admin.css?v=1">
-    <link rel="stylesheet" href="/css/artist.css?v=20261105-color-dot">
+    <link rel="stylesheet" href="/css/artist.css?v=20261105-member-logo">
     <link rel="stylesheet" href="/css/artist-performance.css?v=7">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
 
@@ -65,7 +65,11 @@
                     </div>
                     <div class="lg:col-span-8 space-y-6">
                         <div class="artist-member-heading border-b pb-4 mb-2 flex flex-wrap items-center gap-2">
-                            <span class="artist-member-color-dot shrink-0" aria-hidden="true"></span>
+                            <span class="artist-member-logo-slot" aria-hidden="true">
+                                <span class="artist-member-logo-wrap">
+                                    <img class="artist-member-logo" src="/images/artist/logo/{{artistId}}.png" alt="" width="40" height="40" loading="lazy" decoding="async">
+                                </span>
+                            </span>
                             <h3 class="text-3xl font-extrabold text-[#e3e2e8] tracking-tight">{{name}}</h3>
                             <span class="text-sm font-mono text-[#b9cac4] pl-2">{{engName}}</span>
                             <button type="button" class="artist-mode-btn is-active artist-edit-inline ml-auto" data-artist-edit="{{artistId}}">멤버 수정</button>

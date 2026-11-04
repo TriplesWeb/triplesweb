@@ -2145,14 +2145,46 @@ textarea.form-control {
 
 .artist-member-heading {
     border-color: color-mix(in srgb, var(--artist-color) 40%, rgba(58, 74, 70, 0.3));
+    /* drop-shadow 발광용 여유 */
+    padding-top: 0.35rem;
+    padding-left: 0.2rem;
+    overflow: visible;
 }
 
-.artist-member-color-dot {
-    width: 0.7rem;
-    height: 0.7rem;
-    border-radius: 999px;
-    background: var(--artist-color);
-    box-shadow: 0 0 10px color-mix(in srgb, var(--artist-color) 70%, transparent);
+/* drop-shadow가 알파 실루엣 밖으로 번지도록 슬롯에 여유 */
+.artist-member-logo-slot {
+    display: inline-flex;
+    flex-shrink: 0;
+    padding: 0.45rem;
+    margin: -0.45rem;
+    overflow: visible;
+}
+
+.artist-member-logo-wrap {
+    position: relative;
+    width: 2.75rem;
+    height: 2.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+    background: transparent;
+}
+
+.artist-member-logo {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    /* 로고 PNG 검정 배경을 어두운 페이지에서 덜 보이게 */
+    mix-blend-mode: screen;
+    /* 실루엣 네온 */
+    filter:
+        drop-shadow(0 0 1.5px color-mix(in srgb, var(--artist-color, #00f5d4) 75%, transparent))
+        drop-shadow(0 0 5px color-mix(in srgb, var(--artist-color, #00f5d4) 55%, transparent))
+        drop-shadow(0 0 12px color-mix(in srgb, var(--artist-color, #00f5d4) 35%, transparent));
 }
 
 .artist-color-card {
