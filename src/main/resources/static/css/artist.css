@@ -970,7 +970,7 @@
 .artist-bytes-card-name[data-bite="냥폭이"] { --bite-name-nudge: 0.04em; }
 .artist-bytes-card-name[data-bite="곰멩이"] { --bite-name-nudge: -0.06em; }
 .artist-bytes-card-name[data-bite="녹용"] { --bite-name-nudge: -0.04em; }
-.artist-bytes-card-name[data-bite="융융"] { --bite-name-nudge: 0.02em; }
+.artist-bytes-card-name[data-bite="융융"] { --bite-name-nudge: -0.1em; }
 .artist-bytes-card-name[data-bite="숨숭이"] { --bite-name-nudge: 0.04em; }
 .artist-bytes-card-name[data-bite="김낙쪽"] { --bite-name-nudge: -0.06em; }
 .artist-bytes-card-name[data-bite="공랑이"] { --bite-name-nudge: 0.08em; }
