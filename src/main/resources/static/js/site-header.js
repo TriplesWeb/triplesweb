@@ -107,4 +107,42 @@
     }
     lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
   }, false);
+
+  const headerSearch = document.querySelector("[data-header-search]");
+  if (headerSearch) {
+    const searchInput = headerSearch.querySelector("[data-header-search-input]");
+    const searchOpen = headerSearch.querySelector("[data-header-search-open]");
+
+    function setHeaderSearchOpen(open) {
+      headerSearch.classList.toggle("is-open", open);
+      if (searchOpen) {
+        searchOpen.setAttribute("aria-expanded", open ? "true" : "false");
+        searchOpen.setAttribute("aria-label", open ? "검색 닫기" : "검색 열기");
+      }
+      if (open && searchInput) {
+        searchInput.focus();
+        searchInput.select();
+      }
+    }
+
+    if (searchOpen) {
+      searchOpen.setAttribute("aria-expanded", "false");
+      searchOpen.addEventListener("click", function () {
+        setHeaderSearchOpen(true);
+      });
+    }
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key !== "Escape" || !headerSearch.classList.contains("is-open")) return;
+      setHeaderSearchOpen(false);
+      if (searchOpen) searchOpen.focus();
+    });
+
+    document.addEventListener("pointerdown", function (event) {
+      if (!headerSearch.classList.contains("is-open")) return;
+      if (headerSearch.contains(event.target)) return;
+      if (searchInput && searchInput.value.trim()) return;
+      setHeaderSearchOpen(false);
+    });
+  }
 })();
