@@ -46,8 +46,10 @@ const base=path.resolve(__dirname,'../..'), fixtures=path.join(base,'build/mobil
     }
     if(file==='header-auth.html'||file==='header-bare.html'){
       await page.locator('#mobile-menu-btn').click();assert.equal(await page.locator('#mobile-menu').isVisible(),true);
-      await page.locator('.mobile-nav-toggle').first().click();assert.equal(await page.locator('.mobile-nav-panel').first().isVisible(),true);
-      await page.keyboard.press('Escape');
+      assert.equal(await page.locator('#mobile-menu a[href="/triples"]').isVisible(),true);
+      assert.equal(await page.locator('#mobile-menu a[href="/cosmo/objekt"]').isVisible(),true);
+      assert.equal(await page.locator('#mobile-menu a[href="/cosmo/gravity"]').isVisible(),true);
+      assert.equal(await page.locator('.mobile-nav-toggle').count(),0);
       await page.keyboard.press('Escape');assert.equal(await page.locator('#mobile-menu').isVisible(),false);
       await page.locator('#mobile-menu-btn').click();
       assert.equal(await page.locator('.mobile-account a[href="/mypage"]').isVisible(),true);

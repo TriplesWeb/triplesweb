@@ -30,10 +30,13 @@ const root=path.resolve(__dirname,'../..');
     await page.locator('#mobile-menu-btn').click();
     await page.waitForFunction(()=>!document.getElementById('mobile-menu').classList.contains('hidden'));
     assert.equal(await page.locator('#mobile-menu').evaluate(n=>getComputedStyle(n).display!=='none'),true);
-    const cosmoToggle=page.locator('.mobile-nav-toggle').filter({hasText:'코스모'});
-    await cosmoToggle.click();
-    assert.equal(await page.locator('.mobile-nav-panel a[href="/article/trade"]').first().isVisible(),true);
-    assert.equal(await page.locator('.mobile-nav-panel summary').count(),0);
+    assert.equal(await page.locator('#mobile-menu a[href="/triples"]').isVisible(),true);
+    assert.equal(await page.locator('#mobile-menu a[href="/cosmo/objekt"]').isVisible(),true);
+    assert.equal(await page.locator('#mobile-menu a[href="/cosmo/gravity"]').isVisible(),true);
+    assert.equal(await page.locator('#mobile-menu a[href="/media"]').isVisible(),true);
+    assert.equal(await page.locator('#mobile-menu a[href="/info"]').isVisible(),true);
+    assert.equal(await page.locator('#mobile-menu a[href="/schedule"]').isVisible(),true);
+    assert.equal(await page.locator('.mobile-nav-toggle').count(),0);
     assert.equal(await page.locator('a[href="/community"]').count(),0);
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/flat-menu-chromium-${width}.png`}).catch(error=>console.warn(`[preview] chromium ${width}px screenshot skipped: ${error.message}`));
     await page.keyboard.press('Escape');
@@ -45,17 +48,14 @@ const root=path.resolve(__dirname,'../..');
     assert.equal(await page.locator('.mobile-account a[href="/mypage"]').isVisible(),true);
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/header-chromium-${width}.png`,fullPage:false}).catch(error=>console.warn(`[preview] chromium ${width}px screenshot skipped: ${error.message}`));
    }else{
-    const labels=await page.locator('#navbar > a.nav-item-link, #navbar > .relative > button.nav-item-link').evaluateAll(nodes=>
-      nodes.map(n=>n.childNodes[0]?.textContent?.trim() || n.textContent.replace(/expand_more/g,'').trim())
+    const labels=await page.locator('#navbar > a.nav-item-link').evaluateAll(nodes=>
+      nodes.map(n=>n.textContent.trim())
     );
-    assert.deepEqual(labels,['About 트리플에스','코스모','미디어','정보','일정']);
-    const cosmo=page.locator('#navbar .relative').filter({has:page.locator('button',{hasText:'코스모'})});
-    // 1024~1040px에서는 우측 계정/검색이 네비를 가려 :hover가 안 붙을 수 있음 — 넓은 폭에서 hover, 그 외는 패널만 연다.
-    if(width>=1280) await cosmo.hover();
-    else await cosmo.locator(':scope > .absolute').evaluate(n=>{n.classList.remove('hidden');n.style.display='block';});
-    assert.equal(await cosmo.locator('a[href="/article/trade"]').first().isVisible(),true);
-    assert.equal(await cosmo.locator('a[href="/cosmo/collection"]').isVisible(),true);
-    assert.equal(await cosmo.locator('a[href="/cosmo/transfers"]').count(),0);
+    assert.deepEqual(labels,['About 트리플에스','오브젝트','그래비티','미디어','정보','일정']);
+    assert.equal(await page.locator('#navbar a[href="/cosmo/objekt"]').isVisible(),true);
+    assert.equal(await page.locator('#navbar a[href="/cosmo/gravity"]').isVisible(),true);
+    assert.equal(await page.locator('#navbar a[href="/article/trade"]').count(),0);
+    assert.equal(await page.locator('#navbar a[href="/cosmo/transfers"]').count(),0);
     assert.ok(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().height)<=66, 'main처럼 한 줄 헤더 유지');
     await page.evaluate(()=>window.scrollTo(0,200));
     assert.equal(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().top>=0),true);
