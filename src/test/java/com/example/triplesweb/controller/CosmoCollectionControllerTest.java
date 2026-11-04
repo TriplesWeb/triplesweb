@@ -141,7 +141,7 @@ class CosmoCollectionControllerTest {
         view.put("hasMore", true);
         view.put("loading", true);
         view.put("nextPage", 2);
-        when(collections.search("테스트", 1, "", List.of(), List.of(), "", "all", "all", "latest")).thenReturn(view);
+        when(collections.search("테스트", 1, "", List.of(), List.of(), "", "all", "all", "latest", false)).thenReturn(view);
         mvc.perform(get("/cosmo/collection/more").param("nickname", "테스트").param("page", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].member").value("정하연"))

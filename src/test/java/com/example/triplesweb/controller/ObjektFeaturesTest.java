@@ -43,6 +43,7 @@ class ObjektFeaturesTest {
     /** Mirrors ObjektService.findByKey indexing so detail routes resolve under the mock catalog. */
     private void stubCatalog(List<Map<String, Object>> items) {
         when(catalog.findCollections("triples")).thenReturn(items);
+        when(catalog.filterFacets()).thenReturn(ObjektService.FilterFacets.from(items));
         Map<String, Map<String, Object>> index = new HashMap<>();
         for (Map<String, Object> item : items) {
             putIndex(index, string(item, "id"), item);

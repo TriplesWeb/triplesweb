@@ -34,6 +34,8 @@ class CosmoCollectionLookupTest {
             if (exchange.getRequestURI().getPath().contains("by-nickname")) {
                 profiles.incrementAndGet(); status = profileStatus;
                 body = "{\"nickname\":\"테스트\",\"address\":\"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}";
+            } else if (exchange.getRequestURI().getPath().contains("/users/search")) {
+                body = "{\"results\":[{\"nickname\":\"테스트\",\"address\":\"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}]}";
             } else {
                 holdings.incrementAndGet();
                 if (indexFailure) { status = 503; body = "{}"; }
@@ -187,5 +189,17 @@ class CosmoCollectionLookupTest {
         assertThatThrownBy(() -> service.search("테스트", 0)).isInstanceOf(RuntimeException.class);
         indexFailure = false;
         assertThat(completed()).containsEntry("ownedCount", 26);
+    }
+
+    @Test void morePayloadSkipsFacetsAndExactSuggestWarmsTheCache() {
+        assertThat(service.suggestNicknames("테스트", 8)).contains("테스트");
+        await().atMost(Duration.ofSeconds(5)).until(() -> holdings.get() >= 1);
+        var slim = completed();
+        assertThat(slim).containsKeys("allCards", "kindOptions", "filterMembers");
+        assertThat(service.search("테스트", 0, "", List.of(), List.of(), "", "all", "all", "latest", false))
+                .doesNotContainKeys("allCards", "kindOptions", "filterMembers")
+                .containsEntry("ownedCount", 26)
+                .containsEntry("hasCards", true);
+        assertThat(profiles.get()).isEqualTo(1);
     }
 }

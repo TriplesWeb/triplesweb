@@ -223,6 +223,8 @@
   const filteredCountEl = document.getElementById('collection-filtered-count');
   let filtersReady = false;
   let filterTimer;
+  let listAbort;
+  let lastFirstPageKey = '';
   let listGeneration = 0;
   let loadedCount = Number(grid?.dataset.loaded || grid?.querySelectorAll('.collection-card').length || 0);
   let filteredCount = Number(grid?.dataset.filtered || 0);
@@ -263,10 +265,12 @@
     return params;
   }
 
-  function scheduleApplyFilters() {
+  function scheduleApplyFilters(delayMs) {
     if (!filtersReady || !grid) return;
     clearTimeout(filterTimer);
-    filterTimer = setTimeout(applyFilters, 80);
+    const wait = delayMs == null ? 0 : delayMs;
+    if (wait <= 0) applyFilters();
+    else filterTimer = setTimeout(applyFilters, wait);
   }
 
   function syncFilterAddress(params) {
@@ -330,7 +334,7 @@
       kindCombo?.commit(document.getElementById('collection-kind-select')?.value);
       applyFilters();
     });
-    form.querySelector('input[name="q"]')?.addEventListener('input', scheduleApplyFilters);
+    form.querySelector('input[name="q"]')?.addEventListener('input', () => scheduleApplyFilters(200));
   }
 
   function bindSingleMenu(prefix, inputId, fallback) {
@@ -486,10 +490,35 @@
     </article>`;
   }
 
+  function firstPageKey(items) {
+    return items.map((item) => [
+      item.serial || '',
+      item.collectionId || '',
+      item.collectionNo || '',
+      item.thumbnailImage || ''
+    ].join('\t')).join('\n');
+  }
+
+  function renderCards(items, replace) {
+    if (replace) {
+      grid.replaceChildren();
+      loadedCount = 0;
+    }
+    if (!items.length) return;
+    const wrap = document.createElement('div');
+    wrap.innerHTML = items.map(buildCard).join('');
+    const fragment = document.createDocumentFragment();
+    while (wrap.firstChild) fragment.appendChild(wrap.firstChild);
+    grid.appendChild(fragment);
+    loadedCount += items.length;
+  }
+
   async function applyFilters() {
     if (!grid) return;
     const request = ++listGeneration;
     clearTimeout(pollTimer);
+    listAbort?.abort();
+    listAbort = new AbortController();
     loadError = '';
     loading = true;
     hasMore = false;
@@ -501,20 +530,18 @@
       const res = await fetch(`/cosmo/collection/more?${params.toString()}`, {
         headers: { Accept: 'application/json' },
         credentials: 'same-origin',
-        cache: 'no-store'
+        cache: 'no-store',
+        signal: listAbort.signal
       });
       if (!res.ok) throw new Error('load failed');
       const data = await res.json();
       if (request !== listGeneration) return;
       const items = Array.isArray(data.items) ? data.items : [];
-      grid.replaceChildren();
-      loadedCount = 0;
-      if (items.length) {
-        const wrap = document.createElement('div');
-        wrap.innerHTML = items.map(buildCard).join('');
-        const fragment = document.createDocumentFragment();
-        while (wrap.firstChild) fragment.appendChild(wrap.firstChild);
-        grid.appendChild(fragment);
+      const key = firstPageKey(items);
+      if (key !== lastFirstPageKey) {
+        renderCards(items, true);
+        lastFirstPageKey = key;
+      } else {
         loadedCount = items.length;
       }
       filteredCount = Number(data.filteredCount ?? filteredCount);
@@ -528,8 +555,8 @@
       params.delete('page');
       activeFilters = new URLSearchParams(params);
       syncFilterAddress(params);
-    } catch (_) {
-      if (request !== listGeneration) return;
+    } catch (error) {
+      if (request !== listGeneration || (error && error.name === 'AbortError')) return;
       hasMore = false;
       pending = false;
       loadError = '검색 결과를 바꾸지 못했습니다. 잠시 후 다시 시도해 주세요.';
@@ -538,7 +565,7 @@
       loading = false;
       updateStatus();
       if (pending || (hasMore && sentinelVisible)) {
-        pollTimer = setTimeout(loadMore, pending ? 1000 : 100);
+        pollTimer = setTimeout(loadMore, 100);
       }
     }
   }
@@ -547,6 +574,8 @@
     if ((!hasMore && !pending) || loading) return;
     const request = listGeneration;
     clearTimeout(pollTimer);
+    listAbort?.abort();
+    listAbort = new AbortController();
     loadError = "";
     loading = true;
     updateStatus();
@@ -556,26 +585,25 @@
       const res = await fetch(`/cosmo/collection/more?${params.toString()}`, {
         headers: { Accept: 'application/json' },
         credentials: 'same-origin',
-        cache: 'no-store'
+        cache: 'no-store',
+        signal: listAbort.signal
       });
       if (!res.ok) throw new Error('load failed');
       const data = await res.json();
       if (request !== listGeneration) return;
       const items = Array.isArray(data.items) ? data.items : [];
+      const stillLoading = pending || data.loading;
+      const key = firstPageKey(items);
       // While upstream pages arrive, sorting and filters can move cards.
       // Replace the first page until loading finishes, then append stable pages.
-      if (pending || data.loading) {
-        grid.replaceChildren();
-        loadedCount = 0;
+      if (stillLoading) {
+        if (key !== lastFirstPageKey) {
+          renderCards(items, true);
+          lastFirstPageKey = key;
+        }
+      } else if (items.length) {
+        renderCards(items, false);
       }
-      if (items.length) {
-        const wrap = document.createElement('div');
-        wrap.innerHTML = items.map(buildCard).join('');
-        const fragment = document.createDocumentFragment();
-        while (wrap.firstChild) fragment.appendChild(wrap.firstChild);
-        grid.appendChild(fragment);
-      }
-      loadedCount += items.length;
       filteredCount = Number(data.filteredCount ?? filteredCount);
       ownedCount = Number(data.ownedCount ?? ownedCount);
       hasMore = Boolean(data.hasMore);
@@ -584,8 +612,8 @@
       grid.dataset.loaded = String(loadedCount);
       grid.dataset.filtered = String(filteredCount);
       grid.dataset.owned = String(ownedCount);
-    } catch (_) {
-      if (request !== listGeneration) return;
+    } catch (error) {
+      if (request !== listGeneration || (error && error.name === 'AbortError')) return;
       hasMore = false;
       pending = false;
       loadError = '더 불러오지 못했습니다. 페이지를 새로고침해 주세요.';
@@ -594,7 +622,7 @@
       loading = false;
       updateStatus();
       if (pending || (hasMore && sentinelVisible)) {
-        pollTimer = setTimeout(loadMore, pending ? 1000 : 100);
+        pollTimer = setTimeout(loadMore, 100);
       }
     }
   }
@@ -614,8 +642,11 @@
     btn.addEventListener('click', loadMore);
     sentinel.appendChild(btn);
   }
-  if (pending) pollTimer = setTimeout(loadMore, 1000);
-  window.addEventListener('pagehide', () => clearTimeout(pollTimer), { once: true });
+  if (pending) pollTimer = setTimeout(loadMore, 100);
+  window.addEventListener('pagehide', () => {
+    clearTimeout(pollTimer);
+    listAbort?.abort();
+  }, { once: true });
 })();
 </script>
 {{>layout/page-end}}
