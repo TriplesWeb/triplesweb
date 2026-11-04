@@ -799,6 +799,13 @@
     border-color: color-mix(in srgb, var(--artist-color) 40%, rgba(58, 74, 70, 0.3));
 }
 
+.artist-member-color-dot {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 999px;
+    background: var(--artist-color);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--artist-color) 70%, transparent);
+}
 
 .artist-color-card {
     background:
