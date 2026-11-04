@@ -1,7 +1,7 @@
 {{>layout/head-open}}
 
 <link rel="stylesheet" href="/css/about-admin.css?v=1">
-    <link rel="stylesheet" href="/css/artist.css?v=14">
+    <link rel="stylesheet" href="/css/artist.css?v=16">
     <link rel="stylesheet" href="/css/artist-performance.css?v=7">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
 
@@ -136,14 +136,32 @@
                                 {{/displayAffiliatedUnit}}
                             </div>
                         </div>
-                        {{#hasSignatureImage}}
-                        <div class="bg-[#0d0e12]/40 border border-[#3a4a46]/30 rounded-xl p-4 space-y-2.5">
-                            <span class="text-xl font-semibold text-[#b9cac4] block whitespace-nowrap">싸인</span>
-                            <div class="inline-flex items-center justify-center rounded-lg bg-[#f4f5f7] px-4 py-3">
-                                <img data-member-src="{{signatureImage}}" alt="{{name}} 싸인" class="max-h-28 w-auto object-contain" loading="lazy" decoding="async">
+                        {{#hasSignOrBiteRow}}
+                        <div class="artist-sign-bytes-row">
+                            {{#hasSignatureImage}}
+                            <div class="artist-sign-card">
+                                <span class="artist-sign-card-title">싸인</span>
+                                <div class="artist-sign-card-body">
+                                    <img class="artist-sign-card-image" data-member-src="{{signatureImage}}" alt="{{name}} 싸인" loading="lazy" decoding="async">
+                                </div>
                             </div>
+                            {{/hasSignatureImage}}
+                            {{#hasBite}}
+                            <div class="artist-bytes-card" aria-label="바이츠 {{bite}}">
+                                <div class="artist-bytes-card-header">
+                                    <div class="artist-bytes-card-brand">
+                                        <img class="artist-bytes-card-star-deco" src="/images/artist/bite-star/{{artistId}}.png" alt="" width="40" height="38" loading="lazy" decoding="async" aria-hidden="true">
+                                        <span class="artist-bytes-card-label">byte<span class="artist-bytes-card-label-s">S</span></span>
+                                    </div>
+                                    <div class="artist-bytes-card-name" style="color: {{biteNameTextColor}};">{{bite}}</div>
+                                </div>
+                                <div class="artist-bytes-card-body">
+                                    <img class="artist-bytes-card-image" src="/images/artist/bite/{{artistId}}.png" alt="{{bite}}" width="180" height="170" loading="lazy" decoding="async">
+                                </div>
+                            </div>
+                            {{/hasBite}}
                         </div>
-                        {{/hasSignatureImage}}
+                        {{/hasSignOrBiteRow}}
                     </div>
                 </div>
                 <div class="artist-feed-slot" data-artist-feed-url="/triples/artist/{{artistId}}/feeds">

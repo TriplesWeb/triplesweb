@@ -1,0 +1,25 @@
+-- byteS 전 멤버 바이츠 이름 (나무위키 byteS(tripleS) 기준)
+UPDATE artist SET bite = '잉스크림' WHERE eng_name = 'seoyeon';
+UPDATE artist SET bite = '냥폭이' WHERE eng_name = 'hyerin';
+UPDATE artist SET bite = '곰멩이' WHERE eng_name = 'jiwoo';
+UPDATE artist SET bite = '녹용' WHERE eng_name = 'chaeyeon';
+UPDATE artist SET bite = '융융' WHERE eng_name = 'yooyeon';
+UPDATE artist SET bite = '숨숭이' WHERE eng_name = 'soomin';
+UPDATE artist SET bite = '김낙쪽' WHERE eng_name = 'nakyoung';
+UPDATE artist SET bite = '공랑이' WHERE eng_name = 'yubin';
+UPDATE artist SET bite = '카에뿅' WHERE eng_name = 'kaede';
+UPDATE artist SET bite = '닿탱이' WHERE eng_name = 'dahyun';
+UPDATE artist SET bite = '코쨩' WHERE eng_name = 'kotone';
+UPDATE artist SET bite = '곽춘쿠키' WHERE eng_name = 'yeonji';
+UPDATE artist SET bite = '브로니' WHERE eng_name = 'nien';
+UPDATE artist SET bite = '하품이' WHERE eng_name = 'sohyun';
+UPDATE artist SET bite = '시니니' WHERE eng_name = 'xinyu';
+UPDATE artist SET bite = '우사뮤' WHERE eng_name = 'mayu';
+UPDATE artist SET bite = '샤크린' WHERE eng_name = 'lynn';
+UPDATE artist SET bite = '쭈아' WHERE eng_name = 'joobin';
+UPDATE artist SET bite = '대장각' WHERE eng_name = 'hayeon';
+UPDATE artist SET bite = '숀숑이' WHERE eng_name = 'shion';
+UPDATE artist SET bite = '딸기' WHERE eng_name = 'chaewon';
+UPDATE artist SET bite = '패스블린' WHERE eng_name = 'sullin';
+UPDATE artist SET bite = '하트뿡' WHERE eng_name = 'seoah';
+UPDATE artist SET bite = '슈와닝' WHERE eng_name = 'jiyeon';
