@@ -104,6 +104,8 @@ class CosmoCollectionControllerTest {
                 .andExpect(content().string(containsString("?tab=overview")))
                 .andExpect(content().string(containsString("기타 옵젝")))
                 .andExpect(content().string(containsString("보유 오브젝트 필터")))
+                .andExpect(content().string(containsString("collection-filter-workspace")))
+                .andExpect(content().string(containsString("objekt-filter-bar")))
                 .andExpect(content().string(containsString("id=\"collection-kind-select\"")))
                 .andExpect(content().string(containsString("value=\"전체\"")))
                 .andExpect(content().string(not(containsString("오브젝트 상세 보기"))))

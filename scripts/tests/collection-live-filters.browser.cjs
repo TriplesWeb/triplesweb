@@ -31,7 +31,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
     </div>
     <p class="objekt-other-notice" id="collection-other-notice" hidden>기타</p>
   </div>
-  <div class="collection-filter-bar">
+  <div class="objekt-filter-bar collection-filter-bar relative">
     <div class="objekt-filter relative" id="collection-season-dropdown">
       <span class="objekt-filter-label">시즌</span>
       <button type="button" class="objekt-filter-control" id="collection-season-toggle" aria-expanded="false" aria-controls="collection-season-menu">
@@ -127,13 +127,15 @@ SCRIPT_PLACEHOLDER
         const kind = url.searchParams.get('kind') || 'all';
         const sort = url.searchParams.get('sort') || 'latest';
         const klass = url.searchParams.get('class') || '';
+        const query = url.searchParams.get('q') || '';
         const label = [
           group !== 'all' ? group : '',
           member,
           season,
           klass,
           kind !== 'all' ? kind : '',
-          sort !== 'latest' ? sort : ''
+          sort !== 'latest' ? sort : '',
+          query
         ].filter(Boolean).join('|') || 'filtered';
         return route.fulfill({
           contentType: 'application/json',
@@ -201,6 +203,18 @@ SCRIPT_PLACEHOLDER
     assert.ok(moreCalls.some((call) => (call.season || []).includes('Atom01')));
 
     moreCalls.length = 0;
+    const classWait = page.waitForResponse((res) => {
+      try { return new URL(res.url()).searchParams.getAll('class').includes('Special'); } catch { return false; }
+    });
+    await page.locator('.class-checkbox[value="Special"]').evaluate((el) => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await classWait;
+    await waitForMore('Special');
+    assert.ok(moreCalls.some((call) => (call.class || []).includes('Special')));
+
+    moreCalls.length = 0;
     const kindWait = page.waitForResponse((res) => {
       try { return new URL(res.url()).searchParams.get('kind') === '101Z'; } catch { return false; }
     });
@@ -218,7 +232,16 @@ SCRIPT_PLACEHOLDER
     await waitForMore('oldest');
     assert.ok(moreCalls.some((call) => call.sort === 'oldest'));
 
-    console.log('PASS: 컬렉션 멤버·그룹·시즌·종류·정렬 변경 시 검색 없이 결과 갱신');
+    moreCalls.length = 0;
+    const searchWait = page.waitForResponse((res) => {
+      try { return new URL(res.url()).searchParams.get('q') === 'cream'; } catch { return false; }
+    });
+    await page.locator('input[name="q"]').fill('cream');
+    await searchWait;
+    await waitForMore('cream');
+    assert.ok(moreCalls.some((call) => call.q === 'cream'));
+
+    console.log('PASS: 컬렉션 멤버·그룹·시즌·클래스·종류·정렬·검색 변경 시 검색 버튼 없이 결과 갱신');
   } finally {
     await browser.close();
   }
