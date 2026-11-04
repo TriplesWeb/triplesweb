@@ -950,6 +950,8 @@
     /* 정보 칸(bg-[#0d0e12]/40)과 동일 */
     background: rgba(13, 14, 18, 0.4);
     color: #fff;
+    /* 카드 외곽 라운드에 맞춤 */
+    border-top-left-radius: 0.7rem;
 }
 
 .artist-bytes-card-star-deco {
@@ -990,6 +992,8 @@
     letter-spacing: 0.02em;
     line-height: 1.15;
     text-align: center;
+    /* 카드 우상단 라운드에 맞춤 */
+    border-top-right-radius: 0.7rem;
     /* overflow:hidden 이면 광학 보정된 글리프가 잘림. 바이츠 이름은 짧아서 visible 유지 */
     overflow: visible;
     white-space: nowrap;
