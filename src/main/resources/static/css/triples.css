@@ -2295,7 +2295,8 @@ textarea.form-control {
     justify-content: flex-start;
     gap: 0.15rem;
     padding: 0.3rem 0.55rem 0.3rem 1.55rem;
-    background: #000;
+    /* 정보 칸(bg-[#0d0e12]/40)과 동일 */
+    background: rgba(13, 14, 18, 0.4);
     color: #fff;
 }
 
@@ -2385,7 +2386,8 @@ textarea.form-control {
     flex: 1;
     min-height: 9.5rem;
     padding: 0.85rem 0.75rem 1rem;
-    background: #000;
+    /* 정보 칸(bg-[#0d0e12]/40)과 동일 — 상징색 이름 칸은 유지 */
+    background: rgba(13, 14, 18, 0.4);
     overflow: hidden;
     border-radius: 0 0 0.7rem 0.7rem;
 }
