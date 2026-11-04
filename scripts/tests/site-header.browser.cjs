@@ -57,6 +57,19 @@ const root=path.resolve(__dirname,'../..');
     assert.equal(await cosmo.locator('a[href="/cosmo/collection"]').isVisible(),true);
     assert.equal(await cosmo.locator('a[href="/cosmo/transfers"]').count(),0);
     assert.ok(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().height)<=66, 'main처럼 한 줄 헤더 유지');
+    if(width>=1280){
+      const search=page.locator('[data-header-search]');
+      assert.equal(await search.evaluate(n=>n.classList.contains('is-open')),false);
+      assert.equal(await search.locator('[data-header-search-input]').evaluate(n=>getComputedStyle(n).opacity==='0'),true);
+      await search.locator('[data-header-search-open]').click();
+      // is-open 직후에도 opacity 0.15s transition 중일 수 있어 완전히 펼쳐질 때까지 기다린다.
+      await page.waitForFunction(()=>{
+        const root=document.querySelector('[data-header-search]');
+        const input=root&&root.querySelector('[data-header-search-input]');
+        return !!(root&&root.classList.contains('is-open')&&input&&getComputedStyle(input).opacity==='1');
+      });
+      assert.equal(await search.locator('[data-header-search-input]').evaluate(n=>n===document.activeElement),true);
+    }
     await page.evaluate(()=>window.scrollTo(0,200));
     assert.equal(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().top>=0),true);
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/header-chromium-${width}.png`,fullPage:false}).catch(error=>console.warn(`[preview] chromium ${width}px screenshot skipped: ${error.message}`));
