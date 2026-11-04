@@ -497,6 +497,8 @@ public class CosmoCollectionService {
         private final List<Map<String, Object>> cards = new ArrayList<>();
 
         synchronized void append(JsonNode objekt) {
+            String artist = objekt.path("artist").asText("");
+            if (!artist.isBlank() && !"triples".equalsIgnoreCase(artist)) return;
             cards.add(card(objekt, cards.size()));
         }
 

@@ -2,7 +2,6 @@ package com.example.triplesweb.service;
 
 import com.example.triplesweb.entity.ObjektCatalog;
 import com.example.triplesweb.repository.ObjektCatalogRepository;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,9 +21,15 @@ public class ObjektCatalogStore {
     }
 
     @Transactional
+    public void retainOnly(String artist) {
+        repository.deleteWhereArtistIsNot(keptArtist(artist));
+    }
+
+    @Transactional
     public void replace(String artist, List<ObjektCatalog> rows) {
+        String keep = keptArtist(artist);
         Map<String, ObjektCatalog> existingByCollectionId = new HashMap<>();
-        for (ObjektCatalog existing : repository.findAll()) {
+        for (ObjektCatalog existing : repository.findByArtistIgnoreCaseOrderByNumberValueAsc(keep)) {
             if (existing.getCollectionId() != null && !existing.getCollectionId().isBlank()) {
                 existingByCollectionId.put(existing.getCollectionId(), existing);
             }
@@ -34,7 +39,7 @@ public class ObjektCatalogStore {
         List<ObjektCatalog> newRows = new ArrayList<>();
         for (ObjektCatalog row : rows) {
             if (row.getArtist() == null || row.getArtist().isBlank()) {
-                row.setArtist(artist);
+                row.setArtist(keep);
             }
             String collectionId = row.getCollectionId();
             if (collectionId == null || collectionId.isBlank()) continue;
@@ -55,6 +60,11 @@ public class ObjektCatalogStore {
                 .toList();
         if (!removedRows.isEmpty()) repository.deleteAll(removedRows);
         if (!newRows.isEmpty()) repository.saveAll(newRows);
+        repository.deleteWhereArtistIsNot(keep);
+    }
+
+    private static String keptArtist(String artist) {
+        return artist == null || artist.isBlank() ? "triples" : artist.trim();
     }
 
     private static void copyInto(ObjektCatalog target, ObjektCatalog source) {
@@ -85,8 +95,6 @@ public class ObjektCatalogStore {
 
     @Transactional(readOnly = true)
     public List<ObjektCatalog> load(String artist) {
-        List<ObjektCatalog> rows = repository.findByArtistIgnoreCaseOrderByNumberValueAsc(artist);
-        if (!rows.isEmpty()) return rows;
-        return repository.findAll(Sort.by("numberValue"));
+        return repository.findByArtistIgnoreCaseOrderByNumberValueAsc(keptArtist(artist));
     }
 }

@@ -63,6 +63,7 @@ public class ObjektService {
      */
     @PostConstruct
     void loadStoredCatalog() {
+        catalogStore.retainOnly("triples");
         install(loadFromDatabase("triples"));
     }
 
