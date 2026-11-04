@@ -90,17 +90,6 @@ public class Artist {
         return bite != null && !bite.isBlank();
     }
 
-    /** 바이츠 이름 글자 단위(광학 보정용). */
-    @Transient
-    public List<String> getBiteChars() {
-        if (bite == null || bite.isBlank()) {
-            return List.of();
-        }
-        return bite.codePoints()
-                .mapToObj(cp -> new String(Character.toChars(cp)))
-                .toList();
-    }
-
     /** 싸인·바이츠 카드 행 표시 여부. */
     @Transient
     public boolean isHasSignOrBiteRow() {

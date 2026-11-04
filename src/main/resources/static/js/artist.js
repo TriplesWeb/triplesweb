@@ -616,26 +616,7 @@
     });
   }
 
-  /** 바이츠 이름 글자별 광학 보정용 span 래핑 */
-  function wrapBiteNameChars(root) {
-    const scope = root && root.querySelectorAll ? root : document;
-    scope.querySelectorAll(".artist-bytes-card-name-text").forEach((el) => {
-      if (el.querySelector(".artist-bytes-card-name-ch")) return;
-      const raw = el.textContent || "";
-      if (!raw) return;
-      el.textContent = "";
-      for (const ch of raw) {
-        const span = document.createElement("span");
-        span.className = "artist-bytes-card-name-ch";
-        span.dataset.ch = ch;
-        span.textContent = ch;
-        el.appendChild(span);
-      }
-    });
-  }
-
   document.addEventListener("DOMContentLoaded", () => {
-    wrapBiteNameChars(document);
     bindTabs();
     initAdmin();
   });
