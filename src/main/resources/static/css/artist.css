@@ -1,3 +1,12 @@
+/* HS여름물빛체 — 바이츠 이름 표시용 (토끼네활자공장, 상업용 무료) */
+@font-face {
+    font-family: 'HS여름물빛체';
+    src: url('/fonts/HSYeolumMulbit.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
 /* About 트리플에스 — 관리자 모달 (케미 편집 UI와 톤 맞춤) */
 .artist-admin-btn {
     appearance: none;
@@ -790,13 +799,6 @@
     border-color: color-mix(in srgb, var(--artist-color) 40%, rgba(58, 74, 70, 0.3));
 }
 
-.artist-member-color-dot {
-    width: 0.7rem;
-    height: 0.7rem;
-    border-radius: 999px;
-    background: var(--artist-color);
-    box-shadow: 0 0 10px color-mix(in srgb, var(--artist-color) 70%, transparent);
-}
 
 .artist-color-card {
     background:
@@ -817,6 +819,157 @@
     box-shadow:
         0 0 0 2px color-mix(in srgb, var(--artist-color) 35%, transparent),
         0 0 14px color-mix(in srgb, var(--artist-color) 55%, transparent);
+}
+
+/* 싸인 | 바이츠 2열 */
+.artist-sign-bytes-row {
+    display: grid;
+    gap: 1rem;
+    align-items: stretch;
+}
+
+@media (min-width: 640px) {
+    .artist-sign-bytes-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .artist-sign-bytes-row > :only-child {
+        grid-column: 1 / -1;
+    }
+}
+
+/* 싸인 카드 — 흰 배경, 타이틀 + 중앙 싸인 */
+.artist-sign-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 100%;
+    padding: 0.85rem 1rem 1rem;
+    border-radius: 0.85rem;
+    background: #fff;
+    color: #111;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.artist-sign-card-title {
+    display: block;
+    margin-bottom: 0.55rem;
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: #111;
+    white-space: nowrap;
+}
+
+.artist-sign-card-body {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    min-height: 8.5rem;
+}
+
+.artist-sign-card-image {
+    max-width: 100%;
+    max-height: 9.5rem;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+
+/* bytes 캐릭터 카드 */
+.artist-bytes-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: 0.85rem;
+    border: 2px solid color-mix(in srgb, var(--artist-color, #22aeff) 85%, #fff);
+    background: #000;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--artist-color, #22aeff) 35%, transparent);
+}
+
+.artist-bytes-card-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    min-height: 2.35rem;
+    border-bottom: 2px solid color-mix(in srgb, var(--artist-color, #22aeff) 85%, #fff);
+}
+
+.artist-bytes-card-brand {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.15rem;
+    padding: 0.3rem 0.55rem 0.3rem 1.55rem;
+    background: #000;
+    color: #fff;
+}
+
+.artist-bytes-card-star-deco {
+    position: absolute;
+    left: 0.2rem;
+    bottom: 0.15rem;
+    width: 1.35rem;
+    height: 1.25rem;
+    object-fit: contain;
+    object-position: center;
+    pointer-events: none;
+    /* PNG 검정 배경을 브랜드 검정과 맞추고 별만 드러냄 */
+    mix-blend-mode: screen;
+}
+
+.artist-bytes-card-logo {
+    position: relative;
+    z-index: 1;
+    display: block;
+    height: 1.7rem;
+    width: auto;
+    max-width: calc(100% - 0.25rem);
+    object-fit: contain;
+    object-position: left center;
+}
+
+.artist-bytes-card-name {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* 여름물빛체 글자마다 높이가 달라 약한 광학 보정만 둠 */
+    padding: 0.32rem 0.55rem 0.4rem;
+    background: var(--artist-color, #22aeff);
+    /* 밝은 상징색은 인라인 color(검정)로 덮어씀 */
+    color: #fff;
+    font-family: 'HS여름물빛체', Pretendard, sans-serif;
+    font-size: 1.2rem;
+    font-weight: normal;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.artist-bytes-card-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    min-height: 9.5rem;
+    padding: 0.85rem 0.75rem 1rem;
+    background: #000;
+}
+
+.artist-bytes-card-image {
+    max-width: 100%;
+    max-height: 10.5rem;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
 }
 
 .artist-unit-chips {
