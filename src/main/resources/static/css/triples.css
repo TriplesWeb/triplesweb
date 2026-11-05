@@ -2534,7 +2534,12 @@ textarea.form-control {
     mix-blend-mode: screen;
 }
 
-/* 밝은 상징색: 반전 후 multiply로 검은 글자만 남김 */
+/* 밝은 상징색: 반전 후 multiply로 검은 글자만 남김.
+   isolation으로 상징색 배경만 블렌드 대상으로 고정 (페이지 검정과 섞이면 글자가 사라짐) */
+.artist-bytes-card-name--dark-ink {
+    isolation: isolate;
+}
+
 .artist-bytes-card-name--dark-ink .artist-bytes-card-name-img {
     filter: invert(1);
     mix-blend-mode: multiply;
