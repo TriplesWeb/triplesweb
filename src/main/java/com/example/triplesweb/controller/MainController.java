@@ -16,6 +16,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.ui.ExtendedModelMap;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -43,6 +47,19 @@ public class MainController {
     private final ArchiveService archiveService;
     private final AlbumService albumService;
     private final ArtistSnapshotService artistSnapshot;
+    private volatile Map<String, Object> homeSnapshot;
+
+    @EventListener(ApplicationReadyEvent.class)
+    @Scheduled(fixedDelayString = "${home.cache.refresh-ms:30000}", initialDelay = 30000)
+    public void refreshHomeSnapshot() {
+        try {
+            Model fresh = new ExtendedModelMap();
+            populateHome(fresh);
+            homeSnapshot = java.util.Collections.unmodifiableMap(new LinkedHashMap<>(fresh.asMap()));
+        } catch (RuntimeException ex) {
+            log.warn("홈 데이터 갱신 실패: 기존 데이터를 유지합니다", ex);
+        }
+    }
 
     /** 이전 URL 호환: {@code /main} → {@code /} */
     @GetMapping("/main")
@@ -52,8 +69,18 @@ public class MainController {
 
     @GetMapping("/")
     public String mainPage(Model model) {
+        Map<String, Object> snapshot = homeSnapshot;
+        if (snapshot != null) {
+            model.addAllAttributes(snapshot);
+        } else {
+            populateHome(model);
+        }
+        return "main";
+    }
 
-        List<Schedule> scheduleList = scheduleRepository.findAll();
+    private void populateHome(Model model) {
+
+        List<Schedule> scheduleList = scheduleRepository.findAllWithArtists();
         var artists = artistSnapshot.findAll();
         List<ScheduleForm> scheduleForms = scheduleList.stream()
                 .map(schedule -> SchedulePresentation.form(schedule, artists))
@@ -84,7 +111,6 @@ public class MainController {
         model.addAttribute("upcomingSchedules", upcoming);
         model.addAttribute("hasUpcomingSchedules", !upcoming.isEmpty());
 
-        return "main";
     }
 
     static List<Map<String, String>> upcomingSchedules(List<ScheduleForm> scheduleForms) {

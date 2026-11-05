@@ -21,6 +21,8 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -29,13 +31,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(MustacheConfig.class)
 class MainControllerTest {
     @Autowired MockMvc mvc;
+    @Autowired MainController controller;
     @MockitoBean ScheduleRepository schedules;
     @MockitoBean ArchiveService archives;
     @MockitoBean AlbumService albumService;
     @MockitoBean ArtistSnapshotService artists;
 
     @Test void homeRendersAlbumAndSplitArchivesWithoutNoticeOrChangingAboutLinks() throws Exception {
-        when(schedules.findAll()).thenReturn(List.of());
+        when(schedules.findAllWithArtists()).thenReturn(List.of());
         when(artists.findAll()).thenReturn(List.of());
         when(archives.pageByType(eq(MediaType.IMAGE), eq(0), eq(4), isNull())).thenReturn(new PageImpl<>(List.of()));
         when(archives.pageByType(eq(MediaType.VIDEO), eq(0), eq(4), isNull())).thenReturn(new PageImpl<>(List.of()));
@@ -46,6 +49,8 @@ class MainControllerTest {
         album.setAlbumInfo("끝나지 않을 영원한 트리플에스의 스토리");
         when(albumService.findLatestHomeHero()).thenReturn(HomeAlbumHero.from(album));
 
+        controller.refreshHomeSnapshot();
+        clearInvocations(schedules, archives, albumService, artists);
         mvc.perform(get("/")).andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("공지사항"))))
                 .andExpect(content().string(containsString("스케줄")))
@@ -61,5 +66,6 @@ class MainControllerTest {
                 .andExpect(content().string(containsString("Who is tripleS?")))
                 .andExpect(content().string(containsString("href=\"/triples/artist\"")))
                 .andExpect(content().string(containsString("href=\"/artist\"")));
+        verifyNoInteractions(schedules, archives, albumService, artists);
     }
 }
