@@ -355,13 +355,13 @@ html[lang="en"] .chem-member-name {
 }
 
 .chem-cell-flash {
-    outline: 2px solid #00f5d4;
+    outline: 2px solid var(--chem-flash-color, #00f5d4);
     outline-offset: -2px;
     animation: chemFlash 1.2s ease;
 }
 
 @keyframes chemFlash {
-    from { background-color: rgba(0, 245, 212, 0.35); }
+    from { background-color: color-mix(in srgb, var(--chem-flash-color, #00f5d4) 35%, transparent); }
     to { background-color: transparent; }
 }
 
