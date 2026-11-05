@@ -172,7 +172,15 @@
         el.appendChild(img);
       }
       const span = document.createElement('span');
-      span.textContent = displayTitle(item);
+      span.className = 'objekt-trade-chip-title';
+      if (item.season) {
+        const season = document.createElement('small');
+        season.className = 'objekt-trade-season';
+        season.textContent = item.season;
+        span.appendChild(season);
+        span.appendChild(document.createTextNode(' '));
+      }
+      span.appendChild(document.createTextNode(displayTitle(item)));
       el.appendChild(span);
       const remove = document.createElement('button');
       remove.type = 'button';
@@ -269,7 +277,7 @@
       const title = document.createElement('span');
       title.className = 'block text-xs font-semibold';
       title.style.overflowWrap = 'anywhere';
-      title.textContent = displayTitle(item);
+      title.textContent = (item.season ? item.season + ' · ' : '') + displayTitle(item);
       const meta = document.createElement('span');
       meta.className = 'block truncate text-[11px] text-slate-400';
       meta.textContent = [item.member, item.collectionNo].filter(Boolean).join(' · ');
@@ -410,12 +418,14 @@
         const id = chipEl.dataset.objektId;
         if (!id) return;
         const img = chipEl.querySelector('img');
-        const span = chipEl.querySelector('span');
-        const shown = span ? span.textContent.trim() : id;
+        const span = chipEl.querySelector('.objekt-trade-chip-title');
+        const seasonEl = span && span.querySelector('.objekt-trade-season');
+        const shown = span ? Array.from(span.childNodes).filter((node) => node.nodeType === Node.TEXT_NODE).map((node) => node.textContent).join('').trim() : id;
         itemCache.set(id, {
           id: id,
           collectionId: shown,
           cardTitle: shown,
+          season: seasonEl ? seasonEl.textContent.trim() : '',
           thumbnailImage: img ? img.src : ''
         });
       });

@@ -30,9 +30,9 @@
             </div>
             <div id="objektHavePreview" class="objekt-trade-zone-cards">
                 {{#objektHaveSelected}}
-                <div class="objekt-trade-chip" data-objekt-id="{{id}}" data-side="have">
+                <div class="objekt-trade-chip" data-objekt-id="{{id}}" data-side="have" data-season="{{season}}">
                     {{#thumbnailImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy">{{/thumbnailImage}}
-                    <span>{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</span>
+                    <span class="objekt-trade-chip-title">{{#season}}<small class="objekt-trade-season">{{season}}</small> {{/season}}{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</span>
                     <button type="button" class="objekt-trade-chip-remove" aria-label="선택 해제">×</button>
                 </div>
                 {{/objektHaveSelected}}
@@ -46,9 +46,9 @@
             </div>
             <div id="objektWantPreview" class="objekt-trade-zone-cards">
                 {{#objektWantSelected}}
-                <div class="objekt-trade-chip" data-objekt-id="{{id}}" data-side="want">
+                <div class="objekt-trade-chip" data-objekt-id="{{id}}" data-side="want" data-season="{{season}}">
                     {{#thumbnailImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy">{{/thumbnailImage}}
-                    <span>{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</span>
+                    <span class="objekt-trade-chip-title">{{#season}}<small class="objekt-trade-season">{{season}}</small> {{/season}}{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</span>
                     <button type="button" class="objekt-trade-chip-remove" aria-label="선택 해제">×</button>
                 </div>
                 {{/objektWantSelected}}

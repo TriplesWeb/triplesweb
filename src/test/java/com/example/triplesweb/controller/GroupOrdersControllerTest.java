@@ -2,6 +2,7 @@ package com.example.triplesweb.controller;
 
 import com.example.triplesweb.config.MustacheConfig;
 import com.example.triplesweb.entity.Article;
+import com.example.triplesweb.entity.ArticleObjekt;
 import com.example.triplesweb.service.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.LongStream;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.*;
@@ -71,6 +74,45 @@ class GroupOrdersControllerTest {
         for (String category : List.of("free", "chat", "all")) {
             mvc.perform(get("/article/" + category)).andExpect(redirectedUrl("/article/trade"));
         }
+    }
+
+    @Test void memberSearchContinuesPastTwoHundredAndLegacyAllMatchesWant() throws Exception {
+        List<Article> first = LongStream.iterate(300, n -> n - 1).limit(100).mapToObj(id -> {
+            Article a = article("trade"); a.setId(id); return a;
+        }).toList();
+        List<Article> second = LongStream.iterate(200, n -> n - 1).limit(100).mapToObj(id -> {
+            Article a = article("trade"); a.setId(id); return a;
+        }).toList();
+        Article older = article("trade");
+        older.setId(100L);
+        older.setTitle("오래된 교환 글");
+        ArticleObjekt want = new ArticleObjekt();
+        want.setSide("WANT");
+        want.setMemberName("S1 X S9");
+        when(articles.findCategoryBatchBefore(eq("trade"), eq("title"), eq(""), anyLong(), eq(100)))
+            .thenAnswer(inv -> {
+                long before = inv.getArgument(3);
+                if (before == Long.MAX_VALUE) return first;
+                if (before == 201L) return second;
+                if (before == 101L) return List.of(older);
+                return List.of();
+            });
+        when(links.groupByArticleId(anyList())).thenAnswer(inv -> {
+            List<Long> ids = inv.getArgument(0);
+            return ids.contains(100L) ? Map.of(100L, List.of(want)) : Map.of();
+        });
+
+        mvc.perform(get("/article/trade").param("member", "윤서연").param("objektSide", "all"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("오래된 교환 글")))
+            .andExpect(content().string(containsString("기존 전체 검색 링크")));
+        mvc.perform(get("/article/trade").param("member", "윤서연").param("objektSide", "have"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(not(containsString("오래된 교환 글"))));
+        mvc.perform(get("/article/trade").param("member", "윤서연").param("objektSide", "want"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("오래된 교환 글")));
+        verify(articles, atLeastOnce()).findCategoryBatchBefore("trade", "title", "", 101L, 100);
     }
 
     @Test void noticeBoardIsAllowed() throws Exception {

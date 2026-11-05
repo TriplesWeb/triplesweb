@@ -338,30 +338,41 @@ public class ArticleController {
         String selectedMember = member == null ? "" : member.trim();
         String selectedSide = normalizeObjektSide(category, objektSide);
         boolean marketBoard = isObjektBoard(category);
-        int fetchLimit = marketBoard && !selectedMember.isEmpty() ? Math.max(limit, 200) : limit;
-
-        // 검색어가 있으면 검색, 없으면 최신 게시글 조회
+        int safeLimit = Math.min(100, Math.max(1, limit));
         List<Article> articles;
-        if (searchKeyword.isEmpty()) {
-            articles = articleService.findRecentByCategory(category, fetchLimit);
-        } else {
-            articles = articleService.searchByCategory(
-                    category, searchType, searchKeyword, fetchLimit);
-        }
-
-        List<Artist> artists = artistSnapshot.findAll();
-        Map<Long, List<ArticleObjekt>> linkedByArticle = articleObjektService.groupByArticleId(
-                articles.stream().map(Article::getId).filter(Objects::nonNull).toList());
-        if (linkedByArticle == null) linkedByArticle = Map.of();
-
+        Map<Long, List<ArticleObjekt>> linkedByArticle;
         if (marketBoard && !selectedMember.isEmpty()) {
-            Map<Long, List<ArticleObjekt>> links = linkedByArticle;
-            articles = articles.stream()
-                    .filter(art -> ArticleMemberSwap.matchesMember(
-                            links.getOrDefault(art.getId(), List.of()), selectedMember, selectedSide))
-                    .limit(limit)
-                    .toList();
+            // Keyset batches preserve exact member/unit matching while searching beyond the newest page.
+            articles = new ArrayList<>();
+            linkedByArticle = new LinkedHashMap<>();
+            long beforeId = Long.MAX_VALUE;
+            int batchSize = 100;
+            while (articles.size() < safeLimit) {
+                List<Article> batch = articleService.findCategoryBatchBefore(category, searchType, searchKeyword, beforeId, batchSize);
+                if (batch == null || batch.isEmpty()) break;
+                Map<Long, List<ArticleObjekt>> batchLinks = articleObjektService.groupByArticleId(
+                        batch.stream().map(Article::getId).filter(Objects::nonNull).toList());
+                if (batchLinks == null) batchLinks = Map.of();
+                for (Article art : batch) {
+                    List<ArticleObjekt> links = batchLinks.getOrDefault(art.getId(), List.of());
+                    if (ArticleMemberSwap.matchesMember(links, selectedMember, selectedSide)) {
+                        articles.add(art);
+                        linkedByArticle.put(art.getId(), links);
+                        if (articles.size() == safeLimit) break;
+                    }
+                }
+                if (batch.size() < batchSize) break;
+                beforeId = batch.get(batch.size() - 1).getId();
+            }
+        } else {
+            articles = searchKeyword.isEmpty()
+                    ? articleService.findRecentByCategory(category, safeLimit)
+                    : articleService.searchByCategory(category, searchType, searchKeyword, safeLimit);
+            linkedByArticle = articleObjektService.groupByArticleId(
+                    articles.stream().map(Article::getId).filter(Objects::nonNull).toList());
+            if (linkedByArticle == null) linkedByArticle = Map.of();
         }
+        List<Artist> artists = artistSnapshot.findAll();
 
         List<ArticleViewDto> articleViewList = new ArrayList<>();
 
@@ -734,6 +745,7 @@ public class ArticleController {
         row.put("objektKey", link.getObjektKey());
         row.put("collectionId", link.getCollectionId());
         row.put("cardTitle", ObjektSeasonCodes.cardTitle(link.getCollectionId(), link.getSeason()));
+        row.put("season", link.getSeason());
         row.put("memberName", MemberPortraitOptions.displayMember(link.getMemberName()));
         row.put("memberColor", MemberPortraitOptions.artistColor(link.getMemberName(), artists));
         row.put("thumbnailImage", link.getThumbnailImage());
@@ -754,6 +766,7 @@ public class ArticleController {
                     && MemberPortraitOptions.sameMember(selectedMember, String.valueOf(option.get("value"))));
         }
         model.addAttribute("memberPickerOptions", picker);
+        model.addAttribute("isObjektSideAll", "all".equals(selectedSide));
         model.addAttribute("isObjektSideHave", "have".equals(selectedSide));
         model.addAttribute("isObjektSideWant", "want".equals(selectedSide));
     }
@@ -762,6 +775,7 @@ public class ArticleController {
         if (!isTradeBoard(category)) return "have";
         if (objektSide == null) return "have";
         String normalized = objektSide.trim().toLowerCase();
+        if ("all".equals(normalized)) return "all";
         if ("want".equals(normalized)) return "want";
         return "have";
     }

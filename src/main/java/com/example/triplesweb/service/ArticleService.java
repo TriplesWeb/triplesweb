@@ -25,6 +25,7 @@ public interface ArticleService {
     Article show(Long id);
     List<Article> findRecentByCategory(String category, int limit);
     List<Article> searchByCategory(String category, String type, String keyword, int limit);
+    List<Article> findCategoryBatchBefore(String category, String type, String keyword, long beforeId, int size);
     long getLikesCount(Long articleId);
     Article delete(Long id);
     /** 사용자별 이력 없음 — 항상 false */

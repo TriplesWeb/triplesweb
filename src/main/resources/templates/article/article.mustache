@@ -1,7 +1,7 @@
 {{>layout/head-open}}
 
     <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
-    <link rel="stylesheet" href="/css/article-page.css?v=4">
+    <link rel="stylesheet" href="/css/article-page.css?v=5">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
 </head><body class="site-page article-page bg-surface text-on-surface min-h-screen flex flex-col">
 {{>layout/header}}
@@ -30,7 +30,9 @@
                 <a href="/article/sell" {{#isSell}}aria-current="page"{{/isSell}}>거래</a>
             </nav>
             <section class="market-member-filter" aria-label="멤버별 검색">
-                <div class="market-side-seg" role="group" aria-label="Have Want 구분">
+                <p class="market-side-help">멤버를 선택하면 Have 또는 Want를 기준으로 검색합니다. 멤버를 선택하지 않으면 전체 게시글이 표시됩니다.</p>
+                {{#isObjektSideAll}}<p class="market-side-help" role="status">기존 전체 검색 링크: Have와 Want 양쪽에서 선택한 멤버를 검색합니다.</p>{{/isObjektSideAll}}
+                <div class="market-side-seg" role="group" aria-label="멤버 검색 기준: Have 또는 Want">
                     <a class="market-side-link{{#isObjektSideHave}} is-active{{/isObjektSideHave}}" href="/article/{{category}}?objektSide=have{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Have</a>
                     {{#isTrade}}
                     <a class="market-side-link{{#isObjektSideWant}} is-active{{/isObjektSideWant}}" href="/article/{{category}}?objektSide=want{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Want</a>

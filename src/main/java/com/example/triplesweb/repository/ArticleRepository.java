@@ -39,6 +39,11 @@ public interface ArticleRepository extends JpaRepository<Article,Long> {
     List<Article> findByCategoryIgnoreCaseAndContentContainingIgnoreCaseOrderByIdDesc(String category, String content, Pageable pageable);
     List<Article> findByCategoryIgnoreCaseAndUserIdContainingIgnoreCaseOrderByIdDesc(String category, String userId, Pageable pageable);
 
+    List<Article> findByCategoryIgnoreCaseAndIdLessThanOrderByIdDesc(String category, Long beforeId, Pageable pageable);
+    List<Article> findByCategoryIgnoreCaseAndTitleContainingIgnoreCaseAndIdLessThanOrderByIdDesc(String category, String title, Long beforeId, Pageable pageable);
+    List<Article> findByCategoryIgnoreCaseAndContentContainingIgnoreCaseAndIdLessThanOrderByIdDesc(String category, String content, Long beforeId, Pageable pageable);
+    List<Article> findByCategoryIgnoreCaseAndUserIdContainingIgnoreCaseAndIdLessThanOrderByIdDesc(String category, String userId, Long beforeId, Pageable pageable);
+
     @Query("""
             select a from Article a
              where (:category is null or :category = '' or lower(a.category) = lower(:category))

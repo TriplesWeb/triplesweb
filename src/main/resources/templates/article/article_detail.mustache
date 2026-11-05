@@ -1,7 +1,7 @@
 {{>layout/head-open}}
 
     <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
-    <link rel="stylesheet" href="/css/article-page.css?v=4">
+    <link rel="stylesheet" href="/css/article-page.css?v=5">
 </head><body class="site-page article-page bg-surface text-on-surface min-h-screen flex flex-col">
 
 {{>layout/header}}
@@ -67,7 +67,7 @@
                             <a href="/cosmo/objekt/detail/{{objektKey}}" class="objekt-trade-card">
                                 <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" onerror="this.onerror=null;this.src='{{frontImage}}'">
                                 <div class="objekt-trade-card-meta">
-                                    <p class="objekt-trade-card-title">{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</p>
+                                    {{#season}}<p class="objekt-trade-season">{{season}}</p>{{/season}}<p class="objekt-trade-card-title">{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</p>
                                     <p class="objekt-trade-member mt-1" style="--artist-color:{{memberColor}}">{{memberName}}</p>
                                     <p class="mt-0.5 text-xs objekt-trade-no">{{collectionNo}}</p>
                                 </div>
@@ -89,7 +89,7 @@
                             <a href="/cosmo/objekt/detail/{{objektKey}}" class="objekt-trade-card">
                                 <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" onerror="this.onerror=null;this.src='{{frontImage}}'">
                                 <div class="objekt-trade-card-meta">
-                                    <p class="objekt-trade-card-title">{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</p>
+                                    {{#season}}<p class="objekt-trade-season">{{season}}</p>{{/season}}<p class="objekt-trade-card-title">{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</p>
                                     <p class="objekt-trade-member mt-1" style="--artist-color:{{memberColor}}">{{memberName}}</p>
                                     <p class="mt-0.5 text-xs objekt-trade-no">{{collectionNo}}</p>
                                 </div>
@@ -107,7 +107,7 @@
                     {{#linkedObjekts}}
                     <a href="/cosmo/objekt/detail/{{objektKey}}" class="overflow-hidden rounded-xl border border-white/10 bg-black/20">
                         <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" class="aspect-[2/3] w-full object-cover" onerror="this.onerror=null;this.src='{{frontImage}}'">
-                        <div class="p-2 objekt-trade-card-meta"><p class="objekt-trade-card-title">{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</p><p class="objekt-trade-member mt-1" style="--artist-color:{{memberColor}}">{{memberName}}</p><p class="mt-0.5 text-xs objekt-trade-no">{{collectionNo}}</p></div>
+                        <div class="p-2 objekt-trade-card-meta">{{#season}}<p class="objekt-trade-season">{{season}}</p>{{/season}}<p class="objekt-trade-card-title">{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</p><p class="objekt-trade-member mt-1" style="--artist-color:{{memberColor}}">{{memberName}}</p><p class="mt-0.5 text-xs objekt-trade-no">{{collectionNo}}</p></div>
                     </a>
                     {{/linkedObjekts}}
                 </div>
