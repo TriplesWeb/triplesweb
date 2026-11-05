@@ -2467,7 +2467,7 @@
         alert(IS_EN ? "No cell found for that pair." : "해당 교차 칸을 찾지 못했습니다.");
         return;
       }
-      setPairFilterOpen(false);
+      cell.style.setProperty("--chem-flash-color", MEMBER_COLORS[ai] || "#00f5d4");
       cell.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
       cell.classList.add("chem-cell-flash");
       setTimeout(() => cell.classList.remove("chem-cell-flash"), 1200);
