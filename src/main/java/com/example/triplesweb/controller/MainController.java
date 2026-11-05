@@ -17,7 +17,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -26,7 +33,12 @@ import java.util.stream.Collectors;
 public class MainController {
 
     private static final int HOME_ARCHIVE_LIMIT = 4;
+    private static final int HOME_UPCOMING_LIMIT = 6;
     private static final String ANDLESS_ALBUM = "LOVE & POP Pt.2";
+    private static final DateTimeFormatter HOME_DAY =
+            DateTimeFormatter.ofPattern("M.d (E)", Locale.KOREAN);
+    private static final DateTimeFormatter HOME_RANGE_DAY =
+            DateTimeFormatter.ofPattern("M.d", Locale.KOREAN);
 
     private final ScheduleRepository scheduleRepository;
     private final ArchiveService archiveService;
@@ -72,7 +84,48 @@ public class MainController {
         model.addAttribute("recentVideos", archiveService.pageByType(MediaType.VIDEO, 0, HOME_ARCHIVE_LIMIT, null)
                 .getContent());
         model.addAttribute("schedulesJson", schedulesJson);
+        model.addAttribute("upcomingSchedules", upcomingSchedules(scheduleForms));
 
         return "main";
+    }
+
+    static List<Map<String, String>> upcomingSchedules(List<ScheduleForm> scheduleForms) {
+        LocalDate today = LocalDate.now();
+        return scheduleForms.stream()
+                .filter(Objects::nonNull)
+                .filter(form -> form.getStart() != null)
+                .filter(form -> {
+                    LocalDate last = form.getRawEnd() != null ? form.getRawEnd() : form.getStart();
+                    return !last.isBefore(today);
+                })
+                .sorted(Comparator.comparing(ScheduleForm::getStart)
+                        .thenComparing(form -> form.getDisplayTitle() == null ? "" : form.getDisplayTitle()))
+                .limit(HOME_UPCOMING_LIMIT)
+                .map(MainController::upcomingRow)
+                .toList();
+    }
+
+    private static Map<String, String> upcomingRow(ScheduleForm form) {
+        Map<String, String> row = new LinkedHashMap<>();
+        String title = form.getDisplayTitle() != null && !form.getDisplayTitle().isBlank()
+                ? form.getDisplayTitle()
+                : Objects.toString(form.getTitle(), "");
+        row.put("displayTitle", title);
+        row.put("dateLabel", dateLabel(form));
+        row.put("color", form.getColor() != null ? form.getColor() : "#00f5d4");
+        if (form.getCategoryLabel() != null && !form.getCategoryLabel().isBlank()) {
+            row.put("categoryLabel", form.getCategoryLabel());
+        }
+        return row;
+    }
+
+    private static String dateLabel(ScheduleForm form) {
+        LocalDate start = form.getStart();
+        LocalDate rawEnd = form.getRawEnd();
+        if (start == null) return "";
+        if (rawEnd != null && rawEnd.isAfter(start)) {
+            return start.format(HOME_RANGE_DAY) + "–" + rawEnd.format(HOME_RANGE_DAY);
+        }
+        return start.format(HOME_DAY);
     }
 }
