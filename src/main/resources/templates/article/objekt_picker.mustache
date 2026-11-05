@@ -32,7 +32,7 @@
                 {{#objektHaveSelected}}
                 <div class="objekt-trade-chip" data-objekt-id="{{id}}" data-side="have">
                     {{#thumbnailImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy">{{/thumbnailImage}}
-                    <span>{{collectionId}}</span>
+                    <span>{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</span>
                     <button type="button" class="objekt-trade-chip-remove" aria-label="선택 해제">×</button>
                 </div>
                 {{/objektHaveSelected}}
@@ -48,7 +48,7 @@
                 {{#objektWantSelected}}
                 <div class="objekt-trade-chip" data-objekt-id="{{id}}" data-side="want">
                     {{#thumbnailImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy">{{/thumbnailImage}}
-                    <span>{{collectionId}}</span>
+                    <span>{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</span>
                     <button type="button" class="objekt-trade-chip-remove" aria-label="선택 해제">×</button>
                 </div>
                 {{/objektWantSelected}}

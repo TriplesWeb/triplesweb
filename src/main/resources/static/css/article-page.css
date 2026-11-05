@@ -102,7 +102,7 @@
 .objekt-trade-zone-empty{margin:0;font-size:.75rem;color:#7f918c}
 .objekt-trade-chip{display:flex;align-items:center;gap:.45rem;max-width:100%;padding:.3rem .3rem .3rem .3rem;border:1px solid #314743;border-radius:.7rem;background:#152024;font-size:.7rem;color:#d7e6e1}
 .objekt-trade-chip img{width:1.85rem;height:2.75rem;object-fit:cover;border-radius:.35rem;flex:0 0 auto}
-.objekt-trade-chip span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.objekt-trade-chip span{min-width:0;overflow:visible;white-space:normal;overflow-wrap:anywhere;line-height:1.35}
 .objekt-trade-chip-remove{appearance:none;flex:0 0 auto;display:grid;place-items:center;width:2rem;height:2rem;min-width:2rem;min-height:2rem;margin:0;padding:0;border:1px solid #ffffff22;border-radius:999px;background:#0b1210cc;color:#e8fff8;font-size:1.25rem;font-weight:600;line-height:1;cursor:pointer}
 .objekt-trade-chip-remove:hover{background:#ff6b6b44;border-color:#ff8f8f88;color:#fff}
 .objekt-trade-chip-remove:focus-visible{outline:2px solid #8decd9;outline-offset:2px}
@@ -134,9 +134,10 @@
 .article-page .file-chooser-btn:hover{background:#a6f3e4}
 .article-page .upload-file-names{margin:0;color:#93a5a1;font-size:.78rem;line-height:1.45;overflow-wrap:anywhere}
 .article-page .upload-file-names[hidden]{display:none}
-.objekt-trade-card{display:block;width:calc(50% - .35rem);min-width:5.5rem;max-width:8.5rem;overflow:hidden;border:1px solid #ffffff1a;border-radius:.85rem;background:#00000033;text-decoration:none;color:inherit}
-.objekt-trade-card img{display:block;width:100%;aspect-ratio:2/3;object-fit:cover}
-.objekt-trade-card-meta{padding:.45rem .55rem .55rem}
+.objekt-trade-card{display:block;width:calc(50% - .35rem);min-width:5.5rem;max-width:none;overflow:visible;border:1px solid #ffffff1a;border-radius:.85rem;background:#00000033;text-decoration:none;color:inherit}
+.objekt-trade-card img{display:block;width:100%;aspect-ratio:2/3;object-fit:cover;overflow:hidden;border-radius:.85rem .85rem 0 0}
+.objekt-trade-card-meta{padding:.45rem .55rem .55rem;min-width:0}
+.objekt-trade-card-title{margin:0;font-size:.82rem;font-weight:650;line-height:1.35;white-space:normal;overflow-wrap:anywhere}
 .objekt-side-toggle{display:flex;flex-wrap:wrap;gap:.5rem}
 .objekt-side-btn{padding:.45rem .9rem;border:1px solid #3a4a46;border-radius:999px;background:transparent;color:#b9cac4;font-size:.75rem;font-weight:600;cursor:pointer}
 .objekt-side-btn.is-active{background:#8decd922;border-color:#8decd9;color:#8decd9}

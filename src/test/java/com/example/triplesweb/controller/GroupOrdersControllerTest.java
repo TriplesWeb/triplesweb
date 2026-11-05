@@ -60,7 +60,10 @@ class GroupOrdersControllerTest {
                 .andExpect(content().string(containsString("article-board-heading is-market is-no-likes")))
                 .andExpect(content().string(containsString("article-board-row is-market is-no-likes")))
                 .andExpect(content().string(containsString(">분류<")))
-                .andExpect(content().string(containsString("article-board-swap")));
+                .andExpect(content().string(containsString("article-board-swap")))
+                .andExpect(content().string(containsString("objektSide=have")))
+                .andExpect(content().string(not(containsString("objektSide=all"))))
+                .andExpect(content().string(not(containsString(">전체</a>"))));
             verify(articles, never()).findPopularArticles(eq(category), anyInt());
         }
         mvc.perform(get("/article/info")).andExpect(status().isOk())

@@ -287,6 +287,8 @@ public class ArticleController {
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("id", stringValue(item.get("id")));
         row.put("collectionId", stringValue(item.get("collectionId")));
+        row.put("cardTitle", ObjektSeasonCodes.cardTitle(
+                stringValue(item.get("collectionId")), stringValue(item.get("season"))));
         row.put("member", com.example.triplesweb.util.MemberPortraitOptions.displayMember(stringValue(item.get("member"))));
         row.put("season", stringValue(item.get("season")));
         row.put("class", stringValue(item.get("class")));
@@ -320,7 +322,7 @@ public class ArticleController {
             @RequestParam(name = "type", required = false, defaultValue = "title") String type,
             @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword,
             @RequestParam(name = "member", required = false, defaultValue = "") String member,
-            @RequestParam(name = "objektSide", required = false, defaultValue = "all") String objektSide) {
+            @RequestParam(name = "objektSide", required = false, defaultValue = "have") String objektSide) {
 
         if (isInvalidCategory(category)) {
             return "redirect:/article/trade";
@@ -731,6 +733,7 @@ public class ArticleController {
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("objektKey", link.getObjektKey());
         row.put("collectionId", link.getCollectionId());
+        row.put("cardTitle", ObjektSeasonCodes.cardTitle(link.getCollectionId(), link.getSeason()));
         row.put("memberName", MemberPortraitOptions.displayMember(link.getMemberName()));
         row.put("memberColor", MemberPortraitOptions.artistColor(link.getMemberName(), artists));
         row.put("thumbnailImage", link.getThumbnailImage());
@@ -751,16 +754,15 @@ public class ArticleController {
                     && MemberPortraitOptions.sameMember(selectedMember, String.valueOf(option.get("value"))));
         }
         model.addAttribute("memberPickerOptions", picker);
-        model.addAttribute("isObjektSideAll", "all".equals(selectedSide));
         model.addAttribute("isObjektSideHave", "have".equals(selectedSide));
         model.addAttribute("isObjektSideWant", "want".equals(selectedSide));
     }
 
     private static String normalizeObjektSide(String category, String objektSide) {
         if (!isTradeBoard(category)) return "have";
-        if (objektSide == null) return "all";
+        if (objektSide == null) return "have";
         String normalized = objektSide.trim().toLowerCase();
-        if ("have".equals(normalized) || "want".equals(normalized)) return normalized;
-        return "all";
+        if ("want".equals(normalized)) return "want";
+        return "have";
     }
 }

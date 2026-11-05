@@ -32,6 +32,10 @@
     let activeSide = 'have';
     const itemCache = new Map();
 
+    function displayTitle(item) {
+      return (item && (item.cardTitle || item.collectionId || item.id)) || '';
+    }
+
     function inputName(side) {
       if (!tradeSplit) return 'selectedObjektIds';
       return side === 'want' ? 'selectedWantObjektIds' : 'selectedHaveObjektIds';
@@ -168,7 +172,7 @@
         el.appendChild(img);
       }
       const span = document.createElement('span');
-      span.textContent = item.collectionId || item.id || '';
+      span.textContent = displayTitle(item);
       el.appendChild(span);
       const remove = document.createElement('button');
       remove.type = 'button';
@@ -263,8 +267,9 @@
         label.appendChild(img);
       }
       const title = document.createElement('span');
-      title.className = 'block truncate text-xs font-semibold';
-      title.textContent = item.collectionId || item.id || '';
+      title.className = 'block text-xs font-semibold';
+      title.style.overflowWrap = 'anywhere';
+      title.textContent = displayTitle(item);
       const meta = document.createElement('span');
       meta.className = 'block truncate text-[11px] text-slate-400';
       meta.textContent = [item.member, item.collectionNo].filter(Boolean).join(' · ');
@@ -406,9 +411,11 @@
         if (!id) return;
         const img = chipEl.querySelector('img');
         const span = chipEl.querySelector('span');
+        const shown = span ? span.textContent.trim() : id;
         itemCache.set(id, {
           id: id,
-          collectionId: span ? span.textContent : id,
+          collectionId: shown,
+          cardTitle: shown,
           thumbnailImage: img ? img.src : ''
         });
       });

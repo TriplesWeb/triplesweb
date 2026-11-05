@@ -14,12 +14,14 @@ class ArticleObjektOrderingTest {
         var catalog = mock(ObjektService.class);
         var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
                 mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog, mock(ArtistSnapshotService.class));
-        when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("id","uuid","slug","hayeoncc367z","collectionId","Cream02 HaYeon 367Z","member","HaYeon")));
+        when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("id","uuid","slug","hayeoncc367z","collectionId","Cream02 HaYeon 367Z","member","HaYeon","season","Cream02")));
         for (String category : List.of("trade","sell")) {
             var model = new ExtendedModelMap();
             controller.showArticleForm(category, List.of("uuid","invalid"), model);
             assertThat((List<Map<String,Object>>)model.get("objektSelected")).hasSize(1)
                     .first().extracting(row -> row.get("id")).isEqualTo("uuid");
+            assertThat((List<Map<String,Object>>)model.get("objektSelected"))
+                    .extracting(row -> row.get("cardTitle")).containsExactly("HaYeon 367Z");
             assertThat(model.get("objektInitialSearch")).isEqualTo("Cream02 HaYeon 367Z");
             if ("trade".equals(category)) {
                 assertThat(model.get("isTradeObjektSplit")).isEqualTo(true);
@@ -151,7 +153,8 @@ class ArticleObjektOrderingTest {
         ArticleObjekt have = new ArticleObjekt();
         have.setObjektKey("have-key");
         have.setSide(ArticleObjektService.SIDE_HAVE);
-        have.setCollectionId("Have Card");
+        have.setCollectionId("Cream02 HaYeon 367Z");
+        have.setSeason("Cream02");
         have.setMemberName("JiYeon");
         ArticleObjekt want = new ArticleObjekt();
         want.setObjektKey("want-key");
@@ -172,7 +175,7 @@ class ArticleObjektOrderingTest {
         controller.showArticle("trade", 11L, null, model);
         assertThat(model.get("isTradeObjektSplit")).isEqualTo(true);
         assertThat((List<Map<String, Object>>) model.get("linkedHaveObjekts"))
-                .extracting(row -> row.get("collectionId")).containsExactly("Have Card");
+                .extracting(row -> row.get("cardTitle")).containsExactly("HaYeon 367Z");
         assertThat((List<Map<String, Object>>) model.get("linkedWantObjekts"))
                 .extracting(row -> row.get("collectionId")).containsExactly("Want Card");
     }
