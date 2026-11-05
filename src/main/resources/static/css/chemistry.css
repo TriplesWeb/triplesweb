@@ -733,16 +733,6 @@ html[lang="en"] .chem-member-name {
     color: #d7ddd9;
 }
 
-.chem-trio-back {
-    background: #00f5d4;
-    color: #0d0e12;
-}
-
-.chem-trio-back:hover {
-    color: #0d0e12;
-    filter: brightness(1.05);
-}
-
 /* 툴바 안에서는 선택 해제·결과 보기와 높이·정렬을 맞춘다 */
 .chem-trio-view .mpp-toolbar-actions {
     display: flex;
@@ -751,8 +741,7 @@ html[lang="en"] .chem-member-name {
     gap: 0.45rem;
 }
 
-.chem-trio-view .mpp-toolbar-actions .mpp-tool-btn,
-.chem-trio-view .mpp-toolbar-actions .chem-mode-btn {
+.chem-trio-view .mpp-toolbar-actions .mpp-tool-btn {
     margin: 0;
     min-height: 2.1rem;
     padding: 0.35rem 0.85rem;
@@ -764,10 +753,6 @@ html[lang="en"] .chem-member-name {
     font-weight: 700;
     line-height: 1.2;
     border-radius: 0.5rem;
-}
-
-.chem-trio-view .mpp-toolbar-actions .chem-trio-back {
-    border: 1px solid transparent;
 }
 
 .chem-table-wrap {
