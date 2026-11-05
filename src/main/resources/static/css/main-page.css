@@ -49,6 +49,58 @@
     transform: none;
     transition: opacity .55s ease, transform .55s ease;
 }
+
+/* 홈 미니 캘린더 + 다가오는 일정 */
+.main-page .fc {
+    --fc-border-color: rgba(45, 49, 62, 0.6);
+    --fc-page-bg-color: transparent;
+}
+.main-page .fc .fc-toolbar-title {
+    font-size: 0.85rem !important;
+    font-weight: 700;
+    color: #e3e2e8;
+}
+.main-page .fc .fc-button-primary {
+    background-color: #1a1b22 !important;
+    border-color: #2d313e !important;
+    color: #b9cac4 !important;
+    padding: 0.15rem 0.45rem !important;
+    font-size: 0.7rem !important;
+}
+.main-page .fc .fc-button-primary:hover {
+    background-color: #23242e !important;
+    color: #00f5d4 !important;
+}
+.main-page .fc-theme-standard td,
+.main-page .fc-theme-standard th {
+    border-color: rgba(45, 49, 62, 0.4) !important;
+}
+.main-page .fc .fc-col-header-cell-cushion {
+    color: #b9cac4;
+    font-size: 0.65rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    padding: 2px 0 !important;
+}
+.main-page .fc .fc-daygrid-day-number {
+    color: #e3e2e8;
+    font-size: 0.7rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    padding: 2px 4px !important;
+}
+.main-page .fc-col-header-cell:nth-child(1) .fc-col-header-cell-cushion { color: #f87171 !important; }
+.main-page .fc-col-header-cell:nth-child(7) .fc-col-header-cell-cushion { color: #60a5fa !important; }
+.main-mini-calendar .fc-daygrid-day-frame { min-height: 1.85rem !important; }
+.main-mini-calendar .fc-daygrid-day-events { min-height: 0.55rem !important; margin: 0 !important; }
+.main-mini-calendar .fc-daygrid-event-dot { margin: 0 auto; }
+.main-mini-calendar .fc-daygrid-event {
+    margin: 0 !important;
+    padding: 0 !important;
+    justify-content: center;
+}
+.main-mini-calendar .fc-event-title,
+.main-mini-calendar .fc-event-time { display: none !important; }
+.main-mini-calendar .fc-scrollgrid { border-radius: 0.75rem; overflow: hidden; }
+
 @keyframes main-hero-kenburns {
     from { transform: scale(1.02) translate3d(0, 0, 0); }
     to { transform: scale(1.1) translate3d(-1.4%, -1%, 0); }

@@ -1,20 +1,8 @@
 {{>layout/head-open}}
     <title>tripleS 커뮤</title>
-    <link rel="stylesheet" href="/css/schedule-categories.css?v=5">
-    <link rel="stylesheet" href="/css/main-page.css?v=1">
-
-    <style>
-        /* FullCalendar Dark Customization */
-        .fc { --fc-border-color: rgba(45, 49, 62, 0.6); --fc-page-bg-color: transparent; }
-        .fc .fc-toolbar-title { font-size: 0.9rem !important; font-weight: bold; color: #e3e2e8; }
-        .fc .fc-button-primary { background-color: #1a1b22 !important; border-color: #2d313e !important; color: #b9cac4 !important; }
-        .fc .fc-button-primary:hover { background-color: #23242e !important; color: #00f5d4 !important; }
-        .fc-theme-standard td, .fc-theme-standard th { border-color: rgba(45, 49, 62, 0.4) !important; }
-        .fc .fc-col-header-cell-cushion { color: #b9cac4; font-size: 0.75rem; font-family: monospace; }
-        .fc .fc-daygrid-day-number { color: #e3e2e8; font-size: 0.75rem; font-family: monospace; }
-        .fc-col-header-cell:nth-child(1) .fc-col-header-cell-cushion { color: #f87171 !important; }
-        .fc-col-header-cell:nth-child(7) .fc-col-header-cell-cushion { color: #60a5fa !important; }
-    </style>
+    <link rel="stylesheet" href="/css/schedule-categories.css?v=6">
+    <link rel="stylesheet" href="/css/main-page.css?v=6">
+    <link rel="stylesheet" href="/css/main-upcoming.css?v=2">
 </head><body class="site-page main-page min-h-screen flex flex-col bg-background text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
 
 <!-- 엠비언트 배경 은은한 빛 효과 -->
@@ -110,43 +98,52 @@
         </div>
     </section>
 
-    <!-- 3. 정보 · 스케줄 · 사진 -->
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            <div class="main-fade-up bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl h-full">
-                <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-secondary text-xl">campaign</span>
-                        <h3 class="text-base font-bold text-on-surface">공지사항</h3>
-                    </div>
-                    <a href="/article/notice" class="text-xs text-on-surface-variant hover:text-secondary flex items-center gap-0.5 transition-colors">
-                        더보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
-                    </a>
+    <!-- 3. 스케줄: 미니 달력 + 다가오는 일정 -->
+    <section class="main-fade-up bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
+        <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-4">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary-container text-xl">calendar_month</span>
+                <h3 class="text-base font-bold text-on-surface">스케줄</h3>
+            </div>
+            <a href="/schedule" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
+                전체 달력 <span class="material-symbols-outlined text-sm">chevron_right</span>
+            </a>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+            <div class="lg:col-span-5 flex">
+                <div id="miniCalendar" class="main-mini-calendar w-full min-h-[12rem]" aria-label="이번 달 미니 캘린더"></div>
+            </div>
+            <div class="main-upcoming-panel lg:col-span-7 flex flex-col min-w-0 min-h-0 h-full">
+                <div class="main-upcoming-head flex items-center justify-between gap-3 mb-3">
+                    <p class="m-0 text-xs font-semibold tracking-wide text-on-surface-variant">다가오는 일정</p>
+                    <span class="font-mono text-[0.62rem] text-on-surface-variant/70">오늘 기준</span>
                 </div>
-                <ul class="divide-y divide-outline-variant/20 text-xs">
-                    {{#noticePosts}}
-                        <li class="py-2.5 flex items-center justify-between gap-4 hover:bg-surface-container-high/40 px-2 rounded-lg transition-colors">
-                            <a href="/article/notice/{{id}}" class="truncate text-on-surface hover:text-secondary font-medium flex-1">{{title}}</a>
-                            <div class="text-on-surface-variant/80 font-mono text-[11px] shrink-0">{{userId}} · {{formattedDate}}</div>
-                        </li>
-                    {{/noticePosts}}
-                    {{^noticePosts}}
-                        <li class="py-4 text-center text-on-surface-variant/60">등록된 공지가 없습니다.</li>
-                    {{/noticePosts}}
+                {{#hasUpcomingSchedules}}
+                <ul class="main-upcoming-list">
+                    {{#upcomingSchedules}}
+                    <li>
+                        <a href="/schedule" class="main-upcoming-item" style="--schedule-color: {{color}}">
+                            <span class="main-upcoming-date">{{dateLabel}}</span>
+                            <span class="main-upcoming-body">
+                                <span class="main-upcoming-title">{{displayTitle}}</span>
+                                {{#categoryLabel}}<span class="main-upcoming-category">{{categoryLabel}}</span>{{/categoryLabel}}
+                            </span>
+                            <span class="material-symbols-outlined main-upcoming-chevron" aria-hidden="true">chevron_right</span>
+                        </a>
+                    </li>
+                    {{/upcomingSchedules}}
                 </ul>
-            </div>
-
-            <div class="bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl h-full">
-                <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-3">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary-container text-xl">calendar_month</span>
-                        <h3 class="text-base font-bold text-on-surface">스케줄</h3>
-                    </div>
-                    <a href="/schedule" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
-                        전체 달력 <span class="material-symbols-outlined text-sm">chevron_right</span>
-                    </a>
+                {{/hasUpcomingSchedules}}
+                {{^hasUpcomingSchedules}}
+                <div class="main-upcoming-empty flex flex-1 flex-col items-center justify-center gap-2 min-h-[14rem] text-center" role="status">
+                    <span class="material-symbols-outlined main-upcoming-empty-icon" aria-hidden="true">event_busy</span>
+                    <p class="main-upcoming-empty-title m-0 text-sm font-bold text-on-surface">등록된 일정이 없습니다</p>
+                    <p class="main-upcoming-empty-copy m-0 max-w-[16rem] text-xs leading-relaxed text-on-surface-variant/80">곧 올라올 스케줄을 전체 달력에서 확인해 보세요.</p>
+                    <a href="/schedule" class="main-upcoming-empty-link inline-flex items-center gap-0.5 mt-2 text-xs font-semibold text-primary-container hover:underline">전체 달력 보기 <span class="material-symbols-outlined text-[0.95rem]" aria-hidden="true">arrow_forward</span></a>
                 </div>
-                <div id="miniCalendar" class="w-full"></div>
+                {{/hasUpcomingSchedules}}
             </div>
+        </div>
     </section>
 
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
@@ -200,66 +197,45 @@
 </main>
 
 <!-- 푸터 레이아웃 포함 -->
-<!-- FullCalendar: 미니 캘린더가 보일 때만 로드 -->
+<!-- FullCalendar: 홈 미니 캘린더 (컴팩트 · 일정은 점만 표시) -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/ko.global.min.js"></script>
 <script>
 (function () {
     const calendarEl = document.getElementById("miniCalendar");
-    if (!calendarEl) return;
+    if (!calendarEl || typeof FullCalendar === "undefined") return;
     const schedules = {{{schedulesJson}}} || [];
-    let started = false;
 
-    function loadScript(src) {
-        return new Promise((resolve, reject) => {
-            const s = document.createElement("script");
-            s.src = src;
-            s.async = true;
-            s.onload = resolve;
-            s.onerror = reject;
-            document.head.appendChild(s);
-        });
-    }
-
-    async function initMiniCalendar() {
-        if (started) return;
-        started = true;
-        await loadScript("https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js");
-        await loadScript("https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/ko.global.min.js");
-        const miniCalendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: "dayGridMonth",
-            locale: "ko",
-            height: "auto",
-            fixedWeekCount: false,
-            dayMaxEvents: false,
-            headerToolbar: { left: "", center: "title", right: "prev,next" },
-            events: (schedules || []).map(function (item) {
-                return {
-                    id: item.id,
-                    title: item.displayTitle || item.title,
-                    start: item.start,
-                    end: item.end,
-                    color: item.color,
-                    extendedProps: item
-                };
-            }),
-            eventDidMount: function (info) {
-                info.el.style.setProperty("--schedule-color", info.event.extendedProps.color || "#00f5d4");
-            },
-            eventClick: function () { window.location.href = "/schedule"; }
-        });
-        miniCalendar.render();
-    }
-
-    if ("IntersectionObserver" in window) {
-        const io = new IntersectionObserver((entries) => {
-            if (entries.some((e) => e.isIntersecting)) {
-                io.disconnect();
-                initMiniCalendar();
-            }
-        }, { rootMargin: "120px" });
-        io.observe(calendarEl);
-    } else {
-        window.addEventListener("load", initMiniCalendar);
-    }
+    const miniCalendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: "dayGridMonth",
+        locale: "ko",
+        height: "auto",
+        contentHeight: 240,
+        fixedWeekCount: false,
+        showNonCurrentDates: false,
+        dayMaxEvents: 3,
+        eventDisplay: "list-item",
+        headerToolbar: { left: "", center: "title", right: "prev,next" },
+        events: (schedules || []).map(function (item) {
+            const event = {
+                id: item.id,
+                title: item.displayTitle || item.title,
+                start: item.start,
+                color: item.color,
+                display: "list-item",
+                extendedProps: item
+            };
+            if (item.end) event.end = item.end;
+            return event;
+        }),
+        eventDidMount: function (info) {
+            info.el.style.setProperty("--schedule-color", info.event.extendedProps.color || "#00f5d4");
+            info.el.title = info.event.title || "";
+        },
+        dateClick: function () { window.location.href = "/schedule"; },
+        eventClick: function () { window.location.href = "/schedule"; }
+    });
+    miniCalendar.render();
 })();
 </script>
 <script src="/js/main-page.js?v=1" defer></script>
