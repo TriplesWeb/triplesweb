@@ -1,7 +1,7 @@
 {{>layout/head-open}}
 
 <link rel="stylesheet" href="/css/about-admin.css?v=1">
-    <link rel="stylesheet" href="/css/artist.css?v=20261105-bite-name-img-1.5">
+    <link rel="stylesheet" href="/css/artist.css?v=20261105-bite-name-contrast">
     <link rel="stylesheet" href="/css/artist-performance.css?v=7">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
 
@@ -157,7 +157,7 @@
                                         <img class="artist-bytes-card-star-deco" src="/images/artist/bite-star/{{artistId}}.png" alt="" width="40" height="38" loading="lazy" decoding="async" aria-hidden="true">
                                         <img class="artist-bytes-card-logo" src="/images/artist/bytes-logo.png?v=2" alt="byteS" width="120" height="50" loading="lazy" decoding="async">
                                     </div>
-                                    <div class="artist-bytes-card-name">
+                                    <div class="artist-bytes-card-name{{#biteNameDarkInk}} artist-bytes-card-name--dark-ink{{/biteNameDarkInk}}">
                                         <img class="artist-bytes-card-name-img" src="/images/artist/bite-name/{{artistId}}.png" alt="{{bite}}" width="160" height="50" loading="lazy" decoding="async">
                                     </div>
                                 </div>

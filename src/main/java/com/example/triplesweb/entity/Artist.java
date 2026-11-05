@@ -96,6 +96,26 @@ public class Artist {
         return isHasSignatureImage() || isHasBite();
     }
 
+    /**
+     * 밝은 상징색이면 바이츠 이름 이미지를 어두운 잉크로 그린다.
+     * (흰 글자 PNG + screen 블렌드는 밝은 배경에서 대비가 사라짐)
+     */
+    @Transient
+    public boolean isBiteNameDarkInk() {
+        if (color == null || color.length() < 7 || color.charAt(0) != '#') {
+            return false;
+        }
+        try {
+            int r = Integer.parseInt(color.substring(1, 3), 16);
+            int g = Integer.parseInt(color.substring(3, 5), 16);
+            int b = Integer.parseInt(color.substring(5, 7), 16);
+            double luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255.0;
+            return luminance > 0.62;
+        } catch (NumberFormatException ignored) {
+            return false;
+        }
+    }
+
     @OneToMany(mappedBy = "artist", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UnitMember> affiliatedUnit = new ArrayList<>();
 

@@ -1000,6 +1000,12 @@
     mix-blend-mode: screen;
 }
 
+/* 밝은 상징색: 반전 후 multiply로 검은 글자만 남김 */
+.artist-bytes-card-name--dark-ink .artist-bytes-card-name-img {
+    filter: invert(1);
+    mix-blend-mode: multiply;
+}
+
 .artist-bytes-card-body {
     display: flex;
     align-items: center;
