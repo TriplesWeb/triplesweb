@@ -73,7 +73,6 @@ async function page(serverAdmin, options = {}) {
 test('a stale browser token does not override server rejection', async () => {
   const p = await page(false);
   assert.equal(p.token(), '');
-  assert.equal(p.element('unitAdminBtn').textContent, '관리자');
 });
 
 test('403 during image-only save resets auth and explains how to sign in again', async () => {
@@ -85,7 +84,6 @@ test('403 during image-only save resets auth and explains how to sign in again',
   p.element('unitEditClearImage').checked = true;
   await p.element('unitEditForm').events.submit({ preventDefault() {} });
   assert.equal(p.token(), '');
-  assert.equal(p.element('unitAdminBtn').textContent, '관리자');
   assert.match(p.element('unitEditError').textContent, /관리자 로그인이 만료/);
   assert.equal(p.element('unitEditError').hidden, false);
   assert.equal(p.reloaded(), false);

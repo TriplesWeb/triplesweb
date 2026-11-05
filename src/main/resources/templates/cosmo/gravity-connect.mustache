@@ -14,7 +14,7 @@
 <p class="text-sm text-gray-400">사이트 관리자가 본인 COSMO 계정으로 연결하면 그래비티 정보를 조회할 수 있습니다. 최초 이메일 인증 후 연결은 자동으로 갱신됩니다.</p>
 <p id="connectStatus" role="status" class="gravity-notice">연결 상태 확인 중…</p>
 <section id="gravityLoginRequired" class="gravity-card" hidden>
-<p class="gravity-connect-help">케미명 페이지와 같은 관리자 로그인을 사용합니다. 이미 로그인했다면 별도 비밀번호 입력 없이 연결을 관리할 수 있습니다.</p>
+<p class="gravity-connect-help">상단 헤더의 관리자 버튼으로 로그인하세요. 이미 로그인했다면 별도 비밀번호 입력 없이 연결을 관리할 수 있습니다.</p>
 <button type="button" id="gravityLoginOpen" class="about-mode-btn is-active mt-4 btn btn-sm btn-outline btn-primary btn-active">관리자 로그인</button>
 </section>
 <section id="cosmoLogin" class="gravity-card space-y-5" hidden>
@@ -35,6 +35,6 @@
 <p id="cosmoObjektSyncStatus" role="status" class="text-sm"></p>
 </div>
 </section>
-</main>{{>cosmo/partials/gravity-admin-login}}<script src="/js/gravity-connect.js?v=5" defer></script>
+</main><script src="/js/gravity-connect.js?v=6" defer></script>
 <script src="/js/cosmo-objekt-sync.js?v=1" defer></script>
 {{>layout/page-end}}

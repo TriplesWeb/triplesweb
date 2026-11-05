@@ -5,7 +5,7 @@ const https = require('node:https');
 const path = require('node:path');
 
 const ICONS = [
-  'account_circle','add','add_box','add_circle','album','arrow_back','arrow_drop_down',
+  'account_circle','add','add_box','add_circle','admin_panel_settings','album','arrow_back','arrow_drop_down',
   'arrow_forward','article','calendar_month','calendar_today','campaign','chat_bubble_outline',
   'chevron_left','chevron_right','close','delete','edit','edit_calendar','edit_note','error',
   'event','expand_more','favorite','format_list_bulleted','forum','graphic_eq','grid_view',

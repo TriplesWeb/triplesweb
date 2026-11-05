@@ -1160,18 +1160,7 @@
   let tableBuiltForAdmin = false;
 
   function setAdminUi() {
-    const btn = document.getElementById("chemAdminBtn");
     const hint = document.getElementById("chemAdminHint");
-    if (btn) {
-      if (!adminConfigured) {
-        btn.classList.add("hidden");
-      } else {
-        btn.classList.remove("hidden");
-        btn.textContent = isAdmin ? I18N.adminLogout : I18N.admin;
-        btn.setAttribute("aria-pressed", isAdmin ? "true" : "false");
-        btn.classList.toggle("is-active", isAdmin);
-      }
-    }
     if (hint) hint.classList.toggle("hidden", !isAdmin);
     const adminChanged = tableBuiltForAdmin !== isAdmin;
     if (adminChanged && pairsHydrated) {
@@ -1193,46 +1182,17 @@
     }
   }
 
-  function setLoginPasswordVisible(visible) {
-    const input = document.getElementById("chemLoginPassword");
-    const toggle = document.getElementById("chemLoginPasswordToggle");
-    if (!input || !toggle) return;
-    input.type = visible ? "text" : "password";
-    toggle.setAttribute("aria-pressed", visible ? "true" : "false");
-    toggle.setAttribute(
-      "aria-label",
-      visible ? "비밀번호 숨기기" : "비밀번호 보기"
-    );
-    const icon = toggle.querySelector(".material-symbols-outlined");
-    if (icon) icon.textContent = visible ? "visibility_off" : "visibility";
+  function applyAdminState(state) {
+    if (!state) return;
+    adminConfigured = Boolean(state.configured);
+    isAdmin = Boolean(state.admin);
+    if (!isAdmin) setAdminToken("");
+    setAdminUi();
   }
 
   function openLoginModal() {
-    const modal = document.getElementById("chemistryLoginModal");
-    const err = document.getElementById("chemLoginError");
-    const input = document.getElementById("chemLoginPassword");
-    if (err) {
-      err.hidden = true;
-      err.textContent = "";
-    }
-    if (input) input.value = "";
-    setLoginPasswordVisible(false);
-    if (modal) {
-      modal.classList.remove("hidden");
-      modal.classList.add("flex");
-      document.body.style.overflow = "hidden";
-    }
-    if (input) input.focus();
-  }
-
-  function closeLoginModal() {
-    const modal = document.getElementById("chemistryLoginModal");
-    if (!modal) return;
-    modal.classList.add("hidden");
-    modal.classList.remove("flex");
-    if (document.getElementById("chemistryModal")?.classList.contains("hidden")
-        && document.getElementById("chemistryEditModal")?.classList.contains("hidden")) {
-      document.body.style.overflow = "";
+    if (window.SiteAdmin && typeof window.SiteAdmin.openLogin === "function") {
+      window.SiteAdmin.openLogin();
     }
   }
 
@@ -1747,66 +1707,6 @@
   }
 
   function bindAdminUi() {
-    const adminBtn = document.getElementById("chemAdminBtn");
-    if (adminBtn) {
-      adminBtn.addEventListener("click", async () => {
-        if (isAdmin) {
-          await chemFetch("/api/chemistry/admin/logout", { method: "POST" });
-          isAdmin = false;
-          setAdminToken("");
-          setAdminUi();
-          return;
-        }
-        openLoginModal();
-      });
-    }
-
-    const loginForm = document.getElementById("chemistryLoginForm");
-    if (loginForm) {
-      loginForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const err = document.getElementById("chemLoginError");
-        const password = document.getElementById("chemLoginPassword").value;
-        try {
-          const res = await chemFetch("/api/chemistry/admin/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ password })
-          });
-          if (!res.ok) {
-            if (err) {
-              err.textContent = await readChemError(res, "비밀번호가 올바르지 않습니다.");
-              err.hidden = false;
-            }
-            return;
-          }
-          const data = await res.json();
-          setAdminToken(data && data.token ? data.token : "");
-          isAdmin = true;
-          closeLoginModal();
-          setAdminUi();
-        } catch (_) {
-          if (err) {
-            err.textContent = "로그인에 실패했습니다.";
-            err.hidden = false;
-          }
-        }
-      });
-    }
-
-    const passwordToggle = document.getElementById("chemLoginPasswordToggle");
-    if (passwordToggle) {
-      passwordToggle.addEventListener("click", () => {
-        const input = document.getElementById("chemLoginPassword");
-        const visible = input && input.type === "password";
-        setLoginPasswordVisible(Boolean(visible));
-      });
-    }
-
-    document.querySelectorAll(".chem-login-close").forEach((btn) => {
-      btn.addEventListener("click", closeLoginModal);
-    });
-
     const editBtn = document.getElementById("chemEditBtn");
     if (editBtn) {
       editBtn.addEventListener("click", () => {
@@ -2849,7 +2749,6 @@
       if (e.key !== "Escape") return;
       closeLegendPanel();
       closeEditModal();
-      closeLoginModal();
       closeModal();
     });
 
@@ -2860,19 +2759,19 @@
     bindAdminUi();
     setModeButtons("pair");
 
-    // 관리자 상태만 가볍게. 표/설명 API는 첫 페인트 이후에.
-    try {
-      const statusRes = await chemFetch("/api/chemistry/admin/status");
-      if (statusRes.ok) {
-        const status = await statusRes.json();
-        adminConfigured = Boolean(status.configured);
-        isAdmin = Boolean(status.admin);
-        if (!isAdmin) setAdminToken("");
+    // 전역 SiteAdmin 상태를 구독. 없으면 기존 status API로 폴백.
+    if (window.SiteAdmin && typeof window.SiteAdmin.subscribe === "function") {
+      window.SiteAdmin.subscribe(applyAdminState);
+    } else {
+      try {
+        const statusRes = await chemFetch("/api/chemistry/admin/status");
+        if (statusRes.ok) applyAdminState(await statusRes.json());
+        else applyAdminState({ configured: false, admin: false });
+      } catch (err) {
+        console.error("케미 관리자 상태 로드 실패", err);
+        applyAdminState({ configured: false, admin: false });
       }
-      setAdminUi();
-    } catch (err) {
-      console.error("케미 관리자 상태 로드 실패", err);
-      setAdminUi();
+      document.addEventListener("site-admin:change", (event) => applyAdminState(event.detail));
     }
 
     const prefetch = () => {

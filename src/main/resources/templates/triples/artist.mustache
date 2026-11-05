@@ -19,7 +19,6 @@
             <h2 class="text-2xl font-bold text-[#e3e2e8] flex items-center gap-2 m-0">
                 <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4]"></span>{{pageHeading}}
             </h2>
-            <button type="button" id="artistAdminBtn" class="artist-admin-btn hidden" aria-pressed="false">관리자</button>
         </div>
         <p id="artistAdminHint" class="artist-admin-hint hidden mb-4">관리자 모드: 그룹/멤버 탭에서 수정 버튼으로 내용을 편집할 수 있어요.</p>
 
@@ -180,29 +179,6 @@
     </div>
 </main>
 
-<div id="artistLoginModal" class="artist-modal hidden" role="dialog" aria-modal="true" aria-labelledby="artistLoginTitle">
-    <div class="artist-modal-panel">
-        <button type="button" class="artist-close artist-login-close" aria-label="닫기">
-            <span class="material-symbols-outlined">close</span>
-        </button>
-        <h3 id="artistLoginTitle" class="artist-modal-title">관리자 로그인</h3>
-        <form id="artistLoginForm" class="artist-edit-form">
-            <label class="artist-edit-label">비밀번호
-                <span class="artist-password-field">
-                    <input type="password" id="artistLoginPassword" name="password" required autocomplete="current-password">
-                    <button type="button" id="artistLoginPasswordToggle" class="artist-password-toggle" aria-label="비밀번호 보기" aria-pressed="false">
-                        <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
-                    </button>
-                </span>
-            </label>
-            <p id="artistLoginError" class="artist-edit-error" hidden></p>
-            <div class="artist-edit-actions">
-                <button type="submit" class="artist-mode-btn is-active">로그인</button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <div id="artistGroupModal" class="artist-modal hidden" role="dialog" aria-modal="true" aria-labelledby="artistGroupTitleLabel">
     <div class="artist-modal-panel artist-edit-panel">
         <button type="button" class="artist-close artist-group-close" aria-label="닫기">
@@ -344,5 +320,5 @@
 <script src="/js/about-admin-auth.js?v=2"></script>
 <script src="/js/about-tabs.js?v=1"></script>
 <script src="/js/about-modal.js?v=1"></script>
-<script src="/js/artist.js?v=18" defer></script>
+<script src="/js/artist.js?v=19" defer></script>
 {{>layout/page-end}}

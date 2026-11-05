@@ -1,6 +1,6 @@
 <script src="/js/image-fallback.js?v=1" defer></script>
 <script src="/js/about-admin-auth.js?v=2" defer></script>
-<script src="/js/site-admin-controls.js?v=4" defer></script>
+<script src="/js/site-admin-controls.js?v=8" defer></script>
 <style>
 @keyframes sss-mascot-wave {
     0%, 100% { transform: translateY(0) rotate(-2deg); }
@@ -152,6 +152,10 @@
 {{^member}}
     {{/member}}
 
+    <button type="button" id="siteAdminBtn" aria-label="관리자" title="관리자" aria-pressed="false" hidden>
+        <span class="material-symbols-outlined" aria-hidden="true" data-site-admin-icon>admin_panel_settings</span>
+    </button>
+
     <form action="/search" method="get" role="search" class="site-header-search site-header-search--icon relative hidden lg:flex items-center shrink-0" data-header-search>
         <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" class="site-header-search__input" type="search" placeholder="멤버·게시글 검색" data-header-search-input tabindex="-1" autocomplete="off" />
         <button type="button" class="site-header-search__toggle" aria-label="검색 열기" title="검색" data-header-search-open>
@@ -218,6 +222,29 @@
         </nav>
     </div>
 </header>
+
+<div id="siteAdminLoginModal" hidden role="dialog" aria-modal="true" aria-labelledby="siteAdminLoginTitle">
+    <div class="site-admin-login-panel">
+        <button type="button" class="site-admin-login-close" data-site-admin-close aria-label="닫기">
+            <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+        <h3 id="siteAdminLoginTitle" class="site-admin-login-title">관리자 로그인</h3>
+        <form id="siteAdminLoginForm">
+            <label class="site-admin-login-label">비밀번호
+                <span class="site-admin-password-field">
+                    <input type="password" id="siteAdminPassword" name="password" required autocomplete="current-password">
+                    <button type="button" id="siteAdminPasswordToggle" class="site-admin-password-toggle" aria-label="비밀번호 보기" aria-pressed="false">
+                        <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+                    </button>
+                </span>
+            </label>
+            <p id="siteAdminLoginError" class="site-admin-login-error" role="alert" hidden></p>
+            <div class="site-admin-login-actions">
+                <button type="submit" class="site-admin-login-submit">로그인</button>
+            </div>
+        </form>
+    </div>
+</div>
 
         <!-- Flash Message 알림 메시지 영역 -->
         {{#msg}}
