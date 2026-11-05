@@ -96,25 +96,6 @@ public class Artist {
         return isHasSignatureImage() || isHasBite();
     }
 
-    /**
-     * bytes 카드 이름 글자색. 상징색이 밝으면 검정, 어두우면 흰색.
-     */
-    @Transient
-    public String getBiteNameTextColor() {
-        if (color == null || color.length() < 7 || color.charAt(0) != '#') {
-            return "#ffffff";
-        }
-        try {
-            int r = Integer.parseInt(color.substring(1, 3), 16);
-            int g = Integer.parseInt(color.substring(3, 5), 16);
-            int b = Integer.parseInt(color.substring(5, 7), 16);
-            double luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255.0;
-            return luminance > 0.62 ? "#111111" : "#ffffff";
-        } catch (NumberFormatException ignored) {
-            return "#ffffff";
-        }
-    }
-
     @OneToMany(mappedBy = "artist", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UnitMember> affiliatedUnit = new ArrayList<>();
 
