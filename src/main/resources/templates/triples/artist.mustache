@@ -1,7 +1,7 @@
 {{>layout/head-open}}
 
 <link rel="stylesheet" href="/css/about-admin.css?v=1">
-    <link rel="stylesheet" href="/css/artist.css?v=20261104-mulbit-center2">
+    <link rel="stylesheet" href="/css/artist.css?v=20261105-bytes-radius">
     <link rel="stylesheet" href="/css/artist-performance.css?v=7">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
 
@@ -65,7 +65,11 @@
                     </div>
                     <div class="lg:col-span-8 space-y-6">
                         <div class="artist-member-heading border-b pb-4 mb-2 flex flex-wrap items-center gap-2">
-                            <span class="artist-member-color-dot shrink-0" aria-hidden="true"></span>
+                            <span class="artist-member-logo-slot" aria-hidden="true">
+                                <span class="artist-member-logo-wrap">
+                                    <img class="artist-member-logo" src="/images/artist/logo/{{artistId}}.png" alt="" width="40" height="40" loading="lazy" decoding="async">
+                                </span>
+                            </span>
                             <h3 class="text-3xl font-extrabold text-[#e3e2e8] tracking-tight">{{name}}</h3>
                             <span class="text-sm font-mono text-[#b9cac4] pl-2">{{engName}}</span>
                             <button type="button" class="artist-mode-btn is-active artist-edit-inline ml-auto" data-artist-edit="{{artistId}}">멤버 수정</button>
@@ -153,7 +157,7 @@
                                         <img class="artist-bytes-card-star-deco" src="/images/artist/bite-star/{{artistId}}.png" alt="" width="40" height="38" loading="lazy" decoding="async" aria-hidden="true">
                                         <img class="artist-bytes-card-logo" src="/images/artist/bytes-logo.png?v=2" alt="byteS" width="120" height="50" loading="lazy" decoding="async">
                                     </div>
-                                    <div class="artist-bytes-card-name" style="color: {{biteNameTextColor}};">{{bite}}</div>
+                                    <div class="artist-bytes-card-name" data-bite="{{bite}}" style="color: {{biteNameTextColor}};"><span class="artist-bytes-card-name-text">{{bite}}</span></div>
                                 </div>
                                 <div class="artist-bytes-card-body">
                                     <img class="artist-bytes-card-image" src="/images/artist/bite/{{artistId}}.png" alt="{{bite}}" width="180" height="170" loading="lazy" decoding="async">

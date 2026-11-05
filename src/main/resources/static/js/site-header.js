@@ -107,4 +107,62 @@
     }
     lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
   }, false);
+
+  function headerSearchRoot() {
+    return document.querySelector("[data-header-search]");
+  }
+
+  let headerSearchIgnoreCloseUntil = 0;
+
+  function setHeaderSearchOpen(open) {
+    const headerSearch = headerSearchRoot();
+    if (!headerSearch) return;
+    const searchInput = headerSearch.querySelector("[data-header-search-input]");
+    const searchOpen = headerSearch.querySelector("[data-header-search-open]");
+    headerSearch.classList.toggle("is-open", open);
+    if (searchOpen) {
+      searchOpen.setAttribute("aria-expanded", open ? "true" : "false");
+      searchOpen.setAttribute("aria-label", open ? "검색 닫기" : "검색 열기");
+    }
+    if (!searchInput) return;
+    if (open) {
+      headerSearchIgnoreCloseUntil = Date.now() + 400;
+      searchInput.removeAttribute("tabindex");
+      requestAnimationFrame(function () {
+        searchInput.focus();
+        searchInput.select();
+      });
+    } else {
+      searchInput.setAttribute("tabindex", "-1");
+      searchInput.blur();
+    }
+  }
+
+  const initialOpen = document.querySelector("[data-header-search-open]");
+  if (initialOpen) initialOpen.setAttribute("aria-expanded", "false");
+
+  document.addEventListener("click", function (event) {
+    const openBtn = event.target.closest("[data-header-search-open]");
+    if (!openBtn) return;
+    event.preventDefault();
+    setHeaderSearchOpen(true);
+  });
+
+  document.addEventListener("keydown", function (event) {
+    const headerSearch = headerSearchRoot();
+    if (event.key !== "Escape" || !headerSearch || !headerSearch.classList.contains("is-open")) return;
+    setHeaderSearchOpen(false);
+    const searchOpen = headerSearch.querySelector("[data-header-search-open]");
+    if (searchOpen) searchOpen.focus();
+  });
+
+  document.addEventListener("pointerdown", function (event) {
+    if (Date.now() < headerSearchIgnoreCloseUntil) return;
+    const headerSearch = headerSearchRoot();
+    if (!headerSearch || !headerSearch.classList.contains("is-open")) return;
+    if (headerSearch.contains(event.target)) return;
+    const searchInput = headerSearch.querySelector("[data-header-search-input]");
+    if (searchInput && searchInput.value.trim()) return;
+    setHeaderSearchOpen(false);
+  });
 })();

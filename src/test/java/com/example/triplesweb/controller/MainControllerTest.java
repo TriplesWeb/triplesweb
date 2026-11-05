@@ -47,6 +47,8 @@ class MainControllerTest {
         mvc.perform(get("/")).andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("공지사항"))))
                 .andExpect(content().string(containsString("스케줄")))
+                .andExpect(content().string(containsString("다가오는 일정")))
+                .andExpect(content().string(containsString("등록된 일정이 없습니다")))
                 .andExpect(content().string(containsString("/triples/album/11")))
                 .andExpect(content().string(containsString("영상 아카이브")))
                 .andExpect(content().string(containsString("/archive/video_archive")))

@@ -797,8 +797,47 @@
 
 .artist-member-heading {
     border-color: color-mix(in srgb, var(--artist-color) 40%, rgba(58, 74, 70, 0.3));
+    /* drop-shadow 발광용 여유 */
+    padding-top: 0.35rem;
+    padding-left: 0.2rem;
+    overflow: visible;
 }
 
+/* drop-shadow가 알파 실루엣 밖으로 번지도록 슬롯에 여유 */
+.artist-member-logo-slot {
+    display: inline-flex;
+    flex-shrink: 0;
+    padding: 0.45rem;
+    margin: -0.45rem;
+    overflow: visible;
+}
+
+.artist-member-logo-wrap {
+    position: relative;
+    width: 2.75rem;
+    height: 2.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+    background: transparent;
+}
+
+.artist-member-logo {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    /* 로고 PNG 검정 배경을 어두운 페이지에서 덜 보이게 */
+    mix-blend-mode: screen;
+    /* 실루엣 네온 */
+    filter:
+        drop-shadow(0 0 1.5px color-mix(in srgb, var(--artist-color, #00f5d4) 75%, transparent))
+        drop-shadow(0 0 5px color-mix(in srgb, var(--artist-color, #00f5d4) 55%, transparent))
+        drop-shadow(0 0 12px color-mix(in srgb, var(--artist-color, #00f5d4) 35%, transparent));
+}
 
 .artist-color-card {
     background:
@@ -884,7 +923,9 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
-    overflow: hidden;
+    /* 헤더 글자 글리프가 잘리지 않게 카드 전체 overflow는 열어둠.
+       이미지는 body 쪽에서만 자름. */
+    overflow: visible;
     border-radius: 0.85rem;
     border: 2px solid color-mix(in srgb, var(--artist-color, #22aeff) 85%, #fff);
     background: #000;
@@ -894,8 +935,9 @@
 .artist-bytes-card-header {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-    min-height: 2.35rem;
+    min-height: 2.6rem;
     border-bottom: 2px solid color-mix(in srgb, var(--artist-color, #22aeff) 85%, #fff);
+    overflow: visible;
 }
 
 .artist-bytes-card-brand {
@@ -905,8 +947,11 @@
     justify-content: flex-start;
     gap: 0.15rem;
     padding: 0.3rem 0.55rem 0.3rem 1.55rem;
-    background: #000;
+    /* 정보 칸(bg-[#0d0e12]/40)과 동일 */
+    background: rgba(13, 14, 18, 0.4);
     color: #fff;
+    /* 카드 외곽 라운드에 맞춤 */
+    border-top-left-radius: 0.7rem;
 }
 
 .artist-bytes-card-star-deco {
@@ -937,8 +982,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* 여름물빛체 글자마다 높이가 달라 약한 광학 보정만 둠 */
-    padding: 0.32rem 0.55rem 0.4rem;
+    padding: 0.45rem 0.55rem;
     background: var(--artist-color, #22aeff);
     /* 밝은 상징색은 인라인 color(검정)로 덮어씀 */
     color: #fff;
@@ -946,12 +990,50 @@
     font-size: 1.2rem;
     font-weight: normal;
     letter-spacing: 0.02em;
-    line-height: 1;
+    line-height: 1.15;
     text-align: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    /* 카드 우상단 라운드에 맞춤 */
+    border-top-right-radius: 0.7rem;
+    /* overflow:hidden 이면 광학 보정된 글리프가 잘림. 바이츠 이름은 짧아서 visible 유지 */
+    overflow: visible;
     white-space: nowrap;
 }
+
+.artist-bytes-card-name-text {
+    display: inline-block;
+    max-width: 100%;
+    white-space: nowrap;
+    word-break: keep-all;
+    line-break: strict;
+    /* 배경(보라 박스)은 그대로, 단어 전체만 같은 기준선으로 올림/내림. 음수=위로 */
+    transform: translateY(var(--bite-name-nudge, 0px));
+}
+
+/* 여름물빛체 이름별 글자 세로 광학 보정 */
+.artist-bytes-card-name[data-bite="잉스크림"] { --bite-name-nudge: 0.08em; }
+.artist-bytes-card-name[data-bite="냥폭이"] { --bite-name-nudge: 0.04em; }
+.artist-bytes-card-name[data-bite="곰멩이"] { --bite-name-nudge: -0.06em; }
+.artist-bytes-card-name[data-bite="녹용"] { --bite-name-nudge: -0.04em; }
+.artist-bytes-card-name[data-bite="융융"] { --bite-name-nudge: -0.1em; }
+.artist-bytes-card-name[data-bite="숨숭이"] { --bite-name-nudge: 0.04em; }
+.artist-bytes-card-name[data-bite="김낙쪽"] { --bite-name-nudge: -0.06em; }
+.artist-bytes-card-name[data-bite="공랑이"] { --bite-name-nudge: 0.08em; }
+.artist-bytes-card-name[data-bite="카에뿅"] { --bite-name-nudge: 0.1em; }
+.artist-bytes-card-name[data-bite="닿탱이"] { --bite-name-nudge: 0.06em; }
+.artist-bytes-card-name[data-bite="코쨩"] { --bite-name-nudge: 0.04em; }
+.artist-bytes-card-name[data-bite="곽춘쿠키"] { --bite-name-nudge: 0.08em; }
+.artist-bytes-card-name[data-bite="브로니"] { --bite-name-nudge: 0.12em; }
+.artist-bytes-card-name[data-bite="하품이"] { --bite-name-nudge: 0.1em; }
+.artist-bytes-card-name[data-bite="시니니"] { --bite-name-nudge: 0.12em; }
+.artist-bytes-card-name[data-bite="우사뮤"] { --bite-name-nudge: 0.1em; }
+.artist-bytes-card-name[data-bite="샤크린"] { --bite-name-nudge: 0.12em; }
+.artist-bytes-card-name[data-bite="쭈아"] { --bite-name-nudge: 0.08em; }
+.artist-bytes-card-name[data-bite="대장각"] { --bite-name-nudge: -0.06em; }
+.artist-bytes-card-name[data-bite="숀숑이"] { --bite-name-nudge: 0.06em; }
+.artist-bytes-card-name[data-bite="딸기"] { --bite-name-nudge: -0.16em; }
+.artist-bytes-card-name[data-bite="패스블린"] { --bite-name-nudge: 0.08em; }
+.artist-bytes-card-name[data-bite="하트뿡"] { --bite-name-nudge: 0.12em; }
+.artist-bytes-card-name[data-bite="슈와닝"] { --bite-name-nudge: 0.04em; }
 
 .artist-bytes-card-body {
     display: flex;
@@ -960,7 +1042,10 @@
     flex: 1;
     min-height: 9.5rem;
     padding: 0.85rem 0.75rem 1rem;
-    background: #000;
+    /* 정보 칸(bg-[#0d0e12]/40)과 동일 — 상징색 이름 칸은 유지 */
+    background: rgba(13, 14, 18, 0.4);
+    overflow: hidden;
+    border-radius: 0 0 0.7rem 0.7rem;
 }
 
 .artist-bytes-card-image {

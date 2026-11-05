@@ -105,89 +105,54 @@
     transform: none;
     transition: opacity .55s ease, transform .55s ease;
 }
-.main-section-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--site-ui-text);
-    letter-spacing: normal;
-    text-transform: none;
-}
-.main-section-meta {
-    font-size: 0.75rem;
-    color: var(--site-ui-muted);
-}
-.main-more-link {
-    font-size: 0.75rem;
-    color: var(--site-ui-muted);
-    text-decoration: none;
-    transition: color .2s ease;
-}
-.main-more-link:hover,
-.main-more-link:focus-visible {
-    color: var(--site-ui-accent);
-}
-.main-about-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--site-ui-accent);
-    text-decoration: none;
-}
-.main-about-link:hover {
-    text-decoration: underline;
-}
-.main-mini-calendar {
-    width: 100%;
-    max-width: 22rem;
-    min-height: 12rem;
-}
+
+/* 홈 미니 캘린더 + 다가오는 일정 */
 .main-page .fc {
-    --fc-border-color: var(--main-fc-border);
+    --fc-border-color: rgba(45, 49, 62, 0.6);
     --fc-page-bg-color: transparent;
 }
 .main-page .fc .fc-toolbar-title {
     font-size: 0.85rem !important;
     font-weight: 700;
-    color: var(--main-fc-text);
+    color: #e3e2e8;
 }
 .main-page .fc .fc-button-primary {
-    background-color: var(--main-fc-btn) !important;
-    border-color: var(--main-fc-btn-border) !important;
-    color: var(--main-fc-muted) !important;
+    background-color: #1a1b22 !important;
+    border-color: #2d313e !important;
+    color: #b9cac4 !important;
     padding: 0.15rem 0.45rem !important;
     font-size: 0.7rem !important;
 }
-.main-page .fc .fc-button-primary:hover,
-.main-page .fc .fc-button-primary:focus-visible {
-    background-color: var(--main-fc-btn-hover) !important;
-    color: var(--main-fc-accent) !important;
+.main-page .fc .fc-button-primary:hover {
+    background-color: #23242e !important;
+    color: #00f5d4 !important;
 }
 .main-page .fc-theme-standard td,
 .main-page .fc-theme-standard th {
-    border-color: color-mix(in srgb, var(--site-ui-panel) 40%, transparent) !important;
+    border-color: rgba(45, 49, 62, 0.4) !important;
 }
 .main-page .fc .fc-col-header-cell-cushion {
-    color: var(--main-fc-muted);
+    color: #b9cac4;
     font-size: 0.65rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     padding: 2px 0 !important;
 }
 .main-page .fc .fc-daygrid-day-number {
-    color: var(--main-fc-text);
+    color: #e3e2e8;
     font-size: 0.7rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     padding: 2px 4px !important;
 }
-.main-page .fc-col-header-cell:nth-child(1) .fc-col-header-cell-cushion {
-    color: var(--main-fc-sun) !important;
-}
-.main-page .fc-col-header-cell:nth-child(7) .fc-col-header-cell-cushion {
-    color: var(--main-fc-sat) !important;
-}
+.main-page .fc-col-header-cell:nth-child(1) .fc-col-header-cell-cushion { color: #f87171 !important; }
+.main-page .fc-col-header-cell:nth-child(7) .fc-col-header-cell-cushion { color: #60a5fa !important; }
 .main-mini-calendar .fc-daygrid-day-frame { min-height: 1.85rem !important; }
 .main-mini-calendar .fc-daygrid-day-events { min-height: 0.55rem !important; margin: 0 !important; }
 .main-mini-calendar .fc-daygrid-event-dot { margin: 0 auto; }
-.main-mini-calendar .fc-daygrid-event { margin: 0 !important; padding: 0 !important; justify-content: center; }
+.main-mini-calendar .fc-daygrid-event {
+    margin: 0 !important;
+    padding: 0 !important;
+    justify-content: center;
+}
 .main-mini-calendar .fc-event-title,
 .main-mini-calendar .fc-event-time { display: none !important; }
 .main-mini-calendar .fc-scrollgrid { border-radius: 0.75rem; overflow: hidden; }
