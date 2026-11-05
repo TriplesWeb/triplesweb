@@ -1,10 +1,11 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.config.MustacheConfig;
+import com.example.triplesweb.dto.HomeAlbumHero;
 import com.example.triplesweb.entity.Album;
 import com.example.triplesweb.entity.MediaType;
-import com.example.triplesweb.repository.AlbumRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
+import com.example.triplesweb.service.AlbumService;
 import com.example.triplesweb.service.ArchiveService;
 import com.example.triplesweb.service.ArtistSnapshotService;
 import org.junit.jupiter.api.Test;
@@ -16,7 +17,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
-import java.util.Optional;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.*;
@@ -31,7 +31,7 @@ class MainControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean ScheduleRepository schedules;
     @MockitoBean ArchiveService archives;
-    @MockitoBean AlbumRepository albums;
+    @MockitoBean AlbumService albumService;
     @MockitoBean ArtistSnapshotService artists;
 
     @Test void homeRendersAlbumAndSplitArchivesWithoutNoticeOrChangingAboutLinks() throws Exception {
@@ -40,16 +40,22 @@ class MainControllerTest {
         when(archives.pageByType(eq(MediaType.IMAGE), eq(0), eq(4), isNull())).thenReturn(new PageImpl<>(List.of()));
         when(archives.pageByType(eq(MediaType.VIDEO), eq(0), eq(4), isNull())).thenReturn(new PageImpl<>(List.of()));
         Album album = new Album();
-        album.setAlbumId(11L);
-        album.setAlbumName("LOVE & POP Pt.2");
-        when(albums.findByAlbumName("LOVE & POP Pt.2")).thenReturn(Optional.of(album));
+        album.setAlbumId(14L);
+        album.setAlbumName("LOVE&POP pt.2");
+        album.setAlbumImage("/uploads/images/album/cover.webp");
+        album.setAlbumInfo("끝나지 않을 영원한 트리플에스의 스토리");
+        when(albumService.findLatestHomeHero()).thenReturn(HomeAlbumHero.from(album));
 
         mvc.perform(get("/")).andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("공지사항"))))
                 .andExpect(content().string(containsString("스케줄")))
                 .andExpect(content().string(containsString("다가오는 일정")))
                 .andExpect(content().string(containsString("등록된 일정이 없습니다")))
-                .andExpect(content().string(containsString("/triples/album/11")))
+                .andExpect(content().string(containsString("/triples/album/14")))
+                .andExpect(content().string(containsString("LOVE&amp;POP pt.2")))
+                .andExpect(content().string(containsString("앨범 자세히 보기")))
+                .andExpect(content().string(containsString("컴백")))
+                .andExpect(content().string(containsString("/uploads/images/album/cover.webp")))
                 .andExpect(content().string(containsString("영상 아카이브")))
                 .andExpect(content().string(containsString("/archive/video_archive")))
                 .andExpect(content().string(containsString("Who is tripleS?")))

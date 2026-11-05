@@ -1,7 +1,8 @@
 {{>layout/head-open}}
     <title>tripleS 커뮤</title>
     <link rel="stylesheet" href="/css/schedule-categories.css?v=6">
-    <link rel="stylesheet" href="/css/main-page.css?v=6">
+    <link rel="stylesheet" href="/css/main-page.css?v=10">
+    <link rel="stylesheet" href="/css/main-hero.css?v=4">
     <link rel="stylesheet" href="/css/main-upcoming.css?v=2">
 </head><body class="site-page main-page min-h-screen flex flex-col bg-background text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
 
@@ -18,8 +19,23 @@
 <!-- 메인 레이아웃 컨테이너 -->
 <main class="relative z-10 max-w-7xl w-full mx-auto px-4 py-6 flex flex-col gap-6">
 
-    <!-- 1. 미디어 & 비디오 배너 섹션 -->
+    <!-- 1. 최신 앨범 히어로(좌) + 공식 미디어(우) -->
     <section class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+        <!-- 한·일 최신 발매 앨범 (선공개·정보 부족 제외) -->
+        <a href="{{homeAlbumHero.href}}" class="main-hero-card lg:col-span-5 bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-4 backdrop-blur-md shadow-xl flex flex-col relative overflow-hidden group no-underline">
+            <div class="main-hero-visual relative w-full h-full min-h-[260px] rounded-xl overflow-hidden flex flex-col justify-end bg-cover bg-center" style="background-image: url('{{homeAlbumHero.imageUrl}}');">
+                <div class="main-hero-scrim" aria-hidden="true"></div>
+                <span class="main-hero-sheen" aria-hidden="true"></span>
+
+                <div class="main-hero-copy">
+                    <span class="main-hero-badge">컴백</span>
+                    <h3 class="main-hero-title">{{homeAlbumHero.title}}</h3>
+                    <p class="main-hero-summary">{{homeAlbumHero.summary}}</p>
+                    <span class="main-hero-cta">{{homeAlbumHero.ctaLabel}} <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></span>
+                </div>
+            </div>
+        </a>
 
         <!-- 비디오 영역 -->
         <div class="lg:col-span-7 bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-4 backdrop-blur-md shadow-xl flex flex-col justify-between">
@@ -58,47 +74,9 @@
             })();
             </script>
         </div>
-
-        <!-- 메인 이미지 캐러셀 배너 -->
-        <a href="{{albumHref}}" class="main-hero-card lg:col-span-5 bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-4 backdrop-blur-md shadow-xl flex flex-col relative overflow-hidden group no-underline">
-            <div class="main-hero-visual relative w-full h-full min-h-[240px] rounded-xl overflow-hidden flex flex-col justify-end p-5 bg-cover bg-center" style="background-image: url('../../../uploads/images/andless.webp');">
-                <div class="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent"></div>
-                <span class="main-hero-sheen" aria-hidden="true"></span>
-
-                <div class="relative z-10 space-y-1.5">
-                    <span class="inline-block px-2.5 py-0.5 rounded-full bg-primary-container/20 border border-primary-container text-primary-container text-[11px] font-semibold">컴백</span>
-                    <h3 class="text-xl font-bold text-on-surface">LOVE &amp; POP Pt.2 : Andless</h3>
-                    <p class="text-xs text-on-surface-variant line-clamp-2">끝나지 않을 영원한 트리플에스의 스토리</p>
-                    <span class="main-hero-cta">발매 앨범 보기 <span class="material-symbols-outlined text-sm">arrow_forward</span></span>
-                </div>
-            </div>
-        </a>
     </section>
 
-    <!-- 2. 아티스트 소개 섹션 -->
-    <section class="main-fade-up bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-6 backdrop-blur-md shadow-xl">
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-            <div class="md:col-span-4 rounded-xl overflow-hidden border border-outline-variant/30 aspect-video md:aspect-[4/3]">
-                <img src="/../../uploads/images/tripleS.jpg" alt="tripleS" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
-            </div>
-            <div class="md:col-span-8 space-y-3">
-                <div class="flex items-center gap-3">
-                    <span class="w-1.5 h-6 bg-primary-container rounded-full"></span>
-                    <a href="/artist" class="text-2xl font-bold text-on-surface hover:text-primary-container transition-colors">Who is tripleS?</a>
-                </div>
-                <p class="text-sm text-on-surface-variant leading-relaxed text-justify">
-                    tripleS(트리플에스)는 모드하우스가 결성한 대한민국의 24인조 걸그룹이다. 팬들이 직접 멤버 조합과 활동을 결정하는 팬 참여형 투표 시스템 '디멘션(Dimension)'을 바탕으로 국내 최다 인원 걸그룹으로 활동하고 있다.
-                </p>
-                <div>
-                    <a href="/triples/artist" class="inline-flex items-center gap-1 text-xs text-primary-container hover:underline font-medium">
-                        트리플에스에 대해 더 알고 싶다면 <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 3. 스케줄: 미니 달력 + 다가오는 일정 -->
+    <!-- 2. 스케줄: 미니 달력 + 다가오는 일정 -->
     <section class="main-fade-up bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
         <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-4">
             <div class="flex items-center gap-2">
@@ -142,6 +120,29 @@
                     <a href="/schedule" class="main-upcoming-empty-link inline-flex items-center gap-0.5 mt-2 text-xs font-semibold text-primary-container hover:underline">전체 달력 보기 <span class="material-symbols-outlined text-[0.95rem]" aria-hidden="true">arrow_forward</span></a>
                 </div>
                 {{/hasUpcomingSchedules}}
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. 아티스트 소개 섹션 -->
+    <section class="main-fade-up bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-6 backdrop-blur-md shadow-xl">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+            <div class="md:col-span-4 rounded-xl overflow-hidden border border-outline-variant/30 aspect-video md:aspect-[4/3]">
+                <img src="/../../uploads/images/tripleS.jpg" alt="tripleS" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+            </div>
+            <div class="md:col-span-8 space-y-3">
+                <div class="flex items-center gap-3">
+                    <span class="w-1.5 h-6 bg-primary-container rounded-full"></span>
+                    <a href="/artist" class="text-2xl font-bold text-on-surface hover:text-primary-container transition-colors">Who is tripleS?</a>
+                </div>
+                <p class="text-sm text-on-surface-variant leading-relaxed text-justify">
+                    tripleS(트리플에스)는 모드하우스가 결성한 대한민국의 24인조 걸그룹이다. 팬 투표 '그래비티(Gravity)'로 유닛인 '디멘션(Dimension)' 구성과 활동 방향을 정하며, 국내 최다 인원 걸그룹으로 활동하고 있다.
+                </p>
+                <div>
+                    <a href="/triples/artist" class="inline-flex items-center gap-1 text-xs text-primary-container hover:underline font-medium">
+                        트리플에스에 대해 더 알고 싶다면 <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                    </a>
+                </div>
             </div>
         </div>
     </section>

@@ -1,11 +1,11 @@
 package com.example.triplesweb.controller;
 
+import com.example.triplesweb.dto.HomeAlbumHero;
 import com.example.triplesweb.dto.ScheduleForm;
-import com.example.triplesweb.entity.Album;
 import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.Schedule;
-import com.example.triplesweb.repository.AlbumRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
+import com.example.triplesweb.service.AlbumService;
 import com.example.triplesweb.service.ArchiveService;
 import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.util.SchedulePresentation;
@@ -34,7 +34,6 @@ public class MainController {
 
     private static final int HOME_ARCHIVE_LIMIT = 4;
     private static final int HOME_UPCOMING_LIMIT = 6;
-    private static final String ANDLESS_ALBUM = "LOVE & POP Pt.2";
     private static final DateTimeFormatter HOME_DAY =
             DateTimeFormatter.ofPattern("M.d (E)", Locale.KOREAN);
     private static final DateTimeFormatter HOME_RANGE_DAY =
@@ -42,7 +41,7 @@ public class MainController {
 
     private final ScheduleRepository scheduleRepository;
     private final ArchiveService archiveService;
-    private final AlbumRepository albumRepository;
+    private final AlbumService albumService;
     private final ArtistSnapshotService artistSnapshot;
 
     /** 이전 URL 호환: {@code /main} → {@code /} */
@@ -71,12 +70,9 @@ public class MainController {
                     .replace("&", "\\u0026");
         } catch (Exception ignored) {}
 
-        String albumHref = albumRepository.findByAlbumName(ANDLESS_ALBUM)
-                .map(Album::getAlbumId)
-                .map(id -> "/triples/album/" + id)
-                .orElse("/triples/album");
-
-        model.addAttribute("albumHref", albumHref);
+        HomeAlbumHero homeAlbumHero = albumService.findLatestHomeHero();
+        model.addAttribute("homeAlbumHero", homeAlbumHero);
+        model.addAttribute("albumHref", homeAlbumHero.getHref());
         model.addAttribute("recentPhotos", archiveService.pageByType(MediaType.IMAGE, 0, HOME_ARCHIVE_LIMIT, null)
                 .getContent().stream()
                 .filter(photo -> photo.getFile() != null && photo.getFile().getUrl() != null)

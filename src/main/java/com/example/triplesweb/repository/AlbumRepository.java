@@ -4,6 +4,7 @@ import com.example.triplesweb.dto.AlbumListCard;
 import com.example.triplesweb.entity.Album;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Collection;
@@ -33,4 +34,15 @@ public interface AlbumRepository extends JpaRepository<Album, Long> {
             order by a.releaseDate desc, a.albumId desc
             """)
     List<AlbumListCard> findAllListCards();
+
+    /**
+     * 홈 히어로용: 지정 구분(한·일 등) 앨범을 발매일 내림차순으로 가져온다.
+     */
+    @Query("""
+            select a from Album a
+            join fetch a.section s
+            where s.name in :sectionNames
+            order by a.releaseDate desc, a.albumId desc
+            """)
+    List<Album> findForHomeHero(@Param("sectionNames") Collection<String> sectionNames);
 }
