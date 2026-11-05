@@ -37,22 +37,20 @@
 
   function setAdminUi() {
     const page = document.querySelector(".about-admin-page");
-    const btn = document.getElementById("unitAdminBtn");
     const hint = document.getElementById("unitAdminHint");
     if (page) page.classList.toggle("is-admin", Boolean(isAdmin));
     document.querySelectorAll(".about-edit-inline").forEach((control) => {
       control.hidden = !isAdmin;
     });
-    if (btn) {
-      if (!adminConfigured) btn.classList.add("hidden");
-      else {
-        btn.classList.remove("hidden");
-        btn.textContent = isAdmin ? "관리자 로그아웃" : "관리자";
-        btn.setAttribute("aria-pressed", isAdmin ? "true" : "false");
-        btn.classList.toggle("is-active", isAdmin);
-      }
-    }
     if (hint) hint.classList.toggle("hidden", !isAdmin);
+  }
+
+  function applyAdminState(state) {
+    if (!state) return;
+    adminConfigured = Boolean(state.configured);
+    isAdmin = Boolean(state.admin);
+    if (!isAdmin) setToken("");
+    setAdminUi();
   }
 
   function openModal(id) {
@@ -71,12 +69,9 @@
   }
 
   function openLoginModal() {
-    const err = document.getElementById("unitLoginError");
-    const input = document.getElementById("unitLoginPassword");
-    if (err) { err.hidden = true; err.textContent = ""; }
-    if (input) input.value = "";
-    openModal("unitLoginModal");
-    if (input) input.focus();
+    if (window.SiteAdmin && typeof window.SiteAdmin.openLogin === "function") {
+      window.SiteAdmin.openLogin();
+    }
   }
 
   function escapeAttr(s) {
@@ -226,42 +221,6 @@
   }
 
   function bindUi() {
-    const adminBtn = document.getElementById("unitAdminBtn");
-    if (adminBtn) {
-      adminBtn.addEventListener("click", async () => {
-        if (isAdmin) {
-          await apiFetch(API + "/admin/logout", { method: "POST" });
-          setToken("");
-          isAdmin = false;
-          setAdminUi();
-          return;
-        }
-        openLoginModal();
-      });
-    }
-
-    document.getElementById("unitLoginForm")?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const err = document.getElementById("unitLoginError");
-      const password = document.getElementById("unitLoginPassword")?.value || "";
-      try {
-        const res = await apiFetch(API + "/admin/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ password })
-        });
-        if (!res.ok) throw new Error(await readError(res, "로그인 실패"));
-        const data = await res.json();
-        setToken(data.token || "");
-        isAdmin = true;
-        closeModal("unitLoginModal");
-        setAdminUi();
-      } catch (ex) {
-        if (err) { err.hidden = false; err.textContent = ex.message || "로그인 실패"; }
-      }
-    });
-
-    document.querySelectorAll(".unit-login-close").forEach((el) => el.addEventListener("click", () => closeModal("unitLoginModal")));
     document.querySelectorAll(".unit-edit-close").forEach((el) => el.addEventListener("click", () => closeModal("unitEditModal")));
     document.getElementById("unitAddBtn")?.addEventListener("click", () => openEditModal(null));
     document.querySelectorAll("[data-unit-edit]").forEach((btn) => {
@@ -336,16 +295,18 @@
   async function init() {
     bindTabs();
     bindUi();
-    try {
-      const statusRes = await apiFetch(API + "/admin/status");
-      if (statusRes.ok) {
-        const status = await statusRes.json();
-        adminConfigured = Boolean(status.configured);
-        isAdmin = Boolean(status.admin);
-        if (!isAdmin) setToken("");
+    if (window.SiteAdmin && typeof window.SiteAdmin.subscribe === "function") {
+      window.SiteAdmin.subscribe(applyAdminState);
+    } else {
+      try {
+        const statusRes = await apiFetch(API + "/admin/status");
+        if (statusRes.ok) applyAdminState(await statusRes.json());
+        else applyAdminState({ configured: false, admin: false });
+      } catch (_) {
+        applyAdminState({ configured: false, admin: false });
       }
-    } catch (_) { /* ignore */ }
-    setAdminUi();
+      document.addEventListener("site-admin:change", (event) => applyAdminState(event.detail));
+    }
   }
 
   document.addEventListener("DOMContentLoaded", init);

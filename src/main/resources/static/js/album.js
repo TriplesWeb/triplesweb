@@ -37,22 +37,20 @@
 
   function setAdminUi() {
     const page = document.querySelector(".about-admin-page");
-    const btn = document.getElementById("albumAdminBtn");
     const hint = document.getElementById("albumAdminHint");
     document.querySelectorAll("[data-album-edit], #albumAddBtn, #albumSectionBtn").forEach((control) => {
       control.hidden = !isAdmin;
     });
     if (page) page.classList.toggle("is-admin", Boolean(isAdmin));
-    if (btn) {
-      if (!adminConfigured) btn.classList.add("hidden");
-      else {
-        btn.classList.remove("hidden");
-        btn.textContent = isAdmin ? "관리자 로그아웃" : "관리자";
-        btn.setAttribute("aria-pressed", isAdmin ? "true" : "false");
-        btn.classList.toggle("is-active", isAdmin);
-      }
-    }
     if (hint) hint.classList.toggle("hidden", !isAdmin);
+  }
+
+  function applyAdminState(state) {
+    if (!state) return;
+    adminConfigured = Boolean(state.configured);
+    isAdmin = Boolean(state.admin);
+    if (!isAdmin) setToken("");
+    setAdminUi();
   }
 
   function openModal(id) {
@@ -71,12 +69,9 @@
   }
 
   function openLoginModal() {
-    const err = document.getElementById("albumLoginError");
-    const input = document.getElementById("albumLoginPassword");
-    if (err) { err.hidden = true; err.textContent = ""; }
-    if (input) input.value = "";
-    openModal("albumLoginModal");
-    if (input) input.focus();
+    if (window.SiteAdmin && typeof window.SiteAdmin.openLogin === "function") {
+      window.SiteAdmin.openLogin();
+    }
   }
 
   function trackRowsHtml(tracks) {
@@ -321,44 +316,6 @@
   }
 
   function bindUi() {
-    const adminBtn = document.getElementById("albumAdminBtn");
-    if (adminBtn) {
-      adminBtn.addEventListener("click", async () => {
-        if (isAdmin) {
-          await apiFetch(API + "/admin/logout", { method: "POST" });
-          setToken("");
-          isAdmin = false;
-          setAdminUi();
-          return;
-        }
-        openLoginModal();
-      });
-    }
-
-    document.getElementById("albumLoginForm")?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const err = document.getElementById("albumLoginError");
-      const password = document.getElementById("albumLoginPassword")?.value || "";
-      try {
-        const res = await apiFetch(API + "/admin/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ password })
-        });
-        if (!res.ok) throw new Error(await readError(res, "로그인 실패"));
-        const data = await res.json();
-        setToken(data.token || "");
-        isAdmin = true;
-        closeModal("albumLoginModal");
-        setAdminUi();
-      } catch (ex) {
-        if (err) { err.hidden = false; err.textContent = ex.message || "로그인 실패"; }
-      }
-    });
-
-    document.querySelectorAll(".album-login-close").forEach((el) => {
-      el.addEventListener("click", () => closeModal("albumLoginModal"));
-    });
     document.querySelectorAll(".album-edit-close").forEach((el) => {
       el.addEventListener("click", () => closeModal("albumEditModal"));
     });
@@ -548,18 +505,17 @@
   }
 
   async function refreshAdmin() {
-    isAdmin = false;
-    setAdminUi();
+    if (window.SiteAdmin && typeof window.SiteAdmin.refresh === "function") {
+      applyAdminState(await window.SiteAdmin.refresh());
+      return;
+    }
     try {
       const statusRes = await apiFetch(API + "/admin/status");
-      if (statusRes.ok) {
-        const status = await statusRes.json();
-        adminConfigured = Boolean(status.configured);
-        isAdmin = Boolean(status.admin);
-        if (!isAdmin) setToken("");
-      }
-    } catch (_) { /* ignore */ }
-    setAdminUi();
+      if (statusRes.ok) applyAdminState(await statusRes.json());
+      else applyAdminState({ configured: false, admin: false });
+    } catch (_) {
+      applyAdminState({ configured: false, admin: false });
+    }
   }
 
   function bindSectionTabs() {
@@ -627,7 +583,15 @@
     if (initial) activateTab(initial.getAttribute("data-target"));
   }
 
-  document.addEventListener("DOMContentLoaded", () => { bindSectionTabs(); bindUi(); refreshAdmin(); });
-  window.addEventListener("pageshow", event => { if (event.persisted) refreshAdmin(); });
-  window.addEventListener("storage", event => { if (auth && event.key === auth.TOKEN_KEY) refreshAdmin(); });
+  document.addEventListener("DOMContentLoaded", () => {
+    bindSectionTabs();
+    bindUi();
+    if (window.SiteAdmin && typeof window.SiteAdmin.subscribe === "function") {
+      window.SiteAdmin.subscribe(applyAdminState);
+    } else {
+      refreshAdmin();
+      document.addEventListener("site-admin:change", (event) => applyAdminState(event.detail));
+    }
+  });
+  window.addEventListener("pageshow", (event) => { if (event.persisted) refreshAdmin(); });
 })();

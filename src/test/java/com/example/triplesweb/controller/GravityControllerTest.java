@@ -70,7 +70,7 @@ class GravityControllerTest {
         mvc.perform(get("/cosmo/gravity?artistId=artms")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("/fonts/site-icons.ttf")))
                 .andExpect(content().string(not(containsString("cdn.tailwindcss.com"))))
-                .andExpect(content().string(containsString("gravityAdminLoginForm")))
+                .andExpect(content().string(containsString("siteAdminLoginForm")))
                 .andExpect(content().string(not(containsString("href=\"?artistId=artms\""))))
                 .andExpect(content().string(not(containsString("href=\"?artistId=idntt\""))));
         verify(service).fetchGravityList("tripleS");
