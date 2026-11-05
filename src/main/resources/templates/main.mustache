@@ -1,7 +1,8 @@
 {{>layout/head-open}}
     <title>tripleS 커뮤</title>
     <link rel="stylesheet" href="/css/schedule-categories.css?v=6">
-    <link rel="stylesheet" href="/css/main-page.css?v=2">
+    <link rel="stylesheet" href="/css/main-page.css?v=6">
+    <link rel="stylesheet" href="/css/main-upcoming.css?v=1">
 </head><body class="site-page main-page min-h-screen flex flex-col bg-background text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
 
 <!-- 엠비언트 배경 은은한 빛 효과 -->
@@ -112,12 +113,12 @@
             <div class="lg:col-span-5 flex">
                 <div id="miniCalendar" class="main-mini-calendar w-full min-h-[12rem]" aria-label="이번 달 미니 캘린더"></div>
             </div>
-            <div class="lg:col-span-7 flex flex-col min-w-0">
-                <div class="flex items-center justify-between gap-3 mb-3">
-                    <p class="text-xs font-semibold tracking-wide text-on-surface-variant">다가오는 일정</p>
-                    <span class="text-[10px] font-mono text-on-surface-variant/70">오늘 기준</span>
+            <div class="main-upcoming-panel lg:col-span-7 flex flex-col min-w-0 min-h-0 h-full">
+                <div class="main-upcoming-head flex items-center justify-between gap-3 mb-3">
+                    <p class="m-0 text-xs font-semibold tracking-wide text-on-surface-variant">다가오는 일정</p>
+                    <span class="font-mono text-[0.62rem] text-on-surface-variant/70">오늘 기준</span>
                 </div>
-                <ul class="main-upcoming-list flex flex-col gap-2 flex-1">
+                <ul class="main-upcoming-list">
                     {{#upcomingSchedules}}
                     <li>
                         <a href="/schedule" class="main-upcoming-item" style="--schedule-color: {{color}}">
@@ -130,10 +131,15 @@
                         </a>
                     </li>
                     {{/upcomingSchedules}}
-                    {{^upcomingSchedules}}
-                    <li class="main-upcoming-empty">등록된 일정이 없습니다.</li>
-                    {{/upcomingSchedules}}
                 </ul>
+                {{^upcomingSchedules}}
+                <div class="main-upcoming-empty flex flex-1 flex-col items-center justify-center gap-2 min-h-[14rem] text-center" role="status">
+                    <span class="material-symbols-outlined main-upcoming-empty-icon" aria-hidden="true">event_busy</span>
+                    <p class="main-upcoming-empty-title m-0 text-sm font-bold text-on-surface">등록된 일정이 없습니다</p>
+                    <p class="main-upcoming-empty-copy m-0 max-w-[16rem] text-xs leading-relaxed text-on-surface-variant/80">곧 올라올 스케줄을 전체 달력에서 확인해 보세요.</p>
+                    <a href="/schedule" class="main-upcoming-empty-link inline-flex items-center gap-0.5 mt-2 text-xs font-semibold text-primary-container hover:underline">전체 달력 보기 <span class="material-symbols-outlined text-[0.95rem]" aria-hidden="true">arrow_forward</span></a>
+                </div>
+                {{/upcomingSchedules}}
             </div>
         </div>
     </section>

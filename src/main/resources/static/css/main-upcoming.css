@@ -1,0 +1,151 @@
+.main-upcoming-panel {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+}
+.main-upcoming-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+.main-upcoming-head p {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: rgba(185, 202, 196, 0.9);
+}
+.main-upcoming-head span {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.62rem;
+    color: rgba(185, 202, 196, 0.55);
+}
+.main-upcoming-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+.main-upcoming-list:empty { display: none; }
+.main-upcoming-item {
+    display: grid;
+    grid-template-columns: 5.6rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 3rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 0.9rem;
+    border: 1px solid color-mix(in srgb, var(--schedule-color, #00f5d4) 22%, rgba(58, 74, 70, 0.35));
+    background: color-mix(in srgb, var(--schedule-color, #00f5d4) 7%, rgba(13, 14, 18, 0.55));
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+.main-upcoming-item:hover {
+    border-color: color-mix(in srgb, var(--schedule-color, #00f5d4) 45%, transparent);
+    background: color-mix(in srgb, var(--schedule-color, #00f5d4) 12%, rgba(13, 14, 18, 0.7));
+    transform: translateY(-1px);
+}
+.main-upcoming-date {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--schedule-color, #00f5d4);
+    white-space: nowrap;
+}
+.main-upcoming-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+.main-upcoming-title {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #e3e2e8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.main-upcoming-category {
+    width: fit-content;
+    max-width: 100%;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--schedule-color, #00f5d4) 35%, transparent);
+    background: color-mix(in srgb, var(--schedule-color, #00f5d4) 10%, transparent);
+    color: var(--schedule-color, #00f5d4);
+    font-size: 0.65rem;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.main-upcoming-chevron {
+    font-size: 1rem;
+    color: rgba(185, 202, 196, 0.55);
+}
+.main-upcoming-empty {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    min-height: 14rem;
+    padding: 1.5rem 1.25rem;
+    border-radius: 1rem;
+    border: 1px dashed rgba(58, 74, 70, 0.55);
+    background:
+        radial-gradient(circle at 50% 28%, color-mix(in srgb, #00f5d4 10%, transparent), transparent 55%),
+        rgba(13, 14, 18, 0.42);
+    text-align: center;
+}
+.main-upcoming-empty-icon {
+    font-size: 1.85rem;
+    color: color-mix(in srgb, #00f5d4 70%, #b9cac4);
+    margin-bottom: 0.15rem;
+}
+.main-upcoming-empty-title {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #e3e2e8;
+}
+.main-upcoming-empty-copy {
+    margin: 0;
+    max-width: 16rem;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: rgba(185, 202, 196, 0.7);
+}
+.main-upcoming-empty-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    margin-top: 0.55rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #00f5d4;
+    text-decoration: none;
+}
+.main-upcoming-empty-link:hover { text-decoration: underline; }
+.main-upcoming-empty-link .material-symbols-outlined { font-size: 0.95rem; }
+@media (max-width: 1023px) {
+    .main-upcoming-panel { min-height: 0; }
+    .main-upcoming-empty { min-height: 11rem; }
+    .main-upcoming-item {
+        grid-template-columns: 4.8rem minmax(0, 1fr) auto;
+        gap: 0.55rem;
+        padding: 0.6rem 0.7rem;
+    }
+}
