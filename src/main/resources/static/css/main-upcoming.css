@@ -35,7 +35,10 @@
     min-height: 0;
     overflow: auto;
 }
-.main-upcoming-list:empty { display: none; }
+.main-upcoming-list:empty,
+.main-upcoming-list:not(:has(> li)) {
+    display: none;
+}
 .main-upcoming-item {
     display: grid;
     grid-template-columns: 5.6rem minmax(0, 1fr) auto;

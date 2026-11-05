@@ -84,7 +84,9 @@ public class MainController {
         model.addAttribute("recentVideos", archiveService.pageByType(MediaType.VIDEO, 0, HOME_ARCHIVE_LIMIT, null)
                 .getContent());
         model.addAttribute("schedulesJson", schedulesJson);
-        model.addAttribute("upcomingSchedules", upcomingSchedules(scheduleForms));
+        List<Map<String, String>> upcoming = upcomingSchedules(scheduleForms);
+        model.addAttribute("upcomingSchedules", upcoming);
+        model.addAttribute("hasUpcomingSchedules", !upcoming.isEmpty());
 
         return "main";
     }
