@@ -77,13 +77,15 @@
 .header-link-group>.header-group-heading{display:flex;align-items:center;min-height:44px;padding:11px 12px;border-radius:8px;font-size:13px;line-height:1.5;color:#b9cac4}
 
 /* Desktop icon search: collapsed = outline SVG; open = short flex pill */
-/* Keep icon search on the same optical mid-line as brand + nav */
-#top-header > div:first-child > div:last-child{
-  display:flex;
-  align-items:center;
-  align-self:center;
-  min-height:2rem;
-  height:2rem;
+/* Keep icon search on the same optical mid-line as brand + nav (desktop) */
+@media(min-width:1024px){
+  #top-header > div:first-child > div:last-child{
+    display:flex;
+    align-items:center;
+    align-self:center;
+    min-height:2rem;
+    height:2rem;
+  }
 }
 
 form.site-header-search.site-header-search--icon{
