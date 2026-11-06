@@ -1,8 +1,8 @@
 {{>layout/head-open}}
 
     <title>트리플에스 커뮤니티 - {{categoryName}} 게시판 (글 수정)</title>
-    <link rel="stylesheet" href="/css/article-page.css?v=1">
-    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
+    <link rel="stylesheet" href="{{#asset}}/css/article-page.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
 </head><body class="site-page article-page bg-surface text-on-surface min-h-screen flex flex-col">
 
 {{>layout/header}}
@@ -96,9 +96,9 @@
     </div>
 </main>
 
-<script src="/js/site-ui.js?v=3"></script>
+<script src="{{#asset}}/js/site-ui.js{{/asset}}"></script>
 <script src="/js/article-content.js"></script>
-<script src="/js/article-objekt-picker.js?v=7"></script>
+<script src="{{#asset}}/js/article-objekt-picker.js{{/asset}}"></script>
 <script>
     /* -------------------- helpers -------------------- */
     function savedFromUrl(u) {

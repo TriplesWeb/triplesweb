@@ -1,9 +1,9 @@
 {{>layout/head-open}}
     <title>tripleS 커뮤</title>
-    <link rel="stylesheet" href="/css/schedule-categories.css?v=6">
-    <link rel="stylesheet" href="/css/main-page.css?v=11">
-    <link rel="stylesheet" href="/css/main-hero.css?v=4">
-    <link rel="stylesheet" href="/css/main-upcoming.css?v=2">
+    <link rel="stylesheet" href="{{#asset}}/css/schedule-categories.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/main-page.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/main-hero.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/main-upcoming.css{{/asset}}">
 </head><body class="site-page main-page min-h-screen flex flex-col bg-background text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
 
 <!-- 엠비언트 배경 은은한 빛 효과 -->
@@ -199,6 +199,6 @@
 
 <!-- 푸터 레이아웃 포함 -->
 <script id="homeScheduleData" type="application/json">{{{schedulesJson}}}</script>
-<script src="/js/home-calendar.js?v=1"></script>
-<script src="/js/main-page.js?v=1" defer></script>
+<script src="{{#asset}}/js/home-calendar.js{{/asset}}"></script>
+<script src="{{#asset}}/js/main-page.js{{/asset}}" defer></script>
 {{>layout/page-end}}
