@@ -465,23 +465,66 @@
     });
   }
 
-  /** description에서 "photo by …" 출처를 분리 (서식 HTML 유지) */
-  function splitPhotoCredit(rawDescription) {
-    const raw = String(rawDescription || "");
-    const plain = raw
+  function descriptionPlainText(html) {
+    return String(html || "")
       .replace(/<br\s*\/?>/gi, " ")
       .replace(/<[^>]+>/g, " ")
       .replace(/\s+/g, " ")
       .trim();
+  }
+
+  function trimTrailingEmptyMarkup(html) {
+    let out = String(html || "").trim();
+    let prev = "";
+    while (out !== prev) {
+      prev = out;
+      out = out
+        .replace(/(?:<br\s*\/?>\s*)+$/i, "")
+        .replace(/(?:<span[^>]*>\s*(?:<br\s*\/?>\s*)*<\/span>\s*)+$/i, "")
+        .trim();
+    }
+    return out;
+  }
+
+  /** description에서 "photo by …" 출처를 분리 (서식 HTML 유지) */
+  function splitPhotoCredit(rawDescription) {
+    const raw = String(rawDescription || "");
+    const plain = descriptionPlainText(raw);
     const match = plain.match(/\s*photo\s+by\.?\s*(@?[^\s]+)\s*$/i);
     if (!match) {
       return { description: raw, credit: "" };
     }
     const credit = match[1].replace(/[.,;]+$/, "").trim();
-    const stripped = raw
+    if (!credit) {
+      return { description: raw, credit: "" };
+    }
+
+    // 연속 텍스트 / 뒤에 <br>만 있는 일반 형태
+    let stripped = raw
       .replace(/\s*photo\s+by\.?\s*@?[\w.-]+\s*$/i, "")
       .replace(/(?:<br\s*\/?>|\s)*photo\s+by\.?\s*@?[\w.-]+(?:\s*<[^>]+>)*\s*$/i, "")
       .trim();
+
+    // 태그로 갈라진 "photo by. </span><span>@handle</span>" 형태
+    if (/\bphoto\s+by\b/i.test(descriptionPlainText(stripped))) {
+      const idx = raw.toLowerCase().lastIndexOf("photo by");
+      if (idx >= 0) {
+        let start = idx;
+        // 본문을 닫는 </span>은 건드리지 않고, 크레딧을 감싼 여는 태그와 br만 뒤로 걷
+        while (start > 0) {
+          const prefix = raw.slice(0, start);
+          const lead = prefix.match(/(?:<br\s*\/?>|\s+|<(?!\/)[^>]+>)+$/i);
+          if (!lead) break;
+          start -= lead[0].length;
+        }
+        const tailPlain = descriptionPlainText(raw.slice(start));
+        if (/^photo\s+by\.?\s*@?[^\s]+$/i.test(tailPlain)) {
+          stripped = raw.slice(0, start).trim();
+        }
+      }
+    }
+
+    stripped = trimTrailingEmptyMarkup(stripped);
     return { description: stripped || raw, credit };
   }
 
