@@ -52,7 +52,8 @@ public class StaticAssetVersionService {
             try {
                 long mtime = Files.getLastModifiedTime(file).toMillis();
                 String key = relativePath + "@file@" + mtime;
-                return cache.computeIfAbsent(key, ignored -> sha8(Files.readAllBytes(file)));
+                byte[] bytes = Files.readAllBytes(file);
+                return cache.computeIfAbsent(key, ignored -> sha8(bytes));
             } catch (Exception e) {
                 return "dev";
             }
