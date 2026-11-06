@@ -75,7 +75,7 @@ public class ChemistrySeedService implements CommandLineRunner {
 
     /**
      * classpath {@code data/chemistry-descriptions-en.json}으로
-     * description_en이 비어 있는 행만 채운다 (기존 영문 덮어쓰지 않음).
+     * 최신 한글 설명 기준 영문을 반영한다 (JSON 값이 있으면 덮어씀).
      */
     @Transactional
     public int applyEnglishDescriptionsIfBlank() {
@@ -102,10 +102,11 @@ public class ChemistrySeedService implements CommandLineRunner {
                     continue;
                 }
                 Chemistry entity = opt.get();
-                if (StringUtils.hasText(entity.getDescriptionEn())) {
+                String next = row.getDescriptionEn();
+                if (next.equals(entity.getDescriptionEn())) {
                     continue;
                 }
-                entity.setDescriptionEn(row.getDescriptionEn());
+                entity.setDescriptionEn(next);
                 chemistryRepository.save(entity);
                 updated++;
             }
@@ -118,7 +119,7 @@ public class ChemistrySeedService implements CommandLineRunner {
 
     /**
      * classpath {@code data/chemistry-group-descriptions-en.json}으로
-     * 그룹 description_en이 비어 있는 행만 채운다.
+     * 최신 한글 설명 기준 영문을 반영한다 (JSON 값이 있으면 덮어씀).
      * auto-increment id가 환경마다 달라질 수 있어 {@code memberKey}로 매칭한다.
      */
     @Transactional
@@ -148,10 +149,11 @@ public class ChemistrySeedService implements CommandLineRunner {
                     continue;
                 }
                 ChemistryGroup entity = opt.get();
-                if (StringUtils.hasText(entity.getDescriptionEn())) {
+                String next = row.getDescriptionEn();
+                if (next.equals(entity.getDescriptionEn())) {
                     continue;
                 }
-                entity.setDescriptionEn(row.getDescriptionEn());
+                entity.setDescriptionEn(next);
                 chemistryGroupRepository.save(entity);
                 updated++;
             }
