@@ -593,16 +593,57 @@
     return sanitizeChemistryHtml(editor.innerHTML);
   }
 
+  let lastFocusedDescriptionEditor = null;
+
   function activeDescriptionEditor() {
     const active = document.activeElement;
     if (active && active.id === "chemEditDescriptionEn") return active;
     if (active && active.id === "chemEditDescription") return active;
-    const ko = document.getElementById("chemEditDescription");
-    const en = document.getElementById("chemEditDescriptionEn");
-    if (en && document.getElementById("chemistryEditModal")?.contains(active)) {
-      /* keep last focused if possible — default KO */
+    if (
+      lastFocusedDescriptionEditor &&
+      document.getElementById("chemistryEditModal")?.contains(lastFocusedDescriptionEditor)
+    ) {
+      return lastFocusedDescriptionEditor;
     }
-    return ko || en;
+    return document.getElementById("chemEditDescription")
+      || document.getElementById("chemEditDescriptionEn");
+  }
+
+  function placeCaretAtEnd(el) {
+    if (!el) return;
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    const sel = window.getSelection();
+    if (!sel) return;
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  /** 안내의 photo by 템플릿을 활성(또는 마지막) 설명 칸 맨 끝에 넣는다 */
+  function insertPhotoByTemplate() {
+    const editor = activeDescriptionEditor();
+    if (!editor) return;
+    editor.focus();
+    const plain = descriptionPlainText(editor.innerHTML);
+    if (/\bphoto\s+by\.?\s*@?\S*\s*$/i.test(plain)) {
+      placeCaretAtEnd(editor);
+      return;
+    }
+    placeCaretAtEnd(editor);
+    const needsSpace = !!plain && !/\s$/.test(plain);
+    try {
+      document.execCommand(
+        "insertText",
+        false,
+        (needsSpace ? " " : "") + "photo by. @"
+      );
+    } catch (_) {
+      editor.appendChild(
+        document.createTextNode((needsSpace ? " " : "") + "photo by. @")
+      );
+      placeCaretAtEnd(editor);
+    }
   }
 
   /** 표 칸 케미명 글자색 (NONE=공식 흰) */
@@ -1985,6 +2026,22 @@
         if (!btn) return;
         e.preventDefault();
         removeEditImageAt(Number(btn.getAttribute("data-remove-idx")));
+      });
+    }
+
+    const editModal = document.getElementById("chemistryEditModal");
+    if (editModal) {
+      editModal.addEventListener("focusin", (e) => {
+        const t = e.target;
+        if (t && (t.id === "chemEditDescription" || t.id === "chemEditDescriptionEn")) {
+          lastFocusedDescriptionEditor = t;
+        }
+      });
+      editModal.addEventListener("click", (e) => {
+        const btn = e.target && e.target.closest && e.target.closest(".chem-photo-by-insert");
+        if (!btn || !editModal.contains(btn)) return;
+        e.preventDefault();
+        insertPhotoByTemplate();
       });
     }
 
