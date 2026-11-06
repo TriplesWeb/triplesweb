@@ -465,23 +465,66 @@
     });
   }
 
-  /** description에서 "photo by …" 출처를 분리 (서식 HTML 유지) */
-  function splitPhotoCredit(rawDescription) {
-    const raw = String(rawDescription || "");
-    const plain = raw
+  function descriptionPlainText(html) {
+    return String(html || "")
       .replace(/<br\s*\/?>/gi, " ")
       .replace(/<[^>]+>/g, " ")
       .replace(/\s+/g, " ")
       .trim();
+  }
+
+  function trimTrailingEmptyMarkup(html) {
+    let out = String(html || "").trim();
+    let prev = "";
+    while (out !== prev) {
+      prev = out;
+      out = out
+        .replace(/(?:<br\s*\/?>\s*)+$/i, "")
+        .replace(/(?:<span[^>]*>\s*(?:<br\s*\/?>\s*)*<\/span>\s*)+$/i, "")
+        .trim();
+    }
+    return out;
+  }
+
+  /** description에서 "photo by …" 출처를 분리 (서식 HTML 유지) */
+  function splitPhotoCredit(rawDescription) {
+    const raw = String(rawDescription || "");
+    const plain = descriptionPlainText(raw);
     const match = plain.match(/\s*photo\s+by\.?\s*(@?[^\s]+)\s*$/i);
     if (!match) {
       return { description: raw, credit: "" };
     }
     const credit = match[1].replace(/[.,;]+$/, "").trim();
-    const stripped = raw
+    if (!credit) {
+      return { description: raw, credit: "" };
+    }
+
+    // 연속 텍스트 / 뒤에 <br>만 있는 일반 형태
+    let stripped = raw
       .replace(/\s*photo\s+by\.?\s*@?[\w.-]+\s*$/i, "")
       .replace(/(?:<br\s*\/?>|\s)*photo\s+by\.?\s*@?[\w.-]+(?:\s*<[^>]+>)*\s*$/i, "")
       .trim();
+
+    // 태그로 갈라진 "photo by. </span><span>@handle</span>" 형태
+    if (/\bphoto\s+by\b/i.test(descriptionPlainText(stripped))) {
+      const idx = raw.toLowerCase().lastIndexOf("photo by");
+      if (idx >= 0) {
+        let start = idx;
+        // 본문을 닫는 </span>은 건드리지 않고, 크레딧을 감싼 여는 태그와 br만 뒤로 걷
+        while (start > 0) {
+          const prefix = raw.slice(0, start);
+          const lead = prefix.match(/(?:<br\s*\/?>|\s+|<(?!\/)[^>]+>)+$/i);
+          if (!lead) break;
+          start -= lead[0].length;
+        }
+        const tailPlain = descriptionPlainText(raw.slice(start));
+        if (/^photo\s+by\.?\s*@?[^\s]+$/i.test(tailPlain)) {
+          stripped = raw.slice(0, start).trim();
+        }
+      }
+    }
+
+    stripped = trimTrailingEmptyMarkup(stripped);
     return { description: stripped || raw, credit };
   }
 
@@ -550,16 +593,57 @@
     return sanitizeChemistryHtml(editor.innerHTML);
   }
 
+  let lastFocusedDescriptionEditor = null;
+
   function activeDescriptionEditor() {
     const active = document.activeElement;
     if (active && active.id === "chemEditDescriptionEn") return active;
     if (active && active.id === "chemEditDescription") return active;
-    const ko = document.getElementById("chemEditDescription");
-    const en = document.getElementById("chemEditDescriptionEn");
-    if (en && document.getElementById("chemistryEditModal")?.contains(active)) {
-      /* keep last focused if possible — default KO */
+    if (
+      lastFocusedDescriptionEditor &&
+      document.getElementById("chemistryEditModal")?.contains(lastFocusedDescriptionEditor)
+    ) {
+      return lastFocusedDescriptionEditor;
     }
-    return ko || en;
+    return document.getElementById("chemEditDescription")
+      || document.getElementById("chemEditDescriptionEn");
+  }
+
+  function placeCaretAtEnd(el) {
+    if (!el) return;
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    const sel = window.getSelection();
+    if (!sel) return;
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  /** 안내의 photo by 템플릿을 활성(또는 마지막) 설명 칸 맨 끝에 넣는다 */
+  function insertPhotoByTemplate() {
+    const editor = activeDescriptionEditor();
+    if (!editor) return;
+    editor.focus();
+    const plain = descriptionPlainText(editor.innerHTML);
+    if (/\bphoto\s+by\.?\s*@?\S*\s*$/i.test(plain)) {
+      placeCaretAtEnd(editor);
+      return;
+    }
+    placeCaretAtEnd(editor);
+    const needsSpace = !!plain && !/\s$/.test(plain);
+    try {
+      document.execCommand(
+        "insertText",
+        false,
+        (needsSpace ? " " : "") + "photo by. @"
+      );
+    } catch (_) {
+      editor.appendChild(
+        document.createTextNode((needsSpace ? " " : "") + "photo by. @")
+      );
+      placeCaretAtEnd(editor);
+    }
   }
 
   /** 표 칸 케미명 글자색 (NONE=공식 흰) */
@@ -1942,6 +2026,22 @@
         if (!btn) return;
         e.preventDefault();
         removeEditImageAt(Number(btn.getAttribute("data-remove-idx")));
+      });
+    }
+
+    const editModal = document.getElementById("chemistryEditModal");
+    if (editModal) {
+      editModal.addEventListener("focusin", (e) => {
+        const t = e.target;
+        if (t && (t.id === "chemEditDescription" || t.id === "chemEditDescriptionEn")) {
+          lastFocusedDescriptionEditor = t;
+        }
+      });
+      editModal.addEventListener("click", (e) => {
+        const btn = e.target && e.target.closest && e.target.closest(".chem-photo-by-insert");
+        if (!btn || !editModal.contains(btn)) return;
+        e.preventDefault();
+        insertPhotoByTemplate();
       });
     }
 
