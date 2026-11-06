@@ -79,28 +79,9 @@ public class ChemistrySeedService implements CommandLineRunner {
      */
     @Transactional
     public int applyEnglishDescriptionsIfBlank() {
-        return applyEnglishFromClasspath(
-                "data/chemistry-descriptions-en.json",
-                false
-        );
-    }
-
-    /**
-     * classpath {@code data/chemistry-group-descriptions-en.json}으로
-     * 그룹 description_en이 비어 있는 행만 채운다 (기존 영문 덮어쓰지 않음).
-     */
-    @Transactional
-    public int applyGroupEnglishDescriptionsIfBlank() {
-        return applyEnglishFromClasspath(
-                "data/chemistry-group-descriptions-en.json",
-                true
-        );
-    }
-
-    private int applyEnglishFromClasspath(String classpath, boolean group) {
-        ClassPathResource resource = new ClassPathResource(classpath);
+        ClassPathResource resource = new ClassPathResource("data/chemistry-descriptions-en.json");
         if (!resource.exists()) {
-            log.warn("{} missing — skip English fill", classpath);
+            log.warn("chemistry-descriptions-en.json missing — skip English fill");
             return 0;
         }
         try (InputStream in = resource.getInputStream()) {
@@ -116,35 +97,67 @@ public class ChemistrySeedService implements CommandLineRunner {
                 if (row == null || row.getId() == null || !StringUtils.hasText(row.getDescriptionEn())) {
                     continue;
                 }
-                if (group) {
-                    var opt = chemistryGroupRepository.findById(row.getId());
-                    if (opt.isEmpty()) {
-                        continue;
-                    }
-                    ChemistryGroup entity = opt.get();
-                    if (StringUtils.hasText(entity.getDescriptionEn())) {
-                        continue;
-                    }
-                    entity.setDescriptionEn(row.getDescriptionEn());
-                    chemistryGroupRepository.save(entity);
-                    updated++;
-                } else {
-                    var opt = chemistryRepository.findById(row.getId());
-                    if (opt.isEmpty()) {
-                        continue;
-                    }
-                    Chemistry entity = opt.get();
-                    if (StringUtils.hasText(entity.getDescriptionEn())) {
-                        continue;
-                    }
-                    entity.setDescriptionEn(row.getDescriptionEn());
-                    chemistryRepository.save(entity);
-                    updated++;
+                var opt = chemistryRepository.findById(row.getId());
+                if (opt.isEmpty()) {
+                    continue;
                 }
+                Chemistry entity = opt.get();
+                if (StringUtils.hasText(entity.getDescriptionEn())) {
+                    continue;
+                }
+                entity.setDescriptionEn(row.getDescriptionEn());
+                chemistryRepository.save(entity);
+                updated++;
             }
             return updated;
         } catch (Exception e) {
-            log.error("Chemistry English description fill failed ({}): {}", classpath, e.getMessage(), e);
+            log.error("Chemistry English description fill failed: {}", e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    /**
+     * classpath {@code data/chemistry-group-descriptions-en.json}으로
+     * 그룹 description_en이 비어 있는 행만 채운다.
+     * auto-increment id가 환경마다 달라질 수 있어 {@code memberKey}로 매칭한다.
+     */
+    @Transactional
+    public int applyGroupEnglishDescriptionsIfBlank() {
+        ClassPathResource resource = new ClassPathResource("data/chemistry-group-descriptions-en.json");
+        if (!resource.exists()) {
+            log.warn("chemistry-group-descriptions-en.json missing — skip English fill");
+            return 0;
+        }
+        try (InputStream in = resource.getInputStream()) {
+            List<GroupEnDescriptionRow> rows = objectMapper.readValue(
+                    in,
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, GroupEnDescriptionRow.class)
+            );
+            if (rows == null || rows.isEmpty()) {
+                return 0;
+            }
+            int updated = 0;
+            for (GroupEnDescriptionRow row : rows) {
+                if (row == null
+                        || !StringUtils.hasText(row.getMemberKey())
+                        || !StringUtils.hasText(row.getDescriptionEn())) {
+                    continue;
+                }
+                var opt = chemistryGroupRepository.findByMemberKey(row.getMemberKey().trim());
+                if (opt.isEmpty()) {
+                    continue;
+                }
+                ChemistryGroup entity = opt.get();
+                if (StringUtils.hasText(entity.getDescriptionEn())) {
+                    continue;
+                }
+                entity.setDescriptionEn(row.getDescriptionEn());
+                chemistryGroupRepository.save(entity);
+                updated++;
+            }
+            return updated;
+        } catch (Exception e) {
+            log.error("Chemistry group English description fill failed: {}", e.getMessage(), e);
             return 0;
         }
     }
@@ -269,6 +282,14 @@ public class ChemistrySeedService implements CommandLineRunner {
     @JsonIgnoreProperties(ignoreUnknown = true)
     static class EnDescriptionRow {
         private Long id;
+        private String descriptionEn;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    static class GroupEnDescriptionRow {
+        /** 정렬된 artistId 쉼표 키 (예: "1,2,3") */
+        private String memberKey;
         private String descriptionEn;
     }
 }
