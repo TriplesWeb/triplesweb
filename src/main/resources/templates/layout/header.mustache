@@ -1,6 +1,6 @@
 <script src="/js/image-fallback.js?v=1" defer></script>
 <script src="/js/about-admin-auth.js?v=2" defer></script>
-<script src="/js/site-admin-controls.js?v=8" defer></script>
+<script src="/js/site-admin-controls.js?v=9" defer></script>
 <style>
 @keyframes sss-mascot-wave {
     0%, 100% { transform: translateY(0) rotate(-2deg); }
@@ -153,7 +153,8 @@
     {{/member}}
 
     <button type="button" id="siteAdminBtn" aria-label="관리자" title="관리자" aria-pressed="false" hidden>
-        <span class="material-symbols-outlined" aria-hidden="true" data-site-admin-icon>admin_panel_settings</span>
+        <svg data-site-admin-icon="admin" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 4 6v6c0 4.5 5 8 8 9 3-1 8-4.5 8-9V6z"/><circle cx="12" cy="10" r="2"/><path d="M8 17v-1a4 4 0 0 1 8 0v1"/></svg>
+        <svg data-site-admin-icon="logout" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 4H4v16h6M9 12h12m-4-4 4 4-4 4"/></svg>
     </button>
 
     <form action="/search" method="get" role="search" class="site-header-search site-header-search--icon relative hidden lg:flex items-center shrink-0" data-header-search>

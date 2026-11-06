@@ -27,6 +27,7 @@
       box-sizing: border-box;
       width: 1.75rem;
       height: 1.75rem;
+      flex: 0 0 auto;
       padding: 0;
       border: 0;
       border-radius: 0;
@@ -36,7 +37,13 @@
       transition: color .15s ease;
     }
     #siteAdminBtn.is-ready { display: inline-flex; }
-    #siteAdminBtn .material-symbols-outlined { font-size: 1.25rem; line-height: 1; }
+    #siteAdminBtn svg { width: 1.25rem; height: 1.25rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+    #siteAdminBtn [data-site-admin-icon="logout"],
+    #siteAdminBtn.is-active [data-site-admin-icon="admin"] { display: none; }
+    #siteAdminBtn.is-active [data-site-admin-icon="logout"] { display: block; }
+    @media (max-width: 1023px) {
+      #siteAdminBtn { width: 44px; height: 44px; }
+    }
     #siteAdminBtn:hover,
     #siteAdminBtn.is-active { color: #00f5d4; }
     #siteAdminLoginModal {
@@ -158,14 +165,12 @@
     const configured = Boolean(state.configured);
     const admin = Boolean(state.admin);
     const label = admin ? "관리자 로그아웃" : "관리자";
-    const icon = btn.querySelector("[data-site-admin-icon]");
     btn.classList.toggle("is-ready", configured);
     btn.hidden = !configured;
     btn.setAttribute("aria-label", label);
     btn.setAttribute("title", label);
     btn.setAttribute("aria-pressed", admin ? "true" : "false");
     btn.classList.toggle("is-active", admin);
-    if (icon) icon.textContent = admin ? "logout" : "admin_panel_settings";
   }
 
   function notify(state) {
