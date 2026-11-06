@@ -1,0 +1,11 @@
+{
+  "name": "triplesweb-pr-preview",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": { "test": "node --test test/*.test.mjs" },
+  "dependencies": {
+    "https-proxy-agent": "9.1.0",
+    "ws": "8.22.1"
+  }
+}

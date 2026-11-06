@@ -1,0 +1,36 @@
+name: PR preview tools
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/preview/**'
+      - '.github/workflows/preview-tools.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: scripts/preview/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install isolated preview tooling
+        env:
+          PREVIEW_TOOLS_DIR: ${{ runner.temp }}/preview-tools
+        run: bash scripts/preview/setup.sh
+      - name: Gateway, relay and update/rollback tests
+        run: |
+          npm --prefix scripts/preview test
+          "${{ runner.temp }}/preview-tools/venv/bin/python" -m unittest discover -s scripts/preview/test -p 'test_preview.py' -v
+      - name: Disposable MariaDB snapshot and restore integration
+        env:
+          PREVIEW_DB_TESTS: '1'
+        run: '"${{ runner.temp }}/preview-tools/venv/bin/python" -m unittest discover -s scripts/preview/test -p test_database.py -v'
