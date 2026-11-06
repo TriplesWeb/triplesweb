@@ -1,9 +1,9 @@
 {{>layout/head-open}}
 
-<link rel="stylesheet" href="/css/about-admin.css?v=1">
-    <link rel="stylesheet" href="/css/artist.css?v=20261105-bite-name-isolate">
-    <link rel="stylesheet" href="/css/artist-performance.css?v=7">
-    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
+<link rel="stylesheet" href="{{#asset}}/css/about-admin.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/artist.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/artist-performance.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
 
     <title>트리플에스 커뮤니티 - ABOUT 트리플에스</title>
     <style>
@@ -154,7 +154,7 @@
                                 <div class="artist-bytes-card-header">
                                     <div class="artist-bytes-card-brand">
                                         <img class="artist-bytes-card-star-deco" src="/images/artist/bite-star/{{artistId}}.png" alt="" width="40" height="38" loading="lazy" decoding="async" aria-hidden="true">
-                                        <img class="artist-bytes-card-logo" src="/images/artist/bytes-logo.png?v=2" alt="byteS" width="120" height="50" loading="lazy" decoding="async">
+                                        <img class="artist-bytes-card-logo" src="{{#asset}}/images/artist/bytes-logo.png{{/asset}}" alt="byteS" width="120" height="50" loading="lazy" decoding="async">
                                     </div>
                                     <div class="artist-bytes-card-name{{#biteNameDarkInk}} artist-bytes-card-name--dark-ink{{/biteNameDarkInk}}" data-artist-color="{{color}}">
                                         <img class="artist-bytes-card-name-img" src="/images/artist/bite-name/{{artistId}}.png" alt="{{bite}}" width="160" height="50" loading="lazy" decoding="async">
@@ -317,8 +317,8 @@
   });
 })();
 </script>
-<script src="/js/about-admin-auth.js?v=2"></script>
-<script src="/js/about-tabs.js?v=1"></script>
-<script src="/js/about-modal.js?v=1"></script>
-<script src="/js/artist.js?v=19" defer></script>
+<script src="{{#asset}}/js/about-admin-auth.js{{/asset}}"></script>
+<script src="{{#asset}}/js/about-tabs.js{{/asset}}"></script>
+<script src="{{#asset}}/js/about-modal.js{{/asset}}"></script>
+<script src="{{#asset}}/js/artist.js{{/asset}}" defer></script>
 {{>layout/page-end}}

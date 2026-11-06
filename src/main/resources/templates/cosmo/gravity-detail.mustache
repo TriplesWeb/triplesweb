@@ -1,9 +1,9 @@
 {{>layout/head-open}}
 
-<link rel="stylesheet" href="/css/about-admin.css?v=1">
+<link rel="stylesheet" href="{{#asset}}/css/about-admin.css{{/asset}}">
 <title>그래비티 - 트리플에스 커뮤니티</title>
 <style>body{background:#0d0e12;color:#e3e2e8} .gravity-card{background:#16181f;border:1px solid #ffffff18;border-radius:16px;padding:24px} .gravity-card a{color:#00f5d4} .gravity-notice{border:1px solid #fbbf2440;background:#fbbf2408;padding:16px;border-radius:12px}</style>
-<link rel="stylesheet" href="/css/gravity-charts.css?v=1">
+<link rel="stylesheet" href="{{#asset}}/css/gravity-charts.css{{/asset}}">
 </head><body class="site-page min-h-screen flex flex-col">
 {{>layout/header}}
 <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-8 space-y-6">
@@ -36,5 +36,5 @@
 </section>{{/hasOfficialResults}}
 {{^hasOfficialResults}}{{#selectedPoll}}<p class="gravity-notice">공식 결과가 아직 공개되지 않았습니다.</p>{{/selectedPoll}}{{/hasOfficialResults}}
 
-</main><script src="/js/gravity-detail.js?v=2" defer></script>
+</main><script src="{{#asset}}/js/gravity-detail.js{{/asset}}" defer></script>
 {{>layout/page-end}}

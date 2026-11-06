@@ -1,8 +1,8 @@
 {{>layout/head-open}}
 
-<link rel="stylesheet" href="/css/bootstrap-compat.css?v=2">
-    <link rel="stylesheet" href="/css/archive-page.css?v=15">
-    <link rel="stylesheet" href="/css/archive-page.css?v=11">
+<link rel="stylesheet" href="{{#asset}}/css/bootstrap-compat.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/archive-page.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/archive-page.css{{/asset}}">
 
     <title>트리플에스 커뮤니티 - 트리플에스 미디어</title>
 
@@ -254,9 +254,9 @@
     </div>
 </div>
 
-<script src="/js/date-range-filter.js?v=1"></script>
-<script src="/js/bootstrap-compat.js?v=1"></script>
-<script src="/js/site-ui.js?v=1"></script>
+<script src="{{#asset}}/js/date-range-filter.js{{/asset}}"></script>
+<script src="{{#asset}}/js/bootstrap-compat.js{{/asset}}"></script>
+<script src="{{#asset}}/js/site-ui.js{{/asset}}"></script>
 <script>
     const artistFilter = document.getElementById('artist-filter');
     if (artistFilter) artistFilter.value = '{{selectedArtist}}';

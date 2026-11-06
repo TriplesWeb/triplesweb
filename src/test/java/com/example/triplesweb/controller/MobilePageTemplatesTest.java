@@ -2,6 +2,7 @@ package com.example.triplesweb.controller;
 
 import com.samskivert.mustache.Mustache;
 import com.example.triplesweb.navigation.SiteNavigation;
+import com.example.triplesweb.service.StaticAssetVersionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import java.io.*;
@@ -21,6 +22,8 @@ class MobilePageTemplatesTest {
         var post=Map.<String,Object>of("id",1,"displayId",1,"title",longText,"userId",longText,"formattedDate","2026-10-27","likesCount",10,"category","trade");
         String rich="<p>"+"https://example.com/"+"longpath".repeat(30)+"</p><table style='width:1200px'><tr><td>가로로 긴 표</td></tr></table>";
         Map<String,Object> model=new HashMap<>();
+        StaticAssetVersionService assets = new StaticAssetVersionService();
+        model.put("asset", (Mustache.Lambda) (frag, out) -> out.write(assets.versionedUrl(frag.execute())));
         model.put("siteNavigation", SiteNavigation.PRIMARY);
         model.putAll(post); model.put("categoryName","교환"); model.put("member",false);
         model.put("articleList",List.of(post)); model.put("popularArticles",List.of(post)); model.put("article",Map.of("id",1,"title",longText,"content",rich,"userId",longText));
