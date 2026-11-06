@@ -1455,26 +1455,37 @@ a.chem-highlight:hover {
     font-size: 0.75rem;
 }
 
-.chem-photo-by-insert {
+/* 기존 code 민트 강조 유지 + 클릭 가능 버튼 */
+.chem-edit-field-hint .chem-photo-by-insert,
+.chem-edit-help-list .chem-photo-by-insert,
+button.chem-photo-by-insert {
+    appearance: none;
     display: inline;
     margin: 0;
-    padding: 0.05rem 0.28rem;
-    border: 1px solid rgba(0, 245, 212, 0.35);
-    border-radius: 0.25rem;
-    background: rgba(0, 245, 212, 0.08);
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     color: #00f5d4;
-    font: inherit;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 0.75rem;
+    font-weight: inherit;
     line-height: inherit;
     cursor: pointer;
     vertical-align: baseline;
+    text-decoration: underline;
+    text-decoration-color: rgba(0, 245, 212, 0.45);
+    text-underline-offset: 0.12em;
 }
 
-.chem-photo-by-insert:hover,
-.chem-photo-by-insert:focus-visible {
-    background: rgba(0, 245, 212, 0.16);
-    border-color: rgba(0, 245, 212, 0.65);
+.chem-edit-field-hint .chem-photo-by-insert:hover,
+.chem-edit-help-list .chem-photo-by-insert:hover,
+button.chem-photo-by-insert:hover,
+.chem-edit-field-hint .chem-photo-by-insert:focus-visible,
+.chem-edit-help-list .chem-photo-by-insert:focus-visible,
+button.chem-photo-by-insert:focus-visible {
+    color: #5cffea;
+    text-decoration-color: rgba(92, 255, 234, 0.8);
     outline: none;
 }
 
