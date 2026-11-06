@@ -2,8 +2,10 @@ package com.example.triplesweb.service;
 
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.Chemistry;
+import com.example.triplesweb.entity.ChemistryGroup;
 import com.example.triplesweb.entity.ChemistryLabelTone;
 import com.example.triplesweb.repository.ArtistRepository;
+import com.example.triplesweb.repository.ChemistryGroupRepository;
 import com.example.triplesweb.repository.ChemistryRepository;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,6 +38,7 @@ import java.util.Map;
 public class ChemistrySeedService implements CommandLineRunner {
 
     private final ChemistryRepository chemistryRepository;
+    private final ChemistryGroupRepository chemistryGroupRepository;
     private final ArtistRepository artistRepository;
     private final ObjectMapper objectMapper;
     private final ChemistryService chemistryService;
@@ -64,6 +67,10 @@ public class ChemistrySeedService implements CommandLineRunner {
         if (enFilled > 0) {
             log.info("Chemistry English descriptions filled: {}", enFilled);
         }
+        int groupEnFilled = applyGroupEnglishDescriptionsIfBlank();
+        if (groupEnFilled > 0) {
+            log.info("Chemistry group English descriptions filled: {}", groupEnFilled);
+        }
     }
 
     /**
@@ -72,9 +79,28 @@ public class ChemistrySeedService implements CommandLineRunner {
      */
     @Transactional
     public int applyEnglishDescriptionsIfBlank() {
-        ClassPathResource resource = new ClassPathResource("data/chemistry-descriptions-en.json");
+        return applyEnglishFromClasspath(
+                "data/chemistry-descriptions-en.json",
+                false
+        );
+    }
+
+    /**
+     * classpath {@code data/chemistry-group-descriptions-en.json}으로
+     * 그룹 description_en이 비어 있는 행만 채운다 (기존 영문 덮어쓰지 않음).
+     */
+    @Transactional
+    public int applyGroupEnglishDescriptionsIfBlank() {
+        return applyEnglishFromClasspath(
+                "data/chemistry-group-descriptions-en.json",
+                true
+        );
+    }
+
+    private int applyEnglishFromClasspath(String classpath, boolean group) {
+        ClassPathResource resource = new ClassPathResource(classpath);
         if (!resource.exists()) {
-            log.warn("chemistry-descriptions-en.json missing — skip English fill");
+            log.warn("{} missing — skip English fill", classpath);
             return 0;
         }
         try (InputStream in = resource.getInputStream()) {
@@ -90,21 +116,35 @@ public class ChemistrySeedService implements CommandLineRunner {
                 if (row == null || row.getId() == null || !StringUtils.hasText(row.getDescriptionEn())) {
                     continue;
                 }
-                var opt = chemistryRepository.findById(row.getId());
-                if (opt.isEmpty()) {
-                    continue;
+                if (group) {
+                    var opt = chemistryGroupRepository.findById(row.getId());
+                    if (opt.isEmpty()) {
+                        continue;
+                    }
+                    ChemistryGroup entity = opt.get();
+                    if (StringUtils.hasText(entity.getDescriptionEn())) {
+                        continue;
+                    }
+                    entity.setDescriptionEn(row.getDescriptionEn());
+                    chemistryGroupRepository.save(entity);
+                    updated++;
+                } else {
+                    var opt = chemistryRepository.findById(row.getId());
+                    if (opt.isEmpty()) {
+                        continue;
+                    }
+                    Chemistry entity = opt.get();
+                    if (StringUtils.hasText(entity.getDescriptionEn())) {
+                        continue;
+                    }
+                    entity.setDescriptionEn(row.getDescriptionEn());
+                    chemistryRepository.save(entity);
+                    updated++;
                 }
-                Chemistry entity = opt.get();
-                if (StringUtils.hasText(entity.getDescriptionEn())) {
-                    continue;
-                }
-                entity.setDescriptionEn(row.getDescriptionEn());
-                chemistryRepository.save(entity);
-                updated++;
             }
             return updated;
         } catch (Exception e) {
-            log.error("Chemistry English description fill failed: {}", e.getMessage(), e);
+            log.error("Chemistry English description fill failed ({}): {}", classpath, e.getMessage(), e);
             return 0;
         }
     }
