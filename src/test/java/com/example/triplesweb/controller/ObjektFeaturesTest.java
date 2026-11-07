@@ -250,6 +250,39 @@ class ObjektFeaturesTest {
                 .andExpect(jsonPath("$.description").value(""));
     }
 
+    @Test void memberSpecificNumbersKeepSeparateDescriptions() throws Exception {
+        var seo = Map.<String, Object>of("id", "seo", "slug", "cream02-seoyeon-335a",
+                "collectionId", "Cream02 SeoYeon 335A", "season", "Cream02", "collectionNo", "335A", "member", "SeoYeon");
+        var yu = Map.<String, Object>of("id", "yu", "slug", "cream02-yubin-335a",
+                "collectionId", "Cream02 YuBin 335A", "season", "Cream02", "collectionNo", "335A", "member", "YuBin");
+        stubCatalog(List.of(seo, yu));
+        var stored = new java.util.HashMap<String, com.example.triplesweb.entity.ObjektDescription>();
+        var shared = new com.example.triplesweb.entity.ObjektDescription();
+        shared.setObjektKey(com.example.triplesweb.util.ObjektDescriptionKeys.groupKey("Cream02", "335A"));
+        shared.setDescription("공통으로 덮인 설명");
+        stored.put(shared.getObjektKey(), shared);
+        when(descriptions.findByObjektKey(anyString())).thenAnswer(call -> java.util.Optional.ofNullable(stored.get(call.getArgument(0))));
+        when(descriptions.save(any())).thenAnswer(call -> {
+            com.example.triplesweb.entity.ObjektDescription value = call.getArgument(0);
+            stored.put(value.getObjektKey(), value);
+            return value;
+        });
+        mvc.perform(get("/cosmo/objekt/detail/seo").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.description").value(""));
+        mvc.perform(post("/cosmo/objekt/detail/seo/description").accept(MediaType.APPLICATION_JSON).param("description", "넵튠"))
+                .andExpect(status().isOk());
+        mvc.perform(post("/cosmo/objekt/detail/yu/description").accept(MediaType.APPLICATION_JSON).param("description", "제니스"))
+                .andExpect(status().isOk());
+        mvc.perform(get("/cosmo/objekt/detail/seo").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.description").value("넵튠"));
+        mvc.perform(post("/cosmo/objekt/detail/seo/description").accept(MediaType.APPLICATION_JSON).param("description", ""))
+                .andExpect(status().isOk());
+        mvc.perform(get("/cosmo/objekt/detail/yu").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.description").value("제니스"));
+        mvc.perform(get("/cosmo/objekt/detail/seo").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.description").value(""));
+    }
+
     @Test void modalShowsLocalDescriptionOnlyWithoutApolloPayload() throws Exception {
         var item = Map.<String,Object>of("id","uuid","slug","cream02-kotone-356a","season","Cream02","collectionNo","356A","member","Kotone");
         stubCatalog(List.of(item));
