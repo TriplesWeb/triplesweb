@@ -40,35 +40,21 @@
 
   function setAdminUi() {
     const page = document.querySelector(".artist-page");
-    const btn = document.getElementById("artistAdminBtn");
     const hint = document.getElementById("artistAdminHint");
     // 관리자 인증 전에는 소개/멤버 편집 버튼을 표시하지 않는다.
     document.querySelectorAll(".artist-edit-inline").forEach((control) => {
       control.hidden = !isAdmin;
     });
     if (page) page.classList.toggle("is-admin", Boolean(isAdmin));
-    if (btn) {
-      if (!adminConfigured) {
-        btn.classList.add("hidden");
-      } else {
-        btn.classList.remove("hidden");
-        btn.textContent = isAdmin ? "관리자 로그아웃" : "관리자";
-        btn.setAttribute("aria-pressed", isAdmin ? "true" : "false");
-        btn.classList.toggle("is-active", isAdmin);
-      }
-    }
     if (hint) hint.classList.toggle("hidden", !isAdmin);
   }
 
-  function setLoginPasswordVisible(visible) {
-    const input = document.getElementById("artistLoginPassword");
-    const toggle = document.getElementById("artistLoginPasswordToggle");
-    if (!input || !toggle) return;
-    input.type = visible ? "text" : "password";
-    toggle.setAttribute("aria-pressed", visible ? "true" : "false");
-    toggle.setAttribute("aria-label", visible ? "비밀번호 숨기기" : "비밀번호 보기");
-    const icon = toggle.querySelector(".material-symbols-outlined");
-    if (icon) icon.textContent = visible ? "visibility_off" : "visibility";
+  function applyAdminState(state) {
+    if (!state) return;
+    adminConfigured = Boolean(state.configured);
+    isAdmin = Boolean(state.admin);
+    if (!isAdmin) setAdminToken("");
+    setAdminUi();
   }
 
   function openModal(id) {
@@ -89,16 +75,9 @@
   }
 
   function openLoginModal() {
-    const err = document.getElementById("artistLoginError");
-    const input = document.getElementById("artistLoginPassword");
-    if (err) {
-      err.hidden = true;
-      err.textContent = "";
+    if (window.SiteAdmin && typeof window.SiteAdmin.openLogin === "function") {
+      window.SiteAdmin.openLogin();
     }
-    if (input) input.value = "";
-    setLoginPasswordVisible(false);
-    openModal("artistLoginModal");
-    if (input) input.focus();
   }
 
   function paintFrameMask(avatar, frame) {
@@ -283,24 +262,22 @@
   }
 
   async function refreshAdminStatus() {
+    if (window.SiteAdmin && typeof window.SiteAdmin.refresh === "function") {
+      const state = await window.SiteAdmin.refresh();
+      applyAdminState(state);
+      return Boolean(state && state.admin);
+    }
     try {
       const res = await artistFetch("/api/artist/admin/status");
       if (!res.ok) {
-        adminConfigured = false;
-        isAdmin = false;
-        setAdminUi();
+        applyAdminState({ configured: false, admin: false });
         return false;
       }
       const status = await res.json();
-      adminConfigured = Boolean(status.configured);
-      isAdmin = Boolean(status.admin);
-      if (!isAdmin) setAdminToken("");
-      setAdminUi();
-      return isAdmin;
+      applyAdminState(status);
+      return Boolean(status.admin);
     } catch (_) {
-      adminConfigured = false;
-      isAdmin = false;
-      setAdminUi();
+      applyAdminState({ configured: false, admin: false });
       return false;
     }
   }
@@ -390,73 +367,6 @@
   }
 
   function bindAdminUi() {
-    const adminBtn = document.getElementById("artistAdminBtn");
-    if (adminBtn) {
-      adminBtn.addEventListener("click", async () => {
-        if (isAdmin) {
-          try {
-            const res = await artistFetch("/api/artist/admin/logout", { method: "POST" });
-            if (!res.ok) {
-              alert(await readError(res, "로그아웃에 실패했습니다."));
-              return;
-            }
-          } catch (_) {
-            alert("로그아웃 요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
-            return;
-          }
-          isAdmin = false;
-          setAdminToken("");
-          setAdminUi();
-          return;
-        }
-        openLoginModal();
-      });
-    }
-
-    const loginForm = document.getElementById("artistLoginForm");
-    if (loginForm) {
-      loginForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const err = document.getElementById("artistLoginError");
-        const password = document.getElementById("artistLoginPassword").value;
-        try {
-          const res = await artistFetch("/api/artist/admin/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ password })
-          });
-          if (!res.ok) {
-            if (err) {
-              err.textContent = await readError(res, "비밀번호가 올바르지 않습니다.");
-              err.hidden = false;
-            }
-            return;
-          }
-          const data = await res.json();
-          setAdminToken(data && data.token ? data.token : "");
-          isAdmin = true;
-          closeModal("artistLoginModal");
-          setAdminUi();
-        } catch (_) {
-          if (err) {
-            err.textContent = "로그인에 실패했습니다.";
-            err.hidden = false;
-          }
-        }
-      });
-    }
-
-    const passwordToggle = document.getElementById("artistLoginPasswordToggle");
-    if (passwordToggle) {
-      passwordToggle.addEventListener("click", () => {
-        const input = document.getElementById("artistLoginPassword");
-        setLoginPasswordVisible(Boolean(input && input.type === "password"));
-      });
-    }
-
-    document.querySelectorAll(".artist-login-close").forEach((btn) => {
-      btn.addEventListener("click", () => closeModal("artistLoginModal"));
-    });
     document.querySelectorAll(".artist-edit-close").forEach((btn) => {
       btn.addEventListener("click", () => closeModal("artistEditModal"));
     });
@@ -609,11 +519,13 @@
   }
 
   async function initAdmin() {
-    await refreshAdminStatus();
     bindAdminUi();
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") refreshAdminStatus();
-    });
+    if (window.SiteAdmin && typeof window.SiteAdmin.subscribe === "function") {
+      window.SiteAdmin.subscribe(applyAdminState);
+    } else {
+      await refreshAdminStatus();
+      document.addEventListener("site-admin:change", (event) => applyAdminState(event.detail));
+    }
   }
 
   document.addEventListener("DOMContentLoaded", () => {

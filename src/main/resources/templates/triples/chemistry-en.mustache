@@ -1,8 +1,8 @@
 {{>layout/head-open}}
 
-<link rel="stylesheet" href="/css/about-admin.css?v=1">
-    <link rel="stylesheet" href="/css/chemistry.css?v=4">
-    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
+<link rel="stylesheet" href="{{#asset}}/css/about-admin.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/chemistry.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
     <title>tripleS Community — Chemistry Names</title>
 </head><body class="site-page bg-[#0d0e12] text-[#ffffff] min-h-screen">
 {{>layout/header}}
@@ -44,7 +44,6 @@
                         <button type="button" class="chem-mode-btn" data-mode="trio" aria-pressed="false" onclick="window.__chemSetMode&&window.__chemSetMode('trio')">3+</button>
                     </div>
                     <a href="/triples/chemistry" class="chem-lang-btn" hreflang="ko" lang="ko" title="한국어로 보기">한국어</a>
-                    <button type="button" id="chemAdminBtn" class="chem-admin-btn hidden" aria-pressed="false">Admin</button>
                 </div>
             </div>
             <p class="text-base font-semibold text-[#ffffff]">English names/descriptions when set; otherwise Korean chemistry names are shown. Member names open profiles.</p>
@@ -92,7 +91,6 @@
                 <div class="mpp-toolbar-actions">
                     <button type="button" class="mpp-tool-btn" id="chemTrioClear">Clear</button>
                     <a href="#chemTrioResults" id="chemTrioJump" class="mpp-tool-btn chem-trio-jump hidden">View results</a>
-                    <button type="button" class="chem-mode-btn chem-trio-back" data-mode="pair" onclick="window.__chemSetMode&&window.__chemSetMode('pair')">View pairs</button>
                 </div>
             </div>
             <div class="member-portrait-picker" id="chemTrioPicker" role="group" aria-label="3+ chemistry member picker"></div>
@@ -103,10 +101,10 @@
 
 {{>triples/partials/chemistry-modals}}
 
-<script src="/js/about-modal.js?v=1" defer></script>
-<script src="/js/triples-members.js?v=1" defer></script>
-<script src="/js/chemistry-sanitize.js?v=1" defer></script>
-<script src="/js/member-portrait-picker.js?v=10" defer></script>
-<script src="/js/chemistry.js?v=67" defer></script>
-<script src="/js/about-admin-auth.js?v=2" defer></script>
+<script src="{{#asset}}/js/about-modal.js{{/asset}}" defer></script>
+<script src="{{#asset}}/js/triples-members.js{{/asset}}" defer></script>
+<script src="{{#asset}}/js/chemistry-sanitize.js{{/asset}}" defer></script>
+<script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}" defer></script>
+<script src="{{#asset}}/js/chemistry.js{{/asset}}" defer></script>
+<script src="{{#asset}}/js/about-admin-auth.js{{/asset}}" defer></script>
 {{>layout/page-end}}

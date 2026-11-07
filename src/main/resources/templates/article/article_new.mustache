@@ -1,8 +1,8 @@
 {{>layout/head-open}}
 
     <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
-    <link rel="stylesheet" href="/css/article-page.css?v=7">
-    <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
+    <link rel="stylesheet" href="{{#asset}}/css/article-page.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
 </head><body class="site-page article-page bg-surface text-on-surface min-h-screen flex flex-col">
 {{>layout/header}}
 
@@ -79,11 +79,11 @@
     </div>
     </div>
 </main>
-<script src="/js/site-ui.js?v=3"></script>
+<script src="{{#asset}}/js/site-ui.js{{/asset}}"></script>
 <script src="/js/article-content.js"></script>
-<script src="/js/article-editor-media.js?v=1"></script>
-<script src="/js/objekt-kind-combo.js?v=1"></script>
-<script src="/js/article-objekt-picker.js?v=10"></script>
+<script src="{{#asset}}/js/article-editor-media.js{{/asset}}"></script>
+<script src="{{#asset}}/js/objekt-kind-combo.js{{/asset}}"></script>
+<script src="{{#asset}}/js/article-objekt-picker.js{{/asset}}"></script>
 <script>
     window.beforeSubmit = function(form) {
     const titleInput    = form.querySelector('input[name="title"]');

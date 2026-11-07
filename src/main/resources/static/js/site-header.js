@@ -126,11 +126,12 @@
     }
     if (!searchInput) return;
     if (open) {
-      headerSearchIgnoreCloseUntil = Date.now() + 400;
+      // 같은 제스처의 바깥 pointerdown/click에 바로 닫히지 않게
+      headerSearchIgnoreCloseUntil = Date.now() + 500;
       searchInput.removeAttribute("tabindex");
       requestAnimationFrame(function () {
         searchInput.focus();
-        searchInput.select();
+        try { searchInput.select(); } catch (_) {}
       });
     } else {
       searchInput.setAttribute("tabindex", "-1");
@@ -138,15 +139,24 @@
     }
   }
 
-  const initialOpen = document.querySelector("[data-header-search-open]");
-  if (initialOpen) initialOpen.setAttribute("aria-expanded", "false");
+  (function bindHeaderSearch() {
+    const headerSearch = headerSearchRoot();
+    if (!headerSearch) return;
+    const searchOpen = headerSearch.querySelector("[data-header-search-open]");
+    if (!searchOpen) return;
+    searchOpen.setAttribute("aria-expanded", "false");
 
-  document.addEventListener("click", function (event) {
-    const openBtn = event.target.closest("[data-header-search-open]");
-    if (!openBtn) return;
-    event.preventDefault();
-    setHeaderSearchOpen(true);
-  });
+    function openFromToggle(event) {
+      if (event.type === "pointerdown" && event.button != null && event.button !== 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setHeaderSearchOpen(true);
+    }
+
+    // 문서 위임 대신 버튼에 직접 바인딩 (SVG 클릭·캡처 이슈 회피)
+    searchOpen.addEventListener("pointerdown", openFromToggle);
+    searchOpen.addEventListener("click", openFromToggle);
+  })();
 
   document.addEventListener("keydown", function (event) {
     const headerSearch = headerSearchRoot();
@@ -160,7 +170,8 @@
     if (Date.now() < headerSearchIgnoreCloseUntil) return;
     const headerSearch = headerSearchRoot();
     if (!headerSearch || !headerSearch.classList.contains("is-open")) return;
-    if (headerSearch.contains(event.target)) return;
+    const target = event.target;
+    if (target instanceof Node && headerSearch.contains(target)) return;
     const searchInput = headerSearch.querySelector("[data-header-search-input]");
     if (searchInput && searchInput.value.trim()) return;
     setHeaderSearchOpen(false);

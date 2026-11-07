@@ -1,9 +1,9 @@
 {{>layout/head-open}}
 
-<link rel="stylesheet" href="/css/gravity-page.css?v=3">
-<link rel="stylesheet" href="/css/archive-page.css?v=15">
-<link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=29">
+<link rel="stylesheet" href="{{#asset}}/css/gravity-page.css{{/asset}}">
+<link rel="stylesheet" href="{{#asset}}/css/archive-page.css{{/asset}}">
+<link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
+<link rel="stylesheet" href="{{#asset}}/css/cosmo-collection.css{{/asset}}">
 <title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}코스모 아이디 검색{{/nickname}}</title>
 </head><body class="site-page collection-page min-h-screen flex flex-col">
 {{>layout/header}}
@@ -201,9 +201,9 @@
     </div>
     {{/hasCollection}}
 </main>
-<script src="/js/member-portrait-picker.js?v=10"></script>
-<script src="/js/objekt-kind-combo.js?v=1"></script>
-<script src="/js/collection-nickname-suggest.js?v=4"></script>
+<script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
+<script src="{{#asset}}/js/objekt-kind-combo.js{{/asset}}"></script>
+<script src="{{#asset}}/js/collection-nickname-suggest.js{{/asset}}"></script>
 <script>
 (() => {
   const form = document.getElementById('collection-filter-form');

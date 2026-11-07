@@ -1,11 +1,11 @@
 package com.example.triplesweb.controller;
 
+import com.example.triplesweb.dto.HomeAlbumHero;
 import com.example.triplesweb.dto.ScheduleForm;
-import com.example.triplesweb.entity.Album;
 import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.Schedule;
-import com.example.triplesweb.repository.AlbumRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
+import com.example.triplesweb.service.AlbumService;
 import com.example.triplesweb.service.ArchiveService;
 import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.util.SchedulePresentation;
@@ -16,6 +16,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.ui.ExtendedModelMap;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -34,7 +38,6 @@ public class MainController {
 
     private static final int HOME_ARCHIVE_LIMIT = 4;
     private static final int HOME_UPCOMING_LIMIT = 6;
-    private static final String ANDLESS_ALBUM = "LOVE & POP Pt.2";
     private static final DateTimeFormatter HOME_DAY =
             DateTimeFormatter.ofPattern("M.d (E)", Locale.KOREAN);
     private static final DateTimeFormatter HOME_RANGE_DAY =
@@ -42,8 +45,21 @@ public class MainController {
 
     private final ScheduleRepository scheduleRepository;
     private final ArchiveService archiveService;
-    private final AlbumRepository albumRepository;
+    private final AlbumService albumService;
     private final ArtistSnapshotService artistSnapshot;
+    private volatile Map<String, Object> homeSnapshot;
+
+    @EventListener(ApplicationReadyEvent.class)
+    @Scheduled(fixedDelayString = "${home.cache.refresh-ms:30000}", initialDelay = 30000)
+    public void refreshHomeSnapshot() {
+        try {
+            Model fresh = new ExtendedModelMap();
+            populateHome(fresh);
+            homeSnapshot = java.util.Collections.unmodifiableMap(new LinkedHashMap<>(fresh.asMap()));
+        } catch (RuntimeException ex) {
+            log.warn("홈 데이터 갱신 실패: 기존 데이터를 유지합니다", ex);
+        }
+    }
 
     /** 이전 URL 호환: {@code /main} → {@code /} */
     @GetMapping("/main")
@@ -53,8 +69,18 @@ public class MainController {
 
     @GetMapping("/")
     public String mainPage(Model model) {
+        Map<String, Object> snapshot = homeSnapshot;
+        if (snapshot != null) {
+            model.addAllAttributes(snapshot);
+        } else {
+            populateHome(model);
+        }
+        return "main";
+    }
 
-        List<Schedule> scheduleList = scheduleRepository.findAll();
+    private void populateHome(Model model) {
+
+        List<Schedule> scheduleList = scheduleRepository.findAllWithArtists();
         var artists = artistSnapshot.findAll();
         List<ScheduleForm> scheduleForms = scheduleList.stream()
                 .map(schedule -> SchedulePresentation.form(schedule, artists))
@@ -71,12 +97,9 @@ public class MainController {
                     .replace("&", "\\u0026");
         } catch (Exception ignored) {}
 
-        String albumHref = albumRepository.findByAlbumName(ANDLESS_ALBUM)
-                .map(Album::getAlbumId)
-                .map(id -> "/triples/album/" + id)
-                .orElse("/triples/album");
-
-        model.addAttribute("albumHref", albumHref);
+        HomeAlbumHero homeAlbumHero = albumService.findLatestHomeHero();
+        model.addAttribute("homeAlbumHero", homeAlbumHero);
+        model.addAttribute("albumHref", homeAlbumHero.getHref());
         model.addAttribute("recentPhotos", archiveService.pageByType(MediaType.IMAGE, 0, HOME_ARCHIVE_LIMIT, null)
                 .getContent().stream()
                 .filter(photo -> photo.getFile() != null && photo.getFile().getUrl() != null)
@@ -88,7 +111,6 @@ public class MainController {
         model.addAttribute("upcomingSchedules", upcoming);
         model.addAttribute("hasUpcomingSchedules", !upcoming.isEmpty());
 
-        return "main";
     }
 
     static List<Map<String, String>> upcomingSchedules(List<ScheduleForm> scheduleForms) {

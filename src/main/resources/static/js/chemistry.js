@@ -465,23 +465,66 @@
     });
   }
 
-  /** description에서 "photo by …" 출처를 분리 (서식 HTML 유지) */
-  function splitPhotoCredit(rawDescription) {
-    const raw = String(rawDescription || "");
-    const plain = raw
+  function descriptionPlainText(html) {
+    return String(html || "")
       .replace(/<br\s*\/?>/gi, " ")
       .replace(/<[^>]+>/g, " ")
       .replace(/\s+/g, " ")
       .trim();
+  }
+
+  function trimTrailingEmptyMarkup(html) {
+    let out = String(html || "").trim();
+    let prev = "";
+    while (out !== prev) {
+      prev = out;
+      out = out
+        .replace(/(?:<br\s*\/?>\s*)+$/i, "")
+        .replace(/(?:<span[^>]*>\s*(?:<br\s*\/?>\s*)*<\/span>\s*)+$/i, "")
+        .trim();
+    }
+    return out;
+  }
+
+  /** description에서 "photo by …" 출처를 분리 (서식 HTML 유지) */
+  function splitPhotoCredit(rawDescription) {
+    const raw = String(rawDescription || "");
+    const plain = descriptionPlainText(raw);
     const match = plain.match(/\s*photo\s+by\.?\s*(@?[^\s]+)\s*$/i);
     if (!match) {
       return { description: raw, credit: "" };
     }
     const credit = match[1].replace(/[.,;]+$/, "").trim();
-    const stripped = raw
+    if (!credit) {
+      return { description: raw, credit: "" };
+    }
+
+    // 연속 텍스트 / 뒤에 <br>만 있는 일반 형태
+    let stripped = raw
       .replace(/\s*photo\s+by\.?\s*@?[\w.-]+\s*$/i, "")
       .replace(/(?:<br\s*\/?>|\s)*photo\s+by\.?\s*@?[\w.-]+(?:\s*<[^>]+>)*\s*$/i, "")
       .trim();
+
+    // 태그로 갈라진 "photo by. </span><span>@handle</span>" 형태
+    if (/\bphoto\s+by\b/i.test(descriptionPlainText(stripped))) {
+      const idx = raw.toLowerCase().lastIndexOf("photo by");
+      if (idx >= 0) {
+        let start = idx;
+        // 본문을 닫는 </span>은 건드리지 않고, 크레딧을 감싼 여는 태그와 br만 뒤로 걷
+        while (start > 0) {
+          const prefix = raw.slice(0, start);
+          const lead = prefix.match(/(?:<br\s*\/?>|\s+|<(?!\/)[^>]+>)+$/i);
+          if (!lead) break;
+          start -= lead[0].length;
+        }
+        const tailPlain = descriptionPlainText(raw.slice(start));
+        if (/^photo\s+by\.?\s*@?[^\s]+$/i.test(tailPlain)) {
+          stripped = raw.slice(0, start).trim();
+        }
+      }
+    }
+
+    stripped = trimTrailingEmptyMarkup(stripped);
     return { description: stripped || raw, credit };
   }
 
@@ -550,16 +593,57 @@
     return sanitizeChemistryHtml(editor.innerHTML);
   }
 
+  let lastFocusedDescriptionEditor = null;
+
   function activeDescriptionEditor() {
     const active = document.activeElement;
     if (active && active.id === "chemEditDescriptionEn") return active;
     if (active && active.id === "chemEditDescription") return active;
-    const ko = document.getElementById("chemEditDescription");
-    const en = document.getElementById("chemEditDescriptionEn");
-    if (en && document.getElementById("chemistryEditModal")?.contains(active)) {
-      /* keep last focused if possible — default KO */
+    if (
+      lastFocusedDescriptionEditor &&
+      document.getElementById("chemistryEditModal")?.contains(lastFocusedDescriptionEditor)
+    ) {
+      return lastFocusedDescriptionEditor;
     }
-    return ko || en;
+    return document.getElementById("chemEditDescription")
+      || document.getElementById("chemEditDescriptionEn");
+  }
+
+  function placeCaretAtEnd(el) {
+    if (!el) return;
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    const sel = window.getSelection();
+    if (!sel) return;
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  /** 안내의 photo by 템플릿을 활성(또는 마지막) 설명 칸 맨 끝에 넣는다 */
+  function insertPhotoByTemplate() {
+    const editor = activeDescriptionEditor();
+    if (!editor) return;
+    editor.focus();
+    const plain = descriptionPlainText(editor.innerHTML);
+    if (/\bphoto\s+by\.?\s*@?\S*\s*$/i.test(plain)) {
+      placeCaretAtEnd(editor);
+      return;
+    }
+    placeCaretAtEnd(editor);
+    const needsSpace = !!plain && !/\s$/.test(plain);
+    try {
+      document.execCommand(
+        "insertText",
+        false,
+        (needsSpace ? " " : "") + "photo by. @"
+      );
+    } catch (_) {
+      editor.appendChild(
+        document.createTextNode((needsSpace ? " " : "") + "photo by. @")
+      );
+      placeCaretAtEnd(editor);
+    }
   }
 
   /** 표 칸 케미명 글자색 (NONE=공식 흰) */
@@ -1160,18 +1244,7 @@
   let tableBuiltForAdmin = false;
 
   function setAdminUi() {
-    const btn = document.getElementById("chemAdminBtn");
     const hint = document.getElementById("chemAdminHint");
-    if (btn) {
-      if (!adminConfigured) {
-        btn.classList.add("hidden");
-      } else {
-        btn.classList.remove("hidden");
-        btn.textContent = isAdmin ? I18N.adminLogout : I18N.admin;
-        btn.setAttribute("aria-pressed", isAdmin ? "true" : "false");
-        btn.classList.toggle("is-active", isAdmin);
-      }
-    }
     if (hint) hint.classList.toggle("hidden", !isAdmin);
     const adminChanged = tableBuiltForAdmin !== isAdmin;
     if (adminChanged && pairsHydrated) {
@@ -1193,46 +1266,17 @@
     }
   }
 
-  function setLoginPasswordVisible(visible) {
-    const input = document.getElementById("chemLoginPassword");
-    const toggle = document.getElementById("chemLoginPasswordToggle");
-    if (!input || !toggle) return;
-    input.type = visible ? "text" : "password";
-    toggle.setAttribute("aria-pressed", visible ? "true" : "false");
-    toggle.setAttribute(
-      "aria-label",
-      visible ? "비밀번호 숨기기" : "비밀번호 보기"
-    );
-    const icon = toggle.querySelector(".material-symbols-outlined");
-    if (icon) icon.textContent = visible ? "visibility_off" : "visibility";
+  function applyAdminState(state) {
+    if (!state) return;
+    adminConfigured = Boolean(state.configured);
+    isAdmin = Boolean(state.admin);
+    if (!isAdmin) setAdminToken("");
+    setAdminUi();
   }
 
   function openLoginModal() {
-    const modal = document.getElementById("chemistryLoginModal");
-    const err = document.getElementById("chemLoginError");
-    const input = document.getElementById("chemLoginPassword");
-    if (err) {
-      err.hidden = true;
-      err.textContent = "";
-    }
-    if (input) input.value = "";
-    setLoginPasswordVisible(false);
-    if (modal) {
-      modal.classList.remove("hidden");
-      modal.classList.add("flex");
-      document.body.style.overflow = "hidden";
-    }
-    if (input) input.focus();
-  }
-
-  function closeLoginModal() {
-    const modal = document.getElementById("chemistryLoginModal");
-    if (!modal) return;
-    modal.classList.add("hidden");
-    modal.classList.remove("flex");
-    if (document.getElementById("chemistryModal")?.classList.contains("hidden")
-        && document.getElementById("chemistryEditModal")?.classList.contains("hidden")) {
-      document.body.style.overflow = "";
+    if (window.SiteAdmin && typeof window.SiteAdmin.openLogin === "function") {
+      window.SiteAdmin.openLogin();
     }
   }
 
@@ -1747,66 +1791,6 @@
   }
 
   function bindAdminUi() {
-    const adminBtn = document.getElementById("chemAdminBtn");
-    if (adminBtn) {
-      adminBtn.addEventListener("click", async () => {
-        if (isAdmin) {
-          await chemFetch("/api/chemistry/admin/logout", { method: "POST" });
-          isAdmin = false;
-          setAdminToken("");
-          setAdminUi();
-          return;
-        }
-        openLoginModal();
-      });
-    }
-
-    const loginForm = document.getElementById("chemistryLoginForm");
-    if (loginForm) {
-      loginForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const err = document.getElementById("chemLoginError");
-        const password = document.getElementById("chemLoginPassword").value;
-        try {
-          const res = await chemFetch("/api/chemistry/admin/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ password })
-          });
-          if (!res.ok) {
-            if (err) {
-              err.textContent = await readChemError(res, "비밀번호가 올바르지 않습니다.");
-              err.hidden = false;
-            }
-            return;
-          }
-          const data = await res.json();
-          setAdminToken(data && data.token ? data.token : "");
-          isAdmin = true;
-          closeLoginModal();
-          setAdminUi();
-        } catch (_) {
-          if (err) {
-            err.textContent = "로그인에 실패했습니다.";
-            err.hidden = false;
-          }
-        }
-      });
-    }
-
-    const passwordToggle = document.getElementById("chemLoginPasswordToggle");
-    if (passwordToggle) {
-      passwordToggle.addEventListener("click", () => {
-        const input = document.getElementById("chemLoginPassword");
-        const visible = input && input.type === "password";
-        setLoginPasswordVisible(Boolean(visible));
-      });
-    }
-
-    document.querySelectorAll(".chem-login-close").forEach((btn) => {
-      btn.addEventListener("click", closeLoginModal);
-    });
-
     const editBtn = document.getElementById("chemEditBtn");
     if (editBtn) {
       editBtn.addEventListener("click", () => {
@@ -2042,6 +2026,22 @@
         if (!btn) return;
         e.preventDefault();
         removeEditImageAt(Number(btn.getAttribute("data-remove-idx")));
+      });
+    }
+
+    const editModal = document.getElementById("chemistryEditModal");
+    if (editModal) {
+      editModal.addEventListener("focusin", (e) => {
+        const t = e.target;
+        if (t && (t.id === "chemEditDescription" || t.id === "chemEditDescriptionEn")) {
+          lastFocusedDescriptionEditor = t;
+        }
+      });
+      editModal.addEventListener("click", (e) => {
+        const btn = e.target && e.target.closest && e.target.closest(".chem-photo-by-insert");
+        if (!btn || !editModal.contains(btn)) return;
+        e.preventDefault();
+        insertPhotoByTemplate();
       });
     }
 
@@ -2567,7 +2567,7 @@
         alert(IS_EN ? "No cell found for that pair." : "해당 교차 칸을 찾지 못했습니다.");
         return;
       }
-      setPairFilterOpen(false);
+      cell.style.setProperty("--chem-flash-color", MEMBER_COLORS[ai] || "#00f5d4");
       cell.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
       cell.classList.add("chem-cell-flash");
       setTimeout(() => cell.classList.remove("chem-cell-flash"), 1200);
@@ -2849,7 +2849,6 @@
       if (e.key !== "Escape") return;
       closeLegendPanel();
       closeEditModal();
-      closeLoginModal();
       closeModal();
     });
 
@@ -2860,19 +2859,19 @@
     bindAdminUi();
     setModeButtons("pair");
 
-    // 관리자 상태만 가볍게. 표/설명 API는 첫 페인트 이후에.
-    try {
-      const statusRes = await chemFetch("/api/chemistry/admin/status");
-      if (statusRes.ok) {
-        const status = await statusRes.json();
-        adminConfigured = Boolean(status.configured);
-        isAdmin = Boolean(status.admin);
-        if (!isAdmin) setAdminToken("");
+    // 전역 SiteAdmin 상태를 구독. 없으면 기존 status API로 폴백.
+    if (window.SiteAdmin && typeof window.SiteAdmin.subscribe === "function") {
+      window.SiteAdmin.subscribe(applyAdminState);
+    } else {
+      try {
+        const statusRes = await chemFetch("/api/chemistry/admin/status");
+        if (statusRes.ok) applyAdminState(await statusRes.json());
+        else applyAdminState({ configured: false, admin: false });
+      } catch (err) {
+        console.error("케미 관리자 상태 로드 실패", err);
+        applyAdminState({ configured: false, admin: false });
       }
-      setAdminUi();
-    } catch (err) {
-      console.error("케미 관리자 상태 로드 실패", err);
-      setAdminUi();
+      document.addEventListener("site-admin:change", (event) => applyAdminState(event.detail));
     }
 
     const prefetch = () => {

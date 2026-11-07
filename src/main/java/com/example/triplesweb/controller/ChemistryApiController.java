@@ -105,9 +105,11 @@ public class ChemistryApiController {
         aboutAdminAuth.requireAdmin(request, session);
         int inserted = chemistrySeedService.reseedMissingPairs();
         int enFilled = chemistrySeedService.applyEnglishDescriptionsIfBlank();
+        int groupEnFilled = chemistrySeedService.applyGroupEnglishDescriptionsIfBlank();
         return Map.of(
                 "inserted", inserted,
                 "enFilled", enFilled,
+                "groupEnFilled", groupEnFilled,
                 "total", chemistryService.findAll().size()
         );
     }

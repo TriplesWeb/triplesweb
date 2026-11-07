@@ -1,6 +1,6 @@
-<script src="/js/image-fallback.js?v=1" defer></script>
-<script src="/js/about-admin-auth.js?v=2" defer></script>
-<script src="/js/site-admin-controls.js?v=4" defer></script>
+<script src="{{#asset}}/js/image-fallback.js{{/asset}}" defer></script>
+<script src="{{#asset}}/js/about-admin-auth.js{{/asset}}" defer></script>
+<script src="{{#asset}}/js/site-admin-controls.js{{/asset}}" defer></script>
 <style>
 @keyframes sss-mascot-wave {
     0%, 100% { transform: translateY(0) rotate(-2deg); }
@@ -33,12 +33,12 @@
     position: relative;
     display: inline-flex;
     align-items: center;
-    height: 27px;
-    width: 33px;
+    height: 20px;
+    width: 24px;
     flex-shrink: 0;
 }
 .sss-mascot-wave {
-    height: 27px;
+    height: 20px;
     width: auto;
     transform-origin: center center;
     will-change: transform;
@@ -53,7 +53,7 @@
     position: absolute;
     left: 0;
     top: 0;
-    height: 27px;
+    height: 20px;
     width: auto;
     pointer-events: none;
     opacity: 0;
@@ -78,9 +78,9 @@
     <!-- 1. 브랜드 로고 -->
     <a href="/" class="flex items-center gap-1 shrink-0 text-decoration-none" aria-label="tripleS 홈">
         <span class="sss-mascot-wrap" id="sss-mascot-wrap">
-            <img src="/images/sss-mascot.png" alt="" width="33" height="27" class="sss-mascot-wave block" id="sss-mascot" decoding="async" aria-hidden="true">
+            <img src="/images/sss-mascot.png" alt="" width="24" height="20" class="sss-mascot-wave block" id="sss-mascot" decoding="async" aria-hidden="true">
         </span>
-        <img src="/images/triples-wordmark-white.png" alt="tripleS" width="120" height="36" class="h-7 w-auto block" decoding="async">
+        <img src="/images/triples-wordmark-white.png" alt="tripleS" width="86" height="20" class="w-auto block" decoding="async">
     </a>
 
     <!-- 2. 네비게이션 메뉴 (데스크톱) — 항목은 main SiteNavigation -->
@@ -93,7 +93,7 @@
         <div class="relative group flex items-center">
             <button type="button" class="nav-item-link text-[#b9cac4] hover:text-[#00f5d4] cursor-pointer">
                 {{label}}
-                <span class="material-symbols-outlined transition-transform group-hover:rotate-180" aria-hidden="true">expand_more</span>
+                <span class="nav-caret" aria-hidden="true"></span>
             </button>
             <div class="absolute left-0 top-full pt-1 hidden group-hover:block w-48 z-50">
                 <div class="bg-[#191b22]/95 border border-[#3a4a46]/50 rounded-xl shadow-2xl backdrop-blur-lg p-1.5 flex flex-col gap-0.5">
@@ -151,6 +151,11 @@
     <!-- 로그인 기능 비활성화 — 비로그인 메뉴 숨김 -->
 {{^member}}
     {{/member}}
+
+    <button type="button" id="siteAdminBtn" aria-label="관리자" title="관리자" aria-pressed="false" hidden>
+        <svg data-site-admin-icon="admin" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 4 6v6c0 4.5 5 8 8 9 3-1 8-4.5 8-9V6z"/><circle cx="12" cy="10" r="2"/><path d="M8 17v-1a4 4 0 0 1 8 0v1"/></svg>
+        <svg data-site-admin-icon="logout" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 4H4v16h6M9 12h12m-4-4 4 4-4 4"/></svg>
+    </button>
 
     <form action="/search" method="get" role="search" class="site-header-search site-header-search--icon relative hidden lg:flex items-center shrink-0" data-header-search>
         <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" class="site-header-search__input" type="search" placeholder="멤버·게시글 검색" data-header-search-input tabindex="-1" autocomplete="off" />
@@ -218,6 +223,29 @@
         </nav>
     </div>
 </header>
+
+<div id="siteAdminLoginModal" hidden role="dialog" aria-modal="true" aria-labelledby="siteAdminLoginTitle">
+    <div class="site-admin-login-panel">
+        <button type="button" class="site-admin-login-close" data-site-admin-close aria-label="닫기">
+            <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+        <h3 id="siteAdminLoginTitle" class="site-admin-login-title">관리자 로그인</h3>
+        <form id="siteAdminLoginForm">
+            <label class="site-admin-login-label">비밀번호
+                <span class="site-admin-password-field">
+                    <input type="password" id="siteAdminPassword" name="password" required autocomplete="current-password">
+                    <button type="button" id="siteAdminPasswordToggle" class="site-admin-password-toggle" aria-label="비밀번호 보기" aria-pressed="false">
+                        <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+                    </button>
+                </span>
+            </label>
+            <p id="siteAdminLoginError" class="site-admin-login-error" role="alert" hidden></p>
+            <div class="site-admin-login-actions">
+                <button type="submit" class="site-admin-login-submit">로그인</button>
+            </div>
+        </form>
+    </div>
+</div>
 
         <!-- Flash Message 알림 메시지 영역 -->
         {{#msg}}

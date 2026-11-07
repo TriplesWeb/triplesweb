@@ -1,10 +1,10 @@
 {{>layout/head-open}}
 
-<link rel="stylesheet" href="/css/about-admin.css?v=1">
-<link rel="stylesheet" href="/css/gravity-admin.css?v=1">
-<link rel="stylesheet" href="/css/gravity-page.css?v=3">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=15">
-<link rel="stylesheet" href="/css/gravity-filters.css?v=2">
+<link rel="stylesheet" href="{{#asset}}/css/about-admin.css{{/asset}}">
+<link rel="stylesheet" href="{{#asset}}/css/gravity-admin.css{{/asset}}">
+<link rel="stylesheet" href="{{#asset}}/css/gravity-page.css{{/asset}}">
+<link rel="stylesheet" href="{{#asset}}/css/cosmo-collection.css{{/asset}}">
+<link rel="stylesheet" href="{{#asset}}/css/gravity-filters.css{{/asset}}">
 <title>역대 그래비티 - 트리플에스 커뮤니티</title>
 </head><body class="site-page collection-page min-h-screen flex flex-col">
 <div class="gv-glow gv-glow-violet"></div>
@@ -115,9 +115,8 @@
     {{/hasGravityList}}
     {{#emptyList}}<p class="gv-panel gv-empty">등록된 그래비티가 없습니다.</p>{{/emptyList}}
 </main>
-{{>cosmo/partials/gravity-admin-login}}
-<script src="/js/gravity-connect.js?v=5" defer></script>
-<script src="/js/objekt-dropdown.js?v=1" defer></script>
+<script src="{{#asset}}/js/gravity-connect.js{{/asset}}" defer></script>
+<script src="{{#asset}}/js/objekt-dropdown.js{{/asset}}" defer></script>
 <script>
 (function () {
     const grid = document.getElementById('gvGrid');

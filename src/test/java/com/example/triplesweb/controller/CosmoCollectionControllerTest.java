@@ -29,7 +29,7 @@ class CosmoCollectionControllerTest {
         mvc.perform(get("/cosmo/collection")).andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("없는 닉네임 입니다."))))
                 .andExpect(content().string(containsString("aria-label=\"연관닉\"")))
-                .andExpect(content().string(containsString("collection-nickname-suggest.js?v=4")));
+                .andExpect(content().string(containsString("collection-nickname-suggest.js?v=")));
         mvc.perform(get("/cosmo/collection").param("nickname", "")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("없는 닉네임 입니다.")));
         verifyNoInteractions(collections);

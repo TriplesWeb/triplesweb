@@ -1,10 +1,10 @@
 {{>layout/head-open}}
 <title>{{requestedNickname}} · COSMO 닉네임 상세</title>
-<link rel="stylesheet" href="/css/gravity-page.css?v=3">
-<link rel="stylesheet" href="/css/archive-page.css?v=15">
-<link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
-<link rel="stylesheet" href="/css/cosmo-collection.css?v=15">
-<link rel="stylesheet" href="/css/cosmo-profile.css?v=21">
+<link rel="stylesheet" href="{{#asset}}/css/gravity-page.css{{/asset}}">
+<link rel="stylesheet" href="{{#asset}}/css/archive-page.css{{/asset}}">
+<link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
+<link rel="stylesheet" href="{{#asset}}/css/cosmo-collection.css{{/asset}}">
+<link rel="stylesheet" href="{{#asset}}/css/cosmo-profile.css{{/asset}}">
 </head><body class="site-page collection-page min-h-screen flex flex-col">
 {{>layout/header}}
 <main class="gravity-page cosmo-profile" data-profile-version="{{#hasProfile}}{{profileVersion}}{{/hasProfile}}">
@@ -217,9 +217,9 @@
 {{/isMembersTab}}
 {{/hasProfile}}
 </main>
-<script src="/js/cosmo-profile.js?v=5" defer></script>
+<script src="{{#asset}}/js/cosmo-profile.js{{/asset}}" defer></script>
 {{#isMembersTab}}
-<script src="/js/member-portrait-picker.js?v=10"></script>
+<script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
 
 <script>
 (() => {

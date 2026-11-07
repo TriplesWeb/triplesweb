@@ -1,5 +1,5 @@
 {{>layout/head-open}}
-<link rel="stylesheet" href="/css/triples.css?v=33">
+<link rel="stylesheet" href="{{#asset}}/css/triples.css{{/asset}}">
 
     <title>트리플에스 커뮤니티 - 트리플에스 디멘션</title>
 </head><body class="site-page bg-[#0d0e12] text-[#e3e2e8] min-h-screen about-admin-page">
@@ -13,7 +13,6 @@
             </h2>
             <div class="flex flex-wrap items-center gap-2 shrink-0">
                 <button type="button" id="unitAddBtn" class="about-mode-btn about-admin-only is-active">유닛 (디멘션) 추가</button>
-                <button type="button" id="unitAdminBtn" class="about-admin-btn hidden" aria-pressed="false">관리자</button>
             </div>
         </div>
         <p id="unitAdminHint" class="about-admin-hint hidden mb-4">관리자 모드: 유닛을 추가하거나 탭의 수정 버튼으로 편집할 수 있어요. 이미지는 나무위키 URL을 붙여넣어도 됩니다.</p>
@@ -97,8 +96,8 @@
     </div>
 </main>
 {{>triples/partials/unit-admin-modals}}
-<script src="/js/about-admin-auth.js?v=2"></script>
-<script src="/js/about-tabs.js?v=1"></script>
-<script src="/js/about-modal.js?v=1"></script>
-<script src="/js/unit.js?v=11"></script>
+<script src="{{#asset}}/js/about-admin-auth.js{{/asset}}"></script>
+<script src="{{#asset}}/js/about-tabs.js{{/asset}}"></script>
+<script src="{{#asset}}/js/about-modal.js{{/asset}}"></script>
+<script src="{{#asset}}/js/unit.js{{/asset}}"></script>
 {{>layout/page-end}}

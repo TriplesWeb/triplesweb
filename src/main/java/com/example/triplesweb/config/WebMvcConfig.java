@@ -28,7 +28,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     /**
      * 로컬은 {@code application-local.properties}에서 0으로 두어 src 변경이 바로 보이게 한다.
-     * 운영 기본은 7일(초).
+     * 운영 기본은 7일(초) + immutable. URL {@code ?v=} 해시는 {@link com.example.triplesweb.view.AssetModelAdvice}가 부여한다.
      */
     @Value("${spring.web.resources.cache.period:604800}")
     private long staticCachePeriodSeconds;
