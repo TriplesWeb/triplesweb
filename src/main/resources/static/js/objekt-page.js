@@ -561,26 +561,8 @@
         detailFlip.setAttribute('aria-label', showingBack ? '이미지 클릭 시 뒷면으로 전환' : '이미지 클릭 시 앞면으로 전환');
     }
 
-    let lastApollo = null;
-    function storyText(data) {
-        if (data && Object.prototype.hasOwnProperty.call(data, 'apollo')) {
-            lastApollo = data.apollo && typeof data.apollo === 'object' ? data.apollo : null;
-        }
-        const local = String(data && data.description || '').trim();
-        const apollo = lastApollo || {};
-        const chunks = [];
-        if (local) chunks.push(local);
-        [apollo.description, apollo.eventName, apollo.eventDescription, apollo.eraName]
-            .map(value => String(value || '').trim())
-            .filter(Boolean)
-            .forEach(bit => {
-                if (!chunks.some(existing => existing === bit || existing.includes(bit))) chunks.push(bit);
-            });
-        return chunks.join('\n\n');
-    }
-
     function fillDetailStory(data) {
-        const text = storyText(data);
+        const text = String(data && data.description || '').trim();
         lastStoryText = text;
         if (detailDesc) {
             detailDesc.textContent = text || '아직 등록된 상세 설명이 없습니다.';
@@ -589,9 +571,8 @@
         if (descriptionInput && descriptionForm?.hidden) descriptionInput.value = text;
         const eventNode = document.getElementById('objektDetailEvent');
         if (eventNode) {
-            const type = String((lastApollo || {}).eventType || '').trim();
-            eventNode.hidden = !type;
-            eventNode.textContent = type;
+            eventNode.hidden = true;
+            eventNode.textContent = '';
         }
     }
 
@@ -628,7 +609,6 @@
         if (detailSeason) detailSeason.textContent = data.season || '—';
         if (detailClass) detailClass.textContent = data.class || '—';
         if (detailNo) detailNo.textContent = data.collectionNo || '—';
-        lastApollo = data.apollo && typeof data.apollo === 'object' ? data.apollo : null;
         fillDetailStory(data);
         if (detailImage) detailImage.alt = data.collectionId || '';
         resetModalFlip(data.frontImage || data.thumbnailImage || '', data.backImage || '', Boolean(data.hasBack));
@@ -662,7 +642,6 @@
         detailModal.classList.remove('is-open');
         detailModal.setAttribute('aria-hidden', 'true');
         activeObjektKey = '';
-        lastApollo = null;
         lastStoryText = '';
         isAdmin = false;
         exitDescriptionEdit();
@@ -765,7 +744,7 @@
             const data = await response.json();
             if (typeof data.description !== 'string') throw new Error();
             if (activeObjektKey !== key) return;
-            fillDetailStory({description: data.description, apollo: lastApollo});
+            fillDetailStory({description: data.description});
             exitDescriptionEdit();
             descriptionStatus.textContent = clear ? '상세 설명을 삭제했습니다.' : '상세 설명을 저장했습니다.';
         } catch {
