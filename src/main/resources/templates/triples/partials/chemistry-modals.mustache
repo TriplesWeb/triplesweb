@@ -46,8 +46,7 @@
                 <li><strong>설명(한/영)</strong> — 한국어·영어 설명을 한 화면에서 함께 저장합니다. 영어 페이지는 영문 설명을 보여 줍니다.</li>
                 <li><strong>설명 서식</strong> — 편집 칸을 클릭한 뒤 글자를 드래그하고 <b>B</b>(굵게) / <i>I</i>(기울임) / <u>U</u>(밑줄) / <b>A</b>(색상)를 누르세요.</li>
                 <li><strong>하이퍼링크</strong> — 아래에 표시 텍스트와 URL을 추가한 뒤, 설명 본문에서 같은 문구를 <code>**표시 텍스트**</code>처럼 감싸면 클릭 가능한 링크가 됩니다.</li>
-                <li><strong>사진 출처</strong> — 설명 <em>맨 끝</em>에 <button type="button" class="chem-photo-by-insert" title="클릭하면 설명 맨 끝에 삽입">photo by. @계정</button> 형식으로 적으면, 본문에서는 빠지고 이미지 아래에 출처로만 표시됩니다.<br>
-                    예: <code>…귀여운 케미명이다. photo by. @posh1204</code></li>
+                <li><strong>사진 출처</strong> — 아래 <em>사진 출처</em> 칸에 계정명만 적습니다(<code>@</code> 없이). 설명 본문에는 넣지 않으며, 조회 시 이미지 아래에 <code>photo by. 계정</code>으로만 표시됩니다.</li>
                 <li><strong>사진</strong> — 여러 장(최대 10장)을 고를 수 있습니다. 미리보기에서 개별 삭제. 조회 시 인스타처럼 좌우로 넘깁니다.</li>
             </ul>
         </details>
@@ -149,11 +148,11 @@
                         </div>
                     </div>
                 </div>
-                <p class="chem-edit-field-hint">편집할 칸을 클릭 → 글자 선택 → 서식. 출처는 각 설명 맨 끝 <button type="button" class="chem-photo-by-insert" title="클릭하면 설명 맨 끝에 삽입">photo by. @계정</button></p>
+                <p class="chem-edit-field-hint">편집할 칸을 클릭 → 글자 선택 → 서식. 사진 출처는 설명에 넣지 말고 아래 출처 칸에 적으세요.</p>
                 <p class="chem-edit-lang-label">한국어</p>
-                <div id="chemEditDescription" class="chem-edit-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="한국어 설명을 입력하세요. 끝예: photo by. @username"></div>
+                <div id="chemEditDescription" class="chem-edit-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="한국어 설명을 입력하세요"></div>
                 <p class="chem-edit-lang-label">English</p>
-                <div id="chemEditDescriptionEn" class="chem-edit-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="영어 설명을 입력하세요. 끝예: photo by. @username"></div>
+                <div id="chemEditDescriptionEn" class="chem-edit-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="영어 설명을 입력하세요"></div>
             </div>
             <div class="chem-edit-links-block">
                 <div class="chem-edit-links-head">
@@ -170,7 +169,13 @@
             <div id="chemEditImagePreviewWrap" class="chem-edit-image-preview hidden">
                 <div id="chemEditImageThumbs" class="chem-edit-image-thumbs"></div>
             </div>
-            <p class="chem-edit-field-hint">출처는 사진 칸이 아니라 설명 맨 끝 <button type="button" class="chem-photo-by-insert" title="클릭하면 설명 맨 끝에 삽입">photo by. @계정</button>으로 적습니다. 이미지 아래 캡션으로 표시됩니다.</p>
+            <div class="chem-edit-label">사진 출처
+                <div class="chem-edit-credit-row">
+                    <span class="chem-edit-credit-prefix" aria-hidden="true">photo by.</span>
+                    <input type="text" id="chemEditPhotoCredit" name="photoCredit" maxlength="80" autocomplete="off" spellcheck="false" placeholder="계정명 (@ 없이)">
+                </div>
+                <p class="chem-edit-field-hint">이미지 아래 캡션으로만 표시됩니다. 설명 본문에는 들어가지 않습니다.</p>
+            </div>
             <label class="chem-edit-check">
                 <input type="checkbox" id="chemEditClearImage" name="clearImage"> 사진 전체 제거
             </label>

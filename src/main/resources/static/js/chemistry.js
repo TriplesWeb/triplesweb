@@ -467,6 +467,8 @@
 
   function descriptionPlainText(html) {
     return String(html || "")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/\u00a0/g, " ")
       .replace(/<br\s*\/?>/gi, " ")
       .replace(/<[^>]+>/g, " ")
       .replace(/\s+/g, " ")
@@ -479,46 +481,114 @@
     while (out !== prev) {
       prev = out;
       out = out
+        .replace(/(?:&nbsp;|\u00a0|\s)+$/i, "")
         .replace(/(?:<br\s*\/?>\s*)+$/i, "")
-        .replace(/(?:<span[^>]*>\s*(?:<br\s*\/?>\s*)*<\/span>\s*)+$/i, "")
+        .replace(
+          /(?:<span[^>]*>\s*(?:&nbsp;|\u00a0|<br\s*\/?>|\s)*<\/span>\s*)+$/i,
+          ""
+        )
         .trim();
     }
     return out;
+  }
+
+  /** photo by 핸들: 한글·유니코드 계정명 허용. 태그로 @와 계정이 갈라져도 plain에서는 공백이 생길 수 있음 */
+  const PHOTO_BY_GAP = "(?:\\s|&nbsp;|\u00a0)+";
+  const PHOTO_CREDIT_PLAIN_RE = /\s*photo\s+by\.?\s*(@?)\s*([^\s]+)\s*$/i;
+  const PHOTO_CREDIT_TAIL_RE = /^photo\s+by\.?\s*@?\s*\S+$/i;
+  const PHOTO_BY_MARK_RE = new RegExp("photo" + PHOTO_BY_GAP + "by", "gi");
+
+  function normalizePhotoCredit(value) {
+    return String(value || "")
+      .trim()
+      .replace(/^@+/, "")
+      .replace(/[.,;]+$/, "")
+      .trim();
+  }
+
+  function formatPhotoCreditLabel(credit) {
+    const handle = normalizePhotoCredit(credit);
+    return handle ? "photo by. " + handle : "";
+  }
+
+  /** 저장용: 본문에서 출처를 뺀 뒤, 있으면 맨 끝에 photo by 를 붙인다 */
+  function withPhotoCredit(descriptionHtml, credit) {
+    const handle = normalizePhotoCredit(credit);
+    const { description } = splitPhotoCredit(descriptionHtml || "");
+    if (!handle) return description;
+    if (!descriptionPlainText(description)) return "photo by. " + handle;
+    return description + " photo by. " + handle;
+  }
+
+  function setEditPhotoCredit(credit) {
+    const el = document.getElementById("chemEditPhotoCredit");
+    if (el) el.value = normalizePhotoCredit(credit);
+  }
+
+  function getEditPhotoCredit() {
+    return normalizePhotoCredit(
+      document.getElementById("chemEditPhotoCredit")?.value
+    );
+  }
+
+  function fillDescriptionEditors(description, descriptionEn) {
+    const ko = splitPhotoCredit(description || "");
+    const en = splitPhotoCredit(descriptionEn || "");
+    setEditPhotoCredit(ko.credit || en.credit);
+    const editorKo = document.getElementById("chemEditDescription");
+    const editorEn = document.getElementById("chemEditDescriptionEn");
+    if (editorKo) editorKo.innerHTML = descriptionToEditorHtml(ko.description);
+    if (editorEn) editorEn.innerHTML = descriptionToEditorHtml(en.description);
+  }
+
+  /** HTML 안 photo(&nbsp;|공백)+by 마지막 시작 위치 */
+  function findLastPhotoByIndex(html) {
+    const re = new RegExp(PHOTO_BY_MARK_RE.source, "gi");
+    let idx = -1;
+    let m;
+    while ((m = re.exec(String(html || ""))) !== null) {
+      idx = m.index;
+    }
+    return idx;
   }
 
   /** description에서 "photo by …" 출처를 분리 (서식 HTML 유지) */
   function splitPhotoCredit(rawDescription) {
     const raw = String(rawDescription || "");
     const plain = descriptionPlainText(raw);
-    const match = plain.match(/\s*photo\s+by\.?\s*(@?[^\s]+)\s*$/i);
+    const match = plain.match(PHOTO_CREDIT_PLAIN_RE);
     if (!match) {
       return { description: raw, credit: "" };
     }
-    const credit = match[1].replace(/[.,;]+$/, "").trim();
+    const credit = normalizePhotoCredit(match[1] + match[2]);
     if (!credit) {
       return { description: raw, credit: "" };
     }
 
-    // 연속 텍스트 / 뒤에 <br>만 있는 일반 형태
+    // 연속 텍스트 / 뒤에 <br>만 있는 일반 형태 (한글 핸들·&nbsp; 포함)
+    const creditTail =
+      "photo" + PHOTO_BY_GAP + "by\\.?\\s*@?\\s*[^\\s<]+(?:\\s*<[^>]+>)*\\s*$";
     let stripped = raw
-      .replace(/\s*photo\s+by\.?\s*@?[\w.-]+\s*$/i, "")
-      .replace(/(?:<br\s*\/?>|\s)*photo\s+by\.?\s*@?[\w.-]+(?:\s*<[^>]+>)*\s*$/i, "")
+      .replace(new RegExp("\\s*" + creditTail, "i"), "")
+      .replace(new RegExp("(?:<br\\s*/?>|\\s|&nbsp;)*" + creditTail, "i"), "")
       .trim();
 
-    // 태그로 갈라진 "photo by. </span><span>@handle</span>" 형태
+    // 태그로 갈라진 "photo by. @</span><span>handle</span>" / photo&nbsp;by 형태
     if (/\bphoto\s+by\b/i.test(descriptionPlainText(stripped))) {
-      const idx = raw.toLowerCase().lastIndexOf("photo by");
+      const idx = findLastPhotoByIndex(raw);
       if (idx >= 0) {
         let start = idx;
-        // 본문을 닫는 </span>은 건드리지 않고, 크레딧을 감싼 여는 태그와 br만 뒤로 걷
+        // 본문을 닫는 </span>은 건드리지 않고, 크레딧을 감싼 여는 태그와 br/nbsp만 뒤로 걷
         while (start > 0) {
           const prefix = raw.slice(0, start);
-          const lead = prefix.match(/(?:<br\s*\/?>|\s+|<(?!\/)[^>]+>)+$/i);
+          const lead = prefix.match(
+            /(?:<br\s*\/?>|\s+|&nbsp;|\u00a0|<(?!\/)[^>]+>)+$/i
+          );
           if (!lead) break;
           start -= lead[0].length;
         }
         const tailPlain = descriptionPlainText(raw.slice(start));
-        if (/^photo\s+by\.?\s*@?[^\s]+$/i.test(tailPlain)) {
+        if (PHOTO_CREDIT_TAIL_RE.test(tailPlain)) {
           stripped = raw.slice(0, start).trim();
         }
       }
@@ -607,43 +677,6 @@
     }
     return document.getElementById("chemEditDescription")
       || document.getElementById("chemEditDescriptionEn");
-  }
-
-  function placeCaretAtEnd(el) {
-    if (!el) return;
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    range.collapse(false);
-    const sel = window.getSelection();
-    if (!sel) return;
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-
-  /** 안내의 photo by 템플릿을 활성(또는 마지막) 설명 칸 맨 끝에 넣는다 */
-  function insertPhotoByTemplate() {
-    const editor = activeDescriptionEditor();
-    if (!editor) return;
-    editor.focus();
-    const plain = descriptionPlainText(editor.innerHTML);
-    if (/\bphoto\s+by\.?\s*@?\S*\s*$/i.test(plain)) {
-      placeCaretAtEnd(editor);
-      return;
-    }
-    placeCaretAtEnd(editor);
-    const needsSpace = !!plain && !/\s$/.test(plain);
-    try {
-      document.execCommand(
-        "insertText",
-        false,
-        (needsSpace ? " " : "") + "photo by. @"
-      );
-    } catch (_) {
-      editor.appendChild(
-        document.createTextNode((needsSpace ? " " : "") + "photo by. @")
-      );
-      placeCaretAtEnd(editor);
-    }
   }
 
   /** 표 칸 케미명 글자색 (NONE=공식 흰) */
@@ -1202,15 +1235,20 @@
       : pairTitleText(titleMember1, titleMember2);
     setChemistryDetailImages(imageList, altText);
     if (creditEl) {
-      if (credit && imageList.length) {
-        creditEl.textContent = "photo by. " + credit;
+      const creditLabel = formatPhotoCreditLabel(credit);
+      if (creditLabel && imageList.length) {
+        creditEl.textContent = creditLabel;
         creditEl.hidden = false;
       } else {
         creditEl.textContent = "";
         creditEl.hidden = true;
       }
     }
-    document.getElementById("chemistryDescription").innerHTML = formattedDescription;
+    const descEl = document.getElementById("chemistryDescription");
+    if (descEl) {
+      descEl.innerHTML = formattedDescription;
+      descEl.hidden = !descriptionPlainText(formattedDescription);
+    }
 
     const linkDiv = document.getElementById("chemistryLinks");
     linkDiv.innerHTML = "";
@@ -1515,8 +1553,6 @@
     const modal = document.getElementById("chemistryEditModal");
     const title = document.getElementById("chemistryEditTitle");
     const err = document.getElementById("chemEditError");
-    const editorKo = document.getElementById("chemEditDescription");
-    const editorEn = document.getElementById("chemEditDescriptionEn");
     setEditModeUi("pair", []);
     document.getElementById("chemEditMember1").value = member1;
     document.getElementById("chemEditMember2").value = member2;
@@ -1525,8 +1561,7 @@
     if (labelKoEl) labelKoEl.value = label || "";
     if (labelEnEl) labelEnEl.value = labelEn || "";
     setLabelToneInputs(labelTone);
-    if (editorKo) editorKo.innerHTML = descriptionToEditorHtml(description || "");
-    if (editorEn) editorEn.innerHTML = descriptionToEditorHtml(descriptionEn || "");
+    fillDescriptionEditors(description, descriptionEn);
     setEditImages(
       Array.isArray(imageUrlOrUrls)
         ? imageUrlOrUrls
@@ -1559,8 +1594,6 @@
     const modal = document.getElementById("chemistryEditModal");
     const title = document.getElementById("chemistryEditTitle");
     const err = document.getElementById("chemEditError");
-    const editorKo = document.getElementById("chemEditDescription");
-    const editorEn = document.getElementById("chemEditDescriptionEn");
     setEditModeUi("group", editingGroupMembers);
     document.getElementById("chemEditMember1").value = "";
     document.getElementById("chemEditMember2").value = "";
@@ -1569,8 +1602,7 @@
     if (labelKoEl) labelKoEl.value = label || "";
     if (labelEnEl) labelEnEl.value = labelEn || "";
     setLabelToneInputs(labelTone);
-    if (editorKo) editorKo.innerHTML = descriptionToEditorHtml(description || "");
-    if (editorEn) editorEn.innerHTML = descriptionToEditorHtml(descriptionEn || "");
+    fillDescriptionEditors(description, descriptionEn);
     setEditImages(
       Array.isArray(imageUrlOrUrls)
         ? imageUrlOrUrls
@@ -1642,7 +1674,10 @@
     }
     if (pairEl) pairEl.innerHTML = escapeHtml(formatGroupMembers(group.members));
     const descEl = document.getElementById("chemistryDescription");
-    if (descEl) descEl.innerHTML = formattedDescription;
+    if (descEl) {
+      descEl.innerHTML = formattedDescription;
+      descEl.hidden = !descriptionPlainText(formattedDescription);
+    }
     const imageList = normalizeImageList(data);
     setChemistryDetailImages(
       imageList,
@@ -1650,8 +1685,9 @@
     );
     const creditEl = document.getElementById("chemistryCredit");
     if (creditEl) {
-      if (credit && imageList.length) {
-        creditEl.textContent = "photo by. " + credit;
+      const creditLabel = formatPhotoCreditLabel(credit);
+      if (creditLabel && imageList.length) {
+        creditEl.textContent = creditLabel;
         creditEl.hidden = false;
       } else {
         creditEl.textContent = "";
@@ -2037,12 +2073,6 @@
           lastFocusedDescriptionEditor = t;
         }
       });
-      editModal.addEventListener("click", (e) => {
-        const btn = e.target && e.target.closest && e.target.closest(".chem-photo-by-insert");
-        if (!btn || !editModal.contains(btn)) return;
-        e.preventDefault();
-        insertPhotoByTemplate();
-      });
     }
 
     const editForm = document.getElementById("chemistryEditForm");
@@ -2052,13 +2082,20 @@
         const err = document.getElementById("chemEditError");
         const mode = document.getElementById("chemEditMode")?.value || "pair";
         const fd = new FormData();
+        const photoCredit = getEditPhotoCredit();
         fd.append("label", document.getElementById("chemEditLabel").value);
         fd.append(
           "labelEn",
           (document.getElementById("chemEditLabelEn")?.value || "").trim()
         );
-        fd.append("description", getEditorDescriptionHtml("chemEditDescription"));
-        fd.append("descriptionEn", getEditorDescriptionHtml("chemEditDescriptionEn"));
+        fd.append(
+          "description",
+          withPhotoCredit(getEditorDescriptionHtml("chemEditDescription"), photoCredit)
+        );
+        fd.append(
+          "descriptionEn",
+          withPhotoCredit(getEditorDescriptionHtml("chemEditDescriptionEn"), photoCredit)
+        );
         fd.append("labelTone", selectedLabelTone());
         const keepUrls = editImageItems
           .filter((item) => item.kind === "url" && item.url)

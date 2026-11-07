@@ -3642,10 +3642,12 @@ html[lang="en"] .chem-member-name {
 }
 
 .chem-modal-media {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     width: fit-content;
     max-width: min(72%, 100%);
-    margin: 0 auto 1.75rem;
+    margin: 0 auto 1.25rem;
     padding: 0;
 }
 
@@ -3774,14 +3776,21 @@ html[lang="en"] .chem-member-name {
 }
 
 .chem-modal-credit {
-    margin: 0.45rem 0 0;
-    padding: 0;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0.4rem 0 0;
+    padding: 0 0.15rem;
     font-size: clamp(12px, 0.95vw, 14px);
     font-weight: 500;
     line-height: 1.4;
     color: #8a9690;
     letter-spacing: 0.01em;
     text-align: right;
+}
+
+.chem-modal-credit[hidden] {
+    display: none !important;
 }
 
 .chem-modal-desc {
@@ -3795,6 +3804,13 @@ html[lang="en"] .chem-member-name {
     box-sizing: border-box;
     word-break: keep-all;
     overflow-wrap: break-word;
+}
+
+.chem-modal-desc:empty,
+.chem-modal-desc[hidden] {
+    display: none !important;
+    margin: 0;
+    padding: 0;
 }
 
 /* Enter 두 번(빈 줄)이면 문단 간격이 보이게 */
@@ -4075,43 +4091,42 @@ a.chem-highlight:hover {
     font-size: 0.75rem;
 }
 
-/* 기존 code 민트 강조 유지 + 클릭 가능 버튼 */
-.chem-edit-field-hint .chem-photo-by-insert,
-.chem-edit-help-list .chem-photo-by-insert,
-button.chem-photo-by-insert {
-    appearance: none;
-    display: inline;
-    margin: 0;
-    padding: 0;
+.chem-edit-credit-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    border-radius: 0.65rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #0d0e12;
+    padding: 0 0.75rem;
+}
+
+.chem-edit-credit-prefix {
+    flex: 0 0 auto;
+    color: #8a9a94;
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.chem-edit-label .chem-edit-credit-row input[type="text"] {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
     border: 0;
     border-radius: 0;
     background: transparent;
-    color: #00f5d4;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 0.75rem;
-    font-weight: inherit;
-    line-height: inherit;
-    cursor: pointer;
-    vertical-align: baseline;
-    text-decoration: underline;
-    text-decoration-color: rgba(0, 245, 212, 0.45);
-    text-underline-offset: 0.12em;
+    padding: 0.65rem 0;
+    box-shadow: none;
 }
 
-.chem-edit-field-hint .chem-photo-by-insert:hover,
-.chem-edit-help-list .chem-photo-by-insert:hover,
-button.chem-photo-by-insert:hover,
-.chem-edit-field-hint .chem-photo-by-insert:focus-visible,
-.chem-edit-help-list .chem-photo-by-insert:focus-visible,
-button.chem-photo-by-insert:focus-visible {
-    color: #5cffea;
-    text-decoration-color: rgba(92, 255, 234, 0.8);
+.chem-edit-label .chem-edit-credit-row input[type="text"]:focus {
     outline: none;
 }
 
-.chem-edit-help-list .chem-photo-by-insert {
-    font-size: 0.78rem;
-    word-break: break-all;
+.chem-edit-credit-row:focus-within {
+    border-color: rgba(0, 245, 212, 0.55);
 }
 
 .chem-edit-form {
@@ -4628,11 +4643,6 @@ button.chem-photo-by-insert:focus-visible {
 
 .chem-modal-desc u {
     text-decoration: underline;
-}
-
-.chem-edit-label input[type="file"] {
-    font-size: 0.85rem;
-    color: #b9cac4;
 }
 
 .chem-edit-image-preview {
