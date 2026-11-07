@@ -492,9 +492,9 @@
     return out;
   }
 
-  /** photo by 핸들: 태그로 @와 계정이 갈라져도 plain에서는 공백이 생길 수 있음 */
-  const PHOTO_CREDIT_PLAIN_RE = /\s*photo\s+by\.?\s*(@?)\s*([A-Za-z0-9_.-]+)\s*$/i;
-  const PHOTO_CREDIT_TAIL_RE = /^photo\s+by\.?\s*@?\s*[A-Za-z0-9_.-]+$/i;
+  /** photo by 핸들: 한글·유니코드 계정명 허용. 태그로 @와 계정이 갈라져도 plain에서는 공백이 생길 수 있음 */
+  const PHOTO_CREDIT_PLAIN_RE = /\s*photo\s+by\.?\s*(@?)\s*([^\s]+)\s*$/i;
+  const PHOTO_CREDIT_TAIL_RE = /^photo\s+by\.?\s*@?\s*\S+$/i;
 
   function normalizePhotoCredit(value) {
     return String(value || "")
@@ -552,11 +552,11 @@
       return { description: raw, credit: "" };
     }
 
-    // 연속 텍스트 / 뒤에 <br>만 있는 일반 형태
+    // 연속 텍스트 / 뒤에 <br>만 있는 일반 형태 (한글 핸들 포함)
     let stripped = raw
-      .replace(/\s*photo\s+by\.?\s*@?\s*[\w.-]+\s*$/i, "")
+      .replace(/\s*photo\s+by\.?\s*@?\s*[^\s<]+\s*$/i, "")
       .replace(
-        /(?:<br\s*\/?>|\s|&nbsp;)*photo\s+by\.?\s*@?\s*[\w.-]+(?:\s*<[^>]+>)*\s*$/i,
+        /(?:<br\s*\/?>|\s|&nbsp;)*photo\s+by\.?\s*@?\s*[^\s<]+(?:\s*<[^>]+>)*\s*$/i,
         ""
       )
       .trim();
@@ -1232,7 +1232,11 @@
         creditEl.hidden = true;
       }
     }
-    document.getElementById("chemistryDescription").innerHTML = formattedDescription;
+    const descEl = document.getElementById("chemistryDescription");
+    if (descEl) {
+      descEl.innerHTML = formattedDescription;
+      descEl.hidden = !descriptionPlainText(formattedDescription);
+    }
 
     const linkDiv = document.getElementById("chemistryLinks");
     linkDiv.innerHTML = "";
@@ -1658,7 +1662,10 @@
     }
     if (pairEl) pairEl.innerHTML = escapeHtml(formatGroupMembers(group.members));
     const descEl = document.getElementById("chemistryDescription");
-    if (descEl) descEl.innerHTML = formattedDescription;
+    if (descEl) {
+      descEl.innerHTML = formattedDescription;
+      descEl.hidden = !descriptionPlainText(formattedDescription);
+    }
     const imageList = normalizeImageList(data);
     setChemistryDetailImages(
       imageList,

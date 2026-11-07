@@ -3642,10 +3642,12 @@ html[lang="en"] .chem-member-name {
 }
 
 .chem-modal-media {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     width: fit-content;
     max-width: min(72%, 100%);
-    margin: 0 auto 1.75rem;
+    margin: 0 auto 1.25rem;
     padding: 0;
 }
 
@@ -3774,14 +3776,21 @@ html[lang="en"] .chem-member-name {
 }
 
 .chem-modal-credit {
-    margin: 0.45rem 0 0;
-    padding: 0;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0.4rem 0 0;
+    padding: 0 0.15rem;
     font-size: clamp(12px, 0.95vw, 14px);
     font-weight: 500;
     line-height: 1.4;
     color: #8a9690;
     letter-spacing: 0.01em;
     text-align: right;
+}
+
+.chem-modal-credit[hidden] {
+    display: none !important;
 }
 
 .chem-modal-desc {
@@ -3795,6 +3804,13 @@ html[lang="en"] .chem-member-name {
     box-sizing: border-box;
     word-break: keep-all;
     overflow-wrap: break-word;
+}
+
+.chem-modal-desc:empty,
+.chem-modal-desc[hidden] {
+    display: none !important;
+    margin: 0;
+    padding: 0;
 }
 
 /* Enter 두 번(빈 줄)이면 문단 간격이 보이게 */
