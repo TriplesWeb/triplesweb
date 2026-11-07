@@ -24,6 +24,8 @@ class ArticleMemberSwapTest {
         ArticleObjekt haveNakyoung = link("HAVE", "NaKyoung");
         ArticleObjekt haveDuo = link("HAVE", "S11 X S7");
         ArticleObjekt wantNakyoung = link("WANT", "김나경");
+        assertThat(ArticleMemberSwap.matchesMember(List.of(haveSeoyeon, haveKotone, haveHayeon), "코토네", "have")).isTrue();
+        assertThat(ArticleMemberSwap.matchesMember(List.of(haveSeoyeon, haveKotone), "정하연", "have")).isFalse();
         assertThat(ArticleMemberSwap.matchesMember(List.of(haveKotone, haveNakyoung), "김나경", "have")).isTrue();
         assertThat(ArticleMemberSwap.matchesMember(List.of(haveKotone, haveNakyoung), "나경", "have")).isTrue();
         assertThat(ArticleMemberSwap.matchesMember(List.of(haveDuo), "김나경", "have")).isTrue();

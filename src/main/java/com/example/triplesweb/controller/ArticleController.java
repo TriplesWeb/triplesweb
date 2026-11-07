@@ -837,6 +837,7 @@ public class ArticleController {
 
     private static boolean matchesMarketListing(String category, List<ArticleObjekt> links, String member, String side) {
         if (member != null && !member.isBlank()) {
+            // 판매/구매(또는 Have/Want) 오브젝트 중 해당 멤버가 하나라도 있으면 찾는다.
             return ArticleMemberSwap.matchesMember(links, member, side);
         }
         if (isSellBoard(category)) {

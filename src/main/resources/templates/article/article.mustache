@@ -34,7 +34,7 @@
                 <p class="market-side-help">Have 탭은 Have 멤버만, Want 탭은 Want 멤버만 찾습니다. 멤버를 선택하지 않으면 전체 게시글이 표시됩니다.</p>
                 {{/isTrade}}
                 {{#isSell}}
-                <p class="market-side-help">판매 탭은 판매 글, 구매 탭은 구매 글입니다. 멤버를 고르면 그 탭에 연결된 멤버만 찾습니다.</p>
+                <p class="market-side-help">판매 탭은 판매 글, 구매 탭은 구매 글입니다. 멤버를 고르면 그 탭 오브젝트에 해당 멤버가 하나라도 있는 글이 검색됩니다.</p>
                 {{/isSell}}
                 {{#isObjektSideAll}}<p class="market-side-help" role="status">기존 전체 검색 링크: Have와 Want 양쪽에서 선택한 멤버를 검색합니다.</p>{{/isObjektSideAll}}
                 {{#isTrade}}
@@ -59,9 +59,9 @@
             <div class="article-board-list w-full overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface-container-lowest/40 mb-8">
 
                 <!-- 테이블 헤더 -->
-                <div class="article-board-heading{{#isMarketBoard}} is-market{{/isMarketBoard}}{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-3.5 bg-surface-container-high/60 border-b border-outline-variant/40 text-on-surface-variant font-semibold text-sm text-center">
+                <div class="article-board-heading{{#isTrade}} is-market{{/isTrade}}{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-3.5 bg-surface-container-high/60 border-b border-outline-variant/40 text-on-surface-variant font-semibold text-sm text-center">
                     <div class="article-board-num">번호</div>
-                    {{#isMarketBoard}}<div class="article-board-swap">분류</div>{{/isMarketBoard}}
+                    {{#isTrade}}<div class="article-board-swap">분류</div>{{/isTrade}}
                     <div class="article-board-subject">제목</div>
                     <div class="article-board-author">작성자</div>
                     <div class="article-board-date">날짜</div>
@@ -71,9 +71,9 @@
                 <!-- 테이블 바디 (게시글 목록 루프) -->
                 <div class="divide-y divide-outline-variant/20">
                     {{#articleList}}
-                        <div class="article-board-row{{#isMarketBoard}} is-market{{/isMarketBoard}}{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-4 items-center text-center text-sm text-on-surface hover:bg-surface-container-highest/30 transition-colors">
+                        <div class="article-board-row{{#isTrade}} is-market{{/isTrade}}{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-4 items-center text-center text-sm text-on-surface hover:bg-surface-container-highest/30 transition-colors">
                             <div class="article-board-num text-outline font-mono">{{displayId}}</div>
-                            {{#isMarketBoard}}
+                            {{#isTrade}}
                             <div class="article-board-swap">
                                 {{#hasMemberSwap}}
                                 <span class="article-swap">
@@ -83,7 +83,7 @@
                                 </span>
                                 {{/hasMemberSwap}}
                             </div>
-                            {{/isMarketBoard}}
+                            {{/isTrade}}
                             <div class="article-board-subject text-left font-medium truncate">
                                 <a href="/article/{{#category}}{{category}}{{/category}}{{^category}}trade{{/category}}/{{id}}" class="hover:text-primary-container transition-colors">
                                     {{title}}
