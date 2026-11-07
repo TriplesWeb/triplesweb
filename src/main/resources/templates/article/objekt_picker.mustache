@@ -10,7 +10,12 @@
             <p class="mt-1 text-xs text-slate-400">Have와 Want를 각각 1개 이상 선택하세요. 합쳐 최대 20개.</p>
             {{/isTradeObjektSplit}}
             {{^isTradeObjektSplit}}
+            {{#isSell}}
+            <p class="mt-1 text-xs text-slate-400">판매는 가진 오브젝트, 구매는 구하는 오브젝트를 고릅니다. 최대 20개.</p>
+            {{/isSell}}
+            {{^isSell}}
             <p class="mt-1 text-xs text-slate-400">최대 20개까지 연결할 수 있습니다.</p>
+            {{/isSell}}
             {{/isTradeObjektSplit}}
         </div>
         <button type="button" id="objektPickerToggle"
@@ -59,6 +64,14 @@
         </div>
     </div>
     {{/isTradeObjektSplit}}
+
+    {{#isSell}}
+    <div class="objekt-side-toggle" role="group" aria-label="판매 또는 구매">
+        <input type="hidden" name="sellListingSide" id="sellListingSide" value="{{#isSellListingWant}}want{{/isSellListingWant}}{{^isSellListingWant}}have{{/isSellListingWant}}">
+        <button type="button" id="sellListingHave" class="objekt-side-btn{{#isSellListingHave}} is-active{{/isSellListingHave}}" data-side="have" aria-pressed="{{#isSellListingHave}}true{{/isSellListingHave}}{{^isSellListingHave}}false{{/isSellListingHave}}">판매</button>
+        <button type="button" id="sellListingWant" class="objekt-side-btn{{#isSellListingWant}} is-active{{/isSellListingWant}}" data-side="want" aria-pressed="{{#isSellListingWant}}true{{/isSellListingWant}}{{^isSellListingWant}}false{{/isSellListingWant}}">구매</button>
+    </div>
+    {{/isSell}}
 
     <div id="objektPickerPanel" class="hidden space-y-3" hidden>
         {{#isTradeObjektSplit}}

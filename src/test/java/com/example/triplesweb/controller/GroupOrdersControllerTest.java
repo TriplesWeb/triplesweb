@@ -52,7 +52,14 @@ class GroupOrdersControllerTest {
 
     @Test void marketTabsKeepTradeAndSellWithoutGroupOrders() throws Exception {
         for (String category : List.of("trade", "sell")) {
-            when(articles.findRecentByCategory(eq(category), anyInt())).thenReturn(List.of(article(category)));
+            Article row = article(category);
+            ArticleObjekt have = new ArticleObjekt();
+            have.setSide("HAVE");
+            have.setMemberName("윤서연");
+            when(articles.findRecentByCategory(eq(category), anyInt())).thenReturn(List.of(row));
+            when(articles.findCategoryBatchBefore(eq(category), any(), any(), anyLong(), anyInt()))
+                .thenReturn(List.of(row));
+            when(links.groupByArticleId(anyList())).thenReturn(Map.of(5L, List.of(have)));
             mvc.perform(get("/article/" + category)).andExpect(status().isOk())
                 .andExpect(content().string(containsString("href=\"/article/trade\"")))
                 .andExpect(content().string(containsString("href=\"/article/sell\"")))
@@ -67,6 +74,19 @@ class GroupOrdersControllerTest {
                 .andExpect(content().string(containsString("objektSide=have")))
                 .andExpect(content().string(not(containsString("objektSide=all"))))
                 .andExpect(content().string(not(containsString(">전체</a>"))));
+            if ("trade".equals(category)) {
+                mvc.perform(get("/article/" + category)).andExpect(status().isOk())
+                    .andExpect(content().string(containsString(">Have</a>")))
+                    .andExpect(content().string(containsString(">Want</a>")))
+                    .andExpect(content().string(containsString("Have 탭은 Have 멤버만")));
+            } else {
+                mvc.perform(get("/article/" + category)).andExpect(status().isOk())
+                    .andExpect(content().string(containsString(">판매</a>")))
+                    .andExpect(content().string(containsString(">구매</a>")))
+                    .andExpect(content().string(containsString("objektSide=want")))
+                    .andExpect(content().string(not(containsString(">Have</a>"))))
+                    .andExpect(content().string(not(containsString(">Want</a>"))));
+            }
             verify(articles, never()).findPopularArticles(eq(category), anyInt());
         }
         mvc.perform(get("/article/info")).andExpect(status().isOk())
@@ -108,8 +128,8 @@ class GroupOrdersControllerTest {
             .andExpect(content().string(containsString("기존 전체 검색 링크")));
         mvc.perform(get("/article/trade").param("member", "윤서연").param("objektSide", "have"))
             .andExpect(status().isOk())
-            .andExpect(content().string(containsString("오래된 교환 글")))
-            .andExpect(content().string(containsString("Have·Want에 연결된 글을 모두 찾습니다")));
+            .andExpect(content().string(not(containsString("오래된 교환 글"))))
+            .andExpect(content().string(containsString("Have 탭은 Have 멤버만")));
         mvc.perform(get("/article/trade").param("member", "윤서연").param("objektSide", "want"))
             .andExpect(status().isOk())
             .andExpect(content().string(containsString("오래된 교환 글")));
@@ -142,7 +162,68 @@ class GroupOrdersControllerTest {
         when(links.groupByArticleId(anyList())).thenReturn(Map.of(88L, List.of(haveKotone, wantNakyoung)));
         mvc.perform(get("/article/trade").param("member", "김나경").param("objektSide", "have"))
             .andExpect(status().isOk())
+            .andExpect(content().string(not(containsString("코토네 김나경 교환"))));
+        mvc.perform(get("/article/trade").param("member", "김나경").param("objektSide", "want"))
+            .andExpect(status().isOk())
             .andExpect(content().string(containsString("코토네 김나경 교환")));
+    }
+
+    @Test void sellTabsFilterHaveAndWantListings() throws Exception {
+        Article sellHave = article("sell");
+        sellHave.setId(11L);
+        sellHave.setTitle("코토네 팝니다");
+        Article sellWant = article("sell");
+        sellWant.setId(12L);
+        sellWant.setTitle("김나경 구합니다");
+        ArticleObjekt have = new ArticleObjekt();
+        have.setSide("HAVE");
+        have.setMemberName("코토네");
+        ArticleObjekt want = new ArticleObjekt();
+        want.setSide("WANT");
+        want.setMemberName("김나경");
+        when(articles.findCategoryBatchBefore(eq("sell"), eq("title"), eq(""), anyLong(), eq(100)))
+            .thenReturn(List.of(sellHave, sellWant));
+        when(links.groupByArticleId(anyList())).thenReturn(Map.of(11L, List.of(have), 12L, List.of(want)));
+
+        mvc.perform(get("/article/sell"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("코토네 팝니다")))
+            .andExpect(content().string(not(containsString("김나경 구합니다"))));
+        mvc.perform(get("/article/sell").param("objektSide", "want"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("김나경 구합니다")))
+            .andExpect(content().string(not(containsString("코토네 팝니다"))));
+        mvc.perform(get("/article/sell").param("member", "김나경").param("objektSide", "have"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(not(containsString("김나경 구합니다"))))
+            .andExpect(content().string(not(containsString("코토네 팝니다"))));
+        mvc.perform(get("/article/sell").param("member", "김나경").param("objektSide", "want"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("김나경 구합니다")));
+    }
+
+    @Test void sellCreateStoresWantForBuyListing() throws Exception {
+        Article sell = new Article();
+        sell.setId(9L);
+        sell.setTitle("구매");
+        sell.setContent("<p>내용</p>");
+        sell.setCategory("sell");
+        when(articles.create(any())).thenReturn(sell);
+        mvc.perform(multipart("/article/sell/new")
+                .param("title", "구매")
+                .param("content", "<p>내용</p>")
+                .param("selectedObjektIds", "want-uuid")
+                .param("sellListingSide", "want"))
+            .andExpect(redirectedUrl("/article/sell/9"));
+        verify(links).attachSelected(any(Article.class), eq(List.of()), eq(List.of("want-uuid")));
+
+        mvc.perform(multipart("/article/sell/new")
+                .param("title", "판매")
+                .param("content", "<p>내용</p>")
+                .param("sellListingSide", "have"))
+            .andExpect(status().isOk())
+            .andExpect(model().attribute("errorMessage", "오브젝트를 1개 이상 선택해주세요."));
+        verify(articles, times(1)).create(any());
     }
 
     @Test void noticeBoardIsAllowed() throws Exception {

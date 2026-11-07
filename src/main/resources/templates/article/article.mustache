@@ -30,14 +30,25 @@
                 <a href="/article/sell" {{#isSell}}aria-current="page"{{/isSell}}>거래</a>
             </nav>
             <section class="market-member-filter" aria-label="멤버별 검색">
-                <p class="market-side-help">멤버를 고르면 Have·Want에 연결된 글을 모두 찾습니다. 멤버를 선택하지 않으면 전체 게시글이 표시됩니다.</p>
+                {{#isTrade}}
+                <p class="market-side-help">Have 탭은 Have 멤버만, Want 탭은 Want 멤버만 찾습니다. 멤버를 선택하지 않으면 전체 게시글이 표시됩니다.</p>
+                {{/isTrade}}
+                {{#isSell}}
+                <p class="market-side-help">판매 탭은 판매 글, 구매 탭은 구매 글입니다. 멤버를 고르면 그 탭에 연결된 멤버만 찾습니다.</p>
+                {{/isSell}}
                 {{#isObjektSideAll}}<p class="market-side-help" role="status">기존 전체 검색 링크: Have와 Want 양쪽에서 선택한 멤버를 검색합니다.</p>{{/isObjektSideAll}}
+                {{#isTrade}}
                 <div class="market-side-seg" role="group" aria-label="멤버 검색 기준: Have 또는 Want">
                     <a class="market-side-link{{#isObjektSideHave}} is-active{{/isObjektSideHave}}" href="/article/{{category}}?objektSide=have{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Have</a>
-                    {{#isTrade}}
                     <a class="market-side-link{{#isObjektSideWant}} is-active{{/isObjektSideWant}}" href="/article/{{category}}?objektSide=want{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Want</a>
-                    {{/isTrade}}
                 </div>
+                {{/isTrade}}
+                {{#isSell}}
+                <div class="market-side-seg" role="group" aria-label="판매 또는 구매">
+                    <a class="market-side-link{{#isObjektSideHave}} is-active{{/isObjektSideHave}}" href="/article/{{category}}?objektSide=have{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">판매</a>
+                    <a class="market-side-link{{#isObjektSideWant}} is-active{{/isObjektSideWant}}" href="/article/{{category}}?objektSide=want{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">구매</a>
+                </div>
+                {{/isSell}}
                 <div class="member-portrait-picker" id="market-member-picker" role="group" aria-label="멤버 선택">
                     {{>partials/member-portrait-picker}}
                 </div>

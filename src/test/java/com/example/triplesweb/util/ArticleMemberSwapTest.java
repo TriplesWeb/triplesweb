@@ -30,6 +30,9 @@ class ArticleMemberSwapTest {
         assertThat(ArticleMemberSwap.matchesMember(List.of(haveKotone, wantNakyoung), "김나경", "have")).isFalse();
         assertThat(ArticleMemberSwap.matchesMember(List.of(haveKotone, wantNakyoung), "김나경", "all")).isTrue();
         assertThat(ArticleMemberSwap.matchesMember(List.of(haveKotone, wantNakyoung), "코토네", "all")).isTrue();
+        assertThat(ArticleMemberSwap.hasSide(List.of(haveKotone, wantNakyoung), "have")).isTrue();
+        assertThat(ArticleMemberSwap.hasSide(List.of(haveKotone), "want")).isFalse();
+        assertThat(ArticleMemberSwap.hasSide(List.of(wantNakyoung), "want")).isTrue();
 
         Artist seoyeon = artist(1L, "윤서연", "#111111");
         Artist hayeon = artist(19L, "정하연", "#222222");
@@ -46,6 +49,12 @@ class ArticleMemberSwapTest {
         assertThat(summary.get("wantLeadName")).isEqualTo("지연");
         assertThat(summary.get("hasWantMore")).isEqualTo(true);
         assertThat(summary.get("wantMoreCount")).isEqualTo(2);
+
+        Map<String, Object> sellWant = ArticleMemberSwap.summarize(
+                List.of(), List.of(wantNakyoung), List.of(), false);
+        assertThat(sellWant.get("hasWantLead")).isEqualTo(true);
+        assertThat(sellWant.get("wantLeadName")).isEqualTo("김나경");
+        assertThat(sellWant.get("isTradeSwap")).isEqualTo(false);
     }
 
     private static ArticleObjekt link(String side, String member) {

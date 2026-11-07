@@ -36,6 +36,16 @@ public final class ArticleMemberSwap {
         return false;
     }
 
+    public static boolean hasSide(Collection<ArticleObjekt> links, String side) {
+        if (links == null || links.isEmpty()) return false;
+        String sideKey = normalizeSide(side);
+        for (ArticleObjekt link : links) {
+            if (link == null) continue;
+            if (sideKey == null || sideKey.equalsIgnoreCase(blankToHave(link.getSide()))) return true;
+        }
+        return false;
+    }
+
     private static boolean matchesName(String stored, String selected) {
         if (stored == null || stored.isBlank() || selected == null || selected.isBlank()) return false;
         if (MemberPortraitOptions.sameMember(stored, selected)) return true;
@@ -52,7 +62,7 @@ public final class ArticleMemberSwap {
                                                 List<Artist> artists,
                                                 boolean trade) {
         List<String> haveMembers = uniqueMembers(have);
-        List<String> wantMembers = trade ? uniqueMembers(want) : List.of();
+        List<String> wantMembers = uniqueMembers(want);
         Map<String, Object> row = new LinkedHashMap<>();
         applyLead(row, "have", haveMembers, artists);
         applyLead(row, "want", wantMembers, artists);

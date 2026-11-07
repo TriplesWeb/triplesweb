@@ -377,6 +377,26 @@
     if (loadMore) loadMore.addEventListener('click', () => load(false));
     if (sideHaveBtn) sideHaveBtn.addEventListener('click', () => setActiveSide('have'));
     if (sideWantBtn) sideWantBtn.addEventListener('click', () => setActiveSide('want'));
+    const sellSideInput = document.getElementById('sellListingSide');
+    const sellHaveBtn = document.getElementById('sellListingHave');
+    const sellWantBtn = document.getElementById('sellListingWant');
+    function setSellListing(side) {
+      const next = side === 'want' ? 'want' : 'have';
+      if (sellSideInput) sellSideInput.value = next;
+      if (sellHaveBtn) {
+        const on = next === 'have';
+        sellHaveBtn.classList.toggle('is-active', on);
+        sellHaveBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      }
+      if (sellWantBtn) {
+        const on = next === 'want';
+        sellWantBtn.classList.toggle('is-active', on);
+        sellWantBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      }
+    }
+    if (sellHaveBtn) sellHaveBtn.addEventListener('click', () => setSellListing('have'));
+    if (sellWantBtn) sellWantBtn.addEventListener('click', () => setSellListing('want'));
+    if (sellSideInput) setSellListing(sellSideInput.value);
     function closePickerMenus(except) {
       section.querySelectorAll('.objekt-dropdown-menu').forEach((menu) => {
         if (menu !== except) {
