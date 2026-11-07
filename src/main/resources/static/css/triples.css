@@ -4630,11 +4630,6 @@ button.chem-photo-by-insert:focus-visible {
     text-decoration: underline;
 }
 
-.chem-edit-label input[type="file"] {
-    font-size: 0.85rem;
-    color: #b9cac4;
-}
-
 .chem-edit-image-preview {
     display: flex;
     flex-direction: column;
