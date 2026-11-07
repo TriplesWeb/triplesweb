@@ -2462,7 +2462,8 @@ textarea.form-control {
     overflow: visible;
     border-radius: 0.85rem;
     border: 2px solid color-mix(in srgb, var(--artist-color, #22aeff) 85%, #fff);
-    background: #000;
+    /* brand/body의 rgba(13,14,18,.4)가 공개일 칸과 같게 보이도록 검정 바탕을 제거 */
+    background: transparent;
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--artist-color, #22aeff) 35%, transparent);
 }
 
@@ -2497,7 +2498,7 @@ textarea.form-control {
     object-fit: contain;
     object-position: center;
     pointer-events: none;
-    /* PNG 검정 배경을 브랜드 검정과 맞추고 별만 드러냄 */
+    /* PNG 검정 배경을 브랜드 바탕에 맞추고 별만 드러냄 */
     mix-blend-mode: screen;
 }
 

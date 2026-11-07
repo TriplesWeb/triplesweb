@@ -493,10 +493,11 @@
   }
 
   /** photo by 핸들: 한글·유니코드 계정명 허용. 태그로 @와 계정이 갈라져도 plain에서는 공백이 생길 수 있음 */
-  const PHOTO_BY_GAP = "(?:\\s|&nbsp;|\u00a0)+";
+  const PHOTO_BY_GAP = "(?:\\s|&nbsp;|\u00a0|<[^>]+>)+";
   const PHOTO_CREDIT_PLAIN_RE = /\s*photo\s+by\.?\s*(@?)\s*([^\s]+)\s*$/i;
   const PHOTO_CREDIT_TAIL_RE = /^photo\s+by\.?\s*@?\s*\S+$/i;
   const PHOTO_BY_MARK_RE = new RegExp("photo" + PHOTO_BY_GAP + "by", "gi");
+  const PHOTO_CREDIT_ANYWHERE_PLAIN_RE = /\bphoto\s+by\.?\s*@?\s*\S+/i;
 
   function normalizePhotoCredit(value) {
     return String(value || "")
@@ -541,7 +542,7 @@
     if (editorEn) editorEn.innerHTML = descriptionToEditorHtml(en.description);
   }
 
-  /** HTML 안 photo(&nbsp;|공백)+by 마지막 시작 위치 */
+  /** HTML 안 photo(공백|nbsp|태그)+by 마지막 시작 위치 */
   function findLastPhotoByIndex(html) {
     const re = new RegExp(PHOTO_BY_MARK_RE.source, "gi");
     let idx = -1;
@@ -552,50 +553,130 @@
     return idx;
   }
 
-  /** description에서 "photo by …" 출처를 분리 (서식 HTML 유지) */
+  /** 크레딧 구간 앞의 br/공백/여는 태그를 포함해 잘라낼 시작 위치 */
+  function photoCreditCutStart(html, photoByIndex) {
+    let start = photoByIndex;
+    while (start > 0) {
+      const prefix = html.slice(0, start);
+      const lead = prefix.match(
+        /(?:<br\s*\/?>|\s+|&nbsp;|\u00a0|<(?!\/)[^>]+>)+$/i
+      );
+      if (!lead) break;
+      start -= lead[0].length;
+    }
+    return start;
+  }
+
+  /** photo by … handle 크레딧 HTML 구간 길이 (photo 시작 기준) */
+  function photoCreditSegmentLength(htmlFromPhotoBy) {
+    const m = String(htmlFromPhotoBy || "").match(
+      new RegExp(
+        "^photo" + PHOTO_BY_GAP + "by\\.?\\s*@?\\s*[^\\s<]+(?:\\s*</[^>]+>)*",
+        "i"
+      )
+    );
+    return m ? m[0].length : -1;
+  }
+
+  /** HTML에서 photo by 출처 구간만 제거한다. 앞뒤 본문은 유지. */
+  function removePhotoCreditSegments(html) {
+    let out = String(html || "");
+    for (let guard = 0; guard < 8; guard++) {
+      if (!PHOTO_CREDIT_ANYWHERE_PLAIN_RE.test(descriptionPlainText(out))) break;
+      const idx = findLastPhotoByIndex(out);
+      if (idx < 0) {
+        out = out.replace(
+          new RegExp(
+            "(?:\\s|&nbsp;|\u00a0|<br\\s*/?>)*photo" +
+              PHOTO_BY_GAP +
+              "by\\.?\\s*@?\\s*[^\\s<]+(?:\\s*<[^>]+>)*",
+            "gi"
+          ),
+          ""
+        );
+        break;
+      }
+      const start = photoCreditCutStart(out, idx);
+      const len = photoCreditSegmentLength(out.slice(idx));
+      if (len > 0) {
+        out = out.slice(0, start) + out.slice(idx + len);
+      } else {
+        // 구간 길이를 못 잡으면 끝부분 출처만 정규식으로 제거
+        out = out
+          .replace(
+            new RegExp(
+              "(?:\\s|&nbsp;|\u00a0|<br\\s*/?>)*photo" +
+                PHOTO_BY_GAP +
+                "by\\.?\\s*@?\\s*[^\\s<]+(?:\\s*<[^>]+>)*\\s*$",
+              "i"
+            ),
+            ""
+          )
+          .trim();
+        break;
+      }
+    }
+    return trimTrailingEmptyMarkup(out);
+  }
+
+  /** description에서 "photo by …" 출처를 분리 (서식 HTML 유지). 본문에는 절대 남기지 않는다. */
   function splitPhotoCredit(rawDescription) {
     const raw = String(rawDescription || "");
     const plain = descriptionPlainText(raw);
-    const match = plain.match(PHOTO_CREDIT_PLAIN_RE);
-    if (!match) {
+    const trailing = plain.match(PHOTO_CREDIT_PLAIN_RE);
+    const anywhere = plain.match(/\bphoto\s+by\.?\s*(@?)\s*([^\s]+)/i);
+    const creditMatch = trailing || anywhere;
+    if (!creditMatch) {
       return { description: raw, credit: "" };
     }
-    const credit = normalizePhotoCredit(match[1] + match[2]);
+    const credit = normalizePhotoCredit(creditMatch[1] + creditMatch[2]);
     if (!credit) {
       return { description: raw, credit: "" };
     }
 
-    // 연속 텍스트 / 뒤에 <br>만 있는 일반 형태 (한글 핸들·&nbsp; 포함)
-    const creditTail =
-      "photo" + PHOTO_BY_GAP + "by\\.?\\s*@?\\s*[^\\s<]+(?:\\s*<[^>]+>)*\\s*$";
-    let stripped = raw
-      .replace(new RegExp("\\s*" + creditTail, "i"), "")
-      .replace(new RegExp("(?:<br\\s*/?>|\\s|&nbsp;)*" + creditTail, "i"), "")
-      .trim();
-
-    // 태그로 갈라진 "photo by. @</span><span>handle</span>" / photo&nbsp;by 형태
-    if (/\bphoto\s+by\b/i.test(descriptionPlainText(stripped))) {
+    let stripped;
+    if (trailing) {
+      // 맨 끝 출처: 앞 본문만 남긴다
       const idx = findLastPhotoByIndex(raw);
       if (idx >= 0) {
-        let start = idx;
-        // 본문을 닫는 </span>은 건드리지 않고, 크레딧을 감싼 여는 태그와 br/nbsp만 뒤로 걷
-        while (start > 0) {
-          const prefix = raw.slice(0, start);
-          const lead = prefix.match(
-            /(?:<br\s*\/?>|\s+|&nbsp;|\u00a0|<(?!\/)[^>]+>)+$/i
-          );
-          if (!lead) break;
-          start -= lead[0].length;
-        }
+        const start = photoCreditCutStart(raw, idx);
         const tailPlain = descriptionPlainText(raw.slice(start));
-        if (PHOTO_CREDIT_TAIL_RE.test(tailPlain)) {
-          stripped = raw.slice(0, start).trim();
+        if (
+          PHOTO_CREDIT_TAIL_RE.test(tailPlain) ||
+          PHOTO_CREDIT_ANYWHERE_PLAIN_RE.test(tailPlain)
+        ) {
+          stripped = trimTrailingEmptyMarkup(raw.slice(0, start));
         }
       }
+      if (stripped == null) {
+        stripped = removePhotoCreditSegments(raw);
+      } else if (PHOTO_CREDIT_ANYWHERE_PLAIN_RE.test(descriptionPlainText(stripped))) {
+        stripped = removePhotoCreditSegments(stripped);
+      }
+    } else {
+      // 중간 출처: 크레딧 구간만 제거하고 뒤 본문은 유지 (저장 시 내용 유실 방지)
+      stripped = removePhotoCreditSegments(raw);
     }
 
-    stripped = trimTrailingEmptyMarkup(stripped);
-    return { description: stripped || raw, credit };
+    // 출처만 있던 경우 빈 본문. raw 로 되돌리면 본문에 다시 뜬다.
+    if (!descriptionPlainText(stripped)) {
+      return { description: "", credit };
+    }
+    if (PHOTO_CREDIT_ANYWHERE_PLAIN_RE.test(descriptionPlainText(stripped))) {
+      stripped = removePhotoCreditSegments(stripped);
+    }
+    if (!descriptionPlainText(stripped)) {
+      return { description: "", credit };
+    }
+    if (PHOTO_CREDIT_ANYWHERE_PLAIN_RE.test(descriptionPlainText(stripped))) {
+      // HTML에서 출처 구간을 못 지운 희귀 케이스: plain 기준으로 출처만 빼고 본문은 유지
+      const withoutCredit = descriptionPlainText(stripped)
+        .replace(/\bphoto\s+by\.?\s*@?\s*\S+/gi, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      return { description: withoutCredit, credit };
+    }
+    return { description: stripped, credit };
   }
 
   function extractElementColor(el) {
