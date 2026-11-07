@@ -26,28 +26,54 @@ public final class ObjektCatalogSort {
     }
 
     public static Comparator<Map<String, Object>> comparator(String sort) {
-        Comparator<Map<String, Object>> byDate = Comparator.comparing(
-                item -> text(item, "createdAt", "created_at", "date"),
-                Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
         Comparator<Map<String, Object>> byNumber = Comparator.comparingDouble(ObjektCatalogSort::numberValue);
-        Comparator<Map<String, Object>> byMember = Comparator.comparing(
-                item -> text(item, "member", "memberName"),
-                Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
         String key = sort == null ? "" : sort.trim().toLowerCase(Locale.ROOT);
         return switch (key) {
-            case "oldest" -> byDate;
+            case "oldest" -> byDateOldest().thenComparing(bySeasonOldest()).thenComparing(byCollectionNo());
             case "number_low" -> byNumber;
             case "number_high" -> byNumber.reversed();
             case "mint_low" -> mintComparator(false);
             case "mint_high" -> mintComparator(true);
             case "first_member" -> Comparator.<Map<String, Object>>comparingInt(ObjektCatalogSort::memberOrder)
-                    .thenComparing(byMember);
+                    .thenComparing(byDateNewest())
+                    .thenComparing(byCollectionNo());
             case "last_member" -> Comparator.<Map<String, Object>>comparingInt(item -> {
                 int order = memberOrder(item);
                 return order == 24 ? 24 : 23 - order;
-            }).thenComparing(byMember);
-            default -> byDate.reversed();
+            }).thenComparing(byDateNewest()).thenComparing(byCollectionNo());
+            default -> byDateNewest().thenComparing(bySeasonNewest()).thenComparing(byCollectionNo());
         };
+    }
+
+    private static Comparator<Map<String, Object>> byDateNewest() {
+        return Comparator.comparing(ObjektCatalogSort::createdAtOrNull, Comparator.nullsLast(Comparator.reverseOrder()));
+    }
+
+    private static Comparator<Map<String, Object>> byDateOldest() {
+        return Comparator.comparing(ObjektCatalogSort::createdAtOrNull, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
+    }
+
+    private static Comparator<Map<String, Object>> bySeasonNewest() {
+        return Comparator.comparingLong((Map<String, Object> item) -> {
+            long index = ObjektFilterOrder.seasonIndex(text(item, "seasonKey", "season"));
+            return index < 0 ? Long.MIN_VALUE : index;
+        }).reversed();
+    }
+
+    private static Comparator<Map<String, Object>> bySeasonOldest() {
+        return Comparator.comparingLong((Map<String, Object> item) -> {
+            long index = ObjektFilterOrder.seasonIndex(text(item, "seasonKey", "season"));
+            return index < 0 ? Long.MAX_VALUE : index;
+        });
+    }
+
+    private static Comparator<Map<String, Object>> byCollectionNo() {
+        return Comparator.comparing(item -> text(item, "collectionNo", "collectionNumber"), String.CASE_INSENSITIVE_ORDER);
+    }
+
+    private static String createdAtOrNull(Map<String, Object> item) {
+        String date = text(item, "createdAt", "created_at", "date");
+        return date.isEmpty() ? null : date;
     }
 
     private static Comparator<Map<String, Object>> mintComparator(boolean descending) {

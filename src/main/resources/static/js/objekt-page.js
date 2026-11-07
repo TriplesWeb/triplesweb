@@ -88,6 +88,16 @@
     const kindEmpty = document.getElementById('kind-empty');
     const kindOptions = kindMenu ? [...kindMenu.querySelectorAll('.objekt-kind-option')] : [];
     let kindActiveIndex = -1;
+    const kindByClass = (() => {
+        const node = document.getElementById('objekt-kind-by-class');
+        if (!node) return {};
+        try {
+            const parsed = JSON.parse(node.textContent || '{}');
+            return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch (_) {
+            return {};
+        }
+    })();
 
     function normalizeKindValue(raw) {
         if (window.ObjektKindCombo) return ObjektKindCombo.normalizeKindValue(raw);
@@ -112,13 +122,56 @@
         if (apply && changed) scheduleApplyFilters();
     }
 
+    function selectedClassValues() {
+        return [...document.querySelectorAll('.class-checkbox')]
+            .filter((cb) => cb.value !== 'all' && cb.checked)
+            .map((cb) => cb.value);
+    }
+
+    function allowedKindsForClasses(classes) {
+        if (!classes.length) return null;
+        const keys = Object.keys(kindByClass);
+        if (!keys.length) return null;
+        const allowed = new Set();
+        let matched = false;
+        for (const klass of classes) {
+            const match = keys.find((key) => key.toLocaleLowerCase() === String(klass).toLocaleLowerCase());
+            if (!match) continue;
+            matched = true;
+            const numbers = kindByClass[match];
+            if (!Array.isArray(numbers)) continue;
+            numbers.forEach((number) => allowed.add(normalizeKindValue(number)));
+        }
+        return matched ? allowed : null;
+    }
+
+    function syncKindOptionsToClass({ resetInvalid = true } = {}) {
+        const allowed = allowedKindsForClasses(selectedClassValues());
+        kindOptions.forEach((opt) => {
+            if (opt.dataset.value === 'all') {
+                opt.dataset.classAllowed = 'true';
+                return;
+            }
+            const ok = !allowed || allowed.has(normalizeKindValue(opt.dataset.value));
+            opt.dataset.classAllowed = ok ? 'true' : 'false';
+        });
+        if (resetInvalid && kindSelect) {
+            const current = normalizeKindValue(kindSelect.value);
+            if (current !== 'all' && allowed && !allowed.has(current)) {
+                setKindValue('all', { apply: false });
+            }
+        }
+        filterKindOptions(kindSelect?.value);
+    }
+
     function filterKindOptions(query) {
         const q = normalizeKindValue(query);
         const needle = q === 'all' ? '' : q.toLowerCase();
         let shown = 0;
         kindOptions.forEach((opt) => {
+            const classOk = opt.dataset.value === 'all' || opt.dataset.classAllowed !== 'false';
             const value = String(opt.dataset.value || '').toLowerCase();
-            const match = !needle || value.includes(needle);
+            const match = classOk && (!needle || value.includes(needle));
             opt.hidden = !match;
             if (match) shown += 1;
         });
@@ -348,10 +401,12 @@
             const chosen = boxes.some(other => other.value !== 'all' && other.checked);
             if (all && !chosen) all.checked = true;
             updateDropdownLabel(type);
+            if (type === 'class') syncKindOptionsToClass();
             markActiveFilters();
             scheduleApplyFilters();
         }));
         updateDropdownLabel(type);
+        if (type === 'class') syncKindOptionsToClass({ resetInvalid: true });
     });
 
     function markActiveFilters() {
@@ -452,7 +507,7 @@
     const detailClose = document.getElementById('objektDetailClose');
     const detailTradeLink = document.getElementById('objektDetailTradeLink');
     const detailSellLink = document.getElementById('objektDetailSellLink');
-    const descriptionEditor = document.getElementById('objektDescriptionEditor');
+    const descriptionEdit = document.getElementById('objektDescriptionEdit');
     const descriptionForm = document.getElementById('objektDescriptionForm');
     const descriptionInput = document.getElementById('objektModalDescription');
     const descriptionStatus = document.getElementById('objektDescriptionStatus');
@@ -460,6 +515,8 @@
     let descriptionUrl = '', descriptionSaving = false, detailRequest = 0;
     let activeObjektKey = '';
     let detailLoading = false;
+    let isAdmin = false;
+    let lastStoryText = '';
 
     function csrfHeaders(extra) {
         const headers = new Headers(extra || {});
@@ -506,15 +563,35 @@
 
     function fillDetailStory(data) {
         const text = String(data && data.description || '').trim();
+        lastStoryText = text;
         if (detailDesc) {
             detailDesc.textContent = text || '아직 등록된 상세 설명이 없습니다.';
             detailDesc.classList.toggle('is-empty', !text);
         }
+        if (descriptionInput && descriptionForm?.hidden) descriptionInput.value = text;
         const eventNode = document.getElementById('objektDetailEvent');
         if (eventNode) {
             eventNode.hidden = true;
             eventNode.textContent = '';
         }
+    }
+
+    function exitDescriptionEdit() {
+        if (descriptionForm) descriptionForm.hidden = true;
+        if (detailDesc) detailDesc.hidden = false;
+        if (descriptionEdit) descriptionEdit.hidden = !isAdmin;
+        if (descriptionStatus) descriptionStatus.textContent = '';
+        if (descriptionInput) descriptionInput.value = lastStoryText;
+    }
+
+    function enterDescriptionEdit() {
+        if (!isAdmin || !descriptionForm || !descriptionInput) return;
+        descriptionInput.value = lastStoryText;
+        if (detailDesc) detailDesc.hidden = true;
+        descriptionForm.hidden = false;
+        if (descriptionEdit) descriptionEdit.hidden = true;
+        if (descriptionStatus) descriptionStatus.textContent = '';
+        descriptionInput.focus();
     }
 
     function fillDetailModal(data) {
@@ -554,11 +631,9 @@
         const address = new URL(location.href);
         address.searchParams.set('objekt', key);
         history.replaceState(null, '', address.pathname + address.search);
-        descriptionEditor.hidden = !data.isAdmin;
-        descriptionEditor.open = false;
-        descriptionInput.value = data.description || '';
-        descriptionStatus.textContent = '';
+        isAdmin = Boolean(data.isAdmin);
         descriptionUrl = data.descriptionUrl || '';
+        exitDescriptionEdit();
     }
 
     function finishDetailClose() {
@@ -567,6 +642,9 @@
         detailModal.classList.remove('is-open');
         detailModal.setAttribute('aria-hidden', 'true');
         activeObjektKey = '';
+        lastStoryText = '';
+        isAdmin = false;
+        exitDescriptionEdit();
         detailRequest++;
         if (detailFavorite) detailFavorite.dataset.key = '';
         const address = new URL(location.href);
@@ -620,7 +698,9 @@
         });
         window.ObjektIssued?.show('');
         window.ObjektSerialLookup?.setCollection('');
-        descriptionEditor.hidden = true;
+        isAdmin = false;
+        exitDescriptionEdit();
+        if (descriptionEdit) descriptionEdit.hidden = true;
         openDetailModalShell();
         if (detailDesc) {
             detailDesc.textContent = '불러오는 중…';
@@ -647,7 +727,7 @@
     }
 
     async function saveModalDescription(clear) {
-        if (descriptionSaving || !descriptionUrl || descriptionEditor.hidden) return;
+        if (descriptionSaving || !descriptionUrl || !isAdmin || descriptionForm?.hidden) return;
         if (clear && !window.confirm('이 오브젝트의 상세 설명을 삭제하시겠습니까?')) return;
         if (!clear && !descriptionForm.reportValidity()) return;
         const key = activeObjektKey;
@@ -664,8 +744,8 @@
             const data = await response.json();
             if (typeof data.description !== 'string') throw new Error();
             if (activeObjektKey !== key) return;
-            descriptionInput.value = data.description;
             fillDetailStory({description: data.description});
+            exitDescriptionEdit();
             descriptionStatus.textContent = clear ? '상세 설명을 삭제했습니다.' : '상세 설명을 저장했습니다.';
         } catch {
             if (activeObjektKey === key) descriptionStatus.textContent = '저장하지 못했습니다. 관리자 로그인 상태를 확인한 뒤 다시 시도해 주세요.';
@@ -673,6 +753,7 @@
             descriptionSaving = false; buttons.forEach(button => button.disabled = false);
         }
     }
+    descriptionEdit?.addEventListener('click', enterDescriptionEdit);
     descriptionForm?.addEventListener('submit', event => { event.preventDefault(); saveModalDescription(false); });
     descriptionDelete?.addEventListener('click', () => saveModalDescription(true));
 

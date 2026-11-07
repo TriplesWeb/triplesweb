@@ -127,6 +127,31 @@ class ObjektFeaturesTest {
             .andExpect(jsonPath("$.items[3].id").value("unknown"));
     }
 
+    @Test void latestSortPutsLaterSeasonAheadOfBinary01WithoutCreatedAt() throws Exception {
+        var items = List.<Map<String, Object>>of(
+                Map.of("id", "binary", "season", "Binary01", "collectionNo", "201Z"),
+                Map.of("id", "cream", "season", "Cream02", "collectionNo", "101Z"));
+        stubCatalog(items);
+        when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
+        mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("sort", "latest")
+                        .param("season", "Binary01").param("season", "Cream02"))
+                .andExpect(jsonPath("$.items[0].id").value("cream"))
+                .andExpect(jsonPath("$.items[1].id").value("binary"));
+    }
+
+    @Test void firstMemberSortsSameMemberByNewestCreatedAt() throws Exception {
+        var items = List.<Map<String, Object>>of(
+                Map.of("id", "old", "member", "SeoYeon", "createdAt", "2024-01-01T00:00:00Z", "collectionNo", "1Z"),
+                Map.of("id", "new", "member", "SeoYeon", "createdAt", "2026-10-01T00:00:00Z", "collectionNo", "3Z"),
+                Map.of("id", "hyerin", "member", "HyeRin", "createdAt", "2026-11-01T00:00:00Z", "collectionNo", "8Z"));
+        stubCatalog(items);
+        when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
+        mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("sort", "first_member"))
+                .andExpect(jsonPath("$.items[0].id").value("new"))
+                .andExpect(jsonPath("$.items[1].id").value("old"))
+                .andExpect(jsonPath("$.items[2].id").value("hyerin"));
+    }
+
     @Test void ownerEndpointValidatesSerialAndReturnsRecoverableFailure() throws Exception {
         Map<String, Object> item = Map.of("id", "uuid", "slug", "sample");
         stubCatalog(List.of(item));
@@ -260,10 +285,21 @@ class ObjektFeaturesTest {
         java.nio.file.Files.writeString(java.nio.file.Path.of("build/objekt-modal-preview.html"), result.getResponse().getContentAsString());
         mvc.perform(get("/cosmo/objekt/detail/hayeoncc367z").accept(MediaType.TEXT_HTML))
             .andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc367z"));
-        org.assertj.core.api.Assertions.assertThat(result.getResponse().getContentAsString())
+        String html = result.getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(html.indexOf("id=\"class-dropdown\""))
+            .isGreaterThan(html.indexOf("id=\"season-dropdown\""))
+            .isLessThan(html.indexOf("id=\"kind-dropdown\""));
+        org.assertj.core.api.Assertions.assertThat(html.indexOf("id=\"kind-dropdown\""))
+            .isLessThan(html.indexOf("id=\"sort-dropdown\""));
+        org.assertj.core.api.Assertions.assertThat(html)
             .contains("data-serial-panel", "objektIssuedCount")
             .contains("objekt-member-logo")
             .contains("/images/objekt-member-logos/s19.png")
+            .contains("id=\"objektDescriptionEdit\"")
+            .contains("수정하기")
+            .contains("id=\"objekt-kind-by-class\"")
+            .contains("\"Special\":[\"367Z\"]")
+            .doesNotContain("관리자 · 상세 설명 편집")
             .doesNotContain("objekt-head-mints")
             .doesNotContain("발행량 7,193,056개")
             .doesNotContain("objektIssuedRanges", "objektIssuedTime").doesNotContain("id=\"objektDetailFullLink\"");

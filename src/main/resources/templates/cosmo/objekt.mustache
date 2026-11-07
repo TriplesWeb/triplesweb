@@ -82,6 +82,30 @@
                 </div>
             </div>
 
+            <div class="objekt-filter relative" id="class-dropdown">
+                <span class="objekt-filter-label">클래스</span>
+                <button type="button" onclick="toggleDropdown('class-menu')" class="objekt-filter-control">
+                    <span id="class-label" class="truncate">전체</span>
+                    <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
+                </button>
+                <div id="class-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
+                    <label class="objekt-choice">
+                        <input type="checkbox" value="all" class="class-checkbox" checked>
+                        <span class="objekt-choice-mark" aria-hidden="true"></span>
+                        <span class="objekt-choice-text">전체 클래스</span>
+                    </label>
+                    <div id="class-options">
+                        {{#classOptions}}
+                        <label class="objekt-choice">
+                            <input type="checkbox" name="class" value="{{.}}" class="class-checkbox">
+                            <span class="objekt-choice-mark" aria-hidden="true"></span>
+                            <span class="objekt-choice-text">{{.}}</span>
+                        </label>
+                        {{/classOptions}}
+                    </div>
+                </div>
+            </div>
+
             <div class="objekt-filter relative" id="kind-dropdown">
                 <span class="objekt-filter-label">종류</span>
                 <div class="objekt-filter-control objekt-kind-combo">
@@ -108,30 +132,6 @@
                     <button type="button" class="objekt-kind-option" data-value="{{.}}" role="option">{{.}}</button>
                     {{/objektNumbers}}
                     <p class="objekt-kind-empty" id="kind-empty" hidden>일치하는 종류 없음</p>
-                </div>
-            </div>
-
-            <div class="objekt-filter relative" id="class-dropdown">
-                <span class="objekt-filter-label">클래스</span>
-                <button type="button" onclick="toggleDropdown('class-menu')" class="objekt-filter-control">
-                    <span id="class-label" class="truncate">전체</span>
-                    <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
-                </button>
-                <div id="class-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
-                    <label class="objekt-choice">
-                        <input type="checkbox" value="all" class="class-checkbox" checked>
-                        <span class="objekt-choice-mark" aria-hidden="true"></span>
-                        <span class="objekt-choice-text">전체 클래스</span>
-                    </label>
-                    <div id="class-options">
-                        {{#classOptions}}
-                        <label class="objekt-choice">
-                            <input type="checkbox" name="class" value="{{.}}" class="class-checkbox">
-                            <span class="objekt-choice-mark" aria-hidden="true"></span>
-                            <span class="objekt-choice-text">{{.}}</span>
-                        </label>
-                        {{/classOptions}}
-                    </div>
                 </div>
             </div>
 
@@ -246,19 +246,19 @@
                 <div><dt>발행량</dt><dd id="objektIssuedCount" aria-live="polite">확인 중</dd></div>
             </dl>
             <section class="objekt-detail-story" aria-labelledby="objektDetailStoryTitle">
-                <h3 class="objekt-detail-story-title" id="objektDetailStoryTitle">상세 설명</h3>
+                <div class="objekt-detail-story-head">
+                    <h3 class="objekt-detail-story-title" id="objektDetailStoryTitle">상세 설명</h3>
+                    <button type="button" class="objekt-description-edit" id="objektDescriptionEdit" hidden>수정하기</button>
+                </div>
                 <p class="objekt-detail-desc is-empty" id="objektDetailDesc">불러오는 중…</p>
-                <p class="objekt-detail-event" id="objektDetailEvent" hidden></p>
-            </section>
-            <details id="objektDescriptionEditor" class="objekt-description-editor" hidden>
-                <summary>관리자 · 상세 설명 편집</summary>
-                <form id="objektDescriptionForm">
-                    <label for="objektModalDescription">상세 설명</label>
-                    <textarea id="objektModalDescription" name="description" rows="4" maxlength="10000" placeholder="상세 설명을 입력해 주세요."></textarea>
+                <form id="objektDescriptionForm" class="objekt-description-editor" hidden>
+                    <label class="objekt-description-label" for="objektModalDescription">상세 설명</label>
+                    <textarea id="objektModalDescription" name="description" rows="6" maxlength="10000" placeholder="상세 설명을 입력해 주세요."></textarea>
                     <div class="objekt-description-buttons"><button type="submit">저장</button><button type="button" id="objektDescriptionDelete">설명 삭제</button></div>
                     <p id="objektDescriptionStatus" role="status" aria-live="polite"></p>
                 </form>
-            </details>
+                <p class="objekt-detail-event" id="objektDetailEvent" hidden></p>
+            </section>
 
             <p id="objektFavoriteStatus" role="status" aria-live="polite" hidden></p>
             <div class="objekt-detail-actions">
@@ -282,5 +282,6 @@
 
 <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
 <script src="{{#asset}}/js/objekt-kind-combo.js{{/asset}}"></script>
+<script type="application/json" id="objekt-kind-by-class">{{{kindByClassJson}}}</script>
     <script src="{{#asset}}/js/objekt-page.js{{/asset}}" defer></script>
 {{>layout/page-end}}

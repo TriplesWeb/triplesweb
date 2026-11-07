@@ -5,6 +5,7 @@ import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.ObjektMarketDataService;
 import com.example.triplesweb.util.MemberPortraitOptions;
+import com.example.triplesweb.util.ObjektCatalogSort;
 import com.example.triplesweb.util.ObjektLinks;
 import com.example.triplesweb.util.ObjektSeasonCodes;
 import com.example.triplesweb.util.ObjektSeasonColors;
@@ -71,6 +72,7 @@ public class CosmoController {
         model.addAttribute("seasonOptions", facets.seasons());
         model.addAttribute("classOptions", facets.classes());
         model.addAttribute("objektNumbers", facets.collectionNumbers());
+        model.addAttribute("kindByClassJson", kindByClassJson(facets.numbersByClass()));
 
         model.addAttribute("objekts", withMemberLinks(page.items()));
         model.addAttribute("objektCount", page.resultCount());
@@ -161,7 +163,7 @@ public class CosmoController {
                 .filter(objekt -> matchesSelection(selectedClasses, firstValue(objekt, "classKey", "class")))
                 .filter(objekt -> selectedKind.isBlank() || "all".equals(selectedKind)
                         || normalize(firstValue(objekt, "collectionNo", "collectionNumber")).equals(selectedKind))
-                .sorted(sortComparator(selectedSort, new java.util.HashMap<>()))
+                .sorted(sortComparator(selectedSort))
                 .toList();
 
         int resultCount = filtered.size();
@@ -226,31 +228,10 @@ public class CosmoController {
         return selected.stream().map(CosmoController::normalize).anyMatch(normalizedActual::equals);
     }
 
-    private Comparator<Map<String, Object>> sortComparator(String sort, Map<String, Integer> memberOrderCache) {
-        Comparator<Map<String, Object>> byDate = Comparator.comparing(
-                objekt -> firstValue(objekt, "createdAt", "created_at", "date"),
-                Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
-        Comparator<Map<String, Object>> byNumber = Comparator.comparingDouble(objekt -> numberValue(firstValue(objekt, "numberValue", "number", "collectionNo")));
-        Comparator<Map<String, Object>> byMember = Comparator.comparing(
-                objekt -> firstValue(objekt, "member", "memberName"),
-                Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
-
-        return switch (sort) {
-            case "oldest" -> byDate;
-            case "number_low" -> byNumber;
-            case "number_high" -> byNumber.reversed();
-            case "mint_low" -> mintComparator(false);
-            case "mint_high" -> mintComparator(true);
-            case "first_member" -> Comparator.<Map<String, Object>>comparingInt(item -> memberOrder(item, memberOrderCache)).thenComparing(byMember);
-            case "last_member" -> Comparator.<Map<String, Object>>comparingInt(item -> { int order = memberOrder(item, memberOrderCache); return order == 24 ? 24 : 23 - order; }).thenComparing(byMember);
-            case "latest" -> byDate.reversed();
-            default -> byDate.reversed();
-        };
-    }
-
-    private static int memberOrder(Map<String, Object> item, Map<String, Integer> cache) {
-        return cache.computeIfAbsent(firstValue(item, "member", "memberName"), member ->
-                MemberPortraitOptions.objektMembers(member).stream().mapToInt(MemberPortraitOptions::memberIndex).min().orElse(24));
+    private Comparator<Map<String, Object>> sortComparator(String sort) {
+        if ("mint_low".equals(sort)) return mintComparator(false);
+        if ("mint_high".equals(sort)) return mintComparator(true);
+        return ObjektCatalogSort.comparator(sort);
     }
 
     private Comparator<Map<String, Object>> mintComparator(boolean descending) {
@@ -264,11 +245,6 @@ public class CosmoController {
         if (fromStore != null) return fromStore;
         Object existing = item.get("mintCount");
         return existing instanceof Number n ? n.longValue() : null;
-    }
-
-    private static double numberValue(String value) {
-        try { return Double.parseDouble(value); }
-        catch (Exception ignored) { return 0; }
     }
 
     private static boolean matchesSearch(String query, Map<String, Object> objekt) {
@@ -307,6 +283,30 @@ public class CosmoController {
         String value = kind == null ? "" : kind.trim();
         if (value.isEmpty() || "all".equalsIgnoreCase(value) || "전체".equals(value)) return "전체";
         return value;
+    }
+
+    private static String kindByClassJson(Map<String, List<String>> numbersByClass) {
+        if (numbersByClass == null || numbersByClass.isEmpty()) return "{}";
+        StringBuilder json = new StringBuilder("{");
+        boolean firstClass = true;
+        for (Map.Entry<String, List<String>> entry : numbersByClass.entrySet()) {
+            if (!firstClass) json.append(',');
+            firstClass = false;
+            json.append(jsonString(entry.getKey())).append(':').append('[');
+            boolean firstNumber = true;
+            for (String number : entry.getValue()) {
+                if (!firstNumber) json.append(',');
+                firstNumber = false;
+                json.append(jsonString(number));
+            }
+            json.append(']');
+        }
+        return json.append('}').toString();
+    }
+
+    private static String jsonString(String value) {
+        String raw = value == null ? "" : value;
+        return '"' + raw.replace("\\", "\\\\").replace("\"", "\\\"") + '"';
     }
 
     private List<Map<String, Object>> withMemberLinks(List<Map<String, Object>> items) {
