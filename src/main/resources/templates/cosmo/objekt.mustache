@@ -111,30 +111,6 @@
                 </div>
             </div>
 
-            <div class="objekt-filter relative" id="class-dropdown">
-                <span class="objekt-filter-label">클래스</span>
-                <button type="button" onclick="toggleDropdown('class-menu')" class="objekt-filter-control">
-                    <span id="class-label" class="truncate">전체</span>
-                    <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
-                </button>
-                <div id="class-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
-                    <label class="objekt-choice">
-                        <input type="checkbox" value="all" class="class-checkbox" checked>
-                        <span class="objekt-choice-mark" aria-hidden="true"></span>
-                        <span class="objekt-choice-text">전체 클래스</span>
-                    </label>
-                    <div id="class-options">
-                        {{#classOptions}}
-                        <label class="objekt-choice">
-                            <input type="checkbox" name="class" value="{{.}}" class="class-checkbox">
-                            <span class="objekt-choice-mark" aria-hidden="true"></span>
-                            <span class="objekt-choice-text">{{.}}</span>
-                        </label>
-                        {{/classOptions}}
-                    </div>
-                </div>
-            </div>
-
             <div class="objekt-filter relative" id="sort-dropdown">
                 <span class="objekt-filter-label">정렬</span>
                 <div class="objekt-sort-control">
@@ -157,6 +133,30 @@
                     </label>
                 </div>
                 <div id="sort-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 min-w-[10rem] max-h-60 overflow-y-auto rounded-xl border z-50 p-1.5" role="listbox" aria-label="정렬 목록"></div>
+            </div>
+
+            <div class="objekt-filter relative" id="class-dropdown">
+                <span class="objekt-filter-label">클래스</span>
+                <button type="button" onclick="toggleDropdown('class-menu')" class="objekt-filter-control">
+                    <span id="class-label" class="truncate">전체</span>
+                    <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
+                </button>
+                <div id="class-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
+                    <label class="objekt-choice">
+                        <input type="checkbox" value="all" class="class-checkbox" checked>
+                        <span class="objekt-choice-mark" aria-hidden="true"></span>
+                        <span class="objekt-choice-text">전체 클래스</span>
+                    </label>
+                    <div id="class-options">
+                        {{#classOptions}}
+                        <label class="objekt-choice">
+                            <input type="checkbox" name="class" value="{{.}}" class="class-checkbox">
+                            <span class="objekt-choice-mark" aria-hidden="true"></span>
+                            <span class="objekt-choice-text">{{.}}</span>
+                        </label>
+                        {{/classOptions}}
+                    </div>
+                </div>
             </div>
 
             <div class="objekt-search-row">

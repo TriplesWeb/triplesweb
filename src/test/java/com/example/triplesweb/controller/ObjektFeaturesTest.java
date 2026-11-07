@@ -311,7 +311,11 @@ class ObjektFeaturesTest {
         java.nio.file.Files.writeString(java.nio.file.Path.of("build/objekt-modal-preview.html"), result.getResponse().getContentAsString());
         mvc.perform(get("/cosmo/objekt/detail/hayeoncc367z").accept(MediaType.TEXT_HTML))
             .andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc367z"));
-        org.assertj.core.api.Assertions.assertThat(result.getResponse().getContentAsString())
+        String html = result.getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(html.indexOf("id=\"sort-dropdown\""))
+            .isGreaterThan(html.indexOf("id=\"kind-dropdown\""))
+            .isLessThan(html.indexOf("id=\"class-dropdown\""));
+        org.assertj.core.api.Assertions.assertThat(html)
             .contains("data-serial-panel", "objektIssuedCount")
             .contains("objekt-member-logo")
             .contains("/images/objekt-member-logos/s19.png")
