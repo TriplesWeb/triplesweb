@@ -14,6 +14,8 @@
     const memberFilter = document.getElementById('objektFilterMember');
     const seasonFilter = document.getElementById('objektFilterSeason');
     const classFilter = document.getElementById('objektFilterClass');
+    const kindFilter = document.getElementById('objektFilterKind');
+    const sortFilter = document.getElementById('objektFilterSort');
     const searchFilter = document.getElementById('objektFilterSearch');
     const resetBtn = document.getElementById('objektFilterReset');
     const sideHaveBtn = document.getElementById('objektSideHave');
@@ -31,6 +33,10 @@
     let searchTimer = 0;
     let activeSide = 'have';
     const itemCache = new Map();
+
+    function displayTitle(item) {
+      return (item && (item.cardTitle || item.collectionId || item.id)) || '';
+    }
 
     function inputName(side) {
       if (!tradeSplit) return 'selectedObjektIds';
@@ -168,7 +174,15 @@
         el.appendChild(img);
       }
       const span = document.createElement('span');
-      span.textContent = item.collectionId || item.id || '';
+      span.className = 'objekt-trade-chip-title';
+      if (item.season) {
+        const season = document.createElement('small');
+        season.className = 'objekt-trade-season';
+        season.textContent = item.season;
+        span.appendChild(season);
+        span.appendChild(document.createTextNode(' '));
+      }
+      span.appendChild(document.createTextNode(displayTitle(item)));
       el.appendChild(span);
       const remove = document.createElement('button');
       remove.type = 'button';
@@ -263,8 +277,9 @@
         label.appendChild(img);
       }
       const title = document.createElement('span');
-      title.className = 'block truncate text-xs font-semibold';
-      title.textContent = item.collectionId || item.id || '';
+      title.className = 'block text-xs font-semibold';
+      title.style.overflowWrap = 'anywhere';
+      title.textContent = (item.season ? item.season + ' · ' : '') + displayTitle(item);
       const meta = document.createElement('span');
       meta.className = 'block truncate text-[11px] text-slate-400';
       meta.textContent = [item.member, item.collectionNo].filter(Boolean).join(' · ');
@@ -314,6 +329,8 @@
       if (selection.member) params.set('member', selection.member);
       if (seasonFilter && seasonFilter.value) params.set('season', seasonFilter.value);
       if (classFilter && classFilter.value) params.set('class', classFilter.value);
+      if (kindFilter && kindFilter.value && kindFilter.value !== 'all') params.set('kind', kindFilter.value);
+      if (sortFilter && sortFilter.value) params.set('sort', sortFilter.value);
       if (searchFilter && searchFilter.value.trim()) params.set('q', searchFilter.value.trim());
       params.set('offset', String(offset));
       params.set('limit', String(pageSize));
@@ -360,8 +377,120 @@
     if (loadMore) loadMore.addEventListener('click', () => load(false));
     if (sideHaveBtn) sideHaveBtn.addEventListener('click', () => setActiveSide('have'));
     if (sideWantBtn) sideWantBtn.addEventListener('click', () => setActiveSide('want'));
+    function closePickerMenus(except) {
+      section.querySelectorAll('.objekt-dropdown-menu').forEach((menu) => {
+        if (menu !== except) {
+          menu.hidden = true;
+          menu.classList.add('hidden');
+        }
+      });
+      section.querySelectorAll('.objekt-filter').forEach((filter) => {
+        if (!except || !filter.contains(except)) filter.classList.remove('is-open');
+      });
+      except?.closest('.objekt-filter')?.classList.toggle('is-open', Boolean(except) && !except.hidden);
+    }
+
+    function bindChoiceMenu(opts) {
+      const menu = document.getElementById(opts.menuId);
+      const toggleBtn = document.getElementById(opts.toggleId);
+      const label = document.getElementById(opts.labelId);
+      const root = document.getElementById(opts.rootId);
+      const hidden = opts.hidden;
+      if (!menu || !toggleBtn || !hidden) return { reset() {} };
+      const emptyValue = opts.emptyValue ?? '';
+      const emptyLabel = opts.emptyLabel ?? '전체';
+      const choices = () => [...menu.querySelectorAll('.objekt-choice')];
+      function sync() {
+        const current = hidden.value || emptyValue;
+        let matched = false;
+        choices().forEach((choice) => {
+          const selected = (choice.dataset.value || emptyValue) === current;
+          choice.classList.toggle('is-selected', selected);
+          choice.setAttribute('aria-pressed', selected ? 'true' : 'false');
+          if (selected) {
+            matched = true;
+            if (label) label.textContent = choice.querySelector('.objekt-choice-text')?.textContent.trim() || emptyLabel;
+          }
+        });
+        if (!matched && label) label.textContent = emptyLabel;
+        root?.classList.toggle('is-filtered', current !== emptyValue);
+      }
+      choices().forEach((choice) => choice.addEventListener('click', () => {
+        hidden.value = choice.dataset.value || emptyValue;
+        sync();
+        menu.hidden = true;
+        menu.classList.add('hidden');
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        closePickerMenus();
+        if (open) load(true);
+      }));
+      toggleBtn.addEventListener('click', () => {
+        const willOpen = menu.hasAttribute('hidden');
+        menu.hidden = !willOpen;
+        menu.classList.toggle('hidden', !willOpen);
+        toggleBtn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        closePickerMenus(willOpen ? menu : null);
+      });
+      sync();
+      return {
+        reset() {
+          hidden.value = emptyValue;
+          sync();
+        }
+      };
+    }
+
+    const memberMenu = bindChoiceMenu({
+      hidden: memberFilter,
+      rootId: 'objekt-member-dropdown',
+      toggleId: 'objekt-member-toggle',
+      menuId: 'objekt-member-menu',
+      labelId: 'objekt-member-label'
+    });
+    const seasonMenu = bindChoiceMenu({
+      hidden: seasonFilter,
+      rootId: 'objekt-season-dropdown',
+      toggleId: 'objekt-season-toggle',
+      menuId: 'objekt-season-menu',
+      labelId: 'objekt-season-label'
+    });
+    const classMenu = bindChoiceMenu({
+      hidden: classFilter,
+      rootId: 'objekt-class-dropdown',
+      toggleId: 'objekt-class-toggle',
+      menuId: 'objekt-class-menu',
+      labelId: 'objekt-class-label'
+    });
+    const sortMenu = bindChoiceMenu({
+      hidden: sortFilter,
+      rootId: 'objekt-sort-dropdown',
+      toggleId: 'objekt-sort-toggle',
+      menuId: 'objekt-sort-menu',
+      labelId: 'objekt-sort-label',
+      emptyValue: 'latest',
+      emptyLabel: '최신순'
+    });
+    window.ObjektKindCombo?.bindKindCombo({
+      input: document.getElementById('objekt-kind-select'),
+      menu: document.getElementById('objekt-kind-menu'),
+      toggle: document.getElementById('objekt-kind-toggle'),
+      hiddenInput: kindFilter,
+      empty: document.getElementById('objekt-kind-empty'),
+      closeOthers() {
+        closePickerMenus(document.getElementById('objekt-kind-menu'));
+      },
+      onChange() {
+        window.clearTimeout(searchTimer);
+        searchTimer = window.setTimeout(() => { if (open) load(true); }, 250);
+      }
+    });
+    document.addEventListener('click', (event) => {
+      if (event.target.closest('#objektPickerPanel .objekt-filter')) return;
+      closePickerMenus();
+    });
+
     [memberFilter, seasonFilter, classFilter].forEach((el) => {
-      if (el) el.addEventListener('change', () => { if (open) load(true); });
+      if (el && el.tagName === 'SELECT') el.addEventListener('change', () => { if (open) load(true); });
     });
     if (searchFilter) {
       searchFilter.addEventListener('input', () => {
@@ -386,9 +515,17 @@
     }
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
-        if (memberFilter) memberFilter.value = '';
-        if (seasonFilter) seasonFilter.value = '';
-        if (classFilter) classFilter.value = '';
+        memberMenu.reset();
+        seasonMenu.reset();
+        classMenu.reset();
+        sortMenu.reset();
+        if (kindFilter) kindFilter.value = 'all';
+        const kindInput = document.getElementById('objekt-kind-select');
+        if (kindInput) {
+          kindInput.value = '전체';
+          kindInput.dataset.kindValue = 'all';
+          kindInput.closest('.objekt-filter')?.classList.remove('is-filtered');
+        }
         if (searchFilter) searchFilter.value = '';
         if (open) load(true);
       });
@@ -405,10 +542,14 @@
         const id = chipEl.dataset.objektId;
         if (!id) return;
         const img = chipEl.querySelector('img');
-        const span = chipEl.querySelector('span');
+        const span = chipEl.querySelector('.objekt-trade-chip-title');
+        const seasonEl = span && span.querySelector('.objekt-trade-season');
+        const shown = span ? Array.from(span.childNodes).filter((node) => node.nodeType === Node.TEXT_NODE).map((node) => node.textContent).join('').trim() : id;
         itemCache.set(id, {
           id: id,
-          collectionId: span ? span.textContent : id,
+          collectionId: shown,
+          cardTitle: shown,
+          season: seasonEl ? seasonEl.textContent.trim() : '',
           thumbnailImage: img ? img.src : ''
         });
       });

@@ -14,12 +14,14 @@ class ArticleObjektOrderingTest {
         var catalog = mock(ObjektService.class);
         var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
                 mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog, mock(ArtistSnapshotService.class));
-        when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("id","uuid","slug","hayeoncc367z","collectionId","Cream02 HaYeon 367Z","member","HaYeon")));
+        when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("id","uuid","slug","hayeoncc367z","collectionId","Cream02 HaYeon 367Z","member","HaYeon","season","Cream02")));
         for (String category : List.of("trade","sell")) {
             var model = new ExtendedModelMap();
             controller.showArticleForm(category, List.of("uuid","invalid"), model);
             assertThat((List<Map<String,Object>>)model.get("objektSelected")).hasSize(1)
                     .first().extracting(row -> row.get("id")).isEqualTo("uuid");
+            assertThat((List<Map<String,Object>>)model.get("objektSelected"))
+                    .extracting(row -> row.get("cardTitle")).containsExactly("HaYeon 367Z");
             assertThat(model.get("objektInitialSearch")).isEqualTo("Cream02 HaYeon 367Z");
             if ("trade".equals(category)) {
                 assertThat(model.get("isTradeObjektSplit")).isEqualTo(true);
@@ -48,7 +50,7 @@ class ArticleObjektOrderingTest {
             controller.showArticleForm(category, fresh);
             var edited = new ExtendedModelMap();
             controller.editArticle(category, 3L, edited);
-            var options = controller.objektOptions("", "", "", "", "all", 0, 24);
+            var options = controller.objektOptions("", "", "", "", "all", 0, 24, "", "latest");
         assertThat((List<Map<String, Object>>) options.get("items"))
                 .extracting(item -> item.get("member"))
                 .contains("지연", "윤서연", "김유연 × 박시온");
@@ -67,12 +69,31 @@ class ArticleObjektOrderingTest {
         when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("member", "S21"),
                 Map.of("member", "ChaeWon"), Map.of("member", "김채원"), Map.of("member", "S22"),
                 Map.of("member", "zenith")));
-        assertThat(controller.objektOptions("김채원", "", "", "", "members", 0, 24)).containsEntry("total", 3);
-        assertThat(controller.objektOptions("S21", "", "", "", "members", 0, 24)).containsEntry("total", 3);
-        assertThat(controller.objektOptions("", "", "", "", "other", 0, 24)).containsEntry("total", 1);
+        assertThat(controller.objektOptions("김채원", "", "", "", "members", 0, 24, "", "latest")).containsEntry("total", 3);
+        assertThat(controller.objektOptions("S21", "", "", "", "members", 0, 24, "", "latest")).containsEntry("total", 3);
+        assertThat(controller.objektOptions("", "", "", "", "other", 0, 24, "", "latest")).containsEntry("total", 1);
         var model = new ExtendedModelMap(); controller.showArticleForm("trade", model);
         assertThat(model.get("objektMemberOptions")).isEqualTo(List.of("김채원", "설린"));
         assertThat(model.get("hasOtherObjektOption")).isEqualTo(true);
+    }
+
+    @Test @SuppressWarnings("unchecked") void objektOptionsFiltersKindAndSortsByNumber() {
+        var catalog = mock(ObjektService.class);
+        var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
+                mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog, mock(ArtistSnapshotService.class));
+        when(catalog.findCollections("triples")).thenReturn(List.of(
+                Map.of("id", "a", "member", "SeoYeon", "collectionNo", "102Z", "createdAt", "2024-01-01"),
+                Map.of("id", "b", "member", "HyeRin", "collectionNo", "101Z", "createdAt", "2024-02-01"),
+                Map.of("id", "c", "member", "Jiwoo", "collectionNo", "102Z", "createdAt", "2024-03-01")));
+        var kindFiltered = controller.objektOptions("", "", "", "", "all", 0, 24, "102Z", "latest");
+        assertThat(kindFiltered.get("total")).isEqualTo(2);
+        var sorted = controller.objektOptions("", "", "", "", "all", 0, 24, "", "number_low");
+        assertThat((List<Map<String, Object>>) sorted.get("items"))
+                .extracting(row -> row.get("collectionNo"))
+                .containsExactly("101Z", "102Z", "102Z");
+        var form = new ExtendedModelMap();
+        controller.showArticleForm("trade", form);
+        assertThat((List<String>) form.get("objektKindOptions")).containsExactly("101Z", "102Z");
     }
 
     @Test @SuppressWarnings("unchecked") void detailShowsKoreanObjektMembers() {
@@ -120,7 +141,7 @@ class ArticleObjektOrderingTest {
         blankTitle.setTitle("  ");
         blankTitle.setContent("<p>본문</p>");
         var missingTitle = new ExtendedModelMap();
-        assertThat(controller.updateArticle("info", 4L, blankTitle, null, null, null, null, null, null, missingTitle))
+        assertThat(controller.updateArticle("info", 4L, blankTitle, null, null, null, null, null, null, null, missingTitle))
                 .isEqualTo("article/article_edit");
         assertThat(missingTitle.get("errorMessage")).isEqualTo("제목을 입력해주세요.");
 
@@ -128,7 +149,7 @@ class ArticleObjektOrderingTest {
         blankBody.setTitle("제목");
         blankBody.setContent("<p><br></p>");
         var missingBody = new ExtendedModelMap();
-        assertThat(controller.updateArticle("info", 4L, blankBody, null, null, null, null, null, null, missingBody))
+        assertThat(controller.updateArticle("info", 4L, blankBody, null, null, null, null, null, null, null, missingBody))
                 .isEqualTo("article/article_edit");
         assertThat(missingBody.get("errorMessage")).isEqualTo("내용을 입력해주세요.");
 
@@ -138,7 +159,7 @@ class ArticleObjektOrderingTest {
         same.setTitle("같은 제목");
         same.setContent("<p>같은 내용</p>");
         var unchanged = new ExtendedModelMap();
-        assertThat(controller.updateArticle("info", 4L, same, null, null, null, null, null, null, unchanged))
+        assertThat(controller.updateArticle("info", 4L, same, null, null, null, null, null, null, null, unchanged))
                 .isEqualTo("article/article_edit");
         assertThat(unchanged.get("errorMessage")).isEqualTo("게시글을 수정해주세요.");
     }
@@ -151,7 +172,8 @@ class ArticleObjektOrderingTest {
         ArticleObjekt have = new ArticleObjekt();
         have.setObjektKey("have-key");
         have.setSide(ArticleObjektService.SIDE_HAVE);
-        have.setCollectionId("Have Card");
+        have.setCollectionId("Cream02 HaYeon 367Z");
+        have.setSeason("Cream02");
         have.setMemberName("JiYeon");
         ArticleObjekt want = new ArticleObjekt();
         want.setObjektKey("want-key");
@@ -172,7 +194,7 @@ class ArticleObjektOrderingTest {
         controller.showArticle("trade", 11L, null, model);
         assertThat(model.get("isTradeObjektSplit")).isEqualTo(true);
         assertThat((List<Map<String, Object>>) model.get("linkedHaveObjekts"))
-                .extracting(row -> row.get("collectionId")).containsExactly("Have Card");
+                .extracting(row -> row.get("cardTitle")).containsExactly("HaYeon 367Z");
         assertThat((List<Map<String, Object>>) model.get("linkedWantObjekts"))
                 .extracting(row -> row.get("collectionId")).containsExactly("Want Card");
     }

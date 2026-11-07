@@ -30,13 +30,25 @@
                 <a href="/article/sell" {{#isSell}}aria-current="page"{{/isSell}}>거래</a>
             </nav>
             <section class="market-member-filter" aria-label="멤버별 검색">
-                <div class="market-side-seg" role="group" aria-label="Have Want 구분">
-                    <a class="market-side-link{{#isObjektSideAll}} is-active{{/isObjektSideAll}}" href="/article/{{category}}?objektSide=all{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">전체</a>
+                {{#isTrade}}
+                <p class="market-side-help">Have 탭은 Have 멤버만, Want 탭은 Want 멤버만 찾습니다. 멤버를 선택하지 않으면 전체 게시글이 표시됩니다.</p>
+                {{/isTrade}}
+                {{#isSell}}
+                <p class="market-side-help">판매 탭은 판매 글, 구매 탭은 구매 글입니다. 멤버를 고르면 그 탭 오브젝트에 해당 멤버가 하나라도 있는 글이 검색됩니다.</p>
+                {{/isSell}}
+                {{#isObjektSideAll}}<p class="market-side-help" role="status">기존 전체 검색 링크: Have와 Want 양쪽에서 선택한 멤버를 검색합니다.</p>{{/isObjektSideAll}}
+                {{#isTrade}}
+                <div class="market-side-seg" role="group" aria-label="멤버 검색 기준: Have 또는 Want">
                     <a class="market-side-link{{#isObjektSideHave}} is-active{{/isObjektSideHave}}" href="/article/{{category}}?objektSide=have{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Have</a>
-                    {{#isTrade}}
                     <a class="market-side-link{{#isObjektSideWant}} is-active{{/isObjektSideWant}}" href="/article/{{category}}?objektSide=want{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Want</a>
-                    {{/isTrade}}
                 </div>
+                {{/isTrade}}
+                {{#isSell}}
+                <div class="market-side-seg" role="group" aria-label="판매 또는 구매">
+                    <a class="market-side-link{{#isObjektSideHave}} is-active{{/isObjektSideHave}}" href="/article/{{category}}?objektSide=have{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">판매</a>
+                    <a class="market-side-link{{#isObjektSideWant}} is-active{{/isObjektSideWant}}" href="/article/{{category}}?objektSide=want{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">구매</a>
+                </div>
+                {{/isSell}}
                 <div class="member-portrait-picker" id="market-member-picker" role="group" aria-label="멤버 선택">
                     {{>partials/member-portrait-picker}}
                 </div>
@@ -47,9 +59,9 @@
             <div class="article-board-list w-full overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface-container-lowest/40 mb-8">
 
                 <!-- 테이블 헤더 -->
-                <div class="article-board-heading{{#isMarketBoard}} is-market{{/isMarketBoard}}{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-3.5 bg-surface-container-high/60 border-b border-outline-variant/40 text-on-surface-variant font-semibold text-sm text-center">
+                <div class="article-board-heading{{#isTrade}} is-market{{/isTrade}}{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-3.5 bg-surface-container-high/60 border-b border-outline-variant/40 text-on-surface-variant font-semibold text-sm text-center">
                     <div class="article-board-num">번호</div>
-                    {{#isMarketBoard}}<div class="article-board-swap">분류</div>{{/isMarketBoard}}
+                    {{#isTrade}}<div class="article-board-swap">분류</div>{{/isTrade}}
                     <div class="article-board-subject">제목</div>
                     <div class="article-board-author">작성자</div>
                     <div class="article-board-date">날짜</div>
@@ -59,9 +71,9 @@
                 <!-- 테이블 바디 (게시글 목록 루프) -->
                 <div class="divide-y divide-outline-variant/20">
                     {{#articleList}}
-                        <div class="article-board-row{{#isMarketBoard}} is-market{{/isMarketBoard}}{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-4 items-center text-center text-sm text-on-surface hover:bg-surface-container-highest/30 transition-colors">
+                        <div class="article-board-row{{#isTrade}} is-market{{/isTrade}}{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-4 items-center text-center text-sm text-on-surface hover:bg-surface-container-highest/30 transition-colors">
                             <div class="article-board-num text-outline font-mono">{{displayId}}</div>
-                            {{#isMarketBoard}}
+                            {{#isTrade}}
                             <div class="article-board-swap">
                                 {{#hasMemberSwap}}
                                 <span class="article-swap">
@@ -71,7 +83,7 @@
                                 </span>
                                 {{/hasMemberSwap}}
                             </div>
-                            {{/isMarketBoard}}
+                            {{/isTrade}}
                             <div class="article-board-subject text-left font-medium truncate">
                                 <a href="/article/{{#category}}{{category}}{{/category}}{{^category}}trade{{/category}}/{{id}}" class="hover:text-primary-container transition-colors">
                                     {{title}}
@@ -120,9 +132,9 @@
                 <!-- 오른쪽: 권한별 글쓰기 버튼 -->
                 <div class="flex items-center justify-end w-full sm:w-auto">
                     {{#isAdmin}}
-                            <a href="/article/{{category}}/new" class="md-btn md-btn-filled py-2.5 px-5 rounded-full bg-primary-container text-on-primary font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
-                                <span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
-                                <span>글 쓰기</span>
+                            <a href="/article/{{category}}/new{{#isSell}}?objektSide={{selectedObjektSide}}{{/isSell}}" class="article-write-btn md-btn md-btn-filled py-2.5 px-5 rounded-full bg-primary-container text-black font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
+                                <span class="material-symbols-outlined text-[18px] text-black" data-icon="edit">edit</span>
+                                <span class="text-black">글 쓰기</span>
                             </a>
                         {{/isAdmin}}
 

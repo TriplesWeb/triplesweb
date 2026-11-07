@@ -16,6 +16,7 @@ import com.example.triplesweb.service.CommentService;
 import com.example.triplesweb.service.DateTimeFormatService;
 import com.example.triplesweb.util.ArticleHtmlCleaner;
 import com.example.triplesweb.util.ArticleMemberSwap;
+import com.example.triplesweb.util.ObjektCatalogSort;
 import com.example.triplesweb.util.ObjektFilterOrder;
 import com.example.triplesweb.util.ObjektSeasonCodes;
 import com.example.triplesweb.util.MemberPortraitOptions;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -64,6 +66,10 @@ public class ArticleController {
         return "trade".equals(category);
     }
 
+    private static boolean isSellBoard(String category) {
+        return "sell".equals(category);
+    }
+
     private boolean isInvalidCategory(String category) {
         return !ALLOWED_CATEGORIES.contains(category);
     }
@@ -75,12 +81,12 @@ public class ArticleController {
 
     /** 작성 폼 */
     public String showArticleForm(String category, Model model) {
-        return showArticleForm(category, null, null, null, model);
+        return showArticleForm(category, null, null, null, null, null, model);
     }
 
     /** 테스트·deep-link 호환: selectedObjektIds는 trade에서 Have로 매핑된다. */
     public String showArticleForm(String category, List<String> selectedObjektIds, Model model) {
-        return showArticleForm(category, selectedObjektIds, null, null, model);
+        return showArticleForm(category, selectedObjektIds, null, null, null, null, model);
     }
 
     @GetMapping("/new")
@@ -88,19 +94,22 @@ public class ArticleController {
                                   @RequestParam(value = "selectedObjektIds", required = false) List<String> selectedObjektIds,
                                   @RequestParam(value = "selectedHaveObjektIds", required = false) List<String> selectedHaveObjektIds,
                                   @RequestParam(value = "selectedWantObjektIds", required = false) List<String> selectedWantObjektIds,
+                                  @RequestParam(value = "sellListingSide", required = false) String sellListingSide,
+                                  @RequestParam(value = "objektSide", required = false) String objektSide,
                                   Model model) {
         if (isInvalidCategory(category)) return "redirect:/article/trade";
 
         // 로그인 체크 및 관리자 체크 제거 (누구나 작성 가능)
         model.addAttribute("category", category);
         model.addAttribute("categoryName", getCategoryName(category));
+        addCategoryFlags(model, category);
         model.addAttribute("articleForm", new ArticleForm());
-        // COSMO deep link selectedObjektIds → trade Have 사전선택
+        // COSMO deep link selectedObjektIds → trade Have / 거래 판매 사전선택
         List<String> have = selectedHaveObjektIds;
         if ((have == null || have.isEmpty()) && selectedObjektIds != null && !selectedObjektIds.isEmpty()) {
             have = selectedObjektIds;
         }
-        addObjektOptions(model, category, have, selectedWantObjektIds);
+        addObjektOptions(model, category, have, selectedWantObjektIds, firstNonBlank(sellListingSide, objektSide));
         return "article/article_new";
     }
 
@@ -114,23 +123,27 @@ public class ArticleController {
                                 @RequestParam(value = "uploadedFiles", required = false) List<String> uploadedFiles,
                                 @RequestParam(value = "selectedObjektIds", required = false) List<String> selectedObjektIds,
                                 @RequestParam(value = "selectedHaveObjektIds", required = false) List<String> selectedHaveObjektIds,
-                                @RequestParam(value = "selectedWantObjektIds", required = false) List<String> selectedWantObjektIds) throws IOException {
+                                @RequestParam(value = "selectedWantObjektIds", required = false) List<String> selectedWantObjektIds,
+                                @RequestParam(value = "sellListingSide", required = false) String sellListingSide) throws IOException {
         if (isInvalidCategory(category)) return "redirect:/article/trade";
 
         String cleanedContent = ArticleHtmlCleaner.clean(form.getContent());
         form.setContent(cleanedContent);
-        List<String> haveKeys = isTradeBoard(category) ? selectedHaveObjektIds : selectedObjektIds;
-        List<String> wantKeys = isTradeBoard(category) ? selectedWantObjektIds : null;
+        LinkedSides sides = resolveLinkedSides(
+                category, selectedObjektIds, selectedHaveObjektIds, selectedWantObjektIds, sellListingSide);
+        List<String> haveKeys = sides.have();
+        List<String> wantKeys = sides.want();
         String validationError = validateTitleAndContent(form.getTitle(), cleanedContent);
-        if (validationError == null && isTradeBoard(category)) {
-            validationError = ArticleObjektService.validateTradeSides(haveKeys, wantKeys);
+        if (validationError == null) {
+            validationError = validateObjektSelection(category, haveKeys, wantKeys);
         }
         if (bindingResult.hasErrors() || validationError != null) {
             model.addAttribute("category", category);
             model.addAttribute("categoryName", getCategoryName(category));
+            addCategoryFlags(model, category);
             model.addAttribute("errorMessage", validationError != null ? validationError : "제목과 내용을 모두 입력해주세요.");
             model.addAttribute("articleForm", form);
-            addObjektOptions(model, category, haveKeys, wantKeys);
+            addObjektOptions(model, category, haveKeys, wantKeys, sellListingSide);
             return "article/article_new";
         }
 
@@ -143,11 +156,7 @@ public class ArticleController {
         try {
             Article savedArticle = articleService.create(article);
             if (isObjektBoard(category)) {
-                if (isTradeBoard(category)) {
-                    articleObjektService.attachSelected(savedArticle, haveKeys, wantKeys);
-                } else {
-                    articleObjektService.attachSelected(savedArticle, selectedObjektIds);
-                }
+                articleObjektService.attachSelected(savedArticle, haveKeys, wantKeys);
             }
             if (files != null) {
                 for (MultipartFile mf : files) {
@@ -166,22 +175,32 @@ public class ArticleController {
             model.addAttribute("categoryName", getCategoryName(category));
             model.addAttribute("errorMessage", "글을 저장하지 못했습니다. 첨부 파일과 내용을 확인한 뒤 다시 시도해 주세요.");
             model.addAttribute("articleForm", form);
-            addObjektOptions(model, category, haveKeys, wantKeys);
+            addCategoryFlags(model, category);
+            addObjektOptions(model, category, haveKeys, wantKeys, sellListingSide);
             return "article/article_new";
         }
     }
 
     private void addObjektOptions(Model model, String category) {
-        addObjektOptions(model, category, null, null);
+        addObjektOptions(model, category, null, null, null);
     }
 
     private void addObjektOptions(Model model, String category, List<String> haveKeys, List<String> wantKeys) {
+        addObjektOptions(model, category, haveKeys, wantKeys, null);
+    }
+
+    private void addObjektOptions(Model model, String category, List<String> haveKeys, List<String> wantKeys,
+                                  String sellListingSide) {
         if (!(isObjektBoard(category))) {
             return;
         }
         boolean tradeSplit = isTradeBoard(category);
+        boolean sellWant = isSellBoard(category) && "want".equals(normalizeSellListingSide(sellListingSide));
         Set<String> haveSelected = keySet(haveKeys);
         Set<String> wantSelected = tradeSplit ? keySet(wantKeys) : Set.of();
+        if (isSellBoard(category) && sellWant && haveSelected.isEmpty()) {
+            haveSelected = keySet(wantKeys);
+        }
 
         List<Map<String, Object>> selectedItems = new ArrayList<>();
         List<Map<String, Object>> haveItems = new ArrayList<>();
@@ -189,14 +208,17 @@ public class ArticleController {
         Set<String> members = new LinkedHashSet<>();
         Set<String> seasons = new LinkedHashSet<>();
         Set<String> classes = new LinkedHashSet<>();
+        Set<String> kinds = new LinkedHashSet<>();
 
         for (Map<String, Object> item : objektService.findCollections("triples")) {
             String member = stringValue(item.get("member"));
             String season = stringValue(item.get("season"));
             String klass = stringValue(item.get("class"));
+            String kind = stringValue(item.get("collectionNo"));
             if (!member.isBlank()) members.add(member);
             if (!season.isBlank()) seasons.add(season);
             if (!klass.isBlank()) classes.add(klass);
+            if (!kind.isBlank()) kinds.add(kind);
 
             String id = stringValue(item.get("id"));
             String collectionId = stringValue(item.get("collectionId"));
@@ -215,6 +237,8 @@ public class ArticleController {
         boolean hasOther = members.stream().anyMatch(MemberPortraitOptions::isOtherMember);
         model.addAttribute("showObjektPicker", true);
         model.addAttribute("isTradeObjektSplit", tradeSplit);
+        model.addAttribute("isSellListingHave", isSellBoard(category) && !sellWant);
+        model.addAttribute("isSellListingWant", isSellBoard(category) && sellWant);
         model.addAttribute("objektSelected", selectedItems);
         model.addAttribute("objektHaveSelected", haveItems);
         model.addAttribute("objektWantSelected", wantItems);
@@ -223,6 +247,8 @@ public class ArticleController {
         model.addAttribute("hasOtherObjektOption", hasOther);
         model.addAttribute("objektSeasonOptions", ObjektFilterOrder.sortedSeasons(seasons));
         model.addAttribute("objektClassOptions", classes.stream()
+                .sorted(String.CASE_INSENSITIVE_ORDER).toList());
+        model.addAttribute("objektKindOptions", kinds.stream()
                 .sorted(String.CASE_INSENSITIVE_ORDER).toList());
     }
 
@@ -248,29 +274,33 @@ public class ArticleController {
                                              @RequestParam(defaultValue = "") String q,
                                              @RequestParam(defaultValue = "all") String group,
                                              @RequestParam(defaultValue = "0") int offset,
-                                             @RequestParam(defaultValue = "24") int limit) {
+                                             @RequestParam(defaultValue = "24") int limit,
+                                             @RequestParam(defaultValue = "") String kind,
+                                             @RequestParam(defaultValue = "latest") String sort) {
         int size = Math.min(48, Math.max(1, limit));
         int start = Math.max(0, offset);
-        String seasonKey = season.trim().toLowerCase();
-        String classKey = objektClass.trim().toLowerCase();
-        String query = q.trim().toLowerCase();
+        String seasonKey = season.trim().toLowerCase(Locale.ROOT);
+        String classKey = objektClass.trim().toLowerCase(Locale.ROOT);
+        String query = q.trim().toLowerCase(Locale.ROOT);
         String selectedGroup = "other".equalsIgnoreCase(group) ? "other"
                 : ("members".equalsIgnoreCase(group) || !member.isBlank() ? "members" : "all");
         List<String> selectedMembers = member.isBlank() ? List.of() : List.of(member.trim());
         List<Map<String, Object>> matched = new ArrayList<>();
         for (Map<String, Object> item : objektService.findCollections("triples")) {
             if (!MemberPortraitOptions.matchesMemberGroup(selectedGroup, selectedMembers, stringValue(item.get("member")))) continue;
-            if (!seasonKey.isEmpty() && !stringValue(item.get("season")).toLowerCase().equals(seasonKey)) continue;
-            if (!classKey.isEmpty() && !stringValue(item.get("class")).toLowerCase().equals(classKey)) continue;
+            if (!seasonKey.isEmpty() && !stringValue(item.get("season")).toLowerCase(Locale.ROOT).equals(seasonKey)) continue;
+            if (!classKey.isEmpty() && !stringValue(item.get("class")).toLowerCase(Locale.ROOT).equals(classKey)) continue;
+            if (!ObjektCatalogSort.matchesKind(kind, item)) continue;
             if (!query.isEmpty()) {
                 String haystack = (stringValue(item.get("collectionId")) + " " + stringValue(item.get("member"))
                         + " " + stringValue(item.get("collectionNo")) + " " + stringValue(item.get("season"))
-                        + " " + stringValue(item.get("class"))).toLowerCase();
+                        + " " + stringValue(item.get("class"))).toLowerCase(Locale.ROOT);
                 if (!ObjektSeasonCodes.matches(query, haystack,
                         stringValue(item.get("season")), stringValue(item.get("collectionNo")))) continue;
             }
             matched.add(item);
         }
+        matched.sort(ObjektCatalogSort.comparator(sort));
         int end = Math.min(matched.size(), start + size);
         List<Map<String, Object>> page = new ArrayList<>();
         if (start < matched.size()) {
@@ -287,6 +317,8 @@ public class ArticleController {
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("id", stringValue(item.get("id")));
         row.put("collectionId", stringValue(item.get("collectionId")));
+        row.put("cardTitle", ObjektSeasonCodes.cardTitle(
+                stringValue(item.get("collectionId")), stringValue(item.get("season"))));
         row.put("member", com.example.triplesweb.util.MemberPortraitOptions.displayMember(stringValue(item.get("member"))));
         row.put("season", stringValue(item.get("season")));
         row.put("class", stringValue(item.get("class")));
@@ -320,7 +352,7 @@ public class ArticleController {
             @RequestParam(name = "type", required = false, defaultValue = "title") String type,
             @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword,
             @RequestParam(name = "member", required = false, defaultValue = "") String member,
-            @RequestParam(name = "objektSide", required = false, defaultValue = "all") String objektSide) {
+            @RequestParam(name = "objektSide", required = false, defaultValue = "have") String objektSide) {
 
         if (isInvalidCategory(category)) {
             return "redirect:/article/trade";
@@ -336,30 +368,42 @@ public class ArticleController {
         String selectedMember = member == null ? "" : member.trim();
         String selectedSide = normalizeObjektSide(category, objektSide);
         boolean marketBoard = isObjektBoard(category);
-        int fetchLimit = marketBoard && !selectedMember.isEmpty() ? Math.max(limit, 200) : limit;
-
-        // 검색어가 있으면 검색, 없으면 최신 게시글 조회
+        int safeLimit = Math.min(100, Math.max(1, limit));
         List<Article> articles;
-        if (searchKeyword.isEmpty()) {
-            articles = articleService.findRecentByCategory(category, fetchLimit);
+        Map<Long, List<ArticleObjekt>> linkedByArticle;
+        boolean filterBySide = marketBoard && (!selectedMember.isEmpty() || isSellBoard(category));
+        if (filterBySide) {
+            // Keyset batches preserve exact member/unit matching while searching beyond the newest page.
+            articles = new ArrayList<>();
+            linkedByArticle = new LinkedHashMap<>();
+            long beforeId = Long.MAX_VALUE;
+            int batchSize = 100;
+            while (articles.size() < safeLimit) {
+                List<Article> batch = articleService.findCategoryBatchBefore(category, searchType, searchKeyword, beforeId, batchSize);
+                if (batch == null || batch.isEmpty()) break;
+                Map<Long, List<ArticleObjekt>> batchLinks = articleObjektService.groupByArticleId(
+                        batch.stream().map(Article::getId).filter(Objects::nonNull).toList());
+                if (batchLinks == null) batchLinks = Map.of();
+                for (Article art : batch) {
+                    List<ArticleObjekt> links = batchLinks.getOrDefault(art.getId(), List.of());
+                    if (matchesMarketListing(category, links, selectedMember, selectedSide)) {
+                        articles.add(art);
+                        linkedByArticle.put(art.getId(), links);
+                        if (articles.size() == safeLimit) break;
+                    }
+                }
+                if (batch.size() < batchSize) break;
+                beforeId = batch.get(batch.size() - 1).getId();
+            }
         } else {
-            articles = articleService.searchByCategory(
-                    category, searchType, searchKeyword, fetchLimit);
+            articles = searchKeyword.isEmpty()
+                    ? articleService.findRecentByCategory(category, safeLimit)
+                    : articleService.searchByCategory(category, searchType, searchKeyword, safeLimit);
+            linkedByArticle = articleObjektService.groupByArticleId(
+                    articles.stream().map(Article::getId).filter(Objects::nonNull).toList());
+            if (linkedByArticle == null) linkedByArticle = Map.of();
         }
-
         List<Artist> artists = artistSnapshot.findAll();
-        Map<Long, List<ArticleObjekt>> linkedByArticle = articleObjektService.groupByArticleId(
-                articles.stream().map(Article::getId).filter(Objects::nonNull).toList());
-        if (linkedByArticle == null) linkedByArticle = Map.of();
-
-        if (marketBoard && !selectedMember.isEmpty()) {
-            Map<Long, List<ArticleObjekt>> links = linkedByArticle;
-            articles = articles.stream()
-                    .filter(art -> ArticleMemberSwap.matchesMember(
-                            links.getOrDefault(art.getId(), List.of()), selectedMember, selectedSide))
-                    .limit(limit)
-                    .toList();
-        }
 
         List<ArticleViewDto> articleViewList = new ArrayList<>();
 
@@ -395,9 +439,7 @@ public class ArticleController {
 
         model.addAttribute("category", category);
         model.addAttribute("categoryName", getCategoryName(category));
-        model.addAttribute("isMarketBoard", marketBoard);
-        model.addAttribute("isTrade", "trade".equals(category));
-        model.addAttribute("isSell", "sell".equals(category));
+        addCategoryFlags(model, category);
         model.addAttribute("isGroupOrders", "group-orders".equals(category));
         if (marketBoard) {
             addMarketMemberFilter(model, selectedMember, selectedSide, artists);
@@ -459,9 +501,12 @@ public class ArticleController {
             model.addAttribute("hasLinkedWantObjekts", !wantViews.isEmpty());
             model.addAllAttributes(ArticleMemberSwap.summarize(haveLinks, wantLinks, artists, true));
         } else if (isObjektBoard(category)) {
-            model.addAllAttributes(ArticleMemberSwap.summarize(linkedObjekts, List.of(), artists, false));
+            List<ArticleObjekt> haveLinks = articleObjektService.findHaveForArticle(id);
+            List<ArticleObjekt> wantLinks = articleObjektService.findWantForArticle(id);
+            model.addAllAttributes(ArticleMemberSwap.summarize(haveLinks, wantLinks, artists, false));
         }
         model.addAttribute("category", category);
+        addCategoryFlags(model, category);
         model.addAttribute("commentDtos", commentService.show(id));
         model.addAttribute("categoryName", getCategoryName(category));
         model.addAttribute("isOwner", true); // 로그인 제거: 누구나 수정/삭제 가능
@@ -505,6 +550,7 @@ public class ArticleController {
         model.addAttribute("article", article);
         model.addAttribute("category", category);
         model.addAttribute("categoryName", getCategoryName(category));
+        addCategoryFlags(model, category);
         addObjektOptionsForArticle(model, category, id);
 
         List<ArticleFileDto> fileDtos = toFileDtos(article);
@@ -527,6 +573,7 @@ public class ArticleController {
                                 @RequestParam(value = "selectedObjektIds", required = false) List<String> selectedObjektIds,
                                 @RequestParam(value = "selectedHaveObjektIds", required = false) List<String> selectedHaveObjektIds,
                                 @RequestParam(value = "selectedWantObjektIds", required = false) List<String> selectedWantObjektIds,
+                                @RequestParam(value = "sellListingSide", required = false) String sellListingSide,
                                 Model model) throws IOException {
         if (isInvalidCategory(category)) return "redirect:/article/trade";
 
@@ -534,8 +581,10 @@ public class ArticleController {
         if (article == null) return "redirect:/article/" + category;
 
         newarticle.setContent(ArticleHtmlCleaner.clean(newarticle.getContent()));
-        List<String> haveKeys = isTradeBoard(category) ? selectedHaveObjektIds : selectedObjektIds;
-        List<String> wantKeys = isTradeBoard(category) ? selectedWantObjektIds : null;
+        LinkedSides sides = resolveLinkedSides(
+                category, selectedObjektIds, selectedHaveObjektIds, selectedWantObjektIds, sellListingSide);
+        List<String> haveKeys = sides.have();
+        List<String> wantKeys = sides.want();
         String validationError = validateArticleUpdate(article, newarticle, category, files, uploadedFiles, deletedFiles, haveKeys, wantKeys);
         if (validationError != null) {
             // 사용자가 입력한 값을 유지해 재표시
@@ -544,7 +593,8 @@ public class ArticleController {
             prepareEditModel(article, model, validationError);
             model.addAttribute("category", category);
             model.addAttribute("categoryName", getCategoryName(category));
-            addObjektOptions(model, category, haveKeys, wantKeys);
+            addCategoryFlags(model, category);
+            addObjektOptions(model, category, haveKeys, wantKeys, sellListingSide);
             return "article/article_edit";
         }
 
@@ -558,11 +608,7 @@ public class ArticleController {
                     deletedFiles);
 
             if (isObjektBoard(category)) {
-                if (isTradeBoard(category)) {
-                    articleObjektService.replaceSelected(saved, haveKeys, wantKeys);
-                } else {
-                    articleObjektService.replaceSelected(saved, selectedObjektIds);
-                }
+                articleObjektService.replaceSelected(saved, haveKeys, wantKeys);
             }
             return "redirect:/article/" + category + "/" + id;
         } catch (RuntimeException | IOException ex) {
@@ -571,7 +617,8 @@ public class ArticleController {
             prepareEditModel(article, model, "글을 수정하지 못했습니다. 첨부 파일과 내용을 확인한 뒤 다시 시도해 주세요.");
             model.addAttribute("category", category);
             model.addAttribute("categoryName", getCategoryName(category));
-            addObjektOptions(model, category, haveKeys, wantKeys);
+            addCategoryFlags(model, category);
+            addObjektOptions(model, category, haveKeys, wantKeys, sellListingSide);
             return "article/article_edit";
         }
     }
@@ -591,16 +638,22 @@ public class ArticleController {
                     have.add(link.getObjektKey());
                 }
             }
-            addObjektOptions(model, category, have, want);
+            addObjektOptions(model, category, have, want, null);
             return;
         }
+        String listingSide = sellListingSideFrom(links);
+        boolean wantListing = "want".equals(listingSide);
         List<String> selected = links.stream()
+                .filter(link -> wantListing
+                        ? ArticleObjektService.SIDE_WANT.equalsIgnoreCase(link.getSide())
+                        : !ArticleObjektService.SIDE_WANT.equalsIgnoreCase(
+                                link.getSide() == null ? "" : link.getSide()))
                 .map(com.example.triplesweb.entity.ArticleObjekt::getObjektKey)
                 .filter(Objects::nonNull)
                 .map(String::trim)
                 .filter(v -> !v.isEmpty())
                 .toList();
-        addObjektOptions(model, category, selected, null);
+        addObjektOptions(model, category, selected, null, listingSide);
     }
 
     /** 삭제 */
@@ -667,10 +720,8 @@ public class ArticleController {
                                          List<String> wantKeys) {
         String invalid = validateArticle(incoming);
         if (invalid != null) return invalid;
-        if (isTradeBoard(category)) {
-            String tradeError = ArticleObjektService.validateTradeSides(haveKeys, wantKeys);
-            if (tradeError != null) return tradeError;
-        }
+        String objektError = validateObjektSelection(category, haveKeys, wantKeys);
+        if (objektError != null) return objektError;
         boolean sameText = existing.getTitle() != null
                 && existing.getTitle().trim().equals(incoming.getTitle().trim())
                 && ArticleHtmlCleaner.fingerprint(existing.getContent())
@@ -696,7 +747,7 @@ public class ArticleController {
                                         List<String> haveKeys,
                                         List<String> wantKeys) {
         List<com.example.triplesweb.entity.ArticleObjekt> currentLinks = articleObjektService.findForArticle(articleId);
-        if (isTradeBoard(category)) {
+        if (isTradeBoard(category) || isSellBoard(category)) {
             Set<String> currentHave = currentLinks.stream()
                     .filter(link -> {
                         String side = link.getSide();
@@ -731,6 +782,8 @@ public class ArticleController {
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("objektKey", link.getObjektKey());
         row.put("collectionId", link.getCollectionId());
+        row.put("cardTitle", ObjektSeasonCodes.cardTitle(link.getCollectionId(), link.getSeason()));
+        row.put("season", link.getSeason());
         row.put("memberName", MemberPortraitOptions.displayMember(link.getMemberName()));
         row.put("memberColor", MemberPortraitOptions.artistColor(link.getMemberName(), artists));
         row.put("thumbnailImage", link.getThumbnailImage());
@@ -757,10 +810,73 @@ public class ArticleController {
     }
 
     private static String normalizeObjektSide(String category, String objektSide) {
-        if (!isTradeBoard(category)) return "have";
-        if (objektSide == null) return "all";
+        if (!isObjektBoard(category)) return "have";
+        if (objektSide == null) return "have";
         String normalized = objektSide.trim().toLowerCase();
-        if ("have".equals(normalized) || "want".equals(normalized)) return normalized;
-        return "all";
+        if (isTradeBoard(category) && "all".equals(normalized)) return "all";
+        if ("want".equals(normalized)) return "want";
+        return "have";
     }
+
+    private static String normalizeSellListingSide(String side) {
+        return "want".equalsIgnoreCase(side == null ? "" : side.trim()) ? "want" : "have";
+    }
+
+    private static String sellListingSideFrom(List<ArticleObjekt> links) {
+        boolean have = false;
+        boolean want = false;
+        if (links != null) {
+            for (ArticleObjekt link : links) {
+                if (link == null) continue;
+                if (ArticleObjektService.SIDE_WANT.equalsIgnoreCase(link.getSide())) want = true;
+                else have = true;
+            }
+        }
+        return (want && !have) ? "want" : "have";
+    }
+
+    private static boolean matchesMarketListing(String category, List<ArticleObjekt> links, String member, String side) {
+        if (member != null && !member.isBlank()) {
+            // 판매/구매(또는 Have/Want) 오브젝트 중 해당 멤버가 하나라도 있으면 찾는다.
+            return ArticleMemberSwap.matchesMember(links, member, side);
+        }
+        if (isSellBoard(category)) {
+            return ArticleMemberSwap.hasSide(links, side);
+        }
+        return true;
+    }
+
+    private void addCategoryFlags(Model model, String category) {
+        model.addAttribute("isMarketBoard", isObjektBoard(category));
+        model.addAttribute("isTrade", isTradeBoard(category));
+        model.addAttribute("isSell", isSellBoard(category));
+    }
+
+    private static LinkedSides resolveLinkedSides(String category,
+                                                  List<String> selectedObjektIds,
+                                                  List<String> selectedHaveObjektIds,
+                                                  List<String> selectedWantObjektIds,
+                                                  String sellListingSide) {
+        if (isTradeBoard(category)) {
+            return new LinkedSides(selectedHaveObjektIds, selectedWantObjektIds);
+        }
+        if (isSellBoard(category) && "want".equals(normalizeSellListingSide(sellListingSide))) {
+            return new LinkedSides(List.of(), selectedObjektIds);
+        }
+        return new LinkedSides(selectedObjektIds, List.of());
+    }
+
+    private static String validateObjektSelection(String category, List<String> haveKeys, List<String> wantKeys) {
+        if (isTradeBoard(category)) {
+            return ArticleObjektService.validateTradeSides(haveKeys, wantKeys);
+        }
+        return null;
+    }
+
+    private static String firstNonBlank(String first, String second) {
+        if (first != null && !first.isBlank()) return first;
+        return second;
+    }
+
+    private record LinkedSides(List<String> have, List<String> want) {}
 }

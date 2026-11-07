@@ -29,6 +29,7 @@ class ObjektFeaturesTest {
     @org.junit.jupiter.api.BeforeEach void decorateVisibleCards() {
         when(market.withIssuedSupply(anyList())).thenAnswer(call -> call.getArgument(0));
         when(apollo.story(any())).thenReturn(java.util.Optional.empty());
+        when(storyTranslate.korean(any())).thenAnswer(call -> call.getArgument(0));
     }
     @Autowired MockMvc mvc;
     @MockitoBean ObjektService catalog;
@@ -39,6 +40,7 @@ class ObjektFeaturesTest {
     @MockitoBean ObjektDescriptionRepository descriptions;
     @MockitoBean AboutAdminAuth admin;
     @MockitoBean ApolloObjektMetadataClient apollo;
+    @MockitoBean ObjektStoryTranslateService storyTranslate;
 
     /** Mirrors ObjektService.findByKey indexing so detail routes resolve under the mock catalog. */
     private void stubCatalog(List<Map<String, Object>> items) {
@@ -230,19 +232,29 @@ class ObjektFeaturesTest {
     @Test void modalAttachesApolloStoryWithoutOverwritingLocalDescription() throws Exception {
         var item = Map.<String,Object>of("id","uuid","slug","cream02-kotone-356a","season","Cream02","collectionNo","356A","member","Kotone");
         stubCatalog(List.of(item));
-        when(apollo.story(item)).thenReturn(java.util.Optional.of(new ApolloObjektMetadataClient.Story(
+        var english = new ApolloObjektMetadataClient.Story(
                 "cream02-kotone-356a",
                 "Part of tripleS Official Character byteS Plush Keyring",
                 "tripleS Official Character byteS",
                 "Physical objekts included with the byteS Plush Keyring.",
                 "merch",
                 "<LOVE&POP> pt.1",
-                "https://x.com/soundwave_korea/status/1")));
+                "https://x.com/soundwave_korea/status/1");
+        var korean = new ApolloObjektMetadataClient.Story(
+                "cream02-kotone-356a",
+                "tripleS 공식 캐릭터 byteS 인형 키링의 일부",
+                "tripleS Official Character byteS",
+                "byteS 인형 키링에 포함된 실물 오브젝트입니다.",
+                "merch",
+                "<LOVE&POP> pt.1",
+                "https://x.com/soundwave_korea/status/1");
+        when(apollo.story(item)).thenReturn(java.util.Optional.of(english));
+        when(storyTranslate.korean(english)).thenReturn(korean);
         mvc.perform(get("/cosmo/objekt/detail/cream02-kotone-356a").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.description").value(""))
                 .andExpect(jsonPath("$.apollo.slug").value("cream02-kotone-356a"))
-                .andExpect(jsonPath("$.apollo.description").value("Part of tripleS Official Character byteS Plush Keyring"))
+                .andExpect(jsonPath("$.apollo.description").value("tripleS 공식 캐릭터 byteS 인형 키링의 일부"))
                 .andExpect(jsonPath("$.apollo.eventName").value("tripleS Official Character byteS"))
                 .andExpect(jsonPath("$.apollo.eraName").value("<LOVE&POP> pt.1"));
         var stored = new com.example.triplesweb.entity.ObjektDescription();
@@ -251,6 +263,7 @@ class ObjektFeaturesTest {
         when(descriptions.findByObjektKey(anyString())).thenReturn(java.util.Optional.of(stored));
         mvc.perform(get("/cosmo/objekt/detail/cream02-kotone-356a").accept(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.description").value("관리자 설명"))
+                .andExpect(jsonPath("$.apollo.description").value("tripleS 공식 캐릭터 byteS 인형 키링의 일부"))
                 .andExpect(jsonPath("$.apollo.eventName").value("tripleS Official Character byteS"));
     }
 
