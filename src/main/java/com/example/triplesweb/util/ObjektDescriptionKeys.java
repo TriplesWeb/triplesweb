@@ -13,15 +13,17 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 오브젝트 상세 설명 키.
  * 같은 시즌·번호는 {@code group-} 키를 공유하고,
- * {@code data/objekt-member-descriptions.json}에 있는 묶음만 {@code member-} 키를 쓴다.
+ * JSON에 있는 묶음과 동기화가 기록한 묶음은 {@code member-} 키를 쓴다.
  */
 public final class ObjektDescriptionKeys {
     private static final List<MemberText> MEMBERS = load();
     private static final Set<String> EXCEPTIONS = exceptions(MEMBERS);
+    private static final Set<String> RUNTIME = ConcurrentHashMap.newKeySet();
 
     private ObjektDescriptionKeys() {}
 
@@ -33,7 +35,19 @@ public final class ObjektDescriptionKeys {
     }
 
     public static boolean memberSpecific(String season, String collectionNo) {
-        return EXCEPTIONS.contains(pair(season, collectionNo));
+        String key = pair(season, collectionNo);
+        return EXCEPTIONS.contains(key) || RUNTIME.contains(key);
+    }
+
+    /** 같은 시즌·번호의 문장이 갈릴 때 호출한다. 재시작 뒤에는 DB에서 다시 채운다. */
+    public static void markMemberSpecific(String season, String collectionNo) {
+        String key = pair(season, collectionNo);
+        if (key.startsWith("|") || key.endsWith("|")) return;
+        RUNTIME.add(key);
+    }
+
+    public static void clearRuntime() {
+        RUNTIME.clear();
     }
 
     /** 저장에 쓰는 키. 예외가 아니면 시즌·번호 공통 키, 예외이면 멤버 키. */
@@ -44,7 +58,7 @@ public final class ObjektDescriptionKeys {
         String seasonKey = season.toLowerCase(Locale.ROOT);
         String numberKey = number.toLowerCase(Locale.ROOT);
         if (memberSpecific(seasonKey, numberKey)) {
-            String member = memberToken(text(item, "member", "memberName"));
+            String member = memberOf(item);
             if (!member.isEmpty()) return memberKey(seasonKey, numberKey, member);
         }
         return groupKey(seasonKey, numberKey);
@@ -105,6 +119,20 @@ public final class ObjektDescriptionKeys {
 
     private static String memberToken(String value) {
         return normalize(value).replaceAll("[^a-z0-9]", "");
+    }
+
+    /** 화면 이름은 한글이라 키가 비면 슬러그 {@code season-member-number}에서 멤버를 꺼낸다. */
+    private static String memberOf(Map<String, Object> item) {
+        String named = memberToken(text(item, "member", "memberName"));
+        if (!named.isEmpty()) return named;
+        String slug = normalize(text(item, "slug"));
+        String season = normalize(text(item, "season")).replaceAll("[^a-z0-9]", "");
+        String number = normalize(text(item, "collectionNo", "collectionNumber")).replaceAll("[^a-z0-9]", "");
+        String prefix = season + "-";
+        String suffix = "-" + number;
+        if (season.isEmpty() || number.isEmpty() || !slug.startsWith(prefix) || !slug.endsWith(suffix)) return "";
+        if (slug.length() <= prefix.length() + suffix.length()) return "";
+        return memberToken(slug.substring(prefix.length(), slug.length() - suffix.length()));
     }
 
     private static String text(Map<String, Object> item, String... keys) {

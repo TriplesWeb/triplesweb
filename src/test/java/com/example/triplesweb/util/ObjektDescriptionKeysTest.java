@@ -52,6 +52,15 @@ class ObjektDescriptionKeysTest {
     }
 
     @Test
+    void koreanMemberNameUsesTheSlugToken() {
+        Map<String, Object> seo = Map.of(
+                "id", "seo", "slug", "cream02-seoyeon-335a", "season", "Cream02",
+                "collectionNo", "335A", "member", "서연");
+        assertEquals(ObjektDescriptionKeys.memberKey("cream02", "335a", "seoyeon"),
+                ObjektDescriptionKeys.storageKey(seo));
+    }
+
+    @Test
     void everyExceptionGroupHasAtLeastTwoDescriptions() {
         Map<String, Set<String>> texts = ObjektDescriptionKeys.members().stream()
                 .collect(Collectors.groupingBy(
