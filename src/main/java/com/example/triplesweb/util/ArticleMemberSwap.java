@@ -18,13 +18,31 @@ public final class ArticleMemberSwap {
 
     public static boolean matchesMember(Collection<ArticleObjekt> links, String member, String side) {
         if (links == null || links.isEmpty() || member == null || member.isBlank()) return false;
-        String wanted = MemberPortraitOptions.memberName(member);
-        if (wanted.isBlank()) return false;
+        if (MemberPortraitOptions.memberName(member).isBlank()
+                && MemberPortraitOptions.memberAliases(member).isEmpty()) return false;
+        List<ArticleObjekt> scoped = new ArrayList<>();
         String sideKey = normalizeSide(side);
         for (ArticleObjekt link : links) {
             if (link == null) continue;
             if (sideKey != null && !sideKey.equalsIgnoreCase(blankToHave(link.getSide()))) continue;
-            if (MemberPortraitOptions.objektMembers(link.getMemberName()).contains(wanted)) return true;
+            scoped.add(link);
+        }
+        for (ArticleObjekt link : scoped) {
+            if (matchesName(link.getMemberName(), member)) return true;
+        }
+        for (String name : uniqueMembers(scoped)) {
+            if (matchesName(name, member)) return true;
+        }
+        return false;
+    }
+
+    private static boolean matchesName(String stored, String selected) {
+        if (stored == null || stored.isBlank() || selected == null || selected.isBlank()) return false;
+        if (MemberPortraitOptions.sameMember(stored, selected)) return true;
+        if (MemberPortraitOptions.objektIncludesMember(stored, selected)) return true;
+        for (String name : MemberPortraitOptions.objektMembers(stored)) {
+            if (MemberPortraitOptions.sameMember(name, selected)) return true;
+            if (MemberPortraitOptions.objektIncludesMember(name, selected)) return true;
         }
         return false;
     }

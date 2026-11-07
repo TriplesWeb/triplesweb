@@ -366,7 +366,7 @@ public class ArticleController {
                 if (batchLinks == null) batchLinks = Map.of();
                 for (Article art : batch) {
                     List<ArticleObjekt> links = batchLinks.getOrDefault(art.getId(), List.of());
-                    if (ArticleMemberSwap.matchesMember(links, selectedMember, selectedSide)) {
+                    if (ArticleMemberSwap.matchesMember(links, selectedMember, "all")) {
                         articles.add(art);
                         linkedByArticle.put(art.getId(), links);
                         if (articles.size() == safeLimit) break;

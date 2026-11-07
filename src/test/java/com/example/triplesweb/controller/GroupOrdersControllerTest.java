@@ -108,11 +108,41 @@ class GroupOrdersControllerTest {
             .andExpect(content().string(containsString("기존 전체 검색 링크")));
         mvc.perform(get("/article/trade").param("member", "윤서연").param("objektSide", "have"))
             .andExpect(status().isOk())
-            .andExpect(content().string(not(containsString("오래된 교환 글"))));
+            .andExpect(content().string(containsString("오래된 교환 글")))
+            .andExpect(content().string(containsString("Have·Want에 연결된 글을 모두 찾습니다")));
         mvc.perform(get("/article/trade").param("member", "윤서연").param("objektSide", "want"))
             .andExpect(status().isOk())
             .andExpect(content().string(containsString("오래된 교환 글")));
         verify(articles, atLeastOnce()).findCategoryBatchBefore("trade", "title", "", 101L, 100);
+    }
+
+    @Test void memberSearchFindsEveryLinkedHaveAndWantName() throws Exception {
+        Article post = article("trade");
+        post.setId(88L);
+        post.setTitle("코토네 김나경 교환");
+        ArticleObjekt haveKotone = new ArticleObjekt();
+        haveKotone.setSide("HAVE");
+        haveKotone.setMemberName("코토네");
+        ArticleObjekt haveNakyoung = new ArticleObjekt();
+        haveNakyoung.setSide("HAVE");
+        haveNakyoung.setMemberName("NaKyoung");
+        ArticleObjekt wantNakyoung = new ArticleObjekt();
+        wantNakyoung.setSide("WANT");
+        wantNakyoung.setMemberName("김나경");
+        when(articles.findCategoryBatchBefore(eq("trade"), eq("title"), eq(""), anyLong(), eq(100)))
+            .thenReturn(List.of(post));
+        when(links.groupByArticleId(anyList())).thenReturn(Map.of(88L, List.of(haveKotone, haveNakyoung)));
+        mvc.perform(get("/article/trade").param("member", "김나경").param("objektSide", "have"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("코토네 김나경 교환")));
+        mvc.perform(get("/article/trade").param("member", "코토네"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("코토네 김나경 교환")));
+
+        when(links.groupByArticleId(anyList())).thenReturn(Map.of(88L, List.of(haveKotone, wantNakyoung)));
+        mvc.perform(get("/article/trade").param("member", "김나경").param("objektSide", "have"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("코토네 김나경 교환")));
     }
 
     @Test void noticeBoardIsAllowed() throws Exception {
