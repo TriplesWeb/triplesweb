@@ -53,6 +53,11 @@ uploads/**/.bundle-version
 # Rotating COSMO account credentials
 data/cosmo/
 
+# Apollo description import scratch (seed JSON은 커밋)
+data/apollo-scrape-progress.json
+data/apollo-translate-cache.json
+data/apollo-description-targets.json
+
 ### Node / frontend tooling ###
 node_modules/
 package-lock.json.bak
