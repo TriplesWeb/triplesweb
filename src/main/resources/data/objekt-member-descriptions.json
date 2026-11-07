@@ -10,13 +10,13 @@
           "member": "aaa",
           "slug": "atom01-aaa-000z",
           "collectionId": "Atom01 AAA 000Z",
-          "description": "2022년 10월 14일 Our First Grand Gravity에 투표한 모든 사람에게 선물로 제공됩니다."
+          "description": "2022년 10월 14일 Our First Grand Gravity에 투표한 모든 사람에게 선물."
         },
         {
           "member": "kre",
           "slug": "atom01-kre-000z",
           "collectionId": "Atom01 +(KR)E 000Z",
-          "description": "2022년 10월 14일 Our First Grand Gravity에 투표한 모든 사람에게 선물로 제공됩니다."
+          "description": "2022년 10월 14일 Our First Grand Gravity에 투표한 모든 사람에게 선물."
         },
         {
           "member": "tokyohaus",
@@ -46,7 +46,7 @@
           "member": "hyerin",
           "slug": "atom01-hyerin-201a",
           "collectionId": "Atom01 HyeRin 201A",
-          "description": "인터파크, 핫트랙스, YES24, 알라딘, 신나라 Acid Angel from Asia <ACCESS> 사전예약 보너스"
+          "description": "Interpark, Hottracks, YES24, Aladin, Synnara Acid Angel from Asia <ACCESS> 선주문 보너스"
         },
         {
           "member": "jiwoo",
@@ -58,7 +58,7 @@
           "member": "nakyoung",
           "slug": "atom01-nakyoung-201a",
           "collectionId": "Atom01 NaKyoung 201A",
-          "description": "인터파크, 핫트랙스, YES24, 알라딘, 신나라 Acid Angel from Asia <ACCESS> 사전예약 보너스"
+          "description": "Interpark, Hottracks, YES24, Aladin, Synnara Acid Angel from Asia <ACCESS> 선주문 보너스"
         },
         {
           "member": "seoyeon",
@@ -76,13 +76,13 @@
           "member": "yooyeon",
           "slug": "atom01-yooyeon-201a",
           "collectionId": "Atom01 YooYeon 201A",
-          "description": "인터파크, 핫트랙스, YES24, 알라딘, 신나라 Acid Angel from Asia <ACCESS> 사전예약 보너스"
+          "description": "Interpark, Hottracks, YES24, Aladin, Synnara Acid Angel from Asia <ACCESS> 선주문 보너스"
         },
         {
           "member": "yubin",
           "slug": "atom01-yubin-201a",
           "collectionId": "Atom01 YuBin 201A",
-          "description": "인터파크, 핫트랙스, YES24, 알라딘, 신나라 Acid Angel from Asia <ACCESS> 사전예약 보너스"
+          "description": "Interpark, Hottracks, YES24, Aladin, Synnara Acid Angel from Asia <ACCESS> 선주문 보너스"
         }
       ]
     },
@@ -100,7 +100,7 @@
           "member": "hyerin",
           "slug": "atom01-hyerin-202a",
           "collectionId": "Atom01 HyeRin 202A",
-          "description": "인터파크, 핫트랙스, YES24, 알라딘, 신나라 Acid Angel from Asia <ACCESS> 사전예약 보너스"
+          "description": "Interpark, Hottracks, YES24, Aladin, Synnara Acid Angel from Asia <ACCESS> 선주문 보너스"
         },
         {
           "member": "jiwoo",
@@ -112,7 +112,7 @@
           "member": "nakyoung",
           "slug": "atom01-nakyoung-202a",
           "collectionId": "Atom01 NaKyoung 202A",
-          "description": "인터파크, 핫트랙스, YES24, 알라딘, 신나라 Acid Angel from Asia <ACCESS> 사전예약 보너스"
+          "description": "Interpark, Hottracks, YES24, Aladin, Synnara Acid Angel from Asia <ACCESS> 선주문 보너스"
         },
         {
           "member": "seoyeon",
@@ -130,13 +130,13 @@
           "member": "yooyeon",
           "slug": "atom01-yooyeon-202a",
           "collectionId": "Atom01 YooYeon 202A",
-          "description": "인터파크, 핫트랙스, YES24, 알라딘, 신나라 Acid Angel from Asia <ACCESS> 사전예약 보너스"
+          "description": "Interpark, Hottracks, YES24, Aladin, Synnara Acid Angel from Asia <ACCESS> 선주문 보너스"
         },
         {
           "member": "yubin",
           "slug": "atom01-yubin-202a",
           "collectionId": "Atom01 YuBin 202A",
-          "description": "인터파크, 핫트랙스, YES24, 알라딘, 신나라 Acid Angel from Asia <ACCESS> 사전예약 보너스"
+          "description": "Interpark, Hottracks, YES24, Aladin, Synnara Acid Angel from Asia <ACCESS> 선주문 보너스"
         }
       ]
     },
@@ -310,19 +310,19 @@
           "member": "kotone",
           "slug": "atom02-kotone-311z",
           "collectionId": "Atom02 Kotone 311Z",
-          "description": "TikTok X tripleS 스토리에 'Are You Alive'을(를) 추가하면 선물을 받는 이벤트입니다."
+          "description": "TikTok X tripleS '살아있나요'를 스토리에 추가하면 선물을 드리는 이벤트입니다."
         },
         {
           "member": "nakyoung",
           "slug": "atom02-nakyoung-311z",
           "collectionId": "Atom02 NaKyoung 311Z",
-          "description": "TikTok X tripleS 'Are You Alive'을(를) 사용해 영상이나 이미지를 업로드하면 선물을 주는 이벤트입니다."
+          "description": "TikTok X tripleS '살아있나요'로 영상이나 이미지를 올리면 선물을 드리는 이벤트입니다."
         },
         {
           "member": "seoah",
           "slug": "atom02-seoah-311z",
           "collectionId": "Atom02 SeoAh 311Z",
-          "description": "TikTok X tripleS 'Are You Alive' 게시물에 댓글을 남겨주시면 선물을 드리는 이벤트입니다."
+          "description": "TikTok X tripleS '살아있나요' 게시물에 댓글을 남기면 선물을 드리는 이벤트입니다."
         },
         {
           "member": "yeonji",
@@ -334,7 +334,7 @@
           "member": "yooyeon",
           "slug": "atom02-yooyeon-311z",
           "collectionId": "Atom02 YooYeon 311Z",
-          "description": "TikTok X tripleS 'Are You Alive'을(를) 음악 앱 재생목록에 저장하시면 선물로 드리는 이벤트입니다."
+          "description": "TikTok X tripleS '살아있나요'를 음악 앱 재생목록에 저장하면 선물을 드리는 이벤트입니다."
         }
       ]
     },
@@ -370,7 +370,7 @@
           "member": "hyerin",
           "slug": "atom02-hyerin-345z",
           "collectionId": "Atom02 HyeRin 345Z",
-          "description": "2025 tripleS 여름 에디션 나이트 버전, COSMO 앱 상점에서 판매. HyeRin 오브젝트는 휴가 때문에 임시 이미지를 사용했고 이후 교체되었다."
+          "description": "2025 tripleS 여름 에디션 나이트 버전, COSMO 앱스토어에서 판매됩니다. HyeRin의 Objekt는 휴가 중이어서 임시 이미지를 사용했고 나중에 업데이트되었습니다."
         },
         {
           "member": "jiwoo",
@@ -520,7 +520,7 @@
           "member": "hyerin",
           "slug": "atom02-hyerin-346z",
           "collectionId": "Atom02 HyeRin 346Z",
-          "description": "2025 tripleS 여름 에디션 나이트 버전, COSMO 앱 상점에서 판매. HyeRin 오브젝트는 휴가 때문에 임시 이미지를 사용했고 이후 교체되었다."
+          "description": "2025 tripleS 여름 에디션 나이트 버전, COSMO 앱스토어에서 판매됩니다. HyeRin의 Objekt는 휴가 중이어서 임시 이미지를 사용했고 나중에 업데이트되었습니다."
         },
         {
           "member": "jiwoo",
@@ -670,7 +670,7 @@
           "member": "hyerin",
           "slug": "atom02-hyerin-347z",
           "collectionId": "Atom02 HyeRin 347Z",
-          "description": "2025 tripleS 여름 에디션 나이트 버전, COSMO 앱 상점에서 판매. HyeRin 오브젝트는 휴가 때문에 임시 이미지를 사용했고 이후 교체되었다."
+          "description": "2025 tripleS 여름 에디션 나이트 버전, COSMO 앱스토어에서 판매됩니다. HyeRin의 Objekt는 휴가 중이어서 임시 이미지를 사용했고 나중에 업데이트되었습니다."
         },
         {
           "member": "jiwoo",
@@ -1419,48 +1419,6 @@
       ]
     },
     {
-      "season": "binary01",
-      "collectionNo": "120a",
-      "members": [
-        {
-          "member": "chaeyeon",
-          "slug": "binary01-chaeyeon-120a",
-          "collectionId": "Binary01 ChaeYeon 120A",
-          "description": "실수로 주조되었기 때문에 획득할 수 없습니다. tripleS Binary01 3판의 물리적 오브젝트는 MODHAUS에 의해 출시되지 않았습니다."
-        },
-        {
-          "member": "hyerin",
-          "slug": "binary01-hyerin-120a",
-          "collectionId": "Binary01 HyeRin 120A",
-          "description": "실수로 주조되었기 때문에 획득할 수 없습니다. tripleS Binary01 3판의 물리적 오브젝트는 MODHAUS에 의해 출시되지 않았습니다."
-        },
-        {
-          "member": "jiwoo",
-          "slug": "binary01-jiwoo-120a",
-          "collectionId": "Binary01 JiWoo 120A",
-          "description": "실수로 발행되어 얻을 수 없다. tripleS Binary01 3rd edition 실물 오브젝트는 MODHAUS에서 나오지 않았다."
-        },
-        {
-          "member": "kaede",
-          "slug": "binary01-kaede-120a",
-          "collectionId": "Binary01 Kaede 120A",
-          "description": "실수로 주조되었기 때문에 획득할 수 없습니다. tripleS Binary01 3판의 물리적 오브젝트는 MODHAUS에 의해 출시되지 않았습니다."
-        },
-        {
-          "member": "nien",
-          "slug": "binary01-nien-120a",
-          "collectionId": "Binary01 Nien 120A",
-          "description": "실수로 주조되었기 때문에 획득할 수 없습니다. tripleS Binary01 3판의 물리적 오브젝트는 MODHAUS에 의해 출시되지 않았습니다."
-        },
-        {
-          "member": "xinyu",
-          "slug": "binary01-xinyu-120a",
-          "collectionId": "Binary01 Xinyu 120A",
-          "description": "실수로 주조되었기 때문에 획득할 수 없습니다. tripleS Binary01 3판의 물리적 오브젝트는 MODHAUS에 의해 출시되지 않았습니다."
-        }
-      ]
-    },
-    {
       "season": "binary02",
       "collectionNo": "302a",
       "members": [
@@ -1618,37 +1576,37 @@
           "member": "chaewon",
           "slug": "binary02-chaewon-310a",
           "collectionId": "Binary02 ChaeWon 310A",
-          "description": "tripleS 2026 시즌그리팅 \"tripleShot of Love\" 키트 일부 (스윗 큐피드 버전)"
+          "description": "tripleS 2026 시즌 그리팅 \"tripleS HOT OF LOVE\" 키트 (스윗 큐피드 버전) 의 일부"
         },
         {
           "member": "chaeyeon",
           "slug": "binary02-chaeyeon-310a",
           "collectionId": "Binary02 ChaeYeon 310A",
-          "description": "tripleS 2026 시즌 그리팅 \"tripleShot of Love\" 키트 일부 (프레임 큐피드 버전)"
+          "description": "tripleS 2026 시즌 그리팅 \"tripleS HOT OF LOVE\" 키트 (프레임 큐피드 버전) 의 일부"
         },
         {
           "member": "dahyun",
           "slug": "binary02-dahyun-310a",
           "collectionId": "Binary02 DaHyun 310A",
-          "description": "tripleS 2026 시즌그리팅 \"tripleShot of Love\" 키트 일부 (스윗 큐피드 버전)"
+          "description": "tripleS 2026 시즌 그리팅 \"tripleS HOT OF LOVE\" 키트 (스윗 큐피드 버전) 의 일부"
         },
         {
           "member": "hayeon",
           "slug": "binary02-hayeon-310a",
           "collectionId": "Binary02 HaYeon 310A",
-          "description": "tripleS 2026 시즌 그리팅 \"tripleShot of Love\" 키트 일부 (프레임 큐피드 버전)"
+          "description": "tripleS 2026 시즌 그리팅 \"tripleS HOT OF LOVE\" 키트 (프레임 큐피드 버전) 의 일부"
         },
         {
           "member": "hyerin",
           "slug": "binary02-hyerin-310a",
           "collectionId": "Binary02 HyeRin 310A",
-          "description": "tripleS 2026 시즌그리팅 \"tripleShot of Love\" 키트 일부 (스윗 큐피드 버전)"
+          "description": "tripleS 2026 시즌 그리팅 \"tripleS HOT OF LOVE\" 키트 (스윗 큐피드 버전) 의 일부"
         },
         {
           "member": "jiwoo",
           "slug": "binary02-jiwoo-310a",
           "collectionId": "Binary02 JiWoo 310A",
-          "description": "tripleS 2026 시즌 그리팅 \"tripleShot of Love\" 키트 일부 (프레임 큐피드 버전)"
+          "description": "tripleS 2026 시즌 그리팅 \"tripleS HOT OF LOVE\" 키트 (프레임 큐피드 버전) 의 일부"
         },
         {
           "member": "jiyeon",
@@ -1660,7 +1618,7 @@
           "member": "joobin",
           "slug": "binary02-joobin-310a",
           "collectionId": "Binary02 JooBin 310A",
-          "description": "tripleS 2026 시즌 그리팅 \"tripleShot of Love\" 키트 일부 (팝 큐피드 버전)"
+          "description": "tripleS 2026 시즌 그리팅 \"tripleS HOT OF LOVE\" 키트 (팝 큐피드 버전) 의 일부"
         },
         {
           "member": "kaede",
@@ -1672,31 +1630,31 @@
           "member": "kotone",
           "slug": "binary02-kotone-310a",
           "collectionId": "Binary02 Kotone 310A",
-          "description": "tripleS 2026 시즌 그리팅 \"tripleShot of Love\" 키트 일부 (팝 큐피드 버전)"
+          "description": "tripleS 2026 시즌 그리팅 \"tripleS HOT OF LOVE\" 키트 (팝 큐피드 버전) 의 일부"
         },
         {
           "member": "lynn",
           "slug": "binary02-lynn-310a",
           "collectionId": "Binary02 Lynn 310A",
-          "description": "tripleS 2026 시즌 그리팅 \"tripleShot of Love\" 키트 일부 (팝 큐피드 버전)"
+          "description": "tripleS 2026 시즌 그리팅 \"tripleS HOT OF LOVE\" 키트 (팝 큐피드 버전) 의 일부"
         },
         {
           "member": "mayu",
           "slug": "binary02-mayu-310a",
           "collectionId": "Binary02 Mayu 310A",
-          "description": "tripleS 2026 시즌 그리팅 \"tripleShot of Love\" 키트 일부 (팝 큐피드 버전)"
+          "description": "tripleS 2026 시즌 그리팅 \"tripleS HOT OF LOVE\" 키트 (팝 큐피드 버전) 의 일부"
         },
         {
           "member": "nakyoung",
           "slug": "binary02-nakyoung-310a",
           "collectionId": "Binary02 NaKyoung 310A",
-          "description": "tripleS 2026 시즌그리팅 \"tripleShot of Love\" 키트 일부 (스윗 큐피드 버전)"
+          "description": "tripleS 2026 시즌 그리팅 \"tripleS HOT OF LOVE\" 키트 (스윗 큐피드 버전) 의 일부"
         },
         {
           "member": "nien",
           "slug": "binary02-nien-310a",
           "collectionId": "Binary02 Nien 310A",
-          "description": "tripleS 2026 시즌 그리팅 \"tripleShot of Love\" 키트 일부 (팝 큐피드 버전)"
+          "description": "tripleS 2026 시즌 그리팅 \"tripleS HOT OF LOVE\" 키트 (팝 큐피드 버전) 의 일부"
         },
         {
           "member": "seoah",
@@ -1708,7 +1666,7 @@
           "member": "seoyeon",
           "slug": "binary02-seoyeon-310a",
           "collectionId": "Binary02 SeoYeon 310A",
-          "description": "tripleS 2026 시즌그리팅 \"tripleShot of Love\" 키트 일부 (스윗 큐피드 버전)"
+          "description": "tripleS 2026 시즌 그리팅 \"tripleS HOT OF LOVE\" 키트 (스윗 큐피드 버전) 의 일부"
         },
         {
           "member": "shion",
@@ -1726,7 +1684,7 @@
           "member": "soomin",
           "slug": "binary02-soomin-310a",
           "collectionId": "Binary02 SooMin 310A",
-          "description": "tripleS 2026 시즌그리팅 \"tripleShot of Love\" 키트 일부 (스윗 큐피드 버전)"
+          "description": "tripleS 2026 시즌 그리팅 \"tripleS HOT OF LOVE\" 키트 (스윗 큐피드 버전) 의 일부"
         },
         {
           "member": "sullin",
@@ -1738,25 +1696,25 @@
           "member": "xinyu",
           "slug": "binary02-xinyu-310a",
           "collectionId": "Binary02 Xinyu 310A",
-          "description": "tripleS 2026 시즌 그리팅 \"tripleShot of Love\" 키트 일부 (팝 큐피드 버전)"
+          "description": "tripleS 2026 시즌 그리팅 \"tripleS HOT OF LOVE\" 키트 (팝 큐피드 버전) 의 일부"
         },
         {
           "member": "yeonji",
           "slug": "binary02-yeonji-310a",
           "collectionId": "Binary02 YeonJi 310A",
-          "description": "tripleS 2026 시즌 그리팅 \"tripleShot of Love\" 키트 일부 (프레임 큐피드 버전)"
+          "description": "tripleS 2026 시즌 그리팅 \"tripleS HOT OF LOVE\" 키트 (프레임 큐피드 버전) 의 일부"
         },
         {
           "member": "yooyeon",
           "slug": "binary02-yooyeon-310a",
           "collectionId": "Binary02 YooYeon 310A",
-          "description": "tripleS 2026 시즌 그리팅 \"tripleShot of Love\" 키트 일부 (프레임 큐피드 버전)"
+          "description": "tripleS 2026 시즌 그리팅 \"tripleS HOT OF LOVE\" 키트 (프레임 큐피드 버전) 의 일부"
         },
         {
           "member": "yubin",
           "slug": "binary02-yubin-310a",
           "collectionId": "Binary02 YuBin 310A",
-          "description": "tripleS 2026 시즌 그리팅 \"tripleShot of Love\" 키트 일부 (프레임 큐피드 버전)"
+          "description": "tripleS 2026 시즌 그리팅 \"tripleS HOT OF LOVE\" 키트 (프레임 큐피드 버전) 의 일부"
         }
       ]
     },
@@ -1822,7 +1780,7 @@
           "member": "kotone",
           "slug": "binary02-kotone-313z",
           "collectionId": "Binary02 Kotone 313Z",
-          "description": "COSMO 앱 상점에서 판매되는 2025 tripleS Awards 이벤트. Kotone 오브젝트는 휴식으로 임시 이미지를 사용했고 이후 교체되었다."
+          "description": "COSMO 앱 상점에서 판매되는 2025 tripleS 어워드 이벤트. Kotone의 Objekt는 휴식 중이어서 임시 이미지를 사용했고 나중에 업데이트되었습니다."
         },
         {
           "member": "lynn",
@@ -1972,7 +1930,7 @@
           "member": "kotone",
           "slug": "binary02-kotone-314z",
           "collectionId": "Binary02 Kotone 314Z",
-          "description": "COSMO 앱 상점에서 판매되는 2025 tripleS Awards 이벤트. Kotone 오브젝트는 휴식으로 임시 이미지를 사용했고 이후 교체되었다."
+          "description": "COSMO 앱 상점에서 판매되는 2025 tripleS 어워드 이벤트. Kotone의 Objekt는 휴식 중이어서 임시 이미지를 사용했고 나중에 업데이트되었습니다."
         },
         {
           "member": "lynn",
@@ -2122,7 +2080,7 @@
           "member": "kotone",
           "slug": "binary02-kotone-317z",
           "collectionId": "Binary02 Kotone 317Z",
-          "description": "COSMO 앱 상점에서 판매되는 2025 크리스마스 이벤트. Kotone 오브젝트는 휴식으로 임시 이미지를 사용했고 이후 교체되었다."
+          "description": "COSMO 앱 상점에서 판매되는 2025 크리스마스 이벤트. Kotone의 Objekt는 휴식 중이어서 임시 이미지를 사용했고 나중에 업데이트되었습니다."
         },
         {
           "member": "lynn",
@@ -2272,7 +2230,7 @@
           "member": "kotone",
           "slug": "binary02-kotone-318z",
           "collectionId": "Binary02 Kotone 318Z",
-          "description": "COSMO 앱 상점에서 판매되는 2025 크리스마스 이벤트. Kotone 오브젝트는 휴식으로 임시 이미지를 사용했고 이후 교체되었다."
+          "description": "COSMO 앱 상점에서 판매되는 2025 크리스마스 이벤트. Kotone의 Objekt는 휴식 중이어서 임시 이미지를 사용했고 나중에 업데이트되었습니다."
         },
         {
           "member": "lynn",
@@ -2422,7 +2380,7 @@
           "member": "kotone",
           "slug": "binary02-kotone-319z",
           "collectionId": "Binary02 Kotone 319Z",
-          "description": "COSMO 앱 상점에서 판매되는 2025 크리스마스 이벤트. Kotone 오브젝트는 휴식으로 임시 이미지를 사용했고 이후 교체되었다."
+          "description": "COSMO 앱 상점에서 판매되는 2025 크리스마스 이벤트. Kotone의 Objekt는 휴식 중이어서 임시 이미지를 사용했고 나중에 업데이트되었습니다."
         },
         {
           "member": "lynn",
@@ -2518,55 +2476,55 @@
           "member": "chaewon",
           "slug": "binary02-chaewon-320z",
           "collectionId": "Binary02 ChaeWon 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "chaeyeon",
           "slug": "binary02-chaeyeon-320z",
           "collectionId": "Binary02 ChaeYeon 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "dahyun",
           "slug": "binary02-dahyun-320z",
           "collectionId": "Binary02 DaHyun 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "hayeon",
           "slug": "binary02-hayeon-320z",
           "collectionId": "Binary02 HaYeon 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "hyerin",
           "slug": "binary02-hyerin-320z",
           "collectionId": "Binary02 HyeRin 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "jiwoo",
           "slug": "binary02-jiwoo-320z",
           "collectionId": "Binary02 JiWoo 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "jiyeon",
           "slug": "binary02-jiyeon-320z",
           "collectionId": "Binary02 JiYeon 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "joobin",
           "slug": "binary02-joobin-320z",
           "collectionId": "Binary02 JooBin 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "kaede",
           "slug": "binary02-kaede-320z",
           "collectionId": "Binary02 Kaede 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "kotone",
@@ -2578,85 +2536,85 @@
           "member": "lynn",
           "slug": "binary02-lynn-320z",
           "collectionId": "Binary02 Lynn 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "mayu",
           "slug": "binary02-mayu-320z",
           "collectionId": "Binary02 Mayu 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "nakyoung",
           "slug": "binary02-nakyoung-320z",
           "collectionId": "Binary02 NaKyoung 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "nien",
           "slug": "binary02-nien-320z",
           "collectionId": "Binary02 Nien 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "seoah",
           "slug": "binary02-seoah-320z",
           "collectionId": "Binary02 SeoAh 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "seoyeon",
           "slug": "binary02-seoyeon-320z",
           "collectionId": "Binary02 SeoYeon 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "shion",
           "slug": "binary02-shion-320z",
           "collectionId": "Binary02 ShiOn 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "sohyun",
           "slug": "binary02-sohyun-320z",
           "collectionId": "Binary02 SoHyun 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "soomin",
           "slug": "binary02-soomin-320z",
           "collectionId": "Binary02 SooMin 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "sullin",
           "slug": "binary02-sullin-320z",
           "collectionId": "Binary02 Sullin 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "xinyu",
           "slug": "binary02-xinyu-320z",
           "collectionId": "Binary02 Xinyu 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "yeonji",
           "slug": "binary02-yeonji-320z",
           "collectionId": "Binary02 YeonJi 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "yooyeon",
           "slug": "binary02-yooyeon-320z",
           "collectionId": "Binary02 YooYeon 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         },
         {
           "member": "yubin",
           "slug": "binary02-yubin-320z",
           "collectionId": "Binary02 YuBin 320Z",
-          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물되었습니다."
+          "description": "2025년 크리스마스 이벤트 317-319Z 세트 소유자에게 선물."
         }
       ]
     },
@@ -2668,19 +2626,19 @@
           "member": "chaewon",
           "slug": "binary02-chaewon-353z",
           "collectionId": "Binary02 ChaeWon 353Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "chaeyeon",
           "slug": "binary02-chaeyeon-353z",
           "collectionId": "Binary02 ChaeYeon 353Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "dahyun",
           "slug": "binary02-dahyun-353z",
           "collectionId": "Binary02 DaHyun 353Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 1:1 Objekt 낙서 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune 1:1 Objekt Doodle Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "hayeon",
@@ -2692,7 +2650,7 @@
           "member": "hyerin",
           "slug": "binary02-hyerin-353z",
           "collectionId": "Binary02 HyeRin 353Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "jiwoo",
@@ -2704,7 +2662,7 @@
           "member": "jiyeon",
           "slug": "binary02-jiyeon-353z",
           "collectionId": "Binary02 JiYeon 353Z",
-          "description": "<SSS Summit in Asia> 방콕 Moon Special 1:1 카페 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Moon Special 1:1 Cafe Event in Bangkok + 비행 전 이벤트."
         },
         {
           "member": "joobin",
@@ -2716,61 +2674,61 @@
           "member": "kaede",
           "slug": "binary02-kaede-353z",
           "collectionId": "Binary02 Kaede 353Z",
-          "description": "<SSS Summit in Asia> 방콕 Moon Special 1:1 카페 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Moon Special 1:1 Cafe Event in Bangkok + 비행 전 이벤트."
         },
         {
           "member": "kotone",
           "slug": "binary02-kotone-353z",
           "collectionId": "Binary02 Kotone 353Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 1:1 Objekt 낙서 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune 1:1 Objekt Doodle Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "lynn",
           "slug": "binary02-lynn-353z",
           "collectionId": "Binary02 Lynn 353Z",
-          "description": "<SSS Summit in Asia> 방콕 Moon Special 1:1 카페 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Moon Special 1:1 Cafe Event in Bangkok + 비행 전 이벤트."
         },
         {
           "member": "mayu",
           "slug": "binary02-mayu-353z",
           "collectionId": "Binary02 Mayu 353Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "nakyoung",
           "slug": "binary02-nakyoung-353z",
           "collectionId": "Binary02 NaKyoung 353Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 1:1 Objekt 낙서 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune 1:1 Objekt Doodle Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "nien",
           "slug": "binary02-nien-353z",
           "collectionId": "Binary02 Nien 353Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 1:1 Objekt 낙서 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune 1:1 Objekt Doodle Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "seoah",
           "slug": "binary02-seoah-353z",
           "collectionId": "Binary02 SeoAh 353Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 1:1 Objekt 낙서 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune 1:1 Objekt Doodle Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "seoyeon",
           "slug": "binary02-seoyeon-353z",
           "collectionId": "Binary02 SeoYeon 353Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 1:1 Objekt 낙서 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune 1:1 Objekt Doodle Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "shion",
           "slug": "binary02-shion-353z",
           "collectionId": "Binary02 ShiOn 353Z",
-          "description": "<SSS Summit in Asia> 방콕 Moon Special 1:1 카페 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Moon Special 1:1 Cafe Event in Bangkok + 비행 전 이벤트."
         },
         {
           "member": "sohyun",
           "slug": "binary02-sohyun-353z",
           "collectionId": "Binary02 SoHyun 353Z",
-          "description": "<SSS Summit in Asia> 방콕 Moon Special 1:1 카페 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Moon Special 1:1 Cafe Event in Bangkok + 비행 전 이벤트."
         },
         {
           "member": "soomin",
@@ -2782,13 +2740,13 @@
           "member": "sullin",
           "slug": "binary02-sullin-353z",
           "collectionId": "Binary02 Sullin 353Z",
-          "description": "<SSS Summit in Asia> 방콕 Moon Special 1:1 카페 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Moon Special 1:1 Cafe Event in Bangkok + 비행 전 이벤트."
         },
         {
           "member": "xinyu",
           "slug": "binary02-xinyu-353z",
           "collectionId": "Binary02 Xinyu 353Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "yeonji",
@@ -2800,7 +2758,7 @@
           "member": "yooyeon",
           "slug": "binary02-yooyeon-353z",
           "collectionId": "Binary02 YooYeon 353Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "yubin",
@@ -2818,19 +2776,19 @@
           "member": "chaewon",
           "slug": "binary02-chaewon-354z",
           "collectionId": "Binary02 ChaeWon 354Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "chaeyeon",
           "slug": "binary02-chaeyeon-354z",
           "collectionId": "Binary02 ChaeYeon 354Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "dahyun",
           "slug": "binary02-dahyun-354z",
           "collectionId": "Binary02 DaHyun 354Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 1:1 스페셜 포토 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune 1:1 Special Photo Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "hayeon",
@@ -2842,7 +2800,7 @@
           "member": "hyerin",
           "slug": "binary02-hyerin-354z",
           "collectionId": "Binary02 HyeRin 354Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "jiwoo",
@@ -2854,7 +2812,7 @@
           "member": "jiyeon",
           "slug": "binary02-jiyeon-354z",
           "collectionId": "Binary02 JiYeon 354Z",
-          "description": "<SSS Summit in Asia> 방콕 Moon Special 1:1 포토 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Moon Special 1:1 Photo Event in Bangkok + 비행 전 이벤트."
         },
         {
           "member": "joobin",
@@ -2866,61 +2824,61 @@
           "member": "kaede",
           "slug": "binary02-kaede-354z",
           "collectionId": "Binary02 Kaede 354Z",
-          "description": "<SSS Summit in Asia> 방콕 Moon Special 1:1 포토 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Moon Special 1:1 Photo Event in Bangkok + 비행 전 이벤트."
         },
         {
           "member": "kotone",
           "slug": "binary02-kotone-354z",
           "collectionId": "Binary02 Kotone 354Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 1:1 스페셜 포토 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune 1:1 Special Photo Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "lynn",
           "slug": "binary02-lynn-354z",
           "collectionId": "Binary02 Lynn 354Z",
-          "description": "<SSS Summit in Asia> 방콕 Moon Special 1:1 포토 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Moon Special 1:1 Photo Event in Bangkok + 비행 전 이벤트."
         },
         {
           "member": "mayu",
           "slug": "binary02-mayu-354z",
           "collectionId": "Binary02 Mayu 354Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "nakyoung",
           "slug": "binary02-nakyoung-354z",
           "collectionId": "Binary02 NaKyoung 354Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 1:1 스페셜 포토 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune 1:1 Special Photo Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "nien",
           "slug": "binary02-nien-354z",
           "collectionId": "Binary02 Nien 354Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 1:1 스페셜 포토 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune 1:1 Special Photo Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "seoah",
           "slug": "binary02-seoah-354z",
           "collectionId": "Binary02 SeoAh 354Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 1:1 스페셜 포토 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune 1:1 Special Photo Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "seoyeon",
           "slug": "binary02-seoyeon-354z",
           "collectionId": "Binary02 SeoYeon 354Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 1:1 스페셜 포토 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune 1:1 Special Photo Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "shion",
           "slug": "binary02-shion-354z",
           "collectionId": "Binary02 ShiOn 354Z",
-          "description": "<SSS Summit in Asia> 방콕 Moon Special 1:1 포토 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Moon Special 1:1 Photo Event in Bangkok + 비행 전 이벤트."
         },
         {
           "member": "sohyun",
           "slug": "binary02-sohyun-354z",
           "collectionId": "Binary02 SoHyun 354Z",
-          "description": "<SSS Summit in Asia> 방콕 Moon Special 1:1 포토 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Moon Special 1:1 Photo Event in Bangkok + 비행 전 이벤트."
         },
         {
           "member": "soomin",
@@ -2932,13 +2890,13 @@
           "member": "sullin",
           "slug": "binary02-sullin-354z",
           "collectionId": "Binary02 Sullin 354Z",
-          "description": "<SSS Summit in Asia> 방콕 Moon Special 1:1 포토 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Moon Special 1:1 Photo Event in Bangkok + 비행 전 이벤트."
         },
         {
           "member": "xinyu",
           "slug": "binary02-xinyu-354z",
           "collectionId": "Binary02 Xinyu 354Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "yeonji",
@@ -2950,7 +2908,7 @@
           "member": "yooyeon",
           "slug": "binary02-yooyeon-354z",
           "collectionId": "Binary02 YooYeon 354Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "yubin",
@@ -2968,19 +2926,19 @@
           "member": "chaewon",
           "slug": "binary02-chaewon-355z",
           "collectionId": "Binary02 ChaeWon 355Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "chaeyeon",
           "slug": "binary02-chaeyeon-355z",
           "collectionId": "Binary02 ChaeYeon 355Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "dahyun",
           "slug": "binary02-dahyun-355z",
           "collectionId": "Binary02 DaHyun 355Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 스페셜 익스클루시브 보너스 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune Special Exclusive Bonus Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "hayeon",
@@ -2992,7 +2950,7 @@
           "member": "hyerin",
           "slug": "binary02-hyerin-355z",
           "collectionId": "Binary02 HyeRin 355Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "jiwoo",
@@ -3022,7 +2980,7 @@
           "member": "kotone",
           "slug": "binary02-kotone-355z",
           "collectionId": "Binary02 Kotone 355Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 스페셜 익스클루시브 보너스 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune Special Exclusive Bonus Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "lynn",
@@ -3034,31 +2992,31 @@
           "member": "mayu",
           "slug": "binary02-mayu-355z",
           "collectionId": "Binary02 Mayu 355Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "nakyoung",
           "slug": "binary02-nakyoung-355z",
           "collectionId": "Binary02 NaKyoung 355Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 스페셜 익스클루시브 보너스 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune Special Exclusive Bonus Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "nien",
           "slug": "binary02-nien-355z",
           "collectionId": "Binary02 Nien 355Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 스페셜 익스클루시브 보너스 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune Special Exclusive Bonus Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "seoah",
           "slug": "binary02-seoah-355z",
           "collectionId": "Binary02 SeoAh 355Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 스페셜 익스클루시브 보너스 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune Special Exclusive Bonus Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "seoyeon",
           "slug": "binary02-seoyeon-355z",
           "collectionId": "Binary02 SeoYeon 355Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 스페셜 익스클루시브 보너스 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune Special Exclusive Bonus Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "shion",
@@ -3088,7 +3046,7 @@
           "member": "xinyu",
           "slug": "binary02-xinyu-355z",
           "collectionId": "Binary02 Xinyu 355Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "yeonji",
@@ -3100,7 +3058,7 @@
           "member": "yooyeon",
           "slug": "binary02-yooyeon-355z",
           "collectionId": "Binary02 YooYeon 355Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "yubin",
@@ -3118,19 +3076,19 @@
           "member": "chaewon",
           "slug": "binary02-chaewon-356z",
           "collectionId": "Binary02 ChaeWon 356Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "chaeyeon",
           "slug": "binary02-chaeyeon-356z",
           "collectionId": "Binary02 ChaeYeon 356Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "dahyun",
           "slug": "binary02-dahyun-356z",
           "collectionId": "Binary02 DaHyun 356Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 스페셜 익스클루시브 보너스 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune Special Exclusive Bonus Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "hayeon",
@@ -3142,7 +3100,7 @@
           "member": "hyerin",
           "slug": "binary02-hyerin-356z",
           "collectionId": "Binary02 HyeRin 356Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "jiwoo",
@@ -3172,7 +3130,7 @@
           "member": "kotone",
           "slug": "binary02-kotone-356z",
           "collectionId": "Binary02 Kotone 356Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 스페셜 익스클루시브 보너스 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune Special Exclusive Bonus Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "lynn",
@@ -3184,31 +3142,31 @@
           "member": "mayu",
           "slug": "binary02-mayu-356z",
           "collectionId": "Binary02 Mayu 356Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "nakyoung",
           "slug": "binary02-nakyoung-356z",
           "collectionId": "Binary02 NaKyoung 356Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 스페셜 익스클루시브 보너스 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune Special Exclusive Bonus Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "nien",
           "slug": "binary02-nien-356z",
           "collectionId": "Binary02 Nien 356Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 스페셜 익스클루시브 보너스 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune Special Exclusive Bonus Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "seoah",
           "slug": "binary02-seoah-356z",
           "collectionId": "Binary02 SeoAh 356Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 스페셜 익스클루시브 보너스 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune Special Exclusive Bonus Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "seoyeon",
           "slug": "binary02-seoyeon-356z",
           "collectionId": "Binary02 SeoYeon 356Z",
-          "description": "<SSS Summit in Asia> 타이베이 Neptune 스페셜 익스클루시브 보너스 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Neptune Special Exclusive Bonus Event in Taipei + 비행 전 이벤트."
         },
         {
           "member": "shion",
@@ -3238,7 +3196,7 @@
           "member": "xinyu",
           "slug": "binary02-xinyu-356z",
           "collectionId": "Binary02 Xinyu 356Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "yeonji",
@@ -3250,7 +3208,7 @@
           "member": "yooyeon",
           "slug": "binary02-yooyeon-356z",
           "collectionId": "Binary02 YooYeon 356Z",
-          "description": "<SSS Summit in Asia> 도쿄 Sun Objekt 거래 이벤트와 비행 전 이벤트. COSMO 앱 상점에서 판매."
+          "description": "COSMO 앱 상점에서 판매되는 <SSS Summit in Asia> Sun Objekt Trading Event in Tokyo + 비행 전 이벤트."
         },
         {
           "member": "yubin",
@@ -3268,13 +3226,13 @@
           "member": "chaeyeon",
           "slug": "binary02-chaeyeon-357z",
           "collectionId": "Binary02 ChaeYeon 357Z",
-          "description": "2022년 8월 1일부터 2026년 4월 6일까지 COSMO에서 채연 전용 FCO 또는 MCO를 구매하신 모든 분께 선물로 드립니다."
+          "description": "2022년 8월 1일부터 2026년 4월 6일까지 COSMO 에서 ChaeYeon 전용 FCO 또는 MCO를 구매한 모든 사람에게 선물합니다."
         },
         {
           "member": "hayeon",
           "slug": "binary02-hayeon-357z",
           "collectionId": "Binary02 HaYeon 357Z",
-          "description": "2022년 8월 1일부터 2026년 4월 19일까지 COSMO에서 하연 전용 FCO 또는 MCO를 구매하신 모든 분께 선물로 드립니다."
+          "description": "2022년 8월 1일부터 2026년 4월 19일까지 COSMO 에서 HaYeon 전용 FCO 또는 MCO를 구매한 모든 사람에게 선물합니다."
         },
         {
           "member": "jiwoo",
@@ -3304,7 +3262,7 @@
           "member": "kotone",
           "slug": "cream01-kotone-308z",
           "collectionId": "Cream01 Kotone 308Z",
-          "description": "EVOLution Authentic in Australia 투어 참석자에게 선물. Kotone 309A 보유자에게는 2024년 1월 3일 Kotone 308Z가 선물되었다."
+          "description": "EVOLution님의 Authentic in Australia 투어 참석자에게 선물드립니다. Kotone 309A 보유자는 2024년 1월 3일에 Kotone 308Z를 선물 받았습니다."
         },
         {
           "member": "mayu",
@@ -3346,13 +3304,13 @@
           "member": "chaeyeon",
           "slug": "cream01-chaeyeon-309a",
           "collectionId": "Cream01 ChaeYeon 309A",
-          "description": "EVOLution Authentic in Australia 투어에서 판매."
+          "description": "EVOLution의 Authentic in Australia 투어에서 판매되었습니다."
         },
         {
           "member": "jiwoo",
           "slug": "cream01-jiwoo-309a",
           "collectionId": "Cream01 JiWoo 309A",
-          "description": "EVOLution Authentic in Australia 투어에서 판매."
+          "description": "EVOLution의 Authentic in Australia 투어에서 판매되었습니다."
         },
         {
           "member": "kotone",
@@ -3364,31 +3322,31 @@
           "member": "mayu",
           "slug": "cream01-mayu-309a",
           "collectionId": "Cream01 Mayu 309A",
-          "description": "EVOLution Authentic in Australia 투어에서 판매."
+          "description": "EVOLution의 Authentic in Australia 투어에서 판매되었습니다."
         },
         {
           "member": "nakyoung",
           "slug": "cream01-nakyoung-309a",
           "collectionId": "Cream01 NaKyoung 309A",
-          "description": "EVOLution Authentic in Australia 투어에서 판매."
+          "description": "EVOLution의 Authentic in Australia 투어에서 판매되었습니다."
         },
         {
           "member": "soomin",
           "slug": "cream01-soomin-309a",
           "collectionId": "Cream01 SooMin 309A",
-          "description": "EVOLution Authentic in Australia 투어에서 판매."
+          "description": "EVOLution의 Authentic in Australia 투어에서 판매되었습니다."
         },
         {
           "member": "yeonji",
           "slug": "cream01-yeonji-309a",
           "collectionId": "Cream01 YeonJi 309A",
-          "description": "EVOLution Authentic in Australia 투어에서 판매."
+          "description": "EVOLution의 Authentic in Australia 투어에서 판매되었습니다."
         },
         {
           "member": "yooyeon",
           "slug": "cream01-yooyeon-309a",
           "collectionId": "Cream01 YooYeon 309A",
-          "description": "EVOLution Authentic in Australia 투어에서 판매."
+          "description": "EVOLution의 Authentic in Australia 투어에서 판매되었습니다."
         }
       ]
     },
@@ -3502,13 +3460,13 @@
           "member": "chaeyeon",
           "slug": "cream01-chaeyeon-319z",
           "collectionId": "Cream01 ChaeYeon 319Z",
-          "description": "tripleS Authentic in Seoul 참석자에게 선물."
+          "description": "tripleS Authentic in SEOUL 참석자에게 선물로 드립니다."
         },
         {
           "member": "dahyun",
           "slug": "cream01-dahyun-319z",
           "collectionId": "Cream01 DaHyun 319Z",
-          "description": "tripleS Authentic in Seoul 참석자에게 선물."
+          "description": "tripleS Authentic in SEOUL 참석자에게 선물로 드립니다."
         },
         {
           "member": "hayeon",
@@ -3520,13 +3478,13 @@
           "member": "hyerin",
           "slug": "cream01-hyerin-319z",
           "collectionId": "Cream01 HyeRin 319Z",
-          "description": "tripleS Authentic in Seoul 참석자에게 선물."
+          "description": "tripleS Authentic in SEOUL 참석자에게 선물로 드립니다."
         },
         {
           "member": "jiwoo",
           "slug": "cream01-jiwoo-319z",
           "collectionId": "Cream01 JiWoo 319Z",
-          "description": "tripleS Authentic in Seoul 참석자에게 선물."
+          "description": "tripleS Authentic in SEOUL 참석자에게 선물로 드립니다."
         },
         {
           "member": "joobin",
@@ -3538,13 +3496,13 @@
           "member": "kaede",
           "slug": "cream01-kaede-319z",
           "collectionId": "Cream01 Kaede 319Z",
-          "description": "tripleS Authentic in Seoul 참석자에게 선물."
+          "description": "tripleS Authentic in SEOUL 참석자에게 선물로 드립니다."
         },
         {
           "member": "kotone",
           "slug": "cream01-kotone-319z",
           "collectionId": "Cream01 Kotone 319Z",
-          "description": "tripleS Authentic in Seoul 참석자에게 선물."
+          "description": "tripleS Authentic in SEOUL 참석자에게 선물로 드립니다."
         },
         {
           "member": "lynn",
@@ -3556,25 +3514,25 @@
           "member": "mayu",
           "slug": "cream01-mayu-319z",
           "collectionId": "Cream01 Mayu 319Z",
-          "description": "tripleS Authentic in Seoul 참석자에게 선물."
+          "description": "tripleS Authentic in SEOUL 참석자에게 선물로 드립니다."
         },
         {
           "member": "nakyoung",
           "slug": "cream01-nakyoung-319z",
           "collectionId": "Cream01 NaKyoung 319Z",
-          "description": "tripleS Authentic in Seoul 참석자에게 선물."
+          "description": "tripleS Authentic in SEOUL 참석자에게 선물로 드립니다."
         },
         {
           "member": "nien",
           "slug": "cream01-nien-319z",
           "collectionId": "Cream01 Nien 319Z",
-          "description": "tripleS Authentic in Seoul 참석자에게 선물."
+          "description": "tripleS Authentic in SEOUL 참석자에게 선물로 드립니다."
         },
         {
           "member": "seoyeon",
           "slug": "cream01-seoyeon-319z",
           "collectionId": "Cream01 SeoYeon 319Z",
-          "description": "tripleS Authentic in Seoul 참석자에게 선물."
+          "description": "tripleS Authentic in SEOUL 참석자에게 선물로 드립니다."
         },
         {
           "member": "shion",
@@ -3586,37 +3544,37 @@
           "member": "sohyun",
           "slug": "cream01-sohyun-319z",
           "collectionId": "Cream01 SoHyun 319Z",
-          "description": "tripleS Authentic in Seoul 참석자에게 선물."
+          "description": "tripleS Authentic in SEOUL 참석자에게 선물로 드립니다."
         },
         {
           "member": "soomin",
           "slug": "cream01-soomin-319z",
           "collectionId": "Cream01 SooMin 319Z",
-          "description": "tripleS Authentic in Seoul 참석자에게 선물."
+          "description": "tripleS Authentic in SEOUL 참석자에게 선물로 드립니다."
         },
         {
           "member": "xinyu",
           "slug": "cream01-xinyu-319z",
           "collectionId": "Cream01 Xinyu 319Z",
-          "description": "tripleS Authentic in Seoul 참석자에게 선물."
+          "description": "tripleS Authentic in SEOUL 참석자에게 선물로 드립니다."
         },
         {
           "member": "yeonji",
           "slug": "cream01-yeonji-319z",
           "collectionId": "Cream01 YeonJi 319Z",
-          "description": "tripleS Authentic in Seoul 참석자에게 선물."
+          "description": "tripleS Authentic in SEOUL 참석자에게 선물로 드립니다."
         },
         {
           "member": "yooyeon",
           "slug": "cream01-yooyeon-319z",
           "collectionId": "Cream01 YooYeon 319Z",
-          "description": "tripleS Authentic in Seoul 참석자에게 선물."
+          "description": "tripleS Authentic in SEOUL 참석자에게 선물로 드립니다."
         },
         {
           "member": "yubin",
           "slug": "cream01-yubin-319z",
           "collectionId": "Cream01 YuBin 319Z",
-          "description": "tripleS Authentic in Seoul 참석자에게 선물."
+          "description": "tripleS Authentic in SEOUL 참석자에게 선물로 드립니다."
         }
       ]
     },
@@ -3634,31 +3592,31 @@
           "member": "chaeyeon",
           "slug": "cream01-chaeyeon-326z",
           "collectionId": "Cream01 ChaeYeon 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "dahyun",
           "slug": "cream01-dahyun-326z",
           "collectionId": "Cream01 DaHyun 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "hayeon",
           "slug": "cream01-hayeon-326z",
           "collectionId": "Cream01 HaYeon 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "hyerin",
           "slug": "cream01-hyerin-326z",
           "collectionId": "Cream01 HyeRin 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "jiwoo",
           "slug": "cream01-jiwoo-326z",
           "collectionId": "Cream01 JiWoo 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "jiyeon",
@@ -3670,43 +3628,43 @@
           "member": "joobin",
           "slug": "cream01-joobin-326z",
           "collectionId": "Cream01 JooBin 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "kaede",
           "slug": "cream01-kaede-326z",
           "collectionId": "Cream01 Kaede 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "kotone",
           "slug": "cream01-kotone-326z",
           "collectionId": "Cream01 Kotone 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "lynn",
           "slug": "cream01-lynn-326z",
           "collectionId": "Cream01 Lynn 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "mayu",
           "slug": "cream01-mayu-326z",
           "collectionId": "Cream01 Mayu 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "nakyoung",
           "slug": "cream01-nakyoung-326z",
           "collectionId": "Cream01 NaKyoung 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "nien",
           "slug": "cream01-nien-326z",
           "collectionId": "Cream01 Nien 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "seoah",
@@ -3718,25 +3676,25 @@
           "member": "seoyeon",
           "slug": "cream01-seoyeon-326z",
           "collectionId": "Cream01 SeoYeon 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "shion",
           "slug": "cream01-shion-326z",
           "collectionId": "Cream01 ShiOn 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "sohyun",
           "slug": "cream01-sohyun-326z",
           "collectionId": "Cream01 SoHyun 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "soomin",
           "slug": "cream01-soomin-326z",
           "collectionId": "Cream01 SooMin 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "sullin",
@@ -3748,25 +3706,25 @@
           "member": "xinyu",
           "slug": "cream01-xinyu-326z",
           "collectionId": "Cream01 Xinyu 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "yeonji",
           "slug": "cream01-yeonji-326z",
           "collectionId": "Cream01 YeonJi 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "yooyeon",
           "slug": "cream01-yooyeon-326z",
           "collectionId": "Cream01 YooYeon 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "yubin",
           "slug": "cream01-yubin-326z",
           "collectionId": "Cream01 YuBin 326Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         }
       ]
     },
@@ -3784,31 +3742,31 @@
           "member": "chaeyeon",
           "slug": "cream01-chaeyeon-327z",
           "collectionId": "Cream01 ChaeYeon 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "dahyun",
           "slug": "cream01-dahyun-327z",
           "collectionId": "Cream01 DaHyun 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "hayeon",
           "slug": "cream01-hayeon-327z",
           "collectionId": "Cream01 HaYeon 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "hyerin",
           "slug": "cream01-hyerin-327z",
           "collectionId": "Cream01 HyeRin 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "jiwoo",
           "slug": "cream01-jiwoo-327z",
           "collectionId": "Cream01 JiWoo 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "jiyeon",
@@ -3820,43 +3778,43 @@
           "member": "joobin",
           "slug": "cream01-joobin-327z",
           "collectionId": "Cream01 JooBin 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "kaede",
           "slug": "cream01-kaede-327z",
           "collectionId": "Cream01 Kaede 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "kotone",
           "slug": "cream01-kotone-327z",
           "collectionId": "Cream01 Kotone 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "lynn",
           "slug": "cream01-lynn-327z",
           "collectionId": "Cream01 Lynn 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "mayu",
           "slug": "cream01-mayu-327z",
           "collectionId": "Cream01 Mayu 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "nakyoung",
           "slug": "cream01-nakyoung-327z",
           "collectionId": "Cream01 NaKyoung 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "nien",
           "slug": "cream01-nien-327z",
           "collectionId": "Cream01 Nien 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "seoah",
@@ -3868,25 +3826,25 @@
           "member": "seoyeon",
           "slug": "cream01-seoyeon-327z",
           "collectionId": "Cream01 SeoYeon 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "shion",
           "slug": "cream01-shion-327z",
           "collectionId": "Cream01 ShiOn 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "sohyun",
           "slug": "cream01-sohyun-327z",
           "collectionId": "Cream01 SoHyun 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "soomin",
           "slug": "cream01-soomin-327z",
           "collectionId": "Cream01 SooMin 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "sullin",
@@ -3898,25 +3856,25 @@
           "member": "xinyu",
           "slug": "cream01-xinyu-327z",
           "collectionId": "Cream01 Xinyu 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "yeonji",
           "slug": "cream01-yeonji-327z",
           "collectionId": "Cream01 YeonJi 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "yooyeon",
           "slug": "cream01-yooyeon-327z",
           "collectionId": "Cream01 YooYeon 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         },
         {
           "member": "yubin",
           "slug": "cream01-yubin-327z",
           "collectionId": "Cream01 YuBin 327Z",
-          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱 상점에서 판매됩니다."
+          "description": "2024 벚꽃 이벤트, 2024년 3월 27일부터 3월 30일까지 COSMO 앱스토어에서 판매됩니다."
         }
       ]
     },
@@ -3928,7 +3886,7 @@
           "member": "chaewon",
           "slug": "cream02-chaewon-309z",
           "collectionId": "Cream02 ChaeWon 309Z",
-          "description": "2022년 8월 8일부터 2026년 5월 27일까지 COSMO에서 채원 전용 FCO 또는 MCO를 구매하신 모든 분께 선물로 드립니다."
+          "description": "2022년 8월 8일부터 2026년 5월 27일까지 COSMO 에 채원 전용 FCO 또는 MCO를 구매하신 모든 분께 선물로 드립니다."
         },
         {
           "member": "seoah",
@@ -4552,7 +4510,7 @@
           "member": "sohyun",
           "slug": "cream02-sohyun-343z",
           "collectionId": "Cream02 SoHyun 343Z",
-          "description": "2022년 8월 8일부터 2026년 8월 2일까지 COSMO에서 소현 전용 FCO 또는 MCO를 구매하신 모든 분께 선물로 드립니다."
+          "description": "2022년 8월 8일부터 2026년 8월 2일까지 COSMO 에서 SoHyun 전용 FCO 또는 MCO를 구매한 모든 사람에게 선물합니다."
         }
       ]
     },
@@ -4570,7 +4528,7 @@
           "member": "soomin",
           "slug": "cream02-soomin-357z",
           "collectionId": "Cream02 SooMin 357Z",
-          "description": "2022년 8월 8일부터 2026년 9월 13일까지 COSMO에서 수민 전용 FCO 또는 MCO를 구매하신 모든 분께 선물로 드립니다."
+          "description": "2022년 8월 8일부터 2026년 9월 13일까지 COSMO 에서 수민 전용 FCO 또는 MCO를 구매한 모든 사람에게 선물합니다."
         }
       ]
     },
@@ -4582,37 +4540,37 @@
           "member": "chaewon",
           "slug": "divine01-chaewon-312z",
           "collectionId": "Divine01 ChaeWon 312Z",
-          "description": "2024년 6월 19일 <ASSEMBLE24> & <달> Spotify 재생목록 이벤트에 참여하여 선물받았습니다."
+          "description": "2024년 6월 19일 <ASSEMBLE24> & <Dall> Spotify 재생목록 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "chaeyeon",
           "slug": "divine01-chaeyeon-312z",
           "collectionId": "Divine01 ChaeYeon 312Z",
-          "description": "2024년 11월 7일 Visionary Vision 레코드 이벤트에 참여하여 선물받았습니다."
+          "description": "2024년 11월 7일 Visionary Vision Rekord 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "dahyun",
           "slug": "divine01-dahyun-312z",
           "collectionId": "Divine01 DaHyun 312Z",
-          "description": "2024년 11월 6일 Hit The Floor 팔로우&좋아요 이벤트에 참여하셔서 선물을 드립니다."
+          "description": "2024년 11월 6일 Hit the Floor 팔로우 및 좋아요 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "hayeon",
           "slug": "divine01-hayeon-312z",
           "collectionId": "Divine01 HaYeon 312Z",
-          "description": "2024년 8월 8일 K-POP SEOUL 드림루키 2차 투표 인증 이벤트에 참여하여 선물받았습니다."
+          "description": "2024년 8월 8일 K-POP SEOUL Dream Rookie 2nd Stage 투표 인증 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "hyerin",
           "slug": "divine01-hyerin-312z",
           "collectionId": "Divine01 HyeRin 312Z",
-          "description": "2024년 11월 6일 Before We Hit the Floor 실시간 스트리밍 이벤트에 참여하여 선물을 받았습니다."
+          "description": "2024년 11월 6일 Before We Hit the Floor 라이브 스트리밍 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "jiwoo",
           "slug": "divine01-jiwoo-312z",
           "collectionId": "Divine01 JiWoo 312Z",
-          "description": "2024년 11월 7일 Hit The Floor 스트리밍 이벤트에 참여하여 선물을 받았습니다."
+          "description": "2024년 11월 7일 Hit the Floor 스트리밍 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "jiyeon",
@@ -4624,49 +4582,49 @@
           "member": "joobin",
           "slug": "divine01-joobin-312z",
           "collectionId": "Divine01 JooBin 312Z",
-          "description": "2024년 8월 8일 my1pick 또는 포돌드림루키 2단계 투표인증 이벤트에 참여하여 선물을 드립니다."
+          "description": "2024년 8월 8일 my1pick or Podoal Dream Rookie 2nd Stage 투표 인증 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "kaede",
           "slug": "divine01-kaede-312z",
           "collectionId": "Divine01 Kaede 312Z",
-          "description": "2024년 11월 6일 Hit The Floor 스트리밍 이벤트에 참여하여 선물을 받았습니다."
+          "description": "2024년 11월 6일 Hit the Floor 스트리밍 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "kotone",
           "slug": "divine01-kotone-312z",
           "collectionId": "Divine01 Kotone 312Z",
-          "description": "2024년 10월 25일 <퍼포만테> 하이라이트 메들리 인용 리트윗 이벤트 참여로 선물을 드립니다."
+          "description": "2024년 10월 25일 <Performante> 하이라이트 메들리 인용 리트윗 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "lynn",
           "slug": "divine01-lynn-312z",
           "collectionId": "Divine01 Lynn 312Z",
-          "description": "2024년 8월 29일 K-POP SEOUL 드림루키 3차 투표 인증 이벤트에 참여하여 선물받았습니다."
+          "description": "2024년 8월 29일 K-POP SEOUL Dream Rookie 3rd Stage 투표 인증 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "mayu",
           "slug": "divine01-mayu-312z",
           "collectionId": "Divine01 Mayu 312Z",
-          "description": "2024년 8월 29일 my1pick 드림루키 3차 투표 인증 이벤트에 참여하여 선물받았습니다."
+          "description": "2024년 8월 29일 my1pick Dream Rookie 3rd Stage 투표 인증 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "nakyoung",
           "slug": "divine01-nakyoung-312z",
           "collectionId": "Divine01 NaKyoung 312Z",
-          "description": "2024년 11월 6일 Hit The Floor MV 인용 리트윗 이벤트에 참여하여 선물받았습니다."
+          "description": "2024년 11월 6일 Hit the Floor MV 인용 리트윗 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "nien",
           "slug": "divine01-nien-312z",
           "collectionId": "Divine01 Nien 312Z",
-          "description": "2024년 10월 25일 <퍼포만테> 예약판매 이벤트에 참여하여 선물받았습니다."
+          "description": "2024년 10월 25일 <Performante> 선주문 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "seoah",
           "slug": "divine01-seoah-312z",
           "collectionId": "Divine01 SeoAh 312Z",
-          "description": "2024년 5월 28일 Girls Never Die 스트리밍 이벤트에 참여하여 선물을 받았습니다."
+          "description": "2024년 5월 28일 Girls Never Die 스트리밍 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "seoyeon",
@@ -4678,43 +4636,43 @@
           "member": "shion",
           "slug": "divine01-shion-312z",
           "collectionId": "Divine01 ShiOn 312Z",
-          "description": "240730 Discord 라이브 이벤트에 참여하여 2024년 8월 1일에 선물을 받았습니다."
+          "description": "2024년 8월 1일 240730 Discord 라이브 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "sohyun",
           "slug": "divine01-sohyun-312z",
           "collectionId": "Divine01 SoHyun 312Z",
-          "description": "2024년 9월 19일 Girls Never Die 스트리밍 이벤트에 참여하여 선물을 받았습니다."
+          "description": "2024년 9월 19일 Girls Never Die 스트리밍 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "soomin",
           "slug": "divine01-soomin-312z",
           "collectionId": "Divine01 SooMin 312Z",
-          "description": "2024년 11월 6일 Hit The Floor TikTok 이벤트에 참여하여 선물을 받았습니다."
+          "description": "2024년 11월 6일 Hit the Floor TikTok 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "sullin",
           "slug": "divine01-sullin-312z",
           "collectionId": "Divine01 Sullin 312Z",
-          "description": "2024년 5월 28일 Girls Never Die Instagram 릴스 이벤트에 참여하여 선물을 받았습니다."
+          "description": "2024년 5월 28일 Girls Never Die Instagram 릴스 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "xinyu",
           "slug": "divine01-xinyu-312z",
           "collectionId": "Divine01 Xinyu 312Z",
-          "description": "2024년 8월 29일 포돌드림 루키 3차 투표인증 이벤트에 참여하여 선물받았습니다."
+          "description": "2024년 8월 29일 Podoal Dream Rookie 3rd Stage 투표 인증 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "yeonji",
           "slug": "divine01-yeonji-312z",
           "collectionId": "Divine01 YeonJi 312Z",
-          "description": "2024년 10월 25일 Hit The Floor MV 티저 인용 리트윗 이벤트에 참여하여 선물받았습니다."
+          "description": "2024년 10월 25일 Hit the Floor MV 티저 인용 리트윗 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "yooyeon",
           "slug": "divine01-yooyeon-312z",
           "collectionId": "Divine01 YooYeon 312Z",
-          "description": "2024년 11월 6일 Hit The Floor Instagram 릴스 이벤트에 참여하여 선물을 받았습니다."
+          "description": "2024년 11월 6일 Hit the Floor Instagram 릴스 이벤트에 참여하여 선물받았습니다."
         },
         {
           "member": "yubin",
@@ -4732,13 +4690,13 @@
           "member": "chaewon",
           "slug": "ever01-chaewon-305a",
           "collectionId": "Ever01 ChaeWon 305A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "chaeyeon",
           "slug": "ever01-chaeyeon-305a",
           "collectionId": "Ever01 ChaeYeon 305A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "dahyun",
@@ -4762,7 +4720,7 @@
           "member": "jiwoo",
           "slug": "ever01-jiwoo-305a",
           "collectionId": "Ever01 JiWoo 305A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "jiyeon",
@@ -4786,7 +4744,7 @@
           "member": "kotone",
           "slug": "ever01-kotone-305a",
           "collectionId": "Ever01 Kotone 305A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "lynn",
@@ -4798,7 +4756,7 @@
           "member": "mayu",
           "slug": "ever01-mayu-305a",
           "collectionId": "Ever01 Mayu 305A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "nakyoung",
@@ -4828,7 +4786,7 @@
           "member": "shion",
           "slug": "ever01-shion-305a",
           "collectionId": "Ever01 ShiOn 305A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "sohyun",
@@ -4840,7 +4798,7 @@
           "member": "soomin",
           "slug": "ever01-soomin-305a",
           "collectionId": "Ever01 SooMin 305A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "sullin",
@@ -4864,7 +4822,7 @@
           "member": "yooyeon",
           "slug": "ever01-yooyeon-305a",
           "collectionId": "Ever01 YooYeon 305A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "yubin",
@@ -4882,13 +4840,13 @@
           "member": "chaewon",
           "slug": "ever01-chaewon-306a",
           "collectionId": "Ever01 ChaeWon 306A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "chaeyeon",
           "slug": "ever01-chaeyeon-306a",
           "collectionId": "Ever01 ChaeYeon 306A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "dahyun",
@@ -4912,7 +4870,7 @@
           "member": "jiwoo",
           "slug": "ever01-jiwoo-306a",
           "collectionId": "Ever01 JiWoo 306A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "jiyeon",
@@ -4936,7 +4894,7 @@
           "member": "kotone",
           "slug": "ever01-kotone-306a",
           "collectionId": "Ever01 Kotone 306A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "lynn",
@@ -4948,7 +4906,7 @@
           "member": "mayu",
           "slug": "ever01-mayu-306a",
           "collectionId": "Ever01 Mayu 306A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "nakyoung",
@@ -4978,7 +4936,7 @@
           "member": "shion",
           "slug": "ever01-shion-306a",
           "collectionId": "Ever01 ShiOn 306A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "sohyun",
@@ -4990,7 +4948,7 @@
           "member": "soomin",
           "slug": "ever01-soomin-306a",
           "collectionId": "Ever01 SooMin 306A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "sullin",
@@ -5014,7 +4972,7 @@
           "member": "yooyeon",
           "slug": "ever01-yooyeon-306a",
           "collectionId": "Ever01 YooYeon 306A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "yubin",
@@ -5032,13 +4990,13 @@
           "member": "chaewon",
           "slug": "ever01-chaewon-307a",
           "collectionId": "Ever01 ChaeWon 307A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "chaeyeon",
           "slug": "ever01-chaeyeon-307a",
           "collectionId": "Ever01 ChaeYeon 307A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "dahyun",
@@ -5062,7 +5020,7 @@
           "member": "jiwoo",
           "slug": "ever01-jiwoo-307a",
           "collectionId": "Ever01 JiWoo 307A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "jiyeon",
@@ -5086,7 +5044,7 @@
           "member": "kotone",
           "slug": "ever01-kotone-307a",
           "collectionId": "Ever01 Kotone 307A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "lynn",
@@ -5098,7 +5056,7 @@
           "member": "mayu",
           "slug": "ever01-mayu-307a",
           "collectionId": "Ever01 Mayu 307A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "nakyoung",
@@ -5128,7 +5086,7 @@
           "member": "shion",
           "slug": "ever01-shion-307a",
           "collectionId": "Ever01 ShiOn 307A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "sohyun",
@@ -5140,7 +5098,7 @@
           "member": "soomin",
           "slug": "ever01-soomin-307a",
           "collectionId": "Ever01 SooMin 307A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "sullin",
@@ -5164,7 +5122,7 @@
           "member": "yooyeon",
           "slug": "ever01-yooyeon-307a",
           "collectionId": "Ever01 YooYeon 307A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "yubin",
@@ -5182,13 +5140,13 @@
           "member": "chaewon",
           "slug": "ever01-chaewon-308a",
           "collectionId": "Ever01 ChaeWon 308A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "chaeyeon",
           "slug": "ever01-chaeyeon-308a",
           "collectionId": "Ever01 ChaeYeon 308A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "dahyun",
@@ -5212,7 +5170,7 @@
           "member": "jiwoo",
           "slug": "ever01-jiwoo-308a",
           "collectionId": "Ever01 JiWoo 308A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "jiyeon",
@@ -5236,7 +5194,7 @@
           "member": "kotone",
           "slug": "ever01-kotone-308a",
           "collectionId": "Ever01 Kotone 308A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "lynn",
@@ -5248,7 +5206,7 @@
           "member": "mayu",
           "slug": "ever01-mayu-308a",
           "collectionId": "Ever01 Mayu 308A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "nakyoung",
@@ -5278,7 +5236,7 @@
           "member": "shion",
           "slug": "ever01-shion-308a",
           "collectionId": "Ever01 ShiOn 308A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "sohyun",
@@ -5290,7 +5248,7 @@
           "member": "soomin",
           "slug": "ever01-soomin-308a",
           "collectionId": "Ever01 SooMin 308A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "sullin",
@@ -5314,7 +5272,7 @@
           "member": "yooyeon",
           "slug": "ever01-yooyeon-308a",
           "collectionId": "Ever01 YooYeon 308A",
-          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled>와 이후 오프라인 행사에서 판매."
+          "description": "2024년 11월 26일과 28일 일본 tripleS ∞! 1st Fan Concert <Untitled> 및 향후 오프라인 행사에서 판매됩니다."
         },
         {
           "member": "yubin",
@@ -5332,7 +5290,7 @@
           "member": "chaewon",
           "slug": "ever01-chaewon-309a",
           "collectionId": "Ever01 ChaeWon 309A",
-          "description": "tripleS 2025 시즌 그리팅 \"tripleSchool\" 키트 일부 (테니스 클럽 버전)"
+          "description": "tripleS 2025 시즌그리팅 \"tripleSchool\" 키트 일부 (테니스클럽 버전)"
         },
         {
           "member": "chaeyeon",
@@ -5344,43 +5302,43 @@
           "member": "dahyun",
           "slug": "ever01-dahyun-309a",
           "collectionId": "Ever01 DaHyun 309A",
-          "description": "tripleS 2025 시즌 그리팅 \"tripleSchool\" 키트 일부 (북클럽 버전)"
+          "description": "tripleS 2025 시즌그리팅 \"tripleSchool\" 키트 일부 (북클럽 버전)"
         },
         {
           "member": "hayeon",
           "slug": "ever01-hayeon-309a",
           "collectionId": "Ever01 HaYeon 309A",
-          "description": "tripleS 2025 시즌 그리팅 \"tripleSchool\" 키트 일부 (테니스 클럽 버전)"
+          "description": "tripleS 2025 시즌그리팅 \"tripleSchool\" 키트 일부 (테니스클럽 버전)"
         },
         {
           "member": "hyerin",
           "slug": "ever01-hyerin-309a",
           "collectionId": "Ever01 HyeRin 309A",
-          "description": "tripleS 2025 시즌 그리팅 \"tripleSchool\" 키트 일부 (북클럽 버전)"
+          "description": "tripleS 2025 시즌그리팅 \"tripleSchool\" 키트 일부 (북클럽 버전)"
         },
         {
           "member": "jiwoo",
           "slug": "ever01-jiwoo-309a",
           "collectionId": "Ever01 JiWoo 309A",
-          "description": "tripleS 2025 시즌 그리팅 \"tripleSchool\" 키트 일부 (테니스 클럽 버전)"
+          "description": "tripleS 2025 시즌그리팅 \"tripleSchool\" 키트 일부 (테니스클럽 버전)"
         },
         {
           "member": "jiyeon",
           "slug": "ever01-jiyeon-309a",
           "collectionId": "Ever01 JiYeon 309A",
-          "description": "tripleS 2025 시즌 그리팅 \"tripleSchool\" 키트 일부 (테니스 클럽 버전)"
+          "description": "tripleS 2025 시즌그리팅 \"tripleSchool\" 키트 일부 (테니스클럽 버전)"
         },
         {
           "member": "joobin",
           "slug": "ever01-joobin-309a",
           "collectionId": "Ever01 JooBin 309A",
-          "description": "tripleS 2025 시즌 그리팅 \"tripleSchool\" 키트 일부 (북클럽 버전)"
+          "description": "tripleS 2025 시즌그리팅 \"tripleSchool\" 키트 일부 (북클럽 버전)"
         },
         {
           "member": "kaede",
           "slug": "ever01-kaede-309a",
           "collectionId": "Ever01 Kaede 309A",
-          "description": "tripleS 2025 시즌 그리팅 \"tripleSchool\" 키트 일부 (북클럽 버전)"
+          "description": "tripleS 2025 시즌그리팅 \"tripleSchool\" 키트 일부 (북클럽 버전)"
         },
         {
           "member": "kotone",
@@ -5392,7 +5350,7 @@
           "member": "lynn",
           "slug": "ever01-lynn-309a",
           "collectionId": "Ever01 Lynn 309A",
-          "description": "tripleS 2025 시즌 그리팅 \"tripleSchool\" 키트 일부 (테니스 클럽 버전)"
+          "description": "tripleS 2025 시즌그리팅 \"tripleSchool\" 키트 일부 (테니스클럽 버전)"
         },
         {
           "member": "mayu",
@@ -5404,7 +5362,7 @@
           "member": "nakyoung",
           "slug": "ever01-nakyoung-309a",
           "collectionId": "Ever01 NaKyoung 309A",
-          "description": "tripleS 2025 시즌 그리팅 \"tripleSchool\" 키트 일부 (테니스 클럽 버전)"
+          "description": "tripleS 2025 시즌그리팅 \"tripleSchool\" 키트 일부 (테니스클럽 버전)"
         },
         {
           "member": "nien",
@@ -5428,19 +5386,19 @@
           "member": "shion",
           "slug": "ever01-shion-309a",
           "collectionId": "Ever01 ShiOn 309A",
-          "description": "tripleS 2025 시즌 그리팅 \"tripleSchool\" 키트 일부 (북클럽 버전)"
+          "description": "tripleS 2025 시즌그리팅 \"tripleSchool\" 키트 일부 (북클럽 버전)"
         },
         {
           "member": "sohyun",
           "slug": "ever01-sohyun-309a",
           "collectionId": "Ever01 SoHyun 309A",
-          "description": "tripleS 2025 시즌 그리팅 \"tripleSchool\" 키트 일부 (북클럽 버전)"
+          "description": "tripleS 2025 시즌그리팅 \"tripleSchool\" 키트 일부 (북클럽 버전)"
         },
         {
           "member": "soomin",
           "slug": "ever01-soomin-309a",
           "collectionId": "Ever01 SooMin 309A",
-          "description": "tripleS 2025 시즌 그리팅 \"tripleSchool\" 키트 일부 (북클럽 버전)"
+          "description": "tripleS 2025 시즌그리팅 \"tripleSchool\" 키트 일부 (북클럽 버전)"
         },
         {
           "member": "sullin",
@@ -5452,19 +5410,19 @@
           "member": "xinyu",
           "slug": "ever01-xinyu-309a",
           "collectionId": "Ever01 Xinyu 309A",
-          "description": "tripleS 2025 시즌 그리팅 \"tripleSchool\" 키트 일부 (테니스 클럽 버전)"
+          "description": "tripleS 2025 시즌그리팅 \"tripleSchool\" 키트 일부 (테니스클럽 버전)"
         },
         {
           "member": "yeonji",
           "slug": "ever01-yeonji-309a",
           "collectionId": "Ever01 YeonJi 309A",
-          "description": "tripleS 2025 시즌 그리팅 \"tripleSchool\" 키트 일부 (테니스 클럽 버전)"
+          "description": "tripleS 2025 시즌그리팅 \"tripleSchool\" 키트 일부 (테니스클럽 버전)"
         },
         {
           "member": "yooyeon",
           "slug": "ever01-yooyeon-309a",
           "collectionId": "Ever01 YooYeon 309A",
-          "description": "tripleS 2025 시즌 그리팅 \"tripleSchool\" 키트 일부 (북클럽 버전)"
+          "description": "tripleS 2025 시즌그리팅 \"tripleSchool\" 키트 일부 (북클럽 버전)"
         },
         {
           "member": "yubin",
@@ -5482,31 +5440,31 @@
           "member": "chaeyeon",
           "slug": "ever01-chaeyeon-326a",
           "collectionId": "Ever01 ChaeYeon 326A",
-          "description": "EVOLution <⟡> Objekt 음악 앨범의 일부"
+          "description": "EVOLution <⟡> 오브제크트 뮤직앨범 일부"
         },
         {
           "member": "jiwoo",
           "slug": "ever01-jiwoo-326a",
           "collectionId": "Ever01 JiWoo 326A",
-          "description": "EVOLution <⟡> Objekt 음악 앨범의 일부"
+          "description": "EVOLution <⟡> 오브제크트 뮤직앨범 일부"
         },
         {
           "member": "kotone",
           "slug": "ever01-kotone-326a",
           "collectionId": "Ever01 Kotone 326A",
-          "description": "EVOLution <⟡> Objekt 음악 앨범의 일부"
+          "description": "EVOLution <⟡> 오브제크트 뮤직앨범 일부"
         },
         {
           "member": "mayu",
           "slug": "ever01-mayu-326a",
           "collectionId": "Ever01 Mayu 326A",
-          "description": "EVOLution <⟡> Objekt 음악 앨범의 일부"
+          "description": "EVOLution <⟡> 오브제크트 뮤직앨범 일부"
         },
         {
           "member": "nakyoung",
           "slug": "ever01-nakyoung-326a",
           "collectionId": "Ever01 NaKyoung 326A",
-          "description": "EVOLution <⟡> Objekt 음악 앨범의 일부"
+          "description": "EVOLution <⟡> 오브제크트 뮤직앨범 일부"
         },
         {
           "member": "soomin",
@@ -5518,13 +5476,13 @@
           "member": "yeonji",
           "slug": "ever01-yeonji-326a",
           "collectionId": "Ever01 YeonJi 326A",
-          "description": "EVOLution <⟡> Objekt 음악 앨범의 일부"
+          "description": "EVOLution <⟡> 오브제크트 뮤직앨범 일부"
         },
         {
           "member": "yooyeon",
           "slug": "ever01-yooyeon-326a",
           "collectionId": "Ever01 YooYeon 326A",
-          "description": "EVOLution <⟡> Objekt 음악 앨범의 일부"
+          "description": "EVOLution <⟡> 오브제크트 뮤직앨범 일부"
         }
       ]
     }

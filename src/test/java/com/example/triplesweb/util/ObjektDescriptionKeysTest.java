@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ObjektDescriptionKeysTest {
     @Test
     void keepsSharedKeyUnlessTheSeasonAndNumberAreMemberSpecific() {
-        assertEquals(51, ObjektDescriptionKeys.members().stream()
+        assertEquals(50, ObjektDescriptionKeys.members().stream()
                 .map(row -> row.season() + "|" + row.collectionNo())
                 .distinct()
                 .count());
@@ -66,7 +66,7 @@ class ObjektDescriptionKeysTest {
                 .collect(Collectors.groupingBy(
                         row -> row.season() + "|" + row.collectionNo(),
                         Collectors.mapping(ObjektDescriptionKeys.MemberText::description, Collectors.toSet())));
-        assertEquals(51, texts.size());
+        assertEquals(50, texts.size());
         assertTrue(texts.values().stream().allMatch(values -> values.stream().filter(text -> !text.isBlank()).count() >= 2));
     }
 
