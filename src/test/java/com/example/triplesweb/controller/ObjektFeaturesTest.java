@@ -312,9 +312,11 @@ class ObjektFeaturesTest {
         mvc.perform(get("/cosmo/objekt/detail/hayeoncc367z").accept(MediaType.TEXT_HTML))
             .andExpect(redirectedUrl("/cosmo/objekt?objekt=hayeoncc367z"));
         String html = result.getResponse().getContentAsString();
-        org.assertj.core.api.Assertions.assertThat(html.indexOf("id=\"sort-dropdown\""))
-            .isGreaterThan(html.indexOf("id=\"kind-dropdown\""))
-            .isLessThan(html.indexOf("id=\"class-dropdown\""));
+        org.assertj.core.api.Assertions.assertThat(html.indexOf("id=\"class-dropdown\""))
+            .isGreaterThan(html.indexOf("id=\"season-dropdown\""))
+            .isLessThan(html.indexOf("id=\"kind-dropdown\""));
+        org.assertj.core.api.Assertions.assertThat(html.indexOf("id=\"kind-dropdown\""))
+            .isLessThan(html.indexOf("id=\"sort-dropdown\""));
         org.assertj.core.api.Assertions.assertThat(html)
             .contains("data-serial-panel", "objektIssuedCount")
             .contains("objekt-member-logo")
