@@ -18,7 +18,8 @@ import java.util.regex.Pattern;
 
 /**
  * Apollo {@code /api/objekts/metadata/{slug}} 컬렉션 설명·이벤트·시대.
- * Cloudflare가 데이터센터 IP를 막으면 빈 값을 돌려 주고, 모달은 로컬 설명만 보여 준다.
+ * 기본값은 비활성({@code apollo.descriptions.enabled=false}). 설명은 시드로 적재한
+ * {@code objekt_description}만 쓰며, 런타임 모달은 Apollo 메타를 붙이지 않는다.
  */
 @Service
 public class ApolloObjektMetadataClient {

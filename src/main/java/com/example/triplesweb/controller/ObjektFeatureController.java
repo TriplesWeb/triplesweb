@@ -4,10 +4,8 @@ import com.example.triplesweb.entity.ObjektDescription;
 import com.example.triplesweb.repository.ObjektDescriptionRepository;
 import com.example.triplesweb.repository.ObjektFavoriteRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
-import com.example.triplesweb.service.ApolloObjektMetadataClient;
 import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.ObjektService;
-import com.example.triplesweb.service.ObjektStoryTranslateService;
 import com.example.triplesweb.service.ObjektFavoriteService;
 import com.example.triplesweb.service.ObjektMarketDataService;
 import com.example.triplesweb.util.MemberPortraitOptions;
@@ -39,8 +37,6 @@ public class ObjektFeatureController {
     private final AboutAdminAuth aboutAdminAuth;
     private final ObjektFavoriteService favorites;
     private final ObjektMarketDataService marketData;
-    private final ApolloObjektMetadataClient apolloMetadata;
-    private final ObjektStoryTranslateService storyTranslate;
     private final ArtistSnapshotService artistSnapshot;
 
     @GetMapping("/member")
@@ -83,10 +79,6 @@ public class ObjektFeatureController {
         body.put("backImage", back);
         body.put("hasBack", !back.isBlank() && !back.equals(front));
         body.put("description", description(item, key));
-        apolloMetadata.story(item)
-                .map(storyTranslate::korean)
-                .map(ApolloObjektMetadataClient.Story::toMap)
-                .ifPresent(story -> body.put("apollo", story));
         body.put("isFavorite", favorites.contains(session.getId(), item));
         body.put("isAdmin", aboutAdminAuth.isAdmin(request, session));
         body.put("detailUrl", ObjektLinks.detail(item));

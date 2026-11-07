@@ -107,24 +107,13 @@ const base = path.resolve(__dirname, '../..');
     await page.locator('#objektDetailTitle').filter({hasText:'Cream02 HaYeon 367Z'}).waitFor();
     assert.equal(await page.locator('#objektDetailModal').isVisible(),true);
     await page.locator('#objektDetailClose').click();
-    description = '';
-    apolloStory = {
-      slug:'cream02-kotone-356a',
-      description:'Part of tripleS Official Character byteS Plush Keyring',
-      eventName:'tripleS Official Character byteS',
-      eventDescription:'Physical objekts included with the byteS Plush Keyring and Random Figure.',
-      eventType:'merch',
-      eraName:'<LOVE&POP> pt.1',
-      twitterUrl:'https://x.com/soundwave_korea/status/1'
-    };
+    description = 'tripleS 공식 캐릭터 byteS 인형 키링의 일부';
+    apolloStory = null;
     await page.locator('.objekt-open-detail').first().click();
-    await page.waitForFunction(()=>document.querySelector('#objektDetailDesc')?.textContent.includes('byteS Plush Keyring'));
-    assert.match(await page.locator('#objektDetailDesc').textContent(), /LOVE&POP/);
-    assert.equal(await page.locator('#objektDetailApolloLink').count(), 0);
-    assert.equal(await page.locator('#objektDetailTwitter').count(), 0);
-    assert.equal(await page.locator('#objektDetailSources').count(), 0);
-    fs.mkdirSync('/opt/cursor/artifacts',{recursive:true});
-    await page.screenshot({path:'/opt/cursor/artifacts/objekt-apollo-story.png',fullPage:true});
+    await page.waitForFunction(()=>document.querySelector('#objektDetailDesc')?.textContent.includes('byteS'));
+    assert.match(await page.locator('#objektDetailDesc').textContent(), /byteS/);
+    assert.doesNotMatch(await page.locator('#objektDetailDesc').textContent(), /Plush Keyring/);
+    assert.equal(await page.locator('#objektDetailEvent').isHidden(), true);
     await page.locator('#objektDetailClose').click();
     await page.evaluate(()=>{
       const original=document.querySelector('.objekt-card[data-objekt-key]');
