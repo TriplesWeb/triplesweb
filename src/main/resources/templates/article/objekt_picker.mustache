@@ -70,6 +70,7 @@
         <p class="text-xs text-slate-400">멤버·시즌·종류·정렬·클래스로 필터하거나 검색한 뒤 체크하세요.</p>
 
         <div class="objekt-picker-filter-bar">
+            <div class="objekt-picker-filter-row">
             <div class="objekt-filter">
                 <span class="objekt-filter-label">멤버</span>
                 <div class="objekt-filter-select-wrap">
@@ -143,11 +144,14 @@
                     <button type="button" class="objekt-choice" data-value="mint_high"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">민팅 많은순</span></button>
                 </div>
             </div>
+            </div>
+            <div class="objekt-picker-search-row">
             <div class="header-search objekt-picker-search" role="search">
                 <input type="search" id="objektFilterSearch" placeholder="멤버·시즌·번호 검색" aria-label="오브젝트 검색" autocomplete="off">
                 <button type="button" id="objektFilterSearchBtn" class="header-search-submit" aria-label="검색"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>
             </div>
             <button type="button" id="objektFilterReset" class="objekt-picker-reset">초기화</button>
+            </div>
             <div class="objekt-picker-class-row">
                 <div class="objekt-filter">
                     <span class="objekt-filter-label">클래스</span>

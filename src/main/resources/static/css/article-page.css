@@ -106,10 +106,12 @@
 .objekt-trade-chip-remove{appearance:none;flex:0 0 auto;display:grid;place-items:center;width:2rem;height:2rem;min-width:2rem;min-height:2rem;margin:0;padding:0;border:1px solid #ffffff22;border-radius:999px;background:#0b1210cc;color:#e8fff8;font-size:1.25rem;font-weight:600;line-height:1;cursor:pointer}
 .objekt-trade-chip-remove:hover{background:#ff6b6b44;border-color:#ff8f8f88;color:#fff}
 .objekt-trade-chip-remove:focus-visible{outline:2px solid #8decd9;outline-offset:2px}
-.objekt-picker-filter-bar{display:flex;flex-wrap:wrap;align-items:center;gap:.55rem .65rem}
-.objekt-picker-class-row{flex:1 1 100%;width:100%;display:flex}
-.objekt-picker-class-row .objekt-filter{max-width:16rem}
-#objektPickerPanel .objekt-filter{position:relative;display:flex;min-width:0;height:2.65rem;align-items:center;gap:.5rem;padding:.25rem .25rem .25rem .75rem;border:1px solid #3a4a4699;border-radius:999px;background:#171a24}
+.objekt-picker-filter-bar{display:flex;flex-direction:column;gap:.55rem}
+.objekt-picker-filter-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.55rem .65rem;align-items:center}
+.objekt-picker-search-row{display:flex;flex-wrap:wrap;align-items:center;gap:.55rem}
+.objekt-picker-class-row{display:flex;width:100%}
+.objekt-picker-class-row .objekt-filter{width:100%;max-width:16rem}
+#objektPickerPanel .objekt-filter{position:relative;display:flex;width:100%;min-width:0;height:2.65rem;align-items:center;gap:.5rem;padding:.25rem .25rem .25rem .75rem;border:1px solid #3a4a4699;border-radius:999px;background:#171a24;flex:none}
 #objektPickerPanel .objekt-filter:hover,#objektPickerPanel .objekt-filter:focus-within{border-color:rgba(0,245,212,.38);background:rgba(0,245,212,.04)}
 #objektPickerPanel .objekt-filter.is-filtered{border-color:rgba(0,245,212,.55);background:rgba(0,245,212,.08)}
 #objektPickerPanel .objekt-filter-label{flex:0 0 auto;color:#8b93a7;font-size:.82rem;font-weight:650;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
@@ -136,7 +138,7 @@
 #objektPickerPanel .objekt-choice.is-selected .objekt-choice-mark{color:#7df9e8}
 #objektPickerPanel .objekt-dropdown-menu{min-width:12rem;border:1px solid #343b51;background:#171a24;box-shadow:0 18px 40px rgba(0,0,0,.42);z-index:50}
 #objektPickerPanel .objekt-dropdown-menu[hidden]{display:none}
-.objekt-picker-search{flex:1 1 11rem;min-width:10rem;max-width:22rem}
+.objekt-picker-search{flex:1 1 12rem;min-width:10rem;max-width:none}
 .objekt-picker-search.header-search{width:100%;padding:3px 3px 3px 12px}
 .objekt-picker-search .header-search-submit{width:1.95rem;height:1.95rem;min-width:1.95rem;min-height:1.95rem;background:#8decd9!important;color:#0b1210!important;box-shadow:0 3px 10px #8decd933}
 .objekt-picker-search .header-search-submit:hover{background:#a6f3e4!important;color:#07110e!important}
@@ -172,6 +174,9 @@
 .objekt-side-btn{padding:.45rem .9rem;border:1px solid #3a4a46;border-radius:999px;background:transparent;color:#b9cac4;font-size:.75rem;font-weight:600;cursor:pointer}
 .objekt-side-btn.is-active{background:#8decd922;border-color:#8decd9;color:#8decd9}
 .objekt-side-btn:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:700px){
+ .objekt-picker-filter-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 @media(max-width:640px){
  .objekt-trade-zones{grid-template-columns:1fr;gap:.85rem}
  .objekt-trade-zone-divider{padding-top:0;text-align:center;transform:rotate(90deg);justify-self:center}
