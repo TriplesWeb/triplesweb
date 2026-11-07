@@ -493,8 +493,10 @@
   }
 
   /** photo by 핸들: 한글·유니코드 계정명 허용. 태그로 @와 계정이 갈라져도 plain에서는 공백이 생길 수 있음 */
+  const PHOTO_BY_GAP = "(?:\\s|&nbsp;|\u00a0)+";
   const PHOTO_CREDIT_PLAIN_RE = /\s*photo\s+by\.?\s*(@?)\s*([^\s]+)\s*$/i;
   const PHOTO_CREDIT_TAIL_RE = /^photo\s+by\.?\s*@?\s*\S+$/i;
+  const PHOTO_BY_MARK_RE = new RegExp("photo" + PHOTO_BY_GAP + "by", "gi");
 
   function normalizePhotoCredit(value) {
     return String(value || "")
@@ -539,6 +541,17 @@
     if (editorEn) editorEn.innerHTML = descriptionToEditorHtml(en.description);
   }
 
+  /** HTML 안 photo(&nbsp;|공백)+by 마지막 시작 위치 */
+  function findLastPhotoByIndex(html) {
+    const re = new RegExp(PHOTO_BY_MARK_RE.source, "gi");
+    let idx = -1;
+    let m;
+    while ((m = re.exec(String(html || ""))) !== null) {
+      idx = m.index;
+    }
+    return idx;
+  }
+
   /** description에서 "photo by …" 출처를 분리 (서식 HTML 유지) */
   function splitPhotoCredit(rawDescription) {
     const raw = String(rawDescription || "");
@@ -552,18 +565,17 @@
       return { description: raw, credit: "" };
     }
 
-    // 연속 텍스트 / 뒤에 <br>만 있는 일반 형태 (한글 핸들 포함)
+    // 연속 텍스트 / 뒤에 <br>만 있는 일반 형태 (한글 핸들·&nbsp; 포함)
+    const creditTail =
+      "photo" + PHOTO_BY_GAP + "by\\.?\\s*@?\\s*[^\\s<]+(?:\\s*<[^>]+>)*\\s*$";
     let stripped = raw
-      .replace(/\s*photo\s+by\.?\s*@?\s*[^\s<]+\s*$/i, "")
-      .replace(
-        /(?:<br\s*\/?>|\s|&nbsp;)*photo\s+by\.?\s*@?\s*[^\s<]+(?:\s*<[^>]+>)*\s*$/i,
-        ""
-      )
+      .replace(new RegExp("\\s*" + creditTail, "i"), "")
+      .replace(new RegExp("(?:<br\\s*/?>|\\s|&nbsp;)*" + creditTail, "i"), "")
       .trim();
 
-    // 태그로 갈라진 "photo by. @</span><span>handle</span>" 형태
+    // 태그로 갈라진 "photo by. @</span><span>handle</span>" / photo&nbsp;by 형태
     if (/\bphoto\s+by\b/i.test(descriptionPlainText(stripped))) {
-      const idx = raw.toLowerCase().lastIndexOf("photo by");
+      const idx = findLastPhotoByIndex(raw);
       if (idx >= 0) {
         let start = idx;
         // 본문을 닫는 </span>은 건드리지 않고, 크레딧을 감싼 여는 태그와 br/nbsp만 뒤로 걷
