@@ -9,6 +9,7 @@ import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.ObjektFavoriteService;
 import com.example.triplesweb.service.ObjektMarketDataService;
 import com.example.triplesweb.util.MemberPortraitOptions;
+import com.example.triplesweb.util.ObjektDescriptionKeys;
 import com.example.triplesweb.util.ObjektLinks;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -161,17 +162,14 @@ public class ObjektFeatureController {
     }
 
     private static String descriptionKey(Map<String, Object> item) {
-        String season = value(item, "season").trim().toLowerCase(java.util.Locale.ROOT);
-        String number = value(item, "collectionNo").trim().toLowerCase(java.util.Locale.ROOT);
-        if (season.isEmpty() || number.isEmpty()) return ObjektLinks.id(item);
-        String identity = season.length() + ":" + season + ":" + number;
-        return "group-" + java.util.UUID.nameUUIDFromBytes(identity.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        return ObjektDescriptionKeys.storageKey(item);
     }
 
     private Optional<ObjektDescription> descriptionEntity(Map<String, Object> item, String requested) {
-        return java.util.stream.Stream.of(descriptionKey(item), ObjektLinks.id(item), value(item, "slug"), value(item, "collectionId"), requested)
-                .filter(s -> !s.isBlank()).distinct().map(descriptionRepository::findByObjektKey)
-                .flatMap(Optional::stream).findFirst();
+        return ObjektDescriptionKeys.readKeys(item, requested).stream()
+                .map(descriptionRepository::findByObjektKey)
+                .flatMap(Optional::stream)
+                .findFirst();
     }
     private String description(Map<String, Object> item, String key) {
         return descriptionEntity(item, key).map(ObjektDescription::getDescription).orElse("");

@@ -114,6 +114,27 @@ public class ApolloObjektMetadataClient {
         return story.isEmpty() ? null : story;
     }
 
+    /**
+     * 컬렉션 설명만 읽는다. 모달 표시 여부와 무관하다.
+     * 통신 실패는 빈 Optional, 설명이 없으면 빈 문자열이다.
+     */
+    public Optional<String> collectionDescription(String slug) {
+        if (slug == null || slug.isBlank()) return Optional.of("");
+        try {
+            JsonNode body = client.get()
+                    .uri("/api/objekts/metadata/{slug}", slug)
+                    .header(HttpHeaders.ACCEPT, "application/json")
+                    .header(HttpHeaders.REFERER, "https://apollo.cafe/?id=" + slug)
+                    .header(HttpHeaders.USER_AGENT, "Mozilla/5.0 triplesweb")
+                    .retrieve()
+                    .body(JsonNode.class);
+            if (body == null) return Optional.empty();
+            return Optional.of(clip(text(body.path("data"), "description")));
+        } catch (RestClientException ignored) {
+            return Optional.empty();
+        }
+    }
+
     private Story fetch(String slug) {
         try {
             JsonNode body = client.get()
