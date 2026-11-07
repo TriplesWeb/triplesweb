@@ -55,7 +55,9 @@ const base = path.resolve(__dirname, '../..');
     await page.locator('#objektDetailTitle').filter({hasText:'Cream02 HaYeon 367Z'}).waitFor();
     const memberGlow = await page.locator('#objektDetailMember').evaluate((el) => getComputedStyle(el).textShadow);
     assert.notEqual(memberGlow, 'none');
-    assert.match(memberGlow, /255,\s*255,\s*255/);
+    // 멤버색 글로우는 유지하되 흰 하이라이트(255,255,255)는 쓰지 않는다.
+    assert.doesNotMatch(memberGlow, /255,\s*255,\s*255/);
+    assert.match(memberGlow, /rgba?\(/);
     await page.locator('#objektDetailFavorite').click();
     await page.waitForFunction(()=>document.querySelector('#objektDetailFavorite').dataset.favorite==='true');
     assert.equal(favoriteAttempts,2);
