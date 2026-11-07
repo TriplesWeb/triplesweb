@@ -28,7 +28,8 @@ public final class ObjektFilterOrder {
                 .distinct().sorted(comparator).toList();
     }
 
-    private static long seasonIndex(String value) {
+    public static long seasonIndex(String value) {
+        if (value == null || value.isBlank()) return -1;
         var match = SEASON.matcher(value.toLowerCase(Locale.ROOT).replaceAll("[\\s_-]", ""));
         if (!match.matches()) return -1;
         int family = SEASON_FAMILIES.indexOf(match.group(1));

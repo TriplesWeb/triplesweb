@@ -32,7 +32,9 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
   <button type="button" id="objekt-kind-toggle"></button>
   <div id="kind-menu" class="hidden">
     <button type="button" class="objekt-kind-option" data-value="all">전체</button>
+    <button type="button" class="objekt-kind-option" data-value="001Z">001Z</button>
     <button type="button" class="objekt-kind-option" data-value="101Z">101Z</button>
+    <button type="button" class="objekt-kind-option" data-value="201Z">201Z</button>
   </div>
   <p id="kind-empty" hidden></p>
 </div>
@@ -40,6 +42,8 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
   <span id="class-label">전체</span>
   <div id="class-menu" class="hidden">
     <label><input type="checkbox" value="all" class="class-checkbox" checked><span class="objekt-choice-text">전체 클래스</span></label>
+    <label><input type="checkbox" name="class" value="First" class="class-checkbox"><span class="objekt-choice-text">First</span></label>
+    <label><input type="checkbox" name="class" value="Welcome" class="class-checkbox"><span class="objekt-choice-text">Welcome</span></label>
     <label><input type="checkbox" name="class" value="Special" class="class-checkbox"><span class="objekt-choice-text">Special</span></label>
   </div>
 </div>
@@ -56,6 +60,7 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
 <div id="objekt-empty" class="hidden">없음</div>
 <div id="objekt-card-grid"><article class="objekt-card objekt-item" data-objekt-key="first">초기카드</article></div>
 <div id="objekt-scroll-sentinel" data-has-more="false" data-next-page="1"><p id="objekt-scroll-status"></p><div id="objekt-scroll-spinner" class="hidden"></div></div>
+<script type="application/json" id="objekt-kind-by-class">{"First":["001Z"],"Welcome":["101Z"],"Special":["201Z"]}</script>
 <script src="/js/season-filters.js"></script>
 <script src="/js/member-portrait-picker.js"></script>
 <script src="/js/objekt-page.js"></script>
@@ -116,6 +121,16 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
   await page.locator('.objekt-kind-option[data-value="101Z"]').evaluate(el=>el.click());
   await kindWait;
   assert.ok(moreCalls.some(call=>call.kind==='101Z'));
+
+  moreCalls.length=0;
+  const classWait=page.waitForResponse(res=>{try{const url=new URL(res.url());return url.pathname==='/cosmo/objekt/more'&&url.searchParams.get('class')==='First';}catch{return false;}});
+  await page.locator('.class-checkbox[value="First"]').evaluate(el=>{el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}));});
+  await classWait;
+  await page.waitForFunction(()=>document.querySelector('.objekt-kind-option[data-value="101Z"]').hidden);
+  assert.equal(await page.locator('.objekt-kind-option[data-value="001Z"]').evaluate(el=>el.hidden),false);
+  assert.equal(await page.locator('.objekt-kind-option[data-value="201Z"]').evaluate(el=>el.hidden),true);
+  assert.equal(await page.locator('.objekt-kind-select').inputValue(),'전체');
+  assert.ok(moreCalls.some(call=>call.class==='First'&&call.kind==='all'));
 
   console.log('PASS: 멤버·그룹·시즌·종류 변경 시 검색 버튼 없이 결과 갱신');
  }finally{await browser.close();}

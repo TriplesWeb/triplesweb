@@ -703,22 +703,16 @@
         .objekt-detail-meta dt { color: #8b93a7; margin: 0; }
         .objekt-detail-meta dd { margin: 0; color: #e8edf5; font-weight: 600; text-align: right; }
         .objekt-detail-meta a.objekt-detail-member-link {
-            color: color-mix(in srgb, var(--artist-color, #00f5d4) 72%, #ffffff 28%);
+            color: #fff;
             font-weight: 700;
             text-decoration: none;
-            text-shadow:
-                0 0 4px rgba(255, 255, 255, .72),
-                0 0 10px rgba(255, 255, 255, .38),
-                0 0 18px color-mix(in srgb, var(--artist-color, #00f5d4) 55%, #ffffff);
+            text-shadow: none;
         }
         .objekt-detail-meta a.objekt-detail-member-link:hover,
         .objekt-detail-meta a.objekt-detail-member-link:focus-visible {
             text-decoration: underline;
             text-underline-offset: 2px;
-            text-shadow:
-                0 0 6px rgba(255, 255, 255, .85),
-                0 0 14px rgba(255, 255, 255, .45),
-                0 0 22px color-mix(in srgb, var(--artist-color, #00f5d4) 45%, #ffffff);
+            text-shadow: none;
         }
         .objekt-detail-story {
             margin: .1rem 0;

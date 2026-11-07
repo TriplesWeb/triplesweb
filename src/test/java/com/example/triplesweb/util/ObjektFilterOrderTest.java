@@ -24,6 +24,9 @@ class ObjektFilterOrderTest {
     @Test void seasonsFollowReleaseOrderRatherThanAlphabeticalOrder() {
         assertThat(ObjektFilterOrder.sortedSeasons(List.of("Atom01", "CREAM02", "Divine01", "Binary01", "Ever01", "Cream01", "Atom02", "Binary02", "Other", "Cream01")))
                 .containsExactly("CREAM02", "Binary02", "Atom02", "Ever01", "Divine01", "Cream01", "Binary01", "Atom01", "Other");
+        assertThat(ObjektFilterOrder.seasonIndex("Cream02")).isGreaterThan(ObjektFilterOrder.seasonIndex("Binary01"));
+        assertThat(ObjektFilterOrder.seasonIndex("Binary01")).isGreaterThan(ObjektFilterOrder.seasonIndex("Atom01"));
+        assertThat(ObjektFilterOrder.seasonIndex("")).isEqualTo(-1);
     }
 
     @Test void duplicateNumberEnglishAndKoreanAliasesBecomeOneNameOnlyOption() {

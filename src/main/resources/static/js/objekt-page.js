@@ -88,6 +88,16 @@
     const kindEmpty = document.getElementById('kind-empty');
     const kindOptions = kindMenu ? [...kindMenu.querySelectorAll('.objekt-kind-option')] : [];
     let kindActiveIndex = -1;
+    const kindByClass = (() => {
+        const node = document.getElementById('objekt-kind-by-class');
+        if (!node) return {};
+        try {
+            const parsed = JSON.parse(node.textContent || '{}');
+            return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch (_) {
+            return {};
+        }
+    })();
 
     function normalizeKindValue(raw) {
         if (window.ObjektKindCombo) return ObjektKindCombo.normalizeKindValue(raw);
@@ -112,13 +122,56 @@
         if (apply && changed) scheduleApplyFilters();
     }
 
+    function selectedClassValues() {
+        return [...document.querySelectorAll('.class-checkbox')]
+            .filter((cb) => cb.value !== 'all' && cb.checked)
+            .map((cb) => cb.value);
+    }
+
+    function allowedKindsForClasses(classes) {
+        if (!classes.length) return null;
+        const keys = Object.keys(kindByClass);
+        if (!keys.length) return null;
+        const allowed = new Set();
+        let matched = false;
+        for (const klass of classes) {
+            const match = keys.find((key) => key.toLocaleLowerCase() === String(klass).toLocaleLowerCase());
+            if (!match) continue;
+            matched = true;
+            const numbers = kindByClass[match];
+            if (!Array.isArray(numbers)) continue;
+            numbers.forEach((number) => allowed.add(normalizeKindValue(number)));
+        }
+        return matched ? allowed : null;
+    }
+
+    function syncKindOptionsToClass({ resetInvalid = true } = {}) {
+        const allowed = allowedKindsForClasses(selectedClassValues());
+        kindOptions.forEach((opt) => {
+            if (opt.dataset.value === 'all') {
+                opt.dataset.classAllowed = 'true';
+                return;
+            }
+            const ok = !allowed || allowed.has(normalizeKindValue(opt.dataset.value));
+            opt.dataset.classAllowed = ok ? 'true' : 'false';
+        });
+        if (resetInvalid && kindSelect) {
+            const current = normalizeKindValue(kindSelect.value);
+            if (current !== 'all' && allowed && !allowed.has(current)) {
+                setKindValue('all', { apply: false });
+            }
+        }
+        filterKindOptions(kindSelect?.value);
+    }
+
     function filterKindOptions(query) {
         const q = normalizeKindValue(query);
         const needle = q === 'all' ? '' : q.toLowerCase();
         let shown = 0;
         kindOptions.forEach((opt) => {
+            const classOk = opt.dataset.value === 'all' || opt.dataset.classAllowed !== 'false';
             const value = String(opt.dataset.value || '').toLowerCase();
-            const match = !needle || value.includes(needle);
+            const match = classOk && (!needle || value.includes(needle));
             opt.hidden = !match;
             if (match) shown += 1;
         });
@@ -348,10 +401,12 @@
             const chosen = boxes.some(other => other.value !== 'all' && other.checked);
             if (all && !chosen) all.checked = true;
             updateDropdownLabel(type);
+            if (type === 'class') syncKindOptionsToClass();
             markActiveFilters();
             scheduleApplyFilters();
         }));
         updateDropdownLabel(type);
+        if (type === 'class') syncKindOptionsToClass({ resetInvalid: true });
     });
 
     function markActiveFilters() {

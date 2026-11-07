@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Objekt 외부 API 어댑터.
@@ -206,10 +207,11 @@ public class ObjektService {
             List<String> members,
             List<String> seasons,
             List<String> classes,
-            List<String> collectionNumbers
+            List<String> collectionNumbers,
+            Map<String, List<String>> numbersByClass
     ) {
         public static FilterFacets empty() {
-            return new FilterFacets(List.of(), List.of(), List.of(), List.of());
+            return new FilterFacets(List.of(), List.of(), List.of(), List.of(), Map.of());
         }
 
         public static FilterFacets from(List<Map<String, Object>> views) {
@@ -217,6 +219,7 @@ public class ObjektService {
             Set<String> seasons = new LinkedHashSet<>();
             Set<String> classes = new LinkedHashSet<>();
             Set<String> numbers = new LinkedHashSet<>();
+            Map<String, Set<String>> grouped = new LinkedHashMap<>();
             for (Map<String, Object> item : views) {
                 for (String member : MemberPortraitOptions.objektMembers(first(item, "member", "memberName"))) {
                     if (!member.isBlank()) members.add(member);
@@ -227,12 +230,21 @@ public class ObjektService {
                 if (!klass.isBlank()) classes.add(klass.trim());
                 String number = first(item, "collectionNo", "collectionNumber");
                 if (!number.isBlank()) numbers.add(number.trim());
+                if (!klass.isBlank() && !number.isBlank()) {
+                    grouped.computeIfAbsent(klass.trim(), key -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER))
+                            .add(number.trim());
+                }
             }
+            Map<String, List<String>> numbersByClass = new LinkedHashMap<>();
+            grouped.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey(String.CASE_INSENSITIVE_ORDER))
+                    .forEach(entry -> numbersByClass.put(entry.getKey(), List.copyOf(entry.getValue())));
             return new FilterFacets(
                     ObjektFilterOrder.sortedMembers(members),
                     ObjektFilterOrder.sortedSeasons(seasons),
                     classes.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList(),
-                    numbers.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList()
+                    numbers.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList(),
+                    Map.copyOf(numbersByClass)
             );
         }
 
