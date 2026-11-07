@@ -1,0 +1,65 @@
+<div id="eventEditModal" class="about-modal hidden" role="dialog" aria-modal="true" aria-labelledby="eventEditTitle">
+    <div class="about-modal-panel about-edit-panel">
+        <button type="button" class="about-close event-edit-close" aria-label="닫기">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        <h3 id="eventEditTitle" class="about-modal-title">이벤트 수정</h3>
+        <form id="eventEditForm" class="about-edit-form">
+            <input type="hidden" id="eventEditId">
+            <label class="about-edit-label">이벤트명
+                <input type="text" id="eventEditName" required maxlength="120" placeholder="투어·공연 공통 이름">
+            </label>
+            <label class="about-edit-label">목록 구분
+                <select id="eventEditSectionId"></select>
+            </label>
+            <label class="about-edit-label">소개
+                <textarea id="eventEditInfo" rows="3"></textarea>
+            </label>
+            <div class="event-stops-field">
+                <div class="event-stops-field-head">지역 회차</div>
+                <p class="about-edit-field-hint">회차마다 셋리스트·MD를 넣을 수 있습니다. 셋리스트는 <code># 섹션</code>·<code>곡|앨범|비고</code>, MD는 <code># Official MD</code>·<code>!공지이미지URL</code>·<code>이름|가격</code>.</p>
+                <div id="eventEditStops" class="event-stop-rows"></div>
+                <button type="button" id="eventAddStopBtn" class="about-mode-btn album-add-track-btn btn btn-sm btn-outline btn-primary">회차 추가</button>
+            </div>
+            <label class="about-edit-label">포스터 이미지
+                <input type="file" id="eventEditImage" accept="image/*">
+            </label>
+            <label class="about-edit-label">외부 이미지 URL
+                <input type="url" id="eventEditImageUrl" placeholder="https://example.com/poster.jpg" maxlength="1000" pattern="https?://.+">
+                <span class="text-xs text-gray-400">이미지 파일 대신 사용할 링크를 입력하세요. 파일을 선택하면 파일이 우선 적용됩니다.</span>
+            </label>
+            <img id="eventEditImagePreview" class="about-preview hidden" alt="포스터 미리보기">
+            <label class="about-edit-check">
+                <input type="checkbox" id="eventEditClearImage"> 포스터 이미지 제거
+            </label>
+            <p id="eventEditError" class="about-edit-error" hidden></p>
+            <div class="about-edit-actions">
+                <button type="button" id="eventEditDeleteBtn" class="about-mode-btn hidden btn btn-sm btn-error">삭제</button>
+                <button type="submit" class="about-mode-btn is-active btn btn-sm btn-outline btn-primary btn-active">저장</button>
+                <button type="button" class="about-mode-btn event-edit-close btn btn-sm btn-outline btn-primary">취소</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="eventSectionModal" class="about-modal hidden" role="dialog" aria-modal="true" aria-labelledby="eventSectionTitle">
+    <div class="about-modal-panel about-edit-panel">
+        <button type="button" class="about-close event-section-close" aria-label="닫기">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        <h3 id="eventSectionTitle" class="about-modal-title">구분 관리</h3>
+        <form id="eventSectionAddForm" class="about-edit-form" style="margin-bottom:1rem">
+            <label class="about-edit-label">구분명 추가
+                <div class="flex gap-2">
+                    <input type="text" id="eventSectionNewName" required maxlength="120" placeholder="예: 콘서트, 팬미팅" class="flex-1">
+                    <button type="submit" class="about-mode-btn is-active shrink-0 btn btn-sm btn-outline btn-primary btn-active">추가</button>
+                </div>
+            </label>
+            <p id="eventSectionError" class="about-edit-error" hidden></p>
+        </form>
+        <ul id="eventSectionList" class="list-none p-0 m-0 space-y-2"></ul>
+        <div class="about-edit-actions" style="margin-top:1rem">
+            <button type="button" class="about-mode-btn event-section-close btn btn-sm btn-outline btn-primary">닫기</button>
+        </div>
+    </div>
+</div>
