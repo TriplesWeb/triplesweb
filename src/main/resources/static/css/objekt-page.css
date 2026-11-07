@@ -155,7 +155,7 @@
             flex: 0 0 auto;
             color: #8b93a7;
             font-family: var(--font-sans, "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif);
-            font-size: .72rem;
+            font-size: .82rem;
             font-weight: 650;
             letter-spacing: .04em;
             text-transform: uppercase;
@@ -264,7 +264,7 @@
             padding: 0 !important;
             color: #e8ebf2 !important;
             font-family: var(--font-sans, "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif) !important;
-            font-size: .8rem;
+            font-size: .82rem;
             font-weight: 650;
             letter-spacing: 0;
             line-height: 2.1rem;
@@ -331,7 +331,7 @@
             border-radius: .55rem;
             color: #e8ebf2;
             font-family: var(--font-sans, "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif);
-            font-size: .9rem;
+            font-size: .82rem;
             font-weight: 650;
             cursor: pointer;
         }
@@ -485,13 +485,14 @@
         .objekt-detail-link {
             flex: 1 1 auto;
             min-width: 0;
-            overflow: hidden;
+            overflow: visible;
             color: #f4f6fb;
             font-size: .72rem;
             font-weight: 700;
+            line-height: 1.35;
             text-decoration: none;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            overflow-wrap: anywhere;
+            white-space: normal;
         }
         .objekt-detail-link:hover { color: #00f5d4; }
         .objekt-card-foot {

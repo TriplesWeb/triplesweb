@@ -99,7 +99,7 @@ class CosmoCollectionControllerTest {
                 .andExpect(content().string(containsString("HaYeon 367Z")))
                 .andExpect(content().string(containsString("background:#FF8389")))
                 .andExpect(content().string(containsString("collection-image")))
-                .andExpect(content().string(containsString("내 코스모 아이디 검색")))
+                .andExpect(content().string(containsString("코스모 아이디 검색")))
                 .andExpect(content().string(containsString("프로필 보기")))
                 .andExpect(content().string(containsString("?tab=overview")))
                 .andExpect(content().string(containsString("기타 옵젝")))

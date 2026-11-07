@@ -95,6 +95,20 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<Article> findCategoryBatchBefore(String category, String type, String keyword, long beforeId, int size) {
+        var page = PageRequest.of(0, Math.min(100, Math.max(1, size)));
+        if (keyword == null || keyword.isBlank())
+            return articleRepository.findByCategoryIgnoreCaseAndIdLessThanOrderByIdDesc(category, beforeId, page);
+        String query = keyword.trim();
+        return switch (type == null ? "title" : type.toLowerCase(java.util.Locale.ROOT)) {
+            case "content" -> articleRepository.findByCategoryIgnoreCaseAndContentContainingIgnoreCaseAndIdLessThanOrderByIdDesc(category, query, beforeId, page);
+            case "writer", "userid", "author" -> articleRepository.findByCategoryIgnoreCaseAndUserIdContainingIgnoreCaseAndIdLessThanOrderByIdDesc(category, query, beforeId, page);
+            default -> articleRepository.findByCategoryIgnoreCaseAndTitleContainingIgnoreCaseAndIdLessThanOrderByIdDesc(category, query, beforeId, page);
+        };
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Article> findPopularArticles(String category, int limit) {
         return articleRepository.findPopularByCategory(category, PageRequest.of(0, limit));
     }
