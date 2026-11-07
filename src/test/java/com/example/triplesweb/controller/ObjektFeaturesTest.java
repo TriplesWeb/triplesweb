@@ -290,6 +290,9 @@ class ObjektFeaturesTest {
             .contains("data-serial-panel", "objektIssuedCount")
             .contains("objekt-member-logo")
             .contains("/images/objekt-member-logos/s19.png")
+            .contains("id=\"objektDescriptionEdit\"")
+            .contains("수정하기")
+            .doesNotContain("관리자 · 상세 설명 편집")
             .doesNotContain("objekt-head-mints")
             .doesNotContain("발행량 7,193,056개")
             .doesNotContain("objektIssuedRanges", "objektIssuedTime").doesNotContain("id=\"objektDetailFullLink\"");
