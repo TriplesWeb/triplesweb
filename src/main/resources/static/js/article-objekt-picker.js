@@ -390,25 +390,33 @@
       except?.closest('.objekt-filter')?.classList.toggle('is-open', Boolean(except) && !except.hidden);
     }
 
-    function bindSortMenu() {
-      const menu = document.getElementById('objekt-sort-menu');
-      const toggleBtn = document.getElementById('objekt-sort-toggle');
-      const label = document.getElementById('objekt-sort-label');
-      const root = document.getElementById('objekt-sort-dropdown');
-      if (!menu || !toggleBtn || !sortFilter) return;
+    function bindChoiceMenu(opts) {
+      const menu = document.getElementById(opts.menuId);
+      const toggleBtn = document.getElementById(opts.toggleId);
+      const label = document.getElementById(opts.labelId);
+      const root = document.getElementById(opts.rootId);
+      const hidden = opts.hidden;
+      if (!menu || !toggleBtn || !hidden) return { reset() {} };
+      const emptyValue = opts.emptyValue ?? '';
+      const emptyLabel = opts.emptyLabel ?? '전체';
       const choices = () => [...menu.querySelectorAll('.objekt-choice')];
       function sync() {
-        const current = sortFilter.value || 'latest';
+        const current = hidden.value || emptyValue;
+        let matched = false;
         choices().forEach((choice) => {
-          const selected = choice.dataset.value === current;
+          const selected = (choice.dataset.value || emptyValue) === current;
           choice.classList.toggle('is-selected', selected);
           choice.setAttribute('aria-pressed', selected ? 'true' : 'false');
-          if (selected && label) label.textContent = choice.querySelector('.objekt-choice-text')?.textContent.trim() || '최신순';
+          if (selected) {
+            matched = true;
+            if (label) label.textContent = choice.querySelector('.objekt-choice-text')?.textContent.trim() || emptyLabel;
+          }
         });
-        root?.classList.toggle('is-filtered', current !== 'latest');
+        if (!matched && label) label.textContent = emptyLabel;
+        root?.classList.toggle('is-filtered', current !== emptyValue);
       }
       choices().forEach((choice) => choice.addEventListener('click', () => {
-        sortFilter.value = choice.dataset.value || 'latest';
+        hidden.value = choice.dataset.value || emptyValue;
         sync();
         menu.hidden = true;
         menu.classList.add('hidden');
@@ -424,9 +432,44 @@
         closePickerMenus(willOpen ? menu : null);
       });
       sync();
+      return {
+        reset() {
+          hidden.value = emptyValue;
+          sync();
+        }
+      };
     }
 
-    bindSortMenu();
+    const memberMenu = bindChoiceMenu({
+      hidden: memberFilter,
+      rootId: 'objekt-member-dropdown',
+      toggleId: 'objekt-member-toggle',
+      menuId: 'objekt-member-menu',
+      labelId: 'objekt-member-label'
+    });
+    const seasonMenu = bindChoiceMenu({
+      hidden: seasonFilter,
+      rootId: 'objekt-season-dropdown',
+      toggleId: 'objekt-season-toggle',
+      menuId: 'objekt-season-menu',
+      labelId: 'objekt-season-label'
+    });
+    const classMenu = bindChoiceMenu({
+      hidden: classFilter,
+      rootId: 'objekt-class-dropdown',
+      toggleId: 'objekt-class-toggle',
+      menuId: 'objekt-class-menu',
+      labelId: 'objekt-class-label'
+    });
+    const sortMenu = bindChoiceMenu({
+      hidden: sortFilter,
+      rootId: 'objekt-sort-dropdown',
+      toggleId: 'objekt-sort-toggle',
+      menuId: 'objekt-sort-menu',
+      labelId: 'objekt-sort-label',
+      emptyValue: 'latest',
+      emptyLabel: '최신순'
+    });
     window.ObjektKindCombo?.bindKindCombo({
       input: document.getElementById('objekt-kind-select'),
       menu: document.getElementById('objekt-kind-menu'),
@@ -447,7 +490,7 @@
     });
 
     [memberFilter, seasonFilter, classFilter].forEach((el) => {
-      if (el) el.addEventListener('change', () => { if (open) load(true); });
+      if (el && el.tagName === 'SELECT') el.addEventListener('change', () => { if (open) load(true); });
     });
     if (searchFilter) {
       searchFilter.addEventListener('input', () => {
@@ -472,9 +515,10 @@
     }
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
-        if (memberFilter) memberFilter.value = '';
-        if (seasonFilter) seasonFilter.value = '';
-        if (classFilter) classFilter.value = '';
+        memberMenu.reset();
+        seasonMenu.reset();
+        classMenu.reset();
+        sortMenu.reset();
         if (kindFilter) kindFilter.value = 'all';
         const kindInput = document.getElementById('objekt-kind-select');
         if (kindInput) {
@@ -482,14 +526,6 @@
           kindInput.dataset.kindValue = 'all';
           kindInput.closest('.objekt-filter')?.classList.remove('is-filtered');
         }
-        if (sortFilter) sortFilter.value = 'latest';
-        const sortLabel = document.getElementById('objekt-sort-label');
-        if (sortLabel) sortLabel.textContent = '최신순';
-        document.getElementById('objekt-sort-dropdown')?.classList.remove('is-filtered');
-        document.querySelectorAll('#objekt-sort-menu .objekt-choice').forEach((choice) => {
-          const selected = choice.dataset.value === 'latest';
-          choice.classList.toggle('is-selected', selected);
-        });
         if (searchFilter) searchFilter.value = '';
         if (open) load(true);
       });

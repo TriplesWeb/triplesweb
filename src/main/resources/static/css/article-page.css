@@ -106,8 +106,8 @@
 .objekt-trade-chip-remove{appearance:none;flex:0 0 auto;display:grid;place-items:center;width:2rem;height:2rem;min-width:2rem;min-height:2rem;margin:0;padding:0;border:1px solid #ffffff22;border-radius:999px;background:#0b1210cc;color:#e8fff8;font-size:1.25rem;font-weight:600;line-height:1;cursor:pointer}
 .objekt-trade-chip-remove:hover{background:#ff6b6b44;border-color:#ff8f8f88;color:#fff}
 .objekt-trade-chip-remove:focus-visible{outline:2px solid #8decd9;outline-offset:2px}
-.objekt-picker-filter-bar{display:flex;flex-direction:column;gap:.55rem}
-.objekt-picker-filter-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.55rem .65rem;align-items:center}
+.objekt-picker-filter-bar{display:flex;flex-direction:column;gap:.55rem;overflow:visible}
+.objekt-picker-filter-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.55rem .65rem;align-items:center;overflow:visible}
 .objekt-picker-search-row{display:flex;flex-wrap:wrap;align-items:center;gap:.55rem}
 .objekt-picker-class-row{display:flex;width:100%}
 .objekt-picker-class-row .objekt-filter{width:100%;max-width:16rem}

@@ -71,31 +71,35 @@
 
         <div class="objekt-picker-filter-bar">
             <div class="objekt-picker-filter-row">
-            <div class="objekt-filter">
+            <div class="objekt-filter relative" id="objekt-member-dropdown">
                 <span class="objekt-filter-label">멤버</span>
-                <div class="objekt-filter-select-wrap">
-                    <select id="objektFilterMember" class="objekt-filter-control" aria-label="멤버 필터">
-                        <option value="">전체</option>
-                        {{#objektMemberOptions}}
-                        <option value="{{.}}">{{.}}</option>
-                        {{/objektMemberOptions}}
-                        {{#hasOtherObjektOption}}
-                        <option value="__other__">기타 옵젝</option>
-                        {{/hasOtherObjektOption}}
-                    </select>
+                <input type="hidden" id="objektFilterMember" value="">
+                <button type="button" class="objekt-filter-control" id="objekt-member-toggle" aria-expanded="false" aria-controls="objekt-member-menu">
+                    <span id="objekt-member-label" class="truncate">전체</span>
                     <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
+                </button>
+                <div id="objekt-member-menu" class="objekt-dropdown-menu absolute top-full left-0 mt-2 min-w-[9rem] max-h-60 overflow-y-auto rounded-xl border z-50 p-1.5" hidden>
+                    <button type="button" class="objekt-choice" data-value=""><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">전체</span></button>
+                    {{#objektMemberOptions}}
+                    <button type="button" class="objekt-choice" data-value="{{.}}"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">{{.}}</span></button>
+                    {{/objektMemberOptions}}
+                    {{#hasOtherObjektOption}}
+                    <button type="button" class="objekt-choice" data-value="__other__"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">기타 옵젝</span></button>
+                    {{/hasOtherObjektOption}}
                 </div>
             </div>
-            <div class="objekt-filter">
+            <div class="objekt-filter relative" id="objekt-season-dropdown">
                 <span class="objekt-filter-label">시즌</span>
-                <div class="objekt-filter-select-wrap">
-                    <select id="objektFilterSeason" class="objekt-filter-control" aria-label="시즌 필터">
-                        <option value="">전체</option>
-                        {{#objektSeasonOptions}}
-                        <option value="{{.}}">{{.}}</option>
-                        {{/objektSeasonOptions}}
-                    </select>
+                <input type="hidden" id="objektFilterSeason" value="">
+                <button type="button" class="objekt-filter-control" id="objekt-season-toggle" aria-expanded="false" aria-controls="objekt-season-menu">
+                    <span id="objekt-season-label" class="truncate">전체</span>
                     <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
+                </button>
+                <div id="objekt-season-menu" class="objekt-dropdown-menu absolute top-full left-0 mt-2 min-w-[9rem] max-h-60 overflow-y-auto rounded-xl border z-50 p-1.5" hidden>
+                    <button type="button" class="objekt-choice" data-value=""><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">전체</span></button>
+                    {{#objektSeasonOptions}}
+                    <button type="button" class="objekt-choice" data-value="{{.}}"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">{{.}}</span></button>
+                    {{/objektSeasonOptions}}
                 </div>
             </div>
             <div class="objekt-filter relative" id="objekt-kind-dropdown">
@@ -153,16 +157,18 @@
             <button type="button" id="objektFilterReset" class="objekt-picker-reset">초기화</button>
             </div>
             <div class="objekt-picker-class-row">
-                <div class="objekt-filter">
+                <div class="objekt-filter relative" id="objekt-class-dropdown">
                     <span class="objekt-filter-label">클래스</span>
-                    <div class="objekt-filter-select-wrap">
-                        <select id="objektFilterClass" class="objekt-filter-control" aria-label="클래스 필터">
-                            <option value="">전체</option>
-                            {{#objektClassOptions}}
-                            <option value="{{.}}">{{.}}</option>
-                            {{/objektClassOptions}}
-                        </select>
+                    <input type="hidden" id="objektFilterClass" value="">
+                    <button type="button" class="objekt-filter-control" id="objekt-class-toggle" aria-expanded="false" aria-controls="objekt-class-menu">
+                        <span id="objekt-class-label" class="truncate">전체</span>
                         <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
+                    </button>
+                    <div id="objekt-class-menu" class="objekt-dropdown-menu absolute top-full left-0 mt-2 min-w-[9rem] max-h-60 overflow-y-auto rounded-xl border z-50 p-1.5" hidden>
+                        <button type="button" class="objekt-choice" data-value=""><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">전체</span></button>
+                        {{#objektClassOptions}}
+                        <button type="button" class="objekt-choice" data-value="{{.}}"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">{{.}}</span></button>
+                        {{/objektClassOptions}}
                     </div>
                 </div>
             </div>
