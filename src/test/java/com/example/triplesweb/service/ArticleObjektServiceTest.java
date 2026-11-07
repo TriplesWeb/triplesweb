@@ -25,9 +25,6 @@ class ArticleObjektServiceTest {
         assertThat(ArticleObjektService.validateTradeSides(List.of("a"), List.of("a")))
                 .isEqualTo("같은 오브젝트를 Have와 Want에 동시에 넣을 수 없습니다.");
         assertThat(ArticleObjektService.validateTradeSides(List.of("a"), List.of("b"))).isNull();
-        assertThat(ArticleObjektService.validateSellSelection(List.of()))
-                .isEqualTo("오브젝트를 1개 이상 선택해주세요.");
-        assertThat(ArticleObjektService.validateSellSelection(List.of("a"))).isNull();
     }
 
     @Test

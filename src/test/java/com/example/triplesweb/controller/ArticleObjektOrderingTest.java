@@ -29,8 +29,6 @@ class ArticleObjektOrderingTest {
                 assertThat((List<Map<String,Object>>)model.get("objektWantSelected")).isEmpty();
             } else {
                 assertThat(model.get("isTradeObjektSplit")).isEqualTo(false);
-                assertThat(model.get("isSellListingHave")).isEqualTo(true);
-                assertThat(model.get("isSellListingWant")).isEqualTo(false);
             }
         }
     }

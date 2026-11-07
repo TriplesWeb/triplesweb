@@ -199,7 +199,10 @@ class GroupOrdersControllerTest {
             .andExpect(content().string(not(containsString("코토네 팝니다"))));
         mvc.perform(get("/article/sell").param("member", "김나경").param("objektSide", "want"))
             .andExpect(status().isOk())
-            .andExpect(content().string(containsString("김나경 구합니다")));
+            .andExpect(content().string(containsString("김나경 구합니다")))
+            .andExpect(content().string(containsString("/article/sell/new?objektSide=want")));
+        mvc.perform(get("/article/sell"))
+            .andExpect(content().string(containsString("/article/sell/new?objektSide=have")));
     }
 
     @Test void sellCreateStoresWantForBuyListing() throws Exception {
@@ -220,10 +223,14 @@ class GroupOrdersControllerTest {
         mvc.perform(multipart("/article/sell/new")
                 .param("title", "판매")
                 .param("content", "<p>내용</p>")
+                .param("selectedObjektIds", "have-uuid")
                 .param("sellListingSide", "have"))
+            .andExpect(redirectedUrl("/article/sell/9"));
+        verify(links).attachSelected(any(Article.class), eq(List.of("have-uuid")), eq(List.of()));
+        mvc.perform(get("/article/sell/new").param("objektSide", "want"))
             .andExpect(status().isOk())
-            .andExpect(model().attribute("errorMessage", "오브젝트를 1개 이상 선택해주세요."));
-        verify(articles, times(1)).create(any());
+            .andExpect(content().string(containsString("name=\"sellListingSide\" value=\"want\"")))
+            .andExpect(content().string(not(containsString("id=\"sellListingHave\""))));
     }
 
     @Test void noticeBoardIsAllowed() throws Exception {

@@ -81,12 +81,12 @@ public class ArticleController {
 
     /** 작성 폼 */
     public String showArticleForm(String category, Model model) {
-        return showArticleForm(category, null, null, null, null, model);
+        return showArticleForm(category, null, null, null, null, null, model);
     }
 
     /** 테스트·deep-link 호환: selectedObjektIds는 trade에서 Have로 매핑된다. */
     public String showArticleForm(String category, List<String> selectedObjektIds, Model model) {
-        return showArticleForm(category, selectedObjektIds, null, null, null, model);
+        return showArticleForm(category, selectedObjektIds, null, null, null, null, model);
     }
 
     @GetMapping("/new")
@@ -95,6 +95,7 @@ public class ArticleController {
                                   @RequestParam(value = "selectedHaveObjektIds", required = false) List<String> selectedHaveObjektIds,
                                   @RequestParam(value = "selectedWantObjektIds", required = false) List<String> selectedWantObjektIds,
                                   @RequestParam(value = "sellListingSide", required = false) String sellListingSide,
+                                  @RequestParam(value = "objektSide", required = false) String objektSide,
                                   Model model) {
         if (isInvalidCategory(category)) return "redirect:/article/trade";
 
@@ -108,7 +109,7 @@ public class ArticleController {
         if ((have == null || have.isEmpty()) && selectedObjektIds != null && !selectedObjektIds.isEmpty()) {
             have = selectedObjektIds;
         }
-        addObjektOptions(model, category, have, selectedWantObjektIds, sellListingSide);
+        addObjektOptions(model, category, have, selectedWantObjektIds, firstNonBlank(sellListingSide, objektSide));
         return "article/article_new";
     }
 
@@ -197,9 +198,8 @@ public class ArticleController {
         boolean sellWant = isSellBoard(category) && "want".equals(normalizeSellListingSide(sellListingSide));
         Set<String> haveSelected = keySet(haveKeys);
         Set<String> wantSelected = tradeSplit ? keySet(wantKeys) : Set.of();
-        if (isSellBoard(category) && sellWant) {
-            haveSelected = keySet(wantKeys == null || wantKeys.isEmpty() ? haveKeys : wantKeys);
-            wantSelected = Set.of();
+        if (isSellBoard(category) && sellWant && haveSelected.isEmpty()) {
+            haveSelected = keySet(wantKeys);
         }
 
         List<Map<String, Object>> selectedItems = new ArrayList<>();
@@ -869,12 +869,12 @@ public class ArticleController {
         if (isTradeBoard(category)) {
             return ArticleObjektService.validateTradeSides(haveKeys, wantKeys);
         }
-        if (isSellBoard(category)) {
-            List<String> keys = ArticleObjektService.cleanKeys(haveKeys);
-            if (keys.isEmpty()) keys = ArticleObjektService.cleanKeys(wantKeys);
-            return ArticleObjektService.validateSellSelection(keys);
-        }
         return null;
+    }
+
+    private static String firstNonBlank(String first, String second) {
+        if (first != null && !first.isBlank()) return first;
+        return second;
     }
 
     private record LinkedSides(List<String> have, List<String> want) {}

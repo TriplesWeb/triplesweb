@@ -132,7 +132,7 @@
                 <!-- 오른쪽: 권한별 글쓰기 버튼 -->
                 <div class="flex items-center justify-end w-full sm:w-auto">
                     {{#isAdmin}}
-                            <a href="/article/{{category}}/new" class="article-write-btn md-btn md-btn-filled py-2.5 px-5 rounded-full bg-primary-container text-black font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
+                            <a href="/article/{{category}}/new{{#isSell}}?objektSide={{selectedObjektSide}}{{/isSell}}" class="article-write-btn md-btn md-btn-filled py-2.5 px-5 rounded-full bg-primary-container text-black font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
                                 <span class="material-symbols-outlined text-[18px] text-black" data-icon="edit">edit</span>
                                 <span class="text-black">글 쓰기</span>
                             </a>
