@@ -50,7 +50,7 @@ class ArticleObjektOrderingTest {
             controller.showArticleForm(category, fresh);
             var edited = new ExtendedModelMap();
             controller.editArticle(category, 3L, edited);
-            var options = controller.objektOptions("", "", "", "", "all", 0, 24);
+            var options = controller.objektOptions("", "", "", "", "all", 0, 24, "", "latest");
         assertThat((List<Map<String, Object>>) options.get("items"))
                 .extracting(item -> item.get("member"))
                 .contains("지연", "윤서연", "김유연 × 박시온");
@@ -69,12 +69,31 @@ class ArticleObjektOrderingTest {
         when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("member", "S21"),
                 Map.of("member", "ChaeWon"), Map.of("member", "김채원"), Map.of("member", "S22"),
                 Map.of("member", "zenith")));
-        assertThat(controller.objektOptions("김채원", "", "", "", "members", 0, 24)).containsEntry("total", 3);
-        assertThat(controller.objektOptions("S21", "", "", "", "members", 0, 24)).containsEntry("total", 3);
-        assertThat(controller.objektOptions("", "", "", "", "other", 0, 24)).containsEntry("total", 1);
+        assertThat(controller.objektOptions("김채원", "", "", "", "members", 0, 24, "", "latest")).containsEntry("total", 3);
+        assertThat(controller.objektOptions("S21", "", "", "", "members", 0, 24, "", "latest")).containsEntry("total", 3);
+        assertThat(controller.objektOptions("", "", "", "", "other", 0, 24, "", "latest")).containsEntry("total", 1);
         var model = new ExtendedModelMap(); controller.showArticleForm("trade", model);
         assertThat(model.get("objektMemberOptions")).isEqualTo(List.of("김채원", "설린"));
         assertThat(model.get("hasOtherObjektOption")).isEqualTo(true);
+    }
+
+    @Test @SuppressWarnings("unchecked") void objektOptionsFiltersKindAndSortsByNumber() {
+        var catalog = mock(ObjektService.class);
+        var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
+                mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog, mock(ArtistSnapshotService.class));
+        when(catalog.findCollections("triples")).thenReturn(List.of(
+                Map.of("id", "a", "member", "SeoYeon", "collectionNo", "102Z", "createdAt", "2024-01-01"),
+                Map.of("id", "b", "member", "HyeRin", "collectionNo", "101Z", "createdAt", "2024-02-01"),
+                Map.of("id", "c", "member", "Jiwoo", "collectionNo", "102Z", "createdAt", "2024-03-01")));
+        var kindFiltered = controller.objektOptions("", "", "", "", "all", 0, 24, "102Z", "latest");
+        assertThat(kindFiltered.get("total")).isEqualTo(2);
+        var sorted = controller.objektOptions("", "", "", "", "all", 0, 24, "", "number_low");
+        assertThat((List<Map<String, Object>>) sorted.get("items"))
+                .extracting(row -> row.get("collectionNo"))
+                .containsExactly("101Z", "102Z", "102Z");
+        var form = new ExtendedModelMap();
+        controller.showArticleForm("trade", form);
+        assertThat((List<String>) form.get("objektKindOptions")).containsExactly("101Z", "102Z");
     }
 
     @Test @SuppressWarnings("unchecked") void detailShowsKoreanObjektMembers() {

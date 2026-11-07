@@ -14,6 +14,8 @@
     const memberFilter = document.getElementById('objektFilterMember');
     const seasonFilter = document.getElementById('objektFilterSeason');
     const classFilter = document.getElementById('objektFilterClass');
+    const kindFilter = document.getElementById('objektFilterKind');
+    const sortFilter = document.getElementById('objektFilterSort');
     const searchFilter = document.getElementById('objektFilterSearch');
     const resetBtn = document.getElementById('objektFilterReset');
     const sideHaveBtn = document.getElementById('objektSideHave');
@@ -327,6 +329,8 @@
       if (selection.member) params.set('member', selection.member);
       if (seasonFilter && seasonFilter.value) params.set('season', seasonFilter.value);
       if (classFilter && classFilter.value) params.set('class', classFilter.value);
+      if (kindFilter && kindFilter.value && kindFilter.value !== 'all') params.set('kind', kindFilter.value);
+      if (sortFilter && sortFilter.value) params.set('sort', sortFilter.value);
       if (searchFilter && searchFilter.value.trim()) params.set('q', searchFilter.value.trim());
       params.set('offset', String(offset));
       params.set('limit', String(pageSize));
@@ -373,6 +377,75 @@
     if (loadMore) loadMore.addEventListener('click', () => load(false));
     if (sideHaveBtn) sideHaveBtn.addEventListener('click', () => setActiveSide('have'));
     if (sideWantBtn) sideWantBtn.addEventListener('click', () => setActiveSide('want'));
+    function closePickerMenus(except) {
+      section.querySelectorAll('.objekt-dropdown-menu').forEach((menu) => {
+        if (menu !== except) {
+          menu.hidden = true;
+          menu.classList.add('hidden');
+        }
+      });
+      section.querySelectorAll('.objekt-filter').forEach((filter) => {
+        if (!except || !filter.contains(except)) filter.classList.remove('is-open');
+      });
+      except?.closest('.objekt-filter')?.classList.toggle('is-open', Boolean(except) && !except.hidden);
+    }
+
+    function bindSortMenu() {
+      const menu = document.getElementById('objekt-sort-menu');
+      const toggleBtn = document.getElementById('objekt-sort-toggle');
+      const label = document.getElementById('objekt-sort-label');
+      const root = document.getElementById('objekt-sort-dropdown');
+      if (!menu || !toggleBtn || !sortFilter) return;
+      const choices = () => [...menu.querySelectorAll('.objekt-choice')];
+      function sync() {
+        const current = sortFilter.value || 'latest';
+        choices().forEach((choice) => {
+          const selected = choice.dataset.value === current;
+          choice.classList.toggle('is-selected', selected);
+          choice.setAttribute('aria-pressed', selected ? 'true' : 'false');
+          if (selected && label) label.textContent = choice.querySelector('.objekt-choice-text')?.textContent.trim() || '최신순';
+        });
+        root?.classList.toggle('is-filtered', current !== 'latest');
+      }
+      choices().forEach((choice) => choice.addEventListener('click', () => {
+        sortFilter.value = choice.dataset.value || 'latest';
+        sync();
+        menu.hidden = true;
+        menu.classList.add('hidden');
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        closePickerMenus();
+        if (open) load(true);
+      }));
+      toggleBtn.addEventListener('click', () => {
+        const willOpen = menu.hasAttribute('hidden');
+        menu.hidden = !willOpen;
+        menu.classList.toggle('hidden', !willOpen);
+        toggleBtn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        closePickerMenus(willOpen ? menu : null);
+      });
+      sync();
+    }
+
+    bindSortMenu();
+    window.ObjektKindCombo?.bindKindCombo({
+      input: document.getElementById('objekt-kind-select'),
+      menu: document.getElementById('objekt-kind-menu'),
+      toggle: document.getElementById('objekt-kind-toggle'),
+      hiddenInput: kindFilter,
+      empty: document.getElementById('objekt-kind-empty'),
+      closeOthers() {
+        closePickerMenus(document.getElementById('objekt-kind-menu'));
+      },
+      onChange() {
+        window.clearTimeout(searchTimer);
+        searchTimer = window.setTimeout(() => { if (open) load(true); }, 250);
+      }
+    });
+    document.addEventListener('click', (event) => {
+      if (event.target.closest('#objektPickerPanel .objekt-filter')) return;
+      closePickerMenus();
+    });
+
     [memberFilter, seasonFilter, classFilter].forEach((el) => {
       if (el) el.addEventListener('change', () => { if (open) load(true); });
     });
@@ -402,6 +475,21 @@
         if (memberFilter) memberFilter.value = '';
         if (seasonFilter) seasonFilter.value = '';
         if (classFilter) classFilter.value = '';
+        if (kindFilter) kindFilter.value = 'all';
+        const kindInput = document.getElementById('objekt-kind-select');
+        if (kindInput) {
+          kindInput.value = '전체';
+          kindInput.dataset.kindValue = 'all';
+          kindInput.closest('.objekt-filter')?.classList.remove('is-filtered');
+        }
+        if (sortFilter) sortFilter.value = 'latest';
+        const sortLabel = document.getElementById('objekt-sort-label');
+        if (sortLabel) sortLabel.textContent = '최신순';
+        document.getElementById('objekt-sort-dropdown')?.classList.remove('is-filtered');
+        document.querySelectorAll('#objekt-sort-menu .objekt-choice').forEach((choice) => {
+          const selected = choice.dataset.value === 'latest';
+          choice.classList.toggle('is-selected', selected);
+        });
         if (searchFilter) searchFilter.value = '';
         if (open) load(true);
       });

@@ -1,7 +1,7 @@
 {{>layout/head-open}}
 
     <title>트리플에스 커뮤니티 - {{categoryName}} 게시판 (글 수정)</title>
-    <link rel="stylesheet" href="/css/article-page.css?v=5">
+    <link rel="stylesheet" href="/css/article-page.css?v=6">
     <link rel="stylesheet" href="/css/member-portrait-picker.css?v=33">
 </head><body class="site-page article-page bg-surface text-on-surface min-h-screen flex flex-col">
 
@@ -98,7 +98,9 @@
 
 <script src="/js/site-ui.js?v=3"></script>
 <script src="/js/article-content.js"></script>
-<script src="/js/article-objekt-picker.js?v=9"></script>
+<script src="/js/article-editor-media.js?v=1"></script>
+<script src="/js/objekt-kind-combo.js?v=1"></script>
+<script src="/js/article-objekt-picker.js?v=10"></script>
 <script>
     /* -------------------- helpers -------------------- */
     function savedFromUrl(u) {
@@ -150,47 +152,9 @@
         const previewArea   = document.getElementById('previewArea');
         const fileNamesEl   = document.getElementById('uploadFileNames');
 
-        function placeCaretIn(node) {
-            const sel = window.getSelection?.();
-            if (!sel || !node) return;
-            const r = document.createRange();
-            r.selectNodeContents(node);
-            r.collapse(true);
-            sel.removeAllRanges();
-            sel.addRange(r);
-        }
-        function insertLineBreakAfter(mediaNode) {
-            const line = document.createElement('div');
-            line.style.textAlign = 'left';
-            line.appendChild(document.createElement('br'));
-            if (mediaNode.nextSibling) mediaNode.parentNode.insertBefore(line, mediaNode.nextSibling);
-            else mediaNode.parentNode.appendChild(line);
-            placeCaretIn(line);
-            return line;
-        }
-        function editorHasContent(editor) {
-            if (!editor) return false;
-            if (editor.querySelector('.content-media')) return true;
-            return (editor.innerText || '').replace(/\u00a0/g, ' ').trim().length > 0;
-        }
-        function placeMediaInEditor(editor, wrap) {
-            if (editorHasContent(editor)) {
-                const leftovers = [...editor.childNodes];
-                editor.insertBefore(wrap, editor.firstChild);
-                const line = document.createElement('div');
-                line.style.textAlign = 'left';
-                leftovers.forEach((node) => {
-                    if (node !== wrap) line.appendChild(node);
-                });
-                if (!line.childNodes.length) line.appendChild(document.createElement('br'));
-                if (wrap.nextSibling) editor.insertBefore(line, wrap.nextSibling);
-                else editor.appendChild(line);
-                placeCaretIn(line);
-                return line;
-            }
-            editor.appendChild(wrap);
-            return insertLineBreakAfter(wrap);
-        }
+        const editorMedia = window.ArticleEditorMedia;
+        editorMedia?.bindSelectionMemory(contentDiv, document.querySelector('.file-chooser-row'));
+        function placeCaretIn(node) { editorMedia?.placeCaretIn(node, true); }
         function refreshFileNames() {
             const names = [...previewArea.querySelectorAll('.preview-item')]
                 .map((item) => item.dataset.fileName || item.dataset.key || '')
@@ -212,8 +176,7 @@
             if (!wrap) return;
             wrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
             contentDiv.focus({ preventScroll: true });
-            if (wrap.nextElementSibling) placeCaretIn(wrap.nextElementSibling);
-            else insertLineBreakAfter(wrap);
+            editorMedia?.continueAfter(wrap);
         }
 
         // DB savedName은 파일명만, 본문 URL은 images/.../파일명 경로 → 둘 다 매핑
@@ -573,7 +536,7 @@
                     if (event.target.closest('.remove-btn')) return;
                     selectMedia(saved);
                 });
-                placeMediaInEditor(contentDiv, wrapper);
+                editorMedia?.placeMediaInEditor(contentDiv, wrapper);
                 contentDiv.focus({ preventScroll: true });
             } finally {
                 syncingPreview = false;

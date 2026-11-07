@@ -67,44 +67,101 @@
             <button type="button" id="objektSideWant" class="objekt-side-btn" data-side="want" aria-pressed="false" disabled>Want에 담기</button>
         </div>
         {{/isTradeObjektSplit}}
-        <p class="text-xs text-slate-400">멤버·시즌·클래스로 필터하거나 검색한 뒤 체크하세요.</p>
+        <p class="text-xs text-slate-400">멤버·시즌·종류·정렬·클래스로 필터하거나 검색한 뒤 체크하세요.</p>
 
         <div class="objekt-picker-filter-bar">
-            <div class="objekt-picker-filter">
-                <span class="objekt-picker-filter-label">멤버</span>
-                <select id="objektFilterMember" class="objekt-picker-filter-control" aria-label="멤버 필터">
-                    <option value="">전체</option>
-                    {{#objektMemberOptions}}
-                    <option value="{{.}}">{{.}}</option>
-                    {{/objektMemberOptions}}
-                    {{#hasOtherObjektOption}}
-                    <option value="__other__">기타 옵젝</option>
-                    {{/hasOtherObjektOption}}
-                </select>
+            <div class="objekt-filter">
+                <span class="objekt-filter-label">멤버</span>
+                <div class="objekt-filter-select-wrap">
+                    <select id="objektFilterMember" class="objekt-filter-control" aria-label="멤버 필터">
+                        <option value="">전체</option>
+                        {{#objektMemberOptions}}
+                        <option value="{{.}}">{{.}}</option>
+                        {{/objektMemberOptions}}
+                        {{#hasOtherObjektOption}}
+                        <option value="__other__">기타 옵젝</option>
+                        {{/hasOtherObjektOption}}
+                    </select>
+                    <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
+                </div>
             </div>
-            <div class="objekt-picker-filter">
-                <span class="objekt-picker-filter-label">시즌</span>
-                <select id="objektFilterSeason" class="objekt-picker-filter-control" aria-label="시즌 필터">
-                    <option value="">전체</option>
-                    {{#objektSeasonOptions}}
-                    <option value="{{.}}">{{.}}</option>
-                    {{/objektSeasonOptions}}
-                </select>
+            <div class="objekt-filter">
+                <span class="objekt-filter-label">시즌</span>
+                <div class="objekt-filter-select-wrap">
+                    <select id="objektFilterSeason" class="objekt-filter-control" aria-label="시즌 필터">
+                        <option value="">전체</option>
+                        {{#objektSeasonOptions}}
+                        <option value="{{.}}">{{.}}</option>
+                        {{/objektSeasonOptions}}
+                    </select>
+                    <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
+                </div>
             </div>
-            <div class="objekt-picker-filter">
-                <span class="objekt-picker-filter-label">클래스</span>
-                <select id="objektFilterClass" class="objekt-picker-filter-control" aria-label="클래스 필터">
-                    <option value="">전체</option>
-                    {{#objektClassOptions}}
-                    <option value="{{.}}">{{.}}</option>
-                    {{/objektClassOptions}}
-                </select>
+            <div class="objekt-filter relative" id="objekt-kind-dropdown">
+                <span class="objekt-filter-label">종류</span>
+                <div class="objekt-filter-control objekt-kind-combo">
+                    <input type="hidden" id="objektFilterKind" value="all">
+                    <input type="text"
+                           id="objekt-kind-select"
+                           class="objekt-kind-select"
+                           value="전체"
+                           placeholder="전체"
+                           autocomplete="off"
+                           spellcheck="false"
+                           role="combobox"
+                           aria-expanded="false"
+                           aria-controls="objekt-kind-menu"
+                           aria-autocomplete="list"
+                           aria-label="옵젝 종류 필터 (입력 또는 선택)">
+                    <button type="button" class="objekt-kind-toggle" id="objekt-kind-toggle" aria-label="종류 목록 열기" tabindex="-1">
+                        <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
+                    </button>
+                </div>
+                <div id="objekt-kind-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 min-w-[9rem] max-h-60 overflow-y-auto rounded-xl border z-50 p-1.5" hidden role="listbox" aria-label="종류 목록">
+                    <button type="button" class="objekt-kind-option" data-value="all" role="option">전체</button>
+                    {{#objektKindOptions}}
+                    <button type="button" class="objekt-kind-option" data-value="{{.}}" role="option">{{.}}</button>
+                    {{/objektKindOptions}}
+                    <p class="objekt-kind-empty" id="objekt-kind-empty" hidden>일치하는 종류 없음</p>
+                </div>
+            </div>
+            <div class="objekt-filter relative" id="objekt-sort-dropdown">
+                <span class="objekt-filter-label">정렬</span>
+                <input type="hidden" id="objektFilterSort" value="latest">
+                <button type="button" class="objekt-filter-control" id="objekt-sort-toggle" aria-expanded="false" aria-controls="objekt-sort-menu">
+                    <span id="objekt-sort-label" class="truncate">최신순</span>
+                    <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
+                </button>
+                <div id="objekt-sort-menu" class="objekt-dropdown-menu absolute top-full left-0 mt-2 min-w-[10rem] max-h-60 overflow-y-auto rounded-xl border z-50 p-1.5" hidden>
+                    <button type="button" class="objekt-choice" data-value="latest"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">최신순</span></button>
+                    <button type="button" class="objekt-choice" data-value="oldest"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">오래된순</span></button>
+                    <button type="button" class="objekt-choice" data-value="number_low"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">번호 낮은순</span></button>
+                    <button type="button" class="objekt-choice" data-value="number_high"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">번호 높은순</span></button>
+                    <button type="button" class="objekt-choice" data-value="first_member"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">첫 멤버</span></button>
+                    <button type="button" class="objekt-choice" data-value="last_member"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">마지막 멤버</span></button>
+                    <button type="button" class="objekt-choice" data-value="mint_low"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">민팅 적은순</span></button>
+                    <button type="button" class="objekt-choice" data-value="mint_high"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">민팅 많은순</span></button>
+                </div>
             </div>
             <div class="header-search objekt-picker-search" role="search">
                 <input type="search" id="objektFilterSearch" placeholder="멤버·시즌·번호 검색" aria-label="오브젝트 검색" autocomplete="off">
                 <button type="button" id="objektFilterSearchBtn" class="header-search-submit" aria-label="검색"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>
             </div>
             <button type="button" id="objektFilterReset" class="objekt-picker-reset">초기화</button>
+            <div class="objekt-picker-class-row">
+                <div class="objekt-filter">
+                    <span class="objekt-filter-label">클래스</span>
+                    <div class="objekt-filter-select-wrap">
+                        <select id="objektFilterClass" class="objekt-filter-control" aria-label="클래스 필터">
+                            <option value="">전체</option>
+                            {{#objektClassOptions}}
+                            <option value="{{.}}">{{.}}</option>
+                            {{/objektClassOptions}}
+                        </select>
+                        <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div id="objektSelectedInputs">

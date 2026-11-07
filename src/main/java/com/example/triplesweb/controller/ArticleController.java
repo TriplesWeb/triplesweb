@@ -16,6 +16,7 @@ import com.example.triplesweb.service.CommentService;
 import com.example.triplesweb.service.DateTimeFormatService;
 import com.example.triplesweb.util.ArticleHtmlCleaner;
 import com.example.triplesweb.util.ArticleMemberSwap;
+import com.example.triplesweb.util.ObjektCatalogSort;
 import com.example.triplesweb.util.ObjektFilterOrder;
 import com.example.triplesweb.util.ObjektSeasonCodes;
 import com.example.triplesweb.util.MemberPortraitOptions;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -189,14 +191,17 @@ public class ArticleController {
         Set<String> members = new LinkedHashSet<>();
         Set<String> seasons = new LinkedHashSet<>();
         Set<String> classes = new LinkedHashSet<>();
+        Set<String> kinds = new LinkedHashSet<>();
 
         for (Map<String, Object> item : objektService.findCollections("triples")) {
             String member = stringValue(item.get("member"));
             String season = stringValue(item.get("season"));
             String klass = stringValue(item.get("class"));
+            String kind = stringValue(item.get("collectionNo"));
             if (!member.isBlank()) members.add(member);
             if (!season.isBlank()) seasons.add(season);
             if (!klass.isBlank()) classes.add(klass);
+            if (!kind.isBlank()) kinds.add(kind);
 
             String id = stringValue(item.get("id"));
             String collectionId = stringValue(item.get("collectionId"));
@@ -224,6 +229,8 @@ public class ArticleController {
         model.addAttribute("objektSeasonOptions", ObjektFilterOrder.sortedSeasons(seasons));
         model.addAttribute("objektClassOptions", classes.stream()
                 .sorted(String.CASE_INSENSITIVE_ORDER).toList());
+        model.addAttribute("objektKindOptions", kinds.stream()
+                .sorted(String.CASE_INSENSITIVE_ORDER).toList());
     }
 
     private static Set<String> keySet(List<String> keys) {
@@ -248,29 +255,33 @@ public class ArticleController {
                                              @RequestParam(defaultValue = "") String q,
                                              @RequestParam(defaultValue = "all") String group,
                                              @RequestParam(defaultValue = "0") int offset,
-                                             @RequestParam(defaultValue = "24") int limit) {
+                                             @RequestParam(defaultValue = "24") int limit,
+                                             @RequestParam(defaultValue = "") String kind,
+                                             @RequestParam(defaultValue = "latest") String sort) {
         int size = Math.min(48, Math.max(1, limit));
         int start = Math.max(0, offset);
-        String seasonKey = season.trim().toLowerCase();
-        String classKey = objektClass.trim().toLowerCase();
-        String query = q.trim().toLowerCase();
+        String seasonKey = season.trim().toLowerCase(Locale.ROOT);
+        String classKey = objektClass.trim().toLowerCase(Locale.ROOT);
+        String query = q.trim().toLowerCase(Locale.ROOT);
         String selectedGroup = "other".equalsIgnoreCase(group) ? "other"
                 : ("members".equalsIgnoreCase(group) || !member.isBlank() ? "members" : "all");
         List<String> selectedMembers = member.isBlank() ? List.of() : List.of(member.trim());
         List<Map<String, Object>> matched = new ArrayList<>();
         for (Map<String, Object> item : objektService.findCollections("triples")) {
             if (!MemberPortraitOptions.matchesMemberGroup(selectedGroup, selectedMembers, stringValue(item.get("member")))) continue;
-            if (!seasonKey.isEmpty() && !stringValue(item.get("season")).toLowerCase().equals(seasonKey)) continue;
-            if (!classKey.isEmpty() && !stringValue(item.get("class")).toLowerCase().equals(classKey)) continue;
+            if (!seasonKey.isEmpty() && !stringValue(item.get("season")).toLowerCase(Locale.ROOT).equals(seasonKey)) continue;
+            if (!classKey.isEmpty() && !stringValue(item.get("class")).toLowerCase(Locale.ROOT).equals(classKey)) continue;
+            if (!ObjektCatalogSort.matchesKind(kind, item)) continue;
             if (!query.isEmpty()) {
                 String haystack = (stringValue(item.get("collectionId")) + " " + stringValue(item.get("member"))
                         + " " + stringValue(item.get("collectionNo")) + " " + stringValue(item.get("season"))
-                        + " " + stringValue(item.get("class"))).toLowerCase();
+                        + " " + stringValue(item.get("class"))).toLowerCase(Locale.ROOT);
                 if (!ObjektSeasonCodes.matches(query, haystack,
                         stringValue(item.get("season")), stringValue(item.get("collectionNo")))) continue;
             }
             matched.add(item);
         }
+        matched.sort(ObjektCatalogSort.comparator(sort));
         int end = Math.min(matched.size(), start + size);
         List<Map<String, Object>> page = new ArrayList<>();
         if (start < matched.size()) {
