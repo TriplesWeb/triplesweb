@@ -772,7 +772,7 @@
             color: #eef4fb;
             font-size: 1rem;
             font-weight: 550;
-            line-height: 1.35;
+            line-height: 1.2;
             letter-spacing: -0.03em;
             white-space: pre-wrap;
         }
@@ -796,7 +796,7 @@
             overflow: hidden;
             clip: rect(0 0 0 0);
         }
-        .objekt-description-editor textarea { width: 100%; min-height: 7.5rem; resize: vertical; border: 1px solid #ffffff20; border-radius: .6rem; background: #0d1015; padding: .65rem; color: #e8f3ef; font: inherit; font-size: 1rem; font-weight: 550; line-height: 1.35; letter-spacing: -0.03em; }
+        .objekt-description-editor textarea { width: 100%; min-height: 7.5rem; resize: vertical; border: 1px solid #ffffff20; border-radius: .6rem; background: #0d1015; padding: .65rem; color: #e8f3ef; font: inherit; font-size: 1rem; font-weight: 550; line-height: 1.2; letter-spacing: -0.03em; }
         .objekt-description-buttons { display: flex; gap: .5rem; }
         .objekt-description-buttons button { padding: .45rem .8rem; border: 1px solid #00f5d440; border-radius: .5rem; background: #00f5d415; color: #8decd9; cursor: pointer; font-size: .78rem; }
         .objekt-description-buttons button:last-child { color: #ffb4ab; background: transparent; border-color: #ffb4ab40; }

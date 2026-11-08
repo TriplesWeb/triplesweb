@@ -41,8 +41,8 @@ tripleS Official Character Figure byteS Purchase Bonus Object</textarea>
         editor: ratio(document.querySelector('#objektModalDescription'))
       };
     });
-    assert.ok(Math.abs(metrics.desc.ratio - 1.35) < 0.08, '상세 설명 행 간격: ' + metrics.desc.ratio);
-    assert.ok(Math.abs(metrics.editor.ratio - 1.35) < 0.08, '수정폼 행 간격: ' + metrics.editor.ratio);
+    assert.ok(Math.abs(metrics.desc.ratio - 1.2) < 0.08, '상세 설명 행 간격: ' + metrics.desc.ratio);
+    assert.ok(Math.abs(metrics.editor.ratio - 1.2) < 0.08, '수정폼 행 간격: ' + metrics.editor.ratio);
     console.log('PASS', metrics);
   } finally {
     await browser.close();
