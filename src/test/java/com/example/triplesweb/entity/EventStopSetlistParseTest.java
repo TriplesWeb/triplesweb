@@ -58,4 +58,31 @@ class EventStopSetlistParseTest {
         assertThat(rows.get(1).getOrderNum()).isEqualTo(2);
         assertThat(rows.get(1).getTitle()).isEqualTo("Girls Never Die");
     }
+
+    @Test
+    void parsesSameOrderVariantsSplitByDoublePipe() {
+        EventStop stop = new EventStop();
+        stop.setSetlist(String.join("\n",
+                "Cherry Talk|AESTHETIC",
+                "Supersonic|원곡: 프로미스나인 / A조 || I CAN'T STOP ME|원곡: TWICE / B조",
+                "Atmosphere|ASSEMBLE24"));
+
+        List<EventStop.SetlistRow> rows = stop.getSetlistRows();
+        assertThat(rows).hasSize(3);
+
+        assertThat(rows.get(0).isSplit()).isFalse();
+        assertThat(rows.get(0).getOrderNum()).isEqualTo(1);
+
+        EventStop.SetlistRow split = rows.get(1);
+        assertThat(split.isSplit()).isTrue();
+        assertThat(split.getOrderNum()).isEqualTo(2);
+        assertThat(split.getVariants()).hasSize(2);
+        assertThat(split.getVariants().get(0).getTitle()).isEqualTo("Supersonic");
+        assertThat(split.getVariants().get(0).getSubtitle()).isEqualTo("원곡: 프로미스나인 / A조");
+        assertThat(split.getVariants().get(1).getTitle()).isEqualTo("I CAN'T STOP ME");
+        assertThat(split.getVariants().get(1).getSubtitle()).isEqualTo("원곡: TWICE / B조");
+
+        assertThat(rows.get(2).getOrderNum()).isEqualTo(3);
+        assertThat(rows.get(2).isSplit()).isFalse();
+    }
 }

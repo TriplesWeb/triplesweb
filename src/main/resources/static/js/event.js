@@ -91,14 +91,52 @@
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
   }
 
+  /** 표시용 날짜(2026.02.28) → input[type=date] 값 */
+  function toIsoDate(dotted) {
+    const m = String(dotted || "").trim().match(/^(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})$/);
+    if (!m) return "";
+    return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+  }
+
+  /** input[type=date] 값 → 저장/표시용 2026.02.28 */
+  function toDisplayDate(iso) {
+    const m = String(iso || "").trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return "";
+    return `${m[1]}.${m[2]}.${m[3]}`;
+  }
+
+  function parseEventDate(raw) {
+    const s = String(raw || "").trim();
+    if (!s) return { start: "", end: "" };
+    const parts = s.split(/\s*[~～〜]\s*/);
+    return {
+      start: toIsoDate(parts[0] || ""),
+      end: toIsoDate(parts[1] || "")
+    };
+  }
+
+  function formatEventDate(startIso, endIso) {
+    const start = toDisplayDate(startIso);
+    if (!start) return "";
+    const end = toDisplayDate(endIso);
+    if (!end || end === start) return start;
+    return `${start}~${end}`;
+  }
+
   function stopRowsHtml(stops) {
     const list = Array.isArray(stops) && stops.length
       ? stops
       : [{ sortOrder: 0, eventDate: "", region: "", venue: "", detail: "", setlist: "", mdList: "" }];
-    return list.map((s, i) => `
+    return list.map((s, i) => {
+      const dates = parseEventDate(s.eventDate || "");
+      return `
       <div class="event-stop-row" data-idx="${i}">
         <div class="event-stop-row-top">
-          <input type="text" class="stop-date" placeholder="2025.01.11 또는 기간" value="${escapeAttr(s.eventDate || "")}" title="개최일" aria-label="개최일">
+          <div class="stop-date-range" title="개최일">
+            <input type="date" class="stop-date-start" value="${escapeAttr(dates.start)}" title="시작일" aria-label="시작일">
+            <span class="stop-date-sep" aria-hidden="true">~</span>
+            <input type="date" class="stop-date-end" value="${escapeAttr(dates.end)}" title="종료일 (선택)" aria-label="종료일 (선택)">
+          </div>
           <input type="text" class="stop-region" placeholder="지역" value="${escapeAttr(s.region || "")}" title="지역" aria-label="지역">
           <input type="text" class="stop-venue" placeholder="공연장" value="${escapeAttr(s.venue || "")}" title="공연장" aria-label="공연장">
           <button type="button" class="about-link-remove stop-remove" title="회차 삭제" aria-label="회차 삭제">
@@ -112,21 +150,24 @@
         <div class="event-stop-lists">
           <label class="event-stop-field">
             <span>셋리스트</span>
-            <textarea class="stop-setlist" rows="6" placeholder="# VCR 1 : OPENING VCR&#10;곡명|앨범|비고">${escapeText(s.setlist || "")}</textarea>
+            <textarea class="stop-setlist" rows="6" placeholder="# VCR 1 : OPENING VCR&#10;곡명|앨범|비고&#10;곡A|앨범A || 곡B|앨범B">${escapeText(s.setlist || "")}</textarea>
           </label>
           <label class="event-stop-field">
             <span>MD 리스트</span>
             <textarea class="stop-md-list" rows="7" placeholder="# Official MD&#10;!/uploads/images/md-notice.jpg&#10;응원봉|35000&#10;# MD Benefit&#10;!/uploads/images/md-benefit.jpg">${escapeText(s.mdList || "")}</textarea>
           </label>
         </div>
-      </div>`).join("");
+      </div>`;
+    }).join("");
   }
 
   function collectStops() {
     const rows = document.querySelectorAll("#eventEditStops .event-stop-row");
     const out = [];
     rows.forEach((row, i) => {
-      const eventDate = row.querySelector(".stop-date")?.value?.trim();
+      const start = row.querySelector(".stop-date-start")?.value?.trim() || "";
+      const end = row.querySelector(".stop-date-end")?.value?.trim() || "";
+      const eventDate = formatEventDate(start, end);
       if (!eventDate) return;
       out.push({
         sortOrder: i,

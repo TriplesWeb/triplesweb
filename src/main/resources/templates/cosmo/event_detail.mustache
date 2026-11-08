@@ -11,7 +11,7 @@
         <a href="/cosmo/event">← 이벤트 목록</a>
     </nav>
     <div class="p-6 lg:p-8 space-y-8">
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start border-b border-[#3a4a46]/30 pb-8 min-w-0">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start min-w-0">
              <div class="md:col-span-4 lg:col-span-3 flex justify-center">
                  <img src="{{displayEventImage}}" width="300" height="300" alt="{{eventName}}" class="w-full max-w-[260px] aspect-square object-cover rounded-2xl border border-[#3a4a46]/40 shadow-2xl" />
              </div>
@@ -77,6 +77,27 @@
                                     </tr>
                                     {{/section}}
                                     {{^section}}
+                                    {{#split}}
+                                    <tr class="event-setlist-split-row">
+                                        <td class="event-setlist-col-order">{{#hasOrder}}{{orderNum}}{{/hasOrder}}</td>
+                                        <td class="event-setlist-col-split" colspan="2">
+                                            <div class="event-setlist-variants">
+                                                {{#variants}}
+                                                <div class="event-setlist-variant">
+                                                    <span class="event-setlist-song">{{title}}</span>
+                                                    {{#hasSubtitle}}
+                                                    <span class="event-setlist-album">{{subtitle}}</span>
+                                                    {{/hasSubtitle}}
+                                                    {{#hasNote}}
+                                                    <span class="event-setlist-album">{{note}}</span>
+                                                    {{/hasNote}}
+                                                </div>
+                                                {{/variants}}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {{/split}}
+                                    {{^split}}
                                     <tr>
                                         <td class="event-setlist-col-order">{{#hasOrder}}{{orderNum}}{{/hasOrder}}</td>
                                         <td class="event-setlist-col-title">
@@ -87,6 +108,7 @@
                                         </td>
                                         <td class="event-setlist-col-note">{{#hasNote}}{{note}}{{/hasNote}}</td>
                                     </tr>
+                                    {{/split}}
                                     {{/section}}
                                     {{/setlistRows}}
                                 </tbody>
@@ -114,59 +136,74 @@
             <div class="event-goods-head">콘서트 굿즈</div>
             {{#mdGoodsStops}}
             <div class="event-goods-region" data-region="{{region}}">
-                <div class="event-goods-region-label">
-                    {{goodsLabel}}
-                    {{#hasVenue}}
-                    <span class="event-goods-region-meta">{{eventDate}} · {{venue}}</span>
-                    {{/hasVenue}}
-                    {{^hasVenue}}
-                    <span class="event-goods-region-meta">{{eventDate}}</span>
-                    {{/hasVenue}}
-                </div>
-                <div class="event-goods-cat-bar" role="tablist" aria-label="{{goodsLabel}} MD 카테고리">
+                <button type="button"
+                        class="event-goods-region-toggle"
+                        aria-expanded="false"
+                        aria-controls="event-goods-region-panel-{{stopId}}"
+                        id="event-goods-region-tab-{{stopId}}"
+                        data-event-goods-region>
+                    <span class="event-goods-region-copy">
+                        <span class="event-goods-region-title">{{goodsLabel}}</span>
+                        {{#hasVenue}}
+                        <span class="event-goods-region-meta">{{eventDate}} · {{venue}}</span>
+                        {{/hasVenue}}
+                        {{^hasVenue}}
+                        <span class="event-goods-region-meta">{{eventDate}}</span>
+                        {{/hasVenue}}
+                    </span>
+                    <span class="event-goods-region-mark" aria-hidden="true">▼</span>
+                </button>
+                <div class="event-goods-region-panel"
+                     id="event-goods-region-panel-{{stopId}}"
+                     role="region"
+                     aria-labelledby="event-goods-region-tab-{{stopId}}"
+                     hidden
+                     data-event-goods-region-panel>
+                    <div class="event-goods-cat-bar" role="tablist" aria-label="{{goodsLabel}} MD 카테고리">
+                        {{#mdCategories}}
+                        <button type="button"
+                                class="event-goods-cat-toggle"
+                                role="tab"
+                                aria-expanded="false"
+                                aria-controls="event-goods-panel-{{stopId}}-{{key}}"
+                                id="event-goods-tab-{{stopId}}-{{key}}"
+                                data-event-goods-cat>
+                            <span class="event-goods-cat-mark" aria-hidden="true">▼</span>
+                            <span class="event-goods-cat-title">{{title}}</span>
+                        </button>
+                        {{/mdCategories}}
+                    </div>
                     {{#mdCategories}}
-                    <button type="button"
-                            class="event-goods-cat-toggle"
-                            role="tab"
-                            aria-expanded="false"
-                            aria-controls="event-goods-panel-{{stopId}}-{{key}}"
-                            id="event-goods-tab-{{stopId}}-{{key}}"
-                            data-event-goods-cat>
-                        <span class="event-goods-cat-mark" aria-hidden="true">▼</span>
-                        <span class="event-goods-cat-title">{{title}}</span>
-                    </button>
+                    <div class="event-goods-panel"
+                         id="event-goods-panel-{{stopId}}-{{key}}"
+                         role="tabpanel"
+                         aria-labelledby="event-goods-tab-{{stopId}}-{{key}}"
+                         hidden
+                         data-event-goods-panel>
+                        {{#hasNoticeImages}}
+                        <div class="event-goods-notices">
+                            {{#noticeImages}}
+                            <figure class="event-goods-notice">
+                                <img src="{{.}}" alt="MD 판매 공지" loading="lazy" decoding="async" data-img-fallback>
+                            </figure>
+                            {{/noticeImages}}
+                        </div>
+                        {{/hasNoticeImages}}
+                        {{#hasItems}}
+                        <ul class="event-goods-items">
+                            {{#items}}
+                            <li>
+                                <span class="event-md-name">{{name}}</span>
+                                {{#hasPrice}}
+                                <span class="event-md-price">{{price}}</span>
+                                {{/hasPrice}}
+                            </li>
+                            {{/items}}
+                        </ul>
+                        {{/hasItems}}
+                    </div>
                     {{/mdCategories}}
                 </div>
-                {{#mdCategories}}
-                <div class="event-goods-panel"
-                     id="event-goods-panel-{{stopId}}-{{key}}"
-                     role="tabpanel"
-                     aria-labelledby="event-goods-tab-{{stopId}}-{{key}}"
-                     hidden
-                     data-event-goods-panel>
-                    {{#hasNoticeImages}}
-                    <div class="event-goods-notices">
-                        {{#noticeImages}}
-                        <figure class="event-goods-notice">
-                            <img src="{{.}}" alt="MD 판매 공지" loading="lazy" decoding="async" data-img-fallback>
-                        </figure>
-                        {{/noticeImages}}
-                    </div>
-                    {{/hasNoticeImages}}
-                    {{#hasItems}}
-                    <ul class="event-goods-items">
-                        {{#items}}
-                        <li>
-                            <span class="event-md-name">{{name}}</span>
-                            {{#hasPrice}}
-                            <span class="event-md-price">{{price}}</span>
-                            {{/hasPrice}}
-                        </li>
-                        {{/items}}
-                    </ul>
-                    {{/hasItems}}
-                </div>
-                {{/mdCategories}}
             </div>
             {{/mdGoodsStops}}
         </div>
@@ -202,6 +239,27 @@
       toggle.setAttribute("aria-expanded", open ? "false" : "true");
       item.classList.toggle("is-open", !open);
       if (panel) panel.hidden = open;
+    });
+  });
+
+  document.querySelectorAll("[data-event-goods-region]").forEach(function (toggle) {
+    toggle.addEventListener("click", function () {
+      var region = toggle.closest(".event-goods-region");
+      if (!region) return;
+      var panel = region.querySelector("[data-event-goods-region-panel]");
+      var open = toggle.getAttribute("aria-expanded") === "true";
+      toggle.setAttribute("aria-expanded", open ? "false" : "true");
+      region.classList.toggle("is-open", !open);
+      if (panel) panel.hidden = open;
+      if (open) {
+        region.querySelectorAll("[data-event-goods-cat]").forEach(function (cat) {
+          cat.setAttribute("aria-expanded", "false");
+          cat.classList.remove("is-open");
+          var catId = cat.getAttribute("aria-controls");
+          var catPanel = catId ? document.getElementById(catId) : null;
+          if (catPanel) catPanel.hidden = true;
+        });
+      }
     });
   });
 

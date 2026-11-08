@@ -208,6 +208,31 @@
   border-bottom-color: rgba(0, 245, 212, 0.18);
 }
 
+.event-setlist-col-split {
+  padding: 0 !important;
+}
+
+.event-setlist-variants {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  min-height: 100%;
+}
+
+.event-setlist-variant {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.6rem 0.45rem;
+  text-align: center;
+  border-right: 1px solid rgba(58, 74, 70, 0.28);
+}
+
+.event-setlist-variant:last-child {
+  border-right: 0;
+}
+
 .event-goods-section {
   margin-top: 0.25rem;
 }
@@ -233,15 +258,40 @@
   border-top: 2px solid rgba(13, 14, 18, 0.85);
 }
 
-.event-goods-region-label {
+.event-goods-region-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  width: 100%;
   text-align: center;
+  padding: 0.75rem 1rem;
+  border: 0;
+  background: rgba(0, 245, 212, 0.16);
+  border-bottom: 1px solid rgba(58, 74, 70, 0.35);
+  color: inherit;
+  cursor: pointer;
+}
+
+.event-goods-region-toggle:hover .event-goods-region-title {
+  color: #00f5d4;
+}
+
+.event-goods-region-toggle:focus-visible {
+  outline: 2px solid rgba(0, 245, 212, 0.55);
+  outline-offset: -2px;
+}
+
+.event-goods-region-copy {
+  min-width: 0;
+}
+
+.event-goods-region-title {
+  display: block;
   font-size: 0.9rem;
   font-weight: 700;
   color: #e3e2e8;
-  padding: 0.7rem 1rem;
-  background: rgba(0, 245, 212, 0.16);
-  border-top: 1px solid rgba(0, 245, 212, 0.22);
-  border-bottom: 1px solid rgba(58, 74, 70, 0.35);
+  transition: color 0.15s ease;
 }
 
 .event-goods-region-meta {
@@ -250,6 +300,33 @@
   font-size: 0.75rem;
   font-weight: 500;
   color: #8b9b95;
+}
+
+.event-goods-region-mark {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  color: #8b9b95;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.event-goods-region.is-open .event-goods-region-toggle,
+.event-goods-region-toggle[aria-expanded="true"] {
+  background: rgba(0, 245, 212, 0.22);
+}
+
+.event-goods-region.is-open .event-goods-region-title,
+.event-goods-region-toggle[aria-expanded="true"] .event-goods-region-title {
+  color: #00f5d4;
+}
+
+.event-goods-region.is-open .event-goods-region-mark,
+.event-goods-region-toggle[aria-expanded="true"] .event-goods-region-mark {
+  transform: rotate(180deg);
+  color: #00f5d4;
+}
+
+.event-goods-region-panel[hidden] {
+  display: none;
 }
 
 .event-goods-cat-bar {

@@ -48,6 +48,7 @@ public class EventStop {
      * <ul>
      *   <li>{@code # VCR 1 : OPENING VCR} — 섹션(표 가로줄)</li>
      *   <li>{@code 곡명} / {@code 곡명|앨범} / {@code 곡명|앨범|비고}</li>
+     *   <li>{@code 곡A|앨범A || 곡B|앨범B} — 같은 순번·날짜/조별 갈림 (표에서 칸 분할)</li>
      *   <li>{@code VCR}/{@code MENT}로 시작하는 줄도 섹션으로 인식</li>
      * </ul>
      */
@@ -143,11 +144,13 @@ public class EventStop {
     /**
      * 셋리스트 한 행.
      * 섹션은 표 가로줄, 곡은 순서·곡명·비고 칸으로 표시.
+     * {@code ||}로 나뉜 줄은 같은 순번의 갈림 무대(날짜·조별)로 칸을 분할한다.
      */
     @Getter
     public static final class SetlistRow {
         private static final Pattern SECTION_PREFIX = Pattern.compile(
                 "^(?i)(VCR|MENT|ENCORE|INTRO|OUTRO|MC)\\b.*");
+        private static final Pattern VARIANT_SPLIT = Pattern.compile("\\s*\\|\\|\\s*");
 
         private final boolean section;
         private final String sectionLabel;
@@ -155,21 +158,26 @@ public class EventStop {
         private final String title;
         private final String subtitle;
         private final String note;
+        private final List<SetlistVariant> variants;
         private final boolean hasSubtitle;
         private final boolean hasNote;
         private final boolean hasOrder;
+        private final boolean split;
 
         private SetlistRow(boolean section, String sectionLabel, Integer orderNum,
-                           String title, String subtitle, String note) {
+                           String title, String subtitle, String note,
+                           List<SetlistVariant> variants) {
             this.section = section;
             this.sectionLabel = sectionLabel;
             this.orderNum = orderNum;
             this.title = title;
             this.subtitle = subtitle;
             this.note = note;
+            this.variants = variants == null ? List.of() : List.copyOf(variants);
             this.hasSubtitle = subtitle != null && !subtitle.isBlank();
             this.hasNote = note != null && !note.isBlank();
             this.hasOrder = orderNum != null;
+            this.split = this.variants.size() > 1;
         }
 
         static List<SetlistRow> parseAll(String raw) {
@@ -181,7 +189,7 @@ public class EventStop {
                 if (isSectionLine(line)) {
                     String label = line.startsWith("#") ? line.substring(1).trim() : line;
                     if (label.isEmpty()) continue;
-                    rows.add(new SetlistRow(true, label, null, null, null, null));
+                    rows.add(new SetlistRow(true, label, null, null, null, null, List.of()));
                     continue;
                 }
                 songOrder++;
@@ -196,15 +204,52 @@ public class EventStop {
         }
 
         private static SetlistRow parseSong(String line, int order) {
-            String[] parts = line.split("\\|", -1);
+            String[] chunks = VARIANT_SPLIT.split(line);
+            List<SetlistVariant> variants = new ArrayList<>(chunks.length);
+            for (String chunk : chunks) {
+                SetlistVariant variant = parseVariant(chunk);
+                if (variant != null) variants.add(variant);
+            }
+            if (variants.isEmpty()) {
+                return new SetlistRow(false, null, order, line, null, null, List.of());
+            }
+            SetlistVariant first = variants.get(0);
+            return new SetlistRow(false, null, order,
+                    first.getTitle(),
+                    first.getSubtitle(),
+                    first.getNote(),
+                    variants);
+        }
+
+        private static SetlistVariant parseVariant(String chunk) {
+            if (chunk == null || chunk.isBlank()) return null;
+            String[] parts = chunk.split("\\|", -1);
             String title = parts[0].trim();
             String subtitle = parts.length > 1 ? parts[1].trim() : "";
             String note = parts.length > 2 ? parts[2].trim() : "";
-            if (title.isEmpty()) title = line;
-            return new SetlistRow(false, null, order,
+            if (title.isEmpty()) return null;
+            return new SetlistVariant(
                     title,
                     subtitle.isEmpty() ? null : subtitle,
                     note.isEmpty() ? null : note);
+        }
+    }
+
+    /** 같은 순번 안에서 갈리는 무대 한 칸 */
+    @Getter
+    public static final class SetlistVariant {
+        private final String title;
+        private final String subtitle;
+        private final String note;
+        private final boolean hasSubtitle;
+        private final boolean hasNote;
+
+        private SetlistVariant(String title, String subtitle, String note) {
+            this.title = title;
+            this.subtitle = subtitle;
+            this.note = note;
+            this.hasSubtitle = subtitle != null && !subtitle.isBlank();
+            this.hasNote = note != null && !note.isBlank();
         }
     }
 
