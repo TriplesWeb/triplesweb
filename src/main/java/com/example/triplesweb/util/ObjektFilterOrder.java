@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 /** Shared picker ordering and one Korean-name option per solo member. */
 public final class ObjektFilterOrder {
     private static final List<String> SEASON_FAMILIES = List.of("atom", "binary", "cream", "divine", "ever");
-    private static final Pattern SEASON = Pattern.compile("([a-z]+)([0-9]+)");
+    private static final Pattern SEASON = Pattern.compile("(atom|binary|cream|divine|ever)([0-9]+)");
     private static final Comparator<String> ALPHABETICAL = String.CASE_INSENSITIVE_ORDER.thenComparing(Comparator.naturalOrder());
     private ObjektFilterOrder() {}
 
@@ -31,7 +31,7 @@ public final class ObjektFilterOrder {
     public static long seasonIndex(String value) {
         if (value == null || value.isBlank()) return -1;
         var match = SEASON.matcher(value.toLowerCase(Locale.ROOT).replaceAll("[\\s_-]", ""));
-        if (!match.matches()) return -1;
+        if (!match.find()) return -1;
         int family = SEASON_FAMILIES.indexOf(match.group(1));
         if (family < 0) return -1;
         try {

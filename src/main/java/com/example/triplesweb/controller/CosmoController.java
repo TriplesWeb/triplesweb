@@ -72,7 +72,7 @@ public class CosmoController {
         model.addAttribute("seasonOptions", facets.seasons());
         model.addAttribute("classOptions", facets.classes());
         model.addAttribute("objektNumbers", facets.collectionNumbers());
-        model.addAttribute("kindByClassJson", kindByClassJson(facets.numbersByClass()));
+        model.addAttribute("kindByClassJson", ObjektCatalogSort.kindByClassJson(facets.numbersByClass()));
 
         model.addAttribute("objekts", withMemberLinks(page.items()));
         model.addAttribute("objektCount", page.resultCount());
@@ -283,30 +283,6 @@ public class CosmoController {
         String value = kind == null ? "" : kind.trim();
         if (value.isEmpty() || "all".equalsIgnoreCase(value) || "전체".equals(value)) return "전체";
         return value;
-    }
-
-    private static String kindByClassJson(Map<String, List<String>> numbersByClass) {
-        if (numbersByClass == null || numbersByClass.isEmpty()) return "{}";
-        StringBuilder json = new StringBuilder("{");
-        boolean firstClass = true;
-        for (Map.Entry<String, List<String>> entry : numbersByClass.entrySet()) {
-            if (!firstClass) json.append(',');
-            firstClass = false;
-            json.append(jsonString(entry.getKey())).append(':').append('[');
-            boolean firstNumber = true;
-            for (String number : entry.getValue()) {
-                if (!firstNumber) json.append(',');
-                firstNumber = false;
-                json.append(jsonString(number));
-            }
-            json.append(']');
-        }
-        return json.append('}').toString();
-    }
-
-    private static String jsonString(String value) {
-        String raw = value == null ? "" : value;
-        return '"' + raw.replace("\\", "\\\\").replace("\"", "\\\"") + '"';
     }
 
     private List<Map<String, Object>> withMemberLinks(List<Map<String, Object>> items) {

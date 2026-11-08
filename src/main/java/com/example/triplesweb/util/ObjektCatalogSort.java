@@ -1,8 +1,11 @@
 package com.example.triplesweb.util;
 
 import java.util.Comparator;
+import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.ToIntFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,6 +28,30 @@ public final class ObjektCatalogSort {
         return normalizeKind(text(item, "collectionNo", "collectionNumber")).equals(kindKey);
     }
 
+    public static String kindByClassJson(Map<String, List<String>> numbersByClass) {
+        if (numbersByClass == null || numbersByClass.isEmpty()) return "{}";
+        StringBuilder json = new StringBuilder("{");
+        boolean firstClass = true;
+        for (Map.Entry<String, List<String>> entry : numbersByClass.entrySet()) {
+            if (!firstClass) json.append(',');
+            firstClass = false;
+            json.append(jsonString(entry.getKey())).append(':').append('[');
+            boolean firstNumber = true;
+            for (String number : entry.getValue()) {
+                if (!firstNumber) json.append(',');
+                firstNumber = false;
+                json.append(jsonString(number));
+            }
+            json.append(']');
+        }
+        return json.append('}').toString();
+    }
+
+    private static String jsonString(String value) {
+        String raw = value == null ? "" : value;
+        return '"' + raw.replace("\\", "\\\\").replace("\"", "\\\"") + '"';
+    }
+
     public static Comparator<Map<String, Object>> comparator(String sort) {
         Comparator<Map<String, Object>> byNumber = Comparator.comparingDouble(ObjektCatalogSort::numberValue);
         String key = sort == null ? "" : sort.trim().toLowerCase(Locale.ROOT);
@@ -34,13 +61,8 @@ public final class ObjektCatalogSort {
             case "number_high" -> byNumber.reversed();
             case "mint_low" -> mintComparator(false);
             case "mint_high" -> mintComparator(true);
-            case "first_member" -> Comparator.<Map<String, Object>>comparingInt(ObjektCatalogSort::memberOrder)
-                    .thenComparing(byDateNewest())
-                    .thenComparing(byCollectionNo());
-            case "last_member" -> Comparator.<Map<String, Object>>comparingInt(item -> {
-                int order = memberOrder(item);
-                return order == 24 ? 24 : 23 - order;
-            }).thenComparing(byDateNewest()).thenComparing(byCollectionNo());
+            case "first_member" -> byMemberOrder(false).thenComparing(byDateNewest()).thenComparing(byCollectionNo());
+            case "last_member" -> byMemberOrder(true).thenComparing(byDateNewest()).thenComparing(byCollectionNo());
             default -> bySeasonNewest().thenComparing(byDateNewest()).thenComparing(byCollectionNo());
         };
     }
@@ -53,16 +75,46 @@ public final class ObjektCatalogSort {
         return Comparator.comparing(ObjektCatalogSort::createdAtOrNull, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
     }
 
+    /** 보유 목록 정렬. 최신순은 COSMO owned-by 응답의 획득 순서(앞이 최근)다. */
+    public static Comparator<Map<String, Object>> collectionComparator(String sort) {
+        Comparator<Map<String, Object>> byReceived = Comparator.comparingInt(card -> {
+            Object value = card.get("receivedIndex");
+            return value instanceof Number number ? number.intValue() : 0;
+        });
+        Comparator<Map<String, Object>> byNumber = Comparator.comparingDouble(ObjektCatalogSort::numberValue);
+        Comparator<Map<String, Object>> bySerial = Comparator.comparingLong(card -> {
+            try { return Long.parseLong(text(card, "serial")); }
+            catch (NumberFormatException ex) { return Long.MAX_VALUE; }
+        });
+        String key = sort == null ? "" : sort.trim().toLowerCase(Locale.ROOT);
+        return switch (key) {
+            case "oldest" -> byReceived.reversed();
+            case "number_low" -> byNumber;
+            case "number_high" -> byNumber.reversed();
+            case "first_member" -> byMemberOrder(false).thenComparing(byReceived);
+            case "last_member" -> byMemberOrder(true).thenComparing(byReceived);
+            case "mint_low" -> bySerial;
+            case "mint_high" -> bySerial.reversed();
+            default -> byReceived;
+        };
+    }
+
+    static long seasonRank(Map<String, Object> item) {
+        long fromSeason = ObjektFilterOrder.seasonIndex(text(item, "season", "seasonKey"));
+        if (fromSeason >= 0) return fromSeason;
+        return ObjektFilterOrder.seasonIndex(text(item, "collectionId"));
+    }
+
     private static Comparator<Map<String, Object>> bySeasonNewest() {
         return Comparator.comparingLong((Map<String, Object> item) -> {
-            long index = ObjektFilterOrder.seasonIndex(text(item, "seasonKey", "season"));
+            long index = seasonRank(item);
             return index < 0 ? Long.MIN_VALUE : index;
         }).reversed();
     }
 
     private static Comparator<Map<String, Object>> bySeasonOldest() {
         return Comparator.comparingLong((Map<String, Object> item) -> {
-            long index = ObjektFilterOrder.seasonIndex(text(item, "seasonKey", "season"));
+            long index = seasonRank(item);
             return index < 0 ? Long.MAX_VALUE : index;
         });
     }
@@ -82,11 +134,19 @@ public final class ObjektCatalogSort {
                 .thenComparing(item -> text(item, "slug", "id"));
     }
 
+    private static Comparator<Map<String, Object>> byMemberOrder(boolean lastFirst) {
+        Map<Map<String, Object>, Integer> cache = new IdentityHashMap<>();
+        ToIntFunction<Map<String, Object>> orderOf = item ->
+                cache.computeIfAbsent(item, ObjektCatalogSort::memberOrder);
+        if (!lastFirst) return Comparator.comparingInt(orderOf);
+        return Comparator.comparingInt(item -> {
+            int order = orderOf.applyAsInt(item);
+            return order == 24 ? 24 : 23 - order;
+        });
+    }
+
     private static int memberOrder(Map<String, Object> item) {
-        return MemberPortraitOptions.objektMembers(text(item, "member", "memberName")).stream()
-                .mapToInt(MemberPortraitOptions::memberIndex)
-                .min()
-                .orElse(24);
+        return MemberPortraitOptions.earliestMemberIndex(text(item, "member", "memberName"));
     }
 
     private static Long mintOf(Map<String, Object> item) {

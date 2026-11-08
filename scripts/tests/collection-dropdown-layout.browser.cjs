@@ -37,14 +37,6 @@ ${readCss('season-filters.css')}
           <label class="objekt-choice"><input type="checkbox" name="season" value="Cream02" class="season-checkbox"><span class="objekt-choice-text">Cream02</span></label>
         </div>
       </div>
-      <div class="objekt-filter relative" id="collection-kind-dropdown">
-        <span class="objekt-filter-label">종류</span>
-        <button type="button" class="objekt-filter-control" id="collection-kind-toggle">전체</button>
-        <div id="collection-kind-menu" class="objekt-dropdown-menu" hidden>
-          <button type="button" class="objekt-kind-option">101Z</button>
-          <button type="button" class="objekt-kind-option">201Z</button>
-        </div>
-      </div>
       <div class="objekt-filter relative" id="collection-class-dropdown">
         <span class="objekt-filter-label">클래스</span>
         <button type="button" class="objekt-filter-control" id="collection-class-toggle">전체</button>
@@ -54,12 +46,21 @@ ${readCss('season-filters.css')}
           <label class="objekt-choice"><input type="checkbox" name="class" value="Double" class="class-checkbox"><span class="objekt-choice-text">Double</span></label>
         </div>
       </div>
+      <div class="objekt-filter relative" id="collection-kind-dropdown">
+        <span class="objekt-filter-label">종류</span>
+        <button type="button" class="objekt-filter-control" id="collection-kind-toggle">전체</button>
+        <div id="collection-kind-menu" class="objekt-dropdown-menu" hidden>
+          <button type="button" class="objekt-kind-option">101Z</button>
+          <button type="button" class="objekt-kind-option">201Z</button>
+        </div>
+      </div>
       <div class="objekt-filter relative" id="collection-sort-dropdown">
         <span class="objekt-filter-label">정렬</span>
         <button type="button" class="objekt-filter-control" id="collection-sort-toggle">최신순</button>
         <div id="collection-sort-menu" class="objekt-dropdown-menu collection-sort-menu" hidden>
-          <button type="button" class="objekt-choice" data-value="latest"><span class="objekt-choice-text">최신순</span></button>
-          <button type="button" class="objekt-choice" data-value="oldest"><span class="objekt-choice-text">오래된순</span></button>
+          <button type="button" class="objekt-kind-option" data-value="latest">최신순</button>
+          <button type="button" class="objekt-kind-option" data-value="oldest">오래된순</button>
+          <button type="button" class="objekt-kind-option" data-value="last_member">마지막 멤버</button>
         </div>
       </div>
       <div class="objekt-search-row">
@@ -178,6 +179,18 @@ ${readCss('season-filters.css')}
       await page.screenshot({ path: `/opt/cursor/artifacts/collection-dropdown-class-${viewport.name}.png` });
       await openMenu('collection-sort-toggle', 'collection-sort-menu');
       await assertMenuVisible('collection-sort-menu');
+      const fonts = await page.evaluate(() => {
+        const kind = document.querySelector('#collection-kind-menu .objekt-kind-option');
+        const sort = document.querySelector('#collection-sort-menu .objekt-kind-option');
+        const season = document.querySelector('#collection-season-menu .objekt-choice-text');
+        return {
+          kind: parseFloat(getComputedStyle(kind).fontSize),
+          sort: parseFloat(getComputedStyle(sort).fontSize),
+          season: parseFloat(getComputedStyle(season).fontSize)
+        };
+      });
+      assert.equal(fonts.sort, fonts.kind, '정렬 항목 글자 크기가 종류와 달라서는 안 된다');
+      assert.ok(Math.abs(fonts.sort - fonts.season) < 0.6, '정렬 항목 글자 크기가 시즌과 달라서는 안 된다');
       await page.screenshot({ path: `/opt/cursor/artifacts/collection-dropdown-sort-${viewport.name}.png` });
     }
 

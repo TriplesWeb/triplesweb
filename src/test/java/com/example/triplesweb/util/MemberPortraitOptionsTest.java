@@ -19,6 +19,15 @@ class MemberPortraitOptionsTest {
         assertFalse(MemberPortraitOptions.objektIncludesMember("S21", "S1"));
     }
 
+    @Test void earliestMemberIndexUsesSoloThenTheFirstUnitMember() {
+        assertThat(MemberPortraitOptions.earliestMemberIndex("SeoYeon")).isZero();
+        assertThat(MemberPortraitOptions.earliestMemberIndex("지연")).isEqualTo(23);
+        assertThat(MemberPortraitOptions.earliestMemberIndex("S1 X S9")).isZero();
+        assertThat(MemberPortraitOptions.earliestMemberIndex("S5 X S20")).isEqualTo(4);
+        assertThat(MemberPortraitOptions.earliestMemberIndex("S24 X S1")).isZero();
+        assertThat(MemberPortraitOptions.earliestMemberIndex("zenith")).isEqualTo(24);
+    }
+
     @Test void unitLabelsResolveToTheirMembersAndOtherLabelsDoNot() {
         assertThat(MemberPortraitOptions.objektMembers("S5 X S20")).containsExactly("김유연", "박시온");
         assertThat(MemberPortraitOptions.objektMembers("S5XS20")).containsExactly("김유연", "박시온");

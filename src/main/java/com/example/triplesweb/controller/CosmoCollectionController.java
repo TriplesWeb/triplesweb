@@ -3,6 +3,7 @@ package com.example.triplesweb.controller;
 import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.CosmoCollectionService;
 import com.example.triplesweb.util.MemberPortraitOptions;
+import com.example.triplesweb.util.ObjektCatalogSort;
 import com.example.triplesweb.util.ObjektFilterOrder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -30,6 +31,18 @@ public class CosmoCollectionController {
         return out;
     }
 
+    private static Map<String, List<String>> stringListMap(Object value) {
+        if (!(value instanceof Map<?, ?> map)) return Map.of();
+        Map<String, List<String>> out = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            if (entry.getKey() == null) continue;
+            List<String> numbers = stringList(entry.getValue());
+            if (numbers.isEmpty()) continue;
+            out.put(entry.getKey().toString(), numbers);
+        }
+        return out;
+    }
+
     private final CosmoCollectionService collections;
     private final ArtistSnapshotService artists;
 
@@ -50,6 +63,7 @@ public class CosmoCollectionController {
                              @RequestParam(defaultValue = "latest") String sort,
                              Model model) {
         model.addAttribute("query", nickname == null ? "" : nickname.trim());
+        model.addAttribute("kindByClassJson", "{}");
         if (nickname == null) return "cosmo/collection";
         if (nickname.isBlank()) {
             model.addAttribute("collectionError", "없는 닉네임 입니다.");
@@ -62,6 +76,8 @@ public class CosmoCollectionController {
                     query, group, kind, sort);
             model.addAllAttributes(view);
             model.asMap().remove("allCards");
+            model.addAttribute("kindByClassJson", ObjektCatalogSort.kindByClassJson(stringListMap(view.get("kindByClass"))));
+            model.asMap().remove("kindByClass");
             if (view.get("selectedKind") == null) model.addAttribute("selectedKind", "all");
             if (view.get("selectedKindLabel") == null) model.addAttribute("selectedKindLabel", "전체");
             if (view.get("selectedSort") == null) model.addAttribute("selectedSort", "latest");
