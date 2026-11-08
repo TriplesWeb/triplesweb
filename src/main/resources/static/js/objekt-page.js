@@ -585,8 +585,24 @@
         detailFlip.setAttribute('aria-label', showingBack ? '이미지 클릭 시 뒷면으로 전환' : '이미지 클릭 시 앞면으로 전환');
     }
 
+    function hasHangul(line) {
+        return /[\uAC00-\uD7A3]/.test(line);
+    }
+
+    function isLatinLine(line) {
+        return /[A-Za-z]/.test(line) && !hasHangul(line);
+    }
+
     function displayStoryText(raw) {
-        return String(raw || '').trim().replace(/\r\n/g, '\n').replace(/\n{2,}/g, '\n');
+        const lines = String(raw || '').trim().replace(/\r\n/g, '\n').split('\n');
+        const out = [];
+        for (let i = 0; i < lines.length; i++) {
+            const current = lines[i];
+            const next = lines[i + 1];
+            out.push(current);
+            if (current && next && hasHangul(current) && isLatinLine(next)) out.push('');
+        }
+        return out.join('\n');
     }
 
     function fillDetailStory(data) {
