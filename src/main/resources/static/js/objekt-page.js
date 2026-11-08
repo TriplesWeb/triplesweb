@@ -565,11 +565,16 @@
         detailFlip.setAttribute('aria-label', showingBack ? '이미지 클릭 시 뒷면으로 전환' : '이미지 클릭 시 앞면으로 전환');
     }
 
+    function displayStoryText(raw) {
+        return String(raw || '').trim().replace(/\r\n/g, '\n').replace(/\n{2,}/g, '\n');
+    }
+
     function fillDetailStory(data) {
         const text = String(data && data.description || '').trim();
         lastStoryText = text;
         if (detailDesc) {
-            detailDesc.textContent = text || '아직 등록된 상세 설명이 없습니다.';
+            const shown = displayStoryText(text);
+            detailDesc.textContent = shown || '아직 등록된 상세 설명이 없습니다.';
             detailDesc.classList.toggle('is-empty', !text);
         }
         if (descriptionInput && descriptionForm?.hidden) descriptionInput.value = text;
