@@ -151,24 +151,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
       - name: Qodana Scan
-        id: qodana
-        continue-on-error: true
         uses: JetBrains/qodana-action@v2026.2
-        env:
-          # Optional: cloud upload/PR comment. Community linter still enforces qodana.yaml gates without it.
-          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
-        with:
-          pr-mode: true
-          use-caches: true
-          post-pr-comment: false
-          use-annotations: true
-          upload-result: false
-          push-fixes: 'none'
-      - name: Retry Qodana after Cloud timeout
-        if: steps.qodana.outcome == 'failure'
-        uses: JetBrains/qodana-action@v2026.2
-        env:
-          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
           pr-mode: true
           use-caches: true
