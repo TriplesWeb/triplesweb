@@ -2,6 +2,7 @@ package com.example.triplesweb.util;
 
 import java.util.Comparator;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.ToIntFunction;
@@ -25,6 +26,30 @@ public final class ObjektCatalogSort {
         String kindKey = normalizeKind(selectedKind);
         if (kindKey.isEmpty()) return true;
         return normalizeKind(text(item, "collectionNo", "collectionNumber")).equals(kindKey);
+    }
+
+    public static String kindByClassJson(Map<String, List<String>> numbersByClass) {
+        if (numbersByClass == null || numbersByClass.isEmpty()) return "{}";
+        StringBuilder json = new StringBuilder("{");
+        boolean firstClass = true;
+        for (Map.Entry<String, List<String>> entry : numbersByClass.entrySet()) {
+            if (!firstClass) json.append(',');
+            firstClass = false;
+            json.append(jsonString(entry.getKey())).append(':').append('[');
+            boolean firstNumber = true;
+            for (String number : entry.getValue()) {
+                if (!firstNumber) json.append(',');
+                firstNumber = false;
+                json.append(jsonString(number));
+            }
+            json.append(']');
+        }
+        return json.append('}').toString();
+    }
+
+    private static String jsonString(String value) {
+        String raw = value == null ? "" : value;
+        return '"' + raw.replace("\\", "\\\\").replace("\"", "\\\"") + '"';
     }
 
     public static Comparator<Map<String, Object>> comparator(String sort) {

@@ -162,6 +162,7 @@ public class CosmoCollectionService {
             view.put("filterSeasons", facets.seasons());
             view.put("filterClasses", facets.classes());
             view.put("kindOptions", facets.kindOptions());
+            view.put("kindByClass", facets.numbersByClass());
         }
         view.put("profileUrl", "/cosmo/profile/" + nickEnc.replace("+", "%20"));
         view.put("hasCards", !cards.isEmpty());
@@ -598,16 +599,29 @@ public class CosmoCollectionService {
         }
     }
 
-    private record CardFacets(List<String> members, List<String> seasons, List<String> classes, List<String> kindOptions) {
-        static final CardFacets EMPTY = new CardFacets(List.of(), List.of(), List.of(), List.of());
+    private record CardFacets(List<String> members, List<String> seasons, List<String> classes,
+                              List<String> kindOptions, Map<String, List<String>> numbersByClass) {
+        static final CardFacets EMPTY = new CardFacets(List.of(), List.of(), List.of(), List.of(), Map.of());
 
         static CardFacets from(List<Map<String, Object>> cards) {
+            Map<String, Set<String>> grouped = new LinkedHashMap<>();
+            for (Map<String, Object> card : cards) {
+                String klass = text(card, "objektClass").trim();
+                String number = text(card, "collectionNo").trim();
+                if (klass.isBlank() || number.isBlank()) continue;
+                grouped.computeIfAbsent(klass, key -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER)).add(number);
+            }
+            Map<String, List<String>> numbersByClass = new LinkedHashMap<>();
+            grouped.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey(String.CASE_INSENSITIVE_ORDER))
+                    .forEach(entry -> numbersByClass.put(entry.getKey(), List.copyOf(entry.getValue())));
             return new CardFacets(
                     uniqueValues(cards, "member"),
                     uniqueValues(cards, "season"),
                     uniqueValues(cards, "objektClass"),
                     cards.stream().map(card -> text(card, "collectionNo"))
-                            .filter(value -> !value.isBlank()).distinct().sorted(String.CASE_INSENSITIVE_ORDER).toList());
+                            .filter(value -> !value.isBlank()).distinct().sorted(String.CASE_INSENSITIVE_ORDER).toList(),
+                    Map.copyOf(numbersByClass));
         }
     }
 

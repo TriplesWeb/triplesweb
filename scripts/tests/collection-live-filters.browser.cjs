@@ -49,6 +49,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
       </button>
       <div id="collection-class-menu" class="objekt-dropdown-menu" hidden>
         <label class="objekt-choice"><input type="checkbox" value="all" class="class-checkbox" checked><span class="objekt-choice-text">전체 클래스</span></label>
+        <label class="objekt-choice"><input type="checkbox" name="class" value="Double" class="class-checkbox"><span class="objekt-choice-text">Double</span></label>
         <label class="objekt-choice"><input type="checkbox" name="class" value="Special" class="class-checkbox"><span class="objekt-choice-text">Special</span></label>
       </div>
     </div>
@@ -61,6 +62,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
       <div id="collection-kind-menu" class="objekt-dropdown-menu hidden" hidden role="listbox">
         <button type="button" class="objekt-kind-option" data-value="all" role="option">전체</button>
         <button type="button" class="objekt-kind-option" data-value="101Z" role="option">101Z</button>
+        <button type="button" class="objekt-kind-option" data-value="201A" role="option">201A</button>
         <p class="objekt-kind-empty" id="collection-kind-empty" hidden>없음</p>
       </div>
     </div>
@@ -94,6 +96,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
 </main>
 <script src="/js/member-portrait-picker.js"></script>
 <script src="/js/objekt-kind-combo.js"></script>
+<script type="application/json" id="collection-kind-by-class">{"Double":["101Z"],"Special":["201A"]}</script>
 SCRIPT_PLACEHOLDER
 </body></html>`;
 
@@ -214,15 +217,18 @@ SCRIPT_PLACEHOLDER
     await classWait;
     await waitForMore('Special');
     assert.ok(moreCalls.some((call) => (call.class || []).includes('Special')));
+    assert.equal(await page.locator('.objekt-kind-option[data-value="101Z"]').evaluate((el) => el.hidden), true);
+    assert.equal(await page.locator('.objekt-kind-option[data-value="201A"]').evaluate((el) => el.hidden), false);
+    assert.equal(await page.locator('#collection-kind-select').inputValue(), '전체');
 
     moreCalls.length = 0;
     const kindWait = page.waitForResponse((res) => {
-      try { return new URL(res.url()).searchParams.get('kind') === '101Z'; } catch { return false; }
+      try { return new URL(res.url()).searchParams.get('kind') === '201A'; } catch { return false; }
     });
-    await page.locator('.objekt-kind-option[data-value="101Z"]').evaluate((el) => el.click());
+    await page.locator('.objekt-kind-option[data-value="201A"]').evaluate((el) => el.click());
     await kindWait;
-    await waitForMore('101Z');
-    assert.ok(moreCalls.some((call) => call.kind === '101Z'));
+    await waitForMore('201A');
+    assert.ok(moreCalls.some((call) => call.kind === '201A'));
 
     moreCalls.length = 0;
     const sortWait = page.waitForResponse((res) => {

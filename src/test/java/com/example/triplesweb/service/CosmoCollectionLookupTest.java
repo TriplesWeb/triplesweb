@@ -22,6 +22,7 @@ class CosmoCollectionLookupTest {
     private boolean missingSerial;
     private boolean mixedSeasons;
     private boolean includeForeignArtist;
+    private boolean mixedClasses;
     private boolean indexFailure;
     private volatile boolean laterPageFailure;
     private CountDownLatch continuePage = new CountDownLatch(0);
@@ -74,14 +75,16 @@ class CosmoCollectionLookupTest {
         boolean binary = !foreign && mixedSeasons && n % 2 == 0;
         String artist = foreign ? "artms" : "triples";
         String season = foreign ? "Drop" : (binary ? "Binary02" : "Cream02");
-        String slug = foreign ? "drop-heejin-101z" : (binary ? "binary02-hayeon-367z" : "cream02-hayeon-367z");
+        String klass = mixedClasses && n % 2 == 0 ? "Special" : "Double";
+        String number = mixedClasses ? (n % 2 == 0 ? "201A" : "101Z") : "367Z";
+        String slug = foreign ? "drop-heejin-101z" : (binary ? "binary02-hayeon-367z" : "cream02-hayeon-" + number.toLowerCase());
         String collectionId = foreign ? "Drop HeeJin 101Z #30000001"
-                : (binary ? "Binary02 HaYeon 367Z #30000001" : "Cream02 HaYeon 367Z #30000001");
+                : (binary ? "Binary02 HaYeon 367Z #30000001" : "Cream02 HaYeon " + number + " #30000001");
         String member = foreign ? "HeeJin" : "HaYeon";
         return "{\"id\":\"" + (30000000 + n) + "\",\"serial\":" + (missingSerial ? "null" : n)
                 + ",\"slug\":\"" + slug + "\",\"collectionId\":\"" + collectionId + "\","
                 + "\"member\":\"" + member + "\",\"season\":\"" + season + "\",\"artist\":\"" + artist + "\","
-                + "\"class\":\"Double\",\"frontImage\":\"https://example.com/card.webp\"}";
+                + "\"class\":\"" + klass + "\",\"frontImage\":\"https://example.com/card.webp\"}";
     }
 
     @Test @SuppressWarnings("unchecked") void loadsEveryCursorPageSerialsAndReusesCache() {
@@ -191,13 +194,23 @@ class CosmoCollectionLookupTest {
         assertThat(completed()).containsEntry("ownedCount", 26);
     }
 
+    @Test @SuppressWarnings("unchecked") void kindByClassMapsNumbersForEachClass() {
+        mixedClasses = true;
+        var view = completed();
+        Map<String, List<String>> kindByClass = (Map<String, List<String>>) view.get("kindByClass");
+        assertThat(kindByClass).containsKeys("Double", "Special");
+        assertThat(kindByClass.get("Double")).containsExactly("101Z");
+        assertThat(kindByClass.get("Special")).containsExactly("201A");
+        assertThat((List<String>) view.get("kindOptions")).containsExactly("101Z", "201A");
+    }
+
     @Test void morePayloadSkipsFacetsAndExactSuggestWarmsTheCache() {
         assertThat(service.suggestNicknames("테스트", 8)).contains("테스트");
         await().atMost(Duration.ofSeconds(5)).until(() -> holdings.get() >= 1);
         var slim = completed();
-        assertThat(slim).containsKeys("allCards", "kindOptions", "filterMembers");
+        assertThat(slim).containsKeys("allCards", "kindOptions", "filterMembers", "kindByClass");
         assertThat(service.search("테스트", 0, "", List.of(), List.of(), "", "all", "all", "latest", false))
-                .doesNotContainKeys("allCards", "kindOptions", "filterMembers")
+                .doesNotContainKeys("allCards", "kindOptions", "filterMembers", "kindByClass")
                 .containsEntry("ownedCount", 26)
                 .containsEntry("hasCards", true);
         assertThat(profiles.get()).isEqualTo(1);

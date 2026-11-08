@@ -203,6 +203,7 @@
 </main>
 <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
 <script src="{{#asset}}/js/objekt-kind-combo.js{{/asset}}"></script>
+<script type="application/json" id="collection-kind-by-class">{{{kindByClassJson}}}</script>
 <script src="{{#asset}}/js/collection-nickname-suggest.js{{/asset}}"></script>
 <script>
 (() => {
@@ -237,8 +238,39 @@
   let loadError = '';
   let sentinelVisible = false;
   let lastKindValue = document.getElementById('collection-kind-input')?.value || 'all';
+  let kindCombo = null;
+  let pendingKindReset = false;
   let activeFilters = new URLSearchParams(window.location.search);
   activeFilters.delete('page');
+
+  function selectedClassValues() {
+    return [...document.querySelectorAll('#collection-class-menu .class-checkbox')]
+      .filter((box) => box.value !== 'all' && box.checked)
+      .map((box) => box.value);
+  }
+
+  function kindByClassMap() {
+    const node = document.getElementById('collection-kind-by-class');
+    if (!node) return {};
+    try {
+      const parsed = JSON.parse(node.textContent || '{}');
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  const kindClassMap = kindByClassMap();
+
+  function syncKindToClasses() {
+    if (!kindCombo?.syncToClasses) return lastKindValue;
+    const next = kindCombo.syncToClasses(selectedClassValues(), kindClassMap);
+    if (next && next !== lastKindValue) {
+      lastKindValue = next;
+      pendingKindReset = true;
+    }
+    return lastKindValue;
+  }
 
   function setGroup(group, clearMember) {
     const next = group || 'all';
@@ -314,7 +346,7 @@
     bindChoiceMenu('season', 'collection-season');
     bindChoiceMenu('class', 'collection-class');
     bindSingleMenu('collection-sort', 'collection-sort-input', 'latest');
-    const kindCombo = window.ObjektKindCombo?.bindKindCombo({
+    kindCombo = window.ObjektKindCombo?.bindKindCombo({
       input: document.getElementById('collection-kind-select'),
       menu: document.getElementById('collection-kind-menu'),
       toggle: document.getElementById('collection-kind-toggle'),
@@ -329,6 +361,7 @@
         scheduleApplyFilters();
       }
     });
+    syncKindToClasses();
     form.addEventListener('submit', (event) => {
       event.preventDefault();
       kindCombo?.commit(document.getElementById('collection-kind-select')?.value);
@@ -412,6 +445,7 @@
       const chosen = boxes().some((other) => other.value !== 'all' && other.checked);
       if (all && !chosen) all.checked = true;
       syncLabel();
+      if (type === 'class') syncKindToClasses();
       scheduleApplyFilters();
     }));
     toggleBtn.addEventListener('click', () => {
@@ -429,6 +463,10 @@
   });
 
   filtersReady = Boolean(form && grid && sentinel);
+  if (filtersReady && pendingKindReset) {
+    pendingKindReset = false;
+    scheduleApplyFilters();
+  }
   if (!filtersReady) return;
 
   function escapeHtml(value) {

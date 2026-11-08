@@ -23,6 +23,23 @@
         return !trimmed || trimmed === ALL_LABEL || trimmed.toLowerCase() === ALL_VALUE;
     }
 
+    function allowedKindsForClasses(classes, kindByClass) {
+        if (!classes || !classes.length) return null;
+        const keys = Object.keys(kindByClass || {});
+        if (!keys.length) return null;
+        const allowed = new Set();
+        let matched = false;
+        for (const klass of classes) {
+            const match = keys.find((key) => key.toLocaleLowerCase() === String(klass).toLocaleLowerCase());
+            if (!match) continue;
+            matched = true;
+            const numbers = kindByClass[match];
+            if (!Array.isArray(numbers)) continue;
+            numbers.forEach((number) => allowed.add(normalizeKindValue(number)));
+        }
+        return matched ? allowed : null;
+    }
+
     function bindKindCombo(options) {
         const input = options.input;
         const menu = options.menu;
@@ -40,18 +57,18 @@
             return normalizeKindValue(hiddenInput ? hiddenInput.value : (input.dataset.kindValue || input.value));
         }
 
-        function markFiltered() {
+        function markFiltered(notify) {
             const value = currentValue();
             input.closest('.objekt-filter')?.classList.toggle('is-filtered', value !== ALL_VALUE);
-            onChange?.(value);
+            if (notify !== false) onChange?.(value);
         }
 
-        function commit(raw, display) {
+        function commit(raw, display, notify) {
             const value = normalizeKindValue(raw);
             if (hiddenInput) hiddenInput.value = value;
             input.dataset.kindValue = value;
             if (display !== false) input.value = displayKindValue(value);
-            markFiltered();
+            markFiltered(notify);
             return value;
         }
 
@@ -59,8 +76,9 @@
             const needle = isAllDisplay(query) ? '' : sanitizeKind(query).toLowerCase();
             let shown = 0;
             kindOptions.forEach((opt) => {
+                const classOk = opt.dataset.value === ALL_VALUE || opt.dataset.classAllowed !== 'false';
                 const value = String(opt.dataset.value || '').toLowerCase();
-                const match = !needle || value.includes(needle);
+                const match = classOk && (!needle || value.includes(needle));
                 opt.hidden = !match;
                 if (match) shown += 1;
             });
@@ -68,6 +86,26 @@
             activeIndex = -1;
             kindOptions.forEach((opt) => opt.classList.remove('is-active'));
             return shown;
+        }
+
+        function syncToClasses(classes, kindByClass, resetInvalid) {
+            const allowed = allowedKindsForClasses(classes, kindByClass);
+            kindOptions.forEach((opt) => {
+                if (opt.dataset.value === ALL_VALUE) {
+                    opt.dataset.classAllowed = 'true';
+                    return;
+                }
+                const ok = !allowed || allowed.has(normalizeKindValue(opt.dataset.value));
+                opt.dataset.classAllowed = ok ? 'true' : 'false';
+            });
+            if (resetInvalid !== false) {
+                const current = currentValue();
+                if (current !== ALL_VALUE && allowed && !allowed.has(current)) {
+                    commit(ALL_VALUE, true, false);
+                }
+            }
+            filterOptions(isAllDisplay(input.value) ? '' : input.value);
+            return currentValue();
         }
 
         function isClosed() {
@@ -129,7 +167,9 @@
                     return;
                 }
                 const typed = input.value;
-                const exact = kindOptions.find((opt) => normalizeKindValue(opt.dataset.value) === normalizeKindValue(typed));
+                const exact = kindOptions.find((opt) =>
+                    (opt.dataset.value === ALL_VALUE || opt.dataset.classAllowed !== 'false')
+                    && normalizeKindValue(opt.dataset.value) === normalizeKindValue(typed));
                 if (exact) commit(exact.dataset.value);
                 else if (visible.length === 1) commit(visible[0].dataset.value);
                 else commit(typed);
@@ -164,13 +204,14 @@
         });
 
         commit(hiddenInput?.value || input.value || ALL_VALUE);
-        return { commit, closeMenu, normalizeKindValue, displayKindValue };
+        return { commit, closeMenu, normalizeKindValue, displayKindValue, syncToClasses, filterOptions };
     }
 
     global.ObjektKindCombo = {
         bindKindCombo,
         normalizeKindValue,
         displayKindValue,
-        sanitizeKind
+        sanitizeKind,
+        allowedKindsForClasses
     };
 })(window);

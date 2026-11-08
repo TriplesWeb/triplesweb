@@ -85,10 +85,13 @@ class CosmoCollectionControllerTest {
         view.put("filterMembers", List.of("HaYeon"));
         view.put("filterSeasons", List.of("Cream02"));
         view.put("filterClasses", List.of("Double"));
+        view.put("kindByClass", Map.of("Double", List.of("367Z")));
         when(collections.search("테스트", 0, "", List.of(), List.of(), "", "all", "all", "latest")).thenReturn(view);
         when(artists.findAll()).thenReturn(List.of());
         mvc.perform(get("/cosmo/collection").param("nickname", "테스트")).andExpect(status().isOk())
                 .andExpect(model().attributeDoesNotExist("allCards"))
+                .andExpect(model().attributeDoesNotExist("kindByClass"))
+                .andExpect(model().attribute("kindByClassJson", "{\"Double\":[\"367Z\"]}"))
                 .andExpect(content().string(containsString("#27")))
                 .andExpect(content().string(containsString("collection-card-serial")))
                 .andExpect(content().string(containsString("collection-card-season")))
@@ -107,6 +110,8 @@ class CosmoCollectionControllerTest {
                 .andExpect(content().string(containsString("collection-filter-workspace")))
                 .andExpect(content().string(containsString("objekt-filter-bar")))
                 .andExpect(content().string(containsString("id=\"collection-kind-select\"")))
+                .andExpect(content().string(containsString("id=\"collection-kind-by-class\"")))
+                .andExpect(content().string(containsString("\"Double\":[\"367Z\"]")))
                 .andExpect(content().string(containsString("value=\"전체\"")))
                 .andExpect(content().string(not(containsString("오브젝트 상세 보기"))))
                 .andExpect(content().string(containsString("collection-scroll-sentinel")))

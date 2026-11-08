@@ -9,6 +9,16 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ObjektCatalogSortTest {
+    @Test void kindByClassJsonSerializesClassToNumbers() {
+        assertThat(ObjektCatalogSort.kindByClassJson(null)).isEqualTo("{}");
+        assertThat(ObjektCatalogSort.kindByClassJson(Map.of())).isEqualTo("{}");
+        assertThat(ObjektCatalogSort.kindByClassJson(Map.of(
+                "Double", List.of("101Z"),
+                "Special", List.of("201A"))))
+                .contains("\"Double\":[\"101Z\"]")
+                .contains("\"Special\":[\"201A\"]");
+    }
+
     @Test void kindMatchIgnoresAllAndNonAlphanumeric() {
         Map<String, Object> item = Map.of("collectionNo", "101Z");
         assertThat(ObjektCatalogSort.matchesKind("all", item)).isTrue();
