@@ -32,16 +32,18 @@
             <div class="tab-pane hidden" id="{{tabKey}}" role="tabpanel" aria-labelledby="tab-{{tabKey}}">
                 <ul class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 list-none p-0 m-0">
                     {{#events}}
-                    <li class="relative">
-                        <a href="/cosmo/event/{{eventId}}" class="block text-center no-underline text-[#e3e2e8] hover:text-[#00f5d4] transition-colors">
-                            <img src="{{displayEventImage}}" width="200" height="200" alt="{{eventName}}" loading="lazy" decoding="async" class="w-full aspect-square object-cover rounded-lg mb-2 border border-[#3a4a46]/30">
-                            <div class="text-sm sm:text-base font-semibold">{{eventName}}</div>
-                            <div class="text-xs text-[#8b9b95] mt-1 font-mono">{{eventDate}}</div>
-                            {{#regionLabel}}
-                            <div class="text-xs text-[#b9cac4] mt-0.5">{{regionLabel}}</div>
-                            {{/regionLabel}}
-                        </a>
-                        <button type="button" class="about-edit-inline about-mode-btn btn btn-sm btn-outline btn-primary" hidden data-event-edit="{{eventId}}" style="position:absolute;top:0.5rem;right:0.5rem;">수정</button>
+                    <li>
+                        <div class="relative">
+                            <a href="/cosmo/event/{{eventId}}" class="block text-center no-underline text-[#e3e2e8] hover:text-[#00f5d4] transition-colors">
+                                <img src="{{displayEventImage}}" width="200" height="200" alt="{{eventName}}" loading="lazy" decoding="async" class="w-full aspect-square object-cover rounded-lg mb-2 border border-[#3a4a46]/30">
+                                <div class="text-sm sm:text-base font-semibold">{{eventName}}</div>
+                                <div class="text-xs text-[#8b9b95] mt-1 font-mono">{{eventDate}}</div>
+                                {{#regionLabel}}
+                                <div class="text-xs text-[#b9cac4] mt-0.5">{{regionLabel}}</div>
+                                {{/regionLabel}}
+                            </a>
+                            <button type="button" class="about-edit-inline about-mode-btn is-card-edit btn btn-sm btn-outline btn-primary" hidden data-event-edit="{{eventId}}">수정</button>
+                        </div>
                     </li>
                     {{/events}}
                 </ul>

@@ -820,7 +820,21 @@ textarea.form-control {
 .about-edit-inline,
 .about-edit-inline.about-mode-btn {
     display: none !important;
-    margin-top: 0.75rem;
+}
+
+.about-edit-inline.is-card-edit,
+.about-edit-inline.about-mode-btn.is-card-edit {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 2;
+    margin: 0;
+    min-height: 1.75rem;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    background: rgba(13, 14, 18, 0.82);
+    backdrop-filter: blur(6px);
 }
 
 .about-admin-page.is-admin .about-edit-inline,
@@ -1254,16 +1268,16 @@ textarea.form-control {
 
 .event-stop-row-top {
     display: grid;
-    grid-template-columns: minmax(15.5rem, 1.55fr) minmax(5.5rem, 0.7fr) minmax(0, 1.2fr) 2rem;
+    grid-template-columns: max-content minmax(4.75rem, 0.65fr) minmax(0, 1.35fr) 2rem;
     gap: 0.4rem;
     align-items: center;
 }
 
 .stop-date-range {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    gap: 0.25rem;
+    display: flex;
+    flex-wrap: nowrap;
     align-items: center;
+    gap: 0.3rem;
     min-width: 0;
 }
 
@@ -1291,9 +1305,13 @@ textarea.form-control {
 }
 
 .event-stop-row-top input[type="date"] {
-    font-variant-numeric: tabular-nums;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 0.78rem;
+    width: 9.75rem;
+    min-width: 9.75rem;
+    max-width: 9.75rem;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    font-size: 0.82rem;
+    line-height: 1.25;
     color-scheme: dark;
 }
 
@@ -1333,6 +1351,14 @@ textarea.form-control {
 
     .event-stop-row-top .stop-date-range {
         grid-column: 1 / -2;
+        flex-wrap: wrap;
+    }
+
+    .event-stop-row-top input[type="date"] {
+        width: min(9.75rem, calc(50% - 0.4rem));
+        min-width: 8.5rem;
+        max-width: 9.75rem;
+        flex: 1 1 8.5rem;
     }
 
     .event-stop-row-top .stop-remove {
