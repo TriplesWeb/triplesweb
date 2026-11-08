@@ -605,44 +605,14 @@
         return out.join('\n');
     }
 
-    function renderStoryText(el, raw) {
-        const text = String(raw || '').trim();
-        const shown = displayStoryText(text);
-        el.classList.toggle('is-empty', !text);
-        if (!shown) {
-            el.textContent = '아직 등록된 상세 설명이 없습니다.';
-            return;
-        }
-        const frag = document.createDocumentFragment();
-        const lines = shown.split('\n');
-        let buffer = [];
-        const flushBlock = () => {
-            if (!buffer.length) return;
-            const block = document.createElement('span');
-            block.className = 'objekt-detail-desc-block';
-            block.textContent = buffer.join('\n');
-            frag.appendChild(block);
-            buffer = [];
-        };
-        for (const line of lines) {
-            if (line === '') {
-                flushBlock();
-                const gap = document.createElement('span');
-                gap.className = 'objekt-detail-desc-break';
-                gap.setAttribute('aria-hidden', 'true');
-                frag.appendChild(gap);
-            } else {
-                buffer.push(line);
-            }
-        }
-        flushBlock();
-        el.replaceChildren(frag);
-    }
-
     function fillDetailStory(data) {
         const text = String(data && data.description || '').trim();
         lastStoryText = text;
-        if (detailDesc) renderStoryText(detailDesc, text);
+        if (detailDesc) {
+            const shown = displayStoryText(text);
+            detailDesc.textContent = shown || '아직 등록된 상세 설명이 없습니다.';
+            detailDesc.classList.toggle('is-empty', !text);
+        }
         if (descriptionInput && descriptionForm?.hidden) descriptionInput.value = text;
         const eventNode = document.getElementById('objektDetailEvent');
         if (eventNode) {

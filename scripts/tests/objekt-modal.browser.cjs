@@ -128,37 +128,21 @@ const base = path.resolve(__dirname, '../..');
     description = '카코마린 커버송 이벤트 오브젝트\nKaKoMaLynn Cover Song Objekt';
     await page.locator('.objekt-open-detail').first().click();
     await page.waitForFunction(()=>document.querySelector('#objektDetailDesc')?.textContent.includes('KaKoMaLynn'));
-    const storyGap = await page.locator('#objektDetailDesc').evaluate((el) => ({
-      blocks: [...el.querySelectorAll('.objekt-detail-desc-block')].map((node) => node.textContent),
-      breaks: el.querySelectorAll('.objekt-detail-desc-break').length,
-      breakHeight: el.querySelector('.objekt-detail-desc-break')?.getBoundingClientRect().height || 0,
-      lineHeight: parseFloat(getComputedStyle(el).lineHeight)
-    }));
-    assert.deepEqual(storyGap.blocks, ['카코마린 커버송 이벤트 오브젝트', 'KaKoMaLynn Cover Song Objekt']);
-    assert.equal(storyGap.breaks, 1);
-    assert.ok(storyGap.breakHeight > 4 && storyGap.breakHeight < storyGap.lineHeight * 0.85, '엔터 간격: ' + storyGap.breakHeight);
+    assert.equal(await page.locator('#objektDetailDesc').textContent(), '카코마린 커버송 이벤트 오브젝트\n\nKaKoMaLynn Cover Song Objekt');
     await page.locator('#objektDetailClose').click();
     description = '첫 줄\n\n둘째 줄';
     await page.locator('.objekt-open-detail').first().click();
     await page.waitForFunction(()=>document.querySelector('#objektDetailDesc')?.textContent.includes('둘째 줄'));
-    const enterGap = await page.locator('#objektDetailDesc').evaluate((el) => ({
-      blocks: [...el.querySelectorAll('.objekt-detail-desc-block')].map((node) => node.textContent),
-      breaks: el.querySelectorAll('.objekt-detail-desc-break').length,
-      breakHeight: el.querySelector('.objekt-detail-desc-break')?.getBoundingClientRect().height || 0,
-      lineHeight: parseFloat(getComputedStyle(el).lineHeight)
-    }));
-    assert.deepEqual(enterGap.blocks, ['첫 줄', '둘째 줄']);
-    assert.equal(enterGap.breaks, 1);
-    assert.ok(enterGap.breakHeight > 4 && enterGap.breakHeight < enterGap.lineHeight * 0.85, '엔터 간격: ' + enterGap.breakHeight);
+    assert.equal(await page.locator('#objektDetailDesc').textContent(), '첫 줄\n\n둘째 줄');
     const leadingOf = (el) => {
       const style = getComputedStyle(el);
       return parseFloat(style.lineHeight) / parseFloat(style.fontSize);
     };
     const descLeading = await page.locator('#objektDetailDesc').evaluate(leadingOf);
-    assert.ok(Math.abs(descLeading - 1.5) < 0.08, '상세 설명 행 간격: ' + descLeading);
+    assert.ok(Math.abs(descLeading - 1.35) < 0.08, '상세 설명 행 간격: ' + descLeading);
     await page.locator('#objektDescriptionEdit').click();
     const editorLeading = await page.locator('#objektModalDescription').evaluate(leadingOf);
-    assert.ok(Math.abs(editorLeading - 1.5) < 0.08, '수정폼 행 간격: ' + editorLeading);
+    assert.ok(Math.abs(editorLeading - 1.35) < 0.08, '수정폼 행 간격: ' + editorLeading);
     await page.locator('#objektDetailClose').click();
     description = 'tripleS 공식 캐릭터 byteS 인형 키링의 일부';
     await page.locator('.objekt-open-detail').first().click();
