@@ -129,11 +129,15 @@ const base = path.resolve(__dirname, '../..');
     await page.locator('.objekt-open-detail').first().click();
     await page.waitForFunction(()=>document.querySelector('#objektDetailDesc')?.textContent.includes('KaKoMaLynn'));
     assert.equal(await page.locator('#objektDetailDesc').textContent(), '카코마린 커버송 이벤트 오브젝트\nKaKoMaLynn Cover Song Objekt');
-    const descMetrics = await page.locator('#objektDetailDesc').evaluate((el) => {
+    const leadingOf = (el) => {
       const style = getComputedStyle(el);
-      return {lineHeight: parseFloat(style.lineHeight), fontSize: parseFloat(style.fontSize)};
-    });
-    assert.ok(descMetrics.lineHeight / descMetrics.fontSize <= 1.4, '한국어·영어 행 간격이 넓으면 안 된다');
+      return parseFloat(style.lineHeight) / parseFloat(style.fontSize);
+    };
+    const descLeading = await page.locator('#objektDetailDesc').evaluate(leadingOf);
+    assert.ok(Math.abs(descLeading - 1.5) < 0.08, '상세 설명 행 간격: ' + descLeading);
+    await page.locator('#objektDescriptionEdit').click();
+    const editorLeading = await page.locator('#objektModalDescription').evaluate(leadingOf);
+    assert.ok(Math.abs(editorLeading - 1.5) < 0.08, '수정폼 행 간격: ' + editorLeading);
     await page.locator('#objektDetailClose').click();
     description = 'tripleS 공식 캐릭터 byteS 인형 키링의 일부';
     await page.locator('.objekt-open-detail').first().click();
