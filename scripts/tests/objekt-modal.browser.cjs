@@ -125,10 +125,15 @@ const base = path.resolve(__dirname, '../..');
     await page.waitForFunction(()=>document.querySelector('#objektDetailDesc')?.textContent.includes('byteS'));
     assert.match(await page.locator('#objektDetailDesc').textContent(), /byteS/);
     await page.locator('#objektDetailClose').click();
-    description = '카코마린 커버송 이벤트 오브젝트\n\nKaKoMaLynn Cover Song Objekt';
+    description = '카코마린 커버송 이벤트 오브젝트\nKaKoMaLynn Cover Song Objekt';
     await page.locator('.objekt-open-detail').first().click();
     await page.waitForFunction(()=>document.querySelector('#objektDetailDesc')?.textContent.includes('KaKoMaLynn'));
-    assert.equal(await page.locator('#objektDetailDesc').textContent(), '카코마린 커버송 이벤트 오브젝트\nKaKoMaLynn Cover Song Objekt');
+    assert.equal(await page.locator('#objektDetailDesc').textContent(), '카코마린 커버송 이벤트 오브젝트\n\nKaKoMaLynn Cover Song Objekt');
+    await page.locator('#objektDetailClose').click();
+    description = '첫 줄\n\n둘째 줄';
+    await page.locator('.objekt-open-detail').first().click();
+    await page.waitForFunction(()=>document.querySelector('#objektDetailDesc')?.textContent.includes('둘째 줄'));
+    assert.equal(await page.locator('#objektDetailDesc').textContent(), '첫 줄\n\n둘째 줄');
     const leadingOf = (el) => {
       const style = getComputedStyle(el);
       return parseFloat(style.lineHeight) / parseFloat(style.fontSize);
