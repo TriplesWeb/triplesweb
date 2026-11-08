@@ -49,6 +49,7 @@
     font-weight: 650;
     font-variant-numeric: tabular-nums;
     text-decoration: none;
+    white-space: nowrap;
 }
 .profile-ownership-tab:hover { color: #e8f3ef; background: #ffffff0a; }
 .profile-ownership-tab.is-active {

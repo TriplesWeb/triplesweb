@@ -53,16 +53,49 @@ public final class ObjektCatalogSort {
         return Comparator.comparing(ObjektCatalogSort::createdAtOrNull, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
     }
 
+    public static Comparator<Map<String, Object>> collectionComparator(String sort) {
+        Comparator<Map<String, Object>> byReceived = Comparator.comparingInt(card -> {
+            Object value = card.get("receivedIndex");
+            return value instanceof Number number ? number.intValue() : 0;
+        });
+        Comparator<Map<String, Object>> byNumber = Comparator.comparingDouble(ObjektCatalogSort::numberValue);
+        Comparator<Map<String, Object>> bySerial = Comparator.comparingLong(card -> {
+            try { return Long.parseLong(text(card, "serial")); }
+            catch (NumberFormatException ex) { return Long.MAX_VALUE; }
+        });
+        String key = sort == null ? "" : sort.trim().toLowerCase(Locale.ROOT);
+        return switch (key) {
+            case "oldest" -> bySeasonOldest().thenComparing(byReceived.reversed());
+            case "number_low" -> byNumber;
+            case "number_high" -> byNumber.reversed();
+            case "first_member" -> Comparator.<Map<String, Object>>comparingInt(ObjektCatalogSort::memberOrder)
+                    .thenComparing(byReceived);
+            case "last_member" -> Comparator.<Map<String, Object>>comparingInt(item -> {
+                int order = memberOrder(item);
+                return order == 24 ? 24 : 23 - order;
+            }).thenComparing(byReceived);
+            case "mint_low" -> bySerial;
+            case "mint_high" -> bySerial.reversed();
+            default -> bySeasonNewest().thenComparing(byReceived);
+        };
+    }
+
+    static long seasonRank(Map<String, Object> item) {
+        long fromSeason = ObjektFilterOrder.seasonIndex(text(item, "season", "seasonKey"));
+        if (fromSeason >= 0) return fromSeason;
+        return ObjektFilterOrder.seasonIndex(text(item, "collectionId"));
+    }
+
     private static Comparator<Map<String, Object>> bySeasonNewest() {
         return Comparator.comparingLong((Map<String, Object> item) -> {
-            long index = ObjektFilterOrder.seasonIndex(text(item, "seasonKey", "season"));
+            long index = seasonRank(item);
             return index < 0 ? Long.MIN_VALUE : index;
         }).reversed();
     }
 
     private static Comparator<Map<String, Object>> bySeasonOldest() {
         return Comparator.comparingLong((Map<String, Object> item) -> {
-            long index = ObjektFilterOrder.seasonIndex(text(item, "seasonKey", "season"));
+            long index = seasonRank(item);
             return index < 0 ? Long.MAX_VALUE : index;
         });
     }

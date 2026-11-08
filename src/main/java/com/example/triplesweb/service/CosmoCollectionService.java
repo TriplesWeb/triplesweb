@@ -2,6 +2,7 @@ package com.example.triplesweb.service;
 
 import com.example.triplesweb.infra.GzipRestClients;
 import com.example.triplesweb.util.MemberPortraitOptions;
+import com.example.triplesweb.util.ObjektCatalogSort;
 import com.example.triplesweb.util.ObjektSeasonCodes;
 import com.example.triplesweb.util.ObjektSeasonColors;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -255,36 +256,7 @@ public class CosmoCollectionService {
     }
 
     private static Comparator<Map<String, Object>> sortComparator(String sort) {
-        Comparator<Map<String, Object>> byReceived = Comparator.comparingInt(card -> {
-            Object value = card.get("receivedIndex");
-            return value instanceof Number number ? number.intValue() : 0;
-        });
-        Comparator<Map<String, Object>> byNumber = Comparator
-                .comparingLong((Map<String, Object> card) -> leadingNumber(text(card, "collectionNo")))
-                .thenComparing(card -> text(card, "collectionNo"), String.CASE_INSENSITIVE_ORDER);
-        Comparator<Map<String, Object>> byMember = Comparator.comparing(
-                card -> text(card, "member"), String.CASE_INSENSITIVE_ORDER);
-        Comparator<Map<String, Object>> bySerial = Comparator.comparingLong(card -> {
-            try { return Long.parseLong(text(card, "serial")); }
-            catch (NumberFormatException ex) { return Long.MAX_VALUE; }
-        });
-        return switch (sort) {
-            case "oldest" -> byReceived.reversed();
-            case "number_low" -> byNumber;
-            case "number_high" -> byNumber.reversed();
-            case "first_member" -> byMember;
-            case "last_member" -> byMember.reversed();
-            case "mint_low" -> bySerial;
-            case "mint_high" -> bySerial.reversed();
-            default -> byReceived;
-        };
-    }
-
-    private static long leadingNumber(String value) {
-        var matcher = java.util.regex.Pattern.compile("(\\d+)").matcher(value == null ? "" : value);
-        if (!matcher.find()) return Long.MAX_VALUE;
-        try { return Long.parseLong(matcher.group(1)); }
-        catch (NumberFormatException ex) { return Long.MAX_VALUE; }
+        return ObjektCatalogSort.collectionComparator(sort);
     }
 
     private static String normalizeGroup(String group, String member) {

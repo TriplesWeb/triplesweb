@@ -84,6 +84,27 @@
                         {{/seasonChoices}}
                     </div>
                 </div>
+                <div class="objekt-filter relative" id="collection-class-dropdown">
+                    <span class="objekt-filter-label">클래스</span>
+                    <button type="button" class="objekt-filter-control" id="collection-class-toggle" aria-expanded="false" aria-controls="collection-class-menu">
+                        <span id="collection-class-label" class="truncate">전체</span>
+                        <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
+                    </button>
+                    <div id="collection-class-menu" class="objekt-dropdown-menu absolute top-full left-0 mt-2 rounded-xl border z-50 p-2 max-h-60 overflow-y-auto" hidden>
+                        <label class="objekt-choice">
+                            <input type="checkbox" value="all" class="class-checkbox" {{^hasClassFilter}}checked{{/hasClassFilter}}>
+                            <span class="objekt-choice-mark" aria-hidden="true"></span>
+                            <span class="objekt-choice-text">전체 클래스</span>
+                        </label>
+                        {{#classChoices}}
+                        <label class="objekt-choice">
+                            <input type="checkbox" name="class" value="{{value}}" class="class-checkbox" {{#selected}}checked{{/selected}}>
+                            <span class="objekt-choice-mark" aria-hidden="true"></span>
+                            <span class="objekt-choice-text">{{value}}</span>
+                        </label>
+                        {{/classChoices}}
+                    </div>
+                </div>
                 <div class="objekt-filter relative" id="collection-kind-dropdown">
                     <span class="objekt-filter-label">종류</span>
                     <div class="objekt-filter-control objekt-kind-combo">
@@ -111,42 +132,21 @@
                         <p class="objekt-kind-empty" id="collection-kind-empty" hidden>일치하는 종류 없음</p>
                     </div>
                 </div>
-                <div class="objekt-filter relative" id="collection-class-dropdown">
-                    <span class="objekt-filter-label">클래스</span>
-                    <button type="button" class="objekt-filter-control" id="collection-class-toggle" aria-expanded="false" aria-controls="collection-class-menu">
-                        <span id="collection-class-label" class="truncate">전체</span>
-                        <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
-                    </button>
-                    <div id="collection-class-menu" class="objekt-dropdown-menu absolute top-full left-0 mt-2 rounded-xl border z-50 p-2 max-h-60 overflow-y-auto" hidden>
-                        <label class="objekt-choice">
-                            <input type="checkbox" value="all" class="class-checkbox" {{^hasClassFilter}}checked{{/hasClassFilter}}>
-                            <span class="objekt-choice-mark" aria-hidden="true"></span>
-                            <span class="objekt-choice-text">전체 클래스</span>
-                        </label>
-                        {{#classChoices}}
-                        <label class="objekt-choice">
-                            <input type="checkbox" name="class" value="{{value}}" class="class-checkbox" {{#selected}}checked{{/selected}}>
-                            <span class="objekt-choice-mark" aria-hidden="true"></span>
-                            <span class="objekt-choice-text">{{value}}</span>
-                        </label>
-                        {{/classChoices}}
-                    </div>
-                </div>
                 <div class="objekt-filter relative" id="collection-sort-dropdown">
                     <span class="objekt-filter-label">정렬</span>
-                    <button type="button" class="objekt-filter-control" id="collection-sort-toggle" aria-expanded="false" aria-controls="collection-sort-menu">
+                    <button type="button" class="objekt-filter-control" id="collection-sort-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="collection-sort-menu">
                         <span id="collection-sort-label" class="truncate">최신순</span>
                         <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                     </button>
-                    <div id="collection-sort-menu" class="objekt-dropdown-menu collection-sort-menu absolute top-full left-0 mt-2 min-w-[10rem] max-h-60 overflow-y-auto rounded-xl border z-50 p-1.5" hidden>
-                        <button type="button" class="objekt-choice" data-value="latest"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">최신순</span></button>
-                        <button type="button" class="objekt-choice" data-value="oldest"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">오래된순</span></button>
-                        <button type="button" class="objekt-choice" data-value="number_low"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">번호 낮은순</span></button>
-                        <button type="button" class="objekt-choice" data-value="number_high"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">번호 높은순</span></button>
-                        <button type="button" class="objekt-choice" data-value="first_member"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">첫 멤버</span></button>
-                        <button type="button" class="objekt-choice" data-value="last_member"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">마지막 멤버</span></button>
-                        <button type="button" class="objekt-choice" data-value="mint_low"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">민팅 적은순</span></button>
-                        <button type="button" class="objekt-choice" data-value="mint_high"><span class="objekt-choice-mark" aria-hidden="true"></span><span class="objekt-choice-text">민팅 많은순</span></button>
+                    <div id="collection-sort-menu" class="objekt-dropdown-menu collection-sort-menu absolute top-full left-0 mt-2 min-w-[10rem] max-h-60 overflow-y-auto rounded-xl border z-50 p-1.5" hidden role="listbox" aria-label="정렬 목록">
+                        <button type="button" class="objekt-kind-option" data-value="latest" role="option">최신순</button>
+                        <button type="button" class="objekt-kind-option" data-value="oldest" role="option">오래된순</button>
+                        <button type="button" class="objekt-kind-option" data-value="number_low" role="option">번호 낮은순</button>
+                        <button type="button" class="objekt-kind-option" data-value="number_high" role="option">번호 높은순</button>
+                        <button type="button" class="objekt-kind-option" data-value="first_member" role="option">첫 멤버</button>
+                        <button type="button" class="objekt-kind-option" data-value="last_member" role="option">마지막 멤버</button>
+                        <button type="button" class="objekt-kind-option" data-value="mint_low" role="option">민팅 적은순</button>
+                        <button type="button" class="objekt-kind-option" data-value="mint_high" role="option">민팅 많은순</button>
                     </div>
                 </div>
                 <div class="objekt-search-row">
@@ -344,14 +344,14 @@
     const input = document.getElementById(inputId);
     const root = document.getElementById(prefix + '-dropdown');
     if (!menu || !toggleBtn || !input || !form) return;
-    const choices = () => [...menu.querySelectorAll('.objekt-choice')];
+    const choices = () => [...menu.querySelectorAll('.objekt-kind-option')];
     function sync() {
       const current = input.value || fallback;
       choices().forEach((choice) => {
         const selected = choice.dataset.value === current;
-        choice.classList.toggle('is-selected', selected);
-        choice.setAttribute('aria-pressed', selected ? 'true' : 'false');
-        if (selected && label) label.textContent = choice.querySelector('.objekt-choice-text')?.textContent.trim() || '전체';
+        choice.classList.toggle('is-active', selected);
+        choice.setAttribute('aria-selected', selected ? 'true' : 'false');
+        if (selected && label) label.textContent = choice.textContent.trim() || '전체';
       });
       const active = current && current !== fallback;
       root?.classList.toggle('is-filtered', active);
@@ -359,14 +359,25 @@
         label.textContent = prefix.endsWith('sort') ? '최신순' : '전체';
       }
     }
-    choices().forEach((choice) => choice.addEventListener('click', () => {
+    function applyChoice(choice) {
       input.value = choice.dataset.value || fallback;
       sync();
-      menu.hidden = true;
-      toggleBtn.setAttribute('aria-expanded', 'false');
-      closeMenus();
       scheduleApplyFilters();
-    }));
+    }
+    choices().forEach((choice) => {
+      choice.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        applyChoice(choice);
+      });
+      choice.addEventListener('click', (event) => {
+        event.stopPropagation();
+        applyChoice(choice);
+        menu.hidden = true;
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        closeMenus();
+      });
+    });
     toggleBtn.addEventListener('click', () => {
       const open = menu.hasAttribute('hidden');
       menu.hidden = !open;

@@ -51,6 +51,38 @@ class ObjektCatalogSortTest {
         assertThat(items).extracting(row -> row.get("id")).containsExactly("binary", "cream", "divine");
     }
 
+    @Test void latestSortKeepsMislabeledBinary01InsideBinaryGroup() {
+        List<Map<String, Object>> items = new ArrayList<>(List.of(
+                Map.of("id", "binary-suffix", "season", "Binary01 First", "createdAt", "2026-10-01T00:00:00Z", "collectionNo", "1Z"),
+                Map.of("id", "binary-title", "collectionId", "Binary01 SeoYeon 118A", "createdAt", "2026-11-01T00:00:00Z", "collectionNo", "118A"),
+                Map.of("id", "cream", "season", "Cream02", "createdAt", "2024-01-01T00:00:00Z", "collectionNo", "101Z"),
+                Map.of("id", "binary", "season", "Binary01", "createdAt", "2024-02-01T00:00:00Z", "collectionNo", "201Z"),
+                Map.of("id", "unknown", "season", "Love&Pop", "createdAt", "2026-12-01T00:00:00Z", "collectionNo", "9Z")));
+        items.sort(ObjektCatalogSort.comparator("latest"));
+        assertThat(items).extracting(row -> row.get("id"))
+                .containsExactly("cream", "binary-title", "binary-suffix", "binary", "unknown");
+    }
+
+    @Test void collectionLatestSortsBySeasonThenReceivedIndex() {
+        List<Map<String, Object>> items = new ArrayList<>(List.of(
+                Map.of("id", "binary", "season", "Binary01", "receivedIndex", 0, "member", "SeoYeon", "collectionNo", "1Z"),
+                Map.of("id", "cream-old", "season", "Cream01", "receivedIndex", 1, "member", "HyeRin", "collectionNo", "2Z"),
+                Map.of("id", "divine", "season", "Divine01", "receivedIndex", 2, "member", "JiYeon", "collectionNo", "3Z"),
+                Map.of("id", "cream-new", "season", "Cream01", "receivedIndex", 3, "member", "HyeRin", "collectionNo", "4Z")));
+        items.sort(ObjektCatalogSort.collectionComparator("latest"));
+        assertThat(items).extracting(row -> row.get("id"))
+                .containsExactly("divine", "cream-old", "cream-new", "binary");
+        items.sort(ObjektCatalogSort.collectionComparator("oldest"));
+        assertThat(items).extracting(row -> row.get("id"))
+                .containsExactly("binary", "cream-new", "cream-old", "divine");
+        items.sort(ObjektCatalogSort.collectionComparator("last_member"));
+        assertThat(items).extracting(row -> row.get("id"))
+                .containsExactly("divine", "cream-old", "cream-new", "binary");
+        items.sort(ObjektCatalogSort.collectionComparator("first_member"));
+        assertThat(items).extracting(row -> row.get("id"))
+                .containsExactly("binary", "cream-old", "cream-new", "divine");
+    }
+
     @Test void lastMemberSortsJiyeonBeforeSeoyeonEvenWithOlderDate() {
         List<Map<String, Object>> items = new ArrayList<>(List.of(
                 Map.of("id", "seoyeon-new", "member", "SeoYeon", "createdAt", "2026-10-01T00:00:00Z", "collectionNo", "1Z"),
