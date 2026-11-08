@@ -122,10 +122,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .fc .fc-button-primary:not(:disabled):active{
     background:#00f5d4!important;border-color:#00f5d4!important;color:#0d0e12!important
   }
-  .profile-progress-tabs,.profile-ownership-tabs{max-width:100%;gap:.15rem}
-  .profile-ownership-tabs{display:flex;width:100%;padding:.2rem}
-  .profile-progress-tab,.profile-ownership-tab{min-height:40px;padding:.35rem .4rem;white-space:nowrap}
-  .profile-ownership-tab{flex:1 1 0;justify-content:center;font-size:.72rem;min-width:0}
+  .profile-progress-tabs,.cosmo-profile .profile-ownership-tabs{max-width:100%;gap:.15rem}
+  .cosmo-profile .profile-ownership-tabs{display:flex;width:100%;padding:.2rem}
+  .profile-progress-tab,.cosmo-profile .profile-ownership-tab{min-height:40px;padding:.35rem .4rem;white-space:nowrap}
+  .cosmo-profile .profile-ownership-tab{flex:1 1 0;justify-content:center;font-size:.72rem;min-width:0}
   .profile-identity{flex-wrap:wrap;gap:1rem}
   .profile-identity>div:last-child{min-width:0;flex:1}
   .profile-totals{gap:1rem 1.5rem}

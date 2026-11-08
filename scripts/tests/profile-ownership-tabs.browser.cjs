@@ -16,6 +16,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
 body{margin:0;background:#0d0e12;color:#e3e2e8;font-family:"Pretendard Variable",Pretendard,sans-serif}
 ${readCss('site-mobile.css')}
 ${readCss('cosmo-profile.css')}
+/* 실제 페이지와 같이 site-mobile 다음에 프로필 CSS가 온다. */
 </style></head>
 <body class="site-page">
 <main class="cosmo-profile" style="padding:.875rem">
@@ -54,7 +55,7 @@ ${readCss('cosmo-profile.css')}
     for (const tab of metrics) {
       assert.equal(tab.whiteSpace, 'nowrap', tab.text + ' should stay on one line');
       assert.equal(tab.lines, 1, tab.text + ' wrapped inside the chip');
-      assert.ok(tab.fontSize <= 13, tab.text + ' font too large: ' + tab.fontSize);
+      assert.ok(tab.fontSize <= 12, tab.text + ' font too large: ' + tab.fontSize);
     }
     console.log('PASS: 프로필 보유·미보유 탭이 모바일에서 글자 중간에서 개행되지 않음');
   } finally {
