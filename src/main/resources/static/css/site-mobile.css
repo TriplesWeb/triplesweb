@@ -60,6 +60,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .detail-content pre,pre{max-width:100%;overflow:auto}
   .table-responsive{max-width:100%;overflow-x:auto!important;-webkit-overflow-scrolling:touch}
   input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{font-size:16px!important}
+  .objekt-kind-option,.objekt-choice,.objekt-choice-text,.season-chip,.objekt-filter .objekt-kind-select{font-size:.82rem!important}
   button,input[type=submit],.btn,.site-btn,.ar-submit,.btn-custom-primary,.btn-custom-secondary,.btn-custom-danger,.objekt-reset-button{min-height:44px;touch-action:manipulation}
   a,summary{touch-action:manipulation}
   textarea{max-width:100%;resize:vertical}

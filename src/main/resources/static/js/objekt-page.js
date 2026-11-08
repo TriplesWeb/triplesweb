@@ -40,13 +40,17 @@
         button.dataset.value = option.value;
         button.textContent = option.textContent;
         button.setAttribute('role', 'option');
+        button.addEventListener('mousedown', (event) => event.preventDefault());
         button.addEventListener('click', () => {
             const changed = sortSelect.value !== option.value;
             sortSelect.value = option.value;
             syncSortMenu();
             closeSortMenu();
             sortToggle.focus();
-            if (changed) sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            if (changed) {
+                sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                scheduleApplyFilters();
+            }
         });
         sortMenu.appendChild(button);
     });

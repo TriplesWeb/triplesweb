@@ -139,6 +139,20 @@ class ObjektFeaturesTest {
                 .andExpect(jsonPath("$.items[1].id").value("binary"));
     }
 
+    @Test void latestSortKeepsLaterSeasonFirstEvenIfBinary01CreatedAtIsNewer() throws Exception {
+        var items = List.<Map<String, Object>>of(
+                Map.of("id", "binary", "season", "Binary01", "createdAt", "2026-05-22T02:36:12.000Z", "collectionNo", "118A"),
+                Map.of("id", "cream", "season", "Cream01", "createdAt", "2024-05-07T06:15:27.000Z", "collectionNo", "332Z"),
+                Map.of("id", "divine", "season", "Divine01", "createdAt", "2024-11-08T03:00:16.000Z", "collectionNo", "343Z"));
+        stubCatalog(items);
+        when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
+        mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("sort", "latest")
+                        .param("season", "Binary01").param("season", "Cream01").param("season", "Divine01"))
+                .andExpect(jsonPath("$.items[0].id").value("divine"))
+                .andExpect(jsonPath("$.items[1].id").value("cream"))
+                .andExpect(jsonPath("$.items[2].id").value("binary"));
+    }
+
     @Test void firstMemberSortsSameMemberByNewestCreatedAt() throws Exception {
         var items = List.<Map<String, Object>>of(
                 Map.of("id", "old", "member", "SeoYeon", "createdAt", "2024-01-01T00:00:00Z", "collectionNo", "1Z"),
