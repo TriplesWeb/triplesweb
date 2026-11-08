@@ -7,9 +7,14 @@
     const sortMenu = document.getElementById('sort-menu');
     const sortLabel = document.getElementById('sort-label');
 
+    function setSortOpen(open) {
+        sortToggle.closest('.objekt-filter')?.classList.toggle('is-open', open);
+    }
+
     function closeSortMenu() {
         sortMenu.classList.add('hidden');
         sortToggle.setAttribute('aria-expanded', 'false');
+        setSortOpen(false);
     }
 
     function syncSortMenu() {
@@ -27,6 +32,7 @@
         ['season-menu', 'class-menu'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
         sortMenu.classList.remove('hidden');
         sortToggle.setAttribute('aria-expanded', 'true');
+        setSortOpen(true);
         const options = [...sortMenu.querySelectorAll('[role="option"]')];
         const focusIndex = index ?? options.findIndex(option => option.dataset.value === sortSelect.value);
         options.forEach((option, i) => { option.tabIndex = i === focusIndex ? 0 : -1; });
@@ -40,17 +46,21 @@
         button.dataset.value = option.value;
         button.textContent = option.textContent;
         button.setAttribute('role', 'option');
-        button.addEventListener('mousedown', (event) => event.preventDefault());
-        button.addEventListener('click', () => {
+        button.addEventListener('pointerdown', (event) => {
+            if (event.button !== 0) return;
+            event.preventDefault();
             const changed = sortSelect.value !== option.value;
             sortSelect.value = option.value;
             syncSortMenu();
-            closeSortMenu();
-            sortToggle.focus();
             if (changed) {
                 sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
                 scheduleApplyFilters();
             }
+        });
+        button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            closeSortMenu();
+            sortToggle.focus();
         });
         sortMenu.appendChild(button);
     });
@@ -431,6 +441,14 @@
         markActiveFilters();
     });
 
+    function syncOpenFilters() {
+        document.querySelectorAll('#objekt-search-form .objekt-filter').forEach((filter) => {
+            const menu = filter.querySelector('.objekt-dropdown-menu');
+            const open = Boolean(menu && !menu.classList.contains('hidden') && !menu.hidden);
+            if (filter.id !== 'sort-dropdown') filter.classList.toggle('is-open', open);
+        });
+    }
+
     window.toggleDropdown = function(id) {
         closeKindMenu();
         closeSortMenu();
@@ -438,6 +456,7 @@
             if (menu.id !== id) menu.classList.add('hidden');
         });
         document.getElementById(id)?.classList.toggle('hidden');
+        syncOpenFilters();
     };
 
     window.addEventListener('click', e => {
@@ -446,6 +465,7 @@
             ['season-menu', 'class-menu'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
             closeKindMenu();
         }
+        syncOpenFilters();
     });
 
     form.addEventListener('submit', (event) => {

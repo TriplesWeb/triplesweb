@@ -125,18 +125,24 @@
         .objekt-filter-bar {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
-            align-items: center;
+            align-items: start;
             gap: .55rem .65rem;
             padding: 0;
             border: 0;
             border-radius: 0;
             background: transparent;
             box-shadow: none;
+            overflow: visible;
+            position: relative;
+            z-index: 2;
         }
         .objekt-filter {
+            position: relative;
+            z-index: 1;
             display: flex;
             width: 100%;
             min-width: 0;
+            overflow: visible;
             height: 2.65rem;
             align-items: center;
             gap: .5rem;
@@ -150,6 +156,10 @@
         .objekt-filter:hover {
             border-color: rgba(0, 245, 212, .38);
             background: rgba(0, 245, 212, .04);
+        }
+        .objekt-filter:focus-within,
+        .objekt-filter.is-open {
+            z-index: 80;
         }
         .objekt-filter-label {
             flex: 0 0 auto;
@@ -415,6 +425,8 @@
         }
         .objekt-search-row {
             grid-column: 1 / -1;
+            position: relative;
+            z-index: 0;
             width: 100%;
             margin-top: .15rem;
             padding-top: .85rem;
@@ -425,6 +437,7 @@
         #objekt-member-picker[hidden], .objekt-other-notice[hidden] { display: none; }
         .objekt-other-notice { margin: .85rem 0 .15rem; color: #b9cac4; font-size: .82rem; line-height: 1.6; }
         .objekt-dropdown-menu {
+            z-index: 90;
             min-width: 12rem;
             border-color: #343b51;
             background: #171a24;
