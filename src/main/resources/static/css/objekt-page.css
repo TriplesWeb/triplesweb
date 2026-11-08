@@ -779,7 +779,7 @@
         .objekt-detail-desc-block { display: block; }
         .objekt-detail-desc-break {
             display: block;
-            height: .7em;
+            height: .7rem;
             overflow: hidden;
             font-size: 0;
             line-height: 0;
