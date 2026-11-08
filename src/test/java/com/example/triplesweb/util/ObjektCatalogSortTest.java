@@ -100,4 +100,20 @@ class ObjektCatalogSortTest {
         assertThat(items).extracting(row -> row.get("id"))
                 .containsExactly("seoyeon-new", "seoyeon-old", "hyerin-new");
     }
+
+    @Test void memberSortsKeepOrderOnALargeCatalogWithoutReparsingEachComparison() {
+        String[] members = {"SeoYeon", "HyeRin", "Jiwoo", "ChaeYeon", "JiYeon", "zenith"};
+        List<Map<String, Object>> items = new ArrayList<>();
+        for (int i = 0; i < 6000; i++) {
+            items.add(Map.of(
+                    "id", i,
+                    "member", members[i % members.length],
+                    "createdAt", "2024-01-01T00:00:00Z",
+                    "collectionNo", i + "Z"));
+        }
+        items.sort(ObjektCatalogSort.comparator("first_member"));
+        assertThat(items.get(0).get("member")).isEqualTo("SeoYeon");
+        items.sort(ObjektCatalogSort.comparator("last_member"));
+        assertThat(items.get(0).get("member")).isEqualTo("JiYeon");
+    }
 }

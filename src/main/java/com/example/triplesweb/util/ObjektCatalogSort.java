@@ -1,8 +1,10 @@
 package com.example.triplesweb.util;
 
 import java.util.Comparator;
+import java.util.IdentityHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.ToIntFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,13 +36,8 @@ public final class ObjektCatalogSort {
             case "number_high" -> byNumber.reversed();
             case "mint_low" -> mintComparator(false);
             case "mint_high" -> mintComparator(true);
-            case "first_member" -> Comparator.<Map<String, Object>>comparingInt(ObjektCatalogSort::memberOrder)
-                    .thenComparing(byDateNewest())
-                    .thenComparing(byCollectionNo());
-            case "last_member" -> Comparator.<Map<String, Object>>comparingInt(item -> {
-                int order = memberOrder(item);
-                return order == 24 ? 24 : 23 - order;
-            }).thenComparing(byDateNewest()).thenComparing(byCollectionNo());
+            case "first_member" -> byMemberOrder(false).thenComparing(byDateNewest()).thenComparing(byCollectionNo());
+            case "last_member" -> byMemberOrder(true).thenComparing(byDateNewest()).thenComparing(byCollectionNo());
             default -> bySeasonNewest().thenComparing(byDateNewest()).thenComparing(byCollectionNo());
         };
     }
@@ -68,12 +65,8 @@ public final class ObjektCatalogSort {
             case "oldest" -> bySeasonOldest().thenComparing(byReceived.reversed());
             case "number_low" -> byNumber;
             case "number_high" -> byNumber.reversed();
-            case "first_member" -> Comparator.<Map<String, Object>>comparingInt(ObjektCatalogSort::memberOrder)
-                    .thenComparing(byReceived);
-            case "last_member" -> Comparator.<Map<String, Object>>comparingInt(item -> {
-                int order = memberOrder(item);
-                return order == 24 ? 24 : 23 - order;
-            }).thenComparing(byReceived);
+            case "first_member" -> byMemberOrder(false).thenComparing(byReceived);
+            case "last_member" -> byMemberOrder(true).thenComparing(byReceived);
             case "mint_low" -> bySerial;
             case "mint_high" -> bySerial.reversed();
             default -> bySeasonNewest().thenComparing(byReceived);
@@ -115,11 +108,19 @@ public final class ObjektCatalogSort {
                 .thenComparing(item -> text(item, "slug", "id"));
     }
 
+    private static Comparator<Map<String, Object>> byMemberOrder(boolean lastFirst) {
+        Map<Map<String, Object>, Integer> cache = new IdentityHashMap<>();
+        ToIntFunction<Map<String, Object>> orderOf = item ->
+                cache.computeIfAbsent(item, ObjektCatalogSort::memberOrder);
+        if (!lastFirst) return Comparator.comparingInt(orderOf);
+        return Comparator.comparingInt(item -> {
+            int order = orderOf.applyAsInt(item);
+            return order == 24 ? 24 : 23 - order;
+        });
+    }
+
     private static int memberOrder(Map<String, Object> item) {
-        return MemberPortraitOptions.objektMembers(text(item, "member", "memberName")).stream()
-                .mapToInt(MemberPortraitOptions::memberIndex)
-                .min()
-                .orElse(24);
+        return MemberPortraitOptions.earliestMemberIndex(text(item, "member", "memberName"));
     }
 
     private static Long mintOf(Map<String, Object> item) {

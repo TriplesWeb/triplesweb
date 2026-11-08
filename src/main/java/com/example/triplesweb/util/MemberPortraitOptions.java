@@ -5,12 +5,15 @@ import com.example.triplesweb.entity.Artist;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 멤버 초상화 피커(아티스트 탭 스타일)용 옵션 맵을 만든다.
@@ -36,18 +39,35 @@ public final class MemberPortraitOptions {
     /** S1 윤서연 ~ S24 지연까지 커스텀 음표 로고. 유닛·기타는 기본 음표를 쓴다. */
     private static final int CUSTOM_OBJEKT_LOGO_COUNT = 24;
     private static final String OBJEKT_MEMBER_LOGO_PATH = "/images/objekt-member-logos/s%02d.png";
+    private static final Pattern NON_MEMBER_CHARS = Pattern.compile("[^a-z0-9가-힣]");
+    private static final Pattern UNIT_CHAIN = Pattern.compile("s\\d{1,2}(?:xs\\d{1,2})+");
+    private static final Pattern UNIT_NUMBER = Pattern.compile("s\\d{1,2}");
+    private static final Map<String, Integer> MEMBER_INDEX = buildMemberIndex();
 
     /** Exact solo identity only: S1 X S9 is an extra entry, not S1. */
     public static int memberIndex(String value) {
-        String normalized = normalize(value);
-        for (int i = 0; i < ENGLISH_ORDER.size(); i++) {
-            String number = "s" + (i + 1);
-            if (normalized.equals(number) || normalized.equals("s0" + (i + 1))) return i;
-            for (String alias : List.of(ENGLISH_ORDER.get(i), KOREAN_ORDER.get(i), SHORT_KOREAN_ORDER.get(i))) {
-                if (normalized.equals(alias) || normalized.equals(number + alias) || normalized.equals(alias + number)) return i;
+        Integer found = MEMBER_INDEX.get(normalize(value));
+        return found != null ? found : 24;
+    }
+
+    /** 솔로는 그 멤버, 유닛은 가장 앞 멤버(S1이 S24보다 앞). 기타는 24. */
+    public static int earliestMemberIndex(String value) {
+        int solo = memberIndex(value);
+        if (solo < 24) return solo;
+        int earliest = 24;
+        for (String token : tokens(value)) {
+            int index = memberIndex(token);
+            if (index < earliest) earliest = index;
+        }
+        String compact = normalize(value);
+        if (UNIT_CHAIN.matcher(compact).matches()) {
+            Matcher matcher = UNIT_NUMBER.matcher(compact);
+            while (matcher.find()) {
+                int index = memberIndex(matcher.group());
+                if (index < earliest) earliest = index;
             }
         }
-        return 24;
+        return earliest;
     }
 
     public static String memberName(String value) {
@@ -78,8 +98,8 @@ public final class MemberPortraitOptions {
             if (index < 24) members.add(KOREAN_ORDER.get(index));
         }
         String compact = normalize(value);
-        if (compact.matches("s\\d{1,2}(?:xs\\d{1,2})+")) {
-            var matcher = java.util.regex.Pattern.compile("s\\d{1,2}").matcher(compact);
+        if (UNIT_CHAIN.matcher(compact).matches()) {
+            Matcher matcher = UNIT_NUMBER.matcher(compact);
             while (matcher.find()) {
                 int index = memberIndex(matcher.group());
                 if (index < 24) members.add(KOREAN_ORDER.get(index));
@@ -292,8 +312,29 @@ public final class MemberPortraitOptions {
                 && !trimmed.endsWith("/images/image-upload-pending.png");
     }
 
+    private static Map<String, Integer> buildMemberIndex() {
+        Map<String, Integer> index = new HashMap<>();
+        for (int i = 0; i < ENGLISH_ORDER.size(); i++) {
+            String number = "s" + (i + 1);
+            putAlias(index, number, i);
+            putAlias(index, "s0" + (i + 1), i);
+            for (String alias : List.of(ENGLISH_ORDER.get(i), KOREAN_ORDER.get(i), SHORT_KOREAN_ORDER.get(i))) {
+                String normalized = normalize(alias);
+                putAlias(index, normalized, i);
+                putAlias(index, number + normalized, i);
+                putAlias(index, normalized + number, i);
+            }
+        }
+        return Map.copyOf(index);
+    }
+
+    private static void putAlias(Map<String, Integer> index, String key, int value) {
+        if (key == null || key.isEmpty()) return;
+        index.putIfAbsent(key, value);
+    }
+
     private static String normalize(String value) {
-        if (value == null) return "";
-        return value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9가-힣]", "");
+        if (value == null || value.isEmpty()) return "";
+        return NON_MEMBER_CHARS.matcher(value.toLowerCase(Locale.ROOT)).replaceAll("");
     }
 }
