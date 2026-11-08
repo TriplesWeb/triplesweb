@@ -171,14 +171,16 @@ jobs:
           docker logout ghcr.io >/dev/null 2>&1 || true
           APP_PORT="$(grep -E '^APP_PORT=' .env | cut -d= -f2- || true)"
           APP_PORT="${APP_PORT:-8080}"
-          for attempt in $(seq 1 30); do
-            if curl -fsS "http://127.0.0.1:${APP_PORT}/" >/dev/null; then
-              echo "Smoke OK: / on :${APP_PORT}"
+          # Pi에서 새 이미지 콜드 스타트가 2분 넘는 경우가 있어 5분까지 기다린다.
+          for attempt in $(seq 1 60); do
+            if curl -fsS --max-time 8 "http://127.0.0.1:${APP_PORT}/" >/dev/null; then
+              echo "Smoke OK: / on :${APP_PORT} (attempt ${attempt})"
               exit 0
             fi
             sleep 5
           done
           echo "Smoke failed: / on :${APP_PORT} did not respond"
           docker compose ps || true
+          docker compose logs --tail=200 app || true
           exit 1
           EOF
