@@ -132,9 +132,12 @@
             border-radius: 0;
             background: transparent;
             box-shadow: none;
+            overflow: visible;
         }
         .objekt-filter {
             display: flex;
+            position: relative;
+            z-index: 1;
             width: 100%;
             min-width: 0;
             height: 2.65rem;
@@ -144,12 +147,17 @@
             border: 1px solid var(--objekt-surface-border, rgba(58, 66, 88, .72));
             border-radius: 999px;
             background: var(--objekt-surface, #171a24);
+            overflow: visible;
             transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
         }
         .objekt-filter:focus-within,
         .objekt-filter:hover {
             border-color: rgba(0, 245, 212, .38);
             background: rgba(0, 245, 212, .04);
+        }
+        .objekt-filter:focus-within,
+        .objekt-filter.is-open {
+            z-index: 80;
         }
         .objekt-filter-label {
             flex: 0 0 auto;
@@ -415,6 +423,8 @@
         }
         .objekt-search-row {
             grid-column: 1 / -1;
+            position: relative;
+            z-index: 0;
             width: 100%;
             margin-top: .15rem;
             padding-top: .85rem;
@@ -429,6 +439,7 @@
             border-color: #343b51;
             background: #171a24;
             box-shadow: 0 18px 40px rgba(0,0,0,.42);
+            z-index: 90;
         }
         .objekt-card-grid { gap: 16px; }
         .objekt-card {

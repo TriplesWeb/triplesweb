@@ -7,9 +7,15 @@
     const sortMenu = document.getElementById('sort-menu');
     const sortLabel = document.getElementById('sort-label');
 
+    function setFilterOpen(menu, open) {
+        const node = typeof menu === 'string' ? document.getElementById(menu) : menu;
+        node?.closest('.objekt-filter')?.classList.toggle('is-open', Boolean(open));
+    }
+
     function closeSortMenu() {
         sortMenu.classList.add('hidden');
         sortToggle.setAttribute('aria-expanded', 'false');
+        setFilterOpen(sortMenu, false);
     }
 
     function syncSortMenu() {
@@ -24,9 +30,13 @@
 
     function openSortMenu(index) {
         closeKindMenu();
-        ['season-menu', 'class-menu'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+        ['season-menu', 'class-menu'].forEach(id => {
+            document.getElementById(id)?.classList.add('hidden');
+            setFilterOpen(id, false);
+        });
         sortMenu.classList.remove('hidden');
         sortToggle.setAttribute('aria-expanded', 'true');
+        setFilterOpen(sortMenu, true);
         const options = [...sortMenu.querySelectorAll('[role="option"]')];
         const focusIndex = index ?? options.findIndex(option => option.dataset.value === sortSelect.value);
         options.forEach((option, i) => { option.tabIndex = i === focusIndex ? 0 : -1; });
@@ -40,17 +50,25 @@
         button.dataset.value = option.value;
         button.textContent = option.textContent;
         button.setAttribute('role', 'option');
-        button.addEventListener('mousedown', (event) => event.preventDefault());
-        button.addEventListener('click', () => {
+        function applySortValue() {
             const changed = sortSelect.value !== option.value;
             sortSelect.value = option.value;
             syncSortMenu();
-            closeSortMenu();
-            sortToggle.focus();
             if (changed) {
                 sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
                 scheduleApplyFilters();
             }
+        }
+        button.addEventListener('pointerdown', (event) => {
+            if (event.button) return;
+            event.preventDefault();
+            applySortValue();
+        });
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            applySortValue();
+            closeSortMenu();
         });
         sortMenu.appendChild(button);
     });
@@ -191,14 +209,18 @@
         filterKindOptions(showAll ? '' : kindSelect.value);
         kindMenu.classList.remove('hidden');
         kindSelect.setAttribute('aria-expanded', 'true');
+        setFilterOpen(kindMenu, true);
         document.getElementById('season-menu')?.classList.add('hidden');
+        setFilterOpen('season-menu', false);
         document.getElementById('class-menu')?.classList.add('hidden');
+        setFilterOpen('class-menu', false);
     }
 
     function closeKindMenu() {
         if (!kindMenu || !kindSelect) return;
         kindMenu.classList.add('hidden');
         kindSelect.setAttribute('aria-expanded', 'false');
+        setFilterOpen(kindMenu, false);
         kindActiveIndex = -1;
         kindOptions.forEach((opt) => opt.classList.remove('is-active'));
     }
@@ -435,15 +457,23 @@
         closeKindMenu();
         closeSortMenu();
         document.querySelectorAll('[id$="-menu"]').forEach(menu => {
-            if (menu.id !== id) menu.classList.add('hidden');
+            if (menu.id !== id) {
+                menu.classList.add('hidden');
+                setFilterOpen(menu, false);
+            }
         });
-        document.getElementById(id)?.classList.toggle('hidden');
+        const menu = document.getElementById(id);
+        menu?.classList.toggle('hidden');
+        setFilterOpen(menu, menu && !menu.classList.contains('hidden'));
     };
 
     window.addEventListener('click', e => {
         if (!e.target.closest('#sort-dropdown')) closeSortMenu();
         if (!e.target.closest('#season-dropdown') && !e.target.closest('#class-dropdown') && !e.target.closest('#kind-dropdown')) {
-            ['season-menu', 'class-menu'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+            ['season-menu', 'class-menu'].forEach(id => {
+                document.getElementById(id)?.classList.add('hidden');
+                setFilterOpen(id, false);
+            });
             closeKindMenu();
         }
     });
