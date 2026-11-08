@@ -63,7 +63,7 @@ class ObjektCatalogSortTest {
                 .containsExactly("cream", "binary-title", "binary-suffix", "binary", "unknown");
     }
 
-    @Test void collectionLatestSortsBySeasonThenReceivedIndex() {
+    @Test void collectionLatestSortsByReceivedIndex() {
         List<Map<String, Object>> items = new ArrayList<>(List.of(
                 Map.of("id", "binary", "season", "Binary01", "receivedIndex", 0, "member", "SeoYeon", "collectionNo", "1Z"),
                 Map.of("id", "cream-old", "season", "Cream01", "receivedIndex", 1, "member", "HyeRin", "collectionNo", "2Z"),
@@ -71,10 +71,10 @@ class ObjektCatalogSortTest {
                 Map.of("id", "cream-new", "season", "Cream01", "receivedIndex", 3, "member", "HyeRin", "collectionNo", "4Z")));
         items.sort(ObjektCatalogSort.collectionComparator("latest"));
         assertThat(items).extracting(row -> row.get("id"))
-                .containsExactly("divine", "cream-old", "cream-new", "binary");
+                .containsExactly("binary", "cream-old", "divine", "cream-new");
         items.sort(ObjektCatalogSort.collectionComparator("oldest"));
         assertThat(items).extracting(row -> row.get("id"))
-                .containsExactly("binary", "cream-new", "cream-old", "divine");
+                .containsExactly("cream-new", "divine", "cream-old", "binary");
         items.sort(ObjektCatalogSort.collectionComparator("last_member"));
         assertThat(items).extracting(row -> row.get("id"))
                 .containsExactly("divine", "cream-old", "cream-new", "binary");

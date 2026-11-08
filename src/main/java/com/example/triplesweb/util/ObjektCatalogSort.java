@@ -50,6 +50,7 @@ public final class ObjektCatalogSort {
         return Comparator.comparing(ObjektCatalogSort::createdAtOrNull, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
     }
 
+    /** 보유 목록 정렬. 최신순은 COSMO owned-by 응답의 획득 순서(앞이 최근)다. */
     public static Comparator<Map<String, Object>> collectionComparator(String sort) {
         Comparator<Map<String, Object>> byReceived = Comparator.comparingInt(card -> {
             Object value = card.get("receivedIndex");
@@ -62,14 +63,14 @@ public final class ObjektCatalogSort {
         });
         String key = sort == null ? "" : sort.trim().toLowerCase(Locale.ROOT);
         return switch (key) {
-            case "oldest" -> bySeasonOldest().thenComparing(byReceived.reversed());
+            case "oldest" -> byReceived.reversed();
             case "number_low" -> byNumber;
             case "number_high" -> byNumber.reversed();
             case "first_member" -> byMemberOrder(false).thenComparing(byReceived);
             case "last_member" -> byMemberOrder(true).thenComparing(byReceived);
             case "mint_low" -> bySerial;
             case "mint_high" -> bySerial.reversed();
-            default -> bySeasonNewest().thenComparing(byReceived);
+            default -> byReceived;
         };
     }
 
