@@ -49,7 +49,7 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
 </div>
 <div id="sort-dropdown">
   <button type="button" id="objekt-sort-toggle" hidden><span id="sort-label">최신순</span></button>
-  <label id="sort-native-control"><select name="sort" class="objekt-sort-select"><option value="latest">최신순</option><option value="oldest">오래된순</option></select></label>
+  <label id="sort-native-control"><select name="sort" class="objekt-sort-select"><option value="latest">최신순</option><option value="oldest">오래된순</option><option value="number_low">번호 낮은순</option><option value="number_high">번호 높은순</option><option value="first_member">첫 멤버</option><option value="last_member">마지막 멤버</option><option value="mint_low">민팅 적은순</option><option value="mint_high">민팅 많은순</option></select></label>
   <div id="sort-menu" class="hidden"></div>
 </div>
 <input type="search" name="search" value="">
@@ -131,6 +131,20 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
   assert.equal(await page.locator('.objekt-kind-option[data-value="201Z"]').evaluate(el=>el.hidden),true);
   assert.equal(await page.locator('.objekt-kind-select').inputValue(),'전체');
   assert.ok(moreCalls.some(call=>call.class==='First'&&call.kind==='all'));
+
+  moreCalls.length=0;
+  await page.locator('#objekt-sort-toggle').click();
+  const oldestWait=page.waitForResponse(res=>{try{const url=new URL(res.url());return url.pathname==='/cosmo/objekt/more'&&url.searchParams.get('sort')==='oldest';}catch{return false;}});
+  await page.locator('#sort-menu [data-value="oldest"]').click();
+  await oldestWait;
+  assert.ok(moreCalls.some(call=>call.sort==='oldest'));
+
+  moreCalls.length=0;
+  await page.locator('#objekt-sort-toggle').click();
+  const lastMemberWait=page.waitForResponse(res=>{try{const url=new URL(res.url());return url.pathname==='/cosmo/objekt/more'&&url.searchParams.get('sort')==='last_member';}catch{return false;}});
+  await page.locator('#sort-menu [data-value="last_member"]').click();
+  await lastMemberWait;
+  assert.ok(moreCalls.some(call=>call.sort==='last_member'));
 
   console.log('PASS: 멤버·그룹·시즌·종류 변경 시 검색 버튼 없이 결과 갱신');
  }finally{await browser.close();}

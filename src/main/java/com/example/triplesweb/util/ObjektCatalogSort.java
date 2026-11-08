@@ -29,7 +29,7 @@ public final class ObjektCatalogSort {
         Comparator<Map<String, Object>> byNumber = Comparator.comparingDouble(ObjektCatalogSort::numberValue);
         String key = sort == null ? "" : sort.trim().toLowerCase(Locale.ROOT);
         return switch (key) {
-            case "oldest" -> byDateOldest().thenComparing(bySeasonOldest()).thenComparing(byCollectionNo());
+            case "oldest" -> bySeasonOldest().thenComparing(byDateOldest()).thenComparing(byCollectionNo());
             case "number_low" -> byNumber;
             case "number_high" -> byNumber.reversed();
             case "mint_low" -> mintComparator(false);
@@ -41,7 +41,7 @@ public final class ObjektCatalogSort {
                 int order = memberOrder(item);
                 return order == 24 ? 24 : 23 - order;
             }).thenComparing(byDateNewest()).thenComparing(byCollectionNo());
-            default -> byDateNewest().thenComparing(bySeasonNewest()).thenComparing(byCollectionNo());
+            default -> bySeasonNewest().thenComparing(byDateNewest()).thenComparing(byCollectionNo());
         };
     }
 
