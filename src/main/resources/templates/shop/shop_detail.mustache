@@ -1,49 +1,61 @@
 {{>layout/head-open}}
 
-<link rel="stylesheet" href="{{#asset}}/css/bootstrap-compat.css{{/asset}}">
-    <title>{{item.name}} - 굿즈샵</title>
-    <style>
-        body.other-page { background: #0d0e12; color: #e3e2e8; }
-        .desc-body img, .desc-body figure, .desc-body picture { display: none !important; }
-        .shop-detail { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1.5rem; }
-        .shop-detail h2 { margin: 0 0 .5rem; font-size: 1.6rem; }
-        .shop-price { color: #8decd9; font-size: 1.35rem; font-weight: 750; margin: 0 0 .75rem; }
-        .shop-badge { display: inline-block; padding: .25rem .55rem; border-radius: 999px; background: #7f1d1d55; color: #fecaca; font-size: .8rem; }
-        .shop-detail .site-carousel-slide img { border-radius: .75rem; max-height: 28rem; }
-    </style>
-</head><body class="site-page other-page">
+    <link rel="stylesheet" href="{{#asset}}/css/shop-detail.css{{/asset}}">
+    <title>트리플에스 커뮤니티 - 굿즈리스트</title>
+</head><body class="site-page bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
 {{>layout/header}}
-
-<div class="site-container">
-    <nav class="site-back" aria-label="굿즈샵 목록으로">
-        <a href="/shop">← 굿즈샵</a>
+<main class="main-content max-w-7xl mx-auto px-4 py-8">
+    {{#shop}}
+<div class="card-box shop-detail-card bg-[#16181f]/80 backdrop-blur-md border border-[#3a4a46]/30 rounded-2xl shadow-xl overflow-hidden">
+    <nav class="site-back site-back--bar" aria-label="굿즈리스트로">
+        <a href="/shop">← 굿즈리스트</a>
     </nav>
-    <div class="shop-detail">
-        <div class="site-carousel" data-site-carousel>
-            <div class="site-carousel-track">
-                {{#itemImages}}
-                    <div class="site-carousel-slide"><img src="/{{imagePath}}" alt="메인사진"></div>
-                {{/itemImages}}
-                {{^itemImages}}
-                    <div class="site-carousel-slide"><img src="/images/no-image.png" alt="no image"></div>
-                {{/itemImages}}
+    <div class="shop-detail-body p-6 lg:p-8 space-y-8">
+        <header class="shop-detail-head">
+            <h1 class="text-3xl lg:text-4xl font-extrabold text-[#e3e2e8] tracking-tight m-0">{{eventName}}</h1>
+            {{#hasSalesPeriod}}
+            <p class="shop-detail-period">
+                <span class="material-symbols-outlined text-base text-[#00f5d4]" aria-hidden="true">calendar_today</span>
+                <span>판매 기간: <strong class="font-mono text-[#e3e2e8]">{{salesPeriod}}</strong></span>
+            </p>
+            {{/hasSalesPeriod}}
+            {{#eventId}}
+            <p class="shop-detail-event-link">
+                <a href="/cosmo/event/{{eventId}}">공연 상세에서 굿즈 보기 →</a>
+            </p>
+            {{/eventId}}
+        </header>
+
+        {{#hasMdPhotos}}
+        <section class="shop-md-section" aria-label="MD 리스트">
+            {{#mdRegions}}
+            <div class="shop-md-region">
+                <div class="shop-md-region-head">
+                    <h2 class="shop-md-region-title">{{label}}</h2>
+                    {{#eventDate}}
+                    <p class="shop-md-region-meta">
+                        {{eventDate}}{{#hasVenue}} · {{venue}}{{/hasVenue}}
+                    </p>
+                    {{/eventDate}}
+                </div>
+                {{#hasPhotos}}
+                <div class="shop-md-photos">
+                    {{#photos}}
+                    <figure class="shop-md-photo">
+                        <img src="{{.}}" alt="MD 리스트" loading="lazy" decoding="async">
+                    </figure>
+                    {{/photos}}
+                </div>
+                {{/hasPhotos}}
             </div>
-            <button type="button" class="site-carousel-btn prev" data-site-carousel-prev aria-label="이전">‹</button>
-            <button type="button" class="site-carousel-btn next" data-site-carousel-next aria-label="다음">›</button>
-        </div>
-        <div>
-            <h2>{{item.name}}</h2>
-            <p class="shop-price">{{item.price}}원</p>
-            {{#item.soldout}}<span class="shop-badge">품절</span>{{/item.soldout}}
-            <div class="desc-body mt-3">{{{item.description}}}</div>
-            {{^item.soldout}}
-                <form method="post" action="/shop/cart/add/{{item.id}}" style="margin-top:1rem">
-                    <button class="btn btn-primary" type="submit">장바구니 담기</button>
-                </form>
-            {{/item.soldout}}
-        </div>
+            {{/mdRegions}}
+        </section>
+        {{/hasMdPhotos}}
+        {{^hasMdPhotos}}
+        <p class="text-sm text-[#b9cac4]/70 py-4" role="status">등록된 MD 공지 사진이 없습니다. 공연 상세에서 MD를 등록해 주세요.</p>
+        {{/hasMdPhotos}}
     </div>
 </div>
-<script src="{{#asset}}/js/bootstrap-compat.js{{/asset}}" defer></script>
-<script src="{{#asset}}/js/site-ui.js{{/asset}}"></script>
+    {{/shop}}
+</main>
 {{>layout/page-end}}

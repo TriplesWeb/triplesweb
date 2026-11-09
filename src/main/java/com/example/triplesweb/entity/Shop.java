@@ -1,49 +1,57 @@
 package com.example.triplesweb.entity;
 
-import com.example.triplesweb.util.ShopCategory;
+import com.example.triplesweb.util.ImageUrls;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.springframework.util.StringUtils;
 
 /**
- * 굿즈 상품 엔티티. {@link ShopImage} 1:N.
+ * 공연 MD 리스트 카드. {@link Event} 1:1, {@link ShopSection} N:1.
+ * MD 본문(공지 사진·상품)은 연결된 이벤트의 {@code event_stop.md_list}가 단일 소스다.
  */
 @Entity
 @Table(name = "shop")
 @Getter
 @Setter
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
-@ToString
+@ToString(exclude = {"event", "section"})
 public class Shop {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable=false)
-    private String name;
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "event_id", nullable = false, unique = true)
+    private Event event;
 
-    @Column(nullable=false)
-    private int price;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "section_id")
+    private ShopSection section;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+    /** 판매 기간 표시 (예: 2024.03.01~2024.03.15) */
+    @Column(name = "sales_period", nullable = false, length = 80)
+    private String salesPeriod;
 
-    @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<ShopImage> images = new ArrayList<>();
+    /** 목록 커버. 비우면 이벤트 포스터를 쓴다. */
+    @Column(name = "cover_image", length = 1000)
+    private String coverImage;
 
-    private boolean soldout;
+    @Transient
+    public String getEventName() {
+        return event != null && event.getEventName() != null ? event.getEventName() : "";
+    }
 
-    @Column(nullable=false)
-    private String category;
+    @Transient
+    public String getDisplayCoverImage() {
+        if (StringUtils.hasText(coverImage)) {
+            return ImageUrls.orPlaceholder(coverImage);
+        }
+        return event != null
+                ? ImageUrls.orPlaceholder(event.getEventImage())
+                : ImageUrls.PLACEHOLDER;
+    }
 
-    public String normalizedTab() { return ShopCategory.from(category).getKey(); }
-
-    public void addImage(ShopImage img) {
-        images.add(img);
-        img.setShop(this);
+    public boolean isHasSalesPeriod() {
+        return StringUtils.hasText(salesPeriod);
     }
 }

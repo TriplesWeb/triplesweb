@@ -32,6 +32,7 @@ public class EventAdminService {
     private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
     private final EventService eventService;
+    private final ShopService shopService;
 
     @Transactional(readOnly = true)
     public EventAdminDto get(long eventId) {
@@ -148,6 +149,7 @@ public class EventAdminService {
         applyFields(event, null, eventName, eventInfo, sectionId, stopsJson, image, imageUrl, false);
         EventAdminDto dto = toDto(eventRepository.save(event));
         eventService.invalidateListCache();
+        shopService.invalidateListCache();
         return dto;
     }
 
@@ -167,6 +169,7 @@ public class EventAdminService {
         applyFields(event, eventId, eventName, eventInfo, sectionId, stopsJson, image, imageUrl, clearImage);
         EventAdminDto dto = toDto(eventRepository.save(event));
         eventService.invalidateListCache();
+        shopService.invalidateListCache();
         return dto;
     }
 
@@ -177,6 +180,7 @@ public class EventAdminService {
         deleteManagedImage(event.getEventImage());
         eventRepository.delete(event);
         eventService.invalidateListCache();
+        shopService.invalidateListCache();
     }
 
     private void applyFields(

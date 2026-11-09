@@ -1,145 +1,37 @@
 package com.example.triplesweb.controller;
 
-import com.example.triplesweb.dto.ShopCardDto;
-import com.example.triplesweb.entity.Shop;
-import com.example.triplesweb.entity.ShopImage;
-import com.example.triplesweb.repository.ShopItemRepository;
-import com.example.triplesweb.service.FileStorageService;
+import com.example.triplesweb.dto.ShopDetailDto;
 import com.example.triplesweb.service.ShopService;
-import com.example.triplesweb.util.ShopCategory;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 @RequiredArgsConstructor
 @Controller
 @RequestMapping("/shop")
 public class ShopController {
 
-    private final ShopItemRepository shopItemRepository;
     private final ShopService shopService;
-    private final FileStorageService fileStorageService;
 
     @GetMapping
-    public String ShopPage(@RequestParam(required = false) String category, Model model) {
-        String cat = (category == null || category.isBlank()) ? "album" : category;
-        List<ShopCardDto> items = shopService.getCardsByCategory(cat);
-        model.addAttribute("category", cat);
-        model.addAttribute("isAlbum", "album".equals(cat));
-        model.addAttribute("items", items);
+    public String shopPage(Model model) {
+        model.addAttribute("shopSections", shopService.listGroupedBySection());
         return "shop/shop";
     }
 
-    record ImageSlide(String imagePath, boolean first) {}
-
-    @GetMapping("/item/{category}/{id}")
-    public String shopDetail(@PathVariable Long id, Model model) {
-        Shop item = shopItemRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-
-        List<ImageSlide> slides = new ArrayList<>();
-        List<ShopImage> imgs = item.getImages();
-        if (imgs != null && !imgs.isEmpty()) {
-            for (int i = 0; i < item.getImages().size(); i++) {
-                String url = (imgs.get(i).getFile() != null) ? imgs.get(i).getFile().getUrl() : "/images/no-image.png";
-                slides.add(new ImageSlide(url, i == 0));
-            }
-        }
-        model.addAttribute("item", item);
-        model.addAttribute("itemImages", slides);
-        return "shop/shop_detail";
-    }
-
-    // [주석] @PreAuthorize("hasRole('ADMIN')") 및 auth 파라미터 삭제
-    @GetMapping("/shop_new")
-    public String shopNewGoods(@RequestParam(required = false) String category, Model model) {
-        String cate = (category == null || category.isBlank()) ? "album" : normalizeCategory(category);
-        Shop goods = Shop.builder().category(ShopCategory.from(cate).getKey()).build();
-        bindTabFlags(model, goods.normalizedTab());
-        model.addAttribute("goodsForm", goods);
-        return "shop/shop_new";
-    }
-
-    // [주석] @PreAuthorize("hasRole('ADMIN')") 삭제
-    @PostMapping("/shop_new")
-    public String createShopGoods(@ModelAttribute Shop shop,
-                                  @RequestParam(value = "files", required = false) List<MultipartFile> files,
-                                  Model model) {
-        shop.setCategory(normalizeCategory(shop.getCategory()));
-        if (shop.getName() == null || shop.getName().isBlank()) {
-            bindTabFlags(model, shop.normalizedTab());
-            model.addAttribute("goodsForm", shop);
-            model.addAttribute("errorMessage", "제목을 입력해 주세요.");
-            return "shop/shop_new";
-        }
+    @GetMapping("/{id:[0-9]+}")
+    public String shopDetail(@PathVariable long id, Model model) {
         try {
-            Shop savedGoods = shopService.registerGoods(shop, files);
-            return "redirect:/shop/item/" + savedGoods.getCategory() + "/" + savedGoods.getId();
-        } catch (RuntimeException | java.io.IOException ex) {
-            bindTabFlags(model, shop.normalizedTab());
-            model.addAttribute("goodsForm", shop);
-            model.addAttribute("errorMessage", "상품을 저장하지 못했습니다. 첨부 파일을 확인한 뒤 다시 시도해 주세요.");
-            return "shop/shop_new";
+            ShopDetailDto shop = shopService.getDetail(id);
+            model.addAttribute("shop", shop);
+            return "shop/shop_detail";
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
-    }
-
-    @PostMapping("/cart/add/{id}")
-    public String addToCart(@PathVariable Long id, HttpSession session) {
-        List<Long> cart = (List<Long>) session.getAttribute("CART");
-        if (cart == null) cart = new ArrayList<>();
-        cart.add(id);
-        session.setAttribute("CART", cart);
-        return "redirect:/shop/cart";
-    }
-
-    @GetMapping("/cart")
-    public String viewCart(HttpSession session, Model model) {
-        List<Long> cart = (List<Long>) session.getAttribute("CART");
-        if (cart == null) cart = new ArrayList<>();
-
-        List<Shop> items = shopItemRepository.findAllById(cart);
-        model.addAttribute("items", items);
-        return "shop/shop_cart";
-    }
-
-    // [주석] @PreAuthorize("hasRole('ADMIN')") 삭제
-    @PostMapping("/uploadFile")
-    @ResponseBody
-    public Map<String, String> uploadShopImage(@RequestParam("file") MultipartFile file) throws IOException {
-        if (file.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "빈 파일은 업로드할 수 없습니다.");
-        }
-        var meta = fileStorageService.saveWithMeta(file);
-        return Map.of(
-                "url", meta.getUrl(),
-                "savedName", meta.getSavedName(),
-                "originalName", meta.getOriginalName()
-        );
-    }
-
-    private String normalizeCategory(String c) {
-        if (c == null) return "album";
-        c = c.trim().toLowerCase();
-        if (c.equals("tour-merch") || c.equals("tourmerch")) return "tour";
-        return c;
-    }
-
-    private void bindTabFlags(Model model, String t) {
-        model.addAttribute("category", t);
-        model.addAttribute("category_album", "album".equals(t));
-        model.addAttribute("category_merch", "merch".equals(t));
-        model.addAttribute("category_photobook", "photobook".equals(t));
-        model.addAttribute("category_magazine", "magazine".equals(t));
-        model.addAttribute("category_tour", "tour".equals(t));
     }
 }

@@ -1,0 +1,60 @@
+<div id="shopEditModal" class="about-modal hidden" role="dialog" aria-modal="true" aria-labelledby="shopEditTitle">
+    <div class="about-modal-panel about-edit-panel">
+        <button type="button" class="about-close shop-edit-close" aria-label="닫기">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        <h3 id="shopEditTitle" class="about-modal-title">굿즈리스트 수정</h3>
+        <form id="shopEditForm" class="about-edit-form">
+            <input type="hidden" id="shopEditId">
+            <label class="about-edit-label">공연(이벤트)
+                <select id="shopEditEventId" required></select>
+                <span class="text-xs text-gray-400">카드 이름과 MD 사진은 선택한 공연에서 가져옵니다.</span>
+            </label>
+            <label class="about-edit-label">판매 기간
+                <input type="text" id="shopEditSalesPeriod" required maxlength="80" placeholder="예: 2024.03.01~2024.03.15">
+            </label>
+            <label class="about-edit-label">목록 구분
+                <select id="shopEditSectionId"></select>
+            </label>
+            <label class="about-edit-label">커버 이미지
+                <input type="file" id="shopEditImage" accept="image/*">
+            </label>
+            <label class="about-edit-label">외부 이미지 URL
+                <input type="url" id="shopEditImageUrl" placeholder="https://example.com/cover.jpg" maxlength="1000" pattern="https?://.+">
+                <span class="text-xs text-gray-400">비우면 공연 포스터를 씁니다. 파일을 선택하면 파일이 우선 적용됩니다.</span>
+            </label>
+            <img id="shopEditImagePreview" class="about-preview hidden" alt="커버 미리보기">
+            <label class="about-edit-check">
+                <input type="checkbox" id="shopEditClearImage"> 커버 이미지 제거 (공연 포스터 사용)
+            </label>
+            <p id="shopEditError" class="about-edit-error" hidden></p>
+            <div class="about-edit-actions">
+                <button type="button" id="shopEditDeleteBtn" class="about-mode-btn hidden btn btn-sm btn-error">삭제</button>
+                <button type="submit" class="about-mode-btn is-active btn btn-sm btn-outline btn-primary btn-active">저장</button>
+                <button type="button" class="about-mode-btn shop-edit-close btn btn-sm btn-outline btn-primary">취소</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="shopSectionModal" class="about-modal hidden" role="dialog" aria-modal="true" aria-labelledby="shopSectionTitle">
+    <div class="about-modal-panel about-edit-panel">
+        <button type="button" class="about-close shop-section-close" aria-label="닫기">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        <h3 id="shopSectionTitle" class="about-modal-title">구분 관리</h3>
+        <form id="shopSectionAddForm" class="about-edit-form" style="margin-bottom:1rem">
+            <label class="about-edit-label">구분명 추가
+                <div class="flex gap-2">
+                    <input type="text" id="shopSectionNewName" required maxlength="120" placeholder="예: 콘서트, 팬미팅" class="flex-1">
+                    <button type="submit" class="about-mode-btn is-active shrink-0 btn btn-sm btn-outline btn-primary btn-active">추가</button>
+                </div>
+            </label>
+            <p id="shopSectionError" class="about-edit-error" hidden></p>
+        </form>
+        <ul id="shopSectionList" class="list-none p-0 m-0 space-y-2"></ul>
+        <div class="about-edit-actions" style="margin-top:1rem">
+            <button type="button" class="about-mode-btn shop-section-close btn btn-sm btn-outline btn-primary">닫기</button>
+        </div>
+    </div>
+</div>
