@@ -28,13 +28,14 @@ INSERT INTO shop_section (section_id, name, sort_order) VALUES
 (1, '콘서트', 0),
 (2, '팬미팅', 1);
 
--- MD가 있는 시드 이벤트를 샵 카드로 등록
+-- MD가 있는 시드 이벤트를 샵 카드로 등록.
+-- cover_image는 null로 두어 이벤트 포스터 fallback을 쓴다 (이벤트 이미지 교체·삭제 시 깨진 URL 잔존 방지).
 INSERT INTO shop (event_id, section_id, sales_period, cover_image)
-SELECT e.event_id, 1, '2024.06.15~2025.03.01', e.event_image
+SELECT e.event_id, 1, '2024.06.15~2025.03.01', NULL
 FROM event e
 WHERE e.event_name = 'tripleS Come True';
 
 INSERT INTO shop (event_id, section_id, sales_period, cover_image)
-SELECT e.event_id, 1, '2023.10.14~2023.10.15', e.event_image
+SELECT e.event_id, 1, '2023.10.14~2023.10.15', NULL
 FROM event e
 WHERE e.event_name = 'Authentic';

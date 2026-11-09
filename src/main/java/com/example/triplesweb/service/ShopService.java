@@ -11,6 +11,8 @@ import com.example.triplesweb.repository.ShopSectionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -55,8 +57,24 @@ public class ShopService {
         }
     }
 
-    /** 관리자 저장·삭제·이벤트 MD 변경 후 목록 캐시를 바로 비운다. */
+    /**
+     * 관리자 저장·삭제·이벤트 MD 변경 후 목록 캐시를 비운다.
+     * 트랜잭션 안에서는 커밋 후에 비워, 커밋 전 재조회가 옛 행을 다시 캐시하지 않게 한다.
+     */
     public void invalidateListCache() {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    clearListCache();
+                }
+            });
+            return;
+        }
+        clearListCache();
+    }
+
+    private void clearListCache() {
         listCache = null;
         listCacheExpiresAt = 0L;
     }
