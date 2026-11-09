@@ -357,13 +357,19 @@
         justify-content: space-between;
         border-radius: .75rem;
     }
-    .collection-page .objekt-dropdown-menu,
-    .collection-page .season-choice-panel {
+    .collection-page .objekt-dropdown-menu:not(.season-choice-panel) {
         left: 0 !important;
         right: 0 !important;
         min-width: 0 !important;
         width: 100% !important;
         max-width: none !important;
+    }
+    .collection-page .season-choice-panel {
+        left: 0 !important;
+        right: auto !important;
+        width: min(32rem, calc(100vw - 2rem)) !important;
+        min-width: 0 !important;
+        max-width: calc(100vw - 2rem) !important;
     }
     .collection-page .objekt-choice,
     .collection-page .objekt-kind-option {

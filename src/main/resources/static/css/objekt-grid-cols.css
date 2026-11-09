@@ -167,14 +167,31 @@
     height: 2.25rem;
     line-height: 2.25rem;
   }
-  .objekt-dropdown-menu,
-  .season-choice-panel {
+  .objekt-dropdown-menu:not(.season-choice-panel) {
     left: 0 !important;
     right: 0 !important;
     min-width: 0 !important;
     width: 100% !important;
     max-width: none !important;
   }
+  .season-choice-panel {
+    left: 0 !important;
+    right: auto !important;
+    width: min(32rem, calc(100vw - 2rem)) !important;
+    min-width: 0 !important;
+    max-width: calc(100vw - 2rem) !important;
+  }
+  .season-chip-list {
+    display: flex !important;
+    flex-flow: row wrap !important;
+    align-items: center;
+  }
+  .season-chip {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: 100%;
+  }
+  .collection-page [data-objekt-cols-filter] .objekt-dropdown-menu,
   [data-objekt-cols-filter] .objekt-dropdown-menu,
   [data-objekt-cols-menu] {
     left: 0 !important;

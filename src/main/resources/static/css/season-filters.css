@@ -10,7 +10,7 @@
 .season-chip:focus-visible{outline:2px solid var(--season-color);outline-offset:3px}
 .season-chip:disabled{opacity:.45;cursor:default}
 .season-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
-@media(max-width:600px){.season-choice-panel{width:100%!important;min-width:0!important;max-width:100%}.season-chip{min-height:38px;padding:8px 12px}}
+@media(max-width:600px){.season-choice-panel{width:min(32rem,calc(100vw - 2rem))!important;min-width:0!important;max-width:calc(100vw - 2rem)!important;right:auto}.season-chip-list{display:flex;flex-flow:row wrap;align-items:center}.season-chip{flex:0 0 auto;width:auto;max-width:100%;min-height:38px;padding:8px 12px}}
 @media(prefers-reduced-motion:reduce){.season-chip{transition:none}}
 
 .season-control{position:relative}.season-control select[hidden]{display:none!important}
