@@ -297,7 +297,7 @@ document.getElementById('season-toggle').addEventListener('click', () => {
       await page.screenshot({ path: `/opt/cursor/artifacts/collection-dropdown-sort-${viewport.name}.png` });
     }
 
-    await page.setViewportSize({ width: 390, height: 844 });
+    await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('https://collection-layout.test/cosmo/objekt', { waitUntil: 'load' });
     await page.locator('#season-toggle').click();
     await page.waitForFunction(() => {
@@ -306,15 +306,23 @@ document.getElementById('season-toggle').addEventListener('click', () => {
       const box = list.getBoundingClientRect();
       return box.width > 0 && box.height > 0;
     });
+    await page.setViewportSize({ width: 390, height: 844 });
     const objektWrap = await page.evaluate(() => {
       const list = document.querySelector('#season-menu .season-chip-list');
       const chips = [...document.querySelectorAll('#season-menu .season-chip')];
       const tops = new Set(chips.map((chip) => Math.round(chip.getBoundingClientRect().top)));
-      return { count: chips.length, rows: tops.size, width: Math.round(list.getBoundingClientRect().width) };
+      return {
+        count: chips.length,
+        rows: tops.size,
+        width: Math.round(list.getBoundingClientRect().width),
+        scroll: document.documentElement.scrollWidth,
+        view: innerWidth
+      };
     });
     assert.ok(objektWrap.count >= 8, '오브젝트 시즌 칩 수가 부족하다: ' + JSON.stringify(objektWrap));
     assert.ok(objektWrap.width > 220, '오브젝트 시즌 패널이 너무 좁다: ' + JSON.stringify(objektWrap));
     assert.ok(objektWrap.rows < objektWrap.count, '오브젝트 시즌 칩은 행으로 감싸져야 한다: ' + JSON.stringify(objektWrap));
+    assert.ok(objektWrap.scroll <= objektWrap.view, '오브젝트 시즌 패널이 뷰포트를 넘치면 안 된다: ' + JSON.stringify(objektWrap));
     await page.screenshot({ path: `/opt/cursor/artifacts/objekt-season-chips-mobile.png` });
 
     console.log('PASS: 컬렉션 드롭다운이 모바일·데스크톱에서 잘리고 가려지지 않음');
