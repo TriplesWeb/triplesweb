@@ -2,6 +2,42 @@
   const STORAGE_KEY = 'triples-objekt-cols';
   const ALLOWED = new Set(['2', '3', '4', '5']);
 
+  function isClosed(menu) {
+    if (!menu) return true;
+    return menu.hasAttribute('hidden') || menu.classList.contains('hidden');
+  }
+
+  function setOpen(menu, open) {
+    if (!menu) return;
+    const show = Boolean(open);
+    menu.hidden = !show;
+    menu.toggleAttribute('hidden', !show);
+    menu.classList.toggle('hidden', !show);
+    const host = menu.closest('.objekt-filter, [data-objekt-cols-filter]');
+    host?.classList.toggle('is-open', show);
+    const toggles = [];
+    if (menu.id) {
+      document.querySelectorAll('[aria-controls="' + menu.id + '"]').forEach((el) => toggles.push(el));
+    }
+    host?.querySelectorAll('[data-objekt-cols-toggle], .objekt-kind-toggle').forEach((el) => toggles.push(el));
+    toggles.forEach((el) => el.setAttribute('aria-expanded', show ? 'true' : 'false'));
+  }
+
+  function closeAll(except) {
+    document.querySelectorAll('.objekt-dropdown-menu').forEach((menu) => {
+      if (menu !== except) setOpen(menu, false);
+    });
+  }
+
+  function toggle(menu) {
+    const open = isClosed(menu);
+    closeAll(open ? menu : null);
+    setOpen(menu, open);
+    return open;
+  }
+
+  window.ObjektDropdown = { isClosed, setOpen, closeAll, toggle };
+
   function readCols() {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -28,44 +64,17 @@
     });
   }
 
-  function setMenuOpen(menu, open) {
-    if (!menu) return;
-    menu.hidden = !open;
-    menu.classList.toggle('hidden', !open);
-    const filter = menu.closest('[data-objekt-cols-filter]');
-    filter?.classList.toggle('is-open', open);
-    filter?.querySelector('[data-objekt-cols-toggle]')?.setAttribute('aria-expanded', open ? 'true' : 'false');
-  }
-
-  function closeColsMenus(except) {
-    document.querySelectorAll('[data-objekt-cols-menu]').forEach((menu) => {
-      if (menu !== except) setMenuOpen(menu, false);
-    });
-  }
-
-  function closeOtherMenus(keep) {
-    document.querySelectorAll('.objekt-dropdown-menu').forEach((menu) => {
-      if (menu === keep) return;
-      menu.hidden = true;
-      menu.classList.add('hidden');
-      menu.closest('.objekt-filter')?.classList.remove('is-open');
-    });
-  }
-
   function init() {
     apply(readCols());
 
-    document.querySelectorAll('[data-objekt-cols-toggle]').forEach((toggle) => {
-      toggle.addEventListener('click', (event) => {
+    document.querySelectorAll('[data-objekt-cols-toggle]').forEach((btn) => {
+      btn.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
-        const filter = toggle.closest('[data-objekt-cols-filter]');
+        const filter = btn.closest('[data-objekt-cols-filter]');
         const menu = filter?.querySelector('[data-objekt-cols-menu]');
         if (!menu) return;
-        const open = menu.hidden || menu.classList.contains('hidden');
-        closeOtherMenus(open ? menu : null);
-        setMenuOpen(menu, open);
-        if (!open) closeColsMenus();
+        toggle(menu);
       });
     });
 
@@ -77,12 +86,14 @@
         if (!ALLOWED.has(value)) return;
         writeCols(value);
         apply(value);
-        closeColsMenus();
+        closeAll();
       });
     });
 
     document.addEventListener('click', (event) => {
-      if (!event.target.closest('[data-objekt-cols-filter]')) closeColsMenus();
+      if (!event.target.closest('[data-objekt-cols-filter]')) {
+        document.querySelectorAll('[data-objekt-cols-menu]').forEach((menu) => setOpen(menu, false));
+      }
     });
   }
 

@@ -29,7 +29,12 @@
     if(checkbox){
       menu=source;
       const toggle=control.querySelector('button');const usesHidden=menu.hasAttribute('hidden');
-      source.__seasonClose=()=>{if(usesHidden)menu.hidden=true;else menu.classList.add('hidden');toggle?.setAttribute('aria-expanded','false');};
+      source.__seasonClose=()=>{
+        if(window.ObjektDropdown) window.ObjektDropdown.setOpen(menu,false);
+        else if(usesHidden){menu.hidden=true;menu.classList.add('hidden');}
+        else menu.classList.add('hidden');
+        toggle?.setAttribute('aria-expanded','false');
+      };
       menu.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();source.__seasonClose();toggle?.focus();}});
       native=document.createElement('div');native.className='season-native-options';native.hidden=true;
       while(menu.firstChild)native.append(menu.firstChild);
@@ -53,7 +58,7 @@
     }
     menu.classList.add('season-choice-panel');
     function placeMenu(){
-      if(menu.hidden||menu.classList.contains('hidden'))return;
+      if(window.ObjektDropdown?window.ObjektDropdown.isClosed(menu):(menu.hidden||menu.classList.contains('hidden')))return;
       const pad=12;
       menu.style.left='0';menu.style.right='auto';
       const room=Math.max(160,innerWidth-pad-control.getBoundingClientRect().left);

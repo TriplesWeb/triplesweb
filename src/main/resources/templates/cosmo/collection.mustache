@@ -349,13 +349,33 @@
     setGroup(groupInput?.value || 'all', false);
   }
   function closeMenus(except) {
+    if (window.ObjektDropdown) {
+      window.ObjektDropdown.closeAll(except);
+      return;
+    }
     document.querySelectorAll('.objekt-dropdown-menu').forEach((other) => {
-      if (other !== except) other.hidden = true;
+      if (other === except) return;
+      other.hidden = true;
+      other.classList.add('hidden');
+      other.closest('.objekt-filter')?.classList.remove('is-open');
     });
-    document.querySelectorAll('#collection-filter-form .objekt-filter').forEach((filter) => {
-      if (!except || !filter.contains(except)) filter.classList.remove('is-open');
-    });
-    except?.closest('.objekt-filter')?.classList.toggle('is-open', Boolean(except) && !except.hidden);
+    except?.closest('.objekt-filter')?.classList.toggle('is-open', Boolean(except) && !except.hidden && !except.classList.contains('hidden'));
+  }
+
+  function menuClosed(menu) {
+    return window.ObjektDropdown ? window.ObjektDropdown.isClosed(menu)
+      : (!menu || menu.hidden || menu.classList.contains('hidden'));
+  }
+
+  function toggleMenu(menu) {
+    if (window.ObjektDropdown) return window.ObjektDropdown.toggle(menu);
+    const open = menuClosed(menu);
+    closeMenus(open ? menu : null);
+    if (!menu) return open;
+    menu.hidden = !open;
+    menu.classList.toggle('hidden', !open);
+    menu.closest('.objekt-filter')?.classList.toggle('is-open', open);
+    return open;
   }
 
   if (form) {
@@ -422,16 +442,17 @@
       choice.addEventListener('click', (event) => {
         event.stopPropagation();
         applyChoice(choice);
-        menu.hidden = true;
-        toggleBtn.setAttribute('aria-expanded', 'false');
         closeMenus();
+        toggleBtn.setAttribute('aria-expanded', 'false');
       });
     });
     toggleBtn.addEventListener('click', () => {
-      const open = menu.hasAttribute('hidden');
-      menu.hidden = !open;
+      const open = toggleMenu(menu);
       toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-      closeMenus(open ? menu : null);
+    });
+    root?.addEventListener('click', (event) => {
+      if (event.target.closest('.objekt-dropdown-menu, .objekt-filter-control, input, select, textarea, a')) return;
+      toggleBtn.click();
     });
     if (!input.value) input.value = fallback;
     sync();
@@ -465,16 +486,18 @@
       scheduleApplyFilters();
     }));
     toggleBtn.addEventListener('click', () => {
-      const open = menu.hasAttribute('hidden');
-      menu.hidden = !open;
+      const open = toggleMenu(menu);
       toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-      closeMenus(open ? menu : null);
+    });
+    root?.addEventListener('click', (event) => {
+      if (event.target.closest('.objekt-dropdown-menu, .objekt-filter-control, input, select, textarea, a')) return;
+      toggleBtn.click();
     });
     syncLabel();
   }
 
   document.addEventListener('click', (event) => {
-    if (event.target.closest('.objekt-filter')) return;
+    if (event.target.closest('.objekt-filter, [data-objekt-cols-filter], .collection-nickname-suggest')) return;
     closeMenus();
   });
 

@@ -213,7 +213,14 @@
     background: #171a24;
     box-shadow: 0 18px 40px rgba(0,0,0,.42);
 }
-.collection-page .objekt-dropdown-menu[hidden] { display: none; }
+.collection-page .objekt-dropdown-menu[hidden],
+.collection-page .objekt-dropdown-menu.hidden {
+    display: none !important;
+    pointer-events: none !important;
+}
+.collection-page .objekt-filter { cursor: pointer; }
+.collection-page .objekt-kind-combo,
+.collection-page .objekt-filter input.objekt-kind-select { cursor: text; }
 .collection-page .objekt-choice {
     position: relative;
     display: flex;
@@ -585,7 +592,9 @@
     background: var(--objekt-surface, #171a24);
     box-shadow: 0 18px 40px rgba(0,0,0,.42);
 }
-.collection-nickname-suggest[hidden] { display: none; }
+.collection-nickname-suggest[hidden],
+.collection-nickname-suggest.hidden { display: none !important; }
+.collection-page .collection-nickname-form .ar-search-wrap { overflow: visible; }
 .collection-nickname-suggest-label {
     margin: 0 .15rem .2rem;
     padding: .1rem .55rem;

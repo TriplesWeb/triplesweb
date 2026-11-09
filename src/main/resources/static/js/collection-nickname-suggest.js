@@ -62,6 +62,7 @@
 
   function closeMenu() {
     menu.hidden = true;
+    menu.classList.add('hidden');
     menu.innerHTML = '';
     input.setAttribute('aria-expanded', 'false');
   }
@@ -95,21 +96,30 @@
       menu.appendChild(option);
     });
     menu.hidden = false;
+    menu.classList.remove('hidden');
     input.setAttribute('aria-expanded', 'true');
   }
 
   let timer = 0;
   let abort = null;
   let seq = 0;
+  function recentsFor(query) {
+    const needle = (query || '').trim();
+    if (!needle) return loadRecents().slice(0, 8);
+    return uniqueNames([loadRecents()], needle);
+  }
+
   async function refresh() {
     const query = input.value.trim();
     const requestId = ++seq;
+    const recents = recentsFor(query);
     if (query.length < MIN_QUERY) {
       abort?.abort();
-      closeMenu();
+      if (recents.length && document.activeElement === input) render(recents);
+      else closeMenu();
       return;
     }
-    const recents = uniqueNames([loadRecents()], query);
+    if (recents.length) render(recents);
     abort?.abort();
     abort = new AbortController();
     let remote = [];
@@ -132,12 +142,14 @@
   input.addEventListener('input', () => {
     window.clearTimeout(timer);
     abort?.abort();
-    if (input.value.trim().length < MIN_QUERY) closeMenu();
     timer = window.setTimeout(refresh, 180);
   });
   input.addEventListener('focus', refresh);
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') closeMenu();
+  });
+  document.addEventListener('pointerdown', (event) => {
+    if (!form.contains(event.target)) closeMenu();
   });
   document.addEventListener('click', (event) => {
     if (!form.contains(event.target)) closeMenu();

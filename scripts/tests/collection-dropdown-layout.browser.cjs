@@ -91,6 +91,7 @@ ${readCss('season-filters.css')}
   <article class="collection-card" style="height:8rem;background:#191c27;border:1px solid #343b51">카드2</article>
 </section>
 </main>
+<script src="/js/objekt-grid-cols.js"></script>
 <script src="/js/season-filters.js"></script>
 <script>
 (() => {
@@ -99,11 +100,8 @@ ${readCss('season-filters.css')}
     const menu = document.getElementById(menuId);
     toggle.addEventListener('click', (event) => {
       event.stopPropagation();
-      const open = menu.hasAttribute('hidden');
-      document.querySelectorAll('.objekt-dropdown-menu').forEach((other) => { if (other !== menu) other.hidden = true; });
-      menu.hidden = !open;
-      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-      menu.closest('.objekt-filter')?.classList.toggle('is-open', open);
+      window.ObjektDropdown.toggle(menu);
+      toggle.setAttribute('aria-expanded', window.ObjektDropdown.isClosed(menu) ? 'false' : 'true');
     });
   }
   bind('collection-season-toggle', 'collection-season-menu');
@@ -112,7 +110,6 @@ ${readCss('season-filters.css')}
   bind('collection-sort-toggle', 'collection-sort-menu');
 })();
 </script>
-<script src="/js/objekt-grid-cols.js"></script>
 </body></html>`;
 
 const objektHtml = `<!doctype html><html><head><meta charset="utf-8">
@@ -287,6 +284,20 @@ document.getElementById('season-toggle').addEventListener('click', () => {
         await page.locator('[data-objekt-cols-toggle]').click();
         await page.waitForFunction(() => !document.getElementById('collection-cols-menu').hidden);
         await assertMenuVisible('collection-cols-menu');
+        await page.locator('#collection-season-toggle').click();
+        await page.waitForFunction(() => {
+          const menu = document.getElementById('collection-season-menu');
+          return menu && !menu.hidden && !menu.classList.contains('hidden') && getComputedStyle(menu).display !== 'none';
+        });
+        await assertMenuVisible('collection-season-menu');
+        await page.locator('#collection-sort-toggle').click();
+        await page.waitForFunction(() => {
+          const sort = document.getElementById('collection-sort-menu');
+          const season = document.getElementById('collection-season-menu');
+          return sort && !sort.hidden && !sort.classList.contains('hidden')
+            && (season.hidden || season.classList.contains('hidden') || getComputedStyle(season).display === 'none');
+        });
+        await assertMenuVisible('collection-sort-menu');
         const colsFont = await page.evaluate(() => {
           const cols = document.querySelector('#collection-cols-menu .objekt-kind-option');
           const sort = document.querySelector('#collection-sort-menu .objekt-kind-option');
