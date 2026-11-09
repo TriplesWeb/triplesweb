@@ -30,13 +30,14 @@ class ShopServiceMdPhotoTest {
     }
 
     @Test
-    void toDetail_groupsPhotosByRegionWithoutItemLists() {
+    void toDetail_groupsPhotoCategoriesByRegion() {
         Event event = new Event();
         event.setEventId(10L);
         event.setEventName("tripleS Come True");
         event.setEventInfo("info");
 
         EventStop seoul = new EventStop();
+        seoul.setStopId(1L);
         seoul.setEvent(event);
         seoul.setEventDate("2024.06.15");
         seoul.setRegion("서울");
@@ -46,9 +47,13 @@ class ShopServiceMdPhotoTest {
                 # Official MD
                 !/uploads/seoul-md.jpg
                 응원봉|45000
+                # MD Benefit
+                !/uploads/seoul-benefit.jpg
+                특전 포토카드
                 """);
 
         EventStop bangkok = new EventStop();
+        bangkok.setStopId(2L);
         bangkok.setEvent(event);
         bangkok.setEventDate("2024.09.01");
         bangkok.setRegion("방콕");
@@ -72,8 +77,16 @@ class ShopServiceMdPhotoTest {
         assertThat(detail.getSalesPeriod()).isEqualTo("2024.06.01~2024.09.30");
         assertThat(detail.isHasMdPhotos()).isTrue();
         assertThat(detail.getMdRegions()).hasSize(2);
-        assertThat(detail.getMdRegions().get(0).getLabel()).contains("서울");
-        assertThat(detail.getMdRegions().get(0).getPhotos()).containsExactly("/uploads/seoul-md.jpg");
-        assertThat(detail.getMdRegions().get(1).getPhotos()).containsExactly("/uploads/bkk-md.jpg");
+
+        ShopDetailDto.MdRegion seoulRegion = detail.getMdRegions().get(0);
+        assertThat(seoulRegion.getLabel()).contains("서울");
+        assertThat(seoulRegion.getRegionKey()).isEqualTo("1");
+        assertThat(seoulRegion.getCategories()).hasSize(2);
+        assertThat(seoulRegion.getCategories().get(0).getTitle()).isEqualTo("Official MD");
+        assertThat(seoulRegion.getCategories().get(0).getPhotos()).containsExactly("/uploads/seoul-md.jpg");
+        assertThat(seoulRegion.getCategories().get(1).getPhotos()).containsExactly("/uploads/seoul-benefit.jpg");
+
+        assertThat(detail.getMdRegions().get(1).getCategories().get(0).getPhotos())
+                .containsExactly("/uploads/bkk-md.jpg");
     }
 }

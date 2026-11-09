@@ -1,5 +1,6 @@
 {{>layout/head-open}}
 
+    <link rel="stylesheet" href="{{#asset}}/css/event-detail.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/shop-detail.css{{/asset}}">
     <title>트리플에스 커뮤니티 - 굿즈리스트</title>
 </head><body class="site-page bg-[#0d0e12] text-[#e3e2e8] min-h-screen">
@@ -27,28 +28,70 @@
         </header>
 
         {{#hasMdPhotos}}
-        <section class="shop-md-section" aria-label="MD 리스트">
-            {{#mdRegions}}
-            <div class="shop-md-region">
-                <div class="shop-md-region-head">
-                    <h2 class="shop-md-region-title">{{label}}</h2>
-                    {{#eventDate}}
-                    <p class="shop-md-region-meta">
-                        {{eventDate}}{{#hasVenue}} · {{venue}}{{/hasVenue}}
-                    </p>
-                    {{/eventDate}}
+        <section class="event-goods-section" aria-label="MD 리스트">
+            <div class="event-goods-box">
+                <div class="event-goods-head">MD 리스트</div>
+                {{#mdRegions}}
+                <div class="event-goods-region" data-region="{{label}}">
+                    <button type="button"
+                            class="event-goods-region-toggle"
+                            aria-expanded="false"
+                            aria-controls="shop-goods-region-panel-{{regionKey}}"
+                            id="shop-goods-region-tab-{{regionKey}}"
+                            data-shop-goods-region>
+                        <span class="event-goods-region-copy">
+                            <span class="event-goods-region-title">{{label}}</span>
+                            {{#hasVenue}}
+                            <span class="event-goods-region-meta">{{eventDate}} · {{venue}}</span>
+                            {{/hasVenue}}
+                            {{^hasVenue}}
+                            <span class="event-goods-region-meta">{{eventDate}}</span>
+                            {{/hasVenue}}
+                        </span>
+                        <span class="event-goods-region-mark" aria-hidden="true">▼</span>
+                    </button>
+                    <div class="event-goods-region-panel"
+                         id="shop-goods-region-panel-{{regionKey}}"
+                         role="region"
+                         aria-labelledby="shop-goods-region-tab-{{regionKey}}"
+                         hidden
+                         data-shop-goods-region-panel>
+                        <div class="event-goods-cat-bar" role="tablist" aria-label="{{label}} MD 카테고리">
+                            {{#categories}}
+                            <button type="button"
+                                    class="event-goods-cat-toggle"
+                                    role="tab"
+                                    aria-expanded="false"
+                                    aria-controls="shop-goods-panel-{{regionKey}}-{{key}}"
+                                    id="shop-goods-tab-{{regionKey}}-{{key}}"
+                                    data-shop-goods-cat>
+                                <span class="event-goods-cat-mark" aria-hidden="true">▼</span>
+                                <span class="event-goods-cat-title">{{title}}</span>
+                            </button>
+                            {{/categories}}
+                        </div>
+                        {{#categories}}
+                        <div class="event-goods-panel"
+                             id="shop-goods-panel-{{regionKey}}-{{key}}"
+                             role="tabpanel"
+                             aria-labelledby="shop-goods-tab-{{regionKey}}-{{key}}"
+                             hidden
+                             data-shop-goods-panel>
+                            {{#hasPhotos}}
+                            <div class="event-goods-notices">
+                                {{#photos}}
+                                <figure class="event-goods-notice">
+                                    <img src="{{.}}" alt="MD 판매 공지" loading="lazy" decoding="async" data-img-fallback>
+                                </figure>
+                                {{/photos}}
+                            </div>
+                            {{/hasPhotos}}
+                        </div>
+                        {{/categories}}
+                    </div>
                 </div>
-                {{#hasPhotos}}
-                <div class="shop-md-photos">
-                    {{#photos}}
-                    <figure class="shop-md-photo">
-                        <img src="{{.}}" alt="MD 리스트" loading="lazy" decoding="async">
-                    </figure>
-                    {{/photos}}
-                </div>
-                {{/hasPhotos}}
+                {{/mdRegions}}
             </div>
-            {{/mdRegions}}
         </section>
         {{/hasMdPhotos}}
         {{^hasMdPhotos}}
@@ -58,4 +101,51 @@
 </div>
     {{/shop}}
 </main>
+<script>
+(function () {
+  document.querySelectorAll("[data-shop-goods-region]").forEach(function (toggle) {
+    toggle.addEventListener("click", function () {
+      var region = toggle.closest(".event-goods-region");
+      if (!region) return;
+      var panel = region.querySelector("[data-shop-goods-region-panel]");
+      var open = toggle.getAttribute("aria-expanded") === "true";
+      toggle.setAttribute("aria-expanded", open ? "false" : "true");
+      region.classList.toggle("is-open", !open);
+      if (panel) panel.hidden = open;
+      if (open) {
+        region.querySelectorAll("[data-shop-goods-cat]").forEach(function (cat) {
+          cat.setAttribute("aria-expanded", "false");
+          cat.classList.remove("is-open");
+          var catId = cat.getAttribute("aria-controls");
+          var catPanel = catId ? document.getElementById(catId) : null;
+          if (catPanel) catPanel.hidden = true;
+        });
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-shop-goods-cat]").forEach(function (toggle) {
+    toggle.addEventListener("click", function () {
+      var region = toggle.closest(".event-goods-region");
+      if (!region) return;
+      var panelId = toggle.getAttribute("aria-controls");
+      var panel = panelId ? document.getElementById(panelId) : null;
+      var open = toggle.getAttribute("aria-expanded") === "true";
+
+      region.querySelectorAll("[data-shop-goods-cat]").forEach(function (other) {
+        if (other === toggle) return;
+        other.setAttribute("aria-expanded", "false");
+        other.classList.remove("is-open");
+        var otherId = other.getAttribute("aria-controls");
+        var otherPanel = otherId ? document.getElementById(otherId) : null;
+        if (otherPanel) otherPanel.hidden = true;
+      });
+
+      toggle.setAttribute("aria-expanded", open ? "false" : "true");
+      toggle.classList.toggle("is-open", !open);
+      if (panel) panel.hidden = open;
+    });
+  });
+})();
+</script>
 {{>layout/page-end}}

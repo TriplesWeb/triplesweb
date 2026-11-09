@@ -145,17 +145,26 @@ public class ShopService {
     static ShopDetailDto toDetail(Shop shop) {
         List<ShopDetailDto.MdRegion> regions = new ArrayList<>();
         if (shop.getEvent() != null) {
+            int index = 0;
             for (EventStop stop : shop.getEvent().getMdGoodsStops()) {
-                List<String> photos = collectNoticeImages(stop);
-                if (photos.isEmpty()) continue;
+                List<ShopDetailDto.MdCategory> categories = collectPhotoCategories(stop);
+                if (categories.isEmpty()) {
+                    index++;
+                    continue;
+                }
+                String regionKey = stop.getStopId() != null
+                        ? String.valueOf(stop.getStopId())
+                        : "i" + index;
                 regions.add(ShopDetailDto.MdRegion.builder()
+                        .regionKey(regionKey)
                         .label(stop.getGoodsLabel())
                         .eventDate(stop.getEventDate())
                         .venue(stop.getVenue())
                         .hasVenue(stop.isHasVenue())
                         .hasPhotos(true)
-                        .photos(photos)
+                        .categories(categories)
                         .build());
+                index++;
             }
         }
         return ShopDetailDto.builder()
@@ -170,19 +179,42 @@ public class ShopService {
                 .build();
     }
 
+    /** 공지 사진이 있는 카테고리만 모은다. 상품명·가격 목록은 샵 상세에 올리지 않는다. */
+    static List<ShopDetailDto.MdCategory> collectPhotoCategories(EventStop stop) {
+        List<ShopDetailDto.MdCategory> out = new ArrayList<>();
+        for (EventStop.MdCategory category : stop.getMdCategories()) {
+            List<String> photos = dedupeUrls(category.getNoticeImages());
+            if (photos.isEmpty()) continue;
+            out.add(ShopDetailDto.MdCategory.builder()
+                    .title(category.getTitle())
+                    .key(category.getKey())
+                    .hasPhotos(true)
+                    .photos(photos)
+                    .build());
+        }
+        return out;
+    }
+
     /** 회차 MD 카테고리의 공지 이미지를 순서·중복 없이 모은다. */
     static List<String> collectNoticeImages(EventStop stop) {
+        List<String> out = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
+        for (ShopDetailDto.MdCategory category : collectPhotoCategories(stop)) {
+            for (String url : category.getPhotos()) {
+                if (seen.add(url)) out.add(url);
+            }
+        }
+        return out;
+    }
+
+    private static List<String> dedupeUrls(List<String> urls) {
+        if (urls == null || urls.isEmpty()) return List.of();
         Set<String> seen = new LinkedHashSet<>();
         List<String> out = new ArrayList<>();
-        for (EventStop.MdCategory category : stop.getMdCategories()) {
-            if (category.getNoticeImages() == null) continue;
-            for (String url : category.getNoticeImages()) {
-                if (!StringUtils.hasText(url)) continue;
-                String trimmed = url.trim();
-                if (seen.add(trimmed)) {
-                    out.add(trimmed);
-                }
-            }
+        for (String url : urls) {
+            if (!StringUtils.hasText(url)) continue;
+            String trimmed = url.trim();
+            if (seen.add(trimmed)) out.add(trimmed);
         }
         return out;
     }
