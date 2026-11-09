@@ -29,4 +29,126 @@
   color: #7dffe8;
 }
 
-/* 지역·카테고리 드롭다운은 event-detail.css의 .event-goods-* 를 재사용한다. */
+/* MD 리스트 — 앨범 트랙리스트와 같은 톤 */
+.shop-md-section {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.shop-md-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.shop-md-rows {
+  counter-reset: shop-md;
+}
+
+.shop-md-head,
+.shop-md-row {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) 2.25rem;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+  text-align: left;
+}
+
+.shop-md-head {
+  padding: 0.875rem 0.75rem;
+}
+
+.shop-md-num {
+  text-align: center;
+}
+
+.shop-md-row {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.shop-md-row:hover {
+  background: rgba(32, 36, 48, 0.6);
+}
+
+.shop-md-row:focus-visible {
+  outline: 2px solid rgba(0, 245, 212, 0.55);
+  outline-offset: -2px;
+}
+
+.shop-md-item .shop-md-num::before {
+  counter-increment: shop-md;
+  content: counter(shop-md);
+}
+
+.shop-md-title-col {
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #e3e2e8;
+}
+
+.shop-md-name {
+  display: inline-block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.shop-md-mark {
+  justify-self: center;
+  font-size: 1.15rem;
+  color: #8b9b95;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.shop-md-item.is-open .shop-md-row,
+.shop-md-row[aria-expanded="true"] {
+  background: rgba(32, 36, 48, 0.45);
+}
+
+.shop-md-item.is-open .shop-md-name,
+.shop-md-row[aria-expanded="true"] .shop-md-name {
+  color: #00f5d4;
+}
+
+.shop-md-item.is-open .shop-md-mark,
+.shop-md-row[aria-expanded="true"] .shop-md-mark {
+  transform: rotate(180deg);
+  color: #00f5d4;
+}
+
+.shop-md-panel {
+  padding: 0 0.75rem 1rem;
+  background: rgba(13, 14, 18, 0.35);
+}
+
+.shop-md-panel[hidden] {
+  display: none;
+}
+
+.shop-md-notices {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.shop-md-notice {
+  margin: 0;
+  border-radius: 0.65rem;
+  overflow: hidden;
+  border: 1px solid rgba(58, 74, 70, 0.4);
+  background: rgba(22, 24, 31, 0.7);
+}
+
+.shop-md-notice img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 36rem;
+  object-fit: contain;
+  background: #0d0e12;
+}
