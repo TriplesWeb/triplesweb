@@ -36,6 +36,7 @@ class ShopServiceMdPhotoTest {
 
         Shop shop = new Shop();
         shop.setId(3L);
+        shop.setTitle("tripleS Come True");
         shop.setEvent(event);
         shop.setSalesPeriod("2024.06.01~2024.09.30");
         shop.setMdList("""

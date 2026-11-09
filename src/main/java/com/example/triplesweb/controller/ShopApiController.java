@@ -121,7 +121,8 @@ public class ShopApiController {
 
     @PostMapping
     public ShopAdminDto create(
-            @RequestParam Long eventId,
+            @RequestParam String title,
+            @RequestParam(required = false) Long eventId,
             @RequestParam String salesPeriod,
             @RequestParam(required = false) Long sectionId,
             @RequestParam(required = false, defaultValue = "") String mdList,
@@ -132,7 +133,7 @@ public class ShopApiController {
     ) {
         aboutAdminAuth.requireAdmin(request, session);
         try {
-            return shopAdminService.create(eventId, salesPeriod, sectionId, mdList, image, imageUrl);
+            return shopAdminService.create(title, eventId, salesPeriod, sectionId, mdList, image, imageUrl);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
@@ -141,7 +142,8 @@ public class ShopApiController {
     @PostMapping("/{id:[0-9]+}")
     public ShopAdminDto update(
             @PathVariable long id,
-            @RequestParam Long eventId,
+            @RequestParam String title,
+            @RequestParam(required = false) Long eventId,
             @RequestParam String salesPeriod,
             @RequestParam(required = false) Long sectionId,
             @RequestParam(required = false, defaultValue = "") String mdList,
@@ -153,7 +155,7 @@ public class ShopApiController {
     ) {
         aboutAdminAuth.requireAdmin(request, session);
         try {
-            return shopAdminService.update(id, eventId, salesPeriod, sectionId, mdList, image, imageUrl, clearImage);
+            return shopAdminService.update(id, title, eventId, salesPeriod, sectionId, mdList, image, imageUrl, clearImage);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }

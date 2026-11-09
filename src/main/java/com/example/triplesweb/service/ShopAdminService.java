@@ -147,6 +147,7 @@ public class ShopAdminService {
 
     @Transactional
     public ShopAdminDto create(
+            String title,
             Long eventId,
             String salesPeriod,
             Long sectionId,
@@ -155,7 +156,7 @@ public class ShopAdminService {
             String imageUrl
     ) {
         Shop shop = new Shop();
-        applyFields(shop, null, eventId, salesPeriod, sectionId, mdList, image, imageUrl, false);
+        applyFields(shop, null, title, eventId, salesPeriod, sectionId, mdList, image, imageUrl, false);
         ShopAdminDto dto = toDto(shopRepository.save(shop));
         shopService.invalidateListCache();
         return dto;
@@ -164,6 +165,7 @@ public class ShopAdminService {
     @Transactional
     public ShopAdminDto update(
             long shopId,
+            String title,
             Long eventId,
             String salesPeriod,
             Long sectionId,
@@ -174,7 +176,7 @@ public class ShopAdminService {
     ) {
         Shop shop = shopRepository.findDetailById(shopId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 굿즈리스트가 존재하지 않습니다. id=" + shopId));
-        applyFields(shop, shopId, eventId, salesPeriod, sectionId, mdList, image, imageUrl, clearImage);
+        applyFields(shop, shopId, title, eventId, salesPeriod, sectionId, mdList, image, imageUrl, clearImage);
         ShopAdminDto dto = toDto(shopRepository.save(shop));
         shopService.invalidateListCache();
         return dto;
@@ -192,6 +194,7 @@ public class ShopAdminService {
     private void applyFields(
             Shop shop,
             Long shopId,
+            String title,
             Long eventId,
             String salesPeriod,
             Long sectionId,
@@ -200,18 +203,25 @@ public class ShopAdminService {
             String imageUrl,
             boolean clearImage
     ) {
-        if (eventId == null || eventId <= 0) {
-            throw new IllegalArgumentException("연결할 공연(이벤트)을 선택해 주세요.");
+        String cardTitle = requireText(title, "카드 이름은 필수입니다.");
+        if (cardTitle.length() > 200) {
+            throw new IllegalArgumentException("카드 이름은 200자 이하여야 합니다.");
         }
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 이벤트가 존재하지 않습니다. id=" + eventId));
-        shopRepository.findByEvent_EventId(eventId).ifPresent(other -> {
-            if (!Objects.equals(other.getId(), shopId)) {
-                throw new IllegalArgumentException("이미 굿즈리스트에 등록된 공연입니다: " + event.getEventName());
-            }
-        });
+
+        Event event = null;
+        if (eventId != null && eventId > 0) {
+            event = eventRepository.findById(eventId)
+                    .orElseThrow(() -> new IllegalArgumentException("해당 이벤트가 존재하지 않습니다. id=" + eventId));
+            final String eventLabel = event.getEventName();
+            shopRepository.findByEvent_EventId(eventId).ifPresent(other -> {
+                if (!Objects.equals(other.getId(), shopId)) {
+                    throw new IllegalArgumentException("이미 굿즈리스트에 등록된 공연입니다: " + eventLabel);
+                }
+            });
+        }
 
         String period = requireText(salesPeriod, "판매 기간은 필수입니다.");
+        shop.setTitle(cardTitle);
         shop.setEvent(event);
         shop.setSalesPeriod(period);
         shop.setMdList(normalizeMdList(mdList));
@@ -262,8 +272,9 @@ public class ShopAdminService {
         Event event = shop.getEvent();
         return ShopAdminDto.builder()
                 .id(shop.getId())
+                .title(shop.getTitle())
                 .eventId(event != null ? event.getEventId() : null)
-                .eventName(event != null ? event.getEventName() : null)
+                .eventName(event != null ? event.getEventName() : shop.getEventName())
                 .salesPeriod(shop.getSalesPeriod())
                 .coverImage(shop.getCoverImage())
                 .mdList(shop.getMdList())

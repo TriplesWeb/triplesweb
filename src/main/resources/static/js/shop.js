@@ -126,12 +126,13 @@
   function fillEventSelect(selectedId) {
     const sel = document.getElementById("shopEditEventId");
     if (!sel) return;
+    const blank = '<option value="">공연 없음 (별도 MD)</option>';
     const options = eventOptions.length
       ? eventOptions.map((e) =>
           `<option value="${e.eventId}" ${String(e.eventId) === String(selectedId || "") ? "selected" : ""}>${escapeAttr(e.eventName)}</option>`
         ).join("")
-      : '<option value="">등록된 공연이 없습니다</option>';
-    sel.innerHTML = options;
+      : '<option value="" disabled>등록된 공연이 없습니다</option>';
+    sel.innerHTML = blank + options;
   }
 
   async function loadOptions() {
@@ -175,6 +176,8 @@
     if (err) { err.hidden = true; err.textContent = ""; }
     document.getElementById("shopEditId").value = id || "";
     document.getElementById("shopEditTitle").textContent = id ? "굿즈리스트 수정" : "굿즈리스트 추가";
+    const cardNameEl = document.getElementById("shopEditCardName");
+    if (cardNameEl) cardNameEl.value = "";
     setSalesPeriodInputs("");
     document.getElementById("shopEditMdList").value = "";
     document.getElementById("shopEditImage").value = "";
@@ -198,6 +201,7 @@
         return;
       }
       const data = await res.json();
+      if (cardNameEl) cardNameEl.value = data.title || data.eventName || "";
       setSalesPeriodInputs(data.salesPeriod || "");
       document.getElementById("shopEditMdList").value = data.mdList || "";
       fillSectionSelect(data.sectionId);
@@ -242,6 +246,14 @@
       }
       preview.src = URL.createObjectURL(file);
       preview.classList.remove("hidden");
+    });
+
+    document.getElementById("shopEditEventId")?.addEventListener("change", (e) => {
+      const cardNameEl = document.getElementById("shopEditCardName");
+      if (!cardNameEl || cardNameEl.value.trim()) return;
+      const selectedId = e.target.value;
+      const match = eventOptions.find((ev) => String(ev.eventId) === String(selectedId));
+      if (match?.eventName) cardNameEl.value = match.eventName;
     });
 
     document.getElementById("shopSectionAddForm")?.addEventListener("submit", async (e) => {
@@ -313,10 +325,11 @@
       e.preventDefault();
       const err = document.getElementById("shopEditError");
       const id = document.getElementById("shopEditId").value;
+      const title = document.getElementById("shopEditCardName")?.value?.trim() || "";
       const eventId = document.getElementById("shopEditEventId").value;
       const salesPeriod = readSalesPeriod();
-      if (!eventId) {
-        if (err) { err.hidden = false; err.textContent = "공연을 선택해 주세요."; }
+      if (!title) {
+        if (err) { err.hidden = false; err.textContent = "카드 이름을 입력해 주세요."; }
         return;
       }
       if (!salesPeriod) {
@@ -324,7 +337,8 @@
         return;
       }
       const fd = new FormData();
-      fd.append("eventId", eventId);
+      fd.append("title", title);
+      if (eventId) fd.append("eventId", eventId);
       fd.append("salesPeriod", salesPeriod);
       fd.append("mdList", document.getElementById("shopEditMdList")?.value || "");
       const sectionId = document.getElementById("shopEditSectionId")?.value;

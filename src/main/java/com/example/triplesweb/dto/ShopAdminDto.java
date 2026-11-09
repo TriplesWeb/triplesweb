@@ -13,6 +13,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class ShopAdminDto {
     private Long id;
+    private String title;
     private Long eventId;
     private String eventName;
     private String salesPeriod;

@@ -6,9 +6,12 @@
         <h3 id="shopEditTitle" class="about-modal-title">굿즈리스트 수정</h3>
         <form id="shopEditForm" class="about-edit-form">
             <input type="hidden" id="shopEditId">
+            <label class="about-edit-label">카드 이름
+                <input type="text" id="shopEditCardName" required maxlength="200" placeholder="예: tripleS Come True MD">
+            </label>
             <label class="about-edit-label">공연(이벤트)
-                <select id="shopEditEventId" required></select>
-                <span class="text-xs text-gray-400">카드 이름은 선택한 공연 이름을 씁니다.</span>
+                <select id="shopEditEventId"></select>
+                <span class="text-xs text-gray-400">선택 사항입니다. 연결하면 커버가 비어 있을 때 공연 포스터를 씁니다.</span>
             </label>
             <label class="about-edit-label">판매 기간
                 <div class="stop-date-range shop-sales-period" title="판매 기간">
@@ -30,11 +33,11 @@
             </label>
             <label class="about-edit-label">외부 이미지 URL
                 <input type="url" id="shopEditImageUrl" placeholder="https://example.com/cover.jpg" maxlength="1000" pattern="https?://.+">
-                <span class="text-xs text-gray-400">비우면 공연 포스터를 씁니다. 파일을 선택하면 파일이 우선 적용됩니다.</span>
+                <span class="text-xs text-gray-400">비우면 연결 공연 포스터를 씁니다. 파일을 선택하면 파일이 우선 적용됩니다.</span>
             </label>
             <img id="shopEditImagePreview" class="about-preview hidden" alt="커버 미리보기">
             <label class="about-edit-check">
-                <input type="checkbox" id="shopEditClearImage"> 커버 이미지 제거 (공연 포스터 사용)
+                <input type="checkbox" id="shopEditClearImage"> 커버 이미지 제거 (연결 공연 포스터 사용)
             </label>
             <p id="shopEditError" class="about-edit-error" hidden></p>
             <div class="about-edit-actions">
