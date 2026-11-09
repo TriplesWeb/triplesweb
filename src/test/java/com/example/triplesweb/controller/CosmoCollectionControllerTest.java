@@ -117,6 +117,7 @@ class CosmoCollectionControllerTest {
                 .andExpect(content().string(containsString("\"Double\":[\"367Z\"]")))
                 .andExpect(content().string(containsString("value=\"전체\"")))
                 .andExpect(content().string(not(containsString("오브젝트 상세 보기"))))
+                .andExpect(content().string(not(containsString("header-objekt-jump"))))
                 .andExpect(content().string(containsString("collection-scroll-sentinel")))
                 .andExpect(content().string(containsString("scheduleApplyFilters")))
                 .andExpect(content().string(not(containsString("#30000001"))));
