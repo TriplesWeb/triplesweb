@@ -6,7 +6,7 @@ import lombok.*;
 import org.springframework.util.StringUtils;
 
 /**
- * 공연 MD 리스트 카드. {@link Event}는 선택(1:0..1), {@link ShopSection} N:1.
+ * MD 굿즈리스트 카드. {@link Event}는 선택(1:0..1), {@link ShopSection} N:1.
  * 카드 이름은 {@code title}, MD 공지 사진은 {@code md_list}에서 관리한다.
  */
 @Entity
