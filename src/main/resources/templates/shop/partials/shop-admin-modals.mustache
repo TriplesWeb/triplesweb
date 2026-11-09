@@ -11,7 +11,12 @@
                 <span class="text-xs text-gray-400">카드 이름은 선택한 공연 이름을 씁니다.</span>
             </label>
             <label class="about-edit-label">판매 기간
-                <input type="text" id="shopEditSalesPeriod" required maxlength="80" placeholder="예: 2024.03.01~2024.03.15">
+                <div class="stop-date-range shop-sales-period" title="판매 기간">
+                    <input type="date" id="shopEditSalesStart" required title="시작일" aria-label="판매 시작일">
+                    <span class="stop-date-sep" aria-hidden="true">~</span>
+                    <input type="date" id="shopEditSalesEnd" title="종료일 (선택)" aria-label="판매 종료일 (선택)">
+                </div>
+                <span class="text-xs text-gray-400">시작일은 필수, 종료일은 선택입니다.</span>
             </label>
             <label class="about-edit-label">MD 공지
                 <textarea id="shopEditMdList" rows="8" placeholder="# Official MD&#10;!/uploads/images/md-notice.jpg&#10;# MD Benefit&#10;!/uploads/images/md-benefit.jpg"></textarea>

@@ -1290,6 +1290,7 @@ textarea.form-control {
 
 .event-stop-row-top input[type="text"],
 .event-stop-row-top input[type="date"],
+.shop-sales-period input[type="date"],
 .event-stop-field input[type="text"],
 .event-stop-field textarea {
     appearance: none;
@@ -1304,7 +1305,8 @@ textarea.form-control {
     font-weight: 500;
 }
 
-.event-stop-row-top input[type="date"] {
+.event-stop-row-top input[type="date"],
+.shop-sales-period input[type="date"] {
     width: 9.75rem;
     min-width: 9.75rem;
     max-width: 9.75rem;

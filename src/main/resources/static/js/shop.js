@@ -68,6 +68,52 @@
     return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
   }
 
+  /** 표시용 날짜(2024.06.15) → input[type=date] 값 */
+  function toIsoDate(dotted) {
+    const m = String(dotted || "").trim().match(/^(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})$/);
+    if (!m) return "";
+    return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+  }
+
+  /** input[type=date] 값 → 저장/표시용 2024.06.15 */
+  function toDisplayDate(iso) {
+    const m = String(iso || "").trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return "";
+    return `${m[1]}.${m[2]}.${m[3]}`;
+  }
+
+  function parseSalesPeriod(raw) {
+    const s = String(raw || "").trim();
+    if (!s) return { start: "", end: "" };
+    const parts = s.split(/\s*[~～〜]\s*/);
+    return {
+      start: toIsoDate(parts[0] || ""),
+      end: toIsoDate(parts[1] || "")
+    };
+  }
+
+  function formatSalesPeriod(startIso, endIso) {
+    const start = toDisplayDate(startIso);
+    if (!start) return "";
+    const end = toDisplayDate(endIso);
+    if (!end || end === start) return start;
+    return `${start}~${end}`;
+  }
+
+  function setSalesPeriodInputs(raw) {
+    const dates = parseSalesPeriod(raw);
+    const startEl = document.getElementById("shopEditSalesStart");
+    const endEl = document.getElementById("shopEditSalesEnd");
+    if (startEl) startEl.value = dates.start;
+    if (endEl) endEl.value = dates.end;
+  }
+
+  function readSalesPeriod() {
+    const start = document.getElementById("shopEditSalesStart")?.value?.trim() || "";
+    const end = document.getElementById("shopEditSalesEnd")?.value?.trim() || "";
+    return formatSalesPeriod(start, end);
+  }
+
   function fillSectionSelect(selectedId) {
     const sel = document.getElementById("shopEditSectionId");
     if (!sel) return;
@@ -129,7 +175,7 @@
     if (err) { err.hidden = true; err.textContent = ""; }
     document.getElementById("shopEditId").value = id || "";
     document.getElementById("shopEditTitle").textContent = id ? "굿즈리스트 수정" : "굿즈리스트 추가";
-    document.getElementById("shopEditSalesPeriod").value = "";
+    setSalesPeriodInputs("");
     document.getElementById("shopEditMdList").value = "";
     document.getElementById("shopEditImage").value = "";
     document.getElementById("shopEditImageUrl").value = "";
@@ -152,7 +198,7 @@
         return;
       }
       const data = await res.json();
-      document.getElementById("shopEditSalesPeriod").value = data.salesPeriod || "";
+      setSalesPeriodInputs(data.salesPeriod || "");
       document.getElementById("shopEditMdList").value = data.mdList || "";
       fillSectionSelect(data.sectionId);
       fillEventSelect(data.eventId);
@@ -268,13 +314,13 @@
       const err = document.getElementById("shopEditError");
       const id = document.getElementById("shopEditId").value;
       const eventId = document.getElementById("shopEditEventId").value;
-      const salesPeriod = document.getElementById("shopEditSalesPeriod").value.trim();
+      const salesPeriod = readSalesPeriod();
       if (!eventId) {
         if (err) { err.hidden = false; err.textContent = "공연을 선택해 주세요."; }
         return;
       }
       if (!salesPeriod) {
-        if (err) { err.hidden = false; err.textContent = "판매 기간을 입력해 주세요."; }
+        if (err) { err.hidden = false; err.textContent = "판매 시작일을 선택해 주세요."; }
         return;
       }
       const fd = new FormData();
