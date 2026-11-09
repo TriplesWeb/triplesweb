@@ -1289,6 +1289,15 @@ textarea.form-control {
     line-height: 1;
 }
 
+.shop-md-thumb {
+    width: 4.5rem;
+    height: 4.5rem;
+    object-fit: cover;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(58, 74, 70, 0.45);
+    background: #0d0e12;
+}
+
 .event-stop-row-top input[type="text"],
 .event-stop-row-top input[type="date"],
 .shop-sales-period input[type="date"],

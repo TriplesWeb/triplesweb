@@ -21,9 +21,15 @@
                 </div>
                 <span class="text-xs text-gray-400">시작일은 필수, 종료일은 선택입니다.</span>
             </label>
-            <label class="about-edit-label">MD 공지
-                <textarea id="shopEditMdList" rows="8" placeholder="# Official MD&#10;!/uploads/images/md-notice.jpg&#10;# MD Benefit&#10;!/uploads/images/md-benefit.jpg"></textarea>
-                <span class="text-xs text-gray-400">상세 드롭다운 구역은 <code># 제목</code>, 사진은 <code>!이미지URL</code>로 넣습니다.</span>
+            <label class="about-edit-label">MD 공지 사진
+                <div class="shop-md-photo-tools flex flex-wrap items-center gap-2 mb-2">
+                    <input type="file" id="shopEditMdPhoto" accept="image/*" class="hidden" multiple>
+                    <button type="button" id="shopEditMdPhotoBtn" class="about-mode-btn is-active btn btn-sm btn-outline btn-primary btn-active">사진 추가</button>
+                    <span class="text-xs text-gray-400">상세 화면에 보이는 공지 사진입니다. 여러 장 선택할 수 있어요.</span>
+                </div>
+                <div id="shopEditMdPreview" class="shop-md-preview flex flex-wrap gap-2 mb-2" hidden></div>
+                <textarea id="shopEditMdList" rows="6" placeholder="# Official MD&#10;!/uploads/images/md-notice.jpg&#10;# MD Benefit&#10;!/uploads/images/md-benefit.jpg"></textarea>
+                <span class="text-xs text-gray-400">구역은 <code># 제목</code>, 사진은 <code>!이미지URL</code>. 「사진 추가」로 올리면 자동으로 붙습니다.</span>
             </label>
             <label class="about-edit-label">목록 구분
                 <select id="shopEditSectionId"></select>

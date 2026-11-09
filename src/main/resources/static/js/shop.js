@@ -114,6 +114,66 @@
     return formatSalesPeriod(start, end);
   }
 
+  function parseMdPhotoUrls(raw) {
+    const urls = [];
+    const seen = new Set();
+    String(raw || "").split(/\r?\n/).forEach((line) => {
+      const t = line.trim();
+      if (!t) return;
+      let url = "";
+      if (t.startsWith("!")) url = t.slice(1).trim();
+      else if (/^img:/i.test(t)) url = t.replace(/^img:/i, "").trim();
+      if (!url || seen.has(url)) return;
+      seen.add(url);
+      urls.push(url);
+    });
+    return urls;
+  }
+
+  function refreshMdPreview() {
+    const box = document.getElementById("shopEditMdPreview");
+    const ta = document.getElementById("shopEditMdList");
+    if (!box || !ta) return;
+    const urls = parseMdPhotoUrls(ta.value);
+    if (!urls.length) {
+      box.innerHTML = "";
+      box.hidden = true;
+      return;
+    }
+    box.hidden = false;
+    box.innerHTML = urls.map((url) =>
+      `<img src="${escapeAttr(url)}" alt="" class="shop-md-thumb" loading="lazy" decoding="async">`
+    ).join("");
+  }
+
+  function appendMdPhotoUrl(url) {
+    const ta = document.getElementById("shopEditMdList");
+    if (!ta || !url) return;
+    const line = "!" + url;
+    const cur = ta.value.trimEnd();
+    ta.value = cur ? (cur + "\n" + line) : line;
+    refreshMdPreview();
+  }
+
+  async function uploadMdPhotos(files) {
+    const list = Array.from(files || []).filter((f) => f && f.type && f.type.startsWith("image/"));
+    if (!list.length) {
+      alert("이미지 파일을 선택해 주세요.");
+      return;
+    }
+    const err = document.getElementById("shopEditError");
+    for (const file of list) {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await apiFetch(API + "/md-photo", { method: "POST", body: fd });
+      if (!res.ok) throw new Error(await readError(res, "사진 업로드에 실패했습니다."));
+      const data = await res.json();
+      if (!data?.url) throw new Error("업로드 응답에 URL이 없습니다.");
+      appendMdPhotoUrl(data.url);
+    }
+    if (err) { err.hidden = true; err.textContent = ""; }
+  }
+
   function fillSectionSelect(selectedId) {
     const sel = document.getElementById("shopEditSectionId");
     if (!sel) return;
@@ -180,6 +240,7 @@
     if (cardNameEl) cardNameEl.value = "";
     setSalesPeriodInputs("");
     document.getElementById("shopEditMdList").value = "";
+    refreshMdPreview();
     document.getElementById("shopEditImage").value = "";
     document.getElementById("shopEditImageUrl").value = "";
     document.getElementById("shopEditClearImage").checked = false;
@@ -211,6 +272,7 @@
         preview.classList.remove("hidden");
       }
     }
+    refreshMdPreview();
     openModal("shopEditModal");
   }
 
@@ -254,6 +316,27 @@
       const selectedId = e.target.value;
       const match = eventOptions.find((ev) => String(ev.eventId) === String(selectedId));
       if (match?.eventName) cardNameEl.value = match.eventName;
+    });
+
+    document.getElementById("shopEditMdList")?.addEventListener("input", () => refreshMdPreview());
+
+    document.getElementById("shopEditMdPhotoBtn")?.addEventListener("click", () => {
+      document.getElementById("shopEditMdPhoto")?.click();
+    });
+
+    document.getElementById("shopEditMdPhoto")?.addEventListener("change", async (e) => {
+      const input = e.target;
+      const files = input.files;
+      if (!files || !files.length) return;
+      const err = document.getElementById("shopEditError");
+      try {
+        await uploadMdPhotos(files);
+      } catch (ex) {
+        if (err) { err.hidden = false; err.textContent = ex.message || "사진 업로드 실패"; }
+        else alert(ex.message || "사진 업로드 실패");
+      } finally {
+        input.value = "";
+      }
     });
 
     document.getElementById("shopSectionAddForm")?.addEventListener("submit", async (e) => {

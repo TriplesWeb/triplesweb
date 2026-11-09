@@ -2,7 +2,9 @@ package com.example.triplesweb.controller;
 
 import com.example.triplesweb.dto.ShopAdminDto;
 import com.example.triplesweb.dto.ShopSectionDto;
+import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.service.AboutAdminAuth;
+import com.example.triplesweb.service.FileStorageService;
 import com.example.triplesweb.service.ShopAdminService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -30,6 +33,7 @@ public class ShopApiController {
 
     private final ShopAdminService shopAdminService;
     private final AboutAdminAuth aboutAdminAuth;
+    private final FileStorageService fileStorageService;
 
     @GetMapping("/admin/status")
     public Map<String, Object> adminStatus(HttpServletRequest request, HttpSession session) {
@@ -107,6 +111,28 @@ public class ShopApiController {
             return Map.of("deleted", true);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
+
+    /** 상세 MD 공지 사진 업로드. 저장 URL을 텍스트 영역에 {@code !url}로 붙인다. */
+    @PostMapping("/md-photo")
+    public Map<String, String> uploadMdPhoto(
+            @RequestParam("file") MultipartFile file,
+            HttpServletRequest request,
+            HttpSession session
+    ) {
+        aboutAdminAuth.requireAdmin(request, session);
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미지 파일을 선택해 주세요.");
+        }
+        try {
+            SavedMeta meta = fileStorageService.saveWithMeta(file, "shop/md");
+            if (meta == null || meta.getUrl() == null || meta.getUrl().isBlank()) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "이미지 저장에 실패했습니다.");
+            }
+            return Map.of("url", meta.getUrl());
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "이미지 저장에 실패했습니다.");
         }
     }
 
