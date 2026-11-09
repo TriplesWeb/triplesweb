@@ -1,8 +1,6 @@
 /* 시즌을 열었을 때만 표시하는 공통 색상 버튼. 원래 입력은 폼 전송용으로만 유지한다. */
 .season-native-options[hidden]{display:none!important}
-.season-choice-panel{position:absolute;top:calc(100% + 8px);left:0;width:min(32rem,calc(100vw - 2rem))!important;max-width:calc(100vw - 2rem);max-height:none!important;overflow:visible!important;padding:12px!important;border:1px solid #3a4a4680;border-radius:14px;background:#171b22;box-shadow:0 12px 32px #0005;z-index:60;pointer-events:none}
-.season-choice-panel .season-quick-filters,.season-choice-panel .season-chip-list{pointer-events:none}
-.season-choice-panel .season-chip{pointer-events:auto}
+.season-choice-panel{position:absolute;top:calc(100% + 8px);left:0;width:min(32rem,calc(100vw - 2rem))!important;max-width:calc(100vw - 2rem);max-height:none!important;overflow:visible!important;padding:12px!important;border:1px solid #3a4a4680;border-radius:14px;background:#171b22;box-shadow:0 12px 32px #0005;z-index:60}
 .season-choice-panel.hidden,.season-choice-panel[hidden]{display:none!important}
 .season-quick-filters{font-family:inherit;width:100%;min-width:0;margin:0}
 .season-chip-list{display:flex;flex-wrap:wrap;gap:8px;padding:2px;width:100%;min-width:0}

@@ -290,6 +290,22 @@ document.getElementById('season-toggle').addEventListener('click', () => {
           return menu && !menu.hidden && !menu.classList.contains('hidden') && getComputedStyle(menu).display !== 'none';
         });
         await assertMenuVisible('collection-season-menu');
+        const siblingHits = await page.evaluate(() => {
+          const hit = (id) => {
+            const el = document.getElementById(id);
+            const box = el.getBoundingClientRect();
+            const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+            return Boolean(top && (top.id === id || el.contains(top) || top.closest('#' + el.closest('.objekt-filter')?.id)));
+          };
+          return {
+            class: hit('collection-class-toggle'),
+            kind: hit('collection-kind-toggle'),
+            sort: hit('collection-sort-toggle')
+          };
+        });
+        assert.ok(siblingHits.class, '시즌이 열린 동안 클래스가 가려지면 안 된다');
+        assert.ok(siblingHits.kind, '시즌이 열린 동안 종류가 가려지면 안 된다');
+        assert.ok(siblingHits.sort, '시즌이 열린 동안 정렬이 가려지면 안 된다');
         await page.locator('#collection-sort-toggle').click();
         await page.waitForFunction(() => {
           const sort = document.getElementById('collection-sort-menu');

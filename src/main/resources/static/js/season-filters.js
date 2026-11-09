@@ -60,6 +60,17 @@
     function placeMenu(){
       if(window.ObjektDropdown?window.ObjektDropdown.isClosed(menu):(menu.hidden||menu.classList.contains('hidden')))return;
       const pad=12;
+      if(window.ObjektDropdown?.place) window.ObjektDropdown.place(menu);
+      else {
+        const bar=control.closest('.objekt-filter-bar, .collection-filter-bar');
+        const hostBox=control.getBoundingClientRect();
+        let bottom=hostBox.bottom;
+        if(bar){
+          const chips=[...bar.querySelectorAll(':scope > .objekt-filter')];
+          if(chips.length) bottom=Math.max(...chips.map((el)=>el.getBoundingClientRect().bottom));
+        }
+        menu.style.top=Math.max(8,Math.round(bottom-hostBox.top+8))+'px';
+      }
       menu.style.left='0';menu.style.right='auto';
       const room=Math.max(160,innerWidth-pad-control.getBoundingClientRect().left);
       menu.style.setProperty('max-width',room+'px','important');
