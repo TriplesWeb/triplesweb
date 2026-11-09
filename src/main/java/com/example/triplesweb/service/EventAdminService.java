@@ -254,7 +254,8 @@ public class EventAdminService {
             stop.setVenue(StringUtils.hasText(item.getVenue()) ? item.getVenue().trim() : null);
             stop.setDetail(item.getDetail() != null ? item.getDetail().trim() : "");
             stop.setSetlist(normalizeListText(item.getSetlist()));
-            stop.setMdList(normalizeListText(item.getMdList()));
+            // MD 공지는 샵 카드에서 관리한다. 회차 폼에서는 더 이상 받지 않는다.
+            stop.setMdList(null);
             stop.setSortOrder(item.getSortOrder() != null ? item.getSortOrder() : i);
             event.getStops().add(stop);
             i++;

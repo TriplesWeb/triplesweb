@@ -126,7 +126,7 @@
   function stopRowsHtml(stops) {
     const list = Array.isArray(stops) && stops.length
       ? stops
-      : [{ sortOrder: 0, eventDate: "", region: "", venue: "", detail: "", setlist: "", mdList: "" }];
+      : [{ sortOrder: 0, eventDate: "", region: "", venue: "", detail: "", setlist: "" }];
     return list.map((s, i) => {
       const dates = parseEventDate(s.eventDate || "");
       return `
@@ -152,11 +152,6 @@
             <span>셋리스트</span>
             <textarea class="stop-setlist" rows="6" placeholder="# VCR 1 : OPENING VCR&#10;곡명|앨범|비고&#10;곡A|앨범A || 곡B|앨범B">${escapeText(s.setlist || "")}</textarea>
           </label>
-          <label class="event-stop-field">
-            <span>샵 MD 공지</span>
-            <textarea class="stop-md-list" rows="7" placeholder="# Official MD&#10;!/uploads/images/md-notice.jpg&#10;# MD Benefit&#10;!/uploads/images/md-benefit.jpg" title="샵 MD 상세에 보이는 공지 사진. # 카테고리와 !이미지URL">${escapeText(s.mdList || "")}</textarea>
-            <span class="event-stop-field-hint">공연의 「콘서트 굿즈」에서 샵 MD 페이지로 연결됩니다. <code># 카테고리</code> · <code>!이미지URL</code></span>
-          </label>
         </div>
       </div>`;
     }).join("");
@@ -176,8 +171,7 @@
         region: row.querySelector(".stop-region")?.value?.trim() || "",
         venue: row.querySelector(".stop-venue")?.value?.trim() || "",
         detail: row.querySelector(".stop-detail")?.value?.trim() || "",
-        setlist: row.querySelector(".stop-setlist")?.value || "",
-        mdList: row.querySelector(".stop-md-list")?.value || ""
+        setlist: row.querySelector(".stop-setlist")?.value || ""
       });
     });
     return out;

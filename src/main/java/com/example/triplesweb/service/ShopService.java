@@ -21,11 +21,12 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
  * 굿즈리스트 목록·상세 조회. 목록은 구분(섹션)별로 묶고 미배정은 「기타」.
- * 상세 MD 사진은 연결된 이벤트의 {@code md_list} notice 이미지를 쓴다.
+ * 상세 MD 사진은 샵 카드의 {@code md_list} 공지 이미지를 쓴다.
  */
 @Service
 @RequiredArgsConstructor
@@ -58,7 +59,7 @@ public class ShopService {
     }
 
     /**
-     * 관리자 저장·삭제·이벤트 MD 변경 후 목록 캐시를 비운다.
+     * 관리자 저장·삭제 후 목록 캐시를 비운다.
      * 트랜잭션 안에서는 커밋 후에 비워, 커밋 전 재조회가 옛 행을 다시 캐시하지 않게 한다.
      */
     public void invalidateListCache() {
@@ -144,34 +145,32 @@ public class ShopService {
 
     /** 공연에 연결된 샵 카드 id. 없으면 empty. */
     @Transactional(readOnly = true)
-    public java.util.Optional<Long> findIdByEventId(long eventId) {
+    public Optional<Long> findIdByEventId(long eventId) {
         return shopRepository.findByEvent_EventId(eventId).map(Shop::getId);
     }
 
     static ShopDetailDto toDetail(Shop shop) {
         List<ShopDetailDto.MdRegion> regions = new ArrayList<>();
-        if (shop.getEvent() != null) {
-            int index = 0;
-            for (EventStop stop : shop.getEvent().getMdGoodsStops()) {
-                List<ShopDetailDto.MdCategory> categories = collectPhotoCategories(stop);
-                if (categories.isEmpty()) {
-                    index++;
-                    continue;
-                }
-                String regionKey = stop.getStopId() != null
-                        ? String.valueOf(stop.getStopId())
-                        : "i" + index;
-                regions.add(ShopDetailDto.MdRegion.builder()
-                        .regionKey(regionKey)
-                        .label(stop.getGoodsLabel())
-                        .eventDate(stop.getEventDate())
-                        .venue(stop.getVenue())
-                        .hasVenue(stop.isHasVenue())
-                        .hasPhotos(true)
-                        .categories(categories)
-                        .build());
+        int index = 0;
+        for (EventStop.MdCategory category : EventStop.MdCategory.parseAll(shop.getMdList())) {
+            List<String> photos = dedupeUrls(category.getNoticeImages());
+            if (photos.isEmpty()) {
                 index++;
+                continue;
             }
+            String key = StringUtils.hasText(category.getKey()) ? category.getKey() : ("c" + index);
+            regions.add(ShopDetailDto.MdRegion.builder()
+                    .regionKey(key)
+                    .label(category.getTitle())
+                    .hasPhotos(true)
+                    .categories(List.of(ShopDetailDto.MdCategory.builder()
+                            .title(category.getTitle())
+                            .key(key)
+                            .hasPhotos(true)
+                            .photos(photos)
+                            .build()))
+                    .build());
+            index++;
         }
         return ShopDetailDto.builder()
                 .id(shop.getId())
@@ -185,28 +184,12 @@ public class ShopService {
                 .build();
     }
 
-    /** 공지 사진이 있는 카테고리만 모은다. 상품명·가격 목록은 샵 상세에 올리지 않는다. */
-    static List<ShopDetailDto.MdCategory> collectPhotoCategories(EventStop stop) {
-        List<ShopDetailDto.MdCategory> out = new ArrayList<>();
-        for (EventStop.MdCategory category : stop.getMdCategories()) {
-            List<String> photos = dedupeUrls(category.getNoticeImages());
-            if (photos.isEmpty()) continue;
-            out.add(ShopDetailDto.MdCategory.builder()
-                    .title(category.getTitle())
-                    .key(category.getKey())
-                    .hasPhotos(true)
-                    .photos(photos)
-                    .build());
-        }
-        return out;
-    }
-
-    /** 회차 MD 카테고리의 공지 이미지를 순서·중복 없이 모은다. */
-    static List<String> collectNoticeImages(EventStop stop) {
+    /** 테스트·하위 호환: md_list 공지 이미지를 평탄화한다. */
+    static List<String> collectNoticeImages(String mdList) {
         List<String> out = new ArrayList<>();
         Set<String> seen = new LinkedHashSet<>();
-        for (ShopDetailDto.MdCategory category : collectPhotoCategories(stop)) {
-            for (String url : category.getPhotos()) {
+        for (EventStop.MdCategory category : EventStop.MdCategory.parseAll(mdList)) {
+            for (String url : dedupeUrls(category.getNoticeImages())) {
                 if (seen.add(url)) out.add(url);
             }
         }

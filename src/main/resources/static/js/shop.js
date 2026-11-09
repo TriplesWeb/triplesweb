@@ -81,10 +81,9 @@
     const sel = document.getElementById("shopEditEventId");
     if (!sel) return;
     const options = eventOptions.length
-      ? eventOptions.map((e) => {
-          const mark = e.hasMd ? "" : " (MD 없음)";
-          return `<option value="${e.eventId}" ${String(e.eventId) === String(selectedId || "") ? "selected" : ""}>${escapeAttr(e.eventName)}${mark}</option>`;
-        }).join("")
+      ? eventOptions.map((e) =>
+          `<option value="${e.eventId}" ${String(e.eventId) === String(selectedId || "") ? "selected" : ""}>${escapeAttr(e.eventName)}</option>`
+        ).join("")
       : '<option value="">등록된 공연이 없습니다</option>';
     sel.innerHTML = options;
   }
@@ -131,6 +130,7 @@
     document.getElementById("shopEditId").value = id || "";
     document.getElementById("shopEditTitle").textContent = id ? "굿즈리스트 수정" : "굿즈리스트 추가";
     document.getElementById("shopEditSalesPeriod").value = "";
+    document.getElementById("shopEditMdList").value = "";
     document.getElementById("shopEditImage").value = "";
     document.getElementById("shopEditImageUrl").value = "";
     document.getElementById("shopEditClearImage").checked = false;
@@ -153,6 +153,7 @@
       }
       const data = await res.json();
       document.getElementById("shopEditSalesPeriod").value = data.salesPeriod || "";
+      document.getElementById("shopEditMdList").value = data.mdList || "";
       fillSectionSelect(data.sectionId);
       fillEventSelect(data.eventId);
       if (data.coverImage && preview) {
@@ -279,6 +280,7 @@
       const fd = new FormData();
       fd.append("eventId", eventId);
       fd.append("salesPeriod", salesPeriod);
+      fd.append("mdList", document.getElementById("shopEditMdList")?.value || "");
       const sectionId = document.getElementById("shopEditSectionId")?.value;
       if (sectionId) fd.append("sectionId", sectionId);
       const file = document.getElementById("shopEditImage").files?.[0];

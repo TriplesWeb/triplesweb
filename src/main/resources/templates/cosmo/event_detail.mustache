@@ -117,35 +117,8 @@
                     </div>
                     {{/hasSetlist}}
 
-                    {{#hasMdList}}
-                    {{#hasShopLink}}
-                    <a href="/shop/{{shopId}}" class="event-stop-block event-stop-block--goods event-goods-link">
-                        <span class="event-goods-link-main">
-                            <span class="event-stop-block-title event-goods-link-title">
-                                <span class="material-symbols-outlined" aria-hidden="true">shopping_bag</span>
-                                콘서트 굿즈
-                            </span>
-                            <span class="event-goods-link-meta">{{goodsLabel}} MD 리스트 보기</span>
-                        </span>
-                        <span class="event-goods-link-go" aria-hidden="true">→</span>
-                    </a>
-                    {{/hasShopLink}}
-                    {{^hasShopLink}}
-                    <a href="/shop" class="event-stop-block event-stop-block--goods event-goods-link">
-                        <span class="event-goods-link-main">
-                            <span class="event-stop-block-title event-goods-link-title">
-                                <span class="material-symbols-outlined" aria-hidden="true">shopping_bag</span>
-                                콘서트 굿즈
-                            </span>
-                            <span class="event-goods-link-meta">굿즈리스트에서 MD 보기</span>
-                        </span>
-                        <span class="event-goods-link-go" aria-hidden="true">→</span>
-                    </a>
-                    {{/hasShopLink}}
-                    {{/hasMdList}}
-
                     {{^hasPanelContent}}
-                    <p class="event-stop-detail event-stop-detail--empty">상세 안내·셋리스트·굿즈가 아직 등록되지 않았습니다.</p>
+                    <p class="event-stop-detail event-stop-detail--empty">상세 안내·셋리스트가 아직 등록되지 않았습니다.</p>
                     {{/hasPanelContent}}
                 </div>
             </li>
@@ -156,6 +129,21 @@
         <p class="text-sm text-[#b9cac4]/70 py-6 text-center">등록된 지역 회차가 없습니다.</p>
         {{/hasStops}}
     </section>
+
+    {{#hasShopLink}}
+    <section class="event-goods-section" aria-label="콘서트 굿즈">
+        <a href="/shop/{{shopId}}" class="event-stop-block event-stop-block--goods event-goods-link">
+            <span class="event-goods-link-main">
+                <span class="event-stop-block-title event-goods-link-title">
+                    <span class="material-symbols-outlined" aria-hidden="true">shopping_bag</span>
+                    콘서트 굿즈
+                </span>
+                <span class="event-goods-link-meta">MD 리스트 보기</span>
+            </span>
+            <span class="event-goods-link-go" aria-hidden="true">→</span>
+        </a>
+    </section>
+    {{/hasShopLink}}
     </div>
 </div>
             {{/event}}

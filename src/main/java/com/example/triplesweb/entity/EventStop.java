@@ -89,9 +89,9 @@ public class EventStop {
         return !getMdCategories().isEmpty();
     }
 
-    /** 회차 아코디언 본문(상세·셋리스트·MD) */
+    /** 회차 아코디언 본문(상세·셋리스트). MD는 샵 카드에서 관리한다. */
     public boolean isHasPanelContent() {
-        return isHasDetail() || isHasSetlist() || isHasMdList();
+        return isHasDetail() || isHasSetlist();
     }
 
     /** Mustache용: 공연명 (지역) */
@@ -281,7 +281,7 @@ public class EventStop {
             this.hasItems = !this.items.isEmpty();
         }
 
-        static List<MdCategory> parseAll(String raw) {
+        public static List<MdCategory> parseAll(String raw) {
             List<String> lines = splitLines(raw);
             if (lines.isEmpty()) return List.of();
 

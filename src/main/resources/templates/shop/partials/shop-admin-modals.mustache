@@ -8,10 +8,14 @@
             <input type="hidden" id="shopEditId">
             <label class="about-edit-label">공연(이벤트)
                 <select id="shopEditEventId" required></select>
-                <span class="text-xs text-gray-400">카드 이름과 MD 사진은 선택한 공연에서 가져옵니다.</span>
+                <span class="text-xs text-gray-400">카드 이름은 선택한 공연 이름을 씁니다.</span>
             </label>
             <label class="about-edit-label">판매 기간
                 <input type="text" id="shopEditSalesPeriod" required maxlength="80" placeholder="예: 2024.03.01~2024.03.15">
+            </label>
+            <label class="about-edit-label">MD 공지
+                <textarea id="shopEditMdList" rows="8" placeholder="# Official MD&#10;!/uploads/images/md-notice.jpg&#10;# MD Benefit&#10;!/uploads/images/md-benefit.jpg"></textarea>
+                <span class="text-xs text-gray-400">상세 드롭다운 구역은 <code># 제목</code>, 사진은 <code>!이미지URL</code>로 넣습니다.</span>
             </label>
             <label class="about-edit-label">목록 구분
                 <select id="shopEditSectionId"></select>

@@ -17,6 +17,7 @@ public class ShopAdminDto {
     private String eventName;
     private String salesPeriod;
     private String coverImage;
+    private String mdList;
     private Long sectionId;
     private String sectionName;
 
@@ -28,6 +29,5 @@ public class ShopAdminDto {
     public static class EventOption {
         private Long eventId;
         private String eventName;
-        private boolean hasMd;
     }
 }

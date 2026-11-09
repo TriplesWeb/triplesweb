@@ -48,14 +48,13 @@ public class ShopAdminService {
 
     @Transactional(readOnly = true)
     public List<ShopAdminDto.EventOption> listEventOptions() {
-        return eventRepository.findAllWithSectionAndStops().stream()
+        return eventRepository.findAll().stream()
                 .sorted(Comparator.comparing(
                         e -> e.getEventName() != null ? e.getEventName() : "",
                         String.CASE_INSENSITIVE_ORDER))
                 .map(e -> ShopAdminDto.EventOption.builder()
                         .eventId(e.getEventId())
                         .eventName(e.getEventName())
-                        .hasMd(e.isHasMdGoods())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -151,11 +150,12 @@ public class ShopAdminService {
             Long eventId,
             String salesPeriod,
             Long sectionId,
+            String mdList,
             MultipartFile image,
             String imageUrl
     ) {
         Shop shop = new Shop();
-        applyFields(shop, null, eventId, salesPeriod, sectionId, image, imageUrl, false);
+        applyFields(shop, null, eventId, salesPeriod, sectionId, mdList, image, imageUrl, false);
         ShopAdminDto dto = toDto(shopRepository.save(shop));
         shopService.invalidateListCache();
         return dto;
@@ -167,13 +167,14 @@ public class ShopAdminService {
             Long eventId,
             String salesPeriod,
             Long sectionId,
+            String mdList,
             MultipartFile image,
             String imageUrl,
             boolean clearImage
     ) {
         Shop shop = shopRepository.findDetailById(shopId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 굿즈리스트가 존재하지 않습니다. id=" + shopId));
-        applyFields(shop, shopId, eventId, salesPeriod, sectionId, image, imageUrl, clearImage);
+        applyFields(shop, shopId, eventId, salesPeriod, sectionId, mdList, image, imageUrl, clearImage);
         ShopAdminDto dto = toDto(shopRepository.save(shop));
         shopService.invalidateListCache();
         return dto;
@@ -194,6 +195,7 @@ public class ShopAdminService {
             Long eventId,
             String salesPeriod,
             Long sectionId,
+            String mdList,
             MultipartFile image,
             String imageUrl,
             boolean clearImage
@@ -212,6 +214,7 @@ public class ShopAdminService {
         String period = requireText(salesPeriod, "판매 기간은 필수입니다.");
         shop.setEvent(event);
         shop.setSalesPeriod(period);
+        shop.setMdList(normalizeMdList(mdList));
 
         if (sectionId != null && sectionId > 0) {
             ShopSection section = shopSectionRepository.findById(sectionId)
@@ -263,9 +266,19 @@ public class ShopAdminService {
                 .eventName(event != null ? event.getEventName() : null)
                 .salesPeriod(shop.getSalesPeriod())
                 .coverImage(shop.getCoverImage())
+                .mdList(shop.getMdList())
                 .sectionId(section != null ? section.getSectionId() : null)
                 .sectionName(section != null ? section.getName() : null)
                 .build();
+    }
+
+    private static String normalizeMdList(String raw) {
+        if (!StringUtils.hasText(raw)) return null;
+        String normalized = java.util.Arrays.stream(raw.split("\\R"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.joining("\n"));
+        return normalized.isEmpty() ? null : normalized;
     }
 
     private ShopSectionDto toSectionDto(ShopSection section) {

@@ -7,7 +7,7 @@ import org.springframework.util.StringUtils;
 
 /**
  * 공연 MD 리스트 카드. {@link Event} 1:1, {@link ShopSection} N:1.
- * MD 본문(공지 사진·상품)은 연결된 이벤트의 {@code event_stop.md_list}가 단일 소스다.
+ * 카드 이름은 연결 공연에서, MD 공지 사진은 {@code md_list}에서 관리한다.
  */
 @Entity
 @Table(name = "shop")
@@ -35,6 +35,16 @@ public class Shop {
     /** 목록 커버. 비우면 이벤트 포스터를 쓴다. */
     @Column(name = "cover_image", length = 1000)
     private String coverImage;
+
+    /**
+     * MD 공지. 줄바꿈 DSL.
+     * <ul>
+     *   <li>{@code # Official MD} — 구역(드롭다운) 제목</li>
+     *   <li>{@code !/path.png} — 공지 사진</li>
+     * </ul>
+     */
+    @Column(name = "md_list", columnDefinition = "LONGTEXT")
+    private String mdList;
 
     @Transient
     public String getEventName() {
