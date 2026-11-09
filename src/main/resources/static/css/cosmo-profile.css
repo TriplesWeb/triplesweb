@@ -49,6 +49,7 @@
     font-weight: 650;
     font-variant-numeric: tabular-nums;
     text-decoration: none;
+    white-space: nowrap;
 }
 .profile-ownership-tab:hover { color: #e8f3ef; background: #ffffff0a; }
 .profile-ownership-tab.is-active {
@@ -275,3 +276,22 @@
 .profile-owned-group{padding-top:1rem}.profile-owned-group h4{color:#a9beb8;font-size:.8rem;font-weight:700}.profile-owned-group .profile-checklist-grid{padding-top:.65rem}.profile-breakdown-row strong{font-size:1rem;font-weight:750;color:#eafff8!important}.profile-orbit-stat>div:last-child strong{font-size:1rem;font-weight:800;color:#eafff8;font-variant-numeric:tabular-nums}
 
 .profile-checklist .profile-summary-orbit{--orbit-color:var(--member-color,#8decd9)}.profile-checklist .profile-summary-orbit .orbit-value{stroke:var(--member-color,#8decd9)}
+
+@media (max-width: 767px) {
+    .profile-ownership-tabs {
+        display: flex;
+        width: 100%;
+        max-width: 100%;
+        gap: .15rem;
+        padding: .2rem;
+    }
+    .profile-ownership-tab {
+        flex: 1 1 0;
+        justify-content: center;
+        min-width: 0;
+        min-height: 40px;
+        padding: .35rem .4rem;
+        font-size: .72rem;
+        white-space: nowrap;
+    }
+}

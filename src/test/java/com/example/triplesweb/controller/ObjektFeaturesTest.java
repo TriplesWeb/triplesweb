@@ -12,7 +12,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -138,6 +140,58 @@ class ObjektFeaturesTest {
                         .param("season", "Binary01").param("season", "Cream02"))
                 .andExpect(jsonPath("$.items[0].id").value("cream"))
                 .andExpect(jsonPath("$.items[1].id").value("binary"));
+    }
+
+    @Test void latestSortKeepsLaterSeasonFirstEvenIfBinary01CreatedAtIsNewer() throws Exception {
+        var items = List.<Map<String, Object>>of(
+                Map.of("id", "binary", "season", "Binary01", "createdAt", "2026-05-22T02:36:12.000Z", "collectionNo", "118A"),
+                Map.of("id", "cream", "season", "Cream01", "createdAt", "2024-05-07T06:15:27.000Z", "collectionNo", "332Z"),
+                Map.of("id", "divine", "season", "Divine01", "createdAt", "2024-11-08T03:00:16.000Z", "collectionNo", "343Z"));
+        stubCatalog(items);
+        when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
+        mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("sort", "latest")
+                        .param("season", "Binary01").param("season", "Cream01").param("season", "Divine01"))
+                .andExpect(jsonPath("$.items[0].id").value("divine"))
+                .andExpect(jsonPath("$.items[1].id").value("cream"))
+                .andExpect(jsonPath("$.items[2].id").value("binary"));
+    }
+
+    @Test void latestSortKeepsBinary01ContiguousAcrossPages() throws Exception {
+        List<Map<String, Object>> items = new ArrayList<>();
+        Map<String, Object> titled = new LinkedHashMap<>();
+        titled.put("id", "binary-title");
+        titled.put("collectionId", "Binary01 SeoYeon 118A");
+        titled.put("createdAt", "2026-11-01T00:00:00Z");
+        titled.put("collectionNo", "118A");
+        items.add(titled);
+        items.add(Map.of("id", "binary-suffix", "season", "Binary01 First",
+                "createdAt", "2026-10-01T00:00:00Z", "collectionNo", "1Z"));
+        for (int i = 0; i < 25; i++) {
+            items.add(Map.of("id", "cream-" + i, "season", "Cream02",
+                    "createdAt", "2024-01-01T00:00:00Z", "collectionNo", i + "Z"));
+        }
+        items.add(Map.of("id", "binary", "season", "Binary01",
+                "createdAt", "2024-02-01T00:00:00Z", "collectionNo", "201Z"));
+        stubCatalog(items);
+        when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        List<String> ids = new ArrayList<>();
+        for (int page = 0; page < 3; page++) {
+            String json = mvc.perform(get("/cosmo/objekt/more").param("page", String.valueOf(page)).param("sort", "latest"))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+            for (var item : mapper.readTree(json).path("items")) ids.add(item.path("id").asText());
+        }
+        org.assertj.core.api.Assertions.assertThat(ids.stream().filter(id -> id.startsWith("cream-")).toList()).hasSize(25);
+        int lastCream = -1;
+        int firstBinary = -1;
+        for (int i = 0; i < ids.size(); i++) {
+            if (ids.get(i).startsWith("cream-")) lastCream = i;
+            if (ids.get(i).startsWith("binary") && firstBinary < 0) firstBinary = i;
+        }
+        org.assertj.core.api.Assertions.assertThat(firstBinary).isGreaterThan(lastCream);
+        org.assertj.core.api.Assertions.assertThat(ids.subList(firstBinary, ids.size()))
+                .containsExactly("binary-title", "binary-suffix", "binary");
     }
 
     @Test void firstMemberSortsSameMemberByNewestCreatedAt() throws Exception {

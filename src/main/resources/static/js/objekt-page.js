@@ -7,9 +7,14 @@
     const sortMenu = document.getElementById('sort-menu');
     const sortLabel = document.getElementById('sort-label');
 
+    function setSortOpen(open) {
+        sortToggle.closest('.objekt-filter')?.classList.toggle('is-open', open);
+    }
+
     function closeSortMenu() {
         sortMenu.classList.add('hidden');
         sortToggle.setAttribute('aria-expanded', 'false');
+        setSortOpen(false);
     }
 
     function syncSortMenu() {
@@ -27,6 +32,7 @@
         ['season-menu', 'class-menu'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
         sortMenu.classList.remove('hidden');
         sortToggle.setAttribute('aria-expanded', 'true');
+        setSortOpen(true);
         const options = [...sortMenu.querySelectorAll('[role="option"]')];
         const focusIndex = index ?? options.findIndex(option => option.dataset.value === sortSelect.value);
         options.forEach((option, i) => { option.tabIndex = i === focusIndex ? 0 : -1; });
@@ -40,13 +46,21 @@
         button.dataset.value = option.value;
         button.textContent = option.textContent;
         button.setAttribute('role', 'option');
-        button.addEventListener('click', () => {
+        button.addEventListener('pointerdown', (event) => {
+            if (event.button !== 0) return;
+            event.preventDefault();
             const changed = sortSelect.value !== option.value;
             sortSelect.value = option.value;
             syncSortMenu();
+            if (changed) {
+                sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                scheduleApplyFilters();
+            }
+        });
+        button.addEventListener('click', (event) => {
+            event.stopPropagation();
             closeSortMenu();
             sortToggle.focus();
-            if (changed) sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
         });
         sortMenu.appendChild(button);
     });
@@ -427,6 +441,14 @@
         markActiveFilters();
     });
 
+    function syncOpenFilters() {
+        document.querySelectorAll('#objekt-search-form .objekt-filter').forEach((filter) => {
+            const menu = filter.querySelector('.objekt-dropdown-menu');
+            const open = Boolean(menu && !menu.classList.contains('hidden') && !menu.hidden);
+            if (filter.id !== 'sort-dropdown') filter.classList.toggle('is-open', open);
+        });
+    }
+
     window.toggleDropdown = function(id) {
         closeKindMenu();
         closeSortMenu();
@@ -434,6 +456,7 @@
             if (menu.id !== id) menu.classList.add('hidden');
         });
         document.getElementById(id)?.classList.toggle('hidden');
+        syncOpenFilters();
     };
 
     window.addEventListener('click', e => {
@@ -442,6 +465,7 @@
             ['season-menu', 'class-menu'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
             closeKindMenu();
         }
+        syncOpenFilters();
     });
 
     form.addEventListener('submit', (event) => {
@@ -561,13 +585,64 @@
         detailFlip.setAttribute('aria-label', showingBack ? '이미지 클릭 시 뒷면으로 전환' : '이미지 클릭 시 앞면으로 전환');
     }
 
+    function hasHangul(line) {
+        return /[\uAC00-\uD7A3]/.test(line);
+    }
+
+    function isLatinLine(line) {
+        return /[A-Za-z]/.test(line) && !hasHangul(line);
+    }
+
+    function displayStoryText(raw) {
+        const lines = String(raw || '').trim().replace(/\r\n/g, '\n').split('\n');
+        const out = [];
+        for (let i = 0; i < lines.length; i++) {
+            const current = lines[i];
+            const next = lines[i + 1];
+            out.push(current);
+            if (current && next && hasHangul(current) && isLatinLine(next)) out.push('');
+        }
+        return out.join('\n');
+    }
+
+    function renderStoryText(el, raw) {
+        const text = String(raw || '').trim();
+        const shown = displayStoryText(text);
+        el.classList.toggle('is-empty', !text);
+        if (!shown) {
+            el.textContent = '아직 등록된 상세 설명이 없습니다.';
+            return;
+        }
+        const frag = document.createDocumentFragment();
+        const lines = shown.split('\n');
+        let buffer = [];
+        const flushBlock = () => {
+            if (!buffer.length) return;
+            const block = document.createElement('span');
+            block.className = 'objekt-detail-desc-block';
+            block.textContent = buffer.join('\n');
+            frag.appendChild(block);
+            buffer = [];
+        };
+        for (const line of lines) {
+            if (line === '') {
+                flushBlock();
+                const gap = document.createElement('span');
+                gap.className = 'objekt-detail-desc-break';
+                gap.setAttribute('aria-hidden', 'true');
+                frag.appendChild(gap);
+            } else {
+                buffer.push(line);
+            }
+        }
+        flushBlock();
+        el.replaceChildren(frag);
+    }
+
     function fillDetailStory(data) {
         const text = String(data && data.description || '').trim();
         lastStoryText = text;
-        if (detailDesc) {
-            detailDesc.textContent = text || '아직 등록된 상세 설명이 없습니다.';
-            detailDesc.classList.toggle('is-empty', !text);
-        }
+        if (detailDesc) renderStoryText(detailDesc, text);
         if (descriptionInput && descriptionForm?.hidden) descriptionInput.value = text;
         const eventNode = document.getElementById('objektDetailEvent');
         if (eventNode) {

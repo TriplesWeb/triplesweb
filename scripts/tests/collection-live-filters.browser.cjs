@@ -42,6 +42,17 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
         <label class="objekt-choice"><input type="checkbox" name="season" value="Atom01" class="season-checkbox"><span class="objekt-choice-text">Atom01</span></label>
       </div>
     </div>
+    <div class="objekt-filter relative" id="collection-class-dropdown">
+      <span class="objekt-filter-label">클래스</span>
+      <button type="button" class="objekt-filter-control" id="collection-class-toggle" aria-expanded="false" aria-controls="collection-class-menu">
+        <span id="collection-class-label" class="truncate">전체</span>
+      </button>
+      <div id="collection-class-menu" class="objekt-dropdown-menu" hidden>
+        <label class="objekt-choice"><input type="checkbox" value="all" class="class-checkbox" checked><span class="objekt-choice-text">전체 클래스</span></label>
+        <label class="objekt-choice"><input type="checkbox" name="class" value="Double" class="class-checkbox"><span class="objekt-choice-text">Double</span></label>
+        <label class="objekt-choice"><input type="checkbox" name="class" value="Special" class="class-checkbox"><span class="objekt-choice-text">Special</span></label>
+      </div>
+    </div>
     <div class="objekt-filter relative" id="collection-kind-dropdown">
       <span class="objekt-filter-label">종류</span>
       <div class="objekt-filter-control objekt-kind-combo">
@@ -51,27 +62,19 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
       <div id="collection-kind-menu" class="objekt-dropdown-menu hidden" hidden role="listbox">
         <button type="button" class="objekt-kind-option" data-value="all" role="option">전체</button>
         <button type="button" class="objekt-kind-option" data-value="101Z" role="option">101Z</button>
+        <button type="button" class="objekt-kind-option" data-value="201A" role="option">201A</button>
         <p class="objekt-kind-empty" id="collection-kind-empty" hidden>없음</p>
-      </div>
-    </div>
-    <div class="objekt-filter relative" id="collection-class-dropdown">
-      <span class="objekt-filter-label">클래스</span>
-      <button type="button" class="objekt-filter-control" id="collection-class-toggle" aria-expanded="false" aria-controls="collection-class-menu">
-        <span id="collection-class-label" class="truncate">전체</span>
-      </button>
-      <div id="collection-class-menu" class="objekt-dropdown-menu" hidden>
-        <label class="objekt-choice"><input type="checkbox" value="all" class="class-checkbox" checked><span class="objekt-choice-text">전체 클래스</span></label>
-        <label class="objekt-choice"><input type="checkbox" name="class" value="Special" class="class-checkbox"><span class="objekt-choice-text">Special</span></label>
       </div>
     </div>
     <div class="objekt-filter relative" id="collection-sort-dropdown">
       <span class="objekt-filter-label">정렬</span>
-      <button type="button" class="objekt-filter-control" id="collection-sort-toggle" aria-expanded="false" aria-controls="collection-sort-menu">
+      <button type="button" class="objekt-filter-control" id="collection-sort-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="collection-sort-menu">
         <span id="collection-sort-label" class="truncate">최신순</span>
       </button>
-      <div id="collection-sort-menu" class="objekt-dropdown-menu collection-sort-menu" hidden>
-        <button type="button" class="objekt-choice" data-value="latest"><span class="objekt-choice-text">최신순</span></button>
-        <button type="button" class="objekt-choice" data-value="oldest"><span class="objekt-choice-text">오래된순</span></button>
+      <div id="collection-sort-menu" class="objekt-dropdown-menu collection-sort-menu" hidden role="listbox">
+        <button type="button" class="objekt-kind-option" data-value="latest" role="option">최신순</button>
+        <button type="button" class="objekt-kind-option" data-value="oldest" role="option">오래된순</button>
+        <button type="button" class="objekt-kind-option" data-value="last_member" role="option">마지막 멤버</button>
       </div>
     </div>
   </div>
@@ -93,6 +96,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
 </main>
 <script src="/js/member-portrait-picker.js"></script>
 <script src="/js/objekt-kind-combo.js"></script>
+<script type="application/json" id="collection-kind-by-class">{"Double":["101Z"],"Special":["201A"]}</script>
 SCRIPT_PLACEHOLDER
 </body></html>`;
 
@@ -213,24 +217,38 @@ SCRIPT_PLACEHOLDER
     await classWait;
     await waitForMore('Special');
     assert.ok(moreCalls.some((call) => (call.class || []).includes('Special')));
+    assert.equal(await page.locator('.objekt-kind-option[data-value="101Z"]').evaluate((el) => el.hidden), true);
+    assert.equal(await page.locator('.objekt-kind-option[data-value="201A"]').evaluate((el) => el.hidden), false);
+    assert.equal(await page.locator('#collection-kind-select').inputValue(), '전체');
 
     moreCalls.length = 0;
     const kindWait = page.waitForResponse((res) => {
-      try { return new URL(res.url()).searchParams.get('kind') === '101Z'; } catch { return false; }
+      try { return new URL(res.url()).searchParams.get('kind') === '201A'; } catch { return false; }
     });
-    await page.locator('.objekt-kind-option[data-value="101Z"]').evaluate((el) => el.click());
+    await page.locator('.objekt-kind-option[data-value="201A"]').evaluate((el) => el.click());
     await kindWait;
-    await waitForMore('101Z');
-    assert.ok(moreCalls.some((call) => call.kind === '101Z'));
+    await waitForMore('201A');
+    assert.ok(moreCalls.some((call) => call.kind === '201A'));
 
     moreCalls.length = 0;
     const sortWait = page.waitForResponse((res) => {
       try { return new URL(res.url()).searchParams.get('sort') === 'oldest'; } catch { return false; }
     });
-    await page.locator('#collection-sort-menu .objekt-choice[data-value="oldest"]').evaluate((el) => el.click());
+    await page.locator('#collection-sort-menu .objekt-kind-option[data-value="oldest"]').evaluate((el) => el.click());
     await sortWait;
     await waitForMore('oldest');
     assert.ok(moreCalls.some((call) => call.sort === 'oldest'));
+
+    moreCalls.length = 0;
+    const lastMemberWait = page.waitForResponse((res) => {
+      try { return new URL(res.url()).searchParams.get('sort') === 'last_member'; } catch { return false; }
+    });
+    await page.locator('#collection-sort-toggle').click();
+    await page.locator('#collection-sort-menu .objekt-kind-option[data-value="last_member"]').dispatchEvent('pointerdown', { button: 0 });
+    await page.locator('#collection-sort-menu .objekt-kind-option[data-value="last_member"]').click();
+    await lastMemberWait;
+    await waitForMore('last_member');
+    assert.ok(moreCalls.some((call) => call.sort === 'last_member'));
 
     moreCalls.length = 0;
     const searchWait = page.waitForResponse((res) => {

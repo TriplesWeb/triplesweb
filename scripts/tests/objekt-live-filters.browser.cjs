@@ -47,14 +47,19 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
     <label><input type="checkbox" name="class" value="Special" class="class-checkbox"><span class="objekt-choice-text">Special</span></label>
   </div>
 </div>
-<div id="sort-dropdown">
-  <button type="button" id="objekt-sort-toggle" hidden><span id="sort-label">최신순</span></button>
-  <label id="sort-native-control"><select name="sort" class="objekt-sort-select"><option value="latest">최신순</option><option value="oldest">오래된순</option></select></label>
-  <div id="sort-menu" class="hidden"></div>
+<div class="objekt-filter-bar">
+<div class="objekt-filter relative" id="sort-dropdown">
+  <span class="objekt-filter-label">정렬</span>
+  <button type="button" id="objekt-sort-toggle" class="objekt-filter-control" hidden><span id="sort-label">최신순</span></button>
+  <label id="sort-native-control"><select name="sort" class="objekt-sort-select"><option value="latest">최신순</option><option value="oldest">오래된순</option><option value="number_low">번호 낮은순</option><option value="number_high">번호 높은순</option><option value="first_member">첫 멤버</option><option value="last_member">마지막 멤버</option><option value="mint_low">민팅 적은순</option><option value="mint_high">민팅 많은순</option></select></label>
+  <div id="sort-menu" class="objekt-dropdown-menu hidden absolute top-full left-0"></div>
 </div>
-<input type="search" name="search" value="">
+<div class="objekt-search-row">
+<input type="search" name="search" value="" class="objekt-search-input" style="display:block;width:100%;min-height:44px">
 <button type="submit" id="objekt-search-submit">검색</button>
 <button type="button" id="objekt-reset">초기화</button>
+</div>
+</div>
 </form>
 <p id="objekt-result-summary" data-result-count="1" data-all-count="8" data-loaded="1">검색 결과 <strong>1</strong>개 <span>(전체 <span id="objekt-all-count">8</span>개 중 · <span id="objekt-loaded-count">1</span>개 표시)</span></p>
 <div id="objekt-empty" class="hidden">없음</div>
@@ -131,6 +136,29 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
   assert.equal(await page.locator('.objekt-kind-option[data-value="201Z"]').evaluate(el=>el.hidden),true);
   assert.equal(await page.locator('.objekt-kind-select').inputValue(),'전체');
   assert.ok(moreCalls.some(call=>call.class==='First'&&call.kind==='all'));
+
+  moreCalls.length=0;
+  await page.locator('#objekt-sort-toggle').click();
+  const oldestWait=page.waitForResponse(res=>{try{const url=new URL(res.url());return url.pathname==='/cosmo/objekt/more'&&url.searchParams.get('sort')==='oldest';}catch{return false;}});
+  await page.locator('#sort-menu [data-value="oldest"]').click();
+  await oldestWait;
+  assert.ok(moreCalls.some(call=>call.sort==='oldest'));
+
+  moreCalls.length=0;
+  await page.locator('#objekt-sort-toggle').click();
+  const lastMember=page.locator('#sort-menu [data-value="last_member"]');
+  await lastMember.waitFor();
+  const hit=await lastMember.evaluate((el)=>{
+    const box=el.getBoundingClientRect();
+    const top=document.elementFromPoint(box.left+box.width/2,box.top+box.height/2);
+    return {coveredBy:top&&!el.contains(top)&&top!==el?(top.id||top.className||top.tagName):'',open:el.closest('.objekt-filter')?.classList.contains('is-open')};
+  });
+  assert.equal(hit.coveredBy,'','마지막 멤버가 '+hit.coveredBy+'에 가려지면 안 된다');
+  assert.equal(hit.open,true);
+  const lastMemberWait=page.waitForResponse(res=>{try{const url=new URL(res.url());return url.pathname==='/cosmo/objekt/more'&&url.searchParams.get('sort')==='last_member';}catch{return false;}});
+  await lastMember.click();
+  await lastMemberWait;
+  assert.ok(moreCalls.some(call=>call.sort==='last_member'));
 
   console.log('PASS: 멤버·그룹·시즌·종류 변경 시 검색 버튼 없이 결과 갱신');
  }finally{await browser.close();}

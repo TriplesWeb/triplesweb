@@ -174,7 +174,10 @@
 }
 .collection-page .objekt-kind-option:hover,
 .collection-page .objekt-kind-option:focus-visible,
-.collection-page .objekt-kind-option.is-active { background: #1a1d28; }
+.collection-page .objekt-kind-option.is-active {
+    background: rgba(0, 245, 212, .1);
+    color: #7df9e8;
+}
 .collection-page .objekt-kind-option[hidden] { display: none; }
 .collection-page .objekt-kind-empty { margin: .35rem .5rem; color: #8b93a7; font-size: .75rem; }
 .collection-page .objekt-kind-empty[hidden] { display: none; }
@@ -242,10 +245,8 @@
     border: 0;
     background: transparent;
     font: inherit;
+    font-size: .82rem;
     text-align: left;
-}
-.collection-page .collection-sort-menu .objekt-choice {
-    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 }
 .collection-page .objekt-choice-mark {
     display: grid;
@@ -273,6 +274,8 @@
 }
 .collection-page .objekt-search-row {
     grid-column: 1 / -1;
+    position: relative;
+    z-index: 0;
     width: 100%;
     margin-top: .15rem;
     padding-top: .85rem;

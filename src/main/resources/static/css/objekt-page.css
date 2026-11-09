@@ -125,18 +125,24 @@
         .objekt-filter-bar {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
-            align-items: center;
+            align-items: start;
             gap: .55rem .65rem;
             padding: 0;
             border: 0;
             border-radius: 0;
             background: transparent;
             box-shadow: none;
+            overflow: visible;
+            position: relative;
+            z-index: 2;
         }
         .objekt-filter {
+            position: relative;
+            z-index: 1;
             display: flex;
             width: 100%;
             min-width: 0;
+            overflow: visible;
             height: 2.65rem;
             align-items: center;
             gap: .5rem;
@@ -150,6 +156,10 @@
         .objekt-filter:hover {
             border-color: rgba(0, 245, 212, .38);
             background: rgba(0, 245, 212, .04);
+        }
+        .objekt-filter:focus-within,
+        .objekt-filter.is-open {
+            z-index: 80;
         }
         .objekt-filter-label {
             flex: 0 0 auto;
@@ -415,6 +425,8 @@
         }
         .objekt-search-row {
             grid-column: 1 / -1;
+            position: relative;
+            z-index: 0;
             width: 100%;
             margin-top: .15rem;
             padding-top: .85rem;
@@ -425,6 +437,7 @@
         #objekt-member-picker[hidden], .objekt-other-notice[hidden] { display: none; }
         .objekt-other-notice { margin: .85rem 0 .15rem; color: #b9cac4; font-size: .82rem; line-height: 1.6; }
         .objekt-dropdown-menu {
+            z-index: 90;
             min-width: 12rem;
             border-color: #343b51;
             background: #171a24;
@@ -759,8 +772,16 @@
             color: #eef4fb;
             font-size: 1rem;
             font-weight: 550;
-            line-height: 1.75;
+            line-height: 1.05;
+            letter-spacing: -0.03em;
             white-space: pre-wrap;
+        }
+        .objekt-detail-desc-block { display: block; }
+        .objekt-detail-desc-break {
+            display: block;
+            height: .8em;
+            overflow: hidden;
+            line-height: 0;
         }
         .objekt-detail-desc.is-empty {
             color: #8b93a7;
@@ -782,7 +803,7 @@
             overflow: hidden;
             clip: rect(0 0 0 0);
         }
-        .objekt-description-editor textarea { width: 100%; min-height: 7.5rem; resize: vertical; border: 1px solid #ffffff20; border-radius: .6rem; background: #0d1015; padding: .65rem; color: #e8f3ef; font: inherit; font-size: .9rem; line-height: 1.7; }
+        .objekt-description-editor textarea { width: 100%; min-height: 7.5rem; resize: vertical; border: 1px solid #ffffff20; border-radius: .6rem; background: #0d1015; padding: .65rem; color: #e8f3ef; font: inherit; font-size: 1rem; font-weight: 550; line-height: 1.05; letter-spacing: -0.03em; }
         .objekt-description-buttons { display: flex; gap: .5rem; }
         .objekt-description-buttons button { padding: .45rem .8rem; border: 1px solid #00f5d440; border-radius: .5rem; background: #00f5d415; color: #8decd9; cursor: pointer; font-size: .78rem; }
         .objekt-description-buttons button:last-child { color: #ffb4ab; background: transparent; border-color: #ffb4ab40; }
