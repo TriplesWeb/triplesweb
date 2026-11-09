@@ -7,22 +7,6 @@
     return menu.hasAttribute('hidden') || menu.classList.contains('hidden');
   }
 
-  function place(menu) {
-    if (!menu || isClosed(menu)) return;
-    const host = menu.closest('.objekt-filter, [data-objekt-cols-filter]');
-    if (!host) return;
-    const bar = menu.closest('.objekt-filter-bar, .collection-filter-bar');
-    const hostBox = host.getBoundingClientRect();
-    let bottom = hostBox.bottom;
-    if (bar && host.classList.contains('objekt-filter')) {
-      const chips = [...bar.querySelectorAll(':scope > .objekt-filter')];
-      if (chips.length) {
-        bottom = Math.max(...chips.map((el) => el.getBoundingClientRect().bottom));
-      }
-    }
-    menu.style.top = Math.max(8, Math.round(bottom - hostBox.top + 8)) + 'px';
-  }
-
   function setOpen(menu, open) {
     if (!menu) return;
     const show = Boolean(open);
@@ -37,12 +21,6 @@
     }
     host?.querySelectorAll('[data-objekt-cols-toggle], .objekt-kind-toggle').forEach((el) => toggles.push(el));
     toggles.forEach((el) => el.setAttribute('aria-expanded', show ? 'true' : 'false'));
-    if (show) {
-      place(menu);
-      requestAnimationFrame(() => place(menu));
-    } else {
-      menu.style.removeProperty('top');
-    }
   }
 
   function closeAll(except) {
@@ -58,11 +36,7 @@
     return open;
   }
 
-  window.ObjektDropdown = { isClosed, setOpen, closeAll, toggle, place };
-
-  window.addEventListener('resize', () => {
-    document.querySelectorAll('.objekt-dropdown-menu').forEach(place);
-  });
+  window.ObjektDropdown = { isClosed, setOpen, closeAll, toggle };
 
   function readCols() {
     try {

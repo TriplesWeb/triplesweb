@@ -241,6 +241,12 @@ document.getElementById('season-toggle').addEventListener('click', () => {
       await page.goto('https://collection-layout.test/cosmo/collection', { waitUntil: 'load' });
       await openMenu('collection-season-toggle', 'collection-season-menu');
       await assertMenuVisible('collection-season-menu');
+      const seasonGap = await page.evaluate(() => {
+        const menu = document.getElementById('collection-season-menu');
+        const filter = document.getElementById('collection-season-dropdown');
+        return Math.round(menu.getBoundingClientRect().top - filter.getBoundingClientRect().bottom);
+      });
+      assert.ok(seasonGap >= 0 && seasonGap <= 16, '시즌 메뉴는 시즌 칩 바로 아래에 있어야 한다: ' + seasonGap);
       const chipCount = await page.locator('#collection-season-menu .season-chip').count();
       assert.ok(chipCount >= 3, 'season chips missing at ' + viewport.width);
       if (viewport.name === 'mobile') {
@@ -257,6 +263,12 @@ document.getElementById('season-toggle').addEventListener('click', () => {
       await page.screenshot({ path: `/opt/cursor/artifacts/collection-dropdown-season-${viewport.name}.png` });
       await openMenu('collection-class-toggle', 'collection-class-menu');
       await assertMenuVisible('collection-class-menu');
+      const classGap = await page.evaluate(() => {
+        const menu = document.getElementById('collection-class-menu');
+        const filter = document.getElementById('collection-class-dropdown');
+        return Math.round(menu.getBoundingClientRect().top - filter.getBoundingClientRect().bottom);
+      });
+      assert.ok(classGap >= 0 && classGap <= 16, '클래스 메뉴는 클래스 칩 바로 아래에 있어야 한다: ' + classGap);
       await page.screenshot({ path: `/opt/cursor/artifacts/collection-dropdown-class-${viewport.name}.png` });
       await openMenu('collection-sort-toggle', 'collection-sort-menu');
       await assertMenuVisible('collection-sort-menu');
@@ -290,29 +302,27 @@ document.getElementById('season-toggle').addEventListener('click', () => {
           return menu && !menu.hidden && !menu.classList.contains('hidden') && getComputedStyle(menu).display !== 'none';
         });
         await assertMenuVisible('collection-season-menu');
-        const siblingHits = await page.evaluate(() => {
-          const hit = (id) => {
-            const el = document.getElementById(id);
-            const box = el.getBoundingClientRect();
-            const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
-            return Boolean(top && (top.id === id || el.contains(top) || top.closest('#' + el.closest('.objekt-filter')?.id)));
+        const attached = await page.evaluate(() => {
+          const gap = (menuId, filterId) => {
+            const menu = document.getElementById(menuId);
+            const filter = document.getElementById(filterId);
+            return Math.round(menu.getBoundingClientRect().top - filter.getBoundingClientRect().bottom);
           };
-          return {
-            class: hit('collection-class-toggle'),
-            kind: hit('collection-kind-toggle'),
-            sort: hit('collection-sort-toggle')
-          };
+          return { season: gap('collection-season-menu', 'collection-season-dropdown') };
         });
-        assert.ok(siblingHits.class, '시즌이 열린 동안 클래스가 가려지면 안 된다');
-        assert.ok(siblingHits.kind, '시즌이 열린 동안 종류가 가려지면 안 된다');
-        assert.ok(siblingHits.sort, '시즌이 열린 동안 정렬이 가려지면 안 된다');
-        await page.locator('#collection-sort-toggle').click();
+        assert.ok(attached.season >= 0 && attached.season <= 16, '시즌 메뉴는 시즌 칩 바로 아래에 있어야 한다: ' + JSON.stringify(attached));
+        await page.locator('#collection-class-toggle').click();
         await page.waitForFunction(() => {
-          const sort = document.getElementById('collection-sort-menu');
-          const season = document.getElementById('collection-season-menu');
-          return sort && !sort.hidden && !sort.classList.contains('hidden')
-            && (season.hidden || season.classList.contains('hidden') || getComputedStyle(season).display === 'none');
+          const menu = document.getElementById('collection-class-menu');
+          return menu && !menu.hidden && !menu.classList.contains('hidden') && getComputedStyle(menu).display !== 'none';
         });
+        const classAttached = await page.evaluate(() => {
+          const menu = document.getElementById('collection-class-menu');
+          const filter = document.getElementById('collection-class-dropdown');
+          return Math.round(menu.getBoundingClientRect().top - filter.getBoundingClientRect().bottom);
+        });
+        assert.ok(classAttached >= 0 && classAttached <= 16, '클래스 메뉴는 클래스 칩 바로 아래에 있어야 한다: ' + classAttached);
+        await openMenu('collection-sort-toggle', 'collection-sort-menu');
         await assertMenuVisible('collection-sort-menu');
         const colsFont = await page.evaluate(() => {
           const cols = document.querySelector('#collection-cols-menu .objekt-kind-option');
