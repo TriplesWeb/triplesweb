@@ -142,6 +142,12 @@ public class ShopService {
         return toDetail(shop);
     }
 
+    /** 공연에 연결된 샵 카드 id. 없으면 empty. */
+    @Transactional(readOnly = true)
+    public java.util.Optional<Long> findIdByEventId(long eventId) {
+        return shopRepository.findByEvent_EventId(eventId).map(Shop::getId);
+    }
+
     static ShopDetailDto toDetail(Shop shop) {
         List<ShopDetailDto.MdRegion> regions = new ArrayList<>();
         if (shop.getEvent() != null) {

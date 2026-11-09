@@ -118,58 +118,30 @@
                     {{/hasSetlist}}
 
                     {{#hasMdList}}
-                    <div class="event-stop-block event-stop-block--goods" data-event-goods-scope>
-                        <h3 class="event-stop-block-title">
-                            <span class="material-symbols-outlined" aria-hidden="true">shopping_bag</span>
-                            콘서트 굿즈
-                        </h3>
-                        <div class="event-goods-box event-goods-box--in-stop">
-                            <div class="event-goods-cat-bar" role="tablist" aria-label="{{goodsLabel}} MD 카테고리">
-                                {{#mdCategories}}
-                                <button type="button"
-                                        class="event-goods-cat-toggle"
-                                        role="tab"
-                                        aria-expanded="false"
-                                        aria-controls="event-goods-panel-{{stopId}}-{{key}}"
-                                        id="event-goods-tab-{{stopId}}-{{key}}"
-                                        data-event-goods-cat>
-                                    <span class="event-goods-cat-mark" aria-hidden="true">▼</span>
-                                    <span class="event-goods-cat-title">{{title}}</span>
-                                </button>
-                                {{/mdCategories}}
-                            </div>
-                            {{#mdCategories}}
-                            <div class="event-goods-panel"
-                                 id="event-goods-panel-{{stopId}}-{{key}}"
-                                 role="tabpanel"
-                                 aria-labelledby="event-goods-tab-{{stopId}}-{{key}}"
-                                 hidden
-                                 data-event-goods-panel>
-                                {{#hasNoticeImages}}
-                                <div class="event-goods-notices">
-                                    {{#noticeImages}}
-                                    <figure class="event-goods-notice">
-                                        <img src="{{.}}" alt="MD 판매 공지" loading="lazy" decoding="async" data-img-fallback>
-                                    </figure>
-                                    {{/noticeImages}}
-                                </div>
-                                {{/hasNoticeImages}}
-                                {{#hasItems}}
-                                <ul class="event-goods-items">
-                                    {{#items}}
-                                    <li>
-                                        <span class="event-md-name">{{name}}</span>
-                                        {{#hasPrice}}
-                                        <span class="event-md-price">{{price}}</span>
-                                        {{/hasPrice}}
-                                    </li>
-                                    {{/items}}
-                                </ul>
-                                {{/hasItems}}
-                            </div>
-                            {{/mdCategories}}
-                        </div>
-                    </div>
+                    {{#hasShopLink}}
+                    <a href="/shop/{{shopId}}" class="event-stop-block event-stop-block--goods event-goods-link">
+                        <span class="event-goods-link-main">
+                            <span class="event-stop-block-title event-goods-link-title">
+                                <span class="material-symbols-outlined" aria-hidden="true">shopping_bag</span>
+                                콘서트 굿즈
+                            </span>
+                            <span class="event-goods-link-meta">{{goodsLabel}} MD 리스트 보기</span>
+                        </span>
+                        <span class="event-goods-link-go" aria-hidden="true">→</span>
+                    </a>
+                    {{/hasShopLink}}
+                    {{^hasShopLink}}
+                    <a href="/shop" class="event-stop-block event-stop-block--goods event-goods-link">
+                        <span class="event-goods-link-main">
+                            <span class="event-stop-block-title event-goods-link-title">
+                                <span class="material-symbols-outlined" aria-hidden="true">shopping_bag</span>
+                                콘서트 굿즈
+                            </span>
+                            <span class="event-goods-link-meta">굿즈리스트에서 MD 보기</span>
+                        </span>
+                        <span class="event-goods-link-go" aria-hidden="true">→</span>
+                    </a>
+                    {{/hasShopLink}}
                     {{/hasMdList}}
 
                     {{^hasPanelContent}}
@@ -213,38 +185,6 @@
       var open = toggle.getAttribute("aria-expanded") === "true";
       toggle.setAttribute("aria-expanded", open ? "false" : "true");
       item.classList.toggle("is-open", !open);
-      if (panel) panel.hidden = open;
-      if (open) {
-        item.querySelectorAll("[data-event-goods-cat]").forEach(function (cat) {
-          cat.setAttribute("aria-expanded", "false");
-          cat.classList.remove("is-open");
-          var catId = cat.getAttribute("aria-controls");
-          var catPanel = catId ? document.getElementById(catId) : null;
-          if (catPanel) catPanel.hidden = true;
-        });
-      }
-    });
-  });
-
-  document.querySelectorAll("[data-event-goods-cat]").forEach(function (toggle) {
-    toggle.addEventListener("click", function () {
-      var scope = toggle.closest("[data-event-goods-scope]");
-      if (!scope) return;
-      var panelId = toggle.getAttribute("aria-controls");
-      var panel = panelId ? document.getElementById(panelId) : null;
-      var open = toggle.getAttribute("aria-expanded") === "true";
-
-      scope.querySelectorAll("[data-event-goods-cat]").forEach(function (other) {
-        if (other === toggle) return;
-        other.setAttribute("aria-expanded", "false");
-        other.classList.remove("is-open");
-        var otherId = other.getAttribute("aria-controls");
-        var otherPanel = otherId ? document.getElementById(otherId) : null;
-        if (otherPanel) otherPanel.hidden = true;
-      });
-
-      toggle.setAttribute("aria-expanded", open ? "false" : "true");
-      toggle.classList.toggle("is-open", !open);
       if (panel) panel.hidden = open;
     });
   });

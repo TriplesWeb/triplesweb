@@ -237,6 +237,58 @@
   padding: 0.9rem 0.85rem 0.85rem;
 }
 
+.event-goods-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.event-goods-link:hover {
+  border-color: rgba(0, 245, 212, 0.55);
+  background: rgba(0, 245, 212, 0.08);
+}
+
+.event-goods-link:hover .event-goods-link-title,
+.event-goods-link:hover .event-goods-link-go {
+  color: #00f5d4;
+}
+
+.event-goods-link:focus-visible {
+  outline: 2px solid rgba(0, 245, 212, 0.55);
+  outline-offset: 2px;
+}
+
+.event-goods-link-main {
+  min-width: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.event-goods-link-title {
+  margin: 0;
+}
+
+.event-goods-link-meta {
+  font-size: 0.8125rem;
+  color: #8b9b95;
+}
+
+.event-goods-link-go {
+  flex-shrink: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #b9cac4;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.event-goods-link:hover .event-goods-link-go {
+  transform: translateX(2px);
+}
+
 .event-goods-section {
   margin-top: 0.25rem;
 }
