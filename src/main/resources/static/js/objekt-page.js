@@ -461,7 +461,7 @@
 
     window.addEventListener('click', e => {
         if (!e.target.closest('#sort-dropdown')) closeSortMenu();
-        if (!e.target.closest('#season-dropdown') && !e.target.closest('#class-dropdown') && !e.target.closest('#kind-dropdown')) {
+        if (!e.target.closest('#season-dropdown') && !e.target.closest('#class-dropdown') && !e.target.closest('#kind-dropdown') && !e.target.closest('#objekt-cols-dropdown')) {
             ['season-menu', 'class-menu'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
             closeKindMenu();
         }

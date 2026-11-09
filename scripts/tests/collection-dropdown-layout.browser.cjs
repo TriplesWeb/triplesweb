@@ -17,6 +17,7 @@ body{margin:0;background:#0d0e12;color:#e3e2e8;font-family:"Pretendard Variable"
 .truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 ${readCss('site-mobile.css')}
 ${readCss('cosmo-collection.css')}
+${readCss('objekt-grid-cols.css')}
 ${readCss('season-filters.css')}
 </style></head>
 <body class="site-page collection-page">
@@ -32,9 +33,14 @@ ${readCss('season-filters.css')}
         </button>
         <div id="collection-season-menu" class="objekt-dropdown-menu" hidden>
           <label class="objekt-choice"><input type="checkbox" value="all" class="season-checkbox" checked><span class="objekt-choice-text">전체 시즌</span></label>
-          <label class="objekt-choice"><input type="checkbox" name="season" value="Atom01" class="season-checkbox"><span class="objekt-choice-text">Atom01</span></label>
-          <label class="objekt-choice"><input type="checkbox" name="season" value="Binary01" class="season-checkbox"><span class="objekt-choice-text">Binary01</span></label>
-          <label class="objekt-choice"><input type="checkbox" name="season" value="Cream02" class="season-checkbox"><span class="objekt-choice-text">Cream02</span></label>
+          <label class="objekt-choice"><input type="checkbox" name="season" value="Cream02" class="season-checkbox"><span class="objekt-choice-text">cream02</span></label>
+          <label class="objekt-choice"><input type="checkbox" name="season" value="Binary02" class="season-checkbox"><span class="objekt-choice-text">binary02</span></label>
+          <label class="objekt-choice"><input type="checkbox" name="season" value="Atom02" class="season-checkbox"><span class="objekt-choice-text">atom02</span></label>
+          <label class="objekt-choice"><input type="checkbox" name="season" value="Ever01" class="season-checkbox"><span class="objekt-choice-text">ever01</span></label>
+          <label class="objekt-choice"><input type="checkbox" name="season" value="Divine01" class="season-checkbox"><span class="objekt-choice-text">divine01</span></label>
+          <label class="objekt-choice"><input type="checkbox" name="season" value="Cream01" class="season-checkbox"><span class="objekt-choice-text">cream01</span></label>
+          <label class="objekt-choice"><input type="checkbox" name="season" value="Binary01" class="season-checkbox"><span class="objekt-choice-text">binary01</span></label>
+          <label class="objekt-choice"><input type="checkbox" name="season" value="Atom01" class="season-checkbox"><span class="objekt-choice-text">atom01</span></label>
         </div>
       </div>
       <div class="objekt-filter relative" id="collection-class-dropdown">
@@ -64,6 +70,16 @@ ${readCss('season-filters.css')}
         </div>
       </div>
       <div class="objekt-search-row">
+        <div class="objekt-cols-control" id="collection-cols-dropdown" data-objekt-cols-filter>
+          <button type="button" class="objekt-cols-toggle" data-objekt-cols-toggle aria-label="열 수" aria-expanded="false" aria-controls="collection-cols-menu">
+            <span class="objekt-cols-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+            <span class="objekt-cols-sr" data-objekt-cols-label>2열</span>
+          </button>
+          <div id="collection-cols-menu" class="objekt-dropdown-menu" data-objekt-cols-menu hidden>
+            <button type="button" class="objekt-kind-option" data-objekt-cols-option="2">2열</button>
+            <button type="button" class="objekt-kind-option" data-objekt-cols-option="4">4열</button>
+          </div>
+        </div>
         <div class="objekt-search site-search"><input class="objekt-search-input" value=""></div>
       </div>
     </div>
@@ -96,6 +112,60 @@ ${readCss('season-filters.css')}
   bind('collection-sort-toggle', 'collection-sort-menu');
 })();
 </script>
+<script src="/js/objekt-grid-cols.js"></script>
+</body></html>`;
+
+const objektHtml = `<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{margin:0;background:#0d0e12;color:#e3e2e8;font-family:"Pretendard Variable",Pretendard,sans-serif}
+.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hidden{display:none!important}
+${readCss('site-mobile.css')}
+${readCss('objekt-page.css')}
+${readCss('objekt-grid-cols.css')}
+${readCss('season-filters.css')}
+</style></head>
+<body class="site-page">
+<main class="main-content w-full max-w-[1440px] mx-auto px-4 sm:px-6 py-6 mb-auto">
+<section class="card-box w-full relative z-30">
+<form id="objekt-search-form">
+  <div class="objekt-workspace">
+    <div class="objekt-filter-bar relative">
+      <div class="objekt-filter relative" id="season-dropdown">
+        <span class="objekt-filter-label">시즌</span>
+        <button type="button" class="objekt-filter-control" id="season-toggle">
+          <span id="season-label" class="truncate">전체</span>
+        </button>
+        <div id="season-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
+          <label class="objekt-choice"><input type="checkbox" value="all" class="season-checkbox" checked><span class="objekt-choice-text">전체 시즌</span></label>
+          <label class="objekt-choice"><input type="checkbox" name="season" value="Cream02" class="season-checkbox"><span class="objekt-choice-text">cream02</span></label>
+          <label class="objekt-choice"><input type="checkbox" name="season" value="Binary02" class="season-checkbox"><span class="objekt-choice-text">binary02</span></label>
+          <label class="objekt-choice"><input type="checkbox" name="season" value="Atom02" class="season-checkbox"><span class="objekt-choice-text">atom02</span></label>
+          <label class="objekt-choice"><input type="checkbox" name="season" value="Ever01" class="season-checkbox"><span class="objekt-choice-text">ever01</span></label>
+          <label class="objekt-choice"><input type="checkbox" name="season" value="Divine01" class="season-checkbox"><span class="objekt-choice-text">divine01</span></label>
+          <label class="objekt-choice"><input type="checkbox" name="season" value="Cream01" class="season-checkbox"><span class="objekt-choice-text">cream01</span></label>
+          <label class="objekt-choice"><input type="checkbox" name="season" value="Binary01" class="season-checkbox"><span class="objekt-choice-text">binary01</span></label>
+          <label class="objekt-choice"><input type="checkbox" name="season" value="Atom01" class="season-checkbox"><span class="objekt-choice-text">atom01</span></label>
+        </div>
+      </div>
+      <div class="objekt-filter relative" id="class-dropdown">
+        <span class="objekt-filter-label">클래스</span>
+        <button type="button" class="objekt-filter-control">전체</button>
+      </div>
+    </div>
+  </div>
+</form>
+</section>
+</main>
+<script src="/js/season-filters.js"></script>
+<script>
+document.getElementById('season-toggle').addEventListener('click', () => {
+  const menu = document.getElementById('season-menu');
+  menu.classList.toggle('hidden');
+  menu.hidden = menu.classList.contains('hidden');
+});
+</script>
 </body></html>`;
 
 (async () => {
@@ -108,6 +178,9 @@ ${readCss('season-filters.css')}
     const page = await browser.newPage();
     await page.route('**/*', (route) => {
       const url = new URL(route.request().url());
+      if (url.pathname === '/cosmo/objekt') {
+        return route.fulfill({ contentType: 'text/html', body: objektHtml });
+      }
       if (url.pathname === '/' || url.pathname.endsWith('.html') || url.pathname === '/cosmo/collection') {
         return route.fulfill({ contentType: 'text/html', body: html });
       }
@@ -173,6 +246,17 @@ ${readCss('season-filters.css')}
       await assertMenuVisible('collection-season-menu');
       const chipCount = await page.locator('#collection-season-menu .season-chip').count();
       assert.ok(chipCount >= 3, 'season chips missing at ' + viewport.width);
+      if (viewport.name === 'mobile') {
+        const wrap = await page.evaluate(() => {
+          const list = document.querySelector('#collection-season-menu .season-chip-list');
+          const chips = [...document.querySelectorAll('#collection-season-menu .season-chip')];
+          const tops = new Set(chips.map((chip) => Math.round(chip.getBoundingClientRect().top)));
+          return { count: chips.length, rows: tops.size, width: Math.round(list.getBoundingClientRect().width) };
+        });
+        assert.ok(wrap.count >= 8, '시즌 칩 수가 부족하다: ' + JSON.stringify(wrap));
+        assert.ok(wrap.width > 220, '시즌 패널이 너무 좁아 한 줄에 하나씩 쌓인다: ' + JSON.stringify(wrap));
+        assert.ok(wrap.rows < wrap.count, '시즌 칩은 세로 나열이 아니라 행으로 감싸져야 한다: ' + JSON.stringify(wrap));
+      }
       await page.screenshot({ path: `/opt/cursor/artifacts/collection-dropdown-season-${viewport.name}.png` });
       await openMenu('collection-class-toggle', 'collection-class-menu');
       await assertMenuVisible('collection-class-menu');
@@ -191,8 +275,55 @@ ${readCss('season-filters.css')}
       });
       assert.equal(fonts.sort, fonts.kind, '정렬 항목 글자 크기가 종류와 달라서는 안 된다');
       assert.ok(Math.abs(fonts.sort - fonts.season) < 0.6, '정렬 항목 글자 크기가 시즌과 달라서는 안 된다');
+      if (viewport.name === 'mobile') {
+        const widths = await page.evaluate(() => {
+          const menu = document.getElementById('collection-sort-menu');
+          const filter = document.getElementById('collection-sort-dropdown');
+          return { menu: menu.getBoundingClientRect().width, filter: filter.getBoundingClientRect().width };
+        });
+        assert.ok(Math.abs(widths.menu - widths.filter) <= 3, '모바일 드롭다운 너비가 필터와 같아야 한다: ' + JSON.stringify(widths));
+        assert.equal(await page.locator('[data-objekt-cols-filter] .objekt-filter-label').count(), 0);
+        assert.equal(await page.locator('.objekt-cols-icon span').count(), 3);
+        await page.locator('[data-objekt-cols-toggle]').click();
+        await page.waitForFunction(() => !document.getElementById('collection-cols-menu').hidden);
+        await assertMenuVisible('collection-cols-menu');
+        const colsFont = await page.evaluate(() => {
+          const cols = document.querySelector('#collection-cols-menu .objekt-kind-option');
+          const sort = document.querySelector('#collection-sort-menu .objekt-kind-option');
+          return { cols: parseFloat(getComputedStyle(cols).fontSize), sort: parseFloat(getComputedStyle(sort).fontSize) };
+        });
+        assert.equal(colsFont.cols, colsFont.sort, '열 드롭다운 글자 크기가 정렬과 달라서는 안 된다');
+      }
       await page.screenshot({ path: `/opt/cursor/artifacts/collection-dropdown-sort-${viewport.name}.png` });
     }
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('https://collection-layout.test/cosmo/objekt', { waitUntil: 'load' });
+    await page.locator('#season-toggle').click();
+    await page.waitForFunction(() => {
+      const list = document.querySelector('#season-menu .season-chip-list');
+      if (!list) return false;
+      const box = list.getBoundingClientRect();
+      return box.width > 0 && box.height > 0;
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    const objektWrap = await page.evaluate(() => {
+      const list = document.querySelector('#season-menu .season-chip-list');
+      const chips = [...document.querySelectorAll('#season-menu .season-chip')];
+      const tops = new Set(chips.map((chip) => Math.round(chip.getBoundingClientRect().top)));
+      return {
+        count: chips.length,
+        rows: tops.size,
+        width: Math.round(list.getBoundingClientRect().width),
+        scroll: document.documentElement.scrollWidth,
+        view: innerWidth
+      };
+    });
+    assert.ok(objektWrap.count >= 8, '오브젝트 시즌 칩 수가 부족하다: ' + JSON.stringify(objektWrap));
+    assert.ok(objektWrap.width > 220, '오브젝트 시즌 패널이 너무 좁다: ' + JSON.stringify(objektWrap));
+    assert.ok(objektWrap.rows < objektWrap.count, '오브젝트 시즌 칩은 행으로 감싸져야 한다: ' + JSON.stringify(objektWrap));
+    assert.ok(objektWrap.scroll <= objektWrap.view, '오브젝트 시즌 패널이 뷰포트를 넘치면 안 된다: ' + JSON.stringify(objektWrap));
+    await page.screenshot({ path: `/opt/cursor/artifacts/objekt-season-chips-mobile.png` });
 
     console.log('PASS: 컬렉션 드롭다운이 모바일·데스크톱에서 잘리고 가려지지 않음');
   } finally {

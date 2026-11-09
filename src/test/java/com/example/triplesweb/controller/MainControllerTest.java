@@ -65,7 +65,8 @@ class MainControllerTest {
                 .andExpect(content().string(containsString("/archive/video_archive")))
                 .andExpect(content().string(containsString("Who is tripleS?")))
                 .andExpect(content().string(containsString("href=\"/triples/artist\"")))
-                .andExpect(content().string(containsString("href=\"/artist\"")));
+                .andExpect(content().string(containsString("href=\"/artist\"")))
+                .andExpect(content().string(containsString("header-objekt-jump")));
         verifyNoInteractions(schedules, archives, albumService, artists);
     }
 }
