@@ -1,7 +1,9 @@
 package com.example.triplesweb.controller;
 
 import com.example.triplesweb.entity.Artist;
+import com.example.triplesweb.entity.Event;
 import com.example.triplesweb.service.ArtistSnapshotService;
+import com.example.triplesweb.service.EventService;
 import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.ObjektMarketDataService;
 import com.example.triplesweb.util.MemberPortraitOptions;
@@ -14,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -40,6 +43,7 @@ public class CosmoController {
     private final ObjektService objektService;
     private final ArtistSnapshotService artistSnapshot;
     private final ObjektMarketDataService marketData;
+    private final EventService eventService;
 
     @GetMapping("/objekt")
     public String indexCosmoObjekt(
@@ -308,6 +312,21 @@ public class CosmoController {
     }
 
     @GetMapping("/event")
-    public String indexCosmoEvent() { return "cosmo/event"; }
+    public String indexCosmoEvent(Model model) {
+        model.addAttribute("eventSections", eventService.listGroupedBySection());
+        return "cosmo/event";
+    }
+
+    @GetMapping("/event/{id:[0-9]+}")
+    public String cosmoEventDetail(@PathVariable("id") long eventId, Model model) {
+        try {
+            Event event = eventService.getDetail(eventId);
+            model.addAttribute("event", event);
+            return "cosmo/event_detail";
+        } catch (IllegalArgumentException e) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND, e.getMessage());
+        }
+    }
 
 }
