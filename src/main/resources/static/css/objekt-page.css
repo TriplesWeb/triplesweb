@@ -451,6 +451,8 @@
             background: linear-gradient(160deg, #191c27, #11131b);
             box-shadow: 0 8px 22px rgba(0,0,0,.2);
             outline: none;
+            content-visibility: auto;
+            contain-intrinsic-size: auto 280px;
         }
         .objekt-card .badge {
             height: auto;
@@ -862,17 +864,21 @@
                 max-width: 16rem;
                 margin: 0 auto;
             }
-            .objekt-workspace { padding: .85rem; gap: .75rem; }
+            .main-content { padding-top: 1rem; padding-bottom: 1rem; }
+            .objekt-workspace { padding: .65rem; gap: .55rem; }
             .objekt-filter-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            .objekt-filter { height: auto; min-height: 2.625rem; justify-content: space-between; border-radius: 0.75rem; }
+            .objekt-filter { height: auto; min-height: 2.25rem; justify-content: space-between; border-radius: 0.75rem; }
+            .objekt-head { margin-bottom: .75rem; padding-bottom: .65rem; }
+            .objekt-head-title { font-size: 1.35rem; }
+            .objekt-dropdown-menu { left: 0; right: 0; min-width: 0; width: 100%; }
             .objekt-filter-control { max-width: none; }
             .objekt-filter-select-wrap,
             .objekt-kind-combo { max-width: none; }
             .objekt-search { flex: 1 1 100%; width: 100%; }
             .objekt-search-row { width: 100%; }
             .objekt-reset-button { flex: 0 0 auto; width: 100%; }
-            .objekt-card-grid { gap: 10px; }
-            .objekt-card-body { padding: .6rem .6rem .8rem; gap: .42rem; }
+            .objekt-card-grid { gap: 8px; }
+            .objekt-card-body { padding: .5rem .5rem .65rem; gap: .32rem; }
             .objekt-card-badges { flex-wrap: wrap; gap: .22rem .3rem; }
             .objekt-card-season { order: 1; }
             .objekt-detail-link { order: 2; flex: 1 1 auto; min-width: 0; }
@@ -882,7 +888,6 @@
             img.objekt-member-logo { width: .86rem; height: 1.34rem; }
         }
         @media (max-width: 420px) {
-            .objekt-filter-bar { grid-template-columns: 1fr; }
             .objekt-head { align-items: flex-start; }
             .objekt-fav-link { padding: 0 .8rem; }
         }

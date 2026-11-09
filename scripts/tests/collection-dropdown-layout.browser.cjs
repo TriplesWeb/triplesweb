@@ -17,6 +17,7 @@ body{margin:0;background:#0d0e12;color:#e3e2e8;font-family:"Pretendard Variable"
 .truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 ${readCss('site-mobile.css')}
 ${readCss('cosmo-collection.css')}
+${readCss('objekt-grid-cols.css')}
 ${readCss('season-filters.css')}
 </style></head>
 <body class="site-page collection-page">
@@ -63,6 +64,16 @@ ${readCss('season-filters.css')}
           <button type="button" class="objekt-kind-option" data-value="last_member">마지막 멤버</button>
         </div>
       </div>
+      <div class="objekt-filter relative" id="collection-cols-dropdown" data-objekt-cols-filter>
+        <span class="objekt-filter-label">열</span>
+        <button type="button" class="objekt-filter-control" data-objekt-cols-toggle aria-expanded="false" aria-controls="collection-cols-menu">
+          <span data-objekt-cols-label>2열</span>
+        </button>
+        <div id="collection-cols-menu" class="objekt-dropdown-menu" data-objekt-cols-menu hidden>
+          <button type="button" class="objekt-kind-option" data-objekt-cols-option="2">2열</button>
+          <button type="button" class="objekt-kind-option" data-objekt-cols-option="4">4열</button>
+        </div>
+      </div>
       <div class="objekt-search-row">
         <div class="objekt-search site-search"><input class="objekt-search-input" value=""></div>
       </div>
@@ -96,6 +107,7 @@ ${readCss('season-filters.css')}
   bind('collection-sort-toggle', 'collection-sort-menu');
 })();
 </script>
+<script src="/js/objekt-grid-cols.js"></script>
 </body></html>`;
 
 (async () => {
@@ -191,6 +203,23 @@ ${readCss('season-filters.css')}
       });
       assert.equal(fonts.sort, fonts.kind, '정렬 항목 글자 크기가 종류와 달라서는 안 된다');
       assert.ok(Math.abs(fonts.sort - fonts.season) < 0.6, '정렬 항목 글자 크기가 시즌과 달라서는 안 된다');
+      if (viewport.name === 'mobile') {
+        const widths = await page.evaluate(() => {
+          const menu = document.getElementById('collection-sort-menu');
+          const filter = document.getElementById('collection-sort-dropdown');
+          return { menu: menu.getBoundingClientRect().width, filter: filter.getBoundingClientRect().width };
+        });
+        assert.ok(Math.abs(widths.menu - widths.filter) <= 3, '모바일 드롭다운 너비가 필터와 같아야 한다: ' + JSON.stringify(widths));
+        await page.locator('[data-objekt-cols-toggle]').click();
+        await page.waitForFunction(() => !document.getElementById('collection-cols-menu').hidden);
+        await assertMenuVisible('collection-cols-menu');
+        const colsFont = await page.evaluate(() => {
+          const cols = document.querySelector('#collection-cols-menu .objekt-kind-option');
+          const sort = document.querySelector('#collection-sort-menu .objekt-kind-option');
+          return { cols: parseFloat(getComputedStyle(cols).fontSize), sort: parseFloat(getComputedStyle(sort).fontSize) };
+        });
+        assert.equal(colsFont.cols, colsFont.sort, '열 드롭다운 글자 크기가 정렬과 달라서는 안 된다');
+      }
       await page.screenshot({ path: `/opt/cursor/artifacts/collection-dropdown-sort-${viewport.name}.png` });
     }
 

@@ -103,6 +103,7 @@ class MobilePageTemplatesTest {
         assertThat(count).isGreaterThanOrEqualTo(30);
         var auth=new HashMap<>(model);auth.put("member",Map.of("userId",longText,"level",1,"points",100));
         String header=compiler.compile(Files.readString(root.resolve("layout/header.mustache"))).execute(auth);
+        assertThat(header).contains("header-objekt-jump").contains("href=\"/cosmo/objekt\"");
         Files.writeString(output.resolve("header-auth.html"),"<!doctype html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='/css/gravity.css'><link rel='stylesheet' href='/css/site-mobile.css'><link rel='stylesheet' href='/css/site-header.css'></head><body>"+header+"<main><h1>모바일 메뉴</h1><input aria-label='검색' placeholder='검색'></main></body></html>");
         Files.writeString(output.resolve("header-bare.html"),"<!doctype html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='/css/site-mobile.css'><link rel='stylesheet' href='/css/site-header.css'></head><body>"+header+"<main><h1>스타일 체계가 다른 화면의 메뉴</h1><input aria-label='검색' placeholder='검색'></main></body></html>");
     }

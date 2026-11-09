@@ -1,0 +1,121 @@
+/* Mobile-only column picker + shared compact dropdowns for objekt/collection. */
+[data-objekt-cols-filter] { display: none; }
+
+@media (max-width: 767px) {
+  [data-objekt-cols-filter] { display: flex; }
+
+  [data-objekt-grid][data-cols="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  [data-objekt-grid][data-cols="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: .4rem !important; }
+  [data-objekt-grid][data-cols="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: .28rem !important; }
+  [data-objekt-grid][data-cols="5"] { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; gap: .22rem !important; }
+
+  [data-objekt-grid][data-cols="3"] .objekt-card-body,
+  [data-objekt-grid][data-cols="3"] .collection-card-body {
+    padding: .42rem .4rem .5rem;
+    gap: .22rem;
+  }
+  [data-objekt-grid][data-cols="3"] .objekt-card-season,
+  [data-objekt-grid][data-cols="3"] .objekt-card-class,
+  [data-objekt-grid][data-cols="3"] .collection-card-season,
+  [data-objekt-grid][data-cols="3"] .collection-card-class {
+    font-size: .55rem;
+    padding: .1rem .28rem;
+  }
+  [data-objekt-grid][data-cols="3"] .objekt-detail-link,
+  [data-objekt-grid][data-cols="3"] .collection-title-link,
+  [data-objekt-grid][data-cols="3"] .collection-card-title {
+    font-size: .62rem;
+  }
+  [data-objekt-grid][data-cols="3"] .objekt-card-foot,
+  [data-objekt-grid][data-cols="3"] .collection-card-foot {
+    font-size: .68rem;
+  }
+  [data-objekt-grid][data-cols="3"] .objekt-card-supply { font-size: .62rem; }
+
+  [data-objekt-grid][data-cols="4"] .objekt-card-body,
+  [data-objekt-grid][data-cols="4"] .collection-card-body,
+  [data-objekt-grid][data-cols="5"] .objekt-card-body,
+  [data-objekt-grid][data-cols="5"] .collection-card-body {
+    padding: .28rem .24rem .32rem;
+    gap: .1rem;
+  }
+  [data-objekt-grid][data-cols="4"] .objekt-card-season,
+  [data-objekt-grid][data-cols="4"] .objekt-card-class,
+  [data-objekt-grid][data-cols="4"] .collection-card-season,
+  [data-objekt-grid][data-cols="4"] .collection-card-class,
+  [data-objekt-grid][data-cols="5"] .objekt-card-season,
+  [data-objekt-grid][data-cols="5"] .objekt-card-class,
+  [data-objekt-grid][data-cols="5"] .collection-card-season,
+  [data-objekt-grid][data-cols="5"] .collection-card-class {
+    font-size: .48rem;
+    padding: .06rem .18rem;
+  }
+  [data-objekt-grid][data-cols="4"] .objekt-detail-link,
+  [data-objekt-grid][data-cols="4"] .collection-title-link,
+  [data-objekt-grid][data-cols="4"] .collection-card-title,
+  [data-objekt-grid][data-cols="5"] .objekt-detail-link,
+  [data-objekt-grid][data-cols="5"] .collection-title-link,
+  [data-objekt-grid][data-cols="5"] .collection-card-title {
+    font-size: .54rem;
+    line-height: 1.2;
+  }
+  [data-objekt-grid][data-cols="4"] .objekt-card-foot,
+  [data-objekt-grid][data-cols="4"] .collection-card-foot,
+  [data-objekt-grid][data-cols="5"] .objekt-card-foot,
+  [data-objekt-grid][data-cols="5"] .collection-card-foot,
+  [data-objekt-grid][data-cols="4"] .objekt-card-supply,
+  [data-objekt-grid][data-cols="5"] .objekt-card-supply {
+    display: none;
+  }
+  [data-objekt-grid][data-cols="4"] .collection-card-serial,
+  [data-objekt-grid][data-cols="5"] .collection-card-serial {
+    font-size: .5rem;
+    padding: .1rem .18rem;
+    top: .22rem;
+    left: .22rem;
+  }
+  [data-objekt-grid][data-cols="4"] .objekt-open-detail,
+  [data-objekt-grid][data-cols="5"] .objekt-open-detail {
+    padding: .18rem .18rem 0;
+  }
+
+  .objekt-filter-bar,
+  .collection-filter-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .objekt-filter {
+    min-height: 2.25rem;
+    height: auto;
+    padding: .12rem .18rem .12rem .55rem;
+  }
+  .objekt-filter-control,
+  .objekt-filter button.objekt-filter-control,
+  .objekt-filter input.objekt-kind-select,
+  .objekt-filter-select-wrap select {
+    min-height: 2.25rem;
+    height: 2.25rem;
+    line-height: 2.25rem;
+  }
+  .objekt-dropdown-menu,
+  .season-choice-panel {
+    left: 0 !important;
+    right: 0 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+  .objekt-choice,
+  .objekt-kind-option,
+  .objekt-dropdown-menu .objekt-kind-option {
+    min-height: 2.25rem;
+    padding: .4rem .55rem;
+    font-size: .82rem;
+    line-height: 1.25;
+  }
+  .objekt-choice-text,
+  .objekt-filter .objekt-kind-select,
+  .objekt-filter-control,
+  .objekt-filter-label {
+    font-size: .82rem;
+  }
+}

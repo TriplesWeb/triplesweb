@@ -4,6 +4,7 @@
 <link rel="stylesheet" href="{{#asset}}/css/archive-page.css{{/asset}}">
 <link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
 <link rel="stylesheet" href="{{#asset}}/css/cosmo-collection.css{{/asset}}">
+<link rel="stylesheet" href="{{#asset}}/css/objekt-grid-cols.css{{/asset}}">
 <title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}코스모 아이디 검색{{/nickname}}</title>
 </head><body class="site-page collection-page min-h-screen flex flex-col">
 {{>layout/header}}
@@ -132,6 +133,19 @@
                         <p class="objekt-kind-empty" id="collection-kind-empty" hidden>일치하는 종류 없음</p>
                     </div>
                 </div>
+                <div class="objekt-filter relative" id="collection-cols-dropdown" data-objekt-cols-filter>
+                    <span class="objekt-filter-label">열</span>
+                    <button type="button" class="objekt-filter-control" data-objekt-cols-toggle aria-expanded="false" aria-haspopup="listbox" aria-controls="collection-cols-menu">
+                        <span data-objekt-cols-label class="truncate">2열</span>
+                        <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
+                    </button>
+                    <div id="collection-cols-menu" class="objekt-dropdown-menu absolute top-full left-0 mt-2 rounded-xl border z-50 p-1.5" data-objekt-cols-menu hidden role="listbox" aria-label="열 수">
+                        <button type="button" class="objekt-kind-option" data-objekt-cols-option="2" role="option">2열</button>
+                        <button type="button" class="objekt-kind-option" data-objekt-cols-option="3" role="option">3열</button>
+                        <button type="button" class="objekt-kind-option" data-objekt-cols-option="4" role="option">4열</button>
+                        <button type="button" class="objekt-kind-option" data-objekt-cols-option="5" role="option">5열</button>
+                    </div>
+                </div>
                 <div class="objekt-filter relative" id="collection-sort-dropdown">
                     <span class="objekt-filter-label">정렬</span>
                     <button type="button" class="objekt-filter-control" id="collection-sort-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="collection-sort-menu">
@@ -168,6 +182,7 @@
         </form>
     </section>
     <section class="ar-grid collection-grid" id="collection-grid" aria-label="보유 오브젝트"
+             data-objekt-grid data-cols="2"
              data-loaded="{{loadedCount}}" data-filtered="{{filteredCount}}" data-owned="{{ownedCount}}">
         {{#cards}}
         <article class="card ar-panel ar-card collection-card">
@@ -203,6 +218,7 @@
 </main>
 <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
 <script src="{{#asset}}/js/objekt-kind-combo.js{{/asset}}"></script>
+<script src="{{#asset}}/js/objekt-grid-cols.js{{/asset}}"></script>
 <script type="application/json" id="collection-kind-by-class">{{{kindByClassJson}}}</script>
 <script src="{{#asset}}/js/collection-nickname-suggest.js{{/asset}}"></script>
 <script>
@@ -614,7 +630,7 @@
       loading = false;
       updateStatus();
       if (pending || (hasMore && sentinelVisible)) {
-        pollTimer = setTimeout(loadMore, 100);
+        pollTimer = setTimeout(loadMore, 400);
       }
     }
   }
@@ -671,7 +687,7 @@
       loading = false;
       updateStatus();
       if (pending || (hasMore && sentinelVisible)) {
-        pollTimer = setTimeout(loadMore, 100);
+        pollTimer = setTimeout(loadMore, 400);
       }
     }
   }
@@ -691,7 +707,7 @@
     btn.addEventListener('click', loadMore);
     sentinel.appendChild(btn);
   }
-  if (pending) pollTimer = setTimeout(loadMore, 100);
+  if (pending) pollTimer = setTimeout(loadMore, 400);
   window.addEventListener('pagehide', () => {
     clearTimeout(pollTimer);
     listAbort?.abort();

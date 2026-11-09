@@ -331,7 +331,7 @@
 .collection-page .objekt-reset-button:hover { border-color: #b4bed273; background: #ffffff0a; color: #e8ebf2; }
 .collection-page .objekt-reset-button:focus-visible { outline: 2px solid #a4adbf; outline-offset: 3px; }
 @media (max-width: 760px) {
-    .collection-page .collection-filter-workspace { padding: .85rem; gap: .75rem; }
+    .collection-page .collection-filter-workspace { padding: .65rem; gap: .55rem; }
     .collection-page .collection-filter-form,
     .collection-page .collection-filter-panel {
         display: grid !important;
@@ -353,28 +353,41 @@
     .collection-page .collection-filter-bar .objekt-filter {
         min-width: 0;
         height: auto;
-        min-height: 2.625rem;
+        min-height: 2.25rem;
         justify-content: space-between;
         border-radius: .75rem;
     }
-    .collection-page .objekt-filter:nth-child(even) .objekt-dropdown-menu {
-        left: auto;
-        right: 0;
+    .collection-page .objekt-dropdown-menu,
+    .collection-page .season-choice-panel {
+        left: 0 !important;
+        right: 0 !important;
+        min-width: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+    }
+    .collection-page .objekt-choice,
+    .collection-page .objekt-kind-option {
+        min-height: 2.25rem;
+        padding: .4rem .55rem;
+        font-size: .82rem;
+        line-height: 1.25;
     }
     .collection-page .objekt-search-row {
         overflow: visible;
     }
     .collection-page .objekt-search { flex: 1 1 100%; width: 100%; }
 }
-@media (max-width: 420px) {
-    .collection-page .objekt-filter-bar,
-    .collection-page .collection-filter-bar {
-        grid-template-columns: 1fr !important;
+@media (max-width: 767px) {
+    .collection-page .gravity-page,
+    body.collection-page .gravity-page {
+        padding-top: 1rem;
+        padding-bottom: 1.5rem;
+        gap: 1.15rem;
     }
-    .collection-page .objekt-filter:nth-child(even) .objekt-dropdown-menu {
-        left: 0;
-        right: auto;
-    }
+    .collection-page .gv-headline { padding: 1rem; gap: .75rem; }
+    .collection-page .gv-headline h1 { font-size: 1.35rem; }
+    .collection-page .gv-headline p { line-height: 1.45; }
+    .collection-page .collection-card-body { padding: .45rem .45rem .55rem; gap: .24rem; }
 }
 .collection-filter {
     display: inline-flex;
@@ -476,7 +489,7 @@
 }
 @keyframes collection-spin { to { transform: rotate(360deg); } }
 
-.collection-card{border-radius:1rem;overflow:hidden;border:1px solid #343b5180;background:linear-gradient(160deg,#191c27,#11131b);box-shadow:0 8px 22px rgba(0,0,0,.2)}.collection-image-wrap .collection-card-serial{position:absolute;top:.5rem;left:.5rem;z-index:1;border-radius:.4rem;padding:.25rem .4rem;font-size:.68rem;font-weight:700;line-height:1.2;background:#171a24dc;color:#e8ebf2}.collection-card-serial .ar-id{border:0;padding:0;color:inherit}.collection-card-body{display:flex;flex-direction:column;gap:.38rem;padding:.7rem .8rem .85rem}.collection-card-badges{display:flex;align-items:center;gap:.28rem;min-width:0}.collection-card-season{flex:0 0 auto;border-radius:999px;padding:.14rem .42rem;color:#071513;font-size:.64rem;font-weight:800;line-height:1.2;background:#A4B7B4}.collection-card-class{flex:0 0 auto;margin-left:auto;border-radius:999px;padding:.14rem .42rem;border:1px solid rgba(255,255,255,.08);background:#0c0d12;color:#f3f4f8;font-size:.64rem;font-weight:800;line-height:1.2}.collection-title-link,.collection-card-title{flex:1 1 auto;min-width:0;overflow:hidden;color:#e8eaef;font-size:.68rem;font-weight:700;text-decoration:none;text-overflow:ellipsis;white-space:nowrap}.collection-title-link:hover{color:#00f5d4;text-decoration:none}.collection-card-foot{display:flex;align-items:center;justify-content:space-between;gap:.5rem;color:#8b93a7;font-size:.72rem}.collection-card-member{min-width:0;overflow:hidden;color:#7dd3c7;text-overflow:ellipsis;white-space:nowrap}.collection-card-no{flex:0 0 auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}@media (max-width:760px){.collection-card-body{padding:.55rem .55rem .7rem;gap:.3rem}.collection-card-badges{flex-wrap:wrap;gap:.22rem .3rem}.collection-card-season{order:1}.collection-card-class{order:2;margin-left:auto}.collection-title-link,.collection-card-title{order:3;flex:1 1 100%}}
+.collection-card{border-radius:1rem;overflow:hidden;border:1px solid #343b5180;background:linear-gradient(160deg,#191c27,#11131b);box-shadow:0 8px 22px rgba(0,0,0,.2);content-visibility:auto;contain-intrinsic-size:auto 280px}.collection-image-wrap .collection-card-serial{position:absolute;top:.5rem;left:.5rem;z-index:1;border-radius:.4rem;padding:.25rem .4rem;font-size:.68rem;font-weight:700;line-height:1.2;background:#171a24dc;color:#e8ebf2}.collection-card-serial .ar-id{border:0;padding:0;color:inherit}.collection-card-body{display:flex;flex-direction:column;gap:.38rem;padding:.7rem .8rem .85rem}.collection-card-badges{display:flex;align-items:center;gap:.28rem;min-width:0}.collection-card-season{flex:0 0 auto;border-radius:999px;padding:.14rem .42rem;color:#071513;font-size:.64rem;font-weight:800;line-height:1.2;background:#A4B7B4}.collection-card-class{flex:0 0 auto;margin-left:auto;border-radius:999px;padding:.14rem .42rem;border:1px solid rgba(255,255,255,.08);background:#0c0d12;color:#f3f4f8;font-size:.64rem;font-weight:800;line-height:1.2}.collection-title-link,.collection-card-title{flex:1 1 auto;min-width:0;overflow:hidden;color:#e8eaef;font-size:.68rem;font-weight:700;text-decoration:none;text-overflow:ellipsis;white-space:nowrap}.collection-title-link:hover{color:#00f5d4;text-decoration:none}.collection-card-foot{display:flex;align-items:center;justify-content:space-between;gap:.5rem;color:#8b93a7;font-size:.72rem}.collection-card-member{min-width:0;overflow:hidden;color:#7dd3c7;text-overflow:ellipsis;white-space:nowrap}.collection-card-no{flex:0 0 auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}@media (max-width:760px){.collection-card-body{padding:.45rem .45rem .55rem;gap:.24rem}.collection-card-badges{flex-wrap:wrap;gap:.22rem .3rem}.collection-card-season{order:1}.collection-card-class{order:2;margin-left:auto}.collection-title-link,.collection-card-title{order:3;flex:1 1 100%}}
 .collection-title-link,.collection-card-title{
     overflow:visible;
     text-overflow:unset;

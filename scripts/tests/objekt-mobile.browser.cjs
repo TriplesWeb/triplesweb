@@ -45,6 +45,8 @@ const base=path.resolve(__dirname,'../..'), fixtures=path.join(base,'build/mobil
       assert.equal(await page.locator('.article-board-row>div:nth-child(2)').first().evaluate(node=>getComputedStyle(node).whiteSpace),'normal');
     }
     if(file==='header-auth.html'||file==='header-bare.html'){
+      assert.equal(await page.locator('.header-objekt-jump').isVisible(),true);
+      assert.equal(await page.locator('.header-objekt-jump').getAttribute('href'),'/cosmo/objekt');
       await page.locator('#mobile-menu-btn').click();assert.equal(await page.locator('#mobile-menu').isVisible(),true);
       await page.locator('.mobile-nav-toggle').first().click();assert.equal(await page.locator('.mobile-nav-panel').first().isVisible(),true);
       await page.keyboard.press('Escape');
