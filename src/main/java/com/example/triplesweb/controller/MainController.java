@@ -110,6 +110,7 @@ public class MainController {
         List<Map<String, String>> upcoming = upcomingSchedules(scheduleForms);
         model.addAttribute("upcomingSchedules", upcoming);
         model.addAttribute("hasUpcomingSchedules", !upcoming.isEmpty());
+        model.addAttribute("isHomePage", true);
 
     }
 

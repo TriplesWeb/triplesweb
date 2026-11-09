@@ -29,7 +29,12 @@
     if(checkbox){
       menu=source;
       const toggle=control.querySelector('button');const usesHidden=menu.hasAttribute('hidden');
-      source.__seasonClose=()=>{if(usesHidden)menu.hidden=true;else menu.classList.add('hidden');toggle?.setAttribute('aria-expanded','false');};
+      source.__seasonClose=()=>{
+        if(window.ObjektDropdown) window.ObjektDropdown.setOpen(menu,false);
+        else if(usesHidden){menu.hidden=true;menu.classList.add('hidden');}
+        else menu.classList.add('hidden');
+        toggle?.setAttribute('aria-expanded','false');
+      };
       menu.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();source.__seasonClose();toggle?.focus();}});
       native=document.createElement('div');native.className='season-native-options';native.hidden=true;
       while(menu.firstChild)native.append(menu.firstChild);
@@ -52,12 +57,21 @@
       source.__seasonToggleText=text;source.__seasonClose=close;
     }
     menu.classList.add('season-choice-panel');
-    control.addEventListener('click',()=>queueMicrotask(()=>{
-      if(menu.hidden||menu.classList.contains('hidden'))return;
+    function placeMenu(){
+      if(window.ObjektDropdown?window.ObjektDropdown.isClosed(menu):(menu.hidden||menu.classList.contains('hidden')))return;
+      const pad=12;
+      menu.style.removeProperty('top');
       menu.style.left='0';menu.style.right='auto';
-      if(menu.getBoundingClientRect().right>innerWidth-12){menu.style.left='auto';menu.style.right='0';}
-      if(menu.getBoundingClientRect().left<12){menu.style.right='auto';menu.style.left=(12-control.getBoundingClientRect().left)+'px';}
-    }));
+      const room=Math.max(160,innerWidth-pad-control.getBoundingClientRect().left);
+      menu.style.setProperty('max-width',room+'px','important');
+      if(menu.getBoundingClientRect().right>innerWidth-pad){menu.style.left='auto';menu.style.right='0';}
+      if(menu.getBoundingClientRect().left<pad){
+        menu.style.right='auto';
+        menu.style.left=(pad-control.getBoundingClientRect().left)+'px';
+        menu.style.setProperty('max-width',(innerWidth-2*pad)+'px','important');
+      }
+    }
+    control.addEventListener('click',()=>queueMicrotask(placeMenu));
     const row=document.createElement('div');row.className='season-quick-filters';row.setAttribute('role','group');row.setAttribute('aria-label','시즌 선택');
     const list=document.createElement('div');list.className='season-chip-list';row.append(list);menu.append(row);
     const options=()=>checkbox?[...native.querySelectorAll(checkSelector)].filter(input=>input.value!=='all').map(input=>({value:input.value,label:input.closest('label')?.querySelector('.objekt-choice-text')?.textContent.trim()||input.value,disabled:input.disabled}))
@@ -84,7 +98,7 @@
     }
     // Observe only the original options, never the generated button subtree.
     new MutationObserver(render).observe(native,{childList:true,subtree:true,attributes:true,attributeFilter:['selected','disabled']});
-    source.addEventListener('change',sync);sources.set(source,true);controllers.add({source,sync,close:source.__seasonClose});render();
+    source.addEventListener('change',sync);sources.set(source,true);controllers.add({source,sync,close:source.__seasonClose,place:placeMenu});render();
   }
   function init(root=document){
     const nodes=selector=>[...(root.matches?.(selector)?[root]:[]),...root.querySelectorAll(selector)];
@@ -92,7 +106,7 @@
     nodes(checkSelector).forEach(input=>{const menu=input.closest('#season-menu,#collection-season-menu,[data-season-options],.objekt-dropdown-menu');if(menu)enhance(menu,true);});
   }
   function syncAll(){controllers.forEach(c=>{if(c.source.isConnected)c.sync();else controllers.delete(c);});}
-  function start(){init();document.addEventListener('reset',()=>requestAnimationFrame(syncAll));document.addEventListener('click',event=>{const button=event.target.closest('button');if(button&&(button.matches('.objekt-reset-button,[data-reset],#gvReset')||/reset|clear/i.test(button.id)||button.textContent.includes('초기화')))queueMicrotask(syncAll);});}
+  function start(){init();document.addEventListener('reset',()=>requestAnimationFrame(syncAll));document.addEventListener('click',event=>{const button=event.target.closest('button');if(button&&(button.matches('.objekt-reset-button,[data-reset],#gvReset')||/reset|clear/i.test(button.id)||button.textContent.includes('초기화')))queueMicrotask(syncAll);});window.addEventListener('resize',()=>controllers.forEach(c=>c.place?.()));}
   window.SeasonChips={init,colorFor};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();

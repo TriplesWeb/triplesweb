@@ -33,6 +33,10 @@ const base=path.resolve(__dirname,'../..'), fixtures=path.join(base,'build/mobil
       return r.right>innerWidth+1||r.left < -1;
     }).slice(0,8).map(n=>({tag:n.tagName,cls:n.className,text:n.textContent.slice(0,90),right:n.getBoundingClientRect().right})));
     if(offending.length)failures.push({engine:'chromium',width,file,offending});
+    if(file==='header-home.html'||file==='main.mustache.html'){
+      assert.equal(await page.locator('.header-objekt-jump').isVisible(),true);
+      assert.equal(await page.locator('.header-objekt-jump').getAttribute('href'),'/cosmo/objekt');
+    }
     if(file==='cosmo_profile.mustache.html'){
       assert.equal(await page.locator('.profile-progress-track').count(),0);
       assert.ok(await page.locator('.profile-overall-pie').count()>=1);
@@ -45,6 +49,7 @@ const base=path.resolve(__dirname,'../..'), fixtures=path.join(base,'build/mobil
       assert.equal(await page.locator('.article-board-row>div:nth-child(2)').first().evaluate(node=>getComputedStyle(node).whiteSpace),'normal');
     }
     if(file==='header-auth.html'||file==='header-bare.html'){
+      assert.equal(await page.locator('.header-objekt-jump').count(),0);
       await page.locator('#mobile-menu-btn').click();assert.equal(await page.locator('#mobile-menu').isVisible(),true);
       await page.locator('.mobile-nav-toggle').first().click();assert.equal(await page.locator('.mobile-nav-panel').first().isVisible(),true);
       await page.keyboard.press('Escape');

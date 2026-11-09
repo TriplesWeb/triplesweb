@@ -7,8 +7,9 @@ const root=path.resolve(__dirname,'../..');
   const page=await browser.newPage(); const errors=[]; page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/*',route=>{
    const url=new URL(route.request().url()); if(url.origin!=='https://header.test')return route.abort();
-   if(url.pathname==='/'){
-    let html=fs.readFileSync(path.join(root,'build/mobile-pages/header-auth.html'),'utf8')
+   if(url.pathname==='/'||url.pathname==='/home'){
+    const fixture=url.pathname==='/home'?'header-home.html':'header-auth.html';
+    let html=fs.readFileSync(path.join(root,'build/mobile-pages',fixture),'utf8')
       .replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'');
     html=html.replace('</head>','<style>main{min-height:1400px}</style></head>');
     // header.mustache already embeds site-header.js; strip then inject once so the menu toggle is not double-bound.
@@ -26,6 +27,7 @@ const root=path.resolve(__dirname,'../..');
    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`header overflow ${width}`);
    const desktop=await page.locator('#navbar').evaluate(n=>getComputedStyle(n).display!=='none');
+   assert.equal(await page.locator('.header-objekt-jump').count(),0,`메인 아닌 헤더에 오브젝트 바로가기가 있으면 안 된다 ${width}`);
    if(!desktop){
     await page.locator('#mobile-menu-btn').click();
     await page.waitForFunction(()=>!document.getElementById('mobile-menu').classList.contains('hidden'));
@@ -74,6 +76,18 @@ const root=path.resolve(__dirname,'../..');
     assert.equal(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().top>=0),true);
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/header-chromium-${width}.png`,fullPage:false}).catch(error=>console.warn(`[preview] chromium ${width}px screenshot skipped: ${error.message}`));
    }
+  }
+  for(const width of [320,390,1024]){
+    await page.setViewportSize({width,height:900});
+    await page.goto('https://header.test/home',{waitUntil:'load'});
+    const jump=page.locator('.header-objekt-jump');
+    assert.equal(await jump.getAttribute('href'),'/cosmo/objekt');
+    if(width<1024){
+      assert.equal(await jump.isVisible(),true,`홈 모바일 오브젝트 바로가기 ${width}`);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`home header overflow ${width}`);
+    }else{
+      assert.equal(await jump.evaluate(n=>getComputedStyle(n).display),'none',`홈 데스크톱에서 오브젝트 바로가기는 숨긴다 ${width}`);
+    }
   }
   assert.deepEqual(errors,[]);console.log('PASS: chromium header 320/360/390/1024/1040/1280/1440px, keyboard, navigation, community removed, outside click, search');
  }finally{await browser.close();}
