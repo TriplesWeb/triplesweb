@@ -153,8 +153,9 @@
             <textarea class="stop-setlist" rows="6" placeholder="# VCR 1 : OPENING VCR&#10;곡명|앨범|비고&#10;곡A|앨범A || 곡B|앨범B">${escapeText(s.setlist || "")}</textarea>
           </label>
           <label class="event-stop-field">
-            <span>MD 리스트</span>
-            <textarea class="stop-md-list" rows="7" placeholder="# Official MD&#10;!/uploads/images/md-notice.jpg&#10;응원봉|35000&#10;# MD Benefit&#10;!/uploads/images/md-benefit.jpg">${escapeText(s.mdList || "")}</textarea>
+            <span>샵 MD 공지</span>
+            <textarea class="stop-md-list" rows="7" placeholder="# Official MD&#10;!/uploads/images/md-notice.jpg&#10;# MD Benefit&#10;!/uploads/images/md-benefit.jpg" title="샵 MD 상세에 보이는 공지 사진. # 카테고리와 !이미지URL">${escapeText(s.mdList || "")}</textarea>
+            <span class="event-stop-field-hint">공연의 「콘서트 굿즈」에서 샵 MD 페이지로 연결됩니다. <code># 카테고리</code> · <code>!이미지URL</code></span>
           </label>
         </div>
       </div>`;

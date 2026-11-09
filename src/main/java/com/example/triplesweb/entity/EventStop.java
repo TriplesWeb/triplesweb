@@ -56,10 +56,11 @@ public class EventStop {
     private String setlist;
 
     /**
-     * MD 리스트. 줄바꿈으로 구분.
+     * 샵 MD 공지. 줄바꿈으로 구분. 공연 「콘서트 굿즈」→ 샵 상세에 표시.
      * <ul>
      *   <li>{@code # Official MD} — 카테고리</li>
-     *   <li>{@code 상품명} 또는 {@code 상품명|가격}</li>
+     *   <li>{@code !/path.png} / {@code img:url} — 공지 사진</li>
+     *   <li>{@code 상품명} 또는 {@code 상품명|가격} — 하위 호환(샵 상세에는 사진만 노출)</li>
      * </ul>
      */
     @Column(name = "md_list", columnDefinition = "LONGTEXT")
