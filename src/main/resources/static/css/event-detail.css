@@ -233,6 +233,10 @@
   border-right: 0;
 }
 
+.event-stop-block--goods {
+  padding: 0.9rem 0.85rem 0.85rem;
+}
+
 .event-goods-section {
   margin-top: 0.25rem;
 }
@@ -242,6 +246,11 @@
   border: 1px solid rgba(58, 74, 70, 0.45);
   overflow: hidden;
   background: rgba(13, 14, 18, 0.45);
+}
+
+.event-goods-box--in-stop {
+  border-radius: 0.65rem;
+  background: rgba(13, 14, 18, 0.35);
 }
 
 .event-goods-head {

@@ -88,9 +88,9 @@ public class EventStop {
         return !getMdCategories().isEmpty();
     }
 
-    /** 회차 아코디언 본문(상세·셋리스트). MD는 하단 굿즈 섹션으로 분리 */
+    /** 회차 아코디언 본문(상세·셋리스트·MD) */
     public boolean isHasPanelContent() {
-        return isHasDetail() || isHasSetlist();
+        return isHasDetail() || isHasSetlist() || isHasMdList();
     }
 
     /** Mustache용: 공연명 (지역) */
