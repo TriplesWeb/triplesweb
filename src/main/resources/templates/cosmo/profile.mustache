@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
 <link rel="stylesheet" href="{{#asset}}/css/cosmo-collection.css{{/asset}}">
 <link rel="stylesheet" href="{{#asset}}/css/cosmo-profile.css{{/asset}}">
+<link rel="stylesheet" href="{{#asset}}/css/scroll-top.css{{/asset}}">
 </head><body class="site-page collection-page min-h-screen flex flex-col">
 {{>layout/header}}
 <main class="gravity-page cosmo-profile" data-profile-version="{{#hasProfile}}{{profileVersion}}{{/hasProfile}}">
@@ -240,4 +241,5 @@
 })();
 </script>
 {{/isMembersTab}}
+{{>partials/scroll-top}}
 {{>layout/page-end}}

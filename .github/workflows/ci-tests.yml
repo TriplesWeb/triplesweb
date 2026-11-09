@@ -115,6 +115,7 @@ jobs:
           node scripts/tests/collection-dropdown-layout.browser.cjs
           node scripts/tests/profile-ownership-tabs.browser.cjs
           node scripts/tests/objekt-season-schedule.browser.cjs
+          node scripts/tests/scroll-top.browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

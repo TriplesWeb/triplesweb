@@ -4,6 +4,7 @@
 <link rel="stylesheet" href="{{#asset}}/css/archive-page.css{{/asset}}">
 <link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
 <link rel="stylesheet" href="{{#asset}}/css/cosmo-collection.css{{/asset}}">
+<link rel="stylesheet" href="{{#asset}}/css/scroll-top.css{{/asset}}">
 <title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}코스모 아이디 검색{{/nickname}}</title>
 </head><body class="site-page collection-page min-h-screen flex flex-col">
 {{>layout/header}}
@@ -698,4 +699,5 @@
   }, { once: true });
 })();
 </script>
+{{>partials/scroll-top}}
 {{>layout/page-end}}
