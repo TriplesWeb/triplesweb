@@ -133,19 +133,6 @@
                         <p class="objekt-kind-empty" id="collection-kind-empty" hidden>일치하는 종류 없음</p>
                     </div>
                 </div>
-                <div class="objekt-filter relative" id="collection-cols-dropdown" data-objekt-cols-filter>
-                    <span class="objekt-filter-label">열</span>
-                    <button type="button" class="objekt-filter-control" data-objekt-cols-toggle aria-expanded="false" aria-haspopup="listbox" aria-controls="collection-cols-menu">
-                        <span data-objekt-cols-label class="truncate">2열</span>
-                        <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
-                    </button>
-                    <div id="collection-cols-menu" class="objekt-dropdown-menu absolute top-full left-0 mt-2 rounded-xl border z-50 p-1.5" data-objekt-cols-menu hidden role="listbox" aria-label="열 수">
-                        <button type="button" class="objekt-kind-option" data-objekt-cols-option="2" role="option">2열</button>
-                        <button type="button" class="objekt-kind-option" data-objekt-cols-option="3" role="option">3열</button>
-                        <button type="button" class="objekt-kind-option" data-objekt-cols-option="4" role="option">4열</button>
-                        <button type="button" class="objekt-kind-option" data-objekt-cols-option="5" role="option">5열</button>
-                    </div>
-                </div>
                 <div class="objekt-filter relative" id="collection-sort-dropdown">
                     <span class="objekt-filter-label">정렬</span>
                     <button type="button" class="objekt-filter-control" id="collection-sort-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="collection-sort-menu">
@@ -164,6 +151,18 @@
                     </div>
                 </div>
                 <div class="objekt-search-row">
+                    <div class="objekt-cols-control" id="collection-cols-dropdown" data-objekt-cols-filter>
+                        <button type="button" class="objekt-cols-toggle" data-objekt-cols-toggle aria-label="열 수" aria-expanded="false" aria-haspopup="listbox" aria-controls="collection-cols-menu">
+                            <span class="objekt-cols-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+                            <span class="objekt-cols-sr" data-objekt-cols-label>2열</span>
+                        </button>
+                        <div id="collection-cols-menu" class="objekt-dropdown-menu absolute top-full left-0 mt-2 rounded-xl border z-50 p-1.5" data-objekt-cols-menu hidden role="listbox" aria-label="열 수">
+                            <button type="button" class="objekt-kind-option" data-objekt-cols-option="2" role="option">2열</button>
+                            <button type="button" class="objekt-kind-option" data-objekt-cols-option="3" role="option">3열</button>
+                            <button type="button" class="objekt-kind-option" data-objekt-cols-option="4" role="option">4열</button>
+                            <button type="button" class="objekt-kind-option" data-objekt-cols-option="5" role="option">5열</button>
+                        </div>
+                    </div>
                     <div class="objekt-search site-search">
                         <label class="w-full min-w-0">
                             <input type="search" name="q" value="{{searchQuery}}" placeholder="전체 오브젝트에서 검색..." aria-label="보유 오브젝트 검색" autocomplete="off" class="objekt-search-input site-search__input">

@@ -32,7 +32,7 @@
     if (!menu) return;
     menu.hidden = !open;
     menu.classList.toggle('hidden', !open);
-    const filter = menu.closest('.objekt-filter');
+    const filter = menu.closest('[data-objekt-cols-filter]');
     filter?.classList.toggle('is-open', open);
     filter?.querySelector('[data-objekt-cols-toggle]')?.setAttribute('aria-expanded', open ? 'true' : 'false');
   }
@@ -59,7 +59,7 @@
       toggle.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
-        const filter = toggle.closest('.objekt-filter');
+        const filter = toggle.closest('[data-objekt-cols-filter]');
         const menu = filter?.querySelector('[data-objekt-cols-menu]');
         if (!menu) return;
         const open = menu.hidden || menu.classList.contains('hidden');

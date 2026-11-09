@@ -25,16 +25,18 @@ body{margin:0;background:#0d0e12;color:#e3e2e8;font-family:sans-serif}
 </head>
 <body>
 <div class="objekt-filter-bar">
-  <div class="objekt-filter" data-objekt-cols-filter>
-    <span class="objekt-filter-label">열</span>
-    <button type="button" class="objekt-filter-control" data-objekt-cols-toggle aria-expanded="false">
-      <span data-objekt-cols-label>2열</span>
-    </button>
-    <div class="objekt-dropdown-menu hidden" data-objekt-cols-menu hidden>
-      <button type="button" class="objekt-kind-option" data-objekt-cols-option="2">2열</button>
-      <button type="button" class="objekt-kind-option" data-objekt-cols-option="3">3열</button>
-      <button type="button" class="objekt-kind-option" data-objekt-cols-option="4">4열</button>
-      <button type="button" class="objekt-kind-option" data-objekt-cols-option="5">5열</button>
+  <div class="objekt-search-row">
+    <div class="objekt-cols-control" data-objekt-cols-filter>
+      <button type="button" class="objekt-cols-toggle" data-objekt-cols-toggle aria-label="열 수" aria-expanded="false">
+        <span class="objekt-cols-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span class="objekt-cols-sr" data-objekt-cols-label>2열</span>
+      </button>
+      <div class="objekt-dropdown-menu hidden" data-objekt-cols-menu hidden>
+        <button type="button" class="objekt-kind-option" data-objekt-cols-option="2">2열</button>
+        <button type="button" class="objekt-kind-option" data-objekt-cols-option="3">3열</button>
+        <button type="button" class="objekt-kind-option" data-objekt-cols-option="4">4열</button>
+        <button type="button" class="objekt-kind-option" data-objekt-cols-option="5">5열</button>
+      </div>
     </div>
   </div>
 </div>
@@ -79,6 +81,8 @@ function columnCount(value) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('https://objekt-cols.test/', { waitUntil: 'load' });
     assert.equal(await page.locator('[data-objekt-cols-filter]').evaluate((n) => getComputedStyle(n).display !== 'none'), true);
+    assert.equal(await page.locator('.objekt-cols-icon span').count(), 3);
+    assert.equal(await page.locator('[data-objekt-cols-filter] .objekt-filter-label').count(), 0);
     assert.equal(await page.locator('[data-objekt-grid]').getAttribute('data-cols'), '2');
     assert.equal(columnCount(await page.locator('[data-objekt-grid]').evaluate((n) => getComputedStyle(n).gridTemplateColumns)), 2);
 

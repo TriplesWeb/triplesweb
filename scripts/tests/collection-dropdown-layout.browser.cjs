@@ -64,17 +64,17 @@ ${readCss('season-filters.css')}
           <button type="button" class="objekt-kind-option" data-value="last_member">마지막 멤버</button>
         </div>
       </div>
-      <div class="objekt-filter relative" id="collection-cols-dropdown" data-objekt-cols-filter>
-        <span class="objekt-filter-label">열</span>
-        <button type="button" class="objekt-filter-control" data-objekt-cols-toggle aria-expanded="false" aria-controls="collection-cols-menu">
-          <span data-objekt-cols-label>2열</span>
-        </button>
-        <div id="collection-cols-menu" class="objekt-dropdown-menu" data-objekt-cols-menu hidden>
-          <button type="button" class="objekt-kind-option" data-objekt-cols-option="2">2열</button>
-          <button type="button" class="objekt-kind-option" data-objekt-cols-option="4">4열</button>
-        </div>
-      </div>
       <div class="objekt-search-row">
+        <div class="objekt-cols-control" id="collection-cols-dropdown" data-objekt-cols-filter>
+          <button type="button" class="objekt-cols-toggle" data-objekt-cols-toggle aria-label="열 수" aria-expanded="false" aria-controls="collection-cols-menu">
+            <span class="objekt-cols-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+            <span class="objekt-cols-sr" data-objekt-cols-label>2열</span>
+          </button>
+          <div id="collection-cols-menu" class="objekt-dropdown-menu" data-objekt-cols-menu hidden>
+            <button type="button" class="objekt-kind-option" data-objekt-cols-option="2">2열</button>
+            <button type="button" class="objekt-kind-option" data-objekt-cols-option="4">4열</button>
+          </div>
+        </div>
         <div class="objekt-search site-search"><input class="objekt-search-input" value=""></div>
       </div>
     </div>
@@ -210,6 +210,8 @@ ${readCss('season-filters.css')}
           return { menu: menu.getBoundingClientRect().width, filter: filter.getBoundingClientRect().width };
         });
         assert.ok(Math.abs(widths.menu - widths.filter) <= 3, '모바일 드롭다운 너비가 필터와 같아야 한다: ' + JSON.stringify(widths));
+        assert.equal(await page.locator('[data-objekt-cols-filter] .objekt-filter-label').count(), 0);
+        assert.equal(await page.locator('.objekt-cols-icon span').count(), 3);
         await page.locator('[data-objekt-cols-toggle]').click();
         await page.waitForFunction(() => !document.getElementById('collection-cols-menu').hidden);
         await assertMenuVisible('collection-cols-menu');
