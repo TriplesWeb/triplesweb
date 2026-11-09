@@ -32,6 +32,8 @@ public class FlywayV47ChecksumAlign {
             } catch (SQLException ex) {
                 throw new IllegalStateException("V47 체크섬을 되돌리지 못했습니다.", ex);
             }
+            // 실패 이력(예: 공유 DB에서 event_date 없는 상태)을 지운 뒤 재적용
+            flyway.repair();
             flyway.migrate();
         };
     }
