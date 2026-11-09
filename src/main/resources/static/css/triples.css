@@ -1323,7 +1323,7 @@ textarea.form-control {
     min-width: 0;
 }
 
-.event-stop-field > span {
+.event-stop-field > span:first-child {
     color: #8a9a94;
     font-size: 0.68rem;
     font-weight: 700;
@@ -1331,9 +1331,23 @@ textarea.form-control {
     text-transform: uppercase;
 }
 
+.event-stop-field-hint {
+    color: #8b9b95;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    line-height: 1.4;
+}
+
+.event-stop-field-hint code {
+    font-size: 0.7rem;
+    color: #b9cac4;
+}
+
 .event-stop-lists {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 0.55rem;
 }
 
