@@ -646,7 +646,24 @@
         if (detailImage) detailImage.hidden = true;
         detailVideo.hidden = false;
         const play = detailVideo.play();
-        if (play && typeof play.catch === 'function') play.catch(() => {});
+        if (play && typeof play.catch === 'function') play.catch(() => {
+            showStillImage(detailImage?.dataset.front || '');
+        });
+    }
+    detailVideo?.addEventListener('error', () => {
+        if (detailVideo.dataset.active !== 'true') return;
+        stopDetailMotion();
+        showStillImage(detailImage?.dataset.front || '');
+    });
+
+    function motionMediaUrl(data) {
+        const existing = safeMediaUrl(data?.frontMedia);
+        if (existing) return existing;
+        if (String(data?.class || '').toLowerCase() !== 'motion') return '';
+        const slug = String(data?.slug || '').trim().toLowerCase();
+        if (!/^[a-z0-9]+(?:-[a-z0-9]+)+$/.test(slug)) return '';
+        const artist = String(data?.artist || 'triples').trim().toLowerCase() || 'triples';
+        return `https://cdn.apollo.cafe/mco/${artist}/${slug}.mp4`;
     }
 
     function applyDetailMotion(data, frontUrl) {
@@ -655,18 +672,17 @@
         showStillImage(frontUrl);
         const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const motion = String(data?.class || '').toLowerCase() === 'motion';
-        const media = safeMediaUrl(data?.frontMedia);
+        const media = motionMediaUrl(data);
         if (!motion || !media || reduce) return;
-        if (/\.(mp4|webm|m4v|mov)(\?|#|$)/i.test(media) && detailVideo) {
-            detailVideo.dataset.active = 'true';
-            detailVideo.src = media;
-            playDetailVideo();
-            return;
-        }
-        if (/\.(gif|webp|apng)(\?|#|$)/i.test(media) && detailImage) {
+        if (/\.(gif|webp|apng|png|jpe?g)(\?|#|$)/i.test(media) && detailImage) {
             detailImage.dataset.motion = media;
             detailImage.src = media;
+            return;
         }
+        if (!detailVideo) return;
+        detailVideo.dataset.active = 'true';
+        detailVideo.src = media;
+        playDetailVideo();
     }
 
     function resetModalFlip(front, back, hasBack) {

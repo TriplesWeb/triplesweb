@@ -11,6 +11,7 @@ import com.example.triplesweb.service.ObjektMarketDataService;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektDescriptionKeys;
 import com.example.triplesweb.util.ObjektLinks;
+import com.example.triplesweb.util.ObjektMotionMedia;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -78,7 +79,9 @@ public class ObjektFeatureController {
         body.put("thumbnailImage", value(item, "thumbnailImage", "frontImage"));
         body.put("frontImage", front);
         body.put("backImage", back);
-        body.put("frontMedia", value(item, "frontMedia"));
+        body.put("slug", value(item, "slug"));
+        body.put("artist", value(item, "artist"));
+        body.put("frontMedia", ObjektMotionMedia.resolve(item));
         body.put("hasBack", !back.isBlank() && !back.equals(front));
         body.put("description", description(item, key));
         body.put("isFavorite", favorites.contains(session.getId(), item));

@@ -244,6 +244,22 @@ class ObjektFeaturesTest {
                 .andExpect(redirectedUrl("/cosmo/objekt?group=members&member=HaYeon"));
     }
 
+    @Test void motionDetailUsesApolloVideoWhenFrontMediaIsMissing() throws Exception {
+        var item = new LinkedHashMap<String, Object>();
+        item.put("id", "uuid");
+        item.put("slug", "cream02-kaede-504z");
+        item.put("collectionId", "Cream02 Kaede 504Z");
+        item.put("member", "Kaede");
+        item.put("season", "Cream02");
+        item.put("class", "Motion");
+        item.put("artist", "triples");
+        item.put("collectionNo", "504Z");
+        stubCatalog(List.of(item));
+        mvc.perform(get("/cosmo/objekt/detail/cream02-kaede-504z").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.frontMedia").value("https://cdn.apollo.cafe/mco/triples/cream02-kaede-504z.mp4"));
+    }
+
     @Test void realIndexSlugResolvesShortPublicAliasAndPreservesUpstreamAlias() throws Exception {
         var item = Map.<String,Object>of("id","uuid","slug","cream02-hayeon-367z","season","Cream02","collectionNo","367Z","member","HaYeon");
         stubCatalog(List.of(item));
