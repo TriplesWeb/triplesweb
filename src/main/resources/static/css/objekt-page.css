@@ -631,13 +631,15 @@
         .objekt-detail-modal {
             position: fixed;
             inset: 0;
-            z-index: 80;
+            z-index: 1100;
+            isolation: isolate;
             display: none;
             align-items: center;
             justify-content: center;
             padding: 1rem;
             background: rgba(6, 8, 14, 0.72);
             backdrop-filter: blur(8px);
+            pointer-events: auto;
         }
         .objekt-detail-modal.is-open {
             display: flex;
@@ -664,20 +666,28 @@
             background: #12141c;
             border: 1px solid rgba(255,255,255,.08);
         }
+        .objekt-detail-media-stage {
+            position: relative;
+            width: 100%;
+        }
         .objekt-detail-media-btn {
             appearance: none;
+            position: absolute;
+            inset: 0;
+            z-index: 1;
             display: block;
             width: 100%;
             padding: 0;
             border: 0;
             background: transparent;
-            cursor: zoom-in;
+            cursor: default;
         }
         .objekt-detail-media-btn.is-flippable {
             cursor: pointer;
+            pointer-events: auto;
         }
-        .objekt-detail-media-btn:disabled {
-            cursor: default;
+        .objekt-detail-media-btn:not(.is-flippable) {
+            pointer-events: none;
         }
         .objekt-detail-media img,
         .objekt-detail-media video {

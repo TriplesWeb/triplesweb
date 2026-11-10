@@ -103,6 +103,7 @@ jobs:
           fi
           node scripts/tests/objekt-account-ui.browser.cjs
           node scripts/tests/objekt-modal.browser.cjs
+          node scripts/tests/objekt-detail-mobile-open.browser.cjs
           node scripts/tests/objekt-desc-leading.browser.cjs
           node scripts/tests/profile-board.browser.cjs
           node scripts/tests/objekt-mobile.browser.cjs

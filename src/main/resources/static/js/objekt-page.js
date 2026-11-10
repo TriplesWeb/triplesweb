@@ -594,6 +594,7 @@
     let detailLoading = false;
     let isAdmin = false;
     let lastStoryText = '';
+    let detailOpenedAt = 0;
 
     function csrfHeaders(extra) {
         const headers = new Headers(extra || {});
@@ -627,11 +628,10 @@
 
     function stopDetailMotion() {
         if (!detailVideo) return;
-        detailVideo.pause();
-        detailVideo.removeAttribute('src');
         detailVideo.dataset.active = 'false';
+        try { detailVideo.pause(); } catch (_) { /* ignore */ }
+        detailVideo.removeAttribute('src');
         detailVideo.hidden = true;
-        detailVideo.load();
     }
 
     function showStillImage(url) {
@@ -645,10 +645,14 @@
         if (!detailVideo || detailVideo.dataset.active !== 'true') return;
         if (detailImage) detailImage.hidden = true;
         detailVideo.hidden = false;
-        const play = detailVideo.play();
-        if (play && typeof play.catch === 'function') play.catch(() => {
+        try {
+            const play = detailVideo.play();
+            if (play && typeof play.catch === 'function') play.catch(() => {
+                showStillImage(detailImage?.dataset.front || '');
+            });
+        } catch (_) {
             showStillImage(detailImage?.dataset.front || '');
-        });
+        }
     }
     detailVideo?.addEventListener('error', () => {
         if (detailVideo.dataset.active !== 'true') return;
@@ -697,13 +701,15 @@
         showStillImage(frontUrl);
         detailFace.hidden = !hasBack;
         detailFace.textContent = '앞면';
-        detailFlip.disabled = !hasBack;
+        detailFlip.disabled = false;
         detailFlip.classList.toggle('is-flippable', Boolean(hasBack));
+        detailFlip.setAttribute('aria-disabled', hasBack ? 'false' : 'true');
+        detailFlip.tabIndex = hasBack ? 0 : -1;
         detailFlip.setAttribute('aria-label', hasBack ? '이미지 클릭 시 뒷면으로 전환' : '오브젝트 이미지');
     }
 
     function flipModalImage() {
-        if (!detailImage || !detailFlip || detailFlip.disabled) return;
+        if (!detailImage || !detailFlip || !detailFlip.classList.contains('is-flippable')) return;
         const showingBack = detailImage.dataset.showingBack === 'true';
         const next = showingBack ? (detailImage.dataset.motion || detailImage.dataset.front) : detailImage.dataset.back;
         if (!next && !(showingBack && detailVideo?.dataset.active === 'true')) return;
@@ -829,7 +835,7 @@
         resetModalFlip(frontUrl, data.backImage || '', Boolean(data.hasBack));
         applyDetailMotion(data, frontUrl);
         setFavoriteButton(Boolean(data.isFavorite));
-        detailFavorite.disabled = false;
+        if (detailFavorite) detailFavorite.disabled = false;
         const actions = document.querySelector('.objekt-detail-actions');
         if (actions) actions.inert = false;
         document.getElementById('objektFavoriteStatus').hidden = true;
@@ -869,8 +875,9 @@
         history.replaceState(null, '', address.pathname + address.search);
     }
 
-    function closeDetailModal() {
+    function closeDetailModal(fromClick) {
         if (!detailModal) return;
+        if (fromClick && Date.now() - detailOpenedAt < 500) return;
         if (window.AboutModal) {
             window.AboutModal.closeModal(detailModal, { onClose: finishDetailClose });
         } else {
@@ -883,19 +890,23 @@
 
     function openDetailModalShell() {
         if (!detailModal) return;
+        detailOpenedAt = Date.now();
+        window.ObjektDropdown?.closeAll();
+        closeKindMenu();
+        closeSortMenu();
         detailModal.hidden = false;
         detailModal.classList.add('is-open');
         detailModal.setAttribute('aria-hidden', 'false');
         if (window.AboutModal) {
             window.AboutModal.openModal(detailModal, {
-                focusSelector: '#objektDetailClose',
+                focusSelector: '.objekt-detail-panel',
                 onClose: finishDetailClose
             });
             detailModal.classList.add('is-open');
         } else {
             detailModal.classList.add('flex');
             document.body.style.overflow = 'hidden';
-            detailClose?.focus();
+            detailModal.querySelector('.objekt-detail-panel')?.focus({ preventScroll: true });
         }
     }
 
@@ -991,12 +1002,13 @@
         if (!openHit) return;
         if (!shouldOpenModalFromEvent(event)) return;
         event.preventDefault();
+        event.stopPropagation();
         openObjektDetail(card.dataset.objektKey);
     });
 
-    detailClose?.addEventListener('click', closeDetailModal);
+    detailClose?.addEventListener('click', () => closeDetailModal(true));
     detailModal?.addEventListener('click', (event) => {
-        if (event.target === detailModal) closeDetailModal();
+        if (event.target === detailModal) closeDetailModal(true);
     });
     detailFlip?.addEventListener('click', flipModalImage);
     detailFavorite?.addEventListener('click', async () => {

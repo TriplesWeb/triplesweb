@@ -241,11 +241,13 @@
         <div class="objekt-detail-panel" role="dialog" aria-modal="true" aria-labelledby="objektDetailTitle" tabindex="-1">
         <button type="button" class="objekt-detail-close" id="objektDetailClose" aria-label="닫기">&times;</button>
         <figure class="objekt-detail-media">
-            <button type="button" class="objekt-detail-media-btn" id="objektDetailFlip" aria-label="오브젝트 이미지">
+            <div class="objekt-detail-media-stage">
                 <img id="objektDetailImage" src="" alt="" data-front="" data-back="" data-motion="" data-showing-back="false">
-                <video id="objektDetailVideo" hidden muted loop playsinline preload="none"></video>
-                <span class="objekt-detail-face" id="objektDetailFace" hidden>앞면</span>
-            </button>
+                <video id="objektDetailVideo" hidden muted loop playsinline webkit-playsinline preload="none"></video>
+                <button type="button" class="objekt-detail-media-btn" id="objektDetailFlip" aria-label="오브젝트 이미지">
+                    <span class="objekt-detail-face" id="objektDetailFace" hidden>앞면</span>
+                </button>
+            </div>
         </figure>
         <div class="objekt-detail-body">
             <div>
