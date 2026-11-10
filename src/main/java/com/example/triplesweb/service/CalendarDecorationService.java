@@ -83,6 +83,18 @@ public class CalendarDecorationService {
         String type = image.getContentType();
         if (type != null && !type.startsWith("image/")) throw new IllegalArgumentException("이미지 파일만 업로드할 수 있습니다.");
         if (image.getSize() > 10L * 1024 * 1024) throw new IllegalArgumentException("이미지는 10MB 이하로 업로드해 주세요.");
+        try {
+            byte[] bytes = image.getBytes();
+            boolean png = bytes.length >= 8 && (bytes[0] & 0xff) == 0x89 && bytes[1] == 0x50
+                    && bytes[2] == 0x4e && bytes[3] == 0x47;
+            boolean jpeg = bytes.length >= 3 && (bytes[0] & 0xff) == 0xff
+                    && (bytes[1] & 0xff) == 0xd8 && (bytes[2] & 0xff) == 0xff;
+            boolean webp = bytes.length >= 12 && new String(bytes, 0, 4, java.nio.charset.StandardCharsets.US_ASCII).equals("RIFF")
+                    && new String(bytes, 8, 4, java.nio.charset.StandardCharsets.US_ASCII).equals("WEBP");
+            if (!(png || jpeg || webp)) throw new IllegalArgumentException("파일 내용이 PNG, JPG, WEBP 이미지 형식과 일치하지 않습니다.");
+        } catch (IOException e) {
+            throw new IllegalArgumentException("이미지 파일을 읽을 수 없습니다.");
+        }
     }
 
     private String normalizeColor(String value) {
