@@ -405,7 +405,7 @@
         function getCalendarEvents() {
             try {
                 const injectedEvents = {{{schedulesJson}}};
-                return Array.isArray(injectedEvents) ? injectedEvents.map(toCalendarEvent) : [];
+                return Array.isArray(injectedEvents) ? injectedEvents : [];
             } catch (error) {
                 console.error('스케줄 데이터 파싱 실패:', error);
                 return [];
@@ -603,6 +603,22 @@
                 },
                 eventDidMount: function(info) {
                     info.el.style.setProperty('--schedule-color',info.event.extendedProps.color||'#00f5d4');
+                },
+                eventContent: function(arg) {
+                    const wrap = document.createElement('span');
+                    wrap.className = 'inline-flex min-w-0 items-center gap-1';
+                    const imageUrl = arg.event.extendedProps.imageUrl;
+                    if (imageUrl) {
+                        const image = document.createElement('img');
+                        image.src = imageUrl; image.alt = '';
+                        image.className = 'h-4 w-4 shrink-0 rounded object-contain';
+                        wrap.appendChild(image);
+                    }
+                    const label = document.createElement('span');
+                    label.className = 'min-w-0 break-words';
+                    label.textContent = arg.event.title || '';
+                    wrap.appendChild(label);
+                    return { domNodes: [wrap] };
                 },
                 dateClick: function (info) {
                     renderSelectedDate(info.dateStr, info.date);
