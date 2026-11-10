@@ -543,11 +543,16 @@
                 const endValue = formatDate(getRawEnd(event));
                 document.getElementById('modalScheduleEnd').textContent = endValue === '-' ? '하루 일정' : endValue;
 
+                const isCalendarDecoration = ['BIRTHDAY','UNIT','ANNIVERSARY'].includes(event.extendedProps.kind);
                 const deleteForm = document.getElementById('deleteForm');
-                if (deleteForm) deleteForm.action = `/delete/${encodeURIComponent(event.id)}`;
+                if (deleteForm) {
+                    deleteForm.action = `/delete/${encodeURIComponent(event.id)}`;
+                    deleteForm.classList.toggle('hidden', isCalendarDecoration);
+                }
 
                 const editButton = document.getElementById('editBtn');
                 if (editButton) {
+                    editButton.classList.toggle('hidden', isCalendarDecoration);
                     editButton.onclick = function () {
                         if (!selectedEvent) return;
                         document.getElementById('editScheduleId').value = selectedEvent.id;
