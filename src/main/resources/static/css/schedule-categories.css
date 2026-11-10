@@ -53,3 +53,12 @@
     #calendar .fc-daygrid-event-dot{width:4px;height:4px;border-width:2px;margin-right:3px}
     #calendar .fc-daygrid-day-number{font-size:.75rem}
 }
+
+
+/* 생일·유닛·기념일 이미지 스티커 */
+#calendar .fc-event .fc-event-main,
+#calendar .fc-event .fc-event-main-frame { min-width:0; }
+#calendar .fc-event img { flex:none; }
+#decorationModal .site-modal-dialog { max-width:42rem; }
+#decorationPreview { max-width:100%; margin-inline:auto; }
+.schedule-detail-item img { max-width:100%; }
