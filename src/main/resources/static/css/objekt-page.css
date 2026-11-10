@@ -433,15 +433,13 @@
             border-top: 1px solid rgba(255,255,255,.06);
         }
         #objekt-search-form .objekt-search-row {
-            justify-content: flex-end;
             flex-wrap: nowrap;
         }
         #objekt-search-form .objekt-search {
-            flex: 1 1 18rem;
-            width: min(32rem, 100%);
-            max-width: 32rem;
-            min-width: 12rem;
-            margin-left: auto;
+            flex: 1 1 auto;
+            width: auto;
+            max-width: none;
+            min-width: 0;
         }
         #objekt-search-form .objekt-search-glyph {
             position: absolute;
