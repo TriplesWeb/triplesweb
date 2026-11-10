@@ -1087,7 +1087,7 @@
         return `<article class="card objekt-card objekt-item group relative border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
                  data-objekt-key="${attr(id)}"
                  data-season="${attr(item.seasonKey || season)}" data-class="${attr(item.classKey || klass)}" data-artist="${attr(item.artist || '')}" data-collection-no="${attr(collectionNo)}"
-                 data-number="${attr(item.numberValue || '')}" data-date="${attr(item.createdAt || '')}" data-member="${attr(member)}" data-search="${attr(item.searchText || '')}">
+                 data-number="${attr(item.numberValue || '')}" data-date="${attr(item.createdAt || '')}" data-member="${attr(member)}" data-search="${attr(item.searchText || '')}"${Number.isFinite(item.mintCount) ? ` data-supply-count="${attr(item.mintCount)}" data-supply-done="true"` : ''}>
             <button type="button" class="objekt-open-detail" aria-label="${attr(collectionId)} 상세 보기">
                 <img src="${attr(thumb)}" alt="${attr(collectionId)}" loading="lazy" decoding="async" class="objekt-image" onerror="this.onerror=null;this.src='${attr(front)}';">
             </button>
@@ -1100,7 +1100,7 @@
                     ${memberChipHtml(item, member)}
                     ${klass ? `<span class="badge badge-sm badge-neutral objekt-card-class">${escapeHtml(klass)}</span>` : ''}
                 </div>
-                ${Number.isFinite(item.mintCount) ? `<p class="objekt-card-supply">발행량 ${escapeHtml(String(item.mintCount))}개</p>` : ''}
+                <p class="objekt-card-supply" data-supply-count${Number.isFinite(item.mintCount) ? ` data-supply-done="true"` : ''}>${Number.isFinite(item.mintCount) ? `발행량 ${escapeHtml(String(item.mintCount))}개` : '발행량 확인 중'}</p>
             </div>
         </article>`;
     }
@@ -1248,4 +1248,17 @@
 
     const initialObjekt = new URLSearchParams(location.search).get('objekt');
     if (initialObjekt) openObjektDetail(initialObjekt);
+
+    window.ObjektPage = {
+        visibleKeys() {
+            if (!grid) return [];
+            return [...grid.querySelectorAll('.objekt-card[data-objekt-key]')]
+                .map((card) => card.dataset.objektKey)
+                .filter(Boolean)
+                .slice(0, 24);
+        },
+        reloadVisible() {
+            return applyFilters();
+        }
+    };
 })();

@@ -38,6 +38,7 @@ const base = path.resolve(__dirname, '../..');
       }
       if(p.endsWith('/issued'))return json({status:'available',count:4,ranges:[{first:1,last:2},{first:4,last:5}],hasMore:false,nextOffset:2,observedAt:'2026-10-29T00:00:00Z'});
       if(p==='/cosmo/objekt/supplies')return json({hayeoncc367z:{status:'available',count:4,observedAt:'2026-10-29T00:00:00Z'}});
+      if(p==='/cosmo/objekt/pulse')return json({catalogSig:'1:test',catalogCount:1,supplies:{hayeoncc367z:{status:'available',count:4}},dropWindow:false,pollMs:60000,forceRefreshMs:600000,historyTtlMs:30000});
       if(p.startsWith('/cosmo/objekt/detail/') && (req.headers().accept||'').includes('application/json')) return json(data());
       if(p==='/cosmo/objekt' || p==='/cosmo/objekt/detail/hayeoncc367z') {
         const file=p==='/cosmo/objekt'?'objekt-modal-preview.html':'objekt-detail-preview.html';

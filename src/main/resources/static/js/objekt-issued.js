@@ -19,14 +19,27 @@
     }catch(error){if(version===generation&&error.name!=='AbortError'){const el=countEl();if(el)el.textContent='미확인';}}
   }
   function show(value){close();const count=countEl();if(!count)return;url=value;count.textContent='확인 중';load();}
+  function refresh(){if(url)load();}
+  function applyLive(supplies){
+    Object.entries(supplies||{}).forEach(([key,state])=>{
+      const card=document.querySelector('.objekt-card[data-objekt-key="'+CSS.escape(key)+'"]');
+      const label=card?.querySelector('[data-supply-count]');
+      if(!label||state?.status!=='available'||!number(state.count))return;
+      const prev=Number(card.dataset.supplyCount);
+      if(Number.isFinite(prev)&&state.count<prev)return;
+      label.textContent='발행량 '+state.count.toLocaleString('ko-KR')+'개';
+      card.dataset.supplyDone='true';
+      card.dataset.supplyCount=String(state.count);
+      card.dataset.supplyAt=String(Date.now());
+    });
+  }
   let hydrationTimer,hydrating=false;
   function needsLoad(card){
     const label=card.querySelector('[data-supply-count]');
     if(!label)return false;
     const done=card.dataset.supplyDone==='true';
     const tries=Number(card.dataset.supplyTries||0);
-    const last=Number(card.dataset.supplyAt||0);
-    if(done)return Date.now()-last>=REFRESH_MS;
+    if(done)return false;
     return tries<8;
   }
   async function hydrate(){
@@ -74,5 +87,5 @@
     }
   }
   document.addEventListener('visibilitychange',()=>{if(document.hidden)clearTimeout(hydrationTimer);else hydrate();});
-  window.ObjektIssued={show,close,hydrate};hydrate();
+  window.ObjektIssued={show,close,hydrate,refresh,applyLive};hydrate();
 })();

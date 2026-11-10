@@ -37,20 +37,24 @@ public class ObjektService {
 
     private final RestClient restClient;
     private final ObjektCatalogStore catalogStore;
+    private final ObjektLiveSettings live;
 
     private volatile List<Map<String, Object>> cachedCollections = List.of();
     private volatile Map<String, Map<String, Object>> byKey = Map.of();
     private volatile FilterFacets facets = FilterFacets.empty();
     private volatile long lastSuccessfulRefreshMillis;
+    private volatile String catalogSignature = "0:0";
 
     public ObjektService(
             @Value("${objekt.api.base-url:https://objekt.top/api/v1}")
             String baseUrl,
             @Value("${objekt.cache.read-timeout-ms:30000}")
             long readTimeoutMs,
-            ObjektCatalogStore catalogStore
+            ObjektCatalogStore catalogStore,
+            ObjektLiveSettings live
     ) {
         this.catalogStore = catalogStore;
+        this.live = live;
         // 카탈로그는 gzip 기준 ~1MB·수 초가 걸린다. 비압축이면 10MB+/30초를 넘긴다.
         this.restClient = GzipRestClients.create(
                 baseUrl,
@@ -90,14 +94,27 @@ public class ObjektService {
         return facets;
     }
 
+    public int catalogCount() {
+        return cachedCollections.size();
+    }
+
+    public String catalogSignature() {
+        return catalogSignature;
+    }
+
     /**
-     * 기본 1분 간격으로 캐시를 갱신한다.
-     * 최초 적재 실패도 예외를 페이지 요청으로 전파하지 않고 다음 주기에 재시도한다.
+     * 평소 1분, 드롭 창(22시–자정)에는 더 자주 외부 카탈로그를 본다.
+     * 식별자가 같으면 DB를 다시 쓰지 않는다.
      */
     @Scheduled(
-            fixedDelayString = "${objekt.cache.refresh-ms:60000}",
+            fixedDelayString = "${objekt.live.tick-ms:15000}",
             initialDelayString = "${objekt.cache.initial-delay-ms:0}"
     )
+    void refreshCacheIfDue() {
+        if (live != null && !live.due(lastSuccessfulRefreshMillis)) return;
+        refreshCache();
+    }
+
     public synchronized void refreshCache() {
         try {
             JsonNode response = restClient.get()
@@ -134,12 +151,16 @@ public class ObjektService {
                 }
             }
             List<ObjektCatalog> rows = new ArrayList<>(unique.values());
+            List<Map<String, Object>> views = rows.stream().map(ObjektCatalogDto::toView).toList();
+            String nextSignature = signature(views);
+            lastSuccessfulRefreshMillis = System.currentTimeMillis();
+            if (nextSignature.equals(catalogSignature) && !cachedCollections.isEmpty()) {
+                return;
+            }
             // DB는 다음 시작 시 복구할 스냅샷으로만 저장한다. 갱신 직후 다시
             // SELECT 하지 않고, 이미 받은 API 응답으로 메모리 캐시를 교체한다.
             catalogStore.replace("triples", rows);
-            install(rows.stream().map(ObjektCatalogDto::toView).toList());
-            lastSuccessfulRefreshMillis = System.currentTimeMillis();
-
+            install(views);
             log.info("Objekt 카탈로그 저장 완료: {}개", cachedCollections.size());
 
         } catch (RuntimeException ex) {
@@ -161,6 +182,16 @@ public class ObjektService {
         cachedCollections = snapshot;
         byKey = buildIndex(snapshot);
         facets = FilterFacets.from(snapshot);
+        catalogSignature = signature(snapshot);
+    }
+
+    static String signature(List<Map<String, Object>> views) {
+        int hash = views.size();
+        for (Map<String, Object> item : views) {
+            hash = 31 * hash + string(item, "id").hashCode();
+            hash = 31 * hash + string(item, "collectionId").hashCode();
+        }
+        return views.size() + ":" + Integer.toHexString(hash);
     }
 
     private static Map<String, Map<String, Object>> buildIndex(List<Map<String, Object>> views) {

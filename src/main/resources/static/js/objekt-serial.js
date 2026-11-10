@@ -11,7 +11,13 @@
     owner.hidden=true;history.hidden=true;owner.replaceChildren();list.replaceChildren();more.hidden=true;status.textContent='';
     root.removeAttribute('aria-busy');form.querySelector('button').disabled=!url;more.disabled=false;form.elements.namedItem('serial').value='1';
   }
-  window.ObjektSerialLookup={setCollection};
+  function refresh() {
+    if (!root.dataset.url || loading || !currentSerial) return;
+    if (Number(nextPage) > 1) return;
+    form.elements.namedItem('serial').value = currentSerial;
+    load(false, true);
+  }
+  window.ObjektSerialLookup={setCollection,refresh};
   function el(tag, cls, text) {
     const node = document.createElement(tag); if (cls) node.className = cls;
     if (text !== undefined) node.textContent = text; return node;
@@ -23,15 +29,15 @@
   function date(value) {
     const result = new Date(value); if (!Number.isFinite(result.getTime())) throw new Error(); return result;
   }
-  async function load(append) {
+  async function load(append, quiet) {
     if (!root.dataset.url || loading || (!append && !form.reportValidity())) return;
     const requestVersion=version;abort=new AbortController();
     const serial = append ? currentSerial : form.elements.namedItem('serial').value;
     if (!Number.isSafeInteger(Number(serial)) || Number(serial) < 1 || (append && nextPage === null)) return;
     loading = true; form.querySelector('button').disabled = true; more.disabled = true;
     root.setAttribute('aria-busy', 'true');
-    if (!append) { owner.hidden = true; history.hidden = true; owner.replaceChildren(); list.replaceChildren(); more.hidden = true; nextPage = null; }
-    status.textContent = '시리얼과 전송 내역을 확인하는 중…';
+    if (!append && !quiet) { owner.hidden = true; history.hidden = true; owner.replaceChildren(); list.replaceChildren(); more.hidden = true; nextPage = null; }
+    if (!quiet) status.textContent = '시리얼과 전송 내역을 확인하는 중…';
     try {
       const query = new URLSearchParams({serial, page: String(append ? nextPage : 0)});
       const response = await fetch(`${root.dataset.url}?${query}`, {headers:{Accept:'application/json'}, credentials:'same-origin', cache:'no-store',signal:abort.signal});
@@ -64,6 +70,7 @@
       status.textContent = data.total ? '' : '기록된 전송 내역이 없습니다.';
     } catch {
       if(requestVersion!==version)return;
+      if (quiet && !owner.hidden) return;
       status.textContent = append ? '이전 내역을 불러오지 못했습니다. 더 보기 버튼으로 다시 시도해 주세요.' : '조회하지 못했습니다. 잠시 후 다시 시도해 주세요.';
     } finally {
       if(requestVersion===version){loading = false; form.querySelector('button').disabled = false; more.disabled = false; root.removeAttribute('aria-busy');}
