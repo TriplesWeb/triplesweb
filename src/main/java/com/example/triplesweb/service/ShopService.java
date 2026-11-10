@@ -50,6 +50,11 @@ public class ShopService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<ShopCardDto> listCards() {
+        return shopItemRepository.findAll().stream().map(this::toCardDto).toList();
+    }
+
     public ShopCardDto toCardDto(Shop shop) {
         String mainImageUrl = (shop.getImages() != null && !shop.getImages().isEmpty() &&
                 shop.getImages().get(0).getFile() != null)

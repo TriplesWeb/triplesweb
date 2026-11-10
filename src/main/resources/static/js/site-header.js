@@ -51,8 +51,17 @@
     playMascotIntro();
   }
 
+  function closeHeaderPopovers() {
+    setCosmoIdOpen(false);
+    setAlertsOpen(false);
+  }
+
   function setMobileMenuOpen(open) {
     if (!mobileMenu || !mobileMenuBtn || !mobileMenuIcon) return;
+    if (open) {
+      setHeaderSearchOpen(false);
+      closeHeaderPopovers();
+    }
     mobileMenu.classList.toggle("hidden", !open);
     mobileMenuBtn.setAttribute("aria-expanded", open ? "true" : "false");
     mobileMenuBtn.setAttribute("aria-label", open ? "메뉴 닫기" : "메뉴 열기");
@@ -117,6 +126,10 @@
   function setHeaderSearchOpen(open) {
     const headerSearch = headerSearchRoot();
     if (!headerSearch) return;
+    if (open) {
+      setMobileMenuOpen(false);
+      closeHeaderPopovers();
+    }
     const searchInput = headerSearch.querySelector("[data-header-search-input]");
     const searchOpen = headerSearch.querySelector("[data-header-search-open]");
     headerSearch.classList.toggle("is-open", open);
@@ -176,4 +189,233 @@
     if (searchInput && searchInput.value.trim()) return;
     setHeaderSearchOpen(false);
   });
+
+  const COSMO_RECENTS_KEY = "cosmo-nickname-recents";
+  const ALERTS_CATALOG_KEY = "site-alerts-catalog-sig";
+  const ALERTS_NOTICE_KEY = "site-alerts-notice-id";
+  const cosmoOpen = document.querySelector("[data-cosmo-id-open]");
+  const cosmoPanel = document.querySelector("[data-cosmo-id-panel]");
+  const alertsOpen = document.querySelector("[data-alerts-open]");
+  const alertsPanel = document.querySelector("[data-alerts-panel]");
+  const alertsBadge = document.querySelector("[data-alerts-badge]");
+  let alertsCache = null;
+
+  function loadNicknameRecents() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(COSMO_RECENTS_KEY) || "[]");
+      return Array.isArray(raw) ? raw.map(String).filter(Boolean) : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function renderCosmoIdPanel() {
+    if (!cosmoPanel) return;
+    const recents = loadNicknameRecents();
+    const mine = cosmoPanel.querySelector("[data-cosmo-id-mine]");
+    const list = cosmoPanel.querySelector("[data-cosmo-id-recents]");
+    if (mine) {
+      if (recents[0]) {
+        mine.hidden = false;
+        mine.href = "/cosmo/collection?nickname=" + encodeURIComponent(recents[0]);
+        mine.textContent = "내 아이디로 보기 · " + recents[0];
+      } else {
+        mine.hidden = true;
+      }
+    }
+    if (!list) return;
+    list.replaceChildren();
+    recents.slice(0, 8).forEach((name) => {
+      const item = document.createElement("li");
+      const link = document.createElement("a");
+      link.href = "/cosmo/collection?nickname=" + encodeURIComponent(name);
+      link.textContent = name;
+      item.appendChild(link);
+      list.appendChild(item);
+    });
+  }
+
+  function setCosmoIdOpen(open) {
+    if (!cosmoOpen || !cosmoPanel) return;
+    if (open) {
+      setMobileMenuOpen(false);
+      setHeaderSearchOpen(false);
+      setAlertsOpen(false);
+      renderCosmoIdPanel();
+    }
+    cosmoPanel.hidden = !open;
+    cosmoOpen.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) {
+      const input = cosmoPanel.querySelector("[data-cosmo-id-input]");
+      if (input) requestAnimationFrame(() => input.focus());
+    }
+  }
+
+  function setAlertsOpen(open) {
+    if (!alertsOpen || !alertsPanel) return;
+    if (open) {
+      setMobileMenuOpen(false);
+      setHeaderSearchOpen(false);
+      setCosmoIdOpen(false);
+      loadAlerts(true);
+    }
+    alertsPanel.hidden = !open;
+    alertsOpen.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  function markAlertsSeen(data) {
+    if (!data) return;
+    try {
+      if (data.catalogSig) localStorage.setItem(ALERTS_CATALOG_KEY, String(data.catalogSig));
+      const noticeId = data.notices && data.notices[0] && data.notices[0].id;
+      if (noticeId != null) localStorage.setItem(ALERTS_NOTICE_KEY, String(noticeId));
+    } catch (_) {}
+    if (alertsBadge) alertsBadge.hidden = true;
+  }
+
+  function hasUnreadAlerts(data) {
+    if (!data) return false;
+    let seenSig = "";
+    let seenNotice = "";
+    try {
+      seenSig = localStorage.getItem(ALERTS_CATALOG_KEY) || "";
+      seenNotice = localStorage.getItem(ALERTS_NOTICE_KEY) || "";
+    } catch (_) {}
+    const latestNotice = data.notices && data.notices[0] && data.notices[0].id != null
+      ? String(data.notices[0].id) : "";
+    const catalogNew = !!(data.catalogSig && String(data.catalogSig) !== seenSig);
+    const noticeNew = !!(latestNotice && latestNotice !== seenNotice);
+    return catalogNew || noticeNew;
+  }
+
+  function renderAlerts(data) {
+    if (!alertsPanel) return;
+    const status = alertsPanel.querySelector("[data-alerts-status]");
+    const body = alertsPanel.querySelector("[data-alerts-body]");
+    if (!body) return;
+    body.replaceChildren();
+    if (!data) {
+      if (status) status.textContent = "알림을 불러오지 못했습니다.";
+      return;
+    }
+    if (status) status.hidden = true;
+    if (data.dropWindow) {
+      const drop = document.createElement("a");
+      drop.className = "site-header-popover__drop";
+      drop.href = "/cosmo/objekt";
+      drop.textContent = "드롭 시간입니다. 새 오브젝트를 확인하세요.";
+      body.appendChild(drop);
+    }
+    const noticeTitle = document.createElement("p");
+    noticeTitle.className = "site-header-popover__heading";
+    noticeTitle.textContent = "공지";
+    body.appendChild(noticeTitle);
+    const notices = Array.isArray(data.notices) ? data.notices : [];
+    if (!notices.length) {
+      const empty = document.createElement("p");
+      empty.className = "site-header-popover__empty";
+      empty.textContent = "새 공지가 없습니다.";
+      body.appendChild(empty);
+    } else {
+      const list = document.createElement("ul");
+      list.className = "site-header-popover__list";
+      notices.forEach((item) => {
+        const li = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = item && item.href ? String(item.href) : "/article/notice";
+        link.textContent = item && item.title ? String(item.title) : "공지";
+        li.appendChild(link);
+        list.appendChild(li);
+      });
+      body.appendChild(list);
+    }
+    const objektTitle = document.createElement("p");
+    objektTitle.className = "site-header-popover__heading";
+    objektTitle.textContent = "새 오브젝트";
+    body.appendChild(objektTitle);
+    const objekts = Array.isArray(data.objekts) ? data.objekts : [];
+    if (!objekts.length) {
+      const empty = document.createElement("p");
+      empty.className = "site-header-popover__empty";
+      empty.textContent = "새로 올라온 오브젝트가 없습니다.";
+      body.appendChild(empty);
+    } else {
+      const list = document.createElement("ul");
+      list.className = "site-header-popover__list";
+      objekts.forEach((item) => {
+        const li = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = item && item.href ? String(item.href) : "/cosmo/objekt";
+        link.textContent = item && item.label ? String(item.label) : "오브젝트";
+        li.appendChild(link);
+        list.appendChild(li);
+      });
+      body.appendChild(list);
+    }
+  }
+
+  function loadAlerts(markSeen) {
+    const apply = (data) => {
+      alertsCache = data;
+      if (alertsBadge) alertsBadge.hidden = !hasUnreadAlerts(data);
+      if (markSeen) {
+        renderAlerts(data);
+        markAlertsSeen(data);
+      }
+    };
+    if (alertsCache && markSeen) {
+      apply(alertsCache);
+      return;
+    }
+    fetch("/api/site/alerts", { headers: { Accept: "application/json" } })
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then(apply)
+      .catch(() => {
+        if (alertsBadge) alertsBadge.hidden = true;
+        if (markSeen) renderAlerts(null);
+      });
+  }
+
+  if (cosmoOpen && cosmoPanel) {
+    cosmoOpen.addEventListener("click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      setCosmoIdOpen(cosmoPanel.hidden);
+    });
+  }
+  if (alertsOpen && alertsPanel) {
+    alertsOpen.addEventListener("click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      setAlertsOpen(alertsPanel.hidden);
+    });
+  }
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") return;
+    if (cosmoPanel && !cosmoPanel.hidden) {
+      setCosmoIdOpen(false);
+      if (cosmoOpen) cosmoOpen.focus();
+      return;
+    }
+    if (alertsPanel && !alertsPanel.hidden) {
+      setAlertsOpen(false);
+      if (alertsOpen) alertsOpen.focus();
+    }
+  });
+
+  document.addEventListener("pointerdown", function (event) {
+    const target = event.target;
+    if (!(target instanceof Node)) return;
+    if (cosmoPanel && !cosmoPanel.hidden) {
+      const wrap = cosmoPanel.closest(".site-header-popover-wrap") || cosmoPanel;
+      if (!wrap.contains(target)) setCosmoIdOpen(false);
+    }
+    if (alertsPanel && !alertsPanel.hidden) {
+      const wrap = alertsPanel.closest(".site-header-popover-wrap") || alertsPanel;
+      if (!wrap.contains(target)) setAlertsOpen(false);
+    }
+  });
+
+  loadAlerts(false);
 })();

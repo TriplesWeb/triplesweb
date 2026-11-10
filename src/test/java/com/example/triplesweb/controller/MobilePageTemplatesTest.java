@@ -115,6 +115,25 @@ class MobilePageTemplatesTest {
         Files.writeString(output.resolve("header-auth.html"),"<!doctype html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='/css/gravity.css'><link rel='stylesheet' href='/css/site-mobile.css'><link rel='stylesheet' href='/css/site-header.css'></head><body>"+header+"<main><h1>모바일 메뉴</h1><input aria-label='검색' placeholder='검색'></main></body></html>");
         Files.writeString(output.resolve("header-bare.html"),"<!doctype html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='/css/site-mobile.css'><link rel='stylesheet' href='/css/site-header.css'></head><body>"+header+"<main><h1>스타일 체계가 다른 화면의 메뉴</h1><input aria-label='검색' placeholder='검색'></main></body></html>");
         Files.writeString(output.resolve("header-home.html"),"<!doctype html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='/css/gravity.css'><link rel='stylesheet' href='/css/site-mobile.css'><link rel='stylesheet' href='/css/site-header.css'></head><body class='main-page'>"+homeHeader+"<main><h1>홈</h1><input aria-label='검색' placeholder='검색'></main></body></html>");
+        assertThat(header).contains("data-cosmo-id-open", "data-alerts-open", "사이트 전체 검색");
+        var searchPage = new HashMap<>(model);
+        searchPage.put("keyword", "323");
+        searchPage.put("hasAnyResults", true);
+        searchPage.put("activeTab", "cosmo");
+        Map<String,Object> aboutTab = new LinkedHashMap<>();
+        aboutTab.put("id", "about"); aboutTab.put("label", "About 트리플에스");
+        aboutTab.put("href", "/search?keyword=323&tab=about"); aboutTab.put("count", 1);
+        aboutTab.put("hasHits", true); aboutTab.put("active", false); aboutTab.put("hasMore", true);
+        aboutTab.put("moreHref", "/triples/members");
+        aboutTab.put("hits", List.of(Map.of("label","서연","href","/triples/artist?tab=member-1","kind","멤버","snippet","SeoYeon")));
+        Map<String,Object> cosmoTab = new LinkedHashMap<>();
+        cosmoTab.put("id", "cosmo"); cosmoTab.put("label", "코스모");
+        cosmoTab.put("href", "/search?keyword=323&tab=cosmo"); cosmoTab.put("count", 1);
+        cosmoTab.put("hasHits", true); cosmoTab.put("active", true); cosmoTab.put("hasMore", true);
+        cosmoTab.put("moreHref", "/cosmo/objekt?search=323");
+        cosmoTab.put("hits", List.of(Map.of("label","HaYeon 323","href","/cosmo/objekt/detail/hayeoncc323","kind","오브젝트","snippet","Cream02")));
+        searchPage.put("tabs", List.of(aboutTab, cosmoTab));
+        Files.writeString(output.resolve("search-tabs.html"), compiler.compile(Files.readString(root.resolve("search.mustache"))).execute(searchPage));
     }
     private static Map<String,Object> orbit(String name,int percent,int owned,int total) {
         return Map.of("member",name,"label",name,"percent",percent,"owned",owned,"total",total,"copies",owned,"hasTotal",true,"color","#8decd9","progressUrl","/cosmo/profile/MobileFan?tab=members","isEmpty",owned==0);

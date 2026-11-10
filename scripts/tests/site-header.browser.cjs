@@ -7,6 +7,19 @@ const root=path.resolve(__dirname,'../..');
   const page=await browser.newPage(); const errors=[]; page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/*',route=>{
    const url=new URL(route.request().url()); if(url.origin!=='https://header.test')return route.abort();
+   if(url.pathname==='/api/site/alerts'){
+    return route.fulfill({contentType:'application/json',body:JSON.stringify({
+      catalogSig:'sig-1',catalogCount:2,dropWindow:true,
+      notices:[{id:9,title:'공지 테스트',href:'/article/notice/9',at:'2026-11-10'}],
+      objekts:[{label:'HaYeon 323',href:'/cosmo/objekt/detail/x',collectionId:'cc323',createdAt:'2026-11-10'}]
+    })});
+   }
+   if(url.pathname==='/search'){
+    let html=fs.readFileSync(path.join(root,'build/mobile-pages','search-tabs.html'),'utf8')
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'');
+    html=html.replace('</body>','<script src="/js/site-header.js"></script><script src="/js/site-mobile.js"></script></body>');
+    return route.fulfill({contentType:'text/html',body:html});
+   }
    if(url.pathname==='/'||url.pathname==='/home'){
     const fixture=url.pathname==='/home'?'header-home.html':'header-auth.html';
     let html=fs.readFileSync(path.join(root,'build/mobile-pages',fixture),'utf8')
@@ -29,6 +42,22 @@ const root=path.resolve(__dirname,'../..');
    const desktop=await page.locator('#navbar').evaluate(n=>getComputedStyle(n).display!=='none');
    assert.equal(await page.locator('.header-objekt-jump').count(),0,`메인 아닌 헤더에 오브젝트 바로가기가 있으면 안 된다 ${width}`);
    if(!desktop){
+    assert.equal(await page.locator('[data-header-search-open]').isVisible(),true,`모바일 검색 아이콘 ${width}`);
+    assert.equal(await page.locator('[data-cosmo-id-open]').isVisible(),true,`모바일 코스모 아이디 ${width}`);
+    assert.equal(await page.locator('[data-alerts-open]').isVisible(),true,`모바일 종 ${width}`);
+    await page.evaluate(()=>localStorage.setItem('cosmo-nickname-recents',JSON.stringify(['myid'])));
+    await page.locator('[data-cosmo-id-open]').click();
+    await page.waitForFunction(()=>!document.querySelector('[data-cosmo-id-panel]').hidden);
+    assert.equal(await page.locator('[data-cosmo-id-mine]').isVisible(),true);
+    assert.ok((await page.locator('[data-cosmo-id-mine]').getAttribute('href')).includes('myid'));
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(()=>document.querySelector('[data-cosmo-id-panel]').hidden);
+    await page.locator('[data-alerts-open]').click();
+    await page.getByText('공지 테스트').waitFor();
+    assert.equal(await page.getByText('드롭 시간입니다').isVisible(),true);
+    assert.equal(await page.getByText('공지 테스트').isVisible(),true);
+    assert.equal(await page.getByText('HaYeon 323').isVisible(),true);
+    await page.keyboard.press('Escape');
     await page.locator('#mobile-menu-btn').click();
     await page.waitForFunction(()=>!document.getElementById('mobile-menu').classList.contains('hidden'));
     assert.equal(await page.locator('#mobile-menu').evaluate(n=>getComputedStyle(n).display!=='none'),true);
@@ -58,6 +87,8 @@ const root=path.resolve(__dirname,'../..');
     assert.equal(await cosmo.locator('a[href="/article/trade"]').first().isVisible(),true);
     assert.equal(await cosmo.locator('a[href="/cosmo/collection"]').isVisible(),true);
     assert.equal(await cosmo.locator('a[href="/cosmo/transfers"]').count(),0);
+    assert.equal(await page.locator('[data-cosmo-id-open]').isVisible(),true,`데스크톱 코스모 아이디 ${width}`);
+    assert.equal(await page.locator('[data-alerts-open]').isVisible(),true,`데스크톱 종 ${width}`);
     assert.ok(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().height)<=66, 'main처럼 한 줄 헤더 유지');
     if(width>=1280){
       const search=page.locator('[data-header-search]');
@@ -89,6 +120,12 @@ const root=path.resolve(__dirname,'../..');
       assert.equal(await jump.evaluate(n=>getComputedStyle(n).display),'none',`홈 데스크톱에서 오브젝트 바로가기는 숨긴다 ${width}`);
     }
   }
-  assert.deepEqual(errors,[]);console.log('PASS: chromium header 320/360/390/1024/1040/1280/1440px, keyboard, navigation, community removed, outside click, search');
+  await page.setViewportSize({width:390,height:900});
+  await page.goto('https://header.test/search',{waitUntil:'load'});
+  assert.ok(await page.locator('.search-tabs__item').count()>=2);
+  assert.ok((await page.locator('.search-tabs__item.is-active').innerText()).includes('코스모'));
+  assert.equal(await page.getByText('HaYeon 323').isVisible(),true);
+  assert.equal(await page.getByText('코스모에서 더 보기').isVisible(),true);
+  assert.deepEqual(errors,[]);console.log('PASS: chromium header 320/360/390/1024/1040/1280/1440px, keyboard, navigation, community removed, outside click, search, alerts, cosmo id');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1)});
