@@ -126,6 +126,7 @@ class SiteSearchServiceTest {
         assertThat(cosmo.getHits().get(0).getHref()).isEqualTo("/cosmo/collection?nickname=cc323");
         assertThat(cosmo.getMoreHref()).isEqualTo("/cosmo/objekt?search=cc323");
         assertThat(cosmo.getCount()).isLessThanOrEqualTo(SiteSearchService.LIMIT);
+        assertThat(search.search("cc323", null).getActiveTab()).isEqualTo("cosmo");
     }
 
     @Test
@@ -153,15 +154,18 @@ class SiteSearchServiceTest {
         Schedule schedule = new Schedule("서연 생일", LocalDate.of(2026, 8, 6), LocalDate.of(2026, 8, 6));
         when(schedules.findAll()).thenReturn(List.of(schedule));
 
-        SiteSearchService.Page page = search.search("서연", "media");
-        assertThat(tab(page, "media").getHits()).extracting(SiteSearchService.Hit::getHref)
+        SiteSearchService.Page mediaPage = search.search("서연", "media");
+        assertThat(tab(mediaPage, "media").getHits()).extracting(SiteSearchService.Hit::getHref)
                 .contains("/archive/image_archive?q=%EC%84%9C%EC%97%B0%20%EC%A7%81%EC%BA%A0",
                         "/media/mv/abcdefghijk");
-        assertThat(tab(page, "info").getHits()).extracting(SiteSearchService.Hit::getHref)
+        assertThat(tab(mediaPage, "info").getHits()).isEmpty();
+        SiteSearchService.Page infoPage = search.search("서연", "info");
+        assertThat(tab(infoPage, "info").getHits()).extracting(SiteSearchService.Hit::getHref)
                 .contains("/shop/item/merch/5", "/article/info/11");
-        assertThat(tab(page, "schedule").getHits()).extracting(SiteSearchService.Hit::getHref)
+        SiteSearchService.Page schedulePage = search.search("서연", "schedule");
+        assertThat(tab(schedulePage, "schedule").getHits()).extracting(SiteSearchService.Hit::getHref)
                 .contains("/schedule");
-        assertThat(tab(page, "media").getMoreHref()).startsWith("/archive/image_archive?q=");
+        assertThat(tab(mediaPage, "media").getMoreHref()).startsWith("/archive/image_archive?q=");
     }
 
     @Test

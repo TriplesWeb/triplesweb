@@ -43,7 +43,7 @@
                 {{#tabs}}
                 <a href="{{{href}}}" class="search-tabs__item{{#active}} is-active{{/active}}">
                     <span>{{label}}</span>
-                    <em>{{count}}</em>
+                    {{#active}}<em>{{count}}</em>{{/active}}
                 </a>
                 {{/tabs}}
             </nav>

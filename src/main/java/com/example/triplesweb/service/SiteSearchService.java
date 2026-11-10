@@ -53,17 +53,22 @@ public class SiteSearchService {
 
     public Page search(String keyword, String tab) {
         String query = keyword == null ? "" : keyword.trim();
+        String active = normalizeTab(tab, query);
         if (query.isEmpty()) {
-            return emptyPage(query, normalizeTab(tab, List.of()));
+            return emptyPage(query, active);
         }
         List<Tab> tabs = List.of(
-                tabOf("about", "About 트리플에스", "/triples/members", aboutHits(query), query),
-                tabOf("cosmo", "코스모", "/cosmo/objekt?search=" + encode(query), cosmoHits(query), query),
-                tabOf("media", "미디어", "/archive/image_archive?q=" + encode(query), mediaHits(query), query),
-                tabOf("info", "정보", "/article/info?type=title&keyword=" + encode(query), infoHits(query), query),
-                tabOf("schedule", "일정", "/schedule", scheduleHits(query), query)
+                tabOf("about", "About 트리플에스", "/triples/members",
+                        active.equals("about") ? aboutHits(query) : List.of(), query),
+                tabOf("cosmo", "코스모", "/cosmo/objekt?search=" + encode(query),
+                        active.equals("cosmo") ? cosmoHits(query) : List.of(), query),
+                tabOf("media", "미디어", "/archive/image_archive?q=" + encode(query),
+                        active.equals("media") ? mediaHits(query) : List.of(), query),
+                tabOf("info", "정보", "/article/info?type=title&keyword=" + encode(query),
+                        active.equals("info") ? infoHits(query) : List.of(), query),
+                tabOf("schedule", "일정", "/schedule",
+                        active.equals("schedule") ? scheduleHits(query) : List.of(), query)
         );
-        String active = normalizeTab(tab, tabs);
         List<Tab> marked = tabs.stream().map(item -> item.withActive(item.id.equals(active))).toList();
         return new Page(query, active, marked);
     }
@@ -290,13 +295,10 @@ public class SiteSearchService {
         return ObjektSeasonCodes.matches(query, base, season, collectionNo);
     }
 
-    private static String normalizeTab(String tab, List<Tab> tabs) {
+    private static String normalizeTab(String tab, String query) {
         String requested = tab == null ? "" : tab.trim().toLowerCase(Locale.ROOT);
         if (TAB_IDS.contains(requested)) return requested;
-        for (Tab item : tabs) {
-            if (item.isHasHits()) return item.id;
-        }
-        return "about";
+        return looksLikeNickname(query) ? "cosmo" : "about";
     }
 
     private static Hit hit(String label, String href, String kind, String snippet) {
