@@ -266,9 +266,17 @@
     sortToggle.hidden = false;
 
     if (kindSelect && kindMenu) {
+        kindSelect.addEventListener('beforeinput', (event) => {
+            if (window.ObjektKindCombo) ObjektKindCombo.rejectKindBeforeInput(event);
+            else if (event.data && /[^A-Za-z0-9]/.test(event.data)) event.preventDefault();
+        });
         kindSelect.addEventListener('focus', () => openKindMenu(false));
         kindSelect.addEventListener('click', () => openKindMenu(false));
         kindSelect.addEventListener('input', () => {
+            const cleaned = window.ObjektKindCombo
+                ? ObjektKindCombo.sanitizeKind(kindSelect.value)
+                : String(kindSelect.value || '').replace(/[^A-Za-z0-9]/g, '');
+            if (kindSelect.value !== cleaned) kindSelect.value = cleaned;
             openKindMenu(false);
             markActiveFilters();
         });
@@ -561,6 +569,7 @@
 
     const detailModal = document.getElementById('objektDetailModal');
     const detailImage = document.getElementById('objektDetailImage');
+    const detailVideo = document.getElementById('objektDetailVideo');
     const detailFlip = document.getElementById('objektDetailFlip');
     const detailFace = document.getElementById('objektDetailFace');
     const detailTitle = document.getElementById('objektDetailTitle');
@@ -604,28 +613,98 @@
         detailFavorite.dataset.favorite = on ? 'true' : 'false';
     }
 
+    function safeMediaUrl(raw) {
+        const value = String(raw || '').trim();
+        if (!/^https?:\/\//i.test(value)) return '';
+        try {
+            const url = new URL(value);
+            if (url.protocol !== 'http:' && url.protocol !== 'https:') return '';
+            return url.href;
+        } catch (_) {
+            return '';
+        }
+    }
+
+    function stopDetailMotion() {
+        if (!detailVideo) return;
+        detailVideo.pause();
+        detailVideo.removeAttribute('src');
+        detailVideo.dataset.active = 'false';
+        detailVideo.hidden = true;
+        detailVideo.load();
+    }
+
+    function showStillImage(url) {
+        if (!detailImage) return;
+        detailImage.hidden = false;
+        detailImage.src = url || '';
+        if (detailVideo) detailVideo.hidden = true;
+    }
+
+    function playDetailVideo() {
+        if (!detailVideo || detailVideo.dataset.active !== 'true') return;
+        if (detailImage) detailImage.hidden = true;
+        detailVideo.hidden = false;
+        const play = detailVideo.play();
+        if (play && typeof play.catch === 'function') play.catch(() => {});
+    }
+
+    function applyDetailMotion(data, frontUrl) {
+        stopDetailMotion();
+        if (detailImage) detailImage.dataset.motion = '';
+        showStillImage(frontUrl);
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const motion = String(data?.class || '').toLowerCase() === 'motion';
+        const media = safeMediaUrl(data?.frontMedia);
+        if (!motion || !media || reduce) return;
+        if (/\.(mp4|webm|m4v|mov)(\?|#|$)/i.test(media) && detailVideo) {
+            detailVideo.dataset.active = 'true';
+            detailVideo.src = media;
+            playDetailVideo();
+            return;
+        }
+        if (/\.(gif|webp|apng)(\?|#|$)/i.test(media) && detailImage) {
+            detailImage.dataset.motion = media;
+            detailImage.src = media;
+        }
+    }
+
     function resetModalFlip(front, back, hasBack) {
         if (!detailImage || !detailFlip || !detailFace) return;
         const frontUrl = front || '';
         const backUrl = hasBack ? (back || '') : '';
+        stopDetailMotion();
         detailImage.dataset.front = frontUrl;
         detailImage.dataset.back = backUrl;
+        detailImage.dataset.motion = '';
         detailImage.dataset.showingBack = 'false';
-        detailImage.src = frontUrl;
+        showStillImage(frontUrl);
+        detailFace.hidden = !hasBack;
         detailFace.textContent = '앞면';
         detailFlip.disabled = !hasBack;
         detailFlip.classList.toggle('is-flippable', Boolean(hasBack));
-        detailFlip.setAttribute('aria-label', hasBack ? '이미지 클릭 시 뒷면으로 전환' : '앞면');
+        detailFlip.setAttribute('aria-label', hasBack ? '이미지 클릭 시 뒷면으로 전환' : '오브젝트 이미지');
     }
 
     function flipModalImage() {
         if (!detailImage || !detailFlip || detailFlip.disabled) return;
         const showingBack = detailImage.dataset.showingBack === 'true';
-        const next = showingBack ? detailImage.dataset.front : detailImage.dataset.back;
-        if (!next) return;
-        detailImage.src = next;
+        const next = showingBack ? (detailImage.dataset.motion || detailImage.dataset.front) : detailImage.dataset.back;
+        if (!next && !(showingBack && detailVideo?.dataset.active === 'true')) return;
         detailImage.dataset.showingBack = showingBack ? 'false' : 'true';
-        if (detailFace) detailFace.textContent = showingBack ? '앞면' : '뒷면';
+        if (showingBack && detailVideo?.dataset.active === 'true') {
+            playDetailVideo();
+        } else {
+            if (detailVideo) {
+                detailVideo.pause();
+                detailVideo.hidden = true;
+            }
+            showStillImage(next);
+        }
+        if (detailFace) {
+            detailFace.hidden = false;
+            detailFace.textContent = showingBack ? '앞면' : '뒷면';
+        }
         detailFlip.setAttribute('aria-label', showingBack ? '이미지 클릭 시 뒷면으로 전환' : '이미지 클릭 시 앞면으로 전환');
     }
 
@@ -730,7 +809,9 @@
         if (detailNo) detailNo.textContent = data.collectionNo || '—';
         fillDetailStory(data);
         if (detailImage) detailImage.alt = data.collectionId || '';
-        resetModalFlip(data.frontImage || data.thumbnailImage || '', data.backImage || '', Boolean(data.hasBack));
+        const frontUrl = data.frontImage || data.thumbnailImage || '';
+        resetModalFlip(frontUrl, data.backImage || '', Boolean(data.hasBack));
+        applyDetailMotion(data, frontUrl);
         setFavoriteButton(Boolean(data.isFavorite));
         detailFavorite.disabled = false;
         const actions = document.querySelector('.objekt-detail-actions');
@@ -756,6 +837,7 @@
     }
 
     function finishDetailClose() {
+        stopDetailMotion();
         window.ObjektIssued?.close();
         window.ObjektSerialLookup?.setCollection('');
         detailModal.classList.remove('is-open');

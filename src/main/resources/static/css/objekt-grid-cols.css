@@ -40,6 +40,12 @@
     grid-column: 1 / -1;
     width: 100% !important;
   }
+  .objekt-search-row:has([data-objekt-cols-filter]):has(> .objekt-search-button) > .objekt-search-button,
+  .objekt-search-row:has([data-objekt-cols-filter]):has(> .objekt-search-button) > .objekt-reset-button {
+    grid-column: auto;
+    width: auto !important;
+    min-width: 0;
+  }
   .objekt-cols-toggle {
     display: inline-flex;
     align-items: center;

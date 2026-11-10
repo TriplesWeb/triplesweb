@@ -78,6 +78,7 @@ public class ObjektFeatureController {
         body.put("thumbnailImage", value(item, "thumbnailImage", "frontImage"));
         body.put("frontImage", front);
         body.put("backImage", back);
+        body.put("frontMedia", value(item, "frontMedia"));
         body.put("hasBack", !back.isBlank() && !back.equals(front));
         body.put("description", description(item, key));
         body.put("isFavorite", favorites.contains(session.getId(), item));
