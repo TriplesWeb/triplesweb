@@ -875,9 +875,9 @@
         history.replaceState(null, '', address.pathname + address.search);
     }
 
-    function closeDetailModal(fromClick) {
+    function closeDetailModal(fromBackdrop) {
         if (!detailModal) return;
-        if (fromClick && Date.now() - detailOpenedAt < 500) return;
+        if (fromBackdrop && Date.now() - detailOpenedAt < 500) return;
         if (window.AboutModal) {
             window.AboutModal.closeModal(detailModal, { onClose: finishDetailClose });
         } else {
@@ -1006,7 +1006,7 @@
         openObjektDetail(card.dataset.objektKey);
     });
 
-    detailClose?.addEventListener('click', () => closeDetailModal(true));
+    detailClose?.addEventListener('click', () => closeDetailModal(false));
     detailModal?.addEventListener('click', (event) => {
         if (event.target === detailModal) closeDetailModal(true);
     });
