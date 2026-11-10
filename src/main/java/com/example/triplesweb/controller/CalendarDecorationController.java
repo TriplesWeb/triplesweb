@@ -3,6 +3,14 @@ package com.example.triplesweb.controller;
 import com.example.triplesweb.dto.CalendarDecorationDto;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.CalendarDecorationService;
+import com.example.triplesweb.entity.Artist;
+import com.example.triplesweb.repository.ArtistRepository;
+import java.time.DateTimeException;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +25,9 @@ import java.util.List;
 @RequestMapping("/api/calendar-decorations")
 @RequiredArgsConstructor
 public class CalendarDecorationController {
+    private static final Pattern BIRTH_DATE = Pattern.compile("(?:19|20)\\\\d{2}\\\\s*[./-]\\\\s*(\\\\d{1,2})\\\\s*[./-]\\\\s*(\\\\d{1,2})");
     private final CalendarDecorationService service;
+    private final ArtistRepository artistRepository;
     private final AboutAdminAuth adminAuth;
 
     @GetMapping
