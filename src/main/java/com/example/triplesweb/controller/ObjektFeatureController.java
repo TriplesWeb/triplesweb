@@ -5,6 +5,7 @@ import com.example.triplesweb.repository.ObjektDescriptionRepository;
 import com.example.triplesweb.repository.ObjektFavoriteRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.ArtistSnapshotService;
+import com.example.triplesweb.service.ObjektDescriptionEditor;
 import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.ObjektFavoriteService;
 import com.example.triplesweb.service.ObjektMarketDataService;
@@ -36,6 +37,7 @@ public class ObjektFeatureController {
     private final ObjektService objektService;
     private final ObjektFavoriteRepository favoriteRepository;
     private final ObjektDescriptionRepository descriptionRepository;
+    private final ObjektDescriptionEditor descriptionEditor;
     private final AboutAdminAuth aboutAdminAuth;
     private final ObjektFavoriteService favorites;
     private final ObjektMarketDataService marketData;
@@ -84,6 +86,7 @@ public class ObjektFeatureController {
         body.put("frontMedia", ObjektMotionMedia.resolve(item));
         body.put("hasBack", !back.isBlank() && !back.equals(front));
         body.put("description", description(item, key));
+        body.putAll(descriptionEditor.view(item));
         body.put("isFavorite", favorites.contains(session.getId(), item));
         body.put("isAdmin", aboutAdminAuth.isAdmin(request, session));
         body.put("detailUrl", ObjektLinks.detail(item));
@@ -120,34 +123,32 @@ public class ObjektFeatureController {
     @PostMapping(value = "/detail/{key}/description", produces = MediaType.TEXT_HTML_VALUE)
     public String saveDescription(@PathVariable String key,
                                   @RequestParam(required = false) String description,
+                                  @RequestParam(required = false) String scope,
                                   HttpServletRequest request,
                                   HttpSession session) {
         aboutAdminAuth.requireAdmin(request, session);
         Map<String, Object> item = findObjekt(key);
         if (item == null) return "redirect:/cosmo/objekt";
         if (description != null && description.length() > 10000) throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        String descriptionKey = descriptionKey(item);
-        ObjektDescription entity = descriptionRepository.findByObjektKey(descriptionKey).orElseGet(ObjektDescription::new);
-        if (entity.getObjektKey() == null) entity.setObjektKey(descriptionKey);
-        entity.setDescription(description == null ? "" : description.trim());
-        descriptionRepository.save(entity);
+        descriptionEditor.save(item, description, scope);
         return "redirect:" + ObjektLinks.detail(item);
     }
 
     @PostMapping(value = "/detail/{key}/description", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Map<String, Object>> saveDescriptionJson(@PathVariable String key,
-            @RequestParam(defaultValue = "") String description, HttpServletRequest request, HttpSession session) {
+            @RequestParam(defaultValue = "") String description,
+            @RequestParam(required = false) String scope,
+            HttpServletRequest request, HttpSession session) {
         aboutAdminAuth.requireAdmin(request, session);
         Map<String, Object> item = findObjekt(key);
         if (item == null) return ResponseEntity.notFound().build();
         if (description.length() > 10000) return ResponseEntity.badRequest().body(Map.of("message", "설명은 10,000자까지 입력할 수 있습니다."));
-        String descriptionKey = descriptionKey(item);
-        ObjektDescription entity = descriptionRepository.findByObjektKey(descriptionKey).orElseGet(ObjektDescription::new);
-        if (entity.getObjektKey() == null) entity.setObjektKey(descriptionKey);
-        entity.setDescription(description.trim()); descriptionRepository.save(entity);
-        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
-                .body(Map.of("description", description.trim()));
+        String saved = descriptionEditor.save(item, description, scope);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("description", saved);
+        body.putAll(descriptionEditor.view(item));
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore()).body(body);
     }
 
     @GetMapping("/detail/{key}/lookup")
@@ -163,10 +164,6 @@ public class ObjektFeatureController {
             return ResponseEntity.status(503).cacheControl(org.springframework.http.CacheControl.noStore())
                     .body(Map.of("message", "조회하지 못했습니다. 잠시 후 다시 시도해 주세요."));
         }
-    }
-
-    private static String descriptionKey(Map<String, Object> item) {
-        return ObjektDescriptionKeys.storageKey(item);
     }
 
     private Optional<ObjektDescription> descriptionEntity(Map<String, Object> item, String requested) {

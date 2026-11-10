@@ -589,7 +589,10 @@
     const descriptionInput = document.getElementById('objektModalDescription');
     const descriptionStatus = document.getElementById('objektDescriptionStatus');
     const descriptionDelete = document.getElementById('objektDescriptionDelete');
+    const descriptionScope = document.getElementById('objektDescriptionScope');
+    const descriptionScopeHint = document.getElementById('objektDescriptionScopeHint');
     let descriptionUrl = '', descriptionSaving = false, detailRequest = 0;
+    let descriptionMeta = {scope: 'single', label: '', count: 1};
     let activeObjektKey = '';
     let detailLoading = false;
     let isAdmin = false;
@@ -796,12 +799,47 @@
         }
     }
 
+    function selectedDescriptionScope() {
+        const checked = descriptionForm?.querySelector('input[name="descriptionScope"]:checked');
+        return checked && checked.value === 'member' ? 'member' : 'group';
+    }
+
+    function descriptionScopeHintText(scope) {
+        const label = descriptionMeta.label || '이 번호';
+        const count = descriptionMeta.count || 1;
+        if (scope === 'member') return '이 카드만 바꿉니다. 같은 번호의 다른 멤버는 그대로 둡니다.';
+        if (count > 1) return label + ' 전체 ' + count + '장에 같은 설명을 넣습니다.';
+        return label + ' 설명에 적용합니다.';
+    }
+
+    function syncDescriptionScopeUi() {
+        if (!descriptionScope) return;
+        const canGroup = descriptionMeta.scope === 'group' || descriptionMeta.scope === 'member';
+        descriptionScope.hidden = !canGroup;
+        if (!canGroup) return;
+        const preferred = descriptionMeta.scope === 'member' ? 'member' : 'group';
+        const radio = descriptionForm?.querySelector('input[name="descriptionScope"][value="' + preferred + '"]');
+        if (radio) radio.checked = true;
+        if (descriptionScopeHint) descriptionScopeHint.textContent = descriptionScopeHintText(preferred);
+    }
+
+    function rememberDescriptionMeta(data) {
+        const count = Number(data && data.descriptionGroupCount);
+        descriptionMeta = {
+            scope: data && data.descriptionScope === 'member' ? 'member'
+                : data && data.descriptionScope === 'group' ? 'group' : 'single',
+            label: String(data && data.descriptionGroupLabel || '').trim(),
+            count: Number.isFinite(count) && count > 0 ? count : 1
+        };
+    }
+
     function exitDescriptionEdit() {
         if (descriptionForm) descriptionForm.hidden = true;
         if (detailDesc) detailDesc.hidden = false;
         if (descriptionEdit) descriptionEdit.hidden = !isAdmin;
         if (descriptionStatus) descriptionStatus.textContent = '';
         if (descriptionInput) descriptionInput.value = lastStoryText;
+        if (descriptionScope) descriptionScope.hidden = true;
     }
 
     function enterDescriptionEdit() {
@@ -811,6 +849,7 @@
         descriptionForm.hidden = false;
         if (descriptionEdit) descriptionEdit.hidden = true;
         if (descriptionStatus) descriptionStatus.textContent = '';
+        syncDescriptionScopeUi();
         descriptionInput.focus();
     }
 
@@ -855,6 +894,7 @@
         history.replaceState(null, '', address.pathname + address.search);
         isAdmin = Boolean(data.isAdmin);
         descriptionUrl = data.descriptionUrl || '';
+        rememberDescriptionMeta(data);
         exitDescriptionEdit();
     }
 
@@ -867,6 +907,7 @@
         activeObjektKey = '';
         lastStoryText = '';
         isAdmin = false;
+        descriptionMeta = {scope: 'single', label: '', count: 1};
         exitDescriptionEdit();
         detailRequest++;
         if (detailFavorite) detailFavorite.dataset.key = '';
@@ -956,34 +997,49 @@
 
     async function saveModalDescription(clear) {
         if (descriptionSaving || !descriptionUrl || !isAdmin || descriptionForm?.hidden) return;
-        if (clear && !window.confirm('이 오브젝트의 상세 설명을 삭제하시겠습니까?')) return;
+        const scope = descriptionScope && !descriptionScope.hidden ? selectedDescriptionScope() : 'single';
+        if (clear) {
+            const message = scope === 'group' && descriptionMeta.count > 1
+                ? (descriptionMeta.label || '이 번호') + ' 전체 설명을 삭제할까요?'
+                : '이 오브젝트의 상세 설명을 삭제하시겠습니까?';
+            if (!window.confirm(message)) return;
+        }
         if (!clear && !descriptionForm.reportValidity()) return;
         const key = activeObjektKey;
         descriptionSaving = true;
-        const buttons = descriptionForm.querySelectorAll('button');
-        buttons.forEach(button => button.disabled = true);
+        const controls = descriptionForm.querySelectorAll('button, input, textarea');
+        controls.forEach(control => control.disabled = true);
         descriptionStatus.textContent = clear ? '삭제 중…' : '저장 중…';
         try {
+            const body = new URLSearchParams({description: clear ? '' : descriptionInput.value});
+            if (scope === 'group' || scope === 'member') body.set('scope', scope);
             const response = await fetch(descriptionUrl, {
                 method: 'POST', headers: csrfHeaders(), credentials: 'same-origin',
-                body: new URLSearchParams({description: clear ? '' : descriptionInput.value})
+                body
             });
             if (!response.ok) throw new Error();
             const data = await response.json();
             if (typeof data.description !== 'string') throw new Error();
             if (activeObjektKey !== key) return;
+            rememberDescriptionMeta(data);
             fillDetailStory({description: data.description});
             exitDescriptionEdit();
-            descriptionStatus.textContent = clear ? '상세 설명을 삭제했습니다.' : '상세 설명을 저장했습니다.';
+            descriptionStatus.textContent = clear
+                ? (scope === 'group' && descriptionMeta.count > 1 ? '이 번호의 상세 설명을 삭제했습니다.' : '상세 설명을 삭제했습니다.')
+                : (scope === 'group' && descriptionMeta.count > 1 ? '이 번호 전체에 설명을 저장했습니다.' : '상세 설명을 저장했습니다.');
         } catch {
             if (activeObjektKey === key) descriptionStatus.textContent = '저장하지 못했습니다. 관리자 로그인 상태를 확인한 뒤 다시 시도해 주세요.';
         } finally {
-            descriptionSaving = false; buttons.forEach(button => button.disabled = false);
+            descriptionSaving = false; controls.forEach(control => control.disabled = false);
         }
     }
     descriptionEdit?.addEventListener('click', enterDescriptionEdit);
     descriptionForm?.addEventListener('submit', event => { event.preventDefault(); saveModalDescription(false); });
     descriptionDelete?.addEventListener('click', () => saveModalDescription(true));
+    descriptionForm?.addEventListener('change', (event) => {
+        if (!(event.target instanceof HTMLInputElement) || event.target.name !== 'descriptionScope') return;
+        if (descriptionScopeHint) descriptionScopeHint.textContent = descriptionScopeHintText(event.target.value);
+    });
 
     function shouldOpenModalFromEvent(event) {
         if (event.defaultPrevented) return false;

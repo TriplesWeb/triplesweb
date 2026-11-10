@@ -11,6 +11,7 @@ const base = path.resolve(__dirname, '../..');
     let isAdmin = true, description = '기존 설명', writes = [], failMore = true, apolloStory = null;
     const data = () => ({isFavorite:favorite,objektKey:'hayeoncc367z',collectionId:'Cream02 HaYeon 367Z',member:'HaYeon',season:'Cream02',class:'Special',collectionNo:'367Z',description,isAdmin,
       detailUrl:'/cosmo/objekt/detail/hayeoncc367z',memberUrl:'/cosmo/objekt?group=members&member=HaYeon',tradeUrl:'/article/trade/new?selectedObjektIds=uuid',sellUrl:'/article/sell/new?selectedObjektIds=uuid',descriptionUrl:'/cosmo/objekt/detail/hayeoncc367z/description',
+      descriptionScope:'group',descriptionGroupLabel:'Cream02 367Z',descriptionGroupCount:24,
       ...(apolloStory ? {apollo: apolloStory} : {})});
     await page.context().addCookies([{name:'XSRF-TOKEN',value:'test-csrf',domain:'preview.test',path:'/'}]);
     await page.route('**/*', async route => {
@@ -27,8 +28,10 @@ const base = path.resolve(__dirname, '../..');
       }
       if(p.endsWith('/description') && req.method()==='POST') {
         assert.equal(req.headers()['x-xsrf-token'],'test-csrf');
-        description=new URLSearchParams(req.postData()).get('description'); writes.push(description);
-        return json({description});
+        const params=new URLSearchParams(req.postData());
+        description=params.get('description'); writes.push({description,scope:params.get('scope')});
+        const scope=params.get('scope')||'group';
+        return json({description,descriptionScope:scope,descriptionGroupLabel:'Cream02 367Z',descriptionGroupCount:24});
       }
       if(p.endsWith('/lookup')) {
         const next=url.searchParams.get('page')==='1';
@@ -79,6 +82,12 @@ const base = path.resolve(__dirname, '../..');
     await page.locator('#objektDescriptionEdit').click();
     assert.equal(await page.locator('#objektDetailDesc').isVisible(),false);
     assert.equal(await page.locator('#objektModalDescription').inputValue(),'기존 설명');
+    assert.equal(await page.locator('#objektDescriptionScope').isVisible(),true);
+    assert.equal(await page.locator('input[name=descriptionScope][value=group]').isChecked(),true);
+    assert.match(await page.locator('#objektDescriptionScopeHint').textContent(), /Cream02 367Z 전체 24장/);
+    await page.locator('input[name=descriptionScope][value=member]').check();
+    assert.match(await page.locator('#objektDescriptionScopeHint').textContent(), /이 카드만/);
+    await page.locator('input[name=descriptionScope][value=group]').check();
     await page.locator('#objektModalDescription').fill('<b>새 설명</b>');
     await page.locator('#objektDescriptionForm button[type=submit]').click();
     await page.waitForFunction(()=>document.querySelector('#objektDescriptionStatus').textContent.includes('저장했습니다'));
@@ -90,7 +99,7 @@ const base = path.resolve(__dirname, '../..');
     page.once('dialog',dialog=>dialog.accept()); await page.locator('#objektDescriptionDelete').click();
     await page.waitForFunction(()=>document.querySelector('#objektDescriptionStatus').textContent.includes('삭제했습니다'));
     assert.equal(await page.locator('#objektDescriptionForm').isVisible(),false);
-    assert.deepEqual(writes,['<b>새 설명</b>','']);
+    assert.deepEqual(writes,[{description:'<b>새 설명</b>',scope:'group'},{description:'',scope:'group'}]);
     fs.mkdirSync('/tmp/objekt-ui',{recursive:true});
     await page.screenshot({path:'/tmp/objekt-ui/modal-desktop.png',fullPage:true});
     await page.setViewportSize({width:390,height:844});

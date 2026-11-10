@@ -33,6 +33,20 @@ class ObjektDescriptionSyncTest {
     }
 
     @Test
+    void loadScopesRunsWhenSyncIsDisabled() {
+        ObjektDescriptionScope row = new ObjektDescriptionScope();
+        row.setId(new ObjektDescriptionScope.Key("cream02", "323"));
+        ObjektDescriptionScopeRepository scopeRepo = mock(ObjektDescriptionScopeRepository.class);
+        when(scopeRepo.findAll()).thenReturn(List.of(row));
+        ObjektDescriptionSync sync = new ObjektDescriptionSync(
+                null, mock(ObjektDescriptionRepository.class), scopeRepo, null, null, false);
+
+        sync.loadScopes();
+
+        assertTrue(ObjektDescriptionKeys.memberSpecific("Cream02", "323"));
+    }
+
+    @Test
     void sameSentenceUsesOneGroupKey() {
         ObjektDescriptionSync sync = sync();
         List<Map<String, Object>> catalog = List.of(card("SeoYeon", "401Z"), card("YuBin", "401Z"));

@@ -46,6 +46,27 @@ public final class ObjektDescriptionKeys {
         RUNTIME.add(key);
     }
 
+    /** JSON 예외가 아닌 런타임 묶음만 다시 공통 키로 돌린다. */
+    public static void clearMemberSpecific(String season, String collectionNo) {
+        RUNTIME.remove(pair(season, collectionNo));
+    }
+
+    public static boolean jsonException(String season, String collectionNo) {
+        return EXCEPTIONS.contains(pair(season, collectionNo));
+    }
+
+    public static String season(Map<String, Object> item) {
+        return text(item, "season");
+    }
+
+    public static String collectionNo(Map<String, Object> item) {
+        return text(item, "collectionNo", "collectionNumber");
+    }
+
+    public static boolean canGroup(Map<String, Object> item) {
+        return !season(item).isEmpty() && !collectionNo(item).isEmpty();
+    }
+
     public static void clearRuntime() {
         RUNTIME.clear();
     }

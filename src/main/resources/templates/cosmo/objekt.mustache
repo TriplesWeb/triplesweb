@@ -269,6 +269,18 @@
                 <p class="objekt-detail-desc is-empty" id="objektDetailDesc">불러오는 중…</p>
                 <form id="objektDescriptionForm" class="objekt-description-editor" hidden>
                     <label class="objekt-description-label" for="objektModalDescription">상세 설명</label>
+                    <fieldset id="objektDescriptionScope" class="objekt-description-scope" hidden>
+                        <legend>적용 범위</legend>
+                        <label class="objekt-description-scope-option">
+                            <input type="radio" name="descriptionScope" value="group" checked>
+                            <span>이 번호 일괄 수정</span>
+                        </label>
+                        <label class="objekt-description-scope-option">
+                            <input type="radio" name="descriptionScope" value="member">
+                            <span>이 오브젝트만 수정</span>
+                        </label>
+                        <p id="objektDescriptionScopeHint"></p>
+                    </fieldset>
                     <textarea id="objektModalDescription" name="description" rows="6" maxlength="10000" placeholder="상세 설명을 입력해 주세요."></textarea>
                     <div class="objekt-description-buttons"><button type="submit">저장</button><button type="button" id="objektDescriptionDelete">설명 삭제</button></div>
                     <p id="objektDescriptionStatus" role="status" aria-live="polite"></p>
