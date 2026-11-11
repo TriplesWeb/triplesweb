@@ -99,6 +99,27 @@
   word-break: break-word;
 }
 
+.shop-md-meta {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #8b9b95;
+}
+
+.shop-md-category + .shop-md-category {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(58, 74, 70, 0.28);
+}
+
+.shop-md-category-title {
+  margin: 0 0 0.55rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #b9cac4;
+}
+
 .shop-md-mark {
   justify-self: center;
   font-size: 1.15rem;

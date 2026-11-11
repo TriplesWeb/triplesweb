@@ -3,11 +3,11 @@ package com.example.triplesweb.service;
 import com.example.triplesweb.dto.ShopDetailDto;
 import com.example.triplesweb.dto.ShopListCard;
 import com.example.triplesweb.dto.ShopSectionGroupDto;
-import com.example.triplesweb.entity.EventStop;
 import com.example.triplesweb.entity.Shop;
 import com.example.triplesweb.entity.ShopSection;
 import com.example.triplesweb.repository.ShopRepository;
 import com.example.triplesweb.repository.ShopSectionRepository;
+import com.example.triplesweb.util.ShopMdDocument;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -152,33 +152,54 @@ public class ShopService {
     static ShopDetailDto toDetail(Shop shop) {
         List<ShopDetailDto.MdRegion> regions = new ArrayList<>();
         int index = 0;
-        for (EventStop.MdCategory category : EventStop.MdCategory.parseAll(shop.getMdList())) {
-            List<String> photos = dedupeUrls(category.getNoticeImages());
-            if (photos.isEmpty()) {
+        for (ShopMdDocument.Region region : ShopMdDocument.parse(shop.getMdList())) {
+            if (!region.hasPhotos()) {
                 index++;
                 continue;
             }
-            String key = StringUtils.hasText(category.getKey()) ? category.getKey() : ("c" + index);
+            List<ShopDetailDto.MdCategory> categories = new ArrayList<>();
+            for (ShopMdDocument.Category category : region.categories()) {
+                if (!category.hasPhotos()) continue;
+                categories.add(ShopDetailDto.MdCategory.builder()
+                        .title(category.title())
+                        .key(StringUtils.hasText(category.key()) ? category.key() : ("c" + categories.size()))
+                        .hasPhotos(true)
+                        .photos(category.photos())
+                        .build());
+            }
+            if (categories.isEmpty()) {
+                index++;
+                continue;
+            }
+            String key = "r" + index + "-" + slug(region.name());
             regions.add(ShopDetailDto.MdRegion.builder()
                     .regionKey(key)
-                    .label(category.getTitle())
+                    .label(region.name())
+                    .salesPeriod(region.salesPeriod())
+                    .hasSalesPeriod(region.hasSalesPeriod())
                     .hasPhotos(true)
-                    .categories(List.of(ShopDetailDto.MdCategory.builder()
-                            .title(category.getTitle())
-                            .key(key)
-                            .hasPhotos(true)
-                            .photos(photos)
-                            .build()))
+                    .categories(categories)
                     .build());
             index++;
         }
+
+        boolean linkedEvent = shop.getEvent() != null;
+        String salesPeriod = shop.getSalesPeriod();
+        if (linkedEvent) {
+            String fromRegions = ShopMdDocument.summarizeSalesPeriod(
+                    ShopMdDocument.parse(shop.getMdList()));
+            if (StringUtils.hasText(fromRegions)) {
+                salesPeriod = fromRegions;
+            }
+        }
+
         return ShopDetailDto.builder()
                 .id(shop.getId())
                 .eventId(shop.getEvent() != null ? shop.getEvent().getEventId() : null)
                 .eventName(shop.getEventName())
-                .salesPeriod(shop.getSalesPeriod())
+                .salesPeriod(salesPeriod)
                 .displayCoverImage(shop.getDisplayCoverImage())
-                .hasSalesPeriod(shop.isHasSalesPeriod())
+                .hasSalesPeriod(StringUtils.hasText(salesPeriod))
                 .hasMdPhotos(!regions.isEmpty())
                 .mdRegions(regions)
                 .build();
@@ -188,23 +209,21 @@ public class ShopService {
     static List<String> collectNoticeImages(String mdList) {
         List<String> out = new ArrayList<>();
         Set<String> seen = new LinkedHashSet<>();
-        for (EventStop.MdCategory category : EventStop.MdCategory.parseAll(mdList)) {
-            for (String url : dedupeUrls(category.getNoticeImages())) {
-                if (seen.add(url)) out.add(url);
+        for (ShopMdDocument.Region region : ShopMdDocument.parse(mdList)) {
+            for (ShopMdDocument.Category category : region.categories()) {
+                for (String url : category.photos()) {
+                    if (seen.add(url)) out.add(url);
+                }
             }
         }
         return out;
     }
 
-    private static List<String> dedupeUrls(List<String> urls) {
-        if (urls == null || urls.isEmpty()) return List.of();
-        Set<String> seen = new LinkedHashSet<>();
-        List<String> out = new ArrayList<>();
-        for (String url : urls) {
-            if (!StringUtils.hasText(url)) continue;
-            String trimmed = url.trim();
-            if (seen.add(trimmed)) out.add(trimmed);
-        }
-        return out;
+    private static String slug(String title) {
+        if (!StringUtils.hasText(title)) return "region";
+        String slug = title.toLowerCase(java.util.Locale.ROOT)
+                .replaceAll("[^a-z0-9가-힣]+", "-")
+                .replaceAll("(^-)|(-$)", "");
+        return slug.isBlank() ? "region" : slug;
     }
 }

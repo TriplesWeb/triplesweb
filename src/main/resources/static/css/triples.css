@@ -1288,6 +1288,65 @@ textarea.form-control {
     line-height: 1;
 }
 
+.shop-md-builder {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.shop-md-region {
+    display: grid;
+    gap: 0.55rem;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(58, 74, 70, 0.45);
+    background: rgba(13, 14, 18, 0.55);
+}
+
+.shop-md-region-head,
+.shop-md-category-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.shop-md-input {
+    flex: 1 1 10rem;
+    min-width: 0;
+    appearance: none;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #0d0e12;
+    color: #e3e2e8;
+    padding: 0.45rem 0.55rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.shop-md-categories {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.shop-md-category-edit {
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.55rem;
+    border-radius: 0.6rem;
+    border: 1px solid rgba(58, 74, 70, 0.35);
+    background: rgba(22, 24, 31, 0.55);
+}
+
+.shop-md-photo-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.shop-md-photo-item {
+    position: relative;
+}
+
 .shop-md-thumb {
     width: 4.5rem;
     height: 4.5rem;
@@ -1295,6 +1354,22 @@ textarea.form-control {
     border-radius: 0.5rem;
     border: 1px solid rgba(58, 74, 70, 0.45);
     background: #0d0e12;
+    display: block;
+}
+
+.shop-md-photo-remove {
+    position: absolute;
+    top: -0.35rem;
+    right: -0.35rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 0;
+    border-radius: 999px;
+    background: #7f1d1d;
+    color: #fff;
+    font-size: 0.85rem;
+    line-height: 1;
+    cursor: pointer;
 }
 
 .event-stop-row-top input[type="text"],

@@ -13,24 +13,23 @@
                 <select id="shopEditEventId"></select>
                 <span class="text-xs text-gray-400">선택 사항입니다. 연결하면 커버가 비어 있을 때 공연 포스터를 씁니다.</span>
             </label>
-            <label class="about-edit-label">판매 기간
+            <div id="shopEditGlobalSales" class="about-edit-label">판매 기간
                 <div class="stop-date-range shop-sales-period" title="판매 기간">
-                    <input type="date" id="shopEditSalesStart" required title="시작일" aria-label="판매 시작일">
+                    <input type="date" id="shopEditSalesStart" title="시작일" aria-label="판매 시작일">
                     <span class="stop-date-sep" aria-hidden="true">~</span>
                     <input type="date" id="shopEditSalesEnd" title="종료일 (선택)" aria-label="판매 종료일 (선택)">
                 </div>
-                <span class="text-xs text-gray-400">시작일은 필수, 종료일은 선택입니다.</span>
-            </label>
-            <label class="about-edit-label">MD 공지 사진
-                <div class="shop-md-photo-tools flex flex-wrap items-center gap-2 mb-2">
-                    <input type="file" id="shopEditMdPhoto" accept="image/*" class="hidden" multiple>
-                    <button type="button" id="shopEditMdPhotoBtn" class="about-mode-btn is-active btn btn-sm btn-outline btn-primary btn-active">사진 추가</button>
-                    <span class="text-xs text-gray-400">상세 화면에 보이는 공지 사진입니다. 여러 장 선택할 수 있어요.</span>
+                <span class="text-xs text-gray-400">공연을 연결하지 않은 단독 MD용입니다. 시작일은 필수, 종료일은 선택입니다.</span>
+            </div>
+            <div class="about-edit-label">MD 공지
+                <p id="shopEditMdSalesHint" class="text-xs text-gray-400 mb-2" hidden>공연을 연결하면 판매 기간은 지역마다 따로 넣습니다.</p>
+                <div id="shopEditMdBuilder" class="shop-md-builder"></div>
+                <div class="shop-md-builder-actions flex flex-wrap gap-2 mt-2">
+                    <button type="button" id="shopEditMdAddRegion" class="about-mode-btn is-active btn btn-sm btn-outline btn-primary btn-active">지역 추가</button>
                 </div>
-                <div id="shopEditMdPreview" class="shop-md-preview flex flex-wrap gap-2 mb-2" hidden></div>
-                <textarea id="shopEditMdList" rows="6" placeholder="# Official MD&#10;!/uploads/images/md-notice.jpg&#10;# MD Benefit&#10;!/uploads/images/md-benefit.jpg"></textarea>
-                <span class="text-xs text-gray-400">구역은 <code># 제목</code>, 사진은 <code>!이미지URL</code>. 「사진 추가」로 올리면 자동으로 붙습니다.</span>
-            </label>
+                <input type="file" id="shopEditMdPhoto" accept="image/*" class="hidden" multiple>
+                <textarea id="shopEditMdList" class="hidden" hidden aria-hidden="true"></textarea>
+            </div>
             <label class="about-edit-label">목록 구분
                 <select id="shopEditSectionId"></select>
             </label>

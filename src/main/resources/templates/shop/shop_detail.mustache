@@ -50,6 +50,9 @@
                             <span class="shop-md-num font-mono text-xs text-[#8b9b95]"></span>
                             <span class="shop-md-title-col">
                                 <span class="shop-md-name group-hover:text-[#00f5d4] transition-colors">{{label}}</span>
+                                {{#hasSalesPeriod}}
+                                <span class="shop-md-meta font-mono">{{salesPeriod}}</span>
+                                {{/hasSalesPeriod}}
                             </span>
                             <span class="shop-md-mark material-symbols-outlined" aria-hidden="true">expand_more</span>
                         </button>
@@ -61,12 +64,15 @@
                              data-shop-md-panel>
                             {{#categories}}
                             {{#hasPhotos}}
-                            <div class="shop-md-notices">
-                                {{#photos}}
-                                <figure class="shop-md-notice">
-                                    <img src="{{.}}" alt="{{label}} MD 공지" loading="lazy" decoding="async" data-img-fallback>
-                                </figure>
-                                {{/photos}}
+                            <div class="shop-md-category">
+                                <h3 class="shop-md-category-title">{{title}}</h3>
+                                <div class="shop-md-notices">
+                                    {{#photos}}
+                                    <figure class="shop-md-notice">
+                                        <img src="{{.}}" alt="{{title}} MD 공지" loading="lazy" decoding="async" data-img-fallback>
+                                    </figure>
+                                    {{/photos}}
+                                </div>
                             </div>
                             {{/hasPhotos}}
                             {{/categories}}

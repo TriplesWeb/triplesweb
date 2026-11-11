@@ -4,6 +4,10 @@
   let isAdmin = false;
   let sectionOptions = [];
   let eventOptions = [];
+  /** @type {{name:string,salesStart:string,salesEnd:string,categories:{title:string,photos:string[]}[]}[]} */
+  let mdRegions = [];
+  /** @type {{ri:number,ci:number}|null} */
+  let mdPhotoTarget = null;
 
   function setToken(token) { if (auth) auth.setToken(token); }
 
@@ -114,53 +118,234 @@
     return formatSalesPeriod(start, end);
   }
 
-  function parseMdPhotoUrls(raw) {
-    const urls = [];
-    const seen = new Set();
-    String(raw || "").split(/\r?\n/).forEach((line) => {
-      const t = line.trim();
-      if (!t) return;
-      let url = "";
-      if (t.startsWith("!")) url = t.slice(1).trim();
-      else if (/^img:/i.test(t)) url = t.replace(/^img:/i, "").trim();
-      if (!url || seen.has(url)) return;
-      seen.add(url);
-      urls.push(url);
-    });
-    return urls;
+  function hasLinkedEvent() {
+    return Boolean(document.getElementById("shopEditEventId")?.value);
   }
 
-  function refreshMdPreview() {
-    const box = document.getElementById("shopEditMdPreview");
-    const ta = document.getElementById("shopEditMdList");
-    if (!box || !ta) return;
-    const urls = parseMdPhotoUrls(ta.value);
-    if (!urls.length) {
-      box.innerHTML = "";
-      box.hidden = true;
-      return;
+  function emptyCategory() {
+    return { title: "", photos: [] };
+  }
+
+  function emptyRegion() {
+    return { name: "", salesStart: "", salesEnd: "", categories: [emptyCategory()] };
+  }
+
+  function parseImageLine(line) {
+    const t = String(line || "").trim();
+    if (!t) return "";
+    if (t.startsWith("!")) return t.slice(1).trim();
+    if (/^img:/i.test(t)) return t.replace(/^img:/i, "").trim();
+    if (/^https?:\/\/\S+\.(png|jpe?g|webp|gif)(\?\S*)?$/i.test(t)) return t;
+    return "";
+  }
+
+  function parseMdDocument(raw) {
+    const lines = String(raw || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    if (!lines.length) return [];
+    const hasRegionMarker = lines.some((l) => l.startsWith("##"));
+    if (!hasRegionMarker) {
+      const regions = [];
+      let title = null;
+      let photos = [];
+      const flush = () => {
+        if (!title) return;
+        const cleaned = [];
+        const seen = new Set();
+        photos.forEach((u) => { if (u && !seen.has(u)) { seen.add(u); cleaned.push(u); } });
+        if (!cleaned.length) return;
+        regions.push({
+          name: title,
+          salesStart: "",
+          salesEnd: "",
+          categories: [{ title, photos: cleaned }]
+        });
+      };
+      lines.forEach((line) => {
+        if (line.startsWith("#")) {
+          flush();
+          title = line.replace(/^#+/, "").trim() || "공지";
+          photos = [];
+          return;
+        }
+        const url = parseImageLine(line);
+        if (!url) return;
+        if (!title) title = "공지";
+        photos.push(url);
+      });
+      flush();
+      return regions;
     }
-    box.hidden = false;
-    box.innerHTML = urls.map((url) =>
-      `<img src="${escapeAttr(url)}" alt="" class="shop-md-thumb" loading="lazy" decoding="async">`
-    ).join("");
+
+    const regions = [];
+    let region = null;
+    let category = null;
+    const flushCategory = () => {
+      if (!region || !category) return;
+      const cleaned = [];
+      const seen = new Set();
+      category.photos.forEach((u) => { if (u && !seen.has(u)) { seen.add(u); cleaned.push(u); } });
+      if (!cleaned.length && !category.title) return;
+      region.categories.push({ title: category.title || "공지", photos: cleaned });
+      category = null;
+    };
+    const flushRegion = () => {
+      flushCategory();
+      if (!region) return;
+      if (!region.categories.length) region.categories.push(emptyCategory());
+      regions.push(region);
+      region = null;
+    };
+    lines.forEach((line) => {
+      if (line.startsWith("##")) {
+        flushRegion();
+        region = {
+          name: line.replace(/^##/, "").trim() || "지역",
+          salesStart: "",
+          salesEnd: "",
+          categories: []
+        };
+        return;
+      }
+      if (!region) {
+        region = { name: "지역", salesStart: "", salesEnd: "", categories: [] };
+      }
+      if (line.startsWith("@")) {
+        let period = line.slice(1).trim();
+        if (/^sales:/i.test(period)) period = period.replace(/^sales:/i, "").trim();
+        const dates = parseSalesPeriod(period);
+        region.salesStart = dates.start;
+        region.salesEnd = dates.end;
+        return;
+      }
+      if (line.startsWith("#")) {
+        flushCategory();
+        category = { title: line.replace(/^#/, "").trim() || "공지", photos: [] };
+        return;
+      }
+      const url = parseImageLine(line);
+      if (!url) return;
+      if (!category) category = { title: "공지", photos: [] };
+      category.photos.push(url);
+    });
+    flushRegion();
+    return regions;
   }
 
-  function appendMdPhotoUrl(url) {
+  function serializeMdDocument(regions) {
+    const blocks = [];
+    (regions || []).forEach((region) => {
+      const name = String(region.name || "").trim() || "지역";
+      const lines = ["## " + name];
+      const period = formatSalesPeriod(region.salesStart, region.salesEnd);
+      if (period) lines.push("@" + period);
+      (region.categories || []).forEach((cat) => {
+        const photos = (cat.photos || []).filter(Boolean);
+        if (!photos.length && !String(cat.title || "").trim()) return;
+        lines.push("# " + (String(cat.title || "").trim() || "공지"));
+        photos.forEach((url) => lines.push("!" + url));
+      });
+      if (lines.length > 1 || (region.categories || []).some((c) => (c.photos || []).length)) {
+        blocks.push(lines.join("\n"));
+      } else if (period || name !== "지역") {
+        blocks.push(lines.join("\n"));
+      }
+    });
+    return blocks.join("\n");
+  }
+
+  function syncMdListField() {
     const ta = document.getElementById("shopEditMdList");
-    if (!ta || !url) return;
-    const line = "!" + url;
-    const cur = ta.value.trimEnd();
-    ta.value = cur ? (cur + "\n" + line) : line;
-    refreshMdPreview();
+    if (ta) ta.value = serializeMdDocument(mdRegions);
+  }
+
+  function syncMdBuilderFromDom() {
+    const root = document.getElementById("shopEditMdBuilder");
+    if (!root) return;
+    const next = [];
+    root.querySelectorAll("[data-md-region]").forEach((regionEl) => {
+      const cats = [];
+      regionEl.querySelectorAll("[data-md-category]").forEach((catEl) => {
+        const photos = Array.from(catEl.querySelectorAll("[data-md-photo]"))
+          .map((img) => img.getAttribute("data-md-photo") || "")
+          .filter(Boolean);
+        cats.push({
+          title: catEl.querySelector("[data-md-cat-title]")?.value?.trim() || "",
+          photos
+        });
+      });
+      next.push({
+        name: regionEl.querySelector("[data-md-region-name]")?.value?.trim() || "",
+        salesStart: regionEl.querySelector("[data-md-sales-start]")?.value || "",
+        salesEnd: regionEl.querySelector("[data-md-sales-end]")?.value || "",
+        categories: cats.length ? cats : [emptyCategory()]
+      });
+    });
+    mdRegions = next;
+    syncMdListField();
+  }
+
+  function setMdEditorMode() {
+    const linked = hasLinkedEvent();
+    const globalSales = document.getElementById("shopEditGlobalSales");
+    const hint = document.getElementById("shopEditMdSalesHint");
+    if (globalSales) globalSales.hidden = linked;
+    if (hint) hint.hidden = !linked;
+    renderMdBuilder();
+  }
+
+  function renderMdBuilder() {
+    const root = document.getElementById("shopEditMdBuilder");
+    if (!root) return;
+    const linked = hasLinkedEvent();
+    if (!mdRegions.length) mdRegions = [emptyRegion()];
+    root.innerHTML = mdRegions.map((region, ri) => `
+      <div class="shop-md-region" data-md-region="${ri}">
+        <div class="shop-md-region-head">
+          <input type="text" class="shop-md-input" data-md-region-name maxlength="120"
+                 placeholder="지역 이름 (예: 서울, 방콕)" value="${escapeAttr(region.name || "")}" aria-label="지역 이름">
+          <button type="button" class="about-mode-btn btn btn-xs btn-error" data-md-remove-region title="지역 삭제">삭제</button>
+        </div>
+        <div class="shop-md-region-sales stop-date-range" ${linked ? "" : "hidden"}>
+          <input type="date" data-md-sales-start value="${escapeAttr(region.salesStart || "")}" title="판매 시작일" aria-label="지역 판매 시작일">
+          <span class="stop-date-sep" aria-hidden="true">~</span>
+          <input type="date" data-md-sales-end value="${escapeAttr(region.salesEnd || "")}" title="판매 종료일 (선택)" aria-label="지역 판매 종료일">
+        </div>
+        <div class="shop-md-categories">
+          ${(region.categories || [emptyCategory()]).map((cat, ci) => `
+            <div class="shop-md-category-edit" data-md-category="${ci}">
+              <div class="shop-md-category-head">
+                <input type="text" class="shop-md-input" data-md-cat-title maxlength="120"
+                       placeholder="구분 이름 (예: Official MD)" value="${escapeAttr(cat.title || "")}" aria-label="구분 이름">
+                <button type="button" class="about-mode-btn btn btn-xs btn-outline btn-primary" data-md-add-photos>사진 추가</button>
+                <button type="button" class="about-mode-btn btn btn-xs btn-error" data-md-remove-category title="구분 삭제">삭제</button>
+              </div>
+              <div class="shop-md-photo-list">
+                ${(cat.photos || []).map((url, pi) => `
+                  <div class="shop-md-photo-item">
+                    <img src="${escapeAttr(url)}" alt="" data-md-photo="${escapeAttr(url)}" class="shop-md-thumb" loading="lazy" decoding="async">
+                    <button type="button" class="shop-md-photo-remove" data-md-remove-photo="${pi}" title="사진 삭제" aria-label="사진 삭제">×</button>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          `).join("")}
+        </div>
+        <button type="button" class="about-mode-btn btn btn-xs btn-outline btn-primary" data-md-add-category>구분 추가</button>
+      </div>
+    `).join("");
+    syncMdListField();
   }
 
   async function uploadMdPhotos(files) {
+    if (!mdPhotoTarget) return;
     const list = Array.from(files || []).filter((f) => f && f.type && f.type.startsWith("image/"));
     if (!list.length) {
       alert("이미지 파일을 선택해 주세요.");
       return;
     }
+    syncMdBuilderFromDom();
+    const { ri, ci } = mdPhotoTarget;
+    if (!mdRegions[ri] || !mdRegions[ri].categories[ci]) return;
     const err = document.getElementById("shopEditError");
     for (const file of list) {
       const fd = new FormData();
@@ -169,9 +354,19 @@
       if (!res.ok) throw new Error(await readError(res, "사진 업로드에 실패했습니다."));
       const data = await res.json();
       if (!data?.url) throw new Error("업로드 응답에 URL이 없습니다.");
-      appendMdPhotoUrl(data.url);
+      mdRegions[ri].categories[ci].photos.push(data.url);
     }
     if (err) { err.hidden = true; err.textContent = ""; }
+    renderMdBuilder();
+  }
+
+  function summarizeRegionSalesPeriods() {
+    const periods = mdRegions
+      .map((r) => formatSalesPeriod(r.salesStart, r.salesEnd))
+      .filter(Boolean);
+    if (!periods.length) return "";
+    if (periods.length === 1) return periods[0];
+    return periods.join(" / ");
   }
 
   function fillSectionSelect(selectedId) {
@@ -239,8 +434,8 @@
     const cardNameEl = document.getElementById("shopEditCardName");
     if (cardNameEl) cardNameEl.value = "";
     setSalesPeriodInputs("");
-    document.getElementById("shopEditMdList").value = "";
-    refreshMdPreview();
+    mdRegions = [emptyRegion()];
+    mdPhotoTarget = null;
     document.getElementById("shopEditImage").value = "";
     document.getElementById("shopEditImageUrl").value = "";
     document.getElementById("shopEditClearImage").checked = false;
@@ -264,7 +459,8 @@
       const data = await res.json();
       if (cardNameEl) cardNameEl.value = data.title || data.eventName || "";
       setSalesPeriodInputs(data.salesPeriod || "");
-      document.getElementById("shopEditMdList").value = data.mdList || "";
+      mdRegions = parseMdDocument(data.mdList || "");
+      if (!mdRegions.length) mdRegions = [emptyRegion()];
       fillSectionSelect(data.sectionId);
       fillEventSelect(data.eventId);
       if (data.coverImage && preview) {
@@ -272,7 +468,7 @@
         preview.classList.remove("hidden");
       }
     }
-    refreshMdPreview();
+    setMdEditorMode();
     openModal("shopEditModal");
   }
 
@@ -312,16 +508,74 @@
 
     document.getElementById("shopEditEventId")?.addEventListener("change", (e) => {
       const cardNameEl = document.getElementById("shopEditCardName");
-      if (!cardNameEl || cardNameEl.value.trim()) return;
       const selectedId = e.target.value;
-      const match = eventOptions.find((ev) => String(ev.eventId) === String(selectedId));
-      if (match?.eventName) cardNameEl.value = match.eventName;
+      if (cardNameEl && !cardNameEl.value.trim()) {
+        const match = eventOptions.find((ev) => String(ev.eventId) === String(selectedId));
+        if (match?.eventName) cardNameEl.value = match.eventName;
+      }
+      syncMdBuilderFromDom();
+      setMdEditorMode();
     });
 
-    document.getElementById("shopEditMdList")?.addEventListener("input", () => refreshMdPreview());
+    document.getElementById("shopEditMdAddRegion")?.addEventListener("click", () => {
+      syncMdBuilderFromDom();
+      mdRegions.push(emptyRegion());
+      renderMdBuilder();
+    });
 
-    document.getElementById("shopEditMdPhotoBtn")?.addEventListener("click", () => {
-      document.getElementById("shopEditMdPhoto")?.click();
+    document.getElementById("shopEditMdBuilder")?.addEventListener("click", (e) => {
+      const regionEl = e.target.closest("[data-md-region]");
+      if (!regionEl) return;
+      const ri = Number(regionEl.getAttribute("data-md-region"));
+      if (Number.isNaN(ri)) return;
+
+      if (e.target.closest("[data-md-add-category]")) {
+        syncMdBuilderFromDom();
+        if (!mdRegions[ri]) return;
+        mdRegions[ri].categories.push(emptyCategory());
+        renderMdBuilder();
+        return;
+      }
+      if (e.target.closest("[data-md-remove-region]")) {
+        syncMdBuilderFromDom();
+        mdRegions.splice(ri, 1);
+        if (!mdRegions.length) mdRegions = [emptyRegion()];
+        renderMdBuilder();
+        return;
+      }
+      const catEl = e.target.closest("[data-md-category]");
+      if (!catEl) return;
+      const ci = Number(catEl.getAttribute("data-md-category"));
+      if (Number.isNaN(ci)) return;
+
+      if (e.target.closest("[data-md-add-photos]")) {
+        syncMdBuilderFromDom();
+        mdPhotoTarget = { ri, ci };
+        document.getElementById("shopEditMdPhoto")?.click();
+        return;
+      }
+      if (e.target.closest("[data-md-remove-category]")) {
+        syncMdBuilderFromDom();
+        if (!mdRegions[ri]) return;
+        mdRegions[ri].categories.splice(ci, 1);
+        if (!mdRegions[ri].categories.length) mdRegions[ri].categories = [emptyCategory()];
+        renderMdBuilder();
+        return;
+      }
+      const removePhoto = e.target.closest("[data-md-remove-photo]");
+      if (removePhoto) {
+        const pi = Number(removePhoto.getAttribute("data-md-remove-photo"));
+        syncMdBuilderFromDom();
+        if (!mdRegions[ri]?.categories[ci]) return;
+        mdRegions[ri].categories[ci].photos.splice(pi, 1);
+        renderMdBuilder();
+      }
+    });
+
+    document.getElementById("shopEditMdBuilder")?.addEventListener("change", (e) => {
+      if (e.target.matches("[data-md-region-name], [data-md-cat-title], [data-md-sales-start], [data-md-sales-end]")) {
+        syncMdBuilderFromDom();
+      }
     });
 
     document.getElementById("shopEditMdPhoto")?.addEventListener("change", async (e) => {
@@ -336,6 +590,7 @@
         else alert(ex.message || "사진 업로드 실패");
       } finally {
         input.value = "";
+        mdPhotoTarget = null;
       }
     });
 
@@ -410,20 +665,35 @@
       const id = document.getElementById("shopEditId").value;
       const title = document.getElementById("shopEditCardName")?.value?.trim() || "";
       const eventId = document.getElementById("shopEditEventId").value;
-      const salesPeriod = readSalesPeriod();
+      syncMdBuilderFromDom();
+      const linked = Boolean(eventId);
+      let salesPeriod = linked ? summarizeRegionSalesPeriods() : readSalesPeriod();
       if (!title) {
         if (err) { err.hidden = false; err.textContent = "카드 이름을 입력해 주세요."; }
         return;
       }
       if (!salesPeriod) {
-        if (err) { err.hidden = false; err.textContent = "판매 시작일을 선택해 주세요."; }
+        if (err) {
+          err.hidden = false;
+          err.textContent = linked
+            ? "지역별 판매 시작일을 입력해 주세요."
+            : "판매 시작일을 선택해 주세요.";
+        }
         return;
       }
+      if (linked) {
+        const missing = mdRegions.some((r) => !formatSalesPeriod(r.salesStart, r.salesEnd));
+        if (missing) {
+          if (err) { err.hidden = false; err.textContent = "모든 지역에 판매 시작일을 입력해 주세요."; }
+          return;
+        }
+      }
+      const mdList = serializeMdDocument(mdRegions);
       const fd = new FormData();
       fd.append("title", title);
       if (eventId) fd.append("eventId", eventId);
       fd.append("salesPeriod", salesPeriod);
-      fd.append("mdList", document.getElementById("shopEditMdList")?.value || "");
+      fd.append("mdList", mdList);
       const sectionId = document.getElementById("shopEditSectionId")?.value;
       if (sectionId) fd.append("sectionId", sectionId);
       const file = document.getElementById("shopEditImage").files?.[0];

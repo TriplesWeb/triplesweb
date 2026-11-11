@@ -35,6 +35,8 @@ public class ShopDetailDto {
         /** DOM id용. 미저장이면 목록 인덱스를 쓴다. */
         private String regionKey;
         private String label;
+        private String salesPeriod;
+        private boolean hasSalesPeriod;
         private String eventDate;
         private String venue;
         private boolean hasVenue;
