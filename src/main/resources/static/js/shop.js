@@ -523,15 +523,24 @@
       list.innerHTML = '<li class="text-sm text-[#b9cac4]/70">등록된 구분이 없습니다.</li>';
       return;
     }
-    list.innerHTML = sectionOptions.map((s) => `
-      <li class="flex flex-wrap items-center gap-2 p-2 rounded-lg border border-[#3a4a46]/40" data-section-id="${s.sectionId}">
-        <input type="text" class="section-name-input flex-1 min-w-[8rem] bg-transparent border border-[#3a4a46]/40 rounded px-2 py-1 text-sm" value="${escapeAttr(s.name)}" maxlength="120">
-        <button type="button" class="section-rename about-mode-btn btn btn-xs btn-outline btn-primary">이름</button>
+    list.innerHTML = sectionOptions.map((s) => {
+      const fromEvent = Boolean(s.fromEvent);
+      const nameControl = fromEvent
+        ? `<span class="flex-1 min-w-[8rem] text-sm">${escapeAttr(s.name)}</span>
+           <span class="text-xs text-[#7eb8a8] shrink-0">공연</span>`
+        : `<input type="text" class="section-name-input flex-1 min-w-[8rem] bg-transparent border border-[#3a4a46]/40 rounded px-2 py-1 text-sm" value="${escapeAttr(s.name)}" maxlength="120">
+           <button type="button" class="section-rename about-mode-btn btn btn-xs btn-outline btn-primary">이름</button>`;
+      const deleteBtn = fromEvent
+        ? ""
+        : `<button type="button" class="section-delete about-mode-btn btn btn-xs btn-error">삭제</button>`;
+      return `
+      <li class="flex flex-wrap items-center gap-2 p-2 rounded-lg border border-[#3a4a46]/40" data-section-id="${s.sectionId}" data-from-event="${fromEvent ? "1" : "0"}">
+        ${nameControl}
         <button type="button" class="section-up about-mode-btn btn btn-xs btn-outline btn-primary" title="위로">↑</button>
         <button type="button" class="section-down about-mode-btn btn btn-xs btn-outline btn-primary" title="아래로">↓</button>
-        <button type="button" class="section-delete about-mode-btn btn btn-xs btn-error">삭제</button>
-      </li>
-    `).join("");
+        ${deleteBtn}
+      </li>`;
+    }).join("");
   }
 
   async function openSectionModal() {

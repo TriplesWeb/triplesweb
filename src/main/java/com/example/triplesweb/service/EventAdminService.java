@@ -33,6 +33,7 @@ public class EventAdminService {
     private final ObjectMapper objectMapper;
     private final EventService eventService;
     private final ShopService shopService;
+    private final ShopAdminService shopAdminService;
 
     @Transactional(readOnly = true)
     public EventAdminDto get(long eventId) {
@@ -63,6 +64,7 @@ public class EventAdminService {
         EventSection section = new EventSection(null, trimmed, nextOrder);
         EventSectionDto dto = toSectionDto(eventSectionRepository.save(section));
         eventService.invalidateListCache();
+        shopAdminService.ensureEventSectionsMirrored();
         return dto;
     }
 
@@ -70,6 +72,7 @@ public class EventAdminService {
     public EventSectionDto updateSection(long sectionId, String name, Integer sortOrder) {
         EventSection section = eventSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 구분이 존재하지 않습니다. id=" + sectionId));
+        String previousName = section.getName();
         if (StringUtils.hasText(name)) {
             String trimmed = name.trim();
             eventSectionRepository.findByNameIgnoreCase(trimmed).ifPresent(other -> {
@@ -84,6 +87,10 @@ public class EventAdminService {
         }
         EventSectionDto dto = toSectionDto(eventSectionRepository.save(section));
         eventService.invalidateListCache();
+        if (StringUtils.hasText(name)) {
+            shopAdminService.renameMirroredSection(previousName, section.getName());
+        }
+        shopAdminService.ensureEventSectionsMirrored();
         return dto;
     }
 
