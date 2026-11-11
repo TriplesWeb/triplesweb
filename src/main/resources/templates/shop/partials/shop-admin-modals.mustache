@@ -9,6 +9,9 @@
             <label class="about-edit-label">카드 이름
                 <input type="text" id="shopEditCardName" required maxlength="200" placeholder="예: tripleS Come True MD">
             </label>
+            <label class="about-edit-label">목록 구분
+                <select id="shopEditSectionId"></select>
+            </label>
             <label class="about-edit-label">공연(이벤트)
                 <select id="shopEditEventId"></select>
                 <span class="text-xs text-gray-400">선택 사항입니다. 연결하면 커버가 비어 있을 때 공연 포스터를 씁니다.</span>
@@ -27,9 +30,6 @@
                 <input type="file" id="shopEditMdPhoto" accept="image/*" class="hidden" multiple>
                 <textarea id="shopEditMdList" class="hidden" hidden aria-hidden="true"></textarea>
             </div>
-            <label class="about-edit-label">목록 구분
-                <select id="shopEditSectionId"></select>
-            </label>
             <label class="about-edit-label">커버 이미지
                 <input type="file" id="shopEditImage" accept="image/*">
             </label>
