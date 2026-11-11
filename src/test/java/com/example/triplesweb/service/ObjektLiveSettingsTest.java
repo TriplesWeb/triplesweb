@@ -20,8 +20,10 @@ class ObjektLiveSettingsTest {
         return new ObjektLiveSettings(clock, 20_000, 10_000, 60_000, 30_000, 600_000, 30_000, 15_000);
     }
 
-    @Test void dropWindowIsTenPmToMidnightSeoul() {
-        assertThat(settings(at(21, 59)).dropWindow()).isFalse();
+    @Test void dropWindowIsTenAmToMidnightSeoul() {
+        assertThat(settings(at(9, 59)).dropWindow()).isFalse();
+        assertThat(settings(at(10, 0)).dropWindow()).isTrue();
+        assertThat(settings(at(12, 0)).dropWindow()).isTrue();
         assertThat(settings(at(22, 0)).dropWindow()).isTrue();
         assertThat(settings(at(23, 59)).dropWindow()).isTrue();
         Instant midnight = LocalDateTime.of(2026, 11, 11, 0, 0)
@@ -30,11 +32,11 @@ class ObjektLiveSettingsTest {
     }
 
     @Test void dropWindowUsesFasterPollAndHistoryTtl() {
-        ObjektLiveSettings evening = settings(at(21, 0));
-        assertThat(evening.pollMs()).isEqualTo(20_000);
-        assertThat(evening.refreshMs()).isEqualTo(60_000);
-        assertThat(evening.historyTtlMs()).isEqualTo(30_000);
-        ObjektLiveSettings drop = settings(at(22, 30));
+        ObjektLiveSettings morning = settings(at(9, 0));
+        assertThat(morning.pollMs()).isEqualTo(20_000);
+        assertThat(morning.refreshMs()).isEqualTo(60_000);
+        assertThat(morning.historyTtlMs()).isEqualTo(30_000);
+        ObjektLiveSettings drop = settings(at(10, 30));
         assertThat(drop.pollMs()).isEqualTo(10_000);
         assertThat(drop.refreshMs()).isEqualTo(30_000);
         assertThat(drop.historyTtlMs()).isEqualTo(15_000);
@@ -42,7 +44,7 @@ class ObjektLiveSettingsTest {
     }
 
     @Test void dueUsesDropRefreshDuringWindow() {
-        ObjektLiveSettings drop = settings(at(22, 10));
+        ObjektLiveSettings drop = settings(at(10, 10));
         long now = System.currentTimeMillis();
         assertThat(drop.due(0)).isTrue();
         assertThat(drop.due(now - 29_000)).isFalse();

@@ -10,12 +10,12 @@ import java.time.ZoneId;
 
 /**
  * 오브젝트 라이브 갱신 간격. 외부 API는 서버가 혼자 돌리고,
- * 브라우저 pulse는 이 값을 그대로 따른다. 드롭 창은 한국 시간 22:00–24:00.
+ * 브라우저 pulse는 이 값을 그대로 따른다. 드롭 창은 한국 시간 10:00–24:00.
  */
 @Component
 public class ObjektLiveSettings {
     public static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
-    public static final LocalTime DROP_START = LocalTime.of(22, 0);
+    public static final LocalTime DROP_START = LocalTime.of(10, 0);
 
     private final Clock clock;
     private final long pollMs;
