@@ -119,7 +119,13 @@ class MobilePageTemplatesTest {
         var searchPage = new HashMap<>(model);
         searchPage.put("keyword", "323");
         searchPage.put("hasAnyResults", true);
+        searchPage.put("hasMembers", true);
         searchPage.put("activeTab", "cosmo");
+        searchPage.put("memberResults", List.of(Map.of(
+                "name", "지연",
+                "engName", "JiYeon",
+                "profileImage", "/images/no-image.png",
+                "profileUrl", "/triples/artist?tab=member-24")));
         Map<String,Object> aboutTab = new LinkedHashMap<>();
         aboutTab.put("id", "about"); aboutTab.put("label", "About 트리플에스");
         aboutTab.put("href", "/search?keyword=323&tab=about"); aboutTab.put("count", 1);

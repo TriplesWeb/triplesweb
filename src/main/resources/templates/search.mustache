@@ -39,6 +39,33 @@
             {{/errorMessage}}
 
             {{#keyword}}
+            <section class="search-members" aria-label="멤버 검색 결과">
+                <div class="search-members__head">
+                    <span class="material-symbols-outlined" data-icon="person_search">person_search</span>
+                    <h2>멤버 검색 결과</h2>
+                </div>
+                {{#hasMembers}}
+                <div class="search-members__grid">
+                    {{#memberResults}}
+                    <a href="{{{profileUrl}}}" class="search-member">
+                        <img src="{{{profileImage}}}" loading="lazy" alt="{{name}}" referrerpolicy="no-referrer">
+                        <span class="search-member__text">
+                            <strong class="search-member__name">{{name}}</strong>
+                            {{#engName}}<span class="search-member__eng">{{engName}}</span>{{/engName}}
+                            <span class="search-member__go">프로필 보기 <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span></span>
+                        </span>
+                    </a>
+                    {{/memberResults}}
+                </div>
+                {{/hasMembers}}
+                {{^hasMembers}}
+                <div class="search-members__empty">
+                    <span class="material-symbols-outlined" data-icon="person_off">person_off</span>
+                    <p>일치하는 멤버가 없습니다.</p>
+                </div>
+                {{/hasMembers}}
+            </section>
+
             <nav class="search-tabs" aria-label="검색 결과 탭">
                 {{#tabs}}
                 <a href="{{{href}}}" class="search-tabs__item{{#active}} is-active{{/active}}">

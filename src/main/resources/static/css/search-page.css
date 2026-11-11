@@ -1,3 +1,19 @@
+.search-members{margin:0 0 1.5rem}
+.search-members__head{display:flex;align-items:center;gap:.5rem;margin:0 0 1rem;color:#8decd9}
+.search-members__head h2{margin:0;font-size:1.125rem;font-weight:700;color:#e3e2e8}
+.search-members__head .material-symbols-outlined{font-size:1.35rem}
+.search-members__grid{display:grid;gap:.75rem}
+.search-member{display:flex;align-items:center;gap:1rem;min-height:5.5rem;padding:.9rem 1rem;border:1px solid rgba(58,74,70,.4);border-radius:1rem;background:rgba(13,14,18,.4);text-decoration:none;color:#e3e2e8}
+.search-member:hover{border-color:rgba(0,245,212,.45);color:#8decd9}
+.search-member img{width:4rem;height:4rem;flex:0 0 4rem;border-radius:999px;object-cover;border:1px solid rgba(58,74,70,.5);background:rgba(13,14,18,.6)}
+.search-member__text{min-width:0;display:grid;gap:.2rem}
+.search-member__name{font-size:1rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.search-member__eng{font-size:.75rem;font-weight:650;color:#8decd9}
+.search-member__go{display:inline-flex;align-items:center;gap:.2rem;font-size:.75rem;color:#93a5a1}
+.search-member__go .material-symbols-outlined{font-size:.9rem}
+.search-members__empty{display:grid;justify-items:center;gap:.4rem;padding:1.6rem 1rem;border:1px solid rgba(58,74,70,.3);border-radius:1rem;background:rgba(13,14,18,.28);color:#93a5a1;text-align:center}
+.search-members__empty .material-symbols-outlined{font-size:1.8rem;color:#6b7a76}
+.search-members__empty p{margin:0;font-size:.88rem;font-weight:600}
 .search-tabs{display:flex;gap:.4rem;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;margin:0 0 1.25rem;padding:0 0 .35rem;scrollbar-width:thin}
 .search-tabs__item{display:inline-flex;align-items:center;gap:.4rem;flex:0 0 auto;min-height:2.5rem;padding:.4rem .85rem;border:1px solid rgba(58,74,70,.45);border-radius:999px;background:rgba(13,14,18,.55);color:#b9cac4;text-decoration:none;font-size:.88rem;font-weight:650;white-space:nowrap}
 .search-tabs__item em{font-style:normal;font-size:.72rem;color:#8decd9}
@@ -13,7 +29,11 @@
 .search-more a{color:#8decd9;font-weight:700;text-decoration:none}
 .search-empty{display:grid;justify-items:center;gap:.5rem;padding:2.5rem 1rem;color:#93a5a1;text-align:center}
 .search-empty .material-symbols-outlined{font-size:2rem;color:#6b7a76}
+@media(min-width:640px){
+  .search-members__grid{grid-template-columns:1fr 1fr}
+}
 @media(max-width:767px){
   .search-tabs__item{min-height:2.75rem;font-size:.95rem}
   .search-hit{padding:1rem}
+  .search-member{min-height:5.75rem;padding:1rem}
 }

@@ -92,10 +92,17 @@ class SiteSearchServiceTest {
         SiteSearchService.Page page = search.search("서연", "about");
         SiteSearchService.Tab about = tab(page, "about");
         assertThat(about.isActive()).isTrue();
+        assertThat(page.getMembers()).extracting(SiteSearchService.Member::getName)
+                .containsExactly("윤서연");
+        assertThat(page.getMembers().get(0).getEngName()).isEqualTo("SeoYeon");
+        assertThat(page.getMembers().get(0).getProfileUrl()).isEqualTo("/triples/artist?tab=member-1");
+        assertThat(page.getMembers().get(0).getProfileImage()).isEqualTo("/images/image-upload-pending.png");
         assertThat(about.getHits()).extracting(SiteSearchService.Hit::getKind)
-                .contains("멤버", "케미");
+                .contains("케미")
+                .doesNotContain("멤버");
         assertThat(about.getHits()).extracting(SiteSearchService.Hit::getHref)
-                .contains("/triples/artist?tab=member-1", "/triples/chemistry");
+                .contains("/triples/chemistry")
+                .doesNotContain("/triples/artist?tab=member-1");
 
         SiteSearchService.Page assemble = search.search("ASSEMBLE", "about");
         assertThat(tab(assemble, "about").getHits()).extracting(SiteSearchService.Hit::getHref)
@@ -166,6 +173,27 @@ class SiteSearchServiceTest {
         assertThat(tab(schedulePage, "schedule").getHits()).extracting(SiteSearchService.Hit::getHref)
                 .contains("/schedule");
         assertThat(tab(mediaPage, "media").getMoreHref()).startsWith("/archive/image_archive?q=");
+    }
+
+    @Test
+    void membersStayAtTopEvenOnOtherTabsAndExactNameWins() {
+        Artist seoyeon = new Artist();
+        seoyeon.setArtistId(1L);
+        seoyeon.setName("윤서연");
+        seoyeon.setEngName("SeoYeon");
+        Artist yeon = new Artist();
+        yeon.setArtistId(2L);
+        yeon.setName("서연");
+        yeon.setEngName("Yeon");
+        when(artists.findAll()).thenReturn(List.of(seoyeon, yeon));
+
+        SiteSearchService.Page cosmo = search.search("서연", "cosmo");
+        assertThat(cosmo.getActiveTab()).isEqualTo("cosmo");
+        assertThat(cosmo.isHasMembers()).isTrue();
+        assertThat(cosmo.getMembers()).extracting(SiteSearchService.Member::getName)
+                .containsExactly("서연", "윤서연");
+        assertThat(tab(cosmo, "cosmo").getHits()).extracting(SiteSearchService.Hit::getKind)
+                .doesNotContain("멤버");
     }
 
     @Test

@@ -25,12 +25,16 @@ public class SearchController {
             model.addAttribute("errorMessage", "검색어를 입력해주세요.");
             SiteSearchService.Page empty = search.search("", tab);
             model.addAttribute("tabs", empty.getTabs());
+            model.addAttribute("memberResults", empty.getMembers());
+            model.addAttribute("hasMembers", false);
             model.addAttribute("hasAnyResults", false);
             model.addAttribute("activeTab", empty.getActiveTab());
             return "search";
         }
         SiteSearchService.Page page = search.search(query, tab);
         model.addAttribute("tabs", page.getTabs());
+        model.addAttribute("memberResults", page.getMembers());
+        model.addAttribute("hasMembers", page.isHasMembers());
         model.addAttribute("hasAnyResults", page.isHasAny());
         model.addAttribute("activeTab", page.getActiveTab());
         return "search";

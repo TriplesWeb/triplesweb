@@ -57,6 +57,7 @@ public class SiteSearchService {
         if (query.isEmpty()) {
             return emptyPage(query, active);
         }
+        List<Member> members = memberResults(query);
         List<Tab> tabs = List.of(
                 tabOf("about", "About 트리플에스", "/triples/members",
                         active.equals("about") ? aboutHits(query) : List.of(), query),
@@ -70,7 +71,7 @@ public class SiteSearchService {
                         active.equals("schedule") ? scheduleHits(query) : List.of(), query)
         );
         List<Tab> marked = tabs.stream().map(item -> item.withActive(item.id.equals(active))).toList();
-        return new Page(query, active, marked);
+        return new Page(query, active, marked, members);
     }
 
     private Tab tabOf(String id, String label, String moreHref, List<Hit> hits, String query) {
@@ -81,7 +82,7 @@ public class SiteSearchService {
         List<Tab> tabs = TAB_IDS.stream()
                 .map(id -> new Tab(id, labelOf(id), "/search?tab=" + id, moreOf(id, query), List.of(), id.equals(active)))
                 .toList();
-        return new Page(query, active, tabs);
+        return new Page(query, active, tabs, List.of());
     }
 
     private static String labelOf(String id) {
@@ -105,18 +106,32 @@ public class SiteSearchService {
         };
     }
 
-    private List<Hit> aboutHits(String query) {
-        List<Hit> hits = new ArrayList<>();
+    private List<Member> memberResults(String query) {
+        List<Artist> matched = new ArrayList<>();
         for (Artist artist : safeList(() -> artists.findAll())) {
             if (contains(artist.getName(), query) || contains(artist.getEngName(), query)) {
-                hits.add(hit(
-                        blankTo(artist.getName(), artist.getEngName()),
-                        "/triples/artist?tab=member-" + artist.getArtistId(),
-                        "멤버",
-                        blankTo(artist.getEngName(), artist.getName())));
+                matched.add(artist);
             }
-            if (hits.size() >= LIMIT) return hits;
         }
+        matched.sort((a, b) -> Boolean.compare(exactName(b, query), exactName(a, query)));
+        List<Member> members = new ArrayList<>(matched.size());
+        for (Artist artist : matched) {
+            members.add(new Member(
+                    blankTo(artist.getName(), artist.getEngName()),
+                    blankTo(artist.getEngName(), ""),
+                    artist.getDisplayProfileImage(),
+                    "/triples/artist?tab=member-" + artist.getArtistId()));
+        }
+        return members;
+    }
+
+    private static boolean exactName(Artist artist, String query) {
+        return query != null && (query.equalsIgnoreCase(blankTo(artist.getName(), ""))
+                || query.equalsIgnoreCase(blankTo(artist.getEngName(), "")));
+    }
+
+    private List<Hit> aboutHits(String query) {
+        List<Hit> hits = new ArrayList<>();
         for (Album album : safeList(albums::listAll)) {
             if (contains(album.getAlbumName(), query)) {
                 hits.add(hit(album.getAlbumName(), "/triples/album/" + album.getAlbumId(), "앨범",
@@ -356,15 +371,25 @@ public class SiteSearchService {
         private final String keyword;
         private final String activeTab;
         private final List<Tab> tabs;
+        private final List<Member> members;
 
         public Page(String keyword, String activeTab, List<Tab> tabs) {
+            this(keyword, activeTab, tabs, List.of());
+        }
+
+        public Page(String keyword, String activeTab, List<Tab> tabs, List<Member> members) {
             this.keyword = keyword;
             this.activeTab = activeTab;
             this.tabs = tabs;
+            this.members = members == null ? List.of() : List.copyOf(members);
         }
 
         public boolean isHasAny() {
-            return tabs.stream().anyMatch(Tab::isHasHits);
+            return !members.isEmpty() || tabs.stream().anyMatch(Tab::isHasHits);
+        }
+
+        public boolean isHasMembers() {
+            return !members.isEmpty();
         }
     }
 
@@ -404,6 +429,21 @@ public class SiteSearchService {
 
         Tab withActive(boolean value) {
             return new Tab(id, label, href, moreHref, hits, value);
+        }
+    }
+
+    @Getter
+    public static final class Member {
+        private final String name;
+        private final String engName;
+        private final String profileImage;
+        private final String profileUrl;
+
+        public Member(String name, String engName, String profileImage, String profileUrl) {
+            this.name = name;
+            this.engName = engName == null ? "" : engName;
+            this.profileImage = profileImage == null ? "" : profileImage;
+            this.profileUrl = profileUrl == null ? "#" : profileUrl;
         }
     }
 

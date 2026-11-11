@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.when;
@@ -44,14 +45,25 @@ class SearchControllerTest {
                 "/search?keyword=323&tab=about", "/triples/members", List.of(), false);
         var cosmo = new SiteSearchService.Tab("cosmo", "코스모",
                 "/search?keyword=323&tab=cosmo", "/cosmo/objekt?search=323", hits, true);
-        when(search.search("323", "cosmo")).thenReturn(new SiteSearchService.Page("323", "cosmo", List.of(about, cosmo)));
+        var members = List.of(new SiteSearchService.Member("지연", "JiYeon",
+                "/images/image-upload-pending.png", "/triples/artist?tab=member-24"));
+        when(search.search("323", "cosmo")).thenReturn(
+                new SiteSearchService.Page("323", "cosmo", List.of(about, cosmo), members));
 
-        mvc.perform(get("/search").param("keyword", "323").param("tab", "cosmo"))
+        String body = mvc.perform(get("/search").param("keyword", "323").param("tab", "cosmo"))
                 .andExpect(status().isOk())
+                .andExpect(content().string(containsString("멤버 검색 결과")))
+                .andExpect(content().string(containsString("search-member")))
+                .andExpect(content().string(containsString("지연")))
+                .andExpect(content().string(containsString("JiYeon")))
+                .andExpect(content().string(containsString("/triples/artist?tab=member-24")))
                 .andExpect(content().string(containsString("search-tabs")))
                 .andExpect(content().string(containsString("HaYeon 323")))
                 .andExpect(content().string(containsString("/cosmo/objekt?search=323")))
                 .andExpect(content().string(containsString("코스모에서 더 보기")))
-                .andExpect(content().string(containsString("About 트리플에스")));
+                .andExpect(content().string(containsString("About 트리플에스")))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(body.indexOf("멤버 검색 결과")).isLessThan(body.indexOf("search-tabs"));
+        assertThat(body.indexOf("지연")).isLessThan(body.indexOf("HaYeon 323"));
     }
 }
