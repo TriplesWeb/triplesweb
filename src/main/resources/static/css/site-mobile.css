@@ -26,7 +26,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   #top-header .site-user-menu>button{display:flex;align-items:center;justify-content:center;gap:0;min-height:40px;width:40px;padding:0;border:1px solid #3a4a4680;border-radius:.75rem;background:#191b22;color:inherit}
   #top-header .site-user-menu:not(.site-user-menu-open)>[data-user-menu-panel]{display:none!important}
   #top-header .site-user-menu .site-user-menu__meta,#top-header .site-user-menu .site-user-menu__caret,#top-header .site-user-menu .site-user-menu__name{display:none!important}
-  .header-cosmo-wrap>.site-header-tool,#siteAdminBtn,#siteAdminBtn.is-ready{display:none!important}
+  .header-cosmo-wrap>.site-header-tool{display:none!important}
+  #siteAdminBtn.is-ready{display:inline-flex!important;width:40px;height:40px;min-width:40px;min-height:40px}
   #top-header a.header-objekt-jump{display:inline-flex!important;align-items:center;height:40px;min-height:40px;padding:0 .7rem 0 .55rem}
   #top-header .site-user-menu .site-user-menu__icon{display:block}
   #top-header [data-user-menu-panel]{position:absolute;right:0;min-width:12rem;max-width:calc(100vw - 2rem);z-index:60}

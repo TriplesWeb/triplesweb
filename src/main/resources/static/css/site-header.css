@@ -261,15 +261,21 @@ form.site-header-search button.site-header-search__toggle{display:none}
   .site-header-tools{display:contents;margin-left:0}
   form.site-header-search,
   form.site-header-search button.site-header-search__toggle,
-  .header-cosmo-wrap > .site-header-tool,
-  #siteAdminBtn,
-  #siteAdminBtn.is-ready{
+  .header-cosmo-wrap > .site-header-tool{
     display:none !important
   }
-  .header-objekt-jump{order:1}
-  .header-alerts-wrap{order:2}
-  .site-user-menu{order:3}
-  #mobile-menu-btn{order:4}
+  #siteAdminBtn{order:1}
+  .header-objekt-jump{order:2}
+  .header-alerts-wrap{order:3}
+  .site-user-menu{order:4}
+  #mobile-menu-btn{order:5}
+  #siteAdminBtn.is-ready{
+    display:inline-flex !important;
+    width:2.5rem;
+    height:2.5rem;
+    min-width:2.5rem;
+    min-height:2.5rem
+  }
   .header-objekt-jump,
   #top-header a.header-objekt-jump{
     display:inline-flex !important;
@@ -278,7 +284,7 @@ form.site-header-search button.site-header-search__toggle{display:none}
     padding:0 .7rem 0 .55rem
   }
   .site-header-popover{position:fixed;top:calc(env(safe-area-inset-top,0px) + 3.7rem);left:max(.75rem,env(safe-area-inset-left));right:max(.75rem,env(safe-area-inset-right));width:auto;max-width:none;z-index:80}
-  .site-header-tool,#mobile-menu-btn,.site-user-menu>button{
+  .site-header-tool,#mobile-menu-btn,.site-user-menu>button,#siteAdminBtn.is-ready{
     width:2.5rem;height:2.5rem;min-width:2.5rem;min-height:2.5rem;padding:0
   }
   .site-header-tool svg,.site-user-menu__icon,.site-user-menu__icon svg{width:1.15rem;height:1.15rem}
@@ -303,7 +309,7 @@ form.site-header-search button.site-header-search__toggle{display:none}
 @media(max-width:360px){
   .sss-mascot-wrap{display:none}
   .header-brand img:last-child{max-width:4.4rem}
-  .site-header-tool,#mobile-menu-btn,.site-user-menu>button{
+  .site-header-tool,#mobile-menu-btn,.site-user-menu>button,#siteAdminBtn.is-ready{
     width:2.15rem !important;height:2.15rem !important;min-width:2.15rem !important;min-height:2.15rem !important
   }
   form.site-header-search,

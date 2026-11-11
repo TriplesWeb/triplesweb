@@ -48,8 +48,18 @@ const root=path.resolve(__dirname,'../..');
    assert.equal(await jump.getAttribute('aria-label'),'오브젝트');
    if(!desktop){
     assert.equal(await jump.isVisible(),true,`모바일 바에 Objekt 버튼 ${width}`);
+    await page.evaluate(()=>{
+      const btn=document.getElementById('siteAdminBtn');
+      if(!btn) return;
+      btn.hidden=false;
+      btn.classList.add('is-ready');
+    });
+    const admin=page.locator('#siteAdminBtn');
     const jumpBox=await jump.boundingBox();
+    const adminBox=await admin.boundingBox();
     const alertsBox=await barAlerts.boundingBox();
+    assert.equal(await admin.isVisible(),true,`모바일 바에 관리자 버튼 ${width}`);
+    assert.ok(adminBox&&jumpBox&&adminBox.x+adminBox.width<=jumpBox.x+1,`관리자가 Objekt 왼쪽 ${width}`);
     assert.ok(jumpBox&&alertsBox&&jumpBox.x+jumpBox.width<=alertsBox.x+1,`Objekt가 종 왼쪽 ${width}`);
     assert.equal(await page.locator('[data-header-search-open]').isVisible(),false,`모바일 헤더 돋보기는 없다 ${width}`);
     assert.equal(await page.locator('[data-header-search]').evaluate(n=>getComputedStyle(n).display==='none'),true,`모바일 헤더 검색칸 숨김 ${width}`);
