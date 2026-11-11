@@ -1303,7 +1303,32 @@ textarea.form-control {
 }
 
 .shop-md-add-region {
-    justify-self: start;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    width: 100%;
+    min-height: 3rem;
+    margin: 0;
+    padding: 0.7rem 0.85rem;
+    border-radius: 0.75rem;
+    border: 1px dashed rgba(0, 245, 212, 0.4);
+    background: rgba(0, 245, 212, 0.04);
+    color: #00f5d4;
+    font-size: 0.85rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.shop-md-add-region .material-symbols-outlined {
+    font-size: 1.15rem;
+    line-height: 1;
+}
+
+.shop-md-add-region:hover {
+    border-color: rgba(0, 245, 212, 0.65);
+    background: rgba(0, 245, 212, 0.1);
+    color: #7dffe8;
 }
 
 #shopEditMdPhoto {

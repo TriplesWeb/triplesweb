@@ -390,7 +390,10 @@
         <button type="button" class="about-mode-btn btn btn-xs btn-outline btn-primary" data-md-add-category>구분 추가</button>
       </div>
     `).join("") + `
-      <button type="button" class="about-mode-btn is-active btn btn-sm btn-outline btn-primary btn-active shop-md-add-region" data-md-add-region>지역 추가</button>`;
+      <button type="button" class="shop-md-add-region" data-md-add-region>
+        <span class="material-symbols-outlined" aria-hidden="true">add</span>
+        지역 추가
+      </button>`;
     syncMdListField();
   }
 
