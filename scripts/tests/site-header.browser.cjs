@@ -46,10 +46,18 @@ const root=path.resolve(__dirname,'../..');
    assert.equal(await jump.getAttribute('aria-label'),'오브젝트');
    assert.equal(await jump.isVisible(),true,`오브젝트 아이콘이 보인다 ${width}`);
    if(!desktop){
-    const searchInput=page.locator('[data-header-search-input]');
-    assert.equal(await searchInput.isVisible(),true,`모바일 검색 입력칸 ${width}`);
-    assert.ok(await searchInput.evaluate(n=>parseFloat(getComputedStyle(n).fontSize)>=16),`모바일 검색 글자 16px ${width}`);
-    assert.equal(await page.locator('[data-header-search-open]').count(),0);
+    assert.equal(await page.locator('[data-header-search-open]').isVisible(),true,`모바일 검색 아이콘 ${width}`);
+    assert.equal(await page.locator('[data-header-search-input]').evaluate(n=>getComputedStyle(n).opacity==='0'),true,`모바일 검색칸은 접혀 있다 ${width}`);
+    await page.locator('[data-header-search-open]').click();
+    await page.waitForFunction(()=>{
+      const root=document.querySelector('[data-header-search]');
+      const input=root&&root.querySelector('[data-header-search-input]');
+      return !!(root&&root.classList.contains('is-open')&&input
+        &&getComputedStyle(input).opacity==='1'&&input===document.activeElement);
+    });
+    assert.ok(await page.locator('[data-header-search-input]').evaluate(n=>parseFloat(getComputedStyle(n).fontSize)>=16),`모바일 검색 글자 16px ${width}`);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(()=>!document.querySelector('[data-header-search]').classList.contains('is-open'));
     assert.equal(await page.locator('[data-cosmo-id-open]').isVisible(),true,`모바일 코스모 아이디 ${width}`);
     assert.equal(await page.locator('[data-alerts-open]').isVisible(),true,`모바일 종 ${width}`);
     await page.evaluate(()=>localStorage.setItem('cosmo-nickname-recents',JSON.stringify(['myid'])));
@@ -99,7 +107,7 @@ const root=path.resolve(__dirname,'../..');
     assert.ok(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().height)<=66, 'main처럼 한 줄 헤더 유지');
     const search=page.locator('[data-header-search]');
     assert.equal(await search.locator('[data-header-search-input]').isVisible(),true,`데스크톱 검색 입력칸 ${width}`);
-    assert.equal(await page.locator('[data-header-search-open]').count(),0);
+    assert.equal(await page.locator('[data-header-search-open]').evaluate(n=>getComputedStyle(n).display==='none'),true,`데스크톱은 검색 토글이 숨겨진다 ${width}`);
     assert.ok(await search.locator('[data-header-search-input]').evaluate(n=>getComputedStyle(n).opacity==='1'));
     await page.evaluate(()=>window.scrollTo(0,200));
     assert.equal(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().top>=0),true);
