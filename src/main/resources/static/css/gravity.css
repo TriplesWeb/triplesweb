@@ -1480,8 +1480,7 @@ textarea.form-control {
     font-weight: 500;
 }
 
-.event-stop-row-top input[type="date"],
-.shop-sales-period input[type="date"] {
+.event-stop-row-top input[type="date"] {
     width: 9.75rem;
     min-width: 9.75rem;
     max-width: 9.75rem;
@@ -1492,6 +1491,7 @@ textarea.form-control {
     color-scheme: dark;
 }
 
+.shop-sales-period,
 .shop-md-region-sales {
     display: flex;
     flex-wrap: nowrap;
@@ -1501,6 +1501,7 @@ textarea.form-control {
     min-width: 0;
 }
 
+.shop-sales-period input[type="date"],
 .shop-md-region-sales input[type="date"] {
     flex: 1 1 0;
     width: auto;
@@ -1512,6 +1513,7 @@ textarea.form-control {
     color-scheme: dark;
 }
 
+.shop-sales-period .stop-date-sep,
 .shop-md-region-sales .stop-date-sep {
     flex: 0 0 auto;
 }
