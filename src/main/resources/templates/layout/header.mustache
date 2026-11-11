@@ -73,7 +73,7 @@
 <header class="site-header sticky top-0 z-50 w-full bg-[#16181f]/80 backdrop-blur-md border-b border-[#3a4a46]/30 transition-transform duration-300" id="top-header">
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
 
-    <div class="flex items-center gap-6 flex-1 min-w-0">
+    <div class="header-leading flex items-center gap-6 min-w-0 flex-1">
 
     <!-- 1. 브랜드 로고 -->
     <div class="header-brand-cluster flex items-center gap-2 shrink-0 min-w-0">
@@ -83,11 +83,10 @@
         </span>
         <img src="/images/triples-wordmark-white.png" alt="tripleS" width="86" height="20" class="w-auto block" decoding="async">
     </a>
-    {{#isHomePage}}<a href="/cosmo/objekt" class="header-objekt-jump">오브젝트</a>{{/isHomePage}}
     </div>
 
     <!-- 2. 네비게이션 메뉴 (데스크톱) — 항목은 main SiteNavigation -->
-    <nav id="navbar" class="hidden lg:flex items-center gap-5 text-xs tracking-wider" aria-label="주 메뉴">
+    <nav id="navbar" class="hidden lg:flex items-center gap-6 text-xs tracking-wider" aria-label="주 메뉴">
         {{#siteNavigation}}
         {{#direct}}
         <a class="nav-item-link text-[#b9cac4] hover:text-[#00f5d4] transition-colors text-decoration-none" href="{{href}}">{{label}}</a>
@@ -119,20 +118,73 @@
     </div>
 
     <!-- 3. 유저 메뉴 + 검색(우측 끝) -->
-<div class="flex items-center gap-3 shrink-0 ml-auto">
+<div class="header-trailing flex items-center gap-3 ml-auto min-w-0">
+    <div class="site-header-tools">
+    <form action="/search" method="get" role="search" class="site-header-search relative flex items-center" data-header-search>
+        <span class="site-header-search__glyph" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+        </span>
+        <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" class="site-header-search__input" type="search" placeholder="사이트 전체 검색" data-header-search-input autocomplete="off" />
+        <button type="button" class="site-header-search__toggle" aria-label="검색 열기" title="검색" data-header-search-open>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+        </button>
+        <button type="submit" class="site-header-search__submit" title="검색" aria-label="검색">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+        </button>
+    </form>
+
+    <div class="site-header-popover-wrap header-cosmo-wrap">
+        <button type="button" class="site-header-tool" data-cosmo-id-open aria-label="코스모 아이디 검색" aria-expanded="false" aria-controls="site-cosmo-id-panel" title="코스모 아이디 검색">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M6.2 18.2c.9-2.6 3-4.2 5.8-4.2s4.9 1.6 5.8 4.2"/></svg>
+        </button>
+        <div id="site-cosmo-id-panel" class="site-header-popover" hidden data-cosmo-id-panel>
+            <p class="site-header-popover__title">코스모 아이디 검색</p>
+            <form action="/cosmo/collection" method="get" class="site-header-popover__form">
+                <input type="search" name="nickname" placeholder="닉네임 입력" aria-label="코스모 닉네임" autocomplete="off" minlength="1" required data-cosmo-id-input>
+                <button type="submit">검색</button>
+            </form>
+            <a class="site-header-popover__mine" href="/cosmo/collection" data-cosmo-id-mine hidden>내 아이디로 보기</a>
+            <ul class="site-header-popover__list" data-cosmo-id-recents></ul>
+        </div>
+    </div>
+
+    <a href="/cosmo/objekt" class="header-objekt-jump" aria-label="오브젝트" title="오브젝트">
+        <span class="header-objekt-jump__cards" aria-hidden="true">
+            <span class="header-objekt-jump__card header-objekt-jump__card--back"></span>
+            <span class="header-objekt-jump__card header-objekt-jump__card--front"></span>
+        </span>
+        <span class="header-objekt-jump__label">Objekt</span>
+    </a>
+    </div>
+    <div class="site-header-popover-wrap header-alerts-wrap">
+        <button type="button" class="site-header-tool" data-alerts-open aria-label="알림" aria-expanded="false" aria-controls="site-alerts-panel" title="알림">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16.5V10a6 6 0 1 1 12 0v6.5l1.2 1.5H4.8Z"/><path d="M10 19.2a2 2 0 0 0 4 0"/></svg>
+            <span class="site-header-badge" data-alerts-badge hidden></span>
+        </button>
+        <div id="site-alerts-panel" class="site-header-popover" hidden data-alerts-panel>
+            <p class="site-header-popover__title">알림</p>
+            <p class="site-header-popover__status" data-alerts-status>불러오는 중</p>
+            <div data-alerts-body></div>
+        </div>
+    </div>
+    <button type="button" id="siteAdminBtn" aria-label="관리자" title="관리자" aria-pressed="false" hidden>
+        <svg data-site-admin-icon="admin" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 4 6v6c0 4.5 5 8 8 9 3-1 8-4.5 8-9V6z"/><circle cx="12" cy="10" r="2"/><path d="M8 17v-1a4 4 0 0 1 8 0v1"/></svg>
+        <svg data-site-admin-icon="logout" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 4H4v16h6M9 12h12m-4-4 4 4-4 4"/></svg>
+    </button>
     <!-- 로그인한 회원 메뉴 -->
 {{#member}}
         <div class="relative group site-user-menu">
-            <button type="button" data-user-menu-toggle aria-expanded="false" aria-controls="site-user-menu-panel" class="flex items-center gap-2 px-3 py-1.5 bg-[#191b22] border border-[#3a4a46]/50 rounded-xl hover:border-[#00f5d4] transition-all bg-transparent cursor-pointer">
-                <div class="flex flex-col text-left min-w-0 max-w-[6rem]">
-                    <span class="text-xs font-semibold text-[#e3e2e8] leading-tight block truncate">{{userId}}님</span>
-                    <span class="text-[10px] text-[#00f5d4] font-mono leading-none truncate">Lv.{{level}} {{points}}P</span>
-                </div>
-                <span class="material-symbols-outlined text-sm text-[#b9cac4] group-hover:rotate-180 transition-transform">arrow_drop_down</span>
+            <button type="button" data-user-menu-toggle aria-expanded="false" aria-controls="site-user-menu-panel" class="flex items-center gap-2 px-3 py-1.5 bg-[#191b22] border border-[#3a4a46]/50 rounded-xl hover:border-[#00f5d4] transition-all bg-transparent cursor-pointer" aria-label="{{userId}} 계정 메뉴">
+                <span class="site-user-menu__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3.2"/><path d="M6.2 18.2c.9-2.6 3-4.2 5.8-4.2s4.9 1.6 5.8 4.2"/></svg>
+                </span>
+                <span class="site-user-menu__name">{{userId}}</span>
+                <span class="site-user-menu__caret material-symbols-outlined text-sm text-[#b9cac4] group-hover:rotate-180 transition-transform">arrow_drop_down</span>
             </button>
 
             <div id="site-user-menu-panel" data-user-menu-panel class="absolute right-0 top-full pt-1 hidden group-hover:block w-48 z-50">
                 <div class="bg-[#191b22]/95 border border-[#3a4a46]/50 rounded-xl shadow-2xl p-1.5 backdrop-blur-lg flex flex-col gap-0.5">
+                    <p class="site-user-menu__level">Lv.{{level}} {{points}}P</p>
                     <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2 text-decoration-none" href="/mypage">
                         <span class="material-symbols-outlined text-[16px]">account_circle</span> 마이페이지
                     </a>
@@ -155,21 +207,6 @@
 {{^member}}
     {{/member}}
 
-    <button type="button" id="siteAdminBtn" aria-label="관리자" title="관리자" aria-pressed="false" hidden>
-        <svg data-site-admin-icon="admin" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 4 6v6c0 4.5 5 8 8 9 3-1 8-4.5 8-9V6z"/><circle cx="12" cy="10" r="2"/><path d="M8 17v-1a4 4 0 0 1 8 0v1"/></svg>
-        <svg data-site-admin-icon="logout" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 4H4v16h6M9 12h12m-4-4 4 4-4 4"/></svg>
-    </button>
-
-    <form action="/search" method="get" role="search" class="site-header-search site-header-search--icon relative hidden lg:flex items-center shrink-0" data-header-search>
-        <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" class="site-header-search__input" type="search" placeholder="멤버·게시글 검색" data-header-search-input tabindex="-1" autocomplete="off" />
-        <button type="button" class="site-header-search__toggle" aria-label="검색 열기" title="검색" data-header-search-open>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
-        </button>
-        <button type="submit" class="site-header-search__submit" title="검색" aria-label="검색">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
-        </button>
-    </form>
-
     <!-- 모바일 햄버거 버튼 -->
     <button type="button" id="mobile-menu-btn" class="lg:hidden flex items-center justify-center w-10 h-10 rounded-xl border border-[#3a4a46]/50 bg-[#191b22] text-[#e3e2e8] hover:border-[#00f5d4] hover:text-[#00f5d4] transition-colors cursor-pointer" aria-label="메뉴 열기" aria-expanded="false" aria-controls="mobile-menu">
         <span class="material-symbols-outlined text-xl" id="mobile-menu-icon">menu</span>
@@ -178,52 +215,79 @@
     </div>
 
     <!-- 모바일 메뉴 패널 -->
-    <div id="mobile-menu" class="lg:hidden hidden border-t border-[#3a4a46]/30 bg-[#16181f]/95 backdrop-blur-md">
-        <nav class="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-1 text-sm">
-            <form action="/search" method="get" role="search" class="site-search w-full">
-                <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" class="site-field site-search__input" type="search" placeholder="멤버·게시글 검색" />
+    <div id="mobile-menu" class="lg:hidden hidden">
+        <div class="mobile-menu-sheet">
+            <div class="mobile-menu-head">
+                {{#member}}
+                <div class="mobile-menu-user">
+                    <span class="mobile-menu-user__avatar" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3.2"/><path d="M6.2 18.2c.9-2.6 3-4.2 5.8-4.2s4.9 1.6 5.8 4.2"/></svg>
+                    </span>
+                    <span class="mobile-menu-user__copy">
+                        <strong>{{userId}}</strong>
+                        <span>Lv.{{level}} {{points}}P</span>
+                    </span>
+                </div>
+                {{/member}}
+                <button type="button" class="mobile-menu-close" data-mobile-menu-close aria-label="메뉴 닫기">
+                    <span class="mobile-menu-close__icon" aria-hidden="true"></span>
+                </button>
+            </div>
+
+            <form action="/search" method="get" role="search" class="site-search w-full mobile-menu-search">
+                <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" class="site-field site-search__input" type="search" placeholder="사이트 전체 검색" />
                 <button type="submit" class="site-search__submit" title="검색" aria-label="검색">
                     <span class="material-symbols-outlined">search</span>
                 </button>
             </form>
 
-            {{#siteNavigation}}
-            {{#direct}}
-            <a class="px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="{{href}}">{{label}}</a>
-            {{/direct}}
-            {{^direct}}
-            <div class="mobile-nav-group">
-                <button type="button" class="mobile-nav-toggle w-full flex items-center justify-between px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] bg-transparent border-0 cursor-pointer rounded-lg hover:bg-white/5">
-                    <span>{{label}}</span>
-                    <span class="material-symbols-outlined text-sm transition-transform">expand_more</span>
-                </button>
-                <div class="mobile-nav-panel hidden pl-3 pb-1 flex flex-col gap-0.5">
-                    {{#items}}
-                    {{^nested}}
-                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="{{href}}">{{label}}</a>
-                    {{/nested}}
-                    {{#nested}}
-                    {{#children}}
-                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="{{href}}">{{label}}</a>
-                    {{/children}}
-                    {{/nested}}
-                    {{/items}}
+            <nav class="mobile-menu-nav" aria-label="전체 메뉴">
+                <a class="mobile-direct-link" href="/" data-nav="home">
+                    <span class="mobile-nav-icon" aria-hidden="true"></span>
+                    홈
+                </a>
+                {{#siteNavigation}}
+                {{#direct}}
+                <a class="mobile-direct-link" href="{{href}}" data-nav="{{id}}">
+                    <span class="mobile-nav-icon" aria-hidden="true"></span>
+                    {{label}}
+                </a>
+                {{/direct}}
+                {{^direct}}
+                <div class="mobile-nav-group" data-nav="{{id}}">
+                    <button type="button" class="mobile-nav-toggle w-full flex items-center justify-between px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] bg-transparent border-0 cursor-pointer rounded-lg hover:bg-white/5">
+                        <span class="mobile-nav-label">
+                            <span class="mobile-nav-icon" aria-hidden="true"></span>
+                            {{label}}
+                        </span>
+                        <span class="material-symbols-outlined text-sm transition-transform">expand_more</span>
+                    </button>
+                    <div class="mobile-nav-panel hidden pl-3 pb-1 flex flex-col gap-0.5">
+                        {{#items}}
+                        {{^nested}}
+                        <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="{{href}}">{{label}}</a>
+                        {{/nested}}
+                        {{#nested}}
+                        {{#children}}
+                        <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="{{href}}">{{label}}</a>
+                        {{/children}}
+                        {{/nested}}
+                        {{/items}}
+                    </div>
                 </div>
-            </div>
-            {{/direct}}
-            {{/siteNavigation}}
+                {{/direct}}
+                {{/siteNavigation}}
 
-            {{#member}}
-            <div class="mobile-account">
-                <p>{{userId}}님<span>Lv.{{level}} {{points}}P</span></p>
-                <a href="/mypage">마이페이지</a>
-                <a href="/myposts">작성한 글</a>
-                <a href="/mycomments">작성한 댓글</a>
-                <a href="/logout">로그아웃</a>
-            </div>
-            {{/member}}
-
-        </nav>
+                {{#member}}
+                <div class="mobile-account">
+                    <a href="/mypage">마이페이지</a>
+                    <a href="/myposts">작성한 글</a>
+                    <a href="/mycomments">작성한 댓글</a>
+                    <a href="/logout">로그아웃</a>
+                </div>
+                {{/member}}
+            </nav>
+        </div>
     </div>
 </header>
 
