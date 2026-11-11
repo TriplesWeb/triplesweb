@@ -98,8 +98,9 @@ const root=path.resolve(__dirname,'../..');
     assert.ok(searchBox&&jumpBox&&searchBox.x+searchBox.width<=jumpBox.x+1,`검색칸이 오브젝트 바로가기 왼쪽 ${width}`);
     assert.ok(cosmoIdBox&&jumpBox&&cosmoIdBox.x+cosmoIdBox.width<=jumpBox.x+1,`코스모 아이디가 오브젝트 바로가기 왼쪽 ${width}`);
     if(width>=1280){
-      assert.ok(searchBox.width>=220,`검색칸이 빈자리를 조금 채운다 ${width} ${searchBox.width}`);
-      assert.ok(searchBox.width<=270,`검색칸이 헤더를 다 먹지 않는다 ${width} ${searchBox.width}`);
+      assert.ok(searchBox.width>=300,`검색칸이 왼쪽으로 더 온다 ${width} ${searchBox.width}`);
+      assert.ok(searchBox.width<=520,`검색칸이 네비까지 붙지 않는다 ${width} ${searchBox.width}`);
+      assert.ok(searchBox.x>=scheduleBox.x+scheduleBox.width+12,`일정과 검색 사이 간격 ${width}`);
     }
     assert.equal(await page.locator('#navbar').evaluate(n=>!!n.parentElement.querySelector('.header-objekt-jump')),false,`오브젝트 아이콘이 로고·네비 div 밖 ${width}`);
     assert.ok(await jump.evaluate(n=>n.closest('.ml-auto')!=null),`오브젝트 아이콘이 우측 도구 줄 ${width}`);
