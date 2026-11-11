@@ -85,6 +85,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .ar-filters>select,.ar-filters>.ar-submit,.objekt-search-row>.objekt-search,.objekt-search-row>.objekt-reset-button{
     flex:1 1 100%;width:100%!important;max-width:100%;min-width:0
   }
+  .objekt-search-row:has(>.objekt-search-button)>.objekt-search-button,
+  .objekt-search-row:has(>.objekt-search-button)>.objekt-reset-button{
+    flex:1 1 calc(50% - .35rem);width:auto!important;max-width:none;min-width:0
+  }
   .ar-filters>.ar-select select,.ar-filters select{width:100%}
   .ar-date-filter{width:100%}
   .ar-date-toggle{width:100%;justify-content:center}

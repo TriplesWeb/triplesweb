@@ -103,6 +103,7 @@ jobs:
           fi
           node scripts/tests/objekt-account-ui.browser.cjs
           node scripts/tests/objekt-modal.browser.cjs
+          node scripts/tests/objekt-detail-mobile-open.browser.cjs
           node scripts/tests/objekt-desc-leading.browser.cjs
           node scripts/tests/profile-board.browser.cjs
           node scripts/tests/objekt-mobile.browser.cjs
@@ -110,6 +111,7 @@ jobs:
           node scripts/tests/objekt-artist-gravity.browser.cjs
           node scripts/tests/objekt-member-selection.browser.cjs
           node scripts/tests/objekt-live-filters.browser.cjs
+          node scripts/tests/objekt-live.browser.cjs
           node scripts/tests/objekt-card-chrome.browser.cjs
           node scripts/tests/collection-live-filters.browser.cjs
           node scripts/tests/collection-dropdown-layout.browser.cjs

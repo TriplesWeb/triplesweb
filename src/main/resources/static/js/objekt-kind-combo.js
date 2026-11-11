@@ -6,6 +6,16 @@
         return String(raw || '').replace(/[^A-Za-z0-9]/g, '');
     }
 
+    function rejectKindBeforeInput(event) {
+        const type = event.inputType || '';
+        if (type === 'insertCompositionText' || type === 'insertFromComposition') {
+            event.preventDefault();
+            return;
+        }
+        if (!event.data || type === 'insertFromPaste' || type === 'insertFromDrop') return;
+        if (/[^A-Za-z0-9]/.test(event.data)) event.preventDefault();
+    }
+
     function normalizeKindValue(raw) {
         const trimmed = String(raw || '').trim();
         if (!trimmed || trimmed.toLowerCase() === ALL_VALUE || trimmed === ALL_LABEL) return ALL_VALUE;
@@ -148,6 +158,7 @@
             visible[activeIndex]?.scrollIntoView({ block: 'nearest' });
         }
 
+        input.addEventListener('beforeinput', rejectKindBeforeInput);
         input.addEventListener('focus', () => openMenu(false));
         input.addEventListener('click', () => openMenu(false));
         input.addEventListener('input', () => {
@@ -219,6 +230,7 @@
         normalizeKindValue,
         displayKindValue,
         sanitizeKind,
+        rejectKindBeforeInput,
         allowedKindsForClasses
     };
 })(window);

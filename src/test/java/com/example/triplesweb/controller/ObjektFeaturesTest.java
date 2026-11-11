@@ -26,20 +26,24 @@ import static org.hamcrest.Matchers.not;
 
 @WebMvcTest({CosmoController.class, ObjektFeatureController.class})
 @AutoConfigureMockMvc(addFilters = false)
-@Import({MustacheConfig.class})
+@Import({MustacheConfig.class, ObjektDescriptionEditor.class})
 class ObjektFeaturesTest {
     @org.junit.jupiter.api.BeforeEach void decorateVisibleCards() {
         when(market.withIssuedSupply(anyList())).thenAnswer(call -> call.getArgument(0));
+    }
+    @org.junit.jupiter.api.AfterEach void resetDescriptionRuntime() {
+        com.example.triplesweb.util.ObjektDescriptionKeys.clearRuntime();
     }
     @Autowired MockMvc mvc;
     @MockitoBean ObjektService catalog;
     @MockitoBean ArtistSnapshotService artists;
     @MockitoBean ObjektMarketDataService market;
+    @MockitoBean ObjektLiveSettings live;
     @MockitoBean EventService eventService;
-    @MockitoBean ShopService shopService;
     @MockitoBean ObjektFavoriteService favorites;
     @MockitoBean ObjektFavoriteRepository favoriteRepository;
     @MockitoBean ObjektDescriptionRepository descriptions;
+    @MockitoBean ObjektDescriptionScopeRepository descriptionScopes;
     @MockitoBean AboutAdminAuth admin;
 
     /** Mirrors ObjektService.findByKey indexing so detail routes resolve under the mock catalog. */
@@ -245,6 +249,22 @@ class ObjektFeaturesTest {
                 .andExpect(redirectedUrl("/cosmo/objekt?group=members&member=HaYeon"));
     }
 
+    @Test void motionDetailUsesApolloVideoWhenFrontMediaIsMissing() throws Exception {
+        var item = new LinkedHashMap<String, Object>();
+        item.put("id", "uuid");
+        item.put("slug", "cream02-kaede-504z");
+        item.put("collectionId", "Cream02 Kaede 504Z");
+        item.put("member", "Kaede");
+        item.put("season", "Cream02");
+        item.put("class", "Motion");
+        item.put("artist", "triples");
+        item.put("collectionNo", "504Z");
+        stubCatalog(List.of(item));
+        mvc.perform(get("/cosmo/objekt/detail/cream02-kaede-504z").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.frontMedia").value("https://cdn.apollo.cafe/mco/triples/cream02-kaede-504z.mp4"));
+    }
+
     @Test void realIndexSlugResolvesShortPublicAliasAndPreservesUpstreamAlias() throws Exception {
         var item = Map.<String,Object>of("id","uuid","slug","cream02-hayeon-367z","season","Cream02","collectionNo","367Z","member","HaYeon");
         stubCatalog(List.of(item));
@@ -303,7 +323,42 @@ class ObjektFeaturesTest {
         mvc.perform(post("/cosmo/objekt/detail/b/description").accept(MediaType.APPLICATION_JSON).param("description",""))
                 .andExpect(status().isOk());
         mvc.perform(get("/cosmo/objekt/detail/a").accept(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.description").value(""));
+                .andExpect(jsonPath("$.description").value(""))
+                .andExpect(jsonPath("$.descriptionScope").value("group"))
+                .andExpect(jsonPath("$.descriptionGroupCount").value(2));
+    }
+
+    @Test void adminCanSplitOrReunifyTheSameCollectionNumber() throws Exception {
+        var a = Map.<String,Object>of("id","a","slug","cream02-seoyeon-323","season","Cream02",
+                "collectionNo","323","member","SeoYeon");
+        var b = Map.<String,Object>of("id","b","slug","cream02-yubin-323","season","Cream02",
+                "collectionNo","323","member","YuBin");
+        stubCatalog(List.of(a,b));
+        var stored = new java.util.HashMap<String,com.example.triplesweb.entity.ObjektDescription>();
+        when(descriptions.findByObjektKey(anyString())).thenAnswer(call -> java.util.Optional.ofNullable(stored.get(call.getArgument(0))));
+        when(descriptions.save(any())).thenAnswer(call -> {
+            com.example.triplesweb.entity.ObjektDescription value=call.getArgument(0);
+            stored.put(value.getObjektKey(),value); return value;
+        });
+        mvc.perform(post("/cosmo/objekt/detail/a/description").accept(MediaType.APPLICATION_JSON)
+                        .param("description","공통").param("scope","group"))
+                .andExpect(jsonPath("$.description").value("공통"))
+                .andExpect(jsonPath("$.descriptionScope").value("group"));
+        mvc.perform(get("/cosmo/objekt/detail/b").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.description").value("공통"));
+        mvc.perform(post("/cosmo/objekt/detail/a/description").accept(MediaType.APPLICATION_JSON)
+                        .param("description","서연만").param("scope","member"))
+                .andExpect(jsonPath("$.description").value("서연만"))
+                .andExpect(jsonPath("$.descriptionScope").value("member"));
+        mvc.perform(get("/cosmo/objekt/detail/b").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.description").value("공통"))
+                .andExpect(jsonPath("$.descriptionScope").value("member"));
+        mvc.perform(post("/cosmo/objekt/detail/a/description").accept(MediaType.APPLICATION_JSON)
+                        .param("description","다시 공통").param("scope","group"))
+                .andExpect(jsonPath("$.descriptionScope").value("group"));
+        mvc.perform(get("/cosmo/objekt/detail/b").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.description").value("다시 공통"))
+                .andExpect(jsonPath("$.descriptionScope").value("group"));
     }
 
     @Test void memberSpecificNumbersKeepSeparateDescriptions() throws Exception {
@@ -386,6 +441,9 @@ class ObjektFeaturesTest {
             .contains("/images/objekt-member-logos/s19.png")
             .contains("id=\"objektDescriptionEdit\"")
             .contains("수정하기")
+            .contains("id=\"objektDescriptionScope\"")
+            .contains("이 번호 일괄 수정")
+            .contains("이 오브젝트만 수정")
             .contains("id=\"objekt-kind-by-class\"")
             .contains("\"Special\":[\"367Z\"]")
             .doesNotContain("관리자 · 상세 설명 편집")
@@ -413,7 +471,6 @@ class ObjektFeaturesTest {
         when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
         mvc.perform(get("/cosmo/objekt")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("data-scroll-top")))
-                .andExpect(content().string(not(containsString("header-objekt-jump"))))
                 .andExpect(content().string(not(containsString("objekt-head-mints"))))
                 .andExpect(content().string(not(containsString("발행량 7,193,056개"))))
                 .andExpect(content().string(containsString("objekt-card-supply")))
@@ -537,6 +594,35 @@ class ObjektFeaturesTest {
             org.assertj.core.api.Assertions.assertThat(slice).hasSizeLessThanOrEqualTo(20);
         }
         verify(market, never()).withMintCounts(argThat(list -> list != null && list.size() > 20));
+        verify(market, never()).withIssuedSupply(anyList());
+    }
+
+    @Test void pulseReturnsMemorySnapshotWithoutSerialFetch() throws Exception {
+        var item = new LinkedHashMap<String, Object>();
+        item.put("id", "uuid");
+        item.put("slug", "hayeoncc367z");
+        item.put("collectionId", "Cream02 HaYeon 367Z");
+        stubCatalog(List.of(item));
+        when(catalog.catalogSignature()).thenReturn("1:ab");
+        when(catalog.catalogCount()).thenReturn(1);
+        when(catalog.getLastSuccessfulRefreshMillis()).thenReturn(50L);
+        when(market.mintsSignature()).thenReturn("1:cd");
+        when(market.mintsRefreshedAt()).thenReturn(60L);
+        when(market.mintCount("hayeoncc367z")).thenReturn(90L);
+        when(live.dropWindow()).thenReturn(false);
+        when(live.pollMs()).thenReturn(20000L);
+        when(live.forceRefreshMs()).thenReturn(600000L);
+        when(live.historyTtlMs()).thenReturn(30000L);
+        mvc.perform(get("/cosmo/objekt/pulse").param("key", "uuid"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.catalogSig").value("1:ab"))
+                .andExpect(jsonPath("$.catalogCount").value(1))
+                .andExpect(jsonPath("$.dropWindow").value(false))
+                .andExpect(jsonPath("$.pollMs").value(20000))
+                .andExpect(jsonPath("$.forceRefreshMs").value(600000))
+                .andExpect(jsonPath("$.supplies.uuid.status").value("available"))
+                .andExpect(jsonPath("$.supplies.uuid.count").value(90));
+        verify(market, never()).issuedSupply(any(), anyInt(), anyInt());
     }
 }
 

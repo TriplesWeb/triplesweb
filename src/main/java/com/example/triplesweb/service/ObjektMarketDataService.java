@@ -29,7 +29,10 @@ public class ObjektMarketDataService {
     private final RestClient rpc;
     private final String contract;
     private final ObjektSerialSupplyService serialSupply;
+    private final ObjektLiveSettings live;
     private volatile Map<String, Long> mintCounts = Map.of();
+    private volatile String mintsSignature = "0:0";
+    private volatile long mintsRefreshedAt;
     private final ConcurrentHashMap<String, NicknameCache> nicknames = new ConcurrentHashMap<>();
 
     @Autowired
@@ -38,7 +41,7 @@ public class ObjektMarketDataService {
             @Value("${cosmo.api.base-url:https://api.cosmo.fans}") String cosmoUrl,
             @Value("${abstract.indexer.rpc-url:https://api.mainnet.abs.xyz}") String rpcUrl,
             @Value("${abstract.indexer.contract:0x99Bb83AE9bb0C0A6be865CaCF67760947f91Cb70}") String contract,
-            ObjektIndexClient historyIndex, ObjektSerialSupplyService serialSupply) {
+            ObjektIndexClient historyIndex, ObjektSerialSupplyService serialSupply, ObjektLiveSettings live) {
         var factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(3)).build());
         factory.setReadTimeout(Duration.ofSeconds(6));
@@ -48,15 +51,29 @@ public class ObjektMarketDataService {
         this.contract = contract;
         this.historyIndex = historyIndex;
         this.serialSupply = serialSupply;
+        this.live = live;
     }
 
     ObjektMarketDataService(String indexUrl, String cosmoUrl, String rpcUrl, String contract) {
-        this(indexUrl, cosmoUrl, rpcUrl, contract, new ObjektIndexClient(indexUrl), new ObjektSerialSupplyService(indexUrl));
+        this(indexUrl, cosmoUrl, rpcUrl, contract, new ObjektIndexClient(indexUrl), new ObjektSerialSupplyService(indexUrl), null);
+    }
+
+    public String mintsSignature() {
+        return mintsSignature;
+    }
+
+    public long mintsRefreshedAt() {
+        return mintsRefreshedAt;
     }
 
     // One bulk request, never one request per card or an on-demand whole-chain scan.
 
-    @Scheduled(fixedDelayString = "${objekt.mints.refresh-ms:60000}", initialDelayString = "${objekt.mints.initial-delay-ms:1000}")
+    @Scheduled(fixedDelayString = "${objekt.live.tick-ms:15000}", initialDelayString = "${objekt.mints.initial-delay-ms:1000}")
+    void refreshMintCountsIfDue() {
+        if (live != null && !live.due(mintsRefreshedAt)) return;
+        refreshMintCounts();
+    }
+
     public void refreshMintCounts() {
         try {
             JsonNode rows = index.get().uri("/collections/rarity").retrieve().body(JsonNode.class);
@@ -69,9 +86,20 @@ public class ObjektMarketDataService {
                 if (next.putIfAbsent(slug, row.path("count").asLong()) != null) return;
             }
             mintCounts = Map.copyOf(next);
+            mintsSignature = signature(next);
+            mintsRefreshedAt = System.currentTimeMillis();
         } catch (RuntimeException ignored) {
             // Preserve the last complete snapshot; unknown values must not become zero.
         }
+    }
+
+    static String signature(Map<String, Long> counts) {
+        int hash = counts.size();
+        for (Map.Entry<String, Long> entry : counts.entrySet()) {
+            hash = 31 * hash + entry.getKey().hashCode();
+            hash = 31 * hash + Long.hashCode(entry.getValue() == null ? 0L : entry.getValue());
+        }
+        return counts.size() + ":" + Integer.toHexString(hash);
     }
 
     public List<Map<String, Object>> withMintCounts(List<Map<String, Object>> items) {

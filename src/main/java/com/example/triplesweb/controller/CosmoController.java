@@ -6,7 +6,7 @@ import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.EventService;
 import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.ObjektMarketDataService;
-import com.example.triplesweb.service.ShopService;
+import com.example.triplesweb.service.ObjektLiveSettings;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektCatalogSort;
 import com.example.triplesweb.util.ObjektLinks;
@@ -45,7 +45,7 @@ public class CosmoController {
     private final ArtistSnapshotService artistSnapshot;
     private final ObjektMarketDataService marketData;
     private final EventService eventService;
-    private final ShopService shopService;
+    private final ObjektLiveSettings live;
 
     @GetMapping("/objekt")
     public String indexCosmoObjekt(
@@ -126,6 +126,39 @@ public class CosmoController {
         return ResponseEntity.ok(body);
     }
 
+    /**
+     * 브라우저 라이브 폴링용. 메모리 스냅샷만 돌려 외부 API와 페이지 렌더를 다시 하지 않는다.
+     */
+    @GetMapping("/objekt/pulse")
+    @ResponseBody
+    public Map<String, Object> objektPulse(
+            @RequestParam(name = "key", required = false) List<String> keys
+    ) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("catalogSig", objektService.catalogSignature());
+        body.put("catalogCount", objektService.catalogCount());
+        body.put("catalogAt", objektService.getLastSuccessfulRefreshMillis());
+        body.put("mintsSig", marketData.mintsSignature());
+        body.put("mintsAt", marketData.mintsRefreshedAt());
+        Map<String, Object> supplies = new LinkedHashMap<>();
+        if (keys != null) {
+            for (String key : keys.stream().filter(Objects::nonNull).map(String::trim)
+                    .filter(value -> !value.isBlank()).distinct().limit(24).toList()) {
+                Map<String, Object> item = objektService.findByKey(key);
+                if (item == null) continue;
+                Long count = marketData.mintCount(firstValue(item, "slug", "id"));
+                if (count == null) continue;
+                supplies.put(key, Map.of("status", "available", "count", count));
+            }
+        }
+        body.put("supplies", supplies);
+        body.put("dropWindow", live.dropWindow());
+        body.put("pollMs", live.pollMs());
+        body.put("forceRefreshMs", live.forceRefreshMs());
+        body.put("historyTtlMs", live.historyTtlMs());
+        return body;
+    }
+
     private ObjektPageResult loadObjektPage(
             int page,
             String search,
@@ -182,7 +215,7 @@ public class CosmoController {
         int fromIndex = safePage * PAGE_SIZE;
         int toIndex = Math.min(fromIndex + PAGE_SIZE, resultCount);
         List<Map<String, Object>> pageSlice = filtered.subList(fromIndex, toIndex);
-        List<Map<String, Object>> pageObjekts = marketData.withIssuedSupply(marketData.withMintCounts(pageSlice));
+        List<Map<String, Object>> pageObjekts = marketData.withMintCounts(pageSlice);
         if (pageObjekts == null) pageObjekts = pageSlice;
         boolean hasMore = toIndex < resultCount;
 
@@ -324,10 +357,6 @@ public class CosmoController {
         try {
             Event event = eventService.getDetail(eventId);
             model.addAttribute("event", event);
-            shopService.findIdByEventId(eventId).ifPresent(shopId -> {
-                model.addAttribute("shopId", shopId);
-                model.addAttribute("hasShopLink", true);
-            });
             return "cosmo/event_detail";
         } catch (IllegalArgumentException e) {
             throw new org.springframework.web.server.ResponseStatusException(

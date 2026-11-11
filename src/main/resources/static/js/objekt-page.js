@@ -266,9 +266,17 @@
     sortToggle.hidden = false;
 
     if (kindSelect && kindMenu) {
+        kindSelect.addEventListener('beforeinput', (event) => {
+            if (window.ObjektKindCombo) ObjektKindCombo.rejectKindBeforeInput(event);
+            else if (event.data && /[^A-Za-z0-9]/.test(event.data)) event.preventDefault();
+        });
         kindSelect.addEventListener('focus', () => openKindMenu(false));
         kindSelect.addEventListener('click', () => openKindMenu(false));
         kindSelect.addEventListener('input', () => {
+            const cleaned = window.ObjektKindCombo
+                ? ObjektKindCombo.sanitizeKind(kindSelect.value)
+                : String(kindSelect.value || '').replace(/[^A-Za-z0-9]/g, '');
+            if (kindSelect.value !== cleaned) kindSelect.value = cleaned;
             openKindMenu(false);
             markActiveFilters();
         });
@@ -561,6 +569,7 @@
 
     const detailModal = document.getElementById('objektDetailModal');
     const detailImage = document.getElementById('objektDetailImage');
+    const detailVideo = document.getElementById('objektDetailVideo');
     const detailFlip = document.getElementById('objektDetailFlip');
     const detailFace = document.getElementById('objektDetailFace');
     const detailTitle = document.getElementById('objektDetailTitle');
@@ -580,11 +589,15 @@
     const descriptionInput = document.getElementById('objektModalDescription');
     const descriptionStatus = document.getElementById('objektDescriptionStatus');
     const descriptionDelete = document.getElementById('objektDescriptionDelete');
+    const descriptionScope = document.getElementById('objektDescriptionScope');
+    const descriptionScopeHint = document.getElementById('objektDescriptionScopeHint');
     let descriptionUrl = '', descriptionSaving = false, detailRequest = 0;
+    let descriptionMeta = {scope: 'single', label: '', count: 1};
     let activeObjektKey = '';
     let detailLoading = false;
     let isAdmin = false;
     let lastStoryText = '';
+    let detailOpenedAt = 0;
 
     function csrfHeaders(extra) {
         const headers = new Headers(extra || {});
@@ -604,28 +617,119 @@
         detailFavorite.dataset.favorite = on ? 'true' : 'false';
     }
 
+    function safeMediaUrl(raw) {
+        const value = String(raw || '').trim();
+        if (!/^https?:\/\//i.test(value)) return '';
+        try {
+            const url = new URL(value);
+            if (url.protocol !== 'http:' && url.protocol !== 'https:') return '';
+            return url.href;
+        } catch (_) {
+            return '';
+        }
+    }
+
+    function stopDetailMotion() {
+        if (!detailVideo) return;
+        detailVideo.dataset.active = 'false';
+        try { detailVideo.pause(); } catch (_) { /* ignore */ }
+        detailVideo.removeAttribute('src');
+        detailVideo.hidden = true;
+    }
+
+    function showStillImage(url) {
+        if (!detailImage) return;
+        detailImage.hidden = false;
+        detailImage.src = url || '';
+        if (detailVideo) detailVideo.hidden = true;
+    }
+
+    function playDetailVideo() {
+        if (!detailVideo || detailVideo.dataset.active !== 'true') return;
+        if (detailImage) detailImage.hidden = true;
+        detailVideo.hidden = false;
+        try {
+            const play = detailVideo.play();
+            if (play && typeof play.catch === 'function') play.catch(() => {
+                showStillImage(detailImage?.dataset.front || '');
+            });
+        } catch (_) {
+            showStillImage(detailImage?.dataset.front || '');
+        }
+    }
+    detailVideo?.addEventListener('error', () => {
+        if (detailVideo.dataset.active !== 'true') return;
+        stopDetailMotion();
+        showStillImage(detailImage?.dataset.front || '');
+    });
+
+    function motionMediaUrl(data) {
+        const existing = safeMediaUrl(data?.frontMedia);
+        if (existing) return existing;
+        if (String(data?.class || '').toLowerCase() !== 'motion') return '';
+        const slug = String(data?.slug || '').trim().toLowerCase();
+        if (!/^[a-z0-9]+(?:-[a-z0-9]+)+$/.test(slug)) return '';
+        const artist = String(data?.artist || 'triples').trim().toLowerCase() || 'triples';
+        return `https://cdn.apollo.cafe/mco/${artist}/${slug}.mp4`;
+    }
+
+    function applyDetailMotion(data, frontUrl) {
+        stopDetailMotion();
+        if (detailImage) detailImage.dataset.motion = '';
+        showStillImage(frontUrl);
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const motion = String(data?.class || '').toLowerCase() === 'motion';
+        const media = motionMediaUrl(data);
+        if (!motion || !media || reduce) return;
+        if (/\.(gif|webp|apng|png|jpe?g)(\?|#|$)/i.test(media) && detailImage) {
+            detailImage.dataset.motion = media;
+            detailImage.src = media;
+            return;
+        }
+        if (!detailVideo) return;
+        detailVideo.dataset.active = 'true';
+        detailVideo.src = media;
+        playDetailVideo();
+    }
+
     function resetModalFlip(front, back, hasBack) {
         if (!detailImage || !detailFlip || !detailFace) return;
         const frontUrl = front || '';
         const backUrl = hasBack ? (back || '') : '';
+        stopDetailMotion();
         detailImage.dataset.front = frontUrl;
         detailImage.dataset.back = backUrl;
+        detailImage.dataset.motion = '';
         detailImage.dataset.showingBack = 'false';
-        detailImage.src = frontUrl;
+        showStillImage(frontUrl);
+        detailFace.hidden = !hasBack;
         detailFace.textContent = '앞면';
-        detailFlip.disabled = !hasBack;
+        detailFlip.disabled = false;
         detailFlip.classList.toggle('is-flippable', Boolean(hasBack));
-        detailFlip.setAttribute('aria-label', hasBack ? '이미지 클릭 시 뒷면으로 전환' : '앞면');
+        detailFlip.setAttribute('aria-disabled', hasBack ? 'false' : 'true');
+        detailFlip.tabIndex = hasBack ? 0 : -1;
+        detailFlip.setAttribute('aria-label', hasBack ? '이미지 클릭 시 뒷면으로 전환' : '오브젝트 이미지');
     }
 
     function flipModalImage() {
-        if (!detailImage || !detailFlip || detailFlip.disabled) return;
+        if (!detailImage || !detailFlip || !detailFlip.classList.contains('is-flippable')) return;
         const showingBack = detailImage.dataset.showingBack === 'true';
-        const next = showingBack ? detailImage.dataset.front : detailImage.dataset.back;
-        if (!next) return;
-        detailImage.src = next;
+        const next = showingBack ? (detailImage.dataset.motion || detailImage.dataset.front) : detailImage.dataset.back;
+        if (!next && !(showingBack && detailVideo?.dataset.active === 'true')) return;
         detailImage.dataset.showingBack = showingBack ? 'false' : 'true';
-        if (detailFace) detailFace.textContent = showingBack ? '앞면' : '뒷면';
+        if (showingBack && detailVideo?.dataset.active === 'true') {
+            playDetailVideo();
+        } else {
+            if (detailVideo) {
+                detailVideo.pause();
+                detailVideo.hidden = true;
+            }
+            showStillImage(next);
+        }
+        if (detailFace) {
+            detailFace.hidden = false;
+            detailFace.textContent = showingBack ? '앞면' : '뒷면';
+        }
         detailFlip.setAttribute('aria-label', showingBack ? '이미지 클릭 시 뒷면으로 전환' : '이미지 클릭 시 앞면으로 전환');
     }
 
@@ -695,12 +799,47 @@
         }
     }
 
+    function selectedDescriptionScope() {
+        const checked = descriptionForm?.querySelector('input[name="descriptionScope"]:checked');
+        return checked && checked.value === 'member' ? 'member' : 'group';
+    }
+
+    function descriptionScopeHintText(scope) {
+        const label = descriptionMeta.label || '이 번호';
+        const count = descriptionMeta.count || 1;
+        if (scope === 'member') return '이 카드만 바꿉니다. 같은 번호의 다른 멤버는 그대로 둡니다.';
+        if (count > 1) return label + ' 전체 ' + count + '장에 같은 설명을 넣습니다.';
+        return label + ' 설명에 적용합니다.';
+    }
+
+    function syncDescriptionScopeUi() {
+        if (!descriptionScope) return;
+        const canGroup = descriptionMeta.scope === 'group' || descriptionMeta.scope === 'member';
+        descriptionScope.hidden = !canGroup;
+        if (!canGroup) return;
+        const preferred = descriptionMeta.scope === 'member' ? 'member' : 'group';
+        const radio = descriptionForm?.querySelector('input[name="descriptionScope"][value="' + preferred + '"]');
+        if (radio) radio.checked = true;
+        if (descriptionScopeHint) descriptionScopeHint.textContent = descriptionScopeHintText(preferred);
+    }
+
+    function rememberDescriptionMeta(data) {
+        const count = Number(data && data.descriptionGroupCount);
+        descriptionMeta = {
+            scope: data && data.descriptionScope === 'member' ? 'member'
+                : data && data.descriptionScope === 'group' ? 'group' : 'single',
+            label: String(data && data.descriptionGroupLabel || '').trim(),
+            count: Number.isFinite(count) && count > 0 ? count : 1
+        };
+    }
+
     function exitDescriptionEdit() {
         if (descriptionForm) descriptionForm.hidden = true;
         if (detailDesc) detailDesc.hidden = false;
         if (descriptionEdit) descriptionEdit.hidden = !isAdmin;
         if (descriptionStatus) descriptionStatus.textContent = '';
         if (descriptionInput) descriptionInput.value = lastStoryText;
+        if (descriptionScope) descriptionScope.hidden = true;
     }
 
     function enterDescriptionEdit() {
@@ -710,6 +849,7 @@
         descriptionForm.hidden = false;
         if (descriptionEdit) descriptionEdit.hidden = true;
         if (descriptionStatus) descriptionStatus.textContent = '';
+        syncDescriptionScopeUi();
         descriptionInput.focus();
     }
 
@@ -730,9 +870,11 @@
         if (detailNo) detailNo.textContent = data.collectionNo || '—';
         fillDetailStory(data);
         if (detailImage) detailImage.alt = data.collectionId || '';
-        resetModalFlip(data.frontImage || data.thumbnailImage || '', data.backImage || '', Boolean(data.hasBack));
+        const frontUrl = data.frontImage || data.thumbnailImage || '';
+        resetModalFlip(frontUrl, data.backImage || '', Boolean(data.hasBack));
+        applyDetailMotion(data, frontUrl);
         setFavoriteButton(Boolean(data.isFavorite));
-        detailFavorite.disabled = false;
+        if (detailFavorite) detailFavorite.disabled = false;
         const actions = document.querySelector('.objekt-detail-actions');
         if (actions) actions.inert = false;
         document.getElementById('objektFavoriteStatus').hidden = true;
@@ -752,10 +894,12 @@
         history.replaceState(null, '', address.pathname + address.search);
         isAdmin = Boolean(data.isAdmin);
         descriptionUrl = data.descriptionUrl || '';
+        rememberDescriptionMeta(data);
         exitDescriptionEdit();
     }
 
     function finishDetailClose() {
+        stopDetailMotion();
         window.ObjektIssued?.close();
         window.ObjektSerialLookup?.setCollection('');
         detailModal.classList.remove('is-open');
@@ -763,6 +907,7 @@
         activeObjektKey = '';
         lastStoryText = '';
         isAdmin = false;
+        descriptionMeta = {scope: 'single', label: '', count: 1};
         exitDescriptionEdit();
         detailRequest++;
         if (detailFavorite) detailFavorite.dataset.key = '';
@@ -771,8 +916,9 @@
         history.replaceState(null, '', address.pathname + address.search);
     }
 
-    function closeDetailModal() {
+    function closeDetailModal(fromBackdrop) {
         if (!detailModal) return;
+        if (fromBackdrop && Date.now() - detailOpenedAt < 500) return;
         if (window.AboutModal) {
             window.AboutModal.closeModal(detailModal, { onClose: finishDetailClose });
         } else {
@@ -785,19 +931,23 @@
 
     function openDetailModalShell() {
         if (!detailModal) return;
+        detailOpenedAt = Date.now();
+        window.ObjektDropdown?.closeAll();
+        closeKindMenu();
+        closeSortMenu();
         detailModal.hidden = false;
         detailModal.classList.add('is-open');
         detailModal.setAttribute('aria-hidden', 'false');
         if (window.AboutModal) {
             window.AboutModal.openModal(detailModal, {
-                focusSelector: '#objektDetailClose',
+                focusSelector: '.objekt-detail-panel',
                 onClose: finishDetailClose
             });
             detailModal.classList.add('is-open');
         } else {
             detailModal.classList.add('flex');
             document.body.style.overflow = 'hidden';
-            detailClose?.focus();
+            detailModal.querySelector('.objekt-detail-panel')?.focus({ preventScroll: true });
         }
     }
 
@@ -847,34 +997,49 @@
 
     async function saveModalDescription(clear) {
         if (descriptionSaving || !descriptionUrl || !isAdmin || descriptionForm?.hidden) return;
-        if (clear && !window.confirm('이 오브젝트의 상세 설명을 삭제하시겠습니까?')) return;
+        const scope = descriptionScope && !descriptionScope.hidden ? selectedDescriptionScope() : 'single';
+        if (clear) {
+            const message = scope === 'group' && descriptionMeta.count > 1
+                ? (descriptionMeta.label || '이 번호') + ' 전체 설명을 삭제할까요?'
+                : '이 오브젝트의 상세 설명을 삭제하시겠습니까?';
+            if (!window.confirm(message)) return;
+        }
         if (!clear && !descriptionForm.reportValidity()) return;
         const key = activeObjektKey;
         descriptionSaving = true;
-        const buttons = descriptionForm.querySelectorAll('button');
-        buttons.forEach(button => button.disabled = true);
+        const controls = descriptionForm.querySelectorAll('button, input, textarea');
+        controls.forEach(control => control.disabled = true);
         descriptionStatus.textContent = clear ? '삭제 중…' : '저장 중…';
         try {
+            const body = new URLSearchParams({description: clear ? '' : descriptionInput.value});
+            if (scope === 'group' || scope === 'member') body.set('scope', scope);
             const response = await fetch(descriptionUrl, {
                 method: 'POST', headers: csrfHeaders(), credentials: 'same-origin',
-                body: new URLSearchParams({description: clear ? '' : descriptionInput.value})
+                body
             });
             if (!response.ok) throw new Error();
             const data = await response.json();
             if (typeof data.description !== 'string') throw new Error();
             if (activeObjektKey !== key) return;
+            rememberDescriptionMeta(data);
             fillDetailStory({description: data.description});
             exitDescriptionEdit();
-            descriptionStatus.textContent = clear ? '상세 설명을 삭제했습니다.' : '상세 설명을 저장했습니다.';
+            descriptionStatus.textContent = clear
+                ? (scope === 'group' && descriptionMeta.count > 1 ? '이 번호의 상세 설명을 삭제했습니다.' : '상세 설명을 삭제했습니다.')
+                : (scope === 'group' && descriptionMeta.count > 1 ? '이 번호 전체에 설명을 저장했습니다.' : '상세 설명을 저장했습니다.');
         } catch {
             if (activeObjektKey === key) descriptionStatus.textContent = '저장하지 못했습니다. 관리자 로그인 상태를 확인한 뒤 다시 시도해 주세요.';
         } finally {
-            descriptionSaving = false; buttons.forEach(button => button.disabled = false);
+            descriptionSaving = false; controls.forEach(control => control.disabled = false);
         }
     }
     descriptionEdit?.addEventListener('click', enterDescriptionEdit);
     descriptionForm?.addEventListener('submit', event => { event.preventDefault(); saveModalDescription(false); });
     descriptionDelete?.addEventListener('click', () => saveModalDescription(true));
+    descriptionForm?.addEventListener('change', (event) => {
+        if (!(event.target instanceof HTMLInputElement) || event.target.name !== 'descriptionScope') return;
+        if (descriptionScopeHint) descriptionScopeHint.textContent = descriptionScopeHintText(event.target.value);
+    });
 
     function shouldOpenModalFromEvent(event) {
         if (event.defaultPrevented) return false;
@@ -893,12 +1058,13 @@
         if (!openHit) return;
         if (!shouldOpenModalFromEvent(event)) return;
         event.preventDefault();
+        event.stopPropagation();
         openObjektDetail(card.dataset.objektKey);
     });
 
-    detailClose?.addEventListener('click', closeDetailModal);
+    detailClose?.addEventListener('click', () => closeDetailModal(false));
     detailModal?.addEventListener('click', (event) => {
-        if (event.target === detailModal) closeDetailModal();
+        if (event.target === detailModal) closeDetailModal(true);
     });
     detailFlip?.addEventListener('click', flipModalImage);
     detailFavorite?.addEventListener('click', async () => {
@@ -977,7 +1143,7 @@
         return `<article class="card objekt-card objekt-item group relative border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
                  data-objekt-key="${attr(id)}"
                  data-season="${attr(item.seasonKey || season)}" data-class="${attr(item.classKey || klass)}" data-artist="${attr(item.artist || '')}" data-collection-no="${attr(collectionNo)}"
-                 data-number="${attr(item.numberValue || '')}" data-date="${attr(item.createdAt || '')}" data-member="${attr(member)}" data-search="${attr(item.searchText || '')}">
+                 data-number="${attr(item.numberValue || '')}" data-date="${attr(item.createdAt || '')}" data-member="${attr(member)}" data-search="${attr(item.searchText || '')}"${Number.isFinite(item.mintCount) ? ` data-supply-count="${attr(item.mintCount)}" data-supply-done="true"` : ''}>
             <button type="button" class="objekt-open-detail" aria-label="${attr(collectionId)} 상세 보기">
                 <img src="${attr(thumb)}" alt="${attr(collectionId)}" loading="lazy" decoding="async" class="objekt-image" onerror="this.onerror=null;this.src='${attr(front)}';">
             </button>
@@ -990,7 +1156,7 @@
                     ${memberChipHtml(item, member)}
                     ${klass ? `<span class="badge badge-sm badge-neutral objekt-card-class">${escapeHtml(klass)}</span>` : ''}
                 </div>
-                ${Number.isFinite(item.mintCount) ? `<p class="objekt-card-supply">발행량 ${escapeHtml(String(item.mintCount))}개</p>` : ''}
+                <p class="objekt-card-supply" data-supply-count${Number.isFinite(item.mintCount) ? ` data-supply-done="true"` : ''}>${Number.isFinite(item.mintCount) ? `발행량 ${escapeHtml(String(item.mintCount))}개` : '발행량 확인 중'}</p>
             </div>
         </article>`;
     }
@@ -1138,4 +1304,17 @@
 
     const initialObjekt = new URLSearchParams(location.search).get('objekt');
     if (initialObjekt) openObjektDetail(initialObjekt);
+
+    window.ObjektPage = {
+        visibleKeys() {
+            if (!grid) return [];
+            return [...grid.querySelectorAll('.objekt-card[data-objekt-key]')]
+                .map((card) => card.dataset.objektKey)
+                .filter(Boolean)
+                .slice(0, 24);
+        },
+        reloadVisible() {
+            return applyFilters();
+        }
+    };
 })();

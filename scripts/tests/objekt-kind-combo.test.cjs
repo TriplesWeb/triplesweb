@@ -97,6 +97,38 @@ test('kind combo hides options that are not in the selected class', () => {
   assert.equal(specialKind.dataset.classAllowed, 'true');
 });
 
+test('kind combo blocks letters outside English and digits', () => {
+  const combo = loadCombo();
+  const listeners = {};
+  const input = {
+    value: '',
+    dataset: {},
+    closest: () => ({ classList: classList() }),
+    addEventListener(type, fn) { (listeners[type] ||= []).push(fn); },
+    setAttribute() {},
+    focus() {}
+  };
+  const menu = {
+    querySelectorAll: () => [],
+    classList: classList(),
+    hasAttribute: () => true,
+    setAttribute() {},
+    removeAttribute() {},
+    contains: () => false
+  };
+  menu.classList.add('hidden');
+  combo.bindKindCombo({ input, menu, hiddenInput: { value: 'all' }, empty: { hidden: true } });
+  const blocked = { inputType: 'insertText', data: '가', defaultPrevented: false, preventDefault() { this.defaultPrevented = true; } };
+  listeners.beforeinput.forEach((fn) => fn(blocked));
+  assert.equal(blocked.defaultPrevented, true);
+  const allowed = { inputType: 'insertText', data: '12A', defaultPrevented: false, preventDefault() { this.defaultPrevented = true; } };
+  listeners.beforeinput.forEach((fn) => fn(allowed));
+  assert.equal(allowed.defaultPrevented, false);
+  input.value = '12가A-';
+  listeners.input.forEach((fn) => fn());
+  assert.equal(input.value, '12A');
+});
+
 test('kind combo shows every kind when no class is selected', () => {
   const all = option('all');
   const doubleKind = option('101Z');
