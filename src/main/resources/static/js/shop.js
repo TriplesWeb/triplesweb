@@ -172,8 +172,29 @@
     return ok;
   }
 
+  function selectedSectionIsFromEvent() {
+    const id = document.getElementById("shopEditSectionId")?.value;
+    if (!id) return false;
+    const section = sectionOptions.find((s) => String(s.sectionId) === String(id));
+    return Boolean(section?.fromEvent);
+  }
+
   function hasLinkedEvent() {
-    return Boolean(document.getElementById("shopEditEventId")?.value);
+    return selectedSectionIsFromEvent()
+      && Boolean(document.getElementById("shopEditEventId")?.value);
+  }
+
+  function syncEventFieldVisibility(preferredEventId) {
+    const label = document.getElementById("shopEditEventLabel");
+    const sel = document.getElementById("shopEditEventId");
+    const show = selectedSectionIsFromEvent();
+    if (label) label.hidden = !show;
+    if (!show) {
+      if (sel) sel.value = "";
+    } else {
+      fillEventSelect(preferredEventId ?? sel?.value ?? null);
+    }
+    setMdEditorMode();
   }
 
   function emptyCategory() {
@@ -498,7 +519,7 @@
   function fillEventSelect(selectedId) {
     const sel = document.getElementById("shopEditEventId");
     if (!sel) return;
-    const blank = '<option value="">공연 없음 (별도 MD)</option>';
+    const blank = '<option value="">공연을 선택하세요</option>';
     const options = eventOptions.length
       ? eventOptions.map((e) =>
           `<option value="${e.eventId}" ${String(e.eventId) === String(selectedId || "") ? "selected" : ""}>${escapeAttr(e.eventName)}</option>`
@@ -574,7 +595,7 @@
     if (deleteBtn) deleteBtn.classList.toggle("hidden", !id);
 
     fillSectionSelect(null);
-    fillEventSelect(null);
+    let loadedEventId = null;
 
     if (id) {
       const res = await apiFetch(API + "/" + id);
@@ -588,13 +609,13 @@
       mdRegions = parseMdDocument(data.mdList || "");
       if (!mdRegions.length) mdRegions = [emptyRegion()];
       fillSectionSelect(data.sectionId);
-      fillEventSelect(data.eventId);
+      loadedEventId = data.eventId || null;
       if (data.coverImage && preview) {
         preview.src = data.coverImage;
         preview.classList.remove("hidden");
       }
     }
-    setMdEditorMode();
+    syncEventFieldVisibility(loadedEventId);
     openModal("shopEditModal");
   }
 
@@ -630,6 +651,11 @@
       }
       preview.src = URL.createObjectURL(file);
       preview.classList.remove("hidden");
+    });
+
+    document.getElementById("shopEditSectionId")?.addEventListener("change", () => {
+      syncMdBuilderFromDom();
+      syncEventFieldVisibility(null);
     });
 
     document.getElementById("shopEditEventId")?.addEventListener("change", (e) => {
@@ -826,7 +852,10 @@
       const err = document.getElementById("shopEditError");
       const id = document.getElementById("shopEditId").value;
       const title = document.getElementById("shopEditCardName")?.value?.trim() || "";
-      const eventId = document.getElementById("shopEditEventId").value;
+      const fromEventSection = selectedSectionIsFromEvent();
+      const eventId = fromEventSection
+        ? (document.getElementById("shopEditEventId")?.value || "")
+        : "";
       syncMdBuilderFromDom();
       const linked = Boolean(eventId);
       if (!syncAllShopDateRanges()) {
@@ -836,6 +865,10 @@
       let salesPeriod = linked ? summarizeRegionSalesPeriods() : readSalesPeriod();
       if (!title) {
         if (err) { err.hidden = false; err.textContent = "카드 이름을 입력해 주세요."; }
+        return;
+      }
+      if (fromEventSection && !eventId) {
+        if (err) { err.hidden = false; err.textContent = "공연을 선택해 주세요."; }
         return;
       }
       if (!salesPeriod) {
