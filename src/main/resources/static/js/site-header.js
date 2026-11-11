@@ -74,6 +74,15 @@
       setMobileMenuOpen(willOpen);
     });
 
+    mobileMenu.querySelectorAll("[data-mobile-menu-close]").forEach(function (btn) {
+      btn.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        setMobileMenuOpen(false);
+        mobileMenuBtn.focus();
+      });
+    });
+
     mobileMenu.querySelectorAll(".mobile-nav-toggle").forEach(function (btn) {
       btn.setAttribute("aria-expanded", "false");
       btn.addEventListener("click", function () {
@@ -206,12 +215,20 @@
   const COSMO_RECENTS_KEY = "cosmo-nickname-recents";
   const ALERTS_CATALOG_KEY = "site-alerts-catalog-sig";
   const ALERTS_NOTICE_KEY = "site-alerts-notice-id";
-  const cosmoOpen = document.querySelector("[data-cosmo-id-open]");
+  const cosmoOpens = document.querySelectorAll("[data-cosmo-id-open]");
   const cosmoPanel = document.querySelector("[data-cosmo-id-panel]");
-  const alertsOpen = document.querySelector("[data-alerts-open]");
+  const alertsOpens = document.querySelectorAll("[data-alerts-open]");
   const alertsPanel = document.querySelector("[data-alerts-panel]");
-  const alertsBadge = document.querySelector("[data-alerts-badge]");
+  const alertsBadges = document.querySelectorAll("[data-alerts-badge]");
   let alertsCache = null;
+
+  function nodeListContains(nodes, target) {
+    return Array.from(nodes).some((node) => node.contains(target));
+  }
+
+  function setExpanded(nodes, open) {
+    nodes.forEach((node) => node.setAttribute("aria-expanded", open ? "true" : "false"));
+  }
 
   function loadNicknameRecents() {
     try {
@@ -249,7 +266,7 @@
   }
 
   function setCosmoIdOpen(open) {
-    if (!cosmoOpen || !cosmoPanel) return;
+    if (!cosmoPanel) return;
     if (open) {
       setMobileMenuOpen(false);
       setHeaderSearchOpen(false);
@@ -257,7 +274,7 @@
       renderCosmoIdPanel();
     }
     cosmoPanel.hidden = !open;
-    cosmoOpen.setAttribute("aria-expanded", open ? "true" : "false");
+    setExpanded(cosmoOpens, open);
     if (open) {
       const input = cosmoPanel.querySelector("[data-cosmo-id-input]");
       if (input) requestAnimationFrame(() => input.focus());
@@ -265,7 +282,7 @@
   }
 
   function setAlertsOpen(open) {
-    if (!alertsOpen || !alertsPanel) return;
+    if (!alertsPanel) return;
     if (open) {
       setMobileMenuOpen(false);
       setHeaderSearchOpen(false);
@@ -273,7 +290,7 @@
       loadAlerts(true);
     }
     alertsPanel.hidden = !open;
-    alertsOpen.setAttribute("aria-expanded", open ? "true" : "false");
+    setExpanded(alertsOpens, open);
   }
 
   function markAlertsSeen(data) {
@@ -283,7 +300,7 @@
       const noticeId = data.notices && data.notices[0] && data.notices[0].id;
       if (noticeId != null) localStorage.setItem(ALERTS_NOTICE_KEY, String(noticeId));
     } catch (_) {}
-    if (alertsBadge) alertsBadge.hidden = true;
+    alertsBadges.forEach((badge) => { badge.hidden = true; });
   }
 
   function hasUnreadAlerts(data) {
@@ -370,7 +387,7 @@
   function loadAlerts(markSeen) {
     const apply = (data) => {
       alertsCache = data;
-      if (alertsBadge) alertsBadge.hidden = !hasUnreadAlerts(data);
+      alertsBadges.forEach((badge) => { badge.hidden = !hasUnreadAlerts(data); });
       if (markSeen) {
         renderAlerts(data);
         markAlertsSeen(data);
@@ -384,23 +401,27 @@
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then(apply)
       .catch(() => {
-        if (alertsBadge) alertsBadge.hidden = true;
+        alertsBadges.forEach((badge) => { badge.hidden = true; });
         if (markSeen) renderAlerts(null);
       });
   }
 
-  if (cosmoOpen && cosmoPanel) {
-    cosmoOpen.addEventListener("click", function (event) {
-      event.preventDefault();
-      event.stopPropagation();
-      setCosmoIdOpen(cosmoPanel.hidden);
+  if (cosmoPanel) {
+    cosmoOpens.forEach((btn) => {
+      btn.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        setCosmoIdOpen(cosmoPanel.hidden);
+      });
     });
   }
-  if (alertsOpen && alertsPanel) {
-    alertsOpen.addEventListener("click", function (event) {
-      event.preventDefault();
-      event.stopPropagation();
-      setAlertsOpen(alertsPanel.hidden);
+  if (alertsPanel) {
+    alertsOpens.forEach((btn) => {
+      btn.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        setAlertsOpen(alertsPanel.hidden);
+      });
     });
   }
 
@@ -408,12 +429,14 @@
     if (event.key !== "Escape") return;
     if (cosmoPanel && !cosmoPanel.hidden) {
       setCosmoIdOpen(false);
-      if (cosmoOpen) cosmoOpen.focus();
+      const visible = Array.from(cosmoOpens).find((btn) => btn.offsetParent !== null);
+      if (visible) visible.focus();
       return;
     }
     if (alertsPanel && !alertsPanel.hidden) {
       setAlertsOpen(false);
-      if (alertsOpen) alertsOpen.focus();
+      const visible = Array.from(alertsOpens).find((btn) => btn.offsetParent !== null);
+      if (visible) visible.focus();
     }
   });
 
@@ -422,11 +445,11 @@
     if (!(target instanceof Node)) return;
     if (cosmoPanel && !cosmoPanel.hidden) {
       const wrap = cosmoPanel.closest(".site-header-popover-wrap") || cosmoPanel;
-      if (!wrap.contains(target)) setCosmoIdOpen(false);
+      if (!wrap.contains(target) && !nodeListContains(cosmoOpens, target)) setCosmoIdOpen(false);
     }
     if (alertsPanel && !alertsPanel.hidden) {
       const wrap = alertsPanel.closest(".site-header-popover-wrap") || alertsPanel;
-      if (!wrap.contains(target)) setAlertsOpen(false);
+      if (!wrap.contains(target) && !nodeListContains(alertsOpens, target)) setAlertsOpen(false);
     }
   });
 

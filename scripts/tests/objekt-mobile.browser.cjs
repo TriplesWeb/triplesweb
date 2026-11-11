@@ -34,8 +34,12 @@ const base=path.resolve(__dirname,'../..'), fixtures=path.join(base,'build/mobil
     }).slice(0,8).map(n=>({tag:n.tagName,cls:n.className,text:n.textContent.slice(0,90),right:n.getBoundingClientRect().right})));
     if(offending.length)failures.push({engine:'chromium',width,file,offending});
     if(file==='header-home.html'||file==='main.mustache.html'||file==='header-auth.html'||file==='header-bare.html'){
-      assert.equal(await page.locator('.header-objekt-jump').isVisible(),true);
+      assert.equal(await page.locator('.header-objekt-jump').isVisible(),false);
       assert.equal(await page.locator('.header-objekt-jump').getAttribute('href'),'/cosmo/objekt');
+      await page.locator('#mobile-menu-btn').click();
+      assert.equal(await page.locator('#mobile-menu a.mobile-shortcut[href="/cosmo/objekt"]').isVisible(),true);
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(()=>document.getElementById('mobile-menu').classList.contains('hidden'));
     }
     if(file==='cosmo_profile.mustache.html'){
       assert.equal(await page.locator('.profile-progress-track').count(),0);
