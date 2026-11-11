@@ -322,10 +322,8 @@
     const linked = hasLinkedEvent();
     const globalSales = document.getElementById("shopEditGlobalSales");
     const hint = document.getElementById("shopEditMdSalesHint");
-    const addRegion = document.getElementById("shopEditMdAddRegion");
     if (globalSales) globalSales.hidden = linked;
     if (hint) hint.hidden = !linked;
-    if (addRegion) addRegion.hidden = !linked;
     if (!linked) ensureFlatMdStructure();
     else if (!mdRegions.length) mdRegions = [emptyRegion()];
     renderMdBuilder();
@@ -391,7 +389,8 @@
         </div>
         <button type="button" class="about-mode-btn btn btn-xs btn-outline btn-primary" data-md-add-category>구분 추가</button>
       </div>
-    `).join("");
+    `).join("") + `
+      <button type="button" class="about-mode-btn is-active btn btn-sm btn-outline btn-primary btn-active shop-md-add-region" data-md-add-region>지역 추가</button>`;
     syncMdListField();
   }
 
@@ -577,12 +576,6 @@
       setMdEditorMode();
     });
 
-    document.getElementById("shopEditMdAddRegion")?.addEventListener("click", () => {
-      syncMdBuilderFromDom();
-      mdRegions.push(emptyRegion());
-      renderMdBuilder();
-    });
-
     document.getElementById("shopEditMdBuilder")?.addEventListener("click", (e) => {
       if (!hasLinkedEvent()) {
         if (e.target.closest("[data-md-add-photos]")) {
@@ -600,6 +593,13 @@
           mdRegions[0].categories[0].photos.splice(pi, 1);
           renderMdBuilder();
         }
+        return;
+      }
+
+      if (e.target.closest("[data-md-add-region]")) {
+        syncMdBuilderFromDom();
+        mdRegions.push(emptyRegion());
+        renderMdBuilder();
         return;
       }
 
