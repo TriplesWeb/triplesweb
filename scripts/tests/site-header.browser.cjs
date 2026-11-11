@@ -99,7 +99,11 @@ const root=path.resolve(__dirname,'../..');
     const scheduleBox=await schedule.boundingBox();
     const jumpBox=await jump.boundingBox();
     assert.ok(scheduleBox&&jumpBox&&jumpBox.x>=scheduleBox.x+scheduleBox.width-1,`오브젝트 아이콘이 일정 오른쪽 ${width}`);
-    assert.equal(await page.locator('.header-brand-cluster .header-objekt-jump').count(),0);
+    assert.equal(await page.locator('#navbar').evaluate(n=>!!n.parentElement.querySelector('.header-objekt-jump')),false,`오브젝트 아이콘이 로고·네비 div 밖 ${width}`);
+    assert.ok(await jump.evaluate(n=>n.closest('.ml-auto')!=null),`오브젝트 아이콘이 우측 도구 줄 ${width}`);
+    const logoBox=await page.locator('.header-brand-cluster').boundingBox();
+    const aboutBox=await page.locator('#navbar > .relative > button.nav-item-link').filter({hasText:'About'}).boundingBox();
+    assert.ok(logoBox&&aboutBox&&aboutBox.x>=logoBox.x+logoBox.width+20,`About이 로고에서 떨어져 있다 ${width}`);
     const cosmo=page.locator('#navbar .relative').filter({has:page.locator('button',{hasText:'코스모'})});
     // 1024~1040px에서는 우측 계정/검색이 네비를 가려 :hover가 안 붙을 수 있음 — 넓은 폭에서 hover, 그 외는 패널만 연다.
     if(width>=1280) await cosmo.hover();

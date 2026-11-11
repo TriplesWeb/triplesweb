@@ -15,7 +15,6 @@
 .header-brand{display:flex;align-items:center;gap:5px;flex-shrink:0}
 .header-brand img:last-child{width:auto;height:28px}
 .header-brand-cluster{display:flex;align-items:center;gap:.4rem;flex-shrink:0;min-width:0}
-.header-nav-cluster{display:flex;align-items:center;gap:1.25rem;flex:0 0 auto;min-width:0}
 .header-objekt-jump,
 #top-header a.header-objekt-jump{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:1.75rem;height:1.75rem;min-width:1.75rem;min-height:1.75rem;padding:0;border:0;border-radius:.45rem;background:transparent;color:#8decd9;text-decoration:none}
 #top-header a.header-objekt-jump:hover{background:#ffffff08;color:#c8fff4}
