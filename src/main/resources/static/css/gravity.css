@@ -1366,10 +1366,19 @@ textarea.form-control {
     color: #7dffe8;
 }
 
-.shop-md-file-btn--sm {
-    min-height: 1.85rem;
-    padding: 0.2rem 0.55rem;
+.shop-md-file-btn--sm,
+.shop-md-category-head .btn,
+.shop-md-region-head .btn {
+    min-height: 2rem;
+    height: 2rem;
+    padding: 0 0.65rem;
     font-size: 0.75rem;
+    box-sizing: border-box;
+}
+
+.shop-md-category-head,
+.shop-md-region-head {
+    align-items: center;
 }
 
 .shop-md-region {
