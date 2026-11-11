@@ -46,19 +46,13 @@ const root=path.resolve(__dirname,'../..');
    assert.equal(await jump.getAttribute('aria-label'),'오브젝트');
    assert.equal(await jump.isVisible(),true,`오브젝트 아이콘이 보인다 ${width}`);
    if(!desktop){
-    assert.equal(await page.locator('[data-header-search-open]').isVisible(),true,`모바일 검색 아이콘 ${width}`);
-    assert.equal(await page.locator('[data-header-search-input]').evaluate(n=>getComputedStyle(n).opacity==='0'),true,`모바일 검색칸은 접혀 있다 ${width}`);
-    await page.locator('[data-header-search-open]').click();
-    await page.waitForFunction(()=>{
-      const root=document.querySelector('[data-header-search]');
-      const input=root&&root.querySelector('[data-header-search-input]');
-      return !!(root&&root.classList.contains('is-open')&&input
-        &&getComputedStyle(input).opacity==='1'&&input===document.activeElement);
-    });
-    assert.ok(await page.locator('[data-header-search-input]').evaluate(n=>parseFloat(getComputedStyle(n).fontSize)>=16),`모바일 검색 글자 16px ${width}`);
-    await page.keyboard.press('Escape');
-    await page.waitForFunction(()=>!document.querySelector('[data-header-search]').classList.contains('is-open'));
-    assert.equal(await page.locator('[data-cosmo-id-open]').isVisible(),true,`모바일 코스모 아이디 ${width}`);
+    assert.equal(await page.locator('[data-header-search-open]').isVisible(),false,`모바일 헤더 돋보기는 없다 ${width}`);
+    assert.equal(await page.locator('[data-header-search]').evaluate(n=>getComputedStyle(n).display==='none'),true,`모바일 헤더 검색칸 숨김 ${width}`);
+    const cosmoId=page.locator('[data-cosmo-id-open]');
+    const jumpBox=await jump.boundingBox();
+    const cosmoBox=await cosmoId.boundingBox();
+    assert.ok(jumpBox&&cosmoBox&&jumpBox.x<cosmoBox.x,`오브젝트 아이콘이 코스모 아이디 왼쪽 ${width}`);
+    assert.equal(await cosmoId.isVisible(),true,`모바일 코스모 아이디 ${width}`);
     assert.equal(await page.locator('[data-alerts-open]').isVisible(),true,`모바일 종 ${width}`);
     await page.evaluate(()=>localStorage.setItem('cosmo-nickname-recents',JSON.stringify(['myid'])));
     await page.locator('[data-cosmo-id-open]').click();

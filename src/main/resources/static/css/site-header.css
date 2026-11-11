@@ -201,49 +201,23 @@ form.site-header-search button.site-header-search__toggle{display:none}
   #top-header > div:first-child{overflow:visible}
   #top-header > div:first-child > div:first-child{flex:1 1 auto !important;min-width:0}
   #top-header > div:first-child > div:last-child{flex:0 0 auto !important;min-width:0}
-  .header-trailing{flex:0 0 auto !important;min-width:0;margin-left:auto}
-  .site-header-tools{flex:0 0 auto;margin-left:0;gap:.1rem;min-width:0}
+  .header-trailing{flex:0 0 auto !important;min-width:0;margin-left:auto;gap:.1rem !important}
+  .site-header-tools{display:contents;margin-left:0}
+  .header-objekt-jump{order:1}
+  #siteAdminBtn{order:2}
+  .header-cosmo-wrap{order:3}
+  .site-user-menu{order:4}
+  .header-alerts-wrap{order:5}
+  #mobile-menu-btn{order:6}
+  form.site-header-search,
+  form.site-header-search button.site-header-search__toggle{
+    display:none !important
+  }
   .site-header-popover{position:fixed;top:calc(env(safe-area-inset-top,0px) + 3.7rem);left:max(.75rem,env(safe-area-inset-left));right:max(.75rem,env(safe-area-inset-right));width:auto;max-width:none}
   .site-header-tool,#mobile-menu-btn,.site-user-menu>button{
     width:2.5rem;height:2.5rem;min-width:2.5rem;min-height:2.5rem;padding:0
   }
   .site-header-tool svg,.site-user-menu__icon,.site-user-menu__icon svg{width:1.15rem;height:1.15rem}
-  form.site-header-search{
-    flex:0 0 auto;width:2.5rem !important;max-width:2.5rem !important;min-width:2.5rem !important;
-    height:2.5rem !important;padding:0;border-color:transparent;background:transparent;overflow:hidden
-  }
-  form.site-header-search input.site-header-search__input{
-    position:absolute !important;width:1px !important;height:1px !important;margin:0 !important;padding:0 !important;
-    border:0 !important;opacity:0 !important;pointer-events:none !important;font-size:16px
-  }
-  form.site-header-search button.site-header-search__toggle{
-    display:inline-flex;align-items:center;justify-content:center;
-    width:2.5rem;height:2.5rem;min-width:2.5rem;min-height:2.5rem;padding:0;margin:0;border:0;
-    border-radius:8px;background:transparent;color:#e3e2e8
-  }
-  form.site-header-search button.site-header-search__toggle:hover{background:#ffffff08;color:#8decd9}
-  form.site-header-search button.site-header-search__toggle svg{
-    width:1.15rem;height:1.15rem;fill:none;stroke:currentColor;stroke-width:1.8
-  }
-  form.site-header-search button.site-header-search__submit{
-    opacity:0;visibility:hidden;pointer-events:none;
-    width:1.7rem;height:1.7rem;min-width:1.7rem;min-height:1.7rem
-  }
-  form.site-header-search.is-open{
-    position:absolute;left:max(.75rem,env(safe-area-inset-left));right:max(.75rem,env(safe-area-inset-right));
-    top:calc(100% + .35rem);width:auto !important;max-width:none !important;min-width:0 !important;height:2.75rem !important;
-    z-index:80;padding:0 .35rem 0 .75rem;background:#191b22;border-color:rgba(58,74,70,.6);overflow:visible
-  }
-  form.site-header-search.is-open input.site-header-search__input{
-    position:static !important;flex:1 1 auto;width:auto !important;min-width:0;height:auto !important;
-    opacity:1 !important;pointer-events:auto !important;padding:.1rem 0 0 !important;font-size:16px;line-height:1.25
-  }
-  form.site-header-search.is-open button.site-header-search__toggle{
-    position:absolute;width:1px;height:1px;opacity:0;visibility:hidden;pointer-events:none
-  }
-  form.site-header-search.is-open button.site-header-search__submit{
-    opacity:1;visibility:visible;pointer-events:auto
-  }
   .site-user-menu__icon{display:block}
   .site-user-menu__meta,.site-user-menu__caret{display:none !important}
   .site-user-menu>button{border-radius:.75rem;background:#191b22;border:1px solid #3a4a4680}
@@ -266,9 +240,6 @@ form.site-header-search button.site-header-search__toggle{display:none}
     width:2.15rem !important;height:2.15rem !important;min-width:2.15rem !important;min-height:2.15rem !important
   }
   form.site-header-search,
-  form.site-header-search button.site-header-search__toggle{
-    width:2.15rem !important;height:2.15rem !important;min-width:2.15rem !important;min-height:2.15rem !important
-  }
-  form.site-header-search.is-open{height:2.75rem !important;width:auto !important;min-width:0 !important;max-width:none !important}
+  form.site-header-search button.site-header-search__toggle{display:none !important}
   #top-header>div:first-child{padding-left:max(.65rem,env(safe-area-inset-left));padding-right:max(.65rem,env(safe-area-inset-right));gap:.35rem}
 }

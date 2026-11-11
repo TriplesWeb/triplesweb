@@ -370,18 +370,9 @@ body {
 }
 
 @media (max-width: 1023px) {
-    .site-header-search {
-        flex: 0 0 auto;
-        width: 2.5rem;
-        max-width: 2.5rem;
-        min-width: 2.5rem;
-        height: 2.5rem;
-        padding: 0;
-        border-color: transparent;
-        background: transparent;
-    }
+    .site-header-search,
     .site-header-search__toggle {
-        display: inline-flex;
+        display: none;
     }
 }
 
