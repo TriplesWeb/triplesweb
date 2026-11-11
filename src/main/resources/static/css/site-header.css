@@ -265,12 +265,21 @@ form.site-header-search button.site-header-search__toggle{display:none}
   .site-header-tools{display:contents;margin-left:0}
   form.site-header-search,
   form.site-header-search button.site-header-search__toggle,
-  .header-objekt-jump,
-  #top-header a.header-objekt-jump,
   .header-cosmo-wrap > .site-header-tool,
   #siteAdminBtn,
   #siteAdminBtn.is-ready{
     display:none !important
+  }
+  .header-objekt-jump{order:1}
+  .header-alerts-wrap{order:2}
+  .site-user-menu{order:3}
+  #mobile-menu-btn{order:4}
+  .header-objekt-jump,
+  #top-header a.header-objekt-jump{
+    display:inline-flex !important;
+    height:2.5rem;
+    min-height:2.5rem;
+    padding:0 .7rem 0 .55rem
   }
   .site-header-popover{position:fixed;top:calc(env(safe-area-inset-top,0px) + 3.7rem);left:max(.75rem,env(safe-area-inset-left));right:max(.75rem,env(safe-area-inset-right));width:auto;max-width:none;z-index:80}
   .site-header-tool,#mobile-menu-btn,.site-user-menu>button{
@@ -289,16 +298,6 @@ form.site-header-search button.site-header-search__toggle{display:none}
   .mobile-nav-toggle{color:#e3e2e8 !important;font-weight:750;min-height:48px;padding:.85rem .75rem}
   .mobile-nav-panel{padding:.1rem 0 .55rem .35rem;gap:.2rem}
   .mobile-nav-panel>a{min-height:46px;padding:.7rem .85rem;font-size:.95rem !important;color:#c5d5d0}
-  #mobile-menu a.mobile-shortcut,
-  #mobile-menu button.mobile-shortcut{
-    display:flex !important;
-    flex-direction:column;
-    align-items:center;
-    justify-content:flex-start;
-    min-height:0;
-    padding:.2rem;
-    font-size:.72rem !important
-  }
   #mobile-menu .mobile-menu-head a.mobile-menu-brand{
     min-height:0;
     padding:0
@@ -312,8 +311,17 @@ form.site-header-search button.site-header-search__toggle{display:none}
     width:2.15rem !important;height:2.15rem !important;min-width:2.15rem !important;min-height:2.15rem !important
   }
   form.site-header-search,
-  form.site-header-search button.site-header-search__toggle,
+  form.site-header-search button.site-header-search__toggle{display:none !important}
+  .header-objekt-jump__label{display:none}
   .header-objekt-jump,
-  #top-header a.header-objekt-jump{display:none !important}
+  #top-header a.header-objekt-jump{
+    display:inline-flex !important;
+    width:2.15rem !important;
+    min-width:2.15rem !important;
+    height:2.15rem !important;
+    min-height:2.15rem !important;
+    padding:0 !important;
+    gap:0
+  }
   #top-header>div:first-child{padding-left:max(.65rem,env(safe-area-inset-left));padding-right:max(.65rem,env(safe-area-inset-right));gap:.35rem}
 }
