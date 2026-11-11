@@ -32,6 +32,8 @@ public class EventAdminService {
     private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
     private final EventService eventService;
+    private final ShopService shopService;
+    private final ShopAdminService shopAdminService;
 
     @Transactional(readOnly = true)
     public EventAdminDto get(long eventId) {
@@ -62,6 +64,7 @@ public class EventAdminService {
         EventSection section = new EventSection(null, trimmed, nextOrder);
         EventSectionDto dto = toSectionDto(eventSectionRepository.save(section));
         eventService.invalidateListCache();
+        shopAdminService.ensureEventSectionsMirrored();
         return dto;
     }
 
@@ -69,6 +72,7 @@ public class EventAdminService {
     public EventSectionDto updateSection(long sectionId, String name, Integer sortOrder) {
         EventSection section = eventSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 구분이 존재하지 않습니다. id=" + sectionId));
+        String previousName = section.getName();
         if (StringUtils.hasText(name)) {
             String trimmed = name.trim();
             eventSectionRepository.findByNameIgnoreCase(trimmed).ifPresent(other -> {
@@ -83,6 +87,10 @@ public class EventAdminService {
         }
         EventSectionDto dto = toSectionDto(eventSectionRepository.save(section));
         eventService.invalidateListCache();
+        if (StringUtils.hasText(name)) {
+            shopAdminService.renameMirroredSection(previousName, section.getName());
+        }
+        shopAdminService.ensureEventSectionsMirrored();
         return dto;
     }
 
@@ -148,6 +156,7 @@ public class EventAdminService {
         applyFields(event, null, eventName, eventInfo, sectionId, stopsJson, image, imageUrl, false);
         EventAdminDto dto = toDto(eventRepository.save(event));
         eventService.invalidateListCache();
+        shopService.invalidateListCache();
         return dto;
     }
 
@@ -167,6 +176,7 @@ public class EventAdminService {
         applyFields(event, eventId, eventName, eventInfo, sectionId, stopsJson, image, imageUrl, clearImage);
         EventAdminDto dto = toDto(eventRepository.save(event));
         eventService.invalidateListCache();
+        shopService.invalidateListCache();
         return dto;
     }
 
@@ -177,6 +187,7 @@ public class EventAdminService {
         deleteManagedImage(event.getEventImage());
         eventRepository.delete(event);
         eventService.invalidateListCache();
+        shopService.invalidateListCache();
     }
 
     private void applyFields(
@@ -250,7 +261,8 @@ public class EventAdminService {
             stop.setVenue(StringUtils.hasText(item.getVenue()) ? item.getVenue().trim() : null);
             stop.setDetail(item.getDetail() != null ? item.getDetail().trim() : "");
             stop.setSetlist(normalizeListText(item.getSetlist()));
-            stop.setMdList(normalizeListText(item.getMdList()));
+            // MD 공지는 샵 카드에서 관리한다. 회차 폼에서는 더 이상 받지 않는다.
+            stop.setMdList(null);
             stop.setSortOrder(item.getSortOrder() != null ? item.getSortOrder() : i);
             event.getStops().add(stop);
             i++;

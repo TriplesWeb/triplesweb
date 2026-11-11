@@ -130,85 +130,20 @@
         {{/hasStops}}
     </section>
 
-    {{#hasMdGoods}}
+    {{#hasShopLink}}
     <section class="event-goods-section" aria-label="콘서트 굿즈">
-        <div class="event-goods-box">
-            <div class="event-goods-head">콘서트 굿즈</div>
-            {{#mdGoodsStops}}
-            <div class="event-goods-region" data-region="{{region}}">
-                <button type="button"
-                        class="event-goods-region-toggle"
-                        aria-expanded="false"
-                        aria-controls="event-goods-region-panel-{{stopId}}"
-                        id="event-goods-region-tab-{{stopId}}"
-                        data-event-goods-region>
-                    <span class="event-goods-region-copy">
-                        <span class="event-goods-region-title">{{goodsLabel}}</span>
-                        {{#hasVenue}}
-                        <span class="event-goods-region-meta">{{eventDate}} · {{venue}}</span>
-                        {{/hasVenue}}
-                        {{^hasVenue}}
-                        <span class="event-goods-region-meta">{{eventDate}}</span>
-                        {{/hasVenue}}
-                    </span>
-                    <span class="event-goods-region-mark" aria-hidden="true">▼</span>
-                </button>
-                <div class="event-goods-region-panel"
-                     id="event-goods-region-panel-{{stopId}}"
-                     role="region"
-                     aria-labelledby="event-goods-region-tab-{{stopId}}"
-                     hidden
-                     data-event-goods-region-panel>
-                    <div class="event-goods-cat-bar" role="tablist" aria-label="{{goodsLabel}} MD 카테고리">
-                        {{#mdCategories}}
-                        <button type="button"
-                                class="event-goods-cat-toggle"
-                                role="tab"
-                                aria-expanded="false"
-                                aria-controls="event-goods-panel-{{stopId}}-{{key}}"
-                                id="event-goods-tab-{{stopId}}-{{key}}"
-                                data-event-goods-cat>
-                            <span class="event-goods-cat-mark" aria-hidden="true">▼</span>
-                            <span class="event-goods-cat-title">{{title}}</span>
-                        </button>
-                        {{/mdCategories}}
-                    </div>
-                    {{#mdCategories}}
-                    <div class="event-goods-panel"
-                         id="event-goods-panel-{{stopId}}-{{key}}"
-                         role="tabpanel"
-                         aria-labelledby="event-goods-tab-{{stopId}}-{{key}}"
-                         hidden
-                         data-event-goods-panel>
-                        {{#hasNoticeImages}}
-                        <div class="event-goods-notices">
-                            {{#noticeImages}}
-                            <figure class="event-goods-notice">
-                                <img src="{{.}}" alt="MD 판매 공지" loading="lazy" decoding="async" data-img-fallback>
-                            </figure>
-                            {{/noticeImages}}
-                        </div>
-                        {{/hasNoticeImages}}
-                        {{#hasItems}}
-                        <ul class="event-goods-items">
-                            {{#items}}
-                            <li>
-                                <span class="event-md-name">{{name}}</span>
-                                {{#hasPrice}}
-                                <span class="event-md-price">{{price}}</span>
-                                {{/hasPrice}}
-                            </li>
-                            {{/items}}
-                        </ul>
-                        {{/hasItems}}
-                    </div>
-                    {{/mdCategories}}
-                </div>
-            </div>
-            {{/mdGoodsStops}}
-        </div>
+        <a href="/shop/{{shopId}}" class="event-stop-block event-stop-block--goods event-goods-link">
+            <span class="event-goods-link-main">
+                <span class="event-stop-block-title event-goods-link-title">
+                    <span class="material-symbols-outlined" aria-hidden="true">shopping_bag</span>
+                    콘서트 굿즈
+                </span>
+                <span class="event-goods-link-meta">MD 리스트 보기</span>
+            </span>
+            <span class="event-goods-link-go" aria-hidden="true">→</span>
+        </a>
     </section>
-    {{/hasMdGoods}}
+    {{/hasShopLink}}
     </div>
 </div>
             {{/event}}
@@ -238,50 +173,6 @@
       var open = toggle.getAttribute("aria-expanded") === "true";
       toggle.setAttribute("aria-expanded", open ? "false" : "true");
       item.classList.toggle("is-open", !open);
-      if (panel) panel.hidden = open;
-    });
-  });
-
-  document.querySelectorAll("[data-event-goods-region]").forEach(function (toggle) {
-    toggle.addEventListener("click", function () {
-      var region = toggle.closest(".event-goods-region");
-      if (!region) return;
-      var panel = region.querySelector("[data-event-goods-region-panel]");
-      var open = toggle.getAttribute("aria-expanded") === "true";
-      toggle.setAttribute("aria-expanded", open ? "false" : "true");
-      region.classList.toggle("is-open", !open);
-      if (panel) panel.hidden = open;
-      if (open) {
-        region.querySelectorAll("[data-event-goods-cat]").forEach(function (cat) {
-          cat.setAttribute("aria-expanded", "false");
-          cat.classList.remove("is-open");
-          var catId = cat.getAttribute("aria-controls");
-          var catPanel = catId ? document.getElementById(catId) : null;
-          if (catPanel) catPanel.hidden = true;
-        });
-      }
-    });
-  });
-
-  document.querySelectorAll("[data-event-goods-cat]").forEach(function (toggle) {
-    toggle.addEventListener("click", function () {
-      var region = toggle.closest(".event-goods-region");
-      if (!region) return;
-      var panelId = toggle.getAttribute("aria-controls");
-      var panel = panelId ? document.getElementById(panelId) : null;
-      var open = toggle.getAttribute("aria-expanded") === "true";
-
-      region.querySelectorAll("[data-event-goods-cat]").forEach(function (other) {
-        if (other === toggle) return;
-        other.setAttribute("aria-expanded", "false");
-        other.classList.remove("is-open");
-        var otherId = other.getAttribute("aria-controls");
-        var otherPanel = otherId ? document.getElementById(otherId) : null;
-        if (otherPanel) otherPanel.hidden = true;
-      });
-
-      toggle.setAttribute("aria-expanded", open ? "false" : "true");
-      toggle.classList.toggle("is-open", !open);
       if (panel) panel.hidden = open;
     });
   });

@@ -1,48 +1,58 @@
 {{>layout/head-open}}
 
-    <title>트리플에스 커뮤니티 - 굿즈샵</title>
-</head><body class="site-page other-page">
+<link rel="stylesheet" href="{{#asset}}/css/about-admin.css{{/asset}}">
+    <title>트리플에스 커뮤니티 - 굿즈리스트</title>
+<style>[data-shop-edit][hidden], #shopAddBtn[hidden], #shopSectionBtn[hidden]{display:none!important}</style>
+</head><body class="site-page bg-[#0d0e12] text-[#e3e2e8] min-h-screen about-admin-page">
 {{>layout/header}}
 
-<div class="site-container">
-    <div class="site-carousel shop-banner" data-site-carousel data-autoplay="5000">
-        <div class="site-carousel-track">
-            <div class="site-carousel-slide"><img src="/uploads/images/lightstick.png" alt="배너 1"></div>
-            <div class="site-carousel-slide"><img src="/uploads/images/banner2.jpg" alt="배너 2"></div>
-        </div>
-        <button type="button" class="site-carousel-btn prev" data-site-carousel-prev aria-label="이전">‹</button>
-        <button type="button" class="site-carousel-btn next" data-site-carousel-next aria-label="다음">›</button>
-    </div>
-
-    <div class="category-tabs">
-        <a href="?category=album" class="{{#isAlbum}}active{{/isAlbum}}">ALBUM</a>
-        <a href="?category=merch" class="{{#isMerch}}active{{/isMerch}}">MERCH</a>
-        <a href="?category=photobook" class="{{#isPhotobook}}active{{/isPhotobook}}">PHOTOBOOK</a>
-        <a href="?category=magazine" class="{{#isMagazine}}active{{/isMagazine}}">MAGAZINE</a>
-        <a href="?category=tour" class="{{#isTour}}active{{/isTour}}">TOUR MERCH</a>
-    </div>
-
-    <div class="product-grid">
-       {{#items}}
-            <div class="product-card">
-                <a href="/shop/item/{{category}}/{{id}}">
-                    <img src="{{mainImageUrl}}" alt="{{name}}">
-                    <div class="product-name">{{name}}</div>
-                </a>
-                {{#soldout}}<div class="product-soldout">품절</div>{{/soldout}}
-                <div class="product-price">{{price}}원</div>
+<main class="main-content max-w-7xl mx-auto px-4 py-8">
+    <div class="card-box bg-[#16181f]/80 backdrop-blur-md border border-[#3a4a46]/30 rounded-2xl p-6 shadow-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <h2 class="text-2xl font-bold text-[#e3e2e8] flex items-center gap-2 m-0">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#00f5d4]"></span> 굿즈리스트
+            </h2>
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button" id="shopSectionBtn" hidden class="about-mode-btn about-admin-only is-active btn btn-sm btn-outline btn-primary btn-active">구분 관리</button>
+                <button type="button" id="shopAddBtn" hidden class="about-mode-btn about-admin-only is-active btn btn-sm btn-outline btn-primary btn-active">굿즈 추가</button>
             </div>
-        {{/items}}
-        {{^items}}
-            <div class="shop-empty">상품이 없습니다.</div>
-        {{/items}}
-    </div>
-
-    {{#isAdmin}}
-        <div class="shop-admin">
-            <a href="/shop/shop_new" class="btn-add-goods">새 상품 등록</a>
         </div>
-    {{/isAdmin}}
-</div>
-<script src="{{#asset}}/js/site-ui.js{{/asset}}"></script>
+        <p id="shopAdminHint" class="about-admin-hint hidden mb-4">관리자 모드: 구분을 만들고 카드를 배정하거나, 카드의 수정 버튼으로 편집할 수 있어요.</p>
+
+        <ul class="nav nav-tabs border-b border-[#3a4a46]/40 flex overflow-x-auto items-center pb-2 gap-1.5{{^shopSections}} hidden{{/shopSections}}" id="shopSectionTabs" role="tablist">
+            {{#shopSections}}
+            <button class="nav-tab-btn shop-section-tab bg-transparent border-0 border-b-2 border-transparent text-[#b9cac4] hover:text-[#00f5d4] px-3 py-2 text-sm font-semibold whitespace-nowrap rounded-none transition-colors shrink-0" id="tab-{{tabKey}}" data-target="#{{tabKey}}" type="button" role="tab" title="{{name}}">
+                {{name}}
+            </button>
+            {{/shopSections}}
+        </ul>
+
+        <div class="tab-content mt-6" id="shopSectionTabContent">
+            {{#shopSections}}
+            <div class="tab-pane hidden" id="{{tabKey}}" role="tabpanel" aria-labelledby="tab-{{tabKey}}">
+                <ul class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 list-none p-0 m-0">
+                    {{#shops}}
+                    <li class="relative">
+                        <a href="/shop/{{id}}" class="block text-center no-underline text-[#e3e2e8] hover:text-[#00f5d4] transition-colors">
+                            <img src="{{displayCoverImage}}" width="200" height="200" alt="{{eventName}}" loading="lazy" decoding="async" class="w-full aspect-square object-cover rounded-lg mb-2 border border-[#3a4a46]/30">
+                            <div class="text-sm sm:text-base font-semibold">{{eventName}}</div>
+                            <div class="text-xs text-[#8b9b95] mt-1 font-mono">{{salesPeriod}}</div>
+                        </a>
+                        <button type="button" class="about-edit-inline about-mode-btn is-card-edit btn btn-sm btn-outline btn-primary" hidden data-shop-edit="{{id}}">수정</button>
+                    </li>
+                    {{/shops}}
+                </ul>
+            </div>
+            {{/shopSections}}
+        </div>
+
+        {{^shopSections}}
+        <p class="text-sm text-[#b9cac4]/70 py-8 text-center" role="status">등록된 굿즈리스트가 없습니다.</p>
+        {{/shopSections}}
+    </div>
+</main>
+{{>shop/partials/shop-admin-modals}}
+<script src="{{#asset}}/js/about-tabs.js{{/asset}}" defer></script>
+<script src="{{#asset}}/js/about-modal.js{{/asset}}" defer></script>
+<script src="{{#asset}}/js/shop.js{{/asset}}" defer></script>
 {{>layout/page-end}}

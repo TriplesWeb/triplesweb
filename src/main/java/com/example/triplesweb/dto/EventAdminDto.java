@@ -37,7 +37,7 @@ public class EventAdminDto {
         private String detail;
         /** 줄바꿈 셋리스트. `# 섹션` 또는 `곡|앨범|비고` */
         private String setlist;
-        /** 줄바꿈 MD. `# 카테고리`, `!공지이미지`, `이름|가격` */
+        /** 샵 MD 공지. `# 카테고리`, `!공지이미지` (상품명|가격은 하위 호환) */
         private String mdList;
     }
 }

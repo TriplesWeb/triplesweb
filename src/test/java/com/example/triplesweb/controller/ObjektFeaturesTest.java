@@ -36,6 +36,7 @@ class ObjektFeaturesTest {
     @MockitoBean ArtistSnapshotService artists;
     @MockitoBean ObjektMarketDataService market;
     @MockitoBean EventService eventService;
+    @MockitoBean ShopService shopService;
     @MockitoBean ObjektFavoriteService favorites;
     @MockitoBean ObjektFavoriteRepository favoriteRepository;
     @MockitoBean ObjektDescriptionRepository descriptions;

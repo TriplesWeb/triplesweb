@@ -1,70 +1,229 @@
 package com.example.triplesweb.service;
 
-import com.example.triplesweb.dto.ShopCardDto;
-import com.example.triplesweb.entity.SavedMeta;
+import com.example.triplesweb.dto.ShopDetailDto;
+import com.example.triplesweb.dto.ShopListCard;
+import com.example.triplesweb.dto.ShopSectionGroupDto;
 import com.example.triplesweb.entity.Shop;
-import com.example.triplesweb.entity.ShopImage;
-import com.example.triplesweb.repository.ShopItemRepository;
+import com.example.triplesweb.entity.ShopSection;
+import com.example.triplesweb.repository.ShopRepository;
+import com.example.triplesweb.repository.ShopSectionRepository;
+import com.example.triplesweb.util.ShopMdDocument;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.util.StringUtils;
 
-import java.io.IOException;
-import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /**
- * 쇼핑(굿즈) 상품 등록 및 목록 조회를 담당한다.
- * 이미지 업로드와 {@link Shop} 저장, 카테고리별 카드 DTO 변환을 처리한다.
+ * 굿즈리스트 목록·상세 조회. 목록은 구분(섹션)별로 묶고 미배정은 「기타」.
+ * 상세 MD 사진은 샵 카드의 {@code md_list} 공지 이미지를 쓴다.
  */
 @Service
 @RequiredArgsConstructor
 public class ShopService {
 
-    private final ShopItemRepository shopItemRepository;
-    private final FileStorageService fileStorageService;
+    private static final long LIST_CACHE_TTL_MS = 120_000L;
 
-    @Transactional
-    public Shop registerGoods(Shop shop, List<MultipartFile> files) throws IOException {
-        if (shop == null) throw new IllegalArgumentException("상품 정보가 없습니다.");
+    private final ShopRepository shopRepository;
+    private final ShopSectionRepository shopSectionRepository;
 
-        if (files != null) {
-                for (MultipartFile f : files) {
-                    if (f == null || f.isEmpty()) continue;
+    private volatile List<ShopSectionGroupDto> listCache;
+    private volatile long listCacheExpiresAt;
 
-                    SavedMeta meta = fileStorageService.saveWithMeta(f);
-                    ShopImage img = ShopImage.builder()
-                            .shop(shop)
-                            .file(meta)
-                            .build();
-                    shop.addImage(img);
+    @Transactional(readOnly = true)
+    public List<ShopSectionGroupDto> listGroupedBySection() {
+        long now = System.currentTimeMillis();
+        List<ShopSectionGroupDto> cached = listCache;
+        if (cached != null && now < listCacheExpiresAt) {
+            return cached;
+        }
+        synchronized (this) {
+            if (listCache != null && System.currentTimeMillis() < listCacheExpiresAt) {
+                return listCache;
+            }
+            List<ShopSectionGroupDto> fresh = buildGroupedBySection();
+            listCache = fresh;
+            listCacheExpiresAt = System.currentTimeMillis() + LIST_CACHE_TTL_MS;
+            return fresh;
+        }
+    }
+
+    /**
+     * 관리자 저장·삭제 후 목록 캐시를 비운다.
+     * 트랜잭션 안에서는 커밋 후에 비워, 커밋 전 재조회가 옛 행을 다시 캐시하지 않게 한다.
+     */
+    public void invalidateListCache() {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    clearListCache();
+                }
+            });
+            return;
+        }
+        clearListCache();
+    }
+
+    private void clearListCache() {
+        listCache = null;
+        listCacheExpiresAt = 0L;
+    }
+
+    private List<ShopSectionGroupDto> buildGroupedBySection() {
+        List<ShopSection> sections = shopSectionRepository.findAllByOrderBySortOrderAscSectionIdAsc();
+        List<ShopListCard> shops = shopRepository.findAllWithSectionAndEvent().stream()
+                .sorted(Comparator
+                        .comparing((Shop s) -> s.getSalesPeriod() != null ? s.getSalesPeriod() : "", Comparator.reverseOrder())
+                        .thenComparing(s -> s.getId() != null ? s.getId() : 0L, Comparator.reverseOrder()))
+                .map(ShopListCard::new)
+                .toList();
+
+        Map<Long, ShopSectionGroupDto> byId = new LinkedHashMap<>();
+        for (ShopSection section : sections) {
+            byId.put(section.getSectionId(), ShopSectionGroupDto.builder()
+                    .sectionId(section.getSectionId())
+                    .name(section.getName())
+                    .other(false)
+                    .tabKey("shop-section-" + section.getSectionId())
+                    .shops(new ArrayList<>())
+                    .build());
+        }
+
+        List<ShopListCard> unassigned = new ArrayList<>();
+        for (ShopListCard shop : shops) {
+            Long sectionId = shop.getSectionId();
+            if (sectionId != null && byId.containsKey(sectionId)) {
+                byId.get(sectionId).getShops().add(shop);
+            } else {
+                unassigned.add(shop);
+            }
+        }
+
+        List<ShopSectionGroupDto> groups = new ArrayList<>();
+        for (ShopSectionGroupDto group : byId.values()) {
+            if (!group.getShops().isEmpty()) {
+                groups.add(group);
+            }
+        }
+        if (!unassigned.isEmpty()) {
+            groups.add(ShopSectionGroupDto.builder()
+                    .sectionId(null)
+                    .name("기타")
+                    .other(true)
+                    .tabKey("shop-section-other")
+                    .shops(unassigned)
+                    .build());
+        }
+        if (groups.isEmpty() && !shops.isEmpty()) {
+            groups.add(ShopSectionGroupDto.builder()
+                    .name("기타")
+                    .other(true)
+                    .tabKey("shop-section-other")
+                    .shops(shops)
+                    .build());
+        }
+        return groups;
+    }
+
+    @Transactional(readOnly = true)
+    public ShopDetailDto getDetail(long shopId) {
+        Shop shop = shopRepository.findDetailById(shopId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 굿즈리스트가 존재하지 않습니다. id=" + shopId));
+        return toDetail(shop);
+    }
+
+    /** 공연에 연결된 샵 카드 id. 없으면 empty. */
+    @Transactional(readOnly = true)
+    public Optional<Long> findIdByEventId(long eventId) {
+        return shopRepository.findByEvent_EventId(eventId).map(Shop::getId);
+    }
+
+    static ShopDetailDto toDetail(Shop shop) {
+        List<ShopDetailDto.MdRegion> regions = new ArrayList<>();
+        int index = 0;
+        for (ShopMdDocument.Region region : ShopMdDocument.parse(shop.getMdList())) {
+            if (!region.hasPhotos()) {
+                index++;
+                continue;
+            }
+            List<ShopDetailDto.MdCategory> categories = new ArrayList<>();
+            for (ShopMdDocument.Category category : region.categories()) {
+                if (!category.hasPhotos()) continue;
+                categories.add(ShopDetailDto.MdCategory.builder()
+                        .title(category.title())
+                        .key(StringUtils.hasText(category.key()) ? category.key() : ("c" + categories.size()))
+                        .hasPhotos(true)
+                        .photos(category.photos())
+                        .build());
+            }
+            if (categories.isEmpty()) {
+                index++;
+                continue;
+            }
+            String key = "r" + index + "-" + slug(region.name());
+            regions.add(ShopDetailDto.MdRegion.builder()
+                    .regionKey(key)
+                    .label(region.name())
+                    .salesPeriod(region.salesPeriod())
+                    .hasSalesPeriod(region.hasSalesPeriod())
+                    .hasPhotos(true)
+                    .categories(categories)
+                    .build());
+            index++;
+        }
+
+        boolean linkedEvent = shop.getEvent() != null;
+        String salesPeriod = shop.getSalesPeriod();
+        if (linkedEvent) {
+            String fromRegions = ShopMdDocument.summarizeSalesPeriod(
+                    ShopMdDocument.parse(shop.getMdList()));
+            if (StringUtils.hasText(fromRegions)) {
+                salesPeriod = fromRegions;
+            }
+        }
+
+        return ShopDetailDto.builder()
+                .id(shop.getId())
+                .eventId(shop.getEvent() != null ? shop.getEvent().getEventId() : null)
+                .eventName(shop.getEventName())
+                .salesPeriod(salesPeriod)
+                .displayCoverImage(shop.getDisplayCoverImage())
+                .hasSalesPeriod(StringUtils.hasText(salesPeriod))
+                .hasMdPhotos(!regions.isEmpty())
+                .mdRegions(regions)
+                .build();
+    }
+
+    /** 테스트·하위 호환: md_list 공지 이미지를 평탄화한다. */
+    static List<String> collectNoticeImages(String mdList) {
+        List<String> out = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
+        for (ShopMdDocument.Region region : ShopMdDocument.parse(mdList)) {
+            for (ShopMdDocument.Category category : region.categories()) {
+                for (String url : category.photos()) {
+                    if (seen.add(url)) out.add(url);
                 }
             }
-        return shopItemRepository.save(shop);
-    }
-    @Transactional(readOnly = true)
-    public List<ShopCardDto> getCardsByCategory (String category) {
-        return shopItemRepository.findByCategory(category).stream()
-                .map(this::toCardDto)
-                .toList();
+        }
+        return out;
     }
 
-    public ShopCardDto toCardDto(Shop shop) {
-        String mainImageUrl = (shop.getImages() != null && !shop.getImages().isEmpty() &&
-                shop.getImages().get(0).getFile() != null)
-                ? safeUrl(shop.getImages().get(0).getFile().getUrl())  // "/uploads/..." 기대
-                : "/images/no-image.png";
-        return new ShopCardDto(
-                shop.getId(),
-                shop.getCategory(),
-                shop.getName(),
-                shop.getPrice(),
-                shop.isSoldout(),
-                mainImageUrl
-        );
-    }
-    private String safeUrl(String url) {
-        return (url == null || url.isBlank()) ? "/images/no-image.png" : url;
+    private static String slug(String title) {
+        if (!StringUtils.hasText(title)) return "region";
+        String slug = title.toLowerCase(java.util.Locale.ROOT)
+                .replaceAll("[^a-z0-9가-힣]+", "-")
+                .replaceAll("(^-)|(-$)", "");
+        return slug.isBlank() ? "region" : slug;
     }
 }

@@ -1,0 +1,175 @@
+.shop-detail-head {
+  display: grid;
+  gap: 0.75rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(58, 74, 70, 0.3);
+}
+
+.shop-detail-period {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.9rem;
+  color: #b9cac4;
+}
+
+.shop-detail-event-link {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.shop-detail-event-link a {
+  color: #00f5d4;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.shop-detail-event-link a:hover {
+  color: #7dffe8;
+}
+
+/* MD 리스트 — 앨범 트랙리스트와 같은 톤 */
+.shop-md-section {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.shop-md-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.shop-md-rows {
+  counter-reset: shop-md;
+}
+
+.shop-md-head,
+.shop-md-row {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) 2.25rem;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+  text-align: left;
+}
+
+.shop-md-head {
+  padding: 0.875rem 0.75rem;
+}
+
+.shop-md-num {
+  text-align: center;
+}
+
+.shop-md-row {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.shop-md-row:hover {
+  background: rgba(32, 36, 48, 0.6);
+}
+
+.shop-md-row:focus-visible {
+  outline: 2px solid rgba(0, 245, 212, 0.55);
+  outline-offset: -2px;
+}
+
+.shop-md-item .shop-md-num::before {
+  counter-increment: shop-md;
+  content: counter(shop-md);
+}
+
+.shop-md-title-col {
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #e3e2e8;
+}
+
+.shop-md-name {
+  display: inline-block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.shop-md-meta {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #8b9b95;
+}
+
+.shop-md-category + .shop-md-category {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(58, 74, 70, 0.28);
+}
+
+.shop-md-category-title {
+  margin: 0 0 0.55rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #b9cac4;
+}
+
+.shop-md-mark {
+  justify-self: center;
+  font-size: 1.15rem;
+  color: #8b9b95;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.shop-md-item.is-open .shop-md-row,
+.shop-md-row[aria-expanded="true"] {
+  background: rgba(32, 36, 48, 0.45);
+}
+
+.shop-md-item.is-open .shop-md-name,
+.shop-md-row[aria-expanded="true"] .shop-md-name {
+  color: #00f5d4;
+}
+
+.shop-md-item.is-open .shop-md-mark,
+.shop-md-row[aria-expanded="true"] .shop-md-mark {
+  transform: rotate(180deg);
+  color: #00f5d4;
+}
+
+.shop-md-panel {
+  padding: 0 0.75rem 1rem;
+  background: rgba(13, 14, 18, 0.35);
+}
+
+.shop-md-panel[hidden] {
+  display: none;
+}
+
+.shop-md-notices {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.shop-md-notice {
+  margin: 0;
+  border-radius: 0.65rem;
+  overflow: hidden;
+  border: 1px solid rgba(58, 74, 70, 0.4);
+  background: rgba(22, 24, 31, 0.7);
+}
+
+.shop-md-notice img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 36rem;
+  object-fit: contain;
+  background: #0d0e12;
+}

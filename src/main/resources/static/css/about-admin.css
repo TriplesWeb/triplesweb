@@ -505,8 +505,183 @@
     line-height: 1;
 }
 
+.shop-md-builder {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.shop-md-flat {
+    display: grid;
+    gap: 0.55rem;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(58, 74, 70, 0.45);
+    background: rgba(13, 14, 18, 0.55);
+}
+
+.shop-md-add-region {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    width: 100%;
+    min-height: 3rem;
+    margin: 0;
+    padding: 0.7rem 0.85rem;
+    border-radius: 0.75rem;
+    border: 1px dashed rgba(0, 245, 212, 0.4);
+    background: rgba(0, 245, 212, 0.04);
+    color: #00f5d4;
+    font-size: 0.85rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.shop-md-add-region .material-symbols-outlined {
+    font-size: 1.15rem;
+    line-height: 1;
+}
+
+.shop-md-add-region:hover {
+    border-color: rgba(0, 245, 212, 0.65);
+    background: rgba(0, 245, 212, 0.1);
+    color: #7dffe8;
+}
+
+#shopEditMdPhoto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* 네이티브 파일 선택과 비슷한 톤 */
+.shop-md-file-btn {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1.85rem;
+    height: 1.85rem;
+    padding: 0 0.65rem;
+    border-radius: 0.45rem;
+    border: 1px solid rgba(0, 245, 212, 0.45);
+    background: rgba(13, 14, 18, 0.9);
+    color: #00f5d4;
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+.shop-md-file-btn:hover {
+    background: rgba(0, 245, 212, 0.08);
+    color: #7dffe8;
+}
+
+.shop-md-file-btn--sm,
+.shop-md-category-head .btn,
+.shop-md-region-head .btn {
+    min-height: 1.85rem;
+    height: 1.85rem;
+    padding: 0 0.65rem;
+    font-size: 0.75rem;
+    box-sizing: border-box;
+}
+
+.shop-md-category-head,
+.shop-md-region-head {
+    align-items: center;
+}
+
+.shop-md-region {
+    display: grid;
+    gap: 0.55rem;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(58, 74, 70, 0.45);
+    background: rgba(13, 14, 18, 0.55);
+}
+
+.shop-md-region-head,
+.shop-md-category-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.shop-md-input {
+    flex: 1 1 10rem;
+    min-width: 0;
+    appearance: none;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #0d0e12;
+    color: #e3e2e8;
+    padding: 0.45rem 0.55rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.shop-md-categories {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.shop-md-category-edit {
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.55rem;
+    border-radius: 0.6rem;
+    border: 1px solid rgba(58, 74, 70, 0.35);
+    background: rgba(22, 24, 31, 0.55);
+}
+
+.shop-md-photo-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.shop-md-photo-item {
+    position: relative;
+}
+
+.shop-md-thumb {
+    width: 4.5rem;
+    height: 4.5rem;
+    object-fit: cover;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(58, 74, 70, 0.45);
+    background: #0d0e12;
+    display: block;
+}
+
+.shop-md-photo-remove {
+    position: absolute;
+    top: -0.35rem;
+    right: -0.35rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 0;
+    border-radius: 999px;
+    background: #7f1d1d;
+    color: #fff;
+    font-size: 0.85rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
 .event-stop-row-top input[type="text"],
 .event-stop-row-top input[type="date"],
+.shop-sales-period input[type="date"],
+.shop-md-region-sales input[type="date"],
 .event-stop-field input[type="text"],
 .event-stop-field textarea {
     appearance: none;
@@ -532,6 +707,41 @@
     color-scheme: dark;
 }
 
+.shop-sales-period,
+.shop-md-region-sales {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    min-width: 0;
+}
+
+.shop-sales-period input[type="date"],
+.shop-md-region-sales input[type="date"] {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    box-sizing: border-box;
+    font-size: 0.82rem;
+    line-height: 1.25;
+    color-scheme: dark;
+}
+
+.shop-sales-period .stop-date-sep,
+.shop-md-region-sales .stop-date-sep {
+    flex: 0 0 auto;
+}
+
+.shop-md-region-sales input[type="date"].is-invalid,
+.shop-sales-period input[type="date"].is-invalid,
+#shopEditSalesStart.is-invalid,
+#shopEditSalesEnd.is-invalid {
+    border-color: rgba(248, 113, 113, 0.85);
+    box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.35);
+}
+
 .event-stop-field {
     display: flex;
     flex-direction: column;
@@ -540,7 +750,7 @@
     min-width: 0;
 }
 
-.event-stop-field > span {
+.event-stop-field > span:first-child {
     color: #8a9a94;
     font-size: 0.68rem;
     font-weight: 700;
@@ -548,9 +758,23 @@
     text-transform: uppercase;
 }
 
+.event-stop-field-hint {
+    color: #8b9b95;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    line-height: 1.4;
+}
+
+.event-stop-field-hint code {
+    font-size: 0.7rem;
+    color: #b9cac4;
+}
+
 .event-stop-lists {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 0.55rem;
 }
 
