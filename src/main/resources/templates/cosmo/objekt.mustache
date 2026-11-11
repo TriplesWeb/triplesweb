@@ -6,8 +6,10 @@
     <link rel="stylesheet" href="{{#asset}}/css/objekt-page.css{{/asset}}">
     <!-- Tailwind CSS 스크립트 -->
     <link rel="stylesheet" href="{{#asset}}/css/objekt.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/objekt-grid-cols.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/objekt-serial.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/objekt-modal.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/scroll-top.css{{/asset}}">
     <script src="{{#asset}}/js/about-modal.js{{/asset}}" defer></script>
     <script src="{{#asset}}/js/objekt-serial.js{{/asset}}" defer></script>
     <script src="{{#asset}}/js/objekt-issued.js{{/asset}}" defer></script>
@@ -160,6 +162,18 @@
             </div>
 
             <div class="objekt-search-row">
+                <div class="objekt-cols-control" id="objekt-cols-dropdown" data-objekt-cols-filter>
+                    <button type="button" class="objekt-cols-toggle" data-objekt-cols-toggle aria-label="열 수" aria-expanded="false" aria-haspopup="listbox" aria-controls="objekt-cols-menu">
+                        <span class="objekt-cols-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+                        <span class="objekt-cols-sr" data-objekt-cols-label>2열</span>
+                    </button>
+                    <div id="objekt-cols-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 rounded-xl border z-50 p-1.5" data-objekt-cols-menu hidden role="listbox" aria-label="열 수">
+                        <button type="button" class="objekt-kind-option" data-objekt-cols-option="2" role="option">2열</button>
+                        <button type="button" class="objekt-kind-option" data-objekt-cols-option="3" role="option">3열</button>
+                        <button type="button" class="objekt-kind-option" data-objekt-cols-option="4" role="option">4열</button>
+                        <button type="button" class="objekt-kind-option" data-objekt-cols-option="5" role="option">5열</button>
+                    </div>
+                </div>
                 <div class="objekt-search site-search">
                     <label class="w-full min-w-0">
                         <input type="search" name="search" value="{{searchQuery}}" placeholder="전체 오브젝트에서 검색..." aria-label="전체 오브젝트 검색" autocomplete="off" class="objekt-search-input site-search__input">
@@ -190,7 +204,7 @@
     <div class="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{{objektError}}</div>
     {{/objektError}}
     <div id="objekt-empty" class="hidden mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-10 text-center text-slate-400">검색 조건에 맞는 오브젝트가 없습니다.</div>
-    <div id="objekt-card-grid" class="objekt-card-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 py-2 mt-3">
+    <div id="objekt-card-grid" class="objekt-card-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 py-2 mt-3" data-objekt-grid data-cols="2">
         {{#objekts}}
         <article class="card objekt-card objekt-item group relative border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
                  data-objekt-key="{{publicKey}}"
@@ -282,6 +296,8 @@
 
 <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
 <script src="{{#asset}}/js/objekt-kind-combo.js{{/asset}}"></script>
+<script src="{{#asset}}/js/objekt-grid-cols.js{{/asset}}"></script>
 <script type="application/json" id="objekt-kind-by-class">{{{kindByClassJson}}}</script>
     <script src="{{#asset}}/js/objekt-page.js{{/asset}}" defer></script>
+{{>partials/scroll-top}}
 {{>layout/page-end}}

@@ -109,6 +109,7 @@
         }
 
         function isClosed() {
+            if (window.ObjektDropdown) return window.ObjektDropdown.isClosed(menu);
             return menu.classList.contains('hidden') || menu.hasAttribute('hidden');
         }
 
@@ -116,14 +117,20 @@
             closeOthers?.();
             if (showAll || isAllDisplay(input.value)) input.value = '';
             filterOptions(showAll ? '' : input.value);
-            menu.classList.remove('hidden');
-            menu.removeAttribute('hidden');
+            if (window.ObjektDropdown) window.ObjektDropdown.setOpen(menu, true);
+            else {
+                menu.classList.remove('hidden');
+                menu.removeAttribute('hidden');
+            }
             input.setAttribute('aria-expanded', 'true');
         }
 
         function closeMenu() {
-            menu.classList.add('hidden');
-            menu.setAttribute('hidden', '');
+            if (window.ObjektDropdown) window.ObjektDropdown.setOpen(menu, false);
+            else {
+                menu.classList.add('hidden');
+                menu.setAttribute('hidden', '');
+            }
             input.setAttribute('aria-expanded', 'false');
             activeIndex = -1;
             kindOptions.forEach((opt) => opt.classList.remove('is-active'));

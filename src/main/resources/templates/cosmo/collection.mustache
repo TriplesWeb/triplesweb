@@ -4,6 +4,8 @@
 <link rel="stylesheet" href="{{#asset}}/css/archive-page.css{{/asset}}">
 <link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
 <link rel="stylesheet" href="{{#asset}}/css/cosmo-collection.css{{/asset}}">
+<link rel="stylesheet" href="{{#asset}}/css/objekt-grid-cols.css{{/asset}}">
+<link rel="stylesheet" href="{{#asset}}/css/scroll-top.css{{/asset}}">
 <title>{{#nickname}}{{nickname}} 보유 오브젝트{{/nickname}}{{^nickname}}코스모 아이디 검색{{/nickname}}</title>
 </head><body class="site-page collection-page min-h-screen flex flex-col">
 {{>layout/header}}
@@ -150,6 +152,18 @@
                     </div>
                 </div>
                 <div class="objekt-search-row">
+                    <div class="objekt-cols-control" id="collection-cols-dropdown" data-objekt-cols-filter>
+                        <button type="button" class="objekt-cols-toggle" data-objekt-cols-toggle aria-label="열 수" aria-expanded="false" aria-haspopup="listbox" aria-controls="collection-cols-menu">
+                            <span class="objekt-cols-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+                            <span class="objekt-cols-sr" data-objekt-cols-label>2열</span>
+                        </button>
+                        <div id="collection-cols-menu" class="objekt-dropdown-menu absolute top-full left-0 mt-2 rounded-xl border z-50 p-1.5" data-objekt-cols-menu hidden role="listbox" aria-label="열 수">
+                            <button type="button" class="objekt-kind-option" data-objekt-cols-option="2" role="option">2열</button>
+                            <button type="button" class="objekt-kind-option" data-objekt-cols-option="3" role="option">3열</button>
+                            <button type="button" class="objekt-kind-option" data-objekt-cols-option="4" role="option">4열</button>
+                            <button type="button" class="objekt-kind-option" data-objekt-cols-option="5" role="option">5열</button>
+                        </div>
+                    </div>
                     <div class="objekt-search site-search">
                         <label class="w-full min-w-0">
                             <input type="search" name="q" value="{{searchQuery}}" placeholder="전체 오브젝트에서 검색..." aria-label="보유 오브젝트 검색" autocomplete="off" class="objekt-search-input site-search__input">
@@ -168,6 +182,7 @@
         </form>
     </section>
     <section class="ar-grid collection-grid" id="collection-grid" aria-label="보유 오브젝트"
+             data-objekt-grid data-cols="2"
              data-loaded="{{loadedCount}}" data-filtered="{{filteredCount}}" data-owned="{{ownedCount}}">
         {{#cards}}
         <article class="card ar-panel ar-card collection-card">
@@ -203,6 +218,7 @@
 </main>
 <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
 <script src="{{#asset}}/js/objekt-kind-combo.js{{/asset}}"></script>
+<script src="{{#asset}}/js/objekt-grid-cols.js{{/asset}}"></script>
 <script type="application/json" id="collection-kind-by-class">{{{kindByClassJson}}}</script>
 <script src="{{#asset}}/js/collection-nickname-suggest.js{{/asset}}"></script>
 <script>
@@ -333,13 +349,33 @@
     setGroup(groupInput?.value || 'all', false);
   }
   function closeMenus(except) {
+    if (window.ObjektDropdown) {
+      window.ObjektDropdown.closeAll(except);
+      return;
+    }
     document.querySelectorAll('.objekt-dropdown-menu').forEach((other) => {
-      if (other !== except) other.hidden = true;
+      if (other === except) return;
+      other.hidden = true;
+      other.classList.add('hidden');
+      other.closest('.objekt-filter')?.classList.remove('is-open');
     });
-    document.querySelectorAll('#collection-filter-form .objekt-filter').forEach((filter) => {
-      if (!except || !filter.contains(except)) filter.classList.remove('is-open');
-    });
-    except?.closest('.objekt-filter')?.classList.toggle('is-open', Boolean(except) && !except.hidden);
+    except?.closest('.objekt-filter')?.classList.toggle('is-open', Boolean(except) && !except.hidden && !except.classList.contains('hidden'));
+  }
+
+  function menuClosed(menu) {
+    return window.ObjektDropdown ? window.ObjektDropdown.isClosed(menu)
+      : (!menu || menu.hidden || menu.classList.contains('hidden'));
+  }
+
+  function toggleMenu(menu) {
+    if (window.ObjektDropdown) return window.ObjektDropdown.toggle(menu);
+    const open = menuClosed(menu);
+    closeMenus(open ? menu : null);
+    if (!menu) return open;
+    menu.hidden = !open;
+    menu.classList.toggle('hidden', !open);
+    menu.closest('.objekt-filter')?.classList.toggle('is-open', open);
+    return open;
   }
 
   if (form) {
@@ -406,16 +442,17 @@
       choice.addEventListener('click', (event) => {
         event.stopPropagation();
         applyChoice(choice);
-        menu.hidden = true;
-        toggleBtn.setAttribute('aria-expanded', 'false');
         closeMenus();
+        toggleBtn.setAttribute('aria-expanded', 'false');
       });
     });
     toggleBtn.addEventListener('click', () => {
-      const open = menu.hasAttribute('hidden');
-      menu.hidden = !open;
+      const open = toggleMenu(menu);
       toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-      closeMenus(open ? menu : null);
+    });
+    root?.addEventListener('click', (event) => {
+      if (event.target.closest('.objekt-dropdown-menu, .objekt-filter-control, input, select, textarea, a')) return;
+      toggleBtn.click();
     });
     if (!input.value) input.value = fallback;
     sync();
@@ -449,16 +486,18 @@
       scheduleApplyFilters();
     }));
     toggleBtn.addEventListener('click', () => {
-      const open = menu.hasAttribute('hidden');
-      menu.hidden = !open;
+      const open = toggleMenu(menu);
       toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-      closeMenus(open ? menu : null);
+    });
+    root?.addEventListener('click', (event) => {
+      if (event.target.closest('.objekt-dropdown-menu, .objekt-filter-control, input, select, textarea, a')) return;
+      toggleBtn.click();
     });
     syncLabel();
   }
 
   document.addEventListener('click', (event) => {
-    if (event.target.closest('.objekt-filter')) return;
+    if (event.target.closest('.objekt-filter, [data-objekt-cols-filter], .collection-nickname-suggest')) return;
     closeMenus();
   });
 
@@ -614,7 +653,7 @@
       loading = false;
       updateStatus();
       if (pending || (hasMore && sentinelVisible)) {
-        pollTimer = setTimeout(loadMore, 100);
+        pollTimer = setTimeout(loadMore, 400);
       }
     }
   }
@@ -671,7 +710,7 @@
       loading = false;
       updateStatus();
       if (pending || (hasMore && sentinelVisible)) {
-        pollTimer = setTimeout(loadMore, 100);
+        pollTimer = setTimeout(loadMore, 400);
       }
     }
   }
@@ -691,11 +730,12 @@
     btn.addEventListener('click', loadMore);
     sentinel.appendChild(btn);
   }
-  if (pending) pollTimer = setTimeout(loadMore, 100);
+  if (pending) pollTimer = setTimeout(loadMore, 400);
   window.addEventListener('pagehide', () => {
     clearTimeout(pollTimer);
     listAbort?.abort();
   }, { once: true });
 })();
 </script>
+{{>partials/scroll-top}}
 {{>layout/page-end}}

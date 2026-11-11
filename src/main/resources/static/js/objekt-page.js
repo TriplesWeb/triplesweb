@@ -12,7 +12,11 @@
     }
 
     function closeSortMenu() {
-        sortMenu.classList.add('hidden');
+        if (window.ObjektDropdown) window.ObjektDropdown.setOpen(sortMenu, false);
+        else {
+            sortMenu.classList.add('hidden');
+            sortMenu.setAttribute('hidden', '');
+        }
         sortToggle.setAttribute('aria-expanded', 'false');
         setSortOpen(false);
     }
@@ -29,8 +33,16 @@
 
     function openSortMenu(index) {
         closeKindMenu();
-        ['season-menu', 'class-menu'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
-        sortMenu.classList.remove('hidden');
+        ['season-menu', 'class-menu'].forEach((id) => {
+            const menu = document.getElementById(id);
+            if (window.ObjektDropdown) window.ObjektDropdown.setOpen(menu, false);
+            else menu?.classList.add('hidden');
+        });
+        if (window.ObjektDropdown) window.ObjektDropdown.setOpen(sortMenu, true);
+        else {
+            sortMenu.classList.remove('hidden');
+            sortMenu.removeAttribute('hidden');
+        }
         sortToggle.setAttribute('aria-expanded', 'true');
         setSortOpen(true);
         const options = [...sortMenu.querySelectorAll('[role="option"]')];
@@ -66,7 +78,7 @@
     });
 
     sortToggle.addEventListener('click', () => {
-        if (sortMenu.classList.contains('hidden')) openSortMenu();
+        if (sortMenu.classList.contains('hidden') || sortMenu.hidden) openSortMenu();
         else closeSortMenu();
     });
     document.getElementById('sort-dropdown').addEventListener('keydown', (event) => {
@@ -199,15 +211,28 @@
         if (!kindMenu || !kindSelect) return;
         closeSortMenu();
         filterKindOptions(showAll ? '' : kindSelect.value);
-        kindMenu.classList.remove('hidden');
+        if (window.ObjektDropdown) {
+            window.ObjektDropdown.closeAll(kindMenu);
+            window.ObjektDropdown.setOpen(kindMenu, true);
+        } else {
+            kindMenu.classList.remove('hidden');
+            kindMenu.removeAttribute('hidden');
+            ['season-menu', 'class-menu'].forEach((id) => {
+                const menu = document.getElementById(id);
+                menu?.classList.add('hidden');
+                menu?.setAttribute('hidden', '');
+            });
+        }
         kindSelect.setAttribute('aria-expanded', 'true');
-        document.getElementById('season-menu')?.classList.add('hidden');
-        document.getElementById('class-menu')?.classList.add('hidden');
     }
 
     function closeKindMenu() {
         if (!kindMenu || !kindSelect) return;
-        kindMenu.classList.add('hidden');
+        if (window.ObjektDropdown) window.ObjektDropdown.setOpen(kindMenu, false);
+        else {
+            kindMenu.classList.add('hidden');
+            kindMenu.setAttribute('hidden', '');
+        }
         kindSelect.setAttribute('aria-expanded', 'false');
         kindActiveIndex = -1;
         kindOptions.forEach((opt) => opt.classList.remove('is-active'));
@@ -452,17 +477,36 @@
     window.toggleDropdown = function(id) {
         closeKindMenu();
         closeSortMenu();
-        document.querySelectorAll('[id$="-menu"]').forEach(menu => {
-            if (menu.id !== id) menu.classList.add('hidden');
-        });
-        document.getElementById(id)?.classList.toggle('hidden');
+        const target = document.getElementById(id);
+        if (window.ObjektDropdown) {
+            window.ObjektDropdown.toggle(target);
+        } else {
+            document.querySelectorAll('[id$="-menu"]').forEach(menu => {
+                if (menu.id !== id) {
+                    menu.classList.add('hidden');
+                    menu.setAttribute('hidden', '');
+                }
+            });
+            if (target) {
+                const open = target.classList.contains('hidden') || target.hasAttribute('hidden');
+                target.classList.toggle('hidden', !open);
+                target.toggleAttribute('hidden', !open);
+            }
+        }
         syncOpenFilters();
     };
 
     window.addEventListener('click', e => {
         if (!e.target.closest('#sort-dropdown')) closeSortMenu();
-        if (!e.target.closest('#season-dropdown') && !e.target.closest('#class-dropdown') && !e.target.closest('#kind-dropdown')) {
-            ['season-menu', 'class-menu'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+        if (!e.target.closest('#season-dropdown') && !e.target.closest('#class-dropdown') && !e.target.closest('#kind-dropdown') && !e.target.closest('#objekt-cols-dropdown')) {
+            ['season-menu', 'class-menu'].forEach((id) => {
+                const menu = document.getElementById(id);
+                if (window.ObjektDropdown) window.ObjektDropdown.setOpen(menu, false);
+                else {
+                    menu?.classList.add('hidden');
+                    menu?.setAttribute('hidden', '');
+                }
+            });
             closeKindMenu();
         }
         syncOpenFilters();

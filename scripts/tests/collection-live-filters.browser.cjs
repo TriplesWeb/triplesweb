@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
 const root = path.resolve(__dirname, '../..');
 const html = `<!doctype html><html><head><meta charset="utf-8">
-<style>.is-hidden{display:none}</style>
+<style>.is-hidden,.hidden{display:none!important}.objekt-dropdown-menu[hidden],.objekt-dropdown-menu.hidden{display:none!important;pointer-events:none!important}</style>
 </head><body class="collection-page">
 <main class="gravity-page">
 <form class="collection-filter-form" method="get" action="/cosmo/collection" id="collection-filter-form">
@@ -96,6 +96,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
 </main>
 <script src="/js/member-portrait-picker.js"></script>
 <script src="/js/objekt-kind-combo.js"></script>
+<script src="/js/objekt-grid-cols.js"></script>
 <script type="application/json" id="collection-kind-by-class">{"Double":["101Z"],"Special":["201A"]}</script>
 SCRIPT_PLACEHOLDER
 </body></html>`;
@@ -258,6 +259,48 @@ SCRIPT_PLACEHOLDER
     await searchWait;
     await waitForMore('cream');
     assert.ok(moreCalls.some((call) => call.q === 'cream'));
+
+    await page.evaluate(() => {
+      const menu = document.getElementById('collection-season-menu');
+      menu.classList.add('hidden');
+      menu.setAttribute('hidden', '');
+    });
+    await page.locator('#collection-season-toggle').click();
+    const seasonAfterHidden = await page.evaluate(() => {
+      const menu = document.getElementById('collection-season-menu');
+      return {
+        hidden: menu.hidden,
+        cls: menu.classList.contains('hidden'),
+        display: getComputedStyle(menu).display
+      };
+    });
+    assert.equal(seasonAfterHidden.hidden, false, '열 메뉴가 남긴 hidden 클래스 뒤에도 시즌이 열려야 한다: ' + JSON.stringify(seasonAfterHidden));
+    assert.equal(seasonAfterHidden.cls, false, '시즌 메뉴 hidden 클래스가 남아 있으면 안 된다: ' + JSON.stringify(seasonAfterHidden));
+    assert.notEqual(seasonAfterHidden.display, 'none', '시즌 메뉴가 화면에 보여야 한다: ' + JSON.stringify(seasonAfterHidden));
+
+    await page.locator('#collection-class-dropdown .objekt-filter-label').click();
+    const classFromLabel = await page.evaluate(() => {
+      const menu = document.getElementById('collection-class-menu');
+      return !menu.hidden && !menu.classList.contains('hidden') && getComputedStyle(menu).display !== 'none';
+    });
+    assert.equal(classFromLabel, true, '클래스 라벨을 눌러도 드롭다운이 열려야 한다');
+
+    await page.locator('#collection-sort-toggle').click();
+    await page.waitForFunction(() => {
+      const menu = document.getElementById('collection-sort-menu');
+      return menu && !menu.hidden && !menu.classList.contains('hidden');
+    });
+    await page.locator('#collection-season-toggle').click();
+    const afterSort = await page.evaluate(() => {
+      const season = document.getElementById('collection-season-menu');
+      const sort = document.getElementById('collection-sort-menu');
+      return {
+        season: !season.hidden && !season.classList.contains('hidden') && getComputedStyle(season).display !== 'none',
+        sortClosed: sort.hidden || sort.classList.contains('hidden') || getComputedStyle(sort).display === 'none'
+      };
+    });
+    assert.equal(afterSort.season, true, '정렬을 연 뒤에도 시즌이 열려야 한다');
+    assert.equal(afterSort.sortClosed, true, '시즌을 열면 정렬은 닫혀야 한다');
 
     console.log('PASS: 컬렉션 멤버·그룹·시즌·클래스·종류·정렬·검색 변경 시 검색 버튼 없이 결과 갱신');
   } finally {

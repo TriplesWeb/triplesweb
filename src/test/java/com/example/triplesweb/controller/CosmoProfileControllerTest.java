@@ -41,6 +41,7 @@ class CosmoProfileControllerTest {
                 .andExpect(content().string(containsString("전체 현황")))
                 .andExpect(content().string(containsString("멤버별 상세")))
                 .andExpect(content().string(containsString("전체 수집 현황")))
+                .andExpect(content().string(containsString("data-scroll-top")))
                 .andExpect(content().string(containsString("profile-overall-pie")))
                 .andExpect(content().string(containsString("전체 수집률 100퍼센트")))
                 .andExpect(content().string(containsString("aria-valuenow=\"100\"")))
