@@ -109,6 +109,7 @@ class MobilePageTemplatesTest {
         var auth=new HashMap<>(model);auth.put("member",Map.of("userId",longText,"level",1,"points",100));
         String header=compiler.compile(Files.readString(root.resolve("layout/header.mustache"))).execute(auth);
         assertThat(header).contains("header-objekt-jump").contains("href=\"/cosmo/objekt\"").contains("aria-label=\"오브젝트\"");
+        assertThat(header.indexOf("id=\"navbar\"")).isLessThan(header.indexOf("header-objekt-jump"));
         var homeAuth=new HashMap<>(auth);homeAuth.put("isHomePage", true);
         String homeHeader=compiler.compile(Files.readString(root.resolve("layout/header.mustache"))).execute(homeAuth);
         assertThat(homeHeader).contains("header-objekt-jump").contains("href=\"/cosmo/objekt\"");

@@ -95,6 +95,11 @@ const root=path.resolve(__dirname,'../..');
       nodes.map(n=>n.childNodes[0]?.textContent?.trim() || n.textContent.replace(/expand_more/g,'').trim())
     );
     assert.deepEqual(labels,['About 트리플에스','코스모','미디어','정보','일정']);
+    const schedule=page.locator('#navbar > a.nav-item-link').filter({hasText:/^일정$/});
+    const scheduleBox=await schedule.boundingBox();
+    const jumpBox=await jump.boundingBox();
+    assert.ok(scheduleBox&&jumpBox&&jumpBox.x>=scheduleBox.x+scheduleBox.width-1,`오브젝트 아이콘이 일정 오른쪽 ${width}`);
+    assert.equal(await page.locator('.header-brand-cluster .header-objekt-jump').count(),0);
     const cosmo=page.locator('#navbar .relative').filter({has:page.locator('button',{hasText:'코스모'})});
     // 1024~1040px에서는 우측 계정/검색이 네비를 가려 :hover가 안 붙을 수 있음 — 넓은 폭에서 hover, 그 외는 패널만 연다.
     if(width>=1280) await cosmo.hover();
