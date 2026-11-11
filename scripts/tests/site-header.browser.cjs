@@ -11,7 +11,7 @@ const root=path.resolve(__dirname,'../..');
     return route.fulfill({contentType:'application/json',body:JSON.stringify({
       catalogSig:'sig-1',catalogCount:2,dropWindow:true,
       notices:[{id:9,title:'공지 테스트',href:'/article/notice/9',at:'2026-11-10'}],
-      objekts:[{label:'HaYeon 323',href:'/cosmo/objekt/detail/x',collectionId:'cc323',createdAt:'2026-11-10'}]
+      objekts:[{label:'Cream02 323 드롭',href:'/cosmo/objekt?search=323',collectionId:'cc323',createdAt:'2026-11-10'}]
     })});
    }
    if(url.pathname==='/search'){
@@ -40,9 +40,16 @@ const root=path.resolve(__dirname,'../..');
    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`header overflow ${width}`);
    const desktop=await page.locator('#navbar').evaluate(n=>getComputedStyle(n).display!=='none');
-   assert.equal(await page.locator('.header-objekt-jump').count(),0,`메인 아닌 헤더에 오브젝트 바로가기가 있으면 안 된다 ${width}`);
+   const jump=page.locator('.header-objekt-jump');
+   assert.equal(await jump.count(),1,`모든 페이지에 오브젝트 바로가기가 있다 ${width}`);
+   assert.equal(await jump.getAttribute('href'),'/cosmo/objekt');
+   assert.equal(await jump.getAttribute('aria-label'),'오브젝트');
+   assert.equal(await jump.isVisible(),true,`오브젝트 아이콘이 보인다 ${width}`);
    if(!desktop){
-    assert.equal(await page.locator('[data-header-search-open]').isVisible(),true,`모바일 검색 아이콘 ${width}`);
+    const searchInput=page.locator('[data-header-search-input]');
+    assert.equal(await searchInput.isVisible(),true,`모바일 검색 입력칸 ${width}`);
+    assert.ok(await searchInput.evaluate(n=>parseFloat(getComputedStyle(n).fontSize)>=16),`모바일 검색 글자 16px ${width}`);
+    assert.equal(await page.locator('[data-header-search-open]').count(),0);
     assert.equal(await page.locator('[data-cosmo-id-open]').isVisible(),true,`모바일 코스모 아이디 ${width}`);
     assert.equal(await page.locator('[data-alerts-open]').isVisible(),true,`모바일 종 ${width}`);
     await page.evaluate(()=>localStorage.setItem('cosmo-nickname-recents',JSON.stringify(['myid'])));
@@ -56,7 +63,7 @@ const root=path.resolve(__dirname,'../..');
     await page.getByText('공지 테스트').waitFor();
     assert.equal(await page.getByText('드롭 시간입니다').isVisible(),true);
     assert.equal(await page.getByText('공지 테스트').isVisible(),true);
-    assert.equal(await page.getByText('HaYeon 323').isVisible(),true);
+    assert.equal(await page.getByText('Cream02 323 드롭').isVisible(),true);
     await page.keyboard.press('Escape');
     await page.locator('#mobile-menu-btn').click();
     await page.waitForFunction(()=>!document.getElementById('mobile-menu').classList.contains('hidden'));
@@ -90,19 +97,10 @@ const root=path.resolve(__dirname,'../..');
     assert.equal(await page.locator('[data-cosmo-id-open]').isVisible(),true,`데스크톱 코스모 아이디 ${width}`);
     assert.equal(await page.locator('[data-alerts-open]').isVisible(),true,`데스크톱 종 ${width}`);
     assert.ok(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().height)<=66, 'main처럼 한 줄 헤더 유지');
-    if(width>=1280){
-      const search=page.locator('[data-header-search]');
-      assert.equal(await search.evaluate(n=>n.classList.contains('is-open')),false);
-      assert.equal(await search.locator('[data-header-search-input]').evaluate(n=>getComputedStyle(n).opacity==='0'),true);
-      await search.locator('[data-header-search-open]').click();
-      // is-open 직후에도 opacity 0.15s transition 중일 수 있어 완전히 펼쳐질 때까지 기다린다.
-      await page.waitForFunction(()=>{
-        const root=document.querySelector('[data-header-search]');
-        const input=root&&root.querySelector('[data-header-search-input]');
-        return !!(root&&root.classList.contains('is-open')&&input&&getComputedStyle(input).opacity==='1');
-      });
-      assert.equal(await search.locator('[data-header-search-input]').evaluate(n=>n===document.activeElement),true);
-    }
+    const search=page.locator('[data-header-search]');
+    assert.equal(await search.locator('[data-header-search-input]').isVisible(),true,`데스크톱 검색 입력칸 ${width}`);
+    assert.equal(await page.locator('[data-header-search-open]').count(),0);
+    assert.ok(await search.locator('[data-header-search-input]').evaluate(n=>getComputedStyle(n).opacity==='1'));
     await page.evaluate(()=>window.scrollTo(0,200));
     assert.equal(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().top>=0),true);
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/header-chromium-${width}.png`,fullPage:false}).catch(error=>console.warn(`[preview] chromium ${width}px screenshot skipped: ${error.message}`));
@@ -111,27 +109,24 @@ const root=path.resolve(__dirname,'../..');
   for(const width of [320,390,1024]){
     await page.setViewportSize({width,height:900});
     await page.goto('https://header.test/home',{waitUntil:'load'});
-    const jump=page.locator('.header-objekt-jump');
-    assert.equal(await jump.getAttribute('href'),'/cosmo/objekt');
-    if(width<1024){
-      assert.equal(await jump.isVisible(),true,`홈 모바일 오브젝트 바로가기 ${width}`);
-      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`home header overflow ${width}`);
-    }else{
-      assert.equal(await jump.evaluate(n=>getComputedStyle(n).display),'none',`홈 데스크톱에서 오브젝트 바로가기는 숨긴다 ${width}`);
-    }
+    const homeJump=page.locator('.header-objekt-jump');
+    assert.equal(await homeJump.getAttribute('href'),'/cosmo/objekt');
+    assert.equal(await homeJump.isVisible(),true,`홈 오브젝트 바로가기 ${width}`);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`home header overflow ${width}`);
   }
   await page.setViewportSize({width:390,height:900});
   await page.goto('https://header.test/search',{waitUntil:'load'});
-  assert.ok(await page.locator('.search-tabs__item').count()>=2);
-  assert.ok((await page.locator('.search-tabs__item.is-active').innerText()).includes('코스모'));
+  assert.equal(await page.locator('.search-tabs').count(),0);
+  assert.equal(await page.locator('.search-section').count(),5);
   assert.equal(await page.locator('.search-members').count(),1);
   assert.equal(await page.getByRole('heading',{name:'멤버 검색 결과'}).isVisible(),true);
   assert.equal(await page.locator('a.search-member').filter({hasText:'지연'}).isVisible(),true);
   const memberTop=await page.locator('.search-members').evaluate(n=>n.getBoundingClientRect().top);
-  const tabsTop=await page.locator('.search-tabs').evaluate(n=>n.getBoundingClientRect().top);
-  assert.ok(memberTop<tabsTop,'멤버 검색 결과는 탭 위에 있어야 한다');
+  const sectionTop=await page.locator('.search-section').first().evaluate(n=>n.getBoundingClientRect().top);
+  assert.ok(memberTop<sectionTop,'멤버 검색 결과는 분류 섹션 위에 있어야 한다');
   assert.equal(await page.getByText('HaYeon 323').isVisible(),true);
   assert.equal(await page.getByText('코스모에서 더 보기').isVisible(),true);
+  assert.ok(await page.getByText('이 분류에 없음').count()>=1);
   assert.deepEqual(errors,[]);console.log('PASS: chromium header 320/360/390/1024/1040/1280/1440px, keyboard, navigation, community removed, outside click, search, alerts, cosmo id');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1)});

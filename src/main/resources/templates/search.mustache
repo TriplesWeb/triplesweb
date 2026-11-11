@@ -16,12 +16,11 @@
                         <h1 class="font-headline-lg text-headline-md font-bold text-on-surface tracking-tight mt-1">
                             {{#keyword}}‘{{keyword}}’ 검색 결과{{/keyword}}{{^keyword}}사이트 전체 검색{{/keyword}}
                         </h1>
-                        <p class="mt-1.5 text-sm text-on-surface-variant">About · 코스모 · 미디어 · 정보 · 일정을 탭별로 찾습니다.</p>
+                        <p class="mt-1.5 text-sm text-on-surface-variant">About · 코스모 · 미디어 · 정보 · 일정을 위에서 아래로 이어 봅니다.</p>
                     </div>
                 </div>
 
                 <form action="/search" method="get" class="flex w-full sm:w-auto items-center gap-2">
-                    {{#activeTab}}<input type="hidden" name="tab" value="{{activeTab}}">{{/activeTab}}
                     <div class="site-search flex-1 sm:w-64">
                         <input type="search" name="keyword" value="{{keyword}}" placeholder="사이트 전체 검색" aria-label="사이트 검색어" class="site-field site-search__input" autocomplete="off">
                         <button type="submit" class="site-search__submit" aria-label="검색">
@@ -66,18 +65,12 @@
                 {{/hasMembers}}
             </section>
 
-            <nav class="search-tabs" aria-label="검색 결과 탭">
-                {{#tabs}}
-                <a href="{{{href}}}" class="search-tabs__item{{#active}} is-active{{/active}}">
-                    <span>{{label}}</span>
-                    {{#active}}<em>{{count}}</em>{{/active}}
-                </a>
-                {{/tabs}}
-            </nav>
-
             {{#tabs}}
-            {{#active}}
-            <section class="search-tab-panel" aria-label="{{label}} 검색 결과">
+            <section class="search-section" data-search-section="{{id}}" aria-label="{{label}} 검색 결과">
+                <div class="search-section__head">
+                    <h2>{{label}}</h2>
+                    {{#hasHits}}<em>{{count}}</em>{{/hasHits}}
+                </div>
                 {{#hasHits}}
                 <ul class="search-hits">
                     {{#hits}}
@@ -95,13 +88,9 @@
                 {{/hasMore}}
                 {{/hasHits}}
                 {{^hasHits}}
-                <div class="search-empty">
-                    <span class="material-symbols-outlined" data-icon="search_off">search_off</span>
-                    <p>이 탭에서 일치하는 결과가 없습니다.</p>
-                </div>
+                <p class="search-section__empty">이 분류에 없음</p>
                 {{/hasHits}}
             </section>
-            {{/active}}
             {{/tabs}}
 
             {{^hasAnyResults}}

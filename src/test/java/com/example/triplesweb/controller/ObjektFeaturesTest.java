@@ -471,7 +471,7 @@ class ObjektFeaturesTest {
         when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
         mvc.perform(get("/cosmo/objekt")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("data-scroll-top")))
-                .andExpect(content().string(not(containsString("header-objekt-jump"))))
+                .andExpect(content().string(containsString("header-objekt-jump")))
                 .andExpect(content().string(not(containsString("objekt-head-mints"))))
                 .andExpect(content().string(not(containsString("발행량 7,193,056개"))))
                 .andExpect(content().string(containsString("objekt-card-supply")))
@@ -595,6 +595,7 @@ class ObjektFeaturesTest {
             org.assertj.core.api.Assertions.assertThat(slice).hasSizeLessThanOrEqualTo(20);
         }
         verify(market, never()).withMintCounts(argThat(list -> list != null && list.size() > 20));
+        verify(market, never()).withIssuedSupply(anyList());
     }
 
     @Test void pulseReturnsMemorySnapshotWithoutSerialFetch() throws Exception {

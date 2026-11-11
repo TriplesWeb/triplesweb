@@ -108,7 +108,7 @@ class MobilePageTemplatesTest {
         assertThat(count).isGreaterThanOrEqualTo(30);
         var auth=new HashMap<>(model);auth.put("member",Map.of("userId",longText,"level",1,"points",100));
         String header=compiler.compile(Files.readString(root.resolve("layout/header.mustache"))).execute(auth);
-        assertThat(header).doesNotContain("header-objekt-jump");
+        assertThat(header).contains("header-objekt-jump").contains("href=\"/cosmo/objekt\"").contains("aria-label=\"오브젝트\"");
         var homeAuth=new HashMap<>(auth);homeAuth.put("isHomePage", true);
         String homeHeader=compiler.compile(Files.readString(root.resolve("layout/header.mustache"))).execute(homeAuth);
         assertThat(homeHeader).contains("header-objekt-jump").contains("href=\"/cosmo/objekt\"");
@@ -128,17 +128,32 @@ class MobilePageTemplatesTest {
                 "profileUrl", "/triples/artist?tab=member-24")));
         Map<String,Object> aboutTab = new LinkedHashMap<>();
         aboutTab.put("id", "about"); aboutTab.put("label", "About 트리플에스");
-        aboutTab.put("href", "/search?keyword=323&tab=about"); aboutTab.put("count", 1);
-        aboutTab.put("hasHits", true); aboutTab.put("active", false); aboutTab.put("hasMore", true);
+        aboutTab.put("href", "/search?keyword=323&tab=about"); aboutTab.put("count", 0);
+        aboutTab.put("hasHits", false); aboutTab.put("active", false); aboutTab.put("hasMore", true);
         aboutTab.put("moreHref", "/triples/members");
-        aboutTab.put("hits", List.of(Map.of("label","서연","href","/triples/artist?tab=member-1","kind","멤버","snippet","SeoYeon")));
+        aboutTab.put("hits", List.of());
         Map<String,Object> cosmoTab = new LinkedHashMap<>();
         cosmoTab.put("id", "cosmo"); cosmoTab.put("label", "코스모");
         cosmoTab.put("href", "/search?keyword=323&tab=cosmo"); cosmoTab.put("count", 1);
         cosmoTab.put("hasHits", true); cosmoTab.put("active", true); cosmoTab.put("hasMore", true);
         cosmoTab.put("moreHref", "/cosmo/objekt?search=323");
         cosmoTab.put("hits", List.of(Map.of("label","HaYeon 323","href","/cosmo/objekt/detail/hayeoncc323","kind","오브젝트","snippet","Cream02")));
-        searchPage.put("tabs", List.of(aboutTab, cosmoTab));
+        Map<String,Object> mediaTab = new LinkedHashMap<>();
+        mediaTab.put("id", "media"); mediaTab.put("label", "미디어");
+        mediaTab.put("href", "/search?keyword=323&tab=media"); mediaTab.put("count", 0);
+        mediaTab.put("hasHits", false); mediaTab.put("active", false); mediaTab.put("hasMore", true);
+        mediaTab.put("moreHref", "/archive/image_archive?q=323"); mediaTab.put("hits", List.of());
+        Map<String,Object> infoTab = new LinkedHashMap<>();
+        infoTab.put("id", "info"); infoTab.put("label", "정보");
+        infoTab.put("href", "/search?keyword=323&tab=info"); infoTab.put("count", 0);
+        infoTab.put("hasHits", false); infoTab.put("active", false); infoTab.put("hasMore", true);
+        infoTab.put("moreHref", "/article/info?type=title&keyword=323"); infoTab.put("hits", List.of());
+        Map<String,Object> scheduleTab = new LinkedHashMap<>();
+        scheduleTab.put("id", "schedule"); scheduleTab.put("label", "일정");
+        scheduleTab.put("href", "/search?keyword=323&tab=schedule"); scheduleTab.put("count", 0);
+        scheduleTab.put("hasHits", false); scheduleTab.put("active", false); scheduleTab.put("hasMore", true);
+        scheduleTab.put("moreHref", "/schedule"); scheduleTab.put("hits", List.of());
+        searchPage.put("tabs", List.of(aboutTab, cosmoTab, mediaTab, infoTab, scheduleTab));
         Files.writeString(output.resolve("search-tabs.html"), compiler.compile(Files.readString(root.resolve("search.mustache"))).execute(searchPage));
     }
     private static Map<String,Object> orbit(String name,int percent,int owned,int total) {

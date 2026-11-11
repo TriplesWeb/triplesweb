@@ -7,7 +7,7 @@ const base = path.resolve(__dirname, '../..');
   const browser = await chromium.launch({headless:true, executablePath:process.env.CHROMIUM_PATH || (fs.existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined), args:['--no-sandbox']});
   try {
     const page = await browser.newPage({viewport:{width:1280,height:1000}});
-    let favorite=false, favoriteAttempts=0;
+    let favorite=false, favoriteAttempts=0, suppliesHits=0;
     let isAdmin = true, description = '기존 설명', writes = [], failMore = true, apolloStory = null;
     const data = () => ({isFavorite:favorite,objektKey:'hayeoncc367z',collectionId:'Cream02 HaYeon 367Z',member:'HaYeon',season:'Cream02',class:'Special',collectionNo:'367Z',description,isAdmin,
       detailUrl:'/cosmo/objekt/detail/hayeoncc367z',memberUrl:'/cosmo/objekt?group=members&member=HaYeon',tradeUrl:'/article/trade/new?selectedObjektIds=uuid',sellUrl:'/article/sell/new?selectedObjektIds=uuid',descriptionUrl:'/cosmo/objekt/detail/hayeoncc367z/description',
@@ -40,7 +40,7 @@ const base = path.resolve(__dirname, '../..');
         return json({status:'available',serial:1,page:next?1:0,total:21,hasNext:!next,owner:{status:'indexed',nickname:'Current',timestamp:'2026-10-26T10:00:00Z',basis:'latest_transfer'},transfers});
       }
       if(p.endsWith('/issued'))return json({status:'available',count:4,ranges:[{first:1,last:2},{first:4,last:5}],hasMore:false,nextOffset:2,observedAt:'2026-10-29T00:00:00Z'});
-      if(p==='/cosmo/objekt/supplies')return json({hayeoncc367z:{status:'available',count:4,observedAt:'2026-10-29T00:00:00Z'}});
+      if(p==='/cosmo/objekt/supplies'){suppliesHits++;return json({hayeoncc367z:{status:'available',count:4,observedAt:'2026-10-29T00:00:00Z'}});}
       if(p==='/cosmo/objekt/pulse')return json({catalogSig:'1:test',catalogCount:1,supplies:{hayeoncc367z:{status:'available',count:4}},dropWindow:false,pollMs:60000,forceRefreshMs:600000,historyTtlMs:30000});
       if(p.startsWith('/cosmo/objekt/detail/') && (req.headers().accept||'').includes('application/json')) return json(data());
       if(p==='/cosmo/objekt' || p==='/cosmo/objekt/detail/hayeoncc367z') {
@@ -183,11 +183,15 @@ const base = path.resolve(__dirname, '../..');
     await page.waitForFunction(()=>document.querySelector('#objektDetailDesc')?.textContent.includes('byteS'));
     assert.equal(await page.locator('#objektDescriptionEdit').isVisible(),false);
     await page.locator('#objektDetailClose').click();
+    const suppliesBefore=suppliesHits;
     await page.evaluate(()=>{
       const original=document.querySelector('.objekt-card[data-objekt-key]');
       for(let i=0;i<49;i++){const card=original.cloneNode(true);delete card.dataset.supplyDone;delete card.dataset.supplyTries;original.parentElement.append(card);}
       window.ObjektIssued.hydrate();
     });
+    await page.waitForTimeout(400);
+    assert.equal(suppliesHits,suppliesBefore,'그리드 hydrate는 /supplies를 부르지 않는다');
+    await page.evaluate(()=>window.ObjektIssued.applyLive({hayeoncc367z:{status:'available',count:4}}));
     await page.waitForFunction(()=>document.querySelectorAll('.objekt-card[data-supply-done="true"]').length===50);
     console.log('PASS: 모달 설명 저장·삭제·CSRF, 비관리자 숨김, 선택 유지 링크, 통합 시리얼 조회와 실패 후 이어받기');
   } finally {await browser.close();}

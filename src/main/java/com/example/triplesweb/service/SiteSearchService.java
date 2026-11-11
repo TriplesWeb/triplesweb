@@ -25,10 +25,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 
 /**
- * 헤더 전역 검색. 네비 탭(About / 코스모 / 미디어 / 정보 / 일정)별로 최대 {@link #LIMIT}건을 모은다.
+ * 헤더 전역 검색. About / 코스모 / 미디어 / 정보 / 일정 분류를 한 페이지에 최대 {@link #LIMIT}건씩 모은다.
  */
 @Service
 @RequiredArgsConstructor
@@ -58,17 +59,17 @@ public class SiteSearchService {
             return emptyPage(query, active);
         }
         List<Member> members = memberResults(query);
+        CompletableFuture<List<Hit>> about = CompletableFuture.supplyAsync(() -> aboutHits(query));
+        CompletableFuture<List<Hit>> cosmo = CompletableFuture.supplyAsync(() -> cosmoHits(query));
+        CompletableFuture<List<Hit>> media = CompletableFuture.supplyAsync(() -> mediaHits(query));
+        CompletableFuture<List<Hit>> info = CompletableFuture.supplyAsync(() -> infoHits(query));
+        CompletableFuture<List<Hit>> schedule = CompletableFuture.supplyAsync(() -> scheduleHits(query));
         List<Tab> tabs = List.of(
-                tabOf("about", "About 트리플에스", "/triples/members",
-                        active.equals("about") ? aboutHits(query) : List.of(), query),
-                tabOf("cosmo", "코스모", "/cosmo/objekt?search=" + encode(query),
-                        active.equals("cosmo") ? cosmoHits(query) : List.of(), query),
-                tabOf("media", "미디어", "/archive/image_archive?q=" + encode(query),
-                        active.equals("media") ? mediaHits(query) : List.of(), query),
-                tabOf("info", "정보", "/article/info?type=title&keyword=" + encode(query),
-                        active.equals("info") ? infoHits(query) : List.of(), query),
-                tabOf("schedule", "일정", "/schedule",
-                        active.equals("schedule") ? scheduleHits(query) : List.of(), query)
+                tabOf("about", "About 트리플에스", "/triples/members", about.join(), query),
+                tabOf("cosmo", "코스모", "/cosmo/objekt?search=" + encode(query), cosmo.join(), query),
+                tabOf("media", "미디어", "/archive/image_archive?q=" + encode(query), media.join(), query),
+                tabOf("info", "정보", "/article/info?type=title&keyword=" + encode(query), info.join(), query),
+                tabOf("schedule", "일정", "/schedule", schedule.join(), query)
         );
         List<Tab> marked = tabs.stream().map(item -> item.withActive(item.id.equals(active))).toList();
         return new Page(query, active, marked, members);
@@ -147,8 +148,7 @@ public class SiteSearchService {
             if (hits.size() >= LIMIT) return hits;
         }
         for (ChemistryDto item : safeList(chemistry::findAll)) {
-            String haystack = String.join(" ", blankTo(item.getLabel(), ""), blankTo(item.getLabelEn(), ""),
-                    blankTo(item.getMemberA(), ""), blankTo(item.getMemberB(), ""));
+            String haystack = String.join(" ", blankTo(item.getLabel(), ""), blankTo(item.getLabelEn(), ""));
             if (contains(haystack, query)) {
                 String pair = (blankTo(item.getMemberA(), "") + " · " + blankTo(item.getMemberB(), "")).trim();
                 hits.add(hit(blankTo(item.getLabel(), pair), "/triples/chemistry", "케미", pair));

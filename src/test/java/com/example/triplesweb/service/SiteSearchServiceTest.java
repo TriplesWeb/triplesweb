@@ -98,11 +98,16 @@ class SiteSearchServiceTest {
         assertThat(page.getMembers().get(0).getProfileUrl()).isEqualTo("/triples/artist?tab=member-1");
         assertThat(page.getMembers().get(0).getProfileImage()).isEqualTo("/images/image-upload-pending.png");
         assertThat(about.getHits()).extracting(SiteSearchService.Hit::getKind)
-                .contains("케미")
+                .doesNotContain("케미")
                 .doesNotContain("멤버");
         assertThat(about.getHits()).extracting(SiteSearchService.Hit::getHref)
-                .contains("/triples/chemistry")
+                .doesNotContain("/triples/chemistry")
                 .doesNotContain("/triples/artist?tab=member-1");
+        SiteSearchService.Page chemName = search.search("시선강탈", "about");
+        assertThat(tab(chemName, "about").getHits()).extracting(SiteSearchService.Hit::getKind)
+                .contains("케미");
+        assertThat(tab(chemName, "about").getHits()).extracting(SiteSearchService.Hit::getHref)
+                .contains("/triples/chemistry");
 
         SiteSearchService.Page assemble = search.search("ASSEMBLE", "about");
         assertThat(tab(assemble, "about").getHits()).extracting(SiteSearchService.Hit::getHref)
@@ -165,7 +170,8 @@ class SiteSearchServiceTest {
         assertThat(tab(mediaPage, "media").getHits()).extracting(SiteSearchService.Hit::getHref)
                 .contains("/archive/image_archive?q=%EC%84%9C%EC%97%B0%20%EC%A7%81%EC%BA%A0",
                         "/media/mv/abcdefghijk");
-        assertThat(tab(mediaPage, "info").getHits()).isEmpty();
+        assertThat(tab(mediaPage, "info").getHits()).extracting(SiteSearchService.Hit::getHref)
+                .contains("/shop/item/merch/5", "/article/info/11");
         SiteSearchService.Page infoPage = search.search("서연", "info");
         assertThat(tab(infoPage, "info").getHits()).extracting(SiteSearchService.Hit::getHref)
                 .contains("/shop/item/merch/5", "/article/info/11");
@@ -194,6 +200,30 @@ class SiteSearchServiceTest {
                 .containsExactly("서연", "윤서연");
         assertThat(tab(cosmo, "cosmo").getHits()).extracting(SiteSearchService.Hit::getKind)
                 .doesNotContain("멤버");
+    }
+
+    @Test
+    void chemistryMatchesNameNotMember() {
+        when(chemistry.findAll()).thenReturn(List.of(ChemistryDto.builder()
+                .label("시크릿 쥬쥬즈").labelEn("Secret Jujus").memberA("지연").memberB("서연").build()));
+        assertThat(tab(search.search("지연", "about"), "about").getHits())
+                .extracting(SiteSearchService.Hit::getKind)
+                .doesNotContain("케미");
+        assertThat(tab(search.search("시크릿 쥬쥬즈", "about"), "about").getHits())
+                .extracting(SiteSearchService.Hit::getKind)
+                .contains("케미");
+        assertThat(tab(search.search("Secret Jujus", "about"), "about").getHits())
+                .extracting(SiteSearchService.Hit::getKind)
+                .contains("케미");
+    }
+
+    @Test
+    void keywordFillsEverySection() {
+        when(objekts.findCollections("triples")).thenReturn(List.of());
+        SiteSearchService.Page page = search.search("없는검색어", "cosmo");
+        assertThat(page.getTabs()).extracting(SiteSearchService.Tab::getId)
+                .containsExactly("about", "cosmo", "media", "info", "schedule");
+        assertThat(page.getTabs()).allMatch(tab -> !tab.isHasHits() || tab.getCount() <= SiteSearchService.LIMIT);
     }
 
     @Test

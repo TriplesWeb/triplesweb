@@ -215,7 +215,7 @@ public class CosmoController {
         int fromIndex = safePage * PAGE_SIZE;
         int toIndex = Math.min(fromIndex + PAGE_SIZE, resultCount);
         List<Map<String, Object>> pageSlice = filtered.subList(fromIndex, toIndex);
-        List<Map<String, Object>> pageObjekts = marketData.withIssuedSupply(marketData.withMintCounts(pageSlice));
+        List<Map<String, Object>> pageObjekts = marketData.withMintCounts(pageSlice);
         if (pageObjekts == null) pageObjekts = pageSlice;
         boolean hasMore = toIndex < resultCount;
 

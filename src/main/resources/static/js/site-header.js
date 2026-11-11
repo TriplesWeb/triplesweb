@@ -59,7 +59,6 @@
   function setMobileMenuOpen(open) {
     if (!mobileMenu || !mobileMenuBtn || !mobileMenuIcon) return;
     if (open) {
-      setHeaderSearchOpen(false);
       closeHeaderPopovers();
     }
     mobileMenu.classList.toggle("hidden", !open);
@@ -117,79 +116,6 @@
     lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
   }, false);
 
-  function headerSearchRoot() {
-    return document.querySelector("[data-header-search]");
-  }
-
-  let headerSearchIgnoreCloseUntil = 0;
-
-  function setHeaderSearchOpen(open) {
-    const headerSearch = headerSearchRoot();
-    if (!headerSearch) return;
-    if (open) {
-      setMobileMenuOpen(false);
-      closeHeaderPopovers();
-    }
-    const searchInput = headerSearch.querySelector("[data-header-search-input]");
-    const searchOpen = headerSearch.querySelector("[data-header-search-open]");
-    headerSearch.classList.toggle("is-open", open);
-    if (searchOpen) {
-      searchOpen.setAttribute("aria-expanded", open ? "true" : "false");
-      searchOpen.setAttribute("aria-label", open ? "검색 닫기" : "검색 열기");
-    }
-    if (!searchInput) return;
-    if (open) {
-      // 같은 제스처의 바깥 pointerdown/click에 바로 닫히지 않게
-      headerSearchIgnoreCloseUntil = Date.now() + 500;
-      searchInput.removeAttribute("tabindex");
-      requestAnimationFrame(function () {
-        searchInput.focus();
-        try { searchInput.select(); } catch (_) {}
-      });
-    } else {
-      searchInput.setAttribute("tabindex", "-1");
-      searchInput.blur();
-    }
-  }
-
-  (function bindHeaderSearch() {
-    const headerSearch = headerSearchRoot();
-    if (!headerSearch) return;
-    const searchOpen = headerSearch.querySelector("[data-header-search-open]");
-    if (!searchOpen) return;
-    searchOpen.setAttribute("aria-expanded", "false");
-
-    function openFromToggle(event) {
-      if (event.type === "pointerdown" && event.button != null && event.button !== 0) return;
-      event.preventDefault();
-      event.stopPropagation();
-      setHeaderSearchOpen(true);
-    }
-
-    // 문서 위임 대신 버튼에 직접 바인딩 (SVG 클릭·캡처 이슈 회피)
-    searchOpen.addEventListener("pointerdown", openFromToggle);
-    searchOpen.addEventListener("click", openFromToggle);
-  })();
-
-  document.addEventListener("keydown", function (event) {
-    const headerSearch = headerSearchRoot();
-    if (event.key !== "Escape" || !headerSearch || !headerSearch.classList.contains("is-open")) return;
-    setHeaderSearchOpen(false);
-    const searchOpen = headerSearch.querySelector("[data-header-search-open]");
-    if (searchOpen) searchOpen.focus();
-  });
-
-  document.addEventListener("pointerdown", function (event) {
-    if (Date.now() < headerSearchIgnoreCloseUntil) return;
-    const headerSearch = headerSearchRoot();
-    if (!headerSearch || !headerSearch.classList.contains("is-open")) return;
-    const target = event.target;
-    if (target instanceof Node && headerSearch.contains(target)) return;
-    const searchInput = headerSearch.querySelector("[data-header-search-input]");
-    if (searchInput && searchInput.value.trim()) return;
-    setHeaderSearchOpen(false);
-  });
-
   const COSMO_RECENTS_KEY = "cosmo-nickname-recents";
   const ALERTS_CATALOG_KEY = "site-alerts-catalog-sig";
   const ALERTS_NOTICE_KEY = "site-alerts-notice-id";
@@ -239,7 +165,6 @@
     if (!cosmoOpen || !cosmoPanel) return;
     if (open) {
       setMobileMenuOpen(false);
-      setHeaderSearchOpen(false);
       setAlertsOpen(false);
       renderCosmoIdPanel();
     }
@@ -255,7 +180,6 @@
     if (!alertsOpen || !alertsPanel) return;
     if (open) {
       setMobileMenuOpen(false);
-      setHeaderSearchOpen(false);
       setCosmoIdOpen(false);
       loadAlerts(true);
     }

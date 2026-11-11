@@ -83,7 +83,12 @@
         </span>
         <img src="/images/triples-wordmark-white.png" alt="tripleS" width="86" height="20" class="w-auto block" decoding="async">
     </a>
-    {{#isHomePage}}<a href="/cosmo/objekt" class="header-objekt-jump">오브젝트</a>{{/isHomePage}}
+    <a href="/cosmo/objekt" class="header-objekt-jump" aria-label="오브젝트" title="오브젝트">
+        <span class="header-objekt-jump__cards" aria-hidden="true">
+            <span class="header-objekt-jump__card header-objekt-jump__card--back"></span>
+            <span class="header-objekt-jump__card header-objekt-jump__card--front"></span>
+        </span>
+    </a>
     </div>
 
     <!-- 2. 네비게이션 메뉴 (데스크톱) — 항목은 main SiteNavigation -->
@@ -164,11 +169,8 @@
     </button>
 
     <div class="site-header-tools">
-    <form action="/search" method="get" role="search" class="site-header-search site-header-search--icon relative flex items-center shrink-0" data-header-search>
-        <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" class="site-header-search__input" type="search" placeholder="사이트 전체 검색" data-header-search-input tabindex="-1" autocomplete="off" />
-        <button type="button" class="site-header-search__toggle" aria-label="검색 열기" title="검색" data-header-search-open>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
-        </button>
+    <form action="/search" method="get" role="search" class="site-header-search relative flex items-center" data-header-search>
+        <input name="keyword" required minlength="1" aria-label="사이트 전체 검색" class="site-header-search__input" type="search" placeholder="사이트 전체 검색" data-header-search-input autocomplete="off" />
         <button type="submit" class="site-header-search__submit" title="검색" aria-label="검색">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
         </button>

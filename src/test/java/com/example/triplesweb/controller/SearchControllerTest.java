@@ -39,16 +39,23 @@ class SearchControllerTest {
     }
 
     @Test
-    void keywordAndTabRenderHitsAndMoreLink() throws Exception {
+    void keywordRendersAllSectionsWithoutTabs() throws Exception {
         var hits = List.of(new SiteSearchService.Hit("HaYeon 323", "/cosmo/objekt/detail/hayeoncc323", "오브젝트", "Cream02"));
+        var empty = List.<SiteSearchService.Hit>of();
         var about = new SiteSearchService.Tab("about", "About 트리플에스",
-                "/search?keyword=323&tab=about", "/triples/members", List.of(), false);
+                "/search?keyword=323&tab=about", "/triples/members", empty, false);
         var cosmo = new SiteSearchService.Tab("cosmo", "코스모",
                 "/search?keyword=323&tab=cosmo", "/cosmo/objekt?search=323", hits, true);
+        var media = new SiteSearchService.Tab("media", "미디어",
+                "/search?keyword=323&tab=media", "/archive/image_archive?q=323", empty, false);
+        var info = new SiteSearchService.Tab("info", "정보",
+                "/search?keyword=323&tab=info", "/article/info?type=title&keyword=323", empty, false);
+        var schedule = new SiteSearchService.Tab("schedule", "일정",
+                "/search?keyword=323&tab=schedule", "/schedule", empty, false);
         var members = List.of(new SiteSearchService.Member("지연", "JiYeon",
                 "/images/image-upload-pending.png", "/triples/artist?tab=member-24"));
         when(search.search("323", "cosmo")).thenReturn(
-                new SiteSearchService.Page("323", "cosmo", List.of(about, cosmo), members));
+                new SiteSearchService.Page("323", "cosmo", List.of(about, cosmo, media, info, schedule), members));
 
         String body = mvc.perform(get("/search").param("keyword", "323").param("tab", "cosmo"))
                 .andExpect(status().isOk())
@@ -57,13 +64,23 @@ class SearchControllerTest {
                 .andExpect(content().string(containsString("지연")))
                 .andExpect(content().string(containsString("JiYeon")))
                 .andExpect(content().string(containsString("/triples/artist?tab=member-24")))
-                .andExpect(content().string(containsString("search-tabs")))
+                .andExpect(content().string(containsString("search-section")))
+                .andExpect(content().string(not(containsString("search-tabs"))))
                 .andExpect(content().string(containsString("HaYeon 323")))
                 .andExpect(content().string(containsString("/cosmo/objekt?search=323")))
                 .andExpect(content().string(containsString("코스모에서 더 보기")))
                 .andExpect(content().string(containsString("About 트리플에스")))
+                .andExpect(content().string(containsString("미디어")))
+                .andExpect(content().string(containsString("정보")))
+                .andExpect(content().string(containsString("일정")))
+                .andExpect(content().string(containsString("이 분류에 없음")))
                 .andReturn().getResponse().getContentAsString();
-        assertThat(body.indexOf("멤버 검색 결과")).isLessThan(body.indexOf("search-tabs"));
+        assertThat(body.indexOf("멤버 검색 결과")).isLessThan(body.indexOf("search-section"));
         assertThat(body.indexOf("지연")).isLessThan(body.indexOf("HaYeon 323"));
+        assertThat(body).contains("data-search-section=\"about\"")
+                .contains("data-search-section=\"cosmo\"")
+                .contains("data-search-section=\"media\"")
+                .contains("data-search-section=\"info\"")
+                .contains("data-search-section=\"schedule\"");
     }
 }
