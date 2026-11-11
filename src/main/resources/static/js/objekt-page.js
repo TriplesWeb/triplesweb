@@ -886,8 +886,10 @@
         window.ObjektSerialLookup?.setCollection(
             data.lookupUrl || ('/cosmo/objekt/detail/' + encodeURIComponent(key) + '/lookup')
         );
+        const card = document.querySelector('.objekt-card[data-objekt-key="' + CSS.escape(key) + '"]');
         window.ObjektIssued?.show(
-            data.issuedUrl || ('/cosmo/objekt/detail/' + encodeURIComponent(key) + '/issued')
+            data.issuedUrl || ('/cosmo/objekt/detail/' + encodeURIComponent(key) + '/issued'),
+            data.mintCount ?? card?.dataset.supplyCount
         );
         const address = new URL(location.href);
         address.searchParams.set('objekt', key);
@@ -966,7 +968,8 @@
         [detailMember, detailSeason, detailClass, detailNo].forEach((node) => {
             if (node) node.textContent = '—';
         });
-        window.ObjektIssued?.show('');
+        const openingCard = document.querySelector('.objekt-card[data-objekt-key="' + CSS.escape(key) + '"]');
+        window.ObjektIssued?.show('', openingCard?.dataset.supplyCount);
         window.ObjektSerialLookup?.setCollection('');
         isAdmin = false;
         exitDescriptionEdit();
@@ -1023,6 +1026,7 @@
             if (typeof data.description !== 'string') throw new Error();
             if (activeObjektKey !== key) return;
             rememberDescriptionMeta(data);
+            if (scope === 'group' || scope === 'member') descriptionMeta.scope = scope;
             fillDetailStory({description: data.description});
             exitDescriptionEdit();
             descriptionStatus.textContent = clear

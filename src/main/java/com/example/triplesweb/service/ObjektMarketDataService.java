@@ -113,14 +113,35 @@ public class ObjektMarketDataService {
         return mintCounts.get(slug);
     }
 
+    public Long mintCount(Map<String, Object> item) {
+        if (item == null) return null;
+        Long count = mintCount(text(item, "slug"));
+        return count != null ? count : mintCount(text(item, "id"));
+    }
+
     private static Map<String, Object> applyMint(Map<String, Object> item, Map<String, Long> snapshot) {
         Map<String, Object> copy = new LinkedHashMap<>(item);
-        Long count = snapshot.get(String.valueOf(item.get("slug")));
+        Long count = lookupMint(item, snapshot);
         if (count != null) {
             copy.put("mintCount", count);
             copy.put("mintCountKnown", true);
         }
         return copy;
+    }
+
+    private static Long lookupMint(Map<String, Object> item, Map<String, Long> snapshot) {
+        String slug = text(item, "slug");
+        if (!slug.isBlank() && snapshot.containsKey(slug)) return snapshot.get(slug);
+        String id = text(item, "id");
+        if (!id.isBlank() && snapshot.containsKey(id)) return snapshot.get(id);
+        return null;
+    }
+
+    private static String text(Map<String, Object> item, String key) {
+        Object value = item.get(key);
+        if (value == null) return "";
+        String text = value.toString().trim();
+        return "null".equalsIgnoreCase(text) ? "" : text;
     }
 
     public List<Map<String,Object>> withIssuedSupply(List<Map<String,Object>> items) { return serialSupply.decorate(items); }

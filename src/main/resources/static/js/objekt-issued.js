@@ -2,6 +2,21 @@
   let url='', generation=0, abort, timer;
   const number=value=>Number.isSafeInteger(value)&&value>=0;
   const countEl=()=>document.getElementById('objektIssuedCount');
+  function seedCount(value){
+    if(typeof value==='string'&&value.trim()==='')return null;
+    const count=Number(value);
+    return number(count)?count:null;
+  }
+  function readCount(){
+    const digits=String(countEl()?.textContent||'').replace(/[^\d]/g,'');
+    if(!digits)return null;
+    const count=Number(digits);
+    return number(count)?count:null;
+  }
+  function paint(count){
+    const el=countEl();
+    if(el&&number(count)) el.textContent=count.toLocaleString('ko-KR')+'개';
+  }
   function close(){generation++;abort?.abort();clearTimeout(timer);url='';}
   async function load(attempt=0){
     const count=countEl();
@@ -12,13 +27,27 @@
       if(!response.ok)throw Error();
       const data=await response.json();
       if(version!==generation)return;
+      if(readCount()!=null)return;
       if(data.status==='loading'&&attempt<8){timer=setTimeout(()=>load(attempt+1),1500);return;}
       if(data.status!=='available'||!number(data.count))throw Error();
-      count.textContent=data.count.toLocaleString('ko-KR')+'개';
-    }catch(error){if(version===generation&&error.name!=='AbortError'){const el=countEl();if(el)el.textContent='미확인';}}
+      paint(data.count);
+    }catch(error){
+      if(version===generation&&error.name!=='AbortError'&&readCount()==null){
+        const el=countEl();if(el)el.textContent='미확인';
+      }
+    }
   }
-  function show(value){close();const count=countEl();if(!count)return;url=value;count.textContent='확인 중';load();}
-  function refresh(){if(url)load();}
+  function show(value, seed){
+    close();
+    const el=countEl();
+    if(!el)return;
+    const next=seedCount(seed);
+    if(next!=null) paint(next);
+    else el.textContent='확인 중';
+    url=value||'';
+    if(url&&readCount()==null) load();
+  }
+  function refresh(){if(url&&readCount()==null)load();}
   function applyLive(supplies){
     const openKey=document.getElementById('objektDetailFavorite')?.dataset.key||'';
     Object.entries(supplies||{}).forEach(([key,state])=>{
@@ -33,8 +62,8 @@
         card.dataset.supplyAt=String(Date.now());
       });
       if(openKey===key&&state?.status==='available'&&number(state.count)){
-        const count=countEl();
-        if(count)count.textContent=state.count.toLocaleString('ko-KR')+'개';
+        const prev=readCount();
+        if(prev==null||state.count>=prev) paint(state.count);
       }
     });
   }

@@ -9,9 +9,11 @@ const base = path.resolve(__dirname, '../..');
     const page = await browser.newPage({viewport:{width:1280,height:1000}});
     let favorite=false, favoriteAttempts=0, suppliesHits=0;
     let isAdmin = true, description = '기존 설명', writes = [], failMore = true, apolloStory = null;
+    let mintCount = null, issuedStatus = 'available';
     const data = () => ({isFavorite:favorite,objektKey:'hayeoncc367z',collectionId:'Cream02 HaYeon 367Z',member:'HaYeon',season:'Cream02',class:'Special',collectionNo:'367Z',description,isAdmin,
       detailUrl:'/cosmo/objekt/detail/hayeoncc367z',memberUrl:'/cosmo/objekt?group=members&member=HaYeon',tradeUrl:'/article/trade/new?selectedObjektIds=uuid',sellUrl:'/article/sell/new?selectedObjektIds=uuid',descriptionUrl:'/cosmo/objekt/detail/hayeoncc367z/description',
       descriptionScope:'group',descriptionGroupLabel:'Cream02 367Z',descriptionGroupCount:24,
+      ...(Number.isFinite(mintCount) ? {mintCount} : {}),
       ...(apolloStory ? {apollo: apolloStory} : {})});
     await page.context().addCookies([{name:'XSRF-TOKEN',value:'test-csrf',domain:'preview.test',path:'/'}]);
     await page.route('**/*', async route => {
@@ -39,7 +41,10 @@ const base = path.resolve(__dirname, '../..');
         const transfers=Array.from({length:next?1:20},(_,i)=>({timestamp:`2026-10-${next?'01':'26'}T10:00:00Z`,nickname:i===0?'Current':'Previous'}));
         return json({status:'available',serial:1,page:next?1:0,total:21,hasNext:!next,owner:{status:'indexed',nickname:'Current',timestamp:'2026-10-26T10:00:00Z',basis:'latest_transfer'},transfers});
       }
-      if(p.endsWith('/issued'))return json({status:'available',count:4,ranges:[{first:1,last:2},{first:4,last:5}],hasMore:false,nextOffset:2,observedAt:'2026-10-29T00:00:00Z'});
+      if(p.endsWith('/issued')){
+        if(issuedStatus==='loading')return json({status:'loading'});
+        return json({status:'available',count:4,ranges:[{first:1,last:2},{first:4,last:5}],hasMore:false,nextOffset:2,observedAt:'2026-10-29T00:00:00Z'});
+      }
       if(p==='/cosmo/objekt/supplies'){suppliesHits++;return json({hayeoncc367z:{status:'available',count:4,observedAt:'2026-10-29T00:00:00Z'}});}
       if(p==='/cosmo/objekt/pulse')return json({catalogSig:'1:test',catalogCount:1,supplies:{hayeoncc367z:{status:'available',count:4}},dropWindow:false,pollMs:60000,forceRefreshMs:600000,historyTtlMs:30000});
       if(p.startsWith('/cosmo/objekt/detail/') && (req.headers().accept||'').includes('application/json')) return json(data());
@@ -96,10 +101,22 @@ const base = path.resolve(__dirname, '../..');
     assert.equal(await page.locator('#objektDetailDesc').textContent(),'<b>새 설명</b>');
     assert.equal(await page.locator('#objektDetailDesc b').count(),0);
     await page.locator('#objektDescriptionEdit').click();
+    assert.equal(await page.locator('input[name=descriptionScope][value=group]').isChecked(),true);
+    await page.locator('input[name=descriptionScope][value=member]').check();
+    await page.locator('#objektModalDescription').fill('이 카드만');
+    await page.locator('#objektDescriptionForm button[type=submit]').click();
+    await page.waitForFunction(()=>document.querySelector('#objektDescriptionStatus').textContent.includes('저장했습니다'));
+    assert.equal(await page.locator('#objektDetailDesc').textContent(),'이 카드만');
+    await page.locator('#objektDescriptionEdit').click();
+    assert.equal(await page.locator('input[name=descriptionScope][value=member]').isChecked(),true);
     page.once('dialog',dialog=>dialog.accept()); await page.locator('#objektDescriptionDelete').click();
     await page.waitForFunction(()=>document.querySelector('#objektDescriptionStatus').textContent.includes('삭제했습니다'));
     assert.equal(await page.locator('#objektDescriptionForm').isVisible(),false);
-    assert.deepEqual(writes,[{description:'<b>새 설명</b>',scope:'group'},{description:'',scope:'group'}]);
+    assert.deepEqual(writes,[
+      {description:'<b>새 설명</b>',scope:'group'},
+      {description:'이 카드만',scope:'member'},
+      {description:'',scope:'member'}
+    ]);
     fs.mkdirSync('/tmp/objekt-ui',{recursive:true});
     await page.screenshot({path:'/tmp/objekt-ui/modal-desktop.png',fullPage:true});
     await page.setViewportSize({width:390,height:844});
@@ -193,6 +210,12 @@ const base = path.resolve(__dirname, '../..');
     assert.equal(suppliesHits,suppliesBefore,'그리드 hydrate는 /supplies를 부르지 않는다');
     await page.evaluate(()=>window.ObjektIssued.applyLive({hayeoncc367z:{status:'available',count:4}}));
     await page.waitForFunction(()=>document.querySelectorAll('.objekt-card[data-supply-done="true"]').length===50);
+    mintCount = 90;
+    issuedStatus = 'loading';
+    await page.locator('.objekt-open-detail').first().click();
+    await page.waitForFunction(()=>document.querySelector('#objektIssuedCount')?.textContent==='90개');
+    await page.waitForTimeout(400);
+    assert.equal(await page.locator('#objektIssuedCount').textContent(),'90개');
     console.log('PASS: 모달 설명 저장·삭제·CSRF, 비관리자 숨김, 선택 유지 링크, 통합 시리얼 조회와 실패 후 이어받기');
   } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1)});

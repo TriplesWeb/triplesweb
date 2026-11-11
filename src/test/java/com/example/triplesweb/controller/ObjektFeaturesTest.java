@@ -636,5 +636,25 @@ class ObjektFeaturesTest {
                 .andExpect(jsonPath("$.supplies.uuid.count").value(90));
         verify(market, never()).issuedSupply(any(), anyInt(), anyInt());
     }
+
+    @Test void detailJsonIncludesLiveMintCountWithoutSerialFetch() throws Exception {
+        var item = new LinkedHashMap<String, Object>();
+        item.put("id", "uuid");
+        item.put("slug", "hayeoncc367z");
+        item.put("collectionId", "Cream02 HaYeon 367Z");
+        item.put("member", "HaYeon");
+        item.put("season", "Cream02");
+        item.put("class", "Special");
+        item.put("collectionNo", "367Z");
+        stubCatalog(List.of(item));
+        when(market.mintCount(anyMap())).thenReturn(90L);
+        mvc.perform(get("/cosmo/objekt/detail/hayeoncc367z").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mintCount").value(90))
+                .andExpect(jsonPath("$.mintCountKnown").value(true))
+                .andExpect(jsonPath("$.descriptionScope").value("group"))
+                .andExpect(jsonPath("$.descriptionGroupCount").value(1));
+        verify(market, never()).issuedSupply(any(), anyInt(), anyInt());
+    }
 }
 

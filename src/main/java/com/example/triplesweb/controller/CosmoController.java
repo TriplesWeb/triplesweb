@@ -146,7 +146,7 @@ public class CosmoController {
                     .filter(value -> !value.isBlank()).distinct().limit(24).toList()) {
                 Map<String, Object> item = objektService.findByKey(key);
                 if (item == null) continue;
-                Long count = marketData.mintCount(firstValue(item, "slug", "id"));
+                Long count = liveMint(item);
                 if (count == null) continue;
                 supplies.put(key, Map.of("status", "available", "count", count));
             }
@@ -279,10 +279,15 @@ public class CosmoController {
     }
 
     private Long mintOf(Map<String, Object> item) {
-        Long fromStore = marketData.mintCount(firstValue(item, "slug", "id"));
+        Long fromStore = liveMint(item);
         if (fromStore != null) return fromStore;
         Object existing = item.get("mintCount");
         return existing instanceof Number n ? n.longValue() : null;
+    }
+
+    private Long liveMint(Map<String, Object> item) {
+        Long count = marketData.mintCount(firstValue(item, "slug"));
+        return count != null ? count : marketData.mintCount(firstValue(item, "id"));
     }
 
     private static boolean matchesSearch(String query, Map<String, Object> objekt) {

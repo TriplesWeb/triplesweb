@@ -51,6 +51,7 @@ class ObjektMarketDataServiceTest {
         service.refreshMintCounts();
         assertThat(service.mintsSignature()).isEqualTo(ObjektMarketDataService.signature(Map.of("sample", 524L)));
         assertThat(service.withMintCounts(List.of(collection)).get(0)).containsEntry("mintCount", 524L);
+        assertThat(service.mintCount(Map.of("id", "sample"))).isEqualTo(524L);
         assertThat(collection).doesNotContainKey("mintCount");
         rarity.set("{\"error\":\"unavailable\"}");
         service.refreshMintCounts();

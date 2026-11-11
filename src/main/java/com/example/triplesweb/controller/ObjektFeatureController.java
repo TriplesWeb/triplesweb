@@ -98,6 +98,11 @@ public class ObjektFeatureController {
         body.put("descriptionUrl", ObjektLinks.detail(item) + "/description");
         body.put("lookupUrl", ObjektLinks.detail(item) + "/lookup");
         body.put("issuedUrl", ObjektLinks.detail(item) + "/issued");
+        Long mint = marketData.mintCount(item);
+        if (mint != null) {
+            body.put("mintCount", mint);
+            body.put("mintCountKnown", true);
+        }
         return body;
     }
 
