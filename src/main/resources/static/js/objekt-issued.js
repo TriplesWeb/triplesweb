@@ -20,6 +20,7 @@
   function show(value){close();const count=countEl();if(!count)return;url=value;count.textContent='확인 중';load();}
   function refresh(){if(url)load();}
   function applyLive(supplies){
+    const openKey=document.getElementById('objektDetailFavorite')?.dataset.key||'';
     Object.entries(supplies||{}).forEach(([key,state])=>{
       document.querySelectorAll('.objekt-card[data-objekt-key="'+CSS.escape(key)+'"]').forEach(card=>{
         const label=card.querySelector('[data-supply-count]');
@@ -31,6 +32,10 @@
         card.dataset.supplyCount=String(state.count);
         card.dataset.supplyAt=String(Date.now());
       });
+      if(openKey===key&&state?.status==='available'&&number(state.count)){
+        const count=countEl();
+        if(count)count.textContent=state.count.toLocaleString('ko-KR')+'개';
+      }
     });
   }
   function hydrate(){}

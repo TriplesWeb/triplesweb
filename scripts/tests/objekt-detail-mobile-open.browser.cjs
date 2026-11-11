@@ -243,14 +243,20 @@ const details = {
     assert.equal(layer.hidden, false);
     assert.ok(layer.modalZ > layer.filterZ, `모달 z ${layer.modalZ} > 필터 ${layer.filterZ}`);
     assert.ok(layer.modalZ > layer.headerZ, `모달 z ${layer.modalZ} > 헤더 ${layer.headerZ}`);
-    assert.equal(layer.flipDisabled, false);
+    assert.equal(layer.flipDisabled, true);
     assert.equal(layer.flippable, false);
     assert.equal(layer.videoInsideButton, false);
     assert.equal(layer.faceHidden, true);
 
     await page.evaluate(() => {
       const modal = document.getElementById('objektDetailModal');
-      modal.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+      const card = document.querySelector('[data-objekt-key="special-card"] .objekt-open-detail');
+      const box = card.getBoundingClientRect();
+      modal.dispatchEvent(new MouseEvent('click', {
+        bubbles: true,
+        clientX: box.left + box.width / 2,
+        clientY: box.top + box.height / 2
+      }));
     });
     assert.equal(await page.locator('#objektDetailModal').isVisible(), true);
 
@@ -276,7 +282,7 @@ const details = {
     assert.equal(motion.open, true);
     assert.match(motion.videoSrc, /cream02-kaede-504z\.mp4/);
     assert.equal(motion.active, 'true');
-    assert.equal(motion.flipDisabled, false);
+    assert.equal(motion.flipDisabled, true);
 
     fs.mkdirSync('/tmp/objekt-ui', {recursive: true});
     fs.mkdirSync('/opt/cursor/artifacts', {recursive: true});

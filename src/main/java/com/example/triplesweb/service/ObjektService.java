@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Objekt 외부 API 어댑터.
@@ -50,6 +51,7 @@ public class ObjektService {
     private volatile List<Map<String, Object>> newestDrops = List.of();
     private volatile long lastSuccessfulRefreshMillis;
     private volatile String catalogSignature = "0:0";
+    private final AtomicBoolean refreshing = new AtomicBoolean(false);
 
     public ObjektService(
             @Value("${objekt.api.base-url:https://objekt.top/api/v1}")
@@ -127,6 +129,7 @@ public class ObjektService {
     }
 
     public void refreshCache() {
+        if (!refreshing.compareAndSet(false, true)) return;
         try {
             JsonNode response = restClient.get()
                     .uri(uriBuilder -> uriBuilder
@@ -184,6 +187,8 @@ public class ObjektService {
                     "Objekt 캐시 갱신 실패. 기존 캐시를 유지하고 다음 주기에 재시도합니다: {}",
                     detail(ex)
             );
+        } finally {
+            refreshing.set(false);
         }
     }
 
@@ -231,7 +236,10 @@ public class ObjektService {
             Map<String, Object> row = new LinkedHashMap<>();
             String label = (season == null || season.isBlank() ? number : season + " " + number) + " 드롭";
             row.put("label", label);
-            row.put("href", "/cosmo/objekt?search=" + encode(number));
+            String seasonFilter = first(item, "seasonKey", "season");
+            row.put("href", "/cosmo/objekt?"
+                    + (seasonFilter.isBlank() ? "" : "season=" + encode(seasonFilter) + "&")
+                    + "kind=" + encode(number));
             row.put("collectionId", first(item, "collectionId", "slug"));
             row.put("createdAt", createdAt == null ? "" : createdAt);
             return row;
@@ -275,6 +283,15 @@ public class ObjektService {
         for (Map<String, Object> item : views) {
             hash = 31 * hash + string(item, "id").hashCode();
             hash = 31 * hash + string(item, "collectionId").hashCode();
+            hash = 31 * hash + string(item, "slug").hashCode();
+            hash = 31 * hash + string(item, "frontImage").hashCode();
+            hash = 31 * hash + string(item, "backImage").hashCode();
+            hash = 31 * hash + string(item, "frontMedia").hashCode();
+            hash = 31 * hash + string(item, "thumbnailImage").hashCode();
+            hash = 31 * hash + string(item, "member").hashCode();
+            hash = 31 * hash + string(item, "collectionNo").hashCode();
+            hash = 31 * hash + string(item, "class").hashCode();
+            hash = 31 * hash + string(item, "createdAt").hashCode();
         }
         return views.size() + ":" + Integer.toHexString(hash);
     }

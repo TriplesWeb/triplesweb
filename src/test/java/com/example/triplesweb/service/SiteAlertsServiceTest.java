@@ -28,7 +28,7 @@ class SiteAlertsServiceTest {
         when(live.dropWindow()).thenReturn(true);
         when(objekts.newestDrops()).thenReturn(List.of(
                 Map.of("label", "Cream02 350z 드롭",
-                        "href", "/cosmo/objekt?search=350z",
+                        "href", "/cosmo/objekt?season=cream02&kind=350z",
                         "collectionId", "Cream02 HaYeon 350z",
                         "createdAt", "2026-11-10T09:00:00Z")
         ));
@@ -41,7 +41,7 @@ class SiteAlertsServiceTest {
         List<Map<String, Object>> newest = (List<Map<String, Object>>) body.get("objekts");
         assertThat(newest).hasSize(1);
         assertThat(newest.get(0).get("label")).isEqualTo("Cream02 350z 드롭");
-        assertThat(newest.get(0).get("href")).isEqualTo("/cosmo/objekt?search=350z");
+        assertThat(newest.get(0).get("href")).isEqualTo("/cosmo/objekt?season=cream02&kind=350z");
         assertThat(newest.get(0).get("createdAt")).isEqualTo("2026-11-10T09:00:00Z");
     }
 
@@ -54,7 +54,7 @@ class SiteAlertsServiceTest {
         List<Map<String, Object>> drops = ObjektService.dropAlerts(List.of(hayeon, seoyeon, older));
         assertThat(drops).hasSize(2);
         assertThat(drops.get(0).get("label")).isEqualTo("Cream02 350z 드롭");
-        assertThat(drops.get(0).get("href")).isEqualTo("/cosmo/objekt?search=350z");
+        assertThat(drops.get(0).get("href")).isEqualTo("/cosmo/objekt?season=cream02&kind=350z");
         assertThat(drops.get(0).get("createdAt")).isEqualTo("2026-11-10T09:00:00Z");
         assertThat(drops.get(0).get("label").toString()).doesNotContain("HaYeon").doesNotContain("SeoYeon");
         assertThat(drops.get(1).get("label")).isEqualTo("Atom01 101 드롭");

@@ -54,6 +54,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
   try {
     const page = await browser.newPage();
     let catalogSig = '1:old';
+    let mintsSig = '1:mints';
     let count = 10;
     const moreCalls = [];
     await page.route('**/*', async (route) => {
@@ -69,6 +70,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
           contentType: 'application/json',
           body: JSON.stringify({
             catalogSig,
+            mintsSig,
             catalogCount: catalogSig === '2:new' ? 2 : 1,
             supplies: {'old-card': {status: 'available', count}},
             dropWindow: true,
@@ -109,6 +111,10 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
     assert.equal(moreCalls.length, 0, '첫 pulse는 시그니처만 기억하고 목록을 다시 불러오지 않는다');
 
     count = 12;
+    mintsSig = '2:mints';
+    await page.waitForFunction(() => /12/.test(document.querySelector('[data-objekt-key="old-card"] [data-supply-count]')?.textContent || ''), {timeout: 15000});
+    assert.equal(moreCalls.length, 0, '민트만 바뀌면 목록을 다시 불러오지 않는다');
+
     catalogSig = '2:new';
     await page.waitForFunction(() => document.querySelector('[data-objekt-key="new-card"]'), {timeout: 15000});
     assert.match(await page.locator('[data-objekt-key="old-card"] [data-supply-count]').textContent(), /12/);

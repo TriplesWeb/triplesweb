@@ -249,6 +249,17 @@ class ObjektFeaturesTest {
                 .andExpect(redirectedUrl("/cosmo/objekt?group=members&member=HaYeon"));
     }
 
+    @Test void kindFilterIgnoresPunctuationAndCase() throws Exception {
+        stubCatalog(List.of(
+                Map.of("id", "a", "slug", "a", "collectionNo", "367Z", "member", "HaYeon"),
+                Map.of("id", "b", "slug", "b", "collectionNo", "368Z", "member", "HaYeon")));
+        when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
+        mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("kind", "367-Z"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCount").value(1))
+                .andExpect(jsonPath("$.items[0].collectionNo").value("367Z"));
+    }
+
     @Test void motionDetailUsesApolloVideoWhenFrontMediaIsMissing() throws Exception {
         var item = new LinkedHashMap<String, Object>();
         item.put("id", "uuid");
@@ -616,6 +627,7 @@ class ObjektFeaturesTest {
         mvc.perform(get("/cosmo/objekt/pulse").param("key", "uuid"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.catalogSig").value("1:ab"))
+                .andExpect(jsonPath("$.mintsSig").value("1:cd"))
                 .andExpect(jsonPath("$.catalogCount").value(1))
                 .andExpect(jsonPath("$.dropWindow").value(false))
                 .andExpect(jsonPath("$.pollMs").value(20000))

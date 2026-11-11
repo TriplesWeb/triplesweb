@@ -1,11 +1,16 @@
 (() => {
   if (!document.getElementById('objekt-card-grid')) return;
-  let timer = 0, catalogSig = null, lastForce = 0, inflight = false;
+  let timer = 0, catalogSig = null, mintsSig = null, inflight = false;
 
   function schedule(ms) {
     clearTimeout(timer);
     const wait = Number(ms);
     timer = setTimeout(tick, Number.isFinite(wait) ? Math.max(1000, wait) : 20000);
+  }
+
+  function mintSortActive() {
+    const sort = document.querySelector('.objekt-sort-select')?.value || '';
+    return sort === 'mint_low' || sort === 'mint_high';
   }
 
   async function tick() {
@@ -26,21 +31,19 @@
       if (!response.ok) throw new Error();
       const data = await response.json();
       const nextSig = String(data.catalogSig || '');
-      const forceEvery = Math.max(60000, Number(data.forceRefreshMs) || 600000);
+      const nextMints = String(data.mintsSig || '');
       if (catalogSig == null) {
         catalogSig = nextSig;
-        lastForce = Date.now();
+        mintsSig = nextMints;
       } else if (nextSig && nextSig !== catalogSig) {
         catalogSig = nextSig;
-        lastForce = Date.now();
+        mintsSig = nextMints;
         await window.ObjektPage?.reloadVisible?.();
-      } else if (data.dropWindow && Date.now() - lastForce >= forceEvery) {
-        lastForce = Date.now();
-        await window.ObjektPage?.reloadVisible?.();
+      } else if (nextMints && nextMints !== mintsSig) {
+        mintsSig = nextMints;
+        if (mintSortActive()) await window.ObjektPage?.reloadVisible?.();
       }
       window.ObjektIssued?.applyLive?.(data.supplies);
-      window.ObjektIssued?.refresh?.();
-      window.ObjektSerialLookup?.refresh?.();
       schedule(Math.max(5000, Number(data.pollMs) || 20000));
     } catch {
       schedule(20000);

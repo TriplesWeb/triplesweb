@@ -1,5 +1,6 @@
 
 .objekt-detail-modal{z-index:1100!important;background:#070a10d9!important;backdrop-filter:none!important;padding:clamp(10px,3vw,32px)!important}
+.objekt-detail-modal.is-opening{pointer-events:none!important}
 .objekt-detail-panel{max-width:980px!important;border:1px solid #3a4a4666!important;border-radius:22px!important;background:#141820!important;box-shadow:0 24px 80px #0007!important}
 .objekt-detail-media{align-self:start;position:sticky;top:0;padding:22px!important;background:linear-gradient(160deg,#1b252c,#10141b);border-radius:20px}
 .objekt-detail-media-btn{border-radius:12px;overflow:hidden;cursor:pointer!important}

@@ -200,8 +200,7 @@ public class CosmoController {
                         membershipCache.computeIfAbsent(firstValue(objekt, "member", "memberName"), MemberPortraitOptions::objektMembers)))
                 .filter(objekt -> matchesSelection(selectedSeasons, firstValue(objekt, "seasonKey", "season")))
                 .filter(objekt -> matchesSelection(selectedClasses, firstValue(objekt, "classKey", "class")))
-                .filter(objekt -> selectedKind.isBlank() || "all".equals(selectedKind)
-                        || normalize(firstValue(objekt, "collectionNo", "collectionNumber")).equals(selectedKind))
+                .filter(objekt -> ObjektCatalogSort.matchesKind(selectedKind, objekt))
                 .sorted(sortComparator(selectedSort))
                 .toList();
 

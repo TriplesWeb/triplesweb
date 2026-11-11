@@ -704,7 +704,7 @@
         showStillImage(frontUrl);
         detailFace.hidden = !hasBack;
         detailFace.textContent = '앞면';
-        detailFlip.disabled = false;
+        detailFlip.disabled = !hasBack;
         detailFlip.classList.toggle('is-flippable', Boolean(hasBack));
         detailFlip.setAttribute('aria-disabled', hasBack ? 'false' : 'true');
         detailFlip.tabIndex = hasBack ? 0 : -1;
@@ -902,7 +902,7 @@
         stopDetailMotion();
         window.ObjektIssued?.close();
         window.ObjektSerialLookup?.setCollection('');
-        detailModal.classList.remove('is-open');
+        detailModal.classList.remove('is-open', 'is-opening');
         detailModal.setAttribute('aria-hidden', 'true');
         activeObjektKey = '';
         lastStoryText = '';
@@ -918,7 +918,7 @@
 
     function closeDetailModal(fromBackdrop) {
         if (!detailModal) return;
-        if (fromBackdrop && Date.now() - detailOpenedAt < 500) return;
+        if (fromBackdrop && (detailModal.classList.contains('is-opening') || Date.now() - detailOpenedAt < 500)) return;
         if (window.AboutModal) {
             window.AboutModal.closeModal(detailModal, { onClose: finishDetailClose });
         } else {
@@ -936,8 +936,9 @@
         closeKindMenu();
         closeSortMenu();
         detailModal.hidden = false;
-        detailModal.classList.add('is-open');
+        detailModal.classList.add('is-open', 'is-opening');
         detailModal.setAttribute('aria-hidden', 'false');
+        window.setTimeout(() => detailModal.classList.remove('is-opening'), 450);
         if (window.AboutModal) {
             window.AboutModal.openModal(detailModal, {
                 focusSelector: '.objekt-detail-panel',
@@ -1308,7 +1309,12 @@
     window.ObjektPage = {
         visibleKeys() {
             if (!grid) return [];
+            const height = window.innerHeight || document.documentElement.clientHeight || 0;
             return [...grid.querySelectorAll('.objekt-card[data-objekt-key]')]
+                .filter((card) => {
+                    const box = card.getBoundingClientRect();
+                    return box.bottom > 0 && box.top < height;
+                })
                 .map((card) => card.dataset.objektKey)
                 .filter(Boolean)
                 .slice(0, 24);

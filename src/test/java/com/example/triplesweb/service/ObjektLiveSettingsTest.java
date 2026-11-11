@@ -59,4 +59,12 @@ class ObjektLiveSettingsTest {
         assertThat(ObjektService.signature(before)).isNotEqualTo(ObjektService.signature(after));
         assertThat(ObjektService.signature(before)).isEqualTo(ObjektService.signature(before));
     }
+
+    @Test void catalogSignatureChangesWhenFrontImageChanges() {
+        var before = java.util.List.of(java.util.Map.<String, Object>of(
+                "id", "a", "collectionId", "A", "frontImage", "https://cdn.example/old.webp"));
+        var after = java.util.List.of(java.util.Map.<String, Object>of(
+                "id", "a", "collectionId", "A", "frontImage", "https://cdn.example/new.webp"));
+        assertThat(ObjektService.signature(before)).isNotEqualTo(ObjektService.signature(after));
+    }
 }
