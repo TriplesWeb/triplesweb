@@ -231,7 +231,28 @@
     return regions;
   }
 
+  function collectAllPhotos(regions) {
+    return (regions || []).flatMap((region) =>
+      (region.categories || []).flatMap((cat) => (cat.photos || []).filter(Boolean))
+    );
+  }
+
+  function ensureFlatMdStructure() {
+    const photos = collectAllPhotos(mdRegions);
+    mdRegions = [{
+      name: "",
+      salesStart: "",
+      salesEnd: "",
+      categories: [{ title: "공지", photos }]
+    }];
+  }
+
   function serializeMdDocument(regions) {
+    if (!hasLinkedEvent()) {
+      const photos = collectAllPhotos(regions);
+      if (!photos.length) return "";
+      return ["# 공지"].concat(photos.map((url) => "!" + url)).join("\n");
+    }
     const blocks = [];
     (regions || []).forEach((region) => {
       const name = String(region.name || "").trim() || "지역";
@@ -261,6 +282,19 @@
   function syncMdBuilderFromDom() {
     const root = document.getElementById("shopEditMdBuilder");
     if (!root) return;
+    if (!hasLinkedEvent()) {
+      const photos = Array.from(root.querySelectorAll("[data-md-photo]"))
+        .map((img) => img.getAttribute("data-md-photo") || "")
+        .filter(Boolean);
+      mdRegions = [{
+        name: "",
+        salesStart: "",
+        salesEnd: "",
+        categories: [{ title: "공지", photos }]
+      }];
+      syncMdListField();
+      return;
+    }
     const next = [];
     root.querySelectorAll("[data-md-region]").forEach((regionEl) => {
       const cats = [];
@@ -288,8 +322,12 @@
     const linked = hasLinkedEvent();
     const globalSales = document.getElementById("shopEditGlobalSales");
     const hint = document.getElementById("shopEditMdSalesHint");
+    const addRegion = document.getElementById("shopEditMdAddRegion");
     if (globalSales) globalSales.hidden = linked;
     if (hint) hint.hidden = !linked;
+    if (addRegion) addRegion.hidden = !linked;
+    if (!linked) ensureFlatMdStructure();
+    else if (!mdRegions.length) mdRegions = [emptyRegion()];
     renderMdBuilder();
   }
 
@@ -297,6 +335,27 @@
     const root = document.getElementById("shopEditMdBuilder");
     if (!root) return;
     const linked = hasLinkedEvent();
+    if (!linked) {
+      ensureFlatMdStructure();
+      const photos = mdRegions[0]?.categories?.[0]?.photos || [];
+      root.innerHTML = `
+        <div class="shop-md-flat" data-md-flat>
+          <div class="shop-md-category-head">
+            <button type="button" class="about-mode-btn is-active btn btn-sm btn-outline btn-primary btn-active" data-md-add-photos>사진 추가</button>
+            <span class="text-xs text-gray-400">상세에 보이는 MD 공지 사진입니다.</span>
+          </div>
+          <div class="shop-md-photo-list">
+            ${photos.map((url, pi) => `
+              <div class="shop-md-photo-item">
+                <img src="${escapeAttr(url)}" alt="" data-md-photo="${escapeAttr(url)}" class="shop-md-thumb" loading="lazy" decoding="async">
+                <button type="button" class="shop-md-photo-remove" data-md-remove-photo="${pi}" title="사진 삭제" aria-label="사진 삭제">×</button>
+              </div>
+            `).join("")}
+          </div>
+        </div>`;
+      syncMdListField();
+      return;
+    }
     if (!mdRegions.length) mdRegions = [emptyRegion()];
     root.innerHTML = mdRegions.map((region, ri) => `
       <div class="shop-md-region" data-md-region="${ri}">
@@ -305,7 +364,7 @@
                  placeholder="지역 이름 (예: 서울, 방콕)" value="${escapeAttr(region.name || "")}" aria-label="지역 이름">
           <button type="button" class="about-mode-btn btn btn-xs btn-error" data-md-remove-region title="지역 삭제">삭제</button>
         </div>
-        <div class="shop-md-region-sales stop-date-range" ${linked ? "" : "hidden"}>
+        <div class="shop-md-region-sales stop-date-range">
           <input type="date" data-md-sales-start value="${escapeAttr(region.salesStart || "")}" title="판매 시작일" aria-label="지역 판매 시작일">
           <span class="stop-date-sep" aria-hidden="true">~</span>
           <input type="date" data-md-sales-end value="${escapeAttr(region.salesEnd || "")}" title="판매 종료일 (선택)" aria-label="지역 판매 종료일">
@@ -344,6 +403,7 @@
       return;
     }
     syncMdBuilderFromDom();
+    if (!hasLinkedEvent()) ensureFlatMdStructure();
     const { ri, ci } = mdPhotoTarget;
     if (!mdRegions[ri] || !mdRegions[ri].categories[ci]) return;
     const err = document.getElementById("shopEditError");
@@ -524,6 +584,25 @@
     });
 
     document.getElementById("shopEditMdBuilder")?.addEventListener("click", (e) => {
+      if (!hasLinkedEvent()) {
+        if (e.target.closest("[data-md-add-photos]")) {
+          syncMdBuilderFromDom();
+          ensureFlatMdStructure();
+          mdPhotoTarget = { ri: 0, ci: 0 };
+          document.getElementById("shopEditMdPhoto")?.click();
+          return;
+        }
+        const removePhoto = e.target.closest("[data-md-remove-photo]");
+        if (removePhoto) {
+          const pi = Number(removePhoto.getAttribute("data-md-remove-photo"));
+          syncMdBuilderFromDom();
+          ensureFlatMdStructure();
+          mdRegions[0].categories[0].photos.splice(pi, 1);
+          renderMdBuilder();
+        }
+        return;
+      }
+
       const regionEl = e.target.closest("[data-md-region]");
       if (!regionEl) return;
       const ri = Number(regionEl.getAttribute("data-md-region"));

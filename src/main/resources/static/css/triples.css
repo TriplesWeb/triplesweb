@@ -1293,6 +1293,15 @@ textarea.form-control {
     gap: 0.75rem;
 }
 
+.shop-md-flat {
+    display: grid;
+    gap: 0.55rem;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(58, 74, 70, 0.45);
+    background: rgba(13, 14, 18, 0.55);
+}
+
 .shop-md-region {
     display: grid;
     gap: 0.55rem;

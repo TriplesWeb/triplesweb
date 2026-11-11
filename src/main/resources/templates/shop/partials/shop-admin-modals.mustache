@@ -22,10 +22,10 @@
                 <span class="text-xs text-gray-400">공연을 연결하지 않은 단독 MD용입니다. 시작일은 필수, 종료일은 선택입니다.</span>
             </div>
             <div class="about-edit-label">MD 공지
-                <p id="shopEditMdSalesHint" class="text-xs text-gray-400 mb-2" hidden>공연을 연결하면 판매 기간은 지역마다 따로 넣습니다.</p>
+                <p id="shopEditMdSalesHint" class="text-xs text-gray-400 mb-2" hidden>공연을 연결하면 지역·구분·판매 기간을 나눕니다. 공연 없음이면 사진만 올리면 됩니다.</p>
                 <div id="shopEditMdBuilder" class="shop-md-builder"></div>
                 <div class="shop-md-builder-actions flex flex-wrap gap-2 mt-2">
-                    <button type="button" id="shopEditMdAddRegion" class="about-mode-btn is-active btn btn-sm btn-outline btn-primary btn-active">지역 추가</button>
+                    <button type="button" id="shopEditMdAddRegion" class="about-mode-btn is-active btn btn-sm btn-outline btn-primary btn-active" hidden>지역 추가</button>
                 </div>
                 <input type="file" id="shopEditMdPhoto" accept="image/*" class="hidden" multiple>
                 <textarea id="shopEditMdList" class="hidden" hidden aria-hidden="true"></textarea>
