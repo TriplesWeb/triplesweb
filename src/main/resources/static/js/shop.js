@@ -393,7 +393,7 @@
       root.innerHTML = `
         <div class="shop-md-flat" data-md-flat>
           <div class="shop-md-category-head">
-            <button type="button" class="about-mode-btn shop-md-file-btn" data-md-add-photos>사진 추가</button>
+            <button type="button" class="about-mode-btn shop-md-file-btn shop-md-file-btn--sm" data-md-add-photos>사진 추가</button>
             <span class="text-xs text-gray-400">상세에 보이는 MD 공지 사진입니다.</span>
           </div>
           <div class="shop-md-photo-list">

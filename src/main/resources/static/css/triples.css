@@ -1349,14 +1349,16 @@ textarea.form-control {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 2.25rem;
-    padding: 0.35rem 0.75rem;
-    border-radius: 0.5rem;
+    min-height: 1.85rem;
+    height: 1.85rem;
+    padding: 0 0.65rem;
+    border-radius: 0.45rem;
     border: 1px solid rgba(0, 245, 212, 0.45);
     background: rgba(13, 14, 18, 0.9);
     color: #00f5d4;
-    font-size: 0.82rem;
+    font-size: 0.75rem;
     font-weight: 600;
+    box-sizing: border-box;
     cursor: pointer;
 }
 
@@ -1368,8 +1370,8 @@ textarea.form-control {
 .shop-md-file-btn--sm,
 .shop-md-category-head .btn,
 .shop-md-region-head .btn {
-    min-height: 2rem;
-    height: 2rem;
+    min-height: 1.85rem;
+    height: 1.85rem;
     padding: 0 0.65rem;
     font-size: 0.75rem;
     box-sizing: border-box;
