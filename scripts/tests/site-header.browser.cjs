@@ -98,7 +98,15 @@ const root=path.resolve(__dirname,'../..');
     const schedule=page.locator('#navbar > a.nav-item-link').filter({hasText:/^일정$/});
     const scheduleBox=await schedule.boundingBox();
     const jumpBox=await jump.boundingBox();
+    const searchBox=await page.locator('[data-header-search]').boundingBox();
+    const cosmoIdBox=await page.locator('[data-cosmo-id-open]').boundingBox();
     assert.ok(scheduleBox&&jumpBox&&jumpBox.x>=scheduleBox.x+scheduleBox.width-1,`오브젝트 아이콘이 일정 오른쪽 ${width}`);
+    assert.ok(searchBox&&jumpBox&&searchBox.x+searchBox.width<=jumpBox.x+1,`검색칸이 오브젝트 바로가기 왼쪽 ${width}`);
+    assert.ok(cosmoIdBox&&jumpBox&&cosmoIdBox.x+cosmoIdBox.width<=jumpBox.x+1,`코스모 아이디가 오브젝트 바로가기 왼쪽 ${width}`);
+    if(width>=1280){
+      assert.ok(searchBox.width>=220,`검색칸이 빈자리를 조금 채운다 ${width} ${searchBox.width}`);
+      assert.ok(searchBox.width<=270,`검색칸이 헤더를 다 먹지 않는다 ${width} ${searchBox.width}`);
+    }
     assert.equal(await page.locator('#navbar').evaluate(n=>!!n.parentElement.querySelector('.header-objekt-jump')),false,`오브젝트 아이콘이 로고·네비 div 밖 ${width}`);
     assert.ok(await jump.evaluate(n=>n.closest('.ml-auto')!=null),`오브젝트 아이콘이 우측 도구 줄 ${width}`);
     const logoBox=await page.locator('.header-brand-cluster').boundingBox();

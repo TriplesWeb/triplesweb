@@ -111,6 +111,8 @@ class MobilePageTemplatesTest {
         assertThat(header).contains("header-objekt-jump").contains("href=\"/cosmo/objekt\"").contains("aria-label=\"오브젝트\"");
         assertThat(header.indexOf("id=\"navbar\"")).isLessThan(header.indexOf("header-objekt-jump"));
         assertThat(header.indexOf("ml-auto")).isLessThan(header.indexOf("header-objekt-jump"));
+        assertThat(header.indexOf("data-header-search")).isLessThan(header.indexOf("header-objekt-jump"));
+        assertThat(header.indexOf("data-cosmo-id-open")).isLessThan(header.indexOf("header-objekt-jump"));
         var homeAuth=new HashMap<>(auth);homeAuth.put("isHomePage", true);
         String homeHeader=compiler.compile(Files.readString(root.resolve("layout/header.mustache"))).execute(homeAuth);
         assertThat(homeHeader).contains("header-objekt-jump").contains("href=\"/cosmo/objekt\"");
