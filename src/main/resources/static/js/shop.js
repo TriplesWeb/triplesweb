@@ -110,12 +110,66 @@
     const endEl = document.getElementById("shopEditSalesEnd");
     if (startEl) startEl.value = dates.start;
     if (endEl) endEl.value = dates.end;
+    syncDateRangePair(startEl, endEl);
   }
 
   function readSalesPeriod() {
-    const start = document.getElementById("shopEditSalesStart")?.value?.trim() || "";
-    const end = document.getElementById("shopEditSalesEnd")?.value?.trim() || "";
+    const startEl = document.getElementById("shopEditSalesStart");
+    const endEl = document.getElementById("shopEditSalesEnd");
+    normalizeDateInputYear(startEl);
+    normalizeDateInputYear(endEl);
+    syncDateRangePair(startEl, endEl);
+    const start = startEl?.value?.trim() || "";
+    const end = endEl?.value?.trim() || "";
     return formatSalesPeriod(start, end);
+  }
+
+  /** 26 → 2026 처럼 두 자리(또는 0026) 연도를 보정한다. */
+  function normalizeDateInputYear(el) {
+    if (!el || !el.value) return;
+    const m = String(el.value).trim().match(/^(\d{1,4})-(\d{2})-(\d{2})$/);
+    if (!m) return;
+    let year = Number(m[1]);
+    if (!Number.isFinite(year)) return;
+    if (year < 100) year += 2000;
+    const next = `${String(year).padStart(4, "0")}-${m[2]}-${m[3]}`;
+    if (next !== el.value) el.value = next;
+  }
+
+  function isValidDateRange(startIso, endIso) {
+    if (!startIso) return false;
+    if (!endIso) return true;
+    return endIso >= startIso;
+  }
+
+  function syncDateRangePair(startEl, endEl) {
+    if (!startEl && !endEl) return true;
+    normalizeDateInputYear(startEl);
+    normalizeDateInputYear(endEl);
+    const start = startEl?.value || "";
+    const end = endEl?.value || "";
+    if (endEl) {
+      if (start) endEl.min = start;
+      else endEl.removeAttribute("min");
+      endEl.classList.toggle("is-invalid", Boolean(end && start && end < start));
+    }
+    if (startEl) {
+      startEl.classList.toggle("is-invalid", Boolean(end && start && end < start));
+    }
+    return isValidDateRange(start, end);
+  }
+
+  function syncAllShopDateRanges() {
+    let ok = syncDateRangePair(
+      document.getElementById("shopEditSalesStart"),
+      document.getElementById("shopEditSalesEnd")
+    );
+    document.querySelectorAll("#shopEditMdBuilder [data-md-region]").forEach((regionEl) => {
+      const startEl = regionEl.querySelector("[data-md-sales-start]");
+      const endEl = regionEl.querySelector("[data-md-sales-end]");
+      if (!syncDateRangePair(startEl, endEl)) ok = false;
+    });
+    return ok;
   }
 
   function hasLinkedEvent() {
@@ -363,9 +417,9 @@
           <button type="button" class="about-mode-btn btn btn-xs btn-error" data-md-remove-region title="지역 삭제">삭제</button>
         </div>
         <div class="shop-md-region-sales stop-date-range">
-          <input type="date" data-md-sales-start value="${escapeAttr(region.salesStart || "")}" title="판매 시작일" aria-label="지역 판매 시작일">
+          <input type="date" data-md-sales-start min="2000-01-01" max="2099-12-31" value="${escapeAttr(region.salesStart || "")}" title="판매 시작일" aria-label="지역 판매 시작일">
           <span class="stop-date-sep" aria-hidden="true">~</span>
-          <input type="date" data-md-sales-end value="${escapeAttr(region.salesEnd || "")}" title="판매 종료일 (선택)" aria-label="지역 판매 종료일">
+          <input type="date" data-md-sales-end min="2000-01-01" max="2099-12-31" value="${escapeAttr(region.salesEnd || "")}" title="판매 종료일 (선택)" aria-label="지역 판매 종료일">
         </div>
         <div class="shop-md-categories">
           ${(region.categories || [emptyCategory()]).map((cat, ci) => `
@@ -395,6 +449,7 @@
         지역 추가
       </button>`;
     syncMdListField();
+    syncAllShopDateRanges();
   }
 
   async function uploadMdPhotos(files) {
@@ -655,9 +710,25 @@
     });
 
     document.getElementById("shopEditMdBuilder")?.addEventListener("change", (e) => {
+      if (e.target.matches("[data-md-sales-start], [data-md-sales-end]")) {
+        const regionEl = e.target.closest("[data-md-region]");
+        syncDateRangePair(
+          regionEl?.querySelector("[data-md-sales-start]"),
+          regionEl?.querySelector("[data-md-sales-end]")
+        );
+      }
       if (e.target.matches("[data-md-region-name], [data-md-cat-title], [data-md-sales-start], [data-md-sales-end]")) {
         syncMdBuilderFromDom();
       }
+    });
+
+    ["shopEditSalesStart", "shopEditSalesEnd"].forEach((id) => {
+      document.getElementById(id)?.addEventListener("change", () => {
+        syncDateRangePair(
+          document.getElementById("shopEditSalesStart"),
+          document.getElementById("shopEditSalesEnd")
+        );
+      });
     });
 
     document.getElementById("shopEditMdPhoto")?.addEventListener("change", async (e) => {
@@ -749,6 +820,10 @@
       const eventId = document.getElementById("shopEditEventId").value;
       syncMdBuilderFromDom();
       const linked = Boolean(eventId);
+      if (!syncAllShopDateRanges()) {
+        if (err) { err.hidden = false; err.textContent = "판매 종료일은 시작일 이후여야 합니다."; }
+        return;
+      }
       let salesPeriod = linked ? summarizeRegionSalesPeriods() : readSalesPeriod();
       if (!title) {
         if (err) { err.hidden = false; err.textContent = "카드 이름을 입력해 주세요."; }
@@ -767,6 +842,11 @@
         const missing = mdRegions.some((r) => !formatSalesPeriod(r.salesStart, r.salesEnd));
         if (missing) {
           if (err) { err.hidden = false; err.textContent = "모든 지역에 판매 시작일을 입력해 주세요."; }
+          return;
+        }
+        const invalid = mdRegions.some((r) => !isValidDateRange(r.salesStart, r.salesEnd));
+        if (invalid) {
+          if (err) { err.hidden = false; err.textContent = "판매 종료일은 시작일 이후여야 합니다."; }
           return;
         }
       }

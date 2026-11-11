@@ -1514,6 +1514,14 @@ textarea.form-control {
     flex: 0 0 auto;
 }
 
+.shop-md-region-sales input[type="date"].is-invalid,
+.shop-sales-period input[type="date"].is-invalid,
+#shopEditSalesStart.is-invalid,
+#shopEditSalesEnd.is-invalid {
+    border-color: rgba(248, 113, 113, 0.85);
+    box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.35);
+}
+
 .event-stop-field {
     display: flex;
     flex-direction: column;

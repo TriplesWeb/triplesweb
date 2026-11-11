@@ -18,9 +18,9 @@
             </label>
             <div id="shopEditGlobalSales" class="about-edit-label">판매 기간
                 <div class="stop-date-range shop-sales-period" title="판매 기간">
-                    <input type="date" id="shopEditSalesStart" title="시작일" aria-label="판매 시작일">
+                    <input type="date" id="shopEditSalesStart" min="2000-01-01" max="2099-12-31" title="시작일" aria-label="판매 시작일">
                     <span class="stop-date-sep" aria-hidden="true">~</span>
-                    <input type="date" id="shopEditSalesEnd" title="종료일 (선택)" aria-label="판매 종료일 (선택)">
+                    <input type="date" id="shopEditSalesEnd" min="2000-01-01" max="2099-12-31" title="종료일 (선택)" aria-label="판매 종료일 (선택)">
                 </div>
                 <span class="text-xs text-gray-400">공연을 연결하지 않은 단독 MD용입니다. 시작일은 필수, 종료일은 선택입니다.</span>
             </div>
