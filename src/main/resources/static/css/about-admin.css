@@ -523,6 +523,46 @@
     justify-self: start;
 }
 
+#shopEditMdPhoto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* 네이티브 파일 선택과 비슷한 톤 */
+.shop-md-file-btn {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.25rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(0, 245, 212, 0.45);
+    background: rgba(13, 14, 18, 0.9);
+    color: #00f5d4;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.shop-md-file-btn:hover {
+    background: rgba(0, 245, 212, 0.08);
+    color: #7dffe8;
+}
+
+.shop-md-file-btn--sm {
+    min-height: 1.85rem;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.75rem;
+}
+
 .shop-md-region {
     display: grid;
     gap: 0.55rem;

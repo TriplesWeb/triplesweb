@@ -339,7 +339,7 @@
       root.innerHTML = `
         <div class="shop-md-flat" data-md-flat>
           <div class="shop-md-category-head">
-            <button type="button" class="about-mode-btn is-active btn btn-sm btn-outline btn-primary btn-active" data-md-add-photos>사진 추가</button>
+            <button type="button" class="about-mode-btn shop-md-file-btn" data-md-add-photos>사진 추가</button>
             <span class="text-xs text-gray-400">상세에 보이는 MD 공지 사진입니다.</span>
           </div>
           <div class="shop-md-photo-list">
@@ -373,7 +373,7 @@
               <div class="shop-md-category-head">
                 <input type="text" class="shop-md-input" data-md-cat-title maxlength="120"
                        placeholder="구분 이름 (예: Official MD)" value="${escapeAttr(cat.title || "")}" aria-label="구분 이름">
-                <button type="button" class="about-mode-btn btn btn-xs btn-outline btn-primary" data-md-add-photos>사진 추가</button>
+                <button type="button" class="about-mode-btn shop-md-file-btn shop-md-file-btn--sm" data-md-add-photos>사진 추가</button>
                 <button type="button" class="about-mode-btn btn btn-xs btn-error" data-md-remove-category title="구분 삭제">삭제</button>
               </div>
               <div class="shop-md-photo-list">
