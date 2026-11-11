@@ -78,6 +78,8 @@ const root=path.resolve(__dirname,'../..');
     await page.waitForFunction(()=>!document.getElementById('mobile-menu').classList.contains('hidden'));
     assert.equal(await page.locator('#mobile-menu').evaluate(n=>getComputedStyle(n).display!=='none'),true);
     assert.equal(await page.locator('#mobile-menu form[action="/search"] input').isVisible(),true,`전체 메뉴 검색 ${width}`);
+    assert.equal(await page.locator('#mobile-menu .mobile-menu-brand').count(),0,`전체 메뉴에 로고 없음 ${width}`);
+    assert.equal(await page.locator('#mobile-menu img[alt="tripleS"]').count(),0,`전체 메뉴에 워드마크 없음 ${width}`);
     const cosmoToggle=page.locator('.mobile-nav-toggle').filter({hasText:'코스모'});
     await cosmoToggle.click();
     assert.equal(await page.locator('.mobile-nav-panel a[href="/article/trade"]').first().isVisible(),true);

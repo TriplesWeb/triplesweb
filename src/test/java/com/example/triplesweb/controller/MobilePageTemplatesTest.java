@@ -121,7 +121,7 @@ class MobilePageTemplatesTest {
         Files.writeString(output.resolve("header-home.html"),"<!doctype html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='/css/gravity.css'><link rel='stylesheet' href='/css/site-mobile.css'><link rel='stylesheet' href='/css/site-header.css'></head><body class='main-page'>"+homeHeader+"<main><h1>홈</h1><input aria-label='검색' placeholder='검색'></main></body></html>");
         assertThat(header).contains("data-cosmo-id-open", "data-alerts-open", "사이트 전체 검색");
         assertThat(header).contains("header-objekt-jump__label").contains(">Objekt<");
-        assertThat(header).doesNotContain("mobile-shortcuts").contains("data-nav=\"home\"");
+        assertThat(header).doesNotContain("mobile-shortcuts").doesNotContain("mobile-menu-brand").contains("data-nav=\"home\"");
         assertThat(header).contains("site-user-menu__name").doesNotContain("site-user-menu__meta");
         var searchPage = new HashMap<>(model);
         searchPage.put("keyword", "323");
