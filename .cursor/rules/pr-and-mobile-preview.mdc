@@ -1,5 +1,5 @@
 ---
-description: 새 PR은 요청 전까지 만들지 않고, PR을 갱신할 때마다 모바일 미리보기를 연다
+description: 새 PR은 요청 전까지 만들지 않고, 모바일 미리보기는 Cloud에서만 연다
 alwaysApply: true
 ---
 
@@ -7,7 +7,8 @@ alwaysApply: true
 
 - 사용자가 말하기 전까지 **새 PR을 만들지 않는다.** 이미 열린 PR이 있으면 그 브랜치에서 이어서 수정한다. 열린 PR이 없으면 브랜치만 두고 PR은 열지 않는다.
 - `main`에 직접 푸시하지 않는다. 머지는 사용자가 직접 한다.
-- PR을 **푸시·갱신할 때마다** 협업자 서버(Pi Docker 배포)를 건드리지 말고, 로컬 앱으로 HTTPS 모바일 미리보기를 연다.
+- **PC(로컬 Desktop)에서 작업 중이면** 모바일 HTTPS 미리보기(Funnel·기본 인증 프록시)를 **열지 않는다.** 사용자가 요청한 경우에만 연다.
+- **Cursor Cloud**에서 PR을 푸시·갱신할 때만 협업자 서버(Pi Docker 배포)를 건드리지 말고, 로컬 앱으로 HTTPS 모바일 미리보기를 연다.
   1. 현재 브랜치에서 `bootRun`을 켠다. `UPLOAD_SYNC_ENABLED=false`.
   2. 기본 인증 프록시(18080) 뒤에 두고 `tailscale funnel --bg 18080`으로 연다.
   3. Funnel 주소와 아이디/비밀번호를 **PR 링크 다음에** 바로 전달한다.
