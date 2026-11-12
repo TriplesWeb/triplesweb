@@ -2,6 +2,7 @@ package com.example.triplesweb.service;
 
 import com.example.triplesweb.infra.GzipRestClients;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -13,6 +14,7 @@ import java.util.LinkedHashMap;
 @Service
 public class ObjektIndexClient {
     private final RestClient client;
+    private ObjektLiveSettings live;
     // Short, bounded cache: owner lookup and history share one upstream response.
     // Never serve expired history on failure: an upstream visibility change must take effect.
     private final LinkedHashMap<String, Entry> serials = new LinkedHashMap<>();
@@ -21,6 +23,11 @@ public class ObjektIndexClient {
 
     public ObjektIndexClient(@Value("${objekt.api.base-url:https://objekt.top/api/v1}") String baseUrl) {
         client = GzipRestClients.create(baseUrl, Duration.ofSeconds(3), Duration.ofSeconds(15));
+    }
+
+    @Autowired(required = false)
+    void setLive(ObjektLiveSettings live) {
+        this.live = live;
     }
 
     public JsonNode serialHistory(String slug, long serial) {
@@ -49,7 +56,9 @@ public class ObjektIndexClient {
                     && body.path("tokenId").asText("").matches("[0-9]{1,78}")) {
                 synchronized (serials) {
                     if (serials.size() >= 256) serials.remove(serials.keySet().iterator().next());
-                    serials.put(key, new Entry(body.deepCopy(), System.nanoTime() + Duration.ofSeconds(30).toNanos()));
+                    long ttlMs = live != null ? live.historyTtlMs()
+                            : (ObjektLiveSettings.dropWindow(null) ? 60_000L : 120_000L);
+                    serials.put(key, new Entry(body.deepCopy(), System.nanoTime() + Duration.ofMillis(ttlMs).toNanos()));
                 }
             }
             return body;

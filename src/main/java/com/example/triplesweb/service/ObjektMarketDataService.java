@@ -29,8 +29,12 @@ public class ObjektMarketDataService {
     private final RestClient rpc;
     private final String contract;
     private final ObjektSerialSupplyService serialSupply;
+    private final ObjektLiveSettings live;
     private volatile Map<String, Long> mintCounts = Map.of();
+    private volatile String mintsSignature = "0:0";
+    private volatile long mintsRefreshedAt;
     private final ConcurrentHashMap<String, NicknameCache> nicknames = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ParsedSerial> parsedSerials = new ConcurrentHashMap<>();
 
     @Autowired
     public ObjektMarketDataService(
@@ -38,7 +42,7 @@ public class ObjektMarketDataService {
             @Value("${cosmo.api.base-url:https://api.cosmo.fans}") String cosmoUrl,
             @Value("${abstract.indexer.rpc-url:https://api.mainnet.abs.xyz}") String rpcUrl,
             @Value("${abstract.indexer.contract:0x99Bb83AE9bb0C0A6be865CaCF67760947f91Cb70}") String contract,
-            ObjektIndexClient historyIndex, ObjektSerialSupplyService serialSupply) {
+            ObjektIndexClient historyIndex, ObjektSerialSupplyService serialSupply, ObjektLiveSettings live) {
         var factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(3)).build());
         factory.setReadTimeout(Duration.ofSeconds(6));
@@ -48,15 +52,29 @@ public class ObjektMarketDataService {
         this.contract = contract;
         this.historyIndex = historyIndex;
         this.serialSupply = serialSupply;
+        this.live = live;
     }
 
     ObjektMarketDataService(String indexUrl, String cosmoUrl, String rpcUrl, String contract) {
-        this(indexUrl, cosmoUrl, rpcUrl, contract, new ObjektIndexClient(indexUrl), new ObjektSerialSupplyService(indexUrl));
+        this(indexUrl, cosmoUrl, rpcUrl, contract, new ObjektIndexClient(indexUrl), new ObjektSerialSupplyService(indexUrl), null);
+    }
+
+    public String mintsSignature() {
+        return mintsSignature;
+    }
+
+    public long mintsRefreshedAt() {
+        return mintsRefreshedAt;
     }
 
     // One bulk request, never one request per card or an on-demand whole-chain scan.
 
-    @Scheduled(fixedDelayString = "${objekt.mints.refresh-ms:60000}", initialDelayString = "${objekt.mints.initial-delay-ms:1000}")
+    @Scheduled(fixedDelayString = "${objekt.live.tick-ms:15000}", initialDelayString = "${objekt.mints.initial-delay-ms:1000}")
+    void refreshMintCountsIfDue() {
+        if (live != null && !live.due(mintsRefreshedAt)) return;
+        refreshMintCounts();
+    }
+
     public void refreshMintCounts() {
         try {
             JsonNode rows = index.get().uri("/collections/rarity").retrieve().body(JsonNode.class);
@@ -69,9 +87,20 @@ public class ObjektMarketDataService {
                 if (next.putIfAbsent(slug, row.path("count").asLong()) != null) return;
             }
             mintCounts = Map.copyOf(next);
+            mintsSignature = signature(next);
+            mintsRefreshedAt = System.currentTimeMillis();
         } catch (RuntimeException ignored) {
             // Preserve the last complete snapshot; unknown values must not become zero.
         }
+    }
+
+    static String signature(Map<String, Long> counts) {
+        int hash = counts.size();
+        for (Map.Entry<String, Long> entry : counts.entrySet()) {
+            hash = 31 * hash + entry.getKey().hashCode();
+            hash = 31 * hash + Long.hashCode(entry.getValue() == null ? 0L : entry.getValue());
+        }
+        return counts.size() + ":" + Integer.toHexString(hash);
     }
 
     public List<Map<String, Object>> withMintCounts(List<Map<String, Object>> items) {
@@ -85,14 +114,35 @@ public class ObjektMarketDataService {
         return mintCounts.get(slug);
     }
 
+    public Long mintCount(Map<String, Object> item) {
+        if (item == null) return null;
+        Long count = mintCount(text(item, "slug"));
+        return count != null ? count : mintCount(text(item, "id"));
+    }
+
     private static Map<String, Object> applyMint(Map<String, Object> item, Map<String, Long> snapshot) {
         Map<String, Object> copy = new LinkedHashMap<>(item);
-        Long count = snapshot.get(String.valueOf(item.get("slug")));
+        Long count = lookupMint(item, snapshot);
         if (count != null) {
             copy.put("mintCount", count);
             copy.put("mintCountKnown", true);
         }
         return copy;
+    }
+
+    private static Long lookupMint(Map<String, Object> item, Map<String, Long> snapshot) {
+        String slug = text(item, "slug");
+        if (!slug.isBlank() && snapshot.containsKey(slug)) return snapshot.get(slug);
+        String id = text(item, "id");
+        if (!id.isBlank() && snapshot.containsKey(id)) return snapshot.get(id);
+        return null;
+    }
+
+    private static String text(Map<String, Object> item, String key) {
+        Object value = item.get(key);
+        if (value == null) return "";
+        String text = value.toString().trim();
+        return "null".equalsIgnoreCase(text) ? "" : text;
     }
 
     public List<Map<String,Object>> withIssuedSupply(List<Map<String,Object>> items) { return serialSupply.decorate(items); }
@@ -153,12 +203,26 @@ public class ObjektMarketDataService {
     /** Latest recipient and history come from the same index snapshot, without depending on RPC health. */
     public Map<String, Object> serialLookup(Map<String, Object> collection, long serial, int page) {
         if (serial < 1 || page < 0) throw new IllegalArgumentException("시리얼과 페이지를 확인해 주세요.");
-        JsonNode indexed = historyIndex.serialHistory(String.valueOf(collection.get("slug")), serial);
+        String slug = String.valueOf(collection.get("slug"));
+        String cacheKey = slug + ":" + serial;
+        long now = System.nanoTime();
+        parsedSerials.entrySet().removeIf(entry -> now - entry.getValue().expiresAtNanos() >= 0);
+        ParsedSerial cached = parsedSerials.get(cacheKey);
+        if (cached != null) return pageOf(cached, serial, page);
+        JsonNode indexed = historyIndex.serialHistory(slug, serial);
         if (indexed == null) return Map.of("status", "not_found");
         if (indexed.path("hide").asBoolean()) return Map.of("status", "hidden");
+        ParsedSerial parsed = parseHistory(indexed);
+        if (parsedSerials.size() >= 256) {
+            parsedSerials.keySet().stream().findFirst().ifPresent(parsedSerials::remove);
+        }
+        parsedSerials.put(cacheKey, parsed);
+        return pageOf(parsed, serial, page);
+    }
+
+    private ParsedSerial parseHistory(JsonNode indexed) {
         JsonNode rows = indexed.path("transfers");
         if (rows.size() > 10000) throw new IllegalStateException("전송 내역이 너무 큽니다.");
-        // Validate the entire upstream response before presenting any page.
         List<Map<String, Object>> history = new ArrayList<>();
         List<JsonNode> ordered = new ArrayList<>();
         for (JsonNode row : rows) {
@@ -191,11 +255,19 @@ public class ObjektMarketDataService {
                 if (!burned && !name.isBlank()) latestOwner.put("profileUrl", "/cosmo/profile/" + java.net.URLEncoder.encode(name, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20"));
             }
         }
+        long ttlMs = live != null ? live.historyTtlMs()
+                : (ObjektLiveSettings.dropWindow(null) ? 60_000L : 120_000L);
+        return new ParsedSerial(Map.copyOf(latestOwner), List.copyOf(history),
+                System.nanoTime() + Duration.ofMillis(ttlMs).toNanos());
+    }
+
+    private static Map<String, Object> pageOf(ParsedSerial parsed, long serial, int page) {
+        List<Map<String, Object>> history = parsed.history();
         int pages = Math.max(1, (history.size() + 19) / 20);
         int safePage = Math.min(page, pages - 1), from = safePage * 20;
         return Map.of("status", "available", "serial", serial, "source", "objekt.top",
                 "page", safePage, "total", history.size(), "hasNext", safePage + 1 < pages,
-                "owner", latestOwner, "transfers", List.copyOf(history.subList(from, Math.min(from + 20, history.size()))));
+                "owner", parsed.owner(), "transfers", List.copyOf(history.subList(from, Math.min(from + 20, history.size()))));
     }
 
     private String resolveNickname(String address, List<String> candidates) {
@@ -227,5 +299,6 @@ public class ObjektMarketDataService {
     }
 
     private record NicknameCache(String nickname, long expiresAt) {}
+    private record ParsedSerial(Map<String, Object> owner, List<Map<String, Object>> history, long expiresAtNanos) {}
 }
 
