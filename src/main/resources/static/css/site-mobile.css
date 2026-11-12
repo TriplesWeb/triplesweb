@@ -9,7 +9,9 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   #top-header>div:first-child{display:flex;align-items:center;justify-content:space-between;min-height:64px;height:auto;gap:.75rem;padding-left:max(1rem,env(safe-area-inset-left));padding-right:max(1rem,env(safe-area-inset-right));min-width:0;max-width:100%}
   #top-header>div:first-child>div:first-child{flex:1;min-width:0}
   #top-header>div:first-child>div:last-child{display:flex;align-items:center;gap:.5rem;min-width:0}
-  #top-header>div:first-child a img{max-height:28px;width:auto;max-width:100px}
+  #top-header>div:first-child a img:not(.sss-mascot-wave):not(.sss-mascot-trail){max-height:28px;width:auto;max-width:100px}
+  #top-header>div:first-child a img.sss-mascot-wave,
+  #top-header>div:first-child a img.sss-mascot-trail{max-height:28px;height:28px;width:auto;max-width:none}
   #mobile-menu-btn{flex:0 0 auto}
   #mobile-menu-btn{margin-left:auto}
   #top-header a{color:#b9cac4;text-decoration:none}

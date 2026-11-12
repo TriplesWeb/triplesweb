@@ -2,71 +2,54 @@
 <script src="{{#asset}}/js/about-admin-auth.js{{/asset}}" defer></script>
 <script src="{{#asset}}/js/site-admin-controls.js{{/asset}}" defer></script>
 <style>
-@keyframes sss-mascot-wave {
-    0%, 100% { transform: translateY(0) rotate(-2deg); }
-    25% { transform: translateY(-2.5px) rotate(3deg); }
-    50% { transform: translateY(0.5px) rotate(-1deg); }
-    75% { transform: translateY(-1.5px) rotate(2deg); }
+#top-header a[aria-label="tripleS 홈"] {
+    position: relative;
+    overflow: visible;
 }
-@keyframes sss-mascot-fly-in {
-    0% {
-        transform: translate(92px, 14px) rotate(18deg) scale(0.72);
-        opacity: 0;
-    }
-    12% { opacity: 1; }
-    45% {
-        transform: translate(48px, 20px) rotate(4deg) scale(0.88);
-    }
-    72% {
-        transform: translate(14px, 6px) rotate(-6deg) scale(0.96);
-    }
-    100% {
-        transform: translate(0, 0) rotate(-2deg) scale(1);
-        opacity: 1;
-    }
-}
-@keyframes sss-mascot-trail-fade {
-    0% { opacity: 0.55; transform: translate(var(--tx), var(--ty)) scale(0.78) rotate(12deg); }
-    100% { opacity: 0; transform: translate(calc(var(--tx) * 0.35), calc(var(--ty) * 0.55)) scale(0.9) rotate(0deg); }
-}
+#top-header a[aria-label="tripleS 홈"] .sss-mascot-wrap,
 .sss-mascot-wrap {
     position: relative;
     display: inline-flex;
     align-items: center;
-    height: 20px;
-    width: 24px;
-    flex-shrink: 0;
-}
-.sss-mascot-wave {
-    height: 20px;
+    justify-content: center;
+    height: 28px;
     width: auto;
+    flex-shrink: 0;
+    overflow: visible;
+    margin-right: 4px;
+}
+#top-header a[aria-label="tripleS 홈"] .sss-mascot-wave,
+#top-header a[aria-label="tripleS 홈"] .sss-mascot-trail,
+.sss-mascot-wave {
+    height: 28px !important;
+    max-height: 28px !important;
+    width: auto !important;
+    max-width: none !important;
+    object-fit: contain;
     transform-origin: center center;
-    will-change: transform;
+    will-change: transform, opacity;
 }
-.sss-mascot-wrap.is-ready .sss-mascot-wave {
-    animation: sss-mascot-wave 2.8s ease-in-out infinite;
-}
-.sss-mascot-wrap.is-intro .sss-mascot-wave {
-    animation: sss-mascot-fly-in 0.85s cubic-bezier(0.22, 0.9, 0.28, 1) forwards;
+.sss-mascot-wrap:not(.is-ready):not(.is-intro) .sss-mascot-wave {
+    opacity: 0;
 }
 .sss-mascot-trail {
     position: absolute;
     left: 0;
     top: 0;
-    height: 20px;
-    width: auto;
     pointer-events: none;
     opacity: 0;
-    z-index: 0;
+    z-index: 2;
+    will-change: transform, opacity;
 }
-.sss-mascot-wrap.is-intro .sss-mascot-trail {
-    animation: sss-mascot-trail-fade 0.7s ease-out forwards;
+.sss-mascot-wrap .sss-mascot-wave { position: relative; z-index: 3; }
+#top-header a[aria-label="tripleS 홈"] #sss-wordmark {
+    position: relative;
+    z-index: 1;
+    height: 20px;
+    width: auto;
 }
-.sss-mascot-wrap .sss-mascot-wave { position: relative; z-index: 1; }
 @media (prefers-reduced-motion: reduce) {
-    .sss-mascot-wrap.is-ready .sss-mascot-wave,
-    .sss-mascot-wrap.is-intro .sss-mascot-wave,
-    .sss-mascot-wrap.is-intro .sss-mascot-trail { animation: none; }
+    .sss-mascot-wrap:not(.is-ready):not(.is-intro) .sss-mascot-wave { opacity: 1; }
 }
 </style>
 <!-- 헤더 고정 상단 영역 -->
@@ -77,11 +60,11 @@
 
     <!-- 1. 브랜드 로고 -->
     <div class="header-brand-cluster flex items-center gap-2 shrink-0 min-w-0">
-    <a href="/" class="flex items-center gap-1 shrink-0 text-decoration-none" aria-label="tripleS 홈">
+    <a href="/" class="flex items-center shrink-0 text-decoration-none" aria-label="tripleS 홈">
         <span class="sss-mascot-wrap" id="sss-mascot-wrap">
-            <img src="/images/sss-mascot.png" alt="" width="24" height="20" class="sss-mascot-wave block" id="sss-mascot" decoding="async" aria-hidden="true">
+            <img src="/images/sss-mascot-motion/01.png" alt="" width="39" height="28" class="sss-mascot-wave block" id="sss-mascot" decoding="async" aria-hidden="true" data-sss-mascot-motion="1">
         </span>
-        <img src="/images/triples-wordmark-white.png" alt="tripleS" width="86" height="20" class="w-auto block" decoding="async">
+        <img src="/images/triples-wordmark-white.png" alt="tripleS" width="86" height="20" class="w-auto block" id="sss-wordmark" decoding="async">
     </a>
     {{#isHomePage}}<a href="/cosmo/objekt" class="header-objekt-jump">오브젝트</a>{{/isHomePage}}
     </div>
