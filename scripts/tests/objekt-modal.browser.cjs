@@ -7,12 +7,12 @@ const base = path.resolve(__dirname, '../..');
   const browser = await chromium.launch({headless:true, executablePath:process.env.CHROMIUM_PATH || (fs.existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined), args:['--no-sandbox']});
   try {
     const page = await browser.newPage({viewport:{width:1280,height:1000}});
-    let favorite=false, favoriteAttempts=0, suppliesHits=0, lookupHits=0;
+    let favorite=false, favoriteCount=2, favoriteAttempts=0, suppliesHits=0, lookupHits=0;
     let isAdmin = true, description = '기존 설명', writes = [], failMore = true, apolloStory = null;
     let mintCount = null, issuedStatus = 'available';
     let unlockDetail=()=>{};
     let detailBarrier=Promise.resolve();
-    const data = () => ({isFavorite:favorite,objektKey:'hayeoncc367z',collectionId:'Cream02 HaYeon 367Z',member:'HaYeon',season:'Cream02',class:'Special',collectionNo:'367Z',description,isAdmin,
+    const data = () => ({isFavorite:favorite,favoriteCount,objektKey:'hayeoncc367z',collectionId:'Cream02 HaYeon 367Z',member:'HaYeon',season:'Cream02',class:'Special',collectionNo:'367Z',description,isAdmin,
       detailUrl:'/cosmo/objekt/detail/hayeoncc367z',memberUrl:'/cosmo/objekt?group=members&member=HaYeon',tradeUrl:'/article/trade/new?selectedObjektIds=uuid',sellUrl:'/article/sell/new?selectedObjektIds=uuid',descriptionUrl:'/cosmo/objekt/detail/hayeoncc367z/description',
       descriptionScope:'group',descriptionGroupLabel:'Cream02 367Z',descriptionGroupCount:24,
       ...(Number.isFinite(mintCount) ? {mintCount} : {}),
@@ -28,7 +28,8 @@ const base = path.resolve(__dirname, '../..');
         if(favoriteAttempts===1)return route.fulfill({status:403,body:'{}',contentType:'application/json'});
         if(favoriteAttempts===4)return route.fulfill({status:503,body:'{}',contentType:'application/json'});
         favorite=(url.searchParams.get('favorite') || new URLSearchParams(req.postData()).get('favorite'))==='true';
-        return json({favorite});
+        favoriteCount = favorite ? favoriteCount + 1 : Math.max(0, favoriteCount - 1);
+        return json({favorite, favoriteCount});
       }
       if(p.endsWith('/description') && req.method()==='POST') {
         assert.equal(req.headers()['x-xsrf-token'],'test-csrf');
@@ -84,6 +85,26 @@ const base = path.resolve(__dirname, '../..');
     await page.waitForFunction(()=>document.querySelector('#objektDetailFavorite')?.disabled===false);
     assert.equal(await page.locator('.objekt-detail-heading #objektDetailFavorite').count(),1);
     assert.equal(await page.locator('.objekt-detail-actions #objektDetailFavorite').count(),0);
+    const favLayout = await page.locator('#objektDetailFavorite').evaluate((el) => {
+      const icon = el.querySelector('.objekt-fav-icon');
+      const count = el.querySelector('.objekt-fav-count');
+      const iconBox = icon.getBoundingClientRect();
+      const countBox = count.getBoundingClientRect();
+      const style = getComputedStyle(el);
+      const countStyle = getComputedStyle(count);
+      return {
+        display: style.display,
+        countText: count.textContent,
+        countVisible: countStyle.display !== 'none' && countBox.width > 0,
+        countRightOfIcon: countBox.left >= iconBox.right - 1,
+        icon: icon.textContent
+      };
+    });
+    assert.match(favLayout.display, /flex/);
+    assert.equal(favLayout.countText, '2');
+    assert.equal(favLayout.countVisible, true);
+    assert.equal(favLayout.countRightOfIcon, true);
+    assert.equal(favLayout.icon, '♡');
     const postRow = await page.locator('.objekt-detail-post-links').evaluate((el) => {
       const nodes = [...el.children];
       const boxes = nodes.map((node) => node.getBoundingClientRect());
@@ -112,8 +133,11 @@ const base = path.resolve(__dirname, '../..');
     await page.locator('#objektDetailFavorite').click();
     await page.waitForFunction(()=>document.querySelector('#objektDetailFavorite').dataset.favorite==='true');
     assert.equal(favoriteAttempts,2);
+    assert.equal(await page.locator('#objektDetailFavoriteCount').textContent(), '3');
+    assert.equal(await page.locator('.objekt-fav-icon').textContent(), '♥');
     await page.locator('#objektDetailFavorite').click();
     await page.waitForFunction(()=>document.querySelector('#objektDetailFavorite').dataset.favorite==='false');
+    assert.equal(await page.locator('#objektDetailFavoriteCount').textContent(), '2');
     await page.locator('#objektDetailFavorite').click();
     await page.waitForFunction(()=>document.querySelector('#objektFavoriteStatus').textContent.includes('저장하지 못했습니다'));
     assert.equal(await page.locator('#objektDetailFavorite').getAttribute('data-favorite'),'false');
@@ -176,6 +200,18 @@ const base = path.resolve(__dirname, '../..');
     });
     assert.equal(mobilePosts.aligned, true);
     assert.equal(mobilePosts.sameHeight, true);
+    const mobileFav = await page.locator('#objektDetailFavorite').evaluate((el) => {
+      const count = el.querySelector('.objekt-fav-count');
+      const box = el.getBoundingClientRect();
+      return {
+        countDisplay: getComputedStyle(count).display,
+        width: Math.round(box.width),
+        height: Math.round(box.height)
+      };
+    });
+    assert.equal(mobileFav.countDisplay, 'none');
+    assert.ok(mobileFav.width <= 36, '모바일 찜 버튼 너비: ' + mobileFav.width);
+    assert.ok(mobileFav.height <= 36, '모바일 찜 버튼 높이: ' + mobileFav.height);
     await page.screenshot({path:'/tmp/objekt-ui/modal-mobile.png',fullPage:true});
     await page.locator('#objektDetailClose').click(); isAdmin=false;
     await page.locator('.objekt-open-detail').first().click();

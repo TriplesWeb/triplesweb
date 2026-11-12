@@ -89,6 +89,7 @@ public class ObjektFeatureController {
         boolean admin = aboutAdminAuth.isAdmin(request, session);
         body.putAll(descriptionEditor.view(item));
         body.put("isFavorite", favorites.contains(session.getId(), item));
+        body.put("favoriteCount", favorites.count(session.getId()));
         body.put("isAdmin", admin);
         body.put("detailUrl", ObjektLinks.detail(item));
         body.put("memberUrl", ObjektLinks.member(item));
@@ -190,7 +191,7 @@ public class ObjektFeatureController {
         boolean desired = !favorites.contains(session.getId(), item);
         setFavorite(session.getId(), item, desired);
         return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
-                .body(Map.of("isFavorite", favorites.contains(session.getId(), item), "objektKey", key));
+                .body(favoriteState(session.getId(), item, key));
     }
 
     @PostMapping(value = "/detail/{key}/favorite", produces = MediaType.TEXT_HTML_VALUE)
@@ -210,7 +211,17 @@ public class ObjektFeatureController {
         if (item == null) return ResponseEntity.notFound().build();
         setFavorite(session.getId(), item, favorite);
         return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
-                .body(Map.of("favorite", favorites.contains(session.getId(), item)));
+                .body(favoriteState(session.getId(), item, key));
+    }
+
+    private Map<String, Object> favoriteState(String visitor, Map<String, Object> item, String key) {
+        boolean on = favorites.contains(visitor, item);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("favorite", on);
+        body.put("isFavorite", on);
+        body.put("favoriteCount", favorites.count(visitor));
+        body.put("objektKey", key);
+        return body;
     }
 
     private void setFavorite(String visitor, Map<String, Object> item, boolean desired) {

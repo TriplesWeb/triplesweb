@@ -929,13 +929,17 @@
         }
         .objekt-detail-heading .objekt-fav-toggle {
             appearance: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .35rem;
             flex: 0 0 auto;
-            width: 2rem;
+            width: auto;
             height: 2rem;
             min-width: 2rem;
             min-height: 2rem;
             margin: .1rem 0 0;
-            padding: 0;
+            padding: 0 .7rem 0 .55rem;
             border: 1px solid rgba(244, 114, 182, .4);
             border-radius: 999px;
             background: rgba(244, 114, 182, .1);
@@ -943,6 +947,17 @@
             font-size: .95rem;
             line-height: 1;
             cursor: pointer;
+        }
+        .objekt-detail-heading .objekt-fav-icon {
+            display: inline-flex;
+            line-height: 1;
+        }
+        .objekt-detail-heading .objekt-fav-count {
+            font-size: .72rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -.02em;
+            line-height: 1;
         }
         .objekt-detail-heading .objekt-fav-toggle.is-on {
             background: rgba(244, 114, 182, .22);
@@ -988,6 +1003,13 @@
             font-weight: 650;
         }
         @media (max-width: 760px) {
+            .objekt-detail-heading .objekt-fav-toggle {
+                width: 2rem;
+                min-width: 2rem;
+                padding: 0;
+                gap: 0;
+            }
+            .objekt-detail-heading .objekt-fav-count { display: none; }
             .objekt-detail-panel {
                 grid-template-columns: 1fr;
                 max-height: 92vh;

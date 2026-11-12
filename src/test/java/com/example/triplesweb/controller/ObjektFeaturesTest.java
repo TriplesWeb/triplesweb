@@ -465,6 +465,8 @@ class ObjektFeaturesTest {
             .contains("data-serial-panel", "objektIssuedCount")
             .contains("objekt-detail-heading", "objekt-detail-post-links")
             .contains("id=\"objektDetailFavorite\"")
+            .contains("objekt-fav-icon")
+            .contains("id=\"objektDetailFavoriteCount\"")
             .contains("objekt-member-logo")
             .contains("/images/objekt-member-logos/s19.png")
             .contains("id=\"objektDescriptionEdit\"")
@@ -668,12 +670,14 @@ class ObjektFeaturesTest {
         item.put("collectionNo", "367Z");
         stubCatalog(List.of(item));
         when(market.mintCount(anyMap())).thenReturn(90L);
+        when(favorites.count(any())).thenReturn(3L);
         mvc.perform(get("/cosmo/objekt/detail/hayeoncc367z").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.mintCount").value(90))
                 .andExpect(jsonPath("$.mintCountKnown").value(true))
                 .andExpect(jsonPath("$.descriptionScope").value("group"))
                 .andExpect(jsonPath("$.descriptionGroupCount").value(1))
+                .andExpect(jsonPath("$.favoriteCount").value(3))
                 .andExpect(jsonPath("$.isAdmin").value(false));
         verify(market, never()).issuedSupply(any(), anyInt(), anyInt());
         verify(catalog, never()).findCollections(any());
@@ -698,6 +702,19 @@ class ObjektFeaturesTest {
                 .andExpect(jsonPath("$.descriptionGroupCount").value(24));
         verify(catalog).groupCount(any());
         verify(catalog, never()).findCollections(any());
+    }
+
+    @Test void favoritePutReturnsVisitorCount() throws Exception {
+        var item = Map.<String, Object>of("id", "uuid", "slug", "hayeoncc367z");
+        stubCatalog(List.of(item));
+        when(favorites.contains(any(), any())).thenReturn(true);
+        when(favorites.count(any())).thenReturn(4L);
+        mvc.perform(put("/cosmo/objekt/detail/hayeoncc367z/favorite").param("favorite", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.favorite").value(true))
+                .andExpect(jsonPath("$.isFavorite").value(true))
+                .andExpect(jsonPath("$.favoriteCount").value(4));
+        verify(favorites).set(anyString(), any(), eq(true));
     }
 }
 

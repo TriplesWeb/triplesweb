@@ -611,11 +611,19 @@
         return headers;
     }
 
-    function setFavoriteButton(on) {
+    function setFavoriteButton(on, count) {
         if (!detailFavorite) return;
+        const parsed = Number(count);
+        const total = Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed))
+            : Math.max(0, Number(detailFavorite.dataset.count || 0) || 0);
         detailFavorite.classList.toggle('is-on', Boolean(on));
-        detailFavorite.textContent = on ? '♥' : '♡';
-        detailFavorite.setAttribute('aria-label', on ? '찜 해제' : '찜하기');
+        const icon = detailFavorite.querySelector('.objekt-fav-icon');
+        const countEl = detailFavorite.querySelector('.objekt-fav-count');
+        if (icon) icon.textContent = on ? '♥' : '♡';
+        if (countEl) countEl.textContent = String(total);
+        detailFavorite.dataset.count = String(total);
+        const label = (on ? '찜 해제' : '찜하기') + ', ' + total.toLocaleString('ko-KR') + '개';
+        detailFavorite.setAttribute('aria-label', label);
         detailFavorite.setAttribute('aria-pressed', String(Boolean(on)));
         detailFavorite.dataset.favorite = on ? 'true' : 'false';
     }
@@ -926,7 +934,7 @@
         const frontUrl = data.frontImage || data.thumbnailImage || '';
         resetModalFlip(frontUrl, data.backImage || '', Boolean(data.hasBack));
         applyDetailMotion(data, frontUrl);
-        setFavoriteButton(Boolean(data.isFavorite));
+        setFavoriteButton(Boolean(data.isFavorite), data.favoriteCount);
         if (detailFavorite) detailFavorite.disabled = false;
         const actions = document.querySelector('.objekt-detail-actions');
         if (actions) actions.inert = false;
@@ -1152,7 +1160,7 @@
             if (!response.ok) throw new Error(String(response.status));
             const data = await response.json();
             if (activeObjektKey !== key) return;
-            setFavoriteButton(Boolean(data.favorite ?? data.isFavorite));
+            setFavoriteButton(Boolean(data.favorite ?? data.isFavorite), data.favoriteCount);
             detailPrefetch.delete(key);
             status.textContent = desired ? '찜 목록에 저장했습니다.' : '찜 목록에서 해제했습니다.';
             status.hidden = false;
