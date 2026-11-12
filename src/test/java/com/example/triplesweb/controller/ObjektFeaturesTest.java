@@ -474,10 +474,13 @@ class ObjektFeaturesTest {
             .contains("이 오브젝트만 수정")
             .contains("id=\"objekt-kind-by-class\"")
             .contains("\"Special\":[\"367Z\"]")
+            .contains("objekt-sell-link")
             .doesNotContain("관리자 · 상세 설명 편집")
             .doesNotContain("objekt-head-mints")
             .doesNotContain("발행량 7,193,056개")
-            .doesNotContain("objektIssuedRanges", "objektIssuedTime").doesNotContain("id=\"objektDetailFullLink\"");
+            .doesNotContain("objektIssuedRanges", "objektIssuedTime").doesNotContain("id=\"objektDetailFullLink\"")
+            .doesNotContain("objekt-modal-favorites-link")
+            .doesNotContain("찜한 오브젝트 보기");
     }
 
     @Test void cardSupplyDoesNotShowPolygonPageTotal() throws Exception {

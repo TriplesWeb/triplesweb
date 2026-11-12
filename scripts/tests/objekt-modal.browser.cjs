@@ -69,9 +69,12 @@ const base = path.resolve(__dirname, '../..');
     const kindFonts = await page.evaluate(() => {
       const kind = document.querySelector('.objekt-filter input.objekt-kind-select');
       const other = document.querySelector('#class-dropdown .objekt-filter-control') || document.querySelector('.objekt-filter-control');
-      return {kind: getComputedStyle(kind).fontSize, other: getComputedStyle(other).fontSize};
+      const kindStyle = getComputedStyle(kind), otherStyle = getComputedStyle(other);
+      return {kind: kindStyle.fontSize, other: otherStyle.fontSize, kindWeight: kindStyle.fontWeight, otherWeight: otherStyle.fontWeight};
     });
     assert.equal(kindFonts.kind, kindFonts.other);
+    assert.equal(kindFonts.kindWeight, kindFonts.otherWeight);
+    assert.equal(await page.locator('.objekt-modal-favorites-link').count(), 0);
     detailBarrier = new Promise((resolve) => { unlockDetail = resolve; });
     await page.locator('.objekt-open-detail').first().click();
     await page.locator('#objektDetailTitle').filter({hasText:'Cream02 HaYeon 367Z'}).waitFor();
@@ -82,11 +85,24 @@ const base = path.resolve(__dirname, '../..');
     assert.equal(await page.locator('.objekt-detail-heading #objektDetailFavorite').count(),1);
     assert.equal(await page.locator('.objekt-detail-actions #objektDetailFavorite').count(),0);
     const postRow = await page.locator('.objekt-detail-post-links').evaluate((el) => {
-      const boxes = [...el.children].map((node) => node.getBoundingClientRect());
-      return {count: boxes.length, aligned: Math.abs(boxes[0].top - boxes[1].top) < 8};
+      const nodes = [...el.children];
+      const boxes = nodes.map((node) => node.getBoundingClientRect());
+      const styles = nodes.map((node) => getComputedStyle(node));
+      return {
+        count: boxes.length,
+        aligned: Math.abs(boxes[0].top - boxes[1].top) < 8,
+        sameHeight: Math.abs(boxes[0].height - boxes[1].height) < 1,
+        display: styles.map((style) => style.display),
+        align: styles.map((style) => style.alignItems),
+        justify: styles.map((style) => style.justifyContent)
+      };
     });
     assert.equal(postRow.count, 2);
     assert.equal(postRow.aligned, true);
+    assert.equal(postRow.sameHeight, true);
+    assert.deepEqual(postRow.display, ['flex', 'flex']);
+    assert.deepEqual(postRow.align, ['center', 'center']);
+    assert.deepEqual(postRow.justify, ['center', 'center']);
     const memberStyle = await page.locator('#objektDetailMember').evaluate((el) => {
       const style = getComputedStyle(el);
       return {color: style.color, textShadow: style.textShadow};
@@ -146,6 +162,20 @@ const base = path.resolve(__dirname, '../..');
     await page.screenshot({path:'/tmp/objekt-ui/modal-desktop.png',fullPage:true});
     await page.setViewportSize({width:390,height:844});
     assert.equal(await page.locator('.objekt-detail-panel').evaluate(node=>node.getBoundingClientRect().right<=innerWidth),true);
+    const mobileKindFonts = await page.evaluate(() => {
+      const kind = document.querySelector('.objekt-filter input.objekt-kind-select');
+      const other = document.querySelector('#class-dropdown .objekt-filter-control') || document.querySelector('.objekt-filter-control');
+      const kindStyle = getComputedStyle(kind), otherStyle = getComputedStyle(other);
+      return {kind: kindStyle.fontSize, other: otherStyle.fontSize, kindWeight: kindStyle.fontWeight, otherWeight: otherStyle.fontWeight};
+    });
+    assert.equal(mobileKindFonts.kind, mobileKindFonts.other);
+    assert.equal(mobileKindFonts.kindWeight, mobileKindFonts.otherWeight);
+    const mobilePosts = await page.locator('.objekt-detail-post-links').evaluate((el) => {
+      const boxes = [...el.children].map((node) => node.getBoundingClientRect());
+      return {aligned: Math.abs(boxes[0].top - boxes[1].top) < 8, sameHeight: Math.abs(boxes[0].height - boxes[1].height) < 1};
+    });
+    assert.equal(mobilePosts.aligned, true);
+    assert.equal(mobilePosts.sameHeight, true);
     await page.screenshot({path:'/tmp/objekt-ui/modal-mobile.png',fullPage:true});
     await page.locator('#objektDetailClose').click(); isAdmin=false;
     await page.locator('.objekt-open-detail').first().click();

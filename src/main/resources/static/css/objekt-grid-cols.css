@@ -235,9 +235,11 @@
   }
   .objekt-choice-text,
   .objekt-filter .objekt-kind-select,
+  .objekt-filter input.objekt-kind-select,
   .objekt-filter-control,
   .objekt-filter-label {
     font-size: .82rem;
     font-weight: 600;
+    line-height: 1;
   }
 }

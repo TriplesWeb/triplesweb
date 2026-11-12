@@ -59,8 +59,9 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .detail-content img,.desc-body img{height:auto}
   .detail-content pre,pre{max-width:100%;overflow:auto}
   .table-responsive{max-width:100%;overflow-x:auto!important;-webkit-overflow-scrolling:touch}
-  input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{font-size:16px!important}
-  .objekt-kind-option,.objekt-choice,.objekt-choice-text,.season-chip,.objekt-filter .objekt-kind-select,.objekt-filter input.objekt-kind-select{font-size:.82rem!important;font-weight:600!important}
+  input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=range]):not(.objekt-kind-select),select,textarea{font-size:16px!important}
+  .objekt-kind-option,.objekt-choice,.objekt-choice-text,.season-chip,.objekt-filter .objekt-kind-select,.objekt-filter input.objekt-kind-select{font-size:.82rem!important;font-weight:600!important;line-height:1!important}
+  input.objekt-kind-select:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=range]){font-size:.82rem!important;font-weight:600!important;line-height:1!important}
   .objekt-detail-heading .objekt-fav-toggle{min-width:2rem;min-height:2rem;width:2rem;height:2rem}
   button,input[type=submit],.btn,.site-btn,.ar-submit,.btn-custom-primary,.btn-custom-secondary,.btn-custom-danger,.objekt-reset-button{min-height:44px;touch-action:manipulation}
   a,summary{touch-action:manipulation}

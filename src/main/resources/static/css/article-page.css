@@ -123,7 +123,7 @@
 #objektPickerPanel .objekt-filter-select-wrap select option{background:#12151c;color:#e3e2e8}
 #objektPickerPanel .objekt-filter-select-wrap .objekt-filter-caret{position:absolute;top:50%;right:.2rem;transform:translateY(-50%)}
 #objektPickerPanel .objekt-kind-combo{min-width:0;gap:0;padding:0 .2rem 0 .65rem}
-#objektPickerPanel .objekt-filter input.objekt-kind-select{appearance:none!important;width:100%;min-width:0;flex:1 1 auto;height:2.1rem;margin:0;border:0!important;outline:none!important;background:transparent!important;padding:0!important;color:#e8ebf2!important;font-size:.82rem!important;font-weight:600!important;line-height:2.1rem;caret-color:#6ee7d8}
+#objektPickerPanel .objekt-filter input.objekt-kind-select{appearance:none!important;width:100%;min-width:0;flex:1 1 auto;height:2.1rem;margin:0;border:0!important;outline:none!important;background:transparent!important;padding:0!important;color:#e8ebf2!important;font-size:.82rem!important;font-weight:600!important;line-height:1;caret-color:#6ee7d8}
 #objektPickerPanel .objekt-kind-toggle{display:inline-flex;align-items:center;justify-content:center;width:1.45rem;height:1.45rem;border:0;border-radius:999px;background:transparent;color:#6ee7d8;cursor:pointer}
 #objektPickerPanel .objekt-kind-option,#objektPickerPanel .objekt-choice,#objektPickerPanel .objekt-choice-text{font-size:.82rem;font-weight:600;color:#e8ebf2}
 #objektPickerPanel .objekt-kind-option{display:block;width:100%;padding:.45rem .7rem;border:0;border-radius:.5rem;background:transparent;text-align:left;cursor:pointer}
