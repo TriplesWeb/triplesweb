@@ -18,7 +18,11 @@
     const focusTarget = opts.focusSelector
       ? modal.querySelector(opts.focusSelector)
       : modal.querySelector(FOCUSABLE);
-    (focusTarget || modal).focus();
+    try {
+      (focusTarget || modal).focus({ preventScroll: true });
+    } catch (_) {
+      (focusTarget || modal).focus();
+    }
 
     function onKey(e) {
       if (e.key === "Escape") {

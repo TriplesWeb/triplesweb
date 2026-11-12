@@ -65,7 +65,6 @@ public class ObjektDescriptionSync {
 
     @PostConstruct
     void loadScopes() {
-        if (!enabled) return;
         for (ObjektDescriptionScope row : scopes.findAll()) {
             if (row.getId() == null) continue;
             ObjektDescriptionKeys.markMemberSpecific(row.getId().getSeason(), row.getId().getCollectionNo());

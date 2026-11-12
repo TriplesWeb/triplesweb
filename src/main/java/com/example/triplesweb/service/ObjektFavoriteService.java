@@ -28,6 +28,11 @@ public class ObjektFavoriteService {
         return repository.existsByVisitorKeyAndObjektKeyIn(visitor, aliases(item));
     }
 
+    public long count(String visitor) {
+        if (visitor == null || visitor.isBlank()) return 0;
+        return Math.max(0, repository.countByVisitorKey(visitor));
+    }
+
     @Transactional
     public void set(String visitor, Map<String, Object> item, boolean desired) {
         if (!desired) {
