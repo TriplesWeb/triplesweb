@@ -6,10 +6,42 @@
   const owner = $('[data-serial-owner]'), history = $('[data-serial-history]');
   const list = $('[data-serial-rows]'), more = $('[data-serial-more]');
   let loading = false, currentSerial = '', nextPage = null, version=0, abort;
+  const memory = new Map();
+  const inflight = new Map();
+  function cacheId(url, serial, page) {
+    return `${url}|${serial}|${page}`;
+  }
   function setCollection(url) {
-    version++;abort?.abort();loading=false;currentSerial='';nextPage=null;root.dataset.url=url;
+    url = url || '';
+    if (root.dataset.url === url) return;
+    version++;abort?.abort();abort=null;loading=false;currentSerial='';nextPage=null;root.dataset.url=url;
+    memory.clear();inflight.clear();
     owner.hidden=true;history.hidden=true;owner.replaceChildren();list.replaceChildren();more.hidden=true;status.textContent='';
     root.removeAttribute('aria-busy');form.querySelector('button').disabled=!url;more.disabled=false;form.elements.namedItem('serial').value='1';
+  }
+  function fetchPage(serial, page, signal) {
+    const url = root.dataset.url;
+    const id = cacheId(url, serial, page);
+    if (memory.has(id)) return Promise.resolve(memory.get(id));
+    const pending = inflight.get(id);
+    if (pending) return pending;
+    const request = fetch(`${url}?${new URLSearchParams({serial, page: String(page)})}`, {
+      headers:{Accept:'application/json'}, credentials:'same-origin', cache:'no-store', signal
+    }).then(async response => {
+      const data = await response.json();
+      if (!response.ok) throw new Error();
+      if (root.dataset.url === url) memory.set(id, data);
+      return data;
+    }).finally(() => {
+      if (inflight.get(id) === request) inflight.delete(id);
+    });
+    inflight.set(id, request);
+    return request;
+  }
+  function prefetch(serial) {
+    if (!root.dataset.url || !Number.isSafeInteger(Number(serial)) || Number(serial) < 1) return;
+    if (!abort || abort.signal.aborted) abort = new AbortController();
+    fetchPage(String(serial), 0, abort.signal).catch(() => {});
   }
   function refresh() {
     if (!root.dataset.url || loading || !currentSerial) return;
@@ -17,7 +49,7 @@
     form.elements.namedItem('serial').value = currentSerial;
     load(false, true);
   }
-  window.ObjektSerialLookup={setCollection,refresh};
+  window.ObjektSerialLookup={setCollection,refresh,prefetch};
   function el(tag, cls, text) {
     const node = document.createElement(tag); if (cls) node.className = cls;
     if (text !== undefined) node.textContent = text; return node;
@@ -31,7 +63,7 @@
   }
   async function load(append, quiet) {
     if (!root.dataset.url || loading || (!append && !form.reportValidity())) return;
-    const requestVersion=version;abort=new AbortController();
+    const requestVersion=version; if (!abort || abort.signal.aborted) abort=new AbortController();
     const serial = append ? currentSerial : form.elements.namedItem('serial').value;
     if (!Number.isSafeInteger(Number(serial)) || Number(serial) < 1 || (append && nextPage === null)) return;
     loading = true; form.querySelector('button').disabled = true; more.disabled = true;
@@ -39,9 +71,8 @@
     if (!append && !quiet) { owner.hidden = true; history.hidden = true; owner.replaceChildren(); list.replaceChildren(); more.hidden = true; nextPage = null; }
     if (!quiet) status.textContent = '시리얼과 전송 내역을 확인하는 중…';
     try {
-      const query = new URLSearchParams({serial, page: String(append ? nextPage : 0)});
-      const response = await fetch(`${root.dataset.url}?${query}`, {headers:{Accept:'application/json'}, credentials:'same-origin', cache:'no-store',signal:abort.signal});
-      const data = await response.json(); if(requestVersion!==version)return; if (!response.ok) throw new Error();
+      const data = await fetchPage(serial, append ? nextPage : 0, abort.signal);
+      if(requestVersion!==version)return;
       if (['hidden','not_found'].includes(data.status)) {
         owner.hidden = true; history.hidden = true; list.replaceChildren(); nextPage = null; more.hidden = true;
         status.textContent = data.status === 'hidden' ? '이 시리얼의 정보는 현재 제공되지 않습니다.' : '발행되지 않았거나 아직 반영되지 않은 시리얼입니다.'; return;

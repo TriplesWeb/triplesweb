@@ -51,6 +51,16 @@ class ObjektLiveSettingsTest {
         assertThat(drop.due(now - 31_000)).isTrue();
     }
 
+    @Test void groupCountIndexCountsSameSeasonAndNumber() {
+        var views = java.util.List.of(
+                java.util.Map.<String, Object>of("season", "Cream02", "collectionNo", "323", "member", "SeoYeon"),
+                java.util.Map.<String, Object>of("season", "Cream02", "collectionNo", "323", "member", "YuBin"),
+                java.util.Map.<String, Object>of("season", "Cream02", "collectionNo", "101Z", "member", "SeoYeon"));
+        var counts = ObjektService.buildGroupCounts(views);
+        org.assertj.core.api.Assertions.assertThat(counts.get("cream02|323")).isEqualTo(2);
+        org.assertj.core.api.Assertions.assertThat(counts.get("cream02|101z")).isEqualTo(1);
+    }
+
     @Test void catalogSignatureChangesWhenACollectionAppears() {
         var before = java.util.List.of(java.util.Map.<String, Object>of("id", "a", "collectionId", "A"));
         var after = java.util.List.of(

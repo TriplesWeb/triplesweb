@@ -238,5 +238,6 @@
   .objekt-filter-control,
   .objekt-filter-label {
     font-size: .82rem;
+    font-weight: 600;
   }
 }

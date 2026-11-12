@@ -47,6 +47,7 @@ public class ObjektService {
 
     private volatile List<Map<String, Object>> cachedCollections = List.of();
     private volatile Map<String, Map<String, Object>> byKey = Map.of();
+    private volatile Map<String, Integer> groupCounts = Map.of();
     private volatile FilterFacets facets = FilterFacets.empty();
     private volatile List<Map<String, Object>> newestDrops = List.of();
     private volatile long lastSuccessfulRefreshMillis;
@@ -104,6 +105,16 @@ public class ObjektService {
 
     public int catalogCount() {
         return cachedCollections.size();
+    }
+
+    /** Same season+number cards, from the in-memory catalog index. */
+    public int groupCount(Map<String, Object> item) {
+        if (item == null) return 1;
+        String season = first(item, "season", "seasonKey").toLowerCase(Locale.ROOT);
+        String number = first(item, "collectionNo", "collectionNumber").toLowerCase(Locale.ROOT);
+        if (number.isBlank()) return 1;
+        Integer count = groupCounts.get(season + "|" + number);
+        return count == null || count < 1 ? 1 : count;
     }
 
     public String catalogSignature() {
@@ -200,9 +211,22 @@ public class ObjektService {
         List<Map<String, Object>> snapshot = views == null ? List.of() : List.copyOf(views);
         cachedCollections = snapshot;
         byKey = buildIndex(snapshot);
+        groupCounts = buildGroupCounts(snapshot);
         facets = FilterFacets.from(snapshot);
         catalogSignature = signature(snapshot);
         newestDrops = dropAlerts(snapshot);
+    }
+
+    static Map<String, Integer> buildGroupCounts(List<Map<String, Object>> views) {
+        if (views == null || views.isEmpty()) return Map.of();
+        Map<String, Integer> counts = new HashMap<>();
+        for (Map<String, Object> item : views) {
+            String season = first(item, "season", "seasonKey").toLowerCase(Locale.ROOT);
+            String number = first(item, "collectionNo", "collectionNumber").toLowerCase(Locale.ROOT);
+            if (number.isBlank()) continue;
+            counts.merge(season + "|" + number, 1, Integer::sum);
+        }
+        return Map.copyOf(counts);
     }
 
     /**

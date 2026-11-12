@@ -34,6 +34,7 @@ public class ObjektMarketDataService {
     private volatile String mintsSignature = "0:0";
     private volatile long mintsRefreshedAt;
     private final ConcurrentHashMap<String, NicknameCache> nicknames = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ParsedSerial> parsedSerials = new ConcurrentHashMap<>();
 
     @Autowired
     public ObjektMarketDataService(
@@ -202,12 +203,26 @@ public class ObjektMarketDataService {
     /** Latest recipient and history come from the same index snapshot, without depending on RPC health. */
     public Map<String, Object> serialLookup(Map<String, Object> collection, long serial, int page) {
         if (serial < 1 || page < 0) throw new IllegalArgumentException("시리얼과 페이지를 확인해 주세요.");
-        JsonNode indexed = historyIndex.serialHistory(String.valueOf(collection.get("slug")), serial);
+        String slug = String.valueOf(collection.get("slug"));
+        String cacheKey = slug + ":" + serial;
+        long now = System.nanoTime();
+        parsedSerials.entrySet().removeIf(entry -> now - entry.getValue().expiresAtNanos() >= 0);
+        ParsedSerial cached = parsedSerials.get(cacheKey);
+        if (cached != null) return pageOf(cached, serial, page);
+        JsonNode indexed = historyIndex.serialHistory(slug, serial);
         if (indexed == null) return Map.of("status", "not_found");
         if (indexed.path("hide").asBoolean()) return Map.of("status", "hidden");
+        ParsedSerial parsed = parseHistory(indexed);
+        if (parsedSerials.size() >= 256) {
+            parsedSerials.keySet().stream().findFirst().ifPresent(parsedSerials::remove);
+        }
+        parsedSerials.put(cacheKey, parsed);
+        return pageOf(parsed, serial, page);
+    }
+
+    private ParsedSerial parseHistory(JsonNode indexed) {
         JsonNode rows = indexed.path("transfers");
         if (rows.size() > 10000) throw new IllegalStateException("전송 내역이 너무 큽니다.");
-        // Validate the entire upstream response before presenting any page.
         List<Map<String, Object>> history = new ArrayList<>();
         List<JsonNode> ordered = new ArrayList<>();
         for (JsonNode row : rows) {
@@ -240,11 +255,19 @@ public class ObjektMarketDataService {
                 if (!burned && !name.isBlank()) latestOwner.put("profileUrl", "/cosmo/profile/" + java.net.URLEncoder.encode(name, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20"));
             }
         }
+        long ttlMs = live != null ? live.historyTtlMs()
+                : (ObjektLiveSettings.dropWindow(null) ? 60_000L : 120_000L);
+        return new ParsedSerial(Map.copyOf(latestOwner), List.copyOf(history),
+                System.nanoTime() + Duration.ofMillis(ttlMs).toNanos());
+    }
+
+    private static Map<String, Object> pageOf(ParsedSerial parsed, long serial, int page) {
+        List<Map<String, Object>> history = parsed.history();
         int pages = Math.max(1, (history.size() + 19) / 20);
         int safePage = Math.min(page, pages - 1), from = safePage * 20;
         return Map.of("status", "available", "serial", serial, "source", "objekt.top",
                 "page", safePage, "total", history.size(), "hasNext", safePage + 1 < pages,
-                "owner", latestOwner, "transfers", List.copyOf(history.subList(from, Math.min(from + 20, history.size()))));
+                "owner", parsed.owner(), "transfers", List.copyOf(history.subList(from, Math.min(from + 20, history.size()))));
     }
 
     private String resolveNickname(String address, List<String> candidates) {
@@ -276,5 +299,6 @@ public class ObjektMarketDataService {
     }
 
     private record NicknameCache(String nickname, long expiresAt) {}
+    private record ParsedSerial(Map<String, Object> owner, List<Map<String, Object>> history, long expiresAtNanos) {}
 }
 

@@ -274,8 +274,8 @@
             padding: 0 !important;
             color: #e8ebf2 !important;
             font-family: var(--font-sans, "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif) !important;
-            font-size: .82rem;
-            font-weight: 650;
+            font-size: .82rem !important;
+            font-weight: 600 !important;
             letter-spacing: 0;
             line-height: 2.1rem;
             text-transform: none;
@@ -317,7 +317,7 @@
             color: #e8ebf2;
             font-family: var(--font-sans, "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif) !important;
             font-size: .82rem;
-            font-weight: 650;
+            font-weight: 600;
             letter-spacing: 0;
             text-transform: none;
             text-align: left;
@@ -735,6 +735,13 @@
             line-height: 1;
             cursor: pointer;
         }
+        .objekt-detail-heading {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: .75rem;
+        }
+        .objekt-detail-heading > div { min-width: 0; flex: 1 1 auto; }
         .objekt-detail-kicker {
             margin: 0;
             color: #6ee7d8;
@@ -745,7 +752,7 @@
         }
         .objekt-detail-title {
             margin: .2rem 0 0;
-            padding-right: 2.2rem;
+            padding-right: 0;
             color: #f3f4f8;
             font-size: clamp(1.15rem, 2vw, 1.45rem);
             font-weight: 800;
@@ -906,8 +913,7 @@
             gap: .5rem;
             margin-top: auto;
         }
-        .objekt-detail-actions a,
-        .objekt-detail-actions button {
+        .objekt-detail-actions a {
             display: block;
             width: 100%;
             text-align: center;
@@ -916,17 +922,39 @@
             font-size: .88rem;
             font-weight: 700;
             text-decoration: none;
+            box-sizing: border-box;
         }
-        .objekt-fav-toggle {
+        .objekt-detail-heading .objekt-fav-toggle {
             appearance: none;
+            flex: 0 0 auto;
+            width: 2rem;
+            height: 2rem;
+            min-width: 2rem;
+            min-height: 2rem;
+            margin: .1rem 0 0;
+            padding: 0;
             border: 1px solid rgba(244, 114, 182, .4);
+            border-radius: 999px;
             background: rgba(244, 114, 182, .1);
             color: #f9a8d4;
+            font-size: .95rem;
+            line-height: 1;
             cursor: pointer;
         }
-        .objekt-fav-toggle.is-on {
+        .objekt-detail-heading .objekt-fav-toggle.is-on {
             background: rgba(244, 114, 182, .22);
             color: #fce7f3;
+        }
+        .objekt-detail-post-links {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .objekt-detail-post-links a {
+            min-height: 38px;
+            padding: .5rem .45rem;
+            font-size: .72rem;
+            white-space: nowrap;
         }
         .objekt-detail-actions .objekt-member-link {
             border: 1px solid rgba(255,255,255,.12);

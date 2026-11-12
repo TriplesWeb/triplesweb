@@ -18,6 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ObjektDescriptionEditorTest {
@@ -72,9 +74,33 @@ class ObjektDescriptionEditorTest {
         assertEquals("member", editor.view(seo).get("descriptionScope"));
     }
 
-    private ObjektDescriptionEditor editor(List<Map<String, Object>> catalog) {
+    @Test
+    void viewWithoutGroupCountDoesNotScanCatalog() {
+        Map<String, Object> seo = card("SeoYeon", "323");
         ObjektService objekts = mock(ObjektService.class);
+        ObjektDescriptionEditor editor = editor(List.of(seo, card("YuBin", "323")), objekts);
+        assertEquals(1, editor.view(seo, false).get("descriptionGroupCount"));
+        assertEquals("group", editor.view(seo, false).get("descriptionScope"));
+        verify(objekts, never()).findCollections(any());
+        verify(objekts, never()).groupCount(any());
+    }
+
+    private ObjektDescriptionEditor editor(List<Map<String, Object>> catalog) {
+        return editor(catalog, mock(ObjektService.class));
+    }
+
+    private ObjektDescriptionEditor editor(List<Map<String, Object>> catalog, ObjektService objekts) {
         when(objekts.findCollections("triples")).thenReturn(catalog);
+        when(objekts.groupCount(any())).thenAnswer(call -> {
+            Map<String, Object> item = call.getArgument(0);
+            String season = String.valueOf(item.get("season"));
+            String number = String.valueOf(item.get("collectionNo"));
+            int count = 0;
+            for (Map<String, Object> candidate : catalog) {
+                if (season.equals(candidate.get("season")) && number.equals(candidate.get("collectionNo"))) count++;
+            }
+            return Math.max(1, count);
+        });
         ObjektDescriptionRepository descriptions = mock(ObjektDescriptionRepository.class);
         ObjektDescriptionScopeRepository scopeRepo = mock(ObjektDescriptionScopeRepository.class);
         when(descriptions.findByObjektKey(any())).thenAnswer(call -> Optional.ofNullable(stored.get(call.getArgument(0))));

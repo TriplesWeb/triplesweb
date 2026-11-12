@@ -33,8 +33,8 @@ public class ObjektLiveSettings {
             @Value("${objekt.live.refresh-ms:${objekt.cache.refresh-ms:60000}}") long refreshMs,
             @Value("${objekt.live.drop-refresh-ms:30000}") long dropRefreshMs,
             @Value("${objekt.live.force-refresh-ms:600000}") long forceRefreshMs,
-            @Value("${objekt.live.history-ttl-ms:30000}") long historyTtlMs,
-            @Value("${objekt.live.drop-history-ttl-ms:15000}") long dropHistoryTtlMs) {
+            @Value("${objekt.live.history-ttl-ms:120000}") long historyTtlMs,
+            @Value("${objekt.live.drop-history-ttl-ms:60000}") long dropHistoryTtlMs) {
         this(Clock.system(ZONE), pollMs, dropPollMs, refreshMs, dropRefreshMs,
                 forceRefreshMs, historyTtlMs, dropHistoryTtlMs);
     }

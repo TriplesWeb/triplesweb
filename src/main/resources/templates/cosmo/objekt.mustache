@@ -250,9 +250,12 @@
             </div>
         </figure>
         <div class="objekt-detail-body">
-            <div>
-                <p class="objekt-detail-kicker">OBJEKT</p>
-                <h2 class="objekt-detail-title" id="objektDetailTitle">—</h2>
+            <div class="objekt-detail-heading">
+                <div>
+                    <p class="objekt-detail-kicker">OBJEKT</p>
+                    <h2 class="objekt-detail-title" id="objektDetailTitle">—</h2>
+                </div>
+                <button type="button" class="objekt-fav-toggle" id="objektDetailFavorite" aria-label="찜하기" aria-pressed="false">♡</button>
             </div>
             <dl class="objekt-detail-meta">
                 <div><dt>멤버</dt><dd><a class="objekt-detail-member-link" id="objektDetailMember">—</a></dd></div>
@@ -290,11 +293,11 @@
 
             <p id="objektFavoriteStatus" role="status" aria-live="polite" hidden></p>
             <div class="objekt-detail-actions">
-                <button type="button" class="md-btn md-btn-tonal objekt-fav-toggle" id="objektDetailFavorite">♡ 찜하기</button>
                 <a class="objekt-member-link" id="objektDetailMemberLink" href="/cosmo/objekt">이 멤버의 오브젝트 더 보기</a>
-                <a class="objekt-trade-link" id="objektDetailTradeLink" href="/article/trade/new">교환 게시글 작성</a>
-                <a class="objekt-member-link" id="objektDetailSellLink" href="/article/sell/new">거래 게시글 작성</a>
-
+                <div class="objekt-detail-post-links">
+                    <a class="objekt-trade-link" id="objektDetailTradeLink" href="/article/trade/new">교환 게시글 작성</a>
+                    <a class="objekt-member-link" id="objektDetailSellLink" href="/article/sell/new">거래 게시글 작성</a>
+                </div>
             </div>
             <a class="objekt-modal-favorites-link" href="/cosmo/objekt/favorites">찜한 오브젝트 보기 ↗</a>
             <section class="serial-panel" data-serial-panel data-url="" aria-labelledby="owner-heading">

@@ -57,7 +57,7 @@ public class ObjektIndexClient {
                 synchronized (serials) {
                     if (serials.size() >= 256) serials.remove(serials.keySet().iterator().next());
                     long ttlMs = live != null ? live.historyTtlMs()
-                            : (ObjektLiveSettings.dropWindow(null) ? 15_000L : 30_000L);
+                            : (ObjektLiveSettings.dropWindow(null) ? 60_000L : 120_000L);
                     serials.put(key, new Entry(body.deepCopy(), System.nanoTime() + Duration.ofMillis(ttlMs).toNanos()));
                 }
             }

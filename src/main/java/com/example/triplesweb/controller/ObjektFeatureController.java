@@ -86,9 +86,10 @@ public class ObjektFeatureController {
         body.put("frontMedia", ObjektMotionMedia.resolve(item));
         body.put("hasBack", !back.isBlank() && !back.equals(front));
         body.put("description", description(item, key));
+        boolean admin = aboutAdminAuth.isAdmin(request, session);
         body.putAll(descriptionEditor.view(item));
         body.put("isFavorite", favorites.contains(session.getId(), item));
-        body.put("isAdmin", aboutAdminAuth.isAdmin(request, session));
+        body.put("isAdmin", admin);
         body.put("detailUrl", ObjektLinks.detail(item));
         body.put("memberUrl", ObjektLinks.member(item));
         String member = value(item, "member", "memberName");

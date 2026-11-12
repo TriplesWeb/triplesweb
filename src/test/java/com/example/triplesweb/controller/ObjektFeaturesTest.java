@@ -66,6 +66,21 @@ class ObjektFeaturesTest {
             Map<String, Object> found = index.get(key);
             return found != null ? found : index.get(key.toLowerCase(Locale.ROOT));
         });
+        when(catalog.groupCount(any())).thenAnswer(inv -> {
+            Map<String, Object> item = inv.getArgument(0);
+            if (item == null) return 1;
+            String season = string(item, "season").toLowerCase(Locale.ROOT);
+            String number = string(item, "collectionNo").toLowerCase(Locale.ROOT);
+            if (number.isBlank()) return 1;
+            int count = 0;
+            for (Map<String, Object> candidate : items) {
+                if (season.equals(string(candidate, "season").toLowerCase(Locale.ROOT))
+                        && number.equals(string(candidate, "collectionNo").toLowerCase(Locale.ROOT))) {
+                    count++;
+                }
+            }
+            return Math.max(1, count);
+        });
     }
 
     private static void putIndex(Map<String, Map<String, Object>> index, String key, Map<String, Object> item) {
@@ -448,6 +463,8 @@ class ObjektFeaturesTest {
             .isLessThan(html.indexOf("id=\"sort-dropdown\""));
         org.assertj.core.api.Assertions.assertThat(html)
             .contains("data-serial-panel", "objektIssuedCount")
+            .contains("objekt-detail-heading", "objekt-detail-post-links")
+            .contains("id=\"objektDetailFavorite\"")
             .contains("objekt-member-logo")
             .contains("/images/objekt-member-logos/s19.png")
             .contains("id=\"objektDescriptionEdit\"")
@@ -653,8 +670,31 @@ class ObjektFeaturesTest {
                 .andExpect(jsonPath("$.mintCount").value(90))
                 .andExpect(jsonPath("$.mintCountKnown").value(true))
                 .andExpect(jsonPath("$.descriptionScope").value("group"))
-                .andExpect(jsonPath("$.descriptionGroupCount").value(1));
+                .andExpect(jsonPath("$.descriptionGroupCount").value(1))
+                .andExpect(jsonPath("$.isAdmin").value(false));
         verify(market, never()).issuedSupply(any(), anyInt(), anyInt());
+        verify(catalog, never()).findCollections(any());
+        verify(catalog).groupCount(any());
+    }
+
+    @Test void adminDetailJsonUsesIndexedGroupCount() throws Exception {
+        var item = new LinkedHashMap<String, Object>();
+        item.put("id", "uuid");
+        item.put("slug", "hayeoncc367z");
+        item.put("collectionId", "Cream02 HaYeon 367Z");
+        item.put("member", "HaYeon");
+        item.put("season", "Cream02");
+        item.put("class", "Special");
+        item.put("collectionNo", "367Z");
+        stubCatalog(List.of(item));
+        when(admin.isAdmin(any(), any())).thenReturn(true);
+        org.mockito.Mockito.doReturn(24).when(catalog).groupCount(any());
+        mvc.perform(get("/cosmo/objekt/detail/hayeoncc367z").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isAdmin").value(true))
+                .andExpect(jsonPath("$.descriptionGroupCount").value(24));
+        verify(catalog).groupCount(any());
+        verify(catalog, never()).findCollections(any());
     }
 }
 

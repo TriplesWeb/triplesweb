@@ -21,6 +21,7 @@ class ObjektMarketDataServiceTest {
     private final AtomicReference<String> profile = new AtomicReference<>("{\"address\":\"0xaadab543abd013eeaf34eb50219b9316aa5bbcbe\",\"nickname\":\"FlexS5\"}");
     private final AtomicReference<String> account = new AtomicReference<>("{\"address\":\"0xaadab543abd013eeaf34eb50219b9316aa5bbcbe\",\"nickname\":\"FlexS5\"}");
     private final java.util.concurrent.atomic.AtomicInteger profileCalls = new java.util.concurrent.atomic.AtomicInteger();
+    private final java.util.concurrent.atomic.AtomicInteger transferCalls = new java.util.concurrent.atomic.AtomicInteger();
     private final Map<String, Object> collection = Map.of("slug", "sample", "member", "HaYeon", "season", "Cream02", "collectionNo", "367Z");
 
     @BeforeEach void setup() throws Exception {
@@ -31,6 +32,7 @@ class ObjektMarketDataServiceTest {
                     : path.contains("nft-metadata") ? metadata.get()
                     : path.contains("/profiles/") ? profile.get() : path.contains("by-nickname") ? account.get() : chain.get();
             if (path.contains("/profiles/")) profileCalls.incrementAndGet();
+            if (path.endsWith("/transfers")) transferCalls.incrementAndGet();
             if (exchange.getRequestMethod().equals("POST")) {
                 String request = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
                 assertThat(request).contains("eth_call", "6352211e" + "0".repeat(57) + new java.math.BigInteger("30570441").toString(16));
@@ -120,6 +122,15 @@ class ObjektMarketDataServiceTest {
     @Test void unknownLatestNicknameNeverFallsBackToAnOlderHolder() {
         indexed.set("{\"transfers\":[{\"to\":\"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"timestamp\":\"2026-10-24T10:00:00Z\",\"nickname\":\"Old\"},{\"to\":\"0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"timestamp\":\"2026-10-25T10:00:00Z\"}]}");
         assertThat((Map<String,Object>)service.serialLookup(collection, 1, 0).get("owner")).containsEntry("nickname", "");
+    }
+
+    @Test void parsedSerialLookupReusesUpstreamHistory() {
+        indexed.set("{\"tokenId\":\"123\",\"transfers\":[{\"to\":\"0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"timestamp\":\"2026-10-25T10:00:00Z\",\"nickname\":\"New\"}]}");
+        var first = service.serialLookup(collection, 1, 0);
+        var second = service.serialLookup(collection, 1, 0);
+        assertThat(first.get("owner")).isEqualTo(second.get("owner"));
+        assertThat(((Map<?,?>) first.get("owner")).get("nickname")).isEqualTo("New");
+        assertThat(transferCalls.get()).isEqualTo(1);
     }
 
     @Test void invalidHistoryNeverProducesPartialPage() {

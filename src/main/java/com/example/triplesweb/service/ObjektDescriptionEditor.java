@@ -33,15 +33,20 @@ public class ObjektDescriptionEditor {
     }
 
     public Map<String, Object> view(Map<String, Object> item) {
+        return view(item, true);
+    }
+
+    public Map<String, Object> view(Map<String, Object> item, boolean includeGroupCount) {
         Map<String, Object> body = new LinkedHashMap<>();
         boolean canGroup = ObjektDescriptionKeys.canGroup(item);
         String season = ObjektDescriptionKeys.season(item);
         String number = ObjektDescriptionKeys.collectionNo(item);
         boolean member = canGroup && ObjektDescriptionKeys.memberSpecific(season, number);
-        List<Map<String, Object>> group = canGroup ? siblings(item) : List.of();
+        int count = 1;
+        if (canGroup && includeGroupCount) count = Math.max(1, objekts.groupCount(item));
         body.put("descriptionScope", !canGroup ? "single" : member ? "member" : "group");
         body.put("descriptionGroupLabel", canGroup ? (season + " " + number).trim() : "");
-        body.put("descriptionGroupCount", canGroup ? Math.max(1, group.size()) : 1);
+        body.put("descriptionGroupCount", count);
         return body;
     }
 

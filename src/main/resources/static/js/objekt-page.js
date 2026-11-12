@@ -598,6 +598,7 @@
     let isAdmin = false;
     let lastStoryText = '';
     let detailOpenedAt = 0;
+    const detailPrefetch = new Map();
 
     function csrfHeaders(extra) {
         const headers = new Headers(extra || {});
@@ -613,8 +614,60 @@
     function setFavoriteButton(on) {
         if (!detailFavorite) return;
         detailFavorite.classList.toggle('is-on', Boolean(on));
-        detailFavorite.textContent = on ? '♥ 찜 해제' : '♡ 찜하기';
+        detailFavorite.textContent = on ? '♥' : '♡';
+        detailFavorite.setAttribute('aria-label', on ? '찜 해제' : '찜하기');
+        detailFavorite.setAttribute('aria-pressed', String(Boolean(on)));
         detailFavorite.dataset.favorite = on ? 'true' : 'false';
+    }
+
+    function requestDetail(key) {
+        if (!key) return Promise.reject(new Error('missing key'));
+        const existing = detailPrefetch.get(key);
+        if (existing) return existing;
+        const request = fetch('/cosmo/objekt/detail/' + encodeURIComponent(key), {
+            headers: csrfHeaders({ Accept: 'application/json' }),
+            credentials: 'same-origin',
+            cache: 'no-store'
+        }).then(async (res) => {
+            if (!res.ok) throw new Error('detail failed');
+            return res.json();
+        }).finally(() => {
+            if (detailPrefetch.get(key) === request) detailPrefetch.delete(key);
+        });
+        detailPrefetch.set(key, request);
+        return request;
+    }
+
+    function paintFromCard(card) {
+        if (!card) return;
+        const titleLink = card.querySelector('.objekt-detail-link');
+        const collectionId = (titleLink?.getAttribute('title') || '').trim()
+            || (card.querySelector('.objekt-open-detail')?.getAttribute('aria-label') || '').replace(/\s*상세 보기\s*$/, '').trim();
+        if (detailTitle) detailTitle.textContent = collectionId || '—';
+        const memberName = (card.querySelector('.objekt-member-name')?.textContent || card.dataset.member || '').trim();
+        if (detailMember) {
+            detailMember.textContent = memberName || '—';
+            const color = card.querySelector('.objekt-member-chip')?.style.getPropertyValue('--artist-color') || '';
+            if (color) detailMember.style.setProperty('--artist-color', color);
+            const href = card.querySelector('.objekt-member-chip')?.getAttribute('href');
+            if (href) detailMember.href = href;
+            else detailMember.removeAttribute('href');
+        }
+        if (detailSeason) {
+            detailSeason.textContent = (card.querySelector('.objekt-card-season')?.textContent || card.dataset.season || '—').trim() || '—';
+        }
+        if (detailClass) {
+            detailClass.textContent = (card.querySelector('.objekt-card-class')?.textContent || card.dataset.class || '—').trim() || '—';
+        }
+        if (detailNo) detailNo.textContent = (card.dataset.collectionNo || '—').trim() || '—';
+        const img = card.querySelector('.objekt-image');
+        resetModalFlip(img?.currentSrc || img?.src || '', '', false);
+    }
+
+    function startSerialPrefetch(key) {
+        if (!key) return;
+        window.ObjektSerialLookup?.setCollection('/cosmo/objekt/detail/' + encodeURIComponent(key) + '/lookup');
+        window.ObjektSerialLookup?.prefetch('1');
     }
 
     function safeMediaUrl(raw) {
@@ -886,6 +939,7 @@
         window.ObjektSerialLookup?.setCollection(
             data.lookupUrl || ('/cosmo/objekt/detail/' + encodeURIComponent(key) + '/lookup')
         );
+        window.ObjektSerialLookup?.prefetch('1');
         const card = document.querySelector('.objekt-card[data-objekt-key="' + CSS.escape(key) + '"]');
         window.ObjektIssued?.show(
             data.issuedUrl || ('/cosmo/objekt/detail/' + encodeURIComponent(key) + '/issued'),
@@ -955,7 +1009,7 @@
     }
 
     async function openObjektDetail(key) {
-        if (!key || detailLoading) return;
+        if (!key) return;
         detailLoading = true;
         const request = ++detailRequest;
         activeObjektKey = '';
@@ -965,37 +1019,35 @@
         }
         const actions = document.querySelector('.objekt-detail-actions');
         if (actions) actions.inert = true;
-        [detailMember, detailSeason, detailClass, detailNo].forEach((node) => {
-            if (node) node.textContent = '—';
-        });
         const openingCard = document.querySelector('.objekt-card[data-objekt-key="' + CSS.escape(key) + '"]');
         window.ObjektIssued?.show('', openingCard?.dataset.supplyCount);
-        window.ObjektSerialLookup?.setCollection('');
         isAdmin = false;
         exitDescriptionEdit();
         if (descriptionEdit) descriptionEdit.hidden = true;
-        openDetailModalShell();
         if (detailDesc) {
             detailDesc.textContent = '불러오는 중…';
             detailDesc.classList.add('is-empty');
         }
-        if (detailTitle) detailTitle.textContent = '불러오는 중…';
-        try {
-            const res = await fetch('/cosmo/objekt/detail/' + encodeURIComponent(key), {
-                headers: csrfHeaders({ Accept: 'application/json' }),
-                credentials: 'same-origin',
-                cache: 'no-store'
+        if (openingCard) paintFromCard(openingCard);
+        else {
+            if (detailTitle) detailTitle.textContent = '불러오는 중…';
+            [detailMember, detailSeason, detailClass, detailNo].forEach((node) => {
+                if (node) node.textContent = '—';
             });
-            if (!res.ok) throw new Error('detail failed');
-            const data = await res.json();
+        }
+        openDetailModalShell();
+        startSerialPrefetch(key);
+        try {
+            const data = await requestDetail(key);
             if (request === detailRequest) fillDetailModal(data);
         } catch (_) {
+            if (request !== detailRequest) return;
             if (detailDesc) {
                 detailDesc.textContent = '상세 정보를 불러오지 못했습니다.';
                 detailDesc.classList.add('is-empty');
             }
         } finally {
-            detailLoading = false;
+            if (request === detailRequest) detailLoading = false;
         }
     }
 
@@ -1053,6 +1105,15 @@
         return true;
     }
 
+    grid?.addEventListener('pointerdown', (event) => {
+        if (event.button != null && event.button !== 0) return;
+        const memberChip = event.target.closest('.objekt-member-chip');
+        if (memberChip) return;
+        const card = event.target.closest('.objekt-card[data-objekt-key]');
+        const openHit = event.target.closest('.objekt-open-detail, .objekt-detail-link');
+        if (!card || !openHit) return;
+        requestDetail(card.dataset.objektKey).catch(() => {});
+    });
     grid?.addEventListener('click', (event) => {
         const memberChip = event.target.closest('.objekt-member-chip');
         if (memberChip) return;
@@ -1092,6 +1153,7 @@
             const data = await response.json();
             if (activeObjektKey !== key) return;
             setFavoriteButton(Boolean(data.favorite ?? data.isFavorite));
+            detailPrefetch.delete(key);
             status.textContent = desired ? '찜 목록에 저장했습니다.' : '찜 목록에서 해제했습니다.';
             status.hidden = false;
         } catch (error) {

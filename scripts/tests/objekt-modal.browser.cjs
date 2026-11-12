@@ -7,9 +7,11 @@ const base = path.resolve(__dirname, '../..');
   const browser = await chromium.launch({headless:true, executablePath:process.env.CHROMIUM_PATH || (fs.existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined), args:['--no-sandbox']});
   try {
     const page = await browser.newPage({viewport:{width:1280,height:1000}});
-    let favorite=false, favoriteAttempts=0, suppliesHits=0;
+    let favorite=false, favoriteAttempts=0, suppliesHits=0, lookupHits=0;
     let isAdmin = true, description = '기존 설명', writes = [], failMore = true, apolloStory = null;
     let mintCount = null, issuedStatus = 'available';
+    let unlockDetail=()=>{};
+    let detailBarrier=Promise.resolve();
     const data = () => ({isFavorite:favorite,objektKey:'hayeoncc367z',collectionId:'Cream02 HaYeon 367Z',member:'HaYeon',season:'Cream02',class:'Special',collectionNo:'367Z',description,isAdmin,
       detailUrl:'/cosmo/objekt/detail/hayeoncc367z',memberUrl:'/cosmo/objekt?group=members&member=HaYeon',tradeUrl:'/article/trade/new?selectedObjektIds=uuid',sellUrl:'/article/sell/new?selectedObjektIds=uuid',descriptionUrl:'/cosmo/objekt/detail/hayeoncc367z/description',
       descriptionScope:'group',descriptionGroupLabel:'Cream02 367Z',descriptionGroupCount:24,
@@ -36,6 +38,7 @@ const base = path.resolve(__dirname, '../..');
         return json({description,descriptionScope:scope,descriptionGroupLabel:'Cream02 367Z',descriptionGroupCount:24});
       }
       if(p.endsWith('/lookup')) {
+        lookupHits++;
         const next=url.searchParams.get('page')==='1';
         if(next&&failMore){failMore=false;return route.fulfill({status:503,body:'{}',contentType:'application/json'});}
         const transfers=Array.from({length:next?1:20},(_,i)=>({timestamp:`2026-10-${next?'01':'26'}T10:00:00Z`,nickname:i===0?'Current':'Previous'}));
@@ -47,7 +50,10 @@ const base = path.resolve(__dirname, '../..');
       }
       if(p==='/cosmo/objekt/supplies'){suppliesHits++;return json({hayeoncc367z:{status:'available',count:4,observedAt:'2026-10-29T00:00:00Z'}});}
       if(p==='/cosmo/objekt/pulse')return json({catalogSig:'1:test',catalogCount:1,supplies:{hayeoncc367z:{status:'available',count:4}},dropWindow:false,pollMs:60000,forceRefreshMs:600000,historyTtlMs:30000});
-      if(p.startsWith('/cosmo/objekt/detail/') && (req.headers().accept||'').includes('application/json')) return json(data());
+      if(p.startsWith('/cosmo/objekt/detail/') && (req.headers().accept||'').includes('application/json')) {
+        await detailBarrier;
+        return json(data());
+      }
       if(p==='/cosmo/objekt' || p==='/cosmo/objekt/detail/hayeoncc367z') {
         const file=p==='/cosmo/objekt'?'objekt-modal-preview.html':'objekt-detail-preview.html';
         return route.fulfill({contentType:'text/html',body:fs.readFileSync(path.join(base,'build',file),'utf8')});
@@ -60,8 +66,27 @@ const base = path.resolve(__dirname, '../..');
       return route.fulfill({status:404,body:''});
     });
     await page.goto('https://preview.test/cosmo/objekt');
+    const kindFonts = await page.evaluate(() => {
+      const kind = document.querySelector('.objekt-filter input.objekt-kind-select');
+      const other = document.querySelector('#class-dropdown .objekt-filter-control') || document.querySelector('.objekt-filter-control');
+      return {kind: getComputedStyle(kind).fontSize, other: getComputedStyle(other).fontSize};
+    });
+    assert.equal(kindFonts.kind, kindFonts.other);
+    detailBarrier = new Promise((resolve) => { unlockDetail = resolve; });
     await page.locator('.objekt-open-detail').first().click();
     await page.locator('#objektDetailTitle').filter({hasText:'Cream02 HaYeon 367Z'}).waitFor();
+    assert.equal(await page.locator('#objektDetailDesc').textContent(), '불러오는 중…');
+    unlockDetail();
+    detailBarrier = Promise.resolve();
+    await page.waitForFunction(()=>document.querySelector('#objektDetailFavorite')?.disabled===false);
+    assert.equal(await page.locator('.objekt-detail-heading #objektDetailFavorite').count(),1);
+    assert.equal(await page.locator('.objekt-detail-actions #objektDetailFavorite').count(),0);
+    const postRow = await page.locator('.objekt-detail-post-links').evaluate((el) => {
+      const boxes = [...el.children].map((node) => node.getBoundingClientRect());
+      return {count: boxes.length, aligned: Math.abs(boxes[0].top - boxes[1].top) < 8};
+    });
+    assert.equal(postRow.count, 2);
+    assert.equal(postRow.aligned, true);
     const memberStyle = await page.locator('#objektDetailMember').evaluate((el) => {
       const style = getComputedStyle(el);
       return {color: style.color, textShadow: style.textShadow};
@@ -129,8 +154,12 @@ const base = path.resolve(__dirname, '../..');
     assert.equal(await page.locator('#objektDescriptionForm').isVisible(),false);
     // 소유자 조회·전송 내역은 별도 페이지가 아니라 같은 모달 안에 존재한다.
     assert.equal(await page.locator('[data-serial-lookup]').count(),1);
+    for (let i=0;i<40 && lookupHits<1;i++) await page.waitForTimeout(50);
+    const lookupAfterOpen=lookupHits;
+    assert.ok(lookupAfterOpen>=1, '시리얼 1 프리페치');
     await page.locator('[data-serial-lookup] button').click();
     await page.locator('.serial-owner-name').filter({hasText:'Current'}).waitFor();
+    assert.equal(lookupHits, lookupAfterOpen);
     assert.equal(await page.locator('[data-serial-rows] li').count(),20);
     await page.locator('[data-serial-more]').click();
     await page.waitForFunction(()=>document.querySelector('[data-serial-status]').textContent.includes('불러오지 못했습니다'));
