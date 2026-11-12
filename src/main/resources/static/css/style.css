@@ -191,13 +191,21 @@ body {
 }
 
 #top-header a[aria-label="tripleS 홈"] .sss-mascot-wrap {
-    height: 20px;
-    width: 24px;
+    height: 28px;
+    width: auto;
+    margin-right: 4px;
 }
 
 #top-header a[aria-label="tripleS 홈"] .sss-mascot-wave,
-#top-header a[aria-label="tripleS 홈"] .sss-mascot-trail,
-#top-header a[aria-label="tripleS 홈"] img:last-of-type {
+#top-header a[aria-label="tripleS 홈"] .sss-mascot-trail {
+    display: block;
+    height: 28px !important;
+    max-height: 28px !important;
+    width: auto !important;
+    max-width: none !important;
+}
+
+#top-header a[aria-label="tripleS 홈"] #sss-wordmark {
     display: block;
     height: 20px;
     width: auto;
