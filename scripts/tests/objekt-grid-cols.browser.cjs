@@ -87,8 +87,9 @@ function columnCount(value) {
     assert.equal(await page.locator('[data-objekt-cols-filter] .objekt-filter-label').count(), 0);
     assert.equal(await page.locator('[data-objekt-grid]').getAttribute('data-cols'), '2');
     assert.equal(columnCount(await page.locator('[data-objekt-grid]').evaluate((n) => getComputedStyle(n).gridTemplateColumns)), 2);
-    assert.equal(await page.locator('[data-objekt-cols-option="5"]').isHidden(), true);
-    assert.equal(await page.locator('[data-objekt-cols-option="8"]').isHidden(), true);
+    const optionHidden = (cols) => page.locator(`[data-objekt-cols-option="${cols}"]`).evaluate((el) => el.hidden);
+    assert.equal(await optionHidden(5), true);
+    assert.equal(await optionHidden(8), true);
 
     await page.locator('[data-objekt-cols-toggle]').click();
     await page.locator('[data-objekt-cols-option="4"]').click();
@@ -101,7 +102,7 @@ function columnCount(value) {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('https://objekt-cols.test/', { waitUntil: 'load' });
     assert.equal(await page.locator('[data-objekt-cols-filter]').evaluate((n) => getComputedStyle(n).display !== 'none'), true);
-    assert.equal(await page.locator('[data-objekt-cols-option="8"]').isHidden(), false);
+    assert.equal(await optionHidden(8), false);
     assert.equal(await page.locator('[data-objekt-grid]').getAttribute('data-cols'), '4');
     assert.equal(columnCount(await page.locator('[data-objekt-grid]').evaluate((n) => getComputedStyle(n).gridTemplateColumns)), 4);
 
@@ -114,7 +115,7 @@ function columnCount(value) {
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.waitForFunction(() => document.querySelector('[data-objekt-grid]')?.getAttribute('data-cols') === '4');
-    assert.equal(await page.locator('[data-objekt-cols-option="8"]').isHidden(), true);
+    assert.equal(await optionHidden(8), true);
     assert.equal(await page.evaluate(() => localStorage.getItem('triples-objekt-cols')), '8');
 
     console.log('PASS: 모바일은 최대 4열, 데스크톱은 최대 8열까지 고른다');
