@@ -239,7 +239,12 @@ document.getElementById('season-toggle').addEventListener('click', () => {
     }
 
     fs.mkdirSync('/tmp/objekt-ui', { recursive: true });
-    fs.mkdirSync('/opt/cursor/artifacts', { recursive: true });
+    const artifactDir = '/opt/cursor/artifacts';
+    try { fs.mkdirSync(artifactDir, { recursive: true }); } catch (_) { /* 로컬에는 CI artifact 경로가 없을 수 있다 */ }
+    const shot = (name) => {
+      const dir = fs.existsSync(artifactDir) ? artifactDir : '/tmp/objekt-ui';
+      return path.join(dir, name);
+    };
     for (const viewport of [{ width: 1280, height: 900, name: 'desktop' }, { width: 390, height: 844, name: 'mobile' }]) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto('https://collection-layout.test/cosmo/collection', { waitUntil: 'load' });
@@ -264,7 +269,7 @@ document.getElementById('season-toggle').addEventListener('click', () => {
         assert.ok(wrap.width > 220, '시즌 패널이 너무 좁아 한 줄에 하나씩 쌓인다: ' + JSON.stringify(wrap));
         assert.ok(wrap.rows < wrap.count, '시즌 칩은 세로 나열이 아니라 행으로 감싸져야 한다: ' + JSON.stringify(wrap));
       }
-      await page.screenshot({ path: `/opt/cursor/artifacts/collection-dropdown-season-${viewport.name}.png` });
+      await page.screenshot({ path: shot(`collection-dropdown-season-${viewport.name}.png`) });
       await openMenu('collection-class-toggle', 'collection-class-menu');
       await assertMenuVisible('collection-class-menu');
       const classGap = await page.evaluate(() => {
@@ -273,7 +278,7 @@ document.getElementById('season-toggle').addEventListener('click', () => {
         return Math.round(menu.getBoundingClientRect().top - filter.getBoundingClientRect().bottom);
       });
       assert.ok(classGap >= 0 && classGap <= 16, '클래스 메뉴는 클래스 칩 바로 아래에 있어야 한다: ' + classGap);
-      await page.screenshot({ path: `/opt/cursor/artifacts/collection-dropdown-class-${viewport.name}.png` });
+      await page.screenshot({ path: shot(`collection-dropdown-class-${viewport.name}.png`) });
       await openMenu('collection-sort-toggle', 'collection-sort-menu');
       await assertMenuVisible('collection-sort-menu');
       const fonts = await page.evaluate(() => {
@@ -297,6 +302,10 @@ document.getElementById('season-toggle').addEventListener('click', () => {
         assert.ok(Math.abs(widths.menu - widths.filter) <= 3, '모바일 드롭다운 너비가 필터와 같아야 한다: ' + JSON.stringify(widths));
         assert.equal(await page.locator('[data-objekt-cols-filter] .objekt-filter-label').count(), 0);
         assert.equal(await page.locator('.objekt-cols-icon span').count(), 3);
+        await page.evaluate(() => {
+          document.querySelectorAll('.objekt-dropdown-menu').forEach((menu) => { menu.hidden = true; });
+          document.querySelectorAll('.objekt-filter').forEach((filter) => filter.classList.remove('is-open'));
+        });
         await page.locator('[data-objekt-cols-toggle]').click();
         await page.waitForFunction(() => !document.getElementById('collection-cols-menu').hidden);
         await assertMenuVisible('collection-cols-menu');
@@ -335,7 +344,7 @@ document.getElementById('season-toggle').addEventListener('click', () => {
         });
         assert.equal(colsFont.cols, colsFont.sort, '열 드롭다운 글자 크기가 정렬과 달라서는 안 된다');
       }
-      await page.screenshot({ path: `/opt/cursor/artifacts/collection-dropdown-sort-${viewport.name}.png` });
+      await page.screenshot({ path: shot(`collection-dropdown-sort-${viewport.name}.png`) });
     }
 
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -364,7 +373,7 @@ document.getElementById('season-toggle').addEventListener('click', () => {
     assert.ok(objektWrap.width > 220, '오브젝트 시즌 패널이 너무 좁다: ' + JSON.stringify(objektWrap));
     assert.ok(objektWrap.rows < objektWrap.count, '오브젝트 시즌 칩은 행으로 감싸져야 한다: ' + JSON.stringify(objektWrap));
     assert.ok(objektWrap.scroll <= objektWrap.view, '오브젝트 시즌 패널이 뷰포트를 넘치면 안 된다: ' + JSON.stringify(objektWrap));
-    await page.screenshot({ path: `/opt/cursor/artifacts/objekt-season-chips-mobile.png` });
+    await page.screenshot({ path: shot('objekt-season-chips-mobile.png') });
 
     console.log('PASS: 컬렉션 드롭다운이 모바일·데스크톱에서 잘리고 가려지지 않음');
   } finally {

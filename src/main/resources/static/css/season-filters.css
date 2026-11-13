@@ -7,7 +7,7 @@
   appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:0;
   flex:0 0 auto;min-height:34px;padding:7px 13px;border:1px solid var(--season-color);border-radius:999px;
   background:transparent;color:var(--season-color);
-  font-family:inherit;font-size:12px;font-weight:600;line-height:1.3;white-space:nowrap;
+  font-family:inherit;font-size:.82rem;font-weight:600;line-height:1.3;white-space:nowrap;
   cursor:pointer;transition:background-color .12s,color .12s;box-shadow:none;filter:none;width:auto;max-width:100%
 }
 .season-chip:hover,.season-chip-list>.objekt-choice.season-chip:hover{background:color-mix(in srgb,var(--season-color) 10%,transparent)}
