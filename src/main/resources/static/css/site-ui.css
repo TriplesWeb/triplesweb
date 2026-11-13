@@ -367,3 +367,74 @@ html[data-theme="light"] a.site-back-link:hover,
 html[data-theme="light"] a.site-back-link:focus-visible {
     color: var(--site-ui-accent, #0a8f7c);
 }
+
+/* 공통 section underline 탭 (앨범/공연/굿즈/교환·거래) */
+.site-section-tabs {
+    display: flex;
+    gap: 0.375rem;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    align-items: center;
+    margin: 0;
+    padding: 0 0 0.5rem;
+    list-style: none;
+    border-bottom: 1px solid rgba(58, 74, 70, 0.4);
+}
+
+.site-section-tab {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    color: #b9cac4;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.25;
+    white-space: nowrap;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.site-section-tab:hover {
+    color: #00f5d4;
+}
+
+.site-section-tab.is-active,
+.site-section-tab[aria-current="page"],
+.site-section-tab[aria-selected="true"] {
+    color: #00f5d4;
+    border-bottom-color: #00f5d4;
+    background: transparent;
+}
+
+.site-section-tab:focus-visible {
+    outline: 2px solid #8decd9;
+    outline-offset: 3px;
+}
+
+html[data-theme="light"] .site-section-tabs {
+    border-bottom-color: rgba(40, 50, 48, 0.28);
+}
+
+html[data-theme="light"] .site-section-tab {
+    color: #5a6b66;
+}
+
+html[data-theme="light"] .site-section-tab:hover,
+html[data-theme="light"] .site-section-tab.is-active,
+html[data-theme="light"] .site-section-tab[aria-current="page"],
+html[data-theme="light"] .site-section-tab[aria-selected="true"] {
+    color: var(--site-ui-accent, #0a8f7c);
+}
+
+html[data-theme="light"] .site-section-tab.is-active,
+html[data-theme="light"] .site-section-tab[aria-current="page"],
+html[data-theme="light"] .site-section-tab[aria-selected="true"] {
+    border-bottom-color: var(--site-ui-accent, #0a8f7c);
+}

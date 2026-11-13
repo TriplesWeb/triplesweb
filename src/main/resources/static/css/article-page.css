@@ -75,12 +75,7 @@
 .article-board-row{border-color:#ffffff12!important}
 .article-board-row+.article-board-row{border-top:1px solid #ffffff12}
 
-/* 앨범/공연/굿즈 section tabs 와 같은 underline 탭 */
-.market-tabs{display:flex;gap:.375rem;flex-wrap:nowrap;overflow-x:auto;align-items:center;margin:-.5rem 0 1.5rem;padding-bottom:.5rem;border-bottom:1px solid rgba(58,74,70,.4)}
-.market-tabs .market-tab{padding:.5rem .75rem;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:#b9cac4;text-decoration:none;font-size:.875rem;font-weight:600;white-space:nowrap;flex-shrink:0;transition:color .15s ease,border-color .15s ease}
-.market-tabs .market-tab:hover{color:#00f5d4}
-.market-tabs .market-tab[aria-current="page"]{color:#00f5d4;border-bottom-color:#00f5d4;background:transparent}
-.market-tabs .market-tab:focus-visible{outline:2px solid #8decd9;outline-offset:3px}
+.article-page .market-tabs.site-section-tabs{margin:-.5rem 0 1.5rem}
 .market-member-filter{display:grid;gap:.85rem;margin:0 0 1.35rem;padding:1rem;border:1px solid var(--site-ui-border,#ffffff22);border-radius:1.1rem;background:color-mix(in srgb,var(--site-ui-panel,#15191f) 88%,transparent)}
 .market-side-seg{display:flex;flex-wrap:wrap;gap:.45rem}
 .market-side-link{display:inline-flex;align-items:center;min-height:36px;padding:.4rem .95rem;border:1px solid #3a4a46;border-radius:999px;color:#b9cac4;text-decoration:none;font-size:.82rem;font-weight:650}
