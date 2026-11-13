@@ -79,8 +79,9 @@ class GroupOrdersControllerTest {
                     .andExpect(content().string(containsString(">Have</a>")))
                     .andExpect(content().string(containsString(">Want</a>")))
                     .andExpect(content().string(containsString("Have/Want 쪽 멤버·시즌·클래스로 찾습니다")))
-                    .andExpect(content().string(containsString("market-filter-season")))
-                    .andExpect(content().string(containsString("market-filter-class")));
+                    .andExpect(content().string(containsString("market-season-toggle")))
+                    .andExpect(content().string(containsString("market-class-toggle")))
+                    .andExpect(content().string(containsString("objekt-filter.css")));
             } else {
                 mvc.perform(get("/article/" + category)).andExpect(status().isOk())
                     .andExpect(content().string(containsString("article-board-heading is-no-likes")))
@@ -161,8 +162,8 @@ class GroupOrdersControllerTest {
         mvc.perform(get("/article/trade").param("season", "Cream02").param("class", "Z").param("objektSide", "have"))
             .andExpect(status().isOk())
             .andExpect(content().string(containsString("크림02 지 교환")))
-            .andExpect(content().string(containsString("option value=\"Cream02\" selected")))
-            .andExpect(content().string(containsString("option value=\"Z\" selected")))
+            .andExpect(content().string(containsString("name=\"season\" value=\"Cream02\" class=\"season-checkbox\" checked")))
+            .andExpect(content().string(containsString("name=\"class\" value=\"Z\" class=\"class-checkbox\" checked")))
             .andExpect(content().string(containsString("초기화")));
         mvc.perform(get("/article/trade").param("season", "Ever01").param("objektSide", "have"))
             .andExpect(status().isOk())

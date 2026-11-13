@@ -834,13 +834,12 @@ public class ArticleController {
             if (!season.isBlank()) seasons.add(season);
             if (!klass.isBlank()) classes.add(klass);
         }
+        // 전체는 드롭다운의 all 체크박스가 담당 — 옵션 목록에는 실제 값만 둔다.
         List<Map<String, Object>> seasonOptions = new ArrayList<>();
-        seasonOptions.add(marketFilterOption("", "전체", selectedSeason.isBlank()));
         for (String value : ObjektFilterOrder.sortedSeasons(seasons)) {
             seasonOptions.add(marketFilterOption(value, value, selectedSeason.equalsIgnoreCase(value)));
         }
         List<Map<String, Object>> classOptions = new ArrayList<>();
-        classOptions.add(marketFilterOption("", "전체", selectedClass.isBlank()));
         for (String value : classes.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList()) {
             classOptions.add(marketFilterOption(value, value, selectedClass.equalsIgnoreCase(value)));
         }
