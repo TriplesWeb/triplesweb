@@ -106,6 +106,7 @@ jobs:
           node scripts/tests/objekt-detail-mobile-open.browser.cjs
           node scripts/tests/objekt-desc-leading.browser.cjs
           node scripts/tests/profile-board.browser.cjs
+          node scripts/tests/chemistry-search-link.browser.cjs
           node scripts/tests/objekt-mobile.browser.cjs
           node scripts/tests/site-header.browser.cjs
           node scripts/tests/objekt-artist-gravity.browser.cjs

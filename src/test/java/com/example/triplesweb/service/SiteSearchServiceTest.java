@@ -104,7 +104,7 @@ class SiteSearchServiceTest {
         unit.setSmallName("AAA");
         when(albums.listAll()).thenReturn(List.of(album));
         when(units.listVisible()).thenReturn(List.of(unit));
-        when(chemistry.findAll()).thenReturn(List.of(ChemistryDto.builder().label("시선강탈")
+        when(chemistry.findAll()).thenReturn(List.of(ChemistryDto.builder().id(42L).label("시선강탈")
                 .labelEn("Eye Catchers").memberA("서연").memberB("카에데").build()));
 
         assertThat(tab(search.search("assemble", "about"), "about").getHits())
@@ -112,7 +112,7 @@ class SiteSearchServiceTest {
         assertThat(tab(search.search("AAA", null), "about").getHits())
                 .extracting(SiteSearchService.Hit::getHref).containsExactly("/triples/unit?tab=unit-3");
         assertThat(tab(search.search("시선강탈", null), "about").getHits())
-                .extracting(SiteSearchService.Hit::getHref).containsExactly("/triples/chemistry");
+                .extracting(SiteSearchService.Hit::getHref).containsExactly("/triples/chemistry?pair=42");
         assertThat(tab(search.search("Eye Catchers", null), "about").getHits())
                 .extracting(SiteSearchService.Hit::getKind).containsExactly("케미");
         assertThat(search.search("카에데", null).getTabs())
@@ -249,6 +249,28 @@ class SiteSearchServiceTest {
                 .containsExactly("서연", "윤서연");
         assertThat(tab(cosmo, "cosmo").getHits()).extracting(SiteSearchService.Hit::getKind)
                 .doesNotContain("멤버");
+    }
+
+    @Test
+    void memberSearchMatchesAtLeastTwoCharactersInNamesAndOptionalRealName() {
+        Artist hayeon = new Artist();
+        hayeon.setArtistId(1L);
+        hayeon.setName("정하연");
+        hayeon.setEngName("HaYeon");
+        Artist chaewon = new Artist();
+        chaewon.setArtistId(2L);
+        chaewon.setName("김채원");
+        chaewon.setRealName("다른 본명");
+        when(artists.findAll()).thenReturn(List.of(hayeon, chaewon));
+        assertThat(search.search("하연", null).getMembers()).extracting(SiteSearchService.Member::getName)
+                .containsExactly("정하연");
+        assertThat(search.search("채원", null).getMembers()).extracting(SiteSearchService.Member::getName)
+                .containsExactly("김채원");
+        assertThat(search.search("본명", null).getMembers()).extracting(SiteSearchService.Member::getName)
+                .containsExactly("김채원");
+        assertThat(search.search("하", null).getMembers()).isEmpty();
+        assertThat(search.search("HAYEON", null).getMembers()).extracting(SiteSearchService.Member::getName)
+                .containsExactly("정하연");
     }
 
     @Test

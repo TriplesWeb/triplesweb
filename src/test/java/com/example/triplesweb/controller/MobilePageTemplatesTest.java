@@ -86,6 +86,14 @@ class MobilePageTemplatesTest {
                 String result=compiler.compile(source).execute(pageModel);
                 assertThat(result).contains("/css/site-mobile.css", "name=\"viewport\"");
                 String name=root.relativize(path).toString().replace('/', '_').replace('\\', '_');
+                if (name.equals("cosmo_profile.mustache") || name.equals("cosmo_transfers.mustache")) {
+                    String tabs = result.substring(result.indexOf("<nav class=\"profile-progress-tabs"));
+                    tabs = tabs.substring(0, tabs.indexOf("</nav>"));
+                    assertThat(tabs.indexOf("멤버별 상세")).isLessThan(tabs.indexOf("전송 내역"));
+                    assertThat(tabs.indexOf("전송 내역")).isLessThan(tabs.indexOf("전체 현황"));
+                }
+                if (name.equals("cosmo_profile.mustache")) assertThat(result).doesNotContain("tripleS · Welcome·Zero 제외 · 카탈로그 종류 기준");
+                if (name.equals("cosmo_collection.mustache")) assertThat(result).doesNotContain("닉네임 컬렉션</div></section>");
                 Files.writeString(output.resolve(name+".html"),result);count++;
             }
         }

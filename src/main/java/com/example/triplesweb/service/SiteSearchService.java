@@ -120,8 +120,10 @@ public class SiteSearchService {
 
     private List<Member> memberResults(String query) {
         List<Artist> matched = new ArrayList<>();
+        if (query.codePointCount(0, query.length()) < 2) return List.of();
         for (Artist artist : safeList(() -> artists.findAll())) {
-            if (contains(artist.getName(), query) || contains(artist.getEngName(), query)) {
+            if (contains(artist.getName(), query) || contains(artist.getEngName(), query)
+                    || contains(artist.getRealName(), query)) {
                 matched.add(artist);
             }
         }
@@ -139,7 +141,8 @@ public class SiteSearchService {
 
     private static boolean exactName(Artist artist, String query) {
         return query != null && (query.equalsIgnoreCase(blankTo(artist.getName(), ""))
-                || query.equalsIgnoreCase(blankTo(artist.getEngName(), "")));
+                || query.equalsIgnoreCase(blankTo(artist.getEngName(), ""))
+                || query.equalsIgnoreCase(blankTo(artist.getRealName(), "")));
     }
 
     /** 케미·앨범·유닛 이름만 대상으로 하여 멤버 이름만 일치할 때는 About을 표시하지 않는다. */
@@ -162,7 +165,8 @@ public class SiteSearchService {
         for (ChemistryDto item : safeList(chemistry::findAll)) {
             if (contains(item.getLabel(), query) || contains(item.getLabelEn(), query)) {
                 String pair = (blankTo(item.getMemberA(), "") + " · " + blankTo(item.getMemberB(), "")).trim();
-                hits.add(hit(blankTo(item.getLabel(), item.getLabelEn()), "/triples/chemistry", "케미", pair));
+                String href = item.getId() == null ? "/triples/chemistry" : "/triples/chemistry?pair=" + item.getId();
+                hits.add(hit(blankTo(item.getLabel(), item.getLabelEn()), href, "케미", pair));
                 if (hits.size() >= LIMIT) return hits;
             }
         }

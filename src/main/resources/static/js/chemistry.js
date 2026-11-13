@@ -2939,6 +2939,28 @@
     openChemistryName(el.dataset.person, el.dataset.key);
   }
 
+  async function openLinkedPair() {
+    const pairId = new URLSearchParams(window.location.search).get("pair");
+    if (!pairId || !/^[1-9]\d*$/.test(pairId)) return;
+    try {
+      await ensurePairsLoaded();
+      const entry = dbEntries.find((item) => String(item.id) === pairId);
+      if (!entry || !entry.memberA || !entry.memberB) return;
+      await openCellFromEl({
+        dataset: {
+          m1: entry.memberA,
+          m2: entry.memberB,
+          person: entry.memberA,
+          key: chemKey(entry.memberA, entry.memberB),
+          tone: entry.labelTone || "NONE"
+        },
+        textContent: entry.label || ""
+      });
+    } catch (err) {
+      console.error("케미 상세 로드 실패", err);
+    }
+  }
+
   // SSR 표는 즉시 클릭 가능. 상세 API는 클릭/유휴 시 로드.
   if (hasSsrTable()) {
     fillPairFilterOptions();
@@ -2976,6 +2998,7 @@
     bindChemistryCarousel();
     bindAdminUi();
     setModeButtons("pair");
+    openLinkedPair();
 
     // 전역 SiteAdmin 상태를 구독. 없으면 기존 status API로 폴백.
     if (window.SiteAdmin && typeof window.SiteAdmin.subscribe === "function") {
