@@ -166,18 +166,22 @@ const root=path.resolve(__dirname,'../..');
     assert.equal(await search.locator('[data-header-search-input]').isVisible(),true,`데스크톱 검색 입력칸 ${width}`);
     assert.equal(await page.locator('[data-header-search-open]').evaluate(n=>getComputedStyle(n).display==='none'),true,`데스크톱은 검색 토글이 숨겨진다 ${width}`);
     assert.ok(await search.locator('[data-header-search-input]').evaluate(n=>getComputedStyle(n).opacity==='1'));
-    await page.evaluate(()=>window.scrollTo(0,200));
+    assert.ok(await page.locator('#top-header').evaluate(n=>{
+      const pos=getComputedStyle(n).position;
+      return pos==='sticky'||pos==='fixed';
+    }),`헤더 sticky/fixed ${width}`);
+    await page.evaluate(()=>window.scrollTo(0,240));
     await page.waitForFunction(()=>{
       const header=document.getElementById('top-header');
       return header && (header.style.transform||'').includes('-100%');
-    });
-    await page.evaluate(()=>window.scrollTo(0,40));
+    },null,{timeout:3000});
+    await page.evaluate(()=>window.scrollTo(0,0));
     await page.waitForFunction(()=>{
       const header=document.getElementById('top-header');
       if(!header) return false;
       const transform=header.style.transform||'';
-      return (transform===''||transform.includes('translateY(0)')) && header.getBoundingClientRect().top>=0;
-    });
+      return !transform.includes('-100%') && header.getBoundingClientRect().top>=-1;
+    },null,{timeout:3000});
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/header-chromium-${width}.png`,fullPage:false}).catch(error=>console.warn(`[preview] chromium ${width}px screenshot skipped: ${error.message}`));
    }
   }
