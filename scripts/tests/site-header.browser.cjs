@@ -166,7 +166,9 @@ const root=path.resolve(__dirname,'../..');
     assert.equal(await search.locator('[data-header-search-input]').isVisible(),true,`데스크톱 검색 입력칸 ${width}`);
     assert.equal(await page.locator('[data-header-search-open]').evaluate(n=>getComputedStyle(n).display==='none'),true,`데스크톱은 검색 토글이 숨겨진다 ${width}`);
     assert.ok(await search.locator('[data-header-search-input]').evaluate(n=>getComputedStyle(n).opacity==='1'));
-    await page.evaluate(()=>window.scrollTo(0,200));
+    // hide-on-scroll은 100px 초과 하향에서 헤더를 숨김 — sticky 자체는 그보다 작은 스크롤로 확인
+    assert.equal(await page.locator('#top-header').evaluate(n=>getComputedStyle(n).position==='sticky'),true);
+    await page.evaluate(()=>window.scrollTo(0,80));
     assert.equal(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().top>=0),true);
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/header-chromium-${width}.png`,fullPage:false}).catch(error=>console.warn(`[preview] chromium ${width}px screenshot skipped: ${error.message}`));
    }
