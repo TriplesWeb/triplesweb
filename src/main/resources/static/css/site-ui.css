@@ -300,7 +300,7 @@ input[type="file"]:disabled::-webkit-file-upload-button {
     appearance: none;
     position: absolute;
     top: 50%;
-    right: 0.25rem;
+    right: 0.55rem;
     transform: translateY(-50%);
     display: grid;
     place-items: center;
