@@ -25,10 +25,6 @@
     }
   }
 
-  function easeOutCubic(t) {
-    return 1 - Math.pow(1 - t, 3);
-  }
-
   function waitWordmarkReady(wordmark) {
     if (!wordmark) return Promise.resolve();
     if (wordmark.complete && wordmark.naturalWidth > 0) return Promise.resolve();
@@ -129,22 +125,18 @@
         }
         const holdMs = 450;
         const moveMs = (MASCOT_FRAME_COUNT / MASCOT_FRAME_FPS) * 1000; // 54프레임 1회
+        // 본체 진행도 e보다 뒤처진 지점에 잔상 → 초반에 앞서 나가지 않음
+        const trailLags = [0.05, 0.1, 0.16, 0.22, 0.28];
         const trails = [];
-        const trailMeta = [
-          { t: 0.92, delay: holdMs },
-          { t: 0.72, delay: holdMs + 70 },
-          { t: 0.5, delay: holdMs + 140 },
-          { t: 0.3, delay: holdMs + 210 },
-          { t: 0.12, delay: holdMs + 280 }
-        ];
-        for (const step of trailMeta) {
+        for (const lag of trailLags) {
           const ghost = mascot.cloneNode(true);
           ghost.removeAttribute("id");
           ghost.removeAttribute("data-motion-running");
           ghost.className = "sss-mascot-trail";
           ghost.src = mascotFrameSrc(1);
+          ghost.style.opacity = "0";
           wrap.insertBefore(ghost, mascot);
-          trails.push({ el: ghost, t: step.t, delay: step.delay });
+          trails.push({ el: ghost, lag: lag, lastFrame: 1 });
         }
 
         wrap.classList.add("is-intro");
@@ -156,7 +148,7 @@
         runMascotIntroSequence(mascot, {
           holdMs: holdMs,
           moveMs: moveMs,
-          onUpdate: (local, _p, e) => {
+          onUpdate: (_local, _p, e) => {
             const x = fly.x * (1 - e);
             // 시작·종료 Y는 fly.y→0, 중간만 글자 아래로 우회
             const y = fly.y * (1 - e) + Math.sin(e * Math.PI) * 18;
@@ -165,16 +157,25 @@
             mascot.style.transform = "translate(" + x.toFixed(2) + "px, " + y.toFixed(2) + "px) scale(" + scale.toFixed(3) + ")";
 
             for (const trail of trails) {
-              const tp = Math.min(1, Math.max(0, (local - trail.delay) / 850));
-              if (tp <= 0) {
+              if (e <= 0) {
                 trail.el.style.opacity = "0";
                 continue;
               }
-              const te = easeOutCubic(tp);
-              const tx = fly.x * trail.t * (1 - te * 0.55);
-              const ty = (fly.y * trail.t + Math.sin(trail.t * Math.PI) * 14) * (1 - te * 0.55);
-              trail.el.style.opacity = String(0.45 * (1 - te));
-              trail.el.style.transform = "translate(" + tx.toFixed(2) + "px, " + ty.toFixed(2) + "px) scale(" + (0.82 + 0.1 * te).toFixed(3) + ")";
+              const te = Math.max(0, e - trail.lag);
+              const tx = fly.x * (1 - te);
+              const ty = fly.y * (1 - te) + Math.sin(te * Math.PI) * 18;
+              const tScale = 0.85 + 0.15 * te;
+              const fadeIn = Math.min(1, e / Math.max(0.04, trail.lag));
+              const strength = 0.4 * (1 - trail.lag / 0.34);
+              trail.el.style.opacity = String(Math.max(0, strength * fadeIn));
+              trail.el.style.transform = "translate(" + tx.toFixed(2) + "px, " + ty.toFixed(2) + "px) scale(" + tScale.toFixed(3) + ")";
+              const trailFrame = te >= 1
+                ? MASCOT_FRAME_COUNT
+                : Math.min(MASCOT_FRAME_COUNT, 1 + Math.floor(te * (MASCOT_FRAME_COUNT - 1)));
+              if (trailFrame !== trail.lastFrame) {
+                trail.lastFrame = trailFrame;
+                trail.el.src = mascotFrameSrc(trailFrame);
+              }
             }
           },
           onDone: () => {

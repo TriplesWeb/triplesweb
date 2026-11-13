@@ -210,6 +210,10 @@ const root=path.resolve(__dirname,'../..');
     assert.equal(await search.locator('[data-header-search-input]').isVisible(),true,`데스크톱 검색 입력칸 ${width}`);
     assert.equal(await page.locator('[data-header-search-open]').evaluate(n=>getComputedStyle(n).display==='none'),true,`데스크톱은 검색 토글이 숨겨진다 ${width}`);
     assert.ok(await search.locator('[data-header-search-input]').evaluate(n=>getComputedStyle(n).opacity==='1'));
+    // 100px 이하에서는 sticky를 유지하고, 이후 방향에 따라 숨김과 표시를 전환한다.
+    assert.equal(await page.locator('#top-header').evaluate(n=>getComputedStyle(n).position==='sticky'),true);
+    await page.evaluate(()=>window.scrollTo(0,80));
+    await page.waitForFunction(()=>document.getElementById('top-header').getBoundingClientRect().top>=-0.5,null,{timeout:3000});
     await page.evaluate(()=>window.scrollTo(0,200));
     await page.waitForFunction(()=>{
       const header=document.getElementById('top-header');
