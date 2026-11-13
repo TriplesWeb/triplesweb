@@ -56,20 +56,21 @@ body{margin:0;background:#0d0e12;color:#e3e2e8}
     <div id="sort-menu" class="objekt-dropdown-menu hidden"></div>
   </div>
   <div class="objekt-search-row">
-    <div class="objekt-cols-control" id="objekt-cols-dropdown" data-objekt-cols-filter>
-      <button type="button" class="objekt-cols-toggle" data-objekt-cols-toggle aria-label="열 수">열</button>
-    </div>
     <div class="objekt-search site-search">
-      <span class="objekt-search-glyph" aria-hidden="true">🔍</span>
+      <span class="objekt-search-glyph" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></span>
       <label><input type="search" name="search" class="objekt-search-input site-search__input"></label>
     </div>
-    <button type="submit" id="objekt-search-submit" class="objekt-search-button">검색</button>
     <button type="button" id="objekt-reset" class="objekt-reset-button">초기화</button>
   </div>
 </div>
 </form>
 </section>
-<p id="objekt-result-summary" data-result-count="2" data-all-count="2" data-loaded="2">검색 결과 <strong>2</strong>개 <span id="objekt-all-count">2</span> <span id="objekt-loaded-count">2</span></p>
+<div class="objekt-result-bar">
+  <p id="objekt-result-summary" data-result-count="2" data-all-count="2" data-loaded="2">검색 결과 <strong>2</strong>개</p>
+  <div class="objekt-cols-control" id="objekt-cols-dropdown" data-objekt-cols-filter>
+    <button type="button" class="objekt-cols-toggle" data-objekt-cols-toggle aria-label="열 수">열</button>
+  </div>
+</div>
 <div id="objekt-empty" class="hidden"></div>
 <div id="objekt-card-grid" class="objekt-card-grid" data-objekt-grid data-cols="2">
   <article class="objekt-card objekt-item" data-objekt-key="special-card">
@@ -212,9 +213,9 @@ const details = {
     await page.goto('https://mobile.test/cosmo/objekt', {waitUntil: 'load'});
     assert.deepEqual(errors, [], '페이지 스크립트 오류: ' + errors.join('; '));
 
-    const searchBtn = page.locator('#objekt-search-submit');
-    const searchWidth = await searchBtn.evaluate((el) => el.getBoundingClientRect().width);
-    assert.ok(searchWidth >= 80, '모바일 검색 버튼 너비: ' + searchWidth);
+    const resetBtn = page.locator('#objekt-reset');
+    const resetWidth = await resetBtn.evaluate((el) => el.getBoundingClientRect().width);
+    assert.ok(resetWidth >= 80, '모바일 초기화 버튼 너비: ' + resetWidth);
 
     await page.locator('[data-objekt-key="special-card"] .objekt-open-detail').tap();
     await page.locator('#objektDetailTitle').filter({hasText: 'Cream02 HaYeon 367Z'}).waitFor();

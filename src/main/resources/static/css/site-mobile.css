@@ -67,6 +67,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .objekt-detail-heading .objekt-fav-toggle{min-width:2rem;min-height:2rem;width:2rem;height:2rem;padding:0;gap:0;justify-content:center}
   .objekt-detail-heading .objekt-fav-count{display:none}
   button,input[type=submit],.btn,.site-btn,.ar-submit,.btn-custom-primary,.btn-custom-secondary,.btn-custom-danger,.objekt-reset-button{min-height:44px;touch-action:manipulation}
+  .objekt-description-edit,
+  .objekt-description-buttons button,
+  .objekt-description-share-toggle{min-height:1.65rem;height:1.65rem}
+  .objekt-description-share-actions button{min-height:1.45rem;height:1.45rem}
   a,summary{touch-action:manipulation}
   textarea{max-width:100%;resize:vertical}
   [contenteditable=true]{max-width:100%;font-size:16px;overflow-wrap:anywhere;overflow-x:auto}
@@ -80,8 +84,14 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   }
   .site-search,.ar-search-wrap,.objekt-search,.tr-search{width:100%;max-width:100%;min-width:0;flex:1 1 100%}
   .site-search__submit,.objekt-search-button.site-search__submit{min-height:auto;min-width:auto;padding:0;background:transparent;color:#b9cac4;border-radius:0}
-  main form:has(.site-search),main form:has(.ar-search),.ar-filters,.objekt-search-row,.tr-toolbar,.tr-facets,.gv-filters{
+  main form:has(.site-search):not(:has(.objekt-workspace)),main form:has(.ar-search),.ar-filters,.objekt-search-row,.tr-toolbar,.tr-facets,.gv-filters{
     width:100%;display:flex;flex-wrap:wrap;gap:.55rem;align-items:stretch
+  }
+  #objekt-search-form{
+    display:block;width:100%;max-width:100%;min-width:0
+  }
+  #objekt-search-form .objekt-workspace{
+    width:100%;max-width:100%;min-width:0
   }
   main form:has(.site-search)>.site-field,
   main form:has(.site-search)>select,
@@ -89,10 +99,6 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .ar-filters>.site-search,.ar-filters>.ar-search-wrap,.ar-filters>.ar-select,.ar-filters>.ar-date-filter,
   .ar-filters>select,.ar-filters>.ar-submit,.objekt-search-row>.objekt-search,.objekt-search-row>.objekt-reset-button{
     flex:1 1 100%;width:100%!important;max-width:100%;min-width:0
-  }
-  .objekt-search-row:has(>.objekt-search-button)>.objekt-search-button,
-  .objekt-search-row:has(>.objekt-search-button)>.objekt-reset-button{
-    flex:1 1 calc(50% - .35rem);width:auto!important;max-width:none;min-width:0
   }
   .ar-filters>.ar-select select,.ar-filters select{width:100%}
   .ar-date-filter{width:100%}
@@ -114,7 +120,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .ar-dialog-foot{flex-wrap:wrap}
   .ar-dialog-foot .ar-submit{flex:1 1 auto}
 
-  .objekt-detail-panel{max-height:calc(100vh - 2rem)!important;max-height:calc(100dvh - 2rem)!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  .objekt-detail-panel{max-height:calc(100vh - 2rem)!important;max-height:calc(100dvh - 2rem)!important;overflow:hidden!important}
+  .objekt-detail-body{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
   .objekt-detail-title{padding-right:3rem}
   .modal .modal-dialog{max-width:calc(100% - 1.5rem);margin:.75rem auto}
   .modal .modal-content{max-height:calc(100vh - 1.5rem);max-height:calc(100dvh - 1.5rem)}
@@ -156,5 +163,6 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .article-board-row.is-market{grid-template-columns:minmax(7.25rem,.9fr) minmax(0,1.45fr)!important}
   .article-board-row.is-market>.article-board-swap{grid-column:1!important}
   .article-board-row.is-market>.article-board-subject{grid-column:2!important;font-size:.95rem}
-  .btn-close,.objekt-detail-close{min-width:44px;min-height:44px}
+  .btn-close{min-width:44px;min-height:44px}
+  .objekt-detail-close{min-width:1.55rem;min-height:1.55rem}
 }
