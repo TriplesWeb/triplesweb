@@ -27,8 +27,8 @@
 
             {{#isMarketBoard}}
             <nav class="site-section-tabs market-tabs" aria-label="교환/거래 게시판 분류">
-                <a class="site-section-tab" href="/article/trade" {{#isTrade}}aria-current="page"{{/isTrade}}>교환</a>
-                <a class="site-section-tab" href="/article/sell" {{#isSell}}aria-current="page"{{/isSell}}>거래</a>
+                <a class="site-section-tab" href="/article/trade?objektSide={{selectedObjektSide}}{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}" {{#isTrade}}aria-current="page"{{/isTrade}}>교환</a>
+                <a class="site-section-tab" href="/article/sell?objektSide={{selectedObjektSide}}{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}" {{#isSell}}aria-current="page"{{/isSell}}>거래</a>
             </nav>
             <section class="market-member-filter" aria-label="교환 필터">
                 {{#isTrade}}
@@ -233,73 +233,6 @@
 
 <script src="{{#asset}}/js/objekt-dropdown-core.js{{/asset}}"></script>
 <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const picker = document.getElementById("market-member-picker");
-        if (picker && window.MemberPortraitPicker) {
-            window.MemberPortraitPicker.bindMultiSelect(picker, {
-                multi: false,
-                onChange: function (values) {
-                    const url = new URL(window.location.href);
-                    if (values.length) url.searchParams.set("member", values[0]);
-                    else url.searchParams.delete("member");
-                    window.location.href = url.pathname + url.search;
-                }
-            });
-        }
-        function applyMarketFilterParam(key, value) {
-            const url = new URL(window.location.href);
-            if (value) url.searchParams.set(key, value);
-            else url.searchParams.delete(key);
-            window.location.href = url.pathname + url.search;
-        }
-        function bindMarketFacet(toggleId, menuId, checkboxClass, paramKey, labelId) {
-            const toggle = document.getElementById(toggleId);
-            const menu = document.getElementById(menuId);
-            const label = document.getElementById(labelId);
-            if (!toggle || !menu || !window.ObjektDropdown) return;
-            toggle.addEventListener("click", function (event) {
-                event.preventDefault();
-                event.stopPropagation();
-                window.ObjektDropdown.toggle(menu);
-            });
-            menu.addEventListener("change", function (event) {
-                const input = event.target;
-                if (!(input instanceof HTMLInputElement) || !input.classList.contains(checkboxClass)) return;
-                const boxes = menu.querySelectorAll("." + checkboxClass);
-                boxes.forEach(function (box) { box.checked = box === input; });
-                if (input.value === "all") {
-                    if (label) label.textContent = "전체";
-                    applyMarketFilterParam(paramKey, "");
-                    return;
-                }
-                if (label) label.textContent = input.value;
-                applyMarketFilterParam(paramKey, input.value);
-            });
-        }
-        bindMarketFacet("market-season-toggle", "market-season-menu", "season-checkbox", "season", "market-season-label");
-        bindMarketFacet("market-class-toggle", "market-class-menu", "class-checkbox", "class", "market-class-label");
-        document.addEventListener("click", function (event) {
-            if (!event.target.closest(".market-filter-bar .objekt-filter")) {
-                ["market-season-menu", "market-class-menu"].forEach(function (id) {
-                    const menu = document.getElementById(id);
-                    if (menu) window.ObjektDropdown?.setOpen(menu, false);
-                });
-            }
-        });
-        // 테이블의 tbody 안에 있는 모든 행(tr)을 가져옵니다.
-        const rows = document.querySelectorAll(".table-article tr");
-
-        // 행들을 순회하면서 첫 번째 칸(글 순서 칸)의 텍스트를 1부터 차례대로 다시 적어줍니다.
-        rows.forEach((row, index) => {
-            const seqCell = row.querySelector("th"); // 혹은 번호가 들어있는 th/td 셀
-            if (seqCell && !row.querySelector(".text-center")) { // "게시글이 없습니다" 행은 제외
-                // 위에서부터 1, 2, 3... 으로 매기고 싶다면 index + 1
-                // 최신 글이 1번이 되게 하고 싶다면 (전체 개수 - index) 등 응용 가능
-                seqCell.innerText = index + 1;
-            }
-        });
-    });
-</script>
+<script src="{{#asset}}/js/article-market-board.js{{/asset}}"></script>
 {{>layout/page-end}}
 
