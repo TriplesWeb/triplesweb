@@ -42,7 +42,7 @@
                     <div class="objekt-filter relative{{#hasSelectedSeason}} is-filtered{{/hasSelectedSeason}}" id="market-season-dropdown">
                         <span class="objekt-filter-label">시즌</span>
                         <button type="button" id="market-season-toggle" class="objekt-filter-control" aria-haspopup="true" aria-expanded="false" aria-controls="market-season-menu" aria-label="시즌">
-                            <span id="market-season-label" class="truncate">{{#selectedSeason}}{{selectedSeason}}{{/selectedSeason}}{{^selectedSeason}}전체{{/selectedSeason}}</span>
+                            <span id="market-season-label" class="truncate">{{#hasSelectedSeason}}{{selectedSeason}}{{/hasSelectedSeason}}{{^hasSelectedSeason}}전체{{/hasSelectedSeason}}</span>
                             <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                         </button>
                         <div id="market-season-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 rounded-xl border z-50 p-2 max-h-60 overflow-y-auto" data-season-options hidden>
@@ -63,7 +63,7 @@
                     <div class="objekt-filter relative{{#hasSelectedClass}} is-filtered{{/hasSelectedClass}}" id="market-class-dropdown">
                         <span class="objekt-filter-label">클래스</span>
                         <button type="button" id="market-class-toggle" class="objekt-filter-control" aria-haspopup="true" aria-expanded="false" aria-controls="market-class-menu" aria-label="클래스">
-                            <span id="market-class-label" class="truncate">{{#selectedClass}}{{selectedClass}}{{/selectedClass}}{{^selectedClass}}전체{{/selectedClass}}</span>
+                            <span id="market-class-label" class="truncate">{{#hasSelectedClass}}{{selectedClass}}{{/hasSelectedClass}}{{^hasSelectedClass}}전체{{/hasSelectedClass}}</span>
                             <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                         </button>
                         <div id="market-class-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 rounded-xl border z-50 p-2 max-h-60 overflow-y-auto" hidden>

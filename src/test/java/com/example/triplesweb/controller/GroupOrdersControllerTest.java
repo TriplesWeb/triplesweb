@@ -81,6 +81,8 @@ class GroupOrdersControllerTest {
                     .andExpect(content().string(containsString("Have/Want 쪽 멤버·시즌·클래스로 찾습니다")))
                     .andExpect(content().string(containsString("market-season-toggle")))
                     .andExpect(content().string(containsString("market-class-toggle")))
+                    .andExpect(content().string(containsString("id=\"market-season-label\" class=\"truncate\">전체<")))
+                    .andExpect(content().string(containsString("id=\"market-class-label\" class=\"truncate\">전체<")))
                     .andExpect(content().string(containsString("objekt-filter.css")));
             } else {
                 mvc.perform(get("/article/" + category)).andExpect(status().isOk())
