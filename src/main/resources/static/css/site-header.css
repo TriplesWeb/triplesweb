@@ -16,16 +16,16 @@
 .header-brand img:last-child{width:auto;height:28px}
 .header-brand-cluster{display:flex;align-items:center;gap:.4rem;flex-shrink:0;min-width:0}
 .header-objekt-jump,
-#top-header a.header-objekt-jump{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;flex:0 0 auto;width:auto;height:2.5rem;min-width:0;min-height:2.5rem;padding:0;border:0;border-radius:0;background:transparent;color:#8decd9;text-decoration:none}
-#top-header a.header-objekt-jump:hover{color:#c8fff4}
-#top-header a.header-objekt-jump:hover .header-objekt-jump__cards{background:#ffffff08;border-color:#8decd9;color:#8decd9}
-.header-objekt-jump__cards{position:relative;display:block;width:2.5rem;height:2.5rem;flex:0 0 auto;border:1px solid #3a4a4680;border-radius:.75rem;background:#191b22;color:#e3e2e8;box-sizing:border-box}
-.header-objekt-jump__card{position:absolute;width:1rem;height:1.2rem;border:1.5px solid currentColor;border-radius:.18rem;background:rgba(0,245,212,.14);box-sizing:border-box;left:50%;top:50%}
-.header-objekt-jump__card--back{transform:translate(calc(-50% + .28rem), calc(-50% - .16rem));opacity:.55}
-.header-objekt-jump__card--front{transform:translate(calc(-50% - .22rem), calc(-50% + .12rem));background:rgba(0,245,212,.28)}
+#top-header a.header-objekt-jump{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;flex:0 0 auto;width:auto;height:2.5rem;min-height:2.5rem;padding:0 .8rem 0 .5rem;border:1px solid #3a4a4680;border-radius:.75rem;background:#191b22;color:#e3e2e8;text-decoration:none;box-sizing:border-box}
+#top-header a.header-objekt-jump:hover{background:#ffffff08;border-color:#8decd9;color:#c8fff4}
+.header-objekt-jump__cards{position:relative;display:block;width:1.15rem;height:1.15rem;flex:0 0 auto;border:0;background:transparent;color:#8decd9}
+.header-objekt-jump__card{position:absolute;width:.72rem;height:.88rem;border:1.5px solid currentColor;border-radius:.14rem;background:rgba(0,245,212,.14);box-sizing:border-box;left:50%;top:50%}
+.header-objekt-jump__card--back{transform:translate(calc(-50% + .18rem), calc(-50% - .1rem));opacity:.55}
+.header-objekt-jump__card--front{transform:translate(calc(-50% - .14rem), calc(-50% + .08rem));background:rgba(0,245,212,.28)}
 .header-objekt-jump__label{font-size:.78rem;font-weight:750;letter-spacing:.02em;line-height:1;color:#8decd9}
-.sss-mascot-wave{width:24px;height:20px;animation:sss-mascot-wave 2.8s ease-in-out infinite;transform-origin:center}
-@keyframes sss-mascot-wave{0%,100%{transform:rotate(-2deg)}50%{transform:translateY(-2px) rotate(2deg)}}
+.sss-mascot-wrap{width:auto;height:28px;margin-right:4px}
+.sss-mascot-wave,.sss-mascot-trail{width:auto!important;height:28px!important;max-height:28px!important;max-width:none!important;object-fit:contain;transform-origin:center}
+#top-header a[aria-label="tripleS 홈"] #sss-wordmark{height:20px;width:auto}
 .header-primary{display:flex;gap:24px;align-items:center;flex-shrink:0}
 .header-disclosure{position:relative}
 .header-nav-toggle{display:flex;align-items:center;gap:8px;min-height:48px;padding:8px 0;font-size:12px!important;white-space:nowrap}
@@ -128,9 +128,47 @@
 .header-trailing{display:flex;align-items:center;justify-content:flex-end;gap:.55rem;flex:0 1 auto;min-width:0}
 @media(min-width:1024px){
   .header-leading{min-width:auto}
-  #navbar .nav-caret{display:none}
   .header-trailing{gap:.65rem}
   .site-header-tools{gap:.55rem}
+  #top-header #navbar .nav-caret{
+    display:inline-block;
+    flex-shrink:0;
+    width:.4rem;
+    height:.4rem;
+    margin:0 0 0 .15rem;
+    border-right:1.6px solid currentColor;
+    border-bottom:1.6px solid currentColor;
+    transform:translateY(-1px) rotate(45deg);
+    transition:transform .15s ease;
+  }
+  #top-header #navbar .group:hover > .nav-item-link .nav-caret,
+  #top-header #navbar .group:focus-within > .nav-item-link .nav-caret{
+    transform:translateY(1px) rotate(225deg);
+  }
+  #top-header #navbar .group > .absolute,
+  #top-header .site-user-menu > [data-user-menu-panel]{
+    display:block !important;
+    visibility:hidden;
+    opacity:0;
+    transform:translateY(6px);
+    pointer-events:none;
+    transition:opacity .16s ease,transform .16s ease,visibility .16s ease;
+  }
+  #top-header #navbar .group:hover > .absolute,
+  #top-header #navbar .group:focus-within > .absolute,
+  #top-header .site-user-menu:hover > [data-user-menu-panel],
+  #top-header .site-user-menu:focus-within > [data-user-menu-panel],
+  #top-header .site-user-menu.site-user-menu-open > [data-user-menu-panel]{
+    visibility:visible;
+    opacity:1;
+    transform:none;
+    pointer-events:auto;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  #top-header #navbar .nav-caret,
+  #top-header #navbar .group > .absolute,
+  #top-header .site-user-menu > [data-user-menu-panel]{transition:none}
 }
 @media(min-width:1024px) and (max-width:1279px){
   #navbar{gap:1.1rem}
@@ -226,6 +264,10 @@ form.site-header-search button.site-header-search__submit svg{
 form.site-header-search button.site-header-search__toggle{display:none}
 
 .site-header-tools{display:flex;align-items:center;justify-content:flex-end;gap:.35rem;flex:0 0 auto;min-width:0}
+@media(min-width:1024px) and (max-width:1279px){
+  .site-header-tools{flex:0 1 auto;min-width:0}
+  form.site-header-search{flex-basis:11rem;min-width:6.5rem}
+}
 .site-header button.site-header-tool{position:relative;display:inline-flex;align-items:center;justify-content:center;width:2.5rem;height:2.5rem;min-width:2.5rem;min-height:2.5rem;padding:0;border:1px solid #3a4a4680;border-radius:.75rem;background:#191b22;color:#e3e2e8;box-sizing:border-box}
 .site-header button.site-header-tool:hover{background:#ffffff08;border-color:#8decd9;color:#8decd9}
 .site-header button.site-header-tool svg{width:1.15rem;height:1.15rem;fill:none;stroke:currentColor;stroke-width:1.8}
@@ -279,8 +321,7 @@ form.site-header-search button.site-header-search__toggle{display:none}
   #top-header a.header-objekt-jump{
     display:inline-flex !important;
     height:2.5rem;
-    min-height:2.5rem;
-    padding:0
+    min-height:2.5rem
   }
   .site-header-popover{position:fixed;top:calc(env(safe-area-inset-top,0px) + 3.7rem);left:max(.75rem,env(safe-area-inset-left));right:max(.75rem,env(safe-area-inset-right));width:auto;max-width:none;z-index:80}
   .site-header-tool,#mobile-menu-btn,.site-user-menu>button,#siteAdminBtn.is-ready{

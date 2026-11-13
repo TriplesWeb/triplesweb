@@ -126,10 +126,10 @@
     padding: 0 !important;
     color: #e8ebf2 !important;
     font-family: var(--font-sans, "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif) !important;
-    font-size: .82rem;
-    font-weight: 650;
+    font-size: .82rem !important;
+    font-weight: 600 !important;
     letter-spacing: 0;
-    line-height: 2.1rem;
+    line-height: 1;
     text-transform: none;
     caret-color: #6ee7d8;
 }
@@ -166,7 +166,7 @@
     color: #e8ebf2;
     font-family: var(--font-sans, "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif) !important;
     font-size: .82rem;
-    font-weight: 650;
+    font-weight: 600;
     letter-spacing: 0;
     text-transform: none;
     text-align: left;

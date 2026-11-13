@@ -191,13 +191,21 @@ body {
 }
 
 #top-header a[aria-label="tripleS 홈"] .sss-mascot-wrap {
-    height: 20px;
-    width: 24px;
+    height: 28px;
+    width: auto;
+    margin-right: 4px;
 }
 
 #top-header a[aria-label="tripleS 홈"] .sss-mascot-wave,
-#top-header a[aria-label="tripleS 홈"] .sss-mascot-trail,
-#top-header a[aria-label="tripleS 홈"] img:last-of-type {
+#top-header a[aria-label="tripleS 홈"] .sss-mascot-trail {
+    display: block;
+    height: 28px !important;
+    max-height: 28px !important;
+    width: auto !important;
+    max-width: none !important;
+}
+
+#top-header a[aria-label="tripleS 홈"] #sss-wordmark {
     display: block;
     height: 20px;
     width: auto;
@@ -267,9 +275,17 @@ body {
         -webkit-appearance: none;
     }
 
-    /* 개선안 목업: PC 네비는 캐럿 없이 라벨만 */
+    /* 글자 높이에 맞춘 CSS 캐럿 */
     #navbar .nav-caret {
-        display: none;
+        display: inline-block;
+        flex-shrink: 0;
+        width: 0.4rem;
+        height: 0.4rem;
+        margin: 0;
+        border-right: 1.6px solid currentColor;
+        border-bottom: 1.6px solid currentColor;
+        transform: translateY(-1px) rotate(45deg);
+        transition: transform 0.15s ease;
     }
 
     #navbar .group:hover > .nav-item-link .nav-caret,
