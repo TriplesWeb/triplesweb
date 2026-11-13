@@ -174,7 +174,16 @@ const root=path.resolve(__dirname,'../..');
     assert.equal(await page.locator('[data-header-search-open]').evaluate(n=>getComputedStyle(n).display==='none'),true,`데스크톱은 검색 토글이 숨겨진다 ${width}`);
     assert.ok(await search.locator('[data-header-search-input]').evaluate(n=>getComputedStyle(n).opacity==='1'));
     await page.evaluate(()=>window.scrollTo(0,200));
-    assert.equal(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().top>=0),true);
+    await page.waitForFunction(()=>{
+      const header=document.getElementById('top-header');
+      const box=header.getBoundingClientRect();
+      return header.style.transform==='translateY(-100%)' && box.bottom<=1;
+    },null,{timeout:3000});
+    await page.evaluate(()=>window.scrollTo(0,100));
+    await page.waitForFunction(()=>{
+      const header=document.getElementById('top-header');
+      return header.style.transform==='translateY(0px)' && header.getBoundingClientRect().top>=-0.5;
+    },null,{timeout:3000});
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/header-chromium-${width}.png`,fullPage:false}).catch(error=>console.warn(`[preview] chromium ${width}px screenshot skipped: ${error.message}`));
    }
   }
