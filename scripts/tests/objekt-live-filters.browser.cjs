@@ -94,7 +94,7 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
     const kind=url.searchParams.get('kind')||'all';
     const search=url.searchParams.get('search')||'';
     const label=search||members[0]||seasons[0]||(group==='other'?'other':kind!=='all'?kind:'filtered');
-    const member=members[0]||'';
+    const member=members[0]||(group==='other'?'zenith':'');
     return route.fulfill({contentType:'application/json',body:JSON.stringify({
       items:[{id:label,publicKey:label,collectionId:label+' 카드',member,memberLogo:member==='윤서연'?'/images/objekt-member-logos/s01.png':'',season:seasons[0]||'',class:'First',collectionNo:'1'}],
       resultCount:3,allCount:8,hasMore:false,nextPage:null
@@ -124,6 +124,9 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
   await page.locator('[data-objekt-group="other"]').click();
   await page.waitForFunction(()=>document.querySelector('[data-objekt-key="other"]'));
   assert.ok(moreCalls.some(call=>call.group==='other'));
+  assert.equal(await page.locator('[data-objekt-key="other"] .objekt-member-name').textContent(),'zenith');
+  assert.equal(await page.locator('[data-objekt-key="other"] span.objekt-member-logo').count(),1);
+  assert.equal(await page.locator('[data-objekt-key="other"] img.objekt-member-logo').count(),0);
 
   moreCalls.length=0;
   await page.locator('.season-checkbox[value="Atom01"]').evaluate(el=>{el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}));});

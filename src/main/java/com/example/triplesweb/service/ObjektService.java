@@ -6,6 +6,7 @@ import com.example.triplesweb.infra.GzipRestClients;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektFilterOrder;
 import com.example.triplesweb.util.ObjektLinks;
+import com.example.triplesweb.util.ObjektSeasonCodes;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -311,7 +312,10 @@ public class ObjektService {
     private record DropGroup(String season, String number, String createdAt, Map<String, Object> item) {
         Map<String, Object> toRow() {
             Map<String, Object> row = new LinkedHashMap<>();
-            String label = (season == null || season.isBlank() ? number : season + " " + number) + " 드롭";
+            String code = ObjektSeasonCodes.code(season).toUpperCase(Locale.ROOT);
+            String seasonLabel = season == null ? "" : season.trim();
+            if (!code.isEmpty()) seasonLabel += "(" + code + ")";
+            String label = (seasonLabel.isEmpty() ? number : seasonLabel + " " + number) + " 새 오브젝트 출시";
             row.put("label", label);
             String seasonFilter = first(item, "seasonKey", "season");
             row.put("href", "/cosmo/objekt?"

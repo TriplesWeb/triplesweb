@@ -97,4 +97,17 @@ class SearchControllerTest {
                 .andExpect(content().string(containsString("https://example.org/thumb.jpg")))
                 .andExpect(content().string(containsString("aria-hidden=\"true\">image")));
     }
+
+    @Test
+    void matchingAboutSectionIsRendered() throws Exception {
+        var hit = new SiteSearchService.Hit("ASSEMBLE", "/triples/album/14", "앨범", "앨범");
+        var about = new SiteSearchService.Tab("about", "About 트리플에스", "", "", List.of(hit), false);
+        when(search.search("ASSEMBLE", null)).thenReturn(new SiteSearchService.Page("ASSEMBLE", "cosmo", List.of(about)));
+
+        mvc.perform(get("/search").param("keyword", "ASSEMBLE"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("data-search-section=\"about\"")))
+                .andExpect(content().string(containsString("/triples/album/14")))
+                .andExpect(content().string(not(containsString("코스모 아이디로 보기"))));
+    }
 }

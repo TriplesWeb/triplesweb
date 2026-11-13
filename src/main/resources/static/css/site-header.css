@@ -284,6 +284,10 @@ form.site-header-search button.site-header-search__toggle{display:none}
 .site-header-popover__form{display:flex;gap:.4rem;align-items:center}
 .site-header-popover__form input{flex:1 1 auto;min-width:0;min-height:2.4rem;padding:.45rem .7rem;border:1px solid rgba(58,74,70,.6);border-radius:.7rem;background:#12151c;color:#e3e2e8;font-size:.88rem}
 .site-header-popover__form button{flex:0 0 auto;min-height:2.4rem;padding:0 .8rem;border-radius:.7rem;background:#00f5d4;color:#0d0e12;font-weight:750}
+.site-header-nickname-suggest{display:grid;gap:.1rem;max-height:16rem;overflow-y:auto;margin-top:.45rem;padding:.3rem;border:1px solid rgba(58,74,70,.55);border-radius:.7rem;background:#12151c}
+.site-header-nickname-suggest[hidden]{display:none}
+.site-header-nickname-option{display:block;width:100%;min-height:2.4rem;padding:.5rem .65rem;border:0;border-radius:.45rem;background:transparent;color:#e3e2e8;text-align:left;overflow-wrap:anywhere}
+.site-header-nickname-option:hover,.site-header-nickname-option[aria-selected="true"]{background:rgba(0,245,212,.16);color:#8decd9}
 .site-header-popover__mine{display:block;margin:.55rem 0 .15rem;color:#8decd9;font-size:.82rem;font-weight:700;text-decoration:none}
 .site-header-popover__list{list-style:none;margin:0;padding:0;display:grid;gap:.15rem}
 .site-header-popover__list a{display:block;padding:.55rem .45rem;border-radius:.55rem;color:#e3e2e8;text-decoration:none;font-size:.86rem;overflow-wrap:anywhere}

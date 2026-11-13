@@ -1,15 +1,18 @@
 package com.example.triplesweb.service;
 
 import com.example.triplesweb.dto.MediaDto;
+import com.example.triplesweb.dto.ChemistryDto;
 import com.example.triplesweb.dto.EventListCard;
 import com.example.triplesweb.dto.EventSectionGroupDto;
 import com.example.triplesweb.dto.ShopListCard;
 import com.example.triplesweb.entity.Shop;
 import com.example.triplesweb.entity.Archive;
+import com.example.triplesweb.entity.Album;
 import com.example.triplesweb.entity.Article;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.Schedule;
+import com.example.triplesweb.entity.Unit;
 import com.example.triplesweb.entity.Event;
 import com.example.triplesweb.entity.EventStop;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +31,9 @@ import static org.mockito.Mockito.when;
 
 class SiteSearchServiceTest {
     private ArtistSnapshotService artists;
+    private AlbumService albums;
+    private UnitService units;
+    private ChemistryService chemistry;
     private ObjektService objekts;
     private GravityService gravity;
     private ArticleService articles;
@@ -41,6 +47,9 @@ class SiteSearchServiceTest {
     @BeforeEach
     void setUp() {
         artists = mock(ArtistSnapshotService.class);
+        albums = mock(AlbumService.class);
+        units = mock(UnitService.class);
+        chemistry = mock(ChemistryService.class);
         objekts = mock(ObjektService.class);
         gravity = mock(GravityService.class);
         articles = mock(ArticleService.class);
@@ -49,9 +58,12 @@ class SiteSearchServiceTest {
         events = mock(EventService.class);
         shop = mock(ShopService.class);
         schedules = mock(ScheduleService.class);
-        search = new SiteSearchService(artists, objekts, gravity,
+        search = new SiteSearchService(artists, albums, units, chemistry, objekts, gravity,
                 articles, archives, media, events, shop, schedules);
         when(artists.findAll()).thenReturn(List.of());
+        when(albums.listAll()).thenReturn(List.of());
+        when(units.listVisible()).thenReturn(List.of());
+        when(chemistry.findAll()).thenReturn(List.of());
         when(objekts.findCollections("triples")).thenReturn(List.of());
         when(gravity.hasCosmoToken()).thenReturn(false);
         when(archives.searchLatestByType(eq(MediaType.IMAGE), anyString(), eq(8))).thenReturn(List.of());
@@ -69,6 +81,8 @@ class SiteSearchServiceTest {
         artist.setName("윤서연");
         artist.setEngName("SeoYeon");
         when(artists.findAll()).thenReturn(List.of(artist));
+        when(chemistry.findAll()).thenReturn(List.of(ChemistryDto.builder().label("시선강탈")
+                .memberA("서연").memberB("카에데").build()));
         SiteSearchService.Page page = search.search("서연", "about");
         assertThat(page.getActiveTab()).isEqualTo("cosmo");
         assertThat(page.getTabs()).extracting(SiteSearchService.Tab::getId).doesNotContain("about");
@@ -80,7 +94,33 @@ class SiteSearchServiceTest {
     }
 
     @Test
-    void cosmoTabAddsNicknameShortcutAndObjektHitsAndSurvivesGravityFailure() {
+    void aboutAppearsOnlyForMatchingAlbumUnitOrChemistryNames() {
+        Album album = new Album();
+        album.setAlbumId(14L);
+        album.setAlbumName("ASSEMBLE");
+        Unit unit = new Unit();
+        unit.setUnitId(3L);
+        unit.setUnitName("Acid Angel from Asia");
+        unit.setSmallName("AAA");
+        when(albums.listAll()).thenReturn(List.of(album));
+        when(units.listVisible()).thenReturn(List.of(unit));
+        when(chemistry.findAll()).thenReturn(List.of(ChemistryDto.builder().label("시선강탈")
+                .labelEn("Eye Catchers").memberA("서연").memberB("카에데").build()));
+
+        assertThat(tab(search.search("assemble", "about"), "about").getHits())
+                .extracting(SiteSearchService.Hit::getHref).containsExactly("/triples/album/14");
+        assertThat(tab(search.search("AAA", null), "about").getHits())
+                .extracting(SiteSearchService.Hit::getHref).containsExactly("/triples/unit?tab=unit-3");
+        assertThat(tab(search.search("시선강탈", null), "about").getHits())
+                .extracting(SiteSearchService.Hit::getHref).containsExactly("/triples/chemistry");
+        assertThat(tab(search.search("Eye Catchers", null), "about").getHits())
+                .extracting(SiteSearchService.Hit::getKind).containsExactly("케미");
+        assertThat(search.search("카에데", null).getTabs())
+                .extracting(SiteSearchService.Tab::getId).doesNotContain("about");
+    }
+
+    @Test
+    void cosmoTabDoesNotAddNicknameShortcutAndSurvivesGravityFailure() {
         when(objekts.findCollections("triples")).thenReturn(List.of(Map.of(
                 "member", "HaYeon",
                 "collectionNo", "323",
@@ -98,14 +138,14 @@ class SiteSearchServiceTest {
         SiteSearchService.Tab cosmo = tab(page, "cosmo");
         assertThat(cosmo.isActive()).isTrue();
         assertThat(cosmo.getHits()).extracting(SiteSearchService.Hit::getKind)
-                .contains("코스모 아이디", "오브젝트");
-        assertThat(cosmo.getHits().get(0).getHref()).isEqualTo("/cosmo/collection?nickname=cc323");
+                .containsExactly("오브젝트");
         var objektHit = cosmo.getHits().stream().filter(SiteSearchService.Hit::isObjekt).findFirst().orElseThrow();
         assertThat(objektHit.getImageUrl()).isEqualTo("https://example.org/thumb.jpg");
-        assertThat(cosmo.getHits().get(0).isObjekt()).isFalse();
+        assertThat(cosmo.getHits().get(0).isObjekt()).isTrue();
         assertThat(cosmo.isHasMore()).isFalse();
         assertThat(cosmo.getCount()).isLessThanOrEqualTo(SiteSearchService.LIMIT);
         assertThat(search.search("cc323", null).getActiveTab()).isEqualTo("cosmo");
+        assertThat(search.search("not-a-real-user", null).isHasAny()).isFalse();
     }
 
     @Test

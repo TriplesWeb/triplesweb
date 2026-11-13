@@ -1,14 +1,17 @@
 package com.example.triplesweb.service;
 
+import com.example.triplesweb.dto.ChemistryDto;
 import com.example.triplesweb.dto.EventListCard;
 import com.example.triplesweb.dto.EventSectionGroupDto;
 import com.example.triplesweb.dto.MediaDto;
 import com.example.triplesweb.dto.ShopListCard;
+import com.example.triplesweb.entity.Album;
 import com.example.triplesweb.entity.Archive;
 import com.example.triplesweb.entity.Article;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.Schedule;
+import com.example.triplesweb.entity.Unit;
 import com.example.triplesweb.media.MediaTab;
 import com.example.triplesweb.util.ObjektLinks;
 import com.example.triplesweb.util.ObjektSeasonCodes;
@@ -31,7 +34,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 헤더 전역 검색. 멤버와 코스모 / 미디어 / 정보 / 일정 검색 결과를 한 페이지에 모은다.
+ * 헤더 전역 검색. 멤버와 사이트 각 분류의 검색 결과를 한 페이지에 모은다.
  */
 @Service
 @RequiredArgsConstructor
@@ -41,10 +44,12 @@ public class SiteSearchService {
     static final int OBJEKT_LIMIT = 5;
     static final int INFO_SCHEDULE_LIMIT = 5;
     static final List<String> TAB_IDS = List.of("cosmo", "media", "info", "schedule");
-    private static final Pattern NICKNAME = Pattern.compile("^[A-Za-z0-9._-]{3,24}$");
     private static final Pattern DATE = Pattern.compile("(?<!\\d)(\\d{4})[.\\-/](\\d{1,2})[.\\-/](\\d{1,2})(?!\\d)");
 
     private final ArtistSnapshotService artists;
+    private final AlbumService albums;
+    private final UnitService units;
+    private final ChemistryService chemistry;
     private final ObjektService objekts;
     private final GravityService gravity;
     private final ArticleService articles;
@@ -61,19 +66,26 @@ public class SiteSearchService {
             return emptyPage(query, active);
         }
         List<Member> members = memberResults(query);
+        CompletableFuture<List<Hit>> about = CompletableFuture.supplyAsync(() -> aboutHits(query));
         CompletableFuture<CosmoResults> cosmo = CompletableFuture.supplyAsync(() -> cosmoHits(query));
         CompletableFuture<List<Hit>> media = CompletableFuture.supplyAsync(() -> mediaHits(query));
         CompletableFuture<List<Hit>> info = CompletableFuture.supplyAsync(() -> infoHits(query));
         CompletableFuture<List<Hit>> schedule = CompletableFuture.supplyAsync(() -> scheduleHits(query));
+        List<Hit> aboutResults = about.join();
         CosmoResults cosmoResults = cosmo.join();
-        List<Tab> tabs = List.of(
-                tabOf("cosmo", "코스모", cosmoResults.hasMoreObjekts()
-                        ? "/cosmo/objekt?search=" + encode(query) : "", cosmoResults.hits(), query),
-                tabOf("media", "미디어", "", media.join(), query),
-                tabOf("info", "정보", "", info.join(), query),
-                tabOf("schedule", "일정", "", schedule.join(), query)
-        );
-        List<Tab> marked = tabs.stream().map(item -> item.withActive(item.id.equals(active))).toList();
+        List<Tab> tabs = new ArrayList<>();
+        if (!aboutResults.isEmpty()) {
+            tabs.add(tabOf("about", "About 트리플에스", "", aboutResults, query));
+        } else if ("about".equals(active)) {
+            active = "cosmo";
+        }
+        tabs.add(tabOf("cosmo", "코스모", cosmoResults.hasMoreObjekts()
+                ? "/cosmo/objekt?search=" + encode(query) : "", cosmoResults.hits(), query));
+        tabs.add(tabOf("media", "미디어", "", media.join(), query));
+        tabs.add(tabOf("info", "정보", "", info.join(), query));
+        tabs.add(tabOf("schedule", "일정", "", schedule.join(), query));
+        String activeTab = active;
+        List<Tab> marked = tabs.stream().map(item -> item.withActive(item.id.equals(activeTab))).toList();
         return new Page(query, active, marked, members);
     }
 
@@ -130,13 +142,37 @@ public class SiteSearchService {
                 || query.equalsIgnoreCase(blankTo(artist.getEngName(), "")));
     }
 
+    /** 케미·앨범·유닛 이름만 대상으로 하여 멤버 이름만 일치할 때는 About을 표시하지 않는다. */
+    private List<Hit> aboutHits(String query) {
+        List<Hit> hits = new ArrayList<>();
+        for (Album album : safeList(albums::listAll)) {
+            if (contains(album.getAlbumName(), query)) {
+                hits.add(hit(album.getAlbumName(), "/triples/album/" + album.getAlbumId(), "앨범",
+                        blankTo(album.getReleaseDate(), "앨범")));
+                if (hits.size() >= LIMIT) return hits;
+            }
+        }
+        for (Unit unit : safeList(units::listVisible)) {
+            if (contains(unit.getUnitName(), query) || contains(unit.getSmallName(), query)) {
+                hits.add(hit(unit.getUnitName(), "/triples/unit?tab=unit-" + unit.getUnitId(), "유닛",
+                        blankTo(unit.getSmallName(), "디멘션")));
+                if (hits.size() >= LIMIT) return hits;
+            }
+        }
+        for (ChemistryDto item : safeList(chemistry::findAll)) {
+            if (contains(item.getLabel(), query) || contains(item.getLabelEn(), query)) {
+                String pair = (blankTo(item.getMemberA(), "") + " · " + blankTo(item.getMemberB(), "")).trim();
+                hits.add(hit(blankTo(item.getLabel(), item.getLabelEn()), "/triples/chemistry", "케미", pair));
+                if (hits.size() >= LIMIT) return hits;
+            }
+        }
+        return hits;
+    }
+
     private record CosmoResults(List<Hit> hits, boolean hasMoreObjekts) {}
 
     private CosmoResults cosmoHits(String query) {
         List<Hit> hits = new ArrayList<>();
-        if (looksLikeNickname(query)) {
-            hits.add(hit("코스모 아이디로 보기", "/cosmo/collection?nickname=" + encode(query), "코스모 아이디", query));
-        }
         // 멤버 상세의 오브젝트 목록과 동일하게 생성 시각이 최신인 항목부터 표시한다.
         List<Map<String, Object>> matchingObjekts = safeList(() -> objekts.findCollections("triples")).stream()
                 .filter(objekt -> objektMatches(query, objekt))
@@ -295,10 +331,6 @@ public class SiteSearchService {
         }
     }
 
-    static boolean looksLikeNickname(String query) {
-        return query != null && NICKNAME.matcher(query).matches();
-    }
-
     static boolean objektMatches(String query, Map<String, Object> objekt) {
         if (query == null || query.isBlank() || objekt == null) return false;
         String season = first(objekt, "season", "seasonKey");
@@ -314,7 +346,7 @@ public class SiteSearchService {
 
     private static String normalizeTab(String tab, String query) {
         String requested = tab == null ? "" : tab.trim().toLowerCase(Locale.ROOT);
-        if (TAB_IDS.contains(requested)) return requested;
+        if (("about".equals(requested) && query != null && !query.isBlank()) || TAB_IDS.contains(requested)) return requested;
         return "cosmo";
     }
 
