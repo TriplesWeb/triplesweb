@@ -50,32 +50,37 @@ const urls={
    assert.match(await kindInput.evaluate(el=>getComputedStyle(el).fontFamily),/Pretendard/i,name+' 종류 입력 사이트 폰트');
    const kindOption=page.locator(name==='objekt'?'#kind-menu .objekt-kind-option':'#collection-kind-menu .objekt-kind-option').first();
    assert.match(await kindOption.evaluate(el=>getComputedStyle(el).fontFamily),/Pretendard/i,name+' 종류 목록 사이트 폰트');
-   await page.locator(name==='objekt'?'#season-dropdown>button':'#collection-season-toggle').click();
+   const seasonToggle=page.locator(name==='objekt'?'#season-toggle':'#collection-season-toggle');
+   assert.equal(await seasonToggle.getAttribute('aria-expanded'),'false',name+' 시즌 토글 aria-expanded 기본값');
+   assert.equal(await seasonToggle.getAttribute('aria-controls'),name==='objekt'?'season-menu':'collection-season-menu',name+' 시즌 토글 aria-controls');
+   await seasonToggle.click();
+   assert.equal(await seasonToggle.getAttribute('aria-expanded'),'true',name+' 시즌 열림 aria-expanded');
    const row=page.getByRole('group',{name:'시즌 선택',exact:true});
-   await row.locator('button[data-value="Atom01"]').waitFor({timeout:10000}).catch(async error=>{
-    console.log('시즌 버튼 진단',name,JSON.stringify(await page.evaluate(()=>({
+   const chip=(value)=>row.locator(`.season-chip:has(input.season-checkbox[value="${value}"])`);
+   await chip('Atom01').waitFor({timeout:10000}).catch(async error=>{
+    console.log('시즌 칩 진단',name,JSON.stringify(await page.evaluate(()=>({
       api:typeof window.SeasonChips,
-      source:[...document.querySelectorAll('.season-checkbox')].map(el=>({value:el.value,parent:el.closest('.objekt-dropdown-menu')?.id})),
+      source:[...document.querySelectorAll('.season-checkbox')].map(el=>({value:el.value,parent:el.closest('.objekt-dropdown-menu')?.id,chip:el.closest('.season-chip')?.className})),
       rows:[...document.querySelectorAll('.season-quick-filters')].map(el=>el.outerHTML),
       assets:[...document.scripts].map(el=>el.src).filter(src=>src.includes('season'))
     }))),JSON.stringify(pageErrors));
     throw error;
    });
-   assert.equal(await page.locator('.season-native-options:visible').count(),0,'기존 체크 표시 UI 숨김');
+   assert.equal(await page.locator('.season-native-options').count(),0,'체크박스 미러 컨테이너 없음');
    assert.equal(await row.locator('.season-chip-list').evaluate(el=>getComputedStyle(el).flexWrap),'wrap',name+' 웹에서 시즌 전체 펼침');
    assert.equal(await row.locator('.season-chip-list').evaluate(el=>el.scrollWidth<=el.clientWidth),true,name+' 웹 가로 스크롤 없음');
-   const atom=row.locator('button[data-value="Atom01"]'),binary=row.locator('button[data-value="Binary01"]');
+   const atom=chip('Atom01'),binary=chip('Binary01');
    assert.notEqual(await atom.evaluate(el=>getComputedStyle(el).borderColor),await binary.evaluate(el=>getComputedStyle(el).borderColor));
    await atom.click();await binary.click();
    assert.equal(await page.locator('input.season-checkbox[value="Atom01"]').first().isChecked(),true);
    assert.equal(await page.locator('input.season-checkbox[value="Binary01"]').first().isChecked(),true);
-   assert.equal(await atom.getAttribute('aria-pressed'),'true');
-   await row.locator('button[data-value=""]').click();
+   assert.equal(await atom.evaluate(el=>el.matches(':has(input:checked)')),true);
+   await chip('all').click();
    assert.equal(await page.locator('input.season-checkbox[value="Atom01"]').first().isChecked(),false);
    const input=page.locator('input.season-checkbox[value="Cream02"]').first();
    await input.evaluate(el=>{el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}));});
-   assert.equal(await row.locator('button[data-value="Cream02"]').getAttribute('aria-pressed'),'true');
-   const creamChip=row.locator('button[data-value="Cream02"]');
+   assert.equal(await chip('Cream02').evaluate(el=>el.matches(':has(input:checked)')),true);
+   const creamChip=chip('Cream02');
    const creamColor=await creamChip.evaluate(el=>getComputedStyle(el).borderTopColor);
    const badge=page.locator(name==='objekt'?'.objekt-card-season':'.collection-card-season').filter({hasText:'Cream02'}).first();
    assert.equal(await badge.count(),1,name+' 카드에 Cream02 뱃지');

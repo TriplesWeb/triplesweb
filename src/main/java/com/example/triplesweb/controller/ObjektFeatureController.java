@@ -87,7 +87,7 @@ public class ObjektFeatureController {
         body.put("hasBack", !back.isBlank() && !back.equals(front));
         body.put("description", description(item, key));
         boolean admin = aboutAdminAuth.isAdmin(request, session);
-        body.putAll(descriptionEditor.view(item));
+        body.putAll(descriptionEditor.view(item, admin));
         body.put("isFavorite", favorites.contains(session.getId(), item));
         body.put("favoriteCount", favorites.count(session.getId()));
         body.put("isAdmin", admin);
@@ -131,13 +131,15 @@ public class ObjektFeatureController {
     public String saveDescription(@PathVariable String key,
                                   @RequestParam(required = false) String description,
                                   @RequestParam(required = false) String scope,
+                                  @RequestParam(required = false) List<String> members,
+                                  @RequestParam(required = false) List<String> numbers,
                                   HttpServletRequest request,
                                   HttpSession session) {
         aboutAdminAuth.requireAdmin(request, session);
         Map<String, Object> item = findObjekt(key);
         if (item == null) return "redirect:/cosmo/objekt";
         if (description != null && description.length() > 10000) throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        descriptionEditor.save(item, description, scope);
+        descriptionEditor.save(item, description, scope, members, numbers);
         return "redirect:" + ObjektLinks.detail(item);
     }
 
@@ -146,15 +148,18 @@ public class ObjektFeatureController {
     public ResponseEntity<Map<String, Object>> saveDescriptionJson(@PathVariable String key,
             @RequestParam(defaultValue = "") String description,
             @RequestParam(required = false) String scope,
+            @RequestParam(required = false) List<String> members,
+            @RequestParam(required = false) List<String> numbers,
             HttpServletRequest request, HttpSession session) {
         aboutAdminAuth.requireAdmin(request, session);
         Map<String, Object> item = findObjekt(key);
         if (item == null) return ResponseEntity.notFound().build();
         if (description.length() > 10000) return ResponseEntity.badRequest().body(Map.of("message", "설명은 10,000자까지 입력할 수 있습니다."));
-        String saved = descriptionEditor.save(item, description, scope);
+        String saved = descriptionEditor.save(item, description, scope, members, numbers);
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("description", saved);
-        body.putAll(descriptionEditor.view(item));
+        // 저장 응답은 메타만 빠르게 맞추고, 공유 옵션은 다음 수정 진입 때 다시 읽는다.
+        body.putAll(descriptionEditor.view(item, false));
         return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore()).body(body);
     }
 

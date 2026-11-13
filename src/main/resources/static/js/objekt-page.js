@@ -51,18 +51,13 @@
         options[focusIndex]?.focus();
     }
 
-    [...sortSelect.options].forEach((option) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'objekt-kind-option';
-        button.dataset.value = option.value;
-        button.textContent = option.textContent;
-        button.setAttribute('role', 'option');
+    sortMenu.querySelectorAll('[role="option"]').forEach((button) => {
         button.addEventListener('pointerdown', (event) => {
             if (event.button !== 0) return;
             event.preventDefault();
-            const changed = sortSelect.value !== option.value;
-            sortSelect.value = option.value;
+            const value = button.dataset.value || '';
+            const changed = sortSelect.value !== value;
+            sortSelect.value = value;
             syncSortMenu();
             if (changed) {
                 sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
@@ -74,7 +69,6 @@
             closeSortMenu();
             sortToggle.focus();
         });
-        sortMenu.appendChild(button);
     });
 
     sortToggle.addEventListener('click', () => {
@@ -452,22 +446,34 @@
             markActiveFilters();
             scheduleApplyFilters();
         }));
+        const toggle = document.getElementById(`${type}-toggle`);
+        toggle?.addEventListener('click', () => window.toggleDropdown(`${type}-menu`));
         updateDropdownLabel(type);
         if (type === 'class') syncKindOptionsToClass({ resetInvalid: true });
     });
 
     function markActiveFilters() {
         const seasonText = document.getElementById('season-label')?.textContent.trim();
-        document.getElementById('season-dropdown')?.classList.toggle('is-filtered', !!seasonText && seasonText !== '전체');
+        const seasonOn = !!seasonText && seasonText !== '전체';
+        document.getElementById('season-dropdown')?.classList.toggle('is-filtered', seasonOn);
         const classText = document.getElementById('class-label')?.textContent.trim();
-        document.getElementById('class-dropdown')?.classList.toggle('is-filtered', !!classText && classText !== '전체');
+        const classOn = !!classText && classText !== '전체';
+        document.getElementById('class-dropdown')?.classList.toggle('is-filtered', classOn);
         const kindValue = normalizeKindValue(kindSelect?.value);
-        kindSelect?.closest('.objekt-filter')?.classList.toggle('is-filtered', kindValue !== 'all');
-        sortSelect.closest('.objekt-filter')?.classList.toggle('is-filtered', sortSelect.value && sortSelect.value !== 'latest');
+        const kindOn = kindValue !== 'all';
+        kindSelect?.closest('.objekt-filter')?.classList.toggle('is-filtered', kindOn);
+        const sortOn = Boolean(sortSelect.value && sortSelect.value !== 'latest');
+        sortSelect.closest('.objekt-filter')?.classList.toggle('is-filtered', sortOn);
         const searchValue = (form.querySelector('input[name="search"]')?.value || '').trim();
         document.querySelector('.objekt-search')?.classList.toggle('is-filtered', searchValue.length > 0);
         const memberOn = memberGroupInput.value !== 'all' || document.querySelectorAll('.member-checkbox:checked').length > 0;
         memberRoot?.classList.toggle('is-filtered', memberOn);
+        const resetBtn = document.getElementById('objekt-reset');
+        if (resetBtn) {
+            const showReset = seasonOn || classOn || kindOn || sortOn;
+            resetBtn.hidden = !showReset;
+            resetBtn.toggleAttribute('hidden', !showReset);
+        }
     }
     markActiveFilters();
     form.addEventListener('change', () => {
@@ -482,6 +488,13 @@
         });
     }
 
+    function syncMenuExpanded(menu, open) {
+        if (!menu?.id) return;
+        document.querySelectorAll(`[aria-controls="${menu.id}"]`).forEach((el) => {
+            el.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+    }
+
     window.toggleDropdown = function(id) {
         closeKindMenu();
         closeSortMenu();
@@ -493,12 +506,14 @@
                 if (menu.id !== id) {
                     menu.classList.add('hidden');
                     menu.setAttribute('hidden', '');
+                    syncMenuExpanded(menu, false);
                 }
             });
             if (target) {
                 const open = target.classList.contains('hidden') || target.hasAttribute('hidden');
                 target.classList.toggle('hidden', !open);
                 target.toggleAttribute('hidden', !open);
+                syncMenuExpanded(target, open);
             }
         }
         syncOpenFilters();
@@ -513,6 +528,7 @@
                 else {
                     menu?.classList.add('hidden');
                     menu?.setAttribute('hidden', '');
+                    syncMenuExpanded(menu, false);
                 }
             });
             closeKindMenu();
@@ -520,12 +536,26 @@
         syncOpenFilters();
     });
 
+    const searchInput = form.querySelector('input[name="search"]');
+    let searchTimer = 0;
+
     form.addEventListener('submit', (event) => {
         event.preventDefault();
+        clearTimeout(searchTimer);
         const page = form.querySelector('input[name="page"]');
         if (page) page.value = '0';
         if (kindSelect) kindSelect.value = displayKindValue(kindSelect.value);
         applyFilters();
+    });
+
+    searchInput?.addEventListener('input', () => {
+        markActiveFilters();
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+            const page = form.querySelector('input[name="page"]');
+            if (page) page.value = '0';
+            applyFilters();
+        }, 280);
     });
 
     document.getElementById('objekt-reset').addEventListener('click', () => {
@@ -534,7 +564,6 @@
 
     const grid = document.getElementById('objekt-card-grid');
     const summary = document.getElementById('objekt-result-summary');
-    const loadedEl = document.getElementById('objekt-loaded-count');
     const sentinel = document.getElementById('objekt-scroll-sentinel');
     const statusEl = document.getElementById('objekt-scroll-status');
     const spinner = document.getElementById('objekt-scroll-spinner');
@@ -591,8 +620,28 @@
     const descriptionDelete = document.getElementById('objektDescriptionDelete');
     const descriptionScope = document.getElementById('objektDescriptionScope');
     const descriptionScopeHint = document.getElementById('objektDescriptionScopeHint');
+    const descriptionMembersEl = document.getElementById('objektDescriptionMembers');
+    const descriptionNumbersEl = document.getElementById('objektDescriptionNumbers');
+    const descriptionMembersPanel = document.getElementById('objektDescriptionMembersPanel');
+    const descriptionNumbersPanel = document.getElementById('objektDescriptionNumbersPanel');
+    const descriptionMembersToggle = document.getElementById('objektDescriptionMembersToggle');
+    const descriptionNumbersToggle = document.getElementById('objektDescriptionNumbersToggle');
+    const descriptionMembersSummary = document.getElementById('objektDescriptionMembersSummary');
+    const descriptionNumbersSummary = document.getElementById('objektDescriptionNumbersSummary');
+    const descriptionSeasonLabel = document.getElementById('objektDescriptionSeasonLabel');
     let descriptionUrl = '', descriptionSaving = false, detailRequest = 0;
-    let descriptionMeta = {scope: 'single', label: '', count: 1};
+    let descriptionMeta = {
+        scope: 'single',
+        label: '',
+        count: 1,
+        member: '',
+        number: '',
+        season: '',
+        members: [],
+        numbers: [],
+        selectedMembers: [],
+        selectedNumbers: []
+    };
     let activeObjektKey = '';
     let detailLoading = false;
     let isAdmin = false;
@@ -860,37 +909,184 @@
         }
     }
 
-    function selectedDescriptionScope() {
-        const checked = descriptionForm?.querySelector('input[name="descriptionScope"]:checked');
-        return checked && checked.value === 'member' ? 'member' : 'group';
+    function selectedShareMembers() {
+        if (!descriptionMembersEl) return descriptionMeta.member ? [descriptionMeta.member] : [];
+        return Array.from(descriptionMembersEl.querySelectorAll('input[name="descriptionMembers"]:checked'))
+            .map((input) => input.value)
+            .filter(Boolean);
     }
 
-    function descriptionScopeHintText(scope) {
-        const label = descriptionMeta.label || '이 번호';
-        const count = descriptionMeta.count || 1;
-        if (scope === 'member') return '이 카드만 바꿉니다. 같은 번호의 다른 멤버는 그대로 둡니다.';
-        if (count > 1) return label + ' 전체 ' + count + '장에 같은 설명을 넣습니다.';
-        return label + ' 설명에 적용합니다.';
+    function selectedShareNumbers() {
+        if (!descriptionNumbersEl) return descriptionMeta.number ? [descriptionMeta.number] : [];
+        return Array.from(descriptionNumbersEl.querySelectorAll('input[name="descriptionNumbers"]:checked'))
+            .map((input) => input.value)
+            .filter(Boolean);
+    }
+
+    function memberLabelForToken(token) {
+        const row = descriptionMeta.members.find((item) => String(item.token || '') === token);
+        return row && row.label ? String(row.label) : token;
+    }
+
+    function shareMembersSummaryText() {
+        const selected = selectedShareMembers();
+        const total = descriptionMembersEl
+            ? descriptionMembersEl.querySelectorAll('input[name="descriptionMembers"]').length
+            : descriptionMeta.members.length || selected.length;
+        if (!selected.length) return '멤버 선택';
+        if (total > 0 && selected.length >= total) return '전체 ' + total + '명';
+        if (selected.length === 1) return memberLabelForToken(selected[0]);
+        const first = memberLabelForToken(selected[0]);
+        return first + ' 외 ' + (selected.length - 1) + '명';
+    }
+
+    function shareNumbersSummaryText() {
+        const selected = selectedShareNumbers();
+        const total = descriptionNumbersEl
+            ? descriptionNumbersEl.querySelectorAll('input[name="descriptionNumbers"]').length
+            : descriptionMeta.numbers.length || selected.length;
+        if (!selected.length) return '번호 선택';
+        if (total > 0 && selected.length >= total) return '전체 ' + total + '개';
+        if (selected.length === 1) return selected[0];
+        return selected[0] + ' 외 ' + (selected.length - 1) + '개';
+    }
+
+    function refreshShareSummaries() {
+        if (descriptionMembersSummary) descriptionMembersSummary.textContent = shareMembersSummaryText();
+        if (descriptionNumbersSummary) descriptionNumbersSummary.textContent = shareNumbersSummaryText();
+        if (descriptionScopeHint) descriptionScopeHint.textContent = descriptionScopeHintText();
+    }
+
+    function descriptionScopeHintText() {
+        const members = selectedShareMembers();
+        const numbers = selectedShareNumbers();
+        const memberCount = members.length || 1;
+        const numberCount = numbers.length || 1;
+        const season = descriptionMeta.season || '이 시즌';
+        if (memberCount <= 1 && numberCount <= 1) {
+            return '이 멤버·이 번호에만 저장합니다.';
+        }
+        if (memberCount > 1 && numberCount > 1) {
+            return season + '에서 고른 멤버 ' + memberCount + '명 · 번호 ' + numberCount + '개에 같은 설명을 넣습니다.';
+        }
+        if (memberCount > 1) {
+            return '이 번호에서 고른 멤버 ' + memberCount + '명끼리 설명을 공유합니다. 선택하지 않은 멤버는 그대로 둡니다.';
+        }
+        return season + '에서 고른 번호 ' + numberCount + '개에 같은 설명을 넣습니다.';
+    }
+
+    function setSharePanelOpen(panel, toggle, open) {
+        if (!panel || !toggle) return;
+        panel.hidden = !open;
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    function renderShareOptions(container, name, items, lockedValue) {
+        if (!container) return;
+        container.replaceChildren();
+        items.forEach((item) => {
+            const value = typeof item === 'string' ? item : String(item.token || item.value || '');
+            if (!value) return;
+            const labelText = typeof item === 'string' ? item : String(item.label || value);
+            const locked = value === lockedValue;
+            const selected = locked || (typeof item === 'string' ? false : Boolean(item.selected));
+            const label = document.createElement('label');
+            label.className = 'objekt-description-share-option' + (locked ? ' is-current' : '');
+            label.title = labelText;
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.name = name;
+            input.value = value;
+            input.checked = selected || locked;
+            if (locked) input.disabled = true;
+            const text = document.createElement('span');
+            text.textContent = labelText;
+            label.append(input, text);
+            container.append(label);
+        });
+    }
+
+    function applyMemberSharePreset(mode) {
+        if (!descriptionMembersEl) return;
+        const boxes = descriptionMembersEl.querySelectorAll('input[name="descriptionMembers"]');
+        boxes.forEach((input) => {
+            if (input.disabled) {
+                input.checked = true;
+                return;
+            }
+            input.checked = mode === 'all';
+        });
+        refreshShareSummaries();
     }
 
     function syncDescriptionScopeUi() {
         if (!descriptionScope) return;
-        const canGroup = descriptionMeta.scope === 'group' || descriptionMeta.scope === 'member';
-        descriptionScope.hidden = !canGroup;
-        if (!canGroup) return;
-        const preferred = descriptionMeta.scope === 'member' ? 'member' : 'group';
-        const radio = descriptionForm?.querySelector('input[name="descriptionScope"][value="' + preferred + '"]');
-        if (radio) radio.checked = true;
-        if (descriptionScopeHint) descriptionScopeHint.textContent = descriptionScopeHintText(preferred);
+        const canShare = descriptionMeta.scope === 'group' || descriptionMeta.scope === 'member';
+        descriptionScope.hidden = !canShare;
+        if (!canShare) return;
+        if (descriptionSeasonLabel) {
+            descriptionSeasonLabel.textContent = descriptionMeta.season ? '(' + descriptionMeta.season + ')' : '';
+        }
+        const selectedMemberSet = new Set(
+            (descriptionMeta.selectedMembers || []).map((value) => String(value || '').trim()).filter(Boolean)
+        );
+        if (descriptionMeta.member) selectedMemberSet.add(descriptionMeta.member);
+        const selectedNumberSet = new Set(
+            (descriptionMeta.selectedNumbers || []).map((value) => String(value || '').trim().toLowerCase()).filter(Boolean)
+        );
+        if (descriptionMeta.number) selectedNumberSet.add(descriptionMeta.number.toLowerCase());
+        const memberItems = (descriptionMeta.members.length
+            ? descriptionMeta.members
+            : (descriptionMeta.member ? [{token: descriptionMeta.member, label: descriptionMeta.member, selected: true, current: true}] : [])
+        ).map((item) => {
+            const token = String(item.token || item.value || '');
+            return {
+                ...item,
+                token,
+                selected: selectedMemberSet.size
+                    ? selectedMemberSet.has(token)
+                    : Boolean(item.selected) || token === descriptionMeta.member,
+                current: token === descriptionMeta.member
+            };
+        });
+        const numberItems = (descriptionMeta.numbers.length ? descriptionMeta.numbers : [descriptionMeta.number].filter(Boolean))
+            .map((number) => ({
+                token: number,
+                label: number,
+                selected: selectedNumberSet.has(String(number).toLowerCase()),
+                current: number === descriptionMeta.number
+            }));
+        renderShareOptions(descriptionMembersEl, 'descriptionMembers', memberItems, descriptionMeta.member);
+        renderShareOptions(descriptionNumbersEl, 'descriptionNumbers', numberItems, descriptionMeta.number);
+        setSharePanelOpen(descriptionMembersPanel, descriptionMembersToggle, false);
+        setSharePanelOpen(descriptionNumbersPanel, descriptionNumbersToggle, false);
+        refreshShareSummaries();
     }
 
     function rememberDescriptionMeta(data) {
         const count = Number(data && data.descriptionGroupCount);
+        const members = Array.isArray(data && data.descriptionShareMembers) ? data.descriptionShareMembers : null;
+        const numbers = Array.isArray(data && data.descriptionSeasonNumbers) ? data.descriptionSeasonNumbers : null;
+        const selectedMembers = Array.isArray(data && data.descriptionSelectedMembers)
+            ? data.descriptionSelectedMembers.map((value) => String(value || '').trim()).filter(Boolean)
+            : null;
+        const selectedNumbers = Array.isArray(data && data.descriptionSelectedNumbers)
+            ? data.descriptionSelectedNumbers.map((value) => String(value || '').trim()).filter(Boolean)
+            : null;
         descriptionMeta = {
             scope: data && data.descriptionScope === 'member' ? 'member'
                 : data && data.descriptionScope === 'group' ? 'group' : 'single',
             label: String(data && data.descriptionGroupLabel || '').trim(),
-            count: Number.isFinite(count) && count > 0 ? count : 1
+            count: Number.isFinite(count) && count > 0 ? count : 1,
+            member: String(data && data.descriptionMember || descriptionMeta.member || '').trim(),
+            number: String(data && data.descriptionNumber || descriptionMeta.number || '').trim(),
+            season: String(data && data.descriptionSeason || descriptionMeta.season || '').trim(),
+            members: members && members.length ? members : descriptionMeta.members,
+            numbers: numbers && numbers.length
+                ? numbers.map((value) => String(value || '').trim()).filter(Boolean)
+                : descriptionMeta.numbers,
+            selectedMembers: selectedMembers && selectedMembers.length ? selectedMembers : descriptionMeta.selectedMembers,
+            selectedNumbers: selectedNumbers && selectedNumbers.length ? selectedNumbers : descriptionMeta.selectedNumbers
         };
     }
 
@@ -971,7 +1167,18 @@
         activeObjektKey = '';
         lastStoryText = '';
         isAdmin = false;
-        descriptionMeta = {scope: 'single', label: '', count: 1};
+        descriptionMeta = {
+            scope: 'single',
+            label: '',
+            count: 1,
+            member: '',
+            number: '',
+            season: '',
+            members: [],
+            numbers: [],
+            selectedMembers: [],
+            selectedNumbers: []
+        };
         exitDescriptionEdit();
         detailRequest++;
         if (detailFavorite) detailFavorite.dataset.key = '';
@@ -1061,22 +1268,31 @@
 
     async function saveModalDescription(clear) {
         if (descriptionSaving || !descriptionUrl || !isAdmin || descriptionForm?.hidden) return;
-        const scope = descriptionScope && !descriptionScope.hidden ? selectedDescriptionScope() : 'single';
+        const canShare = descriptionScope && !descriptionScope.hidden;
+        const members = canShare ? selectedShareMembers() : [];
+        const numbers = canShare ? selectedShareNumbers() : [];
+        if (canShare && (!members.length || !numbers.length)) {
+            if (descriptionStatus) descriptionStatus.textContent = '공유할 멤버와 적용할 번호를 골라 주세요.';
+            return;
+        }
         if (clear) {
-            const message = scope === 'group' && descriptionMeta.count > 1
-                ? (descriptionMeta.label || '이 번호') + ' 전체 설명을 삭제할까요?'
+            const memberCount = members.length || 1;
+            const numberCount = numbers.length || 1;
+            const message = memberCount > 1 || numberCount > 1
+                ? ('선택한 멤버 ' + memberCount + '명 · 번호 ' + numberCount + '개의 설명을 삭제할까요?')
                 : '이 오브젝트의 상세 설명을 삭제하시겠습니까?';
             if (!window.confirm(message)) return;
         }
         if (!clear && !descriptionForm.reportValidity()) return;
         const key = activeObjektKey;
         descriptionSaving = true;
-        const controls = descriptionForm.querySelectorAll('button, input, textarea');
+        const controls = descriptionForm.querySelectorAll('button, textarea');
         controls.forEach(control => control.disabled = true);
         descriptionStatus.textContent = clear ? '삭제 중…' : '저장 중…';
         try {
             const body = new URLSearchParams({description: clear ? '' : descriptionInput.value});
-            if (scope === 'group' || scope === 'member') body.set('scope', scope);
+            members.forEach((member) => body.append('members', member));
+            numbers.forEach((number) => body.append('numbers', number));
             const response = await fetch(descriptionUrl, {
                 method: 'POST', headers: csrfHeaders(), credentials: 'same-origin',
                 body
@@ -1086,12 +1302,17 @@
             if (typeof data.description !== 'string') throw new Error();
             if (activeObjektKey !== key) return;
             rememberDescriptionMeta(data);
-            if (scope === 'group' || scope === 'member') descriptionMeta.scope = scope;
             fillDetailStory({description: data.description});
             exitDescriptionEdit();
+            const memberCount = members.length || 1;
+            const numberCount = numbers.length || 1;
             descriptionStatus.textContent = clear
-                ? (scope === 'group' && descriptionMeta.count > 1 ? '이 번호의 상세 설명을 삭제했습니다.' : '상세 설명을 삭제했습니다.')
-                : (scope === 'group' && descriptionMeta.count > 1 ? '이 번호 전체에 설명을 저장했습니다.' : '상세 설명을 저장했습니다.');
+                ? (memberCount > 1 || numberCount > 1
+                    ? '선택한 범위의 설명을 삭제했습니다.'
+                    : '상세 설명을 삭제했습니다.')
+                : (memberCount > 1 || numberCount > 1
+                    ? '선택한 멤버·번호에 설명을 저장했습니다.'
+                    : '상세 설명을 저장했습니다.');
         } catch {
             if (activeObjektKey === key) descriptionStatus.textContent = '저장하지 못했습니다. 관리자 로그인 상태를 확인한 뒤 다시 시도해 주세요.';
         } finally {
@@ -1102,8 +1323,25 @@
     descriptionForm?.addEventListener('submit', event => { event.preventDefault(); saveModalDescription(false); });
     descriptionDelete?.addEventListener('click', () => saveModalDescription(true));
     descriptionForm?.addEventListener('change', (event) => {
-        if (!(event.target instanceof HTMLInputElement) || event.target.name !== 'descriptionScope') return;
-        if (descriptionScopeHint) descriptionScopeHint.textContent = descriptionScopeHintText(event.target.value);
+        if (!(event.target instanceof HTMLInputElement)) return;
+        if (event.target.name !== 'descriptionMembers' && event.target.name !== 'descriptionNumbers') return;
+        refreshShareSummaries();
+    });
+    descriptionMembersToggle?.addEventListener('click', () => {
+        const open = descriptionMembersPanel?.hidden !== false;
+        setSharePanelOpen(descriptionMembersPanel, descriptionMembersToggle, open);
+    });
+    descriptionNumbersToggle?.addEventListener('click', () => {
+        const open = descriptionNumbersPanel?.hidden !== false;
+        setSharePanelOpen(descriptionNumbersPanel, descriptionNumbersToggle, open);
+    });
+    descriptionForm?.addEventListener('click', (event) => {
+        const button = event.target instanceof Element
+            ? event.target.closest('[data-share-members]')
+            : null;
+        if (!button) return;
+        event.preventDefault();
+        applyMemberSharePreset(button.getAttribute('data-share-members') === 'all' ? 'all' : 'current');
     });
 
     function shouldOpenModalFromEvent(event) {
@@ -1176,7 +1414,6 @@
     });
 
     function updateSummary() {
-        if (loadedEl) loadedEl.textContent = String(loadedCount);
         if (empty) empty.classList.toggle('hidden', loadedCount > 0);
         if (!statusEl) return;
         if (loading) statusEl.textContent = '불러오는 중…';
@@ -1266,9 +1503,6 @@
     }
 
     function rememberCounts() {
-        if (loadedEl) loadedEl.textContent = String(loadedCount);
-        const allEl = document.getElementById('objekt-all-count');
-        if (allEl) allEl.textContent = String(allCount);
         if (summary) {
             summary.dataset.loaded = String(loadedCount);
             summary.dataset.resultCount = String(resultCount);

@@ -24,10 +24,9 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
   <div id="sort-menu" class="hidden"></div>
 </div>
 <input type="search" name="search">
-<button type="submit" id="objekt-search-submit">검색</button>
 <button type="button" id="objekt-reset">초기화</button>
 </form>
-<p id="objekt-result-summary" data-result-count="1" data-all-count="1" data-loaded="1">검색 결과 <strong>1</strong>개 <span id="objekt-all-count">1</span> <span id="objekt-loaded-count">1</span></p>
+<p id="objekt-result-summary" data-result-count="1" data-all-count="1" data-loaded="1">검색 결과 <strong>1</strong>개</p>
 <div id="objekt-empty" class="hidden"></div>
 <div id="objekt-card-grid">
   <article class="objekt-card objekt-item" data-objekt-key="old-card">

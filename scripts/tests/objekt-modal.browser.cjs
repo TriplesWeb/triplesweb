@@ -10,11 +10,34 @@ const base = path.resolve(__dirname, '../..');
     let favorite=false, favoriteCount=2, favoriteAttempts=0, suppliesHits=0, lookupHits=0;
     let isAdmin = true, description = '기존 설명', writes = [], failMore = true, apolloStory = null;
     let mintCount = null, issuedStatus = 'available';
+    let selectedMembers = ['hayeon'];
+    let selectedNumbers = ['367Z'];
+    const shareMembers = [
+      {token:'hayeon', label:'HaYeon', current:true},
+      {token:'seoyeon', label:'SeoYeon', current:false},
+      {token:'jiwoo', label:'JiWoo', current:false}
+    ];
+    const seasonNumbers = ['367Z', '368Z'];
     let unlockDetail=()=>{};
     let detailBarrier=Promise.resolve();
+    const descriptionPayload = () => ({
+      descriptionScope: selectedMembers.length >= shareMembers.length ? 'group' : 'member',
+      descriptionGroupLabel:'Cream02 367Z',
+      descriptionGroupCount:24,
+      descriptionMember:'hayeon',
+      descriptionNumber:'367Z',
+      descriptionSeason:'Cream02',
+      descriptionShareMembers: shareMembers.map((row) => ({
+        ...row,
+        selected: selectedMembers.includes(row.token)
+      })),
+      descriptionSeasonNumbers: seasonNumbers,
+      descriptionSelectedMembers: selectedMembers.slice(),
+      descriptionSelectedNumbers: selectedNumbers.slice()
+    });
     const data = () => ({isFavorite:favorite,favoriteCount,objektKey:'hayeoncc367z',collectionId:'Cream02 HaYeon 367Z',member:'HaYeon',season:'Cream02',class:'Special',collectionNo:'367Z',description,isAdmin,
       detailUrl:'/cosmo/objekt/detail/hayeoncc367z',memberUrl:'/cosmo/objekt?group=members&member=HaYeon',tradeUrl:'/article/trade/new?selectedObjektIds=uuid',sellUrl:'/article/sell/new?selectedObjektIds=uuid',descriptionUrl:'/cosmo/objekt/detail/hayeoncc367z/description',
-      descriptionScope:'group',descriptionGroupLabel:'Cream02 367Z',descriptionGroupCount:24,
+      ...descriptionPayload(),
       ...(Number.isFinite(mintCount) ? {mintCount} : {}),
       ...(apolloStory ? {apollo: apolloStory} : {})});
     await page.context().addCookies([{name:'XSRF-TOKEN',value:'test-csrf',domain:'preview.test',path:'/'}]);
@@ -34,9 +57,13 @@ const base = path.resolve(__dirname, '../..');
       if(p.endsWith('/description') && req.method()==='POST') {
         assert.equal(req.headers()['x-xsrf-token'],'test-csrf');
         const params=new URLSearchParams(req.postData());
-        description=params.get('description'); writes.push({description,scope:params.get('scope')});
-        const scope=params.get('scope')||'group';
-        return json({description,descriptionScope:scope,descriptionGroupLabel:'Cream02 367Z',descriptionGroupCount:24});
+        description=params.get('description');
+        const members=params.getAll('members');
+        const numbers=params.getAll('numbers');
+        writes.push({description,members,numbers});
+        if(members.length) selectedMembers=members;
+        if(numbers.length) selectedNumbers=numbers;
+        return json({description, ...descriptionPayload()});
       }
       if(p.endsWith('/lookup')) {
         lookupHits++;
@@ -153,11 +180,21 @@ const base = path.resolve(__dirname, '../..');
     assert.equal(await page.locator('#objektDetailDesc').isVisible(),false);
     assert.equal(await page.locator('#objektModalDescription').inputValue(),'기존 설명');
     assert.equal(await page.locator('#objektDescriptionScope').isVisible(),true);
-    assert.equal(await page.locator('input[name=descriptionScope][value=group]').isChecked(),true);
-    assert.match(await page.locator('#objektDescriptionScopeHint').textContent(), /Cream02 367Z 전체 24장/);
-    await page.locator('input[name=descriptionScope][value=member]').check();
-    assert.match(await page.locator('#objektDescriptionScopeHint').textContent(), /이 카드만/);
-    await page.locator('input[name=descriptionScope][value=group]').check();
+    assert.equal(await page.locator('input[name=descriptionMembers][value=hayeon]').isChecked(),true);
+    assert.equal(await page.locator('input[name=descriptionMembers][value=hayeon]').isDisabled(),true);
+    assert.equal(await page.locator('input[name=descriptionMembers][value=seoyeon]').isChecked(),false);
+    assert.equal(await page.locator('input[name=descriptionNumbers][value="367Z"]').isChecked(),true);
+    assert.match(await page.locator('#objektDescriptionScopeHint').textContent(), /이 멤버·이 번호에만/);
+    assert.equal(await page.locator('#objektDescriptionMembersSummary').textContent(), 'HaYeon');
+    await page.locator('#objektDescriptionMembersToggle').click();
+    await page.locator('[data-share-members=all]').click();
+    assert.equal(await page.locator('input[name=descriptionMembers][value=seoyeon]').isChecked(),true);
+    assert.equal(await page.locator('#objektDescriptionMembersSummary').textContent(), '전체 3명');
+    assert.match(await page.locator('#objektDescriptionScopeHint').textContent(), /멤버 3명/);
+    await page.locator('[data-share-members=current]').click();
+    assert.equal(await page.locator('input[name=descriptionMembers][value=seoyeon]').isChecked(),false);
+    assert.match(await page.locator('#objektDescriptionScopeHint').textContent(), /이 멤버·이 번호에만/);
+    await page.locator('[data-share-members=all]').click();
     await page.locator('#objektModalDescription').fill('<b>새 설명</b>');
     await page.locator('#objektDescriptionForm button[type=submit]').click();
     await page.waitForFunction(()=>document.querySelector('#objektDescriptionStatus').textContent.includes('저장했습니다'));
@@ -166,21 +203,25 @@ const base = path.resolve(__dirname, '../..');
     assert.equal(await page.locator('#objektDetailDesc').textContent(),'<b>새 설명</b>');
     assert.equal(await page.locator('#objektDetailDesc b').count(),0);
     await page.locator('#objektDescriptionEdit').click();
-    assert.equal(await page.locator('input[name=descriptionScope][value=group]').isChecked(),true);
-    await page.locator('input[name=descriptionScope][value=member]').check();
+    assert.equal(await page.locator('input[name=descriptionMembers][value=seoyeon]').isChecked(),true);
+    assert.equal(await page.locator('#objektDescriptionMembersSummary').textContent(), '전체 3명');
+    await page.locator('#objektDescriptionMembersToggle').click();
+    await page.locator('[data-share-members=current]').click();
     await page.locator('#objektModalDescription').fill('이 카드만');
     await page.locator('#objektDescriptionForm button[type=submit]').click();
     await page.waitForFunction(()=>document.querySelector('#objektDescriptionStatus').textContent.includes('저장했습니다'));
     assert.equal(await page.locator('#objektDetailDesc').textContent(),'이 카드만');
     await page.locator('#objektDescriptionEdit').click();
-    assert.equal(await page.locator('input[name=descriptionScope][value=member]').isChecked(),true);
+    assert.equal(await page.locator('input[name=descriptionMembers][value=hayeon]').isChecked(),true);
+    assert.equal(await page.locator('input[name=descriptionMembers][value=seoyeon]').isChecked(),false);
+    assert.equal(await page.locator('#objektDescriptionMembersSummary').textContent(), 'HaYeon');
     page.once('dialog',dialog=>dialog.accept()); await page.locator('#objektDescriptionDelete').click();
     await page.waitForFunction(()=>document.querySelector('#objektDescriptionStatus').textContent.includes('삭제했습니다'));
     assert.equal(await page.locator('#objektDescriptionForm').isVisible(),false);
     assert.deepEqual(writes,[
-      {description:'<b>새 설명</b>',scope:'group'},
-      {description:'이 카드만',scope:'member'},
-      {description:'',scope:'member'}
+      {description:'<b>새 설명</b>',members:['hayeon','seoyeon','jiwoo'],numbers:['367Z']},
+      {description:'이 카드만',members:['hayeon'],numbers:['367Z']},
+      {description:'',members:['hayeon'],numbers:['367Z']}
     ]);
     fs.mkdirSync('/tmp/objekt-ui',{recursive:true});
     await page.screenshot({path:'/tmp/objekt-ui/modal-desktop.png',fullPage:true});

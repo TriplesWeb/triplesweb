@@ -155,7 +155,8 @@
     cursor: pointer;
 }
 .collection-page .objekt-kind-toggle:hover { background: rgba(255,255,255,.06); }
-.collection-page .objekt-kind-toggle .material-symbols-outlined { font-size: 1.1rem; line-height: 1; }
+.collection-page .objekt-kind-toggle .objekt-filter-caret,
+.collection-page .objekt-kind-toggle .material-symbols-outlined { font-size: 1.1rem !important; line-height: 1 !important; pointer-events: none; }
 .collection-page .objekt-kind-option {
     display: block;
     width: 100%;
@@ -318,7 +319,7 @@
 }
 .collection-page .collection-filter-bar .objekt-filter { width: 100%; }
 .collection-page .objekt-filter-control { flex: 1 1 auto; min-width: 0; }
-.collection-page .objekt-filter-label { flex: 0 0 auto; }
+.collection-page .objekt-filter-label { flex: 0 0 2.5rem; width: 2.5rem; min-width: 2.5rem; }
 .collection-page .objekt-dropdown-menu {
     width: max(100%, 12rem);
     max-width: calc(100vw - 2rem);

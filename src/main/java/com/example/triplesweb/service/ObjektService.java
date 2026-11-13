@@ -48,6 +48,8 @@ public class ObjektService {
     private volatile List<Map<String, Object>> cachedCollections = List.of();
     private volatile Map<String, Map<String, Object>> byKey = Map.of();
     private volatile Map<String, Integer> groupCounts = Map.of();
+    private volatile Map<String, List<Map<String, Object>>> groupsBySeasonNumber = Map.of();
+    private volatile Map<String, List<String>> numbersBySeason = Map.of();
     private volatile FilterFacets facets = FilterFacets.empty();
     private volatile List<Map<String, Object>> newestDrops = List.of();
     private volatile long lastSuccessfulRefreshMillis;
@@ -115,6 +117,20 @@ public class ObjektService {
         if (number.isBlank()) return 1;
         Integer count = groupCounts.get(season + "|" + number);
         return count == null || count < 1 ? 1 : count;
+    }
+
+    /** Same season+number cards. Empty when the pair is unknown. */
+    public List<Map<String, Object>> groupCards(String season, String collectionNo) {
+        if (season == null || collectionNo == null) return List.of();
+        String key = season.trim().toLowerCase(Locale.ROOT) + "|" + collectionNo.trim().toLowerCase(Locale.ROOT);
+        if (key.startsWith("|") || key.endsWith("|")) return List.of();
+        return groupsBySeasonNumber.getOrDefault(key, List.of());
+    }
+
+    /** Distinct collection numbers in a season, case-insensitive sorted. */
+    public List<String> seasonCollectionNumbers(String season) {
+        if (season == null || season.isBlank()) return List.of();
+        return numbersBySeason.getOrDefault(season.trim().toLowerCase(Locale.ROOT), List.of());
     }
 
     public String catalogSignature() {
@@ -211,22 +227,56 @@ public class ObjektService {
         List<Map<String, Object>> snapshot = views == null ? List.of() : List.copyOf(views);
         cachedCollections = snapshot;
         byKey = buildIndex(snapshot);
-        groupCounts = buildGroupCounts(snapshot);
+        GroupIndex groupIndex = buildGroupIndex(snapshot);
+        groupCounts = groupIndex.counts();
+        groupsBySeasonNumber = groupIndex.cards();
+        numbersBySeason = groupIndex.numbersBySeason();
         facets = FilterFacets.from(snapshot);
         catalogSignature = signature(snapshot);
         newestDrops = dropAlerts(snapshot);
     }
 
     static Map<String, Integer> buildGroupCounts(List<Map<String, Object>> views) {
-        if (views == null || views.isEmpty()) return Map.of();
-        Map<String, Integer> counts = new HashMap<>();
-        for (Map<String, Object> item : views) {
-            String season = first(item, "season", "seasonKey").toLowerCase(Locale.ROOT);
-            String number = first(item, "collectionNo", "collectionNumber").toLowerCase(Locale.ROOT);
-            if (number.isBlank()) continue;
-            counts.merge(season + "|" + number, 1, Integer::sum);
+        return buildGroupIndex(views).counts();
+    }
+
+    private record GroupIndex(
+            Map<String, Integer> counts,
+            Map<String, List<Map<String, Object>>> cards,
+            Map<String, List<String>> numbersBySeason
+    ) {}
+
+    static GroupIndex buildGroupIndex(List<Map<String, Object>> views) {
+        if (views == null || views.isEmpty()) {
+            return new GroupIndex(Map.of(), Map.of(), Map.of());
         }
-        return Map.copyOf(counts);
+        Map<String, Integer> counts = new HashMap<>();
+        Map<String, List<Map<String, Object>>> cards = new LinkedHashMap<>();
+        Map<String, LinkedHashSet<String>> numbers = new LinkedHashMap<>();
+        for (Map<String, Object> item : views) {
+            String season = first(item, "season", "seasonKey");
+            String number = first(item, "collectionNo", "collectionNumber");
+            if (number.isBlank()) continue;
+            String seasonKey = season.toLowerCase(Locale.ROOT);
+            String numberKey = number.toLowerCase(Locale.ROOT);
+            String pair = seasonKey + "|" + numberKey;
+            counts.merge(pair, 1, Integer::sum);
+            cards.computeIfAbsent(pair, ignored -> new ArrayList<>()).add(item);
+            if (!seasonKey.isBlank()) {
+                numbers.computeIfAbsent(seasonKey, ignored -> new LinkedHashSet<>()).add(number);
+            }
+        }
+        Map<String, List<Map<String, Object>>> frozenCards = new HashMap<>();
+        for (Map.Entry<String, List<Map<String, Object>>> entry : cards.entrySet()) {
+            frozenCards.put(entry.getKey(), List.copyOf(entry.getValue()));
+        }
+        Map<String, List<String>> frozenNumbers = new HashMap<>();
+        for (Map.Entry<String, LinkedHashSet<String>> entry : numbers.entrySet()) {
+            List<String> sorted = new ArrayList<>(entry.getValue());
+            sorted.sort(String.CASE_INSENSITIVE_ORDER);
+            frozenNumbers.put(entry.getKey(), List.copyOf(sorted));
+        }
+        return new GroupIndex(Map.copyOf(counts), Map.copyOf(frozenCards), Map.copyOf(frozenNumbers));
     }
 
     /**
