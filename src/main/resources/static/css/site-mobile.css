@@ -40,8 +40,9 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   #mobile-menu form[role=search],
   #mobile-menu .site-search{display:flex!important;position:relative;align-items:center;width:100%;min-width:0;flex:0 0 auto;min-height:0;height:auto;margin:0 0 .5rem}
   #mobile-menu .site-search .site-field,
-  #mobile-menu .site-search input{width:100%;min-width:0;min-height:44px;height:44px;font-size:16px!important}
-  #mobile-menu .site-search__submit{right:.75rem;min-height:auto;min-width:auto;height:auto;padding:0;background:transparent;color:#b9cac4;border-radius:0}
+  #mobile-menu .site-search input{width:100%;min-width:0;min-height:44px;height:44px;padding-left:2.5rem;padding-right:2.5rem;font-size:16px!important}
+  /* 검색 아이콘은 왼쪽 — type=search 지우기(X)와 오른쪽에서 겹치지 않게 */
+  #mobile-menu .site-search__submit{left:.75rem;right:auto;min-height:auto;min-width:auto;height:auto;padding:0;background:transparent;color:#b9cac4;border-radius:0}
   #mobile-menu .site-search__submit:hover{color:#00f5d4;background:transparent}
   #mobile-menu a,#mobile-menu .mobile-nav-toggle{display:flex;align-items:center;min-height:44px;padding:.65rem .75rem}
   #mobile-menu .mobile-nav-toggle{width:100%;justify-content:space-between;border:0;border-radius:.75rem;background:transparent;color:#b9cac4}
