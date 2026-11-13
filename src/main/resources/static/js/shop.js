@@ -947,13 +947,13 @@
       if (!targetPane) return;
 
       tabButtons.forEach((b) => {
-        b.classList.remove("text-[#00f5d4]", "border-[#00f5d4]");
-        b.classList.add("text-[#b9cac4]", "border-transparent");
+        b.classList.remove("is-active");
+        b.setAttribute("aria-selected", "false");
       });
 
       if (btn) {
-        btn.classList.remove("text-[#b9cac4]", "border-transparent");
-        btn.classList.add("text-[#00f5d4]", "border-[#00f5d4]");
+        btn.classList.add("is-active");
+        btn.setAttribute("aria-selected", "true");
         const scroller = btn.closest("#shopSectionTabs");
         if (scroller && scroller.scrollWidth > scroller.clientWidth + 1) {
           const btnRect = btn.getBoundingClientRect();
