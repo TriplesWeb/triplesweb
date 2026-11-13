@@ -52,16 +52,24 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
   <span class="objekt-filter-label">정렬</span>
   <button type="button" id="objekt-sort-toggle" class="objekt-filter-control" hidden><span id="sort-label">최신순</span></button>
   <label id="sort-native-control"><select name="sort" class="objekt-sort-select"><option value="latest">최신순</option><option value="oldest">오래된순</option><option value="number_low">번호 낮은순</option><option value="number_high">번호 높은순</option><option value="first_member">첫 멤버</option><option value="last_member">마지막 멤버</option><option value="mint_low">민팅 적은순</option><option value="mint_high">민팅 많은순</option></select></label>
-  <div id="sort-menu" class="objekt-dropdown-menu hidden absolute top-full left-0"></div>
+  <div id="sort-menu" class="objekt-dropdown-menu hidden absolute top-full left-0" role="listbox" aria-label="정렬 목록">
+    <button type="button" class="objekt-kind-option" data-value="latest" role="option">최신순</button>
+    <button type="button" class="objekt-kind-option" data-value="oldest" role="option">오래된순</button>
+    <button type="button" class="objekt-kind-option" data-value="number_low" role="option">번호 낮은순</button>
+    <button type="button" class="objekt-kind-option" data-value="number_high" role="option">번호 높은순</button>
+    <button type="button" class="objekt-kind-option" data-value="first_member" role="option">첫 멤버</button>
+    <button type="button" class="objekt-kind-option" data-value="last_member" role="option">마지막 멤버</button>
+    <button type="button" class="objekt-kind-option" data-value="mint_low" role="option">민팅 적은순</button>
+    <button type="button" class="objekt-kind-option" data-value="mint_high" role="option">민팅 많은순</button>
+  </div>
 </div>
 <div class="objekt-search-row">
 <input type="search" name="search" value="" class="objekt-search-input" style="display:block;width:100%;min-height:44px">
-<button type="submit" id="objekt-search-submit">검색</button>
-<button type="button" id="objekt-reset">초기화</button>
+<button type="button" id="objekt-reset" hidden>초기화</button>
 </div>
 </div>
 </form>
-<p id="objekt-result-summary" data-result-count="1" data-all-count="8" data-loaded="1">검색 결과 <strong>1</strong>개 <span>(전체 <span id="objekt-all-count">8</span>개 중 · <span id="objekt-loaded-count">1</span>개 표시)</span></p>
+<p id="objekt-result-summary" data-result-count="1" data-all-count="8" data-loaded="1">검색 결과 <strong>1</strong>개</p>
 <div id="objekt-empty" class="hidden">없음</div>
 <div id="objekt-card-grid"><article class="objekt-card objekt-item" data-objekt-key="first">초기카드</article></div>
 <div id="objekt-scroll-sentinel" data-has-more="false" data-next-page="1"><p id="objekt-scroll-status"></p><div id="objekt-scroll-spinner" class="hidden"></div></div>
@@ -84,7 +92,8 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
     const seasons=url.searchParams.getAll('season');
     const group=url.searchParams.get('group')||'all';
     const kind=url.searchParams.get('kind')||'all';
-    const label=members[0]||seasons[0]||(group==='other'?'other':kind!=='all'?kind:'filtered');
+    const search=url.searchParams.get('search')||'';
+    const label=search||members[0]||seasons[0]||(group==='other'?'other':kind!=='all'?kind:'filtered');
     const member=members[0]||'';
     return route.fulfill({contentType:'application/json',body:JSON.stringify({
       items:[{id:label,publicKey:label,collectionId:label+' 카드',member,memberLogo:member==='윤서연'?'/images/objekt-member-logos/s01.png':'',season:seasons[0]||'',class:'First',collectionNo:'1'}],
@@ -100,6 +109,7 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
   });
   await page.goto('https://filters.test/cosmo/objekt',{waitUntil:'load'});
   assert.equal(await page.locator('.objekt-kind-select').inputValue(),'전체');
+  assert.equal(await page.locator('#objekt-reset').isHidden(),true);
   await page.locator('.mpp-item').click();
   await page.waitForFunction(()=>document.querySelector('[data-objekt-key="윤서연"]'));
   assert.equal(await page.locator('#objekt-card-grid .objekt-item').count(),1);
@@ -119,6 +129,7 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
   await page.locator('.season-checkbox[value="Atom01"]').evaluate(el=>{el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}));});
   await page.waitForFunction(()=>document.querySelector('[data-objekt-key="Atom01"]'));
   assert.ok(moreCalls.some(call=>call.season==='Atom01'));
+  assert.equal(await page.locator('#objekt-reset').isHidden(),false);
   assert.equal(await page.locator('.objekt-card-season').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 221, 0)');
 
   moreCalls.length=0;
@@ -160,6 +171,14 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
   await lastMemberWait;
   assert.ok(moreCalls.some(call=>call.sort==='last_member'));
 
-  console.log('PASS: 멤버·그룹·시즌·종류 변경 시 검색 버튼 없이 결과 갱신');
+  moreCalls.length=0;
+  const searchWait=page.waitForResponse(res=>{try{const url=new URL(res.url());return url.pathname==='/cosmo/objekt/more'&&url.searchParams.get('search')==='서연';}catch{return false;}});
+  await page.locator('input[name="search"]').fill('서연');
+  await searchWait;
+  await page.waitForFunction(()=>document.querySelector('[data-objekt-key="서연"]'));
+  assert.ok(moreCalls.some(call=>call.search==='서연'));
+  assert.equal(await page.locator('[data-objekt-key="서연"]').count(),1);
+
+  console.log('PASS: 멤버·그룹·시즌·종류·검색어 변경 시 검색 버튼 없이 결과 갱신');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1)});

@@ -270,7 +270,7 @@
 .objekt-member-picker-panel:not(.is-collapsed) .mpp-toolbar { margin-bottom: .75rem; }
 .objekt-member-toggle {
     display: flex;
-    flex: 1 1 auto;
+    flex: 0 1 auto;
     min-width: 0;
     align-items: center;
     gap: .55rem;

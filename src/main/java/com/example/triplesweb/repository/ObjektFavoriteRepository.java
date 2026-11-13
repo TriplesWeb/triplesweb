@@ -12,4 +12,5 @@ public interface ObjektFavoriteRepository extends JpaRepository<ObjektFavorite, 
     boolean existsByVisitorKeyAndObjektKeyIn(String visitorKey, List<String> objektKeys);
     void deleteByVisitorKeyAndObjektKeyIn(String visitorKey, List<String> objektKeys);
     void deleteByVisitorKeyAndObjektKey(String visitorKey, String objektKey);
+    long countByVisitorKey(String visitorKey);
 }

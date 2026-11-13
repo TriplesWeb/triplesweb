@@ -14,16 +14,24 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Objekt 외부 API 어댑터.
@@ -37,20 +45,31 @@ public class ObjektService {
 
     private final RestClient restClient;
     private final ObjektCatalogStore catalogStore;
+    private final ObjektLiveSettings live;
+
+    public static final int DROP_ALERT_LIMIT = 8;
 
     private volatile List<Map<String, Object>> cachedCollections = List.of();
     private volatile Map<String, Map<String, Object>> byKey = Map.of();
+    private volatile Map<String, Integer> groupCounts = Map.of();
+    private volatile Map<String, List<Map<String, Object>>> groupsBySeasonNumber = Map.of();
+    private volatile Map<String, List<String>> numbersBySeason = Map.of();
     private volatile FilterFacets facets = FilterFacets.empty();
+    private volatile List<Map<String, Object>> newestDrops = List.of();
     private volatile long lastSuccessfulRefreshMillis;
+    private volatile String catalogSignature = "0:0";
+    private final AtomicBoolean refreshing = new AtomicBoolean(false);
 
     public ObjektService(
             @Value("${objekt.api.base-url:https://objekt.top/api/v1}")
             String baseUrl,
             @Value("${objekt.cache.read-timeout-ms:30000}")
             long readTimeoutMs,
-            ObjektCatalogStore catalogStore
+            ObjektCatalogStore catalogStore,
+            ObjektLiveSettings live
     ) {
         this.catalogStore = catalogStore;
+        this.live = live;
         // 카탈로그는 gzip 기준 ~1MB·수 초가 걸린다. 비압축이면 10MB+/30초를 넘긴다.
         this.restClient = GzipRestClients.create(
                 baseUrl,
@@ -90,15 +109,58 @@ public class ObjektService {
         return facets;
     }
 
+    public int catalogCount() {
+        return cachedCollections.size();
+    }
+
+    /** Same season+number cards, from the in-memory catalog index. */
+    public int groupCount(Map<String, Object> item) {
+        if (item == null) return 1;
+        String season = first(item, "season", "seasonKey").toLowerCase(Locale.ROOT);
+        String number = first(item, "collectionNo", "collectionNumber").toLowerCase(Locale.ROOT);
+        if (number.isBlank()) return 1;
+        Integer count = groupCounts.get(season + "|" + number);
+        return count == null || count < 1 ? 1 : count;
+    }
+
+    /** Same season+number cards. Empty when the pair is unknown. */
+    public List<Map<String, Object>> groupCards(String season, String collectionNo) {
+        if (season == null || collectionNo == null) return List.of();
+        String key = season.trim().toLowerCase(Locale.ROOT) + "|" + collectionNo.trim().toLowerCase(Locale.ROOT);
+        if (key.startsWith("|") || key.endsWith("|")) return List.of();
+        return groupsBySeasonNumber.getOrDefault(key, List.of());
+    }
+
+    /** Distinct collection numbers in a season, case-insensitive sorted. */
+    public List<String> seasonCollectionNumbers(String season) {
+        if (season == null || season.isBlank()) return List.of();
+        return numbersBySeason.getOrDefault(season.trim().toLowerCase(Locale.ROOT), List.of());
+    }
+
+    public String catalogSignature() {
+        return catalogSignature;
+    }
+
+    /** 시즌+번호 드롭 알림. install() 때 미리 계산한다. */
+    public List<Map<String, Object>> newestDrops() {
+        return newestDrops;
+    }
+
     /**
-     * 기본 1분 간격으로 캐시를 갱신한다.
-     * 최초 적재 실패도 예외를 페이지 요청으로 전파하지 않고 다음 주기에 재시도한다.
+     * 평소 1분, 드롭 창(10시–자정)에는 더 자주 외부 카탈로그를 본다.
+     * 화면용 스냅샷이 같으면 DB를 다시 쓰지 않는다.
      */
     @Scheduled(
-            fixedDelayString = "${objekt.cache.refresh-ms:60000}",
+            fixedDelayString = "${objekt.live.tick-ms:15000}",
             initialDelayString = "${objekt.cache.initial-delay-ms:0}"
     )
-    public synchronized void refreshCache() {
+    void refreshCacheIfDue() {
+        if (live != null && !live.due(lastSuccessfulRefreshMillis)) return;
+        refreshCache();
+    }
+
+    public void refreshCache() {
+        if (!refreshing.compareAndSet(false, true)) return;
         try {
             JsonNode response = restClient.get()
                     .uri(uriBuilder -> uriBuilder
@@ -134,12 +196,18 @@ public class ObjektService {
                 }
             }
             List<ObjektCatalog> rows = new ArrayList<>(unique.values());
-            // DB는 다음 시작 시 복구할 스냅샷으로만 저장한다. 갱신 직후 다시
-            // SELECT 하지 않고, 이미 받은 API 응답으로 메모리 캐시를 교체한다.
-            catalogStore.replace("triples", rows);
-            install(rows.stream().map(ObjektCatalogDto::toView).toList());
-            lastSuccessfulRefreshMillis = System.currentTimeMillis();
-
+            List<Map<String, Object>> views = rows.stream().map(ObjektCatalogDto::toView).toList();
+            synchronized (this) {
+                if (views.equals(cachedCollections) && !cachedCollections.isEmpty()) {
+                    lastSuccessfulRefreshMillis = System.currentTimeMillis();
+                    return;
+                }
+                // DB는 다음 시작 시 복구할 스냅샷으로만 저장한다. 갱신 직후 다시
+                // SELECT 하지 않고, 이미 받은 API 응답으로 메모리 캐시를 교체한다.
+                catalogStore.replace("triples", rows);
+                install(views);
+                lastSuccessfulRefreshMillis = System.currentTimeMillis();
+            }
             log.info("Objekt 카탈로그 저장 완료: {}개", cachedCollections.size());
 
         } catch (RuntimeException ex) {
@@ -149,6 +217,8 @@ public class ObjektService {
                     "Objekt 캐시 갱신 실패. 기존 캐시를 유지하고 다음 주기에 재시도합니다: {}",
                     detail(ex)
             );
+        } finally {
+            refreshing.set(false);
         }
     }
 
@@ -160,7 +230,159 @@ public class ObjektService {
         List<Map<String, Object>> snapshot = views == null ? List.of() : List.copyOf(views);
         cachedCollections = snapshot;
         byKey = buildIndex(snapshot);
+        GroupIndex groupIndex = buildGroupIndex(snapshot);
+        groupCounts = groupIndex.counts();
+        groupsBySeasonNumber = groupIndex.cards();
+        numbersBySeason = groupIndex.numbersBySeason();
         facets = FilterFacets.from(snapshot);
+        catalogSignature = signature(snapshot);
+        newestDrops = dropAlerts(snapshot);
+    }
+
+    static Map<String, Integer> buildGroupCounts(List<Map<String, Object>> views) {
+        return buildGroupIndex(views).counts();
+    }
+
+    private record GroupIndex(
+            Map<String, Integer> counts,
+            Map<String, List<Map<String, Object>>> cards,
+            Map<String, List<String>> numbersBySeason
+    ) {}
+
+    static GroupIndex buildGroupIndex(List<Map<String, Object>> views) {
+        if (views == null || views.isEmpty()) {
+            return new GroupIndex(Map.of(), Map.of(), Map.of());
+        }
+        Map<String, Integer> counts = new HashMap<>();
+        Map<String, List<Map<String, Object>>> cards = new LinkedHashMap<>();
+        Map<String, LinkedHashSet<String>> numbers = new LinkedHashMap<>();
+        for (Map<String, Object> item : views) {
+            String season = first(item, "season", "seasonKey");
+            String number = first(item, "collectionNo", "collectionNumber");
+            if (number.isBlank()) continue;
+            String seasonKey = season.toLowerCase(Locale.ROOT);
+            String numberKey = number.toLowerCase(Locale.ROOT);
+            String pair = seasonKey + "|" + numberKey;
+            counts.merge(pair, 1, Integer::sum);
+            cards.computeIfAbsent(pair, ignored -> new ArrayList<>()).add(item);
+            if (!seasonKey.isBlank()) {
+                numbers.computeIfAbsent(seasonKey, ignored -> new LinkedHashSet<>()).add(number);
+            }
+        }
+        Map<String, List<Map<String, Object>>> frozenCards = new HashMap<>();
+        for (Map.Entry<String, List<Map<String, Object>>> entry : cards.entrySet()) {
+            frozenCards.put(entry.getKey(), List.copyOf(entry.getValue()));
+        }
+        Map<String, List<String>> frozenNumbers = new HashMap<>();
+        for (Map.Entry<String, LinkedHashSet<String>> entry : numbers.entrySet()) {
+            List<String> sorted = new ArrayList<>(entry.getValue());
+            sorted.sort(String.CASE_INSENSITIVE_ORDER);
+            frozenNumbers.put(entry.getKey(), List.copyOf(sorted));
+        }
+        return new GroupIndex(Map.copyOf(counts), Map.copyOf(frozenCards), Map.copyOf(frozenNumbers));
+    }
+
+    /**
+     * 같은 시즌+번호를 한 줄로 묶고, 첫 멤버 민팅 시각을 드롭 시각으로 쓴다.
+     * 최신 그룹 최대 {@link #DROP_ALERT_LIMIT}개.
+     */
+    static List<Map<String, Object>> dropAlerts(List<Map<String, Object>> views) {
+        if (views == null || views.isEmpty()) return List.of();
+        Map<String, DropGroup> groups = new LinkedHashMap<>();
+        for (Map<String, Object> item : views) {
+            String season = first(item, "season", "seasonKey");
+            String number = first(item, "collectionNo", "collectionNumber");
+            if (number.isBlank()) continue;
+            String key = season.toLowerCase(Locale.ROOT) + "|" + number.toLowerCase(Locale.ROOT);
+            String at = createdAt(item);
+            DropGroup existing = groups.get(key);
+            if (existing == null || compareCreated(at, existing.createdAt) < 0) {
+                groups.put(key, new DropGroup(season, number, at, item));
+            }
+        }
+        return groups.values().stream()
+                .sorted(Comparator.comparing((DropGroup group) -> group.createdAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(DROP_ALERT_LIMIT)
+                .map(DropGroup::toRow)
+                .toList();
+    }
+
+    private record DropGroup(String season, String number, String createdAt, Map<String, Object> item) {
+        Map<String, Object> toRow() {
+            Map<String, Object> row = new LinkedHashMap<>();
+            String label = (season == null || season.isBlank() ? number : season + " " + number) + " 드롭";
+            row.put("label", label);
+            String seasonFilter = first(item, "seasonKey", "season");
+            row.put("href", "/cosmo/objekt?"
+                    + (seasonFilter.isBlank() ? "" : "season=" + encode(seasonFilter) + "&")
+                    + "kind=" + encode(number));
+            row.put("collectionId", first(item, "collectionId", "slug"));
+            row.put("createdAt", createdAt == null ? "" : createdAt);
+            return row;
+        }
+    }
+
+    private static String createdAt(Map<String, Object> item) {
+        for (String key : List.of("createdAt", "created_at", "date")) {
+            Object value = item.get(key);
+            if (value != null && !value.toString().isBlank() && !"null".equalsIgnoreCase(value.toString())) {
+                return value.toString();
+            }
+        }
+        return null;
+    }
+
+    private static int compareCreated(String left, String right) {
+        if (left == null && right == null) return 0;
+        if (left == null) return 1;
+        if (right == null) return -1;
+        return left.compareTo(right);
+    }
+
+    private static String first(Map<String, Object> item, String... keys) {
+        if (item == null) return "";
+        for (String key : keys) {
+            Object value = item.get(key);
+            if (value != null && !value.toString().isBlank() && !"null".equalsIgnoreCase(value.toString())) {
+                return value.toString().trim();
+            }
+        }
+        return "";
+    }
+
+    private static String encode(String value) {
+        return URLEncoder.encode(value == null ? "" : value, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
+    static String signature(List<Map<String, Object>> views) {
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 is unavailable", ex);
+        }
+        updateDigest(digest, Integer.toString(views.size()));
+        for (Map<String, Object> item : views) {
+            // 맵의 반복 순서와 관계없이 화면에 제공하는 모든 필드의 변경을 반영한다.
+            Map<String, Object> ordered = new TreeMap<>(item);
+            updateDigest(digest, Integer.toString(ordered.size()));
+            ordered.forEach((key, value) -> {
+                updateDigest(digest, key);
+                updateDigest(digest, String.valueOf(value));
+            });
+        }
+        return views.size() + ":" + HexFormat.of().formatHex(digest.digest());
+    }
+
+    private static void updateDigest(MessageDigest digest, String value) {
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        int length = bytes.length;
+        digest.update((byte) (length >>> 24));
+        digest.update((byte) (length >>> 16));
+        digest.update((byte) (length >>> 8));
+        digest.update((byte) length);
+        digest.update(bytes);
     }
 
     private static Map<String, Map<String, Object>> buildIndex(List<Map<String, Object>> views) {

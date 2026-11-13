@@ -67,7 +67,7 @@
             <div class="objekt-filter-bar collection-filter-bar relative">
                 <div class="objekt-filter relative" id="collection-season-dropdown">
                     <span class="objekt-filter-label">시즌</span>
-                    <button type="button" class="objekt-filter-control" id="collection-season-toggle" aria-expanded="false" aria-controls="collection-season-menu">
+                    <button type="button" class="objekt-filter-control" id="collection-season-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="collection-season-menu">
                         <span id="collection-season-label" class="truncate">전체</span>
                         <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                     </button>
@@ -88,7 +88,7 @@
                 </div>
                 <div class="objekt-filter relative" id="collection-class-dropdown">
                     <span class="objekt-filter-label">클래스</span>
-                    <button type="button" class="objekt-filter-control" id="collection-class-toggle" aria-expanded="false" aria-controls="collection-class-menu">
+                    <button type="button" class="objekt-filter-control" id="collection-class-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="collection-class-menu">
                         <span id="collection-class-label" class="truncate">전체</span>
                         <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                     </button>
@@ -123,7 +123,7 @@
                                aria-autocomplete="list"
                                aria-label="옵젝 종류 필터 (입력 또는 선택)">
                         <button type="button" class="objekt-kind-toggle" id="collection-kind-toggle" aria-label="종류 목록 열기" tabindex="-1">
-                            <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
+                            <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                         </button>
                     </div>
                     <div id="collection-kind-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 min-w-[9rem] max-h-60 overflow-y-auto rounded-xl border z-50 p-1.5" hidden role="listbox" aria-label="종류 목록">
@@ -152,18 +152,6 @@
                     </div>
                 </div>
                 <div class="objekt-search-row">
-                    <div class="objekt-cols-control" id="collection-cols-dropdown" data-objekt-cols-filter>
-                        <button type="button" class="objekt-cols-toggle" data-objekt-cols-toggle aria-label="열 수" aria-expanded="false" aria-haspopup="listbox" aria-controls="collection-cols-menu">
-                            <span class="objekt-cols-icon" aria-hidden="true"><span></span><span></span><span></span></span>
-                            <span class="objekt-cols-sr" data-objekt-cols-label>2열</span>
-                        </button>
-                        <div id="collection-cols-menu" class="objekt-dropdown-menu absolute top-full left-0 mt-2 rounded-xl border z-50 p-1.5" data-objekt-cols-menu hidden role="listbox" aria-label="열 수">
-                            <button type="button" class="objekt-kind-option" data-objekt-cols-option="2" role="option">2열</button>
-                            <button type="button" class="objekt-kind-option" data-objekt-cols-option="3" role="option">3열</button>
-                            <button type="button" class="objekt-kind-option" data-objekt-cols-option="4" role="option">4열</button>
-                            <button type="button" class="objekt-kind-option" data-objekt-cols-option="5" role="option">5열</button>
-                        </div>
-                    </div>
                     <div class="objekt-search site-search">
                         <label class="w-full min-w-0">
                             <input type="search" name="q" value="{{searchQuery}}" placeholder="전체 오브젝트에서 검색..." aria-label="보유 오브젝트 검색" autocomplete="off" class="objekt-search-input site-search__input">
@@ -181,6 +169,23 @@
             </div>
         </form>
     </section>
+    <div class="objekt-result-bar collection-result-bar">
+        <div class="objekt-cols-control" id="collection-cols-dropdown" data-objekt-cols-filter>
+            <button type="button" class="objekt-cols-toggle" data-objekt-cols-toggle aria-label="열 수" aria-expanded="false" aria-haspopup="listbox" aria-controls="collection-cols-menu">
+                <span class="objekt-cols-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+                <span class="objekt-cols-sr" data-objekt-cols-label>2열</span>
+            </button>
+            <div id="collection-cols-menu" class="objekt-dropdown-menu absolute top-full right-0 mt-2 rounded-xl border z-50 p-1.5" data-objekt-cols-menu hidden role="listbox" aria-label="열 수">
+                <button type="button" class="objekt-kind-option" data-objekt-cols-option="2" role="option">2열</button>
+                <button type="button" class="objekt-kind-option" data-objekt-cols-option="3" role="option">3열</button>
+                <button type="button" class="objekt-kind-option" data-objekt-cols-option="4" role="option">4열</button>
+                <button type="button" class="objekt-kind-option" data-objekt-cols-option="5" role="option">5열</button>
+                <button type="button" class="objekt-kind-option" data-objekt-cols-option="6" role="option">6열</button>
+                <button type="button" class="objekt-kind-option" data-objekt-cols-option="7" role="option">7열</button>
+                <button type="button" class="objekt-kind-option" data-objekt-cols-option="8" role="option">8열</button>
+            </div>
+        </div>
+    </div>
     <section class="ar-grid collection-grid" id="collection-grid" aria-label="보유 오브젝트"
              data-objekt-grid data-cols="2"
              data-loaded="{{loadedCount}}" data-filtered="{{filteredCount}}" data-owned="{{ownedCount}}">

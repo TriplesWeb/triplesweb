@@ -1,6 +1,26 @@
 (() => {
   const STORAGE_KEY = 'triples-objekt-cols';
-  const ALLOWED = new Set(['2', '3', '4', '5']);
+  const MOBILE_MQ = '(max-width: 767px)';
+
+  function isMobile() {
+    return window.matchMedia(MOBILE_MQ).matches;
+  }
+
+  function maxCols() {
+    return isMobile() ? 4 : 8;
+  }
+
+  function defaultCols() {
+    return isMobile() ? '2' : '5';
+  }
+
+  function clampCols(value) {
+    const n = Number.parseInt(String(value || ''), 10);
+    if (!Number.isFinite(n)) return defaultCols();
+    const max = maxCols();
+    const min = 2;
+    return String(Math.min(max, Math.max(min, n)));
+  }
 
   function isClosed(menu) {
     if (!menu) return true;
@@ -41,27 +61,40 @@
   function readCols() {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (ALLOWED.has(stored)) return stored;
+      if (stored != null) return clampCols(stored);
     } catch (_) { /* ignore quota / private mode */ }
-    return '2';
+    return defaultCols();
   }
 
   function writeCols(value) {
     try { localStorage.setItem(STORAGE_KEY, value); } catch (_) { /* ignore */ }
   }
 
+  function syncOptionVisibility() {
+    const max = maxCols();
+    document.querySelectorAll('[data-objekt-cols-option]').forEach((btn) => {
+      const value = Number.parseInt(btn.getAttribute('data-objekt-cols-option') || '', 10);
+      const allowed = Number.isFinite(value) && value >= 2 && value <= max;
+      btn.hidden = !allowed;
+      btn.toggleAttribute('hidden', !allowed);
+    });
+  }
+
   function apply(cols) {
+    const next = clampCols(cols);
     document.querySelectorAll('[data-objekt-grid]').forEach((grid) => {
-      grid.setAttribute('data-cols', cols);
+      grid.setAttribute('data-cols', next);
     });
     document.querySelectorAll('[data-objekt-cols-label]').forEach((el) => {
-      el.textContent = cols + '열';
+      el.textContent = next + '열';
     });
     document.querySelectorAll('[data-objekt-cols-option]').forEach((btn) => {
-      const on = btn.getAttribute('data-objekt-cols-option') === cols;
+      const on = btn.getAttribute('data-objekt-cols-option') === next;
       btn.classList.toggle('is-active', on);
       btn.setAttribute('aria-selected', on ? 'true' : 'false');
     });
+    syncOptionVisibility();
+    return next;
   }
 
   function init() {
@@ -82,10 +115,11 @@
       btn.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
-        const value = btn.getAttribute('data-objekt-cols-option');
-        if (!ALLOWED.has(value)) return;
-        writeCols(value);
-        apply(value);
+        const raw = Number.parseInt(btn.getAttribute('data-objekt-cols-option') || '', 10);
+        if (!Number.isFinite(raw) || raw < 2 || raw > maxCols()) return;
+        const next = String(raw);
+        writeCols(next);
+        apply(next);
         closeAll();
       });
     });
@@ -95,6 +129,11 @@
         document.querySelectorAll('[data-objekt-cols-menu]').forEach((menu) => setOpen(menu, false));
       }
     });
+
+    const mq = window.matchMedia(MOBILE_MQ);
+    const onViewportChange = () => apply(readCols());
+    if (typeof mq.addEventListener === 'function') mq.addEventListener('change', onViewportChange);
+    else if (typeof mq.addListener === 'function') mq.addListener(onViewportChange);
   }
 
   if (document.readyState === 'loading') {

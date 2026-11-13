@@ -12,6 +12,23 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ObjektDescriptionKeysTest {
+    @org.junit.jupiter.api.AfterEach
+    void resetRuntime() {
+        ObjektDescriptionKeys.clearRuntime();
+    }
+
+    @Test
+    void runtimeMemberSpecificCanBeClearedUnlikeJsonExceptions() {
+        assertTrue(ObjektDescriptionKeys.jsonException("Cream02", "335A"));
+        assertFalse(ObjektDescriptionKeys.jsonException("Cream02", "323"));
+        ObjektDescriptionKeys.markMemberSpecific("Cream02", "323");
+        assertTrue(ObjektDescriptionKeys.memberSpecific("Cream02", "323"));
+        ObjektDescriptionKeys.clearMemberSpecific("Cream02", "323");
+        assertFalse(ObjektDescriptionKeys.memberSpecific("Cream02", "323"));
+        ObjektDescriptionKeys.clearMemberSpecific("Cream02", "335A");
+        assertTrue(ObjektDescriptionKeys.memberSpecific("Cream02", "335A"));
+    }
+
     @Test
     void keepsSharedKeyUnlessTheSeasonAndNumberAreMemberSpecific() {
         assertEquals(50, ObjektDescriptionKeys.members().stream()

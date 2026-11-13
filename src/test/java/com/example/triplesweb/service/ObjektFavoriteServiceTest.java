@@ -49,4 +49,16 @@ class ObjektFavoriteServiceTest {
         service.remove("gone", "uuid");
         assertThat(service.contains("gone", item)).isFalse();
     }
+
+    @Test void countIsPerVisitor() {
+        service.set("one", item, true);
+        service.set("two", Map.of("id", "other", "slug", "other", "collectionId", "Other"), true);
+        assertThat(service.count("one")).isEqualTo(1);
+        assertThat(service.count("two")).isEqualTo(1);
+        assertThat(service.count("missing")).isEqualTo(0);
+        assertThat(service.count("")).isEqualTo(0);
+        service.set("one", item, false);
+        assertThat(service.count("one")).isEqualTo(0);
+        assertThat(service.count("two")).isEqualTo(1);
+    }
 }

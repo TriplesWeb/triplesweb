@@ -46,6 +46,27 @@ public final class ObjektDescriptionKeys {
         RUNTIME.add(key);
     }
 
+    /** JSON 예외가 아닌 런타임 묶음만 다시 공통 키로 돌린다. */
+    public static void clearMemberSpecific(String season, String collectionNo) {
+        RUNTIME.remove(pair(season, collectionNo));
+    }
+
+    public static boolean jsonException(String season, String collectionNo) {
+        return EXCEPTIONS.contains(pair(season, collectionNo));
+    }
+
+    public static String season(Map<String, Object> item) {
+        return text(item, "season");
+    }
+
+    public static String collectionNo(Map<String, Object> item) {
+        return text(item, "collectionNo", "collectionNumber");
+    }
+
+    public static boolean canGroup(Map<String, Object> item) {
+        return !season(item).isEmpty() && !collectionNo(item).isEmpty();
+    }
+
     public static void clearRuntime() {
         RUNTIME.clear();
     }
@@ -122,7 +143,7 @@ public final class ObjektDescriptionKeys {
     }
 
     /** 화면 이름은 한글이라 키가 비면 슬러그 {@code season-member-number}에서 멤버를 꺼낸다. */
-    private static String memberOf(Map<String, Object> item) {
+    public static String memberOf(Map<String, Object> item) {
         String named = memberToken(text(item, "member", "memberName"));
         if (!named.isEmpty()) return named;
         String slug = normalize(text(item, "slug"));

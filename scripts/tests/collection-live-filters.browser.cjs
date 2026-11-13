@@ -34,7 +34,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
   <div class="objekt-filter-bar collection-filter-bar relative">
     <div class="objekt-filter relative" id="collection-season-dropdown">
       <span class="objekt-filter-label">시즌</span>
-      <button type="button" class="objekt-filter-control" id="collection-season-toggle" aria-expanded="false" aria-controls="collection-season-menu">
+      <button type="button" class="objekt-filter-control" id="collection-season-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="collection-season-menu">
         <span id="collection-season-label" class="truncate">전체</span>
       </button>
       <div id="collection-season-menu" class="objekt-dropdown-menu" hidden>
@@ -44,7 +44,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
     </div>
     <div class="objekt-filter relative" id="collection-class-dropdown">
       <span class="objekt-filter-label">클래스</span>
-      <button type="button" class="objekt-filter-control" id="collection-class-toggle" aria-expanded="false" aria-controls="collection-class-menu">
+      <button type="button" class="objekt-filter-control" id="collection-class-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="collection-class-menu">
         <span id="collection-class-label" class="truncate">전체</span>
       </button>
       <div id="collection-class-menu" class="objekt-dropdown-menu" hidden>

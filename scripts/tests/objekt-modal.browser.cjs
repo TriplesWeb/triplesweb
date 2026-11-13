@@ -7,10 +7,38 @@ const base = path.resolve(__dirname, '../..');
   const browser = await chromium.launch({headless:true, executablePath:process.env.CHROMIUM_PATH || (fs.existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined), args:['--no-sandbox']});
   try {
     const page = await browser.newPage({viewport:{width:1280,height:1000}});
-    let favorite=false, favoriteAttempts=0;
+    let favorite=false, favoriteCount=2, favoriteAttempts=0, suppliesHits=0, lookupHits=0;
     let isAdmin = true, description = '기존 설명', writes = [], failMore = true, apolloStory = null;
-    const data = () => ({isFavorite:favorite,objektKey:'hayeoncc367z',collectionId:'Cream02 HaYeon 367Z',member:'HaYeon',season:'Cream02',class:'Special',collectionNo:'367Z',description,isAdmin,
+    let mintCount = null, issuedStatus = 'available';
+    let selectedMembers = ['hayeon'];
+    let selectedNumbers = ['367Z'];
+    const shareMembers = [
+      {token:'hayeon', label:'HaYeon', current:true},
+      {token:'seoyeon', label:'SeoYeon', current:false},
+      {token:'jiwoo', label:'JiWoo', current:false}
+    ];
+    const seasonNumbers = ['367Z', '368Z'];
+    let unlockDetail=()=>{};
+    let detailBarrier=Promise.resolve();
+    const descriptionPayload = () => ({
+      descriptionScope: selectedMembers.length >= shareMembers.length ? 'group' : 'member',
+      descriptionGroupLabel:'Cream02 367Z',
+      descriptionGroupCount:24,
+      descriptionMember:'hayeon',
+      descriptionNumber:'367Z',
+      descriptionSeason:'Cream02',
+      descriptionShareMembers: shareMembers.map((row) => ({
+        ...row,
+        selected: selectedMembers.includes(row.token)
+      })),
+      descriptionSeasonNumbers: seasonNumbers,
+      descriptionSelectedMembers: selectedMembers.slice(),
+      descriptionSelectedNumbers: selectedNumbers.slice()
+    });
+    const data = () => ({isFavorite:favorite,favoriteCount,objektKey:'hayeoncc367z',collectionId:'Cream02 HaYeon 367Z',member:'HaYeon',season:'Cream02',class:'Special',collectionNo:'367Z',description,isAdmin,
       detailUrl:'/cosmo/objekt/detail/hayeoncc367z',memberUrl:'/cosmo/objekt?group=members&member=HaYeon',tradeUrl:'/article/trade/new?selectedObjektIds=uuid',sellUrl:'/article/sell/new?selectedObjektIds=uuid',descriptionUrl:'/cosmo/objekt/detail/hayeoncc367z/description',
+      ...descriptionPayload(),
+      ...(Number.isFinite(mintCount) ? {mintCount} : {}),
       ...(apolloStory ? {apollo: apolloStory} : {})});
     await page.context().addCookies([{name:'XSRF-TOKEN',value:'test-csrf',domain:'preview.test',path:'/'}]);
     await page.route('**/*', async route => {
@@ -23,22 +51,37 @@ const base = path.resolve(__dirname, '../..');
         if(favoriteAttempts===1)return route.fulfill({status:403,body:'{}',contentType:'application/json'});
         if(favoriteAttempts===4)return route.fulfill({status:503,body:'{}',contentType:'application/json'});
         favorite=(url.searchParams.get('favorite') || new URLSearchParams(req.postData()).get('favorite'))==='true';
-        return json({favorite});
+        favoriteCount = favorite ? favoriteCount + 1 : Math.max(0, favoriteCount - 1);
+        return json({favorite, favoriteCount});
       }
       if(p.endsWith('/description') && req.method()==='POST') {
         assert.equal(req.headers()['x-xsrf-token'],'test-csrf');
-        description=new URLSearchParams(req.postData()).get('description'); writes.push(description);
-        return json({description});
+        const params=new URLSearchParams(req.postData());
+        description=params.get('description');
+        const members=params.getAll('members');
+        const numbers=params.getAll('numbers');
+        writes.push({description,members,numbers});
+        if(members.length) selectedMembers=members;
+        if(numbers.length) selectedNumbers=numbers;
+        return json({description, ...descriptionPayload()});
       }
       if(p.endsWith('/lookup')) {
+        lookupHits++;
         const next=url.searchParams.get('page')==='1';
         if(next&&failMore){failMore=false;return route.fulfill({status:503,body:'{}',contentType:'application/json'});}
         const transfers=Array.from({length:next?1:20},(_,i)=>({timestamp:`2026-10-${next?'01':'26'}T10:00:00Z`,nickname:i===0?'Current':'Previous'}));
         return json({status:'available',serial:1,page:next?1:0,total:21,hasNext:!next,owner:{status:'indexed',nickname:'Current',timestamp:'2026-10-26T10:00:00Z',basis:'latest_transfer'},transfers});
       }
-      if(p.endsWith('/issued'))return json({status:'available',count:4,ranges:[{first:1,last:2},{first:4,last:5}],hasMore:false,nextOffset:2,observedAt:'2026-10-29T00:00:00Z'});
-      if(p==='/cosmo/objekt/supplies')return json({hayeoncc367z:{status:'available',count:4,observedAt:'2026-10-29T00:00:00Z'}});
-      if(p.startsWith('/cosmo/objekt/detail/') && (req.headers().accept||'').includes('application/json')) return json(data());
+      if(p.endsWith('/issued')){
+        if(issuedStatus==='loading')return json({status:'loading'});
+        return json({status:'available',count:4,ranges:[{first:1,last:2},{first:4,last:5}],hasMore:false,nextOffset:2,observedAt:'2026-10-29T00:00:00Z'});
+      }
+      if(p==='/cosmo/objekt/supplies'){suppliesHits++;return json({hayeoncc367z:{status:'available',count:4,observedAt:'2026-10-29T00:00:00Z'}});}
+      if(p==='/cosmo/objekt/pulse')return json({catalogSig:'1:test',catalogCount:1,supplies:{hayeoncc367z:{status:'available',count:4}},dropWindow:false,pollMs:60000,forceRefreshMs:600000,historyTtlMs:30000});
+      if(p.startsWith('/cosmo/objekt/detail/') && (req.headers().accept||'').includes('application/json')) {
+        await detailBarrier;
+        return json(data());
+      }
       if(p==='/cosmo/objekt' || p==='/cosmo/objekt/detail/hayeoncc367z') {
         const file=p==='/cosmo/objekt'?'objekt-modal-preview.html':'objekt-detail-preview.html';
         return route.fulfill({contentType:'text/html',body:fs.readFileSync(path.join(base,'build',file),'utf8')});
@@ -51,8 +94,63 @@ const base = path.resolve(__dirname, '../..');
       return route.fulfill({status:404,body:''});
     });
     await page.goto('https://preview.test/cosmo/objekt');
+    const kindFonts = await page.evaluate(() => {
+      const kind = document.querySelector('.objekt-filter input.objekt-kind-select');
+      const other = document.querySelector('#class-dropdown .objekt-filter-control') || document.querySelector('.objekt-filter-control');
+      const kindStyle = getComputedStyle(kind), otherStyle = getComputedStyle(other);
+      return {kind: kindStyle.fontSize, other: otherStyle.fontSize, kindWeight: kindStyle.fontWeight, otherWeight: otherStyle.fontWeight};
+    });
+    assert.equal(kindFonts.kind, kindFonts.other);
+    assert.equal(kindFonts.kindWeight, kindFonts.otherWeight);
+    assert.equal(await page.locator('.objekt-modal-favorites-link').count(), 0);
+    detailBarrier = new Promise((resolve) => { unlockDetail = resolve; });
     await page.locator('.objekt-open-detail').first().click();
     await page.locator('#objektDetailTitle').filter({hasText:'Cream02 HaYeon 367Z'}).waitFor();
+    assert.equal(await page.locator('#objektDetailDesc').textContent(), '불러오는 중…');
+    unlockDetail();
+    detailBarrier = Promise.resolve();
+    await page.waitForFunction(()=>document.querySelector('#objektDetailFavorite')?.disabled===false);
+    assert.equal(await page.locator('.objekt-detail-heading #objektDetailFavorite').count(),1);
+    assert.equal(await page.locator('.objekt-detail-actions #objektDetailFavorite').count(),0);
+    const favLayout = await page.locator('#objektDetailFavorite').evaluate((el) => {
+      const icon = el.querySelector('.objekt-fav-icon');
+      const count = el.querySelector('.objekt-fav-count');
+      const iconBox = icon.getBoundingClientRect();
+      const countBox = count.getBoundingClientRect();
+      const style = getComputedStyle(el);
+      const countStyle = getComputedStyle(count);
+      return {
+        display: style.display,
+        countText: count.textContent,
+        countVisible: countStyle.display !== 'none' && countBox.width > 0,
+        countRightOfIcon: countBox.left >= iconBox.right - 1,
+        icon: icon.textContent
+      };
+    });
+    assert.match(favLayout.display, /flex/);
+    assert.equal(favLayout.countText, '2');
+    assert.equal(favLayout.countVisible, true);
+    assert.equal(favLayout.countRightOfIcon, true);
+    assert.equal(favLayout.icon, '♡');
+    const postRow = await page.locator('.objekt-detail-post-links').evaluate((el) => {
+      const nodes = [...el.children];
+      const boxes = nodes.map((node) => node.getBoundingClientRect());
+      const styles = nodes.map((node) => getComputedStyle(node));
+      return {
+        count: boxes.length,
+        aligned: Math.abs(boxes[0].top - boxes[1].top) < 8,
+        sameHeight: Math.abs(boxes[0].height - boxes[1].height) < 1,
+        display: styles.map((style) => style.display),
+        align: styles.map((style) => style.alignItems),
+        justify: styles.map((style) => style.justifyContent)
+      };
+    });
+    assert.equal(postRow.count, 2);
+    assert.equal(postRow.aligned, true);
+    assert.equal(postRow.sameHeight, true);
+    assert.deepEqual(postRow.display, ['flex', 'flex']);
+    assert.deepEqual(postRow.align, ['center', 'center']);
+    assert.deepEqual(postRow.justify, ['center', 'center']);
     const memberStyle = await page.locator('#objektDetailMember').evaluate((el) => {
       const style = getComputedStyle(el);
       return {color: style.color, textShadow: style.textShadow};
@@ -62,8 +160,11 @@ const base = path.resolve(__dirname, '../..');
     await page.locator('#objektDetailFavorite').click();
     await page.waitForFunction(()=>document.querySelector('#objektDetailFavorite').dataset.favorite==='true');
     assert.equal(favoriteAttempts,2);
+    assert.equal(await page.locator('#objektDetailFavoriteCount').textContent(), '3');
+    assert.equal(await page.locator('.objekt-fav-icon').textContent(), '♥');
     await page.locator('#objektDetailFavorite').click();
     await page.waitForFunction(()=>document.querySelector('#objektDetailFavorite').dataset.favorite==='false');
+    assert.equal(await page.locator('#objektDetailFavoriteCount').textContent(), '2');
     await page.locator('#objektDetailFavorite').click();
     await page.waitForFunction(()=>document.querySelector('#objektFavoriteStatus').textContent.includes('저장하지 못했습니다'));
     assert.equal(await page.locator('#objektDetailFavorite').getAttribute('data-favorite'),'false');
@@ -78,6 +179,22 @@ const base = path.resolve(__dirname, '../..');
     await page.locator('#objektDescriptionEdit').click();
     assert.equal(await page.locator('#objektDetailDesc').isVisible(),false);
     assert.equal(await page.locator('#objektModalDescription').inputValue(),'기존 설명');
+    assert.equal(await page.locator('#objektDescriptionScope').isVisible(),true);
+    assert.equal(await page.locator('input[name=descriptionMembers][value=hayeon]').isChecked(),true);
+    assert.equal(await page.locator('input[name=descriptionMembers][value=hayeon]').isDisabled(),true);
+    assert.equal(await page.locator('input[name=descriptionMembers][value=seoyeon]').isChecked(),false);
+    assert.equal(await page.locator('input[name=descriptionNumbers][value="367Z"]').isChecked(),true);
+    assert.match(await page.locator('#objektDescriptionScopeHint').textContent(), /이 멤버·이 번호에만/);
+    assert.equal(await page.locator('#objektDescriptionMembersSummary').textContent(), 'HaYeon');
+    await page.locator('#objektDescriptionMembersToggle').click();
+    await page.locator('[data-share-members=all]').click();
+    assert.equal(await page.locator('input[name=descriptionMembers][value=seoyeon]').isChecked(),true);
+    assert.equal(await page.locator('#objektDescriptionMembersSummary').textContent(), '전체 3명');
+    assert.match(await page.locator('#objektDescriptionScopeHint').textContent(), /멤버 3명/);
+    await page.locator('[data-share-members=current]').click();
+    assert.equal(await page.locator('input[name=descriptionMembers][value=seoyeon]').isChecked(),false);
+    assert.match(await page.locator('#objektDescriptionScopeHint').textContent(), /이 멤버·이 번호에만/);
+    await page.locator('[data-share-members=all]').click();
     await page.locator('#objektModalDescription').fill('<b>새 설명</b>');
     await page.locator('#objektDescriptionForm button[type=submit]').click();
     await page.waitForFunction(()=>document.querySelector('#objektDescriptionStatus').textContent.includes('저장했습니다'));
@@ -86,14 +203,56 @@ const base = path.resolve(__dirname, '../..');
     assert.equal(await page.locator('#objektDetailDesc').textContent(),'<b>새 설명</b>');
     assert.equal(await page.locator('#objektDetailDesc b').count(),0);
     await page.locator('#objektDescriptionEdit').click();
+    assert.equal(await page.locator('input[name=descriptionMembers][value=seoyeon]').isChecked(),true);
+    assert.equal(await page.locator('#objektDescriptionMembersSummary').textContent(), '전체 3명');
+    await page.locator('#objektDescriptionMembersToggle').click();
+    await page.locator('[data-share-members=current]').click();
+    await page.locator('#objektModalDescription').fill('이 카드만');
+    await page.locator('#objektDescriptionForm button[type=submit]').click();
+    await page.waitForFunction(()=>document.querySelector('#objektDescriptionStatus').textContent.includes('저장했습니다'));
+    assert.equal(await page.locator('#objektDetailDesc').textContent(),'이 카드만');
+    await page.locator('#objektDescriptionEdit').click();
+    assert.equal(await page.locator('input[name=descriptionMembers][value=hayeon]').isChecked(),true);
+    assert.equal(await page.locator('input[name=descriptionMembers][value=seoyeon]').isChecked(),false);
+    assert.equal(await page.locator('#objektDescriptionMembersSummary').textContent(), 'HaYeon');
     page.once('dialog',dialog=>dialog.accept()); await page.locator('#objektDescriptionDelete').click();
     await page.waitForFunction(()=>document.querySelector('#objektDescriptionStatus').textContent.includes('삭제했습니다'));
     assert.equal(await page.locator('#objektDescriptionForm').isVisible(),false);
-    assert.deepEqual(writes,['<b>새 설명</b>','']);
+    assert.deepEqual(writes,[
+      {description:'<b>새 설명</b>',members:['hayeon','seoyeon','jiwoo'],numbers:['367Z']},
+      {description:'이 카드만',members:['hayeon'],numbers:['367Z']},
+      {description:'',members:['hayeon'],numbers:['367Z']}
+    ]);
     fs.mkdirSync('/tmp/objekt-ui',{recursive:true});
     await page.screenshot({path:'/tmp/objekt-ui/modal-desktop.png',fullPage:true});
     await page.setViewportSize({width:390,height:844});
     assert.equal(await page.locator('.objekt-detail-panel').evaluate(node=>node.getBoundingClientRect().right<=innerWidth),true);
+    const mobileKindFonts = await page.evaluate(() => {
+      const kind = document.querySelector('.objekt-filter input.objekt-kind-select');
+      const other = document.querySelector('#class-dropdown .objekt-filter-control') || document.querySelector('.objekt-filter-control');
+      const kindStyle = getComputedStyle(kind), otherStyle = getComputedStyle(other);
+      return {kind: kindStyle.fontSize, other: otherStyle.fontSize, kindWeight: kindStyle.fontWeight, otherWeight: otherStyle.fontWeight};
+    });
+    assert.equal(mobileKindFonts.kind, mobileKindFonts.other);
+    assert.equal(mobileKindFonts.kindWeight, mobileKindFonts.otherWeight);
+    const mobilePosts = await page.locator('.objekt-detail-post-links').evaluate((el) => {
+      const boxes = [...el.children].map((node) => node.getBoundingClientRect());
+      return {aligned: Math.abs(boxes[0].top - boxes[1].top) < 8, sameHeight: Math.abs(boxes[0].height - boxes[1].height) < 1};
+    });
+    assert.equal(mobilePosts.aligned, true);
+    assert.equal(mobilePosts.sameHeight, true);
+    const mobileFav = await page.locator('#objektDetailFavorite').evaluate((el) => {
+      const count = el.querySelector('.objekt-fav-count');
+      const box = el.getBoundingClientRect();
+      return {
+        countDisplay: getComputedStyle(count).display,
+        width: Math.round(box.width),
+        height: Math.round(box.height)
+      };
+    });
+    assert.equal(mobileFav.countDisplay, 'none');
+    assert.ok(mobileFav.width <= 36, '모바일 찜 버튼 너비: ' + mobileFav.width);
+    assert.ok(mobileFav.height <= 36, '모바일 찜 버튼 높이: ' + mobileFav.height);
     await page.screenshot({path:'/tmp/objekt-ui/modal-mobile.png',fullPage:true});
     await page.locator('#objektDetailClose').click(); isAdmin=false;
     await page.locator('.objekt-open-detail').first().click();
@@ -102,8 +261,12 @@ const base = path.resolve(__dirname, '../..');
     assert.equal(await page.locator('#objektDescriptionForm').isVisible(),false);
     // 소유자 조회·전송 내역은 별도 페이지가 아니라 같은 모달 안에 존재한다.
     assert.equal(await page.locator('[data-serial-lookup]').count(),1);
+    for (let i=0;i<40 && lookupHits<1;i++) await page.waitForTimeout(50);
+    const lookupAfterOpen=lookupHits;
+    assert.ok(lookupAfterOpen>=1, '시리얼 1 프리페치');
     await page.locator('[data-serial-lookup] button').click();
     await page.locator('.serial-owner-name').filter({hasText:'Current'}).waitFor();
+    assert.equal(lookupHits, lookupAfterOpen);
     assert.equal(await page.locator('[data-serial-rows] li').count(),20);
     await page.locator('[data-serial-more]').click();
     await page.waitForFunction(()=>document.querySelector('[data-serial-status]').textContent.includes('불러오지 못했습니다'));
@@ -173,12 +336,22 @@ const base = path.resolve(__dirname, '../..');
     await page.waitForFunction(()=>document.querySelector('#objektDetailDesc')?.textContent.includes('byteS'));
     assert.equal(await page.locator('#objektDescriptionEdit').isVisible(),false);
     await page.locator('#objektDetailClose').click();
+    const suppliesBefore=suppliesHits;
     await page.evaluate(()=>{
       const original=document.querySelector('.objekt-card[data-objekt-key]');
       for(let i=0;i<49;i++){const card=original.cloneNode(true);delete card.dataset.supplyDone;delete card.dataset.supplyTries;original.parentElement.append(card);}
       window.ObjektIssued.hydrate();
     });
+    await page.waitForTimeout(400);
+    assert.equal(suppliesHits,suppliesBefore,'그리드 hydrate는 /supplies를 부르지 않는다');
+    await page.evaluate(()=>window.ObjektIssued.applyLive({hayeoncc367z:{status:'available',count:4}}));
     await page.waitForFunction(()=>document.querySelectorAll('.objekt-card[data-supply-done="true"]').length===50);
+    mintCount = 90;
+    issuedStatus = 'loading';
+    await page.locator('.objekt-open-detail').first().click();
+    await page.waitForFunction(()=>document.querySelector('#objektIssuedCount')?.textContent==='90개');
+    await page.waitForTimeout(400);
+    assert.equal(await page.locator('#objektIssuedCount').textContent(),'90개');
     console.log('PASS: 모달 설명 저장·삭제·CSRF, 비관리자 숨김, 선택 유지 링크, 통합 시리얼 조회와 실패 후 이어받기');
   } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1)});

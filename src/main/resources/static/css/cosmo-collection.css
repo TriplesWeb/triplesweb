@@ -126,10 +126,10 @@
     padding: 0 !important;
     color: #e8ebf2 !important;
     font-family: var(--font-sans, "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif) !important;
-    font-size: .82rem;
-    font-weight: 650;
+    font-size: .82rem !important;
+    font-weight: 600 !important;
     letter-spacing: 0;
-    line-height: 2.1rem;
+    line-height: 1;
     text-transform: none;
     caret-color: #6ee7d8;
 }
@@ -155,7 +155,8 @@
     cursor: pointer;
 }
 .collection-page .objekt-kind-toggle:hover { background: rgba(255,255,255,.06); }
-.collection-page .objekt-kind-toggle .material-symbols-outlined { font-size: 1.1rem; line-height: 1; }
+.collection-page .objekt-kind-toggle .objekt-filter-caret,
+.collection-page .objekt-kind-toggle .material-symbols-outlined { font-size: 1.1rem !important; line-height: 1 !important; pointer-events: none; }
 .collection-page .objekt-kind-option {
     display: block;
     width: 100%;
@@ -166,7 +167,7 @@
     color: #e8ebf2;
     font-family: var(--font-sans, "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif) !important;
     font-size: .82rem;
-    font-weight: 650;
+    font-weight: 600;
     letter-spacing: 0;
     text-transform: none;
     text-align: left;
@@ -318,7 +319,7 @@
 }
 .collection-page .collection-filter-bar .objekt-filter { width: 100%; }
 .collection-page .objekt-filter-control { flex: 1 1 auto; min-width: 0; }
-.collection-page .objekt-filter-label { flex: 0 0 auto; }
+.collection-page .objekt-filter-label { flex: 0 0 2.5rem; width: 2.5rem; min-width: 2.5rem; }
 .collection-page .objekt-dropdown-menu {
     width: max(100%, 12rem);
     max-width: calc(100vw - 2rem);

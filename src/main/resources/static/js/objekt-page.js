@@ -51,18 +51,13 @@
         options[focusIndex]?.focus();
     }
 
-    [...sortSelect.options].forEach((option) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'objekt-kind-option';
-        button.dataset.value = option.value;
-        button.textContent = option.textContent;
-        button.setAttribute('role', 'option');
+    sortMenu.querySelectorAll('[role="option"]').forEach((button) => {
         button.addEventListener('pointerdown', (event) => {
             if (event.button !== 0) return;
             event.preventDefault();
-            const changed = sortSelect.value !== option.value;
-            sortSelect.value = option.value;
+            const value = button.dataset.value || '';
+            const changed = sortSelect.value !== value;
+            sortSelect.value = value;
             syncSortMenu();
             if (changed) {
                 sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
@@ -74,7 +69,6 @@
             closeSortMenu();
             sortToggle.focus();
         });
-        sortMenu.appendChild(button);
     });
 
     sortToggle.addEventListener('click', () => {
@@ -266,9 +260,17 @@
     sortToggle.hidden = false;
 
     if (kindSelect && kindMenu) {
+        kindSelect.addEventListener('beforeinput', (event) => {
+            if (window.ObjektKindCombo) ObjektKindCombo.rejectKindBeforeInput(event);
+            else if (event.data && /[^A-Za-z0-9]/.test(event.data)) event.preventDefault();
+        });
         kindSelect.addEventListener('focus', () => openKindMenu(false));
         kindSelect.addEventListener('click', () => openKindMenu(false));
         kindSelect.addEventListener('input', () => {
+            const cleaned = window.ObjektKindCombo
+                ? ObjektKindCombo.sanitizeKind(kindSelect.value)
+                : String(kindSelect.value || '').replace(/[^A-Za-z0-9]/g, '');
+            if (kindSelect.value !== cleaned) kindSelect.value = cleaned;
             openKindMenu(false);
             markActiveFilters();
         });
@@ -444,22 +446,34 @@
             markActiveFilters();
             scheduleApplyFilters();
         }));
+        const toggle = document.getElementById(`${type}-toggle`);
+        toggle?.addEventListener('click', () => window.toggleDropdown(`${type}-menu`));
         updateDropdownLabel(type);
         if (type === 'class') syncKindOptionsToClass({ resetInvalid: true });
     });
 
     function markActiveFilters() {
         const seasonText = document.getElementById('season-label')?.textContent.trim();
-        document.getElementById('season-dropdown')?.classList.toggle('is-filtered', !!seasonText && seasonText !== '전체');
+        const seasonOn = !!seasonText && seasonText !== '전체';
+        document.getElementById('season-dropdown')?.classList.toggle('is-filtered', seasonOn);
         const classText = document.getElementById('class-label')?.textContent.trim();
-        document.getElementById('class-dropdown')?.classList.toggle('is-filtered', !!classText && classText !== '전체');
+        const classOn = !!classText && classText !== '전체';
+        document.getElementById('class-dropdown')?.classList.toggle('is-filtered', classOn);
         const kindValue = normalizeKindValue(kindSelect?.value);
-        kindSelect?.closest('.objekt-filter')?.classList.toggle('is-filtered', kindValue !== 'all');
-        sortSelect.closest('.objekt-filter')?.classList.toggle('is-filtered', sortSelect.value && sortSelect.value !== 'latest');
+        const kindOn = kindValue !== 'all';
+        kindSelect?.closest('.objekt-filter')?.classList.toggle('is-filtered', kindOn);
+        const sortOn = Boolean(sortSelect.value && sortSelect.value !== 'latest');
+        sortSelect.closest('.objekt-filter')?.classList.toggle('is-filtered', sortOn);
         const searchValue = (form.querySelector('input[name="search"]')?.value || '').trim();
         document.querySelector('.objekt-search')?.classList.toggle('is-filtered', searchValue.length > 0);
         const memberOn = memberGroupInput.value !== 'all' || document.querySelectorAll('.member-checkbox:checked').length > 0;
         memberRoot?.classList.toggle('is-filtered', memberOn);
+        const resetBtn = document.getElementById('objekt-reset');
+        if (resetBtn) {
+            const showReset = seasonOn || classOn || kindOn || sortOn;
+            resetBtn.hidden = !showReset;
+            resetBtn.toggleAttribute('hidden', !showReset);
+        }
     }
     markActiveFilters();
     form.addEventListener('change', () => {
@@ -474,6 +488,13 @@
         });
     }
 
+    function syncMenuExpanded(menu, open) {
+        if (!menu?.id) return;
+        document.querySelectorAll(`[aria-controls="${menu.id}"]`).forEach((el) => {
+            el.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+    }
+
     window.toggleDropdown = function(id) {
         closeKindMenu();
         closeSortMenu();
@@ -485,12 +506,14 @@
                 if (menu.id !== id) {
                     menu.classList.add('hidden');
                     menu.setAttribute('hidden', '');
+                    syncMenuExpanded(menu, false);
                 }
             });
             if (target) {
                 const open = target.classList.contains('hidden') || target.hasAttribute('hidden');
                 target.classList.toggle('hidden', !open);
                 target.toggleAttribute('hidden', !open);
+                syncMenuExpanded(target, open);
             }
         }
         syncOpenFilters();
@@ -505,6 +528,7 @@
                 else {
                     menu?.classList.add('hidden');
                     menu?.setAttribute('hidden', '');
+                    syncMenuExpanded(menu, false);
                 }
             });
             closeKindMenu();
@@ -512,12 +536,26 @@
         syncOpenFilters();
     });
 
+    const searchInput = form.querySelector('input[name="search"]');
+    let searchTimer = 0;
+
     form.addEventListener('submit', (event) => {
         event.preventDefault();
+        clearTimeout(searchTimer);
         const page = form.querySelector('input[name="page"]');
         if (page) page.value = '0';
         if (kindSelect) kindSelect.value = displayKindValue(kindSelect.value);
         applyFilters();
+    });
+
+    searchInput?.addEventListener('input', () => {
+        markActiveFilters();
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+            const page = form.querySelector('input[name="page"]');
+            if (page) page.value = '0';
+            applyFilters();
+        }, 280);
     });
 
     document.getElementById('objekt-reset').addEventListener('click', () => {
@@ -526,7 +564,6 @@
 
     const grid = document.getElementById('objekt-card-grid');
     const summary = document.getElementById('objekt-result-summary');
-    const loadedEl = document.getElementById('objekt-loaded-count');
     const sentinel = document.getElementById('objekt-scroll-sentinel');
     const statusEl = document.getElementById('objekt-scroll-status');
     const spinner = document.getElementById('objekt-scroll-spinner');
@@ -561,6 +598,7 @@
 
     const detailModal = document.getElementById('objektDetailModal');
     const detailImage = document.getElementById('objektDetailImage');
+    const detailVideo = document.getElementById('objektDetailVideo');
     const detailFlip = document.getElementById('objektDetailFlip');
     const detailFace = document.getElementById('objektDetailFace');
     const detailTitle = document.getElementById('objektDetailTitle');
@@ -580,11 +618,36 @@
     const descriptionInput = document.getElementById('objektModalDescription');
     const descriptionStatus = document.getElementById('objektDescriptionStatus');
     const descriptionDelete = document.getElementById('objektDescriptionDelete');
+    const descriptionScope = document.getElementById('objektDescriptionScope');
+    const descriptionScopeHint = document.getElementById('objektDescriptionScopeHint');
+    const descriptionMembersEl = document.getElementById('objektDescriptionMembers');
+    const descriptionNumbersEl = document.getElementById('objektDescriptionNumbers');
+    const descriptionMembersPanel = document.getElementById('objektDescriptionMembersPanel');
+    const descriptionNumbersPanel = document.getElementById('objektDescriptionNumbersPanel');
+    const descriptionMembersToggle = document.getElementById('objektDescriptionMembersToggle');
+    const descriptionNumbersToggle = document.getElementById('objektDescriptionNumbersToggle');
+    const descriptionMembersSummary = document.getElementById('objektDescriptionMembersSummary');
+    const descriptionNumbersSummary = document.getElementById('objektDescriptionNumbersSummary');
+    const descriptionSeasonLabel = document.getElementById('objektDescriptionSeasonLabel');
     let descriptionUrl = '', descriptionSaving = false, detailRequest = 0;
+    let descriptionMeta = {
+        scope: 'single',
+        label: '',
+        count: 1,
+        member: '',
+        number: '',
+        season: '',
+        members: [],
+        numbers: [],
+        selectedMembers: [],
+        selectedNumbers: []
+    };
     let activeObjektKey = '';
     let detailLoading = false;
     let isAdmin = false;
     let lastStoryText = '';
+    let detailOpenedAt = 0;
+    const detailPrefetch = new Map();
 
     function csrfHeaders(extra) {
         const headers = new Headers(extra || {});
@@ -597,35 +660,186 @@
         return headers;
     }
 
-    function setFavoriteButton(on) {
+    function setFavoriteButton(on, count) {
         if (!detailFavorite) return;
+        const parsed = Number(count);
+        const total = Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed))
+            : Math.max(0, Number(detailFavorite.dataset.count || 0) || 0);
         detailFavorite.classList.toggle('is-on', Boolean(on));
-        detailFavorite.textContent = on ? '♥ 찜 해제' : '♡ 찜하기';
+        const icon = detailFavorite.querySelector('.objekt-fav-icon');
+        const countEl = detailFavorite.querySelector('.objekt-fav-count');
+        if (icon) icon.textContent = on ? '♥' : '♡';
+        if (countEl) countEl.textContent = String(total);
+        detailFavorite.dataset.count = String(total);
+        const label = (on ? '찜 해제' : '찜하기') + ', ' + total.toLocaleString('ko-KR') + '개';
+        detailFavorite.setAttribute('aria-label', label);
+        detailFavorite.setAttribute('aria-pressed', String(Boolean(on)));
         detailFavorite.dataset.favorite = on ? 'true' : 'false';
+    }
+
+    function requestDetail(key) {
+        if (!key) return Promise.reject(new Error('missing key'));
+        const existing = detailPrefetch.get(key);
+        if (existing) return existing;
+        const request = fetch('/cosmo/objekt/detail/' + encodeURIComponent(key), {
+            headers: csrfHeaders({ Accept: 'application/json' }),
+            credentials: 'same-origin',
+            cache: 'no-store'
+        }).then(async (res) => {
+            if (!res.ok) throw new Error('detail failed');
+            return res.json();
+        }).finally(() => {
+            if (detailPrefetch.get(key) === request) detailPrefetch.delete(key);
+        });
+        detailPrefetch.set(key, request);
+        return request;
+    }
+
+    function paintFromCard(card) {
+        if (!card) return;
+        const titleLink = card.querySelector('.objekt-detail-link');
+        const collectionId = (titleLink?.getAttribute('title') || '').trim()
+            || (card.querySelector('.objekt-open-detail')?.getAttribute('aria-label') || '').replace(/\s*상세 보기\s*$/, '').trim();
+        if (detailTitle) detailTitle.textContent = collectionId || '—';
+        const memberName = (card.querySelector('.objekt-member-name')?.textContent || card.dataset.member || '').trim();
+        if (detailMember) {
+            detailMember.textContent = memberName || '—';
+            const color = card.querySelector('.objekt-member-chip')?.style.getPropertyValue('--artist-color') || '';
+            if (color) detailMember.style.setProperty('--artist-color', color);
+            const href = card.querySelector('.objekt-member-chip')?.getAttribute('href');
+            if (href) detailMember.href = href;
+            else detailMember.removeAttribute('href');
+        }
+        if (detailSeason) {
+            detailSeason.textContent = (card.querySelector('.objekt-card-season')?.textContent || card.dataset.season || '—').trim() || '—';
+        }
+        if (detailClass) {
+            detailClass.textContent = (card.querySelector('.objekt-card-class')?.textContent || card.dataset.class || '—').trim() || '—';
+        }
+        if (detailNo) detailNo.textContent = (card.dataset.collectionNo || '—').trim() || '—';
+        const img = card.querySelector('.objekt-image');
+        resetModalFlip(img?.currentSrc || img?.src || '', '', false);
+    }
+
+    function startSerialPrefetch(key) {
+        if (!key) return;
+        window.ObjektSerialLookup?.setCollection('/cosmo/objekt/detail/' + encodeURIComponent(key) + '/lookup');
+        window.ObjektSerialLookup?.prefetch('1');
+    }
+
+    function safeMediaUrl(raw) {
+        const value = String(raw || '').trim();
+        if (!/^https?:\/\//i.test(value)) return '';
+        try {
+            const url = new URL(value);
+            if (url.protocol !== 'http:' && url.protocol !== 'https:') return '';
+            return url.href;
+        } catch (_) {
+            return '';
+        }
+    }
+
+    function stopDetailMotion() {
+        if (!detailVideo) return;
+        detailVideo.dataset.active = 'false';
+        try { detailVideo.pause(); } catch (_) { /* ignore */ }
+        detailVideo.removeAttribute('src');
+        detailVideo.hidden = true;
+    }
+
+    function showStillImage(url) {
+        if (!detailImage) return;
+        detailImage.hidden = false;
+        detailImage.src = url || '';
+        if (detailVideo) detailVideo.hidden = true;
+    }
+
+    function playDetailVideo() {
+        if (!detailVideo || detailVideo.dataset.active !== 'true') return;
+        if (detailImage) detailImage.hidden = true;
+        detailVideo.hidden = false;
+        try {
+            const play = detailVideo.play();
+            if (play && typeof play.catch === 'function') play.catch(() => {
+                showStillImage(detailImage?.dataset.front || '');
+            });
+        } catch (_) {
+            showStillImage(detailImage?.dataset.front || '');
+        }
+    }
+    detailVideo?.addEventListener('error', () => {
+        if (detailVideo.dataset.active !== 'true') return;
+        stopDetailMotion();
+        showStillImage(detailImage?.dataset.front || '');
+    });
+
+    function motionMediaUrl(data) {
+        const existing = safeMediaUrl(data?.frontMedia);
+        if (existing) return existing;
+        if (String(data?.class || '').toLowerCase() !== 'motion') return '';
+        const slug = String(data?.slug || '').trim().toLowerCase();
+        if (!/^[a-z0-9]+(?:-[a-z0-9]+)+$/.test(slug)) return '';
+        const artist = String(data?.artist || 'triples').trim().toLowerCase() || 'triples';
+        return `https://cdn.apollo.cafe/mco/${artist}/${slug}.mp4`;
+    }
+
+    function applyDetailMotion(data, frontUrl) {
+        stopDetailMotion();
+        if (detailImage) detailImage.dataset.motion = '';
+        showStillImage(frontUrl);
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const motion = String(data?.class || '').toLowerCase() === 'motion';
+        const media = motionMediaUrl(data);
+        if (!motion || !media || reduce) return;
+        if (/\.(gif|webp|apng|png|jpe?g)(\?|#|$)/i.test(media) && detailImage) {
+            detailImage.dataset.motion = media;
+            detailImage.src = media;
+            return;
+        }
+        if (!detailVideo) return;
+        detailVideo.dataset.active = 'true';
+        detailVideo.src = media;
+        playDetailVideo();
     }
 
     function resetModalFlip(front, back, hasBack) {
         if (!detailImage || !detailFlip || !detailFace) return;
         const frontUrl = front || '';
         const backUrl = hasBack ? (back || '') : '';
+        stopDetailMotion();
         detailImage.dataset.front = frontUrl;
         detailImage.dataset.back = backUrl;
+        detailImage.dataset.motion = '';
         detailImage.dataset.showingBack = 'false';
-        detailImage.src = frontUrl;
+        showStillImage(frontUrl);
+        detailFace.hidden = !hasBack;
         detailFace.textContent = '앞면';
         detailFlip.disabled = !hasBack;
         detailFlip.classList.toggle('is-flippable', Boolean(hasBack));
-        detailFlip.setAttribute('aria-label', hasBack ? '이미지 클릭 시 뒷면으로 전환' : '앞면');
+        detailFlip.setAttribute('aria-disabled', hasBack ? 'false' : 'true');
+        detailFlip.tabIndex = hasBack ? 0 : -1;
+        detailFlip.setAttribute('aria-label', hasBack ? '이미지 클릭 시 뒷면으로 전환' : '오브젝트 이미지');
     }
 
     function flipModalImage() {
-        if (!detailImage || !detailFlip || detailFlip.disabled) return;
+        if (!detailImage || !detailFlip || !detailFlip.classList.contains('is-flippable')) return;
         const showingBack = detailImage.dataset.showingBack === 'true';
-        const next = showingBack ? detailImage.dataset.front : detailImage.dataset.back;
-        if (!next) return;
-        detailImage.src = next;
+        const next = showingBack ? (detailImage.dataset.motion || detailImage.dataset.front) : detailImage.dataset.back;
+        if (!next && !(showingBack && detailVideo?.dataset.active === 'true')) return;
         detailImage.dataset.showingBack = showingBack ? 'false' : 'true';
-        if (detailFace) detailFace.textContent = showingBack ? '앞면' : '뒷면';
+        if (showingBack && detailVideo?.dataset.active === 'true') {
+            playDetailVideo();
+        } else {
+            if (detailVideo) {
+                detailVideo.pause();
+                detailVideo.hidden = true;
+            }
+            showStillImage(next);
+        }
+        if (detailFace) {
+            detailFace.hidden = false;
+            detailFace.textContent = showingBack ? '앞면' : '뒷면';
+        }
         detailFlip.setAttribute('aria-label', showingBack ? '이미지 클릭 시 뒷면으로 전환' : '이미지 클릭 시 앞면으로 전환');
     }
 
@@ -695,12 +909,194 @@
         }
     }
 
+    function selectedShareMembers() {
+        if (!descriptionMembersEl) return descriptionMeta.member ? [descriptionMeta.member] : [];
+        return Array.from(descriptionMembersEl.querySelectorAll('input[name="descriptionMembers"]:checked'))
+            .map((input) => input.value)
+            .filter(Boolean);
+    }
+
+    function selectedShareNumbers() {
+        if (!descriptionNumbersEl) return descriptionMeta.number ? [descriptionMeta.number] : [];
+        return Array.from(descriptionNumbersEl.querySelectorAll('input[name="descriptionNumbers"]:checked'))
+            .map((input) => input.value)
+            .filter(Boolean);
+    }
+
+    function memberLabelForToken(token) {
+        const row = descriptionMeta.members.find((item) => String(item.token || '') === token);
+        return row && row.label ? String(row.label) : token;
+    }
+
+    function shareMembersSummaryText() {
+        const selected = selectedShareMembers();
+        const total = descriptionMembersEl
+            ? descriptionMembersEl.querySelectorAll('input[name="descriptionMembers"]').length
+            : descriptionMeta.members.length || selected.length;
+        if (!selected.length) return '멤버 선택';
+        if (total > 0 && selected.length >= total) return '전체 ' + total + '명';
+        if (selected.length === 1) return memberLabelForToken(selected[0]);
+        const first = memberLabelForToken(selected[0]);
+        return first + ' 외 ' + (selected.length - 1) + '명';
+    }
+
+    function shareNumbersSummaryText() {
+        const selected = selectedShareNumbers();
+        const total = descriptionNumbersEl
+            ? descriptionNumbersEl.querySelectorAll('input[name="descriptionNumbers"]').length
+            : descriptionMeta.numbers.length || selected.length;
+        if (!selected.length) return '번호 선택';
+        if (total > 0 && selected.length >= total) return '전체 ' + total + '개';
+        if (selected.length === 1) return selected[0];
+        return selected[0] + ' 외 ' + (selected.length - 1) + '개';
+    }
+
+    function refreshShareSummaries() {
+        if (descriptionMembersSummary) descriptionMembersSummary.textContent = shareMembersSummaryText();
+        if (descriptionNumbersSummary) descriptionNumbersSummary.textContent = shareNumbersSummaryText();
+        if (descriptionScopeHint) descriptionScopeHint.textContent = descriptionScopeHintText();
+    }
+
+    function descriptionScopeHintText() {
+        const members = selectedShareMembers();
+        const numbers = selectedShareNumbers();
+        const memberCount = members.length || 1;
+        const numberCount = numbers.length || 1;
+        const season = descriptionMeta.season || '이 시즌';
+        if (memberCount <= 1 && numberCount <= 1) {
+            return '이 멤버·이 번호에만 저장합니다.';
+        }
+        if (memberCount > 1 && numberCount > 1) {
+            return season + '에서 고른 멤버 ' + memberCount + '명 · 번호 ' + numberCount + '개에 같은 설명을 넣습니다.';
+        }
+        if (memberCount > 1) {
+            return '이 번호에서 고른 멤버 ' + memberCount + '명끼리 설명을 공유합니다. 선택하지 않은 멤버는 그대로 둡니다.';
+        }
+        return season + '에서 고른 번호 ' + numberCount + '개에 같은 설명을 넣습니다.';
+    }
+
+    function setSharePanelOpen(panel, toggle, open) {
+        if (!panel || !toggle) return;
+        panel.hidden = !open;
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    function renderShareOptions(container, name, items, lockedValue) {
+        if (!container) return;
+        container.replaceChildren();
+        items.forEach((item) => {
+            const value = typeof item === 'string' ? item : String(item.token || item.value || '');
+            if (!value) return;
+            const labelText = typeof item === 'string' ? item : String(item.label || value);
+            const locked = value === lockedValue;
+            const selected = locked || (typeof item === 'string' ? false : Boolean(item.selected));
+            const label = document.createElement('label');
+            label.className = 'objekt-description-share-option' + (locked ? ' is-current' : '');
+            label.title = labelText;
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.name = name;
+            input.value = value;
+            input.checked = selected || locked;
+            if (locked) input.disabled = true;
+            const text = document.createElement('span');
+            text.textContent = labelText;
+            label.append(input, text);
+            container.append(label);
+        });
+    }
+
+    function applyMemberSharePreset(mode) {
+        if (!descriptionMembersEl) return;
+        const boxes = descriptionMembersEl.querySelectorAll('input[name="descriptionMembers"]');
+        boxes.forEach((input) => {
+            if (input.disabled) {
+                input.checked = true;
+                return;
+            }
+            input.checked = mode === 'all';
+        });
+        refreshShareSummaries();
+    }
+
+    function syncDescriptionScopeUi() {
+        if (!descriptionScope) return;
+        const canShare = descriptionMeta.scope === 'group' || descriptionMeta.scope === 'member';
+        descriptionScope.hidden = !canShare;
+        if (!canShare) return;
+        if (descriptionSeasonLabel) {
+            descriptionSeasonLabel.textContent = descriptionMeta.season ? '(' + descriptionMeta.season + ')' : '';
+        }
+        const selectedMemberSet = new Set(
+            (descriptionMeta.selectedMembers || []).map((value) => String(value || '').trim()).filter(Boolean)
+        );
+        if (descriptionMeta.member) selectedMemberSet.add(descriptionMeta.member);
+        const selectedNumberSet = new Set(
+            (descriptionMeta.selectedNumbers || []).map((value) => String(value || '').trim().toLowerCase()).filter(Boolean)
+        );
+        if (descriptionMeta.number) selectedNumberSet.add(descriptionMeta.number.toLowerCase());
+        const memberItems = (descriptionMeta.members.length
+            ? descriptionMeta.members
+            : (descriptionMeta.member ? [{token: descriptionMeta.member, label: descriptionMeta.member, selected: true, current: true}] : [])
+        ).map((item) => {
+            const token = String(item.token || item.value || '');
+            return {
+                ...item,
+                token,
+                selected: selectedMemberSet.size
+                    ? selectedMemberSet.has(token)
+                    : Boolean(item.selected) || token === descriptionMeta.member,
+                current: token === descriptionMeta.member
+            };
+        });
+        const numberItems = (descriptionMeta.numbers.length ? descriptionMeta.numbers : [descriptionMeta.number].filter(Boolean))
+            .map((number) => ({
+                token: number,
+                label: number,
+                selected: selectedNumberSet.has(String(number).toLowerCase()),
+                current: number === descriptionMeta.number
+            }));
+        renderShareOptions(descriptionMembersEl, 'descriptionMembers', memberItems, descriptionMeta.member);
+        renderShareOptions(descriptionNumbersEl, 'descriptionNumbers', numberItems, descriptionMeta.number);
+        setSharePanelOpen(descriptionMembersPanel, descriptionMembersToggle, false);
+        setSharePanelOpen(descriptionNumbersPanel, descriptionNumbersToggle, false);
+        refreshShareSummaries();
+    }
+
+    function rememberDescriptionMeta(data) {
+        const count = Number(data && data.descriptionGroupCount);
+        const members = Array.isArray(data && data.descriptionShareMembers) ? data.descriptionShareMembers : null;
+        const numbers = Array.isArray(data && data.descriptionSeasonNumbers) ? data.descriptionSeasonNumbers : null;
+        const selectedMembers = Array.isArray(data && data.descriptionSelectedMembers)
+            ? data.descriptionSelectedMembers.map((value) => String(value || '').trim()).filter(Boolean)
+            : null;
+        const selectedNumbers = Array.isArray(data && data.descriptionSelectedNumbers)
+            ? data.descriptionSelectedNumbers.map((value) => String(value || '').trim()).filter(Boolean)
+            : null;
+        descriptionMeta = {
+            scope: data && data.descriptionScope === 'member' ? 'member'
+                : data && data.descriptionScope === 'group' ? 'group' : 'single',
+            label: String(data && data.descriptionGroupLabel || '').trim(),
+            count: Number.isFinite(count) && count > 0 ? count : 1,
+            member: String(data && data.descriptionMember || descriptionMeta.member || '').trim(),
+            number: String(data && data.descriptionNumber || descriptionMeta.number || '').trim(),
+            season: String(data && data.descriptionSeason || descriptionMeta.season || '').trim(),
+            members: members && members.length ? members : descriptionMeta.members,
+            numbers: numbers && numbers.length
+                ? numbers.map((value) => String(value || '').trim()).filter(Boolean)
+                : descriptionMeta.numbers,
+            selectedMembers: selectedMembers && selectedMembers.length ? selectedMembers : descriptionMeta.selectedMembers,
+            selectedNumbers: selectedNumbers && selectedNumbers.length ? selectedNumbers : descriptionMeta.selectedNumbers
+        };
+    }
+
     function exitDescriptionEdit() {
         if (descriptionForm) descriptionForm.hidden = true;
         if (detailDesc) detailDesc.hidden = false;
         if (descriptionEdit) descriptionEdit.hidden = !isAdmin;
         if (descriptionStatus) descriptionStatus.textContent = '';
         if (descriptionInput) descriptionInput.value = lastStoryText;
+        if (descriptionScope) descriptionScope.hidden = true;
     }
 
     function enterDescriptionEdit() {
@@ -710,6 +1106,7 @@
         descriptionForm.hidden = false;
         if (descriptionEdit) descriptionEdit.hidden = true;
         if (descriptionStatus) descriptionStatus.textContent = '';
+        syncDescriptionScopeUi();
         descriptionInput.focus();
     }
 
@@ -730,9 +1127,11 @@
         if (detailNo) detailNo.textContent = data.collectionNo || '—';
         fillDetailStory(data);
         if (detailImage) detailImage.alt = data.collectionId || '';
-        resetModalFlip(data.frontImage || data.thumbnailImage || '', data.backImage || '', Boolean(data.hasBack));
-        setFavoriteButton(Boolean(data.isFavorite));
-        detailFavorite.disabled = false;
+        const frontUrl = data.frontImage || data.thumbnailImage || '';
+        resetModalFlip(frontUrl, data.backImage || '', Boolean(data.hasBack));
+        applyDetailMotion(data, frontUrl);
+        setFavoriteButton(Boolean(data.isFavorite), data.favoriteCount);
+        if (detailFavorite) detailFavorite.disabled = false;
         const actions = document.querySelector('.objekt-detail-actions');
         if (actions) actions.inert = false;
         document.getElementById('objektFavoriteStatus').hidden = true;
@@ -744,25 +1143,42 @@
         window.ObjektSerialLookup?.setCollection(
             data.lookupUrl || ('/cosmo/objekt/detail/' + encodeURIComponent(key) + '/lookup')
         );
+        window.ObjektSerialLookup?.prefetch('1');
+        const card = document.querySelector('.objekt-card[data-objekt-key="' + CSS.escape(key) + '"]');
         window.ObjektIssued?.show(
-            data.issuedUrl || ('/cosmo/objekt/detail/' + encodeURIComponent(key) + '/issued')
+            data.issuedUrl || ('/cosmo/objekt/detail/' + encodeURIComponent(key) + '/issued'),
+            data.mintCount ?? card?.dataset.supplyCount
         );
         const address = new URL(location.href);
         address.searchParams.set('objekt', key);
         history.replaceState(null, '', address.pathname + address.search);
         isAdmin = Boolean(data.isAdmin);
         descriptionUrl = data.descriptionUrl || '';
+        rememberDescriptionMeta(data);
         exitDescriptionEdit();
     }
 
     function finishDetailClose() {
+        stopDetailMotion();
         window.ObjektIssued?.close();
         window.ObjektSerialLookup?.setCollection('');
-        detailModal.classList.remove('is-open');
+        detailModal.classList.remove('is-open', 'is-opening');
         detailModal.setAttribute('aria-hidden', 'true');
         activeObjektKey = '';
         lastStoryText = '';
         isAdmin = false;
+        descriptionMeta = {
+            scope: 'single',
+            label: '',
+            count: 1,
+            member: '',
+            number: '',
+            season: '',
+            members: [],
+            numbers: [],
+            selectedMembers: [],
+            selectedNumbers: []
+        };
         exitDescriptionEdit();
         detailRequest++;
         if (detailFavorite) detailFavorite.dataset.key = '';
@@ -771,8 +1187,9 @@
         history.replaceState(null, '', address.pathname + address.search);
     }
 
-    function closeDetailModal() {
+    function closeDetailModal(fromBackdrop) {
         if (!detailModal) return;
+        if (fromBackdrop && (detailModal.classList.contains('is-opening') || Date.now() - detailOpenedAt < 500)) return;
         if (window.AboutModal) {
             window.AboutModal.closeModal(detailModal, { onClose: finishDetailClose });
         } else {
@@ -785,24 +1202,29 @@
 
     function openDetailModalShell() {
         if (!detailModal) return;
+        detailOpenedAt = Date.now();
+        window.ObjektDropdown?.closeAll();
+        closeKindMenu();
+        closeSortMenu();
         detailModal.hidden = false;
-        detailModal.classList.add('is-open');
+        detailModal.classList.add('is-open', 'is-opening');
         detailModal.setAttribute('aria-hidden', 'false');
+        window.setTimeout(() => detailModal.classList.remove('is-opening'), 450);
         if (window.AboutModal) {
             window.AboutModal.openModal(detailModal, {
-                focusSelector: '#objektDetailClose',
+                focusSelector: '.objekt-detail-panel',
                 onClose: finishDetailClose
             });
             detailModal.classList.add('is-open');
         } else {
             detailModal.classList.add('flex');
             document.body.style.overflow = 'hidden';
-            detailClose?.focus();
+            detailModal.querySelector('.objekt-detail-panel')?.focus({ preventScroll: true });
         }
     }
 
     async function openObjektDetail(key) {
-        if (!key || detailLoading) return;
+        if (!key) return;
         detailLoading = true;
         const request = ++detailRequest;
         activeObjektKey = '';
@@ -812,69 +1234,115 @@
         }
         const actions = document.querySelector('.objekt-detail-actions');
         if (actions) actions.inert = true;
-        [detailMember, detailSeason, detailClass, detailNo].forEach((node) => {
-            if (node) node.textContent = '—';
-        });
-        window.ObjektIssued?.show('');
-        window.ObjektSerialLookup?.setCollection('');
+        const openingCard = document.querySelector('.objekt-card[data-objekt-key="' + CSS.escape(key) + '"]');
+        window.ObjektIssued?.show('', openingCard?.dataset.supplyCount);
         isAdmin = false;
         exitDescriptionEdit();
         if (descriptionEdit) descriptionEdit.hidden = true;
-        openDetailModalShell();
         if (detailDesc) {
             detailDesc.textContent = '불러오는 중…';
             detailDesc.classList.add('is-empty');
         }
-        if (detailTitle) detailTitle.textContent = '불러오는 중…';
-        try {
-            const res = await fetch('/cosmo/objekt/detail/' + encodeURIComponent(key), {
-                headers: csrfHeaders({ Accept: 'application/json' }),
-                credentials: 'same-origin',
-                cache: 'no-store'
+        if (openingCard) paintFromCard(openingCard);
+        else {
+            if (detailTitle) detailTitle.textContent = '불러오는 중…';
+            [detailMember, detailSeason, detailClass, detailNo].forEach((node) => {
+                if (node) node.textContent = '—';
             });
-            if (!res.ok) throw new Error('detail failed');
-            const data = await res.json();
+        }
+        openDetailModalShell();
+        startSerialPrefetch(key);
+        try {
+            const data = await requestDetail(key);
             if (request === detailRequest) fillDetailModal(data);
         } catch (_) {
+            if (request !== detailRequest) return;
             if (detailDesc) {
                 detailDesc.textContent = '상세 정보를 불러오지 못했습니다.';
                 detailDesc.classList.add('is-empty');
             }
         } finally {
-            detailLoading = false;
+            if (request === detailRequest) detailLoading = false;
         }
     }
 
     async function saveModalDescription(clear) {
         if (descriptionSaving || !descriptionUrl || !isAdmin || descriptionForm?.hidden) return;
-        if (clear && !window.confirm('이 오브젝트의 상세 설명을 삭제하시겠습니까?')) return;
+        const canShare = descriptionScope && !descriptionScope.hidden;
+        const members = canShare ? selectedShareMembers() : [];
+        const numbers = canShare ? selectedShareNumbers() : [];
+        if (canShare && (!members.length || !numbers.length)) {
+            if (descriptionStatus) descriptionStatus.textContent = '공유할 멤버와 적용할 번호를 골라 주세요.';
+            return;
+        }
+        if (clear) {
+            const memberCount = members.length || 1;
+            const numberCount = numbers.length || 1;
+            const message = memberCount > 1 || numberCount > 1
+                ? ('선택한 멤버 ' + memberCount + '명 · 번호 ' + numberCount + '개의 설명을 삭제할까요?')
+                : '이 오브젝트의 상세 설명을 삭제하시겠습니까?';
+            if (!window.confirm(message)) return;
+        }
         if (!clear && !descriptionForm.reportValidity()) return;
         const key = activeObjektKey;
         descriptionSaving = true;
-        const buttons = descriptionForm.querySelectorAll('button');
-        buttons.forEach(button => button.disabled = true);
+        const controls = descriptionForm.querySelectorAll('button, textarea');
+        controls.forEach(control => control.disabled = true);
         descriptionStatus.textContent = clear ? '삭제 중…' : '저장 중…';
         try {
+            const body = new URLSearchParams({description: clear ? '' : descriptionInput.value});
+            members.forEach((member) => body.append('members', member));
+            numbers.forEach((number) => body.append('numbers', number));
             const response = await fetch(descriptionUrl, {
                 method: 'POST', headers: csrfHeaders(), credentials: 'same-origin',
-                body: new URLSearchParams({description: clear ? '' : descriptionInput.value})
+                body
             });
             if (!response.ok) throw new Error();
             const data = await response.json();
             if (typeof data.description !== 'string') throw new Error();
             if (activeObjektKey !== key) return;
+            rememberDescriptionMeta(data);
             fillDetailStory({description: data.description});
             exitDescriptionEdit();
-            descriptionStatus.textContent = clear ? '상세 설명을 삭제했습니다.' : '상세 설명을 저장했습니다.';
+            const memberCount = members.length || 1;
+            const numberCount = numbers.length || 1;
+            descriptionStatus.textContent = clear
+                ? (memberCount > 1 || numberCount > 1
+                    ? '선택한 범위의 설명을 삭제했습니다.'
+                    : '상세 설명을 삭제했습니다.')
+                : (memberCount > 1 || numberCount > 1
+                    ? '선택한 멤버·번호에 설명을 저장했습니다.'
+                    : '상세 설명을 저장했습니다.');
         } catch {
             if (activeObjektKey === key) descriptionStatus.textContent = '저장하지 못했습니다. 관리자 로그인 상태를 확인한 뒤 다시 시도해 주세요.';
         } finally {
-            descriptionSaving = false; buttons.forEach(button => button.disabled = false);
+            descriptionSaving = false; controls.forEach(control => control.disabled = false);
         }
     }
     descriptionEdit?.addEventListener('click', enterDescriptionEdit);
     descriptionForm?.addEventListener('submit', event => { event.preventDefault(); saveModalDescription(false); });
     descriptionDelete?.addEventListener('click', () => saveModalDescription(true));
+    descriptionForm?.addEventListener('change', (event) => {
+        if (!(event.target instanceof HTMLInputElement)) return;
+        if (event.target.name !== 'descriptionMembers' && event.target.name !== 'descriptionNumbers') return;
+        refreshShareSummaries();
+    });
+    descriptionMembersToggle?.addEventListener('click', () => {
+        const open = descriptionMembersPanel?.hidden !== false;
+        setSharePanelOpen(descriptionMembersPanel, descriptionMembersToggle, open);
+    });
+    descriptionNumbersToggle?.addEventListener('click', () => {
+        const open = descriptionNumbersPanel?.hidden !== false;
+        setSharePanelOpen(descriptionNumbersPanel, descriptionNumbersToggle, open);
+    });
+    descriptionForm?.addEventListener('click', (event) => {
+        const button = event.target instanceof Element
+            ? event.target.closest('[data-share-members]')
+            : null;
+        if (!button) return;
+        event.preventDefault();
+        applyMemberSharePreset(button.getAttribute('data-share-members') === 'all' ? 'all' : 'current');
+    });
 
     function shouldOpenModalFromEvent(event) {
         if (event.defaultPrevented) return false;
@@ -883,6 +1351,15 @@
         return true;
     }
 
+    grid?.addEventListener('pointerdown', (event) => {
+        if (event.button != null && event.button !== 0) return;
+        const memberChip = event.target.closest('.objekt-member-chip');
+        if (memberChip) return;
+        const card = event.target.closest('.objekt-card[data-objekt-key]');
+        const openHit = event.target.closest('.objekt-open-detail, .objekt-detail-link');
+        if (!card || !openHit) return;
+        requestDetail(card.dataset.objektKey).catch(() => {});
+    });
     grid?.addEventListener('click', (event) => {
         const memberChip = event.target.closest('.objekt-member-chip');
         if (memberChip) return;
@@ -893,12 +1370,13 @@
         if (!openHit) return;
         if (!shouldOpenModalFromEvent(event)) return;
         event.preventDefault();
+        event.stopPropagation();
         openObjektDetail(card.dataset.objektKey);
     });
 
-    detailClose?.addEventListener('click', closeDetailModal);
+    detailClose?.addEventListener('click', () => closeDetailModal(false));
     detailModal?.addEventListener('click', (event) => {
-        if (event.target === detailModal) closeDetailModal();
+        if (event.target === detailModal) closeDetailModal(true);
     });
     detailFlip?.addEventListener('click', flipModalImage);
     detailFavorite?.addEventListener('click', async () => {
@@ -920,7 +1398,8 @@
             if (!response.ok) throw new Error(String(response.status));
             const data = await response.json();
             if (activeObjektKey !== key) return;
-            setFavoriteButton(Boolean(data.favorite ?? data.isFavorite));
+            setFavoriteButton(Boolean(data.favorite ?? data.isFavorite), data.favoriteCount);
+            detailPrefetch.delete(key);
             status.textContent = desired ? '찜 목록에 저장했습니다.' : '찜 목록에서 해제했습니다.';
             status.hidden = false;
         } catch (error) {
@@ -935,7 +1414,6 @@
     });
 
     function updateSummary() {
-        if (loadedEl) loadedEl.textContent = String(loadedCount);
         if (empty) empty.classList.toggle('hidden', loadedCount > 0);
         if (!statusEl) return;
         if (loading) statusEl.textContent = '불러오는 중…';
@@ -977,7 +1455,7 @@
         return `<article class="card objekt-card objekt-item group relative border rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
                  data-objekt-key="${attr(id)}"
                  data-season="${attr(item.seasonKey || season)}" data-class="${attr(item.classKey || klass)}" data-artist="${attr(item.artist || '')}" data-collection-no="${attr(collectionNo)}"
-                 data-number="${attr(item.numberValue || '')}" data-date="${attr(item.createdAt || '')}" data-member="${attr(member)}" data-search="${attr(item.searchText || '')}">
+                 data-number="${attr(item.numberValue || '')}" data-date="${attr(item.createdAt || '')}" data-member="${attr(member)}" data-search="${attr(item.searchText || '')}"${Number.isFinite(item.mintCount) ? ` data-supply-count="${attr(item.mintCount)}" data-supply-done="true"` : ''}>
             <button type="button" class="objekt-open-detail" aria-label="${attr(collectionId)} 상세 보기">
                 <img src="${attr(thumb)}" alt="${attr(collectionId)}" loading="lazy" decoding="async" class="objekt-image" onerror="this.onerror=null;this.src='${attr(front)}';">
             </button>
@@ -990,7 +1468,7 @@
                     ${memberChipHtml(item, member)}
                     ${klass ? `<span class="badge badge-sm badge-neutral objekt-card-class">${escapeHtml(klass)}</span>` : ''}
                 </div>
-                ${Number.isFinite(item.mintCount) ? `<p class="objekt-card-supply">발행량 ${escapeHtml(String(item.mintCount))}개</p>` : ''}
+                <p class="objekt-card-supply" data-supply-count${Number.isFinite(item.mintCount) ? ` data-supply-done="true"` : ''}>${Number.isFinite(item.mintCount) ? `발행량 ${escapeHtml(String(item.mintCount))}개` : '발행량 확인 중'}</p>
             </div>
         </article>`;
     }
@@ -1025,9 +1503,6 @@
     }
 
     function rememberCounts() {
-        if (loadedEl) loadedEl.textContent = String(loadedCount);
-        const allEl = document.getElementById('objekt-all-count');
-        if (allEl) allEl.textContent = String(allCount);
         if (summary) {
             summary.dataset.loaded = String(loadedCount);
             summary.dataset.resultCount = String(resultCount);
@@ -1138,4 +1613,22 @@
 
     const initialObjekt = new URLSearchParams(location.search).get('objekt');
     if (initialObjekt) openObjektDetail(initialObjekt);
+
+    window.ObjektPage = {
+        visibleKeys() {
+            if (!grid) return [];
+            const height = window.innerHeight || document.documentElement.clientHeight || 0;
+            return [...grid.querySelectorAll('.objekt-card[data-objekt-key]')]
+                .filter((card) => {
+                    const box = card.getBoundingClientRect();
+                    return box.bottom > 0 && box.top < height;
+                })
+                .map((card) => card.dataset.objektKey)
+                .filter(Boolean)
+                .slice(0, 24);
+        },
+        reloadVisible() {
+            return applyFilters();
+        }
+    };
 })();

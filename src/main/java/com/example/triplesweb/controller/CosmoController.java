@@ -2,13 +2,16 @@ package com.example.triplesweb.controller;
 
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.Event;
+import com.example.triplesweb.entity.ObjektDescription;
+import com.example.triplesweb.repository.ObjektDescriptionRepository;
 import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.EventService;
 import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.ObjektMarketDataService;
-import com.example.triplesweb.service.ShopService;
+import com.example.triplesweb.service.ObjektLiveSettings;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektCatalogSort;
+import com.example.triplesweb.util.ObjektDescriptionKeys;
 import com.example.triplesweb.util.ObjektLinks;
 import com.example.triplesweb.util.ObjektSeasonCodes;
 import com.example.triplesweb.util.ObjektSeasonColors;
@@ -28,6 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -45,7 +49,8 @@ public class CosmoController {
     private final ArtistSnapshotService artistSnapshot;
     private final ObjektMarketDataService marketData;
     private final EventService eventService;
-    private final ShopService shopService;
+    private final ObjektLiveSettings live;
+    private final ObjektDescriptionRepository descriptions;
 
     @GetMapping("/objekt")
     public String indexCosmoObjekt(
@@ -126,6 +131,39 @@ public class CosmoController {
         return ResponseEntity.ok(body);
     }
 
+    /**
+     * 브라우저 라이브 폴링용. 메모리 스냅샷만 돌려 외부 API와 페이지 렌더를 다시 하지 않는다.
+     */
+    @GetMapping("/objekt/pulse")
+    @ResponseBody
+    public Map<String, Object> objektPulse(
+            @RequestParam(name = "key", required = false) List<String> keys
+    ) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("catalogSig", objektService.catalogSignature());
+        body.put("catalogCount", objektService.catalogCount());
+        body.put("catalogAt", objektService.getLastSuccessfulRefreshMillis());
+        body.put("mintsSig", marketData.mintsSignature());
+        body.put("mintsAt", marketData.mintsRefreshedAt());
+        Map<String, Object> supplies = new LinkedHashMap<>();
+        if (keys != null) {
+            for (String key : keys.stream().filter(Objects::nonNull).map(String::trim)
+                    .filter(value -> !value.isBlank()).distinct().limit(24).toList()) {
+                Map<String, Object> item = objektService.findByKey(key);
+                if (item == null) continue;
+                Long count = liveMint(item);
+                if (count == null) continue;
+                supplies.put(key, Map.of("status", "available", "count", count));
+            }
+        }
+        body.put("supplies", supplies);
+        body.put("dropWindow", live.dropWindow());
+        body.put("pollMs", live.pollMs());
+        body.put("forceRefreshMs", live.forceRefreshMs());
+        body.put("historyTtlMs", live.historyTtlMs());
+        return body;
+    }
+
     private ObjektPageResult loadObjektPage(
             int page,
             String search,
@@ -159,16 +197,16 @@ public class CosmoController {
         List<String> selectedClasses = cleanSelections(classFilters);
         String selectedKind = "전체".equals(normalize(kind)) ? "all" : normalize(kind);
         String selectedSort = normalize(sort);
+        Map<String, String> descriptionTexts = query.isBlank() ? Map.of() : descriptionIndex();
 
         // 전체 캐시에서 검색어와 모든 필터를 먼저 적용하고, 그 결과에만 정렬과 페이지네이션을 적용한다.
         List<Map<String, Object>> filtered = allObjekts.stream()
-                .filter(objekt -> matchesSearch(query, objekt))
+                .filter(objekt -> matchesSearch(query, objekt, descriptionTexts))
                 .filter(objekt -> "all".equals(selectedGroup) || matchesMember(selectedGroup, selectedNames,
                         membershipCache.computeIfAbsent(firstValue(objekt, "member", "memberName"), MemberPortraitOptions::objektMembers)))
                 .filter(objekt -> matchesSelection(selectedSeasons, firstValue(objekt, "seasonKey", "season")))
                 .filter(objekt -> matchesSelection(selectedClasses, firstValue(objekt, "classKey", "class")))
-                .filter(objekt -> selectedKind.isBlank() || "all".equals(selectedKind)
-                        || normalize(firstValue(objekt, "collectionNo", "collectionNumber")).equals(selectedKind))
+                .filter(objekt -> ObjektCatalogSort.matchesKind(selectedKind, objekt))
                 .sorted(sortComparator(selectedSort))
                 .toList();
 
@@ -182,7 +220,7 @@ public class CosmoController {
         int fromIndex = safePage * PAGE_SIZE;
         int toIndex = Math.min(fromIndex + PAGE_SIZE, resultCount);
         List<Map<String, Object>> pageSlice = filtered.subList(fromIndex, toIndex);
-        List<Map<String, Object>> pageObjekts = marketData.withIssuedSupply(marketData.withMintCounts(pageSlice));
+        List<Map<String, Object>> pageObjekts = marketData.withMintCounts(pageSlice);
         if (pageObjekts == null) pageObjekts = pageSlice;
         boolean hasMore = toIndex < resultCount;
 
@@ -247,13 +285,38 @@ public class CosmoController {
     }
 
     private Long mintOf(Map<String, Object> item) {
-        Long fromStore = marketData.mintCount(firstValue(item, "slug", "id"));
+        Long fromStore = liveMint(item);
         if (fromStore != null) return fromStore;
         Object existing = item.get("mintCount");
         return existing instanceof Number n ? n.longValue() : null;
     }
 
-    private static boolean matchesSearch(String query, Map<String, Object> objekt) {
+    private Long liveMint(Map<String, Object> item) {
+        Long count = marketData.mintCount(firstValue(item, "slug"));
+        return count != null ? count : marketData.mintCount(firstValue(item, "id"));
+    }
+
+    private Map<String, String> descriptionIndex() {
+        Map<String, String> index = new HashMap<>();
+        for (ObjektDescription row : descriptions.findAll()) {
+            if (row == null || row.getObjektKey() == null || row.getObjektKey().isBlank()) continue;
+            String text = row.getDescription();
+            if (text == null || text.isBlank()) continue;
+            index.put(row.getObjektKey(), text);
+        }
+        return index;
+    }
+
+    private static String descriptionOf(Map<String, Object> objekt, Map<String, String> descriptionTexts) {
+        if (descriptionTexts == null || descriptionTexts.isEmpty()) return "";
+        for (String key : ObjektDescriptionKeys.readKeys(objekt, "")) {
+            String text = descriptionTexts.get(key);
+            if (text != null && !text.isBlank()) return text;
+        }
+        return "";
+    }
+
+    private static boolean matchesSearch(String query, Map<String, Object> objekt, Map<String, String> descriptionTexts) {
         if (query == null || query.isBlank()) return true;
         String season = firstValue(objekt, "season", "seasonKey");
         String collectionNo = firstValue(objekt, "collectionNo");
@@ -261,7 +324,8 @@ public class CosmoController {
                 value(objekt, "searchText"), value(objekt, "collectionId"), value(objekt, "slug"),
                 value(objekt, "season"), value(objekt, "seasonKey"), value(objekt, "member"),
                 value(objekt, "memberName"), value(objekt, "artist"), value(objekt, "collectionNo"),
-                value(objekt, "class"), value(objekt, "classKey"), value(objekt, "numberValue"))
+                value(objekt, "class"), value(objekt, "classKey"), value(objekt, "numberValue"),
+                descriptionOf(objekt, descriptionTexts))
                 .toLowerCase(Locale.ROOT);
         return ObjektSeasonCodes.matches(query, base, season, collectionNo);
     }
@@ -324,10 +388,6 @@ public class CosmoController {
         try {
             Event event = eventService.getDetail(eventId);
             model.addAttribute("event", event);
-            shopService.findIdByEventId(eventId).ifPresent(shopId -> {
-                model.addAttribute("shopId", shopId);
-                model.addAttribute("hasShopLink", true);
-            });
             return "cosmo/event_detail";
         } catch (IllegalArgumentException e) {
             throw new org.springframework.web.server.ResponseStatusException(
