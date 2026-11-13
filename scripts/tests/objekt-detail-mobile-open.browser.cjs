@@ -213,7 +213,17 @@ const details = {
     await page.goto('https://mobile.test/cosmo/objekt', {waitUntil: 'load'});
     assert.deepEqual(errors, [], '페이지 스크립트 오류: ' + errors.join('; '));
 
+    await page.evaluate(() => {
+      const select = document.querySelector('select[name="sort"]');
+      const option = document.createElement('option');
+      option.value = 'oldest';
+      option.textContent = '오래된순';
+      select.append(option);
+      select.value = 'oldest';
+      select.dispatchEvent(new Event('change', {bubbles: true}));
+    });
     const resetBtn = page.locator('#objekt-reset');
+    await resetBtn.waitFor({state: 'visible'});
     const resetWidth = await resetBtn.evaluate((el) => el.getBoundingClientRect().width);
     assert.ok(resetWidth >= 80, '모바일 초기화 버튼 너비: ' + resetWidth);
 
@@ -286,9 +296,13 @@ const details = {
     assert.equal(motion.flipDisabled, true);
 
     fs.mkdirSync('/tmp/objekt-ui', {recursive: true});
-    fs.mkdirSync('/opt/cursor/artifacts', {recursive: true});
     await page.screenshot({path: '/tmp/objekt-ui/objekt-detail-mobile-open.png'});
-    await page.screenshot({path: '/opt/cursor/artifacts/objekt-detail-mobile-motion.png'});
+    try {
+      fs.mkdirSync('/opt/cursor/artifacts', {recursive: true});
+      await page.screenshot({path: '/opt/cursor/artifacts/objekt-detail-mobile-motion.png'});
+    } catch (_) {
+      // CI artifact 경로가 없으면 /tmp만 남긴다.
+    }
     console.log('PASS: 모바일 탭으로 상세 모달이 열리고 바로 닫히지 않으며 Motion 영상을 건다');
   } finally {
     await browser.close();
