@@ -24,19 +24,21 @@ body{margin:0;background:#0d0e12;color:#e3e2e8;font-family:sans-serif}
 <link rel="stylesheet" href="/css/objekt-grid-cols.css">
 </head>
 <body>
-<div class="objekt-filter-bar">
-  <div class="objekt-search-row">
-    <div class="objekt-cols-control" data-objekt-cols-filter>
-      <button type="button" class="objekt-cols-toggle" data-objekt-cols-toggle aria-label="열 수" aria-expanded="false">
-        <span class="objekt-cols-icon" aria-hidden="true"><span></span><span></span><span></span></span>
-        <span class="objekt-cols-sr" data-objekt-cols-label>2열</span>
-      </button>
-      <div class="objekt-dropdown-menu hidden" data-objekt-cols-menu hidden>
-        <button type="button" class="objekt-kind-option" data-objekt-cols-option="2">2열</button>
-        <button type="button" class="objekt-kind-option" data-objekt-cols-option="3">3열</button>
-        <button type="button" class="objekt-kind-option" data-objekt-cols-option="4">4열</button>
-        <button type="button" class="objekt-kind-option" data-objekt-cols-option="5">5열</button>
-      </div>
+<div class="objekt-result-bar">
+  <p>검색 결과</p>
+  <div class="objekt-cols-control" data-objekt-cols-filter>
+    <button type="button" class="objekt-cols-toggle" data-objekt-cols-toggle aria-label="열 수" aria-expanded="false">
+      <span class="objekt-cols-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+      <span class="objekt-cols-sr" data-objekt-cols-label>2열</span>
+    </button>
+    <div class="objekt-dropdown-menu hidden" data-objekt-cols-menu hidden>
+      <button type="button" class="objekt-kind-option" data-objekt-cols-option="2">2열</button>
+      <button type="button" class="objekt-kind-option" data-objekt-cols-option="3">3열</button>
+      <button type="button" class="objekt-kind-option" data-objekt-cols-option="4">4열</button>
+      <button type="button" class="objekt-kind-option" data-objekt-cols-option="5">5열</button>
+      <button type="button" class="objekt-kind-option" data-objekt-cols-option="6">6열</button>
+      <button type="button" class="objekt-kind-option" data-objekt-cols-option="7">7열</button>
+      <button type="button" class="objekt-kind-option" data-objekt-cols-option="8">8열</button>
     </div>
   </div>
 </div>
@@ -85,6 +87,8 @@ function columnCount(value) {
     assert.equal(await page.locator('[data-objekt-cols-filter] .objekt-filter-label').count(), 0);
     assert.equal(await page.locator('[data-objekt-grid]').getAttribute('data-cols'), '2');
     assert.equal(columnCount(await page.locator('[data-objekt-grid]').evaluate((n) => getComputedStyle(n).gridTemplateColumns)), 2);
+    assert.equal(await page.locator('[data-objekt-cols-option="5"]').isHidden(), true);
+    assert.equal(await page.locator('[data-objekt-cols-option="8"]').isHidden(), true);
 
     await page.locator('[data-objekt-cols-toggle]').click();
     await page.locator('[data-objekt-cols-option="4"]').click();
@@ -96,12 +100,24 @@ function columnCount(value) {
 
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('https://objekt-cols.test/', { waitUntil: 'load' });
-    assert.equal(await page.locator('[data-objekt-cols-filter]').evaluate((n) => getComputedStyle(n).display), 'none');
+    assert.equal(await page.locator('[data-objekt-cols-filter]').evaluate((n) => getComputedStyle(n).display !== 'none'), true);
+    assert.equal(await page.locator('[data-objekt-cols-option="8"]').isHidden(), false);
     assert.equal(await page.locator('[data-objekt-grid]').getAttribute('data-cols'), '4');
-    assert.equal(columnCount(await page.locator('[data-objekt-grid]').evaluate((n) => getComputedStyle(n).gridTemplateColumns)), 5);
-    assert.notEqual(await page.locator('.objekt-card-foot').first().evaluate((n) => getComputedStyle(n).display), 'none');
+    assert.equal(columnCount(await page.locator('[data-objekt-grid]').evaluate((n) => getComputedStyle(n).gridTemplateColumns)), 4);
 
-    console.log('PASS: 모바일 열 수 드롭다운이 2·4열을 바꾸고 데스크톱은 기존 열을 유지한다');
+    await page.locator('[data-objekt-cols-toggle]').click();
+    await page.locator('[data-objekt-cols-option="8"]').click();
+    assert.equal(await page.locator('[data-objekt-grid]').getAttribute('data-cols'), '8');
+    assert.equal(columnCount(await page.locator('[data-objekt-grid]').evaluate((n) => getComputedStyle(n).gridTemplateColumns)), 8);
+    assert.equal(await page.evaluate(() => localStorage.getItem('triples-objekt-cols')), '8');
+    assert.equal(await page.locator('.objekt-card-foot').first().evaluate((n) => getComputedStyle(n).display), 'none');
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForFunction(() => document.querySelector('[data-objekt-grid]')?.getAttribute('data-cols') === '4');
+    assert.equal(await page.locator('[data-objekt-cols-option="8"]').isHidden(), true);
+    assert.equal(await page.evaluate(() => localStorage.getItem('triples-objekt-cols')), '8');
+
+    console.log('PASS: 모바일은 최대 4열, 데스크톱은 최대 8열까지 고른다');
   } finally {
     await browser.close();
   }

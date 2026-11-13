@@ -28,7 +28,7 @@ ${readCss('season-filters.css')}
     <div class="objekt-filter-bar collection-filter-bar relative">
       <div class="objekt-filter relative" id="collection-season-dropdown">
         <span class="objekt-filter-label">시즌</span>
-        <button type="button" class="objekt-filter-control" id="collection-season-toggle" aria-expanded="false" aria-controls="collection-season-menu">
+        <button type="button" class="objekt-filter-control" id="collection-season-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="collection-season-menu">
           <span id="collection-season-label" class="truncate">전체</span>
         </button>
         <div id="collection-season-menu" class="objekt-dropdown-menu" hidden>
@@ -70,22 +70,24 @@ ${readCss('season-filters.css')}
         </div>
       </div>
       <div class="objekt-search-row">
-        <div class="objekt-cols-control" id="collection-cols-dropdown" data-objekt-cols-filter>
-          <button type="button" class="objekt-cols-toggle" data-objekt-cols-toggle aria-label="열 수" aria-expanded="false" aria-controls="collection-cols-menu">
-            <span class="objekt-cols-icon" aria-hidden="true"><span></span><span></span><span></span></span>
-            <span class="objekt-cols-sr" data-objekt-cols-label>2열</span>
-          </button>
-          <div id="collection-cols-menu" class="objekt-dropdown-menu" data-objekt-cols-menu hidden>
-            <button type="button" class="objekt-kind-option" data-objekt-cols-option="2">2열</button>
-            <button type="button" class="objekt-kind-option" data-objekt-cols-option="4">4열</button>
-          </div>
-        </div>
         <div class="objekt-search site-search"><input class="objekt-search-input" value=""></div>
       </div>
     </div>
   </div>
 </form>
 </section>
+<div class="objekt-result-bar collection-result-bar">
+  <div class="objekt-cols-control" id="collection-cols-dropdown" data-objekt-cols-filter>
+    <button type="button" class="objekt-cols-toggle" data-objekt-cols-toggle aria-label="열 수" aria-expanded="false" aria-controls="collection-cols-menu">
+      <span class="objekt-cols-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+      <span class="objekt-cols-sr" data-objekt-cols-label>2열</span>
+    </button>
+    <div id="collection-cols-menu" class="objekt-dropdown-menu" data-objekt-cols-menu hidden>
+      <button type="button" class="objekt-kind-option" data-objekt-cols-option="2">2열</button>
+      <button type="button" class="objekt-kind-option" data-objekt-cols-option="4">4열</button>
+    </div>
+  </div>
+</div>
 <section class="collection-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;margin-top:1rem">
   <article class="collection-card" style="height:8rem;background:#191c27;border:1px solid #343b51">카드1</article>
   <article class="collection-card" style="height:8rem;background:#191c27;border:1px solid #343b51">카드2</article>
@@ -131,7 +133,7 @@ ${readCss('season-filters.css')}
     <div class="objekt-filter-bar relative">
       <div class="objekt-filter relative" id="season-dropdown">
         <span class="objekt-filter-label">시즌</span>
-        <button type="button" class="objekt-filter-control" id="season-toggle">
+        <button type="button" class="objekt-filter-control" id="season-toggle" aria-expanded="false" aria-controls="season-menu" aria-label="시즌">
           <span id="season-label" class="truncate">전체</span>
         </button>
         <div id="season-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
@@ -159,8 +161,10 @@ ${readCss('season-filters.css')}
 <script>
 document.getElementById('season-toggle').addEventListener('click', () => {
   const menu = document.getElementById('season-menu');
-  menu.classList.toggle('hidden');
-  menu.hidden = menu.classList.contains('hidden');
+  const open = menu.classList.contains('hidden') || menu.hidden;
+  menu.classList.toggle('hidden', !open);
+  menu.hidden = !open;
+  document.getElementById('season-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
 });
 </script>
 </body></html>`;
