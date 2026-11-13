@@ -28,15 +28,15 @@
 
 <div class="profile-refresh"><span data-profile-refresh-status role="status" aria-live="polite">보유 목록 자동 갱신</span></div>
 <nav class="profile-progress-tabs" aria-label="수집 현황 보기">
-    <a class="profile-progress-tab{{#isOverviewTab}} is-active{{/isOverviewTab}}" href="{{overviewUrl}}" {{#isOverviewTab}}aria-current="page"{{/isOverviewTab}}>전체 현황</a>
-    <a class="profile-progress-tab" href="{{transfersUrl}}">전송 내역</a>
     <a class="profile-progress-tab{{#isMembersTab}} is-active{{/isMembersTab}}" href="{{membersTabUrl}}" {{#isMembersTab}}aria-current="page"{{/isMembersTab}}>멤버별 상세</a>
+    <a class="profile-progress-tab" href="{{transfersUrl}}">전송 내역</a>
+    <a class="profile-progress-tab{{#isOverviewTab}} is-active{{/isOverviewTab}}" href="{{overviewUrl}}" {{#isOverviewTab}}aria-current="page"{{/isOverviewTab}}>전체 현황</a>
 </nav>
 
 {{#isOverviewTab}}
 <div data-profile-live="overview">
 <section class="profile-progress-section" aria-labelledby="overall-progress-heading">
-    <div class="profile-section-heading"><h2 id="overall-progress-heading">전체 수집 현황</h2><p>tripleS · Welcome·Zero 제외 · 카탈로그 종류 기준</p></div>
+    <div class="profile-section-heading"><h2 id="overall-progress-heading">전체 수집 현황</h2></div>
     {{#hasOverallProgress}}
     <div class="ar-panel profile-overall-panel">
         <div class="profile-overall-pie" style="--owned-pct: {{overallPercent}}" role="img" aria-label="전체 수집률 {{overallPercent}}퍼센트, 수집 {{overallOwned}}종, 미수집 {{overallMissing}}종">

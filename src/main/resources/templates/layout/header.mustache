@@ -123,9 +123,10 @@
         <div id="site-cosmo-id-panel" class="site-header-popover" hidden data-cosmo-id-panel>
             <p class="site-header-popover__title">코스모 아이디 검색</p>
             <form action="/cosmo/collection" method="get" class="site-header-popover__form">
-                <input type="search" name="nickname" placeholder="닉네임 입력" aria-label="코스모 닉네임" autocomplete="off" minlength="1" required data-cosmo-id-input>
+                <input type="search" name="nickname" placeholder="닉네임 입력" aria-label="코스모 닉네임" autocomplete="off" minlength="1" required data-cosmo-id-input role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="site-cosmo-id-suggest">
                 <button type="submit">검색</button>
             </form>
+            <div id="site-cosmo-id-suggest" class="site-header-nickname-suggest" role="listbox" aria-label="연관 닉네임" hidden></div>
             <a class="site-header-popover__mine" href="/cosmo/collection" data-cosmo-id-mine hidden>내 아이디로 보기</a>
             <ul class="site-header-popover__list" data-cosmo-id-recents></ul>
         </div>

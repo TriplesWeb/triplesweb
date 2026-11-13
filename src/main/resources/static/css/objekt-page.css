@@ -583,18 +583,12 @@
             flex: 0 0 auto;
         }
         span.objekt-member-logo {
-            width: 1.12rem;
-            height: 1.12rem;
-            color: #00f5d4;
-            background: currentColor;
-            -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='black' d='M210.3 56.34l-80-24A8 8 0 0 0 120 40v108.26A48 48 0 1 0 136 184V98.75l69.7 20.91A8 8 0 0 0 216 112V64a8 8 0 0 0-5.7-7.66zM88 216a32 32 0 1 1 32-32 32 32 0 0 1-32 32z'/%3E%3C/svg%3E");
-            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='black' d='M210.3 56.34l-80-24A8 8 0 0 0 120 40v108.26A48 48 0 1 0 136 184V98.75l69.7 20.91A8 8 0 0 0 216 112V64a8 8 0 0 0-5.7-7.66zM88 216a32 32 0 1 1 32-32 32 32 0 0 1-32 32z'/%3E%3C/svg%3E");
-            -webkit-mask-repeat: no-repeat;
-            mask-repeat: no-repeat;
-            -webkit-mask-position: center;
-            mask-position: center;
-            -webkit-mask-size: contain;
-            mask-size: contain;
+            width: .95rem;
+            height: 1.48rem;
+            box-sizing: border-box;
+            border: 1px solid rgba(185, 202, 196, .28);
+            border-radius: .2rem;
+            background: rgba(185, 202, 196, .06);
         }
         img.objekt-member-logo {
             width: .95rem;
@@ -1262,7 +1256,7 @@
             .objekt-detail-link { order: 2; flex: 1 1 auto; min-width: 0; }
             .objekt-card-class { font-size: .58rem; padding: .12rem .4rem; }
             .objekt-member-name { font-size: .82rem; }
-            span.objekt-member-logo { width: 1rem; height: 1rem; }
+            span.objekt-member-logo { width: .86rem; height: 1.34rem; }
             img.objekt-member-logo { width: .86rem; height: 1.34rem; }
         }
         @media (max-width: 420px) {

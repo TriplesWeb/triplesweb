@@ -38,6 +38,13 @@ public class ArchiveService {
         return archiveRepository.findAll();
     }
 
+    /** 날짜가 확인된 검색 결과를 먼저 최신순으로 반환한다. */
+    @Transactional(readOnly = true)
+    public List<Archive> searchLatestByType(MediaType type, String keyword, int limit) {
+        if (type == null || keyword == null || keyword.isBlank() || limit <= 0) return List.of();
+        return archiveRepository.searchLatestByType(type, keyword.trim(), PageRequest.of(0, Math.min(limit, 100)));
+    }
+
     @Transactional(readOnly = true)
     public Page<Archive> pageByType(MediaType type, int page, int size, String keyword) {
         return pageByType(type, page, size, keyword, List.of());

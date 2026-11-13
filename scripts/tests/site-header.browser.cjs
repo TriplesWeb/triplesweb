@@ -4,9 +4,14 @@ const root=path.resolve(__dirname,'../..');
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||(fs.existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined),args:['--no-sandbox']});
  try{
-  const page=await browser.newPage(); const errors=[]; page.on('pageerror',e=>errors.push(e.message));
-  await page.route('**/*',route=>{
+  const page=await browser.newPage(); const errors=[]; const suggestionQueries=[]; page.on('pageerror',e=>errors.push(e.message));
+  await page.route('**/*',async route=>{
    const url=new URL(route.request().url()); if(url.origin!=='https://header.test')return route.abort();
+   if(url.pathname==='/cosmo/collection/suggest'){
+    const q=url.searchParams.get('q'); suggestionQueries.push(q);
+    if(q==='old') await new Promise(resolve=>setTimeout(resolve,300));
+    return route.fulfill({contentType:'application/json',body:JSON.stringify({items:q.startsWith('new')?['newwave','newday']:['oldname']})}).catch(()=>{});
+   }
    if(url.pathname==='/api/site/alerts'){
     return route.fulfill({contentType:'application/json',body:JSON.stringify({
       catalogSig:'sig-1',catalogCount:2,dropWindow:true,
@@ -23,7 +28,7 @@ const root=path.resolve(__dirname,'../..');
       .replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'');
     html=html.replace('</head>','<style>main{min-height:1400px}</style></head>');
     // header.mustache already embeds site-header.js; strip then inject once so the menu toggle is not double-bound.
-    html=html.replace('</body>','<script src="/js/about-admin-auth.js"></script><script src="/js/site-admin-controls.js"></script><script src="/js/site-header.js"></script><script src="/js/site-mobile.js"></script></body>');
+    html=html.replace('</body>','<script src="/js/about-admin-auth.js"></script><script src="/js/site-admin-controls.js"></script><script src="/js/site-header.js"></script><script src="/js/header-nickname-suggest.js"></script><script src="/js/site-mobile.js"></script></body>');
     return route.fulfill({contentType:'text/html',body:html});
    }
    const file=path.resolve(root,'src/main/resources/static','.'+url.pathname);
@@ -135,6 +140,13 @@ const root=path.resolve(__dirname,'../..');
     const searchBoxForHit=await searchForm.boundingBox();
     const submitBox=await searchForm.locator('.site-header-search__submit').boundingBox();
     assert.ok(searchBoxForHit&&submitBox&&Math.abs(submitBox.height-searchBoxForHit.height)<=1,`돋보기 클릭 높이가 알약과 같다 ${width}`);
+    const headerInput=searchForm.locator('[data-header-search-input]');
+    await headerInput.fill('jQuery');
+    const inputBox=await headerInput.boundingBox();
+    const inputStyle=await headerInput.evaluate(n=>({paddingLeft:parseFloat(getComputedStyle(n).paddingLeft),radius:getComputedStyle(n).borderTopLeftRadius}));
+    assert.ok(inputBox&&submitBox&&inputBox.x+inputStyle.paddingLeft>submitBox.x+submitBox.width,`첫 글자가 돋보기와 겹치지 않는다 ${width}`);
+    assert.ok(inputStyle.paddingLeft>=2&&inputStyle.radius==='0px',`왼쪽으로 뻗는 글자도 잘리지 않는다 ${width}`);
+    assert.equal(await headerInput.inputValue(),'jQuery');
     assert.ok(scheduleBox&&jumpBox&&jumpBox.x>=scheduleBox.x+scheduleBox.width-1,`오브젝트 아이콘이 일정 오른쪽 ${width}`);
     assert.ok(scheduleBox&&searchBox&&scheduleBox.x+scheduleBox.width<=searchBox.x+2,`일정이 검색과 겹치지 않는다 ${width}`);
     assert.ok(searchBox&&cosmoIdBox&&searchBox.x+searchBox.width<=cosmoIdBox.x+1,`검색칸이 코스모 왼쪽 ${width}`);
@@ -159,6 +171,38 @@ const root=path.resolve(__dirname,'../..');
     assert.equal(await cosmo.locator('a[href="/cosmo/transfers"]').count(),0);
     assert.equal(await barCosmo.isVisible(),true,`데스크톱 코스모 아이디 ${width}`);
     assert.equal(await barAlerts.isVisible(),true,`데스크톱 종 ${width}`);
+    if(width===1280){
+      await barCosmo.click();
+      const nickname=page.locator('[data-cosmo-id-input]');
+      const suggestions=page.locator('#site-cosmo-id-suggest');
+      await nickname.fill('ne');
+      await page.waitForTimeout(250);
+      assert.equal(suggestionQueries.length,0,'3글자 미만은 추천 요청을 보내지 않는다');
+      await nickname.fill('old');
+      await page.waitForTimeout(220);
+      await nickname.fill('new');
+      await page.waitForFunction(()=>document.querySelectorAll('#site-cosmo-id-suggest [role=option]').length===2);
+      await page.waitForTimeout(350);
+      assert.deepEqual(await suggestions.locator('[role=option]').allTextContents(),['newwave','newday'],'오래된 응답이 최신 추천을 덮지 않는다');
+      assert.equal(await nickname.getAttribute('aria-expanded'),'true');
+      await nickname.press('ArrowDown');
+      assert.equal(await nickname.getAttribute('aria-activedescendant'),'site-cosmo-id-option-0');
+      await nickname.press('Escape');
+      assert.equal(await suggestions.isHidden(),true,'Escape로 추천만 닫는다');
+      assert.equal(await page.locator('[data-cosmo-id-panel]').isVisible(),true);
+      await nickname.fill('neww');
+      await page.waitForFunction(()=>!document.getElementById('site-cosmo-id-suggest').hidden);
+      await page.evaluate(()=>document.querySelector('[data-cosmo-id-input]').form.addEventListener('submit',e=>{e.preventDefault();e.target.dataset.submitted=e.target.elements.nickname.value},{once:true}));
+      await nickname.press('ArrowDown');
+      await nickname.press('Enter');
+      assert.equal(await nickname.evaluate(n=>n.form.dataset.submitted),'newwave','키보드로 선택한 닉네임을 검색한다');
+      await nickname.fill('new');
+      await page.waitForFunction(()=>document.querySelectorAll('#site-cosmo-id-suggest [role=option]').length===2);
+      await page.evaluate(()=>document.querySelector('[data-cosmo-id-input]').form.addEventListener('submit',e=>{e.preventDefault();e.target.dataset.submitted=e.target.elements.nickname.value},{once:true}));
+      await suggestions.getByRole('option',{name:'newday'}).click();
+      assert.equal(await nickname.evaluate(n=>n.form.dataset.submitted),'newday','터치·클릭으로 선택한 닉네임을 검색한다');
+      await page.keyboard.press('Escape');
+    }
     assert.equal(await page.locator('#siteAdminBtn').isVisible(),true,`PC 관리자 로그인 버튼 ${width}`);
     assert.equal(await page.locator('#siteAdminBtn').getAttribute('aria-label'),'관리자 로그인');
     assert.ok(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().height)<=66, 'main처럼 한 줄 헤더 유지');
@@ -166,10 +210,21 @@ const root=path.resolve(__dirname,'../..');
     assert.equal(await search.locator('[data-header-search-input]').isVisible(),true,`데스크톱 검색 입력칸 ${width}`);
     assert.equal(await page.locator('[data-header-search-open]').evaluate(n=>getComputedStyle(n).display==='none'),true,`데스크톱은 검색 토글이 숨겨진다 ${width}`);
     assert.ok(await search.locator('[data-header-search-input]').evaluate(n=>getComputedStyle(n).opacity==='1'));
-    // hide-on-scroll은 100px 초과 하향에서 헤더를 숨김 — sticky 자체는 그보다 작은 스크롤로 확인
+    // 100px 이하에서는 sticky를 유지하고, 이후 방향에 따라 숨김과 표시를 전환한다.
     assert.equal(await page.locator('#top-header').evaluate(n=>getComputedStyle(n).position==='sticky'),true);
     await page.evaluate(()=>window.scrollTo(0,80));
-    assert.equal(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().top>=0),true);
+    await page.waitForFunction(()=>document.getElementById('top-header').getBoundingClientRect().top>=-0.5,null,{timeout:3000});
+    await page.evaluate(()=>window.scrollTo(0,200));
+    await page.waitForFunction(()=>{
+      const header=document.getElementById('top-header');
+      const box=header.getBoundingClientRect();
+      return header.style.transform==='translateY(-100%)' && box.bottom<=1;
+    },null,{timeout:3000});
+    await page.evaluate(()=>window.scrollTo(0,100));
+    await page.waitForFunction(()=>{
+      const header=document.getElementById('top-header');
+      return header.style.transform==='translateY(0px)' && header.getBoundingClientRect().top>=-0.5;
+    },null,{timeout:3000});
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/header-chromium-${width}.png`,fullPage:false}).catch(error=>console.warn(`[preview] chromium ${width}px screenshot skipped: ${error.message}`));
    }
   }

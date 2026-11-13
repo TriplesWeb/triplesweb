@@ -36,7 +36,7 @@ public final class MemberPortraitOptions {
             "서연", "혜린", "지우", "채연", "유연", "수민", "나경", "유빈",
             "카에데", "다현", "코토네", "연지", "니엔", "소현", "신위", "마유",
             "린", "주빈", "하연", "시온", "채원", "설린", "서아", "지연");
-    /** S1 윤서연 ~ S24 지연까지 커스텀 음표 로고. 유닛·기타는 기본 음표를 쓴다. */
+    /** S1 윤서연 ~ S24 지연까지 커스텀 멤버 로고. 유닛·기타는 빈 사진을 쓴다. */
     private static final int CUSTOM_OBJEKT_LOGO_COUNT = 24;
     private static final String OBJEKT_MEMBER_LOGO_PATH = "/images/objekt-member-logos/s%02d.png";
     private static final Pattern NON_MEMBER_CHARS = Pattern.compile("[^a-z0-9가-힣]");
@@ -228,12 +228,10 @@ public final class MemberPortraitOptions {
 
     /**
      * 솔로 S1~S24 카드에 커스텀 음표 로고 경로를 준다.
-     * 유닛·기타는 빈 문자열이라 기본 음표 마크업을 쓴다.
+     * 유닛·기타는 빈 문자열이라 빈 사진 마크업을 쓴다.
      */
     public static String objektMemberLogo(String memberField) {
-        Set<String> members = objektMembers(memberField);
-        if (members.size() != 1) return "";
-        int index = memberIndex(members.iterator().next());
+        int index = memberIndex(memberField);
         if (index >= CUSTOM_OBJEKT_LOGO_COUNT) return "";
         return OBJEKT_MEMBER_LOGO_PATH.formatted(index + 1);
     }

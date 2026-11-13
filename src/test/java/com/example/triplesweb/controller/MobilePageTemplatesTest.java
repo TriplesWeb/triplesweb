@@ -86,6 +86,14 @@ class MobilePageTemplatesTest {
                 String result=compiler.compile(source).execute(pageModel);
                 assertThat(result).contains("/css/site-mobile.css", "name=\"viewport\"");
                 String name=root.relativize(path).toString().replace('/', '_').replace('\\', '_');
+                if (name.equals("cosmo_profile.mustache") || name.equals("cosmo_transfers.mustache")) {
+                    String tabs = result.substring(result.indexOf("<nav class=\"profile-progress-tabs"));
+                    tabs = tabs.substring(0, tabs.indexOf("</nav>"));
+                    assertThat(tabs.indexOf("멤버별 상세")).isLessThan(tabs.indexOf("전송 내역"));
+                    assertThat(tabs.indexOf("전송 내역")).isLessThan(tabs.indexOf("전체 현황"));
+                }
+                if (name.equals("cosmo_profile.mustache")) assertThat(result).doesNotContain("tripleS · Welcome·Zero 제외 · 카탈로그 종류 기준");
+                if (name.equals("cosmo_collection.mustache")) assertThat(result).doesNotContain("닉네임 컬렉션</div></section>");
                 Files.writeString(output.resolve(name+".html"),result);count++;
             }
         }
@@ -126,6 +134,51 @@ class MobilePageTemplatesTest {
         assertThat(header).doesNotContain("mobile-shortcuts").doesNotContain("mobile-menu-brand").contains("data-nav=\"home\"");
         assertThat(header).contains("site-user-menu__name").doesNotContain("site-user-menu__meta");
     }
+    @Test void searchPageFixtureRendersMemberCardAndSections() throws Exception {
+        Path root=Path.of("src/main/resources/templates"), output=Path.of("build/mobile-pages");
+        Files.createDirectories(output);
+        var compiler=Mustache.compiler().defaultValue("").withLoader(name -> new InputStreamReader(
+                new ClassPathResource("templates/"+name+".mustache").getInputStream(), StandardCharsets.UTF_8));
+        StaticAssetVersionService assets = new StaticAssetVersionService();
+        Map<String,Object> searchPage=new HashMap<>();
+        searchPage.put("asset", (Mustache.Lambda) (frag, out) -> out.write(assets.versionedUrl(frag.execute())));
+        searchPage.put("siteNavigation", SiteNavigation.PRIMARY);
+        searchPage.put("keyword", "323");
+        searchPage.put("hasAnyResults", true);
+        searchPage.put("hasMembers", true);
+        searchPage.put("activeTab", "cosmo");
+        searchPage.put("memberResults", List.of(Map.of(
+                "name", "지연",
+                "engName", "JiYeon",
+                "profileImage", "/images/no-image.png",
+                "profileUrl", "/triples/artist?tab=member-24")));
+        Map<String,Object> cosmoTab = new LinkedHashMap<>();
+        cosmoTab.put("id", "cosmo"); cosmoTab.put("label", "코스모");
+        cosmoTab.put("href", "/search?keyword=323&tab=cosmo"); cosmoTab.put("count", 1);
+        cosmoTab.put("hasHits", true); cosmoTab.put("active", true); cosmoTab.put("hasMore", true);
+        cosmoTab.put("moreHref", "/cosmo/objekt?search=323");
+        cosmoTab.put("hits", List.of(Map.of("label","HaYeon 323","href","/cosmo/objekt/detail/hayeoncc323","kind","오브젝트","snippet","Cream02")));
+        Map<String,Object> mediaTab = new LinkedHashMap<>();
+        mediaTab.put("id", "media"); mediaTab.put("label", "미디어");
+        mediaTab.put("href", "/search?keyword=323&tab=media"); mediaTab.put("count", 0);
+        mediaTab.put("hasHits", false); mediaTab.put("active", false); mediaTab.put("hasMore", true);
+        mediaTab.put("moreHref", "/archive/image_archive?q=323"); mediaTab.put("hits", List.of());
+        Map<String,Object> infoTab = new LinkedHashMap<>();
+        infoTab.put("id", "info"); infoTab.put("label", "정보");
+        infoTab.put("href", "/search?keyword=323&tab=info"); infoTab.put("count", 0);
+        infoTab.put("hasHits", false); infoTab.put("active", false); infoTab.put("hasMore", true);
+        infoTab.put("moreHref", "/article/info?type=title&keyword=323"); infoTab.put("hits", List.of());
+        Map<String,Object> scheduleTab = new LinkedHashMap<>();
+        scheduleTab.put("id", "schedule"); scheduleTab.put("label", "일정");
+        scheduleTab.put("href", "/search?keyword=323&tab=schedule"); scheduleTab.put("count", 0);
+        scheduleTab.put("hasHits", false); scheduleTab.put("active", false); scheduleTab.put("hasMore", true);
+        scheduleTab.put("moreHref", "/schedule"); scheduleTab.put("hits", List.of());
+        searchPage.put("tabs", List.of(cosmoTab, mediaTab, infoTab, scheduleTab));
+        String html=compiler.compile(Files.readString(root.resolve("search.mustache"))).execute(searchPage);
+        assertThat(html).contains("search-section").doesNotContain("search-tabs", "data-search-section=\"about\"").contains("지연").contains("HaYeon 323");
+        Files.writeString(output.resolve("search-tabs.html"), html);
+    }
+
     private static Map<String,Object> orbit(String name,int percent,int owned,int total) {
         return Map.of("member",name,"label",name,"percent",percent,"owned",owned,"total",total,"copies",owned,"hasTotal",true,"color","#8decd9","progressUrl","/cosmo/profile/MobileFan?tab=members","isEmpty",owned==0);
     }

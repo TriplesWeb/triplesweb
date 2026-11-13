@@ -95,6 +95,13 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<Article> searchLatestByCategory(String category, String keyword, int limit) {
+        if (category == null || category.isBlank() || keyword == null || keyword.isBlank() || limit <= 0) return List.of();
+        return articleRepository.searchLatestByCategory(category.trim(), keyword.trim(), PageRequest.of(0, Math.min(limit, 100)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Article> findCategoryBatchBefore(String category, String type, String keyword, long beforeId, int size) {
         var page = PageRequest.of(0, Math.min(100, Math.max(1, size)));
         if (keyword == null || keyword.isBlank())

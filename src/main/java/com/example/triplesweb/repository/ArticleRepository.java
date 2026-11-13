@@ -36,6 +36,15 @@ public interface ArticleRepository extends JpaRepository<Article,Long> {
     List<Article> findByCategoryIgnoreCaseOrderByIdDesc(String category, Pageable pageable);
 
     List<Article> findByCategoryIgnoreCaseAndTitleContainingIgnoreCaseOrderByIdDesc(String category, String title, Pageable pageable);
+
+    @Query("""
+            select a from Article a
+            where lower(trim(a.category)) = lower(trim(:category))
+              and locate(lower(:keyword), lower(a.title)) > 0
+            order by case when a.formattedCreatedAt is null then 1 else 0 end,
+                     a.formattedCreatedAt desc, a.id desc
+            """)
+    List<Article> searchLatestByCategory(@Param("category") String category, @Param("keyword") String keyword, Pageable pageable);
     List<Article> findByCategoryIgnoreCaseAndContentContainingIgnoreCaseOrderByIdDesc(String category, String content, Pageable pageable);
     List<Article> findByCategoryIgnoreCaseAndUserIdContainingIgnoreCaseOrderByIdDesc(String category, String userId, Pageable pageable);
 

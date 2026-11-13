@@ -77,4 +77,20 @@ class ObjektLiveSettingsTest {
                 "id", "a", "collectionId", "A", "frontImage", "https://cdn.example/new.webp"));
         assertThat(ObjektService.signature(before)).isNotEqualTo(ObjektService.signature(after));
     }
+
+    @Test void catalogSignatureCoversMetadataRegardlessOfMapIterationOrder() {
+        var first = new java.util.LinkedHashMap<String, Object>();
+        first.put("id", "a");
+        first.put("season", "Cream01");
+        first.put("originalBackImage", "old.webp");
+        var reordered = new java.util.LinkedHashMap<String, Object>();
+        reordered.put("originalBackImage", "old.webp");
+        reordered.put("season", "Cream01");
+        reordered.put("id", "a");
+        assertThat(ObjektService.signature(java.util.List.of(first)))
+                .isEqualTo(ObjektService.signature(java.util.List.of(reordered)));
+        reordered.put("originalBackImage", "new.webp");
+        assertThat(ObjektService.signature(java.util.List.of(first)))
+                .isNotEqualTo(ObjektService.signature(java.util.List.of(reordered)));
+    }
 }
