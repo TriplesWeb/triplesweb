@@ -196,8 +196,17 @@
     playMascotIntro();
   }
 
+  function closeHeaderPopovers() {
+    setCosmoIdOpen(false);
+    setAlertsOpen(false);
+  }
+
   function setMobileMenuOpen(open) {
     if (!mobileMenu || !mobileMenuBtn || !mobileMenuIcon) return;
+    if (open) {
+      setHeaderSearchOpen(false);
+      closeHeaderPopovers();
+    }
     mobileMenu.classList.toggle("hidden", !open);
     mobileMenuBtn.setAttribute("aria-expanded", open ? "true" : "false");
     mobileMenuBtn.setAttribute("aria-label", open ? "메뉴 닫기" : "메뉴 열기");
@@ -208,6 +217,15 @@
     mobileMenuBtn.addEventListener("click", function () {
       const willOpen = mobileMenu.classList.contains("hidden");
       setMobileMenuOpen(willOpen);
+    });
+
+    mobileMenu.querySelectorAll("[data-mobile-menu-close]").forEach(function (btn) {
+      btn.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        setMobileMenuOpen(false);
+        mobileMenuBtn.focus();
+      });
     });
 
     mobileMenu.querySelectorAll(".mobile-nav-toggle").forEach(function (btn) {
@@ -232,7 +250,10 @@
     }
   });
   window.addEventListener("resize", function () {
-    if (window.innerWidth >= 1024) setMobileMenuOpen(false);
+    if (window.innerWidth >= 1024) {
+      setMobileMenuOpen(false);
+      setHeaderSearchOpen(false);
+    }
   });
 
   window.addEventListener("scroll", function () {
@@ -257,6 +278,10 @@
     return document.querySelector("[data-header-search]");
   }
 
+  function isCompactHeader() {
+    return window.matchMedia("(max-width: 1023px)").matches;
+  }
+
   let headerSearchIgnoreCloseUntil = 0;
 
   function setHeaderSearchOpen(open) {
@@ -264,6 +289,16 @@
     if (!headerSearch) return;
     const searchInput = headerSearch.querySelector("[data-header-search-input]");
     const searchOpen = headerSearch.querySelector("[data-header-search-open]");
+    if (!isCompactHeader()) {
+      headerSearch.classList.remove("is-open");
+      if (searchInput) searchInput.removeAttribute("tabindex");
+      if (searchOpen) searchOpen.setAttribute("aria-expanded", "false");
+      return;
+    }
+    if (open) {
+      setMobileMenuOpen(false);
+      closeHeaderPopovers();
+    }
     headerSearch.classList.toggle("is-open", open);
     if (searchOpen) {
       searchOpen.setAttribute("aria-expanded", open ? "true" : "false");
@@ -271,13 +306,12 @@
     }
     if (!searchInput) return;
     if (open) {
-      // 같은 제스처의 바깥 pointerdown/click에 바로 닫히지 않게
       headerSearchIgnoreCloseUntil = Date.now() + 500;
       searchInput.removeAttribute("tabindex");
-      requestAnimationFrame(function () {
+      window.setTimeout(function () {
         searchInput.focus();
         try { searchInput.select(); } catch (_) {}
-      });
+      }, 0);
     } else {
       searchInput.setAttribute("tabindex", "-1");
       searchInput.blur();
@@ -288,6 +322,8 @@
     const headerSearch = headerSearchRoot();
     if (!headerSearch) return;
     const searchOpen = headerSearch.querySelector("[data-header-search-open]");
+    const searchInput = headerSearch.querySelector("[data-header-search-input]");
+    if (isCompactHeader() && searchInput) searchInput.setAttribute("tabindex", "-1");
     if (!searchOpen) return;
     searchOpen.setAttribute("aria-expanded", "false");
 
@@ -298,7 +334,6 @@
       setHeaderSearchOpen(true);
     }
 
-    // 문서 위임 대신 버튼에 직접 바인딩 (SVG 클릭·캡처 이슈 회피)
     searchOpen.addEventListener("pointerdown", openFromToggle);
     searchOpen.addEventListener("click", openFromToggle);
   })();
@@ -321,4 +356,247 @@
     if (searchInput && searchInput.value.trim()) return;
     setHeaderSearchOpen(false);
   });
+
+  const COSMO_RECENTS_KEY = "cosmo-nickname-recents";
+  const ALERTS_CATALOG_KEY = "site-alerts-catalog-sig";
+  const ALERTS_NOTICE_KEY = "site-alerts-notice-id";
+  const cosmoOpens = document.querySelectorAll("[data-cosmo-id-open]");
+  const cosmoPanel = document.querySelector("[data-cosmo-id-panel]");
+  const alertsOpens = document.querySelectorAll("[data-alerts-open]");
+  const alertsPanel = document.querySelector("[data-alerts-panel]");
+  const alertsBadges = document.querySelectorAll("[data-alerts-badge]");
+  let alertsCache = null;
+
+  function nodeListContains(nodes, target) {
+    return Array.from(nodes).some((node) => node.contains(target));
+  }
+
+  function setExpanded(nodes, open) {
+    nodes.forEach((node) => node.setAttribute("aria-expanded", open ? "true" : "false"));
+  }
+
+  function loadNicknameRecents() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(COSMO_RECENTS_KEY) || "[]");
+      return Array.isArray(raw) ? raw.map(String).filter(Boolean) : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function renderCosmoIdPanel() {
+    if (!cosmoPanel) return;
+    const recents = loadNicknameRecents();
+    const mine = cosmoPanel.querySelector("[data-cosmo-id-mine]");
+    const list = cosmoPanel.querySelector("[data-cosmo-id-recents]");
+    if (mine) {
+      if (recents[0]) {
+        mine.hidden = false;
+        mine.href = "/cosmo/collection?nickname=" + encodeURIComponent(recents[0]);
+        mine.textContent = "내 아이디로 보기 · " + recents[0];
+      } else {
+        mine.hidden = true;
+      }
+    }
+    if (!list) return;
+    list.replaceChildren();
+    recents.slice(0, 8).forEach((name) => {
+      const item = document.createElement("li");
+      const link = document.createElement("a");
+      link.href = "/cosmo/collection?nickname=" + encodeURIComponent(name);
+      link.textContent = name;
+      item.appendChild(link);
+      list.appendChild(item);
+    });
+  }
+
+  function setCosmoIdOpen(open) {
+    if (!cosmoPanel) return;
+    if (open) {
+      setMobileMenuOpen(false);
+      setHeaderSearchOpen(false);
+      setAlertsOpen(false);
+      renderCosmoIdPanel();
+    }
+    cosmoPanel.hidden = !open;
+    setExpanded(cosmoOpens, open);
+    if (open) {
+      const input = cosmoPanel.querySelector("[data-cosmo-id-input]");
+      if (input) requestAnimationFrame(() => input.focus());
+    }
+  }
+
+  function setAlertsOpen(open) {
+    if (!alertsPanel) return;
+    if (open) {
+      setMobileMenuOpen(false);
+      setHeaderSearchOpen(false);
+      setCosmoIdOpen(false);
+      loadAlerts(true);
+    }
+    alertsPanel.hidden = !open;
+    setExpanded(alertsOpens, open);
+  }
+
+  function markAlertsSeen(data) {
+    if (!data) return;
+    try {
+      if (data.catalogSig) localStorage.setItem(ALERTS_CATALOG_KEY, String(data.catalogSig));
+      const noticeId = data.notices && data.notices[0] && data.notices[0].id;
+      if (noticeId != null) localStorage.setItem(ALERTS_NOTICE_KEY, String(noticeId));
+    } catch (_) {}
+    alertsBadges.forEach((badge) => { badge.hidden = true; });
+  }
+
+  function hasUnreadAlerts(data) {
+    if (!data) return false;
+    let seenSig = "";
+    let seenNotice = "";
+    try {
+      seenSig = localStorage.getItem(ALERTS_CATALOG_KEY) || "";
+      seenNotice = localStorage.getItem(ALERTS_NOTICE_KEY) || "";
+    } catch (_) {}
+    const latestNotice = data.notices && data.notices[0] && data.notices[0].id != null
+      ? String(data.notices[0].id) : "";
+    const catalogNew = !!(data.catalogSig && String(data.catalogSig) !== seenSig);
+    const noticeNew = !!(latestNotice && latestNotice !== seenNotice);
+    return catalogNew || noticeNew;
+  }
+
+  function renderAlerts(data) {
+    if (!alertsPanel) return;
+    const status = alertsPanel.querySelector("[data-alerts-status]");
+    const body = alertsPanel.querySelector("[data-alerts-body]");
+    if (!body) return;
+    body.replaceChildren();
+    if (!data) {
+      if (status) status.textContent = "알림을 불러오지 못했습니다.";
+      return;
+    }
+    if (status) status.hidden = true;
+    if (data.dropWindow) {
+      const drop = document.createElement("a");
+      drop.className = "site-header-popover__drop";
+      drop.href = "/cosmo/objekt";
+      drop.textContent = "드롭 시간입니다. 새 오브젝트를 확인하세요.";
+      body.appendChild(drop);
+    }
+    const noticeTitle = document.createElement("p");
+    noticeTitle.className = "site-header-popover__heading";
+    noticeTitle.textContent = "공지";
+    body.appendChild(noticeTitle);
+    const notices = Array.isArray(data.notices) ? data.notices : [];
+    if (!notices.length) {
+      const empty = document.createElement("p");
+      empty.className = "site-header-popover__empty";
+      empty.textContent = "새 공지가 없습니다.";
+      body.appendChild(empty);
+    } else {
+      const list = document.createElement("ul");
+      list.className = "site-header-popover__list";
+      notices.forEach((item) => {
+        const li = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = item && item.href ? String(item.href) : "/article/notice";
+        link.textContent = item && item.title ? String(item.title) : "공지";
+        li.appendChild(link);
+        list.appendChild(li);
+      });
+      body.appendChild(list);
+    }
+    const objektTitle = document.createElement("p");
+    objektTitle.className = "site-header-popover__heading";
+    objektTitle.textContent = "새 오브젝트";
+    body.appendChild(objektTitle);
+    const objekts = Array.isArray(data.objekts) ? data.objekts : [];
+    if (!objekts.length) {
+      const empty = document.createElement("p");
+      empty.className = "site-header-popover__empty";
+      empty.textContent = "새로 올라온 오브젝트가 없습니다.";
+      body.appendChild(empty);
+    } else {
+      const list = document.createElement("ul");
+      list.className = "site-header-popover__list";
+      objekts.forEach((item) => {
+        const li = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = item && item.href ? String(item.href) : "/cosmo/objekt";
+        link.textContent = item && item.label ? String(item.label) : "오브젝트";
+        li.appendChild(link);
+        list.appendChild(li);
+      });
+      body.appendChild(list);
+    }
+  }
+
+  function loadAlerts(markSeen) {
+    const apply = (data) => {
+      alertsCache = data;
+      alertsBadges.forEach((badge) => { badge.hidden = !hasUnreadAlerts(data); });
+      if (markSeen) {
+        renderAlerts(data);
+        markAlertsSeen(data);
+      }
+    };
+    if (alertsCache && markSeen) {
+      apply(alertsCache);
+      return;
+    }
+    fetch("/api/site/alerts", { headers: { Accept: "application/json" } })
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then(apply)
+      .catch(() => {
+        alertsBadges.forEach((badge) => { badge.hidden = true; });
+        if (markSeen) renderAlerts(null);
+      });
+  }
+
+  if (cosmoPanel) {
+    cosmoOpens.forEach((btn) => {
+      btn.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        setCosmoIdOpen(cosmoPanel.hidden);
+      });
+    });
+  }
+  if (alertsPanel) {
+    alertsOpens.forEach((btn) => {
+      btn.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        setAlertsOpen(alertsPanel.hidden);
+      });
+    });
+  }
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") return;
+    if (cosmoPanel && !cosmoPanel.hidden) {
+      setCosmoIdOpen(false);
+      const visible = Array.from(cosmoOpens).find((btn) => btn.offsetParent !== null);
+      if (visible) visible.focus();
+      return;
+    }
+    if (alertsPanel && !alertsPanel.hidden) {
+      setAlertsOpen(false);
+      const visible = Array.from(alertsOpens).find((btn) => btn.offsetParent !== null);
+      if (visible) visible.focus();
+    }
+  });
+
+  document.addEventListener("pointerdown", function (event) {
+    const target = event.target;
+    if (!(target instanceof Node)) return;
+    if (cosmoPanel && !cosmoPanel.hidden) {
+      const wrap = cosmoPanel.closest(".site-header-popover-wrap") || cosmoPanel;
+      if (!wrap.contains(target) && !nodeListContains(cosmoOpens, target)) setCosmoIdOpen(false);
+    }
+    if (alertsPanel && !alertsPanel.hidden) {
+      const wrap = alertsPanel.closest(".site-header-popover-wrap") || alertsPanel;
+      if (!wrap.contains(target) && !nodeListContains(alertsOpens, target)) setAlertsOpen(false);
+    }
+  });
+
+  loadAlerts(false);
 })();

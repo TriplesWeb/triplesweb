@@ -8,16 +8,16 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   #top-header{position:sticky;top:0;z-index:50;background:#16181ff5;color:#e3e2e8;font-family:"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;max-width:100%;transform:translateY(0)}
   #top-header>div:first-child{display:flex;align-items:center;justify-content:space-between;min-height:64px;height:auto;gap:.75rem;padding-left:max(1rem,env(safe-area-inset-left));padding-right:max(1rem,env(safe-area-inset-right));min-width:0;max-width:100%}
   #top-header>div:first-child>div:first-child{flex:1;min-width:0}
-  #top-header>div:first-child>div:last-child{display:flex;align-items:center;gap:.5rem;min-width:0}
+  #top-header>div:first-child>div:last-child{display:flex;align-items:center;gap:.25rem;min-width:0}
   #top-header>div:first-child a img:not(.sss-mascot-wave):not(.sss-mascot-trail){max-height:28px;width:auto;max-width:100px}
   #top-header>div:first-child a img.sss-mascot-wave,
   #top-header>div:first-child a img.sss-mascot-trail{max-height:28px;height:28px;width:auto;max-width:none}
   #mobile-menu-btn{flex:0 0 auto}
-  #mobile-menu-btn{margin-left:auto}
   #top-header a{color:#b9cac4;text-decoration:none}
   #top-header a:hover{color:#8decd9}
-  #navbar,#top-header>div:first-child form[role=search]{display:none!important}
-  #mobile-menu-btn{display:inline-flex!important;flex:0 0 auto;align-items:center;justify-content:center;width:44px;height:44px;border:1px solid #3a4a4680;border-radius:.75rem;background:#191b22;color:#e3e2e8}
+  #navbar{display:none!important}
+  #top-header>div:first-child form[role=search].site-header-search{display:none!important}
+  #mobile-menu-btn{display:inline-flex!important;flex:0 0 auto;align-items:center;justify-content:center;width:40px;height:40px;border:1px solid #3a4a4680;border-radius:.75rem;background:#191b22;color:#e3e2e8}
   #mobile-menu-icon{position:relative;display:block;width:20px;height:20px;max-width:none;font-size:0!important;overflow:visible;background:linear-gradient(currentColor,currentColor) center/20px 2px no-repeat}
   #mobile-menu-icon::before,#mobile-menu-icon::after{content:"";position:absolute;left:0;width:20px;height:2px;background:currentColor}
   #mobile-menu-icon::before{top:3px}#mobile-menu-icon::after{bottom:3px}
@@ -25,10 +25,16 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   #mobile-menu-btn[aria-expanded=true] #mobile-menu-icon::before{top:9px;transform:rotate(45deg)}
   #mobile-menu-btn[aria-expanded=true] #mobile-menu-icon::after{top:9px;bottom:auto;transform:rotate(-45deg)}
   #top-header .site-user-menu{position:relative;min-width:0}
-  #top-header .site-user-menu>button{display:flex;align-items:center;gap:.5rem;min-height:44px;padding:.4rem .6rem;border:1px solid #3a4a4680;border-radius:.75rem;background:#191b22;color:inherit}
+  #top-header .site-user-menu>button{display:flex;align-items:center;justify-content:center;gap:0;min-height:40px;width:40px;padding:0;border:1px solid #3a4a4680;border-radius:.75rem;background:#191b22;color:inherit}
   #top-header .site-user-menu:not(.site-user-menu-open)>[data-user-menu-panel]{display:none!important}
-  #top-header .site-user-menu button>div{max-width:6rem;min-width:0}
-  #top-header .site-user-menu button>div>span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #top-header .site-user-menu .site-user-menu__meta,#top-header .site-user-menu .site-user-menu__caret,#top-header .site-user-menu .site-user-menu__name{display:none!important}
+  .header-cosmo-wrap{display:none!important}
+  #siteAdminBtn.is-ready,
+  #top-header #siteAdminBtn.is-ready[hidden]{display:inline-flex!important;box-sizing:border-box;width:40px;height:40px;min-width:40px;min-height:40px;padding:0;border:1px solid #3a4a4680;border-radius:.75rem;background:#191b22;flex:0 0 auto}
+  #mobile-menu button.mobile-direct-link{display:flex;align-items:center;gap:.55rem;width:100%;text-align:left;background:transparent;border:0;color:#d5e2de}
+  #mobile-menu button.mobile-direct-link[hidden]{display:none!important}
+  #top-header a.header-objekt-jump{display:inline-flex!important;align-items:center;height:40px;min-height:40px}
+  #top-header .site-user-menu .site-user-menu__icon{display:block}
   #top-header [data-user-menu-panel]{position:absolute;right:0;min-width:12rem;max-width:calc(100vw - 2rem);z-index:60}
   #top-header [data-user-menu-panel]>div{display:grid;gap:.25rem;padding:.5rem;border:1px solid #3a4a4680;border-radius:.75rem;background:#191b22}
   #top-header [data-user-menu-panel] a{display:flex;gap:.5rem;align-items:center;min-height:44px;padding:.5rem .7rem}
@@ -36,13 +42,13 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   #mobile-menu.hidden,#mobile-menu .mobile-nav-panel.hidden{display:none!important}
   #mobile-menu:not(.hidden){display:block!important}
   #mobile-menu nav,#mobile-menu .mobile-nav-panel:not(.hidden){display:flex;flex-direction:column}
-  #mobile-menu nav{padding:.75rem 1rem}
+  #mobile-menu nav{padding:1rem 1.1rem 1.4rem;gap:.35rem}
   /* 폼 자체가 필드 크롬 — 왼쪽 돋보기·오른쪽 X가 flex로 세로 중앙 정렬 */
   #mobile-menu form[role=search],
   #mobile-menu .site-search{
     display:flex!important;position:relative;align-items:center;gap:.5rem;
     width:100%;min-width:0;flex:0 0 auto;min-height:44px;height:44px;
-    margin:0 0 .5rem;padding:0 .7rem;box-sizing:border-box;
+    margin:0 0 .75rem;padding:0 .7rem;box-sizing:border-box;
     border:1px solid rgba(58,74,70,.6);border-radius:.75rem;background:rgba(13,14,18,.7)
   }
   #mobile-menu .site-search .site-field,
@@ -72,7 +78,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     display:block;font-size:16px;line-height:1;width:16px;height:16px;overflow:visible
   }
   #mobile-menu .site-search__submit:hover{color:#00f5d4;background:transparent}
-  #mobile-menu a,#mobile-menu .mobile-nav-toggle{display:flex;align-items:center;min-height:44px;padding:.65rem .75rem}
+  #mobile-menu a,#mobile-menu .mobile-nav-toggle{display:flex;align-items:center;min-height:48px;padding:.8rem .85rem;font-size:1rem;line-height:1.45;white-space:normal;overflow:visible;text-overflow:unset;color:#d5e2de}
   #mobile-menu .mobile-nav-toggle{width:100%;justify-content:space-between;border:0;border-radius:.75rem;background:transparent;color:#b9cac4}
   #mobile-menu .mobile-nav-toggle .material-symbols-outlined{width:8px;height:8px;max-width:none;font-size:0!important;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg)!important}
   #mobile-menu .mobile-nav-toggle[aria-expanded=true] .material-symbols-outlined{transform:rotate(225deg)!important}
