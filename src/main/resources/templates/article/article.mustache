@@ -48,25 +48,28 @@
                     </div>
                     <div class="objekt-filter{{#hasSelectedClass}} is-filtered{{/hasSelectedClass}}">
                         <span class="objekt-filter-label">클래스</span>
-                        <div class="objekt-filter-control objekt-filter-select-wrap">
-                            <select id="market-filter-class" name="class" aria-label="클래스 필터">
-                                {{#marketClassOptions}}
-                                <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
-                                {{/marketClassOptions}}
-                            </select>
-                            <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
-                        </div>
+                        <select id="market-filter-class" name="class" data-objekt-dropdown aria-label="클래스 필터">
+                            {{#marketClassOptions}}
+                            <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+                            {{/marketClassOptions}}
+                        </select>
                     </div>
                     {{#isTrade}}
-                    <div class="market-side-seg" role="group" aria-label="멤버 검색 기준: Have 또는 Want">
-                        <a class="market-side-link{{#isObjektSideHave}} is-active{{/isObjektSideHave}}" href="/article/{{category}}?objektSide=have{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Have</a>
-                        <a class="market-side-link{{#isObjektSideWant}} is-active{{/isObjektSideWant}}" href="/article/{{category}}?objektSide=want{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Want</a>
+                    <div class="objekt-filter market-side-filter" role="group" aria-label="멤버 검색 기준: Have 또는 Want">
+                        <span class="objekt-filter-label">구분</span>
+                        <div class="objekt-filter-control market-side-seg">
+                            <a class="market-side-link{{#isObjektSideHave}} is-active{{/isObjektSideHave}}" href="/article/{{category}}?objektSide=have{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Have</a>
+                            <a class="market-side-link{{#isObjektSideWant}} is-active{{/isObjektSideWant}}" href="/article/{{category}}?objektSide=want{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Want</a>
+                        </div>
                     </div>
                     {{/isTrade}}
                     {{#isSell}}
-                    <div class="market-side-seg" role="group" aria-label="판매 또는 구매">
-                        <a class="market-side-link{{#isObjektSideHave}} is-active{{/isObjektSideHave}}" href="/article/{{category}}?objektSide=have{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">판매</a>
-                        <a class="market-side-link{{#isObjektSideWant}} is-active{{/isObjektSideWant}}" href="/article/{{category}}?objektSide=want{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">구매</a>
+                    <div class="objekt-filter market-side-filter" role="group" aria-label="판매 또는 구매">
+                        <span class="objekt-filter-label">구분</span>
+                        <div class="objekt-filter-control market-side-seg">
+                            <a class="market-side-link{{#isObjektSideHave}} is-active{{/isObjektSideHave}}" href="/article/{{category}}?objektSide=have{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">판매</a>
+                            <a class="market-side-link{{#isObjektSideWant}} is-active{{/isObjektSideWant}}" href="/article/{{category}}?objektSide=want{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">구매</a>
+                        </div>
                     </div>
                     {{/isSell}}
                     {{#hasMarketAttrFilter}}
@@ -201,6 +204,7 @@
     </div>
 </main>
 
+<script src="{{#asset}}/js/objekt-dropdown.js{{/asset}}" defer></script>
 <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
