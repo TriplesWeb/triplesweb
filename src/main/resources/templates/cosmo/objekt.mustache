@@ -62,7 +62,7 @@
 
             <div class="objekt-filter relative" id="season-dropdown">
                 <span class="objekt-filter-label">시즌</span>
-                <button type="button" onclick="toggleDropdown('season-menu')" class="objekt-filter-control">
+                <button type="button" id="season-toggle" class="objekt-filter-control" aria-haspopup="true" aria-expanded="false" aria-controls="season-menu" aria-label="시즌">
                     <span id="season-label" class="truncate">전체</span>
                     <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                 </button>
@@ -86,7 +86,7 @@
 
             <div class="objekt-filter relative" id="class-dropdown">
                 <span class="objekt-filter-label">클래스</span>
-                <button type="button" onclick="toggleDropdown('class-menu')" class="objekt-filter-control">
+                <button type="button" id="class-toggle" class="objekt-filter-control" aria-haspopup="true" aria-expanded="false" aria-controls="class-menu" aria-label="클래스">
                     <span id="class-label" class="truncate">전체</span>
                     <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                 </button>
@@ -125,7 +125,7 @@
                            aria-autocomplete="list"
                            aria-label="옵젝 종류 필터 (입력 또는 선택)">
                     <button type="button" class="objekt-kind-toggle" id="objekt-kind-toggle" aria-label="종류 목록 열기" tabindex="-1">
-                        <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
+                        <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                     </button>
                 </div>
                 <div id="kind-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 min-w-[9rem] max-h-60 overflow-y-auto rounded-xl border z-50 p-1.5" role="listbox" aria-label="종류 목록">
@@ -158,30 +158,28 @@
                     <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                     </label>
                 </div>
-                <div id="sort-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 min-w-[10rem] max-h-60 overflow-y-auto rounded-xl border z-50 p-1.5" role="listbox" aria-label="정렬 목록"></div>
+                <div id="sort-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 min-w-[10rem] max-h-60 overflow-y-auto rounded-xl border z-50 p-1.5" role="listbox" aria-label="정렬 목록">
+                    <button type="button" class="objekt-kind-option" data-value="latest" role="option">최신순</button>
+                    <button type="button" class="objekt-kind-option" data-value="oldest" role="option">오래된순</button>
+                    <button type="button" class="objekt-kind-option" data-value="number_low" role="option">번호 낮은순</button>
+                    <button type="button" class="objekt-kind-option" data-value="number_high" role="option">번호 높은순</button>
+                    <button type="button" class="objekt-kind-option" data-value="first_member" role="option">첫 멤버</button>
+                    <button type="button" class="objekt-kind-option" data-value="last_member" role="option">마지막 멤버</button>
+                    <button type="button" class="objekt-kind-option" data-value="mint_low" role="option">민팅 적은순</button>
+                    <button type="button" class="objekt-kind-option" data-value="mint_high" role="option">민팅 많은순</button>
+                </div>
             </div>
 
             <div class="objekt-search-row">
-                <div class="objekt-cols-control" id="objekt-cols-dropdown" data-objekt-cols-filter>
-                    <button type="button" class="objekt-cols-toggle" data-objekt-cols-toggle aria-label="열 수" aria-expanded="false" aria-haspopup="listbox" aria-controls="objekt-cols-menu">
-                        <span class="objekt-cols-icon" aria-hidden="true"><span></span><span></span><span></span></span>
-                        <span class="objekt-cols-sr" data-objekt-cols-label>2열</span>
-                    </button>
-                    <div id="objekt-cols-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 rounded-xl border z-50 p-1.5" data-objekt-cols-menu hidden role="listbox" aria-label="열 수">
-                        <button type="button" class="objekt-kind-option" data-objekt-cols-option="2" role="option">2열</button>
-                        <button type="button" class="objekt-kind-option" data-objekt-cols-option="3" role="option">3열</button>
-                        <button type="button" class="objekt-kind-option" data-objekt-cols-option="4" role="option">4열</button>
-                        <button type="button" class="objekt-kind-option" data-objekt-cols-option="5" role="option">5열</button>
-                    </div>
-                </div>
                 <div class="objekt-search site-search">
-                    <span class="objekt-search-glyph" aria-hidden="true">🔍</span>
+                    <span class="objekt-search-glyph" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+                    </span>
                     <label class="w-full min-w-0">
-                        <input type="search" name="search" value="{{searchQuery}}" placeholder="전체 오브젝트에서 검색..." aria-label="전체 오브젝트 검색" autocomplete="off" class="objekt-search-input site-search__input">
+                        <input type="search" name="search" value="{{searchQuery}}" placeholder="멤버·시즌·번호·설명 검색..." aria-label="전체 오브젝트 검색" autocomplete="off" class="objekt-search-input site-search__input">
                     </label>
                 </div>
-                <button type="submit" id="objekt-search-submit" class="objekt-search-button">검색</button>
-                <button type="button" id="objekt-reset" class="objekt-reset-button">
+                <button type="button" id="objekt-reset" class="objekt-reset-button" hidden>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2.6 8.4M3 4v6h6"/></svg>
                     초기화
                 </button>
@@ -192,12 +190,28 @@
         </form>
     </section>
 
-    <div class="mt-5 flex items-center justify-between gap-3 px-1">
-        <p id="objekt-result-summary" class="text-sm text-slate-400"
+    <div class="objekt-result-bar mt-5 flex items-center justify-between gap-3 px-1">
+        <p id="objekt-result-summary" class="text-sm text-slate-400 min-w-0"
            data-result-count="{{objektCount}}" data-all-count="{{objektAllCount}}" data-loaded="{{objektPageCount}}">
-            검색 결과 <strong class="text-[#00f5d4]">{{objektCount}}</strong>개
-            <span class="text-slate-500">(전체 <span id="objekt-all-count">{{objektAllCount}}</span>개 중 · <span id="objekt-loaded-count">{{objektPageCount}}</span>개 표시)</span>
+            <span>검색 결과</span>
+            <strong class="text-[#00f5d4]">{{objektCount}}</strong>
+            <span>개</span>
         </p>
+        <div class="objekt-cols-control" id="objekt-cols-dropdown" data-objekt-cols-filter>
+            <button type="button" class="objekt-cols-toggle" data-objekt-cols-toggle aria-label="열 수" aria-expanded="false" aria-haspopup="listbox" aria-controls="objekt-cols-menu">
+                <span class="objekt-cols-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+                <span class="objekt-cols-sr" data-objekt-cols-label>2열</span>
+            </button>
+            <div id="objekt-cols-menu" class="objekt-dropdown-menu hidden absolute top-full right-0 mt-2 rounded-xl border z-50 p-1.5" data-objekt-cols-menu hidden role="listbox" aria-label="열 수">
+                <button type="button" class="objekt-kind-option" data-objekt-cols-option="2" role="option">2열</button>
+                <button type="button" class="objekt-kind-option" data-objekt-cols-option="3" role="option">3열</button>
+                <button type="button" class="objekt-kind-option" data-objekt-cols-option="4" role="option">4열</button>
+                <button type="button" class="objekt-kind-option" data-objekt-cols-option="5" role="option">5열</button>
+                <button type="button" class="objekt-kind-option" data-objekt-cols-option="6" role="option">6열</button>
+                <button type="button" class="objekt-kind-option" data-objekt-cols-option="7" role="option">7열</button>
+                <button type="button" class="objekt-kind-option" data-objekt-cols-option="8" role="option">8열</button>
+            </div>
+        </div>
     </div>
     {{#objektError}}
     <div class="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{{objektError}}</div>
@@ -277,14 +291,34 @@
                     <label class="objekt-description-label" for="objektModalDescription">상세 설명</label>
                     <fieldset id="objektDescriptionScope" class="objekt-description-scope" hidden>
                         <legend>적용 범위</legend>
-                        <label class="objekt-description-scope-option">
-                            <input type="radio" name="descriptionScope" value="group" checked>
-                            <span>이 번호 일괄 수정</span>
-                        </label>
-                        <label class="objekt-description-scope-option">
-                            <input type="radio" name="descriptionScope" value="member">
-                            <span>이 오브젝트만 수정</span>
-                        </label>
+                        <div class="objekt-description-share" data-share="members">
+                            <div class="objekt-description-share-head">
+                                <p class="objekt-description-share-title">공유할 멤버</p>
+                                <button type="button" id="objektDescriptionMembersToggle" class="objekt-description-share-toggle" aria-expanded="false" aria-controls="objektDescriptionMembersPanel">
+                                    <span id="objektDescriptionMembersSummary">이 멤버만</span>
+                                    <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
+                                </button>
+                            </div>
+                            <div id="objektDescriptionMembersPanel" class="objekt-description-share-panel" hidden>
+                                <div class="objekt-description-share-actions">
+                                    <button type="button" data-share-members="all">전체</button>
+                                    <button type="button" data-share-members="current">이 멤버만</button>
+                                </div>
+                                <div id="objektDescriptionMembers" class="objekt-description-share-list" role="group" aria-label="공유할 멤버"></div>
+                            </div>
+                        </div>
+                        <div class="objekt-description-share" data-share="numbers">
+                            <div class="objekt-description-share-head">
+                                <p class="objekt-description-share-title">적용할 번호 <span id="objektDescriptionSeasonLabel"></span></p>
+                                <button type="button" id="objektDescriptionNumbersToggle" class="objekt-description-share-toggle" aria-expanded="false" aria-controls="objektDescriptionNumbersPanel">
+                                    <span id="objektDescriptionNumbersSummary">이 번호만</span>
+                                    <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
+                                </button>
+                            </div>
+                            <div id="objektDescriptionNumbersPanel" class="objekt-description-share-panel" hidden>
+                                <div id="objektDescriptionNumbers" class="objekt-description-share-list is-numbers" role="group" aria-label="적용할 번호"></div>
+                            </div>
+                        </div>
                         <p id="objektDescriptionScopeHint"></p>
                     </fieldset>
                     <textarea id="objektModalDescription" name="description" rows="6" maxlength="10000" placeholder="상세 설명을 입력해 주세요."></textarea>

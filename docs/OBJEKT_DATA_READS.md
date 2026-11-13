@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | 전체 카탈로그 | objekt.top | 기본 1분마다 검증 후 DB·메모리 스냅샷 교체. 페이지에서는 저장된 목록만 읽음 |
 | 컬렉션별 발행량 | objekt.top rarity | 기본 1분마다 갱신. 잘못된 응답·중복 slug·장애 시 마지막 스냅샷 유지. persist 설계는 `OBJEKT_MINT_VOLUME_BACKFILL.md` |
-| 컬렉션 상세 설명 | `objekt_description` | Apollo `data.description`을 한글로 번역해 시드·적재한 로컬 설명만 모달에 표시한다. 런타임 Apollo metadata 호출은 끈다 |
+| 컬렉션 상세 설명 | `objekt_description` | 관리자가 상세 모달에서 수작업으로 넣는다. 멤버·번호 공유 범위도 저장 시 직접 고른다 |
 | 공개 계정 보유 목록 | COSMO 닉네임 확인 + objekt.top | 전체 페이지를 검증한 뒤 10분 캐시. 커서 반복·과도한 페이지는 실패 처리 |
 | 카드별 전송 내역 | objekt.top serial transfers | 사용자가 시리얼 조회 시 읽음. 20건씩 화면 페이지. 현재 소유자 조회와 최대 30초 동안 응답 공유 |
 | 계정별 전송 내역 | COSMO 닉네임 확인 + objekt.top transfers | 보유 목록을 먼저 읽지 않고 upstream 커서로 한 페이지만 조회. 자동 반복 수집 없음 |

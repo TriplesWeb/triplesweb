@@ -1,5 +1,5 @@
 {
-  "source": "apollo.cafe /api/objekts/metadata/{slug} data.description",
+  "source": "manual",
   "note": "같은 시즌·번호에서 멤버 설명이 다른 묶음만. description은 화면용 한글.",
   "groups": [
     {
