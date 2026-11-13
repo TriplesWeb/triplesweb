@@ -14,13 +14,16 @@ const root=path.resolve(__dirname,'../..');
       objekts:[{label:'Cream02 323 드롭',href:'/cosmo/objekt?search=323',collectionId:'cc323',createdAt:'2026-11-10'}]
     })});
    }
+   if(url.pathname==='/api/artist/admin/status'){
+    return route.fulfill({contentType:'application/json',body:JSON.stringify({configured:true,admin:false})});
+   }
    if(url.pathname==='/'||url.pathname==='/home'){
     const fixture=url.pathname==='/home'?'header-home.html':'header-auth.html';
     let html=fs.readFileSync(path.join(root,'build/mobile-pages',fixture),'utf8')
       .replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'');
     html=html.replace('</head>','<style>main{min-height:1400px}</style></head>');
     // header.mustache already embeds site-header.js; strip then inject once so the menu toggle is not double-bound.
-    html=html.replace('</body>','<script src="/js/site-header.js"></script><script src="/js/site-mobile.js"></script></body>');
+    html=html.replace('</body>','<script src="/js/about-admin-auth.js"></script><script src="/js/site-admin-controls.js"></script><script src="/js/site-header.js"></script><script src="/js/site-mobile.js"></script></body>');
     return route.fulfill({contentType:'text/html',body:html});
    }
    const file=path.resolve(root,'src/main/resources/static','.'+url.pathname);
@@ -32,6 +35,7 @@ const root=path.resolve(__dirname,'../..');
    await page.setViewportSize({width,height:900});
    await page.goto('https://header.test/',{waitUntil:'load'});
    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+   await page.waitForFunction(()=>document.getElementById('siteAdminBtn')?.classList.contains('is-ready'));
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`header overflow ${width}`);
    const desktop=await page.locator('#navbar').evaluate(n=>getComputedStyle(n).display!=='none');
    const jump=page.locator('.header-objekt-jump');
@@ -52,19 +56,20 @@ const root=path.resolve(__dirname,'../..');
         assert.ok(Math.abs(box.width-40)<=2&&Math.abs(box.height-40)<=2,`40px 타일 ${width} ${box.width}x${box.height}`);
       }
     }
-    await page.evaluate(()=>{
-      const btn=document.getElementById('siteAdminBtn');
-      if(!btn) return;
-      btn.hidden=false;
-      btn.classList.add('is-ready');
-    });
     const admin=page.locator('#siteAdminBtn');
     const jumpBox=await jump.boundingBox();
     const adminBox=await admin.boundingBox();
     const alertsBox=await barAlerts.boundingBox();
-    assert.equal(await admin.isVisible(),true,`모바일 바에 관리자 버튼 ${width}`);
+    assert.equal(await admin.isVisible(),true,`모바일 바에 관리자 로그인 버튼 ${width}`);
+    assert.equal(await admin.getAttribute('aria-label'),'관리자 로그인');
     assert.ok(adminBox&&jumpBox&&adminBox.x+adminBox.width<=jumpBox.x+1,`관리자가 Objekt 왼쪽 ${width}`);
+    assert.ok(Math.abs(adminBox.height-40)<=2,`관리자 40px 타일 ${width} ${adminBox.height}`);
     assert.ok(jumpBox&&alertsBox&&jumpBox.x+jumpBox.width<=alertsBox.x+1,`Objekt가 종 왼쪽 ${width}`);
+    await admin.click();
+    await page.waitForFunction(()=>document.getElementById('siteAdminLoginModal')?.classList.contains('is-open'));
+    assert.equal(await page.locator('#siteAdminLoginTitle').isVisible(),true,`모바일 헤더 관리자 로그인 모달 ${width}`);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(()=>!document.getElementById('siteAdminLoginModal')?.classList.contains('is-open'));
     assert.equal(await page.locator('[data-header-search-open]').isVisible(),false,`모바일 헤더 돋보기는 없다 ${width}`);
     assert.equal(await page.locator('[data-header-search]').evaluate(n=>getComputedStyle(n).display==='none'),true,`모바일 헤더 검색칸 숨김 ${width}`);
     assert.equal(await barCosmo.isVisible(),false,`모바일 바에서 코스모 아이콘 숨김 ${width}`);
@@ -84,6 +89,16 @@ const root=path.resolve(__dirname,'../..');
     assert.equal(await page.locator('#mobile-menu form[action="/search"] input').isVisible(),true,`전체 메뉴 검색 ${width}`);
     assert.equal(await page.locator('#mobile-menu .mobile-menu-brand').count(),0,`전체 메뉴에 로고 없음 ${width}`);
     assert.equal(await page.locator('#mobile-menu img[alt="tripleS"]').count(),0,`전체 메뉴에 워드마크 없음 ${width}`);
+    const mobileAdmin=page.locator('#siteAdminMobileBtn');
+    assert.equal(await mobileAdmin.isVisible(),true,`전체 메뉴 관리자 로그인 ${width}`);
+    assert.equal(await mobileAdmin.locator('[data-site-admin-mobile-label]').innerText(),'관리자 로그인');
+    await mobileAdmin.click();
+    await page.waitForFunction(()=>document.getElementById('siteAdminLoginModal')?.classList.contains('is-open'));
+    assert.equal(await page.locator('#siteAdminLoginTitle').isVisible(),true,`모바일 관리자 로그인 모달 ${width}`);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(()=>!document.getElementById('siteAdminLoginModal')?.classList.contains('is-open'));
+    await page.locator('#mobile-menu-btn').click();
+    await page.waitForFunction(()=>!document.getElementById('mobile-menu').classList.contains('hidden'));
     const cosmoToggle=page.locator('.mobile-nav-toggle').filter({hasText:'코스모'});
     await cosmoToggle.click();
     assert.equal(await page.locator('.mobile-nav-panel a[href="/article/trade"]').first().isVisible(),true);
@@ -144,6 +159,8 @@ const root=path.resolve(__dirname,'../..');
     assert.equal(await cosmo.locator('a[href="/cosmo/transfers"]').count(),0);
     assert.equal(await barCosmo.isVisible(),true,`데스크톱 코스모 아이디 ${width}`);
     assert.equal(await barAlerts.isVisible(),true,`데스크톱 종 ${width}`);
+    assert.equal(await page.locator('#siteAdminBtn').isVisible(),true,`PC 관리자 로그인 버튼 ${width}`);
+    assert.equal(await page.locator('#siteAdminBtn').getAttribute('aria-label'),'관리자 로그인');
     assert.ok(await page.locator('#top-header').evaluate(n=>n.getBoundingClientRect().height)<=66, 'main처럼 한 줄 헤더 유지');
     const search=page.locator('[data-header-search]');
     assert.equal(await search.locator('[data-header-search-input]').isVisible(),true,`데스크톱 검색 입력칸 ${width}`);

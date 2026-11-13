@@ -38,7 +38,8 @@
       cursor: pointer;
       transition: color .15s ease;
     }
-    #siteAdminBtn.is-ready { display: inline-flex; }
+    #siteAdminBtn.is-ready,
+    #siteAdminBtn.is-ready[hidden] { display: inline-flex !important; }
     #siteAdminBtn svg { width: 1.25rem; height: 1.25rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
     #siteAdminBtn [data-site-admin-icon="logout"],
     #siteAdminBtn.is-active [data-site-admin-icon="admin"] { display: none; }
@@ -159,17 +160,19 @@
   }
 
   function updateHeaderButton(state) {
-    const btn = byId("siteAdminBtn");
-    if (!btn) return;
     const configured = Boolean(state.configured);
     const admin = Boolean(state.admin);
-    const label = admin ? "관리자 로그아웃" : "관리자";
-    btn.classList.toggle("is-ready", configured);
-    btn.hidden = !configured;
-    btn.setAttribute("aria-label", label);
-    btn.setAttribute("title", label);
-    btn.setAttribute("aria-pressed", admin ? "true" : "false");
-    btn.classList.toggle("is-active", admin);
+    const label = admin ? "관리자 로그아웃" : "관리자 로그인";
+    document.querySelectorAll("[data-site-admin-open]").forEach((btn) => {
+      btn.classList.toggle("is-ready", configured);
+      btn.hidden = !configured;
+      btn.setAttribute("aria-label", label);
+      btn.setAttribute("title", label);
+      btn.setAttribute("aria-pressed", admin ? "true" : "false");
+      btn.classList.toggle("is-active", admin);
+      const text = btn.querySelector("[data-site-admin-mobile-label]");
+      if (text) text.textContent = label;
+    });
   }
 
   function notify(state) {
@@ -296,20 +299,30 @@
   }
 
   function bindUi() {
-    const btn = byId("siteAdminBtn");
     const modal = byId("siteAdminLoginModal");
     const form = byId("siteAdminLoginForm");
 
-    btn?.addEventListener("click", async () => {
-      if (currentState.admin) {
-        try {
-          await logout();
-        } catch (_) {
-          alert("로그아웃에 실패했습니다. 네트워크 연결을 확인해 주세요.");
+    document.querySelectorAll("[data-site-admin-open]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const mobileMenu = document.getElementById("mobile-menu");
+        const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+        if (mobileMenu && !mobileMenu.classList.contains("hidden")) {
+          mobileMenu.classList.add("hidden");
+          if (mobileMenuBtn) {
+            mobileMenuBtn.setAttribute("aria-expanded", "false");
+            mobileMenuBtn.setAttribute("aria-label", "메뉴 열기");
+          }
         }
-        return;
-      }
-      openLogin();
+        if (currentState.admin) {
+          try {
+            await logout();
+          } catch (_) {
+            alert("로그아웃에 실패했습니다. 네트워크 연결을 확인해 주세요.");
+          }
+          return;
+        }
+        openLogin();
+      });
     });
 
     form?.addEventListener("submit", async (event) => {

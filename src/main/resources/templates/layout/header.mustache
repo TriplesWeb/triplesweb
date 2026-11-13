@@ -150,7 +150,7 @@
             <div data-alerts-body></div>
         </div>
     </div>
-    <button type="button" id="siteAdminBtn" aria-label="관리자" title="관리자" aria-pressed="false" hidden>
+    <button type="button" id="siteAdminBtn" class="site-header-tool" data-site-admin-open aria-label="관리자 로그인" title="관리자 로그인" aria-pressed="false" hidden>
         <svg data-site-admin-icon="admin" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 4 6v6c0 4.5 5 8 8 9 3-1 8-4.5 8-9V6z"/><circle cx="12" cy="10" r="2"/><path d="M8 17v-1a4 4 0 0 1 8 0v1"/></svg>
         <svg data-site-admin-icon="logout" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 4H4v16h6M9 12h12m-4-4 4 4-4 4"/></svg>
     </button>
@@ -260,6 +260,11 @@
                 </div>
                 {{/direct}}
                 {{/siteNavigation}}
+
+                <button type="button" class="mobile-direct-link" id="siteAdminMobileBtn" data-site-admin-open data-nav="admin" hidden>
+                    <span class="mobile-nav-icon" aria-hidden="true"></span>
+                    <span data-site-admin-mobile-label>관리자 로그인</span>
+                </button>
 
                 {{#member}}
                 <div class="mobile-account">
