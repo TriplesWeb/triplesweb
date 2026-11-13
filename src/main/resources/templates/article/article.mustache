@@ -142,35 +142,39 @@
                             </div>
                             {{/isTrade}}
                             <div class="article-board-subject text-left font-medium">
+                                {{#hasObjektPreview}}
+                                <a href="/article/{{#category}}{{category}}{{/category}}{{^category}}trade{{/category}}/{{id}}" class="article-board-subject-link article-board-subject-link--preview hover:text-primary-container transition-colors" aria-label="{{title}}">
+                                    <div class="article-board-objekt-previews">
+                                        {{#hasHavePreview}}
+                                        <div class="article-board-objekt-strip" data-side="have">
+                                            {{#havePreview}}
+                                            <span class="article-board-objekt-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
+                                                {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
+                                                {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
+                                            </span>
+                                            {{/havePreview}}
+                                            {{#hasHavePreviewMore}}<span class="article-board-objekt-more">+{{havePreviewMoreCount}}</span>{{/hasHavePreviewMore}}
+                                        </div>
+                                        {{/hasHavePreview}}
+                                        {{#showTradeSwap}}<span class="article-board-objekt-arrow" aria-hidden="true">↔</span>{{/showTradeSwap}}
+                                        {{#hasWantPreview}}
+                                        <div class="article-board-objekt-strip" data-side="want">
+                                            {{#wantPreview}}
+                                            <span class="article-board-objekt-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
+                                                {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
+                                                {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
+                                            </span>
+                                            {{/wantPreview}}
+                                            {{#hasWantPreviewMore}}<span class="article-board-objekt-more">+{{wantPreviewMoreCount}}</span>{{/hasWantPreviewMore}}
+                                        </div>
+                                        {{/hasWantPreview}}
+                                    </div>
+                                </a>
+                                {{/hasObjektPreview}}
+                                {{^hasObjektPreview}}
                                 <a href="/article/{{#category}}{{category}}{{/category}}{{^category}}trade{{/category}}/{{id}}" class="article-board-subject-link hover:text-primary-container transition-colors">
                                     {{title}}
                                 </a>
-                                {{#hasObjektPreview}}
-                                <div class="article-board-objekt-previews" aria-label="Have/Want 미리보기">
-                                    {{#hasHavePreview}}
-                                    <div class="article-board-objekt-strip" data-side="have">
-                                        {{#havePreview}}
-                                        <span class="article-board-objekt-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
-                                            {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
-                                            {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
-                                        </span>
-                                        {{/havePreview}}
-                                        {{#hasHavePreviewMore}}<span class="article-board-objekt-more">+{{havePreviewMoreCount}}</span>{{/hasHavePreviewMore}}
-                                    </div>
-                                    {{/hasHavePreview}}
-                                    {{#showTradeSwap}}<span class="article-board-objekt-arrow" aria-hidden="true">↔</span>{{/showTradeSwap}}
-                                    {{#hasWantPreview}}
-                                    <div class="article-board-objekt-strip" data-side="want">
-                                        {{#wantPreview}}
-                                        <span class="article-board-objekt-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
-                                            {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
-                                            {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
-                                        </span>
-                                        {{/wantPreview}}
-                                        {{#hasWantPreviewMore}}<span class="article-board-objekt-more">+{{wantPreviewMoreCount}}</span>{{/hasWantPreviewMore}}
-                                    </div>
-                                    {{/hasWantPreview}}
-                                </div>
                                 {{/hasObjektPreview}}
                             </div>
                             <div class="article-board-author text-on-surface-variant truncate">{{userId}}</div>
