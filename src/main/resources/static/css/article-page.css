@@ -76,7 +76,7 @@
 .article-board-row{border-color:#ffffff12!important}
 .article-board-row+.article-board-row{border-top:1px solid #ffffff12}
 
-.market-tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin:-.5rem 0 1.5rem}.market-tabs a{padding:.6rem 1.15rem;border:1px solid #3a4a46;border-radius:999px;color:#b9cac4;text-decoration:none}.market-tabs a:hover,.market-tabs a[aria-current="page"]{background:#8decd9;color:#102720;border-color:#8decd9}.market-tabs a:focus-visible{outline:2px solid #8decd9;outline-offset:3px}
+.article-page .market-tabs.site-section-tabs{margin:-.5rem 0 1.5rem}
 .market-member-filter{display:grid;gap:.85rem;margin:0 0 1.35rem;padding:1rem;border:1px solid var(--site-ui-border,#ffffff22);border-radius:1.1rem;background:color-mix(in srgb,var(--site-ui-panel,#15191f) 88%,transparent)}
 /* /cosmo/objekt 필터와 같은 pill 컨트롤 */
 .market-filter-bar{display:flex;flex-wrap:wrap;align-items:center;gap:.55rem .65rem;position:relative;z-index:2;overflow:visible}
