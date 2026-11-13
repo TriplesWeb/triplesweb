@@ -175,25 +175,33 @@ public class ObjektDescriptionEditor {
         boolean allSelected = present.isEmpty() || present.equals(targets);
         if (allSelected) {
             writes.put(groupKey, text);
-            if (ObjektDescriptionKeys.jsonException(season, number)) {
+            boolean split = ObjektDescriptionKeys.memberSpecific(season, number);
+            if (ObjektDescriptionKeys.jsonException(season, number) || split) {
+                // 예외·기존 분리 번호는 멤버 행을 최신 공통 문구로 맞춰 둔다.
                 for (String token : present) {
                     writes.put(ObjektDescriptionKeys.memberKey(season, number, token), text);
                 }
-            } else {
+            }
+            if (!ObjektDescriptionKeys.jsonException(season, number)) {
                 ObjektDescriptionKeys.clearMemberSpecific(season, number);
                 forget.add(scopeKey);
             }
             return;
         }
 
+        boolean alreadySplit = ObjektDescriptionKeys.memberSpecific(season, number);
         String previous = previousText(season, number, cards, existing);
         ObjektDescriptionKeys.markMemberSpecific(season, number);
         remember.add(scopeKey);
-        for (String token : present) {
-            if (targets.contains(token)) continue;
-            String key = ObjektDescriptionKeys.memberKey(season, number, token);
-            if (!hasText(key, existing, writes) && !previous.isBlank()) {
-                writes.put(key, previous);
+        // 공통→분리로 처음 갈 때만 비선택 멤버에 이전 공통 문구를 채운다.
+        // 이미 분리된 번호에서는 의도적 빈 설명을 덮지 않는다.
+        if (!alreadySplit) {
+            for (String token : present) {
+                if (targets.contains(token)) continue;
+                String key = ObjektDescriptionKeys.memberKey(season, number, token);
+                if (!hasText(key, existing, writes) && !previous.isBlank()) {
+                    writes.put(key, previous);
+                }
             }
         }
         for (String token : targets) {

@@ -129,6 +129,45 @@ class ObjektDescriptionEditorTest {
     }
 
     @Test
+    void regroupingSyncsStaleMemberRowsBeforeClearingScope() {
+        Map<String, Object> seo = card("SeoYeon", "323");
+        Map<String, Object> yu = card("YuBin", "323");
+        ObjektDescriptionEditor editor = editor(List.of(seo, yu));
+        editor.save(seo, "공통", "group");
+        editor.save(seo, "서연만", "member");
+
+        editor.save(seo, "다시 공통", "group");
+
+        assertFalse(ObjektDescriptionKeys.memberSpecific("Cream02", "323"));
+        assertEquals("다시 공통", stored.get(ObjektDescriptionKeys.groupKey("Cream02", "323")).getDescription());
+        assertEquals("다시 공통",
+                stored.get(ObjektDescriptionKeys.memberKey("Cream02", "323", "SeoYeon")).getDescription());
+        assertEquals("다시 공통",
+                stored.get(ObjektDescriptionKeys.memberKey("Cream02", "323", "YuBin")).getDescription());
+
+        editor.save(seo, "서연만 다시", "member");
+        assertEquals("다시 공통",
+                stored.get(ObjektDescriptionKeys.memberKey("Cream02", "323", "YuBin")).getDescription());
+    }
+
+    @Test
+    void alreadySplitBlankMemberIsNotFilledFromSibling() {
+        Map<String, Object> seo = card("SeoYeon", "323");
+        Map<String, Object> yu = card("YuBin", "323");
+        ObjektDescriptionEditor editor = editor(List.of(seo, yu));
+        editor.save(seo, "공통", "group");
+        editor.save(seo, "서연만", "member");
+        editor.save(yu, "", "member");
+
+        editor.save(seo, "서연 수정", "member");
+
+        assertEquals("서연 수정",
+                stored.get(ObjektDescriptionKeys.memberKey("Cream02", "323", "SeoYeon")).getDescription());
+        assertEquals("",
+                stored.get(ObjektDescriptionKeys.memberKey("Cream02", "323", "YuBin")).getDescription());
+    }
+
+    @Test
     void saveRemembersSelectedMembersAndNumbersForNextEdit() {
         Map<String, Object> seo323 = card("SeoYeon", "323");
         Map<String, Object> yu323 = card("YuBin", "323");
