@@ -25,13 +25,15 @@
       align-items: center;
       justify-content: center;
       box-sizing: border-box;
-      width: 1.75rem;
-      height: 1.75rem;
+      width: 2.5rem;
+      height: 2.5rem;
+      min-width: 2.5rem;
+      min-height: 2.5rem;
       flex: 0 0 auto;
       padding: 0;
-      border: 0;
-      border-radius: 0;
-      background: transparent;
+      border: 1px solid #3a4a4680;
+      border-radius: .75rem;
+      background: #191b22;
       color: #e3e2e8;
       cursor: pointer;
       transition: color .15s ease;
@@ -41,11 +43,8 @@
     #siteAdminBtn [data-site-admin-icon="logout"],
     #siteAdminBtn.is-active [data-site-admin-icon="admin"] { display: none; }
     #siteAdminBtn.is-active [data-site-admin-icon="logout"] { display: block; }
-    @media (max-width: 1023px) {
-      #siteAdminBtn { width: 44px; height: 44px; }
-    }
     #siteAdminBtn:hover,
-    #siteAdminBtn.is-active { color: #00f5d4; }
+    #siteAdminBtn.is-active { color: #8decd9; border-color: #8decd9; }
     #siteAdminLoginModal {
       position: fixed;
       inset: 0;

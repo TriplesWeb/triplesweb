@@ -42,6 +42,16 @@ const root=path.resolve(__dirname,'../..');
    assert.equal(await jump.getAttribute('aria-label'),'오브젝트');
    if(!desktop){
     assert.equal(await jump.isVisible(),true,`모바일 바에 Objekt 버튼 ${width}`);
+    const labelShown=await page.locator('.header-objekt-jump__label').evaluate(n=>getComputedStyle(n).display!=='none');
+    assert.equal(labelShown,width>=420,`Objekt 라벨은 420px 이상에서만 ${width}`);
+    if(width<420){
+      const tile=await jump.boundingBox();
+      const bell=await barAlerts.boundingBox();
+      assert.ok(tile&&bell,`Objekt·종 크기 ${width}`);
+      for(const box of [tile,bell]){
+        assert.ok(Math.abs(box.width-40)<=2&&Math.abs(box.height-40)<=2,`40px 타일 ${width} ${box.width}x${box.height}`);
+      }
+    }
     await page.evaluate(()=>{
       const btn=document.getElementById('siteAdminBtn');
       if(!btn) return;
@@ -98,9 +108,15 @@ const root=path.resolve(__dirname,'../..');
     const alertsBox=await barAlerts.boundingBox();
     assert.equal(await jump.isVisible(),true,`데스크톱 Objekt 필 ${width}`);
     assert.equal(await page.locator('.header-objekt-jump__label').evaluate(n=>n.textContent.trim()),'Objekt');
-    if(width>=1280){
-      assert.equal(await page.locator('.header-objekt-jump__label').evaluate(n=>getComputedStyle(n).display!=='none'),true,`넓은 PC에서 Objekt 라벨 ${width}`);
-    }
+    assert.equal(await page.locator('.header-objekt-jump__label').evaluate(n=>getComputedStyle(n).display!=='none'),true,`PC에서 Objekt 라벨 ${width}`);
+    const objektTile=await page.locator('.header-objekt-jump__cards').boundingBox();
+    assert.ok(objektTile&&alertsBox&&objektTile.height+1>=alertsBox.height,`Objekt 타일이 종보다 작지 않다 ${width}`);
+    assert.ok(objektTile&&Math.abs(objektTile.width-40)<=2&&Math.abs(objektTile.height-40)<=2,`Objekt 아이콘 40px ${width}`);
+    const searchForm=page.locator('[data-header-search]');
+    assert.equal(await searchForm.locator('[data-header-search-input]').getAttribute('placeholder'),'검색',`검색 placeholder ${width}`);
+    const searchBoxForHit=await searchForm.boundingBox();
+    const submitBox=await searchForm.locator('.site-header-search__submit').boundingBox();
+    assert.ok(searchBoxForHit&&submitBox&&Math.abs(submitBox.height-searchBoxForHit.height)<=1,`돋보기 클릭 높이가 알약과 같다 ${width}`);
     assert.ok(scheduleBox&&jumpBox&&jumpBox.x>=scheduleBox.x+scheduleBox.width-1,`오브젝트 아이콘이 일정 오른쪽 ${width}`);
     assert.ok(scheduleBox&&searchBox&&scheduleBox.x+scheduleBox.width<=searchBox.x+2,`일정이 검색과 겹치지 않는다 ${width}`);
     assert.ok(searchBox&&cosmoIdBox&&searchBox.x+searchBox.width<=cosmoIdBox.x+1,`검색칸이 코스모 왼쪽 ${width}`);
