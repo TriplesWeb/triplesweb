@@ -81,4 +81,20 @@ class SearchControllerTest {
                 .contains("data-search-section=\"info\"")
                 .contains("data-search-section=\"schedule\"");
     }
+
+    @Test
+    void objektImagesRenderAndAbsentMembersAreNotShown() throws Exception {
+        var image = new SiteSearchService.Hit("지우 306Z", "/cosmo/objekt/detail/card", "오브젝트", "Cream02", true,
+                "https://example.org/thumb.jpg");
+        var missingImage = new SiteSearchService.Hit("지우 350Z", "/cosmo/objekt/detail/card2", "오브젝트", "", true, "");
+        var hits = List.of(image, missingImage);
+        var cosmo = new SiteSearchService.Tab("cosmo", "코스모", "", "/cosmo/objekt?search=지우", hits, true);
+        when(search.search("지우", null)).thenReturn(new SiteSearchService.Page("지우", "cosmo", List.of(cosmo)));
+        mvc.perform(get("/search").param("keyword", "지우"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("멤버 검색 결과"))))
+                .andExpect(content().string(containsString("class=\"search-objekt\"")))
+                .andExpect(content().string(containsString("https://example.org/thumb.jpg")))
+                .andExpect(content().string(containsString("aria-hidden=\"true\">image")));
+    }
 }

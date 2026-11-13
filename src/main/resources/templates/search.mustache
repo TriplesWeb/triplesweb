@@ -38,12 +38,12 @@
             {{/errorMessage}}
 
             {{#keyword}}
+            {{#hasMembers}}
             <section class="search-members" aria-label="멤버 검색 결과">
                 <div class="search-members__head">
                     <span class="material-symbols-outlined" data-icon="person_search">person_search</span>
                     <h2>멤버 검색 결과</h2>
                 </div>
-                {{#hasMembers}}
                 <div class="search-members__grid">
                     {{#memberResults}}
                     <a href="{{{profileUrl}}}" class="search-member">
@@ -56,14 +56,8 @@
                     </a>
                     {{/memberResults}}
                 </div>
-                {{/hasMembers}}
-                {{^hasMembers}}
-                <div class="search-members__empty">
-                    <span class="material-symbols-outlined" data-icon="person_off">person_off</span>
-                    <p>일치하는 멤버가 없습니다.</p>
-                </div>
-                {{/hasMembers}}
             </section>
+            {{/hasMembers}}
 
             {{#tabs}}
             <section class="search-section" data-search-section="{{id}}" aria-label="{{label}} 검색 결과">
@@ -74,12 +68,26 @@
                 {{#hasHits}}
                 <ul class="search-hits">
                     {{#hits}}
-                    <li>
+                    <li class="{{#objekt}}search-hits__objekt{{/objekt}}{{^objekt}}search-hits__item{{/objekt}}">
+                        {{#objekt}}
+                        <a href="{{{href}}}" class="search-objekt">
+                            <span class="search-objekt__image">
+                                {{#hasImage}}<img src="{{imageUrl}}" loading="lazy" alt="">{{/hasImage}}
+                                {{^hasImage}}<span class="material-symbols-outlined" aria-hidden="true">image</span>{{/hasImage}}
+                            </span>
+                            <span class="search-objekt__body">
+                                <strong class="search-objekt__label">{{label}}</strong>
+                                {{#snippet}}<span class="search-objekt__snippet">{{snippet}}</span>{{/snippet}}
+                            </span>
+                        </a>
+                        {{/objekt}}
+                        {{^objekt}}
                         <a href="{{{href}}}" class="search-hit">
                             <span class="search-hit__kind">{{kind}}</span>
                             <strong class="search-hit__label">{{label}}</strong>
                             {{#snippet}}<p class="search-hit__snippet">{{snippet}}</p>{{/snippet}}
                         </a>
+                        {{/objekt}}
                     </li>
                     {{/hits}}
                 </ul>

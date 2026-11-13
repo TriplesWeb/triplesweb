@@ -18,12 +18,16 @@ import org.springframework.stereotype.Service;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.DateTimeException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -35,8 +39,10 @@ public class SiteSearchService {
 
     public static final int LIMIT = 8;
     static final int OBJEKT_LIMIT = 5;
+    static final int INFO_SCHEDULE_LIMIT = 5;
     static final List<String> TAB_IDS = List.of("cosmo", "media", "info", "schedule");
     private static final Pattern NICKNAME = Pattern.compile("^[A-Za-z0-9._-]{3,24}$");
+    private static final Pattern DATE = Pattern.compile("(?<!\\d)(\\d{4})[.\\-/](\\d{1,2})[.\\-/](\\d{1,2})(?!\\d)");
 
     private final ArtistSnapshotService artists;
     private final ObjektService objekts;
@@ -63,9 +69,9 @@ public class SiteSearchService {
         List<Tab> tabs = List.of(
                 tabOf("cosmo", "코스모", cosmoResults.hasMoreObjekts()
                         ? "/cosmo/objekt?search=" + encode(query) : "", cosmoResults.hits(), query),
-                tabOf("media", "미디어", "/archive/image_archive?q=" + encode(query), media.join(), query),
-                tabOf("info", "정보", "/article/info?type=title&keyword=" + encode(query), info.join(), query),
-                tabOf("schedule", "일정", "/schedule", schedule.join(), query)
+                tabOf("media", "미디어", "", media.join(), query),
+                tabOf("info", "정보", "", info.join(), query),
+                tabOf("schedule", "일정", "", schedule.join(), query)
         );
         List<Tab> marked = tabs.stream().map(item -> item.withActive(item.id.equals(active))).toList();
         return new Page(query, active, marked, members);
@@ -96,9 +102,6 @@ public class SiteSearchService {
         String encoded = encode(query);
         return switch (id) {
             case "cosmo" -> "/cosmo/objekt?search=" + encoded;
-            case "media" -> "/archive/image_archive?q=" + encoded;
-            case "info" -> "/article/info?type=title&keyword=" + encoded;
-            case "schedule" -> "/schedule";
             default -> "";
         };
     }
@@ -147,7 +150,8 @@ public class SiteSearchService {
             String season = first(objekt, "season", "seasonKey");
             String label = (member + " " + number).trim();
             if (label.isBlank()) label = first(objekt, "collectionId", "searchText", "slug");
-            hits.add(hit(label, ObjektLinks.detail(objekt), "오브젝트", season));
+            hits.add(new Hit(blankTo(label, "오브젝트"), ObjektLinks.detail(objekt), "오브젝트", season,
+                    true, first(objekt, "thumbnailImage", "frontImage")));
         }
         boolean hasMoreObjekts = matchingObjekts.size() >= OBJEKT_LIMIT;
         for (Hit gravityHit : gravityHits(query)) {
@@ -188,78 +192,99 @@ public class SiteSearchService {
         }
     }
 
+    private record DatedHit(Hit hit, LocalDateTime date) {}
+
+    private static List<Hit> newest(List<DatedHit> hits, int limit) {
+        return hits.stream()
+                .sorted(Comparator.comparing(DatedHit::date, Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(limit).map(DatedHit::hit).toList();
+    }
+
     private List<Hit> mediaHits(String query) {
-        List<Hit> hits = new ArrayList<>();
+        List<DatedHit> hits = new ArrayList<>();
         for (Archive archive : archiveHits(MediaType.IMAGE, query)) {
-            hits.add(hit(archive.getTitle(), "/archive/image_archive?q=" + encode(archive.getTitle()), "사진",
-                    blankTo(archive.getArtistNames(), "사진 아카이브")));
-            if (hits.size() >= LIMIT) return hits;
+            hits.add(new DatedHit(hit(archive.getTitle(), "/archive/image_archive?q=" + encode(archive.getTitle()), "사진",
+                    blankTo(archive.getArtistNames(), "사진 아카이브")), dateTime(archive.getRegisteredOn())));
         }
         for (Archive archive : archiveHits(MediaType.VIDEO, query)) {
-            hits.add(hit(archive.getTitle(), "/archive/video_archive?q=" + encode(archive.getTitle()), "영상",
-                    blankTo(archive.getArtistNames(), "영상 아카이브")));
-            if (hits.size() >= LIMIT) return hits;
+            hits.add(new DatedHit(hit(archive.getTitle(), "/archive/video_archive?q=" + encode(archive.getTitle()), "영상",
+                    blankTo(archive.getArtistNames(), "영상 아카이브")), dateTime(archive.getRegisteredOn())));
         }
         for (MediaTab tab : MediaTab.values()) {
             for (MediaDto item : safeList(() -> media.allByTab(tab.getKey()))) {
                 if (!contains(item.getTitle(), query) && !contains(item.getArtistNames(), query)) continue;
-                hits.add(hit(blankTo(item.getTitle(), item.getYoutubeId()),
+                hits.add(new DatedHit(hit(blankTo(item.getTitle(), item.getYoutubeId()),
                         "/media/" + item.normalizedTab() + "/" + item.getYoutubeId(),
-                        tab.getKor(), blankTo(item.getArtistNames(), tab.getKor())));
-                if (hits.size() >= LIMIT) return hits;
+                        tab.getKor(), blankTo(item.getArtistNames(), tab.getKor())), firstDate(item.getPublishedOn())));
             }
         }
-        return hits;
+        return newest(hits, LIMIT);
     }
 
     private List<Archive> archiveHits(MediaType type, String query) {
         try {
-            return archives.pageByType(type, 0, LIMIT, query).getContent();
+            return archives.searchLatestByType(type, query, LIMIT);
         } catch (RuntimeException ignored) {
             return List.of();
         }
     }
 
     private List<Hit> infoHits(String query) {
-        List<Hit> hits = new ArrayList<>();
+        List<DatedHit> hits = new ArrayList<>();
         for (EventSectionGroupDto group : safeList(events::listGroupedBySection)) {
             List<EventListCard> cards = group.getEvents() == null ? List.of() : group.getEvents();
             for (EventListCard event : cards) {
                 if (!contains(event.getEventName(), query) && !contains(event.getRegionLabel(), query)) continue;
-                hits.add(hit(event.getEventName(), "/cosmo/event/" + event.getEventId(), "공연/이벤트",
-                        blankTo(event.getEventDate(), group.getName())));
-                if (hits.size() >= LIMIT) return hits;
+                hits.add(new DatedHit(hit(event.getEventName(), "/cosmo/event/" + event.getEventId(), "공연/이벤트",
+                        blankTo(event.getEventDate(), group.getName())), firstDate(event.getEventDate())));
             }
         }
         for (ShopListCard card : safeList(shop::listCards)) {
             if (!contains(card.getEventName(), query)) continue;
-            hits.add(hit(card.getEventName(), "/shop/" + card.getId(), "굿즈",
-                    blankTo(card.getSalesPeriod(), "굿즈")));
-            if (hits.size() >= LIMIT) return hits;
+            hits.add(new DatedHit(hit(card.getEventName(), "/shop/" + card.getId(), "굿즈",
+                    blankTo(card.getSalesPeriod(), "굿즈")), firstDate(card.getSalesPeriod())));
         }
-        for (Article article : articleHits("info", query)) {
-            hits.add(hit(article.getTitle(), "/article/info/" + article.getId(), "기사/그외",
-                    blankTo(article.getUserId(), "정보")));
-            if (hits.size() >= LIMIT) return hits;
+        for (Article article : latestArticleHits("info", query)) {
+            hits.add(new DatedHit(hit(article.getTitle(), "/article/info/" + article.getId(), "기사/그외",
+                    blankTo(article.getUserId(), "정보")), article.getFormattedCreatedAt()));
         }
-        for (Article article : articleHits("notice", query)) {
-            hits.add(hit(article.getTitle(), "/article/notice/" + article.getId(), "공지",
-                    blankTo(article.getFormattedDate(), "공지")));
-            if (hits.size() >= LIMIT) return hits;
+        for (Article article : latestArticleHits("notice", query)) {
+            hits.add(new DatedHit(hit(article.getTitle(), "/article/notice/" + article.getId(), "공지",
+                    blankTo(article.getFormattedDate(), "공지")), article.getFormattedCreatedAt()));
         }
-        return hits;
+        return newest(hits, INFO_SCHEDULE_LIMIT);
     }
 
     private List<Hit> scheduleHits(String query) {
-        List<Hit> hits = new ArrayList<>();
+        List<DatedHit> hits = new ArrayList<>();
         for (Schedule schedule : safeList(schedules::findAll)) {
             String names = schedule.getArtistNames();
             if (!contains(schedule.getTitle(), query) && !contains(names, query)) continue;
-            hits.add(hit(blankTo(schedule.getTitle(), "일정"), "/schedule", "일정",
-                    blankTo(names, dateRange(schedule))));
-            if (hits.size() >= LIMIT) return hits;
+            hits.add(new DatedHit(hit(blankTo(schedule.getTitle(), "일정"), "/schedule", "일정",
+                    blankTo(names, dateRange(schedule))), dateTime(schedule.getStart())));
         }
-        return hits;
+        return newest(hits, INFO_SCHEDULE_LIMIT);
+    }
+
+    private List<Article> latestArticleHits(String category, String query) {
+        return safeList(() -> articles.searchLatestByCategory(category, query, INFO_SCHEDULE_LIMIT));
+    }
+
+    private static LocalDateTime dateTime(LocalDate date) {
+        return date == null ? null : date.atStartOfDay();
+    }
+
+    // 이벤트와 굿즈의 자유 형식 기간에서 시작일을 추출한다. 알 수 없는 날짜는 마지막에 둔다.
+    private static LocalDateTime firstDate(String value) {
+        if (value == null) return null;
+        Matcher match = DATE.matcher(value);
+        if (!match.find()) return null;
+        try {
+            return LocalDate.of(Integer.parseInt(match.group(1)), Integer.parseInt(match.group(2)),
+                    Integer.parseInt(match.group(3))).atStartOfDay();
+        } catch (DateTimeException ex) {
+            return null;
+        }
     }
 
     private List<Article> articleHits(String category, String query) {
@@ -430,12 +455,24 @@ public class SiteSearchService {
         private final String href;
         private final String kind;
         private final String snippet;
+        private final boolean objekt;
+        private final String imageUrl;
 
         public Hit(String label, String href, String kind, String snippet) {
+            this(label, href, kind, snippet, false, "");
+        }
+
+        public Hit(String label, String href, String kind, String snippet, boolean objekt, String imageUrl) {
             this.label = label;
             this.href = href;
             this.kind = kind;
             this.snippet = snippet;
+            this.objekt = objekt;
+            this.imageUrl = imageUrl == null ? "" : imageUrl;
+        }
+
+        public boolean isHasImage() {
+            return !imageUrl.isBlank();
         }
     }
 }

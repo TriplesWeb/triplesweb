@@ -1,6 +1,8 @@
 package com.example.triplesweb.service;
 
 import com.example.triplesweb.dto.MediaDto;
+import com.example.triplesweb.dto.EventListCard;
+import com.example.triplesweb.dto.EventSectionGroupDto;
 import com.example.triplesweb.dto.ShopListCard;
 import com.example.triplesweb.entity.Shop;
 import com.example.triplesweb.entity.Archive;
@@ -8,11 +10,12 @@ import com.example.triplesweb.entity.Article;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.Schedule;
+import com.example.triplesweb.entity.Event;
+import com.example.triplesweb.entity.EventStop;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.data.domain.PageImpl;
-
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -51,8 +54,8 @@ class SiteSearchServiceTest {
         when(artists.findAll()).thenReturn(List.of());
         when(objekts.findCollections("triples")).thenReturn(List.of());
         when(gravity.hasCosmoToken()).thenReturn(false);
-        when(archives.pageByType(eq(MediaType.IMAGE), eq(0), eq(8), anyString())).thenReturn(new PageImpl<>(List.of()));
-        when(archives.pageByType(eq(MediaType.VIDEO), eq(0), eq(8), anyString())).thenReturn(new PageImpl<>(List.of()));
+        when(archives.searchLatestByType(eq(MediaType.IMAGE), anyString(), eq(8))).thenReturn(List.of());
+        when(archives.searchLatestByType(eq(MediaType.VIDEO), anyString(), eq(8))).thenReturn(List.of());
         when(events.listGroupedBySection()).thenReturn(List.of());
         when(shop.listCards()).thenReturn(List.of());
         when(schedules.findAll()).thenReturn(List.of());
@@ -82,6 +85,8 @@ class SiteSearchServiceTest {
                 "member", "HaYeon",
                 "collectionNo", "323",
                 "season", "Cream02",
+                "thumbnailImage", "https://example.org/thumb.jpg",
+                "frontImage", "https://example.org/front.jpg",
                 "searchText", "Cream02 HaYeon 323",
                 "collectionId", "Cream02 HaYeon 323",
                 "slug", "hayeon-cc323"
@@ -95,6 +100,9 @@ class SiteSearchServiceTest {
         assertThat(cosmo.getHits()).extracting(SiteSearchService.Hit::getKind)
                 .contains("코스모 아이디", "오브젝트");
         assertThat(cosmo.getHits().get(0).getHref()).isEqualTo("/cosmo/collection?nickname=cc323");
+        var objektHit = cosmo.getHits().stream().filter(SiteSearchService.Hit::isObjekt).findFirst().orElseThrow();
+        assertThat(objektHit.getImageUrl()).isEqualTo("https://example.org/thumb.jpg");
+        assertThat(cosmo.getHits().get(0).isObjekt()).isFalse();
         assertThat(cosmo.isHasMore()).isFalse();
         assertThat(cosmo.getCount()).isLessThanOrEqualTo(SiteSearchService.LIMIT);
         assertThat(search.search("cc323", null).getActiveTab()).isEqualTo("cosmo");
@@ -105,8 +113,8 @@ class SiteSearchServiceTest {
         Archive photo = new Archive();
         photo.setTitle("서연 직캠");
         photo.setArtistNames("서연");
-        when(archives.pageByType(eq(MediaType.IMAGE), eq(0), eq(8), eq("서연")))
-                .thenReturn(new PageImpl<>(List.of(photo)));
+        when(archives.searchLatestByType(eq(MediaType.IMAGE), eq("서연"), eq(8)))
+                .thenReturn(List.of(photo));
         when(media.allByTab(anyString())).thenReturn(List.of());
         when(media.allByTab("mv")).thenReturn(List.of(MediaDto.builder()
                 .tab("mv").youtubeId("abcdefghijk").title("서연 MV").artistNames("서연").build()));
@@ -120,7 +128,7 @@ class SiteSearchServiceTest {
         info.setTitle("서연 인터뷰");
         info.setUserId("admin");
         info.setCategory("info");
-        when(articles.searchByCategory(eq("info"), eq("title"), eq("서연"), eq(8)))
+        when(articles.searchLatestByCategory(eq("info"), eq("서연"), eq(5)))
                 .thenReturn(List.of(info));
         Schedule schedule = new Schedule("서연 생일", LocalDate.of(2026, 8, 6), LocalDate.of(2026, 8, 6));
         when(schedules.findAll()).thenReturn(List.of(schedule));
@@ -137,7 +145,49 @@ class SiteSearchServiceTest {
         SiteSearchService.Page schedulePage = search.search("서연", "schedule");
         assertThat(tab(schedulePage, "schedule").getHits()).extracting(SiteSearchService.Hit::getHref)
                 .contains("/schedule");
-        assertThat(tab(mediaPage, "media").getMoreHref()).startsWith("/archive/image_archive?q=");
+        assertThat(tab(mediaPage, "media").isHasMore()).isFalse();
+        assertThat(tab(mediaPage, "info").isHasMore()).isFalse();
+        assertThat(tab(mediaPage, "schedule").isHasMore()).isFalse();
+    }
+
+    @Test
+    void sortsMediaAcrossSourcesByDateBeforeLimit() {
+        Archive photo = new Archive(); photo.setTitle("지연 사진"); photo.setRegisteredOn(LocalDate.of(2025, 1, 1));
+        Archive video = new Archive(); video.setTitle("지연 영상"); video.setRegisteredOn(LocalDate.of(2026, 1, 1));
+        when(archives.searchLatestByType(MediaType.IMAGE, "지연", 8)).thenReturn(List.of(photo));
+        when(archives.searchLatestByType(MediaType.VIDEO, "지연", 8)).thenReturn(List.of(video));
+        when(media.allByTab("mv")).thenReturn(List.of(
+                MediaDto.builder().tab("mv").youtubeId("a").title("지연 미디어 최신").publishedOn("2026-09-01").build(),
+                MediaDto.builder().tab("mv").youtubeId("b").title("지연 미디어 과거").publishedOn("2024-02-01").build()));
+        assertThat(tab(search.search("지연", null), "media").getHits())
+                .extracting(SiteSearchService.Hit::getLabel)
+                .containsExactly("지연 미디어 최신", "지연 영상", "지연 사진", "지연 미디어 과거");
+    }
+
+    @Test
+    void sortsInfoAndSchedulesAcrossSourcesBeforeTakingFive() {
+        Event event = new Event(); event.setEventId(1L); event.setEventName("지연 행사");
+        EventStop stop = new EventStop(); stop.setEventDate("2026.03.01~2026.12.31");
+        event.setStops(List.of(stop));
+        when(events.listGroupedBySection()).thenReturn(List.of(EventSectionGroupDto.builder()
+                .name("공연").events(List.of(new EventListCard(event))).build()));
+        Shop goods = new Shop(); goods.setId(2L); goods.setTitle("지연 굿즈"); goods.setSalesPeriod("2026.05.01~2026.12.01");
+        when(shop.listCards()).thenReturn(List.of(new ShopListCard(goods)));
+        Article article = new Article(); article.setId(3L); article.setTitle("지연 공지");
+        article.setFormattedCreatedAt(LocalDateTime.of(2026, 4, 2, 10, 0));
+        when(articles.searchLatestByCategory("notice", "지연", 5)).thenReturn(List.of(article));
+        when(schedules.findAll()).thenReturn(List.of(
+                new Schedule("지연 1", LocalDate.of(2020, 1, 1), null),
+                new Schedule("지연 2", LocalDate.of(2022, 1, 1), null),
+                new Schedule("지연 3", LocalDate.of(2023, 1, 1), null),
+                new Schedule("지연 4", LocalDate.of(2024, 1, 1), null),
+                new Schedule("지연 5", LocalDate.of(2025, 1, 1), null),
+                new Schedule("지연 6", LocalDate.of(2026, 1, 1), null)));
+        var page = search.search("지연", null);
+        assertThat(tab(page, "info").getHits()).extracting(SiteSearchService.Hit::getLabel)
+                .containsExactly("지연 굿즈", "지연 공지", "지연 행사");
+        assertThat(tab(page, "schedule").getHits()).extracting(SiteSearchService.Hit::getLabel)
+                .containsExactly("지연 6", "지연 5", "지연 4", "지연 3", "지연 2");
     }
 
     @Test
