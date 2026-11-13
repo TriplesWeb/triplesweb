@@ -37,16 +37,28 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   #mobile-menu:not(.hidden){display:block!important}
   #mobile-menu nav,#mobile-menu .mobile-nav-panel:not(.hidden){display:flex;flex-direction:column}
   #mobile-menu nav{padding:.75rem 1rem}
+  /* 폼 자체가 필드 크롬 — 왼쪽 돋보기·오른쪽 X가 flex로 세로 중앙 정렬 */
   #mobile-menu form[role=search],
-  #mobile-menu .site-search{display:flex!important;position:relative;align-items:center;width:100%;min-width:0;flex:0 0 auto;min-height:0;height:auto;margin:0 0 .5rem}
+  #mobile-menu .site-search{
+    display:flex!important;position:relative;align-items:center;gap:.5rem;
+    width:100%;min-width:0;flex:0 0 auto;min-height:44px;height:44px;
+    margin:0 0 .5rem;padding:0 .75rem 0 .7rem;box-sizing:border-box;
+    border:1px solid rgba(58,74,70,.6);border-radius:.75rem;background:rgba(13,14,18,.7)
+  }
   #mobile-menu .site-search .site-field,
-  #mobile-menu .site-search input{width:100%;min-width:0;min-height:44px;height:44px;padding-left:2.5rem;padding-right:2.5rem;font-size:16px!important}
-  /* 검색 아이콘은 왼쪽 — type=search 지우기(X)와 오른쪽에서 겹치지 않게 */
+  #mobile-menu .site-search input{
+    flex:1 1 auto;width:auto;min-width:0;min-height:0;height:100%;margin:0;
+    padding:.25rem 1.75rem .25rem 0;border:0;background:transparent;border-radius:0;
+    font-size:16px!important;line-height:1.25;box-shadow:none
+  }
+  #mobile-menu .site-search .site-field:focus,
+  #mobile-menu .site-search input:focus{outline:none;border:0;box-shadow:none}
+  #mobile-menu .site-search:focus-within{border-color:#00f5d4}
   #mobile-menu .site-search__submit{
-    left:.75rem;right:auto;top:0;bottom:0;margin-block:auto;transform:none;
+    position:static;inset:auto;transform:none;flex:0 0 auto;
     display:inline-flex;align-items:center;justify-content:center;
-    min-height:auto;min-width:auto;height:1.125rem;width:1.125rem;padding:0;
-    background:transparent;color:#b9cac4;border-radius:0;line-height:1
+    min-height:auto;min-width:auto;width:1.125rem;height:1.125rem;padding:0;margin:0;
+    background:transparent;color:#b9cac4;border:0;border-radius:0;line-height:1
   }
   #mobile-menu .site-search__submit .material-symbols-outlined{
     display:block;font-size:18px;line-height:1;width:18px;height:18px;overflow:visible
