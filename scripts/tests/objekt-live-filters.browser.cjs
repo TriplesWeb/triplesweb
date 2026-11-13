@@ -93,7 +93,7 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
     const group=url.searchParams.get('group')||'all';
     const kind=url.searchParams.get('kind')||'all';
     const search=url.searchParams.get('search')||'';
-    const label=members[0]||seasons[0]||(group==='other'?'other':kind!=='all'?kind:search||'filtered');
+    const label=search||members[0]||seasons[0]||(group==='other'?'other':kind!=='all'?kind:'filtered');
     const member=members[0]||'';
     return route.fulfill({contentType:'application/json',body:JSON.stringify({
       items:[{id:label,publicKey:label,collectionId:label+' 카드',member,memberLogo:member==='윤서연'?'/images/objekt-member-logos/s01.png':'',season:seasons[0]||'',class:'First',collectionNo:'1'}],
@@ -175,6 +175,7 @@ const html=`<!doctype html><html><head><meta charset="utf-8">
   const searchWait=page.waitForResponse(res=>{try{const url=new URL(res.url());return url.pathname==='/cosmo/objekt/more'&&url.searchParams.get('search')==='서연';}catch{return false;}});
   await page.locator('input[name="search"]').fill('서연');
   await searchWait;
+  await page.waitForFunction(()=>document.querySelector('[data-objekt-key="서연"]'));
   assert.ok(moreCalls.some(call=>call.search==='서연'));
   assert.equal(await page.locator('[data-objekt-key="서연"]').count(),1);
 
