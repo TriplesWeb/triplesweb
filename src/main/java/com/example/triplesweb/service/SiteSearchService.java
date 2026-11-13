@@ -1,17 +1,14 @@
 package com.example.triplesweb.service;
 
-import com.example.triplesweb.dto.ChemistryDto;
 import com.example.triplesweb.dto.EventListCard;
 import com.example.triplesweb.dto.EventSectionGroupDto;
 import com.example.triplesweb.dto.MediaDto;
 import com.example.triplesweb.dto.ShopListCard;
-import com.example.triplesweb.entity.Album;
 import com.example.triplesweb.entity.Archive;
 import com.example.triplesweb.entity.Article;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.Schedule;
-import com.example.triplesweb.entity.Unit;
 import com.example.triplesweb.media.MediaTab;
 import com.example.triplesweb.util.ObjektLinks;
 import com.example.triplesweb.util.ObjektSeasonCodes;
@@ -22,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -29,20 +27,18 @@ import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 
 /**
- * 헤더 전역 검색. About / 코스모 / 미디어 / 정보 / 일정 분류를 한 페이지에 최대 {@link #LIMIT}건씩 모은다.
+ * 헤더 전역 검색. 멤버와 코스모 / 미디어 / 정보 / 일정 검색 결과를 한 페이지에 모은다.
  */
 @Service
 @RequiredArgsConstructor
 public class SiteSearchService {
 
     public static final int LIMIT = 8;
-    static final List<String> TAB_IDS = List.of("about", "cosmo", "media", "info", "schedule");
+    static final int OBJEKT_LIMIT = 5;
+    static final List<String> TAB_IDS = List.of("cosmo", "media", "info", "schedule");
     private static final Pattern NICKNAME = Pattern.compile("^[A-Za-z0-9._-]{3,24}$");
 
     private final ArtistSnapshotService artists;
-    private final AlbumService albums;
-    private final UnitService units;
-    private final ChemistryService chemistry;
     private final ObjektService objekts;
     private final GravityService gravity;
     private final ArticleService articles;
@@ -59,14 +55,14 @@ public class SiteSearchService {
             return emptyPage(query, active);
         }
         List<Member> members = memberResults(query);
-        CompletableFuture<List<Hit>> about = CompletableFuture.supplyAsync(() -> aboutHits(query));
-        CompletableFuture<List<Hit>> cosmo = CompletableFuture.supplyAsync(() -> cosmoHits(query));
+        CompletableFuture<CosmoResults> cosmo = CompletableFuture.supplyAsync(() -> cosmoHits(query));
         CompletableFuture<List<Hit>> media = CompletableFuture.supplyAsync(() -> mediaHits(query));
         CompletableFuture<List<Hit>> info = CompletableFuture.supplyAsync(() -> infoHits(query));
         CompletableFuture<List<Hit>> schedule = CompletableFuture.supplyAsync(() -> scheduleHits(query));
+        CosmoResults cosmoResults = cosmo.join();
         List<Tab> tabs = List.of(
-                tabOf("about", "About 트리플에스", "/triples/members", about.join(), query),
-                tabOf("cosmo", "코스모", "/cosmo/objekt?search=" + encode(query), cosmo.join(), query),
+                tabOf("cosmo", "코스모", cosmoResults.hasMoreObjekts()
+                        ? "/cosmo/objekt?search=" + encode(query) : "", cosmoResults.hits(), query),
                 tabOf("media", "미디어", "/archive/image_archive?q=" + encode(query), media.join(), query),
                 tabOf("info", "정보", "/article/info?type=title&keyword=" + encode(query), info.join(), query),
                 tabOf("schedule", "일정", "/schedule", schedule.join(), query)
@@ -92,7 +88,7 @@ public class SiteSearchService {
             case "media" -> "미디어";
             case "info" -> "정보";
             case "schedule" -> "일정";
-            default -> "About 트리플에스";
+            default -> "코스모";
         };
     }
 
@@ -103,7 +99,7 @@ public class SiteSearchService {
             case "media" -> "/archive/image_archive?q=" + encoded;
             case "info" -> "/article/info?type=title&keyword=" + encoded;
             case "schedule" -> "/schedule";
-            default -> "/triples/members";
+            default -> "";
         };
     }
 
@@ -131,51 +127,32 @@ public class SiteSearchService {
                 || query.equalsIgnoreCase(blankTo(artist.getEngName(), "")));
     }
 
-    private List<Hit> aboutHits(String query) {
-        List<Hit> hits = new ArrayList<>();
-        for (Album album : safeList(albums::listAll)) {
-            if (contains(album.getAlbumName(), query)) {
-                hits.add(hit(album.getAlbumName(), "/triples/album/" + album.getAlbumId(), "앨범",
-                        blankTo(album.getReleaseDate(), "앨범")));
-            }
-            if (hits.size() >= LIMIT) return hits;
-        }
-        for (Unit unit : safeList(units::listVisible)) {
-            if (contains(unit.getUnitName(), query) || contains(unit.getSmallName(), query)) {
-                hits.add(hit(unit.getUnitName(), "/triples/unit?tab=unit-" + unit.getUnitId(), "유닛",
-                        blankTo(unit.getSmallName(), "디멘션")));
-            }
-            if (hits.size() >= LIMIT) return hits;
-        }
-        for (ChemistryDto item : safeList(chemistry::findAll)) {
-            String haystack = String.join(" ", blankTo(item.getLabel(), ""), blankTo(item.getLabelEn(), ""));
-            if (contains(haystack, query)) {
-                String pair = (blankTo(item.getMemberA(), "") + " · " + blankTo(item.getMemberB(), "")).trim();
-                hits.add(hit(blankTo(item.getLabel(), pair), "/triples/chemistry", "케미", pair));
-            }
-            if (hits.size() >= LIMIT) return hits;
-        }
-        return hits;
-    }
+    private record CosmoResults(List<Hit> hits, boolean hasMoreObjekts) {}
 
-    private List<Hit> cosmoHits(String query) {
+    private CosmoResults cosmoHits(String query) {
         List<Hit> hits = new ArrayList<>();
         if (looksLikeNickname(query)) {
             hits.add(hit("코스모 아이디로 보기", "/cosmo/collection?nickname=" + encode(query), "코스모 아이디", query));
         }
-        for (Map<String, Object> objekt : safeList(() -> objekts.findCollections("triples"))) {
-            if (!objektMatches(query, objekt)) continue;
+        // 멤버 상세의 오브젝트 목록과 동일하게 생성 시각이 최신인 항목부터 표시한다.
+        List<Map<String, Object>> matchingObjekts = safeList(() -> objekts.findCollections("triples")).stream()
+                .filter(objekt -> objektMatches(query, objekt))
+                .sorted(Comparator.comparing((Map<String, Object> item) -> first(item, "createdAt"),
+                        Comparator.reverseOrder()))
+                .limit(OBJEKT_LIMIT)
+                .toList();
+        for (Map<String, Object> objekt : matchingObjekts) {
             String member = first(objekt, "member", "memberName");
             String number = first(objekt, "collectionNo", "collectionNumber");
             String season = first(objekt, "season", "seasonKey");
             String label = (member + " " + number).trim();
             if (label.isBlank()) label = first(objekt, "collectionId", "searchText", "slug");
             hits.add(hit(label, ObjektLinks.detail(objekt), "오브젝트", season));
-            if (hits.size() >= LIMIT) return hits;
         }
+        boolean hasMoreObjekts = matchingObjekts.size() >= OBJEKT_LIMIT;
         for (Hit gravityHit : gravityHits(query)) {
             hits.add(gravityHit);
-            if (hits.size() >= LIMIT) return hits;
+            if (hits.size() >= LIMIT) return new CosmoResults(hits, hasMoreObjekts);
         }
         for (String category : List.of("trade", "sell", "group-orders")) {
             String kind = switch (category) {
@@ -186,10 +163,10 @@ public class SiteSearchService {
             for (Article article : articleHits(category, query)) {
                 hits.add(hit(article.getTitle(), "/article/" + category + "/" + article.getId(), kind,
                         blankTo(article.getUserId(), kind)));
-                if (hits.size() >= LIMIT) return hits;
+                if (hits.size() >= LIMIT) return new CosmoResults(hits, hasMoreObjekts);
             }
         }
-        return hits;
+        return new CosmoResults(hits, hasMoreObjekts);
     }
 
     private List<Hit> gravityHits(String query) {
@@ -313,7 +290,7 @@ public class SiteSearchService {
     private static String normalizeTab(String tab, String query) {
         String requested = tab == null ? "" : tab.trim().toLowerCase(Locale.ROOT);
         if (TAB_IDS.contains(requested)) return requested;
-        return looksLikeNickname(query) ? "cosmo" : "about";
+        return "cosmo";
     }
 
     private static Hit hit(String label, String href, String kind, String snippet) {

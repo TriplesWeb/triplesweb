@@ -25,8 +25,10 @@
 .search-hit__kind{font-size:.7rem;font-weight:700;letter-spacing:.04em;color:#8decd9}
 .search-hit__label{font-size:1rem;font-weight:700;overflow-wrap:anywhere}
 .search-hit__snippet{margin:0;font-size:.82rem;color:#93a5a1;overflow-wrap:anywhere}
+.site-search .site-search__input{padding-right:3.5rem}
 .search-more{margin:1rem 0 0}
-.search-more a{color:#8decd9;font-weight:700;text-decoration:none}
+.search-more a{display:inline-flex;align-items:center;min-height:2.75rem;color:#8decd9;font-weight:700;text-decoration:none}
+.search-more a:hover{text-decoration:underline}
 @media(min-width:640px){
   .search-members__grid{grid-template-columns:1fr 1fr}
 }

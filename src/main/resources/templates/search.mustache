@@ -16,7 +16,7 @@
                         <h1 class="font-headline-lg text-headline-md font-bold text-on-surface tracking-tight mt-1">
                             {{#keyword}}‘{{keyword}}’ 검색 결과{{/keyword}}{{^keyword}}사이트 전체 검색{{/keyword}}
                         </h1>
-                        <p class="mt-1.5 text-sm text-on-surface-variant">About · 코스모 · 미디어 · 정보 · 일정을 위에서 아래로 이어 봅니다.</p>
+                        <p class="mt-1.5 text-sm text-on-surface-variant">코스모 · 미디어 · 정보 · 일정을 위에서 아래로 이어 봅니다.</p>
                     </div>
                 </div>
 
@@ -84,7 +84,7 @@
                     {{/hits}}
                 </ul>
                 {{#hasMore}}
-                <p class="search-more"><a href="{{{moreHref}}}">{{label}}에서 더 보기</a></p>
+                <p class="search-more"><a href="{{{moreHref}}}" aria-label="{{label}}에서 더 보기">→ 더보기</a></p>
                 {{/hasMore}}
                 {{/hasHits}}
                 {{^hasHits}}

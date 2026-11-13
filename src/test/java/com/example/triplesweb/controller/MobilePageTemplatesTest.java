@@ -144,12 +144,6 @@ class MobilePageTemplatesTest {
                 "engName", "JiYeon",
                 "profileImage", "/images/no-image.png",
                 "profileUrl", "/triples/artist?tab=member-24")));
-        Map<String,Object> aboutTab = new LinkedHashMap<>();
-        aboutTab.put("id", "about"); aboutTab.put("label", "About 트리플에스");
-        aboutTab.put("href", "/search?keyword=323&tab=about"); aboutTab.put("count", 0);
-        aboutTab.put("hasHits", false); aboutTab.put("active", false); aboutTab.put("hasMore", true);
-        aboutTab.put("moreHref", "/triples/members");
-        aboutTab.put("hits", List.of());
         Map<String,Object> cosmoTab = new LinkedHashMap<>();
         cosmoTab.put("id", "cosmo"); cosmoTab.put("label", "코스모");
         cosmoTab.put("href", "/search?keyword=323&tab=cosmo"); cosmoTab.put("count", 1);
@@ -171,9 +165,9 @@ class MobilePageTemplatesTest {
         scheduleTab.put("href", "/search?keyword=323&tab=schedule"); scheduleTab.put("count", 0);
         scheduleTab.put("hasHits", false); scheduleTab.put("active", false); scheduleTab.put("hasMore", true);
         scheduleTab.put("moreHref", "/schedule"); scheduleTab.put("hits", List.of());
-        searchPage.put("tabs", List.of(aboutTab, cosmoTab, mediaTab, infoTab, scheduleTab));
+        searchPage.put("tabs", List.of(cosmoTab, mediaTab, infoTab, scheduleTab));
         String html=compiler.compile(Files.readString(root.resolve("search.mustache"))).execute(searchPage);
-        assertThat(html).contains("search-section").doesNotContain("search-tabs").contains("지연").contains("HaYeon 323");
+        assertThat(html).contains("search-section").doesNotContain("search-tabs", "data-search-section=\"about\"").contains("지연").contains("HaYeon 323");
         Files.writeString(output.resolve("search-tabs.html"), html);
     }
 

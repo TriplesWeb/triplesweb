@@ -209,8 +209,9 @@ form.site-header-search input.site-header-search__input{
   min-width:0;
   height:auto;
   margin:0;
-  padding:.1rem 0 0;
+  padding:.1rem 0 0 .2rem;
   border:0;
+  border-radius:0;
   opacity:1;
   color:#e3e2e8;
   font-size:.8125rem;

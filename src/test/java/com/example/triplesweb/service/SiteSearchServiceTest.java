@@ -1,16 +1,13 @@
 package com.example.triplesweb.service;
 
-import com.example.triplesweb.dto.ChemistryDto;
 import com.example.triplesweb.dto.MediaDto;
 import com.example.triplesweb.dto.ShopListCard;
 import com.example.triplesweb.entity.Shop;
-import com.example.triplesweb.entity.Album;
 import com.example.triplesweb.entity.Archive;
 import com.example.triplesweb.entity.Article;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.Schedule;
-import com.example.triplesweb.entity.Unit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageImpl;
@@ -28,9 +25,6 @@ import static org.mockito.Mockito.when;
 
 class SiteSearchServiceTest {
     private ArtistSnapshotService artists;
-    private AlbumService albums;
-    private UnitService units;
-    private ChemistryService chemistry;
     private ObjektService objekts;
     private GravityService gravity;
     private ArticleService articles;
@@ -44,9 +38,6 @@ class SiteSearchServiceTest {
     @BeforeEach
     void setUp() {
         artists = mock(ArtistSnapshotService.class);
-        albums = mock(AlbumService.class);
-        units = mock(UnitService.class);
-        chemistry = mock(ChemistryService.class);
         objekts = mock(ObjektService.class);
         gravity = mock(GravityService.class);
         articles = mock(ArticleService.class);
@@ -55,12 +46,9 @@ class SiteSearchServiceTest {
         events = mock(EventService.class);
         shop = mock(ShopService.class);
         schedules = mock(ScheduleService.class);
-        search = new SiteSearchService(artists, albums, units, chemistry, objekts, gravity,
+        search = new SiteSearchService(artists, objekts, gravity,
                 articles, archives, media, events, shop, schedules);
         when(artists.findAll()).thenReturn(List.of());
-        when(albums.listAll()).thenReturn(List.of());
-        when(units.listVisible()).thenReturn(List.of());
-        when(chemistry.findAll()).thenReturn(List.of());
         when(objekts.findCollections("triples")).thenReturn(List.of());
         when(gravity.hasCosmoToken()).thenReturn(false);
         when(archives.pageByType(eq(MediaType.IMAGE), eq(0), eq(8), anyString())).thenReturn(new PageImpl<>(List.of()));
@@ -72,50 +60,20 @@ class SiteSearchServiceTest {
     }
 
     @Test
-    void aboutTabMapsMembersAlbumsUnitsAndChemistry() {
+    void memberResultsRemainWithoutAboutSection() {
         Artist artist = new Artist();
         artist.setArtistId(1L);
         artist.setName("윤서연");
         artist.setEngName("SeoYeon");
         when(artists.findAll()).thenReturn(List.of(artist));
-        Album album = new Album();
-        album.setAlbumId(14L);
-        album.setAlbumName("ASSEMBLE");
-        when(albums.listAll()).thenReturn(List.of(album));
-        Unit unit = new Unit();
-        unit.setUnitId(3L);
-        unit.setUnitName("Acid Angel from Asia");
-        unit.setSmallName("AAA");
-        when(units.listVisible()).thenReturn(List.of(unit));
-        when(chemistry.findAll()).thenReturn(List.of(ChemistryDto.builder()
-                .label("시선강탈").memberA("서연").memberB("카에데").build()));
-
         SiteSearchService.Page page = search.search("서연", "about");
-        SiteSearchService.Tab about = tab(page, "about");
-        assertThat(about.isActive()).isTrue();
+        assertThat(page.getActiveTab()).isEqualTo("cosmo");
+        assertThat(page.getTabs()).extracting(SiteSearchService.Tab::getId).doesNotContain("about");
         assertThat(page.getMembers()).extracting(SiteSearchService.Member::getName)
                 .containsExactly("윤서연");
         assertThat(page.getMembers().get(0).getEngName()).isEqualTo("SeoYeon");
         assertThat(page.getMembers().get(0).getProfileUrl()).isEqualTo("/triples/artist?tab=member-1");
         assertThat(page.getMembers().get(0).getProfileImage()).isEqualTo("/images/image-upload-pending.png");
-        assertThat(about.getHits()).extracting(SiteSearchService.Hit::getKind)
-                .doesNotContain("케미")
-                .doesNotContain("멤버");
-        assertThat(about.getHits()).extracting(SiteSearchService.Hit::getHref)
-                .doesNotContain("/triples/chemistry")
-                .doesNotContain("/triples/artist?tab=member-1");
-        SiteSearchService.Page chemName = search.search("시선강탈", "about");
-        assertThat(tab(chemName, "about").getHits()).extracting(SiteSearchService.Hit::getKind)
-                .contains("케미");
-        assertThat(tab(chemName, "about").getHits()).extracting(SiteSearchService.Hit::getHref)
-                .contains("/triples/chemistry");
-
-        SiteSearchService.Page assemble = search.search("ASSEMBLE", "about");
-        assertThat(tab(assemble, "about").getHits()).extracting(SiteSearchService.Hit::getHref)
-                .contains("/triples/album/14");
-        SiteSearchService.Page aaa = search.search("AAA", "about");
-        assertThat(tab(aaa, "about").getHits()).extracting(SiteSearchService.Hit::getHref)
-                .contains("/triples/unit?tab=unit-3");
     }
 
     @Test
@@ -137,7 +95,7 @@ class SiteSearchServiceTest {
         assertThat(cosmo.getHits()).extracting(SiteSearchService.Hit::getKind)
                 .contains("코스모 아이디", "오브젝트");
         assertThat(cosmo.getHits().get(0).getHref()).isEqualTo("/cosmo/collection?nickname=cc323");
-        assertThat(cosmo.getMoreHref()).isEqualTo("/cosmo/objekt?search=cc323");
+        assertThat(cosmo.isHasMore()).isFalse();
         assertThat(cosmo.getCount()).isLessThanOrEqualTo(SiteSearchService.LIMIT);
         assertThat(search.search("cc323", null).getActiveTab()).isEqualTo("cosmo");
     }
@@ -204,18 +162,33 @@ class SiteSearchServiceTest {
     }
 
     @Test
-    void chemistryMatchesNameNotMember() {
-        when(chemistry.findAll()).thenReturn(List.of(ChemistryDto.builder()
-                .label("시크릿 쥬쥬즈").labelEn("Secret Jujus").memberA("지연").memberB("서연").build()));
-        assertThat(tab(search.search("지연", "about"), "about").getHits())
-                .extracting(SiteSearchService.Hit::getKind)
-                .doesNotContain("케미");
-        assertThat(tab(search.search("시크릿 쥬쥬즈", "about"), "about").getHits())
-                .extracting(SiteSearchService.Hit::getKind)
-                .contains("케미");
-        assertThat(tab(search.search("Secret Jujus", "about"), "about").getHits())
-                .extracting(SiteSearchService.Hit::getKind)
-                .contains("케미");
+    void cosmoShowsOnlyFiveNewestObjektsAndRetainsOtherResults() {
+        when(objekts.findCollections("triples")).thenReturn(List.of(
+                objekt("1", "2026-01-01"), objekt("5", "2026-05-01"),
+                objekt("2", "2026-02-01"), objekt("6", "2026-06-01"),
+                objekt("3", "2026-03-01"), objekt("4", "2026-04-01"),
+                objekt("0", "")));
+        Article trade = new Article();
+        trade.setId(7L);
+        trade.setTitle("지연 교환");
+        when(articles.searchByCategory("trade", "title", "지연", 8)).thenReturn(List.of(trade));
+
+        var cosmo = tab(search.search("지연", "cosmo"), "cosmo");
+        assertThat(cosmo.getHits()).filteredOn(hit -> hit.getKind().equals("오브젝트"))
+                .extracting(SiteSearchService.Hit::getLabel)
+                .containsExactly("지연 6", "지연 5", "지연 4", "지연 3", "지연 2");
+        assertThat(cosmo.getHits()).extracting(SiteSearchService.Hit::getKind).contains("교환");
+        assertThat(cosmo.isHasMore()).isTrue();
+        assertThat(cosmo.getMoreHref()).isEqualTo("/cosmo/objekt?search=%EC%A7%80%EC%97%B0");
+
+        when(objekts.findCollections("triples")).thenReturn(List.of(
+                objekt("1", "2026-01-01"), objekt("2", "2026-02-01"),
+                objekt("3", "2026-03-01"), objekt("4", "2026-04-01")));
+        assertThat(tab(search.search("지연", "cosmo"), "cosmo").isHasMore()).isFalse();
+        when(objekts.findCollections("triples")).thenReturn(List.of(
+                objekt("1", "2026-01-01"), objekt("2", "2026-02-01"),
+                objekt("3", "2026-03-01"), objekt("4", "2026-04-01"), objekt("5", "2026-05-01")));
+        assertThat(tab(search.search("지연", "cosmo"), "cosmo").isHasMore()).isTrue();
     }
 
     @Test
@@ -223,7 +196,7 @@ class SiteSearchServiceTest {
         when(objekts.findCollections("triples")).thenReturn(List.of());
         SiteSearchService.Page page = search.search("없는검색어", "cosmo");
         assertThat(page.getTabs()).extracting(SiteSearchService.Tab::getId)
-                .containsExactly("about", "cosmo", "media", "info", "schedule");
+                .containsExactly("cosmo", "media", "info", "schedule");
         assertThat(page.getTabs()).allMatch(tab -> !tab.isHasHits() || tab.getCount() <= SiteSearchService.LIMIT);
     }
 
@@ -231,9 +204,14 @@ class SiteSearchServiceTest {
     void emptyKeywordDoesNotQuerySourcesAndUnknownTabFallsBack() {
         SiteSearchService.Page empty = search.search("  ", "nope");
         assertThat(empty.isHasAny()).isFalse();
-        assertThat(empty.getActiveTab()).isEqualTo("about");
+        assertThat(empty.getActiveTab()).isEqualTo("cosmo");
         assertThat(empty.getTabs()).extracting(SiteSearchService.Tab::getId)
-                .containsExactly("about", "cosmo", "media", "info", "schedule");
+                .containsExactly("cosmo", "media", "info", "schedule");
+    }
+
+    private static Map<String, Object> objekt(String number, String createdAt) {
+        return Map.of("member", "지연", "collectionNo", number,
+                "collectionId", "id-" + number, "slug", "slug-" + number, "createdAt", createdAt);
     }
 
     private static SiteSearchService.Tab tab(SiteSearchService.Page page, String id) {
