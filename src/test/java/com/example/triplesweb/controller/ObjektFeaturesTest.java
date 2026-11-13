@@ -44,6 +44,7 @@ class ObjektFeaturesTest {
     @MockitoBean ObjektFavoriteRepository favoriteRepository;
     @MockitoBean ObjektDescriptionRepository descriptions;
     @MockitoBean ObjektDescriptionScopeRepository descriptionScopes;
+    @MockitoBean ObjektDescriptionSharePrefRepository descriptionSharePrefs;
     @MockitoBean AboutAdminAuth admin;
 
     /** Mirrors ObjektService.findByKey indexing so detail routes resolve under the mock catalog. */
@@ -51,6 +52,8 @@ class ObjektFeaturesTest {
         when(catalog.findCollections("triples")).thenReturn(items);
         when(catalog.filterFacets()).thenReturn(ObjektService.FilterFacets.from(items));
         Map<String, Map<String, Object>> index = new HashMap<>();
+        Map<String, List<Map<String, Object>>> groups = new HashMap<>();
+        Map<String, java.util.LinkedHashSet<String>> seasonNumbers = new HashMap<>();
         for (Map<String, Object> item : items) {
             putIndex(index, string(item, "id"), item);
             putIndex(index, string(item, "collectionId"), item);
@@ -59,6 +62,16 @@ class ObjektFeaturesTest {
             if (!slugLower.isBlank()) index.putIfAbsent(slugLower, item);
             putIndex(index, ObjektLinks.key(item), item);
             putIndex(index, ObjektLinks.id(item), item);
+            String season = string(item, "season");
+            String number = string(item, "collectionNo");
+            if (!number.isBlank()) {
+                String pair = season.toLowerCase(Locale.ROOT) + "|" + number.toLowerCase(Locale.ROOT);
+                groups.computeIfAbsent(pair, ignored -> new ArrayList<>()).add(item);
+                if (!season.isBlank()) {
+                    seasonNumbers.computeIfAbsent(season.toLowerCase(Locale.ROOT), ignored -> new java.util.LinkedHashSet<>())
+                            .add(number);
+                }
+            }
         }
         when(catalog.findByKey(anyString())).thenAnswer(inv -> {
             String key = inv.getArgument(0);
@@ -72,15 +85,46 @@ class ObjektFeaturesTest {
             String season = string(item, "season").toLowerCase(Locale.ROOT);
             String number = string(item, "collectionNo").toLowerCase(Locale.ROOT);
             if (number.isBlank()) return 1;
-            int count = 0;
-            for (Map<String, Object> candidate : items) {
-                if (season.equals(string(candidate, "season").toLowerCase(Locale.ROOT))
-                        && number.equals(string(candidate, "collectionNo").toLowerCase(Locale.ROOT))) {
-                    count++;
-                }
-            }
-            return Math.max(1, count);
+            return Math.max(1, groups.getOrDefault(season + "|" + number, List.of()).size());
         });
+        when(catalog.groupCards(anyString(), anyString())).thenAnswer(inv -> {
+            String season = inv.getArgument(0, String.class).toLowerCase(Locale.ROOT);
+            String number = inv.getArgument(1, String.class).toLowerCase(Locale.ROOT);
+            return groups.getOrDefault(season + "|" + number, List.of());
+        });
+        when(catalog.seasonCollectionNumbers(anyString())).thenAnswer(inv -> {
+            String season = inv.getArgument(0, String.class).toLowerCase(Locale.ROOT);
+            return List.copyOf(seasonNumbers.getOrDefault(season, new java.util.LinkedHashSet<>()));
+        });
+        when(descriptions.findByObjektKeyIn(any())).thenAnswer(call -> {
+            java.util.Collection<?> keys = call.getArgument(0);
+            // 저장 스텁이 테스트마다 따로 잡히므로, 키 단건 조회로 위임한다.
+            List<com.example.triplesweb.entity.ObjektDescription> rows = new ArrayList<>();
+            for (Object key : keys) {
+                descriptions.findByObjektKey(String.valueOf(key)).ifPresent(rows::add);
+            }
+            return rows;
+        });
+        when(descriptionSharePrefs.findById(any())).thenReturn(java.util.Optional.empty());
+        when(descriptionSharePrefs.findAllById(any())).thenReturn(List.of());
+        when(descriptionSharePrefs.save(any())).thenAnswer(call -> call.getArgument(0));
+        when(descriptionSharePrefs.saveAll(any())).thenAnswer(call -> {
+            java.util.Collection<?> values = call.getArgument(0);
+            return List.copyOf(values);
+        });
+        when(descriptions.saveAll(any())).thenAnswer(call -> {
+            java.util.Collection<com.example.triplesweb.entity.ObjektDescription> values = call.getArgument(0);
+            for (com.example.triplesweb.entity.ObjektDescription value : values) {
+                descriptions.save(value);
+            }
+            return List.copyOf(values);
+        });
+        when(descriptionScopes.findAllById(any())).thenReturn(List.of());
+        when(descriptionScopes.saveAll(any())).thenAnswer(call -> {
+            java.util.Collection<?> values = call.getArgument(0);
+            return List.copyOf(values);
+        });
+        org.mockito.Mockito.doNothing().when(descriptionScopes).deleteAllInBatch(any());
     }
 
     private static void putIndex(Map<String, Map<String, Object>> index, String key, Map<String, Object> item) {
@@ -312,6 +356,40 @@ class ObjektFeaturesTest {
                 .andExpect(jsonPath("$.detailUrl").value("/cosmo/objekt/detail/hayeoncc368z"));
     }
 
+    @Test void objektSearchMatchesStoredDescriptionText() throws Exception {
+        var hit = new LinkedHashMap<String, Object>();
+        hit.put("id", "hit-id");
+        hit.put("slug", "hayeon-cream02-367z");
+        hit.put("member", "HaYeon");
+        hit.put("season", "Cream02");
+        hit.put("collectionNo", "367Z");
+        hit.put("collectionId", "Cream02 HaYeon 367Z");
+        hit.put("searchText", "cream02 hayeon 367z");
+        hit.put("class", "Double");
+        var miss = new LinkedHashMap<String, Object>();
+        miss.put("id", "miss-id");
+        miss.put("slug", "xinyu-cream02-306z");
+        miss.put("member", "Xinyu");
+        miss.put("season", "Cream02");
+        miss.put("collectionNo", "306Z");
+        miss.put("collectionId", "Cream02 Xinyu 306Z");
+        miss.put("searchText", "cream02 xinyu 306z");
+        miss.put("class", "Double");
+        stubCatalog(List.of(hit, miss));
+        when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
+        var stored = new com.example.triplesweb.entity.ObjektDescription();
+        stored.setObjektKey(com.example.triplesweb.util.ObjektDescriptionKeys.groupKey("Cream02", "367Z"));
+        stored.setDescription("네오 시티 네온 사인 특별 문구");
+        when(descriptions.findAll()).thenReturn(List.of(stored));
+        mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("search", "네온 사인"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCount").value(1))
+                .andExpect(jsonPath("$.items[0].collectionNo").value("367Z"));
+        mvc.perform(get("/cosmo/objekt/more").param("page", "0").param("search", "없는설명문구"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCount").value(0));
+    }
+
     @Test void modalDescriptionWritesKeepStableKeyAndRequireAdmin() throws Exception {
         var item = Map.<String,Object>of("id", "uuid", "slug", "hayeoncc367z");
         stubCatalog(List.of(item));
@@ -352,6 +430,39 @@ class ObjektFeaturesTest {
                 .andExpect(jsonPath("$.description").value(""))
                 .andExpect(jsonPath("$.descriptionScope").value("group"))
                 .andExpect(jsonPath("$.descriptionGroupCount").value(2));
+    }
+
+    @Test void selectedMembersAndNumbersCanShareTogether() throws Exception {
+        var a = Map.<String,Object>of("id","a","slug","cream02-xinyu-306z","season","Cream02","collectionNo","306Z","member","Xinyu");
+        var a2 = Map.<String,Object>of("id","a2","slug","cream02-hayeon-306z","season","Cream02","collectionNo","306Z","member","HaYeon");
+        var b = Map.<String,Object>of("id","b","slug","cream02-xinyu-307z","season","Cream02","collectionNo","307Z","member","Xinyu");
+        var b2 = Map.<String,Object>of("id","b2","slug","cream02-hayeon-307z","season","Cream02","collectionNo","307Z","member","HaYeon");
+        stubCatalog(List.of(a,a2,b,b2));
+        var stored = new java.util.HashMap<String,com.example.triplesweb.entity.ObjektDescription>();
+        when(descriptions.findByObjektKey(anyString())).thenAnswer(call -> java.util.Optional.ofNullable(stored.get(call.getArgument(0))));
+        when(descriptions.save(any())).thenAnswer(call -> {
+            com.example.triplesweb.entity.ObjektDescription value=call.getArgument(0);
+            stored.put(value.getObjektKey(),value); return value;
+        });
+        mvc.perform(post("/cosmo/objekt/detail/a/description").accept(MediaType.APPLICATION_JSON)
+                        .param("description", "공통306").param("scope", "group"))
+                .andExpect(jsonPath("$.description").value("공통306"));
+        mvc.perform(post("/cosmo/objekt/detail/b/description").accept(MediaType.APPLICATION_JSON)
+                        .param("description", "공통307").param("scope", "group"))
+                .andExpect(jsonPath("$.description").value("공통307"));
+        mvc.perform(post("/cosmo/objekt/detail/a/description").accept(MediaType.APPLICATION_JSON)
+                        .param("description", "신위만 공유")
+                        .param("members", "xinyu")
+                        .param("numbers", "306Z")
+                        .param("numbers", "307Z"))
+                .andExpect(jsonPath("$.description").value("신위만 공유"))
+                .andExpect(jsonPath("$.descriptionScope").value("member"));
+        mvc.perform(get("/cosmo/objekt/detail/b").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.description").value("신위만 공유"));
+        mvc.perform(get("/cosmo/objekt/detail/a2").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.description").value("공통306"));
+        mvc.perform(get("/cosmo/objekt/detail/b2").accept(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.description").value("공통307"));
     }
 
     @Test void adminCanSplitOrReunifyTheSameCollectionNumber() throws Exception {
@@ -472,8 +583,12 @@ class ObjektFeaturesTest {
             .contains("id=\"objektDescriptionEdit\"")
             .contains("수정하기")
             .contains("id=\"objektDescriptionScope\"")
-            .contains("이 번호 일괄 수정")
-            .contains("이 오브젝트만 수정")
+            .contains("공유할 멤버")
+            .contains("적용할 번호")
+            .contains("id=\"objektDescriptionMembersToggle\"")
+            .contains("id=\"objektDescriptionNumbersToggle\"")
+            .contains("id=\"objektDescriptionMembers\"")
+            .contains("id=\"objektDescriptionNumbers\"")
             .contains("id=\"objekt-kind-by-class\"")
             .contains("\"Special\":[\"367Z\"]")
             .contains("objekt-sell-link")
@@ -699,9 +814,12 @@ class ObjektFeaturesTest {
         mvc.perform(get("/cosmo/objekt/detail/hayeoncc367z").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isAdmin").value(true))
-                .andExpect(jsonPath("$.descriptionGroupCount").value(24));
+                .andExpect(jsonPath("$.descriptionGroupCount").value(24))
+                .andExpect(jsonPath("$.descriptionShareMembers").isArray())
+                .andExpect(jsonPath("$.descriptionSeasonNumbers").isArray());
         verify(catalog).groupCount(any());
-        verify(catalog, never()).findCollections(any());
+        verify(catalog, atLeastOnce()).groupCards(anyString(), anyString());
+        verify(catalog, atLeastOnce()).seasonCollectionNumbers(anyString());
     }
 
     @Test void favoritePutReturnsVisitorCount() throws Exception {

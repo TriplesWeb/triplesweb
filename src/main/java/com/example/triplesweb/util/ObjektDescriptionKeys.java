@@ -143,7 +143,7 @@ public final class ObjektDescriptionKeys {
     }
 
     /** 화면 이름은 한글이라 키가 비면 슬러그 {@code season-member-number}에서 멤버를 꺼낸다. */
-    private static String memberOf(Map<String, Object> item) {
+    public static String memberOf(Map<String, Object> item) {
         String named = memberToken(text(item, "member", "memberName"));
         if (!named.isEmpty()) return named;
         String slug = normalize(text(item, "slug"));

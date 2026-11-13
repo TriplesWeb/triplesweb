@@ -2,6 +2,8 @@ package com.example.triplesweb.controller;
 
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.Event;
+import com.example.triplesweb.entity.ObjektDescription;
+import com.example.triplesweb.repository.ObjektDescriptionRepository;
 import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.EventService;
 import com.example.triplesweb.service.ObjektService;
@@ -9,6 +11,7 @@ import com.example.triplesweb.service.ObjektMarketDataService;
 import com.example.triplesweb.service.ObjektLiveSettings;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektCatalogSort;
+import com.example.triplesweb.util.ObjektDescriptionKeys;
 import com.example.triplesweb.util.ObjektLinks;
 import com.example.triplesweb.util.ObjektSeasonCodes;
 import com.example.triplesweb.util.ObjektSeasonColors;
@@ -28,6 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -46,6 +50,7 @@ public class CosmoController {
     private final ObjektMarketDataService marketData;
     private final EventService eventService;
     private final ObjektLiveSettings live;
+    private final ObjektDescriptionRepository descriptions;
 
     @GetMapping("/objekt")
     public String indexCosmoObjekt(
@@ -192,10 +197,11 @@ public class CosmoController {
         List<String> selectedClasses = cleanSelections(classFilters);
         String selectedKind = "전체".equals(normalize(kind)) ? "all" : normalize(kind);
         String selectedSort = normalize(sort);
+        Map<String, String> descriptionTexts = query.isBlank() ? Map.of() : descriptionIndex();
 
         // 전체 캐시에서 검색어와 모든 필터를 먼저 적용하고, 그 결과에만 정렬과 페이지네이션을 적용한다.
         List<Map<String, Object>> filtered = allObjekts.stream()
-                .filter(objekt -> matchesSearch(query, objekt))
+                .filter(objekt -> matchesSearch(query, objekt, descriptionTexts))
                 .filter(objekt -> "all".equals(selectedGroup) || matchesMember(selectedGroup, selectedNames,
                         membershipCache.computeIfAbsent(firstValue(objekt, "member", "memberName"), MemberPortraitOptions::objektMembers)))
                 .filter(objekt -> matchesSelection(selectedSeasons, firstValue(objekt, "seasonKey", "season")))
@@ -290,7 +296,27 @@ public class CosmoController {
         return count != null ? count : marketData.mintCount(firstValue(item, "id"));
     }
 
-    private static boolean matchesSearch(String query, Map<String, Object> objekt) {
+    private Map<String, String> descriptionIndex() {
+        Map<String, String> index = new HashMap<>();
+        for (ObjektDescription row : descriptions.findAll()) {
+            if (row == null || row.getObjektKey() == null || row.getObjektKey().isBlank()) continue;
+            String text = row.getDescription();
+            if (text == null || text.isBlank()) continue;
+            index.put(row.getObjektKey(), text);
+        }
+        return index;
+    }
+
+    private static String descriptionOf(Map<String, Object> objekt, Map<String, String> descriptionTexts) {
+        if (descriptionTexts == null || descriptionTexts.isEmpty()) return "";
+        for (String key : ObjektDescriptionKeys.readKeys(objekt, "")) {
+            String text = descriptionTexts.get(key);
+            if (text != null && !text.isBlank()) return text;
+        }
+        return "";
+    }
+
+    private static boolean matchesSearch(String query, Map<String, Object> objekt, Map<String, String> descriptionTexts) {
         if (query == null || query.isBlank()) return true;
         String season = firstValue(objekt, "season", "seasonKey");
         String collectionNo = firstValue(objekt, "collectionNo");
@@ -298,7 +324,8 @@ public class CosmoController {
                 value(objekt, "searchText"), value(objekt, "collectionId"), value(objekt, "slug"),
                 value(objekt, "season"), value(objekt, "seasonKey"), value(objekt, "member"),
                 value(objekt, "memberName"), value(objekt, "artist"), value(objekt, "collectionNo"),
-                value(objekt, "class"), value(objekt, "classKey"), value(objekt, "numberValue"))
+                value(objekt, "class"), value(objekt, "classKey"), value(objekt, "numberValue"),
+                descriptionOf(objekt, descriptionTexts))
                 .toLowerCase(Locale.ROOT);
         return ObjektSeasonCodes.matches(query, base, season, collectionNo);
     }
