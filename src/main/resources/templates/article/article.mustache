@@ -29,24 +29,45 @@
                 <a href="/article/trade" {{#isTrade}}aria-current="page"{{/isTrade}}>교환</a>
                 <a href="/article/sell" {{#isSell}}aria-current="page"{{/isSell}}>거래</a>
             </nav>
-            <section class="market-member-filter" aria-label="멤버별 검색">
+            <section class="market-member-filter" aria-label="교환 필터">
                 {{#isTrade}}
-                <p class="market-side-help">Have 탭은 Have 멤버만, Want 탭은 Want 멤버만 찾습니다. 멤버를 선택하지 않으면 전체 게시글이 표시됩니다.</p>
+                <p class="market-side-help">Have/Want 쪽 멤버·시즌·클래스로 찾습니다.</p>
                 {{/isTrade}}
                 {{#isSell}}
-                <p class="market-side-help">판매 탭은 판매 글, 구매 탭은 구매 글입니다. 멤버를 고르면 그 탭 오브젝트에 해당 멤버가 하나라도 있는 글이 검색됩니다.</p>
+                <p class="market-side-help">판매/구매 탭과 멤버·시즌·클래스로 찾습니다.</p>
                 {{/isSell}}
                 {{#isObjektSideAll}}<p class="market-side-help" role="status">기존 전체 검색 링크: Have와 Want 양쪽에서 선택한 멤버를 검색합니다.</p>{{/isObjektSideAll}}
+                <div class="market-filter-bar" role="group" aria-label="시즌·클래스 필터">
+                    <label class="market-filter-pill">
+                        <span class="market-filter-pill-label">시즌</span>
+                        <select id="market-filter-season" aria-label="시즌 필터">
+                            {{#marketSeasonOptions}}
+                            <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+                            {{/marketSeasonOptions}}
+                        </select>
+                    </label>
+                    <label class="market-filter-pill">
+                        <span class="market-filter-pill-label">클래스</span>
+                        <select id="market-filter-class" aria-label="클래스 필터">
+                            {{#marketClassOptions}}
+                            <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+                            {{/marketClassOptions}}
+                        </select>
+                    </label>
+                    {{#hasMarketAttrFilter}}
+                    <a class="market-filter-reset" href="/article/{{category}}?objektSide={{selectedObjektSide}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">초기화</a>
+                    {{/hasMarketAttrFilter}}
+                </div>
                 {{#isTrade}}
                 <div class="market-side-seg" role="group" aria-label="멤버 검색 기준: Have 또는 Want">
-                    <a class="market-side-link{{#isObjektSideHave}} is-active{{/isObjektSideHave}}" href="/article/{{category}}?objektSide=have{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Have</a>
-                    <a class="market-side-link{{#isObjektSideWant}} is-active{{/isObjektSideWant}}" href="/article/{{category}}?objektSide=want{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Want</a>
+                    <a class="market-side-link{{#isObjektSideHave}} is-active{{/isObjektSideHave}}" href="/article/{{category}}?objektSide=have{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Have</a>
+                    <a class="market-side-link{{#isObjektSideWant}} is-active{{/isObjektSideWant}}" href="/article/{{category}}?objektSide=want{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Want</a>
                 </div>
                 {{/isTrade}}
                 {{#isSell}}
                 <div class="market-side-seg" role="group" aria-label="판매 또는 구매">
-                    <a class="market-side-link{{#isObjektSideHave}} is-active{{/isObjektSideHave}}" href="/article/{{category}}?objektSide=have{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">판매</a>
-                    <a class="market-side-link{{#isObjektSideWant}} is-active{{/isObjektSideWant}}" href="/article/{{category}}?objektSide=want{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">구매</a>
+                    <a class="market-side-link{{#isObjektSideHave}} is-active{{/isObjektSideHave}}" href="/article/{{category}}?objektSide=have{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">판매</a>
+                    <a class="market-side-link{{#isObjektSideWant}} is-active{{/isObjektSideWant}}" href="/article/{{category}}?objektSide=want{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">구매</a>
                 </div>
                 {{/isSell}}
                 <div class="member-portrait-picker" id="market-member-picker" role="group" aria-label="멤버 선택">
@@ -84,10 +105,37 @@
                                 {{/hasMemberSwap}}
                             </div>
                             {{/isTrade}}
-                            <div class="article-board-subject text-left font-medium truncate">
-                                <a href="/article/{{#category}}{{category}}{{/category}}{{^category}}trade{{/category}}/{{id}}" class="hover:text-primary-container transition-colors">
+                            <div class="article-board-subject text-left font-medium">
+                                <a href="/article/{{#category}}{{category}}{{/category}}{{^category}}trade{{/category}}/{{id}}" class="hover:text-primary-container transition-colors truncate block">
                                     {{title}}
                                 </a>
+                                {{#hasObjektPreview}}
+                                <div class="article-board-objekt-previews" aria-label="Have/Want 미리보기">
+                                    {{#hasHavePreview}}
+                                    <div class="article-board-objekt-strip" data-side="have">
+                                        {{#havePreview}}
+                                        <span class="article-board-objekt-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
+                                            {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
+                                            {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
+                                        </span>
+                                        {{/havePreview}}
+                                        {{#hasHavePreviewMore}}<span class="article-board-objekt-more">+{{havePreviewMoreCount}}</span>{{/hasHavePreviewMore}}
+                                    </div>
+                                    {{/hasHavePreview}}
+                                    {{#showTradeSwap}}<span class="article-board-objekt-arrow" aria-hidden="true">↔</span>{{/showTradeSwap}}
+                                    {{#hasWantPreview}}
+                                    <div class="article-board-objekt-strip" data-side="want">
+                                        {{#wantPreview}}
+                                        <span class="article-board-objekt-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
+                                            {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
+                                            {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
+                                        </span>
+                                        {{/wantPreview}}
+                                        {{#hasWantPreviewMore}}<span class="article-board-objekt-more">+{{wantPreviewMoreCount}}</span>{{/hasWantPreviewMore}}
+                                    </div>
+                                    {{/hasWantPreview}}
+                                </div>
+                                {{/hasObjektPreview}}
                             </div>
                             <div class="article-board-author text-on-surface-variant truncate">{{userId}}</div>
                             <div class="article-board-date text-xs text-outline">{{formattedDate}}</div>
@@ -120,6 +168,8 @@
                     {{#isMarketBoard}}
                     <input type="hidden" name="member" value="{{selectedMember}}">
                     <input type="hidden" name="objektSide" value="{{selectedObjektSide}}">
+                    <input type="hidden" name="season" value="{{selectedSeason}}">
+                    <input type="hidden" name="class" value="{{selectedClass}}">
                     {{/isMarketBoard}}
                     <div class="site-search-field article-board-search-keyword relative flex-1 sm:w-60">
                         <input type="search" name="keyword" value="{{searchKeyword}}" placeholder="검색어를 입력하세요" aria-label="게시글 검색어" autocomplete="off" />
@@ -158,6 +208,24 @@
                     else url.searchParams.delete("member");
                     window.location.href = url.pathname + url.search;
                 }
+            });
+        }
+        function applyMarketFilterParam(key, value) {
+            const url = new URL(window.location.href);
+            if (value) url.searchParams.set(key, value);
+            else url.searchParams.delete(key);
+            window.location.href = url.pathname + url.search;
+        }
+        const seasonSelect = document.getElementById("market-filter-season");
+        const classSelect = document.getElementById("market-filter-class");
+        if (seasonSelect) {
+            seasonSelect.addEventListener("change", function () {
+                applyMarketFilterParam("season", seasonSelect.value);
+            });
+        }
+        if (classSelect) {
+            classSelect.addEventListener("change", function () {
+                applyMarketFilterParam("class", classSelect.value);
             });
         }
         // 테이블의 tbody 안에 있는 모든 행(tr)을 가져옵니다.

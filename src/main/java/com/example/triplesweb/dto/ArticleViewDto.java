@@ -3,6 +3,7 @@ package com.example.triplesweb.dto;
 import lombok.*;
 
 import java.util.List;
+import java.util.Map;
 
 /** 게시글 상세 페이지 뷰 DTO. 본문·카테고리·KST 날짜·첨부 목록. */
 @Getter @Setter
@@ -32,4 +33,13 @@ public class ArticleViewDto {
     private String wantLeadColor;
     private boolean hasWantMore;
     private int wantMoreCount;
+    private List<Map<String, Object>> havePreview;
+    private List<Map<String, Object>> wantPreview;
+    private boolean hasHavePreview;
+    private boolean hasWantPreview;
+    private boolean hasObjektPreview;
+    private boolean hasHavePreviewMore;
+    private int havePreviewMoreCount;
+    private boolean hasWantPreviewMore;
+    private int wantPreviewMoreCount;
 }

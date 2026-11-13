@@ -352,7 +352,9 @@ public class ArticleController {
             @RequestParam(name = "type", required = false, defaultValue = "title") String type,
             @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword,
             @RequestParam(name = "member", required = false, defaultValue = "") String member,
-            @RequestParam(name = "objektSide", required = false, defaultValue = "have") String objektSide) {
+            @RequestParam(name = "objektSide", required = false, defaultValue = "have") String objektSide,
+            @RequestParam(name = "season", required = false, defaultValue = "") String season,
+            @RequestParam(name = "class", required = false, defaultValue = "") String objektClass) {
 
         if (isInvalidCategory(category)) {
             return "redirect:/article/trade";
@@ -367,12 +369,17 @@ public class ArticleController {
         String searchKeyword = keyword == null ? "" : keyword.trim();
         String selectedMember = member == null ? "" : member.trim();
         String selectedSide = normalizeObjektSide(category, objektSide);
+        String selectedSeason = season == null ? "" : season.trim();
+        String selectedClass = objektClass == null ? "" : objektClass.trim();
         boolean marketBoard = isObjektBoard(category);
         int safeLimit = Math.min(100, Math.max(1, limit));
         List<Article> articles;
         Map<Long, List<ArticleObjekt>> linkedByArticle;
-        boolean filterBySide = marketBoard && (!selectedMember.isEmpty() || isSellBoard(category));
-        if (filterBySide) {
+        boolean filterByAttrs = marketBoard && (!selectedMember.isEmpty()
+                || !selectedSeason.isEmpty()
+                || !selectedClass.isEmpty()
+                || isSellBoard(category));
+        if (filterByAttrs) {
             // Keyset batches preserve exact member/unit matching while searching beyond the newest page.
             articles = new ArrayList<>();
             linkedByArticle = new LinkedHashMap<>();
@@ -386,7 +393,7 @@ public class ArticleController {
                 if (batchLinks == null) batchLinks = Map.of();
                 for (Article art : batch) {
                     List<ArticleObjekt> links = batchLinks.getOrDefault(art.getId(), List.of());
-                    if (matchesMarketListing(category, links, selectedMember, selectedSide)) {
+                    if (matchesMarketListing(category, links, selectedMember, selectedSide, selectedSeason, selectedClass)) {
                         articles.add(art);
                         linkedByArticle.put(art.getId(), links);
                         if (articles.size() == safeLimit) break;
@@ -432,6 +439,7 @@ public class ArticleController {
                         .toList();
                 ArticleMemberSwap.copyOnto(
                         ArticleMemberSwap.summarize(have, want, artists, isTradeBoard(category)), dto);
+                ArticleMemberSwap.copyPreviewsOnto(dto, have, want, 6);
             }
 
             articleViewList.add(dto);
@@ -443,6 +451,7 @@ public class ArticleController {
         model.addAttribute("isGroupOrders", "group-orders".equals(category));
         if (marketBoard) {
             addMarketMemberFilter(model, selectedMember, selectedSide, artists);
+            addMarketSeasonClassFilter(model, selectedSeason, selectedClass);
         }
         model.addAttribute("articleList", articleViewList);
         // 교환/거래/분철: 추천 컬럼·인기글 조회 제거. popularList는 템플릿 미사용.
@@ -456,6 +465,10 @@ public class ArticleController {
         model.addAttribute("isSearchWriter", "writer".equals(searchType));
         model.addAttribute("selectedMember", selectedMember);
         model.addAttribute("selectedObjektSide", selectedSide);
+        model.addAttribute("selectedSeason", selectedSeason);
+        model.addAttribute("selectedClass", selectedClass);
+        model.addAttribute("hasMarketAttrFilter",
+                !selectedMember.isEmpty() || !selectedSeason.isEmpty() || !selectedClass.isEmpty());
 
         model.addAttribute("limit", limit);
 
@@ -809,6 +822,42 @@ public class ArticleController {
         model.addAttribute("isObjektSideWant", "want".equals(selectedSide));
     }
 
+    private void addMarketSeasonClassFilter(Model model, String selectedSeason, String selectedClass) {
+        Set<String> seasons = new LinkedHashSet<>();
+        Set<String> classes = new LinkedHashSet<>();
+        List<Map<String, Object>> catalog = objektService.findCollections("triples");
+        if (catalog == null) catalog = List.of();
+        for (Map<String, Object> item : catalog) {
+            if (item == null) continue;
+            String season = stringValue(item.get("season"));
+            String klass = stringValue(item.get("class"));
+            if (!season.isBlank()) seasons.add(season);
+            if (!klass.isBlank()) classes.add(klass);
+        }
+        List<Map<String, Object>> seasonOptions = new ArrayList<>();
+        seasonOptions.add(marketFilterOption("", "전체", selectedSeason.isBlank()));
+        for (String value : ObjektFilterOrder.sortedSeasons(seasons)) {
+            seasonOptions.add(marketFilterOption(value, value, selectedSeason.equalsIgnoreCase(value)));
+        }
+        List<Map<String, Object>> classOptions = new ArrayList<>();
+        classOptions.add(marketFilterOption("", "전체", selectedClass.isBlank()));
+        for (String value : classes.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList()) {
+            classOptions.add(marketFilterOption(value, value, selectedClass.equalsIgnoreCase(value)));
+        }
+        model.addAttribute("marketSeasonOptions", seasonOptions);
+        model.addAttribute("marketClassOptions", classOptions);
+        model.addAttribute("hasSelectedSeason", !selectedSeason.isBlank());
+        model.addAttribute("hasSelectedClass", !selectedClass.isBlank());
+    }
+
+    private static Map<String, Object> marketFilterOption(String value, String label, boolean selected) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("value", value);
+        row.put("label", label);
+        row.put("selected", selected);
+        return row;
+    }
+
     private static String normalizeObjektSide(String category, String objektSide) {
         if (!isObjektBoard(category)) return "have";
         if (objektSide == null) return "have";
@@ -835,10 +884,17 @@ public class ArticleController {
         return (want && !have) ? "want" : "have";
     }
 
-    private static boolean matchesMarketListing(String category, List<ArticleObjekt> links, String member, String side) {
-        if (member != null && !member.isBlank()) {
-            // 판매/구매(또는 Have/Want) 오브젝트 중 해당 멤버가 하나라도 있으면 찾는다.
-            return ArticleMemberSwap.matchesMember(links, member, side);
+    private static boolean matchesMarketListing(String category,
+                                                List<ArticleObjekt> links,
+                                                String member,
+                                                String side,
+                                                String season,
+                                                String objektClass) {
+        boolean hasAttr = (member != null && !member.isBlank())
+                || (season != null && !season.isBlank())
+                || (objektClass != null && !objektClass.isBlank());
+        if (hasAttr) {
+            return ArticleMemberSwap.matchesListing(links, member, side, season, objektClass);
         }
         if (isSellBoard(category)) {
             return ArticleMemberSwap.hasSide(links, side);

@@ -78,7 +78,9 @@ class GroupOrdersControllerTest {
                     .andExpect(content().string(containsString("article-board-swap")))
                     .andExpect(content().string(containsString(">Have</a>")))
                     .andExpect(content().string(containsString(">Want</a>")))
-                    .andExpect(content().string(containsString("Have 탭은 Have 멤버만")));
+                    .andExpect(content().string(containsString("Have/Want 쪽 멤버·시즌·클래스로 찾습니다")))
+                    .andExpect(content().string(containsString("market-filter-season")))
+                    .andExpect(content().string(containsString("market-filter-class")));
             } else {
                 mvc.perform(get("/article/" + category)).andExpect(status().isOk())
                     .andExpect(content().string(containsString("article-board-heading is-no-likes")))
@@ -89,7 +91,7 @@ class GroupOrdersControllerTest {
                     .andExpect(content().string(containsString(">판매</a>")))
                     .andExpect(content().string(containsString(">구매</a>")))
                     .andExpect(content().string(containsString("objektSide=want")))
-                    .andExpect(content().string(containsString("해당 멤버가 하나라도 있는 글")))
+                    .andExpect(content().string(containsString("판매/구매 탭과 멤버·시즌·클래스로 찾습니다")))
                     .andExpect(content().string(not(containsString(">Have</a>"))))
                     .andExpect(content().string(not(containsString(">Want</a>"))));
             }
@@ -135,11 +137,36 @@ class GroupOrdersControllerTest {
         mvc.perform(get("/article/trade").param("member", "윤서연").param("objektSide", "have"))
             .andExpect(status().isOk())
             .andExpect(content().string(not(containsString("오래된 교환 글"))))
-            .andExpect(content().string(containsString("Have 탭은 Have 멤버만")));
+            .andExpect(content().string(containsString("Have/Want 쪽 멤버·시즌·클래스로 찾습니다")));
         mvc.perform(get("/article/trade").param("member", "윤서연").param("objektSide", "want"))
             .andExpect(status().isOk())
             .andExpect(content().string(containsString("오래된 교환 글")));
         verify(articles, atLeastOnce()).findCategoryBatchBefore("trade", "title", "", 101L, 100);
+    }
+
+    @Test void seasonAndClassFiltersKeepMatchingTradePosts() throws Exception {
+        Article post = article("trade");
+        post.setId(77L);
+        post.setTitle("크림02 지 교환");
+        ArticleObjekt have = new ArticleObjekt();
+        have.setSide("HAVE");
+        have.setMemberName("코토네");
+        have.setSeason("Cream02");
+        have.setObjektClass("Z");
+        when(articles.findCategoryBatchBefore(eq("trade"), eq("title"), eq(""), anyLong(), eq(100)))
+            .thenReturn(List.of(post));
+        when(links.groupByArticleId(anyList())).thenReturn(Map.of(77L, List.of(have)));
+        when(objekts.findCollections("triples")).thenReturn(List.of(
+            Map.of("season", "Cream02", "class", "Z", "member", "Kotone")));
+        mvc.perform(get("/article/trade").param("season", "Cream02").param("class", "Z").param("objektSide", "have"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("크림02 지 교환")))
+            .andExpect(content().string(containsString("option value=\"Cream02\" selected")))
+            .andExpect(content().string(containsString("option value=\"Z\" selected")))
+            .andExpect(content().string(containsString("초기화")));
+        mvc.perform(get("/article/trade").param("season", "Ever01").param("objektSide", "have"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(not(containsString("크림02 지 교환"))));
     }
 
     @Test void memberSearchFindsEveryLinkedHaveAndWantName() throws Exception {
