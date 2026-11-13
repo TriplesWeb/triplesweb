@@ -78,13 +78,29 @@
 
 .market-tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin:-.5rem 0 1.5rem}.market-tabs a{padding:.6rem 1.15rem;border:1px solid #3a4a46;border-radius:999px;color:#b9cac4;text-decoration:none}.market-tabs a:hover,.market-tabs a[aria-current="page"]{background:#8decd9;color:#102720;border-color:#8decd9}.market-tabs a:focus-visible{outline:2px solid #8decd9;outline-offset:3px}
 .market-member-filter{display:grid;gap:.85rem;margin:0 0 1.35rem;padding:1rem;border:1px solid var(--site-ui-border,#ffffff22);border-radius:1.1rem;background:color-mix(in srgb,var(--site-ui-panel,#15191f) 88%,transparent)}
-.market-filter-bar{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem}
-.market-filter-pill{display:inline-flex;align-items:center;gap:.35rem;min-height:36px;padding:.2rem .55rem .2rem .85rem;border:1px solid #3a4a46;border-radius:999px;background:#12181c;color:#b9cac4}
-.market-filter-pill-label{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#8a9b96;white-space:nowrap}
-.market-filter-pill select{appearance:none;-webkit-appearance:none;min-width:5.5rem;max-width:9rem;height:1.85rem;margin:0;border:0;border-radius:999px;background:transparent;color:#e8fff8;font-size:.82rem;font-weight:650;padding:0 1.1rem 0 .2rem;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a9b96' stroke-width='2.2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .15rem center}
-.market-filter-pill select:focus-visible{outline:2px solid #8decd9;outline-offset:2px}
-.market-filter-reset{display:inline-flex;align-items:center;min-height:36px;padding:.35rem .85rem;border:1px solid #3a4a46;border-radius:999px;color:#b9cac4;text-decoration:none;font-size:.78rem;font-weight:650}
-.market-filter-reset:hover{border-color:#8decd9;color:#8decd9}
+/* /cosmo/objekt 필터와 같은 pill 컨트롤 */
+.market-filter-bar{display:flex;flex-wrap:wrap;align-items:center;gap:.55rem .65rem;position:relative;z-index:2;overflow:visible}
+.market-filter-bar .objekt-filter{position:relative;z-index:1;display:flex;min-width:11rem;max-width:16rem;flex:1 1 11rem;height:2.65rem;align-items:center;gap:.5rem;padding:.25rem .25rem .25rem .75rem;border:1px solid rgba(58,66,88,.72);border-radius:999px;background:#171a24;transition:border-color .18s ease,background .18s ease;overflow:visible}
+.market-filter-bar .objekt-filter:focus-within,.market-filter-bar .objekt-filter:has(.season-toggle[aria-expanded="true"]){z-index:80}
+.market-filter-bar .objekt-filter:hover,.market-filter-bar .objekt-filter:focus-within{border-color:rgba(0,245,212,.38);background:rgba(0,245,212,.04)}
+.market-filter-bar .objekt-filter.is-filtered{border-color:rgba(0,245,212,.55);background:rgba(0,245,212,.08)}
+.market-filter-bar .objekt-filter-label{flex:0 0 2.5rem;width:2.5rem;min-width:2.5rem;color:#8b93a7;font-size:.82rem;font-weight:650;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.market-filter-bar .objekt-filter.is-filtered .objekt-filter-label{color:#7df9e8}
+.market-filter-bar .objekt-filter-control{display:inline-flex;flex:1 1 auto;align-items:center;justify-content:space-between;gap:.2rem;box-sizing:border-box;min-width:0;width:auto;height:2.1rem;margin:0;border:0;border-radius:999px;background:rgba(255,255,255,.045);padding:0 .35rem 0 .75rem;color:#e8ebf2;font-size:.82rem;font-weight:600;line-height:1;transition:background .18s ease,color .18s ease}
+.market-filter-bar .objekt-filter-control:hover{background:rgba(255,255,255,.07)}
+.market-filter-bar .objekt-filter button.objekt-filter-control{cursor:pointer}
+.market-filter-bar .objekt-filter-select-wrap{position:relative;min-width:0;flex:1 1 auto;padding-right:.25rem}
+.market-filter-bar .objekt-filter-select-wrap select{appearance:none!important;-webkit-appearance:none!important;width:100%;min-width:0;height:2.1rem;margin:0;border:0!important;outline:none!important;background:transparent!important;padding:0 1.35rem 0 0!important;color:#e8ebf2!important;font-size:.82rem;font-weight:600;line-height:2.1rem;cursor:pointer}
+.market-filter-bar .objekt-filter-select-wrap select option{background:#12151c;color:#e3e2e8}
+.market-filter-bar .objekt-filter-select-wrap .objekt-filter-caret{position:absolute;top:50%;right:.2rem;transform:translateY(-50%);color:#6ee7d8;font-size:1.1rem!important;line-height:1!important;pointer-events:none}
+.market-filter-bar .objekt-filter-control:focus-within,.market-filter-bar .objekt-filter-control:focus-visible{outline:2px solid #8decd9;outline-offset:2px}
+.market-filter-bar .objekt-filter>select{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.market-filter-bar .objekt-filter .season-toggle{flex:1 1 auto;min-width:0;width:auto;max-width:none;cursor:pointer}
+.market-filter-bar .objekt-filter .season-toggle>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.market-filter-bar .objekt-dropdown-caret{width:.45rem;height:.45rem;flex:0 0 auto;margin:0 .3rem .2rem .6rem;border-right:2px solid #6ee7d8;border-bottom:2px solid #6ee7d8;transform:rotate(45deg);display:block}
+.market-filter-bar .objekt-filter-control[aria-expanded="true"] .objekt-dropdown-caret{transform:rotate(225deg);margin-bottom:0}
+.market-filter-bar .objekt-filter-caret{flex:0 0 auto;color:#6ee7d8;font-size:1.1rem!important;line-height:1!important;pointer-events:none}
+.market-filter-bar .market-filter-reset{flex:0 0 auto;text-decoration:none;min-height:2.65rem}
 .market-side-seg{display:flex;flex-wrap:wrap;gap:.45rem}
 .market-side-link{display:inline-flex;align-items:center;min-height:36px;padding:.4rem .95rem;border:1px solid #3a4a46;border-radius:999px;color:#b9cac4;text-decoration:none;font-size:.82rem;font-weight:650}
 .market-side-link:hover,.market-side-link.is-active{background:var(--site-ui-accent,#8decd9);color:#071310;border-color:var(--site-ui-accent,#8decd9)}
