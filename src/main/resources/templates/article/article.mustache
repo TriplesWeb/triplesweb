@@ -26,8 +26,8 @@
 
             {{#isMarketBoard}}
             <nav class="market-tabs" aria-label="교환/거래 게시판 분류">
-                <a href="/article/trade" {{#isTrade}}aria-current="page"{{/isTrade}}>교환</a>
-                <a href="/article/sell" {{#isSell}}aria-current="page"{{/isSell}}>거래</a>
+                <a class="market-tab" href="/article/trade" {{#isTrade}}aria-current="page"{{/isTrade}}>교환</a>
+                <a class="market-tab" href="/article/sell" {{#isSell}}aria-current="page"{{/isSell}}>거래</a>
             </nav>
             <section class="market-member-filter" aria-label="멤버별 검색">
                 {{#isTrade}}
