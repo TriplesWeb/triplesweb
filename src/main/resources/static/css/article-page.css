@@ -21,7 +21,8 @@
 .article-board-heading .article-board-swap,
 .article-board-row .article-board-subject,
 .article-board-row .article-board-swap{text-align:left}
-.article-board-subject a{display:block;padding:.2rem 0;line-height:1.6}
+.article-board-subject a,.article-board-subject-link{display:block;padding:.2rem 0;line-height:1.6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.article-board-objekt-previews{min-width:0}
 .article-board-search{min-width:0;max-width:100%}
 .article-board-search-type{min-width:5.5rem}
 .article-board-search-type select{padding-right:1.6rem;cursor:pointer}
@@ -45,7 +46,7 @@
  .article-board-row>div{grid-column:auto!important;min-width:0}
  .article-board-row>.article-board-num{display:none}
  .article-board-row>.article-board-subject{grid-column:1/-1!important;white-space:normal!important;overflow:visible!important;font-size:1rem;font-weight:650;overflow-wrap:anywhere}
- .article-board-subject a{padding:0 0 .15rem;min-height:2rem;line-height:1.65}
+ .article-board-subject a,.article-board-subject-link{padding:0 0 .15rem;min-height:2rem;line-height:1.65;white-space:normal!important;overflow:visible!important;text-overflow:unset}
  .article-board-row>.article-board-author{grid-column:1!important;font-size:.78rem;line-height:1.5;overflow-wrap:anywhere;white-space:normal}
  .article-board-row>.article-board-date{grid-column:2!important;font-size:.72rem;line-height:1.6;white-space:nowrap;color:#9eaea9!important}
  .article-board-date::before{content:none!important}
