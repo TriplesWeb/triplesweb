@@ -384,30 +384,70 @@
     }
   }
 
+  function persistNicknameRecents(names) {
+    try {
+      localStorage.setItem(COSMO_RECENTS_KEY, JSON.stringify(names));
+    } catch (_) {}
+  }
+
+  function removeNicknameRecent(name) {
+    const key = String(name || "").toLowerCase();
+    persistNicknameRecents(loadNicknameRecents().filter((item) => item.toLowerCase() !== key));
+  }
+
+  function clearNicknameRecents() {
+    persistNicknameRecents([]);
+  }
+
+  function recentRemoveButton(label, onClick) {
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "site-header-popover__remove";
+    remove.setAttribute("aria-label", label);
+    remove.textContent = "×";
+    remove.addEventListener("click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      onClick();
+    });
+    return remove;
+  }
+
   function renderCosmoIdPanel() {
     if (!cosmoPanel) return;
     const recents = loadNicknameRecents();
+    const mineRow = cosmoPanel.querySelector("[data-cosmo-id-mine-row]");
     const mine = cosmoPanel.querySelector("[data-cosmo-id-mine]");
     const list = cosmoPanel.querySelector("[data-cosmo-id-recents]");
+    const clear = cosmoPanel.querySelector("[data-cosmo-id-clear]");
     if (mine) {
       if (recents[0]) {
+        if (mineRow) mineRow.hidden = false;
         mine.hidden = false;
         mine.href = "/cosmo/collection?nickname=" + encodeURIComponent(recents[0]);
         mine.textContent = "내 아이디로 보기 · " + recents[0];
       } else {
+        if (mineRow) mineRow.hidden = true;
         mine.hidden = true;
       }
     }
-    if (!list) return;
-    list.replaceChildren();
-    recents.slice(0, 8).forEach((name) => {
-      const item = document.createElement("li");
-      const link = document.createElement("a");
-      link.href = "/cosmo/collection?nickname=" + encodeURIComponent(name);
-      link.textContent = name;
-      item.appendChild(link);
-      list.appendChild(item);
-    });
+    if (list) {
+      list.replaceChildren();
+      recents.slice(1, 8).forEach((name) => {
+        const item = document.createElement("li");
+        item.className = "site-header-popover__recent";
+        const link = document.createElement("a");
+        link.href = "/cosmo/collection?nickname=" + encodeURIComponent(name);
+        link.textContent = name;
+        item.appendChild(link);
+        item.appendChild(recentRemoveButton(name + " 기록 삭제", function () {
+          removeNicknameRecent(name);
+          renderCosmoIdPanel();
+        }));
+        list.appendChild(item);
+      });
+    }
+    if (clear) clear.hidden = recents.length === 0;
   }
 
   function setCosmoIdOpen(open) {
@@ -545,6 +585,25 @@
         setCosmoIdOpen(cosmoPanel.hidden);
       });
     });
+    const mineRemove = cosmoPanel.querySelector("[data-cosmo-id-mine-remove]");
+    if (mineRemove) {
+      mineRemove.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const recents = loadNicknameRecents();
+        if (recents[0]) removeNicknameRecent(recents[0]);
+        renderCosmoIdPanel();
+      });
+    }
+    const clearRecents = cosmoPanel.querySelector("[data-cosmo-id-clear]");
+    if (clearRecents) {
+      clearRecents.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        clearNicknameRecents();
+        renderCosmoIdPanel();
+      });
+    }
   }
   if (alertsPanel) {
     alertsOpens.forEach((btn) => {

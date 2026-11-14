@@ -127,8 +127,12 @@
                 <button type="submit">검색</button>
             </form>
             <div id="site-cosmo-id-suggest" class="site-header-nickname-suggest" role="listbox" aria-label="연관 닉네임" hidden></div>
-            <a class="site-header-popover__mine" href="/cosmo/collection" data-cosmo-id-mine hidden>내 아이디로 보기</a>
+            <div class="site-header-popover__mine-row" data-cosmo-id-mine-row hidden>
+                <a class="site-header-popover__mine" href="/cosmo/collection" data-cosmo-id-mine>내 아이디로 보기</a>
+                <button type="button" class="site-header-popover__remove" data-cosmo-id-mine-remove aria-label="최근 아이디 삭제">×</button>
+            </div>
             <ul class="site-header-popover__list" data-cosmo-id-recents></ul>
+            <button type="button" class="site-header-popover__clear" data-cosmo-id-clear hidden>최근 검색 삭제</button>
         </div>
     </div>
 

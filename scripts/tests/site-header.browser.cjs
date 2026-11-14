@@ -185,7 +185,23 @@ const emptyAlerts={catalogSig:'sig-empty',catalogCount:2,dropWindow:false,notice
     assert.equal(await barCosmo.isVisible(),true,`데스크톱 코스모 아이디 ${width}`);
     assert.equal(await barAlerts.isVisible(),true,`데스크톱 종 ${width}`);
     if(width===1280){
+      await page.evaluate(()=>localStorage.setItem('cosmo-nickname-recents',JSON.stringify(['ottomagic','newwave'])));
       await barCosmo.click();
+      const mine=page.locator('[data-cosmo-id-mine]');
+      assert.equal(await mine.innerText(),'내 아이디로 보기 · ottomagic');
+      assert.deepEqual(await page.locator('[data-cosmo-id-recents] a').allTextContents(),['newwave']);
+      assert.equal(await page.getByRole('button',{name:'최근 아이디 삭제'}).isVisible(),true);
+      await page.getByRole('button',{name:'newwave 기록 삭제'}).click();
+      assert.deepEqual(await page.locator('[data-cosmo-id-recents] a').allTextContents(),[]);
+      assert.equal(await mine.innerText(),'내 아이디로 보기 · ottomagic');
+      await page.getByRole('button',{name:'최근 아이디 삭제'}).click();
+      assert.equal(await mine.isVisible(),false);
+      await page.evaluate(()=>localStorage.setItem('cosmo-nickname-recents',JSON.stringify(['ottomagic','newwave'])));
+      await page.locator('[data-cosmo-id-open]').click();
+      await page.locator('[data-cosmo-id-open]').click();
+      await page.getByRole('button',{name:'최근 검색 삭제',exact:true}).click();
+      assert.equal(await mine.isVisible(),false);
+      assert.deepEqual(JSON.parse(await page.evaluate(()=>localStorage.getItem('cosmo-nickname-recents')||'[]')),[]);
       const nickname=page.locator('[data-cosmo-id-input]');
       const suggestions=page.locator('#site-cosmo-id-suggest');
       await nickname.fill('ne');
