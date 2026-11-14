@@ -1,6 +1,7 @@
 {{>layout/head-open}}
 
-    <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
+    <title>트리플에스 커뮤니티 - {{#isMarketBoard}}{{categoryName}}{{/isMarketBoard}}{{^isMarketBoard}}{{categoryName}} 게시판{{/isMarketBoard}}</title>
+    <link rel="stylesheet" href="{{#asset}}/css/objekt-filter.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/article-page.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
 </head><body class="site-page article-page bg-surface text-on-surface min-h-screen flex flex-col">
@@ -19,49 +20,213 @@
                 <div class="flex items-center gap-3">
                     <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:#8decd9;flex-shrink:0"><path d="M20 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.95L3 21l1.95-4.5A9 9 0 0 1 4 12.5 8.5 8.5 0 1 1 20 11.5Z"/><path d="M8 10h8M8 14h5"/></svg>
                     <h1 class="font-headline-lg text-headline-md font-bold text-on-surface tracking-tight">
-                        {{categoryName}} 게시판
+                        {{#isMarketBoard}}{{categoryName}}{{/isMarketBoard}}{{^isMarketBoard}}{{categoryName}} 게시판{{/isMarketBoard}}
                     </h1>
                 </div>
             </div>
 
             {{#isMarketBoard}}
-            <nav class="site-section-tabs market-tabs" aria-label="교환/거래 게시판 분류">
-                <a class="site-section-tab" href="/article/trade" {{#isTrade}}aria-current="page"{{/isTrade}}>교환</a>
-                <a class="site-section-tab" href="/article/sell" {{#isSell}}aria-current="page"{{/isSell}}>거래</a>
+            <nav class="site-section-tabs market-tabs" aria-label="교환/거래 분류">
+                <a class="site-section-tab" href="/trade?objektSide={{selectedObjektSide}}{{#hasSelectedMember}}&amp;member={{selectedMember}}{{/hasSelectedMember}}{{#hasSelectedSeason}}&amp;season={{selectedSeason}}{{/hasSelectedSeason}}{{#hasSelectedClass}}&amp;class={{selectedClass}}{{/hasSelectedClass}}{{#hasSearchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/hasSearchKeyword}}" {{#isTrade}}aria-current="page"{{/isTrade}}>교환</a>
+                <a class="site-section-tab" href="/sell?objektSide={{selectedObjektSide}}{{#hasSelectedMember}}&amp;member={{selectedMember}}{{/hasSelectedMember}}{{#hasSelectedSeason}}&amp;season={{selectedSeason}}{{/hasSelectedSeason}}{{#hasSelectedClass}}&amp;class={{selectedClass}}{{/hasSelectedClass}}{{#hasSearchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/hasSearchKeyword}}" {{#isSell}}aria-current="page"{{/isSell}}>거래</a>
             </nav>
-            <section class="market-member-filter" aria-label="멤버별 검색">
-                {{#isTrade}}
-                <p class="market-side-help">Have 탭은 Have 멤버만, Want 탭은 Want 멤버만 찾습니다. 멤버를 선택하지 않으면 전체 게시글이 표시됩니다.</p>
-                {{/isTrade}}
-                {{#isSell}}
-                <p class="market-side-help">판매 탭은 판매 글, 구매 탭은 구매 글입니다. 멤버를 고르면 그 탭 오브젝트에 해당 멤버가 하나라도 있는 글이 검색됩니다.</p>
-                {{/isSell}}
-                {{#isObjektSideAll}}<p class="market-side-help" role="status">기존 전체 검색 링크: Have와 Want 양쪽에서 선택한 멤버를 검색합니다.</p>{{/isObjektSideAll}}
-                {{#isTrade}}
-                <div class="market-side-seg" role="group" aria-label="멤버 검색 기준: Have 또는 Want">
-                    <a class="market-side-link{{#isObjektSideHave}} is-active{{/isObjektSideHave}}" href="/article/{{category}}?objektSide=have{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Have</a>
-                    <a class="market-side-link{{#isObjektSideWant}} is-active{{/isObjektSideWant}}" href="/article/{{category}}?objektSide=want{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Want</a>
+            <section class="market-member-filter" aria-label="트레이드 필터">
+                {{#isObjektSideAll}}<p class="market-side-help" role="status">Have와 Want 양쪽에서 선택한 멤버를 검색합니다.</p>{{/isObjektSideAll}}
+                <div class="market-filter-bar" role="group" aria-label="시즌·클래스·구분 필터">
+                    <div class="objekt-filter relative{{#hasSelectedSeason}} is-filtered{{/hasSelectedSeason}}" id="market-season-dropdown">
+                        <span class="objekt-filter-label">시즌</span>
+                        <button type="button" id="market-season-toggle" class="objekt-filter-control" aria-haspopup="true" aria-expanded="false" aria-controls="market-season-menu" aria-label="시즌">
+                            <span id="market-season-label" class="truncate">{{#hasSelectedSeason}}{{selectedSeason}}{{/hasSelectedSeason}}{{^hasSelectedSeason}}전체{{/hasSelectedSeason}}</span>
+                            <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
+                        </button>
+                        <div id="market-season-menu" class="objekt-dropdown-menu hidden" data-season-options hidden>
+                            <label class="objekt-choice">
+                                <input type="checkbox" value="all" class="season-checkbox" {{^hasSelectedSeason}}checked{{/hasSelectedSeason}}>
+                                <span class="objekt-choice-mark" aria-hidden="true"></span>
+                                <span class="objekt-choice-text">전체 시즌</span>
+                            </label>
+                            {{#marketSeasonOptions}}
+                            <label class="objekt-choice">
+                                <input type="checkbox" name="season" value="{{value}}" class="season-checkbox" {{#selected}}checked{{/selected}}>
+                                <span class="objekt-choice-mark" aria-hidden="true"></span>
+                                <span class="objekt-choice-text">{{label}}</span>
+                            </label>
+                            {{/marketSeasonOptions}}
+                        </div>
+                    </div>
+                    <div class="objekt-filter relative{{#hasSelectedClass}} is-filtered{{/hasSelectedClass}}" id="market-class-dropdown">
+                        <span class="objekt-filter-label">클래스</span>
+                        <button type="button" id="market-class-toggle" class="objekt-filter-control" aria-haspopup="true" aria-expanded="false" aria-controls="market-class-menu" aria-label="클래스">
+                            <span id="market-class-label" class="truncate">{{#hasSelectedClass}}{{selectedClass}}{{/hasSelectedClass}}{{^hasSelectedClass}}전체{{/hasSelectedClass}}</span>
+                            <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
+                        </button>
+                        <div id="market-class-menu" class="objekt-dropdown-menu hidden" hidden>
+                            <label class="objekt-choice">
+                                <input type="checkbox" value="all" class="class-checkbox" {{^hasSelectedClass}}checked{{/hasSelectedClass}}>
+                                <span class="objekt-choice-mark" aria-hidden="true"></span>
+                                <span class="objekt-choice-text">전체 클래스</span>
+                            </label>
+                            {{#marketClassOptions}}
+                            <label class="objekt-choice">
+                                <input type="checkbox" name="class" value="{{value}}" class="class-checkbox" {{#selected}}checked{{/selected}}>
+                                <span class="objekt-choice-mark" aria-hidden="true"></span>
+                                <span class="objekt-choice-text">{{label}}</span>
+                            </label>
+                            {{/marketClassOptions}}
+                        </div>
+                    </div>
+                    {{#isTrade}}
+                    <div class="objekt-filter market-side-filter" role="group" aria-label="멤버 검색 기준: Have 또는 Want">
+                        <span class="objekt-filter-label">구분</span>
+                        <div class="objekt-filter-control market-side-seg">
+                            <a class="market-side-link{{#isObjektSideHave}} is-active{{/isObjektSideHave}}" href="{{boardBase}}?objektSide=have{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Have</a>
+                            <a class="market-side-link{{#isObjektSideWant}} is-active{{/isObjektSideWant}}" href="{{boardBase}}?objektSide=want{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">Want</a>
+                        </div>
+                    </div>
+                    {{/isTrade}}
+                    {{#isSell}}
+                    <div class="objekt-filter market-side-filter" role="group" aria-label="판매 또는 구매">
+                        <span class="objekt-filter-label">구분</span>
+                        <div class="objekt-filter-control market-side-seg">
+                            <a class="market-side-link{{#isObjektSideHave}} is-active{{/isObjektSideHave}}" href="{{boardBase}}?objektSide=have{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">판매</a>
+                            <a class="market-side-link{{#isObjektSideWant}} is-active{{/isObjektSideWant}}" href="{{boardBase}}?objektSide=want{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">구매</a>
+                        </div>
+                    </div>
+                    {{/isSell}}
+                    {{#hasMarketAttrFilter}}
+                    <a class="objekt-reset-button market-filter-reset" href="{{boardBase}}?objektSide={{selectedObjektSide}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2.6 8.4M3 4v6h6"/></svg>
+                        초기화
+                    </a>
+                    {{/hasMarketAttrFilter}}
                 </div>
-                {{/isTrade}}
-                {{#isSell}}
-                <div class="market-side-seg" role="group" aria-label="판매 또는 구매">
-                    <a class="market-side-link{{#isObjektSideHave}} is-active{{/isObjektSideHave}}" href="/article/{{category}}?objektSide=have{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">판매</a>
-                    <a class="market-side-link{{#isObjektSideWant}} is-active{{/isObjektSideWant}}" href="/article/{{category}}?objektSide=want{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}">구매</a>
-                </div>
-                {{/isSell}}
-                <div class="member-portrait-picker" id="market-member-picker" role="group" aria-label="멤버 선택">
-                    {{>partials/member-portrait-picker}}
+                <div class="market-member-picker{{#hasSelectedMember}} is-filtered{{/hasSelectedMember}}">
+                    <div class="member-portrait-picker" id="market-member-picker" role="group" aria-label="멤버 선택">
+                        {{>partials/member-portrait-picker}}
+                    </div>
                 </div>
             </section>
+
+            <div class="market-feed" aria-label="{{categoryName}} 피드">
+                {{#articleList}}
+                <article class="market-feed-card">
+                    <header class="market-feed-card-head">
+                        <div class="market-feed-card-meta">
+                            {{#isTrade}}<span class="market-feed-badge is-wtt">WTT</span>{{/isTrade}}
+                            {{#isSell}}
+                            {{#hasWantPreview}}{{^hasHavePreview}}<span class="market-feed-badge is-wtb">구매</span>{{/hasHavePreview}}{{/hasWantPreview}}
+                            {{#hasHavePreview}}{{^hasWantPreview}}<span class="market-feed-badge is-wts">판매</span>{{/hasWantPreview}}{{/hasHavePreview}}
+                            {{#hasHavePreview}}{{#hasWantPreview}}<span class="market-feed-badge is-wtt">거래</span>{{/hasWantPreview}}{{/hasHavePreview}}
+                            {{^hasObjektPreview}}<span class="market-feed-badge is-wts">거래</span>{{/hasObjektPreview}}
+                            {{/isSell}}
+                            <span class="market-feed-author">{{userId}}</span>
+                            <time class="market-feed-time">{{formattedDate}}</time>
+                        </div>
+                        {{#hasMemberSwap}}
+                        <p class="market-feed-members">
+                            {{#hasHaveLead}}<span class="article-swap-name" style="--artist-color:{{haveLeadColor}}">{{haveLeadName}}</span>{{#hasHaveMore}} 외 {{haveMoreCount}}{{/hasHaveMore}}{{/hasHaveLead}}
+                            {{#showTradeSwap}} <span class="market-feed-members-sep" aria-hidden="true">·</span> {{/showTradeSwap}}
+                            {{#hasWantLead}}<span class="article-swap-name" style="--artist-color:{{wantLeadColor}}">{{wantLeadName}}</span>{{#hasWantMore}} 외 {{wantMoreCount}}{{/hasWantMore}}{{/hasWantLead}}
+                        </p>
+                        {{/hasMemberSwap}}
+                    </header>
+                    <a href="{{boardBase}}/{{id}}" class="market-feed-card-body" aria-label="{{title}}">
+                        {{#hasObjektPreview}}
+                        {{#isTrade}}
+                        <div class="market-feed-deal">
+                            <div class="market-feed-side" data-side="have">
+                                <span class="market-feed-side-label">HAVE</span>
+                                <div class="market-feed-strip">
+                                    {{#hasHavePreview}}
+                                    {{#havePreview}}
+                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
+                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
+                                        {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
+                                    </span>
+                                    {{/havePreview}}
+                                    {{#hasHavePreviewMore}}<span class="market-feed-more">+{{havePreviewMoreCount}}</span>{{/hasHavePreviewMore}}
+                                    {{/hasHavePreview}}
+                                    {{^hasHavePreview}}<span class="market-feed-side-empty">—</span>{{/hasHavePreview}}
+                                </div>
+                            </div>
+                            <span class="market-feed-swap" aria-hidden="true">⇌</span>
+                            <div class="market-feed-side" data-side="want">
+                                <span class="market-feed-side-label">WANT</span>
+                                <div class="market-feed-strip">
+                                    {{#hasWantPreview}}
+                                    {{#wantPreview}}
+                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
+                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
+                                        {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
+                                    </span>
+                                    {{/wantPreview}}
+                                    {{#hasWantPreviewMore}}<span class="market-feed-more">+{{wantPreviewMoreCount}}</span>{{/hasWantPreviewMore}}
+                                    {{/hasWantPreview}}
+                                    {{^hasWantPreview}}<span class="market-feed-side-empty">—</span>{{/hasWantPreview}}
+                                </div>
+                            </div>
+                        </div>
+                        {{/isTrade}}
+                        {{#isSell}}
+                        <div class="market-feed-deal is-single">
+                            {{#hasHavePreview}}
+                            <div class="market-feed-side" data-side="have">
+                                <span class="market-feed-side-label">HAVE</span>
+                                <div class="market-feed-strip">
+                                    {{#havePreview}}
+                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
+                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
+                                        {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
+                                    </span>
+                                    {{/havePreview}}
+                                    {{#hasHavePreviewMore}}<span class="market-feed-more">+{{havePreviewMoreCount}}</span>{{/hasHavePreviewMore}}
+                                </div>
+                            </div>
+                            {{/hasHavePreview}}
+                            {{#hasWantPreview}}
+                            {{^hasHavePreview}}
+                            <div class="market-feed-side" data-side="want">
+                                <span class="market-feed-side-label">WANT</span>
+                                <div class="market-feed-strip">
+                                    {{#wantPreview}}
+                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
+                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
+                                        {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
+                                    </span>
+                                    {{/wantPreview}}
+                                    {{#hasWantPreviewMore}}<span class="market-feed-more">+{{wantPreviewMoreCount}}</span>{{/hasWantPreviewMore}}
+                                </div>
+                            </div>
+                            {{/hasHavePreview}}
+                            {{/hasWantPreview}}
+                        </div>
+                        {{/isSell}}
+                        {{/hasObjektPreview}}
+                        {{^hasObjektPreview}}
+                        <p class="market-feed-note">{{title}}</p>
+                        {{/hasObjektPreview}}
+                    </a>
+                </article>
+                {{/articleList}}
+                {{^articleList}}
+                <div class="market-feed-empty">
+                    <span class="material-symbols-outlined text-outline text-4xl mb-2" data-icon="inbox">inbox</span>
+                    <p class="text-on-surface-variant font-medium">
+                        {{#hasMarketAttrFilter}}조건에 맞는 글이 없습니다.{{/hasMarketAttrFilter}}
+                        {{^hasMarketAttrFilter}}{{#hasSearchKeyword}}검색 결과가 없습니다.{{/hasSearchKeyword}}{{^hasSearchKeyword}}아직 등록된 글이 없습니다.{{/hasSearchKeyword}}{{/hasMarketAttrFilter}}
+                    </p>
+                </div>
+                {{/articleList}}
+            </div>
             {{/isMarketBoard}}
 
+            {{^isMarketBoard}}
             <!-- 게시판 테이블 영역 -->
             <div class="article-board-list w-full overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface-container-lowest/40 mb-8">
 
                 <!-- 테이블 헤더 -->
-                <div class="article-board-heading{{#isTrade}} is-market{{/isTrade}}{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-3.5 bg-surface-container-high/60 border-b border-outline-variant/40 text-on-surface-variant font-semibold text-sm text-center">
+                <div class="article-board-heading{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-3.5 bg-surface-container-high/60 border-b border-outline-variant/40 text-on-surface-variant font-semibold text-sm text-center">
                     <div class="article-board-num">번호</div>
-                    {{#isTrade}}<div class="article-board-swap">분류</div>{{/isTrade}}
                     <div class="article-board-subject">제목</div>
                     <div class="article-board-author">작성자</div>
                     <div class="article-board-date">날짜</div>
@@ -71,21 +236,10 @@
                 <!-- 테이블 바디 (게시글 목록 루프) -->
                 <div class="divide-y divide-outline-variant/20">
                     {{#articleList}}
-                        <div class="article-board-row{{#isTrade}} is-market{{/isTrade}}{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-4 items-center text-center text-sm text-on-surface hover:bg-surface-container-highest/30 transition-colors">
+                        <div class="article-board-row{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-4 items-center text-center text-sm text-on-surface hover:bg-surface-container-highest/30 transition-colors">
                             <div class="article-board-num text-outline font-mono">{{displayId}}</div>
-                            {{#isTrade}}
-                            <div class="article-board-swap">
-                                {{#hasMemberSwap}}
-                                <span class="article-swap">
-                                    {{#hasHaveLead}}<span class="article-swap-name" style="--artist-color:{{haveLeadColor}}">{{haveLeadName}}</span>{{#hasHaveMore}} 외 {{haveMoreCount}}명{{/hasHaveMore}}{{/hasHaveLead}}
-                                    {{#showTradeSwap}} <span class="article-swap-arrow" aria-hidden="true">&lt;-&gt;</span> {{/showTradeSwap}}
-                                    {{#hasWantLead}}<span class="article-swap-name" style="--artist-color:{{wantLeadColor}}">{{wantLeadName}}</span>{{#hasWantMore}} 외 {{wantMoreCount}}명{{/hasWantMore}}{{/hasWantLead}}
-                                </span>
-                                {{/hasMemberSwap}}
-                            </div>
-                            {{/isTrade}}
-                            <div class="article-board-subject text-left font-medium truncate">
-                                <a href="/article/{{#category}}{{category}}{{/category}}{{^category}}trade{{/category}}/{{id}}" class="hover:text-primary-container transition-colors">
+                            <div class="article-board-subject text-left font-medium">
+                                <a href="{{boardBase}}/{{id}}" class="article-board-subject-link hover:text-primary-container transition-colors">
                                     {{title}}
                                 </a>
                             </div>
@@ -95,7 +249,6 @@
                         </div>
                     {{/articleList}}
 
-                    <!-- 게시글이 없을 경우 -->
                     {{^articleList}}
                         <div class="py-16 text-center">
                             <span class="material-symbols-outlined text-outline text-4xl mb-2" data-icon="inbox">inbox</span>
@@ -104,12 +257,12 @@
                     {{/articleList}}
                 </div>
             </div>
+            {{/isMarketBoard}}
 
-            <!-- 하단 컨트롤 영역 (왼쪽: 검색 기능 / 오른쪽: 글쓰기 버튼) -->
+            <!-- 하단 컨트롤: 일반 게시판은 검색+글쓰기, 교환/거래는 글쓰기만 -->
             <div class="article-board-controls flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-
-                <!-- 왼쪽: 게시글 검색 폼 -->
-                <form action="/article/{{category}}" method="get" class="article-board-search flex items-center gap-2 w-full sm:w-auto">
+                {{^isMarketBoard}}
+                <form action="{{boardBase}}" method="get" class="article-board-search flex items-center gap-2 w-full sm:w-auto">
                     <label class="site-search-field article-board-search-type shrink-0">
                         <select name="type" aria-label="검색 유형">
                             <option value="title" {{#isSearchTitle}}selected{{/isSearchTitle}}>제목</option>
@@ -117,10 +270,6 @@
                             <option value="writer" {{#isSearchWriter}}selected{{/isSearchWriter}}>작성자</option>
                         </select>
                     </label>
-                    {{#isMarketBoard}}
-                    <input type="hidden" name="member" value="{{selectedMember}}">
-                    <input type="hidden" name="objektSide" value="{{selectedObjektSide}}">
-                    {{/isMarketBoard}}
                     <div class="site-search-field article-board-search-keyword relative flex-1 sm:w-60">
                         <input type="search" name="keyword" value="{{searchKeyword}}" placeholder="검색어를 입력하세요" aria-label="게시글 검색어" autocomplete="off" />
                         <button type="submit" aria-label="게시글 검색" class="site-search-submit">
@@ -128,13 +277,13 @@
                         </button>
                     </div>
                 </form>
+                {{/isMarketBoard}}
 
-                <!-- 오른쪽: 권한별 글쓰기 버튼 -->
-                <div class="flex items-center justify-end w-full sm:w-auto">
+                <div class="flex items-center justify-end w-full sm:w-auto{{#isMarketBoard}} ml-auto{{/isMarketBoard}}">
                     {{#isAdmin}}
-                            <a href="/article/{{category}}/new{{#isSell}}?objektSide={{selectedObjektSide}}{{/isSell}}" class="article-write-btn md-btn md-btn-filled py-2.5 px-5 rounded-full bg-primary-container text-black font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
+                            <a href="{{boardBase}}/new{{#isSell}}?objektSide={{selectedObjektSide}}{{/isSell}}" class="article-write-btn md-btn md-btn-filled py-2.5 px-5 rounded-full bg-primary-container text-black font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
                                 <span class="material-symbols-outlined text-[18px] text-black" data-icon="edit">edit</span>
-                                <span class="text-black">글 쓰기</span>
+                                <span class="text-black">{{#isTrade}}새 교환{{/isTrade}}{{#isSell}}새 거래{{/isSell}}{{^isMarketBoard}}글 쓰기{{/isMarketBoard}}</span>
                             </a>
                         {{/isAdmin}}
 
@@ -145,34 +294,8 @@
     </div>
 </main>
 
+<script src="{{#asset}}/js/objekt-dropdown-core.js{{/asset}}"></script>
 <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const picker = document.getElementById("market-member-picker");
-        if (picker && window.MemberPortraitPicker) {
-            window.MemberPortraitPicker.bindMultiSelect(picker, {
-                multi: false,
-                onChange: function (values) {
-                    const url = new URL(window.location.href);
-                    if (values.length) url.searchParams.set("member", values[0]);
-                    else url.searchParams.delete("member");
-                    window.location.href = url.pathname + url.search;
-                }
-            });
-        }
-        // 테이블의 tbody 안에 있는 모든 행(tr)을 가져옵니다.
-        const rows = document.querySelectorAll(".table-article tr");
-
-        // 행들을 순회하면서 첫 번째 칸(글 순서 칸)의 텍스트를 1부터 차례대로 다시 적어줍니다.
-        rows.forEach((row, index) => {
-            const seqCell = row.querySelector("th"); // 혹은 번호가 들어있는 th/td 셀
-            if (seqCell && !row.querySelector(".text-center")) { // "게시글이 없습니다" 행은 제외
-                // 위에서부터 1, 2, 3... 으로 매기고 싶다면 index + 1
-                // 최신 글이 1번이 되게 하고 싶다면 (전체 개수 - index) 등 응용 가능
-                seqCell.innerText = index + 1;
-            }
-        });
-    });
-</script>
+<script src="{{#asset}}/js/article-market-board.js{{/asset}}"></script>
 {{>layout/page-end}}
 

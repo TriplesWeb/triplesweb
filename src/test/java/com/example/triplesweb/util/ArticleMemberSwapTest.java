@@ -59,10 +59,42 @@ class ArticleMemberSwapTest {
         assertThat(sellWant.get("isTradeSwap")).isEqualTo(false);
     }
 
+    @Test void matchesListingRequiresSeasonClassAndMemberTogether() {
+        ArticleObjekt have = link("HAVE", "코토네", "Cream02", "Z");
+        ArticleObjekt want = link("WANT", "카에데", "Ever01", "A");
+        assertThat(ArticleMemberSwap.matchesListing(List.of(have, want), "", "have", "Cream02", "")).isTrue();
+        assertThat(ArticleMemberSwap.matchesListing(List.of(have, want), "", "have", "Ever01", "")).isFalse();
+        assertThat(ArticleMemberSwap.matchesListing(List.of(have, want), "코토네", "have", "Cream02", "Z")).isTrue();
+        assertThat(ArticleMemberSwap.matchesListing(List.of(have, want), "코토네", "have", "Cream02", "A")).isFalse();
+        assertThat(ArticleMemberSwap.matchesListing(List.of(have, want), "카에데", "want", "Ever01", "A")).isTrue();
+        assertThat(ArticleMemberSwap.matchesListing(List.of(have, want), "", "all", "Ever01", "A")).isTrue();
+    }
+
+    @Test void previewThumbsCapsAndCountsOverflow() {
+        ArticleObjekt a = link("HAVE", "코토네", "Cream02", "Z");
+        a.setThumbnailImage("https://example/a.jpg");
+        a.setCollectionNo("369Z");
+        ArticleObjekt b = link("HAVE", "카에데", "Cream02", "Z");
+        b.setFrontImage("https://example/b.jpg");
+        b.setCollectionNo("370Z");
+        ArticleObjekt c = link("HAVE", "마유", "Cream02", "Z");
+        c.setCollectionNo("371Z");
+        assertThat(ArticleMemberSwap.previewThumbs(List.of(a, b, c), 2)).hasSize(2);
+        assertThat(ArticleMemberSwap.previewMoreCount(List.of(a, b, c), 2)).isEqualTo(1);
+        assertThat(ArticleMemberSwap.previewThumbs(List.of(a, b, c), 2).get(0).get("hasImage")).isEqualTo(true);
+        assertThat(ArticleMemberSwap.previewThumbs(List.of(c), 2).get(0).get("hasImage")).isEqualTo(false);
+    }
+
     private static ArticleObjekt link(String side, String member) {
+        return link(side, member, "", "");
+    }
+
+    private static ArticleObjekt link(String side, String member, String season, String objektClass) {
         ArticleObjekt row = new ArticleObjekt();
         row.setSide(side);
         row.setMemberName(member);
+        row.setSeason(season);
+        row.setObjektClass(objektClass);
         return row;
     }
 

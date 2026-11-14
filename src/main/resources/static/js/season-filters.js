@@ -81,7 +81,9 @@
     toggle.setAttribute('aria-label',source.getAttribute('aria-label')||'시즌 선택');
     menu=document.createElement('div');menu.id='season-choice-'+(++sequence);menu.className='objekt-dropdown-menu';menu.hidden=true;
     toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-controls',menu.id);
-    const text=document.createElement('span'),caret=document.createElement('span');caret.className='objekt-dropdown-caret';caret.setAttribute('aria-hidden','true');toggle.append(text,caret);
+    const text=document.createElement('span');text.className='truncate';
+    const caret=document.createElement('span');caret.className='material-symbols-outlined objekt-filter-caret';caret.setAttribute('aria-hidden','true');caret.textContent='arrow_drop_down';
+    toggle.append(text,caret);
     const close=()=>{menu.hidden=true;toggle.setAttribute('aria-expanded','false');};
     toggle.addEventListener('click',()=>{const open=menu.hidden;controllers.forEach(c=>c.close?.());menu.hidden=!open;toggle.setAttribute('aria-expanded',String(open));});
     document.addEventListener('click',event=>{if(!control.contains(event.target))close();});

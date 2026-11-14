@@ -36,7 +36,7 @@ const base = path.resolve(__dirname, '../..');
       descriptionSelectedNumbers: selectedNumbers.slice()
     });
     const data = () => ({isFavorite:favorite,favoriteCount,objektKey:'hayeoncc367z',collectionId:'Cream02 HaYeon 367Z',member:'HaYeon',season:'Cream02',class:'Special',collectionNo:'367Z',description,isAdmin,
-      detailUrl:'/cosmo/objekt/detail/hayeoncc367z',memberUrl:'/cosmo/objekt?group=members&member=HaYeon',tradeUrl:'/article/trade/new?selectedObjektIds=uuid',sellUrl:'/article/sell/new?selectedObjektIds=uuid',descriptionUrl:'/cosmo/objekt/detail/hayeoncc367z/description',
+      detailUrl:'/cosmo/objekt/detail/hayeoncc367z',memberUrl:'/cosmo/objekt?group=members&member=HaYeon',tradeUrl:'/trade/new?selectedObjektIds=uuid',sellUrl:'/sell/new?selectedObjektIds=uuid',descriptionUrl:'/cosmo/objekt/detail/hayeoncc367z/description',
       ...descriptionPayload(),
       ...(Number.isFinite(mintCount) ? {mintCount} : {}),
       ...(apolloStory ? {apollo: apolloStory} : {})});
@@ -174,7 +174,7 @@ const base = path.resolve(__dirname, '../..');
     assert.equal(await page.locator('#objektIssuedRanges, #objektIssuedTime').count(),0);
     assert.match(await page.locator('#objektDetailMemberLink').getAttribute('href'),/\/cosmo\/objekt\?group=members&member=HaYeon/);
     assert.match(await page.locator('#objektDetailTradeLink').getAttribute('href'),/selectedObjektIds=uuid/);
-    assert.match(await page.locator('#objektDetailSellLink').getAttribute('href'),/\/article\/sell\/new\?selectedObjektIds=uuid/);
+    assert.match(await page.locator('#objektDetailSellLink').getAttribute('href'),/\/sell\/new\?selectedObjektIds=uuid/);
     assert.equal(await page.locator('#objektDescriptionForm').isVisible(),false);
     await page.locator('#objektDescriptionEdit').click();
     assert.equal(await page.locator('#objektDetailDesc').isVisible(),false);

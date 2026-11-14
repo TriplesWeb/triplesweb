@@ -19,7 +19,7 @@
         <!-- 메인 게시글 컨테이너 카드 -->
         <div class="article-detail-shell relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl overflow-hidden backdrop-blur-2xl shadow-2xl">
             <nav class="site-back site-back--bar" aria-label="게시판 목록으로">
-                <a href="/article/{{category}}">← {{categoryName}}</a>
+                <a href="{{boardBase}}">← {{categoryName}}</a>
             </nav>
             <div class="p-6 sm:p-10">
 
@@ -141,10 +141,10 @@
                 <div class="article-detail-actions flex items-center justify-between pt-2">
                     <div class="flex items-center gap-2">
 {{#isOwner}}
-                                <a href="/article/{{category}}/{{article.id}}/edit" class="py-2 px-4 rounded-xl bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/40 text-on-surface text-sm font-medium transition-all">
+                                <a href="{{boardBase}}/{{article.id}}/edit" class="py-2 px-4 rounded-xl bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/40 text-on-surface text-sm font-medium transition-all">
                                     수정하기
                                 </a>
-                                <form method="post" action="/article/{{category}}/{{article.id}}/delete" onsubmit="return confirm('정말 삭제하시겠습니까?')" class="inline">
+                                <form method="post" action="{{boardBase}}/{{article.id}}/delete" onsubmit="return confirm('정말 삭제하시겠습니까?')" class="inline">
                                     {{#_csrf}}
                                     <input type="hidden" name="{{parameterName}}" value="{{token}}">
                                     {{/_csrf}}
@@ -155,7 +155,7 @@
 {{/isOwner}}
                     </div>
 
-                    <a href="/article/{{category}}" class="site-back-link">← 목록으로</a>
+                    <a href="{{boardBase}}" class="site-back-link">← 목록으로</a>
                 </div>
 
             </div>
@@ -184,7 +184,7 @@
                 ? window.SiteUi.csrfHeaders({ 'Content-Type': 'application/json' })
                 : { 'Content-Type': 'application/json' };
 
-            fetch('/article/{{category}}/{{article.id}}/like', {
+            fetch('{{boardBase}}/{{article.id}}/like', {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers

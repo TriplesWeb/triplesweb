@@ -22,7 +22,7 @@
         <!-- 메인 수정 카드 컨테이너 -->
         <div class="relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl overflow-hidden backdrop-blur-2xl shadow-2xl">
         <nav class="site-back site-back--bar" aria-label="게시판 목록으로">
-            <a href="/article/{{category}}">← {{categoryName}}</a>
+            <a href="{{boardBase}}">← {{categoryName}}</a>
         </nav>
         <div class="p-6 sm:p-10">
 
@@ -39,7 +39,7 @@
                 </div>
             {{/errorMessage}}
 
-            <form id="editForm" action="/article/{{article.category}}/{{article.id}}" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit(this)" class="space-y-5">
+            <form id="editForm" action="{{boardBase}}/{{article.id}}" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit(this)" class="space-y-5">
                 <input type="hidden" name="id" value="{{article.id}}">
 
                 <!-- 작성자 -->
@@ -88,7 +88,7 @@
                 <!-- 버튼 그룹 -->
                 <div class="flex items-center gap-3 pt-4">
                     <button type="submit" class="btn btn-primary flex-1">수정하기</button>
-                    <a href="/article/{{category}}" class="site-back-link">← 목록으로</a>
+                    <a href="{{boardBase}}" class="site-back-link">← 목록으로</a>
                 </div>
             </form>
         </div>

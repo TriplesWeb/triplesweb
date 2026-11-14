@@ -1225,7 +1225,7 @@
             .objekt-filter { height: auto; min-height: 2.25rem; justify-content: space-between; border-radius: 0.75rem; }
             .objekt-head { margin-bottom: .75rem; padding-bottom: .65rem; }
             .objekt-head-title { font-size: 1.35rem; }
-            .objekt-dropdown-menu:not(.season-choice-panel) { left: 0; right: 0; min-width: 0; width: 100%; }
+            /* 드롭다운 너비는 objekt-filter.css 공통 규칙을 쓴다 */
             .objekt-filter-control { max-width: none; }
             .objekt-filter-select-wrap,
             .objekt-kind-combo { max-width: none; }

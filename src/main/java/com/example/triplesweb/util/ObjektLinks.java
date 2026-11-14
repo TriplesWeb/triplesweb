@@ -42,7 +42,10 @@ public final class ObjektLinks {
     public static String encode(String value) { return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20"); }
     public static String detail(Map<String, Object> item) { return "/cosmo/objekt/detail/" + encode(key(item)); }
     public static String member(Map<String, Object> item) { return "/cosmo/objekt?group=members&member=" + encode(String.valueOf(item.getOrDefault("member", ""))); }
-    public static String compose(Map<String, Object> item, String category) { return "/article/" + category + "/new?selectedObjektIds=" + encode(id(item)); }
+    public static String compose(Map<String, Object> item, String category) {
+        String base = ("trade".equals(category) || "sell".equals(category)) ? "/" + category : "/article/" + category;
+        return base + "/new?selectedObjektIds=" + encode(id(item));
+    }
 
     private static String first(Map<String, Object> item, String... keys) {
         for (String key : keys) {

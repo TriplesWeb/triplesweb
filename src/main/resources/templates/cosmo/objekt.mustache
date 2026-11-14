@@ -3,6 +3,7 @@
 
     <link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{#asset}}/css/objekt-filter.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/objekt-page.css{{/asset}}">
     <!-- Tailwind CSS 스크립트 -->
     <link rel="stylesheet" href="{{#asset}}/css/objekt.css{{/asset}}">
@@ -66,7 +67,7 @@
                     <span id="season-label" class="truncate">전체</span>
                     <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                 </button>
-                <div id="season-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
+                <div id="season-menu" class="objekt-dropdown-menu hidden">
                     <label class="objekt-choice">
                         <input type="checkbox" value="all" class="season-checkbox" checked>
                         <span class="objekt-choice-mark" aria-hidden="true"></span>
@@ -90,7 +91,7 @@
                     <span id="class-label" class="truncate">전체</span>
                     <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
                 </button>
-                <div id="class-menu" class="objekt-dropdown-menu hidden absolute top-full left-0 mt-2 rounded-xl border z-50 p-2 max-h-60 overflow-y-auto">
+                <div id="class-menu" class="objekt-dropdown-menu hidden">
                     <label class="objekt-choice">
                         <input type="checkbox" value="all" class="class-checkbox" checked>
                         <span class="objekt-choice-mark" aria-hidden="true"></span>
@@ -332,8 +333,8 @@
             <div class="objekt-detail-actions">
                 <a class="objekt-member-link" id="objektDetailMemberLink" href="/cosmo/objekt">이 멤버의 오브젝트 더 보기</a>
                 <div class="objekt-detail-post-links">
-                    <a class="objekt-trade-link" id="objektDetailTradeLink" href="/article/trade/new">교환 게시글 작성</a>
-                    <a class="objekt-sell-link" id="objektDetailSellLink" href="/article/sell/new">거래 게시글 작성</a>
+                    <a class="objekt-trade-link" id="objektDetailTradeLink" href="/trade/new">교환 게시글 작성</a>
+                    <a class="objekt-sell-link" id="objektDetailSellLink" href="/sell/new">거래 게시글 작성</a>
                 </div>
             </div>
             <section class="serial-panel" data-serial-panel data-url="" aria-labelledby="owner-heading">
@@ -347,6 +348,7 @@
     </div>
 </div>
 
+<script src="{{#asset}}/js/objekt-dropdown-core.js{{/asset}}"></script>
 <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
 <script src="{{#asset}}/js/objekt-kind-combo.js{{/asset}}"></script>
 <script src="{{#asset}}/js/objekt-grid-cols.js{{/asset}}"></script>
