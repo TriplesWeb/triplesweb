@@ -111,7 +111,9 @@
 .market-member-picker.is-filtered{border-color:rgba(0,245,212,.4)}
 .market-member-picker .member-portrait-picker{width:100%}
 .market-feed{display:grid;gap:.85rem;margin:0 0 1.5rem}
-.market-feed-card{border:1px solid #ffffff16;border-radius:1.15rem;background:#10151a;overflow:visible}
+.market-feed-card{display:block;border:1px solid #ffffff16;border-radius:1.15rem;background:#10151a;overflow:visible;color:inherit;text-decoration:none;transition:border-color .15s ease,background .15s ease}
+.market-feed-card:hover{border-color:#ffffff2a;background:#121820}
+.market-feed-card:focus-visible{outline:2px solid #8decd9;outline-offset:2px}
 .market-feed-card-head{display:grid;gap:.35rem;padding:.85rem 1rem .2rem}
 .market-feed-card-meta{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem .65rem;min-width:0}
 .market-feed-badge{display:inline-flex;align-items:center;padding:.18rem .45rem;border-radius:.4rem;font-size:.68rem;font-weight:800;letter-spacing:.04em;line-height:1.2}
@@ -122,8 +124,7 @@
 .market-feed-time{color:#8a9b96;font-size:.72rem}
 .market-feed-members{margin:0;color:#b9cac4;font-size:.75rem;font-weight:650;line-height:1.4}
 .market-feed-members-sep{color:#6f8a84}
-.market-feed-card-body{display:block;padding:.55rem 1rem 1rem;color:inherit;text-decoration:none}
-.market-feed-card-body:hover{background:rgba(255,255,255,.02)}
+.market-feed-card-body{display:block;padding:.55rem 1rem 1rem}
 .market-feed-deal{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:flex-start;gap:.65rem .75rem}
 .market-feed-deal.is-single{display:block}
 .market-feed-side{flex:0 1 auto;min-width:0;max-width:100%}

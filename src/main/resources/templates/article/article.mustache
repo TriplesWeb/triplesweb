@@ -117,8 +117,8 @@
 
             <div class="market-feed" aria-label="{{categoryName}} 피드">
                 {{#articleList}}
-                <article class="market-feed-card">
-                    <header class="market-feed-card-head">
+                <a href="{{boardBase}}/{{id}}" class="market-feed-card" aria-label="{{title}}">
+                    <div class="market-feed-card-head">
                         <div class="market-feed-card-meta">
                             {{#isTrade}}<span class="market-feed-badge is-wtt">WTT</span>{{/isTrade}}
                             {{#isSell}}
@@ -137,8 +137,8 @@
                             {{#hasWantLead}}<span class="article-swap-name" style="--artist-color:{{wantLeadColor}}">{{wantLeadName}}</span>{{#hasWantMore}} 외 {{wantMoreCount}}{{/hasWantMore}}{{/hasWantLead}}
                         </p>
                         {{/hasMemberSwap}}
-                    </header>
-                    <a href="{{boardBase}}/{{id}}" class="market-feed-card-body" aria-label="{{title}}">
+                    </div>
+                    <div class="market-feed-card-body">
                         {{#hasObjektPreview}}
                         {{#isTrade}}
                         <div class="market-feed-deal">
@@ -148,7 +148,7 @@
                                     {{#hasHavePreview}}
                                     {{#havePreview}}
                                     <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" {{#previewTip}}data-tip="{{previewTip}}" title="{{previewTip}}"{{/previewTip}}>
-                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="{{previewTip}}" loading="lazy" decoding="async">{{/hasImage}}
+                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
                                         {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
                                     </span>
                                     {{/havePreview}}
@@ -164,7 +164,7 @@
                                     {{#hasWantPreview}}
                                     {{#wantPreview}}
                                     <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" {{#previewTip}}data-tip="{{previewTip}}" title="{{previewTip}}"{{/previewTip}}>
-                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="{{previewTip}}" loading="lazy" decoding="async">{{/hasImage}}
+                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
                                         {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
                                     </span>
                                     {{/wantPreview}}
@@ -183,7 +183,7 @@
                                 <div class="market-feed-strip">
                                     {{#havePreview}}
                                     <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" {{#previewTip}}data-tip="{{previewTip}}" title="{{previewTip}}"{{/previewTip}}>
-                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="{{previewTip}}" loading="lazy" decoding="async">{{/hasImage}}
+                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
                                         {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
                                     </span>
                                     {{/havePreview}}
@@ -198,7 +198,7 @@
                                 <div class="market-feed-strip">
                                     {{#wantPreview}}
                                     <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" {{#previewTip}}data-tip="{{previewTip}}" title="{{previewTip}}"{{/previewTip}}>
-                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="{{previewTip}}" loading="lazy" decoding="async">{{/hasImage}}
+                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
                                         {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
                                     </span>
                                     {{/wantPreview}}
@@ -213,8 +213,8 @@
                         {{^hasObjektPreview}}
                         <p class="market-feed-note">{{title}}</p>
                         {{/hasObjektPreview}}
-                    </a>
-                </article>
+                    </div>
+                </a>
                 {{/articleList}}
                 {{^articleList}}
                 <div class="market-feed-empty">
