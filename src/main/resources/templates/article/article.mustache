@@ -100,15 +100,11 @@
                     </a>
                     {{/hasMarketAttrFilter}}
                 </div>
-                <details class="market-member-fold{{#hasSelectedMember}} is-filtered{{/hasSelectedMember}}" {{#hasSelectedMember}}open{{/hasSelectedMember}}>
-                    <summary class="market-member-fold-summary">
-                        <span class="market-member-fold-label">멤버</span>
-                        <span class="market-member-fold-value">{{#hasSelectedMember}}{{selectedMember}}{{/hasSelectedMember}}{{^hasSelectedMember}}전체{{/hasSelectedMember}}</span>
-                    </summary>
+                <div class="market-member-picker{{#hasSelectedMember}} is-filtered{{/hasSelectedMember}}">
                     <div class="member-portrait-picker" id="market-member-picker" role="group" aria-label="멤버 선택">
                         {{>partials/member-portrait-picker}}
                     </div>
-                </details>
+                </div>
             </section>
 
             <div class="market-feed" aria-label="{{categoryName}} 피드">

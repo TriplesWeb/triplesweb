@@ -80,7 +80,7 @@ class GroupOrdersControllerTest {
                     .andExpect(content().string(containsString(">WANT<")))
                     .andExpect(content().string(containsString(">Have</a>")))
                     .andExpect(content().string(containsString(">Want</a>")))
-                    .andExpect(content().string(containsString("market-member-fold")))
+                    .andExpect(content().string(containsString("market-member-picker")))
                     .andExpect(content().string(containsString("새 교환")))
                     .andExpect(content().string(not(containsString("article-board-heading is-market"))))
                     .andExpect(content().string(not(containsString(">분류<"))))
@@ -144,8 +144,8 @@ class GroupOrdersControllerTest {
         mvc.perform(get("/trade").param("member", "윤서연").param("objektSide", "have"))
             .andExpect(status().isOk())
             .andExpect(content().string(not(containsString("오래된 교환 글"))))
-            .andExpect(content().string(containsString("market-member-fold is-filtered")))
-            .andExpect(content().string(containsString("market-member-fold")));
+            .andExpect(content().string(containsString("market-member-picker is-filtered")))
+            .andExpect(content().string(containsString("market-member-picker")));
         mvc.perform(get("/trade").param("member", "윤서연").param("objektSide", "want"))
             .andExpect(status().isOk())
             .andExpect(content().string(containsString("오래된 교환 글")));

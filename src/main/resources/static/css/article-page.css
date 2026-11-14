@@ -107,18 +107,9 @@
 .market-filter-bar .market-side-link:hover{background:rgba(255,255,255,.07);color:#e8ebf2}
 .market-filter-bar .market-side-link.is-active{background:rgba(0,245,212,.16);color:#7df9e8}
 .market-filter-bar .market-side-link:focus-visible{outline:2px solid #8decd9;outline-offset:2px}
-.market-member-fold{width:fit-content;max-width:100%;border:1px solid var(--objekt-surface-border,rgba(58,66,88,.72));border-radius:999px;background:var(--objekt-surface,#171a24);overflow:hidden;transition:border-color .18s ease,background .18s ease}
-.market-member-fold:hover{border-color:rgba(0,245,212,.38);background:rgba(0,245,212,.04)}
-.market-member-fold[open]{width:100%;border-radius:1rem;border-color:rgba(0,245,212,.38);background:rgba(0,0,0,.16)}
-.market-member-fold.is-filtered{border-color:rgba(0,245,212,.55);background:rgba(0,245,212,.08)}
-.market-member-fold-summary{display:flex;align-items:center;gap:.5rem;min-height:2.65rem;padding:.25rem .7rem .25rem .75rem;cursor:pointer;list-style:none;color:#c5d4cf;font-size:.82rem;font-weight:650}
-.market-member-fold-summary::-webkit-details-marker{display:none}
-.market-member-fold-label{flex:0 0 auto;color:#8b93a7;font-weight:650;letter-spacing:.04em}
-.market-member-fold.is-filtered .market-member-fold-label{color:#7df9e8}
-.market-member-fold-value{display:inline-flex;align-items:center;min-height:2.1rem;padding:0 .55rem;border-radius:999px;background:rgba(255,255,255,.045);color:#8decd9;font-weight:700}
-.market-member-fold-summary::after{content:"";width:.45rem;height:.45rem;margin-left:.15rem;border-right:2px solid #7df9e8;border-bottom:2px solid #7df9e8;transform:rotate(45deg);transition:transform .15s ease;flex:0 0 auto}
-.market-member-fold[open]>.market-member-fold-summary::after{transform:rotate(225deg);margin-top:.2rem}
-.market-member-fold .member-portrait-picker{padding:.35rem .65rem .85rem;width:100%}
+.market-member-picker{width:100%;border:1px solid #ffffff14;border-radius:1rem;background:rgba(0,0,0,.16);padding:.35rem .55rem .55rem}
+.market-member-picker.is-filtered{border-color:rgba(0,245,212,.4)}
+.market-member-picker .member-portrait-picker{width:100%}
 .market-feed{display:grid;gap:.85rem;margin:0 0 1.5rem}
 .market-feed-card{border:1px solid #ffffff16;border-radius:1.15rem;background:#10151a;overflow:hidden}
 .market-feed-card-head{display:grid;gap:.35rem;padding:.85rem 1rem .2rem}
