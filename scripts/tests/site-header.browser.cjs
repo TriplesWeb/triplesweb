@@ -1,7 +1,19 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'../..');
+const alertsWithDrops={
+ catalogSig:'sig-1',catalogCount:2,dropWindow:true,
+ notices:[{id:9,title:'공지 테스트',href:'/article/notice/9',at:'2026-11-10'}],
+ objekts:[
+  {label:'Cream02 334Z 새 오브젝트 출시',href:'/cosmo/objekt?kind=334z',collectionId:'cc334',createdAt:'2026-11-15'},
+  {label:'Cream02 336Z 새 오브젝트 출시',href:'/cosmo/objekt?kind=336z',collectionId:'cc336',createdAt:'2026-11-15'},
+  {label:'Cream02 337Z 새 오브젝트 출시',href:'/cosmo/objekt?kind=337z',collectionId:'cc337',createdAt:'2026-11-15'},
+  {label:'Cream02 335Z 새 오브젝트 출시',href:'/cosmo/objekt?kind=335z',collectionId:'cc335',createdAt:'2026-11-15'}
+ ]
+};
+const emptyAlerts={catalogSig:'sig-empty',catalogCount:2,dropWindow:false,notices:[],objekts:[]};
 (async()=>{
+ let alertsPayload=alertsWithDrops;
  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||(fs.existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined),args:['--no-sandbox']});
  try{
   const page=await browser.newPage(); const errors=[]; const suggestionQueries=[]; page.on('pageerror',e=>errors.push(e.message));
@@ -13,11 +25,7 @@ const root=path.resolve(__dirname,'../..');
     return route.fulfill({contentType:'application/json',body:JSON.stringify({items:q.startsWith('new')?['newwave','newday']:['oldname']})}).catch(()=>{});
    }
    if(url.pathname==='/api/site/alerts'){
-    return route.fulfill({contentType:'application/json',body:JSON.stringify({
-      catalogSig:'sig-1',catalogCount:2,dropWindow:true,
-      notices:[{id:9,title:'공지 테스트',href:'/article/notice/9',at:'2026-11-10'}],
-      objekts:[{label:'Cream02 323 드롭',href:'/cosmo/objekt?search=323',collectionId:'cc323',createdAt:'2026-11-10'}]
-    })});
+    return route.fulfill({contentType:'application/json',body:JSON.stringify(alertsPayload)});
    }
    if(url.pathname==='/api/artist/admin/status'){
     return route.fulfill({contentType:'application/json',body:JSON.stringify({configured:true,admin:false})});
@@ -82,10 +90,15 @@ const root=path.resolve(__dirname,'../..');
     assert.equal(await page.locator('#mobile-menu-btn').isVisible(),true,`모바일 햄버거 ${width}`);
     assert.equal(await page.locator('#mobile-menu .mobile-shortcut').count(),0,`전체 메뉴에 원형 바로가기 없음 ${width}`);
     await barAlerts.click();
-    await page.getByText('공지 테스트').waitFor();
-    assert.equal(await page.getByText('드롭 시간입니다').isVisible(),true);
+    await page.getByText('오브젝트 드롭시간입니다').waitFor();
+    assert.equal(await page.getByText('오브젝트 드롭시간입니다').isVisible(),true);
     assert.equal(await page.getByText('공지 테스트').isVisible(),true);
-    assert.equal(await page.getByText('Cream02 323 드롭').isVisible(),true);
+    assert.equal(await page.getByText('Cream02 334Z 새 오브젝트 출시').isVisible(),true);
+    assert.equal(await page.getByText('Cream02 336Z 새 오브젝트 출시').isVisible(),true);
+    assert.equal(await page.getByText('Cream02 337Z 새 오브젝트 출시').isVisible(),true);
+    assert.equal(await page.getByText('Cream02 335Z 새 오브젝트 출시').count(),0);
+    assert.equal(await page.locator('.site-header-popover__title').filter({hasText:'알림'}).count(),0);
+    assert.equal(await page.getByText('새 공지가 없습니다.').count(),0);
     await page.keyboard.press('Escape');
     await page.waitForFunction(()=>document.querySelector('[data-alerts-panel]').hidden);
     await page.locator('#mobile-menu-btn').click();
@@ -236,6 +249,16 @@ const root=path.resolve(__dirname,'../..');
     assert.equal(await homeJump.isVisible(),true,`홈 오브젝트 바로가기 ${width}`);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`home header overflow ${width}`);
   }
+  alertsPayload=emptyAlerts;
+  await page.setViewportSize({width:390,height:900});
+  await page.goto('https://header.test/',{waitUntil:'load'});
+  await page.evaluate(()=>localStorage.removeItem('site-alerts-catalog-sig'));
+  await page.locator('.header-alerts-wrap [data-alerts-open]').click();
+  await page.locator('[data-alerts-panel] [data-alerts-body]').waitFor();
+  assert.equal(await page.getByText('오브젝트 드롭시간입니다').count(),0);
+  assert.equal(await page.getByText('새로 출시된 오브젝트가 없습니다.').isVisible(),true);
+  assert.equal(await page.locator('.site-header-popover__title').filter({hasText:'알림'}).count(),0);
+  assert.equal(await page.getByText('새 공지가 없습니다.').count(),0);
   assert.deepEqual(errors,[]);console.log('PASS: chromium header 320/360/390/1024/1040/1280/1440px, keyboard, navigation, community removed, outside click, search, alerts, cosmo id');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1)});

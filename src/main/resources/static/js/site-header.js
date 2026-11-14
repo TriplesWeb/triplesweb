@@ -360,7 +360,6 @@
 
   const COSMO_RECENTS_KEY = "cosmo-nickname-recents";
   const ALERTS_CATALOG_KEY = "site-alerts-catalog-sig";
-  const ALERTS_NOTICE_KEY = "site-alerts-notice-id";
   const cosmoOpens = document.querySelectorAll("[data-cosmo-id-open]");
   const cosmoPanel = document.querySelector("[data-cosmo-id-panel]");
   const alertsOpens = document.querySelectorAll("[data-alerts-open]");
@@ -443,25 +442,22 @@
     if (!data) return;
     try {
       if (data.catalogSig) localStorage.setItem(ALERTS_CATALOG_KEY, String(data.catalogSig));
-      const noticeId = data.notices && data.notices[0] && data.notices[0].id;
-      if (noticeId != null) localStorage.setItem(ALERTS_NOTICE_KEY, String(noticeId));
     } catch (_) {}
     alertsBadges.forEach((badge) => { badge.hidden = true; });
   }
 
+  function releasedObjekts(data) {
+    return data && Array.isArray(data.objekts) ? data.objekts.slice(0, 3) : [];
+  }
+
   function hasUnreadAlerts(data) {
     if (!data) return false;
+    if (!releasedObjekts(data).length) return false;
     let seenSig = "";
-    let seenNotice = "";
     try {
       seenSig = localStorage.getItem(ALERTS_CATALOG_KEY) || "";
-      seenNotice = localStorage.getItem(ALERTS_NOTICE_KEY) || "";
     } catch (_) {}
-    const latestNotice = data.notices && data.notices[0] && data.notices[0].id != null
-      ? String(data.notices[0].id) : "";
-    const catalogNew = !!(data.catalogSig && String(data.catalogSig) !== seenSig);
-    const noticeNew = !!(latestNotice && latestNotice !== seenNotice);
-    return catalogNew || noticeNew;
+    return !!(data.catalogSig && String(data.catalogSig) !== seenSig);
   }
 
   function renderAlerts(data) {
@@ -471,28 +467,34 @@
     if (!body) return;
     body.replaceChildren();
     if (!data) {
-      if (status) status.textContent = "알림을 불러오지 못했습니다.";
+      if (status) {
+        status.hidden = false;
+        status.textContent = "알림을 불러오지 못했습니다.";
+      }
       return;
     }
     if (status) status.hidden = true;
-    if (data.dropWindow) {
+    const objekts = releasedObjekts(data);
+    if (objekts.length) {
       const drop = document.createElement("a");
       drop.className = "site-header-popover__drop";
       drop.href = "/cosmo/objekt";
-      drop.textContent = "드롭 시간입니다. 새 오브젝트를 확인하세요.";
+      drop.textContent = "오브젝트 드롭시간입니다";
       body.appendChild(drop);
+      const list = document.createElement("ul");
+      list.className = "site-header-popover__list";
+      objekts.forEach((item) => {
+        const li = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = item && item.href ? String(item.href) : "/cosmo/objekt";
+        link.textContent = item && item.label ? String(item.label) : "오브젝트";
+        li.appendChild(link);
+        list.appendChild(li);
+      });
+      body.appendChild(list);
     }
-    const noticeTitle = document.createElement("p");
-    noticeTitle.className = "site-header-popover__heading";
-    noticeTitle.textContent = "공지";
-    body.appendChild(noticeTitle);
     const notices = Array.isArray(data.notices) ? data.notices : [];
-    if (!notices.length) {
-      const empty = document.createElement("p");
-      empty.className = "site-header-popover__empty";
-      empty.textContent = "새 공지가 없습니다.";
-      body.appendChild(empty);
-    } else {
+    if (notices.length) {
       const list = document.createElement("ul");
       list.className = "site-header-popover__list";
       notices.forEach((item) => {
@@ -505,28 +507,11 @@
       });
       body.appendChild(list);
     }
-    const objektTitle = document.createElement("p");
-    objektTitle.className = "site-header-popover__heading";
-    objektTitle.textContent = "새 오브젝트";
-    body.appendChild(objektTitle);
-    const objekts = Array.isArray(data.objekts) ? data.objekts : [];
-    if (!objekts.length) {
+    if (!objekts.length && !notices.length) {
       const empty = document.createElement("p");
       empty.className = "site-header-popover__empty";
-      empty.textContent = "새로 올라온 오브젝트가 없습니다.";
+      empty.textContent = "새로 출시된 오브젝트가 없습니다.";
       body.appendChild(empty);
-    } else {
-      const list = document.createElement("ul");
-      list.className = "site-header-popover__list";
-      objekts.forEach((item) => {
-        const li = document.createElement("li");
-        const link = document.createElement("a");
-        link.href = item && item.href ? String(item.href) : "/cosmo/objekt";
-        link.textContent = item && item.label ? String(item.label) : "오브젝트";
-        li.appendChild(link);
-        list.appendChild(li);
-      });
-      body.appendChild(list);
     }
   }
 
