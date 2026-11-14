@@ -48,7 +48,7 @@ public class ObjektService {
     private final ObjektCatalogStore catalogStore;
     private final ObjektLiveSettings live;
 
-    public static final int DROP_ALERT_LIMIT = 8;
+    public static final int DROP_ALERT_LIMIT = 3;
 
     private volatile List<Map<String, Object>> cachedCollections = List.of();
     private volatile Map<String, Map<String, Object>> byKey = Map.of();
