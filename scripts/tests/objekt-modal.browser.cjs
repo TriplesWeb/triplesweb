@@ -174,7 +174,7 @@ const base = path.resolve(__dirname, '../..');
     assert.equal(await page.locator('#objektIssuedRanges, #objektIssuedTime').count(),0);
     assert.match(await page.locator('#objektDetailMemberLink').getAttribute('href'),/\/cosmo\/objekt\?group=members&member=HaYeon/);
     assert.match(await page.locator('#objektDetailTradeLink').getAttribute('href'),/selectedObjektIds=uuid/);
-    assert.match(await page.locator('#objektDetailSellLink').getAttribute('href'),/\/article\/sell\/new\?selectedObjektIds=uuid/);
+    assert.match(await page.locator('#objektDetailSellLink').getAttribute('href'),/\/sell\/new\?selectedObjektIds=uuid/);
     assert.equal(await page.locator('#objektDescriptionForm').isVisible(),false);
     await page.locator('#objektDescriptionEdit').click();
     assert.equal(await page.locator('#objektDetailDesc').isVisible(),false);
