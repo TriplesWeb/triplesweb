@@ -38,8 +38,8 @@
 
 .ar-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
 .ar-stat { min-height: 7.6rem; padding: 1.1rem 1.15rem; display: flex; flex-direction: column; justify-content: space-between; }
-.ar-stat-label { display: flex; align-items: center; justify-content: space-between; color: #b9cac4; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 11px; letter-spacing: 0.05em; }
-.ar-stat-label .material-symbols-outlined { color: #00f5d4; font-size: 18px; }
+.ar-stat-label { display: flex; align-items: center; justify-content: space-between; color: #b9cac4; font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 0.82rem; font-weight: 650; letter-spacing: -0.01em; }
+.ar-stat-label .material-symbols-outlined { color: #00f5d4; font-family: "Material Symbols Outlined", sans-serif; font-size: 18px; font-weight: 400; letter-spacing: 0; }
 .ar-stat strong { font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: clamp(1.45rem, 2vw, 1.9rem); line-height: 1.15; color: #d7fff3; letter-spacing: -0.02em; }
 .ar-stat em { font-style: normal; color: #00f5d4; font-size: 0.7em; }
 .ar-stat .is-violet { color: #dbb8ff; font-size: 1.35rem; overflow-wrap: anywhere; }
@@ -51,8 +51,8 @@
 .ar-icon-btn { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; width: 2.25rem; height: 2.25rem; border-radius: 9999px; border: 1px solid rgba(255, 255, 255, 0.14); background: #292a2e; color: #b9cac4; }
 .ar-icon-btn:hover { color: #00f5d4; border-color: #00f5d4; }
 .ar-icon-btn .material-symbols-outlined { font-size: 18px; }
-.ar-track { display: flex; gap: 1.1rem; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 0.4rem; }
-.ar-highlight { min-width: 9.5rem; max-width: 11rem; scroll-snap-align: start; overflow: hidden; display: flex; flex-direction: column; }
+.ar-track { display: flex; align-items: flex-start; gap: 1.1rem; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 0.4rem; }
+.ar-highlight { flex: 0 0 auto; width: 11rem; min-width: 9.5rem; max-width: 11rem; height: auto; max-height: none; scroll-snap-align: start; overflow: hidden; display: flex; flex-direction: column; align-self: flex-start; }
 .ar-highlight:hover { border-color: rgba(0, 245, 212, 0.5); }
 .ar-highlight img, .ar-highlight video { width: 100%; height: 7.5rem; object-fit: cover; background: #07080b; }
 .ar-highlight > div { padding: 0.55rem 0.65rem 0.7rem; }
@@ -110,6 +110,38 @@
 .archive-page[data-archive-kind="image"] .ar-card .ar-photo-link > img { height: clamp(16rem, 34vw, 22rem); }
 .ar-card .ar-body { padding: 0.95rem 1rem 1rem; display: flex; flex-direction: column; gap: 0.55rem; flex: 1; }
 .ar-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.ar-highlight .ar-meta { flex-wrap: nowrap; align-items: center; gap: 0.4rem; }
+.ar-card .ar-meta {
+    --member-count: 1;
+    --chip-size: clamp(2.15rem, calc(3.75rem - 0.08rem * var(--member-count)), 3.4rem);
+    --chip-image: clamp(1.35rem, calc(var(--chip-size) * 0.64), 2.15rem);
+    gap: clamp(0.18rem, calc(0.38rem - 0.008rem * var(--member-count)), 0.35rem);
+}
+.ar-card .ar-meta .archive-member-chip {
+    min-width: var(--chip-size);
+    max-width: var(--chip-size);
+    padding: 0.22rem 0.18rem 0.16rem;
+}
+.ar-card .ar-meta .archive-member-chip span {
+    max-width: 100%;
+    font-size: clamp(0.58rem, calc(var(--chip-size) * 0.22), 0.72rem);
+}
+.archive-member-more {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    min-height: 1.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #c6d3d0;
+    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+}
 .ar-id, .ar-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.55rem; border-radius: 0.45rem; font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 0.8rem; font-weight: 650; line-height: 1.4; }
 .ar-id { color: #e3ece8; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.16); font-variant-numeric: tabular-nums; }
 .ar-badge {
@@ -373,5 +405,5 @@
 }
 
 /* 카드의 큰 사진 규칙과 멤버 배지 이미지를 분리한다. */
-.archive-page .ar-card .archive-member-chip img,
+.archive-page .ar-card .archive-member-chip img{width:var(--chip-image, 2.15rem);height:var(--chip-image, 2.15rem);max-width:var(--chip-image, 2.15rem);object-fit:cover;flex:none}
 .archive-page .ar-highlight .archive-member-chip img{width:2.15rem;height:2.15rem;max-width:2.15rem;object-fit:cover;flex:none}

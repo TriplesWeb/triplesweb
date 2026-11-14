@@ -161,6 +161,25 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("data-archive-number>10</span>")));
     }
 
+    @Test void recentHighlightsCollapseManyMembersToFirstPlusCount() throws Exception {
+        when(artistRepository.findAll()).thenReturn(List.of());
+        Archive group = photo();
+        group.setArtistNames("윤서연, 정혜린, 이지우, 김채연");
+        when(archiveService.pageByType(eq(MediaType.IMAGE), anyInt(), anyInt(), isNull()))
+                .thenReturn(new PageImpl<>(List.of(group)));
+        String html = mvc.perform(get("/archive/image_archive"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("외 3명")))
+                .andExpect(content().string(containsString("윤서연")))
+                .andReturn().getResponse().getContentAsString();
+        int trackAt = html.indexOf("id=\"archiveTrack\"");
+        String recent = html.substring(trackAt, html.indexOf("</section>", trackAt));
+        org.assertj.core.api.Assertions.assertThat(recent).contains("archive-member-more");
+        org.assertj.core.api.Assertions.assertThat(recent).contains("<span>윤서연</span>");
+        org.assertj.core.api.Assertions.assertThat(recent).doesNotContain("<span>정혜린</span>");
+        org.assertj.core.api.Assertions.assertThat(html).contains("<span>정혜린</span>");
+    }
+
     @Test void invalidMemberColorUsesReadableNeutralBadge() throws Exception {
         var member = new Artist();
         member.setName("서연");

@@ -53,7 +53,7 @@
                 <div>
                     <span class="ar-id" data-archive-number>{{displayNumber}}</span>
                     <h3>{{title}}</h3>
-                    <div class="ar-meta">{{>partials/archive-member-badges}}</div>
+                    <div class="ar-meta" title="{{artistNames}}">{{>partials/archive-member-preview}}</div>
                 </div>
             </article>
             {{/archiveHighlights}}
@@ -115,7 +115,7 @@
                 <span class="ar-photo-open">원본 보기 ↗</span>
             </a>
             <div class="ar-body">
-                <div class="ar-meta"><span class="ar-id" data-archive-number>{{displayNumber}}</span>{{>partials/archive-member-badges}}</div>
+                <div class="ar-meta" style="--member-count: {{memberCount}}"><span class="ar-id" data-archive-number>{{displayNumber}}</span>{{>partials/archive-member-badges}}</div>
                 <h3>{{title}}</h3>
                 <div class="ar-actions" data-admin-only>
                     <button type="button" data-archive-edit data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-url="{{file.url}}" data-registered="{{registeredOn}}">수정</button>

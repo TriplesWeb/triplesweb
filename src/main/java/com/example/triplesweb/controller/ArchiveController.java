@@ -174,6 +174,11 @@ public class ArchiveController {
             card.put("thumbnailUrl", archive.getThumbnailUrl());
             card.put("displayNumber", offset + cards.size() + 1);
             card.put("memberBadges", badges);
+            card.put("memberCount", badges.size());
+            if (!badges.isEmpty()) card.put("firstMemberBadge", badges.get(0));
+            int extra = Math.max(0, badges.size() - 1);
+            card.put("otherMemberCount", extra);
+            card.put("hasOtherMembers", extra > 0);
             card.put("registeredOn", archive.getRegisteredOn() == null ? "" : archive.getRegisteredOn().toString());
             cards.add(card);
         }
