@@ -64,7 +64,9 @@ const base=path.resolve(__dirname,'../..');
      const author=await page.locator('.market-feed-author').first().boundingBox();
      const date=await page.locator('.market-feed-time').first().boundingBox();
      assert.ok(author&&date,'writer/date present');
-     assert.ok(author.x+author.width<=date.x+date.width+1,'writer/date separate');
+     // 같은 줄이면 작성자→날짜 순서, 긴 닉네임으로 줄바꿈되면 아래로 쌓여도 된다.
+     const sideBySide=Math.abs(author.y-date.y)<8;
+     assert.ok(sideBySide?author.x+author.width<=date.x+1:author.y+author.height<=date.y+4,'writer/date separate');
     }
     assert.equal(await page.locator('.article-board-likes').count(),0);
     if(width===390||width===1280)await page.screenshot({path:`/tmp/objekt-ui/board-${category}-${width}.png`,fullPage:true});
