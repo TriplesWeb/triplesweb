@@ -98,16 +98,16 @@
 .article-page .market-tabs.site-section-tabs{margin:-.5rem 0 1.15rem}
 .market-member-filter{display:grid;gap:.75rem;margin:0 0 1.15rem;padding:.85rem 1rem;border:1px solid var(--site-ui-border,#ffffff22);border-radius:1.1rem;background:color-mix(in srgb,var(--site-ui-panel,#15191f) 88%,transparent)}
 /* 필터 크롬·드롭다운은 /css/objekt-filter.css 공유. 여기선 배치·구분만 */
-.market-filter-bar{display:flex;flex-wrap:wrap;align-items:center;gap:.55rem .65rem;position:relative;z-index:2;overflow:visible}
-.market-filter-bar .objekt-filter{flex:1 1 11rem;min-width:11rem;max-width:16rem}
+.market-filter-bar{display:flex;flex-wrap:wrap;align-items:stretch;gap:.55rem .65rem;width:100%;position:relative;z-index:2;overflow:visible}
+.market-filter-bar .objekt-filter{flex:1 1 0;min-width:0}
 .market-filter-bar .market-filter-reset{flex:0 0 auto;text-decoration:none;min-height:2.65rem}
-.market-filter-bar .market-side-filter{flex:0 1 14rem;min-width:11rem;max-width:16rem}
+.market-filter-bar .market-side-filter{flex:1 1 0;min-width:0;width:auto;max-width:none}
 .market-filter-bar .market-side-filter .market-side-seg{display:inline-flex;flex:1 1 auto;align-items:center;gap:.2rem;min-width:0;height:2.1rem;padding:0 .2rem;background:rgba(255,255,255,.045)}
 .market-filter-bar .market-side-link{display:inline-flex;flex:1 1 0;align-items:center;justify-content:center;min-width:0;height:1.7rem;padding:0 .55rem;border:0;border-radius:999px;background:transparent;color:#b9cac4;text-decoration:none;font-size:.78rem;font-weight:650;line-height:1;transition:background .18s ease,color .18s ease}
 .market-filter-bar .market-side-link:hover{background:rgba(255,255,255,.07);color:#e8ebf2}
 .market-filter-bar .market-side-link.is-active{background:rgba(0,245,212,.16);color:#7df9e8}
 .market-filter-bar .market-side-link:focus-visible{outline:2px solid #8decd9;outline-offset:2px}
-.market-member-fold{border:1px solid #ffffff14;border-radius:.9rem;background:rgba(0,0,0,.16);overflow:hidden}
+.market-member-fold{width:100%;border:1px solid #ffffff14;border-radius:.9rem;background:rgba(0,0,0,.16);overflow:hidden}
 .market-member-fold.is-filtered{border-color:rgba(0,245,212,.4)}
 .market-member-fold-summary{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.7rem .9rem;cursor:pointer;list-style:none;color:#c5d4cf;font-size:.82rem;font-weight:650}
 .market-member-fold-summary::-webkit-details-marker{display:none}
