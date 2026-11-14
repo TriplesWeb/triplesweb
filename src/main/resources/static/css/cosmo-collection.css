@@ -551,15 +551,25 @@
         min-width: 0;
     }
 }
+.collection-page .collection-search-hero {
+    position: relative;
+    z-index: 40;
+    overflow: visible;
+}
+.collection-page .collection-search-hero:has(#collection-nickname-suggest:not([hidden])) {
+    z-index: 80;
+    backdrop-filter: none;
+}
 .collection-page .collection-nickname-form {
     position: relative;
-    z-index: 8;
+    z-index: 2;
     overflow: visible;
     align-items: center;
 }
 .collection-page .collection-nickname-form .ar-search-wrap {
     position: relative;
-    z-index: 6;
+    z-index: 2;
+    overflow: visible;
     flex: 0 1 20rem;
     width: min(20rem, 100%);
     max-width: 20rem;
@@ -584,7 +594,7 @@
     top: calc(100% + .4rem);
     left: 0;
     right: 0;
-    z-index: 80;
+    z-index: 120;
     max-height: 15rem;
     overflow: auto;
     padding: .45rem;
