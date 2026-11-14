@@ -81,6 +81,7 @@ ${css}
 <div class="objekt-card-grid">
 ${members.map(([member, english, color, logo]) => cardHtml({member, english, color, logo})).join('\n')}
 ${cardHtml({member: 'zenith', english: 'zenith', color: '#00f5d4', logo: '', title: 'zenith 001Z'})}
+${cardHtml({member: 'S8 X S12', english: 'unit', color: '#00f5d4', logo: '', title: 'S8 X S12 602Z'})}
 </div>
 </body></html>`;
 
@@ -111,7 +112,7 @@ ${cardHtml({member: 'zenith', english: 'zenith', color: '#00f5d4', logo: '', tit
     await page.waitForFunction(() => [...document.querySelectorAll('img.objekt-member-logo')]
       .every(img => img.complete && img.naturalWidth > 0));
     assert.equal(await page.locator('img.objekt-member-logo').count(), 24);
-    assert.equal(await page.locator('span.objekt-member-logo').count(), 1);
+    assert.equal(await page.locator('span.objekt-member-logo').count(), 2);
     for (const [member, , , logo] of members) {
       const src = await page.locator(`[data-member="${member}"] img.objekt-member-logo`).getAttribute('src');
       assert.equal(src, `/images/objekt-member-logos/${logo}.png`);
@@ -119,7 +120,14 @@ ${cardHtml({member: 'zenith', english: 'zenith', color: '#00f5d4', logo: '', tit
       assert.equal(nameColor, 'rgb(244, 246, 251)');
     }
     assert.equal(await page.locator('[data-member="설린"] img.objekt-member-logo').getAttribute('src'), '/images/objekt-member-logos/s22.png');
-    assert.equal(await page.locator('span.objekt-member-logo').evaluate(el => getComputedStyle(el).color), 'rgb(0, 245, 212)');
+    for (const member of ['zenith', 'S8 X S12']) {
+      const empty = page.locator(`[data-member="${member}"] span.objekt-member-logo`);
+      assert.equal(await empty.count(), 1);
+      const style = await empty.evaluate(el => ({mask: getComputedStyle(el).maskImage, border: getComputedStyle(el).borderTopWidth, text: el.textContent}));
+      assert.equal(style.mask, 'none', `${member}: 음표 대신 빈 사진`);
+      assert.equal(style.border, '1px');
+      assert.equal(style.text, '');
+    }
     fs.mkdirSync('/tmp/objekt-ui', {recursive: true});
     fs.mkdirSync('/opt/cursor/artifacts', {recursive: true});
     await page.screenshot({path: '/tmp/objekt-ui/objekt-card-chrome.png', fullPage: true});
@@ -129,7 +137,7 @@ ${cardHtml({member: 'zenith', english: 'zenith', color: '#00f5d4', logo: '', tit
     await page.locator('[data-member="지연"]').screenshot({path: '/opt/cursor/artifacts/objekt-card-jiyeon-logo.png'});
     await page.setViewportSize({width: 390, height: 4200});
     await page.screenshot({path: '/opt/cursor/artifacts/objekt-card-s1-s24-logos-mobile.png', fullPage: true});
-    console.log('PASS: 오브젝트 카드 S1~S24 음표 로고 · 유닛/기타 기본 음표');
+    console.log('PASS: 오브젝트 카드 S1~S24 멤버 로고 · 유닛/기타 빈 사진');
   } finally {
     await browser.close();
   }

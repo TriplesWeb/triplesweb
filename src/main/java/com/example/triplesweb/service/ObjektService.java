@@ -6,6 +6,7 @@ import com.example.triplesweb.infra.GzipRestClients;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektFilterOrder;
 import com.example.triplesweb.util.ObjektLinks;
+import com.example.triplesweb.util.ObjektSeasonCodes;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -16,16 +17,20 @@ import org.springframework.web.client.RestClient;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -144,7 +149,7 @@ public class ObjektService {
 
     /**
      * 평소 1분, 드롭 창(10시–자정)에는 더 자주 외부 카탈로그를 본다.
-     * 식별자가 같으면 DB를 다시 쓰지 않는다.
+     * 화면용 스냅샷이 같으면 DB를 다시 쓰지 않는다.
      */
     @Scheduled(
             fixedDelayString = "${objekt.live.tick-ms:15000}",
@@ -193,17 +198,16 @@ public class ObjektService {
             }
             List<ObjektCatalog> rows = new ArrayList<>(unique.values());
             List<Map<String, Object>> views = rows.stream().map(ObjektCatalogDto::toView).toList();
-            String nextSignature = signature(views);
-            long now = System.currentTimeMillis();
             synchronized (this) {
-                lastSuccessfulRefreshMillis = now;
-                if (nextSignature.equals(catalogSignature) && !cachedCollections.isEmpty()) {
+                if (views.equals(cachedCollections) && !cachedCollections.isEmpty()) {
+                    lastSuccessfulRefreshMillis = System.currentTimeMillis();
                     return;
                 }
                 // DB는 다음 시작 시 복구할 스냅샷으로만 저장한다. 갱신 직후 다시
                 // SELECT 하지 않고, 이미 받은 API 응답으로 메모리 캐시를 교체한다.
                 catalogStore.replace("triples", rows);
                 install(views);
+                lastSuccessfulRefreshMillis = System.currentTimeMillis();
             }
             log.info("Objekt 카탈로그 저장 완료: {}개", cachedCollections.size());
 
@@ -308,7 +312,10 @@ public class ObjektService {
     private record DropGroup(String season, String number, String createdAt, Map<String, Object> item) {
         Map<String, Object> toRow() {
             Map<String, Object> row = new LinkedHashMap<>();
-            String label = (season == null || season.isBlank() ? number : season + " " + number) + " 드롭";
+            String code = ObjektSeasonCodes.code(season).toUpperCase(Locale.ROOT);
+            String seasonLabel = season == null ? "" : season.trim();
+            if (!code.isEmpty()) seasonLabel += "(" + code + ")";
+            String label = (seasonLabel.isEmpty() ? number : seasonLabel + " " + number) + " 새 오브젝트 출시";
             row.put("label", label);
             String seasonFilter = first(item, "seasonKey", "season");
             row.put("href", "/cosmo/objekt?"
@@ -353,21 +360,33 @@ public class ObjektService {
     }
 
     static String signature(List<Map<String, Object>> views) {
-        int hash = views.size();
-        for (Map<String, Object> item : views) {
-            hash = 31 * hash + string(item, "id").hashCode();
-            hash = 31 * hash + string(item, "collectionId").hashCode();
-            hash = 31 * hash + string(item, "slug").hashCode();
-            hash = 31 * hash + string(item, "frontImage").hashCode();
-            hash = 31 * hash + string(item, "backImage").hashCode();
-            hash = 31 * hash + string(item, "frontMedia").hashCode();
-            hash = 31 * hash + string(item, "thumbnailImage").hashCode();
-            hash = 31 * hash + string(item, "member").hashCode();
-            hash = 31 * hash + string(item, "collectionNo").hashCode();
-            hash = 31 * hash + string(item, "class").hashCode();
-            hash = 31 * hash + string(item, "createdAt").hashCode();
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 is unavailable", ex);
         }
-        return views.size() + ":" + Integer.toHexString(hash);
+        updateDigest(digest, Integer.toString(views.size()));
+        for (Map<String, Object> item : views) {
+            // 맵의 반복 순서와 관계없이 화면에 제공하는 모든 필드의 변경을 반영한다.
+            Map<String, Object> ordered = new TreeMap<>(item);
+            updateDigest(digest, Integer.toString(ordered.size()));
+            ordered.forEach((key, value) -> {
+                updateDigest(digest, key);
+                updateDigest(digest, String.valueOf(value));
+            });
+        }
+        return views.size() + ":" + HexFormat.of().formatHex(digest.digest());
+    }
+
+    private static void updateDigest(MessageDigest digest, String value) {
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        int length = bytes.length;
+        digest.update((byte) (length >>> 24));
+        digest.update((byte) (length >>> 16));
+        digest.update((byte) (length >>> 8));
+        digest.update((byte) length);
+        digest.update(bytes);
     }
 
     private static Map<String, Map<String, Object>> buildIndex(List<Map<String, Object>> views) {

@@ -65,6 +65,8 @@ class MemberPortraitOptionsTest {
         assertThat(MemberPortraitOptions.objektMemberLogo("JiYeon")).isEqualTo("/images/objekt-member-logos/s24.png");
         assertThat(MemberPortraitOptions.objektMemberLogo("S24")).isEqualTo("/images/objekt-member-logos/s24.png");
         assertThat(MemberPortraitOptions.objektMemberLogo("S1 X S9")).isEmpty();
+        assertThat(MemberPortraitOptions.objektMemberLogo("S8 X S12")).isEmpty();
+        assertThat(MemberPortraitOptions.objektMemberLogo("윤서연 X 기타")).isEmpty();
         assertThat(MemberPortraitOptions.objektMemberLogo("zenith")).isEmpty();
     }
 }

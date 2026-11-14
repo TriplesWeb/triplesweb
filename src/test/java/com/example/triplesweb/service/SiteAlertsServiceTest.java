@@ -27,7 +27,7 @@ class SiteAlertsServiceTest {
         when(objekts.catalogCount()).thenReturn(24);
         when(live.dropWindow()).thenReturn(true);
         when(objekts.newestDrops()).thenReturn(List.of(
-                Map.of("label", "Cream02 350z 드롭",
+                Map.of("label", "Cream02(CC) 350z 새 오브젝트 출시",
                         "href", "/cosmo/objekt?season=cream02&kind=350z",
                         "collectionId", "Cream02 HaYeon 350z",
                         "createdAt", "2026-11-10T09:00:00Z")
@@ -40,7 +40,7 @@ class SiteAlertsServiceTest {
         assertThat(notices.get(0).get("href")).isEqualTo("/article/notice/7");
         List<Map<String, Object>> newest = (List<Map<String, Object>>) body.get("objekts");
         assertThat(newest).hasSize(1);
-        assertThat(newest.get(0).get("label")).isEqualTo("Cream02 350z 드롭");
+        assertThat(newest.get(0).get("label")).isEqualTo("Cream02(CC) 350z 새 오브젝트 출시");
         assertThat(newest.get(0).get("href")).isEqualTo("/cosmo/objekt?season=cream02&kind=350z");
         assertThat(newest.get(0).get("createdAt")).isEqualTo("2026-11-10T09:00:00Z");
     }
@@ -53,11 +53,20 @@ class SiteAlertsServiceTest {
 
         List<Map<String, Object>> drops = ObjektService.dropAlerts(List.of(hayeon, seoyeon, older));
         assertThat(drops).hasSize(2);
-        assertThat(drops.get(0).get("label")).isEqualTo("Cream02 350z 드롭");
+        assertThat(drops.get(0).get("label")).isEqualTo("Cream02(CC) 350z 새 오브젝트 출시");
         assertThat(drops.get(0).get("href")).isEqualTo("/cosmo/objekt?season=cream02&kind=350z");
         assertThat(drops.get(0).get("createdAt")).isEqualTo("2026-11-10T09:00:00Z");
         assertThat(drops.get(0).get("label").toString()).doesNotContain("HaYeon").doesNotContain("SeoYeon");
-        assertThat(drops.get(1).get("label")).isEqualTo("Atom01 101 드롭");
+        assertThat(drops.get(1).get("label")).isEqualTo("Atom01(A) 101 새 오브젝트 출시");
+    }
+
+    @Test
+    void dropLabelsOmitUnknownOrMissingSeasonCodes() {
+        Map<String, Object> unknown = row("Welcome", "001Z", "HaYeon", "2026-01-02T00:00:00Z");
+        Map<String, Object> noSeason = row("", "002A", "SeoYeon", "2026-01-01T00:00:00Z");
+        List<Map<String, Object>> drops = ObjektService.dropAlerts(List.of(unknown, noSeason));
+        assertThat(drops).extracting(drop -> drop.get("label"))
+                .containsExactly("Welcome 001Z 새 오브젝트 출시", "002A 새 오브젝트 출시");
     }
 
     private static Map<String, Object> row(String season, String number, String member, String createdAt) {

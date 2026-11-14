@@ -58,6 +58,13 @@ public class ShopService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public List<ShopListCard> listCards() {
+        return listGroupedBySection().stream()
+                .flatMap(group -> (group.getShops() == null ? List.<ShopListCard>of() : group.getShops()).stream())
+                .toList();
+    }
+
     /**
      * 관리자 저장·삭제 후 목록 캐시를 비운다.
      * 트랜잭션 안에서는 커밋 후에 비워, 커밋 전 재조회가 옛 행을 다시 캐시하지 않게 한다.
