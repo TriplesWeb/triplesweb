@@ -26,16 +26,6 @@
     close();
   }
 
-  function recentMatches(query) {
-    try {
-      const names = JSON.parse(localStorage.getItem('cosmo-nickname-recents') || '[]');
-      return Array.isArray(names) ? names.filter((name) =>
-        typeof name === 'string' && name.toLowerCase().startsWith(query.toLowerCase())) : [];
-    } catch (_) {
-      return [];
-    }
-  }
-
   function choose(name) {
     input.value = name;
     cancel();
@@ -90,7 +80,7 @@
     if (current !== generation || panel.hidden || document.activeElement !== input || input.value.trim() !== query) return;
     const seen = new Set();
     const names = [];
-    for (const item of [...remote, ...recentMatches(query)]) {
+    for (const item of remote) {
       if (typeof item !== 'string') continue;
       const name = item.trim();
       const key = name.toLowerCase();

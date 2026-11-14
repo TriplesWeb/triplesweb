@@ -288,16 +288,9 @@ form.site-header-search button.site-header-search__toggle{display:none}
 .site-header-nickname-suggest[hidden]{display:none}
 .site-header-nickname-option{display:block;width:100%;min-height:2.4rem;padding:.5rem .65rem;border:0;border-radius:.45rem;background:transparent;color:#e3e2e8;text-align:left;overflow-wrap:anywhere}
 .site-header-nickname-option:hover,.site-header-nickname-option[aria-selected="true"]{background:rgba(0,245,212,.16);color:#8decd9}
-.site-header-popover__mine-row,.site-header-popover__recent{display:flex;align-items:center;gap:.15rem}
-.site-header-popover__mine-row{margin:.55rem 0 .15rem}
-.site-header-popover__mine{display:block;flex:1 1 auto;min-width:0;margin:0;padding:.2rem .45rem .2rem 0;color:#8decd9;font-size:.82rem;font-weight:700;text-decoration:none;overflow-wrap:anywhere}
 .site-header-popover__list{list-style:none;margin:0;padding:0;display:grid;gap:.15rem}
-.site-header-popover__list a{display:block;flex:1 1 auto;min-width:0;padding:.55rem .45rem;border-radius:.55rem;color:#e3e2e8;text-decoration:none;font-size:.86rem;overflow-wrap:anywhere}
+.site-header-popover__list a{display:block;padding:.55rem .45rem;border-radius:.55rem;color:#e3e2e8;text-decoration:none;font-size:.86rem;overflow-wrap:anywhere}
 .site-header-popover__list a:hover{background:#ffffff0c;color:#8decd9}
-.site-header-popover__remove{flex:0 0 auto;width:1.7rem;height:1.7rem;padding:0;border:0;border-radius:.45rem;background:transparent;color:#93a5a1;font-size:1.05rem;line-height:1;cursor:pointer}
-.site-header-popover__remove:hover{background:#ffffff0c;color:#8decd9}
-.site-header-popover__clear{display:block;width:100%;margin:.2rem 0 0;padding:.4rem .2rem;border:0;background:transparent;color:#93a5a1;font-size:.78rem;text-align:right;cursor:pointer}
-.site-header-popover__clear:hover{color:#8decd9}
 .site-header-popover__empty{margin:0;font-size:.82rem;color:#93a5a1}
 .site-header-popover__status{margin:0;font-size:.82rem;color:#93a5a1}
 .site-header-popover__drop{display:block;margin:0 0 .45rem;padding:.7rem .75rem;border-radius:.75rem;background:rgba(0,245,212,.12);border:1px solid rgba(0,245,212,.4);color:#8decd9;font-size:.84rem;font-weight:750;text-decoration:none}
