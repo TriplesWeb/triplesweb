@@ -38,7 +38,7 @@ class SiteNavigationTest {
         assertThat(SiteNavigation.PRIMARY).extracting(SiteNavigation.Section::label)
             .containsExactly("About 트리플에스", "코스모", "미디어", "정보", "일정");
         assertThat(SiteNavigation.PRIMARY.get(1).items()).extracting(SiteNavigation.Item::href)
-            .containsExactly("/cosmo/objekt", "/cosmo/collection", "/article/trade", "/cosmo/gravity");
+            .containsExactly("/cosmo/objekt", "/cosmo/collection", "/trade", "/cosmo/gravity");
         assertThat(SiteNavigation.PRIMARY.get(1).items()).extracting(SiteNavigation.Item::label)
             .containsExactly("오브젝트", "코스모 아이디 검색", "교환/거래", "그래비티");
         assertThat(SiteNavigation.PRIMARY.get(3).items()).extracting(SiteNavigation.Item::label)
@@ -53,7 +53,7 @@ class SiteNavigationTest {
     @Test void overviewIsNotFoundAndMembersIncludesGroupIntro() throws Exception {
         when(artistAdmin.getGroupIntro()).thenReturn(GroupIntroDto.builder().title("tripleS").body("기존 그룹 설명").imageUrl("/group.jpg").build());
         mvc.perform(get("/triples/overview")).andExpect(status().isNotFound());
-        mvc.perform(get("/cosmo/group-orders")).andExpect(redirectedUrl("/article/trade"));
+        mvc.perform(get("/cosmo/group-orders")).andExpect(redirectedUrl("/trade"));
         Artist member = new Artist(); member.setArtistId(1L); member.setName("서연"); member.setEngName("SeoYeon");
         when(artists.findAllWithUnits()).thenReturn(List.of(member));
         mvc.perform(get("/triples/members")).andExpect(status().isOk())

@@ -42,7 +42,10 @@ import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/article/{category}")
+@RequestMapping({
+        "/article/{category}",
+        "/{category:trade|sell}"
+})
 public class ArticleController {
 
     private final ArticleService articleService;
@@ -97,7 +100,7 @@ public class ArticleController {
                                   @RequestParam(value = "sellListingSide", required = false) String sellListingSide,
                                   @RequestParam(value = "objektSide", required = false) String objektSide,
                                   Model model) {
-        if (isInvalidCategory(category)) return "redirect:/article/trade";
+        if (isInvalidCategory(category)) return "redirect:/trade";
 
         // 로그인 체크 및 관리자 체크 제거 (누구나 작성 가능)
         model.addAttribute("category", category);
@@ -125,7 +128,7 @@ public class ArticleController {
                                 @RequestParam(value = "selectedHaveObjektIds", required = false) List<String> selectedHaveObjektIds,
                                 @RequestParam(value = "selectedWantObjektIds", required = false) List<String> selectedWantObjektIds,
                                 @RequestParam(value = "sellListingSide", required = false) String sellListingSide) throws IOException {
-        if (isInvalidCategory(category)) return "redirect:/article/trade";
+        if (isInvalidCategory(category)) return "redirect:/trade";
 
         String cleanedContent = ArticleHtmlCleaner.clean(form.getContent());
         form.setContent(cleanedContent);
@@ -169,7 +172,7 @@ public class ArticleController {
                 articleFileService.attachUploadedFiles(uploadedFiles, savedArticle);
             }
             articleFileService.extractAndSaveFilesFromContent(savedArticle);
-            return "redirect:/article/" + category + "/" + savedArticle.getId();
+            return "redirect:" + boardPath(category) + "/" + savedArticle.getId();
         } catch (RuntimeException | IOException ex) {
             model.addAttribute("category", category);
             model.addAttribute("categoryName", getCategoryName(category));
@@ -357,7 +360,7 @@ public class ArticleController {
             @RequestParam(name = "class", required = false, defaultValue = "") String objektClass) {
 
         if (isInvalidCategory(category)) {
-            return "redirect:/article/trade";
+            return "redirect:/trade";
         }
 
         boolean marketBoard = isObjektBoard(category);
@@ -490,10 +493,10 @@ public class ArticleController {
                               @RequestParam(required = false) String notice,
                               Model model) {
 
-        if (isInvalidCategory(category)) return "redirect:/article/trade";
+        if (isInvalidCategory(category)) return "redirect:/trade";
         Article article = articleService.showWithFiles(id);
 
-        if (article == null) return "redirect:/article/" + category;
+        if (article == null) return "redirect:" + boardPath(category);
 
         model.addAttribute("article", article);
         List<ArticleObjekt> linkedObjekts = articleObjektService.findForArticle(id);
@@ -559,9 +562,9 @@ public class ArticleController {
     public String editArticle(@PathVariable("category") String category,
                               @PathVariable("id") Long id,
                               Model model) {
-        if (isInvalidCategory(category)) return "redirect:/article/trade";
+        if (isInvalidCategory(category)) return "redirect:/trade";
         Article article = articleService.showWithFiles(id);
-        if (article == null) return "redirect:/article/" + category;
+        if (article == null) return "redirect:" + boardPath(category);
 
         model.addAttribute("article", article);
         model.addAttribute("category", category);
@@ -591,10 +594,10 @@ public class ArticleController {
                                 @RequestParam(value = "selectedWantObjektIds", required = false) List<String> selectedWantObjektIds,
                                 @RequestParam(value = "sellListingSide", required = false) String sellListingSide,
                                 Model model) throws IOException {
-        if (isInvalidCategory(category)) return "redirect:/article/trade";
+        if (isInvalidCategory(category)) return "redirect:/trade";
 
         Article article = articleService.showWithFiles(id);
-        if (article == null) return "redirect:/article/" + category;
+        if (article == null) return "redirect:" + boardPath(category);
 
         newarticle.setContent(ArticleHtmlCleaner.clean(newarticle.getContent()));
         LinkedSides sides = resolveLinkedSides(
@@ -626,7 +629,7 @@ public class ArticleController {
             if (isObjektBoard(category)) {
                 articleObjektService.replaceSelected(saved, haveKeys, wantKeys);
             }
-            return "redirect:/article/" + category + "/" + id;
+            return "redirect:" + boardPath(category) + "/" + id;
         } catch (RuntimeException | IOException ex) {
             article.setTitle(newarticle.getTitle());
             article.setContent(newarticle.getContent());
@@ -676,17 +679,17 @@ public class ArticleController {
     @PostMapping("/{id}/delete")
     public String deleteArticle(@PathVariable("id") Long id,
                                 @PathVariable("category") String category) {
-        if (isInvalidCategory(category)) return "redirect:/article/trade";
+        if (isInvalidCategory(category)) return "redirect:/trade";
         Article article = articleService.showWithFiles(id);
-        if (article == null) return "redirect:/article/" + category;
+        if (article == null) return "redirect:" + boardPath(category);
 
         try {
             List<Long> fileIds = articleFileService.findFileIdsByArticleId(id);
             fileIds.forEach(articleFileService::deleteFileById);
             articleService.delete(id);
-            return "redirect:/article/" + category;
+            return "redirect:" + boardPath(category);
         } catch (RuntimeException ex) {
-            return "redirect:/article/" + category + "/" + id + "?notice=delete-failed";
+            return "redirect:" + boardPath(category) + "/" + id + "?notice=delete-failed";
         }
     }
 
@@ -908,6 +911,12 @@ public class ArticleController {
         model.addAttribute("isMarketBoard", isObjektBoard(category));
         model.addAttribute("isTrade", isTradeBoard(category));
         model.addAttribute("isSell", isSellBoard(category));
+        // 교환/거래 링크·폼은 /trade·/sell, 그 외 게시판은 /article/{category}
+        model.addAttribute("boardBase", boardPath(category));
+    }
+
+    private static String boardPath(String category) {
+        return isObjektBoard(category) ? "/" + category : "/article/" + category;
     }
 
     private static LinkedSides resolveLinkedSides(String category,

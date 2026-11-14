@@ -2,7 +2,7 @@
  * 교환/거래 게시판: 필터 바인딩 + 탭 소프트 전환(fetch + pushState).
  */
 (function () {
-  var MARKET_PATH = /^\/article\/(trade|sell)\/?$/;
+  var MARKET_PATH = /^\/(trade|sell)\/?$/;
   var abortController = null;
   var outsideClickBound = false;
 
