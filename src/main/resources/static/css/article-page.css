@@ -124,16 +124,16 @@
 .market-feed-members-sep{color:#6f8a84}
 .market-feed-card-body{display:block;padding:.55rem 1rem 1rem;color:inherit;text-decoration:none}
 .market-feed-card-body:hover{background:rgba(255,255,255,.02)}
-.market-feed-deal{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:.65rem .75rem;align-items:start}
-.market-feed-deal.is-single{grid-template-columns:minmax(0,1fr)}
-.market-feed-side{min-width:0}
+.market-feed-deal{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:flex-start;gap:.65rem .75rem}
+.market-feed-deal.is-single{display:block}
+.market-feed-side{flex:0 1 auto;min-width:0;max-width:100%}
 .market-feed-side-label{display:block;margin:0 0 .4rem;color:#8decd9;font-size:.68rem;font-weight:800;letter-spacing:.06em}
 .market-feed-strip{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem}
 .market-feed-thumb{display:inline-grid;place-items:center;width:3rem;height:4.5rem;overflow:hidden;border:1px solid #ffffff22;border-radius:.45rem;background:#0b1210;color:#9fc9c2;font-size:.58rem;font-weight:700;line-height:1.1;text-align:center}
 .market-feed-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .market-feed-thumb.is-empty{padding:.2rem}
 .market-feed-more{display:inline-flex;align-items:center;justify-content:center;min-width:3rem;height:4.5rem;padding:0 .35rem;border:1px dashed #3a4a46;border-radius:.45rem;color:#9fc9c2;font-size:.78rem;font-weight:750}
-.market-feed-swap{align-self:center;padding-top:1.1rem;color:#6f8a84;font-size:1.15rem;font-weight:800;line-height:1}
+.market-feed-swap{flex:0 0 auto;align-self:center;padding-top:1.1rem;color:#6f8a84;font-size:1.15rem;font-weight:800;line-height:1}
 .market-feed-side-empty{color:#5f736e;font-size:.85rem}
 .market-feed-note{margin:0;color:#d7e0dc;font-size:.92rem;font-weight:650;line-height:1.45;overflow-wrap:anywhere}
 .market-feed-empty{display:grid;place-items:center;gap:.35rem;padding:3.5rem 1rem;border:1px dashed #ffffff18;border-radius:1.15rem;background:#10151a;text-align:center}
@@ -154,8 +154,8 @@
 @media(max-width:767px){
  .article-board-row.is-market>.article-board-swap{align-self:start}
  .article-swap{justify-content:flex-start}
- .market-feed-deal{grid-template-columns:1fr;gap:.75rem}
- .market-feed-swap{padding-top:0;justify-self:center;transform:rotate(90deg)}
+ .market-feed-deal{flex-direction:column;align-items:stretch;gap:.75rem}
+ .market-feed-swap{padding-top:0;align-self:center;transform:rotate(90deg)}
  .market-feed-thumb,.market-feed-more{width:2.65rem;height:4rem;min-width:2.65rem}
 }
 
