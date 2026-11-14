@@ -155,10 +155,11 @@ public final class ArticleMemberSwap {
                                         List<ArticleObjekt> want,
                                         int limit) {
         if (!(target instanceof com.example.triplesweb.dto.ArticleViewDto dto)) return;
-        List<Map<String, Object>> havePreview = previewThumbs(have, limit);
-        List<Map<String, Object>> wantPreview = previewThumbs(want, limit);
-        int haveMore = previewMoreCount(have, limit);
-        int wantMore = previewMoreCount(want, limit);
+        int[] caps = previewCaps(have, want, limit);
+        List<Map<String, Object>> havePreview = previewThumbs(have, caps[0]);
+        List<Map<String, Object>> wantPreview = previewThumbs(want, caps[1]);
+        int haveMore = previewMoreCount(have, caps[0]);
+        int wantMore = previewMoreCount(want, caps[1]);
         dto.setHavePreview(havePreview);
         dto.setWantPreview(wantPreview);
         dto.setHasHavePreview(!havePreview.isEmpty());
@@ -168,6 +169,40 @@ public final class ArticleMemberSwap {
         dto.setHavePreviewMoreCount(haveMore);
         dto.setHasWantPreviewMore(wantMore > 0);
         dto.setWantPreviewMoreCount(wantMore);
+    }
+
+    /**
+     * 쪽마다 기본 limit칸을 두고, 한쪽이 덜 쓰면 남는 칸을 넘치는 쪽에 넘긴다.
+     * @return [haveCap, wantCap]
+     */
+    static int[] previewCaps(List<ArticleObjekt> have, List<ArticleObjekt> want, int limit) {
+        int base = Math.max(0, limit);
+        int haveSize = countLinks(have);
+        int wantSize = countLinks(want);
+        int haveCap = Math.min(haveSize, base);
+        int wantCap = Math.min(wantSize, base);
+        int spare = (base - haveCap) + (base - wantCap);
+        int haveNeed = Math.max(0, haveSize - haveCap);
+        int wantNeed = Math.max(0, wantSize - wantCap);
+        if (spare > 0 && haveNeed > 0) {
+            int give = Math.min(spare, haveNeed);
+            haveCap += give;
+            spare -= give;
+            haveNeed -= give;
+        }
+        if (spare > 0 && wantNeed > 0) {
+            wantCap += Math.min(spare, wantNeed);
+        }
+        return new int[]{haveCap, wantCap};
+    }
+
+    private static int countLinks(List<ArticleObjekt> links) {
+        if (links == null || links.isEmpty()) return 0;
+        int total = 0;
+        for (ArticleObjekt link : links) {
+            if (link != null) total++;
+        }
+        return total;
     }
 
     private static void applyLead(Map<String, Object> row, String prefix, List<String> members, List<Artist> artists) {

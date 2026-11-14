@@ -85,6 +85,25 @@ class ArticleMemberSwapTest {
         assertThat(ArticleMemberSwap.previewThumbs(List.of(c), 2).get(0).get("hasImage")).isEqualTo(false);
     }
 
+    @Test void previewCapsMovesSpareSlotsToTheCrowdedSide() {
+        List<ArticleObjekt> have = new java.util.ArrayList<>();
+        for (int i = 0; i < 10; i++) have.add(link("HAVE", "코토네", "Cream02", "Z"));
+        List<ArticleObjekt> want = List.of(link("WANT", "카에데", "Cream02", "Z"), link("WANT", "마유", "Cream02", "Z"));
+        int[] caps = ArticleMemberSwap.previewCaps(have, want, 6);
+        assertThat(caps[0]).isEqualTo(10); // WANT가 4칸 남김 → HAVE가 전부 표시
+        assertThat(caps[1]).isEqualTo(2);
+        assertThat(ArticleMemberSwap.previewMoreCount(have, caps[0])).isZero();
+
+        List<ArticleObjekt> bothHeavyHave = new java.util.ArrayList<>();
+        List<ArticleObjekt> bothHeavyWant = new java.util.ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            bothHeavyHave.add(link("HAVE", "코토네"));
+            bothHeavyWant.add(link("WANT", "카에데"));
+        }
+        int[] even = ArticleMemberSwap.previewCaps(bothHeavyHave, bothHeavyWant, 6);
+        assertThat(even).containsExactly(6, 6);
+    }
+
     private static ArticleObjekt link(String side, String member) {
         return link(side, member, "", "");
     }
