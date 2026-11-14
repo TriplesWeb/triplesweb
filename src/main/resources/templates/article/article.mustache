@@ -259,31 +259,17 @@
             </div>
             {{/isMarketBoard}}
 
-            <!-- 하단 컨트롤 영역 (왼쪽: 검색 기능 / 오른쪽: 글쓰기 버튼) -->
+            <!-- 하단 컨트롤: 일반 게시판은 검색+글쓰기, 교환/거래는 글쓰기만 -->
             <div class="article-board-controls flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-
-                <!-- 왼쪽: 게시글 검색 폼 -->
+                {{^isMarketBoard}}
                 <form action="{{boardBase}}" method="get" class="article-board-search flex items-center gap-2 w-full sm:w-auto">
                     <label class="site-search-field article-board-search-type shrink-0">
                         <select name="type" aria-label="검색 유형">
-                            {{#isMarketBoard}}
-                            <option value="writer" {{#isSearchWriter}}selected{{/isSearchWriter}}>작성자</option>
-                            <option value="title" {{#isSearchTitle}}selected{{/isSearchTitle}}>제목</option>
-                            <option value="content" {{#isSearchContent}}selected{{/isSearchContent}}>내용</option>
-                            {{/isMarketBoard}}
-                            {{^isMarketBoard}}
                             <option value="title" {{#isSearchTitle}}selected{{/isSearchTitle}}>제목</option>
                             <option value="content" {{#isSearchContent}}selected{{/isSearchContent}}>내용</option>
                             <option value="writer" {{#isSearchWriter}}selected{{/isSearchWriter}}>작성자</option>
-                            {{/isMarketBoard}}
                         </select>
                     </label>
-                    {{#isMarketBoard}}
-                    <input type="hidden" name="member" value="{{selectedMember}}">
-                    <input type="hidden" name="objektSide" value="{{selectedObjektSide}}">
-                    <input type="hidden" name="season" value="{{selectedSeason}}">
-                    <input type="hidden" name="class" value="{{selectedClass}}">
-                    {{/isMarketBoard}}
                     <div class="site-search-field article-board-search-keyword relative flex-1 sm:w-60">
                         <input type="search" name="keyword" value="{{searchKeyword}}" placeholder="검색어를 입력하세요" aria-label="게시글 검색어" autocomplete="off" />
                         <button type="submit" aria-label="게시글 검색" class="site-search-submit">
@@ -291,9 +277,9 @@
                         </button>
                     </div>
                 </form>
+                {{/isMarketBoard}}
 
-                <!-- 오른쪽: 권한별 글쓰기 버튼 -->
-                <div class="flex items-center justify-end w-full sm:w-auto">
+                <div class="flex items-center justify-end w-full sm:w-auto{{#isMarketBoard}} ml-auto{{/isMarketBoard}}">
                     {{#isAdmin}}
                             <a href="{{boardBase}}/new{{#isSell}}?objektSide={{selectedObjektSide}}{{/isSell}}" class="article-write-btn md-btn md-btn-filled py-2.5 px-5 rounded-full bg-primary-container text-black font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
                                 <span class="material-symbols-outlined text-[18px] text-black" data-icon="edit">edit</span>
