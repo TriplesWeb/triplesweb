@@ -14,6 +14,7 @@
 
 ## Cursor Cloud specific instructions
 
-- PR을 푸시·갱신하면 현재 브랜치로 로컬 `bootRun`을 켜고, 기본 인증 프록시(18080) + `tailscale funnel --bg 18080`으로 모바일에서 열리게 한다. `UPLOAD_SYNC_ENABLED=false`. Funnel 주소와 기본 인증(아이디/비밀번호)을 PR 링크 다음에 전달한다.
+- PR을 푸시·갱신하면 현재 브랜치로 미리보기 `bootRun`을 **8081**에 켠다. `UPLOAD_SYNC_ENABLED=false`, `--server.port=8081`. **8080은 로컬 `bootRun`용으로 비워 둔다.**
+- 기본 인증 프록시(18080)는 `127.0.0.1:8081`로 넘기고 `tailscale funnel --bg 18080`으로 모바일에서 열리게 한다. Funnel 주소와 기본 인증(아이디/비밀번호)을 PR 링크 다음에 전달한다.
 - Pi 웹앱을 재배포하거나 운영 스키마를 복사하지 않는다.
 - 미리보기는 사용자가 끄라고 하거나 다음 갱신으로 교체할 때까지 유지한다.
