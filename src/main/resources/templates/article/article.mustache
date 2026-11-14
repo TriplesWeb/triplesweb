@@ -16,13 +16,21 @@
         <div class="article-board-shell {{#hideRecommendations}}article-board-no-likes{{/hideRecommendations}} relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl p-6 sm:p-10 backdrop-blur-2xl shadow-2xl">
 
             <!-- 상단 헤더 타이틀 -->
-            <div class="article-board-title flex items-center justify-between mb-8 pb-4 border-b border-outline-variant/30">
-                <div class="flex items-center gap-3">
+            <div class="article-board-title flex items-center justify-between gap-3 mb-8 pb-4 border-b border-outline-variant/30">
+                <div class="flex items-center gap-3 min-w-0">
                     <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:#8decd9;flex-shrink:0"><path d="M20 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.95L3 21l1.95-4.5A9 9 0 0 1 4 12.5 8.5 8.5 0 1 1 20 11.5Z"/><path d="M8 10h8M8 14h5"/></svg>
                     <h1 class="font-headline-lg text-headline-md font-bold text-on-surface tracking-tight">
                         {{#isMarketBoard}}{{categoryName}}{{/isMarketBoard}}{{^isMarketBoard}}{{categoryName}} 게시판{{/isMarketBoard}}
                     </h1>
                 </div>
+                {{#isMarketBoard}}
+                {{#isAdmin}}
+                <a href="{{boardBase}}/new{{#isSell}}?objektSide={{selectedObjektSide}}{{/isSell}}" class="article-write-btn md-btn md-btn-filled py-2.5 px-5 rounded-full bg-primary-container text-black font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md shrink-0 whitespace-nowrap">
+                    <span class="material-symbols-outlined text-[18px] text-black" data-icon="edit">edit</span>
+                    <span class="text-black">{{#isTrade}}새 교환{{/isTrade}}{{#isSell}}새 거래{{/isSell}}</span>
+                </a>
+                {{/isAdmin}}
+                {{/isMarketBoard}}
             </div>
 
             {{#isMarketBoard}}
@@ -259,9 +267,8 @@
             </div>
             {{/isMarketBoard}}
 
-            <!-- 하단 컨트롤: 일반 게시판은 검색+글쓰기, 교환/거래는 글쓰기만 -->
+            {{^isMarketBoard}}
             <div class="article-board-controls flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-                {{^isMarketBoard}}
                 <form action="{{boardBase}}" method="get" class="article-board-search flex items-center gap-2 w-full sm:w-auto">
                     <label class="site-search-field article-board-search-type shrink-0">
                         <select name="type" aria-label="검색 유형">
@@ -277,18 +284,17 @@
                         </button>
                     </div>
                 </form>
-                {{/isMarketBoard}}
 
-                <div class="flex items-center justify-end w-full sm:w-auto{{#isMarketBoard}} ml-auto{{/isMarketBoard}}">
+                <div class="flex items-center justify-end w-full sm:w-auto">
                     {{#isAdmin}}
-                            <a href="{{boardBase}}/new{{#isSell}}?objektSide={{selectedObjektSide}}{{/isSell}}" class="article-write-btn md-btn md-btn-filled py-2.5 px-5 rounded-full bg-primary-container text-black font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
-                                <span class="material-symbols-outlined text-[18px] text-black" data-icon="edit">edit</span>
-                                <span class="text-black">{{#isTrade}}새 교환{{/isTrade}}{{#isSell}}새 거래{{/isSell}}{{^isMarketBoard}}글 쓰기{{/isMarketBoard}}</span>
-                            </a>
-                        {{/isAdmin}}
-
+                    <a href="{{boardBase}}/new" class="article-write-btn md-btn md-btn-filled py-2.5 px-5 rounded-full bg-primary-container text-black font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
+                        <span class="material-symbols-outlined text-[18px] text-black" data-icon="edit">edit</span>
+                        <span class="text-black">글 쓰기</span>
+                    </a>
+                    {{/isAdmin}}
                 </div>
             </div>
+            {{/isMarketBoard}}
 
         </div>
     </div>
