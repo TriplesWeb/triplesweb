@@ -61,24 +61,29 @@ class GroupOrdersControllerTest {
                 .thenReturn(List.of(row));
             when(links.groupByArticleId(anyList())).thenReturn(Map.of(5L, List.of(have)));
             mvc.perform(get("/article/" + category)).andExpect(status().isOk())
-                .andExpect(content().string(containsString("href=\"/article/trade\"")))
-                .andExpect(content().string(containsString("href=\"/article/sell\"")))
+                .andExpect(content().string(containsString("href=\"/article/trade?")))
+                .andExpect(content().string(containsString("href=\"/article/sell?")))
                 .andExpect(content().string(not(containsString("href=\"/article/group-orders\""))))
                 .andExpect(content().string(not(containsString("분철"))))
-                .andExpect(content().string(containsString("href=\"/article/" + category + "\" aria-current=\"page\"")))
+                .andExpect(content().string(containsString("href=\"/article/" + category + "?")))
+                .andExpect(content().string(containsString("aria-current=\"page\"")))
                 .andExpect(content().string(not(containsString(">추천<"))))
                 .andExpect(content().string(containsString("objektSide=have")))
                 .andExpect(content().string(not(containsString("objektSide=all"))))
                 .andExpect(content().string(not(containsString(">전체</a>"))));
             if ("trade".equals(category)) {
                 mvc.perform(get("/article/" + category)).andExpect(status().isOk())
-                    .andExpect(content().string(containsString("article-board-heading is-market is-no-likes")))
-                    .andExpect(content().string(containsString("article-board-row is-market is-no-likes")))
-                    .andExpect(content().string(containsString(">분류<")))
-                    .andExpect(content().string(containsString("article-board-swap")))
+                    .andExpect(content().string(containsString("market-feed")))
+                    .andExpect(content().string(containsString("market-feed-card")))
+                    .andExpect(content().string(containsString("market-feed-badge is-wtt")))
+                    .andExpect(content().string(containsString(">HAVE<")))
+                    .andExpect(content().string(containsString(">WANT<")))
                     .andExpect(content().string(containsString(">Have</a>")))
                     .andExpect(content().string(containsString(">Want</a>")))
-                    .andExpect(content().string(containsString("Have/Want 쪽 멤버·시즌·클래스로 찾습니다")))
+                    .andExpect(content().string(containsString("market-member-fold")))
+                    .andExpect(content().string(containsString("새 교환")))
+                    .andExpect(content().string(not(containsString("article-board-heading is-market"))))
+                    .andExpect(content().string(not(containsString(">분류<"))))
                     .andExpect(content().string(containsString("market-season-toggle")))
                     .andExpect(content().string(containsString("market-class-toggle")))
                     .andExpect(content().string(containsString("id=\"market-season-label\" class=\"truncate\">전체<")))
@@ -86,15 +91,14 @@ class GroupOrdersControllerTest {
                     .andExpect(content().string(containsString("objekt-filter.css")));
             } else {
                 mvc.perform(get("/article/" + category)).andExpect(status().isOk())
-                    .andExpect(content().string(containsString("article-board-heading is-no-likes")))
-                    .andExpect(content().string(containsString("article-board-row is-no-likes")))
+                    .andExpect(content().string(containsString("market-feed")))
+                    .andExpect(content().string(containsString("market-feed-card")))
                     .andExpect(content().string(not(containsString("article-board-heading is-market"))))
                     .andExpect(content().string(not(containsString(">분류<"))))
-                    .andExpect(content().string(not(containsString("article-board-swap"))))
                     .andExpect(content().string(containsString(">판매</a>")))
                     .andExpect(content().string(containsString(">구매</a>")))
                     .andExpect(content().string(containsString("objektSide=want")))
-                    .andExpect(content().string(containsString("판매/구매 탭과 멤버·시즌·클래스로 찾습니다")))
+                    .andExpect(content().string(containsString("새 거래")))
                     .andExpect(content().string(not(containsString(">Have</a>"))))
                     .andExpect(content().string(not(containsString(">Want</a>"))));
             }
@@ -120,7 +124,7 @@ class GroupOrdersControllerTest {
         ArticleObjekt want = new ArticleObjekt();
         want.setSide("WANT");
         want.setMemberName("S1 X S9");
-        when(articles.findCategoryBatchBefore(eq("trade"), eq("title"), eq(""), anyLong(), eq(100)))
+        when(articles.findCategoryBatchBefore(eq("trade"), eq("writer"), eq(""), anyLong(), eq(100)))
             .thenAnswer(inv -> {
                 long before = inv.getArgument(3);
                 if (before == Long.MAX_VALUE) return first;
@@ -136,15 +140,16 @@ class GroupOrdersControllerTest {
         mvc.perform(get("/article/trade").param("member", "윤서연").param("objektSide", "all"))
             .andExpect(status().isOk())
             .andExpect(content().string(containsString("오래된 교환 글")))
-            .andExpect(content().string(containsString("기존 전체 검색 링크")));
+            .andExpect(content().string(containsString("Have와 Want 양쪽에서 선택한 멤버를 검색합니다")));
         mvc.perform(get("/article/trade").param("member", "윤서연").param("objektSide", "have"))
             .andExpect(status().isOk())
             .andExpect(content().string(not(containsString("오래된 교환 글"))))
-            .andExpect(content().string(containsString("Have/Want 쪽 멤버·시즌·클래스로 찾습니다")));
+            .andExpect(content().string(containsString("market-member-fold is-filtered")))
+            .andExpect(content().string(containsString("market-member-fold")));
         mvc.perform(get("/article/trade").param("member", "윤서연").param("objektSide", "want"))
             .andExpect(status().isOk())
             .andExpect(content().string(containsString("오래된 교환 글")));
-        verify(articles, atLeastOnce()).findCategoryBatchBefore("trade", "title", "", 101L, 100);
+        verify(articles, atLeastOnce()).findCategoryBatchBefore("trade", "writer", "", 101L, 100);
     }
 
     @Test void seasonAndClassFiltersKeepMatchingTradePosts() throws Exception {
@@ -156,7 +161,7 @@ class GroupOrdersControllerTest {
         have.setMemberName("코토네");
         have.setSeason("Cream02");
         have.setObjektClass("Z");
-        when(articles.findCategoryBatchBefore(eq("trade"), eq("title"), eq(""), anyLong(), eq(100)))
+        when(articles.findCategoryBatchBefore(eq("trade"), eq("writer"), eq(""), anyLong(), eq(100)))
             .thenReturn(List.of(post));
         when(links.groupByArticleId(anyList())).thenReturn(Map.of(77L, List.of(have)));
         when(objekts.findCollections("triples")).thenReturn(List.of(
@@ -185,7 +190,7 @@ class GroupOrdersControllerTest {
         ArticleObjekt wantNakyoung = new ArticleObjekt();
         wantNakyoung.setSide("WANT");
         wantNakyoung.setMemberName("김나경");
-        when(articles.findCategoryBatchBefore(eq("trade"), eq("title"), eq(""), anyLong(), eq(100)))
+        when(articles.findCategoryBatchBefore(eq("trade"), eq("writer"), eq(""), anyLong(), eq(100)))
             .thenReturn(List.of(post));
         when(links.groupByArticleId(anyList())).thenReturn(Map.of(88L, List.of(haveKotone, haveNakyoung)));
         mvc.perform(get("/article/trade").param("member", "김나경").param("objektSide", "have"))
@@ -217,7 +222,7 @@ class GroupOrdersControllerTest {
         ArticleObjekt want = new ArticleObjekt();
         want.setSide("WANT");
         want.setMemberName("김나경");
-        when(articles.findCategoryBatchBefore(eq("sell"), eq("title"), eq(""), anyLong(), eq(100)))
+        when(articles.findCategoryBatchBefore(eq("sell"), eq("writer"), eq(""), anyLong(), eq(100)))
             .thenReturn(List.of(sellHave, sellWant));
         when(links.groupByArticleId(anyList())).thenReturn(Map.of(11L, List.of(have), 12L, List.of(want)));
 
@@ -263,7 +268,7 @@ class GroupOrdersControllerTest {
         ArticleObjekt wantKotone = new ArticleObjekt();
         wantKotone.setSide("WANT");
         wantKotone.setMemberName("코토네");
-        when(articles.findCategoryBatchBefore(eq("sell"), eq("title"), eq(""), anyLong(), eq(100)))
+        when(articles.findCategoryBatchBefore(eq("sell"), eq("writer"), eq(""), anyLong(), eq(100)))
             .thenReturn(List.of(sellHave, sellWant));
         when(links.groupByArticleId(anyList())).thenReturn(Map.of(
             21L, List.of(haveSeoyeon, haveKotone, haveHayeon),

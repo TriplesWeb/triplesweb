@@ -349,7 +349,7 @@ public class ArticleController {
             @PathVariable("category") String category,
             Model model,
             @RequestParam(name = "limit", required = false, defaultValue = "10") Integer limit,
-            @RequestParam(name = "type", required = false, defaultValue = "title") String type,
+            @RequestParam(name = "type", required = false) String type,
             @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword,
             @RequestParam(name = "member", required = false, defaultValue = "") String member,
             @RequestParam(name = "objektSide", required = false, defaultValue = "have") String objektSide,
@@ -360,10 +360,12 @@ public class ArticleController {
             return "redirect:/article/trade";
         }
 
-        // 검색 조건 정리
-        String searchType = type;
+        boolean marketBoard = isObjektBoard(category);
+
+        // 검색 조건 정리 (마켓 피드는 작성자 검색을 기본값으로)
+        String searchType = type == null ? "" : type.trim();
         if (!Set.of("title", "content", "writer").contains(searchType)) {
-            searchType = "title";
+            searchType = marketBoard ? "writer" : "title";
         }
 
         String searchKeyword = keyword == null ? "" : keyword.trim();
@@ -371,7 +373,6 @@ public class ArticleController {
         String selectedSide = normalizeObjektSide(category, objektSide);
         String selectedSeason = season == null ? "" : season.trim();
         String selectedClass = objektClass == null ? "" : objektClass.trim();
-        boolean marketBoard = isObjektBoard(category);
         int safeLimit = Math.min(100, Math.max(1, limit));
         List<Article> articles;
         Map<Long, List<ArticleObjekt>> linkedByArticle;
@@ -467,6 +468,8 @@ public class ArticleController {
         model.addAttribute("selectedObjektSide", selectedSide);
         model.addAttribute("selectedSeason", selectedSeason);
         model.addAttribute("selectedClass", selectedClass);
+        model.addAttribute("hasSelectedMember", !selectedMember.isEmpty());
+        model.addAttribute("hasSearchKeyword", !searchKeyword.isEmpty());
         model.addAttribute("hasMarketAttrFilter",
                 !selectedMember.isEmpty() || !selectedSeason.isEmpty() || !selectedClass.isEmpty());
 

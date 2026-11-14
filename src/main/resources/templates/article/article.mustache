@@ -1,6 +1,6 @@
 {{>layout/head-open}}
 
-    <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
+    <title>트리플에스 커뮤니티 - {{#isMarketBoard}}{{categoryName}}{{/isMarketBoard}}{{^isMarketBoard}}{{categoryName}} 게시판{{/isMarketBoard}}</title>
     <link rel="stylesheet" href="{{#asset}}/css/objekt-filter.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/article-page.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
@@ -20,24 +20,18 @@
                 <div class="flex items-center gap-3">
                     <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:#8decd9;flex-shrink:0"><path d="M20 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.95L3 21l1.95-4.5A9 9 0 0 1 4 12.5 8.5 8.5 0 1 1 20 11.5Z"/><path d="M8 10h8M8 14h5"/></svg>
                     <h1 class="font-headline-lg text-headline-md font-bold text-on-surface tracking-tight">
-                        {{categoryName}} 게시판
+                        {{#isMarketBoard}}{{categoryName}}{{/isMarketBoard}}{{^isMarketBoard}}{{categoryName}} 게시판{{/isMarketBoard}}
                     </h1>
                 </div>
             </div>
 
             {{#isMarketBoard}}
-            <nav class="site-section-tabs market-tabs" aria-label="교환/거래 게시판 분류">
-                <a class="site-section-tab" href="/article/trade?objektSide={{selectedObjektSide}}{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}" {{#isTrade}}aria-current="page"{{/isTrade}}>교환</a>
-                <a class="site-section-tab" href="/article/sell?objektSide={{selectedObjektSide}}{{#selectedMember}}&amp;member={{selectedMember}}{{/selectedMember}}{{#selectedSeason}}&amp;season={{selectedSeason}}{{/selectedSeason}}{{#selectedClass}}&amp;class={{selectedClass}}{{/selectedClass}}{{#searchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/searchKeyword}}" {{#isSell}}aria-current="page"{{/isSell}}>거래</a>
+            <nav class="site-section-tabs market-tabs" aria-label="교환/거래 분류">
+                <a class="site-section-tab" href="/article/trade?objektSide={{selectedObjektSide}}{{#hasSelectedMember}}&amp;member={{selectedMember}}{{/hasSelectedMember}}{{#hasSelectedSeason}}&amp;season={{selectedSeason}}{{/hasSelectedSeason}}{{#hasSelectedClass}}&amp;class={{selectedClass}}{{/hasSelectedClass}}{{#hasSearchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/hasSearchKeyword}}" {{#isTrade}}aria-current="page"{{/isTrade}}>교환</a>
+                <a class="site-section-tab" href="/article/sell?objektSide={{selectedObjektSide}}{{#hasSelectedMember}}&amp;member={{selectedMember}}{{/hasSelectedMember}}{{#hasSelectedSeason}}&amp;season={{selectedSeason}}{{/hasSelectedSeason}}{{#hasSelectedClass}}&amp;class={{selectedClass}}{{/hasSelectedClass}}{{#hasSearchKeyword}}&amp;type={{#isSearchTitle}}title{{/isSearchTitle}}{{#isSearchContent}}content{{/isSearchContent}}{{#isSearchWriter}}writer{{/isSearchWriter}}&amp;keyword={{searchKeyword}}{{/hasSearchKeyword}}" {{#isSell}}aria-current="page"{{/isSell}}>거래</a>
             </nav>
-            <section class="market-member-filter" aria-label="교환 필터">
-                {{#isTrade}}
-                <p class="market-side-help">Have/Want 쪽 멤버·시즌·클래스로 찾습니다.</p>
-                {{/isTrade}}
-                {{#isSell}}
-                <p class="market-side-help">판매/구매 탭과 멤버·시즌·클래스로 찾습니다.</p>
-                {{/isSell}}
-                {{#isObjektSideAll}}<p class="market-side-help" role="status">기존 전체 검색 링크: Have와 Want 양쪽에서 선택한 멤버를 검색합니다.</p>{{/isObjektSideAll}}
+            <section class="market-member-filter" aria-label="트레이드 필터">
+                {{#isObjektSideAll}}<p class="market-side-help" role="status">Have와 Want 양쪽에서 선택한 멤버를 검색합니다.</p>{{/isObjektSideAll}}
                 <div class="market-filter-bar" role="group" aria-label="시즌·클래스·구분 필터">
                     <div class="objekt-filter relative{{#hasSelectedSeason}} is-filtered{{/hasSelectedSeason}}" id="market-season-dropdown">
                         <span class="objekt-filter-label">시즌</span>
@@ -106,20 +100,138 @@
                     </a>
                     {{/hasMarketAttrFilter}}
                 </div>
-                <div class="member-portrait-picker" id="market-member-picker" role="group" aria-label="멤버 선택">
-                    {{>partials/member-portrait-picker}}
-                </div>
+                <details class="market-member-fold{{#hasSelectedMember}} is-filtered{{/hasSelectedMember}}" {{#hasSelectedMember}}open{{/hasSelectedMember}}>
+                    <summary class="market-member-fold-summary">
+                        <span>멤버</span>
+                        <span class="market-member-fold-value">{{#hasSelectedMember}}{{selectedMember}}{{/hasSelectedMember}}{{^hasSelectedMember}}전체{{/hasSelectedMember}}</span>
+                    </summary>
+                    <div class="member-portrait-picker" id="market-member-picker" role="group" aria-label="멤버 선택">
+                        {{>partials/member-portrait-picker}}
+                    </div>
+                </details>
             </section>
+
+            <div class="market-feed" aria-label="{{categoryName}} 피드">
+                {{#articleList}}
+                <article class="market-feed-card">
+                    <header class="market-feed-card-head">
+                        <div class="market-feed-card-meta">
+                            {{#isTrade}}<span class="market-feed-badge is-wtt">WTT</span>{{/isTrade}}
+                            {{#isSell}}
+                            {{#hasWantPreview}}{{^hasHavePreview}}<span class="market-feed-badge is-wtb">구매</span>{{/hasHavePreview}}{{/hasWantPreview}}
+                            {{#hasHavePreview}}{{^hasWantPreview}}<span class="market-feed-badge is-wts">판매</span>{{/hasWantPreview}}{{/hasHavePreview}}
+                            {{#hasHavePreview}}{{#hasWantPreview}}<span class="market-feed-badge is-wtt">거래</span>{{/hasWantPreview}}{{/hasHavePreview}}
+                            {{^hasObjektPreview}}<span class="market-feed-badge is-wts">거래</span>{{/hasObjektPreview}}
+                            {{/isSell}}
+                            <span class="market-feed-author">{{userId}}</span>
+                            <time class="market-feed-time">{{formattedDate}}</time>
+                        </div>
+                        {{#hasMemberSwap}}
+                        <p class="market-feed-members">
+                            {{#hasHaveLead}}<span class="article-swap-name" style="--artist-color:{{haveLeadColor}}">{{haveLeadName}}</span>{{#hasHaveMore}} 외 {{haveMoreCount}}{{/hasHaveMore}}{{/hasHaveLead}}
+                            {{#showTradeSwap}} <span class="market-feed-members-sep" aria-hidden="true">·</span> {{/showTradeSwap}}
+                            {{#hasWantLead}}<span class="article-swap-name" style="--artist-color:{{wantLeadColor}}">{{wantLeadName}}</span>{{#hasWantMore}} 외 {{wantMoreCount}}{{/hasWantMore}}{{/hasWantLead}}
+                        </p>
+                        {{/hasMemberSwap}}
+                    </header>
+                    <a href="/article/{{#category}}{{category}}{{/category}}{{^category}}trade{{/category}}/{{id}}" class="market-feed-card-body" aria-label="{{title}}">
+                        {{#hasObjektPreview}}
+                        {{#isTrade}}
+                        <div class="market-feed-deal">
+                            <div class="market-feed-side" data-side="have">
+                                <span class="market-feed-side-label">HAVE</span>
+                                <div class="market-feed-strip">
+                                    {{#hasHavePreview}}
+                                    {{#havePreview}}
+                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
+                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
+                                        {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
+                                    </span>
+                                    {{/havePreview}}
+                                    {{#hasHavePreviewMore}}<span class="market-feed-more">+{{havePreviewMoreCount}}</span>{{/hasHavePreviewMore}}
+                                    {{/hasHavePreview}}
+                                    {{^hasHavePreview}}<span class="market-feed-side-empty">—</span>{{/hasHavePreview}}
+                                </div>
+                            </div>
+                            <span class="market-feed-swap" aria-hidden="true">⇌</span>
+                            <div class="market-feed-side" data-side="want">
+                                <span class="market-feed-side-label">WANT</span>
+                                <div class="market-feed-strip">
+                                    {{#hasWantPreview}}
+                                    {{#wantPreview}}
+                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
+                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
+                                        {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
+                                    </span>
+                                    {{/wantPreview}}
+                                    {{#hasWantPreviewMore}}<span class="market-feed-more">+{{wantPreviewMoreCount}}</span>{{/hasWantPreviewMore}}
+                                    {{/hasWantPreview}}
+                                    {{^hasWantPreview}}<span class="market-feed-side-empty">—</span>{{/hasWantPreview}}
+                                </div>
+                            </div>
+                        </div>
+                        {{/isTrade}}
+                        {{#isSell}}
+                        <div class="market-feed-deal is-single">
+                            {{#hasHavePreview}}
+                            <div class="market-feed-side" data-side="have">
+                                <span class="market-feed-side-label">HAVE</span>
+                                <div class="market-feed-strip">
+                                    {{#havePreview}}
+                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
+                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
+                                        {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
+                                    </span>
+                                    {{/havePreview}}
+                                    {{#hasHavePreviewMore}}<span class="market-feed-more">+{{havePreviewMoreCount}}</span>{{/hasHavePreviewMore}}
+                                </div>
+                            </div>
+                            {{/hasHavePreview}}
+                            {{#hasWantPreview}}
+                            {{^hasHavePreview}}
+                            <div class="market-feed-side" data-side="want">
+                                <span class="market-feed-side-label">WANT</span>
+                                <div class="market-feed-strip">
+                                    {{#wantPreview}}
+                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
+                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
+                                        {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
+                                    </span>
+                                    {{/wantPreview}}
+                                    {{#hasWantPreviewMore}}<span class="market-feed-more">+{{wantPreviewMoreCount}}</span>{{/hasWantPreviewMore}}
+                                </div>
+                            </div>
+                            {{/hasHavePreview}}
+                            {{/hasWantPreview}}
+                        </div>
+                        {{/isSell}}
+                        {{/hasObjektPreview}}
+                        {{^hasObjektPreview}}
+                        <p class="market-feed-note">{{title}}</p>
+                        {{/hasObjektPreview}}
+                    </a>
+                </article>
+                {{/articleList}}
+                {{^articleList}}
+                <div class="market-feed-empty">
+                    <span class="material-symbols-outlined text-outline text-4xl mb-2" data-icon="inbox">inbox</span>
+                    <p class="text-on-surface-variant font-medium">
+                        {{#hasMarketAttrFilter}}조건에 맞는 글이 없습니다.{{/hasMarketAttrFilter}}
+                        {{^hasMarketAttrFilter}}{{#hasSearchKeyword}}검색 결과가 없습니다.{{/hasSearchKeyword}}{{^hasSearchKeyword}}아직 등록된 글이 없습니다.{{/hasSearchKeyword}}{{/hasMarketAttrFilter}}
+                    </p>
+                </div>
+                {{/articleList}}
+            </div>
             {{/isMarketBoard}}
 
+            {{^isMarketBoard}}
             <!-- 게시판 테이블 영역 -->
             <div class="article-board-list w-full overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface-container-lowest/40 mb-8">
 
                 <!-- 테이블 헤더 -->
-                <div class="article-board-heading{{#isTrade}} is-market{{/isTrade}}{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-3.5 bg-surface-container-high/60 border-b border-outline-variant/40 text-on-surface-variant font-semibold text-sm text-center">
+                <div class="article-board-heading{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-3.5 bg-surface-container-high/60 border-b border-outline-variant/40 text-on-surface-variant font-semibold text-sm text-center">
                     <div class="article-board-num">번호</div>
-                    {{#isTrade}}<div class="article-board-swap">분류</div>{{/isTrade}}
-                    <div class="article-board-subject">{{^isMarketBoard}}제목{{/isMarketBoard}}</div>
+                    <div class="article-board-subject">제목</div>
                     <div class="article-board-author">작성자</div>
                     <div class="article-board-date">날짜</div>
                     {{^hideRecommendations}}<div class="article-board-likes">추천</div>{{/hideRecommendations}}
@@ -128,54 +240,12 @@
                 <!-- 테이블 바디 (게시글 목록 루프) -->
                 <div class="divide-y divide-outline-variant/20">
                     {{#articleList}}
-                        <div class="article-board-row{{#isTrade}} is-market{{/isTrade}}{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-4 items-center text-center text-sm text-on-surface hover:bg-surface-container-highest/30 transition-colors">
+                        <div class="article-board-row{{#hideRecommendations}} is-no-likes{{/hideRecommendations}} px-6 py-4 items-center text-center text-sm text-on-surface hover:bg-surface-container-highest/30 transition-colors">
                             <div class="article-board-num text-outline font-mono">{{displayId}}</div>
-                            {{#isTrade}}
-                            <div class="article-board-swap">
-                                {{#hasMemberSwap}}
-                                <span class="article-swap">
-                                    {{#hasHaveLead}}<span class="article-swap-name" style="--artist-color:{{haveLeadColor}}">{{haveLeadName}}</span>{{#hasHaveMore}} 외 {{haveMoreCount}}명{{/hasHaveMore}}{{/hasHaveLead}}
-                                    {{#showTradeSwap}} <span class="article-swap-arrow" aria-hidden="true">&lt;-&gt;</span> {{/showTradeSwap}}
-                                    {{#hasWantLead}}<span class="article-swap-name" style="--artist-color:{{wantLeadColor}}">{{wantLeadName}}</span>{{#hasWantMore}} 외 {{wantMoreCount}}명{{/hasWantMore}}{{/hasWantLead}}
-                                </span>
-                                {{/hasMemberSwap}}
-                            </div>
-                            {{/isTrade}}
                             <div class="article-board-subject text-left font-medium">
-                                {{#hasObjektPreview}}
-                                <a href="/article/{{#category}}{{category}}{{/category}}{{^category}}trade{{/category}}/{{id}}" class="article-board-subject-link article-board-subject-link--preview hover:text-primary-container transition-colors" aria-label="{{title}}">
-                                    <div class="article-board-objekt-previews">
-                                        {{#hasHavePreview}}
-                                        <div class="article-board-objekt-strip" data-side="have">
-                                            {{#havePreview}}
-                                            <span class="article-board-objekt-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
-                                                {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
-                                                {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
-                                            </span>
-                                            {{/havePreview}}
-                                            {{#hasHavePreviewMore}}<span class="article-board-objekt-more">+{{havePreviewMoreCount}}</span>{{/hasHavePreviewMore}}
-                                        </div>
-                                        {{/hasHavePreview}}
-                                        {{#showTradeSwap}}<span class="article-board-objekt-arrow" aria-hidden="true">↔</span>{{/showTradeSwap}}
-                                        {{#hasWantPreview}}
-                                        <div class="article-board-objekt-strip" data-side="want">
-                                            {{#wantPreview}}
-                                            <span class="article-board-objekt-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
-                                                {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
-                                                {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
-                                            </span>
-                                            {{/wantPreview}}
-                                            {{#hasWantPreviewMore}}<span class="article-board-objekt-more">+{{wantPreviewMoreCount}}</span>{{/hasWantPreviewMore}}
-                                        </div>
-                                        {{/hasWantPreview}}
-                                    </div>
-                                </a>
-                                {{/hasObjektPreview}}
-                                {{^hasObjektPreview}}
                                 <a href="/article/{{#category}}{{category}}{{/category}}{{^category}}trade{{/category}}/{{id}}" class="article-board-subject-link hover:text-primary-container transition-colors">
                                     {{title}}
                                 </a>
-                                {{/hasObjektPreview}}
                             </div>
                             <div class="article-board-author text-on-surface-variant truncate">{{userId}}</div>
                             <div class="article-board-date text-xs text-outline">{{formattedDate}}</div>
@@ -183,7 +253,6 @@
                         </div>
                     {{/articleList}}
 
-                    <!-- 게시글이 없을 경우 -->
                     {{^articleList}}
                         <div class="py-16 text-center">
                             <span class="material-symbols-outlined text-outline text-4xl mb-2" data-icon="inbox">inbox</span>
@@ -192,6 +261,7 @@
                     {{/articleList}}
                 </div>
             </div>
+            {{/isMarketBoard}}
 
             <!-- 하단 컨트롤 영역 (왼쪽: 검색 기능 / 오른쪽: 글쓰기 버튼) -->
             <div class="article-board-controls flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
@@ -200,9 +270,16 @@
                 <form action="/article/{{category}}" method="get" class="article-board-search flex items-center gap-2 w-full sm:w-auto">
                     <label class="site-search-field article-board-search-type shrink-0">
                         <select name="type" aria-label="검색 유형">
+                            {{#isMarketBoard}}
+                            <option value="writer" {{#isSearchWriter}}selected{{/isSearchWriter}}>작성자</option>
+                            <option value="title" {{#isSearchTitle}}selected{{/isSearchTitle}}>제목</option>
+                            <option value="content" {{#isSearchContent}}selected{{/isSearchContent}}>내용</option>
+                            {{/isMarketBoard}}
+                            {{^isMarketBoard}}
                             <option value="title" {{#isSearchTitle}}selected{{/isSearchTitle}}>제목</option>
                             <option value="content" {{#isSearchContent}}selected{{/isSearchContent}}>내용</option>
                             <option value="writer" {{#isSearchWriter}}selected{{/isSearchWriter}}>작성자</option>
+                            {{/isMarketBoard}}
                         </select>
                     </label>
                     {{#isMarketBoard}}
@@ -224,7 +301,7 @@
                     {{#isAdmin}}
                             <a href="/article/{{category}}/new{{#isSell}}?objektSide={{selectedObjektSide}}{{/isSell}}" class="article-write-btn md-btn md-btn-filled py-2.5 px-5 rounded-full bg-primary-container text-black font-headline-sm text-sm font-bold tracking-tight transition-all duration-200 btn-glow active:scale-[0.98] flex items-center gap-1.5 shadow-md">
                                 <span class="material-symbols-outlined text-[18px] text-black" data-icon="edit">edit</span>
-                                <span class="text-black">글 쓰기</span>
+                                <span class="text-black">{{#isTrade}}새 교환{{/isTrade}}{{#isSell}}새 거래{{/isSell}}{{^isMarketBoard}}글 쓰기{{/isMarketBoard}}</span>
                             </a>
                         {{/isAdmin}}
 
