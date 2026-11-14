@@ -87,8 +87,14 @@ public final class ArticleMemberSwap {
             Map<String, Object> row = new LinkedHashMap<>();
             String thumb = blank(link.getThumbnailImage());
             if (thumb.isEmpty()) thumb = blank(link.getFrontImage());
+            String season = blank(link.getSeason());
+            String member = blank(link.getMemberName());
+            String collectionNo = blank(link.getCollectionNo());
             row.put("thumbnailImage", thumb);
-            row.put("collectionNo", blank(link.getCollectionNo()));
+            row.put("season", season);
+            row.put("memberName", member);
+            row.put("collectionNo", collectionNo);
+            row.put("previewTip", previewTip(season, member, collectionNo));
             row.put("hasImage", !thumb.isEmpty());
             out.add(row);
             shown++;
@@ -103,6 +109,21 @@ public final class ArticleMemberSwap {
             if (link != null) total++;
         }
         return Math.max(0, total - limit);
+    }
+
+    /** 목록 썸네일 호버용: 시즌 · 멤버 · 번호 (비어 있는 값은 생략). 시리얼은 글 링크에 없음. */
+    static String previewTip(String season, String member, String collectionNo) {
+        StringBuilder tip = new StringBuilder();
+        appendTipPart(tip, blank(season));
+        appendTipPart(tip, blank(member));
+        appendTipPart(tip, blank(collectionNo));
+        return tip.toString();
+    }
+
+    private static void appendTipPart(StringBuilder tip, String part) {
+        if (part.isEmpty()) return;
+        if (!tip.isEmpty()) tip.append(" · ");
+        tip.append(part);
     }
 
     private static boolean matchesName(String stored, String selected) {

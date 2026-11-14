@@ -82,7 +82,11 @@ class ArticleMemberSwapTest {
         assertThat(ArticleMemberSwap.previewThumbs(List.of(a, b, c), 2)).hasSize(2);
         assertThat(ArticleMemberSwap.previewMoreCount(List.of(a, b, c), 2)).isEqualTo(1);
         assertThat(ArticleMemberSwap.previewThumbs(List.of(a, b, c), 2).get(0).get("hasImage")).isEqualTo(true);
+        assertThat(ArticleMemberSwap.previewThumbs(List.of(a, b, c), 2).get(0).get("previewTip"))
+                .isEqualTo("Cream02 · 코토네 · 369Z");
         assertThat(ArticleMemberSwap.previewThumbs(List.of(c), 2).get(0).get("hasImage")).isEqualTo(false);
+        assertThat(ArticleMemberSwap.previewTip("Cream02", "코토네", "369Z")).isEqualTo("Cream02 · 코토네 · 369Z");
+        assertThat(ArticleMemberSwap.previewTip("", "", "369Z")).isEqualTo("369Z");
     }
 
     @Test void previewCapsMovesSpareSlotsToTheCrowdedSide() {

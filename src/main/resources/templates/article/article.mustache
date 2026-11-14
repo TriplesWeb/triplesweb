@@ -139,8 +139,8 @@
                                 <div class="market-feed-strip">
                                     {{#hasHavePreview}}
                                     {{#havePreview}}
-                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
-                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
+                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" {{#previewTip}}data-tip="{{previewTip}}" title="{{previewTip}}"{{/previewTip}}>
+                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="{{previewTip}}" loading="lazy" decoding="async">{{/hasImage}}
                                         {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
                                     </span>
                                     {{/havePreview}}
@@ -155,8 +155,8 @@
                                 <div class="market-feed-strip">
                                     {{#hasWantPreview}}
                                     {{#wantPreview}}
-                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
-                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
+                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" {{#previewTip}}data-tip="{{previewTip}}" title="{{previewTip}}"{{/previewTip}}>
+                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="{{previewTip}}" loading="lazy" decoding="async">{{/hasImage}}
                                         {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
                                     </span>
                                     {{/wantPreview}}
@@ -174,8 +174,8 @@
                                 <span class="market-feed-side-label">HAVE</span>
                                 <div class="market-feed-strip">
                                     {{#havePreview}}
-                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
-                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
+                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" {{#previewTip}}data-tip="{{previewTip}}" title="{{previewTip}}"{{/previewTip}}>
+                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="{{previewTip}}" loading="lazy" decoding="async">{{/hasImage}}
                                         {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
                                     </span>
                                     {{/havePreview}}
@@ -189,8 +189,8 @@
                                 <span class="market-feed-side-label">WANT</span>
                                 <div class="market-feed-strip">
                                     {{#wantPreview}}
-                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" title="{{collectionNo}}">
-                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
+                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" {{#previewTip}}data-tip="{{previewTip}}" title="{{previewTip}}"{{/previewTip}}>
+                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="{{previewTip}}" loading="lazy" decoding="async">{{/hasImage}}
                                         {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
                                     </span>
                                     {{/wantPreview}}
