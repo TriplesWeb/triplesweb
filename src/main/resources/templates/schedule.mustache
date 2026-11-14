@@ -27,6 +27,10 @@
 
             {{#isAdmin}}
             <div class="schedule-page-actions">
+                <button type="button" class="md-btn md-btn-tonal btn-custom-secondary" onclick="showDecorationModal()">
+                    <span class="material-symbols-outlined">image</span>
+                    유닛·기념일 관리
+                </button>
                 <button type="button" class="md-btn md-btn-filled btn-custom-primary" onclick="showAddModal()">
                     <span class="material-symbols-outlined">add</span>
                     스케줄 추가
@@ -73,6 +77,8 @@
                         <span class="schedule-view-label">일정 제목</span>
                         <span id="modalScheduleCategory" class="schedule-category-label"></span>
                         <h3 id="modalScheduleTitle" class="text-lg font-bold leading-snug text-white"></h3>
+                        <img id="modalScheduleImage" class="hidden mt-3 max-h-64 w-full rounded-xl object-contain" alt="일정 이미지">
+                        <p id="modalScheduleDescription" class="hidden whitespace-pre-wrap text-sm leading-relaxed text-[#b9cac4]"></p>
                     </div>
                     <div class="schedule-view-dates">
                         <div class="schedule-view-date">
@@ -202,11 +208,135 @@
         </div>
     </div>
 
+    <!-- 유닛·기념일 이미지 관리 -->
+    {{#isAdmin}}
+    <div class="site-modal" id="decorationModal" tabindex="-1" aria-labelledby="decorationLabel" aria-hidden="true">
+        <div class="site-modal-dialog">
+            <div class="site-modal-panel">
+                <div class="site-modal-header">
+                    <h2 id="decorationLabel" class="site-modal-title flex items-center gap-2 text-brand">
+                        <span class="material-symbols-outlined">image</span> 유닛·기념일 관리
+                    </h2>
+                    <button type="button" class="site-modal-close" data-site-dismiss="modal" aria-label="닫기"></button>
+                </div>
+                <form id="decorationForm" class="m-0">
+                    <div class="site-modal-body space-y-3 p-4">
+                        <input type="hidden" id="decorationId">
+                        <div><label class="site-label" for="decorationTitle">제목</label><input id="decorationTitle" name="title" class="site-field" maxlength="120" required></div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="site-label" for="decorationKind">구분</label><select id="decorationKind" name="kind" class="site-field"><option value="UNIT">유닛 일정</option><option value="ANNIVERSARY">기념일</option></select></div>
+                            <div><label class="site-label" for="decorationDate">날짜</label><input id="decorationDate" name="eventDate" type="date" class="site-field" required></div>
+                        </div>
+                        <div><label class="site-label" for="decorationUnit">유닛명 (선택)</label><input id="decorationUnit" name="unitName" class="site-field" maxlength="80"></div>
+                        <div><label class="site-label" for="decorationDescription">설명</label><textarea id="decorationDescription" name="description" class="site-field" rows="3" maxlength="500"></textarea></div>
+                        <div class="grid grid-cols-2 items-end gap-3">
+                            <div><label class="site-label" for="decorationColor">표시 색상</label><input id="decorationColor" name="color" type="color" value="#00f5d4" class="site-field h-11"></div>
+                            <div><label class="site-label" for="decorationImage">스티커 이미지</label><input id="decorationImage" name="image" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" class="site-field"></div>
+                        </div>
+                        <img id="decorationPreview" class="hidden max-h-40 rounded-xl object-contain" alt="업로드 이미지 미리보기">
+                        <label class="flex items-center gap-2 text-sm text-[#b9cac4]"><input id="decorationClearImage" type="checkbox"> 기존 이미지 제거</label>
+                    </div>
+                    <div class="site-modal-footer">
+                        <button type="button" id="decorationReset" class="btn-custom-secondary">새로 등록</button>
+                        <button type="submit" class="md-btn md-btn-filled btn-custom-primary">저장</button>
+                    </div>
+                </form>
+                <div class="border-t border-white/10 p-4">
+                    <h3 class="mb-3 text-sm font-bold text-white">등록된 항목</h3>
+                    <div id="decorationList" class="space-y-2"><p class="text-sm text-[#b9cac4]">불러오는 중...</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{/isAdmin}}
+
     <script src="{{#asset}}/js/site-ui.js{{/asset}}"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/ko.global.min.js"></script>
 
     <script>
+        {{#isAdmin}}
+        let decorationItems = [];
+        function decorationHeaders() {
+            const headers = {};
+            return window.AboutAdminAuth?.applyAuthHeaders(headers) || headers;
+        }
+        function showDecorationModal() {
+            const modal = document.getElementById('decorationModal');
+            scheduleModal(modal).show();
+            loadDecorations();
+        }
+        function resetDecorationForm() {
+            document.getElementById('decorationForm').reset();
+            document.getElementById('decorationId').value = '';
+            document.getElementById('decorationColor').value = '#00f5d4';
+            document.getElementById('decorationClearImage').checked = false;
+            const preview = document.getElementById('decorationPreview');
+            preview.classList.add('hidden'); preview.removeAttribute('src');
+        }
+        async function loadDecorations() {
+            const list = document.getElementById('decorationList');
+            try {
+                const response = await fetch('/api/calendar-decorations', {credentials:'same-origin'});
+                if (!response.ok) throw new Error('목록을 불러오지 못했습니다.');
+                decorationItems = await response.json();
+                list.replaceChildren();
+                if (!decorationItems.length) {
+                    const empty = document.createElement('p'); empty.className='text-sm text-[#b9cac4]'; empty.textContent='등록된 유닛·기념일이 없습니다.'; list.appendChild(empty); return;
+                }
+                decorationItems.forEach(item => {
+                    const row = document.createElement('div'); row.className='flex items-center gap-3 rounded-lg border border-white/10 p-2';
+                    if (item.imageUrl) { const img=document.createElement('img'); img.src=item.imageUrl; img.className='h-12 w-12 rounded object-contain'; img.alt=''; row.appendChild(img); }
+                    const label=document.createElement('div'); label.className='min-w-0 flex-1';
+                    const name=document.createElement('p'); name.className='truncate text-sm font-semibold text-white'; name.textContent=item.title;
+                    const date=document.createElement('p'); date.className='text-xs text-[#b9cac4]'; date.textContent=item.eventDate + (item.unitName ? ' · '+item.unitName : '');
+                    label.append(name,date); row.appendChild(label);
+                    const edit=document.createElement('button'); edit.type='button'; edit.className='btn-custom-secondary text-xs'; edit.textContent='수정'; edit.addEventListener('click',()=>editDecoration(item));
+                    const remove=document.createElement('button'); remove.type='button'; remove.className='btn-custom-danger text-xs'; remove.textContent='삭제'; remove.addEventListener('click',()=>deleteDecoration(item.id));
+                    row.append(edit,remove); list.appendChild(row);
+                });
+            } catch(error) { list.textContent=error.message; }
+        }
+        function editDecoration(item) {
+            document.getElementById('decorationId').value=item.id;
+            document.getElementById('decorationTitle').value=item.title;
+            document.getElementById('decorationKind').value=item.kind;
+            document.getElementById('decorationDate').value=item.eventDate;
+            document.getElementById('decorationUnit').value=item.unitName||'';
+            document.getElementById('decorationDescription').value=item.description||'';
+            document.getElementById('decorationColor').value=item.color||'#00f5d4';
+            document.getElementById('decorationClearImage').checked=false;
+            const preview=document.getElementById('decorationPreview');
+            if(item.imageUrl){preview.src=item.imageUrl;preview.classList.remove('hidden');}else{preview.removeAttribute('src');preview.classList.add('hidden');}
+        }
+        async function deleteDecoration(id) {
+            if(!confirm('이 항목을 삭제할까요?')) return;
+            const response=await fetch('/api/calendar-decorations/'+id,{method:'DELETE',headers:decorationHeaders(),credentials:'same-origin'});
+            if(!response.ok){alert('삭제하지 못했습니다.');return;}
+            await loadDecorations(); document.getElementById('calendar') && window.location.reload();
+        }
+        document.getElementById('decorationReset').addEventListener('click',resetDecorationForm);
+        document.getElementById('decorationImage').addEventListener('change',event=>{
+            const file=event.target.files?.[0], preview=document.getElementById('decorationPreview');
+            if(!file){preview.classList.add('hidden');return;}
+            if(file.size>10*1024*1024){alert('이미지는 10MB 이하만 가능합니다.');event.target.value='';return;}
+            preview.src=URL.createObjectURL(file);preview.classList.remove('hidden');
+        });
+        document.getElementById('decorationForm').addEventListener('submit',async event=>{
+            event.preventDefault();
+            const id=document.getElementById('decorationId').value;
+            const data=new FormData(event.currentTarget);
+            data.delete('image');
+            const image=document.getElementById('decorationImage').files[0]; if(image)data.append('image',image);
+            data.set('clearImage',document.getElementById('decorationClearImage').checked?'true':'false');
+            const response=await fetch('/api/calendar-decorations'+(id?'/'+id:''),{method:'POST',headers:decorationHeaders(),credentials:'same-origin',body:data});
+            if(!response.ok){const message=await response.text();alert('저장 실패: '+message);return;}
+            resetDecorationForm();await loadDecorations();
+            const calendarEl=document.getElementById('calendar');
+            if(calendarEl) window.location.reload();
+        });
+        {{/isAdmin}}
+
         function scheduleModal(element) {
             return window.SiteUi.modal(element);
         }
@@ -275,7 +405,7 @@
         function getCalendarEvents() {
             try {
                 const injectedEvents = {{{schedulesJson}}};
-                return Array.isArray(injectedEvents) ? injectedEvents.map(toCalendarEvent) : [];
+                return Array.isArray(injectedEvents) ? injectedEvents : [];
             } catch (error) {
                 console.error('스케줄 데이터 파싱 실패:', error);
                 return [];
@@ -373,6 +503,20 @@
 
                     const category=document.createElement('span');
                     category.className='schedule-category-label';category.textContent=event.extendedProps.categoryLabel||'일정';
+                    const imageUrl = event.extendedProps.imageUrl;
+                    if (imageUrl) {
+                        const image = document.createElement('img');
+                        image.src = imageUrl; image.alt = event.title || '일정 이미지';
+                        image.className = 'mb-2 max-h-24 rounded-lg object-contain';
+                        item.appendChild(image);
+                    }
+                    const description = event.extendedProps.description;
+                    if (description) {
+                        const summary = document.createElement('p');
+                        summary.className = 'mb-2 whitespace-pre-wrap text-xs text-[#b9cac4]';
+                        summary.textContent = description;
+                        item.appendChild(summary);
+                    }
                     item.append(category, title, dates, actions);
                     detailElement.appendChild(item);
                 });
@@ -383,15 +527,32 @@
                 viewModalElement.style.setProperty('--schedule-color',event.extendedProps.color||'#00f5d4');
                 document.getElementById('modalScheduleCategory').textContent=event.extendedProps.categoryLabel||'일정';
                 document.getElementById('modalScheduleTitle').textContent = event.title || '';
+                const modalImage = document.getElementById('modalScheduleImage');
+                const modalDescription = document.getElementById('modalScheduleDescription');
+                if (modalImage) {
+                    const imageUrl = event.extendedProps.imageUrl;
+                    modalImage.classList.toggle('hidden', !imageUrl);
+                    if (imageUrl) modalImage.src = imageUrl; else modalImage.removeAttribute('src');
+                }
+                if (modalDescription) {
+                    const description = event.extendedProps.description || '';
+                    modalDescription.textContent = description;
+                    modalDescription.classList.toggle('hidden', !description);
+                }
                 document.getElementById('modalScheduleStart').textContent = formatDate(event.startStr);
                 const endValue = formatDate(getRawEnd(event));
                 document.getElementById('modalScheduleEnd').textContent = endValue === '-' ? '하루 일정' : endValue;
 
+                const isCalendarDecoration = ['BIRTHDAY','UNIT','ANNIVERSARY'].includes(event.extendedProps.kind);
                 const deleteForm = document.getElementById('deleteForm');
-                if (deleteForm) deleteForm.action = `/delete/${encodeURIComponent(event.id)}`;
+                if (deleteForm) {
+                    deleteForm.action = `/delete/${encodeURIComponent(event.id)}`;
+                    deleteForm.classList.toggle('hidden', isCalendarDecoration);
+                }
 
                 const editButton = document.getElementById('editBtn');
                 if (editButton) {
+                    editButton.classList.toggle('hidden', isCalendarDecoration);
                     editButton.onclick = function () {
                         if (!selectedEvent) return;
                         document.getElementById('editScheduleId').value = selectedEvent.id;
@@ -425,13 +586,44 @@
                     today: '오늘',
                     month: '월간'
                 },
-                events: getCalendarEvents(),
+                events: function(fetchInfo, successCallback, failureCallback) {
+                    const params = new URLSearchParams({start: fetchInfo.startStr.slice(0,10), end: fetchInfo.endStr.slice(0,10)});
+                    Promise.all([
+                        fetch('/api/calendar-decorations?' + params).then(r => { if(!r.ok) throw new Error('장식 일정 조회 실패'); return r.json(); }),
+                        fetch('/api/calendar-decorations/birthdays?' + params).then(r => { if(!r.ok) throw new Error('생일 조회 실패'); return r.json(); })
+                    ]).then(([decorations, birthdays]) => {
+                        const custom = [...decorations.map(item => ({
+                            id: 'decoration-' + item.id,
+                            title: (item.kind === 'UNIT' ? '★ ' : '🎉 ') + item.title,
+                            start: item.eventDate, color: item.color, categoryLabel: item.kind === 'UNIT' ? '유닛' : '기념일',
+                            kind: item.kind, imageUrl: item.imageUrl, description: item.description,
+                            unitName: item.unitName, rawEnd: null
+                        })), ...birthdays];
+                        successCallback([...getCalendarEvents(), ...custom].map(toCalendarEvent));
+                    }).catch(error => { console.error(error); failureCallback(error); });
+                },
                 windowResize: function() {
                     const maximum=window.matchMedia('(max-width: 600px)').matches ? 2 : 3;
                     if(calendar.getOption('dayMaxEvents')!==maximum)calendar.setOption('dayMaxEvents',maximum);
                 },
                 eventDidMount: function(info) {
                     info.el.style.setProperty('--schedule-color',info.event.extendedProps.color||'#00f5d4');
+                },
+                eventContent: function(arg) {
+                    const wrap = document.createElement('span');
+                    wrap.className = 'inline-flex min-w-0 items-center gap-1';
+                    const imageUrl = arg.event.extendedProps.imageUrl;
+                    if (imageUrl) {
+                        const image = document.createElement('img');
+                        image.src = imageUrl; image.alt = '';
+                        image.className = 'h-4 w-4 shrink-0 rounded object-contain';
+                        wrap.appendChild(image);
+                    }
+                    const label = document.createElement('span');
+                    label.className = 'min-w-0 break-words';
+                    label.textContent = arg.event.title || '';
+                    wrap.appendChild(label);
+                    return { domNodes: [wrap] };
                 },
                 dateClick: function (info) {
                     renderSelectedDate(info.dateStr, info.date);

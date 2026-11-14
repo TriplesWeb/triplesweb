@@ -48,6 +48,7 @@ class ScheduleCategoryControllerTest {
         String html=mvc.perform(get("/schedule").requestAttr(org.springframework.security.web.csrf.CsrfToken.class.getName(),
                 new org.springframework.security.web.csrf.DefaultCsrfToken("X-XSRF-TOKEN","_csrf","fixture-csrf"))).andExpect(status().isOk()).andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
         assertThat(html).contains("addScheduleCategory","editScheduleCategory","#a78bfa","#fb923c","#22aeff","#f87171","#7dd3fc","🎂 윤서연 생일");
+        assertThat(html).contains("유닛·기념일 관리","/api/calendar-decorations/birthdays");
         Files.createDirectories(Path.of("build/filter-pages"));
         Files.writeString(Path.of("build/filter-pages/schedule.html"),html);
     }
