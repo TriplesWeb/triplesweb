@@ -55,8 +55,10 @@ class ArticleObjektOrderingTest {
                 .extracting(item -> item.get("member"))
                 .contains("지연", "윤서연", "김유연 × 박시온");
         for (var model : List.of(fresh, edited)) {
-                assertThat(model.get("objektMemberOptions")).isEqualTo(List.of("윤서연", "정혜린", "김유연", "박시온", "지연"));
-                assertThat(model.get("hasOtherObjektOption")).isEqualTo(true);
+                assertThat((List<Map<String, Object>>) model.get("memberPickerOptions"))
+                        .extracting(row -> row.get("value"))
+                        .containsExactly("윤서연", "정혜린", "김유연", "박시온", "지연");
+                assertThat(model.get("selectedGroup")).isEqualTo("all");
                 assertThat(model.get("objektSeasonOptions")).isEqualTo(List.of("Cream02", "Binary02", "Ever01", "Atom01"));
             }
         }
@@ -73,8 +75,10 @@ class ArticleObjektOrderingTest {
         assertThat(controller.objektOptions("S21", "", "", "", "members", 0, 24, "", "latest")).containsEntry("total", 3);
         assertThat(controller.objektOptions("", "", "", "", "other", 0, 24, "", "latest")).containsEntry("total", 1);
         var model = new ExtendedModelMap(); controller.showArticleForm("trade", model);
-        assertThat(model.get("objektMemberOptions")).isEqualTo(List.of("김채원", "설린"));
-        assertThat(model.get("hasOtherObjektOption")).isEqualTo(true);
+        assertThat((List<Map<String, Object>>) model.get("memberPickerOptions"))
+                .extracting(row -> row.get("value"))
+                .containsExactly("김채원", "설린");
+        assertThat(model.get("selectedGroup")).isEqualTo("all");
     }
 
     @Test @SuppressWarnings("unchecked") void objektOptionsFiltersKindAndSortsByNumber() {
