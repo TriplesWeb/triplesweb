@@ -1,4 +1,9 @@
-<label class="ar-field">{{mediaDateLabel}}
+<label class="ar-field is-ymd">{{mediaDateLabel}}
+    <span class="ar-ymd" data-ymd>
+        <select data-ymd-year aria-label="연도"><option value="">연도</option></select>
+        <select data-ymd-month aria-label="월"><option value="">월</option></select>
+        <select data-ymd-day aria-label="일"><option value="">일</option></select>
+    </span>
     <input type="date" name="registeredOn" required>
     <span class="ar-field-hint">실제로 올라온 날짜를 선택하세요.</span>
 </label>

@@ -58,6 +58,8 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("site-section-tabs")))
                 .andExpect(content().string(containsString("사진 날짜")))
                 .andExpect(content().string(containsString("실제로 올라온 날짜를 선택하세요.")))
+                .andExpect(content().string(containsString("data-ymd-year")))
+                .andExpect(content().string(containsString("aria-label=\"연도\"")))
                 .andExpect(content().string(containsString("S1.png")))
                 .andExpect(content().string(containsString("id=\"archive-member-picker\"")))
                 .andExpect(content().string(not(containsString("archive-symbol-picker"))))

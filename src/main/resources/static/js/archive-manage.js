@@ -325,6 +325,8 @@
         applyArtists(uploadDialog, "");
         if (uploadFile) releaseUrl(uploadFile._archiveLastFile);
         showPreview(uploadPreview, "");
+        window.bindArchiveDateFields?.(uploadForm);
+        uploadForm.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName);
         openDialog(uploadDialog);
     };
 
@@ -414,6 +416,8 @@
         applyArtists(editDialog, button.dataset.artists || "");
         if (editFile) releaseUrl(editFile._archiveLastFile);
         showPreview(editPreview, button.dataset.url || "");
+        window.bindArchiveDateFields?.(editForm);
+        editForm.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName);
         openDialog(editDialog);
     }
 

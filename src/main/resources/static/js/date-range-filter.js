@@ -29,22 +29,29 @@
     if (current && select.value !== (current.length === 4 ? current : pad(current))) select.value = "";
   };
   const enhanceDateInput = (input) => {
-    if (input.dataset.ymdReady) return;
-    input.dataset.ymdReady = "true";
-    const wrap = document.createElement("span");
-    wrap.className = "ar-ymd";
-    wrap.dataset.ymd = "";
-    const year = document.createElement("select");
-    const month = document.createElement("select");
-    const day = document.createElement("select");
-    year.dataset.ymdYear = "";
-    month.dataset.ymdMonth = "";
-    day.dataset.ymdDay = "";
-    year.setAttribute("aria-label", "연도");
-    month.setAttribute("aria-label", "월");
-    day.setAttribute("aria-label", "일");
-    wrap.append(year, month, day);
-    input.before(wrap);
+    if (!input) return;
+    let wrap = input.parentElement?.querySelector("[data-ymd]");
+    if (!wrap) {
+      if (input.dataset.ymdReady) return;
+      wrap = document.createElement("span");
+      wrap.className = "ar-ymd";
+      wrap.dataset.ymd = "";
+      const yearSelect = document.createElement("select");
+      const monthSelect = document.createElement("select");
+      const daySelect = document.createElement("select");
+      yearSelect.dataset.ymdYear = "";
+      monthSelect.dataset.ymdMonth = "";
+      daySelect.dataset.ymdDay = "";
+      yearSelect.setAttribute("aria-label", "연도");
+      monthSelect.setAttribute("aria-label", "월");
+      daySelect.setAttribute("aria-label", "일");
+      wrap.append(yearSelect, monthSelect, daySelect);
+      input.before(wrap);
+    }
+    const year = wrap.querySelector("[data-ymd-year]");
+    const month = wrap.querySelector("[data-ymd-month]");
+    const day = wrap.querySelector("[data-ymd-day]");
+    if (!year || !month || !day) return;
     const thisYear = new Date().getFullYear();
     const syncDays = () => {
       const parsed = parseIso(input.value);
@@ -67,6 +74,11 @@
       fillSelect(month, 1, 12, "월", parsed.month, false);
       fillSelect(day, 1, daysInMonth(parsed.year, parsed.month), "일", parsed.day, false);
     };
+    if (input.dataset.ymdReady) {
+      read();
+      return;
+    }
+    input.dataset.ymdReady = "true";
     year.addEventListener("change", () => { syncDays(); write(); });
     month.addEventListener("change", () => { syncDays(); write(); });
     day.addEventListener("change", write);
@@ -75,6 +87,10 @@
     input.closest("label")?.classList.add("is-ymd");
     read();
   };
+  const bindRegisteredDates = (root) => {
+    (root || document).querySelectorAll('input[type="date"][name="registeredOn"]').forEach(enhanceDateInput);
+  };
+  window.bindArchiveDateFields = bindRegisteredDates;
 
   document.querySelectorAll("[data-date-filter]").forEach((root) => {
     const toggle = root.querySelector("[data-date-toggle]");
@@ -130,7 +146,7 @@
       root.closest("form")?.requestSubmit();
     });
   });
-  document.querySelectorAll('input[type="date"][name="registeredOn"]').forEach(enhanceDateInput);
+  bindRegisteredDates(document);
   document.addEventListener("click", (event) => {
     if (event.target.closest("[data-date-filter]")) return;
     document.querySelectorAll("[data-date-popover]").forEach((pop) => { pop.hidden = true; });
