@@ -186,7 +186,27 @@
 .objekt-trade-chip-remove:hover{background:#ff6b6b44;border-color:#ff8f8f88;color:#fff}
 .objekt-trade-chip-remove:focus-visible{outline:2px solid #8decd9;outline-offset:2px}
 .objekt-picker-market-filter{margin:0}
-.objekt-picker-market-filter .objekt-picker-search-row{margin-top:.15rem}
+.objekt-picker-market-filter .objekt-search-row{
+  display:flex;flex-wrap:nowrap;align-items:center;gap:.55rem;width:100%;
+  margin-top:.15rem;padding-top:.85rem;border-top:1px solid rgba(255,255,255,.06)
+}
+.objekt-picker-market-filter .objekt-search{
+  position:relative;display:flex;align-items:center;flex:1 1 auto;min-width:0;width:auto;max-width:none
+}
+.objekt-picker-market-filter .objekt-search-glyph{
+  position:absolute;left:.7rem;top:50%;transform:translateY(-50%);
+  display:inline-flex;align-items:center;justify-content:center;width:1rem;height:1rem;
+  color:#8b97a8;line-height:1;pointer-events:none
+}
+.objekt-picker-market-filter .objekt-search-glyph svg{
+  width:1rem;height:1rem;fill:none;stroke:currentColor;stroke-width:1.8
+}
+.objekt-picker-market-filter .objekt-search .objekt-search-input,
+.objekt-picker-market-filter .objekt-search .site-search__input{
+  padding-left:2.15rem;padding-right:.85rem
+}
+.objekt-picker-market-filter .objekt-reset-button{flex:0 0 auto;width:auto}
+.objekt-picker-market-filter .objekt-reset-button[hidden]{display:none!important}
 .objekt-picker-filter-bar{display:flex;flex-direction:column;gap:.55rem;overflow:visible}
 .objekt-picker-filter-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.55rem .65rem;align-items:center;overflow:visible}
 .objekt-picker-search-row{display:flex;flex-wrap:wrap;align-items:center;gap:.55rem}

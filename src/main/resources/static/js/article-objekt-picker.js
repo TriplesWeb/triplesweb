@@ -588,15 +588,6 @@
         }
       });
     }
-    const searchBtn = document.getElementById('objektFilterSearchBtn');
-    if (searchBtn) {
-      searchBtn.addEventListener('click', () => {
-        window.clearTimeout(searchTimer);
-        syncFilterChrome();
-        if (open) load(true);
-        else setOpen(true);
-      });
-    }
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
         seasonMenu.reset();
