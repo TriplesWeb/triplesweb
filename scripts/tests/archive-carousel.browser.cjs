@@ -35,7 +35,7 @@ ${css}
         <button type="button" class="ar-icon-btn" id="archiveGalleryNext">다음</button>
       </div>
     </div>
-    <a class="ar-more-link" href="/archive/image_archive/all">더보기</a>
+    <a class="ar-more-link" href="/archive/all">더보기</a>
   </div>
   <section class="ar-grid" id="archiveGrid">${cards}</section>
 </main>

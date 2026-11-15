@@ -31,10 +31,12 @@
 .ar-headline h1 { margin: 0.7rem 0 0; font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: clamp(2rem, 4vw, 2.8rem); line-height: 1.12; font-weight: 700; letter-spacing: -0.02em; color: #d7fff3; }
 .ar-headline h1 span { color: #00f5d4; font-weight: 500; font-size: 0.58em; }
 .ar-headline p { max-width: 38rem; margin: 0.8rem 0 0; color: #b9cac4; line-height: 1.7; }
-.ar-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.4rem; padding-top: 1.1rem; border-top: 1px solid rgba(255, 255, 255, 0.08); }
-.ar-pill { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.95rem; border-radius: 9999px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.04); color: #b9cac4; font-size: 0.9rem; }
-.ar-pill.is-active { color: #00f5d4; background: rgba(0, 245, 212, 0.15); border-color: rgba(0, 245, 212, 0.5); font-weight: 650; }
-.ar-dot { width: 0.4rem; height: 0.4rem; border-radius: 9999px; background: #00f5d4; }
+.ar-headline .site-section-tabs {
+    margin-top: 1.25rem;
+    padding-top: 0.35rem;
+    width: 100%;
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
 
 .ar-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
 .ar-stat { min-height: 7.6rem; padding: 1.1rem 1.15rem; display: flex; flex-direction: column; justify-content: space-between; }
@@ -214,10 +216,15 @@
     max-width: var(--chip-size);
     padding: 0.22rem 0.18rem 0.16rem;
 }
-.ar-card .ar-meta .archive-member-chip span {
+.ar-card .ar-meta .archive-member-chip .archive-chip-name {
     min-width: 0;
     max-width: 100%;
     font-size: clamp(0.68rem, calc(var(--chip-size) * 0.22), 0.72rem);
+}
+.ar-card .ar-meta .archive-member-chip.archive-symbol-chip {
+    min-width: calc(var(--chip-image, 2.15rem) + 0.4rem);
+    max-width: calc(var(--chip-image, 2.15rem) + 0.55rem);
+    padding: 0.16rem;
 }
 .archive-member-more {
     position: relative;
@@ -292,7 +299,7 @@
     background: #101116;
     border: 2px solid var(--member-color);
 }
-.archive-member-chip span {
+.archive-member-chip .archive-chip-name {
     margin-top: 0.28rem;
     max-width: 3.6rem;
     overflow: hidden;
@@ -302,6 +309,55 @@
     font-size: 0.72rem;
     font-weight: 700;
     line-height: 1.2;
+}
+.archive-member-chip.archive-symbol-chip {
+    position: relative;
+    min-width: calc(var(--chip-image, 2.15rem) + 0.5rem);
+    max-width: calc(var(--chip-image, 2.15rem) + 0.7rem);
+    padding: 0.18rem;
+}
+.archive-member-chip.archive-symbol-chip img {
+    border-radius: 0.55rem;
+    object-fit: contain;
+    background: transparent;
+}
+.archive-member-chip.archive-symbol-chip .archive-chip-name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+.ar-card-date {
+    margin: 0;
+    color: #b9cac4;
+    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+.archive-symbol-picker .artist-tab-frame,
+.archive-symbol-picker .artist-tab-shine { display: none !important; }
+.archive-symbol-picker .artist-tab-avatar {
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+}
+.archive-symbol-picker .artist-tab-photo {
+    object-fit: contain;
+    object-position: center;
+    background: transparent;
+    border-radius: 0.55rem;
+    border: 1.5px solid color-mix(in srgb, var(--artist-color) 55%, transparent);
+}
+.archive-symbol-picker .mpp-item.is-active .artist-tab-photo {
+    border-color: var(--artist-color);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--artist-color) 35%, transparent);
 }
 .ar-date-filter { position: relative; }
 .ar-date-toggle {
@@ -557,8 +613,8 @@
 }
 
 /* 카드의 큰 사진 규칙과 멤버 배지 이미지를 분리한다. */
-.archive-page .ar-card .archive-member-chip img{width:var(--chip-image, 2.15rem);height:var(--chip-image, 2.15rem);max-width:var(--chip-image, 2.15rem);object-fit:cover;flex:none}
-.archive-page[data-archive-kind] .ar-highlight .archive-member-chip img{width:2.15rem;height:2.15rem;max-width:2.15rem;max-height:2.15rem;object-fit:cover;flex:none}
+.archive-page .ar-card .archive-member-chip img{width:var(--chip-image, 2.15rem);height:var(--chip-image, 2.15rem);max-width:var(--chip-image, 2.15rem);object-fit:contain;flex:none}
+.archive-page[data-archive-kind] .ar-highlight .archive-member-chip img{width:2.15rem;height:2.15rem;max-width:2.15rem;max-height:2.15rem;object-fit:contain;flex:none}
 
 .archive-page.is-browse .ar-grid {
     grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));

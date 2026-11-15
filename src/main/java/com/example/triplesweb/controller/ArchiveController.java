@@ -25,6 +25,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -39,7 +40,19 @@ public class ArchiveController {
     private final AboutAdminAuth aboutAdminAuth;
     private final ArtistRepository artistRepository;
 
-    @GetMapping("/image_archive/all")
+    @GetMapping
+    public String showArchive(@RequestParam(defaultValue = "image") String type,
+                              @RequestParam(defaultValue = "0") int page,
+                              @RequestParam(defaultValue = "9") int size,
+                              @RequestParam(required = false) String q,
+                              @RequestParam(required = false) String from,
+                              @RequestParam(required = false) String to,
+                              @RequestParam(required = false) List<String> members,
+                              HttpServletRequest request, HttpSession session, Model model) {
+        return renderArchive(type, page, size, q, from, to, members, false, request, session, model);
+    }
+
+    @GetMapping("/all")
     public String showAllImages(@RequestParam(defaultValue = "0") int page,
                                 @RequestParam(defaultValue = "24") int size,
                                 @RequestParam(required = false) String q,
@@ -50,16 +63,28 @@ public class ArchiveController {
         return renderArchive("image", page, size, q, from, to, members, true, request, session, model);
     }
 
-    @GetMapping("/{type}_archive")
-    public String showArchive(@PathVariable("type") String typeSlug,
-                              @RequestParam(defaultValue = "0") int page,
-                              @RequestParam(defaultValue = "9") int size,
-                              @RequestParam(required = false) String q,
-                              @RequestParam(required = false) String from,
-                              @RequestParam(required = false) String to,
-                              @RequestParam(required = false) List<String> members,
-                              HttpServletRequest request, HttpSession session, Model model) {
-        return renderArchive(typeSlug, page, size, q, from, to, members, false, request, session, model);
+    @GetMapping("/image_archive")
+    public String redirectImageArchive(HttpServletRequest request) {
+        return redirectWithQuery("/archive", request);
+    }
+
+    @GetMapping("/video_archive")
+    public String redirectVideoArchive(HttpServletRequest request) {
+        return redirectWithQuery("/archive?type=video", request);
+    }
+
+    @GetMapping({"/image_archive/all", "/video_archive/all"})
+    public String redirectBrowseArchive(HttpServletRequest request) {
+        return redirectWithQuery("/archive/all", request);
+    }
+
+    private static String redirectWithQuery(String path, HttpServletRequest request) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(path);
+        request.getParameterMap().forEach((name, values) -> {
+            if (name == null || values == null) return;
+            for (String value : values) builder.queryParam(name, value);
+        });
+        return "redirect:" + builder.build().encode().toUriString();
     }
 
     private String renderArchive(String typeSlug, int page, int size, String q, String from, String to,
@@ -68,11 +93,7 @@ public class ArchiveController {
         boolean isAdmin = aboutAdminAuth.isAdmin(request, session);
         boolean isAuthenticated = isAdmin;
 
-        String key = typeSlug.trim().toUpperCase()
-                .replace('-', '_');
-        if (key.endsWith("_ARCHIVE")) key = key.substring(0, key.length() - "_ARCHIVE".length());
-
-        MediaType type = MediaType.valueOf(key);
+        MediaType type = mediaType(typeSlug);
 
         List<String> selectedMembers = normalizeMembers(members);
         LocalDate fromDate = parseDate(from);
@@ -113,9 +134,13 @@ public class ArchiveController {
         model.addAttribute("hasDateFilter", fromDate != null || toDate != null);
         model.addAttribute("dateQuery", dateQuery(fromText, toText));
         addFilterSummary(model, q, selectedMembers, artists, fromText, toText);
-        addArchivePage(model, archives, type, q, memberQuery(selectedMembers), highlights, browse);
-        if (browse) return "archive/image_browse";
-        return (type == MediaType.IMAGE) ? "archive/image_archive" : "archive/video_archive";
+        addArchivePage(model, archives, type, q, memberQuery(selectedMembers), dateQuery(fromText, toText), highlights, browse);
+        return "archive/archive";
+    }
+
+    private static MediaType mediaType(String typeSlug) {
+        if (typeSlug != null && typeSlug.trim().equalsIgnoreCase("video")) return MediaType.VIDEO;
+        return MediaType.IMAGE;
     }
 
     private static List<String> normalizeMembers(List<String> members) {
@@ -129,7 +154,7 @@ public class ArchiveController {
 
     private static List<Map<String, Object>> memberOptions(List<Artist> artists, List<String> selected) {
         Set<String> chosen = Set.copyOf(selected);
-        List<Map<String, Object>> options = MemberPortraitOptions.fromArtists(artists, false);
+        List<Map<String, Object>> options = MemberPortraitOptions.archivePickerOptions(artists);
         for (Map<String, Object> option : options) {
             option.put("active", chosen.contains(String.valueOf(option.get("value"))));
         }
@@ -150,7 +175,7 @@ public class ArchiveController {
     }
 
     private static LocalDate requireDate(LocalDate registeredOn) {
-        if (registeredOn == null) throw new IllegalArgumentException("등록일을 입력해주세요.");
+        if (registeredOn == null) throw new IllegalArgumentException("실제로 올라온 날짜를 선택하세요.");
         return registeredOn;
     }
 
@@ -182,12 +207,15 @@ public class ArchiveController {
                     if (artist.getName() != null && artist.getName().trim().equalsIgnoreCase(name)) { matched = artist; break; }
                     if (artist.getEngName() != null && artist.getEngName().trim().equalsIgnoreCase(name)) { matched = artist; break; }
                 }
-                String image = matched == null || matched.getDisplayProfileImage() == null ? "" : matched.getDisplayProfileImage();
+                String symbol = MemberPortraitOptions.archiveSymbolLogo(name);
+                String portrait = matched == null || matched.getDisplayProfileImage() == null ? "" : matched.getDisplayProfileImage();
+                String image = !symbol.isBlank() ? symbol : portrait;
                 Map<String, Object> badge = new LinkedHashMap<>();
                 badge.put("name", name);
                 badge.put("color", colors.getOrDefault(keyName, "#b9cac4"));
                 badge.put("image", image);
                 badge.put("hasImage", !image.isBlank());
+                badge.put("hasSymbol", !symbol.isBlank());
                 badges.add(badge);
             }
             Map<String, Object> card = new LinkedHashMap<>();
@@ -207,7 +235,9 @@ public class ArchiveController {
             card.put("otherMemberCount", extra);
             card.put("hasOtherMembers", extra > 0);
             if (extra > 0) card.put("otherMemberNames", String.join(", ", memberNames.subList(1, memberNames.size())));
-            card.put("registeredOn", archive.getRegisteredOn() == null ? "" : archive.getRegisteredOn().toString());
+            String registered = archive.getRegisteredOn() == null ? "" : archive.getRegisteredOn().toString();
+            card.put("registeredOn", registered);
+            card.put("hasRegisteredOn", !registered.isBlank());
             cards.add(card);
         }
         return cards;
@@ -270,7 +300,7 @@ public class ArchiveController {
     }
 
     private void addArchivePage(Model model, Page<Archive> archives, MediaType type, String q, String memberQuery,
-                                List<Map<String, Object>> highlights, boolean browse) {
+                                String dateQuery, List<Map<String, Object>> highlights, boolean browse) {
         int totalPages = archives.getTotalPages();
         int current = archives.getNumber();
         String query = q == null ? "" : q.trim();
@@ -289,12 +319,23 @@ public class ArchiveController {
         model.addAttribute("memberQuery", memberQuery == null ? "" : memberQuery);
         model.addAttribute("query", query);
         model.addAttribute("hasQuery", !query.isEmpty());
-        String listPath = type == MediaType.IMAGE ? "/archive/image_archive" : "/archive/video_archive";
-        model.addAttribute("archiveHomePath", listPath);
-        model.addAttribute("archivePath", browse ? "/archive/image_archive/all" : listPath);
-        model.addAttribute("archiveBrowsePath", "/archive/image_archive/all");
+        boolean video = type == MediaType.VIDEO;
+        String typeQuery = video ? "&type=video" : "";
+        String pageQuery = current > 0 ? "&page=" + current : "";
+        String qQuery = query.isEmpty() ? "" : "&q=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
+        String filterQuery = qQuery + (memberQuery == null ? "" : memberQuery) + (dateQuery == null ? "" : dateQuery);
+        model.addAttribute("archiveHomePath", video ? "/archive?type=video" : "/archive");
+        model.addAttribute("archivePath", browse ? "/archive/all" : "/archive");
+        model.addAttribute("archiveBrowsePath", "/archive/all");
         model.addAttribute("showArchiveBrowse", type == MediaType.IMAGE && !browse);
         model.addAttribute("imageArchive", type == MediaType.IMAGE);
+        model.addAttribute("videoArchive", video);
+        model.addAttribute("typeQuery", typeQuery);
+        model.addAttribute("hasTypeQuery", video);
+        model.addAttribute("mediaDateLabel", video ? "영상 날짜" : "사진 날짜");
+        model.addAttribute("imageTabHref", joinHref("/archive", filterQuery + pageQuery));
+        model.addAttribute("videoTabHref", joinHref("/archive?type=video", filterQuery + pageQuery));
+        model.addAttribute("browseQuery", joinHref("", filterQuery));
         List<Map<String, Object>> archivePages = new ArrayList<>();
         if (totalPages > 0) {
             int start = Math.max(0, current - 2);
@@ -307,6 +348,13 @@ public class ArchiveController {
         model.addAttribute("archivePages", archivePages);
     }
 
+    private static String joinHref(String path, String extraQuery) {
+        if (extraQuery == null || extraQuery.isBlank()) return path;
+        String extra = extraQuery.startsWith("&") || extraQuery.startsWith("?") ? extraQuery.substring(1) : extraQuery;
+        if (extra.isBlank()) return path;
+        return path.contains("?") ? path + "&" + extra : path + "?" + extra;
+    }
+
     @PostMapping("/upload")
     public String uploadArchive(@RequestParam("title") String title,
                                 @RequestParam("type") MediaType type,
@@ -315,8 +363,8 @@ public class ArchiveController {
         aboutAdminAuth.requireAdmin(request, session);
         archiveService.save(file, title, type, artistNames == null ? "" : String.join(",", artistNames), requireDate(registeredOn));
         return (type == MediaType.IMAGE)
-                ? "redirect:/archive/image_archive"
-                : "redirect:/archive/video_archive";
+                ? "redirect:/archive"
+                : "redirect:/archive?type=video";
     }
 
     @PostMapping("/upload/image")
@@ -325,7 +373,7 @@ public class ArchiveController {
                               @RequestParam("registeredOn") LocalDate registeredOn, HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
         archiveService.uploadImageOnly(file, title, MediaType.IMAGE, artistNames == null ? "" : String.join(",", artistNames), requireDate(registeredOn));
-        return "redirect:/archive/image_archive";
+        return "redirect:/archive";
     }
 
     @PostMapping("/upload/video")
@@ -335,7 +383,7 @@ public class ArchiveController {
                               @RequestParam("registeredOn") LocalDate registeredOn, HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
         archiveService.uploadVideoOnly(file, title, MediaType.VIDEO, artistNames == null ? "" : String.join(",", artistNames), thumbnail, requireDate(registeredOn));
-        return "redirect:/archive/video_archive";
+        return "redirect:/archive?type=video";
     }
 
     @PostMapping("/{id}")

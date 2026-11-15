@@ -19,7 +19,8 @@
         if (title) title.textContent = name;
         if (date) {
             date.hidden = !card.dataset.registered;
-            date.textContent = card.dataset.registered ? '등록일 ' + card.dataset.registered : '';
+            const label = document.querySelector('.archive-page')?.dataset.dateLabel || '날짜';
+            date.textContent = card.dataset.registered ? label + ' ' + card.dataset.registered : '';
         }
         if (members) {
             const source = card.querySelector('.ar-card-members') || card.querySelector('.ar-meta');

@@ -2,6 +2,8 @@ package com.example.triplesweb.util;
 
 import com.example.triplesweb.entity.Artist;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -39,6 +41,7 @@ public final class MemberPortraitOptions {
     /** S1 윤서연 ~ S24 지연까지 커스텀 멤버 로고. 유닛·기타는 빈 사진을 쓴다. */
     private static final int CUSTOM_OBJEKT_LOGO_COUNT = 24;
     private static final String OBJEKT_MEMBER_LOGO_PATH = "/images/objekt-member-logos/s%02d.png";
+    private static final String ARCHIVE_SYMBOL_DIR = URLEncoder.encode("상징로고", StandardCharsets.UTF_8).replace("+", "%20");
     private static final Pattern NON_MEMBER_CHARS = Pattern.compile("[^a-z0-9가-힣]");
     private static final Pattern UNIT_CHAIN = Pattern.compile("s\\d{1,2}(?:xs\\d{1,2})+");
     private static final Pattern UNIT_NUMBER = Pattern.compile("s\\d{1,2}");
@@ -143,6 +146,56 @@ public final class MemberPortraitOptions {
             frame++;
         }
         return out;
+    }
+
+    /**
+     * 아카이브 전용 멤버 피커. 초상 대신 상징로고(S1=윤서연)를 쓰고, 프로필 사진이 없어도 포함한다.
+     */
+    public static List<Map<String, Object>> archivePickerOptions(List<Artist> artists) {
+        List<Artist> ordered = artists == null ? List.of() : artists.stream()
+                .sorted(Comparator.comparingInt((Artist artist) -> Math.min(memberIndex(artist.getEngName()), memberIndex(artist.getName())))
+                        .thenComparing(Artist::getName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
+                        .thenComparing(Artist::getArtistId, Comparator.nullsLast(Long::compareTo)))
+                .toList();
+        List<Map<String, Object>> out = new ArrayList<>();
+        int frame = 1;
+        for (Artist artist : ordered) {
+            if (artist == null || artist.getName() == null || artist.getName().isBlank()) continue;
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("value", artist.getName());
+            row.put("label", artist.getName());
+            String symbol = archiveSymbolLogo(artist.getName());
+            if (symbol.isBlank()) symbol = archiveSymbolLogo(artist.getEngName());
+            if (!symbol.isBlank()) {
+                row.put("image", symbol);
+                row.put("hasSymbol", true);
+                row.put("textOnly", false);
+            } else {
+                row.put("image", artist.getDisplayProfileImage());
+                row.put("hasSymbol", false);
+                row.put("textOnly", !hasProfileImage(artist));
+            }
+            row.put("color", artist.getColor() != null && !artist.getColor().isBlank()
+                    ? artist.getColor()
+                    : "#00f5d4");
+            int index = memberIndex(artist.getEngName());
+            if (index == 24) index = memberIndex(artist.getName());
+            row.put("frame", index < 24 ? index + 1 : Math.min(frame, 24));
+            row.put("artistId", artist.getArtistId());
+            out.add(row);
+            frame++;
+        }
+        return out;
+    }
+
+    /**
+     * 아카이브 멤버 칩용 상징로고. S1=윤서연 … S24=지연.
+     * 유닛·미매칭은 빈 문자열이라 초상화나 이니셜을 쓴다.
+     */
+    public static String archiveSymbolLogo(String name) {
+        int index = memberIndex(name);
+        if (index >= CUSTOM_OBJEKT_LOGO_COUNT) return "";
+        return "/uploads/images/" + ARCHIVE_SYMBOL_DIR + "/S" + (index + 1) + ".png";
     }
 
     /** 원본 멤버 문자열에서 S1~S24 솔로 한글 이름만 뽑아 정렬한다. 유닛·기타는 제외. */

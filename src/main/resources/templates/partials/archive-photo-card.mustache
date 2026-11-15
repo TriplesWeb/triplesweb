@@ -3,8 +3,9 @@
         <img src="{{file.url}}" alt="{{title}}" loading="lazy" decoding="async">
     </button>
     <div class="ar-body">
-        <div class="ar-meta" style="--member-count: {{memberCount}}" title="{{memberNames}}"><span class="ar-id" data-archive-number>{{displayNumber}}</span>{{#archiveBrowse}}{{>partials/archive-member-preview}}{{/archiveBrowse}}{{^archiveBrowse}}{{>partials/archive-member-badges}}{{/archiveBrowse}}</div>
+            <div class="ar-meta" style="--member-count: {{memberCount}}" title="{{memberNames}}"><span class="ar-id" data-archive-number>{{displayNumber}}</span>{{#archiveBrowse}}{{>partials/archive-member-preview}}{{/archiveBrowse}}{{^archiveBrowse}}{{>partials/archive-member-badges}}{{/archiveBrowse}}</div>
         <h3>{{title}}</h3>
+        {{#hasRegisteredOn}}<time class="ar-card-date" datetime="{{registeredOn}}">{{registeredOn}}</time>{{/hasRegisteredOn}}
         <div class="ar-card-members" hidden>{{>partials/archive-member-badges}}</div>
     </div>
 </article>

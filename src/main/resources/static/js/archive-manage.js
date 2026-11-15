@@ -1,6 +1,7 @@
 (function () {
     const kind = document.querySelector("[data-archive-kind]")?.dataset.archiveKind || "image";
     const noun = kind === "video" ? "영상" : "사진";
+    const dateLabel = document.querySelector("[data-date-label]")?.dataset.dateLabel || (noun + " 날짜");
     const extraNames = new WeakMap();
     const dialogTriggers = new WeakMap();
 
@@ -372,7 +373,7 @@
             return;
         }
         if (!uploadForm.querySelector("[name='registeredOn']")?.value) {
-            alert("등록일을 입력해 주세요.");
+            alert(dateLabel + "를 선택해 주세요.");
             return;
         }
         if (!uploadPreview || uploadPreview.hidden || uploadPreview.dataset.invalid || uploadPreview.dataset.pending) {
@@ -480,7 +481,7 @@
         }
         const registeredOn = editForm.querySelector("[name='registeredOn']")?.value || "";
         if (!registeredOn) {
-            alert("등록일을 입력해 주세요.");
+            alert(dateLabel + "를 선택해 주세요.");
             return;
         }
         if (!editForm.dataset.id) {

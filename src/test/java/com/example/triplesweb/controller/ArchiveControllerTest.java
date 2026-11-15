@@ -33,6 +33,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -51,9 +52,15 @@ class ArchiveControllerTest {
         when(artistRepository.findAll()).thenReturn(List.of());
         when(archiveService.pageByType(eq(MediaType.IMAGE), anyInt(), anyInt(), isNull())).thenReturn(new PageImpl<>(List.of(photo())));
 
-        mvc.perform(get("/archive/image_archive")).andExpect(status().isOk())
+        mvc.perform(get("/archive")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("포토")))
-                .andExpect(content().string(containsString("사진 아카이브")))
+                .andExpect(content().string(containsString("<h1>아카이브</h1>")))
+                .andExpect(content().string(containsString("site-section-tabs")))
+                .andExpect(content().string(containsString("사진 날짜")))
+                .andExpect(content().string(containsString("실제로 올라온 날짜를 선택하세요.")))
+                .andExpect(content().string(containsString("S1.png")))
+                .andExpect(content().string(containsString("archive-symbol-picker")))
+                .andExpect(content().string(containsString("archive-symbol-chip")))
                 .andExpect(content().string(containsString("data-archive-edit")))
                 .andExpect(content().string(containsString("data-archive-delete")))
                 .andExpect(content().string(containsString("archiveEditForm")))
@@ -61,12 +68,14 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("멤버 선택")))
                 .andExpect(content().string(containsString("id=\"uploadModal\" hidden")))
                 .andExpect(content().string(containsString("archive-upload-picker")))
+                .andExpect(content().string(containsString("data-upload-url=\"/archive/upload/image\"")))
                 .andExpect(content().string(containsString("data-url=\"/uploads/a.jpg\"")))
                 .andExpect(content().string(containsString("목록에서 보이는 모습")))
                 .andExpect(content().string(containsString("id=\"archiveDetail\"")))
                 .andExpect(content().string(containsString("더보기")))
-                .andExpect(content().string(containsString("/archive/image_archive/all")))
+                .andExpect(content().string(containsString("/archive/all")))
                 .andExpect(content().string(containsString(">날짜<")))
+                .andExpect(content().string(not(containsString("사진 아카이브"))))
                 .andExpect(content().string(not(containsString("등록된 사진과 출연 표기를 확인하세요."))))
                 .andExpect(content().string(not(containsString("원본 보기 ↗"))))
                 .andExpect(content().string(not(containsString("14.8M"))))
@@ -78,7 +87,7 @@ class ArchiveControllerTest {
         when(artistRepository.findAll()).thenReturn(List.of());
         when(archiveService.pageByType(eq(MediaType.IMAGE), anyInt(), anyInt(), isNull())).thenReturn(new PageImpl<>(List.of(photo())));
 
-        mvc.perform(get("/archive/image_archive")).andExpect(status().isOk())
+        mvc.perform(get("/archive")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("포토")))
                 .andExpect(content().string(containsString("data-admin-only")))
                 .andExpect(content().string(containsString("data-archive-edit")))
@@ -94,7 +103,7 @@ class ArchiveControllerTest {
         video.setFile(SavedMeta.builder().url("/uploads/a.mp4").mediaType(MediaType.VIDEO).build());
         when(archiveService.pageByType(eq(MediaType.VIDEO), anyInt(), anyInt(), isNull())).thenReturn(new PageImpl<>(List.of(video)));
 
-        mvc.perform(get("/archive/video_archive")).andExpect(status().isOk())
+        mvc.perform(get("/archive").param("type", "video")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("data-poster=\"/uploads/poster.webp\"")))
                 .andExpect(content().string(containsString("src=\"/uploads/poster.webp\"")))
                 .andExpect(content().string(containsString("data-archive-video")))
@@ -102,7 +111,9 @@ class ArchiveControllerTest {
                 .andExpect(content().string(not(containsString("<video controls preload=\"metadata\""))))
                 .andExpect(content().string(containsString("name=\"thumbnail\"")))
                 .andExpect(content().string(containsString("무대영상")))
-                .andExpect(content().string(containsString("영상 아카이브")))
+                .andExpect(content().string(containsString("<h1>아카이브</h1>")))
+                .andExpect(content().string(containsString("영상 날짜")))
+                .andExpect(content().string(containsString("data-upload-url=\"/archive/upload/video\"")))
                 .andExpect(content().string(containsString("data-admin-only")))
                 .andExpect(content().string(containsString("영상 추가")))
                 .andExpect(content().string(containsString("archive-upload-picker")))
@@ -128,7 +139,7 @@ class ArchiveControllerTest {
         var thumbnail = new MockMultipartFile("thumbnail", "poster.jfif", "application/octet-stream", new byte[]{2});
         mvc.perform(multipart("/archive/upload/video").file(video).file(thumbnail)
                         .param("title", "영상").param("artistNames", "서연").param("registeredOn", "2026-10-02"))
-                .andExpect(status().is3xxRedirection());
+                .andExpect(redirectedUrl("/archive?type=video"));
         verify(archiveService).uploadVideoOnly(any(), eq("영상"), eq(MediaType.VIDEO), eq("서연"), any(), eq(java.time.LocalDate.of(2026, 10, 2)));
         verify(aboutAdminAuth).requireAdmin(any(), any());
     }
@@ -147,7 +158,7 @@ class ArchiveControllerTest {
         second.setId(99L);
         when(archiveService.pageByType(eq(type), anyInt(), anyInt(), isNull()))
                 .thenReturn(new PageImpl<>(List.of(first, second), PageRequest.of(0, 9), 2));
-        mvc.perform(get(type == MediaType.IMAGE ? "/archive/image_archive" : "/archive/video_archive"))
+        mvc.perform(get(type == MediaType.IMAGE ? "/archive" : "/archive").param("type", type == MediaType.IMAGE ? "image" : "video"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("data-archive-number>1</span>")))
                 .andExpect(content().string(containsString("data-archive-number>2</span>")))
@@ -161,7 +172,7 @@ class ArchiveControllerTest {
         when(artistRepository.findAll()).thenReturn(List.of());
         when(archiveService.pageByType(eq(MediaType.IMAGE), anyInt(), anyInt(), isNull()))
                 .thenReturn(new PageImpl<>(List.of(photo()), PageRequest.of(1, 9), 20));
-        mvc.perform(get("/archive/image_archive").param("page", "1"))
+        mvc.perform(get("/archive").param("page", "1"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("data-number-offset=\"9\"")))
                 .andExpect(content().string(containsString("data-archive-number>10</span>")));
@@ -176,7 +187,7 @@ class ArchiveControllerTest {
         solo.setArtistNames("서연 \"A\"");
         when(archiveService.pageByType(eq(MediaType.IMAGE), anyInt(), anyInt(), isNull()))
                 .thenReturn(new PageImpl<>(List.of(group, solo)));
-        String html = mvc.perform(get("/archive/image_archive"))
+        String html = mvc.perform(get("/archive"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("외 3명")))
                 .andExpect(content().string(containsString("윤서연")))
@@ -188,14 +199,14 @@ class ArchiveControllerTest {
         String one = recent.substring(soloAt);
         String preview = many.substring(0, many.indexOf("ar-card-members"));
         org.assertj.core.api.Assertions.assertThat(preview).contains("archive-member-more");
-        org.assertj.core.api.Assertions.assertThat(preview).contains("<span>윤서연</span>");
-        org.assertj.core.api.Assertions.assertThat(preview).doesNotContain("<span>정혜린</span>");
+        org.assertj.core.api.Assertions.assertThat(preview).contains("archive-chip-name\">윤서연</span>");
+        org.assertj.core.api.Assertions.assertThat(preview).doesNotContain("archive-chip-name\">정혜린</span>");
         org.assertj.core.api.Assertions.assertThat(many).contains("title=\"윤서연, 정혜린, 이지우, &lt;김채연&gt;\"");
         org.assertj.core.api.Assertions.assertThat(many).contains("archive-member-rest\">정혜린, 이지우, &lt;김채연&gt;");
         org.assertj.core.api.Assertions.assertThat(many).doesNotContain("외 4명");
         org.assertj.core.api.Assertions.assertThat(one).doesNotContain("archive-member-more");
         org.assertj.core.api.Assertions.assertThat(one).contains("title=\"서연 &quot;A&quot;\"");
-        org.assertj.core.api.Assertions.assertThat(html).contains("<span>정혜린</span>");
+        org.assertj.core.api.Assertions.assertThat(html).contains("archive-chip-name\">정혜린</span>");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("외 0명");
     }
 
@@ -213,7 +224,7 @@ class ArchiveControllerTest {
             if (size == 5) return new PageImpl<>(latest.subList(0, 5));
             return new PageImpl<>(List.of(older), PageRequest.of(1, 9), 6);
         });
-        String html = mvc.perform(get("/archive/image_archive").param("page", "1"))
+        String html = mvc.perform(get("/archive").param("page", "1"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         int trackAt = html.indexOf("id=\"archiveTrack\"");
@@ -235,7 +246,7 @@ class ArchiveControllerTest {
                 .thenReturn(new PageImpl<>(List.of(photo())));
         when(archiveService.pageByType(eq(MediaType.IMAGE), anyInt(), anyInt(), isNull()))
                 .thenReturn(new PageImpl<>(List.of()));
-        String html = mvc.perform(get("/archive/image_archive")
+        String html = mvc.perform(get("/archive")
                         .param("members", "윤서연")
                         .param("members", "지연")
                         .param("q", "심장")
@@ -257,7 +268,7 @@ class ArchiveControllerTest {
         group.setArtistNames("윤서연, 정혜린");
         when(archiveService.pageByType(eq(MediaType.IMAGE), anyInt(), anyInt(), isNull()))
                 .thenReturn(new PageImpl<>(List.of(group), PageRequest.of(0, 24), 1));
-        String html = mvc.perform(get("/archive/image_archive/all"))
+        String html = mvc.perform(get("/archive/all"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("사진 전체")))
                 .andExpect(content().string(containsString("is-browse")))
@@ -268,7 +279,7 @@ class ArchiveControllerTest {
                 .andReturn().getResponse().getContentAsString();
         String visible = html.substring(html.indexOf("id=\"archiveGrid\""), html.indexOf("ar-card-members"));
         org.assertj.core.api.Assertions.assertThat(visible).contains("윤서연");
-        org.assertj.core.api.Assertions.assertThat(visible).doesNotContain("<span>정혜린</span>");
+        org.assertj.core.api.Assertions.assertThat(visible).doesNotContain("archive-chip-name\">정혜린</span>");
     }
 
     @Test void invalidMemberColorUsesReadableNeutralBadge() throws Exception {
@@ -278,10 +289,29 @@ class ArchiveControllerTest {
         when(artistRepository.findAll()).thenReturn(List.of(member));
         when(archiveService.pageByType(eq(MediaType.IMAGE), anyInt(), anyInt(), isNull()))
                 .thenReturn(new PageImpl<>(List.of(photo())));
-        mvc.perform(get("/archive/image_archive"))
+        mvc.perform(get("/archive"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("--member-color: #b9cac4;")))
                 .andExpect(content().string(not(containsString("--member-color: red;position:fixed"))));
+    }
+
+    @Test void oldArchiveUrlsRedirectAndKeepFilters() throws Exception {
+        mvc.perform(get("/archive/image_archive")).andExpect(redirectedUrl("/archive"));
+        mvc.perform(get("/archive/video_archive")).andExpect(redirectedUrl("/archive?type=video"));
+        mvc.perform(get("/archive/image_archive/all")).andExpect(redirectedUrl("/archive/all"));
+        mvc.perform(get("/archive/image_archive").param("q", "heart").param("page", "1"))
+                .andExpect(redirectedUrl("/archive?q=heart&page=1"));
+        mvc.perform(get("/archive/video_archive").param("q", "stage"))
+                .andExpect(redirectedUrl("/archive?type=video&q=stage"));
+    }
+
+    @Test void imageUploadStaysOnTypedEndpoint() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
+        mvc.perform(multipart("/archive/upload/image").file(file)
+                        .param("title", "사진").param("artistNames", "서연").param("registeredOn", "2026-10-03"))
+                .andExpect(redirectedUrl("/archive"));
+        verify(archiveService).uploadImageOnly(any(), eq("사진"), eq(MediaType.IMAGE), eq("서연"), eq(java.time.LocalDate.of(2026, 10, 3)));
+        verify(aboutAdminAuth).requireAdmin(any(), any());
     }
 
     private static Archive photo() {
