@@ -136,6 +136,10 @@
             position: relative;
             z-index: 2;
         }
+        .objekt-filter-bar:has(.is-open),
+        .objekt-filter-bar:has(:focus-within) {
+            z-index: 80;
+        }
         .objekt-filter {
             position: relative;
             z-index: 1;

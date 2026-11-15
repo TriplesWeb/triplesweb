@@ -1,4 +1,9 @@
 /* 시즌·클래스 등 공통 objekt-filter 컨트롤 (/cosmo/objekt · 교환 게시판 공유) */
+/* 열린 메뉴가 그리드 카드 위에 오도록 바 전체 스택을 올린다 */
+.objekt-filter-bar:has(.is-open),
+.objekt-filter-bar:has(:focus-within) {
+  z-index: 80;
+}
 .objekt-filter {
   position: relative;
   z-index: 1;
