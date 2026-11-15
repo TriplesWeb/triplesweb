@@ -1,32 +1,35 @@
 <section class="ar-panel ar-toolbar">
     <form class="ar-filters" id="archiveFilterForm" method="get" action="{{archivePath}}">
         {{#videoArchive}}<input type="hidden" name="type" value="video">{{/videoArchive}}
-        <label class="ar-sort">
-            <span class="ar-sort-label">정렬</span>
-            <span class="ar-sort-control">
-                <select id="archiveSort" aria-label="정렬">
-                    <option value="newest">최신순</option>
-                    <option value="oldest">오래된 순</option>
-                    <option value="title">제목순</option>
-                </select>
-                <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
-            </span>
-        </label>
-        {{>partials/date-range-filter}}
-        <button type="button" class="ar-member-toggle" id="archiveMemberToggle" aria-expanded="false" aria-controls="archiveMemberPanel">
-            <span class="material-symbols-outlined" aria-hidden="true">group</span>
-            <span>멤버 선택</span>
-            <span class="ar-member-count" id="archiveMemberCount" hidden>0</span>
-            <span class="material-symbols-outlined ar-member-chevron" aria-hidden="true">expand_more</span>
-        </button>
+        <button type="submit" class="ar-search-go">검색</button>
         <div class="ar-search-wrap site-search">
             <input class="ar-search site-search__input" type="search" name="q" value="{{query}}" placeholder="{{#imageArchive}}사진 제목 검색{{/imageArchive}}{{^imageArchive}}영상 제목 검색{{/imageArchive}}" aria-label="{{#imageArchive}}사진 제목 검색{{/imageArchive}}{{^imageArchive}}영상 제목 검색{{/imageArchive}}">
-            <button type="submit" class="site-search__submit" aria-label="검색">
-                <span class="material-symbols-outlined" aria-hidden="true">search</span>
-            </button>
+            <span class="site-search__submit" aria-hidden="true">
+                <span class="material-symbols-outlined">search</span>
+            </span>
         </div>
-        <a class="ar-text-btn ar-reset" href="{{archiveHomePath}}">초기화</a>
-        <button type="button" class="ar-submit" data-admin-only onclick="showAddModal()">{{#imageArchive}}사진 추가{{/imageArchive}}{{^imageArchive}}영상 추가{{/imageArchive}}</button>
+        <div class="ar-filter-tools">
+            <label class="ar-sort">
+                <span class="ar-sort-label">정렬</span>
+                <span class="ar-sort-control">
+                    <select id="archiveSort" aria-label="정렬">
+                        <option value="newest">최신순</option>
+                        <option value="oldest">오래된 순</option>
+                        <option value="title">제목순</option>
+                    </select>
+                    <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
+                </span>
+            </label>
+            {{>partials/date-range-filter}}
+            <button type="button" class="ar-member-toggle" id="archiveMemberToggle" aria-expanded="false" aria-controls="archiveMemberPanel">
+                <span class="material-symbols-outlined" aria-hidden="true">group</span>
+                <span>멤버 선택</span>
+                <span class="ar-member-count" id="archiveMemberCount" hidden>0</span>
+                <span class="material-symbols-outlined ar-member-chevron" aria-hidden="true">expand_more</span>
+            </button>
+            <a class="ar-text-btn ar-reset" href="{{archiveHomePath}}">초기화</a>
+            <button type="button" class="ar-submit" data-admin-only onclick="showAddModal()">{{#imageArchive}}사진 추가{{/imageArchive}}{{^imageArchive}}영상 추가{{/imageArchive}}</button>
+        </div>
     </form>
     <div class="ar-member-panel" id="archiveMemberPanel" hidden>
         <div class="member-portrait-picker archive-symbol-picker" id="archive-member-picker" role="group" aria-label="멤버 선택">

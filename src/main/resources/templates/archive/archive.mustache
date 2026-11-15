@@ -15,78 +15,28 @@
 <main class="archive-page{{#archiveBrowse}} is-browse{{/archiveBrowse}}" data-archive-kind="{{#imageArchive}}image{{/imageArchive}}{{#videoArchive}}video{{/videoArchive}}" data-date-label="{{mediaDateLabel}}">
     <section class="ar-hero{{#archiveBrowse}} ar-hero-browse{{/archiveBrowse}}">
         <div class="ar-panel ar-headline">
+            <button type="button" class="ar-stats-toggle" data-stats-toggle aria-expanded="true" aria-controls="archiveStats" aria-label="통계 접기">
+                <span data-stats-icon aria-hidden="true">−</span>
+            </button>
             <div>
                 <div class="ar-kicker"><span class="material-symbols-outlined">{{#imageArchive}}photo_library{{/imageArchive}}{{#videoArchive}}play_circle{{/videoArchive}}</span> Archive</div>
                 <h1>아카이브</h1>
                 {{#archiveBrowse}}<p>사진 전체</p>{{/archiveBrowse}}
             </div>
             {{>partials/archive-type-tabs}}
-        </div>
-        <div class="ar-stats">
-            <article class="ar-panel ar-stat"><div class="ar-stat-label"><span>{{#imageArchive}}등록된 사진{{/imageArchive}}{{#videoArchive}}등록된 영상{{/videoArchive}}</span><span class="material-symbols-outlined">{{#imageArchive}}image{{/imageArchive}}{{#videoArchive}}movie{{/videoArchive}}</span></div><strong>{{archiveTotal}}<em>{{#imageArchive}}장{{/imageArchive}}{{#videoArchive}}개{{/videoArchive}}</em></strong></article>
-            <article class="ar-panel ar-stat"><div class="ar-stat-label"><span>이 페이지</span><span class="material-symbols-outlined">grid_view</span></div><strong>{{archivePageCount}}<em>{{#imageArchive}}장{{/imageArchive}}{{#videoArchive}}개{{/videoArchive}}</em></strong></article>
-            <article class="ar-panel ar-stat"><div class="ar-stat-label"><span>페이지</span><span class="material-symbols-outlined">layers</span></div><strong>{{archivePageDisplay}}<em>/ {{archiveTotalPages}}</em></strong></article>
-            {{>partials/archive-filter-stat}}
-        </div>
-    </section>
-
-    {{#hasArchiveHighlights}}
-    <section class="ar-block">
-        <div class="ar-section-title">
-            <h2>{{#imageArchive}}최근 사진{{/imageArchive}}{{#videoArchive}}최근 영상{{/videoArchive}}</h2>
-            <div>
-                <button type="button" class="ar-icon-btn" id="archivePrev" aria-label="이전"><span class="material-symbols-outlined">arrow_back</span></button>
-                <button type="button" class="ar-icon-btn" id="archiveNext" aria-label="다음"><span class="material-symbols-outlined">arrow_forward</span></button>
+            <div class="ar-stats" id="archiveStats">
+                <article class="ar-stat"><div class="ar-stat-label"><span>{{#imageArchive}}등록된 사진{{/imageArchive}}{{#videoArchive}}등록된 영상{{/videoArchive}}</span><span class="material-symbols-outlined">{{#imageArchive}}image{{/imageArchive}}{{#videoArchive}}movie{{/videoArchive}}</span></div><strong>{{archiveTotal}}<em>{{#imageArchive}}장{{/imageArchive}}{{#videoArchive}}개{{/videoArchive}}</em></strong></article>
+                <article class="ar-stat"><div class="ar-stat-label"><span>이 페이지</span><span class="material-symbols-outlined">grid_view</span></div><strong>{{archivePageCount}}<em>{{#imageArchive}}장{{/imageArchive}}{{#videoArchive}}개{{/videoArchive}}</em></strong></article>
+                <article class="ar-stat"><div class="ar-stat-label"><span>페이지</span><span class="material-symbols-outlined">layers</span></div><strong>{{archivePageDisplay}}<em>/ {{archiveTotalPages}}</em></strong></article>
+                {{>partials/archive-filter-stat}}
             </div>
         </div>
-        <div class="ar-track" id="archiveTrack">
-            {{#archiveHighlights}}
-            {{#imageArchive}}
-            <article class="ar-panel ar-highlight" data-archive-ref="{{id}}" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-url="{{file.url}}" data-registered="{{registeredOn}}">
-                <button type="button" class="ar-highlight-open" data-archive-open aria-label="{{title}} 자세히 보기">
-                    <img src="{{file.url}}" alt="{{title}}" loading="lazy" decoding="async">
-                </button>
-                <div>
-                    <span class="ar-id" data-archive-number>{{displayNumber}}</span>
-                    <h3>{{title}}</h3>
-                    {{#hasRegisteredOn}}<time class="ar-card-date" datetime="{{registeredOn}}">{{registeredOn}}</time>{{/hasRegisteredOn}}
-                    <div class="ar-meta" title="{{memberNames}}">{{>partials/archive-member-preview}}</div>
-                    <div class="ar-card-members" hidden>{{>partials/archive-member-badges}}</div>
-                </div>
-            </article>
-            {{/imageArchive}}
-            {{#videoArchive}}
-            <article class="ar-panel ar-highlight" data-archive-ref="{{id}}">
-                <a class="ar-video-thumb" href="{{file.url}}" data-archive-video data-title="{{title}}" data-poster="{{thumbnailUrl}}" aria-label="{{title}} 재생">
-                    {{#thumbnailUrl}}<img src="{{thumbnailUrl}}" alt="{{title}} 썸네일" loading="lazy" decoding="async">{{/thumbnailUrl}}
-                    {{^thumbnailUrl}}<span class="ar-video-placeholder">영상</span>{{/thumbnailUrl}}
-                    <span class="ar-video-play" aria-hidden="true">▶</span>
-                </a>
-                <div>
-                    <span class="ar-id">{{displayNumber}}</span>
-                    <h3>{{title}}</h3>
-                    {{#hasRegisteredOn}}<time class="ar-card-date" datetime="{{registeredOn}}">{{registeredOn}}</time>{{/hasRegisteredOn}}
-                    <div class="ar-meta" title="{{memberNames}}">{{>partials/archive-member-preview}}</div>
-                </div>
-            </article>
-            {{/videoArchive}}
-            {{/archiveHighlights}}
-        </div>
     </section>
-    {{/hasArchiveHighlights}}
 
     {{>partials/archive-toolbar}}
 
     {{#showArchiveBrowse}}
     <div class="ar-gallery-bar">
-        <div class="ar-gallery-controls" id="archiveGalleryControls" hidden>
-            <p class="ar-gallery-hint">사진을 좌우로 넘겨보세요 <span>방향키 · 모바일 스와이프</span></p>
-            <div class="ar-gallery-navigation">
-                <button type="button" class="ar-icon-btn" id="archiveGalleryPrev" aria-label="이전 사진" aria-controls="archiveGrid"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span></button>
-                <span class="ar-gallery-position" id="archiveGalleryPosition" role="status" aria-live="polite" aria-atomic="true"></span>
-                <button type="button" class="ar-icon-btn" id="archiveGalleryNext" aria-label="다음 사진" aria-controls="archiveGrid"><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
-            </div>
-        </div>
         <a class="ar-more-link" href="{{archiveBrowsePath}}{{browseQuery}}">더보기</a>
     </div>
     {{/showArchiveBrowse}}
@@ -103,8 +53,8 @@
                 <span class="ar-video-play" aria-hidden="true">▶</span>
             </a>
             <div class="ar-body">
-                <div class="ar-meta" style="--member-count: {{memberCount}}"><span class="ar-id" data-archive-number>{{displayNumber}}</span>{{>partials/archive-member-badges}}</div>
                 <h3>{{title}}</h3>
+                <div class="ar-meta" style="--member-count: {{memberCount}}">{{>partials/archive-member-badges}}</div>
                 {{#hasRegisteredOn}}<time class="ar-card-date" datetime="{{registeredOn}}">{{registeredOn}}</time>{{/hasRegisteredOn}}
                 <div class="ar-actions" data-admin-only>
                     <button type="button" data-archive-edit data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-url="{{file.url}}" data-thumbnail-url="{{thumbnailUrl}}" data-registered="{{registeredOn}}">수정</button>
@@ -330,9 +280,6 @@
 <script src="{{#asset}}/js/date-range-filter.js{{/asset}}"></script>
 <script src="{{#asset}}/js/archive-browse.js{{/asset}}"></script>
 {{#imageArchive}}
-{{#showArchiveBrowse}}
-<script src="{{#asset}}/js/archive-photo-carousel.js{{/asset}}"></script>
-{{/showArchiveBrowse}}
 <script src="{{#asset}}/js/archive-detail.js{{/asset}}"></script>
 {{/imageArchive}}
 {{#videoArchive}}

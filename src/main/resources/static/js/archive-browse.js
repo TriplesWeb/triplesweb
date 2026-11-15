@@ -63,19 +63,20 @@
             form.appendChild(input);
         });
     });
-    const track = document.getElementById('archiveTrack');
-    const recentPrevious = document.getElementById('archivePrev');
-    const recentNext = document.getElementById('archiveNext');
-    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    function updateRecentControls() {
-        if (!track) return;
-        if (recentPrevious) recentPrevious.disabled = track.scrollLeft <= 1;
-        if (recentNext) recentNext.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 1;
+    const headline = document.querySelector('.ar-headline');
+    const statsToggle = document.querySelector('[data-stats-toggle]');
+    const stats = document.getElementById('archiveStats');
+    function setStatsOpen(open) {
+        headline?.classList.toggle('is-stats-collapsed', !open);
+        if (stats) stats.hidden = !open;
+        if (!statsToggle) return;
+        statsToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        statsToggle.setAttribute('aria-label', open ? '통계 접기' : '통계 펼치기');
+        const icon = statsToggle.querySelector('[data-stats-icon]');
+        if (icon) icon.textContent = open ? '−' : '+';
     }
-    recentPrevious?.addEventListener('click', () => track?.scrollBy({ left: -380, behavior: motion.matches ? 'auto' : 'smooth' }));
-    recentNext?.addEventListener('click', () => track?.scrollBy({ left: 380, behavior: motion.matches ? 'auto' : 'smooth' }));
-    track?.addEventListener('scroll', updateRecentControls, { passive: true });
-    if (track && window.ResizeObserver) new ResizeObserver(updateRecentControls).observe(track);
-    updateRecentControls();
+    statsToggle?.addEventListener('click', () => {
+        setStatsOpen(statsToggle.getAttribute('aria-expanded') !== 'true');
+    });
     apply();
 })();

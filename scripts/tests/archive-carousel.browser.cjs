@@ -6,15 +6,17 @@ const { chromium } = require('playwright');
 const root = path.resolve(__dirname, '../..');
 const staticRoot = path.join(root, 'src/main/resources/static');
 const css = fs.readFileSync(path.join(staticRoot, 'css', 'archive-page.css'), 'utf8');
-const carouselJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-photo-carousel.js'), 'utf8');
 const detailJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-detail.js'), 'utf8');
 
 const cards = Array.from({ length: 6 }, (_, index) => `
 <article class="ar-panel ar-card" data-id="${index + 1}" data-title="사진 ${index + 1}" data-url="/portrait.svg" data-artists="지연">
   <button type="button" class="ar-photo-link" data-archive-open>
-    <img src="/portrait.svg" alt="사진 ${index + 1}" width="320" height="240">
+    <img src="/portrait.svg" alt="사진 ${index + 1}" width="320" height="${180 + index * 24}">
   </button>
-  <div class="ar-body"><h3>사진 ${index + 1}</h3></div>
+  <div class="ar-body">
+    <h3>사진 ${index + 1}</h3>
+    <div class="ar-meta"><span class="archive-member-chip archive-symbol-chip" title="지연" aria-label="지연"><img src="/portrait.svg" alt="지연"><span class="archive-chip-name">지연</span></span></div>
+  </div>
 </article>`).join('');
 
 const html = `<!doctype html><html><head><meta charset="utf-8">
@@ -28,13 +30,6 @@ ${css}
 <body>
 <main class="archive-page" data-archive-kind="image">
   <div class="ar-gallery-bar">
-    <div class="ar-gallery-controls" id="archiveGalleryControls" hidden>
-      <div class="ar-gallery-navigation">
-        <button type="button" class="ar-icon-btn" id="archiveGalleryPrev">이전</button>
-        <span class="ar-gallery-position" id="archiveGalleryPosition"></span>
-        <button type="button" class="ar-icon-btn" id="archiveGalleryNext">다음</button>
-      </div>
-    </div>
     <a class="ar-more-link" href="/archive/all">더보기</a>
   </div>
   <section class="ar-grid" id="archiveGrid">${cards}</section>
@@ -57,7 +52,6 @@ ${css}
     </div>
   </div>
 </div>
-<script>${carouselJs}</script>
 <script>${detailJs}</script>
 </body></html>`;
 
@@ -83,27 +77,25 @@ ${css}
       return route.fulfill({ status: 404, body: '' });
     });
     await page.goto('https://archive-carousel.test/', { waitUntil: 'load' });
-    await page.waitForSelector('.is-photo-carousel');
 
-    const first = await page.evaluate(() => ({
-      carousel: document.getElementById('archiveGrid').classList.contains('is-photo-carousel'),
-      position: document.getElementById('archiveGalleryPosition').textContent.trim(),
-      current: document.querySelector('.is-current-photo')?.dataset.title || ''
-    }));
-    assert.equal(first.carousel, true, '사진이 늘어도 캐러셀이 켜지지 않는다');
-    assert.equal(first.position, '1 / 6');
-    assert.equal(first.current, '사진 1');
+    const layout = await page.evaluate(() => {
+      const grid = document.getElementById('archiveGrid');
+      const cards = [...grid.querySelectorAll('.ar-card')];
+      const firstTitle = cards[0].querySelector('h3').getBoundingClientRect();
+      const firstMeta = cards[0].querySelector('.ar-meta').getBoundingClientRect();
+      return {
+        carousel: grid.classList.contains('is-photo-carousel'),
+        columns: getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length,
+        visible: cards.filter((card) => card.getBoundingClientRect().height > 40).length,
+        titleBefore: firstTitle.bottom <= firstMeta.top + 1
+      };
+    });
+    assert.equal(layout.carousel, false, '캐러셀이 켜져 있다');
+    assert.ok(layout.columns >= 2, '사진이 여러 열로 배치되지 않는다: ' + layout.columns);
+    assert.ok(layout.visible >= 4, '여러 장이 한 화면에 보이지 않는다: ' + layout.visible);
+    assert.equal(layout.titleBefore, true, '제목이 멤버 로고보다 아래에 있다');
 
-    await page.click('#archiveGalleryNext');
-    await page.waitForTimeout(400);
-    const second = await page.evaluate(() => ({
-      position: document.getElementById('archiveGalleryPosition').textContent.trim(),
-      current: document.querySelector('.is-current-photo')?.dataset.title || ''
-    }));
-    assert.equal(second.position, '2 / 6');
-    assert.equal(second.current, '사진 2');
-
-    await page.locator('.is-current-photo [data-archive-open]').click();
+    await page.locator('#archiveGrid .ar-card').nth(1).locator('[data-archive-open]').click();
     const detail = await page.evaluate(() => ({
       open: !document.getElementById('archiveDetail').hidden,
       title: document.getElementById('archiveDetailTitle').textContent,
@@ -115,8 +107,8 @@ ${css}
 
     const artifactDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
     fs.mkdirSync(artifactDir, { recursive: true });
-    await page.screenshot({ path: path.join(artifactDir, 'archive-carousel-detail.png') });
-    console.log('PASS: 아카이브 캐러셀 넘김·상세 모달');
+    await page.screenshot({ path: path.join(artifactDir, 'archive-masonry-detail.png') });
+    console.log('PASS: 아카이브 매슨리 목록·상세 모달');
   } finally {
     await browser.close();
   }

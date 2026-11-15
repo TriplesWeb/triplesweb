@@ -47,9 +47,13 @@ public class ArchiveController {
                               @RequestParam(required = false) String q,
                               @RequestParam(required = false) String from,
                               @RequestParam(required = false) String to,
+                              @RequestParam(required = false) String on,
+                              @RequestParam(required = false) Integer go,
                               @RequestParam(required = false) List<String> members,
                               HttpServletRequest request, HttpSession session, Model model) {
-        return renderArchive(type, page, size, q, from, to, members, false, request, session, model);
+        String jump = pageJumpRedirect(go, request);
+        if (jump != null) return jump;
+        return renderArchive(type, page, size, q, from, to, on, members, false, request, session, model);
     }
 
     @GetMapping("/all")
@@ -58,9 +62,13 @@ public class ArchiveController {
                                 @RequestParam(required = false) String q,
                                 @RequestParam(required = false) String from,
                                 @RequestParam(required = false) String to,
+                                @RequestParam(required = false) String on,
+                                @RequestParam(required = false) Integer go,
                                 @RequestParam(required = false) List<String> members,
                                 HttpServletRequest request, HttpSession session, Model model) {
-        return renderArchive("image", page, size, q, from, to, members, true, request, session, model);
+        String jump = pageJumpRedirect(go, request);
+        if (jump != null) return jump;
+        return renderArchive("image", page, size, q, from, to, on, members, true, request, session, model);
     }
 
     @GetMapping("/image_archive")
@@ -87,7 +95,20 @@ public class ArchiveController {
         return "redirect:" + builder.build().encode().toUriString();
     }
 
-    private String renderArchive(String typeSlug, int page, int size, String q, String from, String to,
+    private static String pageJumpRedirect(Integer go, HttpServletRequest request) {
+        if (go == null) return null;
+        int target = Math.max(1, go) - 1;
+        UriComponentsBuilder builder = UriComponentsBuilder.fromPath(request.getRequestURI());
+        request.getParameterMap().forEach((name, values) -> {
+            if (name == null || values == null) return;
+            if ("go".equals(name) || "page".equals(name)) return;
+            for (String value : values) builder.queryParam(name, value);
+        });
+        if (target > 0) builder.queryParam("page", target);
+        return "redirect:" + builder.build().encode().toUriString();
+    }
+
+    private String renderArchive(String typeSlug, int page, int size, String q, String from, String to, String on,
                                  List<String> members, boolean browse,
                                  HttpServletRequest request, HttpSession session, Model model) {
         boolean isAdmin = aboutAdminAuth.isAdmin(request, session);
@@ -96,8 +117,9 @@ public class ArchiveController {
         MediaType type = mediaType(typeSlug);
 
         List<String> selectedMembers = normalizeMembers(members);
-        LocalDate fromDate = parseDate(from);
-        LocalDate toDate = parseDate(to);
+        LocalDate onDate = parseDate(on);
+        LocalDate fromDate = onDate != null ? onDate : parseDate(from);
+        LocalDate toDate = onDate != null ? onDate : parseDate(to);
         if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
             LocalDate swap = fromDate;
             fromDate = toDate;
@@ -111,11 +133,6 @@ public class ArchiveController {
 
         List<Artist> artists = artistRepository.findAll();
         List<Map<String, Object>> cards = archiveCards(archives, artists);
-        List<Map<String, Object>> highlights = archiveCards(archiveService.pageByType(type, 0, 5, null), artists);
-        int highlightNumber = 1;
-        for (Map<String, Object> highlight : highlights) {
-            highlight.put("displayNumber", highlightNumber++);
-        }
         model.addAttribute("archives", archives);
         model.addAttribute("archiveCards", cards);
         model.addAttribute("artistOptions", artists);
@@ -127,14 +144,19 @@ public class ArchiveController {
         model.addAttribute("isAuthenticated", isAuthenticated);
         model.addAttribute("isAdmin", isAdmin);
         model.addAttribute("archiveBrowse", browse);
-        String fromText = fromDate == null ? "" : fromDate.toString();
-        String toText = toDate == null ? "" : toDate.toString();
+        String onText = onDate == null ? "" : onDate.toString();
+        String fromText = onDate != null ? "" : (fromDate == null ? "" : fromDate.toString());
+        String toText = onDate != null ? "" : (toDate == null ? "" : toDate.toString());
+        model.addAttribute("on", onText);
         model.addAttribute("from", fromText);
         model.addAttribute("to", toText);
-        model.addAttribute("hasDateFilter", fromDate != null || toDate != null);
-        model.addAttribute("dateQuery", dateQuery(fromText, toText));
-        addFilterSummary(model, q, selectedMembers, artists, fromText, toText);
-        addArchivePage(model, archives, type, q, memberQuery(selectedMembers), dateQuery(fromText, toText), highlights, browse);
+        model.addAttribute("hasExactDate", onDate != null);
+        model.addAttribute("hasDateFilter", onDate != null || fromDate != null || toDate != null);
+        model.addAttribute("dateExactEnabled", true);
+        String dateQuery = dateQuery(fromText, toText, onText);
+        model.addAttribute("dateQuery", dateQuery);
+        addFilterSummary(model, q, selectedMembers, artists, fromText, toText, onText);
+        addArchivePage(model, archives, type, q, memberQuery(selectedMembers), dateQuery, browse);
         return "archive/archive";
     }
 
@@ -167,8 +189,12 @@ public class ArchiveController {
         catch (DateTimeParseException ex) { return null; }
     }
 
-    private static String dateQuery(String from, String to) {
+    private static String dateQuery(String from, String to, String on) {
         StringBuilder query = new StringBuilder();
+        if (on != null && !on.isBlank()) {
+            query.append("&on=").append(URLEncoder.encode(on, StandardCharsets.UTF_8));
+            return query.toString();
+        }
         if (from != null && !from.isBlank()) query.append("&from=").append(URLEncoder.encode(from, StandardCharsets.UTF_8));
         if (to != null && !to.isBlank()) query.append("&to=").append(URLEncoder.encode(to, StandardCharsets.UTF_8));
         return query.toString();
@@ -244,7 +270,7 @@ public class ArchiveController {
     }
 
     private void addFilterSummary(Model model, String q, List<String> selectedMembers, List<Artist> artists,
-                                  String fromText, String toText) {
+                                  String fromText, String toText, String onText) {
         List<Map<String, Object>> parts = new ArrayList<>();
         int groups = 0;
         if (!selectedMembers.isEmpty()) {
@@ -265,7 +291,11 @@ public class ArchiveController {
             if (!parts.isEmpty()) parts.add(Map.of("isSep", true));
             parts.add(Map.of("isText", true, "text", query));
         }
-        if ((fromText != null && !fromText.isBlank()) || (toText != null && !toText.isBlank())) {
+        if (onText != null && !onText.isBlank()) {
+            groups++;
+            if (!parts.isEmpty()) parts.add(Map.of("isSep", true));
+            parts.add(Map.of("isText", true, "text", onText));
+        } else if ((fromText != null && !fromText.isBlank()) || (toText != null && !toText.isBlank())) {
             groups++;
             if (!parts.isEmpty()) parts.add(Map.of("isSep", true));
             String start = fromText == null || fromText.isBlank() ? "처음" : fromText;
@@ -300,7 +330,7 @@ public class ArchiveController {
     }
 
     private void addArchivePage(Model model, Page<Archive> archives, MediaType type, String q, String memberQuery,
-                                String dateQuery, List<Map<String, Object>> highlights, boolean browse) {
+                                String dateQuery, boolean browse) {
         int totalPages = archives.getTotalPages();
         int current = archives.getNumber();
         String query = q == null ? "" : q.trim();
@@ -314,8 +344,6 @@ public class ArchiveController {
         model.addAttribute("archivePrevPage", Math.max(0, current - 1));
         model.addAttribute("archiveNextPage", current + 1);
         model.addAttribute("hasArchives", !archives.isEmpty());
-        model.addAttribute("archiveHighlights", highlights);
-        model.addAttribute("hasArchiveHighlights", !browse && !highlights.isEmpty());
         model.addAttribute("memberQuery", memberQuery == null ? "" : memberQuery);
         model.addAttribute("query", query);
         model.addAttribute("hasQuery", !query.isEmpty());
@@ -333,6 +361,11 @@ public class ArchiveController {
         model.addAttribute("typeQuery", typeQuery);
         model.addAttribute("hasTypeQuery", video);
         model.addAttribute("mediaDateLabel", video ? "영상 날짜" : "사진 날짜");
+        model.addAttribute("dateFilterLabel", video ? "영상 날짜" : "사진 날짜");
+        model.addAttribute("dateFromLabel", video ? "영상 날짜 시작" : "사진 날짜 시작");
+        model.addAttribute("dateToLabel", video ? "영상 날짜 끝" : "사진 날짜 끝");
+        model.addAttribute("dateExactLabel", video ? "이 영상 날짜" : "이 사진 날짜");
+        model.addAttribute("dateFilterHint", "실제로 올라온 날짜로 찾습니다.");
         model.addAttribute("imageTabHref", joinHref("/archive", filterQuery + pageQuery));
         model.addAttribute("videoTabHref", joinHref("/archive?type=video", filterQuery + pageQuery));
         model.addAttribute("browseQuery", joinHref("", filterQuery));
