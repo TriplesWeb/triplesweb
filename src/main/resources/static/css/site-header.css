@@ -288,7 +288,6 @@ form.site-header-search button.site-header-search__toggle{display:none}
 .site-header-nickname-suggest[hidden]{display:none}
 .site-header-nickname-option{display:block;width:100%;min-height:2.4rem;padding:.5rem .65rem;border:0;border-radius:.45rem;background:transparent;color:#e3e2e8;text-align:left;overflow-wrap:anywhere}
 .site-header-nickname-option:hover,.site-header-nickname-option[aria-selected="true"]{background:rgba(0,245,212,.16);color:#8decd9}
-.site-header-popover__mine{display:block;margin:.55rem 0 .15rem;color:#8decd9;font-size:.82rem;font-weight:700;text-decoration:none}
 .site-header-popover__list{list-style:none;margin:0;padding:0;display:grid;gap:.15rem}
 .site-header-popover__list a{display:block;padding:.55rem .45rem;border-radius:.55rem;color:#e3e2e8;text-decoration:none;font-size:.86rem;overflow-wrap:anywhere}
 .site-header-popover__list a:hover{background:#ffffff0c;color:#8decd9}

@@ -114,6 +114,48 @@ ${readCss('season-filters.css')}
 </script>
 </body></html>`;
 
+const suggestHtml = `<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{margin:0;background:#0d0e12;color:#e3e2e8;font-family:"Pretendard Variable",Pretendard,sans-serif}
+${readCss('gravity-page.css')}
+${readCss('archive-page.css')}
+${readCss('cosmo-collection.css')}
+</style></head>
+<body class="site-page collection-page">
+<main class="gravity-page" style="padding:1rem">
+<section class="gv-panel gv-headline collection-search-hero">
+  <h1>코스모 아이디 검색</h1>
+  <p>닉네임을 검색하면 보유 오브젝트와 시리얼 번호를 확인할 수 있습니다.</p>
+  <form class="ar-filters collection-nickname-form" method="get" action="/cosmo/collection" style="margin-top:1rem">
+    <label class="ar-search-wrap">
+      <span class="material-symbols-outlined">search</span>
+      <input class="ar-search" id="collection-nickname-input" type="search" name="nickname" value="ott" placeholder="닉네임 입력" aria-label="COSMO 닉네임" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="collection-nickname-suggest" aria-autocomplete="list">
+      <div id="collection-nickname-suggest" class="collection-nickname-suggest" role="listbox" aria-label="연관닉">
+        <p class="collection-nickname-suggest-label">연관닉</p>
+        <button type="button" class="collection-nickname-option">Otti</button>
+        <button type="button" class="collection-nickname-option">otto</button>
+        <button type="button" class="collection-nickname-option">ottie</button>
+        <button type="button" class="collection-nickname-option">ottvi</button>
+        <button type="button" class="collection-nickname-option">ottid</button>
+        <button type="button" class="collection-nickname-option">otter</button>
+        <button type="button" class="collection-nickname-option">ottoy</button>
+        <button type="button" class="collection-nickname-option">OTT123</button>
+      </div>
+    </label>
+    <button class="ar-submit" type="submit">검색</button>
+  </form>
+</section>
+<section class="gv-panel gv-headline" id="cover-profile">
+  <h1>Otti</h1>
+  <p>보유 오브젝트 <strong>12</strong>개</p>
+</section>
+<section class="collection-filter-panel" aria-label="보유 오브젝트 필터">
+  <div class="collection-filter-workspace" id="cover-filter" style="min-height:8rem">필터 패널</div>
+</section>
+</main>
+</body></html>`;
+
 const objektHtml = `<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
@@ -181,6 +223,9 @@ document.getElementById('season-toggle').addEventListener('click', () => {
       const url = new URL(route.request().url());
       if (url.pathname === '/cosmo/objekt') {
         return route.fulfill({ contentType: 'text/html', body: objektHtml });
+      }
+      if (url.pathname === '/cosmo/collection/suggest-front') {
+        return route.fulfill({ contentType: 'text/html', body: suggestHtml });
       }
       if (url.pathname === '/' || url.pathname.endsWith('.html') || url.pathname === '/cosmo/collection') {
         return route.fulfill({ contentType: 'text/html', body: html });
@@ -374,6 +419,39 @@ document.getElementById('season-toggle').addEventListener('click', () => {
     assert.ok(objektWrap.rows < objektWrap.count, '오브젝트 시즌 칩은 행으로 감싸져야 한다: ' + JSON.stringify(objektWrap));
     assert.ok(objektWrap.scroll <= objektWrap.view, '오브젝트 시즌 패널이 뷰포트를 넘치면 안 된다: ' + JSON.stringify(objektWrap));
     await page.screenshot({ path: shot('objekt-season-chips-mobile.png') });
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('https://collection-layout.test/cosmo/collection/suggest-front', { waitUntil: 'load' });
+    const suggestInfo = await page.evaluate(() => {
+      const menu = document.getElementById('collection-nickname-suggest');
+      const profile = document.getElementById('cover-profile');
+      const box = menu.getBoundingClientRect();
+      const profileBox = profile.getBoundingClientRect();
+      const sample = (x, y) => {
+        const top = document.elementFromPoint(x, y);
+        return top && !menu.contains(top) && top !== menu ? (top.id || top.className || top.tagName) : '';
+      };
+      const innerX = box.left + box.width / 2;
+      return {
+        hidden: menu.hidden,
+        display: getComputedStyle(menu).display,
+        height: box.height,
+        overlapsProfile: box.bottom > profileBox.top + 8,
+        coveredMid: sample(innerX, box.top + box.height / 2),
+        coveredBottom: sample(innerX, box.bottom - 16),
+        heroZ: getComputedStyle(document.querySelector('.collection-search-hero')).zIndex,
+        filterZ: getComputedStyle(document.querySelector('.collection-filter-panel')).zIndex
+      };
+    });
+    assert.notEqual(suggestInfo.display, 'none', '연관닉 목록이 display로 숨겨졌다');
+    assert.equal(suggestInfo.hidden, false);
+    assert.ok(suggestInfo.height > 120, '연관닉 목록이 너무 짧다: ' + suggestInfo.height);
+    assert.ok(suggestInfo.overlapsProfile, '연관닉 목록이 다음 패널과 겹치지 않아 가림을 검증할 수 없다');
+    assert.equal(suggestInfo.coveredMid, '', '연관닉 목록 중간이 가려졌다: ' + suggestInfo.coveredMid);
+    assert.equal(suggestInfo.coveredBottom, '', '연관닉 목록 하단이 가려졌다: ' + suggestInfo.coveredBottom);
+    assert.ok(Number.parseInt(suggestInfo.heroZ, 10) > Number.parseInt(suggestInfo.filterZ, 10),
+      '검색 히어로 z-index가 필터 패널보다 낮아 목록이 가려진다: ' + JSON.stringify(suggestInfo));
+    await page.screenshot({ path: shot('collection-nickname-suggest-front.png') });
 
     console.log('PASS: 컬렉션 드롭다운이 모바일·데스크톱에서 잘리고 가려지지 않음');
   } finally {
