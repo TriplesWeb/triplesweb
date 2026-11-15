@@ -34,20 +34,30 @@
                 </div>
             </div>
 
-            <!-- 게시글 제목 -->
+            {{#isMarketBoard}}
+            {{#showMarketTitle}}
+            <div class="mb-4">
+                <h1 class="text-lg sm:text-xl font-semibold text-on-surface tracking-tight leading-snug">
+                    {{article.title}}
+                </h1>
+            </div>
+            {{/showMarketTitle}}
+            {{/isMarketBoard}}
+            {{^isMarketBoard}}
             <div class="mb-6">
                 <h1 class="text-2xl sm:text-3xl font-bold text-on-surface tracking-tight leading-snug">
                     {{article.title}}
                 </h1>
             </div>
+            {{/isMarketBoard}}
 
             {{#errorMessage}}
             <p class="mt-4 rounded-xl border border-error/40 bg-error-container/10 px-4 py-3 text-sm text-error" role="alert">{{errorMessage}}</p>
             {{/errorMessage}}
 
+            {{#isMarketBoard}}
             {{#hasLinkedObjekts}}
-            <section class="my-6 rounded-2xl border border-teal-400/30 bg-teal-400/[0.04] p-4">
-                <h2 class="mb-3 font-semibold text-teal-200">교환/거래 오브젝트</h2>
+            <section class="my-4 rounded-2xl border border-teal-400/30 bg-teal-400/[0.04] p-4" aria-label="{{#isTradeObjektSplit}}Have와 Want{{/isTradeObjektSplit}}{{^isTradeObjektSplit}}선택 오브젝트{{/isTradeObjektSplit}}">
                 {{#hasMemberSwap}}
                 <p class="objekt-trade-summary">
                     {{#hasHaveLead}}<span class="article-swap-name" style="--artist-color:{{haveLeadColor}}">{{haveLeadName}}</span>{{#hasHaveMore}} 외 {{haveMoreCount}}명{{/hasHaveMore}}{{/hasHaveLead}}
@@ -56,53 +66,70 @@
                 </p>
                 {{/hasMemberSwap}}
                 {{#isTradeObjektSplit}}
-                <div class="objekt-trade-zones objekt-trade-zones--detail" aria-label="Have와 Want 오브젝트">
-                    <div class="objekt-trade-zone" data-zone="have">
-                        <div class="objekt-trade-zone-head">
-                            <span class="objekt-trade-zone-label">Have</span>
-                            <span class="objekt-trade-zone-hint">가진 오브젝트</span>
-                        </div>
-                        <div class="objekt-trade-zone-cards">
+                <div class="objekt-detail-deal market-feed-deal">
+                    <div class="market-feed-side" data-side="have">
+                        <span class="market-feed-side-label">HAVE</span>
+                        <div class="market-feed-strip">
                             {{#linkedHaveObjekts}}
-                            <a href="/cosmo/objekt/detail/{{objektKey}}" class="objekt-trade-card">
-                                <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" onerror="this.onerror=null;this.src='{{frontImage}}'">
-                                <div class="objekt-trade-card-meta">
-                                    {{#season}}<p class="objekt-trade-season">{{season}}</p>{{/season}}<p class="objekt-trade-card-title">{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</p>
-                                    <p class="objekt-trade-member mt-1" style="--artist-color:{{memberColor}}">{{memberName}}</p>
-                                    <p class="mt-0.5 text-xs objekt-trade-no">{{collectionNo}}</p>
-                                </div>
+                            <a href="/cosmo/objekt/detail/{{objektKey}}" class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" {{#previewTip}}data-tip="{{previewTip}}" title="{{previewTip}}"{{/previewTip}}>
+                                {{#hasImage}}<img src="{{#thumbnailImage}}{{thumbnailImage}}{{/thumbnailImage}}{{^thumbnailImage}}{{frontImage}}{{/thumbnailImage}}" alt="" loading="lazy" onerror="this.onerror=null;this.src='{{frontImage}}'">{{/hasImage}}
+                                {{^hasImage}}<span>{{#collectionNo}}{{collectionNo}}{{/collectionNo}}{{^collectionNo}}{{cardTitle}}{{/collectionNo}}</span>{{/hasImage}}
                             </a>
                             {{/linkedHaveObjekts}}
                             {{^hasLinkedHaveObjekts}}
-                            <p class="objekt-trade-zone-empty">등록된 Have 오브젝트가 없습니다</p>
+                            <span class="market-feed-side-empty">—</span>
                             {{/hasLinkedHaveObjekts}}
                         </div>
                     </div>
-                    <div class="objekt-trade-zone-divider" aria-hidden="true">↔</div>
-                    <div class="objekt-trade-zone" data-zone="want">
-                        <div class="objekt-trade-zone-head">
-                            <span class="objekt-trade-zone-label">Want</span>
-                            <span class="objekt-trade-zone-hint">원하는 오브젝트</span>
-                        </div>
-                        <div class="objekt-trade-zone-cards">
+                    <span class="market-feed-swap" aria-hidden="true">⇌</span>
+                    <div class="market-feed-side" data-side="want">
+                        <span class="market-feed-side-label">WANT</span>
+                        <div class="market-feed-strip">
                             {{#linkedWantObjekts}}
-                            <a href="/cosmo/objekt/detail/{{objektKey}}" class="objekt-trade-card">
-                                <img src="{{thumbnailImage}}" alt="{{collectionId}}" loading="lazy" onerror="this.onerror=null;this.src='{{frontImage}}'">
-                                <div class="objekt-trade-card-meta">
-                                    {{#season}}<p class="objekt-trade-season">{{season}}</p>{{/season}}<p class="objekt-trade-card-title">{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</p>
-                                    <p class="objekt-trade-member mt-1" style="--artist-color:{{memberColor}}">{{memberName}}</p>
-                                    <p class="mt-0.5 text-xs objekt-trade-no">{{collectionNo}}</p>
-                                </div>
+                            <a href="/cosmo/objekt/detail/{{objektKey}}" class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" {{#previewTip}}data-tip="{{previewTip}}" title="{{previewTip}}"{{/previewTip}}>
+                                {{#hasImage}}<img src="{{#thumbnailImage}}{{thumbnailImage}}{{/thumbnailImage}}{{^thumbnailImage}}{{frontImage}}{{/thumbnailImage}}" alt="" loading="lazy" onerror="this.onerror=null;this.src='{{frontImage}}'">{{/hasImage}}
+                                {{^hasImage}}<span>{{#collectionNo}}{{collectionNo}}{{/collectionNo}}{{^collectionNo}}{{cardTitle}}{{/collectionNo}}</span>{{/hasImage}}
                             </a>
                             {{/linkedWantObjekts}}
                             {{^hasLinkedWantObjekts}}
-                            <p class="objekt-trade-zone-empty">원하는 오브젝트 없음</p>
+                            <span class="market-feed-side-empty">—</span>
                             {{/hasLinkedWantObjekts}}
                         </div>
                     </div>
                 </div>
                 {{/isTradeObjektSplit}}
                 {{^isTradeObjektSplit}}
+                <div class="objekt-detail-deal market-feed-deal is-single">
+                    <div class="market-feed-side" data-side="{{#hasWantLead}}{{^hasHaveLead}}want{{/hasHaveLead}}{{/hasWantLead}}{{#hasHaveLead}}have{{/hasHaveLead}}">
+                        <span class="market-feed-side-label">{{#hasWantLead}}{{^hasHaveLead}}WANT{{/hasHaveLead}}{{/hasWantLead}}{{#hasHaveLead}}HAVE{{/hasHaveLead}}</span>
+                        <div class="market-feed-strip">
+                            {{#linkedObjekts}}
+                            <a href="/cosmo/objekt/detail/{{objektKey}}" class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" {{#previewTip}}data-tip="{{previewTip}}" title="{{previewTip}}"{{/previewTip}}>
+                                {{#hasImage}}<img src="{{#thumbnailImage}}{{thumbnailImage}}{{/thumbnailImage}}{{^thumbnailImage}}{{frontImage}}{{/thumbnailImage}}" alt="" loading="lazy" onerror="this.onerror=null;this.src='{{frontImage}}'">{{/hasImage}}
+                                {{^hasImage}}<span>{{#collectionNo}}{{collectionNo}}{{/collectionNo}}{{^collectionNo}}{{cardTitle}}{{/collectionNo}}</span>{{/hasImage}}
+                            </a>
+                            {{/linkedObjekts}}
+                        </div>
+                    </div>
+                </div>
+                {{/isTradeObjektSplit}}
+            </section>
+            {{/hasLinkedObjekts}}
+
+            {{#hasMarketDescription}}
+            <div class="mt-5 space-y-2">
+                <p class="text-sm font-medium text-on-surface-variant">설명</p>
+                <div class="detail-content text-on-surface/90 font-body-md text-base leading-relaxed">
+                    {{{article.content}}}
+                </div>
+            </div>
+            {{/hasMarketDescription}}
+            {{/isMarketBoard}}
+
+            {{^isMarketBoard}}
+            {{#hasLinkedObjekts}}
+            <section class="my-6 rounded-2xl border border-teal-400/30 bg-teal-400/[0.04] p-4">
+                <h2 class="mb-3 font-semibold text-teal-200">연결 오브젝트</h2>
                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {{#linkedObjekts}}
                     <a href="/cosmo/objekt/detail/{{objektKey}}" class="overflow-hidden rounded-xl border border-white/10 bg-black/20">
@@ -111,17 +138,13 @@
                     </a>
                     {{/linkedObjekts}}
                 </div>
-                {{/isTradeObjektSplit}}
             </section>
             {{/hasLinkedObjekts}}
-
-            <!-- 구분선 -->
             <hr class="border-outline-variant/30 my-6" />
-
-            <!-- 게시글 본문 내용 -->
             <div class="detail-content text-on-surface/90 font-body-md text-base leading-relaxed min-h-[200px]">
                 {{{article.content}}}
             </div>
+            {{/isMarketBoard}}
 
             <!-- 하단 푸터 (추천 및 수정/삭제/목록 버튼) -->
             <div class="mt-10 pt-6 border-t border-outline-variant/35 flex flex-col gap-6">

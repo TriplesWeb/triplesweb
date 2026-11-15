@@ -18,8 +18,8 @@ public final class ArticleMemberSwap {
 
     public static boolean matchesMember(Collection<ArticleObjekt> links, String member, String side) {
         if (links == null || links.isEmpty() || member == null || member.isBlank()) return false;
-        if (MemberPortraitOptions.memberName(member).isBlank()
-                && MemberPortraitOptions.memberAliases(member).isEmpty()) return false;
+        List<String> wanted = memberTokens(member);
+        if (wanted.isEmpty()) return false;
         List<ArticleObjekt> scoped = new ArrayList<>();
         String sideKey = normalizeSide(side);
         for (ArticleObjekt link : links) {
@@ -28,10 +28,10 @@ public final class ArticleMemberSwap {
             scoped.add(link);
         }
         for (ArticleObjekt link : scoped) {
-            if (matchesName(link.getMemberName(), member)) return true;
+            if (matchesAnyName(link.getMemberName(), wanted)) return true;
         }
         for (String name : uniqueMembers(scoped)) {
-            if (matchesName(name, member)) return true;
+            if (matchesAnyName(name, wanted)) return true;
         }
         return false;
     }
@@ -55,12 +55,11 @@ public final class ArticleMemberSwap {
                                          String side,
                                          String season,
                                          String objektClass) {
-        boolean needMember = member != null && !member.isBlank();
+        List<String> wantedMembers = memberTokens(member);
+        boolean needMember = !wantedMembers.isEmpty();
         boolean needSeason = season != null && !season.isBlank();
         boolean needClass = objektClass != null && !objektClass.isBlank();
         if (!needMember && !needSeason && !needClass) return true;
-        if (needMember && MemberPortraitOptions.memberName(member).isBlank()
-                && MemberPortraitOptions.memberAliases(member).isEmpty()) return false;
         if (links == null || links.isEmpty()) return false;
         String sideKey = normalizeSide(side);
         String seasonKey = needSeason ? season.trim() : "";
@@ -68,7 +67,7 @@ public final class ArticleMemberSwap {
         for (ArticleObjekt link : links) {
             if (link == null) continue;
             if (sideKey != null && !sideKey.equalsIgnoreCase(blankToHave(link.getSide()))) continue;
-            if (needMember && !matchesName(link.getMemberName(), member)) continue;
+            if (needMember && !matchesAnyName(link.getMemberName(), wantedMembers)) continue;
             if (needSeason && !seasonKey.equalsIgnoreCase(blank(link.getSeason()))) continue;
             if (needClass && !classKey.equalsIgnoreCase(blank(link.getObjektClass()))) continue;
             return true;
@@ -76,20 +75,23 @@ public final class ArticleMemberSwap {
         return false;
     }
 
-    /** 목록용 썸네일 프리뷰 (앞에서 limit개 + 초과 개수). */
+    /** 목록용 썸네일 프리뷰 (앞에서 limit개 + 초과 개수). limit &lt; 0 이면 전부. */
     public static List<Map<String, Object>> previewThumbs(List<ArticleObjekt> links, int limit) {
-        if (links == null || links.isEmpty() || limit <= 0) return List.of();
+        if (links == null || links.isEmpty()) return List.of();
+        int max = limit < 0 ? Integer.MAX_VALUE : limit;
+        if (max == 0) return List.of();
         List<Map<String, Object>> out = new ArrayList<>();
         int shown = 0;
         for (ArticleObjekt link : links) {
             if (link == null) continue;
-            if (shown >= limit) break;
+            if (shown >= max) break;
             Map<String, Object> row = new LinkedHashMap<>();
             String thumb = blank(link.getThumbnailImage());
             if (thumb.isEmpty()) thumb = blank(link.getFrontImage());
             String season = blank(link.getSeason());
             String member = blank(link.getMemberName());
             String collectionNo = blank(link.getCollectionNo());
+            row.put("objektKey", blank(link.getObjektKey()));
             row.put("thumbnailImage", thumb);
             row.put("season", season);
             row.put("memberName", member);
@@ -124,6 +126,28 @@ public final class ArticleMemberSwap {
         if (part.isEmpty()) return;
         if (!tip.isEmpty()) tip.append(" · ");
         tip.append(part);
+    }
+
+    /** 콤마로 구분된 멤버 필터를 파싱한다. */
+    public static List<String> memberTokens(String member) {
+        if (member == null || member.isBlank()) return List.of();
+        List<String> out = new ArrayList<>();
+        for (String part : member.split(",")) {
+            String token = part == null ? "" : part.trim();
+            if (token.isEmpty()) continue;
+            if (MemberPortraitOptions.memberName(token).isBlank()
+                    && MemberPortraitOptions.memberAliases(token).isEmpty()) continue;
+            out.add(token);
+        }
+        return out;
+    }
+
+    private static boolean matchesAnyName(String stored, List<String> selected) {
+        if (selected == null || selected.isEmpty()) return false;
+        for (String token : selected) {
+            if (matchesName(stored, token)) return true;
+        }
+        return false;
     }
 
     private static boolean matchesName(String stored, String selected) {
@@ -183,6 +207,8 @@ public final class ArticleMemberSwap {
         int wantMore = previewMoreCount(want, caps[1]);
         dto.setHavePreview(havePreview);
         dto.setWantPreview(wantPreview);
+        dto.setHaveAll(previewThumbs(have, -1));
+        dto.setWantAll(previewThumbs(want, -1));
         dto.setHasHavePreview(!havePreview.isEmpty());
         dto.setHasWantPreview(!wantPreview.isEmpty());
         dto.setHasObjektPreview(!havePreview.isEmpty() || !wantPreview.isEmpty());

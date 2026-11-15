@@ -18,7 +18,6 @@ import java.util.Set;
 public class ArticleObjektService {
     public static final String SIDE_HAVE = "HAVE";
     public static final String SIDE_WANT = "WANT";
-    public static final int MAX_LINKED = 20;
 
     private final ArticleObjektRepository repository;
     private final ObjektService objektService;
@@ -91,9 +90,6 @@ public class ArticleObjektService {
         List<String> want = cleanKeys(wantKeys);
         if (have.isEmpty()) return "Have 오브젝트를 1개 이상 선택해주세요.";
         if (want.isEmpty()) return "Want 오브젝트를 1개 이상 선택해주세요.";
-        if (have.size() + want.size() > MAX_LINKED) {
-            return "오브젝트는 최대 " + MAX_LINKED + "개까지 선택할 수 있습니다.";
-        }
         Set<String> overlap = new LinkedHashSet<>(have);
         overlap.retainAll(new LinkedHashSet<>(want));
         if (!overlap.isEmpty()) return "같은 오브젝트를 Have와 Want에 동시에 넣을 수 없습니다.";
@@ -104,11 +100,7 @@ public class ArticleObjektService {
     public static String validateSellSelection(List<String> haveKeys, List<String> wantKeys) {
         List<String> have = cleanKeys(haveKeys);
         List<String> want = cleanKeys(wantKeys);
-        int total = have.size() + want.size();
-        if (total < 1) return "오브젝트를 1개 이상 선택해주세요.";
-        if (total > MAX_LINKED) {
-            return "오브젝트는 최대 " + MAX_LINKED + "개까지 선택할 수 있습니다.";
-        }
+        if (have.size() + want.size() < 1) return "오브젝트를 1개 이상 선택해주세요.";
         return null;
     }
 
@@ -129,7 +121,7 @@ public class ArticleObjektService {
                             Set<String> stored) {
         if (selectedKeys == null || selectedKeys.isEmpty()) return;
         for (String raw : selectedKeys) {
-            if (raw == null || raw.isBlank() || stored.size() >= MAX_LINKED) continue;
+            if (raw == null || raw.isBlank()) continue;
             String key = raw.trim();
             Map<String, Object> item = all.stream()
                     .filter(o -> key.equals(value(o, "id"))

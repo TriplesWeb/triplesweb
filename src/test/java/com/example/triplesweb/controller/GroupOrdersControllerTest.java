@@ -352,7 +352,7 @@ class GroupOrdersControllerTest {
                 .param("content", "<p>내용</p>")
                 .param("selectedHaveObjektIds", "have-uuid")
                 .param("selectedWantObjektIds", "want-uuid"))
-            .andExpect(redirectedUrl("/trade/7"));
+            .andExpect(redirectedUrl("/trade"));
         verify(links).attachSelected(any(Article.class), eq(List.of("have-uuid")), eq(List.of("want-uuid")));
 
         mvc.perform(multipart("/trade/new")
@@ -369,7 +369,7 @@ class GroupOrdersControllerTest {
                 .param("content", "")
                 .param("selectedHaveObjektIds", "have-uuid")
                 .param("selectedWantObjektIds", "want-uuid"))
-            .andExpect(redirectedUrl("/trade/7"));
+            .andExpect(redirectedUrl("/trade"));
         verify(articles, times(2)).create(any());
     }
 

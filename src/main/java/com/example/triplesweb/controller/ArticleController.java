@@ -177,6 +177,7 @@ public class ArticleController {
                 articleFileService.attachUploadedFiles(uploadedFiles, savedArticle);
             }
             articleFileService.extractAndSaveFilesFromContent(savedArticle);
+            if (isObjektBoard(category)) return "redirect:" + boardPath(category);
             return "redirect:" + boardPath(category) + "/" + savedArticle.getId();
         } catch (RuntimeException | IOException ex) {
             model.addAttribute("category", category);
@@ -234,7 +235,6 @@ public class ArticleController {
             boolean inHave = matchesKey(haveSelected, id, collectionId, slug);
             boolean inWant = matchesKey(wantSelected, id, collectionId, slug);
             if (!inHave && !inWant) continue;
-            if (selectedItems.size() >= ArticleObjektService.MAX_LINKED) continue;
             Map<String, Object> row = pickerItem(item);
             selectedItems.add(row);
             if (inHave) haveItems.add(row);
@@ -279,7 +279,6 @@ public class ArticleController {
                 .filter(Objects::nonNull)
                 .map(String::trim)
                 .filter(v -> !v.isEmpty())
-                .limit(ArticleObjektService.MAX_LINKED)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
@@ -456,6 +455,11 @@ public class ArticleController {
                     .likesCount(art.getLikesCount())
                     .build();
             if (marketBoard) {
+                String cleaned = ArticleHtmlCleaner.clean(
+                        art.getContent() == null ? "" : art.getContent());
+                boolean hasDesc = ArticleHtmlCleaner.hasVisibleContent(cleaned);
+                dto.setContent(hasDesc ? cleaned : "");
+                dto.setHasMarketDescription(hasDesc);
                 List<ArticleObjekt> links = linkedByArticle.getOrDefault(art.getId(), List.of());
                 List<ArticleObjekt> have = links.stream()
                         .filter(row -> ArticleObjektService.SIDE_HAVE.equalsIgnoreCase(
@@ -517,6 +521,8 @@ public class ArticleController {
                               Model model) {
 
         if (isInvalidCategory(category)) return "redirect:/trade";
+        // 교환/거래는 피드에서 바로 보고, 글 상세 페이지는 쓰지 않는다.
+        if (isObjektBoard(category)) return "redirect:" + boardPath(category);
         Article article = articleService.showWithFiles(id);
 
         if (article == null) return "redirect:" + boardPath(category);
@@ -549,6 +555,11 @@ public class ArticleController {
         }
         model.addAttribute("category", category);
         addCategoryFlags(model, category);
+        boolean marketBoard = isObjektBoard(category);
+        String title = article.getTitle() == null ? "" : article.getTitle().trim();
+        String defaultMarketTitle = isTradeBoard(category) ? "교환" : (isSellBoard(category) ? "거래" : "");
+        model.addAttribute("showMarketTitle", marketBoard && !title.isEmpty() && !title.equals(defaultMarketTitle));
+        model.addAttribute("hasMarketDescription", marketBoard && ArticleHtmlCleaner.hasVisibleContent(article.getContent()));
         model.addAttribute("commentDtos", commentService.show(id));
         model.addAttribute("categoryName", getCategoryName(category));
         model.addAttribute("isOwner", true); // 로그인 제거: 누구나 수정/삭제 가능
@@ -658,6 +669,7 @@ public class ArticleController {
 
             if (marketBoard) {
                 articleObjektService.replaceSelected(saved, haveKeys, wantKeys);
+                return "redirect:" + boardPath(category);
             }
             return "redirect:" + boardPath(category) + "/" + id;
         } catch (RuntimeException | IOException ex) {
@@ -835,15 +847,25 @@ public class ArticleController {
 
     private static Map<String, Object> linkedObjektView(ArticleObjekt link, List<Artist> artists) {
         Map<String, Object> row = new LinkedHashMap<>();
+        String memberName = MemberPortraitOptions.displayMember(link.getMemberName());
+        String cardTitle = ObjektSeasonCodes.cardTitle(link.getCollectionId(), link.getSeason());
         row.put("objektKey", link.getObjektKey());
         row.put("collectionId", link.getCollectionId());
-        row.put("cardTitle", ObjektSeasonCodes.cardTitle(link.getCollectionId(), link.getSeason()));
+        row.put("cardTitle", cardTitle);
         row.put("season", link.getSeason());
-        row.put("memberName", MemberPortraitOptions.displayMember(link.getMemberName()));
+        row.put("memberName", memberName);
         row.put("memberColor", MemberPortraitOptions.artistColor(link.getMemberName(), artists));
         row.put("thumbnailImage", link.getThumbnailImage());
         row.put("frontImage", link.getFrontImage());
         row.put("collectionNo", link.getCollectionNo());
+        boolean hasImage = link.getThumbnailImage() != null && !link.getThumbnailImage().isBlank()
+                || link.getFrontImage() != null && !link.getFrontImage().isBlank();
+        row.put("hasImage", hasImage);
+        String tip = java.util.stream.Stream.of(link.getSeason(), memberName, link.getCollectionNo())
+                .filter(v -> v != null && !v.isBlank())
+                .collect(Collectors.joining(" · "));
+        if (tip.isBlank() && cardTitle != null) tip = cardTitle;
+        row.put("previewTip", tip);
         return row;
     }
 
@@ -854,9 +876,12 @@ public class ArticleController {
                 .toList();
         List<Map<String, Object>> picker = MemberPortraitOptions.forObjektFilter(
                 MemberPortraitOptions.soloMemberNames(names), artists);
+        List<String> selectedMembers = ArticleMemberSwap.memberTokens(selectedMember);
         for (Map<String, Object> option : picker) {
-            option.put("active", !selectedMember.isBlank()
-                    && MemberPortraitOptions.sameMember(selectedMember, String.valueOf(option.get("value"))));
+            String value = String.valueOf(option.get("value"));
+            boolean active = selectedMembers.stream()
+                    .anyMatch(token -> MemberPortraitOptions.sameMember(token, value));
+            option.put("active", active);
         }
         model.addAttribute("memberPickerOptions", picker);
         model.addAttribute("isObjektSideAll", "all".equals(selectedSide));

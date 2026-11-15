@@ -117,7 +117,7 @@
 
             <div class="market-feed" aria-label="{{categoryName}} 피드">
                 {{#articleList}}
-                <a href="{{boardBase}}/{{id}}" class="market-feed-card" aria-label="{{title}}">
+                <article class="market-feed-card" aria-label="{{title}}">
                     <div class="market-feed-card-head">
                         <div class="market-feed-card-meta">
                             {{#isTrade}}<span class="market-feed-badge is-wtt">WTT</span>{{/isTrade}}
@@ -130,91 +130,183 @@
                             <span class="market-feed-author">{{userId}}</span>
                             <time class="market-feed-time">{{formattedDate}}</time>
                         </div>
-                        {{#hasMemberSwap}}
-                        <p class="market-feed-members">
-                            {{#hasHaveLead}}<span class="article-swap-name" style="--artist-color:{{haveLeadColor}}">{{haveLeadName}}</span>{{#hasHaveMore}} 외 {{haveMoreCount}}{{/hasHaveMore}}{{/hasHaveLead}}
-                            {{#showTradeSwap}} <span class="market-feed-members-sep" aria-hidden="true">·</span> {{/showTradeSwap}}
-                            {{#hasWantLead}}<span class="article-swap-name" style="--artist-color:{{wantLeadColor}}">{{wantLeadName}}</span>{{#hasWantMore}} 외 {{wantMoreCount}}{{/hasWantMore}}{{/hasWantLead}}
-                        </p>
-                        {{/hasMemberSwap}}
                     </div>
                     <div class="market-feed-card-body">
                         {{#hasObjektPreview}}
                         {{#isTrade}}
                         <div class="market-feed-deal">
                             <div class="market-feed-side" data-side="have">
-                                <span class="market-feed-side-label">HAVE</span>
+                                <div class="market-feed-side-head">
+                                    <span class="market-feed-side-label">HAVE</span>
+                                    {{#hasHaveLead}}
+                                    <p class="market-feed-side-members">
+                                        <span class="article-swap-name" style="--artist-color:{{haveLeadColor}}">{{haveLeadName}}</span>{{#hasHaveMore}} 외 {{haveMoreCount}}{{/hasHaveMore}}
+                                    </p>
+                                    {{/hasHaveLead}}
+                                </div>
                                 <div class="market-feed-strip">
                                     {{#hasHavePreview}}
                                     {{#havePreview}}
-                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" {{#previewTip}}data-tip="{{previewTip}}" title="{{previewTip}}"{{/previewTip}}>
-                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
-                                        {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
-                                    </span>
+                                    {{>article/partials/market-feed-thumb}}
                                     {{/havePreview}}
-                                    {{#hasHavePreviewMore}}<span class="market-feed-more">+{{havePreviewMoreCount}}</span>{{/hasHavePreviewMore}}
+                                    {{#hasHavePreviewMore}}<button type="button" class="market-feed-more" data-market-feed-more="have" aria-label="Have 오브젝트 전체 보기">+{{havePreviewMoreCount}}</button>{{/hasHavePreviewMore}}
                                     {{/hasHavePreview}}
                                     {{^hasHavePreview}}<span class="market-feed-side-empty">—</span>{{/hasHavePreview}}
                                 </div>
                             </div>
                             <span class="market-feed-swap" aria-hidden="true">⇌</span>
                             <div class="market-feed-side" data-side="want">
-                                <span class="market-feed-side-label">WANT</span>
+                                <div class="market-feed-side-head">
+                                    <span class="market-feed-side-label">WANT</span>
+                                    {{#hasWantLead}}
+                                    <p class="market-feed-side-members">
+                                        <span class="article-swap-name" style="--artist-color:{{wantLeadColor}}">{{wantLeadName}}</span>{{#hasWantMore}} 외 {{wantMoreCount}}{{/hasWantMore}}
+                                    </p>
+                                    {{/hasWantLead}}
+                                </div>
                                 <div class="market-feed-strip">
                                     {{#hasWantPreview}}
                                     {{#wantPreview}}
-                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" {{#previewTip}}data-tip="{{previewTip}}" title="{{previewTip}}"{{/previewTip}}>
-                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
-                                        {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
-                                    </span>
+                                    {{>article/partials/market-feed-thumb}}
                                     {{/wantPreview}}
-                                    {{#hasWantPreviewMore}}<span class="market-feed-more">+{{wantPreviewMoreCount}}</span>{{/hasWantPreviewMore}}
+                                    {{#hasWantPreviewMore}}<button type="button" class="market-feed-more" data-market-feed-more="want" aria-label="Want 오브젝트 전체 보기">+{{wantPreviewMoreCount}}</button>{{/hasWantPreviewMore}}
                                     {{/hasWantPreview}}
                                     {{^hasWantPreview}}<span class="market-feed-side-empty">—</span>{{/hasWantPreview}}
                                 </div>
                             </div>
                         </div>
+                        <template data-market-feed-full>
+                            <div class="objekt-detail-deal market-feed-deal" aria-label="Have와 Want 오브젝트">
+                                <div class="market-feed-side" data-side="have">
+                                    <div class="market-feed-side-head">
+                                        <span class="market-feed-side-label">HAVE</span>
+                                        {{#hasHaveLead}}
+                                        <p class="market-feed-side-members">
+                                            <span class="article-swap-name" style="--artist-color:{{haveLeadColor}}">{{haveLeadName}}</span>{{#hasHaveMore}} 외 {{haveMoreCount}}{{/hasHaveMore}}
+                                        </p>
+                                        {{/hasHaveLead}}
+                                    </div>
+                                    <div class="market-feed-strip">
+                                        {{#haveAll}}
+                                        {{>article/partials/market-feed-thumb}}
+                                        {{/haveAll}}
+                                        {{^haveAll}}<span class="market-feed-side-empty">—</span>{{/haveAll}}
+                                    </div>
+                                </div>
+                                <span class="market-feed-swap" aria-hidden="true">⇌</span>
+                                <div class="market-feed-side" data-side="want">
+                                    <div class="market-feed-side-head">
+                                        <span class="market-feed-side-label">WANT</span>
+                                        {{#hasWantLead}}
+                                        <p class="market-feed-side-members">
+                                            <span class="article-swap-name" style="--artist-color:{{wantLeadColor}}">{{wantLeadName}}</span>{{#hasWantMore}} 외 {{wantMoreCount}}{{/hasWantMore}}
+                                        </p>
+                                        {{/hasWantLead}}
+                                    </div>
+                                    <div class="market-feed-strip">
+                                        {{#wantAll}}
+                                        {{>article/partials/market-feed-thumb}}
+                                        {{/wantAll}}
+                                        {{^wantAll}}<span class="market-feed-side-empty">—</span>{{/wantAll}}
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
                         {{/isTrade}}
                         {{#isSell}}
                         <div class="market-feed-deal is-single">
                             {{#hasHavePreview}}
                             <div class="market-feed-side" data-side="have">
-                                <span class="market-feed-side-label">HAVE</span>
+                                <div class="market-feed-side-head">
+                                    <span class="market-feed-side-label">HAVE</span>
+                                    {{#hasHaveLead}}
+                                    <p class="market-feed-side-members">
+                                        <span class="article-swap-name" style="--artist-color:{{haveLeadColor}}">{{haveLeadName}}</span>{{#hasHaveMore}} 외 {{haveMoreCount}}{{/hasHaveMore}}
+                                    </p>
+                                    {{/hasHaveLead}}
+                                </div>
                                 <div class="market-feed-strip">
                                     {{#havePreview}}
-                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" {{#previewTip}}data-tip="{{previewTip}}" title="{{previewTip}}"{{/previewTip}}>
-                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
-                                        {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
-                                    </span>
+                                    {{>article/partials/market-feed-thumb}}
                                     {{/havePreview}}
-                                    {{#hasHavePreviewMore}}<span class="market-feed-more">+{{havePreviewMoreCount}}</span>{{/hasHavePreviewMore}}
+                                    {{#hasHavePreviewMore}}<button type="button" class="market-feed-more" data-market-feed-more="have" aria-label="판매 오브젝트 전체 보기">+{{havePreviewMoreCount}}</button>{{/hasHavePreviewMore}}
                                 </div>
                             </div>
                             {{/hasHavePreview}}
                             {{#hasWantPreview}}
                             {{^hasHavePreview}}
                             <div class="market-feed-side" data-side="want">
-                                <span class="market-feed-side-label">WANT</span>
+                                <div class="market-feed-side-head">
+                                    <span class="market-feed-side-label">WANT</span>
+                                    {{#hasWantLead}}
+                                    <p class="market-feed-side-members">
+                                        <span class="article-swap-name" style="--artist-color:{{wantLeadColor}}">{{wantLeadName}}</span>{{#hasWantMore}} 외 {{wantMoreCount}}{{/hasWantMore}}
+                                    </p>
+                                    {{/hasWantLead}}
+                                </div>
                                 <div class="market-feed-strip">
                                     {{#wantPreview}}
-                                    <span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" {{#previewTip}}data-tip="{{previewTip}}" title="{{previewTip}}"{{/previewTip}}>
-                                        {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
-                                        {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
-                                    </span>
+                                    {{>article/partials/market-feed-thumb}}
                                     {{/wantPreview}}
-                                    {{#hasWantPreviewMore}}<span class="market-feed-more">+{{wantPreviewMoreCount}}</span>{{/hasWantPreviewMore}}
+                                    {{#hasWantPreviewMore}}<button type="button" class="market-feed-more" data-market-feed-more="want" aria-label="구매 오브젝트 전체 보기">+{{wantPreviewMoreCount}}</button>{{/hasWantPreviewMore}}
                                 </div>
                             </div>
                             {{/hasHavePreview}}
                             {{/hasWantPreview}}
                         </div>
+                        <template data-market-feed-full>
+                            <div class="objekt-detail-deal market-feed-deal is-single" aria-label="선택 오브젝트">
+                                {{#hasHavePreview}}
+                                <div class="market-feed-side" data-side="have">
+                                    <div class="market-feed-side-head">
+                                        <span class="market-feed-side-label">HAVE</span>
+                                        {{#hasHaveLead}}
+                                        <p class="market-feed-side-members">
+                                            <span class="article-swap-name" style="--artist-color:{{haveLeadColor}}">{{haveLeadName}}</span>{{#hasHaveMore}} 외 {{haveMoreCount}}{{/hasHaveMore}}
+                                        </p>
+                                        {{/hasHaveLead}}
+                                    </div>
+                                    <div class="market-feed-strip">
+                                        {{#haveAll}}
+                                        {{>article/partials/market-feed-thumb}}
+                                        {{/haveAll}}
+                                    </div>
+                                </div>
+                                {{/hasHavePreview}}
+                                {{#hasWantPreview}}
+                                {{^hasHavePreview}}
+                                <div class="market-feed-side" data-side="want">
+                                    <div class="market-feed-side-head">
+                                        <span class="market-feed-side-label">WANT</span>
+                                        {{#hasWantLead}}
+                                        <p class="market-feed-side-members">
+                                            <span class="article-swap-name" style="--artist-color:{{wantLeadColor}}">{{wantLeadName}}</span>{{#hasWantMore}} 외 {{wantMoreCount}}{{/hasWantMore}}
+                                        </p>
+                                        {{/hasWantLead}}
+                                    </div>
+                                    <div class="market-feed-strip">
+                                        {{#wantAll}}
+                                        {{>article/partials/market-feed-thumb}}
+                                        {{/wantAll}}
+                                    </div>
+                                </div>
+                                {{/hasHavePreview}}
+                                {{/hasWantPreview}}
+                            </div>
+                        </template>
                         {{/isSell}}
                         {{/hasObjektPreview}}
                         {{^hasObjektPreview}}
                         <p class="market-feed-note">{{title}}</p>
                         {{/hasObjektPreview}}
                     </div>
-                </a>
+                    {{#hasMarketDescription}}
+                    <div class="market-feed-desc detail-content">{{{content}}}</div>
+                    {{/hasMarketDescription}}
+                    <div class="market-feed-card-actions">
+                        <a href="{{boardBase}}/{{id}}/edit" class="market-feed-edit">수정</a>
+                    </div>
+                </article>
                 {{/articleList}}
                 {{^articleList}}
                 <div class="market-feed-empty">
@@ -299,6 +391,43 @@
         </div>
     </div>
 </main>
+
+{{#isMarketBoard}}
+<dialog id="marketFeedMoreDialog" class="market-feed-more-dialog" aria-labelledby="marketFeedMoreTitle">
+    <div class="market-feed-more-sheet">
+        <div class="market-feed-more-head">
+            <h2 id="marketFeedMoreTitle" class="market-feed-more-title">오브젝트</h2>
+            <button type="button" class="market-feed-more-close" data-market-feed-more-close aria-label="닫기">×</button>
+        </div>
+        <div id="marketFeedMoreBody" class="market-feed-more-body"></div>
+    </div>
+</dialog>
+<dialog id="marketObjektDialog" class="market-objekt-dialog" aria-labelledby="marketObjektTitle">
+    <div class="market-objekt-sheet">
+        <div class="market-objekt-head">
+            <h2 id="marketObjektTitle" class="market-objekt-title">오브젝트</h2>
+            <button type="button" class="market-feed-more-close" data-market-objekt-close aria-label="닫기">×</button>
+        </div>
+        <div class="market-objekt-body">
+            <div class="market-objekt-media">
+                <img id="marketObjektImage" src="" alt="">
+            </div>
+            <div class="market-objekt-info">
+                <dl class="market-objekt-meta">
+                    <div><dt>멤버</dt><dd id="marketObjektMember">—</dd></div>
+                    <div><dt>시즌</dt><dd id="marketObjektSeason">—</dd></div>
+                    <div><dt>클래스</dt><dd id="marketObjektClass">—</dd></div>
+                    <div><dt>번호</dt><dd id="marketObjektNo">—</dd></div>
+                </dl>
+                <section class="market-objekt-story" aria-labelledby="marketObjektStoryTitle">
+                    <h3 class="market-objekt-story-title" id="marketObjektStoryTitle">상세 설명</h3>
+                    <p id="marketObjektDesc" class="market-objekt-desc is-empty">불러오는 중…</p>
+                </section>
+            </div>
+        </div>
+    </div>
+</dialog>
+{{/isMarketBoard}}
 
 <script src="{{#asset}}/js/objekt-dropdown-core.js{{/asset}}"></script>
 <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>

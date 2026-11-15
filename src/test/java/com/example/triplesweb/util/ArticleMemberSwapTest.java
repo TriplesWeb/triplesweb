@@ -70,6 +70,16 @@ class ArticleMemberSwapTest {
         assertThat(ArticleMemberSwap.matchesListing(List.of(have, want), "", "all", "Ever01", "A")).isTrue();
     }
 
+    @Test void matchesListingAcceptsCommaSeparatedMembers() {
+        ArticleObjekt have = link("HAVE", "코토네", "Cream02", "Z");
+        ArticleObjekt want = link("WANT", "카에데", "Ever01", "A");
+        assertThat(ArticleMemberSwap.matchesListing(List.of(have, want), "이지우,코토네", "have", "", "")).isTrue();
+        assertThat(ArticleMemberSwap.matchesListing(List.of(have, want), "이지우,김수민", "have", "", "")).isFalse();
+        assertThat(ArticleMemberSwap.matchesListing(List.of(have, want), "카에데,코토네", "want", "", "")).isTrue();
+        assertThat(ArticleMemberSwap.matchesMember(List.of(have, want), "카에데,코토네", "all")).isTrue();
+        assertThat(ArticleMemberSwap.memberTokens(" 코토네 , ,카에데 ")).containsExactly("코토네", "카에데");
+    }
+
     @Test void previewThumbsCapsAndCountsOverflow() {
         ArticleObjekt a = link("HAVE", "코토네", "Cream02", "Z");
         a.setThumbnailImage("https://example/a.jpg");
