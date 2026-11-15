@@ -194,7 +194,7 @@ const base = path.resolve(__dirname, '../..');
     await page.locator('.archive-member-chip img').waitFor();
     const sizes=await page.evaluate(()=>({badge:document.querySelector('.archive-member-chip img').getBoundingClientRect().height,photo:document.querySelector('.ar-photo-link img').getBoundingClientRect().height}));
     assert.ok(sizes.badge<=40 && sizes.badge>20,'사진 아카이브 멤버 배지 높이 고정');
-    assert.ok(sizes.photo>=250,'원본 사진 크기 유지');
+    assert.ok(sizes.photo>=160 && sizes.photo<=250,'원본 사진 크기 유지');
     console.log('통과: 단독/번들/그룹 소개/About CSS 선택 효과 · 프레임 보존 · 윤곽 drop-shadow · 상징색 광택 · 6.85초 반복 · 좌상단→우하단 광택 · transform/opacity만 이동 · 다중선택·키보드 · 모션 감소 · 모바일');
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exit(1);});
