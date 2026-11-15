@@ -129,7 +129,7 @@
       }
       if (toggle) {
         toggle.textContent = open
-          ? '목록 닫기'
+          ? '접기'
           : (count > 0 ? '오브젝트 선택 (' + count + ')' : '오브젝트 선택');
       }
       syncWantAvailability();
