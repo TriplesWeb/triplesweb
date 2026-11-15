@@ -164,6 +164,7 @@
 }
 
 /* Compose Have / Want preview (feed-card language) */
+.article-compose-actions{display:flex;align-items:center;gap:.75rem;margin:.15rem 0 .35rem;padding-top:.15rem}
 .objekt-compose-deal{margin:.35rem 0 .15rem;padding:.75rem;border:1px solid #2f4a45;border-radius:1rem;background:#0f1618}
 .objekt-compose-strip{min-height:4.5rem}
 .objekt-trade-zone-empty{margin:0;font-size:.75rem;color:#7f918c;align-self:center}

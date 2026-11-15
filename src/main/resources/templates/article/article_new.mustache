@@ -12,7 +12,7 @@
 <meta name="_csrf_header" content="{{headerName}}">
 {{/_csrf}}
 <div id="editorRoot" data-category="{{category}}"></div>
-<main class="flex-1 flex items-center justify-center px-4 sm:px-6 py-12 z-10 relative">
+<main class="flex-1 flex {{#isMarketBoard}}items-start{{/isMarketBoard}}{{^isMarketBoard}}items-center{{/isMarketBoard}} justify-center px-4 sm:px-6 {{#isMarketBoard}}py-6 sm:py-8{{/isMarketBoard}}{{^isMarketBoard}}py-12{{/isMarketBoard}} z-10 relative">
     <div class="w-full {{#isMarketBoard}}max-w-4xl{{/isMarketBoard}}{{^isMarketBoard}}max-w-2xl{{/isMarketBoard}} relative">
         <div class="absolute -inset-1 rounded-3xl bg-gradient-to-b from-primary-container/20 via-transparent to-secondary-container/30 blur-xl opacity-75 pointer-events-none"></div>
         <div class="relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl overflow-hidden backdrop-blur-2xl shadow-2xl">
@@ -33,6 +33,19 @@
             <form id="articleForm" action="{{boardBase}}/new" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit(this)" class="space-y-5" data-market-board="{{#isMarketBoard}}true{{/isMarketBoard}}{{^isMarketBoard}}false{{/isMarketBoard}}">
                 {{#isMarketBoard}}
                 {{>article/objekt_picker}}
+                <div class="article-compose-actions">
+                    <button type="submit" class="btn btn-primary flex-1">
+                        {{#isTrade}}교환 올리기{{/isTrade}}
+                        {{#isSell}}거래 올리기{{/isSell}}
+                    </button>
+                </div>
+                <div class="space-y-2">
+                    <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">
+                        설명 <span class="text-outline font-normal">(선택)</span>
+                    </label>
+                    <div id="content" contenteditable="true" class="w-full min-h-[5.5rem] p-4 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" aria-multiline="true"></div>
+                    <input type="hidden" name="content" id="hiddenContent" />
+                </div>
                 {{/isMarketBoard}}
 
                 {{^isMarketBoard}}
@@ -45,29 +58,18 @@
                         <input type="text" class="w-full px-11 pr-4 py-3 bg-surface-container-lowest/50 border border-outline-variant/40 rounded-xl font-body-md text-body-md focus:outline-none" name="userid" value="익명" readonly>
                     </div>
                 </div>
-                {{/isMarketBoard}}
-
-                {{^isMarketBoard}}
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">제목</label>
                     <div class="relative group">
                         <input type="text" class="w-full px-3 pr-4 py-3 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md placeholder:text-outline/60 focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all text-on-surface" name="title" required>
                     </div>
                 </div>
-
                 {{>article/objekt_picker}}
-                {{/isMarketBoard}}
-
                 <div class="space-y-2">
-                    <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">
-                        {{#isMarketBoard}}설명 <span class="text-outline font-normal">(선택)</span>{{/isMarketBoard}}
-                        {{^isMarketBoard}}내용{{/isMarketBoard}}
-                    </label>
+                    <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">내용</label>
                     <div id="content" contenteditable="true" class="w-full p-4 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" aria-multiline="true"></div>
                     <input type="hidden" name="content" id="hiddenContent" />
                 </div>
-
-                {{^isMarketBoard}}
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">첨부 파일 (이미지 또는 영상)</label>
                     <div class="file-chooser-row relative">
@@ -80,17 +82,13 @@
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">미리보기</label>
                     <div id="previewArea" class="flex flex-wrap gap-3 p-3 bg-surface-container-lowest/40 border border-outline-variant/30 rounded-xl min-h-[80px]"> </div>
                 </div>
+                <div class="flex items-center gap-3 pt-4">
+                    <button type="submit" class="btn btn-primary flex-1">작성하기</button>
+                </div>
                 {{/isMarketBoard}}
                 {{#_csrf}}
                     <input type="hidden" name="{{parameterName}}" value="{{token}}">
                 {{/_csrf}}
-                <div class="flex items-center gap-3 pt-4">
-                    <button type="submit" class="btn btn-primary flex-1">
-                        {{#isTrade}}교환 올리기{{/isTrade}}
-                        {{#isSell}}거래 올리기{{/isSell}}
-                        {{^isMarketBoard}}작성하기{{/isMarketBoard}}
-                    </button>
-                </div>
         </form>
         </div>
     </div>
