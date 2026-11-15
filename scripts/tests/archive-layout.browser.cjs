@@ -6,6 +6,7 @@ const { chromium } = require('playwright');
 const root = path.resolve(__dirname, '../..');
 const staticRoot = path.join(root, 'src/main/resources/static');
 const css = fs.readFileSync(path.join(staticRoot, 'css', 'archive-page.css'), 'utf8');
+const siteChrome = fs.readFileSync(path.join(staticRoot, 'css', 'site-chrome.css'), 'utf8');
 const siteUi = fs.readFileSync(path.join(staticRoot, 'css', 'site-ui.css'), 'utf8');
 const browseJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-browse.js'), 'utf8');
 const dateJs = fs.readFileSync(path.join(staticRoot, 'js', 'date-range-filter.js'), 'utf8');
@@ -22,6 +23,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
 *,*::before,*::after{box-sizing:border-box}
 img,video{max-width:100%;height:auto}
 body{margin:0;background:#0d0e12;color:#e3e2e8;font-family:"Pretendard Variable",Pretendard,sans-serif}
+${siteChrome}
 ${css}
 ${siteUi}
 </style></head>
@@ -138,8 +140,13 @@ ${siteUi}
       const headlineBox = headline.getBoundingClientRect();
       const statsBox = stats.getBoundingClientRect();
       const pageBox = pageRoot.getBoundingClientRect();
+      const heroBox = document.querySelector('.ar-hero').getBoundingClientRect();
+      const padL = parseFloat(getComputedStyle(pageRoot).paddingLeft);
+      const padR = parseFloat(getComputedStyle(pageRoot).paddingRight);
       return {
-        gutter: pageBox.left >= 40 && (window.innerWidth - pageBox.right) >= 40,
+        gutter: padL >= 32 && padR >= 32
+          && heroBox.left >= pageBox.left + padL - 1
+          && pageBox.right - heroBox.right >= padR - 1,
         statsInside: headline.contains(stats),
         open: toggle.getAttribute('aria-expanded') === 'true',
         icon: toggle.querySelector('[data-stats-icon]').textContent.trim(),
