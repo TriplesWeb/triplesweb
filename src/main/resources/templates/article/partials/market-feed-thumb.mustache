@@ -1,0 +1,12 @@
+{{#objektKey}}
+<button type="button" class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" data-objekt-open="{{objektKey}}" {{#previewTip}}data-tip="{{previewTip}}" title="{{previewTip}}"{{/previewTip}} aria-label="{{#previewTip}}{{previewTip}} {{/previewTip}}설명 보기">
+    {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
+    {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
+</button>
+{{/objektKey}}
+{{^objektKey}}
+<span class="market-feed-thumb{{^hasImage}} is-empty{{/hasImage}}" {{#previewTip}}data-tip="{{previewTip}}" title="{{previewTip}}"{{/previewTip}}>
+    {{#hasImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy" decoding="async">{{/hasImage}}
+    {{^hasImage}}<span>{{collectionNo}}</span>{{/hasImage}}
+</span>
+{{/objektKey}}

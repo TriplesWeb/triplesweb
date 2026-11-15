@@ -1,12 +1,12 @@
 package com.example.triplesweb.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-/** 게시글 작성·수정 폼 바인딩. Multipart 첨부·좋아요 UI 상태 포함. */
+/** 게시글 작성·수정 폼 바인딩. Multipart 첨부·좋아요 UI 상태 포함.
+ * 제목·본문 필수는 ArticleController.validateTitleAndContent에서 검사한다(마켓은 선택). */
 @Getter
 @Setter
 @AllArgsConstructor
@@ -18,9 +18,7 @@ public class ArticleForm {
     private Long displayId;
     private String userId;
 
-    @NotBlank(message = "제목은 필수 입력 항목입니다.")
     private String title;
-    @NotBlank(message = "내용은 필수 입력 항목입니다.")
     private String content;
     private String category;
     private List<MultipartFile> files;

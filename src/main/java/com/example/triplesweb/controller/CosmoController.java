@@ -83,6 +83,7 @@ public class CosmoController {
         model.addAttribute("seasonOptions", facets.seasons());
         model.addAttribute("classOptions", facets.classes());
         model.addAttribute("objektNumbers", facets.collectionNumbers());
+        model.addAttribute("objektWorkspaceNamedFields", true);
         model.addAttribute("kindByClassJson", ObjektCatalogSort.kindByClassJson(facets.numbersByClass()));
 
         model.addAttribute("objekts", withMemberLinks(page.items()));

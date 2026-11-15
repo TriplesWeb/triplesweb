@@ -117,8 +117,8 @@ body{margin:0;background:#0d0e12;color:#e3e2e8}
       <div class="objekt-detail-actions">
         <button type="button" id="objektDetailFavorite">♡ 찜하기</button>
         <a id="objektDetailMemberLink" href="/cosmo/objekt">멤버</a>
-        <a id="objektDetailTradeLink" href="/article/trade/new">교환</a>
-        <a id="objektDetailSellLink" href="/article/sell/new">거래</a>
+        <a id="objektDetailTradeLink" href="/trade/new">교환</a>
+        <a id="objektDetailSellLink" href="/sell/new">거래</a>
         <a id="objektDetailFullLink" href="/cosmo/objekt/detail/x">전체</a>
       </div>
     </div>
