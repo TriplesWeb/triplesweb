@@ -190,7 +190,8 @@ const base = path.resolve(__dirname, '../..');
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth), true);
       await page.emulateMedia({reducedMotion:'no-preference'});
     }
-    await page.setContent('<html><head><base href="https://motion.test/"><link rel="stylesheet" href="/css/archive-page.css"></head><body><main class="archive-page" data-archive-kind="image"><article class="ar-card"><a class="ar-photo-link"><img src="/portrait.svg" alt="큰 사진"></a><div class="ar-body"><span class="archive-member-chip"><img src="/portrait.svg" alt="멤버"><span>멤버 이름</span></span></div></article></main></body></html>');
+    await page.setViewportSize({width:1280,height:800});
+    await page.setContent('<html><head><base href="https://motion.test/"><link rel="stylesheet" href="/css/archive-page.css"></head><body><main class="archive-page" data-archive-kind="image"><section class="ar-grid" id="archiveGrid"><article class="ar-card"><a class="ar-photo-link"><img src="/portrait.svg" alt="큰 사진"></a><div class="ar-body"><span class="archive-member-chip"><img src="/portrait.svg" alt="멤버"><span>멤버 이름</span></span></div></article></section></main></body></html>');
     await page.locator('.archive-member-chip img').waitFor();
     const sizes=await page.evaluate(()=>({badge:document.querySelector('.archive-member-chip img').getBoundingClientRect().height,photo:document.querySelector('.ar-photo-link img').getBoundingClientRect().height}));
     assert.ok(sizes.badge<=40 && sizes.badge>20,'사진 아카이브 멤버 배지 높이 고정');
