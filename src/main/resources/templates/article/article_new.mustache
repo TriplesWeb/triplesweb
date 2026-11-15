@@ -34,18 +34,18 @@
             <form id="articleForm" action="{{boardBase}}/new" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit(this)" class="space-y-5" data-market-board="{{#isMarketBoard}}true{{/isMarketBoard}}{{^isMarketBoard}}false{{/isMarketBoard}}">
                 {{#isMarketBoard}}
                 {{>article/objekt_picker}}
-                <div class="article-compose-actions">
-                    <button type="submit" class="btn btn-primary flex-1">
-                        {{#isTrade}}교환 올리기{{/isTrade}}
-                        {{#isSell}}거래 올리기{{/isSell}}
-                    </button>
-                </div>
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">
                         설명 <span class="text-outline font-normal">(선택)</span>
                     </label>
                     <div id="content" contenteditable="true" class="w-full min-h-[5.5rem] p-4 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" aria-multiline="true"></div>
                     <input type="hidden" name="content" id="hiddenContent" />
+                </div>
+                <div class="article-compose-actions">
+                    <button type="submit" class="btn btn-primary">
+                        {{#isTrade}}교환 올리기{{/isTrade}}
+                        {{#isSell}}거래 올리기{{/isSell}}
+                    </button>
                 </div>
                 {{/isMarketBoard}}
 

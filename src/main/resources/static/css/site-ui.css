@@ -420,6 +420,11 @@ html[data-theme="light"] a.site-back-link:focus-visible {
     outline-offset: 3px;
 }
 
+.site-section-tab:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
 html[data-theme="light"] .site-section-tabs {
     border-bottom-color: rgba(40, 50, 48, 0.28);
 }

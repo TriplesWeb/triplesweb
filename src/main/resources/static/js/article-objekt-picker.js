@@ -35,7 +35,6 @@
     const pickerError = document.getElementById('objektPickerError');
     const api = section.dataset.objektApi;
     const pageSize = 24;
-    const maxLinked = 20;
     const defaultOpen = section.dataset.defaultOpen !== 'false';
     let open = false;
 
@@ -96,29 +95,18 @@
       return selectedNodes().length;
     }
 
-    function syncWantAvailability() {
-      if (!tradeSplit) return;
-      const unlocked = haveCount() > 0;
-      if (sideWantBtn) {
-        sideWantBtn.disabled = !unlocked;
-        if (!unlocked && activeSide === 'want') setActiveSide('have');
-      }
-      // Want는 Have가 비어도 유지한다. Want부터 개별 삭제 가능.
-    }
-
     function setActiveSide(side) {
       if (!tradeSplit) return;
-      if (side === 'want' && haveCount() === 0) return;
       activeSide = side === 'want' ? 'want' : 'have';
       if (sideHaveBtn) {
         const on = activeSide === 'have';
         sideHaveBtn.classList.toggle('is-active', on);
-        sideHaveBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        sideHaveBtn.setAttribute('aria-selected', on ? 'true' : 'false');
       }
       if (sideWantBtn) {
         const on = activeSide === 'want';
         sideWantBtn.classList.toggle('is-active', on);
-        sideWantBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        sideWantBtn.setAttribute('aria-selected', on ? 'true' : 'false');
       }
       refreshOptionChecks();
     }
@@ -127,7 +115,7 @@
       const count = totalCount();
       if (summary) {
         if (tradeSplit) {
-          summary.textContent = 'Have ' + haveCount() + '개 · Want ' + wantCount() + '개 (합계 ' + count + '/' + maxLinked + ')';
+          summary.textContent = 'Have ' + haveCount() + '개 · Want ' + wantCount() + '개 (합계 ' + count + '개)';
         } else {
           summary.textContent = count > 0 ? '선택된 오브젝트 ' + count + '개' : '선택된 오브젝트 0개';
         }
@@ -137,7 +125,6 @@
           ? '접기'
           : (count > 0 ? '오브젝트 선택 (' + count + ')' : '오브젝트 선택');
       }
-      syncWantAvailability();
     }
 
     function checkedValues(selector) {
@@ -279,14 +266,6 @@
           }
           return true;
         }
-        if (tradeSplit && targetSide === 'want' && haveCount() === 0) {
-          showPickerError('Have 오브젝트를 먼저 선택해주세요.');
-          return false;
-        }
-        if (totalCount() >= maxLinked) {
-          showPickerError('오브젝트는 최대 ' + maxLinked + '개까지 선택할 수 있습니다.');
-          return false;
-        }
         showPickerError('');
         const input = document.createElement('input');
         input.type = 'hidden';
@@ -380,7 +359,7 @@
           if (wants.length === 0) {
             wantPreview.appendChild(emptyHint(
               'objektWantEmptyHint',
-              haveCount() > 0 ? 'Want 오브젝트를 선택하세요' : 'Have를 고른 뒤 Want를 선택하세요'
+              'Want 오브젝트를 선택하세요'
             ));
           } else {
             wants.forEach((input) => {
@@ -462,25 +441,35 @@
 
     function refreshOptionChecks() {
       if (!list) return;
-      const chosen = selectedIds();
+      const chosen = selectedIds(tradeSplit ? activeSide : null);
+      const otherSide = tradeSplit
+        ? selectedIds(activeSide === 'want' ? 'have' : 'want')
+        : new Set();
       Array.from(list.children).forEach((label) => {
         const box = label.querySelector('input.objekt-checkbox');
         if (!box) return;
         const id = box.dataset.objektId;
+        const onOther = !!(id && otherSide.has(String(id)));
         const checked = !!(id && chosen.has(String(id)));
         box.checked = checked;
+        box.disabled = onOther;
         label.classList.toggle('border-teal-300/60', checked);
         label.classList.toggle('bg-teal-400/10', checked);
-        label.classList.toggle('border-white/10', !checked);
+        label.classList.toggle('border-white/10', !checked && !onOther);
+        label.classList.toggle('opacity-40', onOther);
+        label.classList.toggle('cursor-not-allowed', onOther);
+        label.title = onOther
+          ? (activeSide === 'want' ? 'Have에 담긴 오브젝트입니다' : 'Want에 담긴 오브젝트입니다')
+          : '';
       });
     }
 
     function statusText() {
       const shown = list ? list.children.length : 0;
       if (tradeSplit) {
-        return '표시 ' + shown + ' / 필터 ' + total + '개 · Have ' + haveCount() + ' · Want ' + wantCount() + ' / ' + maxLinked;
+        return '표시 ' + shown + ' / 필터 ' + total + '개 · Have ' + haveCount() + ' · Want ' + wantCount();
       }
-      return '표시 ' + shown + ' / 필터 ' + total + '개 · 선택 ' + totalCount() + ' / ' + maxLinked + '개';
+      return '표시 ' + shown + ' / 필터 ' + total + '개 · 선택 ' + totalCount() + '개';
     }
 
     function hasMore() {
@@ -521,16 +510,16 @@
         const data = await response.json();
         if (current !== requestId) return;
         total = Number(data.total) || 0;
-        const chosen = selectedIds();
         (data.items || []).forEach((item) => {
           if (!item || !item.id) return;
           itemCache.set(String(item.id), item);
-          const cardEl = card(item, chosen.has(String(item.id)));
+          const cardEl = card(item, false);
           // Keep objekt id on checkbox for later sync.
           const box = cardEl.querySelector('input.objekt-checkbox');
           if (box) box.dataset.objektId = String(item.id);
           list.appendChild(cardEl);
         });
+        refreshOptionChecks();
         const got = (data.items || []).length;
         offset += got;
         if (got === 0) total = offset;
@@ -777,12 +766,12 @@
       if (sellHaveBtn) {
         const on = next === 'have';
         sellHaveBtn.classList.toggle('is-active', on);
-        sellHaveBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        sellHaveBtn.setAttribute('aria-selected', on ? 'true' : 'false');
       }
       if (sellWantBtn) {
         const on = next === 'want';
         sellWantBtn.classList.toggle('is-active', on);
-        sellWantBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        sellWantBtn.setAttribute('aria-selected', on ? 'true' : 'false');
       }
       if (sellSideLabel) sellSideLabel.textContent = next === 'want' ? 'WANT' : 'HAVE';
       const title = section.querySelector('h3');
