@@ -61,6 +61,7 @@
     grid-template-columns: 1fr 1fr;
     gap: 0.7rem;
     margin-top: 1.25rem;
+    margin-inline: auto;
     width: 100%;
     max-width: 46rem;
 }
@@ -552,7 +553,7 @@
     z-index: 30;
     display: grid;
     gap: 0.55rem;
-    width: min(17rem, calc(100vw - 2rem));
+    width: min(22rem, calc(100vw - 2rem));
     padding: 0.75rem;
     border: 1px solid rgba(58, 74, 70, 0.55);
     border-radius: 0.75rem;
@@ -580,6 +581,39 @@
     padding: 0.5rem 0.75rem;
 }
 .ar-date-popover input[type="date"]:focus {
+    outline: none;
+    border-color: #00f5d4;
+}
+.ar-date-popover.is-ymd input[type="date"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+    opacity: 0;
+}
+.ar-ymd {
+    display: grid;
+    grid-template-columns: minmax(4.6rem, 1.2fr) minmax(3.4rem, 0.9fr) minmax(3.4rem, 0.9fr);
+    gap: 0.3rem;
+}
+.ar-ymd select {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 2.1rem;
+    padding: 0.3rem 0.35rem;
+    border: 1px solid rgba(58, 74, 70, 0.6);
+    border-radius: 0.65rem;
+    background: rgba(13, 14, 18, 0.7);
+    color: #e3e2e8;
+    font: inherit;
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+}
+.ar-ymd select:focus {
     outline: none;
     border-color: #00f5d4;
 }

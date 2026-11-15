@@ -8,6 +8,7 @@ const staticRoot = path.join(root, 'src/main/resources/static');
 const css = fs.readFileSync(path.join(staticRoot, 'css', 'archive-page.css'), 'utf8');
 const siteUi = fs.readFileSync(path.join(staticRoot, 'css', 'site-ui.css'), 'utf8');
 const browseJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-browse.js'), 'utf8');
+const dateJs = fs.readFileSync(path.join(staticRoot, 'js', 'date-range-filter.js'), 'utf8');
 
 const members = ['윤서연', '정혜린', '이지우', '김채연', '김유연', '김수민', '김나경', '공유빈', '카에데', '서다현', '코토네', '곽연지', '니엔', '박소현', '신위', '마유', '주빈'];
 
@@ -55,7 +56,14 @@ ${siteUi}
       </div>
       <div class="ar-filter-tools">
         <label class="ar-sort"><span class="ar-sort-label">정렬</span><span class="ar-sort-control"><select id="archiveSort" aria-label="정렬"><option value="newest">최신순</option><option value="oldest">오래된 순</option><option value="title">제목순</option></select><span class="material-symbols-outlined">arrow_drop_down</span></span></label>
-        <div class="ar-date-filter"><button type="button" class="ar-date-toggle"><span>사진 날짜</span></button></div>
+        <div class="ar-date-filter" data-date-filter>
+          <button type="button" class="ar-date-toggle" data-date-toggle aria-expanded="false"><span>사진 날짜</span></button>
+          <div class="ar-date-popover" data-date-popover hidden>
+            <label>이 사진 날짜<input type="date" name="on" data-date-exact></label>
+            <label>사진 날짜 시작<input type="date" name="from" data-date-from></label>
+            <label>사진 날짜 끝<input type="date" name="to" data-date-to></label>
+          </div>
+        </div>
         <button type="button" class="ar-member-toggle">멤버 선택</button>
         <a class="ar-text-btn ar-reset" href="/archive">초기화</a>
       </div>
@@ -87,6 +95,7 @@ ${siteUi}
   </nav>
 </main>
 <script>${browseJs}</script>
+<script>${dateJs}</script>
 </body></html>`;
 
 (async () => {
@@ -133,7 +142,13 @@ ${siteUi}
         open: toggle.getAttribute('aria-expanded') === 'true',
         icon: toggle.querySelector('[data-stats-icon]').textContent.trim(),
         statsShown: statsBox.height > 20,
-        statsNarrower: statsBox.width < headlineBox.width - 80
+        statsNarrower: statsBox.width < headlineBox.width - 80,
+        statsCentered: (() => {
+          const style = getComputedStyle(headline);
+          const left = headlineBox.left + parseFloat(style.paddingLeft);
+          const right = headlineBox.right - parseFloat(style.paddingRight);
+          return Math.abs((statsBox.left + statsBox.right) / 2 - (left + right) / 2) <= 8;
+        })()
       };
     });
     assert.equal(hero.statsInside, true, '통계가 아카이브 제목과 같은 패널에 없다');
@@ -141,6 +156,7 @@ ${siteUi}
     assert.equal(hero.icon, '−');
     assert.equal(hero.statsShown, true, '초기 화면에서 통계가 안 보인다');
     assert.equal(hero.statsNarrower, true, '통계 카드가 여전히 패널 전체 너비다');
+    assert.equal(hero.statsCentered, true, '통계 카드가 가운데 있지 않다');
 
     await page.click('[data-stats-toggle]');
     const closed = await page.evaluate(() => {
@@ -253,6 +269,16 @@ ${siteUi}
     assert.equal(toolbar.resetAlign, true, '초기화가 다른 버튼과 세로로 안 맞는다');
     assert.equal(toolbar.sortEnhanced, true, '정렬 드롭다운이 같은 스타일로 열리지 않는다');
     assert.equal(toolbar.sortMatch, true, '정렬 항목 스타일이 닫힌 버튼과 다르다');
+
+    await page.click('[data-date-toggle]');
+    const ymd = await page.evaluate(() => {
+      const group = document.querySelector('[data-date-exact]')?.parentElement?.querySelector('[data-ymd]');
+      const labels = [...(group?.querySelectorAll('select') || [])].map((el) => el.getAttribute('aria-label'));
+      const boxes = [...(group?.querySelectorAll('select') || [])].map((el) => el.getBoundingClientRect().left);
+      return { labels, ordered: boxes.length === 3 && boxes[0] < boxes[1] && boxes[1] < boxes[2] };
+    });
+    assert.deepEqual(ymd.labels, ['연도', '월', '일'], '날짜 항목이 연-월-일 순이 아니다: ' + JSON.stringify(ymd.labels));
+    assert.equal(ymd.ordered, true, '날짜 선택 칸이 연-월-일 순으로 놓이지 않는다');
 
     const pager = await page.evaluate(() => {
       const jump = document.querySelector('.ar-page-jump');

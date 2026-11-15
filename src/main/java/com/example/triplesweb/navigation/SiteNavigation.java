@@ -22,6 +22,10 @@ public final class SiteNavigation {
         return new Item("", label, href, List.of());
     }
 
+    private static Item parent(String label, String href, Link... children) {
+        return new Item("", label, href, List.of(children));
+    }
+
     public static final List<Section> PRIMARY = List.of(
         new Section("about", "About 트리플에스", List.of(
             link("그룹 입문", "/triples/overview"), link("멤버", "/triples/members"),
@@ -33,7 +37,9 @@ public final class SiteNavigation {
             link("교환/거래", "/article/trade"), link("그래비티", "/cosmo/gravity")
         ), List.of()),
         new Section("media", "미디어", List.of(
-            link("아카이브", "/archive"),
+            parent("아카이브", "/archive",
+                new Link("사진", "/archive"),
+                new Link("영상", "/archive?type=video")),
             link("공식 미디어", "/media")
         ), List.of()),
         new Section("info", "정보", List.of(

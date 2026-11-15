@@ -62,6 +62,7 @@ class MainControllerTest {
                 .andExpect(content().string(containsString("컴백")))
                 .andExpect(content().string(containsString("/uploads/images/album/cover.webp")))
                 .andExpect(content().string(containsString("아카이브")))
+                .andExpect(content().string(containsString("header-group-heading")))
                 .andExpect(content().string(containsString("/archive?type=video")))
                 .andExpect(content().string(containsString("Who is tripleS?")))
                 .andExpect(content().string(containsString("href=\"/triples/artist\"")))
