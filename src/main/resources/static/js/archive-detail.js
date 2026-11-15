@@ -5,7 +5,6 @@
     const title = document.getElementById('archiveDetailTitle');
     const date = document.getElementById('archiveDetailDate');
     const members = document.getElementById('archiveDetailMembers');
-    const original = document.getElementById('archiveDetailOriginal');
     const edit = document.getElementById('archiveDetailEdit');
     const remove = document.getElementById('archiveDetailDelete');
 
@@ -23,13 +22,9 @@
             date.textContent = card.dataset.registered ? label + ' ' + card.dataset.registered : '';
         }
         if (members) {
-            const source = card.querySelector('.ar-card-members') || card.querySelector('.ar-meta');
+            const source = card.querySelector('.ar-card-members');
             members.replaceChildren();
             if (source) members.innerHTML = source.innerHTML;
-        }
-        if (original) {
-            original.href = url || '#';
-            original.hidden = !url;
         }
         [edit, remove].forEach(button => {
             if (!button) return;

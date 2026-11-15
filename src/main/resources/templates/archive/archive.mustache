@@ -35,11 +35,6 @@
 
     {{>partials/archive-toolbar}}
 
-    {{#showArchiveBrowse}}
-    <div class="ar-gallery-bar">
-        <a class="ar-more-link" href="{{archiveBrowsePath}}{{browseQuery}}">더보기</a>
-    </div>
-    {{/showArchiveBrowse}}
     <section class="ar-grid{{#archiveBrowse}} ar-grid-browse{{/archiveBrowse}}" id="archiveGrid" aria-label="{{#imageArchive}}사진 목록{{/imageArchive}}{{#videoArchive}}영상 목록{{/videoArchive}}" data-number-offset="{{archiveOffset}}">
         {{#archiveCards}}
         {{#imageArchive}}

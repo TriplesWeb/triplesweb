@@ -50,21 +50,20 @@ ${siteUi}
   </section>
   <section class="ar-panel ar-toolbar">
     <form class="ar-filters" id="archiveFilterForm">
-      <div class="ar-search-row">
-        <div class="ar-search-wrap site-search"><input class="ar-search site-search__input" type="search" placeholder="사진 제목 검색"><span class="site-search__submit" aria-hidden="true"><span class="material-symbols-outlined">search</span></span></div>
-        <button type="submit" class="ar-search-go">검색</button>
-      </div>
       <div class="ar-filter-tools">
         <label class="ar-sort"><span class="ar-sort-label">정렬</span><span class="ar-sort-control"><select id="archiveSort" aria-label="정렬"><option value="newest">최신순</option><option value="oldest">오래된 순</option><option value="title">제목순</option></select><span class="material-symbols-outlined">arrow_drop_down</span></span></label>
         <div class="ar-date-filter" data-date-filter>
           <button type="button" class="ar-date-toggle" data-date-toggle aria-expanded="false"><span>사진 날짜</span></button>
           <div class="ar-date-popover" data-date-popover hidden>
-            <label>이 사진 날짜<input type="date" name="on" data-date-exact></label>
             <label>사진 날짜 시작<input type="date" name="from" data-date-from></label>
             <label>사진 날짜 끝<input type="date" name="to" data-date-to></label>
           </div>
         </div>
         <button type="button" class="ar-member-toggle">멤버 선택</button>
+        <div class="ar-search-row">
+          <div class="ar-search-wrap site-search"><input class="ar-search site-search__input" type="search" placeholder="사진 제목 검색"><span class="site-search__submit" aria-hidden="true"><span class="material-symbols-outlined">search</span></span></div>
+          <button type="submit" class="ar-search-go">검색</button>
+        </div>
         <a class="ar-text-btn ar-reset" href="/archive">초기화</a>
       </div>
     </form>
@@ -132,12 +131,15 @@ ${siteUi}
     }
 
     const hero = await page.evaluate(() => {
+      const pageRoot = document.querySelector('.archive-page');
       const headline = document.querySelector('.ar-headline');
       const stats = document.getElementById('archiveStats');
       const toggle = document.querySelector('[data-stats-toggle]');
       const headlineBox = headline.getBoundingClientRect();
       const statsBox = stats.getBoundingClientRect();
+      const pageBox = pageRoot.getBoundingClientRect();
       return {
+        gutter: pageBox.left >= 40 && (window.innerWidth - pageBox.right) >= 40,
         statsInside: headline.contains(stats),
         open: toggle.getAttribute('aria-expanded') === 'true',
         icon: toggle.querySelector('[data-stats-icon]').textContent.trim(),
@@ -151,6 +153,7 @@ ${siteUi}
         })()
       };
     });
+    assert.equal(hero.gutter, true, '아카이브 페이지가 좌우를 가득 채운다');
     assert.equal(hero.statsInside, true, '통계가 아카이브 제목과 같은 패널에 없다');
     assert.equal(hero.open, true, '초기 화면에서 통계가 닫혀 있다');
     assert.equal(hero.icon, '−');
@@ -221,6 +224,7 @@ ${siteUi}
       const search = document.querySelector('.ar-search-wrap');
       const icon = document.querySelector('.ar-search-wrap .site-search__submit');
       const tools = document.querySelector('.ar-filter-tools');
+      const bar = document.querySelector('.ar-toolbar');
       const date = document.querySelector('.ar-date-toggle');
       const member = document.querySelector('.ar-member-toggle');
       const reset = document.querySelector('.ar-reset');
@@ -229,6 +233,7 @@ ${siteUi}
       const searchBox = search.getBoundingClientRect();
       const goBox = searchGo.getBoundingClientRect();
       const toolsBox = tools.getBoundingClientRect();
+      const barBox = bar.getBoundingClientRect();
       const memberBox = member.getBoundingClientRect();
       const resetBox = reset.getBoundingClientRect();
       const memberStyle = getComputedStyle(member);
@@ -239,10 +244,13 @@ ${siteUi}
         searchW: Math.round(searchBox.width),
         goAfter: goBox.left >= searchBox.right - 2,
         iconIsButton: icon.tagName === 'BUTTON',
-        toolsAfter: toolsBox.left >= goBox.right - 24,
+        searchAfterMember: searchBox.left >= memberBox.right - 8,
+        resetAfterSearch: resetBox.left >= goBox.right - 8,
+        toolsCentered: Math.abs((toolsBox.left + toolsBox.right) / 2 - (barBox.left + barBox.right) / 2) <= 24,
         dateInTools: tools.contains(date),
         memberInTools: tools.contains(member),
         resetInTools: tools.contains(reset),
+        searchInTools: tools.contains(search),
         filterSize: getComputedStyle(document.querySelector('.ar-filter-summary')).fontSize,
         resetFont: resetStyle.fontSize,
         memberFont: memberStyle.fontSize,
@@ -259,10 +267,13 @@ ${siteUi}
     assert.ok(toolbar.searchW < 420, '검색창이 한 줄을 차지한다: ' + toolbar.searchW);
     assert.equal(toolbar.goAfter, true, '검색 버튼이 검색창 오른쪽에 없다');
     assert.equal(toolbar.iconIsButton, false, '돋보기가 여전히 제출 버튼이다');
-    assert.equal(toolbar.toolsAfter, true, '다른 버튼이 검색창 오른쪽으로 가지 않았다');
+    assert.equal(toolbar.searchAfterMember, true, '검색창이 멤버 선택 오른쪽에 없다');
+    assert.equal(toolbar.resetAfterSearch, true, '초기화가 검색 버튼 오른쪽에 없다');
+    assert.equal(toolbar.toolsCentered, true, '필터가 가운데 있지 않다');
     assert.equal(toolbar.dateInTools, true);
     assert.equal(toolbar.memberInTools, true);
     assert.equal(toolbar.resetInTools, true);
+    assert.equal(toolbar.searchInTools, true);
     assert.ok(parseFloat(toolbar.filterSize) < 22, '필터 글자가 줄지 않는다: ' + toolbar.filterSize);
     assert.equal(toolbar.resetFont, toolbar.memberFont, '초기화 글자 크기가 다른 버튼과 다르다: ' + toolbar.resetFont);
     assert.equal(toolbar.resetColor, toolbar.memberColor, '초기화 색이 다른 버튼과 다르다: ' + toolbar.resetColor);
@@ -272,13 +283,23 @@ ${siteUi}
 
     await page.click('[data-date-toggle]');
     const ymd = await page.evaluate(() => {
-      const group = document.querySelector('[data-date-exact]')?.parentElement?.querySelector('[data-ymd]');
+      const pop = document.querySelector('[data-date-popover]');
+      const group = pop?.querySelector('[data-ymd]');
       const labels = [...(group?.querySelectorAll('select') || [])].map((el) => el.getAttribute('aria-label'));
       const boxes = [...(group?.querySelectorAll('select') || [])].map((el) => el.getBoundingClientRect().left);
-      return { labels, ordered: boxes.length === 3 && boxes[0] < boxes[1] && boxes[1] < boxes[2] };
+      return {
+        labels,
+        ordered: boxes.length === 3 && boxes[0] < boxes[1] && boxes[1] < boxes[2],
+        exact: Boolean(pop?.querySelector('[data-date-exact]')),
+        hint: pop?.querySelector('.ar-field-hint')?.textContent || '',
+        more: Boolean(document.querySelector('.ar-more-link'))
+      };
     });
     assert.deepEqual(ymd.labels, ['연도', '월', '일'], '날짜 항목이 연-월-일 순이 아니다: ' + JSON.stringify(ymd.labels));
     assert.equal(ymd.ordered, true, '날짜 선택 칸이 연-월-일 순으로 놓이지 않는다');
+    assert.equal(ymd.exact, false, '이 사진 날짜 칸이 남아 있다');
+    assert.equal(ymd.hint, '', '날짜 힌트가 남아 있다');
+    assert.equal(ymd.more, false, '더보기 버튼이 남아 있다');
 
     const pager = await page.evaluate(() => {
       const jump = document.querySelector('.ar-page-jump');

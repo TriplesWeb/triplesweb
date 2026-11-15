@@ -16,6 +16,7 @@ const cards = Array.from({ length: 6 }, (_, index) => `
   <div class="ar-body">
     <h3>사진 ${index + 1}</h3>
     <div class="ar-meta"><span class="archive-member-chip archive-symbol-chip" title="지연" aria-label="지연"><img src="/portrait.svg" alt="지연"><span class="archive-chip-name">지연</span></span></div>
+    <div class="ar-card-members" hidden><a href="/triples/artist/24" class="ar-album-member" style="--member-color:#f4a261" title="지연"><img src="/portrait.svg" alt=""><span>지연</span></a></div>
   </div>
 </article>`).join('');
 
@@ -29,9 +30,6 @@ ${css}
 </style></head>
 <body>
 <main class="archive-page" data-archive-kind="image">
-  <div class="ar-gallery-bar">
-    <a class="ar-more-link" href="/archive/all">더보기</a>
-  </div>
   <section class="ar-grid" id="archiveGrid">${cards}</section>
 </main>
 <div class="ar-dialog" id="archiveDetail" hidden>
@@ -42,8 +40,7 @@ ${css}
       <div class="ar-dialog-head"><h2 id="archiveDetailTitle"></h2></div>
       <div class="ar-detail-body">
         <p class="ar-detail-date" id="archiveDetailDate" hidden></p>
-        <div class="ar-meta ar-detail-members" id="archiveDetailMembers"></div>
-        <a id="archiveDetailOriginal" href="#"></a>
+        <div class="ar-detail-members" id="archiveDetailMembers"></div>
       </div>
       <div class="ar-dialog-foot ar-detail-actions" data-admin-only>
         <button type="button" data-archive-edit id="archiveDetailEdit">수정</button>
@@ -99,11 +96,17 @@ ${css}
     const detail = await page.evaluate(() => ({
       open: !document.getElementById('archiveDetail').hidden,
       title: document.getElementById('archiveDetailTitle').textContent,
-      blank: document.querySelector('.ar-card [data-archive-open]')?.tagName
+      blank: document.querySelector('.ar-card [data-archive-open]')?.tagName,
+      original: Boolean(document.getElementById('archiveDetailOriginal')),
+      member: document.querySelector('#archiveDetailMembers .ar-album-member span')?.textContent || '',
+      portrait: document.querySelector('#archiveDetailMembers .ar-album-member img')?.getAttribute('src') || ''
     }));
     assert.equal(detail.open, true, '상세 모달이 열리지 않는다');
     assert.equal(detail.title, '사진 2');
     assert.equal(detail.blank, 'BUTTON');
+    assert.equal(detail.original, false, '원본 열기가 남아 있다');
+    assert.equal(detail.member, '지연');
+    assert.equal(detail.portrait, '/portrait.svg');
 
     const artifactDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
     fs.mkdirSync(artifactDir, { recursive: true });

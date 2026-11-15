@@ -152,7 +152,7 @@ public class ArchiveController {
         model.addAttribute("to", toText);
         model.addAttribute("hasExactDate", onDate != null);
         model.addAttribute("hasDateFilter", onDate != null || fromDate != null || toDate != null);
-        model.addAttribute("dateExactEnabled", true);
+        model.addAttribute("dateExactEnabled", false);
         String dateQuery = dateQuery(fromText, toText, onText);
         model.addAttribute("dateQuery", dateQuery);
         addFilterSummary(model, q, selectedMembers, artists, fromText, toText, onText);
@@ -242,6 +242,10 @@ public class ArchiveController {
                 badge.put("image", image);
                 badge.put("hasImage", !image.isBlank());
                 badge.put("hasSymbol", !symbol.isBlank());
+                badge.put("portrait", portrait);
+                badge.put("hasPortrait", !portrait.isBlank());
+                badge.put("artistId", matched == null ? "" : matched.getArtistId());
+                badge.put("hasArtist", matched != null && matched.getArtistId() != null);
                 badges.add(badge);
             }
             Map<String, Object> card = new LinkedHashMap<>();
@@ -365,7 +369,6 @@ public class ArchiveController {
         model.addAttribute("dateFromLabel", video ? "영상 날짜 시작" : "사진 날짜 시작");
         model.addAttribute("dateToLabel", video ? "영상 날짜 끝" : "사진 날짜 끝");
         model.addAttribute("dateExactLabel", video ? "이 영상 날짜" : "이 사진 날짜");
-        model.addAttribute("dateFilterHint", "실제로 올라온 날짜로 찾습니다.");
         model.addAttribute("imageTabHref", joinHref("/archive", filterQuery + pageQuery));
         model.addAttribute("videoTabHref", joinHref("/archive?type=video", filterQuery + pageQuery));
         model.addAttribute("browseQuery", joinHref("", filterQuery));
