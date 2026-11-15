@@ -89,7 +89,12 @@ class ArchiveControllerTest {
                 .andExpect(content().string(not(containsString("등록된 사진과 출연 표기를 확인하세요."))))
                 .andExpect(content().string(not(containsString("원본 보기 ↗"))))
                 .andExpect(content().string(not(containsString("14.8M"))))
-                .andExpect(content().string(not(containsString("Polygon"))));
+                .andExpect(content().string(not(containsString("Polygon"))))
+                .andExpect(content().string(not(containsString("extraArtists"))))
+                .andExpect(content().string(not(containsString("다른 출연자"))))
+                .andExpect(content().string(not(containsString("목록에 없는 출연자"))))
+                .andExpect(content().string(containsString("파일 선택")))
+                .andExpect(content().string(containsString("선택된 파일 없음")));
     }
 
     @Test void archiveMemberPickerUsesPortraitsNotSymbolLogos() throws Exception {

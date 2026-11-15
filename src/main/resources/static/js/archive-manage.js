@@ -2,7 +2,6 @@
     const kind = document.querySelector("[data-archive-kind]")?.dataset.archiveKind || "image";
     const noun = kind === "video" ? "영상" : "사진";
     const dateLabel = document.querySelector("[data-date-label]")?.dataset.dateLabel || (noun + " 날짜");
-    const extraNames = new WeakMap();
     const dialogTriggers = new WeakMap();
 
     function authHeaders() {
@@ -112,13 +111,23 @@
         }
     }
 
-    function selectedArtists(root, extra) {
-        const values = window.MemberPortraitPicker ? MemberPortraitPicker.selectedValues(root) : [];
-        (extraNames.get(root) || []).forEach(name => { if (!values.includes(name)) values.push(name); });
-        (extra?.value || "").split(",").map(part => part.trim()).filter(Boolean).forEach(name => {
-            if (!values.includes(name)) values.push(name);
+    function selectedArtists(root) {
+        return window.MemberPortraitPicker ? MemberPortraitPicker.selectedValues(root) : [];
+    }
+
+    function syncFileName(input) {
+        const label = input?.closest('.ar-file')?.querySelector('[data-file-name]');
+        if (label) label.textContent = input.files?.[0]?.name || '선택된 파일 없음';
+    }
+
+    function bindFileNames(form) {
+        if (!form) return;
+        form.querySelectorAll('.ar-file input[type="file"]').forEach(input => {
+            input.addEventListener('change', () => syncFileName(input));
         });
-        return values;
+        form.addEventListener('reset', () => {
+            queueMicrotask(() => form.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName));
+        });
     }
 
     function syncPreview(form) {
@@ -130,7 +139,7 @@
         const artists = preview.querySelector('[data-preview-artists]');
         if (artists) {
             artists.replaceChildren();
-            const names = selectedArtists(form.closest('.ar-dialog'), form.querySelector('[name="extraArtists"]'));
+            const names = selectedArtists(form.closest('.ar-dialog'));
             (names.length ? names : ['출연자 미지정']).forEach(name => {
                 const badge = document.createElement('span');
                 badge.className = 'ar-badge';
@@ -145,7 +154,7 @@
 
     function renderArtists(root) {
         if (!root) return;
-        const values = selectedArtists(root, null);
+        const values = selectedArtists(root);
         const count = root.querySelector('[data-picker-count]');
         if (count) count.textContent = String(values.length);
         const chips = root.querySelector('[data-artist-chips]');
@@ -161,9 +170,7 @@
                     root.querySelectorAll('.mpp-item').forEach(button => {
                         if (button.dataset.value === name) window.MemberPortraitPicker?.setActive(button, false);
                     });
-                    extraNames.set(root, (extraNames.get(root) || []).filter(value => value !== name));
                     renderArtists(root);
-                    root.querySelector('[name="extraArtists"]')?.focus();
                 });
                 chips.appendChild(chip);
             });
@@ -172,20 +179,15 @@
         syncPreview(root.querySelector('form'));
     }
 
-    function applyArtists(root, extra, raw) {
+    function applyArtists(root, raw) {
         if (window.MemberPortraitPicker) MemberPortraitPicker.clear(root);
         const names = (raw || "").split(",").map(part => part.trim()).filter(Boolean);
-        const known = new Set();
         root.querySelectorAll(".mpp-item").forEach(button => {
             const value = (button.dataset.value || "").trim();
             if (names.includes(value) && window.MemberPortraitPicker) {
-                window.MemberPortraitPicker?.setActive(button, true);
-                known.add(value);
+                window.MemberPortraitPicker.setActive(button, true);
             }
         });
-        const unknown = names.filter(name => !known.has(name));
-        extraNames.set(root, root.querySelector('[data-artist-tags]') ? unknown : []);
-        if (extra) extra.value = root.querySelector('[data-artist-tags]') ? '' : unknown.join(', ');
         renderArtists(root);
     }
 
@@ -196,31 +198,10 @@
         });
         root.querySelector("[data-picker-clear]")?.addEventListener("click", () => {
             window.MemberPortraitPicker?.clear(root);
-            extraNames.set(root, []);
-            const input = root.querySelector('[name="extraArtists"]');
-            if (input) input.value = '';
             renderArtists(root);
-        });
-        const input = root.querySelector('[data-artist-tags] [name="extraArtists"]');
-        function addNames() {
-            const names = (input?.value || '').split(/[,\n]/).map(name => name.trim()).filter(Boolean);
-            const added = extraNames.get(root) || [];
-            names.forEach(name => {
-                const button = [...root.querySelectorAll('.mpp-item')].find(item => (item.dataset.value || '').toLocaleLowerCase() === name.toLocaleLowerCase());
-                if (button && window.MemberPortraitPicker) MemberPortraitPicker.setActive(button, true);
-                else if (!added.some(value => value.toLocaleLowerCase() === name.toLocaleLowerCase())) added.push(name);
-            });
-            extraNames.set(root, added);
-            if (input) { input.value = ''; input.focus(); }
-            renderArtists(root);
-        }
-        root.querySelector('[data-artist-add]')?.addEventListener('click', addNames);
-        input?.addEventListener('keydown', event => {
-            if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); addNames(); }
         });
         root.querySelector('form')?.addEventListener('input', () => syncPreview(root.querySelector('form')));
         window.MemberPortraitPicker?.clear(root);
-        extraNames.set(root, []);
         renderArtists(root);
     }
 
@@ -273,6 +254,7 @@
         releaseUrl(input._archiveLastFile);
         input._archiveLastFile = null;
         input.value = '';
+        syncFileName(input);
         form.dataset.originalThumbnail = original;
         const clear = form.querySelector('[name="clearThumbnail"]');
         if (clear) clear.value = 'false';
@@ -291,6 +273,7 @@
             if (!/\.(jpe?g|jfif|png|webp|gif|bmp)$/i.test(file.name)) {
                 alert('썸네일은 JPG, JFIF, PNG, WebP, GIF, BMP 이미지 파일로 선택해 주세요.');
                 input.value = '';
+                syncFileName(input);
                 showThumbnail(form, clear?.value === 'true' ? '' : form.dataset.originalThumbnail || '');
                 return;
             }
@@ -302,6 +285,7 @@
             releaseUrl(input._archiveLastFile);
             input._archiveLastFile = null;
             input.value = '';
+            syncFileName(input);
             if (clear) clear.value = 'true';
             showThumbnail(form, '');
         });
@@ -329,15 +313,16 @@
     const uploadDialog = document.getElementById("uploadModal");
     const uploadForm = document.getElementById("archiveUploadForm");
     const uploadPreview = document.getElementById("uploadPreview");
-    const uploadFile = uploadForm?.querySelector('input[type="file"]');
+    const uploadFile = uploadForm?.querySelector('input[name="file"]');
     bindPicker(uploadDialog);
     bindThumbnail(uploadForm);
+    bindFileNames(uploadForm);
 
     window.showAddModal = function () {
         if (!uploadForm || !uploadDialog) return;
         uploadForm.reset();
         resetThumbnail(uploadForm);
-        applyArtists(uploadDialog, uploadForm.querySelector("[name='extraArtists']"), "");
+        applyArtists(uploadDialog, "");
         if (uploadFile) releaseUrl(uploadFile._archiveLastFile);
         showPreview(uploadPreview, "");
         openDialog(uploadDialog);
@@ -354,6 +339,7 @@
         if (!acceptedFile(file)) {
             alert(kind === "video" ? "동영상 파일만 선택할 수 있습니다." : "이미지 파일만 선택할 수 있습니다.");
             uploadFile.value = "";
+            syncFileName(uploadFile);
             showPreview(uploadPreview, "");
             return;
         }
@@ -385,7 +371,7 @@
         const body = new FormData(uploadForm);
         body.delete("artistNames");
         body.delete("extraArtists");
-        selectedArtists(uploadDialog, uploadForm.querySelector("[name='extraArtists']")).forEach(name => body.append("artistNames", name));
+        selectedArtists(uploadDialog).forEach(name => body.append("artistNames", name));
         const button = uploadForm.querySelector("[type='submit']");
         if (button) button.disabled = true;
         try {
@@ -408,9 +394,10 @@
     const editDialog = document.getElementById("editModal");
     const editForm = document.getElementById("archiveEditForm");
     const editPreview = document.getElementById("editPreview");
-    const editFile = editForm?.querySelector('input[type="file"]');
+    const editFile = editForm?.querySelector('input[name="file"]');
     bindPicker(editDialog);
     bindThumbnail(editForm);
+    bindFileNames(editForm);
 
     function showEdit(button) {
         if (!editForm || !editDialog) return;
@@ -420,8 +407,11 @@
         editForm.dataset.originalUrl = button.dataset.url || '';
         editForm.querySelector("[name='title']").value = button.dataset.title || "";
         const registered = editForm.querySelector("[name='registeredOn']");
-        if (registered) registered.value = button.dataset.registered || "";
-        applyArtists(editDialog, editForm.querySelector("[name='extraArtists']"), button.dataset.artists || "");
+        if (registered) {
+            registered.value = button.dataset.registered || "";
+            registered.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        applyArtists(editDialog, button.dataset.artists || "");
         if (editFile) releaseUrl(editFile._archiveLastFile);
         showPreview(editPreview, button.dataset.url || "");
         openDialog(editDialog);
@@ -435,6 +425,7 @@
         if (!acceptedFile(file)) {
             alert(kind === "video" ? "동영상 파일만 선택할 수 있습니다." : "이미지 파일만 선택할 수 있습니다.");
             editFile.value = "";
+            syncFileName(editFile);
             showPreview(editPreview, editForm.dataset.originalUrl || '');
             return;
         }
@@ -501,7 +492,7 @@
         const body = new FormData();
         body.set("title", title);
         body.set("registeredOn", registeredOn);
-        body.set("artistNames", selectedArtists(editDialog, editForm.querySelector("[name='extraArtists']")).join(","));
+        body.set("artistNames", selectedArtists(editDialog).join(","));
         if (replacing) body.set("file", editFile.files[0]);
         const thumbnail = editForm.querySelector('[name="thumbnail"]')?.files?.[0];
         if (thumbnail) body.set('thumbnail', thumbnail);

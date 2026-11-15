@@ -25,6 +25,11 @@
             const source = card.querySelector('.ar-card-members');
             members.replaceChildren();
             if (source) members.innerHTML = source.innerHTML;
+            const count = members.querySelectorAll('.ar-album-member').length;
+            const cols = count <= 1 ? 1 : count <= 4 ? 2 : count <= 12 ? 3 : 4;
+            members.style.setProperty('--member-count', String(Math.max(count, 1)));
+            members.style.setProperty('--member-cols', String(cols));
+            members.dataset.memberCount = String(count);
         }
         [edit, remove].forEach(button => {
             if (!button) return;

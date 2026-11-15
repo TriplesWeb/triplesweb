@@ -627,6 +627,23 @@ body.site-page > main.archive-page {
     outline: none;
     border-color: #00f5d4;
 }
+.ar-field.is-ymd input[type="date"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+    opacity: 0;
+}
+.ar-field.is-ymd {
+    position: relative;
+}
+.ar-field .ar-ymd select {
+    min-height: 2.625rem;
+}
 .ar-date-actions { display: flex; justify-content: flex-end; gap: 0.4rem; }
 .ar-member-chevron { margin-left: 0.1rem; transition: transform 0.15s ease; }
 .ar-member-toggle.is-open .ar-member-chevron { transform: rotate(180deg); }
@@ -669,6 +686,58 @@ body.site-page > main.archive-page {
 }
 .ar-field input[type="file"] {
     min-height: 2.625rem;
+}
+.ar-file {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 2.625rem;
+    padding: 0.4rem 0.5rem;
+    border-radius: 0.65rem;
+    border: 1px solid rgba(58, 74, 70, 0.6);
+    background: #0d0e12;
+}
+.ar-file input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+.ar-file-pick {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-height: 2.1rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: 0.55rem;
+    border: 1px solid rgba(0, 245, 212, 0.45);
+    background: rgba(0, 245, 212, 0.12);
+    color: #00f5d4;
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1.2;
+    cursor: pointer;
+}
+.ar-file-pick:hover {
+    border-color: rgba(0, 245, 212, 0.75);
+    background: rgba(0, 245, 212, 0.2);
+    color: #b7fff2;
+}
+.ar-file-name {
+    min-width: 0;
+    color: #b9cac4;
+    font-size: 0.85rem;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .ar-field input:focus { outline: none; border-color: #00f5d4; }
 .ar-field-hint { margin: 0; color: #93a49e; font-size: 0.75rem; font-weight: 400; line-height: 1.6; }
@@ -916,40 +985,55 @@ body.site-page > main.archive-page {
     overflow: auto;
 }
 .ar-detail-date { margin: 0; color: #b9cac4; font-size: 0.82rem; }
-.ar-detail-members {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.75rem;
+.ar-detail-cast {
+    min-width: 0;
 }
-.ar-album-member {
+.ar-detail-members {
+    --member-count: 1;
+    --member-cols: 2;
+    --chip-image: clamp(1.25rem, calc(2.65rem - 0.055rem * var(--member-count)), 2.5rem);
+    --chip-font: clamp(0.62rem, calc(0.92rem - 0.012rem * var(--member-count)), 0.875rem);
+    --chip-gap: clamp(0.25rem, calc(0.75rem - 0.02rem * var(--member-count)), 0.75rem);
+    --chip-pad-y: clamp(0.2rem, calc(0.5rem - 0.012rem * var(--member-count)), 0.5rem);
+    --chip-pad-x: clamp(0.35rem, calc(1rem - 0.025rem * var(--member-count)), 1rem);
+    display: grid;
+    grid-template-columns: repeat(var(--member-cols), minmax(0, 1fr));
+    gap: clamp(0.3rem, calc(0.75rem - 0.018rem * var(--member-count)), 0.75rem);
+    align-items: stretch;
+}
+.ar-detail-members .ar-album-member {
     display: inline-flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem 1rem;
+    min-width: 0;
+    gap: var(--chip-gap);
+    padding: var(--chip-pad-y) var(--chip-pad-x);
     border: 1px solid rgba(58, 74, 70, 0.3);
     border-radius: 0.75rem;
     background: rgba(255, 255, 255, 0.05);
     color: #b9cac4;
     text-decoration: none;
-    flex-shrink: 0;
 }
-.ar-album-member:hover {
+.ar-detail-members .ar-album-member:hover {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(0, 245, 212, 0.5);
     color: #00f5d4;
 }
-.ar-album-member img {
-    width: 2.5rem;
-    height: 2.5rem;
+.ar-detail-members .ar-album-member img {
+    width: var(--chip-image);
+    height: var(--chip-image);
+    flex: none;
     border-radius: 999px;
     object-fit: cover;
     border: 1px solid rgba(58, 74, 70, 0.5);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--member-color, #00f5d4) 20%, transparent);
 }
-.ar-album-member span {
-    font-size: 0.875rem;
+.ar-detail-members .ar-album-member span {
+    min-width: 0;
+    font-size: var(--chip-font);
     font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .ar-detail-actions {
     justify-content: flex-end;

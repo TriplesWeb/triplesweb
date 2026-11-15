@@ -72,7 +72,7 @@
 <div class="ar-dialog" id="uploadModal" hidden>
     <button type="button" class="ar-dialog-backdrop" data-ar-close aria-label="닫기"></button>
     <div class="ar-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="uploadModalLabel">
-        <form id="archiveUploadForm" enctype="multipart/form-data" data-upload-url="/archive/upload/image">
+        <form id="archiveUploadForm" enctype="multipart/form-data" data-upload-url="/archive/upload/image" novalidate>
             <div class="ar-dialog-head">
                 <h2 id="uploadModalLabel">사진 추가</h2>
                 <button type="button" class="ar-close" data-ar-close aria-label="닫기">&times;</button>
@@ -89,17 +89,16 @@
                     <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
                     <div class="ar-artist-editor" data-artist-tags>
                         <div class="ar-artist-chips" data-artist-chips aria-label="선택한 출연자"></div>
-                        <div class="ar-tag-entry">
-                            <input type="text" name="extraArtists" placeholder="다른 출연자 이름" aria-label="추가 출연자 이름" autocomplete="off" maxlength="80">
-                            <button type="button" class="ar-tag-add" data-artist-add>추가</button>
-                        </div>
-                        <p class="ar-field-hint">목록에 없는 출연자는 이름을 입력하고 Enter 또는 추가를 누르세요.</p>
                     </div>
                 </div>
-                <label class="ar-field">사진 파일
-                    <input type="file" name="file" accept="image/*,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp" required>
+                <div class="ar-field">사진 파일
+                    <span class="ar-file">
+                        <input type="file" id="archiveUploadFile" name="file" accept="image/*,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp" required>
+                        <label for="archiveUploadFile" class="ar-file-pick">파일 선택</label>
+                        <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
+                    </span>
                     <span class="ar-field-hint">JPG · JPEG · JFIF · PNG · WebP · GIF · BMP</span>
-                </label>
+                </div>
                 <div class="ar-preview" id="uploadPreview" hidden>
                     <p class="ar-preview-info" data-preview-file></p>
                     <div><p>원본</p><div class="ar-preview-full"></div></div>
@@ -118,7 +117,7 @@
 <div class="ar-dialog" id="editModal" hidden>
     <button type="button" class="ar-dialog-backdrop" data-ar-close aria-label="닫기"></button>
     <div class="ar-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="editModalLabel">
-        <form id="archiveEditForm" enctype="multipart/form-data">
+        <form id="archiveEditForm" enctype="multipart/form-data" novalidate>
             <div class="ar-dialog-head">
                 <h2 id="editModalLabel">사진 수정</h2>
                 <button type="button" class="ar-close" data-ar-close aria-label="닫기">&times;</button>
@@ -135,17 +134,16 @@
                     <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
                     <div class="ar-artist-editor" data-artist-tags>
                         <div class="ar-artist-chips" data-artist-chips aria-label="선택한 출연자"></div>
-                        <div class="ar-tag-entry">
-                            <input type="text" name="extraArtists" placeholder="다른 출연자 이름" aria-label="추가 출연자 이름" autocomplete="off" maxlength="80">
-                            <button type="button" class="ar-tag-add" data-artist-add>추가</button>
-                        </div>
-                        <p class="ar-field-hint">목록에 없는 출연자는 이름을 입력하고 Enter 또는 추가를 누르세요.</p>
                     </div>
                 </div>
-                <label class="ar-field">파일 교체 (선택)
-                    <input type="file" name="file" accept="image/*,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp">
+                <div class="ar-field">파일 교체 (선택)
+                    <span class="ar-file">
+                        <input type="file" id="archiveEditFile" name="file" accept="image/*,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp">
+                        <label for="archiveEditFile" class="ar-file-pick">파일 선택</label>
+                        <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
+                    </span>
                     <span class="ar-field-hint">JFIF · WebP 포함 · 새 파일을 선택하지 않으면 현재 사진을 유지합니다.</span>
-                </label>
+                </div>
                 <div class="ar-preview" id="editPreview" hidden>
                     <p class="ar-preview-info" data-preview-file></p>
                     <div><p>현재 사진</p><div class="ar-preview-full"></div></div>
@@ -167,7 +165,7 @@
 <div class="ar-dialog" id="uploadModal" hidden>
     <button type="button" class="ar-dialog-backdrop" data-ar-close aria-label="닫기"></button>
     <div class="ar-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="uploadModalLabel">
-        <form id="archiveUploadForm" enctype="multipart/form-data" data-upload-url="/archive/upload/video">
+        <form id="archiveUploadForm" enctype="multipart/form-data" data-upload-url="/archive/upload/video" novalidate>
             <div class="ar-dialog-head">
                 <h2 id="uploadModalLabel">영상 추가</h2>
                 <button type="button" class="ar-close" data-ar-close aria-label="닫기">&times;</button>
@@ -182,15 +180,22 @@
                         {{>partials/member-portrait-picker}}
                     </div>
                     <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
-                    <input type="text" name="extraArtists" placeholder="목록에 없는 이름은 쉼표로 추가">
                 </div>
-                <label class="ar-field">영상 파일
-                    <input type="file" name="file" accept="video/*" required>
-                </label>
-                <label class="ar-field">썸네일 이미지 (선택)
-                    <input type="file" name="thumbnail" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp">
+                <div class="ar-field">영상 파일
+                    <span class="ar-file">
+                        <input type="file" id="archiveUploadFile" name="file" accept="video/*" required>
+                        <label for="archiveUploadFile" class="ar-file-pick">파일 선택</label>
+                        <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
+                    </span>
+                </div>
+                <div class="ar-field">썸네일 이미지 (선택)
+                    <span class="ar-file">
+                        <input type="file" id="archiveUploadThumb" name="thumbnail" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp">
+                        <label for="archiveUploadThumb" class="ar-file-pick">파일 선택</label>
+                        <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
+                    </span>
                     <span class="ar-field-hint">영상 재생 전에 표시할 사진을 선택하세요. 세로·가로 이미지 모두 잘리지 않게 표시됩니다.</span>
-                </label>
+                </div>
                 <div class="ar-thumbnail-preview" data-thumbnail-preview hidden>
                     <img alt="영상 썸네일 미리보기">
                     <div><p data-thumbnail-info></p><button type="button" class="ar-text-btn" data-thumbnail-clear>썸네일 해제</button></div>
@@ -212,7 +217,7 @@
 <div class="ar-dialog" id="editModal" hidden>
     <button type="button" class="ar-dialog-backdrop" data-ar-close aria-label="닫기"></button>
     <div class="ar-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="editModalLabel">
-        <form id="archiveEditForm" enctype="multipart/form-data">
+        <form id="archiveEditForm" enctype="multipart/form-data" novalidate>
             <div class="ar-dialog-head">
                 <h2 id="editModalLabel">영상 수정</h2>
                 <button type="button" class="ar-close" data-ar-close aria-label="닫기">&times;</button>
@@ -227,15 +232,22 @@
                         {{>partials/member-portrait-picker}}
                     </div>
                     <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
-                    <input type="text" name="extraArtists" placeholder="목록에 없는 이름은 쉼표로 추가">
                 </div>
-                <label class="ar-field">파일 교체 (선택)
-                    <input type="file" name="file" accept="video/*">
-                </label>
-                <label class="ar-field">썸네일 이미지 교체 (선택)
-                    <input type="file" name="thumbnail" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp">
+                <div class="ar-field">파일 교체 (선택)
+                    <span class="ar-file">
+                        <input type="file" id="archiveEditFile" name="file" accept="video/*">
+                        <label for="archiveEditFile" class="ar-file-pick">파일 선택</label>
+                        <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
+                    </span>
+                </div>
+                <div class="ar-field">썸네일 이미지 교체 (선택)
+                    <span class="ar-file">
+                        <input type="file" id="archiveEditThumb" name="thumbnail" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp">
+                        <label for="archiveEditThumb" class="ar-file-pick">파일 선택</label>
+                        <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
+                    </span>
                     <span class="ar-field-hint">새 사진을 선택하지 않으면 현재 썸네일을 유지합니다.</span>
-                </label>
+                </div>
                 <input type="hidden" name="clearThumbnail" value="false">
                 <div class="ar-thumbnail-preview" data-thumbnail-preview hidden>
                     <img alt="영상 썸네일 미리보기">

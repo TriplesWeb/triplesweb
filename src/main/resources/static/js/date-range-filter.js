@@ -70,6 +70,9 @@
     year.addEventListener("change", () => { syncDays(); write(); });
     month.addEventListener("change", () => { syncDays(); write(); });
     day.addEventListener("change", write);
+    input.addEventListener("input", read);
+    input.form?.addEventListener("reset", () => queueMicrotask(read));
+    input.closest("label")?.classList.add("is-ymd");
     read();
   };
 
@@ -127,6 +130,7 @@
       root.closest("form")?.requestSubmit();
     });
   });
+  document.querySelectorAll('input[type="date"][name="registeredOn"]').forEach(enhanceDateInput);
   document.addEventListener("click", (event) => {
     if (event.target.closest("[data-date-filter]")) return;
     document.querySelectorAll("[data-date-popover]").forEach((pop) => { pop.hidden = true; });

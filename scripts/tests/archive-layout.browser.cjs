@@ -335,6 +335,22 @@ ${siteUi}
     assert.equal(tabs.dateLabel, '사진 날짜');
     assert.equal(tabs.dateHint, '실제로 올라온 날짜를 선택하세요.');
 
+    const registeredYmd = await page.evaluate(() => {
+      const field = document.querySelector('label.ar-field');
+      const wrap = field?.querySelector('[data-ymd]');
+      const labels = [...(wrap?.querySelectorAll('select') || [])].map((el) => el.getAttribute('aria-label'));
+      const native = field?.querySelector('input[type="date"][name="registeredOn"]');
+      const nativeBox = native?.getBoundingClientRect();
+      return {
+        labels,
+        hidden: Boolean(native) && nativeBox.width <= 1 && nativeBox.height <= 1,
+        extra: Boolean(document.querySelector('[name="extraArtists"]'))
+      };
+    });
+    assert.deepEqual(registeredYmd.labels, ['연도', '월', '일'], '등록 날짜가 연-월-일이 아니다: ' + JSON.stringify(registeredYmd.labels));
+    assert.equal(registeredYmd.hidden, true, '등록 날짜 네이티브 입력이 보인다');
+    assert.equal(registeredYmd.extra, false, '멤버 외 출연자 입력이 남아 있다');
+
     const artifactDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
     fs.mkdirSync(artifactDir, { recursive: true });
     await page.screenshot({ path: path.join(artifactDir, 'archive-layout-stats-members.png'), fullPage: true });
