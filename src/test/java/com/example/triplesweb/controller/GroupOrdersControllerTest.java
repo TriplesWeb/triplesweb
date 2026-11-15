@@ -381,6 +381,7 @@ class GroupOrdersControllerTest {
             .andExpect(content().string(containsString("교환 올리기")))
             .andExpect(content().string(containsString("market-feed-swap")))
             .andExpect(content().string(not(containsString("로그인 필요"))))
-            .andExpect(content().string(not(containsString("name=\"userid\""))));
+            .andExpect(content().string(not(containsString("name=\"userid\""))))
+            .andExpect(content().string(not(containsString("name=\"title\""))));
     }
 }
