@@ -110,12 +110,12 @@
 .archive-page[data-archive-kind="image"] .ar-card .ar-photo-link > img { height: clamp(16rem, 34vw, 22rem); }
 .ar-card .ar-body { padding: 0.95rem 1rem 1rem; display: flex; flex-direction: column; gap: 0.55rem; flex: 1; }
 .ar-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
-.ar-highlight .ar-meta { flex-wrap: nowrap; align-items: center; gap: 0.4rem; }
+.ar-highlight .ar-meta { flex-wrap: wrap; align-items: center; gap: 0.4rem; min-width: 0; }
 .ar-card .ar-meta {
     --member-count: 1;
-    --chip-size: clamp(2.15rem, calc(3.75rem - 0.08rem * var(--member-count)), 3.4rem);
-    --chip-image: clamp(1.35rem, calc(var(--chip-size) * 0.64), 2.15rem);
-    gap: clamp(0.18rem, calc(0.38rem - 0.008rem * var(--member-count)), 0.35rem);
+    --chip-size: clamp(3.05rem, calc(3.85rem - 0.04rem * var(--member-count)), 3.4rem);
+    --chip-image: clamp(1.35rem, calc(2.35rem - 0.045rem * var(--member-count)), 2.15rem);
+    gap: clamp(0.2rem, calc(0.4rem - 0.006rem * var(--member-count)), 0.35rem);
 }
 .ar-card .ar-meta .archive-member-chip {
     min-width: var(--chip-size);
@@ -123,10 +123,12 @@
     padding: 0.22rem 0.18rem 0.16rem;
 }
 .ar-card .ar-meta .archive-member-chip span {
+    min-width: 0;
     max-width: 100%;
-    font-size: clamp(0.58rem, calc(var(--chip-size) * 0.22), 0.72rem);
+    font-size: clamp(0.68rem, calc(var(--chip-size) * 0.22), 0.72rem);
 }
 .archive-member-more {
+    position: relative;
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
@@ -141,6 +143,18 @@
     font-weight: 700;
     line-height: 1.2;
     white-space: nowrap;
+}
+.archive-member-rest {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
 }
 .ar-id, .ar-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.55rem; border-radius: 0.45rem; font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 0.8rem; font-weight: 650; line-height: 1.4; }
 .ar-id { color: #e3ece8; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.16); font-variant-numeric: tabular-nums; }
@@ -406,4 +420,4 @@
 
 /* 카드의 큰 사진 규칙과 멤버 배지 이미지를 분리한다. */
 .archive-page .ar-card .archive-member-chip img{width:var(--chip-image, 2.15rem);height:var(--chip-image, 2.15rem);max-width:var(--chip-image, 2.15rem);object-fit:cover;flex:none}
-.archive-page .ar-highlight .archive-member-chip img{width:2.15rem;height:2.15rem;max-width:2.15rem;object-fit:cover;flex:none}
+.archive-page[data-archive-kind] .ar-highlight .archive-member-chip img{width:2.15rem;height:2.15rem;max-width:2.15rem;max-height:2.15rem;object-fit:cover;flex:none}

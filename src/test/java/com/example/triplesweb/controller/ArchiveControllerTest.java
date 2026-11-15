@@ -164,9 +164,12 @@ class ArchiveControllerTest {
     @Test void recentHighlightsCollapseManyMembersToFirstPlusCount() throws Exception {
         when(artistRepository.findAll()).thenReturn(List.of());
         Archive group = photo();
-        group.setArtistNames("윤서연, 정혜린, 이지우, 김채연");
+        group.setArtistNames("윤서연, 윤서연, 정혜린, 이지우, <김채연>");
+        Archive solo = photo();
+        solo.setId(8L);
+        solo.setArtistNames("서연 \"A\"");
         when(archiveService.pageByType(eq(MediaType.IMAGE), anyInt(), anyInt(), isNull()))
-                .thenReturn(new PageImpl<>(List.of(group)));
+                .thenReturn(new PageImpl<>(List.of(group, solo)));
         String html = mvc.perform(get("/archive/image_archive"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("외 3명")))
@@ -174,10 +177,19 @@ class ArchiveControllerTest {
                 .andReturn().getResponse().getContentAsString();
         int trackAt = html.indexOf("id=\"archiveTrack\"");
         String recent = html.substring(trackAt, html.indexOf("</section>", trackAt));
-        org.assertj.core.api.Assertions.assertThat(recent).contains("archive-member-more");
-        org.assertj.core.api.Assertions.assertThat(recent).contains("<span>윤서연</span>");
-        org.assertj.core.api.Assertions.assertThat(recent).doesNotContain("<span>정혜린</span>");
+        int soloAt = recent.indexOf("data-archive-ref=\"8\"");
+        String many = recent.substring(0, soloAt);
+        String one = recent.substring(soloAt);
+        org.assertj.core.api.Assertions.assertThat(many).contains("archive-member-more");
+        org.assertj.core.api.Assertions.assertThat(many).contains("<span>윤서연</span>");
+        org.assertj.core.api.Assertions.assertThat(many).doesNotContain("<span>정혜린</span>");
+        org.assertj.core.api.Assertions.assertThat(many).contains("title=\"윤서연, 정혜린, 이지우, &lt;김채연&gt;\"");
+        org.assertj.core.api.Assertions.assertThat(many).contains("archive-member-rest\">정혜린, 이지우, &lt;김채연&gt;");
+        org.assertj.core.api.Assertions.assertThat(many).doesNotContain("외 4명");
+        org.assertj.core.api.Assertions.assertThat(one).doesNotContain("archive-member-more");
+        org.assertj.core.api.Assertions.assertThat(one).contains("title=\"서연 &quot;A&quot;\"");
         org.assertj.core.api.Assertions.assertThat(html).contains("<span>정혜린</span>");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("외 0명");
     }
 
     @Test void invalidMemberColorUsesReadableNeutralBadge() throws Exception {

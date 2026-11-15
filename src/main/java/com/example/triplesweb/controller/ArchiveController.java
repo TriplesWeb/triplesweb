@@ -175,10 +175,14 @@ public class ArchiveController {
             card.put("displayNumber", offset + cards.size() + 1);
             card.put("memberBadges", badges);
             card.put("memberCount", badges.size());
+            List<String> memberNames = new ArrayList<>();
+            for (Map<String, Object> badge : badges) memberNames.add(String.valueOf(badge.get("name")));
+            card.put("memberNames", String.join(", ", memberNames));
             if (!badges.isEmpty()) card.put("firstMemberBadge", badges.get(0));
             int extra = Math.max(0, badges.size() - 1);
             card.put("otherMemberCount", extra);
             card.put("hasOtherMembers", extra > 0);
+            if (extra > 0) card.put("otherMemberNames", String.join(", ", memberNames.subList(1, memberNames.size())));
             card.put("registeredOn", archive.getRegisteredOn() == null ? "" : archive.getRegisteredOn().toString());
             cards.add(card);
         }

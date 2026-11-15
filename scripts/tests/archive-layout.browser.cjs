@@ -16,6 +16,8 @@ function chip(name) {
 const html = `<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
+*,*::before,*::after{box-sizing:border-box}
+img,video{max-width:100%;height:auto}
 body{margin:0;background:#0d0e12;color:#e3e2e8;font-family:"Pretendard Variable",Pretendard,sans-serif}
 ${css}
 </style></head>
@@ -38,7 +40,7 @@ ${css}
           <h3>심장마빈즈</h3>
           <div class="ar-meta" title="${members.join(', ')}">
             ${chip('윤서연')}
-            <span class="archive-member-more">외 16명</span>
+            <span class="archive-member-more" title="${members.slice(1).join(', ')}">외 16명<span class="archive-member-rest">${members.slice(1).join(', ')}</span></span>
           </div>
         </div>
       </article>
@@ -111,7 +113,16 @@ ${css}
       const one = document.querySelector('[data-archive-ref="2"]');
       return {
         chips: many.querySelectorAll('.archive-member-chip').length,
-        more: many.querySelector('.archive-member-more')?.textContent.trim() || '',
+        more: many.querySelector('.archive-member-more')?.childNodes[0]?.textContent.trim() || '',
+        rest: many.querySelector('.archive-member-rest')?.textContent.trim() || '',
+        moreWidth: Math.round(many.querySelector('.archive-member-more').getBoundingClientRect().width),
+        moreInside: (() => {
+          const card = many.getBoundingClientRect();
+          const badge = many.querySelector('.archive-member-more').getBoundingClientRect();
+          return badge.right <= card.right + 1 && badge.bottom <= card.bottom + 1;
+        })(),
+        avatar: Math.round(many.querySelector('.archive-member-chip img').getBoundingClientRect().height),
+        photo: Math.round(many.querySelector(':scope > img').getBoundingClientRect().height),
         manyHeight: Math.round(many.getBoundingClientRect().height),
         oneHeight: Math.round(one.getBoundingClientRect().height),
         align: getComputedStyle(document.querySelector('.ar-track')).alignItems
@@ -119,6 +130,11 @@ ${css}
     });
     assert.equal(highlight.chips, 1, '최근 사진은 첫 멤버만 보여야 한다');
     assert.equal(highlight.more, '외 16명');
+    assert.equal(highlight.rest, members.slice(1).join(', '));
+    assert.ok(highlight.moreWidth < 140, '나머지 멤버 이름이 배지를 늘린다: ' + highlight.moreWidth);
+    assert.equal(highlight.moreInside, true, '외 n명 배지가 카드 밖으로 잘린다');
+    assert.ok(highlight.avatar >= 20 && highlight.avatar <= 40, '최근 사진 멤버 이미지가 사진 높이에 끌려간다: ' + highlight.avatar);
+    assert.ok(highlight.photo > 100, '최근 사진 원본이 줄어들었다: ' + highlight.photo);
     assert.equal(highlight.align, 'flex-start');
     assert.ok(highlight.manyHeight < 420, '최근 사진 카드가 너무 길다: ' + highlight.manyHeight);
     assert.ok(Math.abs(highlight.oneHeight - highlight.manyHeight) < 80, '짧은 카드가 긴 카드에 맞춰 늘어난다: ' + JSON.stringify(highlight));
@@ -130,16 +146,20 @@ ${css}
       const oneImg = one.querySelector('.archive-member-chip img').getBoundingClientRect();
       const chips = [...many.querySelectorAll('.archive-member-chip')];
       const tops = new Set(chips.map((chip) => Math.round(chip.getBoundingClientRect().top)));
+      const name = chips[0].querySelector('span');
       return {
         manyImg: manyImg.height,
         oneImg: oneImg.height,
         manyMeta: Math.round(many.querySelector('.ar-meta').getBoundingClientRect().height),
         rows: tops.size,
-        count: chips.length
+        count: chips.length,
+        nameCut: name.scrollWidth > name.clientWidth + 1,
+        name: name.textContent
       };
     });
     assert.ok(grid.oneImg > 20 && grid.oneImg <= 40, '한 명 카드 배지 크기가 깨졌다: ' + grid.oneImg);
     assert.ok(grid.manyImg < grid.oneImg - 4, '멤버가 많을 때 배지가 작아지지 않는다: ' + JSON.stringify(grid));
+    assert.equal(grid.nameCut, false, '멤버 이름이 잘린다: ' + JSON.stringify(grid));
     assert.ok(grid.rows < grid.count, '그리드 멤버가 한 줄에 하나씩 쌓인다: ' + JSON.stringify(grid));
     assert.ok(grid.manyMeta < 280, '그리드 멤버 영역이 너무 높다: ' + grid.manyMeta);
 
