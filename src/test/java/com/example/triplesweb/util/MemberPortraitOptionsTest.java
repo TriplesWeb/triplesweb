@@ -26,6 +26,7 @@ class MemberPortraitOptionsTest {
         assertThat(MemberPortraitOptions.earliestMemberIndex("S5 X S20")).isEqualTo(4);
         assertThat(MemberPortraitOptions.earliestMemberIndex("S24 X S1")).isZero();
         assertThat(MemberPortraitOptions.earliestMemberIndex("zenith")).isEqualTo(24);
+        assertThat(MemberPortraitOptions.earliestMemberIndex("지연, 윤서연")).isZero();
     }
 
     @Test void unitLabelsResolveToTheirMembersAndOtherLabelsDoNot() {

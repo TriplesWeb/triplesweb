@@ -252,6 +252,7 @@ public class ArchiveController {
             card.put("id", archive.getId());
             card.put("title", archive.getTitle());
             card.put("artistNames", archive.getArtistNames());
+            card.put("memberOrder", MemberPortraitOptions.earliestMemberIndex(archive.getArtistNames()));
             card.put("file", archive.getFile());
             card.put("thumbnailUrl", archive.getThumbnailUrl());
             card.put("displayNumber", offset + cards.size() + 1);

@@ -6,6 +6,7 @@ const { chromium } = require('playwright');
 const root = path.resolve(__dirname, '../..');
 const staticRoot = path.join(root, 'src/main/resources/static');
 const css = fs.readFileSync(path.join(staticRoot, 'css', 'archive-page.css'), 'utf8');
+const site = fs.readFileSync(path.join(staticRoot, 'css', 'site.css'), 'utf8');
 const siteChrome = fs.readFileSync(path.join(staticRoot, 'css', 'site-chrome.css'), 'utf8');
 const siteUi = fs.readFileSync(path.join(staticRoot, 'css', 'site-ui.css'), 'utf8');
 const browseJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-browse.js'), 'utf8');
@@ -23,6 +24,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
 *,*::before,*::after{box-sizing:border-box}
 img,video{max-width:100%;height:auto}
 body{margin:0;background:#0d0e12;color:#e3e2e8;font-family:"Pretendard Variable",Pretendard,sans-serif}
+${site}
 ${siteChrome}
 ${css}
 ${siteUi}
@@ -53,7 +55,7 @@ ${siteUi}
   <section class="ar-panel ar-toolbar">
     <form class="ar-filters" id="archiveFilterForm">
       <div class="ar-filter-tools">
-        <label class="ar-sort"><span class="ar-sort-label">정렬</span><span class="ar-sort-control"><select id="archiveSort" aria-label="정렬"><option value="newest">최신순</option><option value="oldest">오래된 순</option><option value="title">제목순</option></select><span class="material-symbols-outlined">arrow_drop_down</span></span></label>
+        <label class="ar-sort"><span class="ar-sort-label">정렬</span><span class="ar-sort-control"><select id="archiveSort" aria-label="정렬"><option value="newest">최신순</option><option value="oldest">오래된 순</option><option value="title">제목순</option><option value="first-member">첫멤버순</option><option value="last-member">마지막멤버순</option></select><span class="material-symbols-outlined">arrow_drop_down</span></span></label>
         <div class="ar-date-filter" data-date-filter>
           <button type="button" class="ar-date-toggle" data-date-toggle aria-expanded="false"><span>사진 날짜</span></button>
           <div class="ar-date-popover" data-date-popover hidden>
@@ -63,8 +65,8 @@ ${siteUi}
         </div>
         <button type="button" class="ar-member-toggle">멤버 선택</button>
         <div class="ar-search-row">
-          <div class="ar-search-wrap site-search"><input class="ar-search site-search__input" type="search" placeholder="사진 제목 검색"><span class="site-search__submit" aria-hidden="true"><span class="material-symbols-outlined">search</span></span></div>
-          <button type="submit" class="ar-search-go">검색</button>
+          <label class="ar-search-wrap"><span class="material-symbols-outlined">search</span><input class="ar-search" type="search" placeholder="사진 제목 검색"></label>
+          <button type="submit" class="ar-submit">검색</button>
         </div>
         <a class="ar-text-btn ar-reset" href="/archive">초기화</a>
       </div>
@@ -74,18 +76,25 @@ ${siteUi}
     <label class="ar-field">사진 날짜<input type="date" name="registeredOn" required><span class="ar-field-hint">실제로 올라온 날짜를 선택하세요.</span></label>
   </div>
   <section class="ar-grid" id="archiveGrid">
-    <article class="ar-panel ar-card">
+    <article class="ar-panel ar-card" data-id="3" data-title="심장마빈즈" data-artists="윤서연,정혜린" data-member-order="0">
       <button type="button" class="ar-photo-link"><img src="/portrait.svg" alt=""></button>
       <div class="ar-body">
         <h3>심장마빈즈</h3>
         <div class="ar-meta" style="--member-count: ${members.length}">${members.map(chip).join('')}</div>
       </div>
     </article>
-    <article class="ar-panel ar-card" id="single-card">
+    <article class="ar-panel ar-card" id="single-card" data-id="1" data-title="지서연" data-artists="지연" data-member-order="23">
       <button type="button" class="ar-photo-link"><img src="/portrait.svg" alt=""></button>
       <div class="ar-body">
         <h3>지서연</h3>
         <div class="ar-meta" style="--member-count: 1">${chip('지연')}</div>
+      </div>
+    </article>
+    <article class="ar-panel ar-card" id="joobin-card" data-id="2" data-title="주빈" data-artists="주빈" data-member-order="17">
+      <button type="button" class="ar-photo-link"><img src="/portrait.svg" alt=""></button>
+      <div class="ar-body">
+        <h3>주빈</h3>
+        <div class="ar-meta" style="--member-count: 1">${chip('주빈')}</div>
       </div>
     </article>
   </section>
@@ -227,9 +236,9 @@ ${siteUi}
     assert.equal(grid.chipBorder, '0px', '상징로고에 테두리가 남아 있다: ' + grid.chipBorder);
 
     const toolbar = await page.evaluate(() => {
-      const searchGo = document.querySelector('.ar-search-go');
       const search = document.querySelector('.ar-search-wrap');
-      const icon = document.querySelector('.ar-search-wrap .site-search__submit');
+      const icon = document.querySelector('.ar-search-wrap > .material-symbols-outlined');
+      const go = document.querySelector('.ar-search-row .ar-submit');
       const tools = document.querySelector('.ar-filter-tools');
       const bar = document.querySelector('.ar-toolbar');
       const date = document.querySelector('.ar-date-toggle');
@@ -238,7 +247,8 @@ ${siteUi}
       const trigger = document.querySelector('.ar-sort-trigger');
       const option = document.querySelector('.ar-sort-option[aria-selected="false"]') || document.querySelector('.ar-sort-option');
       const searchBox = search.getBoundingClientRect();
-      const goBox = searchGo.getBoundingClientRect();
+      const iconBox = icon.getBoundingClientRect();
+      const goBox = go.getBoundingClientRect();
       const toolsBox = tools.getBoundingClientRect();
       const barBox = bar.getBoundingClientRect();
       const memberBox = member.getBoundingClientRect();
@@ -247,10 +257,14 @@ ${siteUi}
       const resetStyle = getComputedStyle(reset);
       const triggerStyle = trigger ? getComputedStyle(trigger) : null;
       const optionStyle = option ? getComputedStyle(option) : null;
+      const field = document.querySelector('.ar-search');
       return {
         searchW: Math.round(searchBox.width),
+        iconLeft: iconBox.left < searchBox.left + 24,
+        iconInside: iconBox.left >= searchBox.left - 1 && iconBox.right <= searchBox.right + 2,
         goAfter: goBox.left >= searchBox.right - 2,
-        iconIsButton: icon.tagName === 'BUTTON',
+        goMint: getComputedStyle(go).backgroundColor,
+        radius: getComputedStyle(field).borderRadius,
         searchAfterMember: searchBox.left >= memberBox.right - 8,
         resetAfterSearch: resetBox.left >= goBox.right - 8,
         toolsCentered: Math.abs((toolsBox.left + toolsBox.right) / 2 - (barBox.left + barBox.right) / 2) <= 24,
@@ -265,6 +279,7 @@ ${siteUi}
         memberColor: memberStyle.color,
         resetAlign: Math.abs(resetBox.top - memberBox.top) <= 2 && Math.abs(resetBox.height - memberBox.height) <= 4,
         sortEnhanced: Boolean(trigger && option),
+        sortLabels: [...document.querySelectorAll('.ar-sort-option')].map((el) => el.dataset.value),
         sortMatch: Boolean(triggerStyle && optionStyle
           && triggerStyle.color === optionStyle.color
           && triggerStyle.fontSize === optionStyle.fontSize
@@ -272,10 +287,14 @@ ${siteUi}
       };
     });
     assert.ok(toolbar.searchW < 420, '검색창이 한 줄을 차지한다: ' + toolbar.searchW);
+    assert.equal(toolbar.iconLeft, true, '돋보기가 검색창 왼쪽에 없다');
+    assert.equal(toolbar.iconInside, true, '돋보기가 검색창 밖에 있다');
     assert.equal(toolbar.goAfter, true, '검색 버튼이 검색창 오른쪽에 없다');
-    assert.equal(toolbar.iconIsButton, false, '돋보기가 여전히 제출 버튼이다');
+    assert.ok(toolbar.goMint.includes('0, 245, 212') || toolbar.goMint.includes('00f5d4'), '검색 버튼이 민트 색이 아니다: ' + toolbar.goMint);
+    assert.ok(toolbar.radius.includes('12px') || toolbar.radius.includes('0.75rem'), '검색창 모서리가 전역 스타일과 다르다: ' + toolbar.radius);
     assert.equal(toolbar.searchAfterMember, true, '검색창이 멤버 선택 오른쪽에 없다');
     assert.equal(toolbar.resetAfterSearch, true, '초기화가 검색 버튼 오른쪽에 없다');
+    assert.deepEqual(toolbar.sortLabels, ['newest', 'oldest', 'title', 'first-member', 'last-member']);
     assert.equal(toolbar.toolsCentered, true, '필터가 가운데 있지 않다');
     assert.equal(toolbar.dateInTools, true);
     assert.equal(toolbar.memberInTools, true);
@@ -287,6 +306,15 @@ ${siteUi}
     assert.equal(toolbar.resetAlign, true, '초기화가 다른 버튼과 세로로 안 맞는다');
     assert.equal(toolbar.sortEnhanced, true, '정렬 드롭다운이 같은 스타일로 열리지 않는다');
     assert.equal(toolbar.sortMatch, true, '정렬 항목 스타일이 닫힌 버튼과 다르다');
+
+    await page.click('.ar-sort-trigger');
+    await page.click('.ar-sort-option[data-value="first-member"]');
+    const firstMember = await page.evaluate(() => [...document.querySelectorAll('#archiveGrid .ar-card')].map((card) => card.dataset.title));
+    assert.deepEqual(firstMember, ['심장마빈즈', '주빈', '지서연'], '첫멤버순이 S1부터 S24로 가지 않는다: ' + firstMember.join(','));
+    await page.click('.ar-sort-trigger');
+    await page.click('.ar-sort-option[data-value="last-member"]');
+    const lastMember = await page.evaluate(() => [...document.querySelectorAll('#archiveGrid .ar-card')].map((card) => card.dataset.title));
+    assert.deepEqual(lastMember, ['지서연', '주빈', '심장마빈즈'], '마지막멤버순이 S24부터 S1로 가지 않는다: ' + lastMember.join(','));
 
     await page.click('[data-date-toggle]');
     const ymd = await page.evaluate(() => {
