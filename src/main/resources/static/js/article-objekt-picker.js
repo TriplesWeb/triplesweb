@@ -10,6 +10,8 @@
     const list = document.getElementById('objektOptionsList');
     const selectedInputs = document.getElementById('objektSelectedInputs');
     const loadMore = document.getElementById('loadMoreObjekts');
+    const scrollRoot = document.getElementById('objektOptionsScroll') || list;
+    const sentinel = document.getElementById('objektOptionsSentinel');
     const status = document.getElementById('objektPickerStatus');
     const memberFilter = document.getElementById('objektFilterMember');
     const seasonFilter = document.getElementById('objektFilterSeason');
@@ -419,9 +421,19 @@
       return '표시 ' + shown + ' / 필터 ' + total + '개 · 선택 ' + totalCount() + ' / ' + maxLinked + '개';
     }
 
+    function hasMore() {
+      return offset < total;
+    }
+
+    function maybeLoadMore() {
+      if (!open || loading || !hasMore()) return;
+      load(false);
+    }
+
     async function load(reset) {
       if (!api || !list) return;
       if (loading && !reset) return;
+      if (!reset && !hasMore() && total > 0) return;
       if (reset) {
         offset = 0;
         total = 0;
@@ -456,15 +468,25 @@
           if (box) box.dataset.objektId = String(item.id);
           list.appendChild(cardEl);
         });
-        offset += (data.items || []).length;
-        if (loadMore) loadMore.hidden = offset >= total;
-        if (status) status.textContent = statusText();
+        const got = (data.items || []).length;
+        offset += got;
+        if (got === 0) total = offset;
+        if (loadMore) loadMore.hidden = true;
+        if (status) {
+          status.textContent = hasMore()
+            ? statusText() + ' · 스크롤하면 더 불러옵니다'
+            : statusText();
+        }
         renderPreviews();
       } catch (_) {
         if (current !== requestId) return;
         if (status) status.textContent = '오브젝트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.';
       } finally {
         if (current === requestId) loading = false;
+        // 첫 페이지가 짧아 센티널이 이미 보이면 이어서 더 불러온다.
+        if (current === requestId && open && hasMore()) {
+          requestAnimationFrame(maybeLoadMore);
+        }
       }
     }
 
@@ -480,7 +502,23 @@
     }
 
     if (toggle) toggle.addEventListener('click', () => setOpen(!open));
-    if (loadMore) loadMore.addEventListener('click', () => load(false));
+    if (loadMore) {
+      loadMore.hidden = true;
+      loadMore.addEventListener('click', () => load(false));
+    }
+    if (scrollRoot) {
+      scrollRoot.addEventListener('scroll', () => {
+        if (scrollRoot.scrollTop + scrollRoot.clientHeight >= scrollRoot.scrollHeight - 64) {
+          maybeLoadMore();
+        }
+      }, { passive: true });
+    }
+    if (sentinel && scrollRoot && typeof IntersectionObserver === 'function') {
+      const observer = new IntersectionObserver((entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) maybeLoadMore();
+      }, { root: scrollRoot, rootMargin: '120px 0px', threshold: 0 });
+      observer.observe(sentinel);
+    }
     if (sideHaveBtn) sideHaveBtn.addEventListener('click', () => setActiveSide('have'));
     if (sideWantBtn) sideWantBtn.addEventListener('click', () => setActiveSide('want'));
     function closePickerMenus(except) {

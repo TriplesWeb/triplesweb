@@ -180,14 +180,11 @@
             {{/objektSelected}}
             {{/isTradeObjektSplit}}
         </div>
-        <div id="objektOptionsList" class="grid max-h-72 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-4"></div>
-        <div class="mt-1 flex flex-wrap items-center justify-between gap-2">
-            <p id="objektPickerStatus" class="text-xs text-slate-400" aria-live="polite">오브젝트를 불러오는 중...</p>
-            <button id="loadMoreObjekts" type="button"
-                    class="rounded-full border border-teal-300/40 px-3 py-1.5 text-[11px] font-semibold text-teal-200 hover:bg-teal-300/10">
-                오브젝트 더 보기
-            </button>
+        <div id="objektOptionsScroll" class="max-h-72 overflow-y-auto">
+            <div id="objektOptionsList" class="grid grid-cols-2 gap-3 sm:grid-cols-4"></div>
+            <div id="objektOptionsSentinel" class="h-2 w-full" aria-hidden="true"></div>
         </div>
+        <p id="objektPickerStatus" class="mt-1 text-xs text-slate-400" aria-live="polite">오브젝트를 불러오는 중...</p>
     </div>
 </section>
 {{/showObjektPicker}}
