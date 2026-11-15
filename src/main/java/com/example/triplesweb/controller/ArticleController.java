@@ -216,14 +216,17 @@ public class ArticleController {
         Set<String> members = new LinkedHashSet<>();
         Set<String> seasons = new LinkedHashSet<>();
         Set<String> classes = new LinkedHashSet<>();
+        Set<String> kinds = new LinkedHashSet<>();
 
         for (Map<String, Object> item : objektService.findCollections("triples")) {
             String member = stringValue(item.get("member"));
             String season = stringValue(item.get("season"));
             String klass = stringValue(item.get("class"));
+            String kind = stringValue(item.get("collectionNo"));
             if (!member.isBlank()) members.add(member);
             if (!season.isBlank()) seasons.add(season);
             if (!klass.isBlank()) classes.add(klass);
+            if (!kind.isBlank()) kinds.add(kind);
 
             String id = stringValue(item.get("id"));
             String collectionId = stringValue(item.get("collectionId"));
@@ -252,10 +255,22 @@ public class ArticleController {
         model.addAttribute("objektHaveSelected", haveItems);
         model.addAttribute("objektWantSelected", wantItems);
         model.addAttribute("objektInitialSearch", selectedItems.size() == 1 ? selectedItems.get(0).getOrDefault("collectionId", "") : "");
+        List<String> seasonOptions = ObjektFilterOrder.sortedSeasons(seasons);
+        List<String> classOptions = classes.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList();
+        List<String> kindOptions = kinds.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList();
         model.addAttribute("memberPickerOptions", memberPicker);
-        model.addAttribute("objektSeasonOptions", ObjektFilterOrder.sortedSeasons(seasons));
-        model.addAttribute("objektClassOptions", classes.stream()
-                .sorted(String.CASE_INSENSITIVE_ORDER).toList());
+        model.addAttribute("selectedGroup", "all");
+        model.addAttribute("isOtherGroup", false);
+        model.addAttribute("seasonOptions", seasonOptions);
+        model.addAttribute("classOptions", classOptions);
+        model.addAttribute("objektNumbers", kindOptions);
+        model.addAttribute("selectedKindLabel", "전체");
+        model.addAttribute("searchQuery", "");
+        model.addAttribute("objektWorkspaceNamedFields", false);
+        // 하위 호환·테스트용 별칭
+        model.addAttribute("objektSeasonOptions", seasonOptions);
+        model.addAttribute("objektClassOptions", classOptions);
+        model.addAttribute("objektKindOptions", kindOptions);
     }
 
     private static Set<String> keySet(List<String> keys) {
@@ -288,9 +303,14 @@ public class ArticleController {
         String seasonKey = season.trim().toLowerCase(Locale.ROOT);
         String classKey = objektClass.trim().toLowerCase(Locale.ROOT);
         String query = q.trim().toLowerCase(Locale.ROOT);
+        List<String> selectedMembers = member.isBlank() ? List.of()
+                : java.util.Arrays.stream(member.split(","))
+                .map(String::trim)
+                .filter(v -> !v.isEmpty())
+                .distinct()
+                .toList();
         String selectedGroup = "other".equalsIgnoreCase(group) ? "other"
-                : ("members".equalsIgnoreCase(group) || !member.isBlank() ? "members" : "all");
-        List<String> selectedMembers = member.isBlank() ? List.of() : List.of(member.trim());
+                : ("members".equalsIgnoreCase(group) || !selectedMembers.isEmpty() ? "members" : "all");
         List<Map<String, Object>> matched = new ArrayList<>();
         for (Map<String, Object> item : objektService.findCollections("triples")) {
             if (!MemberPortraitOptions.matchesMemberGroup(selectedGroup, selectedMembers, stringValue(item.get("member")))) continue;

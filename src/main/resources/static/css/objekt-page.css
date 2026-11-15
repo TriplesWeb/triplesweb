@@ -436,16 +436,19 @@
             padding-top: .85rem;
             border-top: 1px solid rgba(255,255,255,.06);
         }
-        #objekt-search-form .objekt-search-row {
+        #objekt-search-form .objekt-search-row,
+        .objekt-workspace .objekt-search-row {
             flex-wrap: nowrap;
         }
-        #objekt-search-form .objekt-search {
+        #objekt-search-form .objekt-search,
+        .objekt-workspace .objekt-search {
             flex: 1 1 auto;
             width: auto;
             max-width: none;
             min-width: 0;
         }
-        #objekt-search-form .objekt-search-glyph {
+        #objekt-search-form .objekt-search-glyph,
+        .objekt-workspace .objekt-search-glyph {
             position: absolute;
             left: .7rem;
             top: 50%;
@@ -459,7 +462,8 @@
             line-height: 1;
             pointer-events: none;
         }
-        #objekt-search-form .objekt-search-glyph svg {
+        #objekt-search-form .objekt-search-glyph svg,
+        .objekt-workspace .objekt-search-glyph svg {
             width: 1rem;
             height: 1rem;
             fill: none;
@@ -467,15 +471,19 @@
             stroke-width: 1.8;
         }
         #objekt-search-form .objekt-search .objekt-search-input,
-        #objekt-search-form .objekt-search .site-search__input {
+        #objekt-search-form .objekt-search .site-search__input,
+        .objekt-workspace .objekt-search .objekt-search-input,
+        .objekt-workspace .objekt-search .site-search__input {
             padding-left: 2.15rem;
             padding-right: .85rem;
         }
-        #objekt-search-form .objekt-reset-button {
+        #objekt-search-form .objekt-reset-button,
+        .objekt-workspace .objekt-reset-button {
             flex: 0 0 auto;
             width: auto;
         }
-        #objekt-search-form .objekt-reset-button[hidden] {
+        #objekt-search-form .objekt-reset-button[hidden],
+        .objekt-workspace .objekt-reset-button[hidden] {
             display: none !important;
         }
         .objekt-search { flex: 1 1 16rem; }

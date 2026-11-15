@@ -13,13 +13,16 @@
     const scrollRoot = document.getElementById('objektOptionsScroll') || list;
     const sentinel = document.getElementById('objektOptionsSentinel');
     const status = document.getElementById('objektPickerStatus');
-    const memberFilter = document.getElementById('objektFilterMember');
-    const seasonFilter = document.getElementById('objektFilterSeason');
-    const classFilter = document.getElementById('objektFilterClass');
-    const searchFilter = document.getElementById('objektFilterSearch');
-    const resetBtn = document.getElementById('objektFilterReset');
+    const workspace = document.getElementById('objekt-workspace');
+    const memberGroupInput = document.getElementById('objekt-member-group');
+    const memberLabel = document.getElementById('member-label');
     const memberPicker = document.getElementById('objekt-member-picker');
-    const memberPickerWrap = document.getElementById('objekt-member-picker-wrap');
+    const memberPanel = document.getElementById('member-dropdown');
+    const kindInput = document.getElementById('objekt-kind-input');
+    const sortSelect = workspace?.querySelector('.objekt-sort-select');
+    const searchFilter = document.getElementById('objekt-workspace-search');
+    const resetBtn = document.getElementById('objekt-reset');
+    const memberToggle = document.getElementById('objekt-member-toggle');
     const sideHaveBtn = document.getElementById('objektSideHave');
     const sideWantBtn = document.getElementById('objektSideWant');
     const havePreview = document.getElementById('objektHavePreview');
@@ -137,65 +140,124 @@
       syncWantAvailability();
     }
 
-    function memberSelection() {
-      const value = memberFilter ? memberFilter.value.trim() : '';
-      if (value) return { group: 'members', member: value };
-      return { group: 'all', member: '' };
+    function checkedValues(selector) {
+      return Array.from(document.querySelectorAll(selector))
+        .filter((box) => box.checked && box.value && box.value !== 'all')
+        .map((box) => box.value);
+    }
+
+    function normalizeKindValue(raw) {
+      const value = String(raw || '').trim();
+      if (!value || value === '전체' || value.toLowerCase() === 'all') return 'all';
+      return value;
+    }
+
+    function filterState() {
+      const group = memberGroupInput?.value || 'all';
+      const members = checkedValues('.member-checkbox');
+      return {
+        group: group === 'other' ? 'other' : (members.length ? 'members' : group),
+        members: members,
+        season: checkedValues('.season-checkbox')[0] || '',
+        className: checkedValues('.class-checkbox')[0] || '',
+        kind: normalizeKindValue(kindInput?.dataset.kindValue || kindInput?.value),
+        sort: (sortSelect && sortSelect.value) || 'latest',
+        q: (searchFilter && searchFilter.value.trim()) || ''
+      };
+    }
+
+    function syncMemberLabel() {
+      if (!memberLabel || !memberGroupInput) return;
+      const chosen = checkedValues('.member-checkbox');
+      if (!chosen.length) {
+        memberLabel.textContent = memberGroupInput.value === 'other'
+          ? '기타 옵젝'
+          : (memberGroupInput.value === 'members' ? '전체 멤버' : '전체 오브젝트');
+        return;
+      }
+      memberLabel.textContent = chosen.length === 1 ? chosen[0] : (chosen[0] + ' 외 ' + (chosen.length - 1) + '명');
+    }
+
+    function syncMemberGroupUi() {
+      const group = memberGroupInput?.value || 'all';
+      document.querySelectorAll('[data-objekt-group]').forEach((button) => {
+        button.setAttribute('aria-pressed', String(button.dataset.objektGroup === group));
+      });
+      if (memberPicker) memberPicker.hidden = group === 'other';
+      const notice = document.getElementById('objekt-other-notice');
+      if (notice) notice.hidden = group !== 'other';
+      if (memberToggle) memberToggle.hidden = group === 'other';
+      syncMemberLabel();
+    }
+
+    function setMemberPickerOpen(next) {
+      if (!memberPanel) return;
+      memberPanel.classList.toggle('is-collapsed', !next);
+      if (memberToggle) memberToggle.setAttribute('aria-expanded', next ? 'true' : 'false');
+    }
+
+    function updateFacetLabel(type) {
+      const label = document.getElementById(type + '-label');
+      if (!label) return;
+      const chosen = checkedValues('.' + type + '-checkbox');
+      label.textContent = chosen.length ? chosen[0] : '전체';
     }
 
     function syncFilterChrome() {
-      const hasMember = !!(memberFilter && memberFilter.value);
-      const hasSeason = !!(seasonFilter && seasonFilter.value);
-      const hasClass = !!(classFilter && classFilter.value);
-      const hasSearch = !!(searchFilter && searchFilter.value.trim());
+      const state = filterState();
+      const hasMember = state.group !== 'all' || state.members.length > 0;
+      const hasSeason = !!state.season;
+      const hasClass = !!state.className;
+      const hasKind = state.kind !== 'all';
+      const hasSort = state.sort !== 'latest';
+      const hasSearch = !!state.q;
       if (resetBtn) {
-        const showReset = hasMember || hasSeason || hasClass || hasSearch;
+        const showReset = hasMember || hasSeason || hasClass || hasKind || hasSort || hasSearch;
         resetBtn.hidden = !showReset;
         resetBtn.toggleAttribute('hidden', !showReset);
       }
-      memberPickerWrap?.classList.toggle('is-filtered', hasMember);
-      document.getElementById('objekt-season-dropdown')?.classList.toggle('is-filtered', hasSeason);
-      document.getElementById('objekt-class-dropdown')?.classList.toggle('is-filtered', hasClass);
+      memberPanel?.classList.toggle('is-filtered', hasMember);
+      document.getElementById('season-dropdown')?.classList.toggle('is-filtered', hasSeason);
+      document.getElementById('class-dropdown')?.classList.toggle('is-filtered', hasClass);
+      document.getElementById('kind-dropdown')?.classList.toggle('is-filtered', hasKind);
+      document.getElementById('sort-dropdown')?.classList.toggle('is-filtered', hasSort);
+      workspace?.querySelector('.objekt-search')?.classList.toggle('is-filtered', hasSearch);
     }
 
-    function bindFacetMenu(toggleId, menuId, checkboxClass, hidden, labelId) {
-      const toggleBtn = document.getElementById(toggleId);
-      const menu = document.getElementById(menuId);
-      const label = document.getElementById(labelId);
-      if (!toggleBtn || !menu || !hidden) return { reset() {} };
-      toggleBtn.addEventListener('click', (event) => {
+    function bindExclusiveFacet(type) {
+      const boxes = Array.from(document.querySelectorAll('.' + type + '-checkbox'));
+      const all = boxes.find((box) => box.value === 'all');
+      const toggleBtn = document.getElementById(type + '-toggle');
+      const menu = document.getElementById(type + '-menu');
+      boxes.forEach((box) => {
+        box.addEventListener('change', () => {
+          if (box.value === 'all' && box.checked) {
+            boxes.forEach((other) => { if (other !== box) other.checked = false; });
+          } else if (box.value !== 'all' && box.checked) {
+            boxes.forEach((other) => { if (other !== box) other.checked = false; });
+            if (all) all.checked = false;
+          }
+          if (!boxes.some((other) => other.value !== 'all' && other.checked) && all) all.checked = true;
+          updateFacetLabel(type);
+          syncFilterChrome();
+          if (open) load(true);
+        });
+      });
+      toggleBtn?.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
         if (window.ObjektDropdown) window.ObjektDropdown.toggle(menu);
-        else {
-          const willOpen = menu.hasAttribute('hidden');
+        else if (menu) {
+          const willOpen = menu.classList.contains('hidden') || menu.hidden;
           menu.hidden = !willOpen;
           menu.classList.toggle('hidden', !willOpen);
         }
       });
-      menu.addEventListener('change', (event) => {
-        const input = event.target;
-        if (!(input instanceof HTMLInputElement) || !input.classList.contains(checkboxClass)) return;
-        menu.querySelectorAll('.' + checkboxClass).forEach((box) => {
-          box.checked = box === input;
-        });
-        if (input.value === 'all') {
-          hidden.value = '';
-          if (label) label.textContent = '전체';
-        } else {
-          hidden.value = input.value;
-          if (label) label.textContent = input.value;
-        }
-        syncFilterChrome();
-        if (open) load(true);
-      });
+      updateFacetLabel(type);
       return {
         reset() {
-          hidden.value = '';
-          if (label) label.textContent = '전체';
-          menu.querySelectorAll('.' + checkboxClass).forEach((box) => {
-            box.checked = box.value === 'all';
-          });
+          boxes.forEach((box) => { box.checked = box.value === 'all'; });
+          updateFacetLabel(type);
         }
       };
     }
@@ -442,14 +504,15 @@
       loading = true;
       const current = ++requestId;
       if (status) status.textContent = '오브젝트를 불러오는 중...';
-      const selection = memberSelection();
+      const state = filterState();
       const params = new URLSearchParams();
-      params.set('group', selection.group);
-      if (selection.member) params.set('member', selection.member);
-      if (seasonFilter && seasonFilter.value) params.set('season', seasonFilter.value);
-      if (classFilter && classFilter.value) params.set('class', classFilter.value);
-      params.set('sort', 'latest');
-      if (searchFilter && searchFilter.value.trim()) params.set('q', searchFilter.value.trim());
+      params.set('group', state.group);
+      if (state.members.length) params.set('member', state.members.join(','));
+      if (state.season) params.set('season', state.season);
+      if (state.className) params.set('class', state.className);
+      if (state.kind && state.kind !== 'all') params.set('kind', state.kind);
+      params.set('sort', state.sort || 'latest');
+      if (state.q) params.set('q', state.q);
       params.set('offset', String(offset));
       params.set('limit', String(pageSize));
       try {
@@ -534,75 +597,109 @@
       except?.closest('.objekt-filter')?.classList.toggle('is-open', Boolean(except) && !except.hidden);
     }
 
-    function bindChoiceMenu(opts) {
-      const menu = document.getElementById(opts.menuId);
-      const toggleBtn = document.getElementById(opts.toggleId);
-      const label = document.getElementById(opts.labelId);
-      const root = document.getElementById(opts.rootId);
-      const hidden = opts.hidden;
-      if (!menu || !toggleBtn || !hidden) return { reset() {} };
-      const emptyValue = opts.emptyValue ?? '';
-      const emptyLabel = opts.emptyLabel ?? '전체';
-      const choices = () => [...menu.querySelectorAll('.objekt-choice')];
-      function sync() {
-        const current = hidden.value || emptyValue;
-        let matched = false;
-        choices().forEach((choice) => {
-          const selected = (choice.dataset.value || emptyValue) === current;
-          choice.classList.toggle('is-selected', selected);
-          choice.setAttribute('aria-pressed', selected ? 'true' : 'false');
-          if (selected) {
-            matched = true;
-            if (label) label.textContent = choice.querySelector('.objekt-choice-text')?.textContent.trim() || emptyLabel;
-          }
-        });
-        if (!matched && label) label.textContent = emptyLabel;
-        root?.classList.toggle('is-filtered', current !== emptyValue);
-      }
-      choices().forEach((choice) => choice.addEventListener('click', () => {
-        hidden.value = choice.dataset.value || emptyValue;
-        sync();
-        menu.hidden = true;
-        menu.classList.add('hidden');
-        toggleBtn.setAttribute('aria-expanded', 'false');
-        closePickerMenus();
-        if (open) load(true);
-      }));
-      toggleBtn.addEventListener('click', () => {
-        const willOpen = menu.hasAttribute('hidden');
-        menu.hidden = !willOpen;
-        menu.classList.toggle('hidden', !willOpen);
-        toggleBtn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-        closePickerMenus(willOpen ? menu : null);
-      });
-      sync();
-      return {
-        reset() {
-          hidden.value = emptyValue;
-          sync();
-        }
-      };
-    }
+    const seasonMenu = bindExclusiveFacet('season');
+    const classMenu = bindExclusiveFacet('class');
 
-    const seasonMenu = bindFacetMenu(
-      'objekt-season-toggle', 'objekt-season-menu', 'season-checkbox', seasonFilter, 'objekt-season-label');
-    const classMenu = bindFacetMenu(
-      'objekt-class-toggle', 'objekt-class-menu', 'class-checkbox', classFilter, 'objekt-class-label');
+    function syncMemberChecks(values, apply) {
+      const selected = new Set((values || []).map((v) => String(v).toLocaleLowerCase()));
+      document.querySelectorAll('.member-checkbox').forEach((cb) => {
+        cb.checked = selected.has(String(cb.value).toLocaleLowerCase());
+      });
+      if (apply && memberGroupInput) memberGroupInput.value = selected.size ? 'members' : 'all';
+      syncMemberGroupUi();
+      syncFilterChrome();
+      if (apply && open) load(true);
+    }
 
     if (memberPicker && window.MemberPortraitPicker) {
       window.MemberPortraitPicker.bindMultiSelect(memberPicker, {
-        multi: false,
+        multi: true,
         onChange(values) {
-          if (memberFilter) memberFilter.value = values[0] || '';
+          syncMemberChecks(values, true);
+        }
+      });
+    }
+    syncMemberGroupUi();
+    setMemberPickerOpen(false);
+
+    document.querySelectorAll('[data-objekt-group]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const group = button.dataset.objektGroup;
+        if (memberGroupInput) memberGroupInput.value = group;
+        if (group !== 'members') {
+          window.MemberPortraitPicker?.clear(memberPicker);
+          syncMemberChecks([]);
+        }
+        syncMemberGroupUi();
+        setMemberPickerOpen(group === 'members');
+        syncFilterChrome();
+        if (open) load(true);
+      });
+    });
+    memberToggle?.addEventListener('click', () => {
+      if (memberGroupInput?.value === 'other') {
+        memberGroupInput.value = 'members';
+        syncMemberGroupUi();
+        setMemberPickerOpen(true);
+        syncFilterChrome();
+        if (open) load(true);
+        return;
+      }
+      setMemberPickerOpen(!!memberPanel?.classList.contains('is-collapsed'));
+    });
+
+    window.ObjektKindCombo?.bindKindCombo({
+      input: kindInput,
+      menu: document.getElementById('kind-menu'),
+      toggle: document.getElementById('objekt-kind-toggle'),
+      hiddenInput: null,
+      empty: document.getElementById('kind-empty'),
+      closeOthers() {
+        closePickerMenus(document.getElementById('kind-menu'));
+      },
+      onChange() {
+        if (kindInput) kindInput.dataset.kindValue = normalizeKindValue(kindInput.value);
+        syncFilterChrome();
+        window.clearTimeout(searchTimer);
+        searchTimer = window.setTimeout(() => { if (open) load(true); }, 250);
+      }
+    });
+
+    const sortToggle = document.getElementById('objekt-sort-toggle');
+    const sortMenu = document.getElementById('sort-menu');
+    const sortNative = document.getElementById('sort-native-control');
+    if (sortToggle && sortMenu && sortSelect) {
+      if (sortNative) sortNative.hidden = true;
+      sortToggle.hidden = false;
+      const sortLabel = document.getElementById('sort-label');
+      function syncSortLabel() {
+        const opt = sortSelect.selectedOptions?.[0];
+        if (sortLabel) sortLabel.textContent = opt ? opt.textContent : '최신순';
+      }
+      syncSortLabel();
+      sortToggle.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const willOpen = sortMenu.classList.contains('hidden') || sortMenu.hidden;
+        sortMenu.hidden = !willOpen;
+        sortMenu.classList.toggle('hidden', !willOpen);
+        sortToggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      });
+      sortMenu.querySelectorAll('.objekt-kind-option').forEach((option) => {
+        option.addEventListener('click', () => {
+          sortSelect.value = option.dataset.value || 'latest';
+          syncSortLabel();
+          sortMenu.hidden = true;
+          sortMenu.classList.add('hidden');
           syncFilterChrome();
           if (open) load(true);
-        }
+        });
       });
     }
 
     document.addEventListener('click', (event) => {
-      if (event.target.closest('#objektPickerPanel .objekt-filter')) return;
-      ['objekt-season-menu', 'objekt-class-menu'].forEach((id) => {
+      if (event.target.closest('#objekt-workspace .objekt-filter')) return;
+      ['season-menu', 'class-menu', 'kind-menu', 'sort-menu'].forEach((id) => {
         const menu = document.getElementById(id);
         if (menu && window.ObjektDropdown) window.ObjektDropdown.setOpen(menu, false);
         else if (menu) {
@@ -634,9 +731,19 @@
       resetBtn.addEventListener('click', () => {
         seasonMenu.reset();
         classMenu.reset();
-        if (memberFilter) memberFilter.value = '';
-        if (memberPicker && window.MemberPortraitPicker) window.MemberPortraitPicker.clear(memberPicker);
+        if (memberGroupInput) memberGroupInput.value = 'all';
+        window.MemberPortraitPicker?.clear(memberPicker);
+        syncMemberChecks([]);
+        if (kindInput) {
+          kindInput.value = '전체';
+          kindInput.dataset.kindValue = 'all';
+        }
+        if (sortSelect) sortSelect.value = 'latest';
+        const sortLabel = document.getElementById('sort-label');
+        if (sortLabel) sortLabel.textContent = '최신순';
         if (searchFilter) searchFilter.value = '';
+        setMemberPickerOpen(false);
+        syncMemberGroupUi();
         syncFilterChrome();
         if (open) load(true);
       });

@@ -94,76 +94,7 @@
             <button type="button" id="objektSideWant" class="objekt-side-btn" data-side="want" aria-pressed="false" disabled>Want에 담기</button>
         </div>
         {{/isTradeObjektSplit}}
-        <p class="text-xs text-slate-400">시즌·클래스·멤버로 필터하거나 검색한 뒤 체크하세요.</p>
-
-        <div class="market-member-filter objekt-picker-market-filter" aria-label="오브젝트 필터">
-            <input type="hidden" id="objektFilterMember" value="">
-            <input type="hidden" id="objektFilterSeason" value="">
-            <input type="hidden" id="objektFilterClass" value="">
-            <div class="market-filter-bar" role="group" aria-label="시즌·클래스 필터">
-                <div class="objekt-filter relative" id="objekt-season-dropdown">
-                    <span class="objekt-filter-label">시즌</span>
-                    <button type="button" id="objekt-season-toggle" class="objekt-filter-control" aria-haspopup="true" aria-expanded="false" aria-controls="objekt-season-menu" aria-label="시즌">
-                        <span id="objekt-season-label" class="truncate">전체</span>
-                        <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
-                    </button>
-                    <div id="objekt-season-menu" class="objekt-dropdown-menu hidden" hidden>
-                        <label class="objekt-choice">
-                            <input type="checkbox" value="all" class="season-checkbox" checked>
-                            <span class="objekt-choice-mark" aria-hidden="true"></span>
-                            <span class="objekt-choice-text">전체 시즌</span>
-                        </label>
-                        {{#objektSeasonOptions}}
-                        <label class="objekt-choice">
-                            <input type="checkbox" value="{{.}}" class="season-checkbox">
-                            <span class="objekt-choice-mark" aria-hidden="true"></span>
-                            <span class="objekt-choice-text">{{.}}</span>
-                        </label>
-                        {{/objektSeasonOptions}}
-                    </div>
-                </div>
-                <div class="objekt-filter relative" id="objekt-class-dropdown">
-                    <span class="objekt-filter-label">클래스</span>
-                    <button type="button" id="objekt-class-toggle" class="objekt-filter-control" aria-haspopup="true" aria-expanded="false" aria-controls="objekt-class-menu" aria-label="클래스">
-                        <span id="objekt-class-label" class="truncate">전체</span>
-                        <span class="material-symbols-outlined objekt-filter-caret" aria-hidden="true">arrow_drop_down</span>
-                    </button>
-                    <div id="objekt-class-menu" class="objekt-dropdown-menu hidden" hidden>
-                        <label class="objekt-choice">
-                            <input type="checkbox" value="all" class="class-checkbox" checked>
-                            <span class="objekt-choice-mark" aria-hidden="true"></span>
-                            <span class="objekt-choice-text">전체 클래스</span>
-                        </label>
-                        {{#objektClassOptions}}
-                        <label class="objekt-choice">
-                            <input type="checkbox" value="{{.}}" class="class-checkbox">
-                            <span class="objekt-choice-mark" aria-hidden="true"></span>
-                            <span class="objekt-choice-text">{{.}}</span>
-                        </label>
-                        {{/objektClassOptions}}
-                    </div>
-                </div>
-            </div>
-            <div class="market-member-picker" id="objekt-member-picker-wrap">
-                <div class="member-portrait-picker" id="objekt-member-picker" role="group" aria-label="멤버 선택">
-                    {{>partials/member-portrait-picker}}
-                </div>
-            </div>
-            <div class="objekt-search-row objekt-picker-search-row">
-                <div class="objekt-search site-search">
-                    <span class="objekt-search-glyph" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
-                    </span>
-                    <label class="w-full min-w-0">
-                        <input type="search" id="objektFilterSearch" placeholder="멤버·시즌·번호·설명 검색..." aria-label="오브젝트 검색" autocomplete="off" class="objekt-search-input site-search__input">
-                    </label>
-                </div>
-                <button type="button" id="objektFilterReset" class="objekt-reset-button" hidden>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2.6 8.4M3 4v6h6"/></svg>
-                    초기화
-                </button>
-            </div>
-        </div>
+        {{>partials/objekt-workspace}}
 
         <div id="objektSelectedInputs">
             {{#isTradeObjektSplit}}
