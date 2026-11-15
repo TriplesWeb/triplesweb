@@ -1,12 +1,14 @@
 <section class="ar-panel ar-toolbar">
     <form class="ar-filters" id="archiveFilterForm" method="get" action="{{archivePath}}">
         {{#videoArchive}}<input type="hidden" name="type" value="video">{{/videoArchive}}
-        <button type="submit" class="ar-search-go">검색</button>
-        <div class="ar-search-wrap site-search">
-            <input class="ar-search site-search__input" type="search" name="q" value="{{query}}" placeholder="{{#imageArchive}}사진 제목 검색{{/imageArchive}}{{^imageArchive}}영상 제목 검색{{/imageArchive}}" aria-label="{{#imageArchive}}사진 제목 검색{{/imageArchive}}{{^imageArchive}}영상 제목 검색{{/imageArchive}}">
-            <span class="site-search__submit" aria-hidden="true">
-                <span class="material-symbols-outlined">search</span>
-            </span>
+        <div class="ar-search-row">
+            <div class="ar-search-wrap site-search">
+                <input class="ar-search site-search__input" type="search" name="q" value="{{query}}" placeholder="{{#imageArchive}}사진 제목 검색{{/imageArchive}}{{^imageArchive}}영상 제목 검색{{/imageArchive}}" aria-label="{{#imageArchive}}사진 제목 검색{{/imageArchive}}{{^imageArchive}}영상 제목 검색{{/imageArchive}}">
+                <span class="site-search__submit" aria-hidden="true">
+                    <span class="material-symbols-outlined">search</span>
+                </span>
+            </div>
+            <button type="submit" class="ar-search-go">검색</button>
         </div>
         <div class="ar-filter-tools">
             <label class="ar-sort">

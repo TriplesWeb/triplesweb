@@ -56,10 +56,17 @@
     border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 
-.ar-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-top: 1.25rem; }
+.ar-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.7rem;
+    margin-top: 1.25rem;
+    width: 100%;
+    max-width: 46rem;
+}
 .ar-stat {
-    min-height: 7.6rem;
-    padding: 1.1rem 1.15rem;
+    min-height: 6.8rem;
+    padding: 0.95rem 1rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -112,6 +119,12 @@
 
 .ar-toolbar { padding: 0.85rem 1.05rem; display: flex; flex-direction: column; gap: 0.65rem; }
 .ar-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.ar-search-row {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 0;
+}
 .ar-search-go {
     flex: 0 0 auto;
     min-height: 2.1rem;
@@ -123,6 +136,7 @@
     font: inherit;
     font-size: 0.82rem;
     font-weight: 700;
+    line-height: 1;
     cursor: pointer;
 }
 .ar-search-go:hover { border-color: #00f5d4; color: #d7fff3; }
@@ -142,6 +156,8 @@
     letter-spacing: 0.04em;
 }
 .ar-sort-control {
+    --ar-sort-fg: #e8ebf2;
+    --ar-sort-bg: #1c1d24;
     position: relative;
     display: inline-flex;
     align-items: center;
@@ -162,11 +178,88 @@
     outline: none;
     background: transparent;
     padding: 0 1.4rem 0 0;
-    color: #e8ebf2;
+    color: var(--ar-sort-fg);
     font-family: inherit;
     font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
+    color-scheme: dark;
+}
+.ar-sort-control select option {
+    background: var(--ar-sort-bg);
+    color: var(--ar-sort-fg);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+.ar-sort-control.is-enhanced select {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+.ar-sort-trigger {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    height: 2.1rem;
+    margin: 0;
+    padding: 0 1.4rem 0 0;
+    border: 0;
+    background: transparent;
+    color: var(--ar-sort-fg);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1;
+    text-align: left;
+    cursor: pointer;
+}
+.ar-sort-menu {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    left: 0;
+    z-index: 40;
+    display: grid;
+    gap: 0.15rem;
+    min-width: 100%;
+    margin: 0;
+    padding: 0.3rem;
+    list-style: none;
+    border-radius: 0.9rem;
+    background: var(--ar-sort-bg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 16px 32px -16px rgba(0, 0, 0, 0.7);
+}
+.ar-sort-menu[hidden] { display: none; }
+.ar-sort-option {
+    display: block;
+    width: 100%;
+    padding: 0.4rem 0.75rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ar-sort-fg);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: left;
+    cursor: pointer;
+}
+.ar-sort-option:hover,
+.ar-sort-option[aria-selected="true"] {
+    background: rgba(0, 245, 212, 0.12);
+    color: #d7fff3;
 }
 .ar-sort-control .material-symbols-outlined {
     position: absolute;
@@ -222,16 +315,32 @@
     border-color: #8decd9;
     box-shadow: 0 0 0 1px rgba(141, 236, 217, 0.35);
 }
-.ar-reset {
+.ar-toolbar a.ar-reset {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
     min-height: 2.1rem;
-    padding: 0.35rem 0.8rem;
+    height: 2.1rem;
+    padding: 0.3rem 0.75rem;
     border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 999px;
-    color: #c6d3d0;
+    background: rgba(255, 255, 255, 0.045);
+    color: #e3e2e8;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 650;
+    line-height: 1;
+    text-decoration: none;
+}
+.ar-toolbar a.ar-reset:hover {
+    border-color: rgba(0, 245, 212, 0.45);
+    color: #00f5d4;
 }
 .ar-toolbar .ar-submit { min-height: 2.1rem; padding: 0.35rem 0.95rem; }
 @media (max-width: 720px) {
-    .ar-search-go, .ar-search-wrap, .ar-filter-tools { width: 100%; margin-left: 0; }
+    .ar-search-row, .ar-search-wrap, .ar-filter-tools { width: 100%; margin-left: 0; }
+    .ar-search-row .ar-search-wrap { flex: 1 1 auto; max-width: none; }
 }
 
 .ar-grid { display: grid; grid-template-columns: 1fr; gap: 1.1rem; }
@@ -382,11 +491,16 @@
     min-width: calc(var(--chip-image, 2.15rem) + 0.5rem);
     max-width: calc(var(--chip-image, 2.15rem) + 0.7rem);
     padding: 0.18rem;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
 }
 .archive-member-chip.archive-symbol-chip img {
+    border: 0;
     border-radius: 0.55rem;
     object-fit: contain;
     background: transparent;
+    box-shadow: none;
 }
 .archive-member-chip.archive-symbol-chip .archive-chip-name {
     position: absolute;
@@ -726,6 +840,7 @@
 
 /* 카드의 큰 사진 규칙과 멤버 배지 이미지를 분리한다. */
 .archive-page .ar-card .archive-member-chip img{width:var(--chip-image, 2.15rem);height:var(--chip-image, 2.15rem);max-width:var(--chip-image, 2.15rem);object-fit:contain;flex:none}
+.archive-page .ar-card .archive-member-chip.archive-symbol-chip img{border:0;box-shadow:none;background:transparent}
 .archive-page[data-archive-kind] .ar-highlight .archive-member-chip img{width:2.15rem;height:2.15rem;max-width:2.15rem;max-height:2.15rem;object-fit:contain;flex:none}
 
 .archive-page.is-browse .ar-grid {

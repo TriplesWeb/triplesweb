@@ -24,6 +24,65 @@
     }
 
     sort?.addEventListener('change', apply);
+    function enhanceSort(select) {
+        const control = select && select.closest('.ar-sort-control');
+        if (!control || control.classList.contains('is-enhanced')) return;
+        control.classList.add('is-enhanced');
+        select.setAttribute('aria-hidden', 'true');
+        select.tabIndex = -1;
+        const trigger = document.createElement('button');
+        trigger.type = 'button';
+        trigger.className = 'ar-sort-trigger';
+        trigger.setAttribute('aria-haspopup', 'listbox');
+        trigger.setAttribute('aria-expanded', 'false');
+        trigger.setAttribute('aria-label', select.getAttribute('aria-label') || '정렬');
+        const menu = document.createElement('div');
+        menu.className = 'ar-sort-menu';
+        menu.hidden = true;
+        menu.setAttribute('role', 'listbox');
+        function selectedLabel() {
+            return select.options[select.selectedIndex]?.textContent.trim() || '';
+        }
+        function sync() {
+            trigger.textContent = selectedLabel();
+            [...menu.querySelectorAll('.ar-sort-option')].forEach(option => {
+                option.setAttribute('aria-selected', option.dataset.value === select.value ? 'true' : 'false');
+            });
+        }
+        function setOpen(open) {
+            menu.hidden = !open;
+            trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+        [...select.options].forEach(option => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'ar-sort-option';
+            item.setAttribute('role', 'option');
+            item.dataset.value = option.value;
+            item.textContent = option.textContent.trim();
+            item.addEventListener('click', () => {
+                if (select.value !== option.value) {
+                    select.value = option.value;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                sync();
+                setOpen(false);
+                trigger.focus();
+            });
+            menu.appendChild(item);
+        });
+        trigger.addEventListener('click', () => setOpen(menu.hidden));
+        document.addEventListener('click', event => {
+            if (!control.contains(event.target)) setOpen(false);
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') setOpen(false);
+        });
+        select.after(trigger);
+        control.appendChild(menu);
+        sync();
+    }
+    enhanceSort(sort);
     const form = document.getElementById('archiveFilterForm');
     const panel = document.getElementById('archiveMemberPanel');
     const memberToggle = document.getElementById('archiveMemberToggle');

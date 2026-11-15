@@ -49,10 +49,12 @@ ${siteUi}
   </section>
   <section class="ar-panel ar-toolbar">
     <form class="ar-filters" id="archiveFilterForm">
-      <button type="submit" class="ar-search-go">검색</button>
-      <div class="ar-search-wrap site-search"><input class="ar-search site-search__input" type="search" placeholder="사진 제목 검색"><span class="site-search__submit" aria-hidden="true"><span class="material-symbols-outlined">search</span></span></div>
+      <div class="ar-search-row">
+        <div class="ar-search-wrap site-search"><input class="ar-search site-search__input" type="search" placeholder="사진 제목 검색"><span class="site-search__submit" aria-hidden="true"><span class="material-symbols-outlined">search</span></span></div>
+        <button type="submit" class="ar-search-go">검색</button>
+      </div>
       <div class="ar-filter-tools">
-        <label class="ar-sort"><span class="ar-sort-label">정렬</span><span class="ar-sort-control"><select id="archiveSort"><option>최신순</option></select><span class="material-symbols-outlined">arrow_drop_down</span></span></label>
+        <label class="ar-sort"><span class="ar-sort-label">정렬</span><span class="ar-sort-control"><select id="archiveSort" aria-label="정렬"><option value="newest">최신순</option><option value="oldest">오래된 순</option><option value="title">제목순</option></select><span class="material-symbols-outlined">arrow_drop_down</span></span></label>
         <div class="ar-date-filter"><button type="button" class="ar-date-toggle"><span>사진 날짜</span></button></div>
         <button type="button" class="ar-member-toggle">멤버 선택</button>
         <a class="ar-text-btn ar-reset" href="/archive">초기화</a>
@@ -124,17 +126,21 @@ ${siteUi}
       const headline = document.querySelector('.ar-headline');
       const stats = document.getElementById('archiveStats');
       const toggle = document.querySelector('[data-stats-toggle]');
+      const headlineBox = headline.getBoundingClientRect();
+      const statsBox = stats.getBoundingClientRect();
       return {
         statsInside: headline.contains(stats),
         open: toggle.getAttribute('aria-expanded') === 'true',
         icon: toggle.querySelector('[data-stats-icon]').textContent.trim(),
-        statsShown: stats.getBoundingClientRect().height > 20
+        statsShown: statsBox.height > 20,
+        statsNarrower: statsBox.width < headlineBox.width - 80
       };
     });
     assert.equal(hero.statsInside, true, '통계가 아카이브 제목과 같은 패널에 없다');
     assert.equal(hero.open, true, '초기 화면에서 통계가 닫혀 있다');
     assert.equal(hero.icon, '−');
     assert.equal(hero.statsShown, true, '초기 화면에서 통계가 안 보인다');
+    assert.equal(hero.statsNarrower, true, '통계 카드가 여전히 패널 전체 너비다');
 
     await page.click('[data-stats-toggle]');
     const closed = await page.evaluate(() => {
@@ -178,7 +184,8 @@ ${siteUi}
         titleBefore: title.bottom <= meta.top + 1,
         numbers: document.querySelectorAll('#archiveGrid .ar-id').length,
         columns: getComputedStyle(document.getElementById('archiveGrid')).gridTemplateColumns.split(' ').filter(Boolean).length,
-        carousel: document.getElementById('archiveGrid').classList.contains('is-photo-carousel')
+        carousel: document.getElementById('archiveGrid').classList.contains('is-photo-carousel'),
+        chipBorder: getComputedStyle(one.querySelector('.archive-symbol-chip img')).borderWidth
       };
     });
     assert.ok(grid.oneImg > 20 && grid.oneImg <= 40, '한 명 카드 배지 크기가 깨졌다: ' + grid.oneImg);
@@ -191,6 +198,7 @@ ${siteUi}
     assert.equal(grid.numbers, 0, '목록에 번호가 보인다');
     assert.equal(grid.carousel, false, '캐러셀이 남아 있다');
     assert.ok(grid.columns >= 2, '사진이 여러 열로 배치되지 않는다: ' + grid.columns);
+    assert.equal(grid.chipBorder, '0px', '상징로고에 테두리가 남아 있다: ' + grid.chipBorder);
 
     const toolbar = await page.evaluate(() => {
       const searchGo = document.querySelector('.ar-search-go');
@@ -200,28 +208,51 @@ ${siteUi}
       const date = document.querySelector('.ar-date-toggle');
       const member = document.querySelector('.ar-member-toggle');
       const reset = document.querySelector('.ar-reset');
+      const trigger = document.querySelector('.ar-sort-trigger');
+      const option = document.querySelector('.ar-sort-option[aria-selected="false"]') || document.querySelector('.ar-sort-option');
       const searchBox = search.getBoundingClientRect();
       const goBox = searchGo.getBoundingClientRect();
       const toolsBox = tools.getBoundingClientRect();
+      const memberBox = member.getBoundingClientRect();
+      const resetBox = reset.getBoundingClientRect();
+      const memberStyle = getComputedStyle(member);
+      const resetStyle = getComputedStyle(reset);
+      const triggerStyle = trigger ? getComputedStyle(trigger) : null;
+      const optionStyle = option ? getComputedStyle(option) : null;
       return {
         searchW: Math.round(searchBox.width),
-        goBefore: goBox.left < searchBox.left,
+        goAfter: goBox.left >= searchBox.right - 2,
         iconIsButton: icon.tagName === 'BUTTON',
-        toolsAfter: toolsBox.left >= searchBox.right - 24,
+        toolsAfter: toolsBox.left >= goBox.right - 24,
         dateInTools: tools.contains(date),
         memberInTools: tools.contains(member),
         resetInTools: tools.contains(reset),
-        filterSize: getComputedStyle(document.querySelector('.ar-filter-summary')).fontSize
+        filterSize: getComputedStyle(document.querySelector('.ar-filter-summary')).fontSize,
+        resetFont: resetStyle.fontSize,
+        memberFont: memberStyle.fontSize,
+        resetColor: resetStyle.color,
+        memberColor: memberStyle.color,
+        resetAlign: Math.abs(resetBox.top - memberBox.top) <= 2 && Math.abs(resetBox.height - memberBox.height) <= 4,
+        sortEnhanced: Boolean(trigger && option),
+        sortMatch: Boolean(triggerStyle && optionStyle
+          && triggerStyle.color === optionStyle.color
+          && triggerStyle.fontSize === optionStyle.fontSize
+          && triggerStyle.fontWeight === optionStyle.fontWeight)
       };
     });
     assert.ok(toolbar.searchW < 420, '검색창이 한 줄을 차지한다: ' + toolbar.searchW);
-    assert.equal(toolbar.goBefore, true, '검색 버튼이 돋보기 왼쪽에 없다');
+    assert.equal(toolbar.goAfter, true, '검색 버튼이 검색창 오른쪽에 없다');
     assert.equal(toolbar.iconIsButton, false, '돋보기가 여전히 제출 버튼이다');
     assert.equal(toolbar.toolsAfter, true, '다른 버튼이 검색창 오른쪽으로 가지 않았다');
     assert.equal(toolbar.dateInTools, true);
     assert.equal(toolbar.memberInTools, true);
     assert.equal(toolbar.resetInTools, true);
     assert.ok(parseFloat(toolbar.filterSize) < 22, '필터 글자가 줄지 않는다: ' + toolbar.filterSize);
+    assert.equal(toolbar.resetFont, toolbar.memberFont, '초기화 글자 크기가 다른 버튼과 다르다: ' + toolbar.resetFont);
+    assert.equal(toolbar.resetColor, toolbar.memberColor, '초기화 색이 다른 버튼과 다르다: ' + toolbar.resetColor);
+    assert.equal(toolbar.resetAlign, true, '초기화가 다른 버튼과 세로로 안 맞는다');
+    assert.equal(toolbar.sortEnhanced, true, '정렬 드롭다운이 같은 스타일로 열리지 않는다');
+    assert.equal(toolbar.sortMatch, true, '정렬 항목 스타일이 닫힌 버튼과 다르다');
 
     const pager = await page.evaluate(() => {
       const jump = document.querySelector('.ar-page-jump');
