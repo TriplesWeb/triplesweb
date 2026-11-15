@@ -14,10 +14,10 @@
     const memberFilter = document.getElementById('objektFilterMember');
     const seasonFilter = document.getElementById('objektFilterSeason');
     const classFilter = document.getElementById('objektFilterClass');
-    const kindFilter = document.getElementById('objektFilterKind');
-    const sortFilter = document.getElementById('objektFilterSort');
     const searchFilter = document.getElementById('objektFilterSearch');
     const resetBtn = document.getElementById('objektFilterReset');
+    const memberPicker = document.getElementById('objekt-member-picker');
+    const memberPickerWrap = document.getElementById('objekt-member-picker-wrap');
     const sideHaveBtn = document.getElementById('objektSideHave');
     const sideWantBtn = document.getElementById('objektSideWant');
     const havePreview = document.getElementById('objektHavePreview');
@@ -137,9 +137,61 @@
 
     function memberSelection() {
       const value = memberFilter ? memberFilter.value.trim() : '';
-      if (value === '__other__') return { group: 'other', member: '' };
       if (value) return { group: 'members', member: value };
       return { group: 'all', member: '' };
+    }
+
+    function syncFilterChrome() {
+      const hasMember = !!(memberFilter && memberFilter.value);
+      const hasSeason = !!(seasonFilter && seasonFilter.value);
+      const hasClass = !!(classFilter && classFilter.value);
+      const hasSearch = !!(searchFilter && searchFilter.value.trim());
+      if (resetBtn) resetBtn.hidden = !(hasMember || hasSeason || hasClass || hasSearch);
+      memberPickerWrap?.classList.toggle('is-filtered', hasMember);
+      document.getElementById('objekt-season-dropdown')?.classList.toggle('is-filtered', hasSeason);
+      document.getElementById('objekt-class-dropdown')?.classList.toggle('is-filtered', hasClass);
+    }
+
+    function bindFacetMenu(toggleId, menuId, checkboxClass, hidden, labelId) {
+      const toggleBtn = document.getElementById(toggleId);
+      const menu = document.getElementById(menuId);
+      const label = document.getElementById(labelId);
+      if (!toggleBtn || !menu || !hidden) return { reset() {} };
+      toggleBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (window.ObjektDropdown) window.ObjektDropdown.toggle(menu);
+        else {
+          const willOpen = menu.hasAttribute('hidden');
+          menu.hidden = !willOpen;
+          menu.classList.toggle('hidden', !willOpen);
+        }
+      });
+      menu.addEventListener('change', (event) => {
+        const input = event.target;
+        if (!(input instanceof HTMLInputElement) || !input.classList.contains(checkboxClass)) return;
+        menu.querySelectorAll('.' + checkboxClass).forEach((box) => {
+          box.checked = box === input;
+        });
+        if (input.value === 'all') {
+          hidden.value = '';
+          if (label) label.textContent = '전체';
+        } else {
+          hidden.value = input.value;
+          if (label) label.textContent = input.value;
+        }
+        syncFilterChrome();
+        if (open) load(true);
+      });
+      return {
+        reset() {
+          hidden.value = '';
+          if (label) label.textContent = '전체';
+          menu.querySelectorAll('.' + checkboxClass).forEach((box) => {
+            box.checked = box.value === 'all';
+          });
+        }
+      };
     }
 
     function findInput(id) {
@@ -380,8 +432,7 @@
       if (selection.member) params.set('member', selection.member);
       if (seasonFilter && seasonFilter.value) params.set('season', seasonFilter.value);
       if (classFilter && classFilter.value) params.set('class', classFilter.value);
-      if (kindFilter && kindFilter.value && kindFilter.value !== 'all') params.set('kind', kindFilter.value);
-      if (sortFilter && sortFilter.value) params.set('sort', sortFilter.value);
+      params.set('sort', 'latest');
       if (searchFilter && searchFilter.value.trim()) params.set('q', searchFilter.value.trim());
       params.set('offset', String(offset));
       params.set('limit', String(pageSize));
@@ -491,67 +542,48 @@
       };
     }
 
-    const memberMenu = bindChoiceMenu({
-      hidden: memberFilter,
-      rootId: 'objekt-member-dropdown',
-      toggleId: 'objekt-member-toggle',
-      menuId: 'objekt-member-menu',
-      labelId: 'objekt-member-label'
-    });
-    const seasonMenu = bindChoiceMenu({
-      hidden: seasonFilter,
-      rootId: 'objekt-season-dropdown',
-      toggleId: 'objekt-season-toggle',
-      menuId: 'objekt-season-menu',
-      labelId: 'objekt-season-label'
-    });
-    const classMenu = bindChoiceMenu({
-      hidden: classFilter,
-      rootId: 'objekt-class-dropdown',
-      toggleId: 'objekt-class-toggle',
-      menuId: 'objekt-class-menu',
-      labelId: 'objekt-class-label'
-    });
-    const sortMenu = bindChoiceMenu({
-      hidden: sortFilter,
-      rootId: 'objekt-sort-dropdown',
-      toggleId: 'objekt-sort-toggle',
-      menuId: 'objekt-sort-menu',
-      labelId: 'objekt-sort-label',
-      emptyValue: 'latest',
-      emptyLabel: '최신순'
-    });
-    window.ObjektKindCombo?.bindKindCombo({
-      input: document.getElementById('objekt-kind-select'),
-      menu: document.getElementById('objekt-kind-menu'),
-      toggle: document.getElementById('objekt-kind-toggle'),
-      hiddenInput: kindFilter,
-      empty: document.getElementById('objekt-kind-empty'),
-      closeOthers() {
-        closePickerMenus(document.getElementById('objekt-kind-menu'));
-      },
-      onChange() {
-        window.clearTimeout(searchTimer);
-        searchTimer = window.setTimeout(() => { if (open) load(true); }, 250);
-      }
-    });
+    const seasonMenu = bindFacetMenu(
+      'objekt-season-toggle', 'objekt-season-menu', 'season-checkbox', seasonFilter, 'objekt-season-label');
+    const classMenu = bindFacetMenu(
+      'objekt-class-toggle', 'objekt-class-menu', 'class-checkbox', classFilter, 'objekt-class-label');
+
+    if (memberPicker && window.MemberPortraitPicker) {
+      window.MemberPortraitPicker.bindMultiSelect(memberPicker, {
+        multi: false,
+        onChange(values) {
+          if (memberFilter) memberFilter.value = values[0] || '';
+          syncFilterChrome();
+          if (open) load(true);
+        }
+      });
+    }
+
     document.addEventListener('click', (event) => {
       if (event.target.closest('#objektPickerPanel .objekt-filter')) return;
+      ['objekt-season-menu', 'objekt-class-menu'].forEach((id) => {
+        const menu = document.getElementById(id);
+        if (menu && window.ObjektDropdown) window.ObjektDropdown.setOpen(menu, false);
+        else if (menu) {
+          menu.hidden = true;
+          menu.classList.add('hidden');
+        }
+      });
       closePickerMenus();
     });
 
-    [memberFilter, seasonFilter, classFilter].forEach((el) => {
-      if (el && el.tagName === 'SELECT') el.addEventListener('change', () => { if (open) load(true); });
-    });
     if (searchFilter) {
       searchFilter.addEventListener('input', () => {
         window.clearTimeout(searchTimer);
-        searchTimer = window.setTimeout(() => { if (open) load(true); }, 250);
+        searchTimer = window.setTimeout(() => {
+          syncFilterChrome();
+          if (open) load(true);
+        }, 250);
       });
       searchFilter.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
           event.preventDefault();
           window.clearTimeout(searchTimer);
+          syncFilterChrome();
           if (open) load(true);
         }
       });
@@ -560,27 +592,23 @@
     if (searchBtn) {
       searchBtn.addEventListener('click', () => {
         window.clearTimeout(searchTimer);
+        syncFilterChrome();
         if (open) load(true);
         else setOpen(true);
       });
     }
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
-        memberMenu.reset();
         seasonMenu.reset();
         classMenu.reset();
-        sortMenu.reset();
-        if (kindFilter) kindFilter.value = 'all';
-        const kindInput = document.getElementById('objekt-kind-select');
-        if (kindInput) {
-          kindInput.value = '전체';
-          kindInput.dataset.kindValue = 'all';
-          kindInput.closest('.objekt-filter')?.classList.remove('is-filtered');
-        }
+        if (memberFilter) memberFilter.value = '';
+        if (memberPicker && window.MemberPortraitPicker) window.MemberPortraitPicker.clear(memberPicker);
         if (searchFilter) searchFilter.value = '';
+        syncFilterChrome();
         if (open) load(true);
       });
     }
+    syncFilterChrome();
 
     // Seed cache from server-rendered thumbs / hidden inputs.
     selectedNodes().forEach((input) => {

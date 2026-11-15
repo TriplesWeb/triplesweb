@@ -380,6 +380,8 @@ class GroupOrdersControllerTest {
             .andExpect(content().string(containsString("data-default-open=\"true\"")))
             .andExpect(content().string(containsString("교환 올리기")))
             .andExpect(content().string(containsString("market-feed-swap")))
+            .andExpect(content().string(containsString("member-portrait-picker")))
+            .andExpect(content().string(containsString("market-filter-bar")))
             .andExpect(content().string(not(containsString("로그인 필요"))))
             .andExpect(content().string(not(containsString("name=\"userid\""))))
             .andExpect(content().string(not(containsString(">제목</"))))

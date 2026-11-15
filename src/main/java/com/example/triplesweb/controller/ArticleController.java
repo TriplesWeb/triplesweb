@@ -216,17 +216,14 @@ public class ArticleController {
         Set<String> members = new LinkedHashSet<>();
         Set<String> seasons = new LinkedHashSet<>();
         Set<String> classes = new LinkedHashSet<>();
-        Set<String> kinds = new LinkedHashSet<>();
 
         for (Map<String, Object> item : objektService.findCollections("triples")) {
             String member = stringValue(item.get("member"));
             String season = stringValue(item.get("season"));
             String klass = stringValue(item.get("class"));
-            String kind = stringValue(item.get("collectionNo"));
             if (!member.isBlank()) members.add(member);
             if (!season.isBlank()) seasons.add(season);
             if (!klass.isBlank()) classes.add(klass);
-            if (!kind.isBlank()) kinds.add(kind);
 
             String id = stringValue(item.get("id"));
             String collectionId = stringValue(item.get("collectionId"));
@@ -242,7 +239,11 @@ public class ArticleController {
         }
 
         List<String> soloMembers = MemberPortraitOptions.soloMemberNames(members);
-        boolean hasOther = members.stream().anyMatch(MemberPortraitOptions::isOtherMember);
+        List<Artist> artists = artistSnapshot.findAll();
+        List<Map<String, Object>> memberPicker = MemberPortraitOptions.forObjektFilter(soloMembers, artists);
+        for (Map<String, Object> option : memberPicker) {
+            option.put("active", false);
+        }
         model.addAttribute("showObjektPicker", true);
         model.addAttribute("isTradeObjektSplit", tradeSplit);
         model.addAttribute("isSellListingHave", isSellBoard(category) && !sellWant);
@@ -251,12 +252,9 @@ public class ArticleController {
         model.addAttribute("objektHaveSelected", haveItems);
         model.addAttribute("objektWantSelected", wantItems);
         model.addAttribute("objektInitialSearch", selectedItems.size() == 1 ? selectedItems.get(0).getOrDefault("collectionId", "") : "");
-        model.addAttribute("objektMemberOptions", soloMembers);
-        model.addAttribute("hasOtherObjektOption", hasOther);
+        model.addAttribute("memberPickerOptions", memberPicker);
         model.addAttribute("objektSeasonOptions", ObjektFilterOrder.sortedSeasons(seasons));
         model.addAttribute("objektClassOptions", classes.stream()
-                .sorted(String.CASE_INSENSITIVE_ORDER).toList());
-        model.addAttribute("objektKindOptions", kinds.stream()
                 .sorted(String.CASE_INSENSITIVE_ORDER).toList());
     }
 
