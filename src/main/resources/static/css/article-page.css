@@ -163,7 +163,15 @@
  .market-feed-thumb,.market-feed-more{width:2.65rem;height:4rem;min-width:2.65rem}
 }
 
-/* Trade Have / Want zones */
+/* Compose Have / Want preview (feed-card language) */
+.objekt-compose-deal{margin:.35rem 0 .15rem;padding:.75rem;border:1px solid #2f4a45;border-radius:1rem;background:#0f1618}
+.objekt-compose-strip{min-height:4.5rem}
+.objekt-trade-zone-empty{margin:0;font-size:.75rem;color:#7f918c;align-self:center}
+.objekt-compose-remove{appearance:none;position:absolute;top:-.35rem;right:-.35rem;z-index:2;display:grid;place-items:center;width:1.35rem;height:1.35rem;min-width:1.35rem;min-height:1.35rem;margin:0;padding:0;border:1px solid #ffffff22;border-radius:999px;background:#0b1210ee;color:#e8fff8;font-size:.85rem;font-weight:700;line-height:1;cursor:pointer}
+.objekt-compose-remove:hover{background:#ff6b6b44;border-color:#ff8f8f88;color:#fff}
+.objekt-compose-remove:focus-visible{outline:2px solid #8decd9;outline-offset:2px}
+.objekt-compose-strip .market-feed-thumb{position:relative}
+/* Detail page zones keep older card chrome */
 .objekt-trade-zones{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:.75rem 1rem;align-items:start}
 .objekt-trade-zone{min-width:0;padding:.75rem;border:1px solid #2f4a45;border-radius:1rem;background:#0f1618}
 .objekt-trade-zone-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:.35rem .65rem;margin-bottom:.65rem}
@@ -171,7 +179,6 @@
 .objekt-trade-zone-hint{font-size:.72rem;color:#8a9b96}
 .objekt-trade-zone-divider{align-self:center;color:#6f8a84;font-size:1rem;line-height:1;padding-top:1.5rem}
 .objekt-trade-zone-cards{display:flex;flex-wrap:wrap;gap:.65rem .7rem;min-height:2.5rem}
-.objekt-trade-zone-empty{margin:0;font-size:.75rem;color:#7f918c}
 .objekt-trade-chip{display:flex;align-items:center;gap:.45rem;max-width:100%;padding:.3rem .3rem .3rem .3rem;border:1px solid #314743;border-radius:.7rem;background:#152024;font-size:.7rem;color:#d7e6e1}
 .objekt-trade-chip img{width:1.85rem;height:2.75rem;object-fit:cover;border-radius:.35rem;flex:0 0 auto}
 .objekt-trade-chip span{min-width:0;overflow:visible;white-space:normal;overflow-wrap:anywhere;line-height:1.35}

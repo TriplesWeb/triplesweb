@@ -136,9 +136,10 @@ public class ArticleController {
                 category, selectedObjektIds, selectedHaveObjektIds, selectedWantObjektIds, sellListingSide);
         List<String> haveKeys = sides.have();
         List<String> wantKeys = sides.want();
-        String validationError = validateTitleAndContent(form.getTitle(), cleanedContent);
+        boolean marketBoard = isObjektBoard(category);
+        String validationError = validateObjektSelection(category, haveKeys, wantKeys);
         if (validationError == null) {
-            validationError = validateObjektSelection(category, haveKeys, wantKeys);
+            validationError = validateTitleAndContent(form.getTitle(), cleanedContent, marketBoard);
         }
         if (bindingResult.hasErrors() || validationError != null) {
             model.addAttribute("category", category);
@@ -151,8 +152,12 @@ public class ArticleController {
         }
 
         Article article = new Article();
-        article.setTitle(form.getTitle().trim());
-        article.setContent(cleanedContent);
+        String title = form.getTitle() == null ? "" : form.getTitle().trim();
+        if (title.isEmpty() && marketBoard) {
+            title = isTradeBoard(category) ? "교환" : "거래";
+        }
+        article.setTitle(title);
+        article.setContent(cleanedContent == null || cleanedContent.isBlank() ? "" : cleanedContent);
         article.setCategory(category);
         article.setUserId("익명"); // 로그인 기능 삭제로 기본 작성자 지정
 
@@ -618,15 +623,22 @@ public class ArticleController {
         }
 
         try {
+            boolean marketBoard = isObjektBoard(category);
+            String title = newarticle.getTitle() == null ? "" : newarticle.getTitle().trim();
+            if (title.isEmpty() && marketBoard) {
+                title = isTradeBoard(category) ? "교환" : "거래";
+            }
             Article saved = articleService.updateWithFiles(
                     id,
-                    newarticle.getTitle().trim(),
-                    newarticle.getContent(),
+                    title,
+                    newarticle.getContent() == null || newarticle.getContent().isBlank()
+                            ? ""
+                            : newarticle.getContent(),
                     files,
                     uploadedFiles,
                     deletedFiles);
 
-            if (isObjektBoard(category)) {
+            if (marketBoard) {
                 articleObjektService.replaceSelected(saved, haveKeys, wantKeys);
             }
             return "redirect:" + boardPath(category) + "/" + id;
@@ -726,7 +738,7 @@ public class ArticleController {
     }
 
     private String validateArticle(Article newArt) {
-        return validateTitleAndContent(newArt.getTitle(), newArt.getContent());
+        return validateTitleAndContent(newArt.getTitle(), newArt.getContent(), false);
     }
 
     private String validateArticleUpdate(Article existing,
@@ -737,7 +749,8 @@ public class ArticleController {
                                          List<Long> deletedFiles,
                                          List<String> haveKeys,
                                          List<String> wantKeys) {
-        String invalid = validateArticle(incoming);
+        String invalid = validateTitleAndContent(
+                incoming.getTitle(), incoming.getContent(), isObjektBoard(category));
         if (invalid != null) return invalid;
         String objektError = validateObjektSelection(category, haveKeys, wantKeys);
         if (objektError != null) return objektError;
@@ -792,6 +805,11 @@ public class ArticleController {
     }
 
     private static String validateTitleAndContent(String title, String content) {
+        return validateTitleAndContent(title, content, false);
+    }
+
+    private static String validateTitleAndContent(String title, String content, boolean marketBoard) {
+        if (marketBoard) return null;
         if (title == null || title.trim().isEmpty()) return "제목을 입력해주세요.";
         if (!ArticleHtmlCleaner.hasVisibleContent(content)) return "내용을 입력해주세요.";
         return null;
@@ -936,6 +954,9 @@ public class ArticleController {
     private static String validateObjektSelection(String category, List<String> haveKeys, List<String> wantKeys) {
         if (isTradeBoard(category)) {
             return ArticleObjektService.validateTradeSides(haveKeys, wantKeys);
+        }
+        if (isSellBoard(category)) {
+            return ArticleObjektService.validateSellSelection(haveKeys, wantKeys);
         }
         return null;
     }

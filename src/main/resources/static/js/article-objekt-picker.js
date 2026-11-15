@@ -22,10 +22,31 @@
     const sideWantBtn = document.getElementById('objektSideWant');
     const havePreview = document.getElementById('objektHavePreview');
     const wantPreview = document.getElementById('objektWantPreview');
+    const sellPreview = document.getElementById('objektSellPreview');
+    const sellSideInput = document.getElementById('sellListingSide');
+    const sellHaveBtn = document.getElementById('sellListingHaveBtn');
+    const sellWantBtn = document.getElementById('sellListingWantBtn');
+    const sellSideLabel = document.getElementById('objektSellSideLabel');
+    const pickerError = document.getElementById('objektPickerError');
     const api = section.dataset.objektApi;
     const pageSize = 24;
     const maxLinked = 20;
+    const defaultOpen = section.dataset.defaultOpen !== 'false';
     let open = false;
+
+    function showPickerError(message) {
+      if (pickerError) {
+        pickerError.textContent = message || '';
+        pickerError.hidden = !message;
+      } else if (message) {
+        alert(message);
+      }
+      const formError = document.getElementById('formInlineError');
+      if (formError && message) {
+        formError.textContent = message;
+        formError.hidden = false;
+      }
+    }
     let offset = 0;
     let total = 0;
     let loading = false;
@@ -133,19 +154,20 @@
       if (on) {
         if (existing) {
           if (tradeSplit && existing.dataset.side !== targetSide) {
-            alert('같은 오브젝트를 Have와 Want에 동시에 넣을 수 없습니다.');
+            showPickerError('같은 오브젝트를 Have와 Want에 동시에 넣을 수 없습니다.');
             return false;
           }
           return true;
         }
         if (tradeSplit && targetSide === 'want' && haveCount() === 0) {
-          alert('Have 오브젝트를 먼저 선택해주세요.');
+          showPickerError('Have 오브젝트를 먼저 선택해주세요.');
           return false;
         }
         if (totalCount() >= maxLinked) {
-          alert('오브젝트는 최대 ' + maxLinked + '개까지 선택할 수 있습니다.');
+          showPickerError('오브젝트는 최대 ' + maxLinked + '개까지 선택할 수 있습니다.');
           return false;
         }
+        showPickerError('');
         const input = document.createElement('input');
         input.type = 'hidden';
         input.name = inputName(targetSide);
@@ -161,32 +183,37 @@
       return true;
     }
 
+    function tipText(item) {
+      return [item.season, item.member || item.memberName, item.collectionNo || displayTitle(item)]
+        .filter(Boolean)
+        .join(' · ');
+    }
+
     function chip(item, side) {
-      const el = document.createElement('div');
-      el.className = 'objekt-trade-chip';
+      const el = document.createElement('span');
+      const tip = tipText(item);
+      el.className = 'market-feed-thumb' + (item.thumbnailImage ? '' : ' is-empty');
       el.dataset.objektId = item.id;
       el.dataset.side = side || 'have';
+      if (item.season) el.dataset.season = item.season;
+      if (tip) {
+        el.dataset.tip = tip;
+        el.title = tip;
+      }
       if (item.thumbnailImage) {
         const img = document.createElement('img');
         img.src = item.thumbnailImage;
         img.alt = '';
         img.loading = 'lazy';
         el.appendChild(img);
+      } else {
+        const fallback = document.createElement('span');
+        fallback.textContent = item.collectionNo || displayTitle(item) || '?';
+        el.appendChild(fallback);
       }
-      const span = document.createElement('span');
-      span.className = 'objekt-trade-chip-title';
-      if (item.season) {
-        const season = document.createElement('small');
-        season.className = 'objekt-trade-season';
-        season.textContent = item.season;
-        span.appendChild(season);
-        span.appendChild(document.createTextNode(' '));
-      }
-      span.appendChild(document.createTextNode(displayTitle(item)));
-      el.appendChild(span);
       const remove = document.createElement('button');
       remove.type = 'button';
-      remove.className = 'objekt-trade-chip-remove';
+      remove.className = 'objekt-compose-remove';
       remove.setAttribute('aria-label', '선택 해제');
       remove.textContent = '×';
       remove.addEventListener('mousedown', (event) => {
@@ -205,33 +232,56 @@
       return el;
     }
 
+    function emptyHint(id, text) {
+      const hint = document.createElement('p');
+      hint.className = 'objekt-trade-zone-empty';
+      if (id) hint.id = id;
+      hint.textContent = text;
+      return hint;
+    }
+
     function renderPreviews() {
-      if (!tradeSplit) return;
-      if (havePreview) {
-        havePreview.replaceChildren();
-        selectedNodes('have').forEach((input) => {
-          const meta = itemCache.get(input.value) || { id: input.value, collectionId: input.value };
-          havePreview.appendChild(chip(meta, 'have'));
-        });
-      }
-      if (wantPreview) {
-        wantPreview.replaceChildren();
-        const wants = selectedNodes('want');
-        if (wants.length === 0) {
-          const hint = document.createElement('p');
-          hint.className = 'objekt-trade-zone-empty';
-          hint.id = 'objektWantEmptyHint';
-          hint.textContent = haveCount() > 0
-            ? 'Want 오브젝트를 선택하세요'
-            : 'Have를 고른 뒤 Want를 선택하세요';
-          wantPreview.appendChild(hint);
-        } else {
-          wants.forEach((input) => {
-            const meta = itemCache.get(input.value) || { id: input.value, collectionId: input.value };
-            wantPreview.appendChild(chip(meta, 'want'));
-          });
+      if (tradeSplit) {
+        if (havePreview) {
+          havePreview.replaceChildren();
+          const haves = selectedNodes('have');
+          if (haves.length === 0) {
+            havePreview.appendChild(emptyHint('objektHaveEmptyHint', 'Have 오브젝트를 선택하세요'));
+          } else {
+            haves.forEach((input) => {
+              const meta = itemCache.get(input.value) || { id: input.value, collectionId: input.value };
+              havePreview.appendChild(chip(meta, 'have'));
+            });
+          }
         }
+        if (wantPreview) {
+          wantPreview.replaceChildren();
+          const wants = selectedNodes('want');
+          if (wants.length === 0) {
+            wantPreview.appendChild(emptyHint(
+              'objektWantEmptyHint',
+              haveCount() > 0 ? 'Want 오브젝트를 선택하세요' : 'Have를 고른 뒤 Want를 선택하세요'
+            ));
+          } else {
+            wants.forEach((input) => {
+              const meta = itemCache.get(input.value) || { id: input.value, collectionId: input.value };
+              wantPreview.appendChild(chip(meta, 'want'));
+            });
+          }
+        }
+        return;
       }
+      if (!sellPreview) return;
+      sellPreview.replaceChildren();
+      const selected = selectedNodes();
+      if (selected.length === 0) {
+        sellPreview.appendChild(emptyHint('objektSellEmptyHint', '오브젝트를 선택하세요'));
+        return;
+      }
+      selected.forEach((input) => {
+        const meta = itemCache.get(input.value) || { id: input.value, collectionId: input.value };
+        sellPreview.appendChild(chip(meta, 'sell'));
+      });
     }
 
     function sideOf(id) {
@@ -253,9 +303,10 @@
         if (box.checked) {
           if (tradeSplit && existingSide && existingSide !== activeSide) {
             box.checked = false;
-            alert('같은 오브젝트를 Have와 Want에 동시에 넣을 수 없습니다.');
+            showPickerError('같은 오브젝트를 Have와 Want에 동시에 넣을 수 없습니다.');
             return;
           }
+          showPickerError('');
           const ok = setSelected(item.id, true, activeSide, item);
           if (ok === false) box.checked = false;
         } else {
@@ -531,41 +582,66 @@
       });
     }
 
-    // Seed cache from server-rendered chips / hidden inputs.
+    // Seed cache from server-rendered thumbs / hidden inputs.
     selectedNodes().forEach((input) => {
       if (!itemCache.has(input.value)) {
         itemCache.set(input.value, { id: input.value, collectionId: input.value });
       }
     });
-    if (tradeSplit) {
-      document.querySelectorAll('#objektHavePreview .objekt-trade-chip, #objektWantPreview .objekt-trade-chip').forEach((chipEl) => {
-        const id = chipEl.dataset.objektId;
-        if (!id) return;
-        const img = chipEl.querySelector('img');
-        const span = chipEl.querySelector('.objekt-trade-chip-title');
-        const seasonEl = span && span.querySelector('.objekt-trade-season');
-        const shown = span ? Array.from(span.childNodes).filter((node) => node.nodeType === Node.TEXT_NODE).map((node) => node.textContent).join('').trim() : id;
-        itemCache.set(id, {
-          id: id,
-          collectionId: shown,
-          cardTitle: shown,
-          season: seasonEl ? seasonEl.textContent.trim() : '',
-          thumbnailImage: img ? img.src : ''
-        });
+    document.querySelectorAll('#objektHavePreview .market-feed-thumb, #objektWantPreview .market-feed-thumb, #objektSellPreview .market-feed-thumb').forEach((chipEl) => {
+      const id = chipEl.dataset.objektId;
+      if (!id) return;
+      const img = chipEl.querySelector('img');
+      const tip = chipEl.dataset.tip || chipEl.title || id;
+      itemCache.set(id, {
+        id: id,
+        collectionId: tip,
+        cardTitle: tip,
+        season: chipEl.dataset.season || '',
+        thumbnailImage: img ? img.src : ''
       });
+    });
+
+    function setSellSide(side) {
+      if (tradeSplit || !sellSideInput) return;
+      const next = side === 'want' ? 'want' : 'have';
+      sellSideInput.value = next;
+      if (sellHaveBtn) {
+        const on = next === 'have';
+        sellHaveBtn.classList.toggle('is-active', on);
+        sellHaveBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      }
+      if (sellWantBtn) {
+        const on = next === 'want';
+        sellWantBtn.classList.toggle('is-active', on);
+        sellWantBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      }
+      if (sellSideLabel) sellSideLabel.textContent = next === 'want' ? 'WANT' : 'HAVE';
+      const title = section.querySelector('h3');
+      if (title) title.textContent = next === 'want' ? '구매 오브젝트' : '판매 오브젝트';
     }
+    if (sellHaveBtn) sellHaveBtn.addEventListener('click', () => setSellSide('have'));
+    if (sellWantBtn) sellWantBtn.addEventListener('click', () => setSellSide('want'));
 
     window.ArticleObjektPicker = {
       validateTrade: function () {
-        if (!tradeSplit) return true;
-        if (haveCount() < 1) {
-          alert('Have 오브젝트를 1개 이상 선택해주세요.');
+        if (tradeSplit) {
+          if (haveCount() < 1) {
+            showPickerError('Have 오브젝트를 1개 이상 선택해주세요.');
+            return false;
+          }
+          if (wantCount() < 1) {
+            showPickerError('Want 오브젝트를 1개 이상 선택해주세요.');
+            return false;
+          }
+          showPickerError('');
+          return true;
+        }
+        if (section.closest('form')?.dataset.marketBoard === 'true' && totalCount() < 1) {
+          showPickerError('오브젝트를 1개 이상 선택해주세요.');
           return false;
         }
-        if (wantCount() < 1) {
-          alert('Want 오브젝트를 1개 이상 선택해주세요.');
-          return false;
-        }
+        showPickerError('');
         return true;
       },
       fingerprint: function () {
@@ -583,7 +659,7 @@
     if (searchFilter && totalCount() === 1 && section.dataset.initialSearch) {
       searchFilter.value = section.dataset.initialSearch;
     }
-    setOpen(totalCount() > 0);
+    setOpen(defaultOpen || totalCount() > 0);
   }
 
   if (document.readyState === 'loading') {

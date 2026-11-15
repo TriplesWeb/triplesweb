@@ -320,8 +320,17 @@ class GroupOrdersControllerTest {
         verify(links).attachSelected(any(Article.class), eq(List.of("have-uuid")), eq(List.of()));
         mvc.perform(get("/sell/new").param("objektSide", "want"))
             .andExpect(status().isOk())
-            .andExpect(content().string(containsString("name=\"sellListingSide\" value=\"want\"")))
-            .andExpect(content().string(not(containsString("id=\"sellListingHave\""))));
+            .andExpect(content().string(containsString("name=\"sellListingSide\" id=\"sellListingSide\" value=\"want\"")))
+            .andExpect(content().string(containsString("id=\"sellListingWantBtn\"")))
+            .andExpect(content().string(containsString("id=\"objektSellPreview\"")))
+            .andExpect(content().string(containsString("구매 오브젝트")));
+
+        mvc.perform(multipart("/sell/new")
+                .param("title", "빈 거래")
+                .param("content", "<p>내용</p>")
+                .param("sellListingSide", "have"))
+            .andExpect(status().isOk())
+            .andExpect(model().attribute("errorMessage", "오브젝트를 1개 이상 선택해주세요."));
     }
 
     @Test void noticeBoardIsAllowed() throws Exception {
@@ -353,5 +362,25 @@ class GroupOrdersControllerTest {
             .andExpect(status().isOk())
             .andExpect(model().attribute("errorMessage", "Want 오브젝트를 1개 이상 선택해주세요."));
         verify(articles, times(1)).create(any());
+
+        // 마켓은 제목·본문 없이 Have/Want만으로 등록 가능
+        mvc.perform(multipart("/trade/new")
+                .param("title", "")
+                .param("content", "")
+                .param("selectedHaveObjektIds", "have-uuid")
+                .param("selectedWantObjektIds", "want-uuid"))
+            .andExpect(redirectedUrl("/trade/7"));
+        verify(articles, times(2)).create(any());
+    }
+
+    @Test void tradeNewFormPutsPickerFirstWithoutAuthorField() throws Exception {
+        mvc.perform(get("/trade/new"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("Have / Want")))
+            .andExpect(content().string(containsString("data-default-open=\"true\"")))
+            .andExpect(content().string(containsString("교환 올리기")))
+            .andExpect(content().string(containsString("market-feed-swap")))
+            .andExpect(content().string(not(containsString("로그인 필요"))))
+            .andExpect(content().string(not(containsString("name=\"userid\""))));
     }
 }

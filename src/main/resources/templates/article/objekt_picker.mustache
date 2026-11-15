@@ -2,55 +2,57 @@
 <section class="space-y-3 rounded-xl border border-teal-400/30 bg-teal-400/[0.04] p-4" id="objektPickerSection"
          data-objekt-api="{{boardBase}}/objekt-options"
          data-initial-search="{{objektInitialSearch}}"
-         data-trade-split="{{#isTradeObjektSplit}}true{{/isTradeObjektSplit}}{{^isTradeObjektSplit}}false{{/isTradeObjektSplit}}">
+         data-trade-split="{{#isTradeObjektSplit}}true{{/isTradeObjektSplit}}{{^isTradeObjektSplit}}false{{/isTradeObjektSplit}}"
+         data-default-open="true">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-            <h3 class="font-semibold text-teal-200">교환/거래 오브젝트</h3>
+            <h3 class="font-semibold text-teal-200">
+                {{#isTradeObjektSplit}}Have / Want{{/isTradeObjektSplit}}
+                {{^isTradeObjektSplit}}{{#isSellListingWant}}구매 오브젝트{{/isSellListingWant}}{{^isSellListingWant}}판매 오브젝트{{/isSellListingWant}}{{/isTradeObjektSplit}}
+            </h3>
             {{#isTradeObjektSplit}}
             <p class="mt-1 text-xs text-slate-400">Have와 Want를 각각 1개 이상 선택하세요. 합쳐 최대 20개.</p>
             {{/isTradeObjektSplit}}
             {{^isTradeObjektSplit}}
-            <p class="mt-1 text-xs text-slate-400">최대 20개까지 연결할 수 있습니다.</p>
+            <p class="mt-1 text-xs text-slate-400">오브젝트를 1개 이상 선택하세요. 최대 20개.</p>
             {{/isTradeObjektSplit}}
         </div>
         <button type="button" id="objektPickerToggle"
                 class="inline-flex items-center gap-1.5 rounded-full border border-teal-300/50 bg-teal-400/10 px-4 py-2 text-xs font-semibold text-teal-100 hover:bg-teal-400/20"
-                aria-expanded="false" aria-controls="objektPickerPanel">
+                aria-expanded="true" aria-controls="objektPickerPanel">
             오브젝트 선택
         </button>
     </div>
     <p id="objektSelectedSummary" class="text-xs text-slate-400" aria-live="polite">선택된 오브젝트 0개</p>
+    <p id="objektPickerError" class="text-sm text-error font-medium" hidden role="alert"></p>
 
     {{#isTradeObjektSplit}}
-    <div class="objekt-trade-zones" aria-label="Have와 Want 선택 구역">
-        <div class="objekt-trade-zone" data-zone="have">
-            <div class="objekt-trade-zone-head">
-                <span class="objekt-trade-zone-label">Have</span>
-                <span class="objekt-trade-zone-hint">가진 오브젝트</span>
-            </div>
-            <div id="objektHavePreview" class="objekt-trade-zone-cards">
+    <div class="objekt-compose-deal market-feed-deal" aria-label="Have와 Want 선택 구역">
+        <div class="market-feed-side" data-side="have">
+            <span class="market-feed-side-label">HAVE</span>
+            <div id="objektHavePreview" class="market-feed-strip objekt-compose-strip">
                 {{#objektHaveSelected}}
-                <div class="objekt-trade-chip" data-objekt-id="{{id}}" data-side="have" data-season="{{season}}">
+                <span class="market-feed-thumb{{^thumbnailImage}} is-empty{{/thumbnailImage}}" data-objekt-id="{{id}}" data-side="have" data-season="{{season}}" {{#thumbnailImage}}{{^collectionNo}}title="{{cardTitle}}"{{/collectionNo}}{{/thumbnailImage}} {{#collectionNo}}title="{{#season}}{{season}} · {{/season}}{{cardTitle}}"{{/collectionNo}}>
                     {{#thumbnailImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy">{{/thumbnailImage}}
-                    <span class="objekt-trade-chip-title">{{#season}}<small class="objekt-trade-season">{{season}}</small> {{/season}}{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</span>
-                    <button type="button" class="objekt-trade-chip-remove" aria-label="선택 해제">×</button>
-                </div>
+                    {{^thumbnailImage}}<span>{{#collectionNo}}{{collectionNo}}{{/collectionNo}}{{^collectionNo}}{{cardTitle}}{{/collectionNo}}</span>{{/thumbnailImage}}
+                    <button type="button" class="objekt-compose-remove" aria-label="선택 해제">×</button>
+                </span>
+                {{/objektHaveSelected}}
+                {{^objektHaveSelected}}
+                <p class="objekt-trade-zone-empty" id="objektHaveEmptyHint">Have 오브젝트를 선택하세요</p>
                 {{/objektHaveSelected}}
             </div>
         </div>
-        <div class="objekt-trade-zone-divider" aria-hidden="true">↔</div>
-        <div class="objekt-trade-zone" data-zone="want" id="objektWantZone">
-            <div class="objekt-trade-zone-head">
-                <span class="objekt-trade-zone-label">Want</span>
-                <span class="objekt-trade-zone-hint">원하는 오브젝트</span>
-            </div>
-            <div id="objektWantPreview" class="objekt-trade-zone-cards">
+        <span class="market-feed-swap" aria-hidden="true">⇌</span>
+        <div class="market-feed-side" data-side="want" id="objektWantZone">
+            <span class="market-feed-side-label">WANT</span>
+            <div id="objektWantPreview" class="market-feed-strip objekt-compose-strip">
                 {{#objektWantSelected}}
-                <div class="objekt-trade-chip" data-objekt-id="{{id}}" data-side="want" data-season="{{season}}">
+                <span class="market-feed-thumb{{^thumbnailImage}} is-empty{{/thumbnailImage}}" data-objekt-id="{{id}}" data-side="want" data-season="{{season}}">
                     {{#thumbnailImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy">{{/thumbnailImage}}
-                    <span class="objekt-trade-chip-title">{{#season}}<small class="objekt-trade-season">{{season}}</small> {{/season}}{{#cardTitle}}{{cardTitle}}{{/cardTitle}}{{^cardTitle}}{{collectionId}}{{/cardTitle}}</span>
-                    <button type="button" class="objekt-trade-chip-remove" aria-label="선택 해제">×</button>
-                </div>
+                    {{^thumbnailImage}}<span>{{#collectionNo}}{{collectionNo}}{{/collectionNo}}{{^collectionNo}}{{cardTitle}}{{/collectionNo}}</span>{{/thumbnailImage}}
+                    <button type="button" class="objekt-compose-remove" aria-label="선택 해제">×</button>
+                </span>
                 {{/objektWantSelected}}
                 {{^objektWantSelected}}
                 <p class="objekt-trade-zone-empty" id="objektWantEmptyHint">Have를 고른 뒤 Want를 선택하세요</p>
@@ -61,10 +63,31 @@
     {{/isTradeObjektSplit}}
 
     {{#isSell}}
-    <input type="hidden" name="sellListingSide" value="{{#isSellListingWant}}want{{/isSellListingWant}}{{^isSellListingWant}}have{{/isSellListingWant}}">
+    <div class="objekt-side-toggle" role="group" aria-label="판매 또는 구매">
+        <button type="button" id="sellListingHaveBtn" class="objekt-side-btn{{^isSellListingWant}} is-active{{/isSellListingWant}}" data-sell-side="have" aria-pressed="{{^isSellListingWant}}true{{/isSellListingWant}}{{#isSellListingWant}}false{{/isSellListingWant}}">판매</button>
+        <button type="button" id="sellListingWantBtn" class="objekt-side-btn{{#isSellListingWant}} is-active{{/isSellListingWant}}" data-sell-side="want" aria-pressed="{{#isSellListingWant}}true{{/isSellListingWant}}{{^isSellListingWant}}false{{/isSellListingWant}}">구매</button>
+    </div>
+    <input type="hidden" name="sellListingSide" id="sellListingSide" value="{{#isSellListingWant}}want{{/isSellListingWant}}{{^isSellListingWant}}have{{/isSellListingWant}}">
+    <div class="objekt-compose-deal market-feed-deal is-single" aria-label="선택 오브젝트">
+        <div class="market-feed-side" data-side="sell">
+            <span class="market-feed-side-label" id="objektSellSideLabel">{{#isSellListingWant}}WANT{{/isSellListingWant}}{{^isSellListingWant}}HAVE{{/isSellListingWant}}</span>
+            <div id="objektSellPreview" class="market-feed-strip objekt-compose-strip">
+                {{#objektSelected}}
+                <span class="market-feed-thumb{{^thumbnailImage}} is-empty{{/thumbnailImage}}" data-objekt-id="{{id}}" data-side="sell" data-season="{{season}}">
+                    {{#thumbnailImage}}<img src="{{thumbnailImage}}" alt="" loading="lazy">{{/thumbnailImage}}
+                    {{^thumbnailImage}}<span>{{#collectionNo}}{{collectionNo}}{{/collectionNo}}{{^collectionNo}}{{cardTitle}}{{/collectionNo}}</span>{{/thumbnailImage}}
+                    <button type="button" class="objekt-compose-remove" aria-label="선택 해제">×</button>
+                </span>
+                {{/objektSelected}}
+                {{^objektSelected}}
+                <p class="objekt-trade-zone-empty" id="objektSellEmptyHint">오브젝트를 선택하세요</p>
+                {{/objektSelected}}
+            </div>
+        </div>
+    </div>
     {{/isSell}}
 
-    <div id="objektPickerPanel" class="hidden space-y-3" hidden>
+    <div id="objektPickerPanel" class="space-y-3">
         {{#isTradeObjektSplit}}
         <div class="objekt-side-toggle" role="group" aria-label="선택 구역">
             <button type="button" id="objektSideHave" class="objekt-side-btn is-active" data-side="have" aria-pressed="true">Have에 담기</button>

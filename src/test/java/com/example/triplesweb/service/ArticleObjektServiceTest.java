@@ -28,6 +28,14 @@ class ArticleObjektServiceTest {
     }
 
     @Test
+    void validateSellSelectionRequiresAtLeastOneObjekt() {
+        assertThat(ArticleObjektService.validateSellSelection(List.of(), List.of()))
+                .isEqualTo("오브젝트를 1개 이상 선택해주세요.");
+        assertThat(ArticleObjektService.validateSellSelection(List.of("a"), List.of())).isNull();
+        assertThat(ArticleObjektService.validateSellSelection(List.of(), List.of("b"))).isNull();
+    }
+
+    @Test
     void attachSelectedStoresSidesForTrade() {
         var repo = mock(ArticleObjektRepository.class);
         var catalog = mock(ObjektService.class);

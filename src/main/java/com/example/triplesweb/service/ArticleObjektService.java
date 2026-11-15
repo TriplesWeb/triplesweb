@@ -100,6 +100,18 @@ public class ArticleObjektService {
         return null;
     }
 
+    /** Sell posts require at least one linked objekt on the active side. */
+    public static String validateSellSelection(List<String> haveKeys, List<String> wantKeys) {
+        List<String> have = cleanKeys(haveKeys);
+        List<String> want = cleanKeys(wantKeys);
+        int total = have.size() + want.size();
+        if (total < 1) return "오브젝트를 1개 이상 선택해주세요.";
+        if (total > MAX_LINKED) {
+            return "오브젝트는 최대 " + MAX_LINKED + "개까지 선택할 수 있습니다.";
+        }
+        return null;
+    }
+
     public static List<String> cleanKeys(List<String> keys) {
         if (keys == null || keys.isEmpty()) return List.of();
         LinkedHashSet<String> unique = new LinkedHashSet<>();
