@@ -2,38 +2,23 @@
     const grid = document.getElementById('archiveGrid');
     if (!grid) return;
     const cards = [...grid.querySelectorAll('.ar-card')];
-    const artist = document.getElementById('archiveArtistFilter');
     const sort = document.getElementById('archiveSort');
-    const visible = document.getElementById('archiveVisible');
     const none = document.getElementById('archiveNone');
     const numberOffset = Math.max(0, Number(grid.dataset.numberOffset) || 0);
 
     function apply() {
-        const name = artist ? artist.value : '';
-        const shown = cards.filter(card => {
-            const names = card.dataset.artists || '';
-            return !name || names.split(',').map(part => part.trim()).includes(name);
-        }).sort((a, b) => {
+        const shown = [...cards].sort((a, b) => {
             if (!sort || sort.value === 'newest') return Number(b.dataset.id || 0) - Number(a.dataset.id || 0);
             if (sort.value === 'oldest') return Number(a.dataset.id || 0) - Number(b.dataset.id || 0);
             return (a.dataset.title || '').localeCompare(b.dataset.title || '', 'ko');
         });
         cards.forEach(card => card.classList.add('ar-off'));
-        const numbers = new Map();
         shown.forEach((card, index) => {
             card.classList.remove('ar-off');
-            const number = numberOffset + index + 1;
             const badge = card.querySelector('[data-archive-number]');
-            if (badge) badge.textContent = String(number);
-            numbers.set(card.dataset.id, number);
+            if (badge) badge.textContent = String(numberOffset + index + 1);
             grid.appendChild(card);
         });
-        document.querySelectorAll('#archiveTrack [data-archive-ref]').forEach(card => {
-            const badge = card.querySelector('[data-archive-number]');
-            const number = numbers.get(card.dataset.archiveRef);
-            if (badge && number !== undefined) badge.textContent = String(number);
-        });
-        if (visible) visible.textContent = String(shown.length);
         if (none) none.hidden = shown.length !== 0;
         grid.dispatchEvent(new CustomEvent('archive:updated'));
     }
@@ -87,8 +72,8 @@
         if (recentPrevious) recentPrevious.disabled = track.scrollLeft <= 1;
         if (recentNext) recentNext.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 1;
     }
-    recentPrevious?.addEventListener('click', () => track?.scrollBy({ left: -380, behavior: motion.matches ? 'instant' : 'smooth' }));
-    recentNext?.addEventListener('click', () => track?.scrollBy({ left: 380, behavior: motion.matches ? 'instant' : 'smooth' }));
+    recentPrevious?.addEventListener('click', () => track?.scrollBy({ left: -380, behavior: motion.matches ? 'auto' : 'smooth' }));
+    recentNext?.addEventListener('click', () => track?.scrollBy({ left: 380, behavior: motion.matches ? 'auto' : 'smooth' }));
     track?.addEventListener('scroll', updateRecentControls, { passive: true });
     if (track && window.ResizeObserver) new ResizeObserver(updateRecentControls).observe(track);
     updateRecentControls();

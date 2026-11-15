@@ -39,6 +39,17 @@ public class ArchiveController {
     private final AboutAdminAuth aboutAdminAuth;
     private final ArtistRepository artistRepository;
 
+    @GetMapping("/image_archive/all")
+    public String showAllImages(@RequestParam(defaultValue = "0") int page,
+                                @RequestParam(defaultValue = "24") int size,
+                                @RequestParam(required = false) String q,
+                                @RequestParam(required = false) String from,
+                                @RequestParam(required = false) String to,
+                                @RequestParam(required = false) List<String> members,
+                                HttpServletRequest request, HttpSession session, Model model) {
+        return renderArchive("image", page, size, q, from, to, members, true, request, session, model);
+    }
+
     @GetMapping("/{type}_archive")
     public String showArchive(@PathVariable("type") String typeSlug,
                               @RequestParam(defaultValue = "0") int page,
@@ -48,7 +59,12 @@ public class ArchiveController {
                               @RequestParam(required = false) String to,
                               @RequestParam(required = false) List<String> members,
                               HttpServletRequest request, HttpSession session, Model model) {
+        return renderArchive(typeSlug, page, size, q, from, to, members, false, request, session, model);
+    }
 
+    private String renderArchive(String typeSlug, int page, int size, String q, String from, String to,
+                                 List<String> members, boolean browse,
+                                 HttpServletRequest request, HttpSession session, Model model) {
         boolean isAdmin = aboutAdminAuth.isAdmin(request, session);
         boolean isAuthenticated = isAdmin;
 
@@ -74,6 +90,11 @@ public class ArchiveController {
 
         List<Artist> artists = artistRepository.findAll();
         List<Map<String, Object>> cards = archiveCards(archives, artists);
+        List<Map<String, Object>> highlights = archiveCards(archiveService.pageByType(type, 0, 5, null), artists);
+        int highlightNumber = 1;
+        for (Map<String, Object> highlight : highlights) {
+            highlight.put("displayNumber", highlightNumber++);
+        }
         model.addAttribute("archives", archives);
         model.addAttribute("archiveCards", cards);
         model.addAttribute("artistOptions", artists);
@@ -84,13 +105,16 @@ public class ArchiveController {
         model.addAttribute("type", type);
         model.addAttribute("isAuthenticated", isAuthenticated);
         model.addAttribute("isAdmin", isAdmin);
+        model.addAttribute("archiveBrowse", browse);
         String fromText = fromDate == null ? "" : fromDate.toString();
         String toText = toDate == null ? "" : toDate.toString();
         model.addAttribute("from", fromText);
         model.addAttribute("to", toText);
         model.addAttribute("hasDateFilter", fromDate != null || toDate != null);
         model.addAttribute("dateQuery", dateQuery(fromText, toText));
-        addArchivePage(model, archives, type, q, memberQuery(selectedMembers), cards);
+        addFilterSummary(model, q, selectedMembers, artists, fromText, toText);
+        addArchivePage(model, archives, type, q, memberQuery(selectedMembers), highlights, browse);
+        if (browse) return "archive/image_browse";
         return (type == MediaType.IMAGE) ? "archive/image_archive" : "archive/video_archive";
     }
 
@@ -189,7 +213,64 @@ public class ArchiveController {
         return cards;
     }
 
-    private void addArchivePage(Model model, Page<Archive> archives, MediaType type, String q, String memberQuery, List<Map<String, Object>> cards) {
+    private void addFilterSummary(Model model, String q, List<String> selectedMembers, List<Artist> artists,
+                                  String fromText, String toText) {
+        List<Map<String, Object>> parts = new ArrayList<>();
+        int groups = 0;
+        if (!selectedMembers.isEmpty()) {
+            groups++;
+            Map<String, Object> first = memberFilterPart(selectedMembers.get(0), artists);
+            first.put("isMember", true);
+            parts.add(first);
+            if (selectedMembers.size() > 1) {
+                Map<String, Object> more = new LinkedHashMap<>();
+                more.put("isMore", true);
+                more.put("text", "외 " + (selectedMembers.size() - 1) + "명");
+                parts.add(more);
+            }
+        }
+        String query = q == null ? "" : q.trim();
+        if (!query.isEmpty()) {
+            groups++;
+            if (!parts.isEmpty()) parts.add(Map.of("isSep", true));
+            parts.add(Map.of("isText", true, "text", query));
+        }
+        if ((fromText != null && !fromText.isBlank()) || (toText != null && !toText.isBlank())) {
+            groups++;
+            if (!parts.isEmpty()) parts.add(Map.of("isSep", true));
+            String start = fromText == null || fromText.isBlank() ? "처음" : fromText;
+            String end = toText == null || toText.isBlank() ? "최근" : toText;
+            parts.add(Map.of("isText", true, "text", start + " ~ " + end));
+        }
+        model.addAttribute("hasFilters", groups > 0);
+        model.addAttribute("filterParts", parts);
+        model.addAttribute("filterCount", Math.max(1, groups));
+    }
+
+    private static Map<String, Object> memberFilterPart(String name, List<Artist> artists) {
+        Map<String, Object> part = new LinkedHashMap<>();
+        part.put("text", name);
+        String color = "#b9cac4";
+        for (Artist artist : artists) {
+            if (artist.getName() != null && artist.getName().trim().equalsIgnoreCase(name)) {
+                color = safeColor(artist.getColor());
+                break;
+            }
+            if (artist.getEngName() != null && artist.getEngName().trim().equalsIgnoreCase(name)) {
+                color = safeColor(artist.getColor());
+                break;
+            }
+        }
+        part.put("color", color);
+        return part;
+    }
+
+    private static String safeColor(String color) {
+        return color != null && color.matches("#[0-9a-fA-F]{6}") ? color : "#b9cac4";
+    }
+
+    private void addArchivePage(Model model, Page<Archive> archives, MediaType type, String q, String memberQuery,
+                                List<Map<String, Object>> highlights, boolean browse) {
         int totalPages = archives.getTotalPages();
         int current = archives.getNumber();
         String query = q == null ? "" : q.trim();
@@ -203,11 +284,16 @@ public class ArchiveController {
         model.addAttribute("archivePrevPage", Math.max(0, current - 1));
         model.addAttribute("archiveNextPage", current + 1);
         model.addAttribute("hasArchives", !archives.isEmpty());
-        model.addAttribute("archiveHighlights", cards.stream().limit(8).toList());
+        model.addAttribute("archiveHighlights", highlights);
+        model.addAttribute("hasArchiveHighlights", !browse && !highlights.isEmpty());
         model.addAttribute("memberQuery", memberQuery == null ? "" : memberQuery);
         model.addAttribute("query", query);
         model.addAttribute("hasQuery", !query.isEmpty());
-        model.addAttribute("archivePath", type == MediaType.IMAGE ? "/archive/image_archive" : "/archive/video_archive");
+        String listPath = type == MediaType.IMAGE ? "/archive/image_archive" : "/archive/video_archive";
+        model.addAttribute("archiveHomePath", listPath);
+        model.addAttribute("archivePath", browse ? "/archive/image_archive/all" : listPath);
+        model.addAttribute("archiveBrowsePath", "/archive/image_archive/all");
+        model.addAttribute("showArchiveBrowse", type == MediaType.IMAGE && !browse);
         model.addAttribute("imageArchive", type == MediaType.IMAGE);
         List<Map<String, Object>> archivePages = new ArrayList<>();
         if (totalPages > 0) {

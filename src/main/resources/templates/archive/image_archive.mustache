@@ -22,7 +22,6 @@
             <div>
                 <div class="ar-kicker"><span class="material-symbols-outlined">photo_library</span> Photo Archive</div>
                 <h1>사진 아카이브</h1>
-                <p>등록된 사진과 출연 표기를 확인하세요.</p>
             </div>
             <div class="ar-pills">
                 <a class="ar-pill is-active" href="/archive/image_archive"><span class="ar-dot"></span>사진</a>
@@ -33,11 +32,11 @@
             <article class="ar-panel ar-stat"><div class="ar-stat-label"><span>등록된 사진</span><span class="material-symbols-outlined">image</span></div><strong>{{archiveTotal}}<em>장</em></strong></article>
             <article class="ar-panel ar-stat"><div class="ar-stat-label"><span>이 페이지</span><span class="material-symbols-outlined">grid_view</span></div><strong>{{archivePageCount}}<em>장</em></strong></article>
             <article class="ar-panel ar-stat"><div class="ar-stat-label"><span>페이지</span><span class="material-symbols-outlined">layers</span></div><strong>{{archivePageDisplay}}<em>/ {{archiveTotalPages}}</em></strong></article>
-            <article class="ar-panel ar-stat"><div class="ar-stat-label"><span>검색</span><span class="material-symbols-outlined">search</span></div><strong class="is-violet">{{#hasQuery}}{{query}}{{/hasQuery}}{{^hasQuery}}전체{{/hasQuery}}</strong></article>
+            {{>partials/archive-filter-stat}}
         </div>
     </section>
 
-    {{#hasArchives}}
+    {{#hasArchiveHighlights}}
     <section class="ar-block">
         <div class="ar-section-title">
             <h2>최근 사진</h2>
@@ -48,81 +47,38 @@
         </div>
         <div class="ar-track" id="archiveTrack">
             {{#archiveHighlights}}
-            <article class="ar-panel ar-highlight" data-archive-ref="{{id}}">
-                <img src="{{file.url}}" alt="{{title}}" loading="lazy" decoding="async">
+            <article class="ar-panel ar-highlight" data-archive-ref="{{id}}" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-url="{{file.url}}" data-registered="{{registeredOn}}">
+                <button type="button" class="ar-highlight-open" data-archive-open aria-label="{{title}} 자세히 보기">
+                    <img src="{{file.url}}" alt="{{title}}" loading="lazy" decoding="async">
+                </button>
                 <div>
                     <span class="ar-id" data-archive-number>{{displayNumber}}</span>
                     <h3>{{title}}</h3>
                     <div class="ar-meta" title="{{memberNames}}">{{>partials/archive-member-preview}}</div>
+                    <div class="ar-card-members" hidden>{{>partials/archive-member-badges}}</div>
                 </div>
             </article>
             {{/archiveHighlights}}
         </div>
     </section>
-    {{/hasArchives}}
+    {{/hasArchiveHighlights}}
 
-    <section class="ar-panel ar-toolbar">
-        <form class="ar-filters" id="archiveFilterForm" method="get" action="{{archivePath}}">
-            <label class="ar-select">
-                <select id="archiveSort" aria-label="정렬">
-                    <option value="newest">정렬: 최신순</option>
-                    <option value="oldest">정렬: 오래된 순</option>
-                    <option value="title">정렬: 제목순</option>
-                </select>
-                <span class="material-symbols-outlined">sort</span>
-            </label>
-            <div class="ar-search-wrap site-search">
-                <input class="ar-search site-search__input" type="search" name="q" value="{{query}}" placeholder="사진 제목 검색" aria-label="사진 제목 검색">
-                <button type="submit" class="site-search__submit" aria-label="검색">
-                    <span class="material-symbols-outlined">search</span>
-                </button>
-            </div>
-            {{>partials/date-range-filter}}
-            <button type="button" class="ar-submit" data-admin-only onclick="showAddModal()">사진 추가</button>
-        </form>
-        <div class="ar-member-row">
-            <button type="button" class="ar-member-toggle" id="archiveMemberToggle" aria-expanded="false" aria-controls="archiveMemberPanel">
-                <span class="material-symbols-outlined" aria-hidden="true">group</span>
-                <span>멤버 선택</span>
-                <span class="ar-member-count" id="archiveMemberCount" hidden>0</span>
-                <span class="material-symbols-outlined ar-member-chevron" aria-hidden="true">expand_more</span>
-            </button>
-            <div class="ar-member-panel" id="archiveMemberPanel" hidden>
-                <div class="member-portrait-picker" id="archive-member-picker" role="group" aria-label="멤버 선택">
-                    {{>partials/member-portrait-picker}}
-                </div>
+    {{>partials/archive-toolbar}}
+
+    <div class="ar-gallery-bar">
+        <div class="ar-gallery-controls" id="archiveGalleryControls" hidden>
+            <p class="ar-gallery-hint">사진을 좌우로 넘겨보세요 <span>방향키 · 모바일 스와이프</span></p>
+            <div class="ar-gallery-navigation">
+                <button type="button" class="ar-icon-btn" id="archiveGalleryPrev" aria-label="이전 사진" aria-controls="archiveGrid"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span></button>
+                <span class="ar-gallery-position" id="archiveGalleryPosition" role="status" aria-live="polite" aria-atomic="true"></span>
+                <button type="button" class="ar-icon-btn" id="archiveGalleryNext" aria-label="다음 사진" aria-controls="archiveGrid"><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
             </div>
         </div>
-        <div class="ar-toolbar-meta">
-            <span>이 페이지 <strong id="archiveVisible">{{archivePageCount}}</strong>장</span>
-            <a class="ar-text-btn" href="{{archivePath}}"><span class="material-symbols-outlined">refresh</span>필터 초기화</a>
-        </div>
-    </section>
-
-    <div class="ar-gallery-controls" id="archiveGalleryControls" hidden>
-        <p class="ar-gallery-hint">사진을 좌우로 넘겨보세요 <span>방향키 · 모바일 스와이프</span></p>
-        <div class="ar-gallery-navigation">
-            <button type="button" class="ar-icon-btn" id="archiveGalleryPrev" aria-label="이전 사진" aria-controls="archiveGrid"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span></button>
-            <span class="ar-gallery-position" id="archiveGalleryPosition" role="status" aria-live="polite" aria-atomic="true"></span>
-            <button type="button" class="ar-icon-btn" id="archiveGalleryNext" aria-label="다음 사진" aria-controls="archiveGrid"><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
-        </div>
+        <a class="ar-more-link" href="{{archiveBrowsePath}}">더보기</a>
     </div>
     <section class="ar-grid" id="archiveGrid" aria-label="사진 목록" data-number-offset="{{archiveOffset}}">
         {{#archiveCards}}
-        <article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}">
-            <a class="ar-photo-link" href="{{file.url}}" target="_blank" rel="noopener noreferrer" aria-label="{{title}} 원본 보기">
-                <img src="{{file.url}}" alt="{{title}}" loading="lazy" decoding="async">
-                <span class="ar-photo-open">원본 보기 ↗</span>
-            </a>
-            <div class="ar-body">
-                <div class="ar-meta" style="--member-count: {{memberCount}}"><span class="ar-id" data-archive-number>{{displayNumber}}</span>{{>partials/archive-member-badges}}</div>
-                <h3>{{title}}</h3>
-                <div class="ar-actions" data-admin-only>
-                    <button type="button" data-archive-edit data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-url="{{file.url}}" data-registered="{{registeredOn}}">수정</button>
-                    <button type="button" class="ar-delete" data-archive-delete data-id="{{id}}" data-title="{{title}}">삭제</button>
-                </div>
-            </div>
-        </article>
+        {{>partials/archive-photo-card}}
         {{/archiveCards}}
     </section>
     <p id="archiveNone" class="ar-panel ar-empty" hidden>이 페이지에서 조건에 맞는 사진이 없습니다.</p>
@@ -130,20 +86,7 @@
     <p class="ar-panel ar-empty">{{#hasQuery}}검색 결과가 없습니다.{{/hasQuery}}{{^hasQuery}}등록된 사진이 없습니다.{{/hasQuery}}</p>
     {{/hasArchives}}
 
-    {{#archiveTotalPages}}
-    <nav class="ar-panel ar-pager" aria-label="사진 페이지">
-        <span>총 {{archiveTotal}}장 중 {{archivePageCount}}장 표시 (페이지 {{archivePageDisplay}} / {{archiveTotalPages}})</span>
-        <div class="ar-pager-controls">
-            {{#hasArchivePrev}}<a href="{{archivePath}}?page={{archivePrevPage}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">이전</a>{{/hasArchivePrev}}
-            {{^hasArchivePrev}}<a class="is-disabled" aria-disabled="true">이전</a>{{/hasArchivePrev}}
-            <div class="ar-pages">
-                {{#archivePages}}<a class="{{#active}}is-current{{/active}}" href="{{archivePath}}?page={{num}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">{{label}}</a>{{/archivePages}}
-            </div>
-            {{#hasArchiveNext}}<a href="{{archivePath}}?page={{archiveNextPage}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">다음</a>{{/hasArchiveNext}}
-            {{^hasArchiveNext}}<a class="is-disabled" aria-disabled="true">다음</a>{{/hasArchiveNext}}
-        </div>
-    </nav>
-    {{/archiveTotalPages}}
+    {{>partials/archive-pager}}
 </main>
 
 <div class="ar-dialog" id="uploadModal" hidden>
@@ -243,9 +186,11 @@
     </div>
 </div>
 
+{{>partials/archive-photo-detail}}
 <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
 <script src="{{#asset}}/js/archive-manage.js{{/asset}}"></script>
 <script src="{{#asset}}/js/date-range-filter.js{{/asset}}"></script>
 <script src="{{#asset}}/js/archive-browse.js{{/asset}}"></script>
 <script src="{{#asset}}/js/archive-photo-carousel.js{{/asset}}"></script>
+<script src="{{#asset}}/js/archive-detail.js{{/asset}}"></script>
 {{>layout/page-end}}

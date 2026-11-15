@@ -22,7 +22,6 @@
             <div>
                 <div class="ar-kicker"><span class="material-symbols-outlined">play_circle</span> Video Archive</div>
                 <h1>영상 아카이브</h1>
-                <p>등록된 영상과 출연 표기를 확인하세요.</p>
             </div>
             <div class="ar-pills">
                 <a class="ar-pill" href="/archive/image_archive">사진</a>
@@ -33,11 +32,11 @@
             <article class="ar-panel ar-stat"><div class="ar-stat-label"><span>등록된 영상</span><span class="material-symbols-outlined">movie</span></div><strong>{{archiveTotal}}<em>개</em></strong></article>
             <article class="ar-panel ar-stat"><div class="ar-stat-label"><span>이 페이지</span><span class="material-symbols-outlined">grid_view</span></div><strong>{{archivePageCount}}<em>개</em></strong></article>
             <article class="ar-panel ar-stat"><div class="ar-stat-label"><span>페이지</span><span class="material-symbols-outlined">layers</span></div><strong>{{archivePageDisplay}}<em>/ {{archiveTotalPages}}</em></strong></article>
-            <article class="ar-panel ar-stat"><div class="ar-stat-label"><span>검색</span><span class="material-symbols-outlined">search</span></div><strong class="is-violet">{{#hasQuery}}{{query}}{{/hasQuery}}{{^hasQuery}}전체{{/hasQuery}}</strong></article>
+            {{>partials/archive-filter-stat}}
         </div>
     </section>
 
-    {{#hasArchives}}
+    {{#hasArchiveHighlights}}
     <section class="ar-block">
         <div class="ar-section-title">
             <h2>최근 영상</h2>
@@ -55,7 +54,7 @@
                     <span class="ar-video-play" aria-hidden="true">▶</span>
                 </a>
                 <div>
-                    <span class="ar-id" data-archive-number>{{displayNumber}}</span>
+                    <span class="ar-id">{{displayNumber}}</span>
                     <h3>{{title}}</h3>
                     <div class="ar-meta" title="{{memberNames}}">{{>partials/archive-member-preview}}</div>
                 </div>
@@ -63,45 +62,9 @@
             {{/archiveHighlights}}
         </div>
     </section>
-    {{/hasArchives}}
+    {{/hasArchiveHighlights}}
 
-    <section class="ar-panel ar-toolbar">
-        <form class="ar-filters" id="archiveFilterForm" method="get" action="{{archivePath}}">
-            <label class="ar-select">
-                <select id="archiveSort" aria-label="정렬">
-                    <option value="newest">정렬: 최신순</option>
-                    <option value="oldest">정렬: 오래된 순</option>
-                    <option value="title">정렬: 제목순</option>
-                </select>
-                <span class="material-symbols-outlined">sort</span>
-            </label>
-            <div class="ar-search-wrap site-search">
-                <input class="ar-search site-search__input" type="search" name="q" value="{{query}}" placeholder="영상 제목 검색" aria-label="영상 제목 검색">
-                <button type="submit" class="site-search__submit" aria-label="검색">
-                    <span class="material-symbols-outlined">search</span>
-                </button>
-            </div>
-            {{>partials/date-range-filter}}
-            <button type="button" class="ar-submit" data-admin-only onclick="showAddModal()">영상 추가</button>
-        </form>
-        <div class="ar-member-row">
-            <button type="button" class="ar-member-toggle" id="archiveMemberToggle" aria-expanded="false" aria-controls="archiveMemberPanel">
-                <span class="material-symbols-outlined" aria-hidden="true">group</span>
-                <span>멤버 선택</span>
-                <span class="ar-member-count" id="archiveMemberCount" hidden>0</span>
-                <span class="material-symbols-outlined ar-member-chevron" aria-hidden="true">expand_more</span>
-            </button>
-            <div class="ar-member-panel" id="archiveMemberPanel" hidden>
-                <div class="member-portrait-picker" id="archive-member-picker" role="group" aria-label="멤버 선택">
-                    {{>partials/member-portrait-picker}}
-                </div>
-            </div>
-        </div>
-        <div class="ar-toolbar-meta">
-            <span>이 페이지 <strong id="archiveVisible">{{archivePageCount}}</strong>개</span>
-            <a class="ar-text-btn" href="{{archivePath}}"><span class="material-symbols-outlined">refresh</span>필터 초기화</a>
-        </div>
-    </section>
+    {{>partials/archive-toolbar}}
 
     <section class="ar-grid" id="archiveGrid" data-number-offset="{{archiveOffset}}">
         {{#archiveCards}}
@@ -127,20 +90,7 @@
     <p class="ar-panel ar-empty">{{#hasQuery}}검색 결과가 없습니다.{{/hasQuery}}{{^hasQuery}}등록된 영상이 없습니다.{{/hasQuery}}</p>
     {{/hasArchives}}
 
-    {{#archiveTotalPages}}
-    <nav class="ar-panel ar-pager" aria-label="영상 페이지">
-        <span>총 {{archiveTotal}}개 중 {{archivePageCount}}개 표시 (페이지 {{archivePageDisplay}} / {{archiveTotalPages}})</span>
-        <div class="ar-pager-controls">
-            {{#hasArchivePrev}}<a href="{{archivePath}}?page={{archivePrevPage}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">이전</a>{{/hasArchivePrev}}
-            {{^hasArchivePrev}}<a class="is-disabled" aria-disabled="true">이전</a>{{/hasArchivePrev}}
-            <div class="ar-pages">
-                {{#archivePages}}<a class="{{#active}}is-current{{/active}}" href="{{archivePath}}?page={{num}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">{{label}}</a>{{/archivePages}}
-            </div>
-            {{#hasArchiveNext}}<a href="{{archivePath}}?page={{archiveNextPage}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">다음</a>{{/hasArchiveNext}}
-            {{^hasArchiveNext}}<a class="is-disabled" aria-disabled="true">다음</a>{{/hasArchiveNext}}
-        </div>
-    </nav>
-    {{/archiveTotalPages}}
+    {{>partials/archive-pager}}
 </main>
 
 <div class="ar-dialog" id="uploadModal" hidden>

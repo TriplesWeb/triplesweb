@@ -28,8 +28,17 @@ ${css}
       <article class="ar-panel ar-stat"><div class="ar-stat-label"><span>등록된 사진</span><span class="material-symbols-outlined">image</span></div><strong>2<em>장</em></strong></article>
       <article class="ar-panel ar-stat"><div class="ar-stat-label"><span>이 페이지</span><span class="material-symbols-outlined">grid_view</span></div><strong>2<em>장</em></strong></article>
       <article class="ar-panel ar-stat"><div class="ar-stat-label"><span>페이지</span><span class="material-symbols-outlined">layers</span></div><strong>1<em>/ 1</em></strong></article>
-      <article class="ar-panel ar-stat"><div class="ar-stat-label"><span>검색</span><span class="material-symbols-outlined">search</span></div><strong>전체</strong></article>
+      <article class="ar-panel ar-stat ar-stat-filter" style="--filter-count: 3"><div class="ar-stat-label"><span>검색</span><span class="material-symbols-outlined">search</span></div><div class="ar-filter-summary"><span class="ar-filter-member" style="--member-color:#22aeff">윤서연</span><span class="ar-filter-more">외 1명</span><span class="ar-filter-sep">,</span><strong>심장</strong><span class="ar-filter-sep">,</span><strong>2026-01-01 ~ 2026-12-31</strong></div></article>
     </div>
+  </section>
+  <section class="ar-panel ar-toolbar">
+    <form class="ar-filters" id="archiveFilterForm">
+      <label class="ar-sort"><span class="ar-sort-label">정렬</span><span class="ar-sort-control"><select id="archiveSort"><option>최신순</option></select><span class="material-symbols-outlined">arrow_drop_down</span></span></label>
+      <div class="ar-date-filter"><button type="button" class="ar-date-toggle"><span>날짜</span></button></div>
+      <button type="button" class="ar-member-toggle">멤버 선택</button>
+      <div class="ar-search-wrap site-search"><input class="ar-search site-search__input" type="search" placeholder="사진 제목 검색"><button type="submit" class="site-search__submit" aria-label="검색"><span class="material-symbols-outlined">search</span></button></div>
+      <a class="ar-text-btn ar-reset" href="/archive/image_archive">초기화</a>
+    </form>
   </section>
   <section class="ar-block">
     <div class="ar-track" id="archiveTrack">
@@ -58,14 +67,14 @@ ${css}
   </section>
   <section class="ar-grid" id="archiveGrid">
     <article class="ar-panel ar-card">
-      <a class="ar-photo-link"><img src="/portrait.svg" alt=""></a>
+      <button type="button" class="ar-photo-link"><img src="/portrait.svg" alt=""></button>
       <div class="ar-body">
         <div class="ar-meta" style="--member-count: ${members.length}"><span class="ar-id">1</span>${members.map(chip).join('')}</div>
         <h3>심장마빈즈</h3>
       </div>
     </article>
     <article class="ar-panel ar-card" id="single-card">
-      <a class="ar-photo-link"><img src="/portrait.svg" alt=""></a>
+      <button type="button" class="ar-photo-link"><img src="/portrait.svg" alt=""></button>
       <div class="ar-body">
         <div class="ar-meta" style="--member-count: 1"><span class="ar-id">2</span>${chip('지연')}</div>
         <h3>지서연</h3>
@@ -154,7 +163,8 @@ ${css}
         rows: tops.size,
         count: chips.length,
         nameCut: name.scrollWidth > name.clientWidth + 1,
-        name: name.textContent
+        name: name.textContent,
+        photoH: Math.round(many.querySelector('.ar-photo-link img').getBoundingClientRect().height)
       };
     });
     assert.ok(grid.oneImg > 20 && grid.oneImg <= 40, '한 명 카드 배지 크기가 깨졌다: ' + grid.oneImg);
@@ -162,6 +172,34 @@ ${css}
     assert.equal(grid.nameCut, false, '멤버 이름이 잘린다: ' + JSON.stringify(grid));
     assert.ok(grid.rows < grid.count, '그리드 멤버가 한 줄에 하나씩 쌓인다: ' + JSON.stringify(grid));
     assert.ok(grid.manyMeta < 280, '그리드 멤버 영역이 너무 높다: ' + grid.manyMeta);
+    assert.ok(grid.photoH <= 250, '목록 사진 행이 너무 높다: ' + grid.photoH);
+
+    const toolbar = await page.evaluate(() => {
+      const search = document.querySelector('.ar-search-wrap');
+      const date = document.querySelector('.ar-date-toggle');
+      const member = document.querySelector('.ar-member-toggle');
+      const reset = document.querySelector('.ar-reset');
+      const submit = document.querySelector('.site-search__submit');
+      const searchBox = search.getBoundingClientRect();
+      const dateBox = date.getBoundingClientRect();
+      const memberBox = member.getBoundingClientRect();
+      const resetBox = reset.getBoundingClientRect();
+      const submitBox = submit.getBoundingClientRect();
+      return {
+        searchW: Math.round(searchBox.width),
+        dateBeforeSearch: dateBox.left < searchBox.left,
+        memberSameRow: Math.abs(memberBox.top - searchBox.top) < 24,
+        resetAfterSearch: resetBox.left > searchBox.right - 8,
+        submitInside: submitBox.left >= searchBox.left && submitBox.right <= searchBox.right + 1,
+        filterSize: getComputedStyle(document.querySelector('.ar-filter-summary')).fontSize
+      };
+    });
+    assert.ok(toolbar.searchW < 420, '검색창이 한 줄을 차지한다: ' + toolbar.searchW);
+    assert.equal(toolbar.dateBeforeSearch, true, '날짜 버튼이 검색창 왼쪽에 없다');
+    assert.equal(toolbar.memberSameRow, true, '멤버 선택이 다른 줄에 있다');
+    assert.equal(toolbar.resetAfterSearch, true, '초기화가 검색창 오른쪽에 없다');
+    assert.equal(toolbar.submitInside, true, '검색 버튼이 검색창 밖에 있다');
+    assert.ok(parseFloat(toolbar.filterSize) < 22, '필터 글자가 줄지 않는다: ' + toolbar.filterSize);
 
     const artifactDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
     fs.mkdirSync(artifactDir, { recursive: true });

@@ -1,0 +1,149 @@
+{{>layout/head-open}}
+    <title>트리플에스 커뮤니티 - 사진 전체</title>
+
+    <link rel="stylesheet" href="{{#asset}}/css/archive-page.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
+    {{#_csrf}}
+    <meta name="_csrf" content="{{token}}">
+    <meta name="_csrf_header" content="{{headerName}}">
+    {{/_csrf}}
+</head><body class="site-page bg-surface text-on-surface min-h-screen flex flex-col">
+<div class="ar-glow ar-glow-violet"></div>
+<div class="ar-glow ar-glow-mint"></div>
+{{>layout/header}}
+
+<main class="archive-page is-browse" data-archive-kind="image">
+    <section class="ar-hero ar-hero-browse">
+        <div class="ar-panel ar-headline">
+            <div>
+                <div class="ar-kicker"><span class="material-symbols-outlined">photo_library</span> Photo Archive</div>
+                <h1>사진 전체</h1>
+            </div>
+            <div class="ar-pills">
+                <a class="ar-pill" href="{{archiveHomePath}}">돌아가기</a>
+                <a class="ar-pill is-active" href="{{archiveBrowsePath}}"><span class="ar-dot"></span>전체 보기</a>
+            </div>
+        </div>
+        <div class="ar-stats">
+            <article class="ar-panel ar-stat"><div class="ar-stat-label"><span>등록된 사진</span><span class="material-symbols-outlined">image</span></div><strong>{{archiveTotal}}<em>장</em></strong></article>
+            <article class="ar-panel ar-stat"><div class="ar-stat-label"><span>이 페이지</span><span class="material-symbols-outlined">grid_view</span></div><strong>{{archivePageCount}}<em>장</em></strong></article>
+            <article class="ar-panel ar-stat"><div class="ar-stat-label"><span>페이지</span><span class="material-symbols-outlined">layers</span></div><strong>{{archivePageDisplay}}<em>/ {{archiveTotalPages}}</em></strong></article>
+            {{>partials/archive-filter-stat}}
+        </div>
+    </section>
+
+    {{>partials/archive-toolbar}}
+
+    <section class="ar-grid ar-grid-browse" id="archiveGrid" aria-label="전체 사진" data-number-offset="{{archiveOffset}}">
+        {{#archiveCards}}
+        {{>partials/archive-photo-card}}
+        {{/archiveCards}}
+    </section>
+    <p id="archiveNone" class="ar-panel ar-empty" hidden>이 페이지에서 조건에 맞는 사진이 없습니다.</p>
+    {{^hasArchives}}
+    <p class="ar-panel ar-empty">{{#hasQuery}}검색 결과가 없습니다.{{/hasQuery}}{{^hasQuery}}등록된 사진이 없습니다.{{/hasQuery}}</p>
+    {{/hasArchives}}
+
+    {{>partials/archive-pager}}
+</main>
+
+<div class="ar-dialog" id="uploadModal" hidden>
+    <button type="button" class="ar-dialog-backdrop" data-ar-close aria-label="닫기"></button>
+    <div class="ar-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="uploadModalLabel">
+        <form id="archiveUploadForm" enctype="multipart/form-data" data-upload-url="/archive/upload">
+            <input type="hidden" name="type" value="IMAGE">
+            <div class="ar-dialog-head">
+                <h2 id="uploadModalLabel">사진 추가</h2>
+                <button type="button" class="ar-close" data-ar-close aria-label="닫기">&times;</button>
+            </div>
+            <div class="ar-dialog-body">
+                <label class="ar-field">제목
+                    <input type="text" name="title" placeholder="사진 제목을 입력하세요" required>
+                </label>
+                <label class="ar-field">등록일
+                    <input type="date" name="registeredOn" required>
+                </label>
+                <div class="ar-field">출연 멤버
+                    <div class="member-portrait-picker" id="archive-upload-picker" role="group" aria-label="출연 멤버">
+                        {{>partials/member-portrait-picker}}
+                    </div>
+                    <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
+                    <div class="ar-artist-editor" data-artist-tags>
+                        <div class="ar-artist-chips" data-artist-chips aria-label="선택한 출연자"></div>
+                        <div class="ar-tag-entry">
+                            <input type="text" name="extraArtists" placeholder="다른 출연자 이름" aria-label="추가 출연자 이름" autocomplete="off" maxlength="80">
+                            <button type="button" class="ar-tag-add" data-artist-add>추가</button>
+                        </div>
+                    </div>
+                </div>
+                <label class="ar-field">사진 파일
+                    <input type="file" name="file" accept="image/*,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp" required>
+                </label>
+                <div class="ar-preview" id="uploadPreview" hidden>
+                    <p class="ar-preview-info" data-preview-file></p>
+                    <div><p>원본</p><div class="ar-preview-full"></div></div>
+                    <div><p>목록에서 보이는 모습 · 카드/슬라이드</p><div class="ar-preview-card"></div></div>
+                    <p class="ar-preview-error" data-preview-error role="alert" hidden></p>
+                </div>
+            </div>
+            <div class="ar-dialog-foot">
+                <button type="button" class="ar-text-btn" data-ar-close>취소</button>
+                <button type="submit" class="ar-submit">추가하기</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="ar-dialog" id="editModal" hidden>
+    <button type="button" class="ar-dialog-backdrop" data-ar-close aria-label="닫기"></button>
+    <div class="ar-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="editModalLabel">
+        <form id="archiveEditForm" enctype="multipart/form-data">
+            <div class="ar-dialog-head">
+                <h2 id="editModalLabel">사진 수정</h2>
+                <button type="button" class="ar-close" data-ar-close aria-label="닫기">&times;</button>
+            </div>
+            <div class="ar-dialog-body">
+                <label class="ar-field">제목
+                    <input type="text" name="title" required>
+                </label>
+                <label class="ar-field">등록일
+                    <input type="date" name="registeredOn" required>
+                </label>
+                <div class="ar-field">출연 멤버
+                    <div class="member-portrait-picker" id="archive-edit-picker" role="group" aria-label="출연 멤버">
+                        {{>partials/member-portrait-picker}}
+                    </div>
+                    <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
+                    <div class="ar-artist-editor" data-artist-tags>
+                        <div class="ar-artist-chips" data-artist-chips aria-label="선택한 출연자"></div>
+                        <div class="ar-tag-entry">
+                            <input type="text" name="extraArtists" placeholder="다른 출연자 이름" aria-label="추가 출연자 이름" autocomplete="off" maxlength="80">
+                            <button type="button" class="ar-tag-add" data-artist-add>추가</button>
+                        </div>
+                    </div>
+                </div>
+                <label class="ar-field">파일 교체 (선택)
+                    <input type="file" name="file" accept="image/*,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp">
+                </label>
+                <div class="ar-preview" id="editPreview" hidden>
+                    <p class="ar-preview-info" data-preview-file></p>
+                    <div><p>현재 사진</p><div class="ar-preview-full"></div></div>
+                    <div><p>목록에서 보이는 모습 · 카드/슬라이드</p><div class="ar-preview-card"></div></div>
+                    <p class="ar-preview-error" data-preview-error role="alert" hidden></p>
+                </div>
+            </div>
+            <div class="ar-dialog-foot">
+                <button type="button" class="ar-text-btn" data-ar-close>취소</button>
+                <button type="submit" class="ar-submit">저장</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{>partials/archive-photo-detail}}
+<script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
+<script src="{{#asset}}/js/archive-manage.js{{/asset}}"></script>
+<script src="{{#asset}}/js/date-range-filter.js{{/asset}}"></script>
+<script src="{{#asset}}/js/archive-browse.js{{/asset}}"></script>
+<script src="{{#asset}}/js/archive-detail.js{{/asset}}"></script>
+{{>layout/page-end}}

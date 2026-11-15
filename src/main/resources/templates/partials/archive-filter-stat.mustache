@@ -1,0 +1,14 @@
+<article class="ar-panel ar-stat ar-stat-filter" style="--filter-count: {{filterCount}}">
+    <div class="ar-stat-label"><span>검색</span><span class="material-symbols-outlined">search</span></div>
+    <div class="ar-filter-summary">
+        {{#hasFilters}}
+        {{#filterParts}}
+        {{#isMember}}<span class="ar-filter-member" style="--member-color: {{color}}">{{text}}</span>{{/isMember}}
+        {{#isMore}}<span class="ar-filter-more">{{text}}</span>{{/isMore}}
+        {{#isSep}}<span class="ar-filter-sep">,</span>{{/isSep}}
+        {{#isText}}<strong>{{text}}</strong>{{/isText}}
+        {{/filterParts}}
+        {{/hasFilters}}
+        {{^hasFilters}}<strong class="is-violet">전체</strong>{{/hasFilters}}
+    </div>
+</article>
