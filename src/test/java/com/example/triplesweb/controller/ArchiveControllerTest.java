@@ -59,7 +59,8 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("사진 날짜")))
                 .andExpect(content().string(containsString("실제로 올라온 날짜를 선택하세요.")))
                 .andExpect(content().string(containsString("S1.png")))
-                .andExpect(content().string(containsString("archive-symbol-picker")))
+                .andExpect(content().string(containsString("id=\"archive-member-picker\"")))
+                .andExpect(content().string(not(containsString("archive-symbol-picker"))))
                 .andExpect(content().string(containsString("archive-symbol-chip")))
                 .andExpect(content().string(containsString("data-archive-edit")))
                 .andExpect(content().string(containsString("data-archive-delete")))
@@ -88,6 +89,26 @@ class ArchiveControllerTest {
                 .andExpect(content().string(not(containsString("원본 보기 ↗"))))
                 .andExpect(content().string(not(containsString("14.8M"))))
                 .andExpect(content().string(not(containsString("Polygon"))));
+    }
+
+    @Test void archiveMemberPickerUsesPortraitsNotSymbolLogos() throws Exception {
+        var member = new Artist();
+        member.setName("윤서연");
+        member.setEngName("SeoYeon");
+        member.setColor("#22aeff");
+        member.setProfileImage("/uploads/portraits/seoyeon.jpg");
+        when(artistRepository.findAll()).thenReturn(List.of(member));
+        when(archiveService.pageByType(eq(MediaType.IMAGE), anyInt(), anyInt(), isNull()))
+                .thenReturn(new PageImpl<>(List.of(photo())));
+        String html = mvc.perform(get("/archive")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        int start = html.indexOf("id=\"archive-member-picker\"");
+        int end = html.indexOf("</div>", start);
+        String picker = html.substring(start, end);
+        org.assertj.core.api.Assertions.assertThat(picker).contains("/uploads/portraits/seoyeon.jpg");
+        org.assertj.core.api.Assertions.assertThat(picker).doesNotContain("S1.png");
+        org.assertj.core.api.Assertions.assertThat(html).contains("S1.png");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("archive-symbol-picker");
     }
 
     @Test void guestImageArchiveHidesEditAndDelete() throws Exception {

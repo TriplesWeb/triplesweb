@@ -522,24 +522,6 @@
     font-weight: 600;
     letter-spacing: -0.01em;
 }
-.archive-symbol-picker .artist-tab-frame,
-.archive-symbol-picker .artist-tab-shine { display: none !important; }
-.archive-symbol-picker .artist-tab-avatar {
-    background: transparent;
-    box-shadow: none;
-    overflow: visible;
-}
-.archive-symbol-picker .artist-tab-photo {
-    object-fit: contain;
-    object-position: center;
-    background: transparent;
-    border-radius: 0.55rem;
-    border: 1.5px solid color-mix(in srgb, var(--artist-color) 55%, transparent);
-}
-.archive-symbol-picker .mpp-item.is-active .artist-tab-photo {
-    border-color: var(--artist-color);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--artist-color) 35%, transparent);
-}
 .ar-date-filter { position: relative; }
 .ar-filter-tools .ar-date-popover { left: auto; right: 0; }
 .ar-date-toggle {

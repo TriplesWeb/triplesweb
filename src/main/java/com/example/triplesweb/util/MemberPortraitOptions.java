@@ -149,46 +149,6 @@ public final class MemberPortraitOptions {
     }
 
     /**
-     * 아카이브 전용 멤버 피커. 초상 대신 상징로고(S1=윤서연)를 쓰고, 프로필 사진이 없어도 포함한다.
-     */
-    public static List<Map<String, Object>> archivePickerOptions(List<Artist> artists) {
-        List<Artist> ordered = artists == null ? List.of() : artists.stream()
-                .sorted(Comparator.comparingInt((Artist artist) -> Math.min(memberIndex(artist.getEngName()), memberIndex(artist.getName())))
-                        .thenComparing(Artist::getName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
-                        .thenComparing(Artist::getArtistId, Comparator.nullsLast(Long::compareTo)))
-                .toList();
-        List<Map<String, Object>> out = new ArrayList<>();
-        int frame = 1;
-        for (Artist artist : ordered) {
-            if (artist == null || artist.getName() == null || artist.getName().isBlank()) continue;
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("value", artist.getName());
-            row.put("label", artist.getName());
-            String symbol = archiveSymbolLogo(artist.getName());
-            if (symbol.isBlank()) symbol = archiveSymbolLogo(artist.getEngName());
-            if (!symbol.isBlank()) {
-                row.put("image", symbol);
-                row.put("hasSymbol", true);
-                row.put("textOnly", false);
-            } else {
-                row.put("image", artist.getDisplayProfileImage());
-                row.put("hasSymbol", false);
-                row.put("textOnly", !hasProfileImage(artist));
-            }
-            row.put("color", artist.getColor() != null && !artist.getColor().isBlank()
-                    ? artist.getColor()
-                    : "#00f5d4");
-            int index = memberIndex(artist.getEngName());
-            if (index == 24) index = memberIndex(artist.getName());
-            row.put("frame", index < 24 ? index + 1 : Math.min(frame, 24));
-            row.put("artistId", artist.getArtistId());
-            out.add(row);
-            frame++;
-        }
-        return out;
-    }
-
-    /**
      * 아카이브 멤버 칩용 상징로고. S1=윤서연 … S24=지연.
      * 유닛·미매칭은 빈 문자열이라 초상화나 이니셜을 쓴다.
      */
