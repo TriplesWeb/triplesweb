@@ -146,7 +146,11 @@
       const hasSeason = !!(seasonFilter && seasonFilter.value);
       const hasClass = !!(classFilter && classFilter.value);
       const hasSearch = !!(searchFilter && searchFilter.value.trim());
-      if (resetBtn) resetBtn.hidden = !(hasMember || hasSeason || hasClass || hasSearch);
+      if (resetBtn) {
+        const showReset = hasMember || hasSeason || hasClass || hasSearch;
+        resetBtn.hidden = !showReset;
+        resetBtn.toggleAttribute('hidden', !showReset);
+      }
       memberPickerWrap?.classList.toggle('is-filtered', hasMember);
       document.getElementById('objekt-season-dropdown')?.classList.toggle('is-filtered', hasSeason);
       document.getElementById('objekt-class-dropdown')?.classList.toggle('is-filtered', hasClass);

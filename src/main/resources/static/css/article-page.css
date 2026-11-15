@@ -206,7 +206,8 @@
   padding-left:2.15rem;padding-right:.85rem
 }
 .objekt-picker-market-filter .objekt-reset-button{flex:0 0 auto;width:auto}
-.objekt-picker-market-filter .objekt-reset-button[hidden]{display:none!important}
+.objekt-picker-market-filter .objekt-reset-button[hidden],
+#objektFilterReset[hidden]{display:none!important}
 .objekt-picker-filter-bar{display:flex;flex-direction:column;gap:.55rem;overflow:visible}
 .objekt-picker-filter-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.55rem .65rem;align-items:center;overflow:visible}
 .objekt-picker-search-row{display:flex;flex-wrap:wrap;align-items:center;gap:.55rem}
