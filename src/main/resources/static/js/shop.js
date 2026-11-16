@@ -149,20 +149,18 @@
     normalizeDateInputYear(startEl);
     normalizeDateInputYear(endEl);
     const start = startEl?.value || "";
-    let end = endEl?.value || "";
-    // 종료일이 비어 있으면 시작일 당일 하루로 본다(표시·검증용).
-    if (start && !end && endEl) {
-      end = start;
-    }
+    const end = endEl?.value || "";
     if (endEl) {
-      if (start) endEl.min = start;
+      // 종료가 비어 있으면 당일로 보므로 min을 걸지 않는다.
+      // (빈 date + min 조합이 브라우저에서 잘못 invalid 처리되는 경우 방지)
+      if (start && end) endEl.min = start;
       else endEl.removeAttribute("min");
       endEl.classList.toggle("is-invalid", Boolean(end && start && end < start));
     }
     if (startEl) {
       startEl.classList.toggle("is-invalid", Boolean(end && start && end < start));
     }
-    return isValidDateRange(start, endEl?.value || "");
+    return isValidDateRange(start, end);
   }
 
   function syncAllShopDateRanges() {
@@ -920,8 +918,15 @@
         : "";
       syncMdBuilderFromDom();
       const linked = Boolean(eventId);
+      // 종료일 생략 = 시작일 당일. 검증 전에 빈 종료를 채운다.
+      mdRegions.forEach((r) => {
+        if (r.salesStart && !r.salesEnd) r.salesEnd = r.salesStart;
+      });
       if (!syncAllShopDateRanges()) {
-        if (err) { err.hidden = false; err.textContent = "판매 종료일은 시작일 이후여야 합니다."; }
+        if (err) {
+          err.hidden = false;
+          err.textContent = "판매 종료일이 시작일보다 이전이면 안 됩니다. 하루만이면 종료일을 비워 두세요.";
+        }
         return;
       }
       let salesPeriod = linked ? summarizeRegionSalesPeriods() : readSalesPeriod();
@@ -950,7 +955,10 @@
         }
         const invalid = mdRegions.some((r) => !isValidDateRange(r.salesStart, r.salesEnd));
         if (invalid) {
-          if (err) { err.hidden = false; err.textContent = "판매 종료일은 시작일 이후여야 합니다."; }
+          if (err) {
+            err.hidden = false;
+            err.textContent = "판매 종료일이 시작일보다 이전이면 안 됩니다. 하루만이면 종료일을 비워 두세요.";
+          }
           return;
         }
       }
