@@ -7,8 +7,13 @@ import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.repository.ArtistRepository;
+import com.example.triplesweb.dto.ChemistryDto;
+import com.example.triplesweb.dto.ChemistryGroupDto;
+import com.example.triplesweb.entity.Unit;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.ArchiveService;
+import com.example.triplesweb.service.ChemistryGroupService;
+import com.example.triplesweb.service.ChemistryService;
 import com.example.triplesweb.service.UnitService;
 import com.example.triplesweb.util.ArchiveFolderArt;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,11 +60,15 @@ class ArchiveControllerTest {
     @MockitoBean ArtistRepository artistRepository;
     @MockitoBean UnitService unitService;
     @MockitoBean ArchiveFolderArt archiveFolderArt;
+    @MockitoBean ChemistryService chemistryService;
+    @MockitoBean ChemistryGroupService chemistryGroupService;
 
     @BeforeEach void stubs() {
         lenient().when(unitService.listVisible()).thenReturn(List.of());
         lenient().when(archiveService.index()).thenReturn(List.of());
         lenient().when(archiveFolderArt.urlFor(any(), any(), any())).thenReturn("");
+        lenient().when(chemistryService.findAll()).thenReturn(List.of());
+        lenient().when(chemistryGroupService.findAll()).thenReturn(List.of());
     }
 
     private void stubFolder(MediaType type, Archive... items) {
@@ -100,13 +109,14 @@ class ArchiveControllerTest {
         String html = mvc.perform(get("/archive")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">2명 케미</span>");
-        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">3명 이상</span>");
-        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">4명 이상</span>");
-        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">6명 이상</span>");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">3명 케미</span>");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">4명 케미</span>");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">5명 이상</span>");
         org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;combo-2");
         org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;combo-3");
         org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;combo-4");
-        org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;combo-6");
+        org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;combo-5");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;combo-6");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("윤서연 × 정혜린");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder=combo&amp;combo=");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;combo&amp;combo");
@@ -129,8 +139,59 @@ class ArchiveControllerTest {
         stubFolder(MediaType.IMAGE, photo());
         mvc.perform(get("/archive").param("folder", "combo-2")).andExpect(status().isOk())
                 .andExpect(content().string(containsString(">2명 케미</p>")))
+                .andExpect(content().string(containsString("id=\"archiveChem\"")))
+                .andExpect(content().string(containsString("케미 전체")))
                 .andExpect(content().string(containsString("id=\"archive-member-picker\"")))
                 .andExpect(content().string(containsString(">멤버 선택<")));
+    }
+
+    @Test void unitFolderWithoutImageOmitsPlaceholderPreview() throws Exception {
+        Unit aura = new Unit();
+        aura.setUnitId(17L);
+        aura.setUnitName("Aura");
+        aura.setVisible(true);
+        when(unitService.listVisible()).thenReturn(List.of(aura));
+        String html = mvc.perform(get("/archive")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(html).contains("Aura");
+        org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;unit-17");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("image-upload-pending");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("이미지 업로드 예정");
+    }
+
+    @Test void comboFolderFiltersPhotosByChemistryTreePair() throws Exception {
+        ChemistryDto pair = ChemistryDto.builder()
+                .id(3L).memberA("윤서연").memberB("정혜린").label("시선강탈").build();
+        when(chemistryService.findAll()).thenReturn(List.of(pair));
+        stubFolder(MediaType.IMAGE, photo());
+        String html = mvc.perform(get("/archive").param("folder", "combo-2").param("chem", "pair-3"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(html).contains("id=\"archiveChem\"");
+        org.assertj.core.api.Assertions.assertThat(html).contains("시선강탈");
+        org.assertj.core.api.Assertions.assertThat(html).contains("value=\"pair-3\"");
+        org.assertj.core.api.Assertions.assertThat(html).contains(">시선강탈</p>");
+        org.assertj.core.api.Assertions.assertThat(html).containsAnyOf("chem=pair-3", "chem&#x3D;pair-3");
+        verify(archiveService).pageInFolder(eq(MediaType.IMAGE), anyInt(), anyInt(), nullable(String.class),
+                eq(List.of("윤서연", "정혜린")),
+                nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
+                nullable(ArchiveSource.class), anyBoolean(), eq("combo-2"),
+                eq(List.of("윤서연", "정혜린")), any());
+    }
+
+    @Test void comboThreeFolderListsMatchingChemistryGroups() throws Exception {
+        ChemistryGroupDto trio = ChemistryGroupDto.builder()
+                .id(8L).members(List.of("윤서연", "정혜린", "이지우")).label("트리오").build();
+        ChemistryGroupDto pair = ChemistryGroupDto.builder()
+                .id(9L).members(List.of("윤서연", "정혜린")).label("페어").build();
+        when(chemistryGroupService.findAll()).thenReturn(List.of(trio, pair));
+        stubFolder(MediaType.IMAGE, photo());
+        String html = mvc.perform(get("/archive").param("folder", "combo-3")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(html).contains("트리오");
+        org.assertj.core.api.Assertions.assertThat(html).contains("group-8");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("group-9");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("페어");
     }
 
     @Test void imageUploadOfTwoMembersOpensTheCountFolder() throws Exception {
@@ -148,7 +209,7 @@ class ArchiveControllerTest {
                         .param("artistNames", "윤서연").param("artistNames", "정혜린").param("artistNames", "이지우")
                         .param("artistNames", "김채연").param("artistNames", "김유연").param("artistNames", "김수민")
                         .param("registeredOn", "2026-10-03").param("source", "FANCAM"))
-                .andExpect(redirectedUrl("/archive?folder=combo-6"));
+                .andExpect(redirectedUrl("/archive?folder=combo-5"));
     }
 
     @Test void adminImageArchiveShowsEditAndDelete() throws Exception {

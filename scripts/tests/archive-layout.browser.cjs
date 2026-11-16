@@ -68,7 +68,7 @@ ${siteUi}
           <label class="ar-search-wrap"><span class="material-symbols-outlined">search</span><input class="ar-search" type="search" placeholder="사진 제목 검색"></label>
           <button type="submit" class="ar-submit">검색</button>
         </div>
-        <a class="ar-text-btn ar-reset" href="/archive">초기화</a>
+        <a class="site-btn site-btn--reset ar-reset" href="/archive">초기화</a>
       </div>
     </form>
   </section>
@@ -267,17 +267,17 @@ ${siteUi}
         radius: getComputedStyle(field).borderRadius,
         searchAfterMember: searchBox.left >= memberBox.right - 8,
         resetAfterSearch: resetBox.left >= goBox.right - 8,
-        toolsCentered: Math.abs((toolsBox.left + toolsBox.right) / 2 - (barBox.left + barBox.right) / 2) <= 24,
+        toolsLeft: Math.abs(toolsBox.left - barBox.left) <= 24,
         dateInTools: tools.contains(date),
         memberInTools: tools.contains(member),
         resetInTools: tools.contains(reset),
         searchInTools: tools.contains(search),
         filterSize: getComputedStyle(document.querySelector('.ar-filter-summary')).fontSize,
+        resetClass: reset.className,
         resetFont: resetStyle.fontSize,
-        memberFont: memberStyle.fontSize,
+        goFont: getComputedStyle(go).fontSize,
         resetColor: resetStyle.color,
-        memberColor: memberStyle.color,
-        resetAlign: Math.abs(resetBox.top - memberBox.top) <= 2 && Math.abs(resetBox.height - memberBox.height) <= 4,
+        resetAlign: Math.abs(resetBox.top - goBox.top) <= 4,
         sortEnhanced: Boolean(trigger && option),
         sortLabels: [...document.querySelectorAll('.ar-sort-option')].map((el) => el.dataset.value),
         sortMatch: Boolean(triggerStyle && optionStyle
@@ -295,15 +295,15 @@ ${siteUi}
     assert.equal(toolbar.searchAfterMember, true, '검색창이 멤버 선택 오른쪽에 없다');
     assert.equal(toolbar.resetAfterSearch, true, '초기화가 검색 버튼 오른쪽에 없다');
     assert.deepEqual(toolbar.sortLabels, ['newest', 'oldest', 'title', 'first-member', 'last-member']);
-    assert.equal(toolbar.toolsCentered, true, '필터가 가운데 있지 않다');
+    assert.equal(toolbar.toolsLeft, true, '필터가 왼쪽에 붙어 있지 않다');
     assert.equal(toolbar.dateInTools, true);
     assert.equal(toolbar.memberInTools, true);
     assert.equal(toolbar.resetInTools, true);
     assert.equal(toolbar.searchInTools, true);
     assert.ok(parseFloat(toolbar.filterSize) < 22, '필터 글자가 줄지 않는다: ' + toolbar.filterSize);
-    assert.equal(toolbar.resetFont, toolbar.memberFont, '초기화 글자 크기가 다른 버튼과 다르다: ' + toolbar.resetFont);
-    assert.equal(toolbar.resetColor, toolbar.memberColor, '초기화 색이 다른 버튼과 다르다: ' + toolbar.resetColor);
-    assert.equal(toolbar.resetAlign, true, '초기화가 다른 버튼과 세로로 안 맞는다');
+    assert.match(toolbar.resetClass, /site-btn--reset/, '초기화가 회색 유리 버튼이 아니다: ' + toolbar.resetClass);
+    assert.ok(toolbar.resetColor.includes('255') || toolbar.resetColor.includes('#fff'), '초기화 글자가 흰색이 아니다: ' + toolbar.resetColor);
+    assert.equal(toolbar.resetAlign, true, '초기화가 검색 버튼과 세로로 안 맞는다');
     assert.equal(toolbar.sortEnhanced, true, '정렬 드롭다운이 같은 스타일로 열리지 않는다');
     assert.equal(toolbar.sortMatch, true, '정렬 항목 스타일이 닫힌 버튼과 다르다');
 
@@ -375,8 +375,8 @@ ${siteUi}
         extra: Boolean(document.querySelector('[name="extraArtists"]'))
       };
     });
-    assert.deepEqual(registeredYmd.labels, ['연도', '월', '일'], '등록 날짜가 연-월-일이 아니다: ' + JSON.stringify(registeredYmd.labels));
-    assert.equal(registeredYmd.hidden, true, '등록 날짜 네이티브 입력이 보인다');
+    assert.deepEqual(registeredYmd.labels, [], '등록 날짜가 다시 연-월-일 셀렉트다: ' + JSON.stringify(registeredYmd.labels));
+    assert.equal(registeredYmd.hidden, false, '등록 날짜 네이티브 입력이 숨겨져 있다');
     assert.equal(registeredYmd.extra, false, '멤버 외 출연자 입력이 남아 있다');
 
     const artifactDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';

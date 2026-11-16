@@ -19,6 +19,20 @@
                 </span>
             </label>
             {{>partials/date-range-filter}}
+            {{#showChemistryFilter}}
+            <label class="ar-chem">
+                <span class="ar-sort-label">케미</span>
+                <span class="ar-sort-control ar-chem-control">
+                    <select id="archiveChem" name="chem" aria-label="케미씃트리 케미">
+                        <option value="">케미 전체</option>
+                        {{#chemistryOptions}}
+                        <option value="{{value}}"{{#selected}} selected{{/selected}}>{{label}}</option>
+                        {{/chemistryOptions}}
+                    </select>
+                    <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
+                </span>
+            </label>
+            {{/showChemistryFilter}}
             {{#showMemberFilter}}
             <button type="button" class="ar-member-toggle" id="archiveMemberToggle" aria-expanded="false" aria-controls="archiveMemberPanel">
                 <span class="material-symbols-outlined" aria-hidden="true">group</span>

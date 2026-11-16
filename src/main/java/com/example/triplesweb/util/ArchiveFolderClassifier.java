@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 public final class ArchiveFolderClassifier {
     public enum Kind { GROUP, UNIT, COMBO, SOLO, OTHER }
 
-    public static final int[] COMBO_FOLDERS = {2, 3, 4, 6};
+    public static final int[] COMBO_FOLDERS = {2, 3, 4, 5};
     private static final Pattern COMBO_FOLDER = Pattern.compile("(?i)combo-(\\d+)");
 
     public record UnitMembers(long unitId, String unitName, Set<String> members) {}
@@ -60,7 +60,14 @@ public final class ArchiveFolderClassifier {
 
     public static String comboLabel(int min) {
         if (min == 2) return "2명 케미";
+        if (min == 3) return "3명 케미";
+        if (min == 4) return "4명 케미";
         return min + "명 이상";
+    }
+
+    public static String canonicalComboFolder(String folder) {
+        if (folder != null && folder.equalsIgnoreCase("combo-6")) return "combo-5";
+        return folder;
     }
 
     public static int tightestComboMin(int memberCount) {
@@ -92,10 +99,13 @@ public final class ArchiveFolderClassifier {
     }
 
     private static boolean matchesCombo(Match actual, String key, List<String> comboMembers) {
-        Integer min = comboSize(key);
-        if (min != null) return actual.members().size() >= min;
-        if (!key.equals("combo")) return false;
         List<String> wanted = membersOf(String.join(",", comboMembers == null ? List.of() : comboMembers));
+        Integer min = comboSize(key);
+        if (min != null) {
+            if (!wanted.isEmpty()) return actual.members().equals(wanted);
+            return actual.members().size() >= min;
+        }
+        if (!key.equals("combo")) return false;
         if (wanted.isEmpty()) return false;
         return actual.members().equals(wanted);
     }

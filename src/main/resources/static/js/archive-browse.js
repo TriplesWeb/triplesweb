@@ -145,7 +145,10 @@
         sync();
     }
     enhanceSort(sort);
+    const chem = document.getElementById('archiveChem');
+    enhanceSort(chem);
     const form = document.getElementById('archiveFilterForm');
+    chem?.addEventListener('change', () => form?.requestSubmit());
     const panel = document.getElementById('archiveMemberPanel');
     const memberToggle = document.getElementById('archiveMemberToggle');
     const memberCount = document.getElementById('archiveMemberCount');

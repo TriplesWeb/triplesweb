@@ -30,4 +30,13 @@ class ArchiveFolderArtTest {
         assertThat(art.urlFor(ArchiveFolderClassifier.Kind.UNIT, "unit-3", "Glow"))
                 .isEqualTo("/uploads/%EB%AF%B8%EB%94%94%EC%96%B4%20%ED%8F%B4%EB%8D%94/Glow.jpg");
     }
+
+    @Test void fivePlusComboStillUsesSixPersonArtFile() throws Exception {
+        Path dir = uploads.resolve(ArchiveFolderArt.DIR_NAME);
+        Files.createDirectories(dir);
+        Files.writeString(dir.resolve("6.png"), "six");
+        ArchiveFolderArt art = new ArchiveFolderArt(uploads.toString());
+        assertThat(art.urlFor(ArchiveFolderClassifier.Kind.COMBO, "combo-5", "5명 이상"))
+                .isEqualTo("/uploads/%EB%AF%B8%EB%94%94%EC%96%B4%20%ED%8F%B4%EB%8D%94/6.png");
+    }
 }

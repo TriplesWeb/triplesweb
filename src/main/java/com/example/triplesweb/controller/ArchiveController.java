@@ -5,13 +5,18 @@ import com.example.triplesweb.entity.ArchiveSource;
 import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.Unit;
 import com.example.triplesweb.entity.UnitMember;
+import com.example.triplesweb.dto.ChemistryDto;
+import com.example.triplesweb.dto.ChemistryGroupDto;
 import com.example.triplesweb.service.ArchiveService;
 import com.example.triplesweb.service.AboutAdminAuth;
+import com.example.triplesweb.service.ChemistryGroupService;
+import com.example.triplesweb.service.ChemistryService;
 import com.example.triplesweb.service.UnitService;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.util.ArchiveFolderArt;
 import com.example.triplesweb.util.ArchiveFolderClassifier;
+import com.example.triplesweb.util.ImageUrls;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -47,6 +52,8 @@ public class ArchiveController {
     private final ArtistRepository artistRepository;
     private final UnitService unitService;
     private final ArchiveFolderArt archiveFolderArt;
+    private final ChemistryService chemistryService;
+    private final ChemistryGroupService chemistryGroupService;
 
     @GetMapping
     public String showArchive(@RequestParam(defaultValue = "image") String type,
@@ -61,13 +68,14 @@ public class ArchiveController {
                               @RequestParam(required = false) String folder,
                               @RequestParam(required = false) String combo,
                               @RequestParam(required = false) String source,
+                              @RequestParam(required = false) String chem,
                               HttpServletRequest request, HttpSession session, Model model) {
         String jump = pageJumpRedirect(go, request);
         if (jump != null) return jump;
         if (folder == null || folder.isBlank()) {
             return renderFolderHome(request, session, model);
         }
-        return renderArchive(type, page, size, q, from, to, on, members, folder, combo, source,
+        return renderArchive(type, page, size, q, from, to, on, members, folder, combo, source, chem,
                 false, request, session, model);
     }
 
@@ -83,7 +91,7 @@ public class ArchiveController {
                                 HttpServletRequest request, HttpSession session, Model model) {
         String jump = pageJumpRedirect(go, request);
         if (jump != null) return jump;
-        return renderArchive("image", page, size, q, from, to, on, members, null, null, null,
+        return renderArchive("image", page, size, q, from, to, on, members, null, null, null, null,
                 true, request, session, model);
     }
 
@@ -160,15 +168,18 @@ public class ArchiveController {
     }
 
     private String renderArchive(String typeSlug, int page, int size, String q, String from, String to, String on,
-                                 List<String> members, String folder, String combo, String sourceSlug, boolean browse,
-                                 HttpServletRequest request, HttpSession session, Model model) {
+                                 List<String> members, String folder, String combo, String sourceSlug, String chem,
+                                 boolean browse, HttpServletRequest request, HttpSession session, Model model) {
         boolean isAdmin = aboutAdminAuth.isAdmin(request, session);
         boolean isAuthenticated = isAdmin;
 
         MediaType type = mediaType(typeSlug);
-        String folderKey = folder == null ? "" : folder.trim();
+        String folderKey = ArchiveFolderClassifier.canonicalComboFolder(folder == null ? "" : folder.trim());
         List<String> comboMembers = comboMembers(combo);
-        List<String> selectedMembers = isSoloFolder(folderKey) ? List.of() : normalizeMembers(members);
+        ChemistryPick chemistry = resolveChemistry(chem, ArchiveFolderClassifier.comboSize(folderKey));
+        if (chemistry != null) comboMembers = chemistry.members();
+        List<String> selectedMembers = isSoloFolder(folderKey) ? List.of()
+                : (chemistry != null ? chemistry.members() : normalizeMembers(members));
         LocalDate onDate = parseDate(on);
         LocalDate fromDate = onDate != null ? onDate : parseDate(from);
         LocalDate toDate = onDate != null ? onDate : parseDate(to);
@@ -209,10 +220,17 @@ public class ArchiveController {
         model.addAttribute("archiveFolderHome", false);
         model.addAttribute("archiveFolderView", !browse);
         model.addAttribute("showMemberFilter", browse || !isSoloFolder(folderKey));
+        model.addAttribute("showChemistryFilter", !browse && isComboFolder(folderKey));
+        List<Map<String, Object>> chemistryOptions = chemistryOptions(folderKey, chemistry);
+        model.addAttribute("chemistryOptions", chemistryOptions);
+        model.addAttribute("hasChemistryOptions", !chemistryOptions.isEmpty());
         model.addAttribute("folderKey", folderKey);
         model.addAttribute("comboValue", combo == null ? "" : combo.trim());
         model.addAttribute("hasCombo", combo != null && !combo.isBlank());
-        model.addAttribute("folderTitle", folderTitle(folderKey, comboMembers, units));
+        String chemKey = chemistry == null ? "" : chemistry.key();
+        model.addAttribute("chemKey", chemKey);
+        model.addAttribute("hasChemFilter", !chemKey.isBlank());
+        model.addAttribute("folderTitle", chemistry != null ? chemistry.label() : folderTitle(folderKey, comboMembers, units));
         model.addAttribute("folderAccent", folderAccent(folderKey, visibleUnits, artists));
         model.addAttribute("folderIsSolo", isSoloFolder(folderKey));
         String onText = onDate == null ? "" : onDate.toString();
@@ -230,10 +248,12 @@ public class ArchiveController {
         model.addAttribute("sourceQuery", sourceQuery);
         model.addAttribute("sourceKey", sourceSlug == null ? "" : sourceSlug.trim());
         model.addAttribute("hasSourceFilter", sourceSlug != null && !sourceSlug.isBlank());
+        String chemQuery = chemQuery(chemKey);
+        model.addAttribute("chemQuery", chemQuery);
         model.addAttribute("archiveSources", sourceOptions(source));
         addFilterSummary(model, q, selectedMembers, artists, fromText, toText, onText);
         addArchivePage(model, archives, type, q, memberQuery(selectedMembers), dateQuery, browse,
-                folderQuery(folderKey, combo), sourceQuery, sourceSlug);
+                folderQuery(folderKey, combo), sourceQuery, sourceSlug, chemQuery);
         return "archive/archive";
     }
 
@@ -422,7 +442,8 @@ public class ArchiveController {
     }
 
     private void addArchivePage(Model model, Page<Archive> archives, MediaType type, String q, String memberQuery,
-                                String dateQuery, boolean browse, String folderQuery, String sourceQuery, String sourceSlug) {
+                                String dateQuery, boolean browse, String folderQuery, String sourceQuery, String sourceSlug,
+                                String chemQuery) {
         int totalPages = Math.max(1, archives.getTotalPages());
         int current = archives.getNumber();
         String query = q == null ? "" : q.trim();
@@ -445,8 +466,9 @@ public class ArchiveController {
         String qQuery = query.isEmpty() ? "" : "&q=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
         String keptFolder = folderQuery == null ? "" : folderQuery;
         String keptSource = sourceQuery == null ? "" : sourceQuery;
+        String keptChem = chemQuery == null ? "" : chemQuery;
         String filterQuery = qQuery + (memberQuery == null ? "" : memberQuery) + (dateQuery == null ? "" : dateQuery)
-                + keptFolder + keptSource;
+                + keptFolder + keptSource + keptChem;
         String folderBase = browse ? "/archive/all" : "/archive";
         model.addAttribute("archiveHomePath", browse ? folderBase : joinHref("/archive", keptFolder + typeQuery));
         model.addAttribute("archiveFoldersPath", "/archive");
@@ -467,7 +489,7 @@ public class ArchiveController {
         model.addAttribute("videoTabHref", joinHref("/archive?type=video", filterQuery + pageQuery));
         model.addAttribute("browseQuery", joinHref("", filterQuery));
         model.addAttribute("sourceTabs", sourceTabs(folderBase, typeQuery + keptFolder
-                + qQuery + (memberQuery == null ? "" : memberQuery) + (dateQuery == null ? "" : dateQuery), sourceSlug));
+                + qQuery + (memberQuery == null ? "" : memberQuery) + (dateQuery == null ? "" : dateQuery) + keptChem, sourceSlug));
         List<Map<String, Object>> archivePages = new ArrayList<>();
         int start = Math.max(0, current - 2);
         int end = Math.min(totalPages - 1, start + 4);
@@ -519,6 +541,11 @@ public class ArchiveController {
     private static String sourceQuery(String sourceSlug) {
         if (sourceSlug == null || sourceSlug.isBlank()) return "";
         return "&source=" + URLEncoder.encode(sourceSlug.trim(), StandardCharsets.UTF_8);
+    }
+
+    private static String chemQuery(String chem) {
+        if (chem == null || chem.isBlank()) return "";
+        return "&chem=" + URLEncoder.encode(chem.trim(), StandardCharsets.UTF_8);
     }
 
     private static List<Map<String, Object>> sourceOptions(ArchiveSource selected) {
@@ -672,7 +699,7 @@ public class ArchiveController {
             String href = "/archive?folder=" + URLEncoder.encode(key, StandardCharsets.UTF_8);
             String color = unitColor(unit, artists);
             folders.add(folderCard(key, unit.getUnitName(), color, href, counts.getOrDefault(key, 0),
-                    firstNonBlank(previews.get(key), unit.getDisplayUnitImage()),
+                    firstNonBlank(previews.get(key), registeredUnitImage(unit)),
                     ArchiveFolderClassifier.Kind.UNIT, false));
         }
         String[] comboColors = { "#7dd3fc", "#a5b4fc", "#c4b5fd", "#86efac" };
@@ -721,6 +748,122 @@ public class ArchiveController {
     private static String firstNonBlank(String first, String second) {
         if (first != null && !first.isBlank()) return first;
         return second == null ? "" : second;
+    }
+
+    private static String registeredUnitImage(Unit unit) {
+        if (unit == null) return "";
+        String image = unit.getUnitImage();
+        if (image == null || image.isBlank()) return "";
+        String trimmed = image.trim();
+        if (trimmed.equals(ImageUrls.PLACEHOLDER) || trimmed.endsWith("image-upload-pending.png")) return "";
+        return unit.getDisplayUnitImage();
+    }
+
+    private record ChemistryPick(String key, String label, List<String> members) {}
+
+    private ChemistryPick resolveChemistry(String chem, Integer comboMin) {
+        if (chem == null || chem.isBlank()) return null;
+        String value = chem.trim();
+        if (value.regionMatches(true, 0, "pair-", 0, 5)) {
+            if (comboMin != null && comboMin != 2) return null;
+            Long id = parseId(value.substring(5));
+            if (id == null) return null;
+            for (ChemistryDto item : safeChemistries()) {
+                if (id.equals(item.getId())) {
+                    List<String> members = ArchiveFolderClassifier.membersOf(item.getMemberA() + "," + item.getMemberB());
+                    if (members.size() != 2) return null;
+                    String label = item.getLabel() == null || item.getLabel().isBlank()
+                            ? String.join(" × ", members) : item.getLabel().trim();
+                    return new ChemistryPick("pair-" + id, label, members);
+                }
+            }
+            return null;
+        }
+        if (value.regionMatches(true, 0, "group-", 0, 6)) {
+            Long id = parseId(value.substring(6));
+            if (id == null) return null;
+            for (ChemistryGroupDto item : safeChemistryGroups()) {
+                if (!id.equals(item.getId())) continue;
+                List<String> members = ArchiveFolderClassifier.membersOf(String.join(",",
+                        item.getMembers() == null ? List.of() : item.getMembers()));
+                if (!chemistryFitsFolder(members.size(), comboMin)) return null;
+                String label = item.getLabel() == null || item.getLabel().isBlank()
+                        ? String.join(" × ", members) : item.getLabel().trim();
+                return new ChemistryPick("group-" + id, label, members);
+            }
+        }
+        return null;
+    }
+
+    private List<Map<String, Object>> chemistryOptions(String folder, ChemistryPick selected) {
+        Integer min = ArchiveFolderClassifier.comboSize(folder);
+        if (min == null) return List.of();
+        List<Map<String, Object>> options = new ArrayList<>();
+        String selectedKey = selected == null ? "" : selected.key();
+        if (min == 2) {
+            for (ChemistryDto item : safeChemistries()) {
+                if (item.getId() == null) continue;
+                List<String> members = ArchiveFolderClassifier.membersOf(item.getMemberA() + "," + item.getMemberB());
+                if (members.size() != 2) continue;
+                String key = "pair-" + item.getId();
+                String label = item.getLabel() == null || item.getLabel().isBlank()
+                        ? String.join(" × ", members) : item.getLabel().trim();
+                options.add(chemistryOption(key, label + " · " + String.join(" × ", members), key.equals(selectedKey)));
+            }
+            return options;
+        }
+        for (ChemistryGroupDto item : safeChemistryGroups()) {
+            if (item.getId() == null) continue;
+            List<String> members = ArchiveFolderClassifier.membersOf(String.join(",",
+                    item.getMembers() == null ? List.of() : item.getMembers()));
+            if (!chemistryFitsFolder(members.size(), min)) continue;
+            String key = "group-" + item.getId();
+            String label = item.getLabel() == null || item.getLabel().isBlank()
+                    ? String.join(" × ", members) : item.getLabel().trim();
+            options.add(chemistryOption(key, label + " · " + String.join(" × ", members), key.equals(selectedKey)));
+        }
+        return options;
+    }
+
+    private static boolean chemistryFitsFolder(int memberCount, Integer comboMin) {
+        if (comboMin == null || memberCount < 2) return false;
+        if (comboMin <= 4) return memberCount == comboMin;
+        return memberCount >= comboMin;
+    }
+
+    private static Map<String, Object> chemistryOption(String value, String label, boolean selected) {
+        Map<String, Object> option = new LinkedHashMap<>();
+        option.put("value", value);
+        option.put("label", label);
+        option.put("selected", selected);
+        return option;
+    }
+
+    private List<ChemistryDto> safeChemistries() {
+        try {
+            List<ChemistryDto> items = chemistryService.findAll();
+            return items == null ? List.of() : items;
+        } catch (RuntimeException ignored) {
+            return List.of();
+        }
+    }
+
+    private List<ChemistryGroupDto> safeChemistryGroups() {
+        try {
+            List<ChemistryGroupDto> items = chemistryGroupService.findAll();
+            return items == null ? List.of() : items;
+        } catch (RuntimeException ignored) {
+            return List.of();
+        }
+    }
+
+    private static Long parseId(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            return Long.parseLong(raw.trim());
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 
     private Map<String, Object> folderCard(String key, String label, String color, String href,

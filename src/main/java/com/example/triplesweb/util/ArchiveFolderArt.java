@@ -51,6 +51,7 @@ public class ArchiveFolderArt {
                     names.add(size + "인");
                     names.add(size + "명");
                     names.add(String.valueOf(size));
+                    if (size == 5) names.addAll(List.of("6명 이상", "6인", "6명", "6"));
                 }
                 names.add("combo");
             }

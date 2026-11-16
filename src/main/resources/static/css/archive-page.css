@@ -152,9 +152,11 @@ body.site-page > main.archive-page {
 .ar-folder:hover { color: var(--folder-color); }
 .ar-folder-icon {
     position: relative;
+    isolation: isolate;
+    overflow: hidden;
     width: 5.6rem;
     height: 4.5rem;
-    filter: drop-shadow(0 8px 12px color-mix(in srgb, var(--folder-color) 28%, transparent));
+    filter: drop-shadow(0 3px 5px color-mix(in srgb, var(--folder-color) 22%, transparent));
     transition: filter 0.25s ease;
 }
 .ar-folder-icon::after {
@@ -171,7 +173,7 @@ body.site-page > main.archive-page {
         rgba(255, 255, 255, 0.08) 56%,
         transparent 62%
     );
-    transform: translateX(-130%);
+    transform: translateX(-100%);
     opacity: 0;
     mix-blend-mode: screen;
     -webkit-mask: url("/images/archive-folder.svg") center / contain no-repeat;
@@ -179,12 +181,12 @@ body.site-page > main.archive-page {
     transition: opacity 0.2s ease;
 }
 .ar-folder:hover .ar-folder-icon {
-    filter: drop-shadow(0 10px 16px color-mix(in srgb, var(--folder-color) 42%, transparent)) brightness(1.08);
+    filter: drop-shadow(0 3px 5px color-mix(in srgb, var(--folder-color) 22%, transparent));
 }
 .ar-folder:hover .ar-folder-icon::after {
-    opacity: 1;
-    transform: translateX(130%);
-    transition: transform 0.7s ease, opacity 0.2s ease;
+    opacity: 0.72;
+    transform: translateX(100%);
+    transition: transform 0.55s ease, opacity 0.2s ease;
 }
 .ar-folder:hover .ar-folder-art,
 .ar-folder:hover .ar-folder-preview {
@@ -199,10 +201,17 @@ body.site-page > main.archive-page {
     mask: url("/images/archive-folder.svg") center / contain no-repeat;
 }
 .ar-folder-art {
+    position: absolute;
+    inset: 0;
     display: block;
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    max-width: none;
+    max-height: none;
+    object-fit: cover;
+    object-position: center;
+    -webkit-mask: url("/images/archive-folder.svg") center / contain no-repeat;
+    mask: url("/images/archive-folder.svg") center / contain no-repeat;
 }
 .ar-folder-preview {
     position: absolute;
@@ -357,7 +366,16 @@ body.site-page > main.archive-page {
     gap: 0.5rem;
     margin-left: 0;
 }
-.ar-sort { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; }
+.ar-sort,
+.ar-chem { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; }
+.ar-chem-control { min-width: 16.5rem; max-width: 28rem; }
+.ar-chem .ar-sort-trigger,
+.ar-chem .ar-sort-option {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ar-chem .ar-sort-menu { min-width: max(100%, 20rem); }
 .ar-sort-label {
     flex: 0 0 auto;
     color: #8b93a7;

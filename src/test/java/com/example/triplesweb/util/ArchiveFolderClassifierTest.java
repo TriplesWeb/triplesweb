@@ -43,6 +43,8 @@ class ArchiveFolderClassifierTest {
         assertThat(ArchiveFolderClassifier.matches(seoyeonHyein, "combo-2", List.of())).isTrue();
         assertThat(ArchiveFolderClassifier.matches(chaeyeonYuyeon, "combo-2", List.of())).isTrue();
         assertThat(ArchiveFolderClassifier.matches(seoyeonHyein, "combo", List.of("정혜린", "윤서연"))).isTrue();
+        assertThat(ArchiveFolderClassifier.matches(seoyeonHyein, "combo-2", List.of("윤서연", "정혜린"))).isTrue();
+        assertThat(ArchiveFolderClassifier.matches(chaeyeonYuyeon, "combo-2", List.of("윤서연", "정혜린"))).isFalse();
         assertThat(ArchiveFolderClassifier.matches(seoyeonHyein, "combo-3", List.of())).isFalse();
         assertThat(ArchiveFolderClassifier.comboSize("combo-2")).isEqualTo(2);
         assertThat(ArchiveFolderClassifier.comboSize("combo")).isNull();
@@ -52,21 +54,25 @@ class ArchiveFolderClassifierTest {
         var six = ArchiveFolderClassifier.classify(
                 "윤서연,정혜린,이지우,김채연,김유연,김수민", List.of(aaa()));
         assertThat(six.kind()).isEqualTo(ArchiveFolderClassifier.Kind.COMBO);
-        assertThat(six.key()).isEqualTo("combo-6");
+        assertThat(six.key()).isEqualTo("combo-5");
         assertThat(ArchiveFolderClassifier.matches(six, "combo-2", List.of())).isTrue();
         assertThat(ArchiveFolderClassifier.matches(six, "combo-3", List.of())).isTrue();
         assertThat(ArchiveFolderClassifier.matches(six, "combo-4", List.of())).isTrue();
+        assertThat(ArchiveFolderClassifier.matches(six, "combo-5", List.of())).isTrue();
         assertThat(ArchiveFolderClassifier.matches(six, "combo-6", List.of())).isTrue();
         var nine = ArchiveFolderClassifier.classify(
                 "윤서연,정혜린,이지우,김채연,김유연,김수민,김나경,공유빈,카에데", List.of(aaa()));
         assertThat(nine.kind()).isEqualTo(ArchiveFolderClassifier.Kind.COMBO);
-        assertThat(ArchiveFolderClassifier.matches(nine, "combo-6", List.of())).isTrue();
+        assertThat(ArchiveFolderClassifier.matches(nine, "combo-5", List.of())).isTrue();
         var trio = ArchiveFolderClassifier.classify("윤서연,정혜린,이지우", List.of());
         assertThat(trio.key()).isEqualTo("combo-3");
         assertThat(ArchiveFolderClassifier.matches(trio, "combo-2", List.of())).isTrue();
         assertThat(ArchiveFolderClassifier.matches(trio, "combo-4", List.of())).isFalse();
         assertThat(ArchiveFolderClassifier.comboLabel(2)).isEqualTo("2명 케미");
-        assertThat(ArchiveFolderClassifier.comboLabel(4)).isEqualTo("4명 이상");
+        assertThat(ArchiveFolderClassifier.comboLabel(3)).isEqualTo("3명 케미");
+        assertThat(ArchiveFolderClassifier.comboLabel(4)).isEqualTo("4명 케미");
+        assertThat(ArchiveFolderClassifier.comboLabel(5)).isEqualTo("5명 이상");
+        assertThat(ArchiveFolderClassifier.canonicalComboFolder("combo-6")).isEqualTo("combo-5");
     }
 
     @Test void soloFolderIsOnlyThatOneMember() {
