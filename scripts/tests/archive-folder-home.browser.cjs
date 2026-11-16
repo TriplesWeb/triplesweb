@@ -227,6 +227,10 @@ ${siteUi}
       const trigger = document.querySelector('.ar-chem .ar-sort-trigger');
       return {
         title: document.querySelector('.ar-folder-title')?.textContent.trim() || '',
+        kickerLeft: Math.round(document.querySelector('.ar-kicker').getBoundingClientRect().left),
+        copyLeft: Math.round(document.querySelector('.ar-headline-copy').getBoundingClientRect().left),
+        h1Size: parseFloat(getComputedStyle(document.querySelector('.ar-headline h1')).fontSize),
+        titleSize: parseFloat(getComputedStyle(document.querySelector('.ar-folder-title')).fontSize),
         values: [...(select?.options || [])].map((option) => option.value),
         labels: [...(select?.options || [])].map((option) => option.textContent.trim()),
         selected: select?.value || '',
@@ -234,6 +238,10 @@ ${siteUi}
       };
     });
     assert.equal(combo.title, '시선강탈');
+    assert.ok(Math.abs(combo.kickerLeft - combo.copyLeft) <= 4, 'ARCHIVE 제목이 왼쪽에 있지 않다: ' + JSON.stringify(combo));
+    assert.ok(combo.h1Size >= 24, '아카이브 제목이 예전 크기가 아니다: ' + combo.h1Size);
+    assert.ok(combo.titleSize < combo.h1Size, '폴더 이름이 아카이브 제목보다 크다: ' + JSON.stringify(combo));
+    await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-folder-title-left.png') });
     assert.deepEqual(combo.values, ['', 'pair-3', 'pair-4']);
     assert.ok(combo.labels[1].includes('시선강탈'));
     assert.equal(combo.selected, 'pair-3');

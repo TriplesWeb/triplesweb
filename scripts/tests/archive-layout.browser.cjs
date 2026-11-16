@@ -59,8 +59,12 @@ ${siteUi}
         <div class="ar-date-filter" data-date-filter>
           <button type="button" class="ar-date-toggle" data-date-toggle aria-expanded="false"><span>사진 날짜</span></button>
           <div class="ar-date-popover" data-date-popover hidden>
-            <label>사진 날짜 시작<input type="date" name="from" data-date-from></label>
-            <label>사진 날짜 끝<input type="date" name="to" data-date-to></label>
+            <label>사진 날짜 시작<input type="date" name="from" data-date-from lang="ko"></label>
+            <label>사진 날짜 끝<input type="date" name="to" data-date-to lang="ko"></label>
+            <div class="ar-date-actions">
+              <button type="button" class="site-btn site-btn--reset site-btn--sm" data-date-clear>초기화</button>
+              <button type="submit" class="ar-submit">적용</button>
+            </div>
           </div>
         </div>
         <button type="button" class="ar-member-toggle">멤버 선택</button>
@@ -278,6 +282,8 @@ ${siteUi}
         goFont: getComputedStyle(go).fontSize,
         resetColor: resetStyle.color,
         resetAlign: Math.abs(resetBox.top - goBox.top) <= 4,
+        resetHeight: Math.round(resetBox.height),
+        goHeight: Math.round(goBox.height),
         sortEnhanced: Boolean(trigger && option),
         sortLabels: [...document.querySelectorAll('.ar-sort-option')].map((el) => el.dataset.value),
         sortMatch: Boolean(triggerStyle && optionStyle
@@ -304,6 +310,7 @@ ${siteUi}
     assert.match(toolbar.resetClass, /site-btn--reset/, '초기화가 회색 유리 버튼이 아니다: ' + toolbar.resetClass);
     assert.ok(toolbar.resetColor.includes('255') || toolbar.resetColor.includes('#fff'), '초기화 글자가 흰색이 아니다: ' + toolbar.resetColor);
     assert.equal(toolbar.resetAlign, true, '초기화가 검색 버튼과 세로로 안 맞는다');
+    assert.ok(Math.abs(toolbar.resetHeight - toolbar.goHeight) <= 2, '초기화 크기가 검색 버튼과 다르다: ' + JSON.stringify({ reset: toolbar.resetHeight, go: toolbar.goHeight }));
     assert.equal(toolbar.sortEnhanced, true, '정렬 드롭다운이 같은 스타일로 열리지 않는다');
     assert.equal(toolbar.sortMatch, true, '정렬 항목 스타일이 닫힌 버튼과 다르다');
 
@@ -319,22 +326,31 @@ ${siteUi}
     await page.click('[data-date-toggle]');
     const ymd = await page.evaluate(() => {
       const pop = document.querySelector('[data-date-popover]');
-      const group = pop?.querySelector('[data-ymd]');
-      const labels = [...(group?.querySelectorAll('select') || [])].map((el) => el.getAttribute('aria-label'));
-      const boxes = [...(group?.querySelectorAll('select') || [])].map((el) => el.getBoundingClientRect().left);
+      const dates = [...(pop?.querySelectorAll('input[type="date"]') || [])];
+      const cals = [...(pop?.querySelectorAll('.ar-cal') || [])];
       return {
-        labels,
-        ordered: boxes.length === 3 && boxes[0] < boxes[1] && boxes[1] < boxes[2],
+        dateCount: dates.length,
+        calCount: cals.length,
+        selects: pop?.querySelectorAll('select').length || 0,
+        names: dates.map((el) => el.name),
+        visible: dates.every((el) => el.getBoundingClientRect().width > 40),
+        indicator: dates.every((el) => getComputedStyle(el, '::-webkit-calendar-picker-indicator').display !== 'none'),
         exact: Boolean(pop?.querySelector('[data-date-exact]')),
         hint: pop?.querySelector('.ar-field-hint')?.textContent || '',
         more: Boolean(document.querySelector('.ar-more-link'))
       };
     });
-    assert.deepEqual(ymd.labels, ['연도', '월', '일'], '날짜 항목이 연-월-일 순이 아니다: ' + JSON.stringify(ymd.labels));
-    assert.equal(ymd.ordered, true, '날짜 선택 칸이 연-월-일 순으로 놓이지 않는다');
+    assert.equal(ymd.dateCount, 2, '시작/끝 날짜 칸이 없다: ' + JSON.stringify(ymd));
+    assert.equal(ymd.calCount, 2, '달력 스타일 날짜 칸이 없다: ' + JSON.stringify(ymd));
+    assert.equal(ymd.selects, 0, '연-월-일 셀렉트가 남아 있다');
+    assert.deepEqual(ymd.names, ['from', 'to']);
+    assert.equal(ymd.visible, true, '날짜 달력이 숨겨져 있다');
     assert.equal(ymd.exact, false, '이 사진 날짜 칸이 남아 있다');
     assert.equal(ymd.hint, '', '날짜 힌트가 남아 있다');
     assert.equal(ymd.more, false, '더보기 버튼이 남아 있다');
+    const dateShotDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
+    fs.mkdirSync(dateShotDir, { recursive: true });
+    await page.locator('[data-date-popover]').screenshot({ path: path.join(dateShotDir, 'archive-date-calendar.png') });
 
     const pager = await page.evaluate(() => {
       const jump = document.querySelector('.ar-page-jump');
@@ -381,6 +397,7 @@ ${siteUi}
 
     const artifactDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
     fs.mkdirSync(artifactDir, { recursive: true });
+    await page.locator('.ar-filter-tools').screenshot({ path: path.join(artifactDir, 'archive-reset-search-size.png') });
     await page.screenshot({ path: path.join(artifactDir, 'archive-layout-stats-members.png'), fullPage: true });
     console.log('PASS: 아카이브 통계 접기·검색 버튼·매슨리 그리드');
   } finally {
