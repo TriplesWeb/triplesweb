@@ -200,8 +200,7 @@ body {
     margin-right: 4px;
 }
 
-#top-header a[aria-label="tripleS 홈"] .sss-mascot-wave,
-#top-header a[aria-label="tripleS 홈"] .sss-mascot-trail {
+#top-header a[aria-label="tripleS 홈"] .sss-mascot-wave {
     display: block;
     height: 28px !important;
     max-height: 28px !important;
@@ -550,10 +549,7 @@ textarea.form-control {
 .objekt-picker-reset,
 .collection-reset,
 .ar-reset,
-.ar-delete,
-.ar-back-folders,
-.site-back a,
-a.site-back-link {
+.ar-delete {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -618,10 +614,7 @@ a.site-back-link {
 .ar-reset,
 .objekt-reset-button,
 .objekt-picker-reset,
-.collection-reset,
-.ar-back-folders,
-.site-back a,
-a.site-back-link {
+.collection-reset {
     background: linear-gradient(180deg, rgba(226, 232, 240, 0.22), rgba(148, 163, 184, 0.1));
     border: 1px solid rgba(226, 232, 240, 0.28);
     color: #ffffff;
@@ -633,12 +626,7 @@ a.site-back-link {
 .ar-reset:hover,
 .objekt-reset-button:hover,
 .objekt-picker-reset:hover,
-.collection-reset:hover,
-.ar-back-folders:hover,
-.site-back a:hover,
-.site-back a:focus-visible,
-a.site-back-link:hover,
-a.site-back-link:focus-visible {
+.collection-reset:hover {
     background: linear-gradient(180deg, rgba(226, 232, 240, 0.32), rgba(148, 163, 184, 0.16));
     border-color: rgba(226, 232, 240, 0.45);
     color: #ffffff;

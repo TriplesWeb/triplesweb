@@ -12,6 +12,6 @@ daisyUI 5 `triplesdark` 기준. `input-bordered` / `select-bordered` 없음 — 
 | Select | `select` / `select w-full` |
 | Textarea | `textarea w-full` |
 | 검색 partial | `{{>partials/ui/search-field}}` |
-| 뒤로가기 | `{{>partials/ui/back-link}}` (`backHref`, `backLabel`, 선택 `backAriaLabel` / `backBar`) |
+| 뒤로가기 | `{{>partials/ui/back-link}}` 또는 `.site-back` / `a.site-back-link` — 뮤트 텍스트 + hover 틸 (글래스 필 금지) (`backHref`, `backLabel`, 선택 `backAriaLabel` / `backBar`) |
 
 금지: `site-field`, `site-search*`, `btn-custom-*`, `site-modal` 마크업, daisyUI `tab`/`tab-content`.

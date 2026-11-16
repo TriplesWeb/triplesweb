@@ -91,7 +91,7 @@ ${siteUi}
 <main class="archive-page is-folder-home is-folder-index" data-archive-kind="image">
   <section class="ar-hero">
     <div class="ar-panel ar-headline is-member-space" style="--folder-color:#a78bfa">
-      <a class="site-btn site-btn--reset ar-back-folders" href="/archive">←목록으로</a>
+      <a class="site-back-link ar-back-folders" href="/archive">← 목록으로</a>
       <div class="ar-headline-copy">
         <div class="ar-kicker">Archive</div>
         <h1>아카이브</h1>
@@ -119,7 +119,7 @@ ${siteUi}
 <main class="archive-page is-folder-home is-folder-index" data-archive-kind="image">
   <section class="ar-hero">
     <div class="ar-panel ar-headline is-member-space" style="--folder-color:#7dd3fc">
-      <a class="site-btn site-btn--reset ar-back-folders" href="/archive">←목록으로</a>
+      <a class="site-back-link ar-back-folders" href="/archive">← 목록으로</a>
       <div class="ar-headline-copy">
         <div class="ar-kicker">Archive</div>
         <h1>아카이브</h1>
@@ -150,7 +150,7 @@ ${siteUi}
 <main class="archive-page is-folder-view" data-archive-kind="image">
   <section class="ar-hero">
     <div class="ar-panel ar-headline is-member-space" style="--folder-color:#7dd3fc">
-      <a class="site-btn site-btn--reset ar-back-folders" href="/archive">←목록으로</a>
+      <a class="site-back-link ar-back-folders" href="/archive">← 목록으로</a>
       <div class="ar-headline-copy">
         <div class="ar-kicker">Archive</div>
         <h1>아카이브</h1>
@@ -224,7 +224,7 @@ ${siteUi}
 <main class="archive-page is-folder-view" data-archive-kind="image">
   <section class="ar-hero">
     <div class="ar-panel ar-headline is-member-space" style="--folder-color:#22aeff">
-      <a class="site-btn site-btn--reset ar-back-folders" href="/archive">←목록으로</a>
+      <a class="site-back-link ar-back-folders" href="/archive">← 목록으로</a>
       <div class="ar-headline-copy">
         <div class="ar-kicker">Archive</div>
         <h1>아카이브</h1>
