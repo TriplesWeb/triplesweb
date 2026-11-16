@@ -137,6 +137,8 @@
   }
 
   function isValidDateRange(startIso, endIso) {
+    // 둘 다 비었거나, 시작만 있으면(종료 생략 = 당일) 유효하다.
+    if (!startIso && !endIso) return true;
     if (!startIso) return false;
     if (!endIso) return true;
     return endIso >= startIso;
@@ -147,7 +149,11 @@
     normalizeDateInputYear(startEl);
     normalizeDateInputYear(endEl);
     const start = startEl?.value || "";
-    const end = endEl?.value || "";
+    let end = endEl?.value || "";
+    // 종료일이 비어 있으면 시작일 당일 하루로 본다(표시·검증용).
+    if (start && !end && endEl) {
+      end = start;
+    }
     if (endEl) {
       if (start) endEl.min = start;
       else endEl.removeAttribute("min");
@@ -156,14 +162,19 @@
     if (startEl) {
       startEl.classList.toggle("is-invalid", Boolean(end && start && end < start));
     }
-    return isValidDateRange(start, end);
+    return isValidDateRange(start, endEl?.value || "");
   }
 
   function syncAllShopDateRanges() {
-    let ok = syncDateRangePair(
-      document.getElementById("shopEditSalesStart"),
-      document.getElementById("shopEditSalesEnd")
-    );
+    let ok = true;
+    const globalSales = document.getElementById("shopEditGlobalSales");
+    // 공연 연결 시 전역 판매기간은 숨기므로 검증에서 제외한다.
+    if (!globalSales || !globalSales.hidden) {
+      ok = syncDateRangePair(
+        document.getElementById("shopEditSalesStart"),
+        document.getElementById("shopEditSalesEnd")
+      );
+    }
     document.querySelectorAll("#shopEditMdBuilder [data-md-region]").forEach((regionEl) => {
       const startEl = regionEl.querySelector("[data-md-sales-start]");
       const endEl = regionEl.querySelector("[data-md-sales-end]");
