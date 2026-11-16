@@ -4,8 +4,10 @@
     </button>
     <div class="ar-body">
         <h3>{{title}}</h3>
-        <div class="ar-meta" style="--member-count: {{memberCount}}" title="{{memberNames}}">{{>partials/archive-member-badges}}</div>
+        <div class="ar-meta" style="--member-count: {{memberCount}}" title="{{memberNames}}">
+            {{>partials/archive-member-badges}}
+            {{#hasRegisteredOn}}<time class="ar-card-date" datetime="{{registeredOn}}">{{registeredOnDisplay}}</time>{{/hasRegisteredOn}}
+        </div>
         <div class="ar-card-members" hidden>{{>partials/archive-album-members}}</div>
-        {{#hasRegisteredOn}}<time class="ar-card-date" datetime="{{registeredOn}}">{{registeredOn}}</time>{{/hasRegisteredOn}}
     </div>
 </article>

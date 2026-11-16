@@ -23,8 +23,10 @@
             date.textContent = card.dataset.registered ? label + ' ' + card.dataset.registered : '';
         }
         if (source) {
-            source.hidden = !card.dataset.sourceLabel;
-            source.textContent = card.dataset.sourceLabel ? '출처 ' + card.dataset.sourceLabel : '';
+            const label = card.dataset.sourceLabel || '기타/팬메이드';
+            source.hidden = false;
+            source.dataset.source = (card.dataset.source || '').toLowerCase();
+            source.textContent = label;
         }
         if (members) {
             const chips = card.querySelector('.ar-card-members');

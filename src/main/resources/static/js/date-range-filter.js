@@ -87,7 +87,45 @@
     input.closest("label")?.classList.add("is-ymd");
     read();
   };
-  window.bindArchiveDateFields = () => {};
+  const formatCal = (iso) => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
+    if (!match) return "yyyy/mm/dd";
+    return match[1] + "/" + match[2] + "/" + match[3];
+  };
+  const bindCalendarField = (input) => {
+    if (!input) return;
+    if (input.dataset.calReady) {
+      input.dispatchEvent(new Event("input"));
+      return;
+    }
+    input.dataset.calReady = "true";
+    input.classList.add("ar-cal-native");
+    input.setAttribute("lang", "ko");
+    const wrap = document.createElement("span");
+    wrap.className = "ar-cal is-empty";
+    input.before(wrap);
+    wrap.append(input);
+    const text = document.createElement("span");
+    text.className = "ar-cal-text";
+    text.setAttribute("aria-hidden", "true");
+    wrap.append(text);
+    const sync = () => {
+      text.textContent = formatCal(input.value);
+      wrap.classList.toggle("is-empty", !input.value);
+    };
+    input.addEventListener("input", sync);
+    input.addEventListener("change", sync);
+    wrap.addEventListener("click", (event) => {
+      if (event.target === input) return;
+      if (typeof input.showPicker === "function") input.showPicker();
+      else input.focus();
+    });
+    sync();
+  };
+  window.bindArchiveDateFields = (root) => {
+    (root || document).querySelectorAll('input[type="date"][name="registeredOn"]').forEach(bindCalendarField);
+  };
+  window.bindArchiveDateFields(document);
 
   document.querySelectorAll("[data-date-filter]").forEach((root) => {
     const toggle = root.querySelector("[data-date-toggle]");

@@ -251,7 +251,8 @@ public class ArchiveController {
         String chemQuery = chemQuery(chemKey);
         model.addAttribute("chemQuery", chemQuery);
         model.addAttribute("archiveSources", sourceOptions(source));
-        addFilterSummary(model, q, selectedMembers, artists, fromText, toText, onText);
+        addFilterSummary(model, q, selectedMembers, artists, fromText, toText, onText,
+                type, sourceSlug, chemistry == null ? "" : chemistry.label());
         addArchivePage(model, archives, type, q, memberQuery(selectedMembers), dateQuery, browse,
                 folderQuery(folderKey, combo), sourceQuery, sourceSlug, chemQuery);
         return "archive/archive";
@@ -371,6 +372,7 @@ public class ArchiveController {
             if (extra > 0) card.put("otherMemberNames", String.join(", ", memberNames.subList(1, memberNames.size())));
             String registered = archive.getRegisteredOn() == null ? "" : archive.getRegisteredOn().toString();
             card.put("registeredOn", registered);
+            card.put("registeredOnDisplay", registered.replace('-', '/'));
             card.put("hasRegisteredOn", !registered.isBlank());
             ArchiveSource source = archive.getSource();
             card.put("sourceValue", source == null ? "" : source.name());
@@ -382,11 +384,30 @@ public class ArchiveController {
     }
 
     private void addFilterSummary(Model model, String q, List<String> selectedMembers, List<Artist> artists,
-                                  String fromText, String toText, String onText) {
+                                  String fromText, String toText, String onText, MediaType type, String sourceSlug,
+                                  String chemistryLabel) {
         List<Map<String, Object>> parts = new ArrayList<>();
         int groups = 0;
+        groups++;
+        appendFilterText(parts, type == MediaType.VIDEO ? "영상" : "사진");
+        groups++;
+        appendFilterText(parts, sourceSummary(sourceSlug));
+        if (onText != null && !onText.isBlank()) {
+            groups++;
+            appendFilterText(parts, onText.replace('-', '/'));
+        } else if ((fromText != null && !fromText.isBlank()) || (toText != null && !toText.isBlank())) {
+            groups++;
+            String start = fromText == null || fromText.isBlank() ? "처음" : fromText.replace('-', '/');
+            String end = toText == null || toText.isBlank() ? "최근" : toText.replace('-', '/');
+            appendFilterText(parts, start + " ~ " + end);
+        }
+        if (chemistryLabel != null && !chemistryLabel.isBlank()) {
+            groups++;
+            appendFilterText(parts, chemistryLabel.trim());
+        }
         if (!selectedMembers.isEmpty()) {
             groups++;
+            if (!parts.isEmpty()) parts.add(Map.of("isSep", true));
             Map<String, Object> first = memberFilterPart(selectedMembers.get(0), artists);
             first.put("isMember", true);
             parts.add(first);
@@ -400,23 +421,28 @@ public class ArchiveController {
         String query = q == null ? "" : q.trim();
         if (!query.isEmpty()) {
             groups++;
-            if (!parts.isEmpty()) parts.add(Map.of("isSep", true));
-            parts.add(Map.of("isText", true, "text", query));
+            appendFilterText(parts, query);
         }
-        if (onText != null && !onText.isBlank()) {
-            groups++;
-            if (!parts.isEmpty()) parts.add(Map.of("isSep", true));
-            parts.add(Map.of("isText", true, "text", onText));
-        } else if ((fromText != null && !fromText.isBlank()) || (toText != null && !toText.isBlank())) {
-            groups++;
-            if (!parts.isEmpty()) parts.add(Map.of("isSep", true));
-            String start = fromText == null || fromText.isBlank() ? "처음" : fromText;
-            String end = toText == null || toText.isBlank() ? "최근" : toText;
-            parts.add(Map.of("isText", true, "text", start + " ~ " + end));
-        }
-        model.addAttribute("hasFilters", groups > 0);
+        model.addAttribute("hasFilters", !parts.isEmpty());
         model.addAttribute("filterParts", parts);
         model.addAttribute("filterCount", Math.max(1, groups));
+    }
+
+    private static void appendFilterText(List<Map<String, Object>> parts, String text) {
+        if (text == null || text.isBlank()) return;
+        if (!parts.isEmpty()) parts.add(Map.of("isSep", true));
+        parts.add(Map.of("isText", true, "text", text));
+    }
+
+    private static String sourceSummary(String sourceSlug) {
+        if (sourceSlug == null || sourceSlug.isBlank()) return "전체 출처";
+        if (isFanmadeSource(sourceSlug)) return "기타/팬메이드";
+        try {
+            ArchiveSource source = ArchiveSource.parse(sourceSlug);
+            return source == ArchiveSource.FANCAM ? "기타/팬메이드" : source.getLabel();
+        } catch (IllegalArgumentException ignored) {
+            return "전체 출처";
+        }
     }
 
     private static Map<String, Object> memberFilterPart(String name, List<Artist> artists) {

@@ -67,9 +67,11 @@
             </a>
             <div class="ar-body">
                 <h3>{{title}}</h3>
-                <div class="ar-meta" style="--member-count: {{memberCount}}">{{>partials/archive-member-badges}}</div>
+                <div class="ar-meta" style="--member-count: {{memberCount}}">
+                    {{>partials/archive-member-badges}}
+                    {{#hasRegisteredOn}}<time class="ar-card-date" datetime="{{registeredOn}}">{{registeredOnDisplay}}</time>{{/hasRegisteredOn}}
+                </div>
                 <div class="ar-card-members" hidden>{{>partials/archive-album-members}}</div>
-                {{#hasRegisteredOn}}<time class="ar-card-date" datetime="{{registeredOn}}">{{registeredOn}}</time>{{/hasRegisteredOn}}
                 <div class="ar-actions" data-admin-only>
                     <button type="button" class="site-btn site-btn--primary site-btn--sm" data-archive-edit data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-url="{{file.url}}" data-thumbnail-url="{{thumbnailUrl}}" data-registered="{{registeredOn}}" data-source="{{sourceValue}}">수정하기</button>
                     <button type="button" class="site-btn site-btn--danger site-btn--sm ar-delete" data-archive-delete data-id="{{id}}" data-title="{{title}}">삭제하기</button>
@@ -328,7 +330,7 @@
             </div>
             <div class="ar-detail-body">
                 <p class="ar-detail-date" id="archiveVideoDate" hidden></p>
-                <p class="ar-detail-source" id="archiveVideoSource" hidden></p>
+                <div class="ar-source-badge" id="archiveVideoSource" hidden></div>
                 <section class="ar-detail-cast" aria-label="출연 멤버">
                     <div class="ar-detail-members" id="archiveVideoMembers"></div>
                 </section>

@@ -346,6 +346,44 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain(">미분류<");
         org.assertj.core.api.Assertions.assertThat(html).contains("수정하기");
         org.assertj.core.api.Assertions.assertThat(html).contains("삭제하기");
+        org.assertj.core.api.Assertions.assertThat(html).contains("전체 출처");
+        org.assertj.core.api.Assertions.assertThat(html).contains("class=\"ar-source-badge\"");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-source-field");
+        org.assertj.core.api.Assertions.assertThat(html).contains("lang=\"ko\"");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("출처 미분류");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("is-violet");
+    }
+
+    @Test void folderSearchStatFollowsTypeSourceAndDate() throws Exception {
+        when(artistRepository.findAll()).thenReturn(List.of());
+        stubFolder(MediaType.IMAGE);
+        String html = mvc.perform(get("/archive").param("folder", "s")
+                        .param("source", "cosmo_room").param("on", "2026-11-16"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        int start = html.indexOf("ar-filter-summary");
+        int end = html.indexOf("</div>", start);
+        String summary = html.substring(start, end);
+        org.assertj.core.api.Assertions.assertThat(summary).contains(">사진<");
+        org.assertj.core.api.Assertions.assertThat(summary).contains("코스모룸");
+        org.assertj.core.api.Assertions.assertThat(summary).contains("2026/11/16");
+        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain(">전체<");
+    }
+
+    @Test void photoCardShowsDateBesideMembers() throws Exception {
+        Archive shot = photo();
+        shot.setRegisteredOn(java.time.LocalDate.of(2026, 11, 16));
+        shot.setSource(ArchiveSource.COSMO_ROOM);
+        when(artistRepository.findAll()).thenReturn(List.of());
+        stubFolder(MediaType.IMAGE, shot);
+        String html = mvc.perform(get("/archive").param("folder", "s")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        int meta = html.indexOf("class=\"ar-meta\"");
+        int members = html.indexOf("ar-card-members");
+        String row = html.substring(meta, members);
+        org.assertj.core.api.Assertions.assertThat(row).contains("ar-card-date");
+        org.assertj.core.api.Assertions.assertThat(row).contains("2026/11/16");
+        org.assertj.core.api.Assertions.assertThat(html).contains("data-source-label=\"코스모룸\"");
     }
 
     @Test void guestImageArchiveHidesEditAndDelete() throws Exception {
@@ -499,8 +537,9 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).contains("--member-color: #22aeff");
         org.assertj.core.api.Assertions.assertThat(html).contains("외 1명");
         org.assertj.core.api.Assertions.assertThat(html).contains("심장");
-        org.assertj.core.api.Assertions.assertThat(html).contains("2026-01-01 ~ 2026-12-31");
-        org.assertj.core.api.Assertions.assertThat(html).contains("--filter-count: 3");
+        org.assertj.core.api.Assertions.assertThat(html).contains("2026/01/01 ~ 2026/12/31");
+        org.assertj.core.api.Assertions.assertThat(html).contains("전체 출처");
+        org.assertj.core.api.Assertions.assertThat(html).contains("--filter-count: 5");
         org.assertj.core.api.Assertions.assertThat(html).contains("사진 날짜 시작");
     }
 
