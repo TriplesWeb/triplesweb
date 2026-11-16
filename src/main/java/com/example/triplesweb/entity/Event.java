@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -92,7 +91,7 @@ public class Event {
             String key = entry.getKey();
             groups.add(new RegionGroup(
                     key,
-                    slugRegionKey(key),
+                    "r" + index + "-" + slugRegionKey(key),
                     entry.getValue().get(0).getRegionLabel(),
                     List.copyOf(entry.getValue()),
                     index == 0,
@@ -104,10 +103,19 @@ public class Event {
 
     static String slugRegionKey(String key) {
         if (key == null || key.isBlank()) return "etc";
-        String slug = key.toLowerCase(Locale.ROOT)
-                .replaceAll("[^a-z0-9가-힣]+", "-")
-                .replaceAll("(^-)|(-$)", "");
-        return slug.isBlank() ? "etc" : slug;
+        StringBuilder slug = new StringBuilder();
+        for (int i = 0; i < key.length(); i++) {
+            char ch = key.charAt(i);
+            if (Character.isLetterOrDigit(ch)) {
+                slug.append(Character.toLowerCase(ch));
+            } else if (slug.length() > 0 && slug.charAt(slug.length() - 1) != '-') {
+                slug.append('-');
+            }
+        }
+        while (slug.length() > 0 && slug.charAt(slug.length() - 1) == '-') {
+            slug.setLength(slug.length() - 1);
+        }
+        return slug.length() == 0 ? "etc" : slug.toString();
     }
 
     /** Mustache용: 투어 전체 기간 요약 (첫·끝 회차 날짜) */

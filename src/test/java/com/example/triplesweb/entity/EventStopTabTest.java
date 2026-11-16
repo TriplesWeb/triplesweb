@@ -102,7 +102,23 @@ class EventStopTabTest {
         assertThat(only.getRegionKey()).isEqualTo("기타");
         assertThat(event.getRegionGroups()).hasSize(1);
         assertThat(event.getRegionGroups().get(0).getRegionLabel()).isEqualTo("기타");
+        assertThat(event.getRegionGroups().get(0).getRegionPanelId()).isEqualTo("event-region-r0-기타");
         assertThat(event.isHasMultipleRegions()).isFalse();
+    }
+
+    @Test
+    void regionPanelIdsStayUniqueAcrossNonHangulRegions() {
+        Event event = new Event();
+        event.setEventName("tour");
+        EventStop tokyo = stop(event, 1L, "東京", "2024.11.15", 0);
+        EventStop osaka = stop(event, 2L, "大阪", "2024.11.20", 1);
+        event.setStops(new ArrayList<>(List.of(tokyo, osaka)));
+
+        List<Event.RegionGroup> groups = event.getRegionGroups();
+        assertThat(groups).hasSize(2);
+        assertThat(groups.get(0).getRegionPanelId()).isEqualTo("event-region-r0-東京");
+        assertThat(groups.get(1).getRegionPanelId()).isEqualTo("event-region-r1-大阪");
+        assertThat(groups.get(0).getRegionPanelId()).isNotEqualTo(groups.get(1).getRegionPanelId());
     }
 
     @Test
