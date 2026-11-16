@@ -6,8 +6,6 @@
         <div class="ar-pages">
             {{#archivePages}}<a class="{{#active}}is-current{{/active}}" href="{{archivePath}}?page={{num}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">{{label}}</a>{{/archivePages}}
         </div>
-        {{#hasArchiveNext}}<a href="{{archivePath}}?page={{archiveNextPage}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">다음</a>{{/hasArchiveNext}}
-        {{^hasArchiveNext}}<a class="is-disabled" aria-disabled="true">다음</a>{{/hasArchiveNext}}
         <form class="ar-page-jump" method="get" action="{{archivePath}}" aria-label="페이지 이동">
             {{#videoArchive}}<input type="hidden" name="type" value="video">{{/videoArchive}}
             {{#folderKey}}<input type="hidden" name="folder" value="{{folderKey}}">{{/folderKey}}
@@ -25,5 +23,7 @@
             </label>
             <button type="submit">이동</button>
         </form>
+        {{#hasArchiveNext}}<a href="{{archivePath}}?page={{archiveNextPage}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">다음</a>{{/hasArchiveNext}}
+        {{^hasArchiveNext}}<a class="is-disabled" aria-disabled="true">다음</a>{{/hasArchiveNext}}
     </div>
 </nav>

@@ -107,8 +107,8 @@ ${siteUi}
     <div class="ar-pager-controls">
       <a>이전</a>
       <div class="ar-pages"><a class="is-current">1</a></div>
-      <a>다음</a>
       <form class="ar-page-jump"><label>페이지 <input type="number" name="go" min="1" max="1" value="1"></label><button type="submit">이동</button></form>
+      <a>다음</a>
     </div>
   </nav>
 </main>
@@ -439,9 +439,11 @@ ${siteUi}
     const pager = await page.evaluate(() => {
       const controls = document.querySelector('.ar-pager-controls');
       const jump = document.querySelector('.ar-page-jump');
-      const next = [...(controls?.querySelectorAll('a') || [])].find((el) => el.textContent.trim() === '다음');
+      const next = [...(controls?.querySelectorAll(':scope > a') || [])].find((el) => el.textContent.trim() === '다음');
+      const pageLink = controls?.querySelector('.ar-pages a:last-child');
       const jumpBox = jump?.getBoundingClientRect();
       const nextBox = next?.getBoundingClientRect();
+      const pageBox = pageLink?.getBoundingClientRect();
       const goBox = jump?.querySelector('input[name="go"]')?.getBoundingClientRect();
       const moveBox = jump?.querySelector('button')?.getBoundingClientRect();
       return {
@@ -449,8 +451,10 @@ ${siteUi}
         insideControls: Boolean(controls?.contains(jump)),
         goName: jump?.querySelector('input[name="go"]')?.name || '',
         label: jump?.querySelector('button')?.textContent.trim() || '',
-        afterNext: Boolean(next && jump && (next.compareDocumentPosition(jump) & Node.DOCUMENT_POSITION_FOLLOWING)),
-        gap: nextBox && jumpBox ? jumpBox.left - nextBox.right : 999,
+        beforeNext: Boolean(next && jump && (jump.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING)),
+        afterPage: Boolean(pageLink && jump && (pageLink.compareDocumentPosition(jump) & Node.DOCUMENT_POSITION_FOLLOWING)),
+        gap: nextBox && jumpBox ? nextBox.left - jumpBox.right : 999,
+        pageGap: pageBox && jumpBox ? jumpBox.left - pageBox.right : 999,
         aligned: nextBox && jumpBox ? Math.abs(nextBox.top - jumpBox.top) <= 6 : false,
         goWidth: goBox ? Math.round(goBox.width) : 0,
         moveHeight: moveBox ? Math.round(moveBox.height) : 0
@@ -458,10 +462,12 @@ ${siteUi}
     });
     assert.equal(pager.hasJump, true, '페이지 이동 UI가 없다');
     assert.equal(pager.insideControls, true, '페이지 이동이 다음 버튼 옆에 없다');
-    assert.equal(pager.afterNext, true, '페이지 이동이 다음 버튼 뒤에 없다');
+    assert.equal(pager.beforeNext, true, '페이지 이동이 다음 버튼 앞에 없다');
+    assert.equal(pager.afterPage, true, '페이지 이동이 마지막 페이지 번호 뒤에 없다');
     assert.equal(pager.goName, 'go');
     assert.equal(pager.label, '이동');
     assert.ok(pager.gap >= 0 && pager.gap <= 48, '페이지 이동이 다음에서 너무 떨어져 있다: ' + pager.gap);
+    assert.ok(pager.pageGap >= 0 && pager.pageGap <= 48, '페이지 이동이 번호에서 너무 떨어져 있다: ' + pager.pageGap);
     assert.equal(pager.aligned, true, '페이지 이동이 다음과 세로로 안 맞는다');
     assert.ok(pager.goWidth >= 50 && pager.goWidth <= 90, '페이지 숫자 칸 크기가 달라졌다: ' + pager.goWidth);
     assert.ok(pager.moveHeight >= 28 && pager.moveHeight <= 40, '이동 버튼 크기가 달라졌다: ' + pager.moveHeight);

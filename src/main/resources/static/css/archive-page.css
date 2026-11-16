@@ -18,14 +18,16 @@ body.site-page > main.archive-page {
     padding-left: 2rem;
     padding-right: 2rem;
 }
-body.site-page > main.archive-page.is-folder-home {
+body.site-page > main.archive-page.is-folder-home,
+body.site-page > main.archive-page.is-folder-view {
     max-width: 90rem;
     margin-inline: auto;
     padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
     padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
 }
 @media (min-width: 960px) {
-    body.site-page > main.archive-page.is-folder-home {
+    body.site-page > main.archive-page.is-folder-home,
+    body.site-page > main.archive-page.is-folder-view {
         padding-left: max(clamp(2.5rem, 6vw, 5.5rem), env(safe-area-inset-left, 0px));
         padding-right: max(clamp(2.5rem, 6vw, 5.5rem), env(safe-area-inset-right, 0px));
     }
@@ -407,7 +409,7 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 @media (min-width: 820px) {
     .archive-page.is-folder-view .ar-stats,
     .archive-page.is-browse .ar-stats {
-        transform: translate(2.85rem, -0.45rem);
+        transform: translate(3.7rem, -1.05rem);
     }
 }
 .ar-stat {
@@ -453,7 +455,7 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 }
 .archive-page.is-folder-view .ar-stat-date strong,
 .archive-page.is-browse .ar-stat-date strong {
-    font-size: clamp(0.95rem, 1.4vw, 1.22rem);
+    font-size: clamp(0.86rem, 1.2vw, 1.05rem);
 }
 .ar-stat-filter { gap: 0.55rem; }
 .archive-page.is-folder-view .ar-stat-filter,
@@ -1413,7 +1415,7 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     display: inline-flex;
     align-items: center;
     gap: 0.7rem;
-    margin-inline-start: 0.75rem;
+    margin-inline: 0.15rem;
 }
 .ar-page-jump label {
     display: inline-flex;

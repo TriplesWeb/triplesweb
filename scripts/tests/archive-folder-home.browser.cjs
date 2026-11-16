@@ -501,6 +501,9 @@ ${siteUi}
         statWidth: Math.round(statBox.width),
         statHeight: Math.round(statBox.height),
         shift: ((statsBox.left + statsBox.right) / 2) - ((innerLeft + innerRight) / 2),
+        pageMax: getComputedStyle(document.querySelector('.archive-page')).maxWidth,
+        dateSize: parseFloat(getComputedStyle(document.querySelector('.ar-stat-date strong')).fontSize),
+        photoSize: parseFloat(getComputedStyle(document.querySelector('.ar-stat strong')).fontSize),
         columns,
         backText: back.textContent.trim(),
         backHref: back.getAttribute('href'),
@@ -515,7 +518,9 @@ ${siteUi}
     });
     assert.ok(view.statWidth <= 300 && view.statWidth >= 220, '폴더 보기 통계 카드 너비: ' + JSON.stringify(view));
     assert.ok(view.statHeight <= 96 && view.statHeight >= 76, '폴더 보기 통계 카드 높이: ' + JSON.stringify(view));
-    assert.ok(view.shift >= 36 && view.shift <= 56, '폴더 보기 통계가 오른쪽으로 조금 이동하지 않았다: ' + view.shift);
+    assert.ok(view.shift >= 52 && view.shift <= 72, '폴더 보기 통계가 오른쪽으로 조금 이동하지 않았다: ' + view.shift);
+    assert.equal(view.pageMax, '1440px', '폴더 보기 폭이 홈과 다르다: ' + view.pageMax);
+    assert.ok(view.dateSize < view.photoSize && view.dateSize >= 13 && view.dateSize <= 17, '날짜 글자 크기가 맞지 않다: ' + view.dateSize);
     assert.equal(view.columns, 2);
     assert.equal(view.backText, '← 목록으로');
     assert.equal(view.backHref, '/archive');
