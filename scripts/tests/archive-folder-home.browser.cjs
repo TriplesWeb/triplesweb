@@ -253,6 +253,39 @@ ${siteUi}
 
 const groupHtml = memberHtml.replace(/<p class="ar-folder-title[\s\S]*?<\/p>/, '');
 
+const viewHtml = `<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:#0d0e12;color:#e3e2e8;font-family:"Pretendard Variable",Pretendard,sans-serif}
+${site}
+${siteChrome}
+${css}
+${siteUi}
+</style></head>
+<body class="site-page">
+<main class="archive-page is-folder-view" data-archive-kind="image">
+  <section class="ar-hero">
+    <div class="ar-panel ar-headline is-member-space" style="--folder-color:#f5c518">
+      <button type="button" class="ar-stats-toggle" data-stats-toggle aria-expanded="true" aria-controls="archiveStats" aria-label="통계 접기">
+        <span data-stats-icon>−</span>
+      </button>
+      <a class="site-back-link ar-back-folders" href="/archive">← 목록으로</a>
+      <div class="ar-headline-copy">
+        <div class="ar-kicker">Archive</div>
+        <h1>아카이브</h1>
+      </div>
+      <div class="ar-stats" id="archiveStats">
+        <article class="ar-stat"><div class="ar-stat-label"><span>등록된 사진</span><span class="material-symbols-outlined">image</span></div><strong>0<em>장</em></strong></article>
+        <article class="ar-stat ar-stat-date"><div class="ar-stat-label"><span>날짜</span><span class="material-symbols-outlined">calendar_month</span></div><strong>전체</strong></article>
+        <article class="ar-stat"><div class="ar-stat-label"><span>페이지</span><span class="material-symbols-outlined">layers</span></div><strong>1<em>/ 1</em></strong></article>
+        <article class="ar-stat ar-stat-filter" style="--filter-count: 3"><div class="ar-stat-label"><span>검색</span><span class="material-symbols-outlined">search</span></div><div class="ar-filter-summary"><strong>사진</strong><span class="ar-filter-sep">,</span><strong>전체 출처</strong><span class="ar-filter-sep">,</span><span class="ar-filter-member" style="--member-color:#22aeff">윤서연</span></div></article>
+      </div>
+    </div>
+  </section>
+</main>
+</body></html>`;
+
 (async () => {
   const browser = await chromium.launch({
     headless: true,
@@ -280,6 +313,9 @@ const groupHtml = memberHtml.replace(/<p class="ar-folder-title[\s\S]*?<\/p>/, '
       }
       if (url.pathname.endsWith('group.html')) {
         return route.fulfill({ contentType: 'text/html', body: groupHtml });
+      }
+      if (url.pathname.endsWith('view.html')) {
+        return route.fulfill({ contentType: 'text/html', body: viewHtml });
       }
       if (url.pathname === '/images/archive-folder.svg') {
         return route.fulfill({ contentType: 'image/svg+xml', body: folderSvg });
@@ -431,6 +467,84 @@ const groupHtml = memberHtml.replace(/<p class="ar-folder-title[\s\S]*?<\/p>/, '
     await page.goto('https://archive-folders.test/group.html', { waitUntil: 'load' });
     assert.equal(await page.locator('.ar-folder-title').count(), 0);
     await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-group-title.png') });
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('https://archive-folders.test/view.html', { waitUntil: 'load' });
+    const view = await page.evaluate(() => {
+      const headline = document.querySelector('.ar-headline');
+      const stats = document.getElementById('archiveStats');
+      const stat = document.querySelector('.ar-stat');
+      const back = document.querySelector('.ar-back-folders');
+      const toggle = document.querySelector('.ar-stats-toggle');
+      const headlineBox = headline.getBoundingClientRect();
+      const statsBox = stats.getBoundingClientRect();
+      const statBox = stat.getBoundingClientRect();
+      const backBox = back.getBoundingClientRect();
+      const toggleBox = toggle.getBoundingClientRect();
+      const style = getComputedStyle(headline);
+      const backStyle = getComputedStyle(back);
+      const innerLeft = headlineBox.left + parseFloat(style.paddingLeft);
+      const innerRight = headlineBox.right - parseFloat(style.paddingRight);
+      const member = document.querySelector('.ar-filter-member');
+      const text = document.querySelector('.ar-filter-summary strong');
+      const columns = getComputedStyle(stats).gridTemplateColumns.split(' ').filter(Boolean).length;
+      return {
+        statWidth: Math.round(statBox.width),
+        statHeight: Math.round(statBox.height),
+        shift: ((statsBox.left + statsBox.right) / 2) - ((innerLeft + innerRight) / 2),
+        columns,
+        backText: back.textContent.trim(),
+        backHref: back.getAttribute('href'),
+        backRadius: parseFloat(backStyle.borderRadius),
+        backBg: backStyle.backgroundColor,
+        backColor: backStyle.color,
+        backBorder: backStyle.borderTopWidth,
+        gap: toggleBox.left - backBox.right,
+        overlap: backBox.right > toggleBox.left + 1 || backBox.bottom > headlineBox.bottom,
+        filterMatch: getComputedStyle(text).fontSize === getComputedStyle(member).fontSize
+      };
+    });
+    assert.ok(view.statWidth <= 300 && view.statWidth >= 220, '폴더 보기 통계 카드 너비: ' + JSON.stringify(view));
+    assert.ok(view.statHeight <= 96 && view.statHeight >= 76, '폴더 보기 통계 카드 높이: ' + JSON.stringify(view));
+    assert.ok(view.shift >= 18 && view.shift <= 32, '폴더 보기 통계가 오른쪽으로 조금 이동하지 않았다: ' + view.shift);
+    assert.equal(view.columns, 2);
+    assert.equal(view.backText, '← 목록으로');
+    assert.equal(view.backHref, '/archive');
+    assert.ok(view.backRadius >= 16, '목록으로가 알약 버튼이 아니다: ' + view.backRadius);
+    assert.ok(view.backBg.includes('41, 42, 46'), '목록으로 배경이 토글과 다르다: ' + view.backBg);
+    assert.ok(view.backColor.includes('0, 245, 212'), '목록으로 글자가 민트가 아니다: ' + view.backColor);
+    assert.equal(view.backBorder, '1px');
+    assert.ok(view.gap >= 2, '목록으로가 통계 접기 버튼과 겹친다: ' + view.gap);
+    assert.equal(view.overlap, false);
+    assert.equal(view.filterMatch, true, '검색 요약 글자 크기가 멤버 이름과 다르다');
+    await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-folder-view-stats.png') });
+    await page.locator('.ar-back-folders').screenshot({ path: path.join(artifactDir, 'archive-folder-view-back.png') });
+    await page.hover('.ar-back-folders');
+    await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-folder-view-back-hover.png') });
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('https://archive-folders.test/view.html', { waitUntil: 'load' });
+    const narrow = await page.evaluate(() => {
+      const headline = document.querySelector('.ar-headline');
+      const back = document.querySelector('.ar-back-folders');
+      const toggle = document.querySelector('.ar-stats-toggle');
+      const copy = document.querySelector('.ar-headline-copy');
+      const backBox = back.getBoundingClientRect();
+      const toggleBox = toggle.getBoundingClientRect();
+      const copyBox = copy.getBoundingClientRect();
+      const headlineBox = headline.getBoundingClientRect();
+      return {
+        backText: back.textContent.trim(),
+        gap: toggleBox.left - backBox.right,
+        inside: backBox.left >= headlineBox.left - 1 && backBox.right <= headlineBox.right + 1,
+        aboveCopy: backBox.bottom <= copyBox.top + 4
+      };
+    });
+    assert.equal(narrow.backText, '← 목록으로');
+    assert.ok(narrow.gap >= 2, '좁은 화면에서 목록으로가 접기 버튼과 겹친다: ' + narrow.gap);
+    assert.equal(narrow.inside, true, '좁은 화면에서 목록으로가 헤드라인 밖으로 나간다');
+    assert.equal(narrow.aboveCopy, true, '좁은 화면에서 목록으로가 제목을 가린다');
+    await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-folder-view-narrow.png') });
     console.log('PASS: 아카이브 폴더 홈 실루엣·케미 필터');
   } finally {
     await browser.close();

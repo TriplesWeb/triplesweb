@@ -130,10 +130,53 @@ body.site-admin-enabled .archive-page.is-browse .ar-headline { padding-bottom: 4
 }
 .ar-back-folders {
     position: absolute;
-    top: 1.15rem;
+    top: 1rem;
     right: 3.55rem;
     z-index: 2;
     margin: 0;
+}
+a.site-back-link.ar-back-folders {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.15rem;
+    min-height: 2.15rem;
+    padding: 0 0.9rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+    background: #292a2e;
+    box-shadow: none;
+    backdrop-filter: none;
+    color: #00f5d4;
+    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-size: 0.82rem;
+    font-weight: 650;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+a.site-back-link.ar-back-folders:hover,
+a.site-back-link.ar-back-folders:focus-visible {
+    background: rgba(0, 245, 212, 0.08);
+    border-color: #00f5d4;
+    box-shadow: none;
+    color: #00f5d4;
+    outline: none;
+}
+html[data-theme="light"] a.site-back-link.ar-back-folders,
+html[data-theme="light"] a.site-back-link.ar-back-folders:hover,
+html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
+    background: #292a2e;
+    border-color: rgba(255, 255, 255, 0.14);
+    color: #00f5d4;
+}
+html[data-theme="light"] a.site-back-link.ar-back-folders:hover,
+html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
+    background: rgba(0, 245, 212, 0.08);
+    border-color: #00f5d4;
 }
 .ar-folder-tabs {
     display: flex;
@@ -340,6 +383,18 @@ body.site-admin-enabled .archive-page.is-browse .ar-headline { padding-bottom: 4
     gap: 0.55rem;
     margin-top: 1rem;
 }
+.archive-page.is-folder-view .ar-stats,
+.archive-page.is-browse .ar-stats {
+    max-width: 35.5rem;
+    gap: 0.5rem;
+    margin-top: 0.95rem;
+}
+@media (min-width: 820px) {
+    .archive-page.is-folder-view .ar-stats,
+    .archive-page.is-browse .ar-stats {
+        transform: translateX(1.5rem);
+    }
+}
 .ar-stat {
     min-height: 6.8rem;
     padding: 0.95rem 1rem;
@@ -355,19 +410,44 @@ body.site-admin-enabled .archive-page.is-browse .ar-headline { padding-bottom: 4
     padding: 0.75rem 0.8rem;
     border-radius: 0.65rem;
 }
+.archive-page.is-folder-view .ar-stat,
+.archive-page.is-browse .ar-stat {
+    min-height: 5.3rem;
+    padding: 0.68rem 0.75rem;
+    border-radius: 0.65rem;
+}
 .ar-stat-label { display: flex; align-items: center; justify-content: space-between; color: #b9cac4; font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 0.82rem; font-weight: 650; letter-spacing: -0.01em; }
 .archive-page.is-folder-home .ar-stat-label { font-size: 0.7rem; }
+.archive-page.is-folder-view .ar-stat-label,
+.archive-page.is-browse .ar-stat-label { font-size: 0.72rem; }
 .ar-stat-label .material-symbols-outlined { color: #00f5d4; font-family: "Material Symbols Outlined", sans-serif; font-size: 18px; font-weight: 400; letter-spacing: 0; }
 .archive-page.is-folder-home .ar-stat-label .material-symbols-outlined { font-size: 15px; }
+.archive-page.is-folder-view .ar-stat-label .material-symbols-outlined,
+.archive-page.is-browse .ar-stat-label .material-symbols-outlined { font-size: 16px; }
 .ar-stat strong { font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: clamp(1.45rem, 2vw, 1.9rem); line-height: 1.15; color: #d7fff3; letter-spacing: -0.02em; }
 .archive-page.is-folder-home .ar-stat strong { font-size: clamp(1.2rem, 1.65vw, 1.55rem); }
+.archive-page.is-folder-view .ar-stat strong,
+.archive-page.is-browse .ar-stat strong { font-size: clamp(1.12rem, 1.5vw, 1.42rem); }
+.archive-page.is-folder-view .ar-filter-summary strong,
+.archive-page.is-browse .ar-filter-summary strong { font-size: 1em; }
 .ar-stat em { font-style: normal; color: #00f5d4; font-size: 0.7em; }
 .ar-stat .is-violet { color: #dbb8ff; font-size: 1.35rem; overflow-wrap: anywhere; }
 .ar-stat-date strong {
     font-size: clamp(1.05rem, 1.7vw, 1.45rem);
     overflow-wrap: anywhere;
 }
+.archive-page.is-folder-view .ar-stat-date strong,
+.archive-page.is-browse .ar-stat-date strong {
+    font-size: clamp(0.95rem, 1.4vw, 1.22rem);
+}
 .ar-stat-filter { gap: 0.55rem; }
+.archive-page.is-folder-view .ar-stat-filter,
+.archive-page.is-browse .ar-stat-filter { gap: 0.4rem; }
+.archive-page.is-folder-view .ar-filter-summary,
+.archive-page.is-browse .ar-filter-summary {
+    min-height: 1.35rem;
+    font-size: clamp(0.68rem, calc(0.86rem - 0.05rem * var(--filter-count, 1)), 0.8rem);
+}
 .ar-filter-summary {
     display: flex;
     flex-wrap: wrap;
