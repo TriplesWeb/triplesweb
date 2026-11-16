@@ -1,7 +1,42 @@
-.event-stop-tabs {
+.event-detail-meta {
+  margin: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.event-detail-meta-row {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: baseline;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.event-detail-meta-row dt {
+  margin: 0;
+  color: #8b9b95;
+  font-weight: 600;
+}
+
+.event-detail-meta-row dd {
+  margin: 0;
+  color: #e3e2e8;
+  min-width: 0;
+  word-break: keep-all;
+}
+
+.event-region-tabs,
+.event-date-tabs {
   margin: 0 0 1rem;
 }
 
+.event-region-panel[hidden],
+.event-stop-panel[hidden] {
+  display: none;
+}
+
+.event-region-panels,
 .event-stop-panels {
   min-width: 0;
 }
@@ -34,10 +69,6 @@
 
 .event-stop-panel {
   padding: 0;
-}
-
-.event-stop-panel[hidden] {
-  display: none;
 }
 
 .event-stop-detail {
@@ -88,115 +119,95 @@
   padding: 0.9rem 0.85rem 0.85rem;
 }
 
-.event-setlist-wrap {
-  overflow-x: auto;
+.event-setlist-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
   border-radius: 0.65rem;
   border: 1px solid rgba(58, 74, 70, 0.45);
   background: #16181f;
+  overflow: hidden;
 }
 
-.event-setlist-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-  font-size: 0.875rem;
-  line-height: 1.4;
-}
-
-.event-setlist-table thead th {
+.event-setlist-section-item {
+  padding: 0.55rem 0.85rem;
   background: #12141a;
-  color: #b9cac4;
+  border-bottom: 1px solid rgba(58, 74, 70, 0.45);
+}
+
+.event-setlist-section-label {
+  display: block;
+  text-align: center;
   font-size: 0.8125rem;
   font-weight: 700;
-  text-align: center;
-  padding: 0.65rem 0.4rem;
-  border-bottom: 1px solid rgba(58, 74, 70, 0.55);
+  letter-spacing: 0.01em;
+  color: #b9cac4;
 }
 
-.event-setlist-table tbody td {
+.event-setlist-song-item {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  padding: 0.7rem 0.85rem;
   border-bottom: 1px solid rgba(58, 74, 70, 0.28);
-  padding: 0.6rem 0.45rem;
-  vertical-align: middle;
-  color: #e3e2e8;
-  background: transparent;
 }
 
-.event-setlist-table tbody tr:last-child td {
+.event-setlist-song-item:last-child {
   border-bottom: 0;
 }
 
-.event-setlist-table tbody tr:nth-child(even):not(.event-setlist-section) td {
-  background: rgba(18, 20, 26, 0.72);
+.event-setlist-song-item:nth-child(even) {
+  background: rgba(18, 20, 26, 0.55);
 }
 
-.event-setlist-col-order {
-  width: 3.25rem;
-  text-align: center;
+.event-setlist-order {
   font-variant-numeric: tabular-nums;
-  font-size: 0.8rem;
-  color: #8b9b95;
-}
-
-.event-setlist-col-title {
-  text-align: center;
-  word-break: keep-all;
-}
-
-.event-setlist-col-note {
-  width: 28%;
-  text-align: center;
-  color: #b9cac4;
-  word-break: keep-all;
   font-size: 0.8125rem;
+  color: #8b9b95;
+  padding-top: 0.1rem;
+  text-align: right;
+}
+
+.event-setlist-song-body {
+  min-width: 0;
 }
 
 .event-setlist-song {
   display: block;
   font-weight: 700;
   color: #e3e2e8;
+  line-height: 1.4;
+  word-break: keep-all;
 }
 
-.event-setlist-album {
+.event-setlist-album,
+.event-setlist-note {
   display: block;
   margin-top: 0.15rem;
   font-size: 0.75rem;
   font-weight: 500;
   color: #8b9b95;
-}
-
-.event-setlist-section td {
-  background: #12141a !important;
-  color: #b9cac4;
-  font-weight: 700;
-  text-align: center;
-  padding: 0.55rem 0.6rem;
-  border-bottom-color: rgba(58, 74, 70, 0.55);
-  letter-spacing: 0.01em;
-}
-
-.event-setlist-col-split {
-  padding: 0 !important;
+  word-break: keep-all;
 }
 
 .event-setlist-variants {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-  min-height: 100%;
+  gap: 0.5rem;
 }
 
 .event-setlist-variant {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   gap: 0.15rem;
-  padding: 0.6rem 0.45rem;
-  text-align: center;
-  border-right: 1px solid rgba(58, 74, 70, 0.28);
-}
-
-.event-setlist-variant:last-child {
-  border-right: 0;
+  min-width: 0;
+  padding: 0.35rem 0.45rem;
+  border-radius: 0.45rem;
+  background: rgba(13, 14, 18, 0.55);
+  border: 1px solid rgba(58, 74, 70, 0.35);
 }
 
 .event-stop-block--goods {

@@ -9,6 +9,7 @@ import com.example.triplesweb.service.EventService;
 import com.example.triplesweb.service.ObjektService;
 import com.example.triplesweb.service.ObjektMarketDataService;
 import com.example.triplesweb.service.ObjektLiveSettings;
+import com.example.triplesweb.service.ShopService;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektCatalogSort;
 import com.example.triplesweb.util.ObjektDescriptionKeys;
@@ -49,6 +50,7 @@ public class CosmoController {
     private final ArtistSnapshotService artistSnapshot;
     private final ObjektMarketDataService marketData;
     private final EventService eventService;
+    private final ShopService shopService;
     private final ObjektLiveSettings live;
     private final ObjektDescriptionRepository descriptions;
 
@@ -389,6 +391,10 @@ public class CosmoController {
         try {
             Event event = eventService.getDetail(eventId);
             model.addAttribute("event", event);
+            shopService.findIdByEventId(eventId).ifPresentOrElse(shopId -> {
+                model.addAttribute("shopId", shopId);
+                model.addAttribute("hasShopLink", true);
+            }, () -> model.addAttribute("hasShopLink", false));
             return "cosmo/event_detail";
         } catch (IllegalArgumentException e) {
             throw new org.springframework.web.server.ResponseStatusException(

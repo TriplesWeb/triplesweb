@@ -40,6 +40,7 @@ class ObjektFeaturesTest {
     @MockitoBean ObjektMarketDataService market;
     @MockitoBean ObjektLiveSettings live;
     @MockitoBean EventService eventService;
+    @MockitoBean ShopService shopService;
     @MockitoBean ObjektFavoriteService favorites;
     @MockitoBean ObjektFavoriteRepository favoriteRepository;
     @MockitoBean ObjektDescriptionRepository descriptions;

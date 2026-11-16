@@ -11,14 +11,34 @@
         <a href="/cosmo/event">← 이벤트 목록</a>
     </nav>
     <div class="p-6 lg:p-8 space-y-8">
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start min-w-0">
+    <div class="event-detail-hero grid grid-cols-1 md:grid-cols-12 gap-8 items-start min-w-0">
              <div class="md:col-span-4 lg:col-span-3 flex justify-center">
-                 <img src="{{displayEventImage}}" width="300" height="300" alt="{{eventName}}" class="w-full max-w-[260px] aspect-square object-cover rounded-2xl border border-[#3a4a46]/40 shadow-2xl" />
+                 <img src="{{displayEventImage}}" width="300" height="300" alt="{{eventName}}" class="event-detail-poster w-full max-w-[260px] aspect-square object-cover rounded-2xl border border-[#3a4a46]/40 shadow-2xl" />
              </div>
-        <div class="md:col-span-8 lg:col-span-9 space-y-5">
+        <div class="md:col-span-8 lg:col-span-9 space-y-5 min-w-0">
             <div>
-                <h1 class="text-3xl lg:text-4xl font-extrabold text-[#e3e2e8] tracking-tight">{{eventName}}</h1>
+                <h1 class="text-3xl lg:text-4xl font-extrabold text-[#e3e2e8] tracking-tight m-0">{{eventName}}</h1>
             </div>
+            <dl class="event-detail-meta">
+                {{#hasTourPeriodSummary}}
+                <div class="event-detail-meta-row">
+                    <dt>공연 기간</dt>
+                    <dd class="font-mono">{{tourPeriodSummary}}</dd>
+                </div>
+                {{/hasTourPeriodSummary}}
+                {{#hasTourLocationsSummary}}
+                <div class="event-detail-meta-row">
+                    <dt>위치</dt>
+                    <dd id="eventMetaLocation">{{tourLocationsSummary}}</dd>
+                </div>
+                {{/hasTourLocationsSummary}}
+                {{#hasStops}}
+                <div class="event-detail-meta-row" id="eventMetaDateRow" hidden>
+                    <dt>공연 일시</dt>
+                    <dd class="font-mono" id="eventMetaDate"></dd>
+                </div>
+                {{/hasStops}}
+            </dl>
             {{#hasEventInfo}}
             <div class="pt-1">
                 <h3 class="text-xs font-semibold text-[#b9cac4] uppercase tracking-wider mb-2">소개</h3>
@@ -29,72 +49,88 @@
         </div>
     </div>
 
-    <section class="event-stop-section" aria-label="지역별 공연">
-        <h2 class="text-xl font-bold text-[#e3e2e8] flex items-center gap-2 mb-2">
-            <span class="material-symbols-outlined text-[1.25rem] text-[#00f5d4]" aria-hidden="true">location_on</span> 지역별 공연
-        </h2>
+    <section class="event-stop-section" aria-label="지역별 공연" id="eventStopSection">
         {{#hasStops}}
-        {{#hasMultipleStops}}
-        <div class="site-section-tabs event-stop-tabs" id="eventStopTabs" role="tablist" aria-label="지역 회차">
-            {{#orderedStops}}
+        {{#hasMultipleRegions}}
+        <div class="site-section-tabs event-region-tabs" id="eventRegionTabs" role="tablist" aria-label="지역">
+            {{#regionGroups}}
             <button type="button"
-                    class="site-section-tab{{#firstOrderedStop}} is-active{{/firstOrderedStop}}"
+                    class="site-section-tab{{#firstRegion}} is-active{{/firstRegion}}"
                     role="tab"
-                    id="tab-event-stop-{{stopId}}"
-                    aria-controls="event-stop-{{stopId}}"
-                    aria-selected="{{#firstOrderedStop}}true{{/firstOrderedStop}}{{^firstOrderedStop}}false{{/firstOrderedStop}}"
-                    tabindex="{{#firstOrderedStop}}0{{/firstOrderedStop}}{{^firstOrderedStop}}-1{{/firstOrderedStop}}"
-                    data-event-stop-tab
-                    data-target="event-stop-{{stopId}}">{{tabLabel}}</button>
-            {{/orderedStops}}
+                    id="tab-{{regionPanelId}}"
+                    aria-controls="{{regionPanelId}}"
+                    aria-selected="{{#firstRegion}}true{{/firstRegion}}{{^firstRegion}}false{{/firstRegion}}"
+                    tabindex="{{#firstRegion}}0{{/firstRegion}}{{^firstRegion}}-1{{/firstRegion}}"
+                    data-event-region-tab
+                    data-target="{{regionPanelId}}">{{regionLabel}}</button>
+            {{/regionGroups}}
         </div>
-        {{/hasMultipleStops}}
-        <div class="event-stop-panels" id="eventStopPanels">
-            {{#orderedStops}}
-            <div class="event-stop-panel"
-                 id="event-stop-{{stopId}}"
-                 role="tabpanel"
-                 {{#hasMultipleStops}}aria-labelledby="tab-event-stop-{{stopId}}"{{/hasMultipleStops}}
-                 {{#stopPanelHidden}}hidden{{/stopPanelHidden}}>
-                <div class="event-stop-meta">
-                    <div class="event-stop-date">{{eventDate}}</div>
-                    <div class="event-stop-title">{{displayTitle}}</div>
-                    {{#hasVenue}}
-                    <div class="event-stop-venue">{{venue}}</div>
-                    {{/hasVenue}}
+        {{/hasMultipleRegions}}
+
+        <div class="event-region-panels" id="eventRegionPanels">
+            {{#regionGroups}}
+            <div class="event-region-panel"
+                 id="{{regionPanelId}}"
+                 data-event-region
+                 data-region-key="{{regionKey}}"
+                 {{#hasMultipleRegions}}role="tabpanel" aria-labelledby="tab-{{regionPanelId}}"{{/hasMultipleRegions}}
+                 {{#regionHidden}}hidden{{/regionHidden}}>
+                {{#hasMultipleDates}}
+                <div class="site-section-tabs event-date-tabs" role="tablist" aria-label="{{regionLabel}} 회차">
+                    {{#stops}}
+                    <button type="button"
+                            class="site-section-tab{{#firstDateInRegion}} is-active{{/firstDateInRegion}}"
+                            role="tab"
+                            id="tab-event-stop-{{stopId}}"
+                            aria-controls="event-stop-{{stopId}}"
+                            aria-selected="{{#firstDateInRegion}}true{{/firstDateInRegion}}{{^firstDateInRegion}}false{{/firstDateInRegion}}"
+                            tabindex="{{#firstDateInRegion}}0{{/firstDateInRegion}}{{^firstDateInRegion}}-1{{/firstDateInRegion}}"
+                            data-event-date-tab
+                            data-target="event-stop-{{stopId}}"
+                            data-event-date="{{eventDate}}"
+                            data-event-location="{{locationSummary}}">{{dateTabLabel}}</button>
+                    {{/stops}}
                 </div>
+                {{/hasMultipleDates}}
 
-                {{#hasDetail}}
-                <p class="event-stop-detail">{{detail}}</p>
-                {{/hasDetail}}
+                <div class="event-stop-panels">
+                    {{#stops}}
+                    <div class="event-stop-panel"
+                         id="event-stop-{{stopId}}"
+                         role="tabpanel"
+                         {{#hasMultipleDatesInRegion}}aria-labelledby="tab-event-stop-{{stopId}}"{{/hasMultipleDatesInRegion}}
+                         data-event-date="{{eventDate}}"
+                         data-event-location="{{locationSummary}}"
+                         {{#stopPanelHidden}}hidden{{/stopPanelHidden}}>
+                        <div class="event-stop-meta">
+                            <div class="event-stop-date">{{eventDate}}</div>
+                            {{#hasLocationSummary}}
+                            <div class="event-stop-venue">{{locationSummary}}</div>
+                            {{/hasLocationSummary}}
+                        </div>
 
-                {{#hasSetlist}}
-                <div class="event-stop-block event-stop-block--setlist">
-                    <h3 class="event-stop-block-title">
-                        <span class="material-symbols-outlined" aria-hidden="true">graphic_eq</span>
-                        셋리스트
-                    </h3>
-                    <div class="event-setlist-wrap">
-                        <table class="event-setlist-table">
-                            <thead>
-                                <tr>
-                                    <th scope="col" class="event-setlist-col-order">순서</th>
-                                    <th scope="col" class="event-setlist-col-title">곡명</th>
-                                    <th scope="col" class="event-setlist-col-note">비고</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                        {{#hasDetail}}
+                        <p class="event-stop-detail">{{detail}}</p>
+                        {{/hasDetail}}
+
+                        {{#hasSetlist}}
+                        <div class="event-stop-block event-stop-block--setlist">
+                            <h3 class="event-stop-block-title">
+                                <span class="material-symbols-outlined" aria-hidden="true">graphic_eq</span>
+                                셋리스트{{#hasSetlistSongCount}} {{setlistSongCount}}곡{{/hasSetlistSongCount}}
+                            </h3>
+                            <ol class="event-setlist-list">
                                 {{#setlistRows}}
                                 {{#section}}
-                                <tr class="event-setlist-section">
-                                    <td colspan="3">{{sectionLabel}}</td>
-                                </tr>
+                                <li class="event-setlist-section-item" aria-hidden="false">
+                                    <span class="event-setlist-section-label">{{sectionLabel}}</span>
+                                </li>
                                 {{/section}}
                                 {{^section}}
-                                {{#split}}
-                                <tr class="event-setlist-split-row">
-                                    <td class="event-setlist-col-order">{{#hasOrder}}{{orderNum}}{{/hasOrder}}</td>
-                                    <td class="event-setlist-col-split" colspan="2">
+                                <li class="event-setlist-song-item">
+                                    <span class="event-setlist-order" aria-hidden="true">{{#hasOrder}}{{orderNum}}{{/hasOrder}}</span>
+                                    <div class="event-setlist-song-body">
+                                        {{#split}}
                                         <div class="event-setlist-variants">
                                             {{#variants}}
                                             <div class="event-setlist-variant">
@@ -108,34 +144,32 @@
                                             </div>
                                             {{/variants}}
                                         </div>
-                                    </td>
-                                </tr>
-                                {{/split}}
-                                {{^split}}
-                                <tr>
-                                    <td class="event-setlist-col-order">{{#hasOrder}}{{orderNum}}{{/hasOrder}}</td>
-                                    <td class="event-setlist-col-title">
+                                        {{/split}}
+                                        {{^split}}
                                         <span class="event-setlist-song">{{title}}</span>
                                         {{#hasSubtitle}}
                                         <span class="event-setlist-album">{{subtitle}}</span>
                                         {{/hasSubtitle}}
-                                    </td>
-                                    <td class="event-setlist-col-note">{{#hasNote}}{{note}}{{/hasNote}}</td>
-                                </tr>
-                                {{/split}}
+                                        {{#hasNote}}
+                                        <span class="event-setlist-note">{{note}}</span>
+                                        {{/hasNote}}
+                                        {{/split}}
+                                    </div>
+                                </li>
                                 {{/section}}
                                 {{/setlistRows}}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                {{/hasSetlist}}
+                            </ol>
+                        </div>
+                        {{/hasSetlist}}
 
-                {{^hasPanelContent}}
-                <p class="event-stop-detail event-stop-detail--empty">상세 안내·셋리스트가 아직 등록되지 않았습니다.</p>
-                {{/hasPanelContent}}
+                        {{^hasPanelContent}}
+                        <p class="event-stop-detail event-stop-detail--empty">상세 안내·셋리스트가 아직 등록되지 않았습니다.</p>
+                        {{/hasPanelContent}}
+                    </div>
+                    {{/stops}}
+                </div>
             </div>
-            {{/orderedStops}}
+            {{/regionGroups}}
         </div>
         {{/hasStops}}
         {{^hasStops}}
@@ -179,38 +213,110 @@
     });
   }
 
-  var tabRoot = document.getElementById("eventStopTabs");
-  var panelsRoot = document.getElementById("eventStopPanels");
-  if (!tabRoot || !panelsRoot) return;
+  var regionRoot = document.getElementById("eventRegionTabs");
+  var regionPanels = document.getElementById("eventRegionPanels");
+  var metaDate = document.getElementById("eventMetaDate");
+  var metaLocation = document.getElementById("eventMetaLocation");
+  var metaDateRow = document.getElementById("eventMetaDateRow");
 
-  function activateStopTab(btn) {
-    if (!btn) return;
-    var targetId = btn.getAttribute("data-target");
-    tabRoot.querySelectorAll('[role="tab"]').forEach(function (tab) {
-      var selected = tab === btn;
-      tab.setAttribute("aria-selected", selected ? "true" : "false");
-      tab.tabIndex = selected ? 0 : -1;
-      tab.classList.toggle("is-active", selected);
-    });
-    panelsRoot.querySelectorAll('[role="tabpanel"]').forEach(function (panel) {
+  function syncMetaFromPanel(panel) {
+    if (!panel) return;
+    var date = panel.getAttribute("data-event-date") || "";
+    var location = panel.getAttribute("data-event-location") || "";
+    if (metaDate) metaDate.textContent = date;
+    if (metaDateRow) metaDateRow.hidden = !date;
+    if (metaLocation && location) metaLocation.textContent = location;
+  }
+
+  function visibleStopInRegion(regionPanel) {
+    if (!regionPanel) return null;
+    var panels = regionPanel.querySelectorAll(".event-stop-panel");
+    for (var i = 0; i < panels.length; i++) {
+      if (!panels[i].hidden) return panels[i];
+    }
+    return panels[0] || null;
+  }
+
+  function activateDateTab(dateBtn, regionPanel) {
+    if (!dateBtn || !regionPanel) return;
+    var targetId = dateBtn.getAttribute("data-target");
+    var tablist = dateBtn.closest('[role="tablist"]');
+    if (tablist) {
+      tablist.querySelectorAll('[role="tab"]').forEach(function (tab) {
+        var selected = tab === dateBtn;
+        tab.setAttribute("aria-selected", selected ? "true" : "false");
+        tab.tabIndex = selected ? 0 : -1;
+        tab.classList.toggle("is-active", selected);
+      });
+    }
+    regionPanel.querySelectorAll(".event-stop-panel").forEach(function (panel) {
       panel.hidden = panel.id !== targetId;
+    });
+    var active = document.getElementById(targetId);
+    syncMetaFromPanel(active);
+  }
+
+  function activateRegion(regionBtn) {
+    if (!regionBtn || !regionPanels) return;
+    var targetId = regionBtn.getAttribute("data-target");
+    if (regionRoot) {
+      regionRoot.querySelectorAll('[role="tab"]').forEach(function (tab) {
+        var selected = tab === regionBtn;
+        tab.setAttribute("aria-selected", selected ? "true" : "false");
+        tab.tabIndex = selected ? 0 : -1;
+        tab.classList.toggle("is-active", selected);
+      });
+    }
+    regionPanels.querySelectorAll("[data-event-region]").forEach(function (panel) {
+      panel.hidden = panel.id !== targetId;
+    });
+    var regionPanel = document.getElementById(targetId);
+    if (!regionPanel) return;
+    var dateTabs = regionPanel.querySelectorAll("[data-event-date-tab]");
+    if (dateTabs.length) {
+      var activeDate = regionPanel.querySelector("[data-event-date-tab].is-active") || dateTabs[0];
+      activateDateTab(activeDate, regionPanel);
+    } else {
+      var only = visibleStopInRegion(regionPanel);
+      if (only) only.hidden = false;
+      syncMetaFromPanel(only);
+    }
+  }
+
+  if (regionPanels) {
+    regionPanels.querySelectorAll("[data-event-date-tab]").forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        var regionPanel = tab.closest("[data-event-region]");
+        activateDateTab(tab, regionPanel);
+      });
+    });
+    regionPanels.querySelectorAll(".event-date-tabs").forEach(function (tablist) {
+      if (window.AboutTabs && typeof window.AboutTabs.enhanceTabs === "function") {
+        window.AboutTabs.enhanceTabs(tablist, {
+          onActivate: function (btn) {
+            activateDateTab(btn, btn.closest("[data-event-region]"));
+          }
+        });
+      }
     });
   }
 
-  tabRoot.querySelectorAll('[role="tab"]').forEach(function (tab) {
-    tab.addEventListener("click", function () {
-      activateStopTab(tab);
+  if (regionRoot && regionPanels) {
+    regionRoot.querySelectorAll('[role="tab"]').forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        activateRegion(tab);
+      });
     });
-  });
-
-  if (window.AboutTabs && typeof window.AboutTabs.enhanceTabs === "function") {
-    window.AboutTabs.enhanceTabs(tabRoot, {
-      onActivate: activateStopTab
-    });
-  } else {
-    var initial = tabRoot.querySelector('[role="tab"].is-active')
-      || tabRoot.querySelector('[role="tab"]');
-    activateStopTab(initial);
+    if (window.AboutTabs && typeof window.AboutTabs.enhanceTabs === "function") {
+      window.AboutTabs.enhanceTabs(regionRoot, { onActivate: activateRegion });
+    }
+    var initialRegion = regionRoot.querySelector('[role="tab"].is-active')
+      || regionRoot.querySelector('[role="tab"]');
+    activateRegion(initialRegion);
+  } else if (regionPanels) {
+    var firstRegion = regionPanels.querySelector("[data-event-region]");
+    var firstStop = visibleStopInRegion(firstRegion) || regionPanels.querySelector(".event-stop-panel");
+    syncMetaFromPanel(firstStop);
   }
 })();
 </script>

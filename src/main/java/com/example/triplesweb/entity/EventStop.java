@@ -104,6 +104,32 @@ public class EventStop {
         return name;
     }
 
+    /** Mustache용: 지역 그룹 키 (빈 지역은 기타) */
+    @Transient
+    public String getRegionKey() {
+        return isHasRegion() ? region.trim() : "기타";
+    }
+
+    /** Mustache용: 지역 탭에 보이는 라벨 */
+    @Transient
+    public String getRegionLabel() {
+        return getRegionKey();
+    }
+
+    /** Mustache용: 위치 한 줄 (서울 · 올림픽홀) */
+    @Transient
+    public String getLocationSummary() {
+        String place = isHasRegion() ? region.trim() : "";
+        String hall = isHasVenue() ? venue.trim() : "";
+        if (!place.isBlank() && !hall.isBlank()) return place + " · " + hall;
+        if (!place.isBlank()) return place;
+        return hall;
+    }
+
+    public boolean isHasLocationSummary() {
+        return !getLocationSummary().isBlank();
+    }
+
     /** Mustache용: 지역 탭 라벨 (예: 서울 · 10.10–10.11) */
     @Transient
     public String getTabLabel() {
@@ -115,10 +141,23 @@ public class EventStop {
         return getDisplayTitle();
     }
 
+    /** Mustache용: 날짜 탭 라벨 (연도 생략) */
+    @Transient
+    public String getDateTabLabel() {
+        String date = shortTabDate(eventDate);
+        return date.isBlank() ? (eventDate == null ? "" : eventDate.trim()) : date;
+    }
+
     /** Mustache용: 부모 이벤트에 회차가 2개 이상인지 (루프 안 조회용) */
     @Transient
     public boolean isHasMultipleStops() {
         return event != null && event.isHasMultipleStops();
+    }
+
+    /** Mustache용: 같은 지역 회차가 2개 이상이면 날짜 탭 */
+    @Transient
+    public boolean isHasMultipleDatesInRegion() {
+        return regionSiblings().size() > 1;
     }
 
     /** Mustache용: 정렬상 첫 회차(기본 활성 탭) */
@@ -129,10 +168,36 @@ public class EventStop {
         return !ordered.isEmpty() && stopId.equals(ordered.get(0).getStopId());
     }
 
-    /** Mustache용: 다중 회차에서 비활성 패널을 숨김 */
+    /** Mustache용: 같은 지역에서 첫 날짜 탭 */
+    @Transient
+    public boolean isFirstDateInRegion() {
+        if (stopId == null) return false;
+        List<EventStop> siblings = regionSiblings();
+        return !siblings.isEmpty() && stopId.equals(siblings.get(0).getStopId());
+    }
+
+    /** Mustache용: 다중 회차에서 비활성 패널을 숨김 (첫 지역·첫 날짜만 표시) */
     @Transient
     public boolean isStopPanelHidden() {
         return isHasMultipleStops() && !isFirstOrderedStop();
+    }
+
+    /** Mustache용: 셋리스트 곡 수 (섹션 제외) */
+    @Transient
+    public int getSetlistSongCount() {
+        return (int) getSetlistRows().stream().filter(row -> !row.isSection()).count();
+    }
+
+    public boolean isHasSetlistSongCount() {
+        return getSetlistSongCount() > 0;
+    }
+
+    private List<EventStop> regionSiblings() {
+        if (event == null) return List.of();
+        String key = getRegionKey();
+        return event.getOrderedStops().stream()
+                .filter(stop -> key.equals(stop.getRegionKey()))
+                .collect(Collectors.toList());
     }
 
     static String shortTabDate(String raw) {

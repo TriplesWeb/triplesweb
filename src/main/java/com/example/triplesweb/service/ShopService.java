@@ -190,6 +190,12 @@ public class ShopService {
             index++;
         }
 
+        for (int i = 0; i < regions.size(); i++) {
+            ShopDetailDto.MdRegion mdRegion = regions.get(i);
+            mdRegion.setFirstRegion(i == 0);
+            mdRegion.setRegionHidden(i > 0 && regions.size() > 1);
+        }
+
         boolean linkedEvent = shop.getEvent() != null;
         String salesPeriod = shop.getSalesPeriod();
         if (linkedEvent) {
@@ -208,6 +214,7 @@ public class ShopService {
                 .displayCoverImage(shop.getDisplayCoverImage())
                 .hasSalesPeriod(StringUtils.hasText(salesPeriod))
                 .hasMdPhotos(!regions.isEmpty())
+                .hasMultipleMdRegions(regions.size() > 1)
                 .mdRegions(regions)
                 .build();
     }

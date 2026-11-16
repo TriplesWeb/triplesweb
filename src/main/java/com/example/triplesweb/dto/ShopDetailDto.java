@@ -23,6 +23,7 @@ public class ShopDetailDto {
     private String displayCoverImage;
     private boolean hasSalesPeriod;
     private boolean hasMdPhotos;
+    private boolean hasMultipleMdRegions;
     @Builder.Default
     private List<MdRegion> mdRegions = new ArrayList<>();
 
@@ -41,8 +42,14 @@ public class ShopDetailDto {
         private String venue;
         private boolean hasVenue;
         private boolean hasPhotos;
+        private boolean firstRegion;
+        private boolean regionHidden;
         @Builder.Default
         private List<MdCategory> categories = new ArrayList<>();
+
+        public String getRegionPanelId() {
+            return "shop-md-" + regionKey;
+        }
     }
 
     @Getter
