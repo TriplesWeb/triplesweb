@@ -34,6 +34,10 @@ public final class MemberPortraitOptions {
             "니엔", "박소현", "신위", "마유", "린", "주빈",
             "정하연", "박시온", "김채원", "설린", "서아", "지연"
     );
+
+    public static List<String> koreanOrder() {
+        return KOREAN_ORDER;
+    }
     private static final List<String> SHORT_KOREAN_ORDER = List.of(
             "서연", "혜린", "지우", "채연", "유연", "수민", "나경", "유빈",
             "카에데", "다현", "코토네", "연지", "니엔", "소현", "신위", "마유",

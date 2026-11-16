@@ -364,6 +364,10 @@
             alert(dateLabel + "를 선택해 주세요.");
             return;
         }
+        if (!uploadForm.querySelector("[name='source']")?.value) {
+            alert("출처를 선택해 주세요.");
+            return;
+        }
         if (!uploadPreview || uploadPreview.hidden || uploadPreview.dataset.invalid || uploadPreview.dataset.pending) {
             alert("미리보기를 확인한 뒤 추가해 주세요.");
             return;
@@ -414,6 +418,8 @@
             registered.dispatchEvent(new Event("input", { bubbles: true }));
         }
         applyArtists(editDialog, button.dataset.artists || "");
+        const sourceSelect = editForm.querySelector("[name='source']");
+        if (sourceSelect) sourceSelect.value = button.dataset.source || "";
         if (editFile) releaseUrl(editFile._archiveLastFile);
         showPreview(editPreview, button.dataset.url || "");
         window.bindArchiveDateFields?.(editForm);
@@ -497,6 +503,8 @@
         body.set("title", title);
         body.set("registeredOn", registeredOn);
         body.set("artistNames", selectedArtists(editDialog).join(","));
+        const source = editForm.querySelector("[name='source']")?.value || "";
+        if (source) body.set("source", source);
         if (replacing) body.set("file", editFile.files[0]);
         const thumbnail = editForm.querySelector('[name="thumbnail"]')?.files?.[0];
         if (thumbnail) body.set('thumbnail', thumbnail);

@@ -4,6 +4,7 @@
     const image = document.getElementById('archiveDetailImage');
     const title = document.getElementById('archiveDetailTitle');
     const date = document.getElementById('archiveDetailDate');
+    const source = document.getElementById('archiveDetailSource');
     const members = document.getElementById('archiveDetailMembers');
     const edit = document.getElementById('archiveDetailEdit');
     const remove = document.getElementById('archiveDetailDelete');
@@ -21,15 +22,15 @@
             const label = document.querySelector('.archive-page')?.dataset.dateLabel || '날짜';
             date.textContent = card.dataset.registered ? label + ' ' + card.dataset.registered : '';
         }
+        if (source) {
+            source.hidden = !card.dataset.sourceLabel;
+            source.textContent = card.dataset.sourceLabel ? '출처 ' + card.dataset.sourceLabel : '';
+        }
         if (members) {
-            const source = card.querySelector('.ar-card-members');
+            const chips = card.querySelector('.ar-card-members');
             members.replaceChildren();
-            if (source) members.innerHTML = source.innerHTML;
-            const count = members.querySelectorAll('.ar-album-member').length;
-            const cols = count <= 1 ? 1 : count <= 4 ? 2 : count <= 12 ? 3 : 4;
-            members.style.setProperty('--member-count', String(Math.max(count, 1)));
-            members.style.setProperty('--member-cols', String(cols));
-            members.dataset.memberCount = String(count);
+            if (chips) members.innerHTML = chips.innerHTML;
+            members.dataset.memberCount = String(members.querySelectorAll('.unit-member-chip').length);
         }
         [edit, remove].forEach(button => {
             if (!button) return;
@@ -38,6 +39,7 @@
             button.dataset.artists = card.dataset.artists || '';
             button.dataset.url = url;
             button.dataset.registered = card.dataset.registered || '';
+            button.dataset.source = card.dataset.source || '';
         });
     }
 
