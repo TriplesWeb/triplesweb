@@ -22,7 +22,7 @@ ${site}${css}${siteUi}
 <body class="site-page">
 <main class="archive-page is-folder-view" data-archive-kind="image" data-date-label="사진 날짜">
   <section class="ar-panel ar-toolbar">
-    <form class="ar-filters" id="archiveFilterForm">
+    <form class="ar-filters" id="archiveFilterForm" onsubmit="event.preventDefault()">
       <div class="ar-filter-tools">
         <button type="button" class="ar-member-toggle" id="archiveMemberToggle" aria-expanded="false" aria-controls="archiveMemberPanel">
           <span class="material-symbols-outlined" aria-hidden="true">group</span>
@@ -352,8 +352,8 @@ ${site}${css}${siteUi}
         height: dateField.height + 24
       }
     });
-    await page.locator('#editModal .ar-dialog-panel').scrollIntoViewIfNeeded();
     const editBox = await page.locator('#editModal .ar-dialog-panel').boundingBox();
+    assert.ok(editBox && editBox.width > 0 && editBox.height > 0, '수정 창이 보이지 않는다');
     await page.screenshot({
       path: path.join(artifactDir, 'archive-edit-date-source.png'),
       clip: { x: Math.max(0, editBox.x - 12), y: Math.max(0, editBox.y - 12), width: Math.min(1100, editBox.width + 24), height: editBox.height + 24 }
