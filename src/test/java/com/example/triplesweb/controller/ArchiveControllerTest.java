@@ -81,7 +81,7 @@ class ArchiveControllerTest {
 
     @Test void folderHomeListsGroupUnitAndSoloFolders() throws Exception {
         mvc.perform(get("/archive")).andExpect(status().isOk())
-                .andExpect(content().string(containsString("폴더를 선택하세요")))
+                .andExpect(content().string(not(containsString("폴더를 선택하세요"))))
                 .andExpect(content().string(containsString("ar-folder")))
                 .andExpect(content().string(containsString("S1 윤서연")))
                 .andExpect(content().string(containsString("S24 지연")))

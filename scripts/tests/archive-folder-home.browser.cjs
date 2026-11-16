@@ -58,7 +58,6 @@ body.site-admin-enabled button[data-admin-only] { display: inline-flex !importan
       <div class="ar-headline-copy">
         <div class="ar-kicker">Archive</div>
         <h1>아카이브</h1>
-        <p>폴더를 선택하세요</p>
       </div>
       <button type="button" class="ar-submit ar-home-upload" data-admin-only>사진 추가</button>
       <div class="ar-stats" id="archiveStats">
@@ -363,6 +362,8 @@ ${siteUi}
         shineBlend: shine.mixBlendMode,
         uploadText: upload?.textContent.trim() || '',
         uploadVisible: uploadBox.width > 0 && uploadBox.height > 0,
+        uploadHeight: Math.round(uploadBox.height),
+        hint: document.querySelector('.ar-headline-copy p')?.textContent.trim() || '',
         uploadRight: Math.round(headline.right - uploadBox.right),
         uploadBottom: Math.round(headline.bottom - uploadBox.bottom),
         pageMax: pageStyle.maxWidth,
@@ -395,8 +396,10 @@ ${siteUi}
     assert.ok(home.padL >= 40 && home.padR >= 40, '폴더 홈 좌우 여백이 좁다: ' + JSON.stringify(home));
     assert.ok(Math.abs(home.headlineWidth - home.foldersWidth) <= 1, '제목 패널과 폴더 폭이 다르다: ' + JSON.stringify(home));
     assert.ok(home.statWidth <= 320, '통계 카드가 여전히 크다: ' + home.statWidth);
-    assert.ok(home.statHeight <= 100, '통계 카드 높이가 그대로다: ' + home.statHeight);
-    assert.ok(home.statShift >= 48 && home.statShift <= 72, '홈 통계가 오른쪽 위로 이동하지 않았다: ' + home.statShift);
+    assert.ok(home.statHeight <= 84, '통계 카드 높이가 그대로다: ' + home.statHeight);
+    assert.ok(home.statShift >= 76 && home.statShift <= 102, '홈 통계가 오른쪽 위로 이동하지 않았다: ' + home.statShift);
+    assert.equal(home.hint, '', '폴더를 선택하세요 안내가 남아 있다');
+    assert.ok(home.uploadHeight >= 32 && home.uploadHeight <= 38, '사진 추가 버튼이 여전히 두껍다: ' + home.uploadHeight);
     assert.equal(home.countHidden, true, '폴더 사진 숫자가 보인다');
 
     await page.hover('.ar-folder.is-group');

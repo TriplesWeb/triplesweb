@@ -44,14 +44,21 @@ body.site-page > main.archive-page.is-folder-view {
 }
 .ar-hero { display: grid; grid-template-columns: 1fr; gap: 1.15rem; }
 .ar-headline { position: relative; overflow: hidden; padding: 1.7rem 3.6rem 1.3rem 1.7rem; display: flex; flex-direction: column; justify-content: flex-start; min-height: 0; --folder-color: #00f5d4; }
-body.site-admin-enabled .archive-page.is-folder-home .ar-headline,
+body.site-admin-enabled .archive-page.is-folder-home .ar-headline { padding-bottom: 3.15rem; }
 body.site-admin-enabled .archive-page.is-folder-view .ar-headline,
 body.site-admin-enabled .archive-page.is-browse .ar-headline { padding-bottom: 4.4rem; }
+.archive-page.is-folder-home .ar-headline {
+    padding: 1.15rem 1.35rem 0.95rem;
+}
 .ar-home-upload {
     position: absolute;
     right: 1.15rem;
     bottom: 1.05rem;
     z-index: 3;
+    min-height: 2.2rem;
+    padding: 0.32rem 1.05rem;
+    font-size: 0.84rem;
+    line-height: 1.15;
 }
 .ar-stats-toggle {
     position: absolute;
@@ -391,13 +398,13 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     max-width: 46rem;
 }
 .archive-page.is-folder-home .ar-stats {
-    max-width: 38rem;
-    gap: 0.55rem;
-    margin-top: 0.35rem;
+    max-width: 34rem;
+    gap: 0.45rem;
+    margin-top: 0.15rem;
 }
 @media (min-width: 820px) {
     .archive-page.is-folder-home .ar-stats {
-        transform: translate(3.6rem, -1.25rem);
+        transform: translate(5.5rem, -2.15rem);
     }
 }
 .archive-page.is-folder-view .ar-stats,
@@ -423,8 +430,8 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     border-radius: 0.8rem;
 }
 .archive-page.is-folder-home .ar-stat {
-    min-height: 5.55rem;
-    padding: 0.75rem 0.8rem;
+    min-height: 4.55rem;
+    padding: 0.58rem 0.7rem;
     border-radius: 0.65rem;
 }
 .archive-page.is-folder-view .ar-stat,
@@ -1737,7 +1744,7 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     .ar-detail-photo img { max-height: 42vh; }
     .ar-folders { grid-template-columns: repeat(auto-fill, minmax(5.6rem, 1fr)); gap: 1rem 0.55rem; }
     .ar-folder-icon { width: 4.8rem; height: 3.9rem; }
-    body.site-admin-enabled .archive-page.is-folder-home .ar-headline,
+    body.site-admin-enabled .archive-page.is-folder-home .ar-headline { padding-bottom: 3.15rem; }
     body.site-admin-enabled .archive-page.is-folder-view .ar-headline,
     body.site-admin-enabled .archive-page.is-browse .ar-headline { padding-bottom: 4.2rem; }
     .ar-home-upload { right: 0.85rem; bottom: 0.85rem; }
