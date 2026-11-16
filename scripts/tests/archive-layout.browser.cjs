@@ -282,6 +282,8 @@ ${siteUi}
         resetInTools: tools.contains(reset),
         searchInTools: tools.contains(search),
         filterSize: getComputedStyle(document.querySelector('.ar-filter-summary')).fontSize,
+        filterMemberSize: getComputedStyle(document.querySelector('.ar-filter-member')).fontSize,
+        filterTextSize: getComputedStyle(document.querySelector('.ar-filter-summary strong')).fontSize,
         resetClass: reset.className,
         resetFont: resetStyle.fontSize,
         goFont: getComputedStyle(go).fontSize,
@@ -312,6 +314,7 @@ ${siteUi}
     assert.equal(toolbar.resetInTools, true);
     assert.equal(toolbar.searchInTools, true);
     assert.ok(parseFloat(toolbar.filterSize) <= 16, '검색 요약 글자가 크다: ' + toolbar.filterSize);
+    assert.equal(toolbar.filterTextSize, toolbar.filterMemberSize, '검색 요약 글자 크기가 멤버 이름과 다르다: ' + JSON.stringify({ text: toolbar.filterTextSize, member: toolbar.filterMemberSize }));
     assert.match(toolbar.resetClass, /site-btn--reset/, '초기화가 회색 유리 버튼이 아니다: ' + toolbar.resetClass);
     assert.ok(toolbar.resetColor.includes('255') || toolbar.resetColor.includes('#fff'), '초기화 글자가 흰색이 아니다: ' + toolbar.resetColor);
     assert.equal(toolbar.resetAlign, true, '초기화가 검색 버튼과 세로로 안 맞는다');
@@ -486,6 +489,7 @@ ${siteUi}
     const artifactDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
     fs.mkdirSync(artifactDir, { recursive: true });
     await page.locator('.ar-filter-tools').screenshot({ path: path.join(artifactDir, 'archive-reset-search-size.png') });
+    await page.locator('.ar-stat-filter').screenshot({ path: path.join(artifactDir, 'archive-filter-summary-size.png') });
     await page.screenshot({ path: path.join(artifactDir, 'archive-layout-stats-members.png'), fullPage: true });
     console.log('PASS: 아카이브 통계 접기·검색 버튼·매슨리 그리드');
   } finally {

@@ -388,7 +388,7 @@ body.site-admin-enabled .archive-page.is-browse .ar-headline { padding-bottom: 4
 }
 .ar-filter-more { color: #b9cac4; font-weight: 650; margin-left: 0.28rem; }
 .ar-filter-sep { color: #b9cac4; font-weight: 650; padding: 0 0.08rem 0 0.2rem; }
-.ar-filter-summary strong { font-weight: 700; }
+.ar-filter-summary strong { font-size: 1em; font-weight: 700; }
 
 .ar-block { display: flex; flex-direction: column; gap: 0.85rem; }
 .ar-section-title { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
