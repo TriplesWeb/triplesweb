@@ -75,6 +75,9 @@ public class ArchiveController {
         if (folder == null || folder.isBlank()) {
             return renderFolderHome(request, session, model);
         }
+        if (isFolderIndex(folder) && (combo == null || combo.isBlank()) && (chem == null || chem.isBlank())) {
+            return renderFolderIndex(folder, request, session, model);
+        }
         return renderArchive(type, page, size, q, from, to, on, members, folder, combo, source, chem,
                 false, request, session, model);
     }
@@ -163,6 +166,60 @@ public class ArchiveController {
         model.addAttribute("archiveTotalPages", 1);
         model.addAttribute("hasArchives", !folders.isEmpty());
         model.addAttribute("archiveSources", sourceOptions(null));
+        model.addAttribute("hasArchiveBack", false);
+        model.addAttribute("archiveBackHref", "/archive");
+        model.addAttribute("archiveFolderIndex", false);
+        addCommonDateFlags(model);
+        return "archive/archive";
+    }
+
+    private String renderFolderIndex(String folder, HttpServletRequest request, HttpSession session, Model model) {
+        boolean isAdmin = aboutAdminAuth.isAdmin(request, session);
+        List<Artist> artists = artistRepository.findAll();
+        List<Unit> units = unitService.listVisible();
+        List<ArchiveFolderClassifier.UnitMembers> unitMembers = unitSnapshots(units);
+        List<Archive> archives = archiveService.index();
+        FolderCounts counted = folderCounts(archives, unitMembers);
+        boolean unitIndex = isUnitIndex(folder);
+        List<Map<String, Object>> folders = unitIndex
+                ? unitFolderCards(units, artists, counted)
+                : comboFolderCards(counted);
+        long photoCount = 0;
+        long videoCount = 0;
+        for (Archive archive : archives) {
+            ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(archive.getArtistNames(), unitMembers);
+            boolean wanted = unitIndex
+                    ? match.kind() == ArchiveFolderClassifier.Kind.UNIT
+                    : match.kind() == ArchiveFolderClassifier.Kind.COMBO;
+            if (!wanted) continue;
+            if (archive.getType() == MediaType.IMAGE) photoCount++;
+            else if (archive.getType() == MediaType.VIDEO) videoCount++;
+        }
+        String title = unitIndex ? "유닛별" : "케미";
+        String accent = unitIndex ? "#a78bfa" : "#7dd3fc";
+        model.addAttribute("archiveFolderHome", true);
+        model.addAttribute("archiveFolderIndex", true);
+        model.addAttribute("archiveFolderView", false);
+        model.addAttribute("archiveBrowse", false);
+        model.addAttribute("archiveFolders", folders);
+        model.addAttribute("folderTitle", title);
+        model.addAttribute("folderAccent", accent);
+        model.addAttribute("hasArchiveBack", true);
+        model.addAttribute("archiveBackHref", "/archive");
+        model.addAttribute("isAdmin", isAdmin);
+        model.addAttribute("isAuthenticated", isAdmin);
+        model.addAttribute("artistOptions", artists);
+        model.addAttribute("memberPickerOptions", memberOptions(artists, List.of()));
+        model.addAttribute("imageArchive", true);
+        model.addAttribute("videoArchive", false);
+        model.addAttribute("archiveTotal", photoCount);
+        model.addAttribute("archiveVideoTotal", videoCount);
+        model.addAttribute("archiveFolderCount", folders.size());
+        model.addAttribute("archivePageCount", folders.size());
+        model.addAttribute("archivePageDisplay", 1);
+        model.addAttribute("archiveTotalPages", 1);
+        model.addAttribute("hasArchives", !folders.isEmpty());
+        model.addAttribute("archiveSources", sourceOptions(null));
         addCommonDateFlags(model);
         return "archive/archive";
     }
@@ -218,7 +275,10 @@ public class ArchiveController {
         model.addAttribute("isAdmin", isAdmin);
         model.addAttribute("archiveBrowse", browse);
         model.addAttribute("archiveFolderHome", false);
+        model.addAttribute("archiveFolderIndex", false);
         model.addAttribute("archiveFolderView", !browse);
+        model.addAttribute("hasArchiveBack", !browse);
+        model.addAttribute("archiveBackHref", folderBackHref(folderKey));
         model.addAttribute("showMemberFilter", browse || !isSoloFolder(folderKey));
         model.addAttribute("showChemistryFilter", !browse && isComboFolder(folderKey));
         List<Map<String, Object>> chemistryOptions = chemistryOptions(folderKey, chemistry);
@@ -547,7 +607,25 @@ public class ArchiveController {
     }
 
     private static boolean isComboFolder(String folder) {
-        return folder != null && (folder.equalsIgnoreCase("combo") || ArchiveFolderClassifier.comboSize(folder) != null);
+        return ArchiveFolderClassifier.comboSize(folder) != null;
+    }
+
+    private static boolean isUnitIndex(String folder) {
+        return folder != null && (folder.equalsIgnoreCase("units") || folder.equalsIgnoreCase("unit"));
+    }
+
+    private static boolean isComboIndex(String folder) {
+        return folder != null && (folder.equalsIgnoreCase("combos") || folder.equalsIgnoreCase("combo"));
+    }
+
+    private static boolean isFolderIndex(String folder) {
+        return isUnitIndex(folder) || isComboIndex(folder);
+    }
+
+    private static String folderBackHref(String folder) {
+        if (folder != null && folder.toLowerCase(Locale.ROOT).startsWith("unit-")) return "/archive?folder=units";
+        if (isComboFolder(folder)) return "/archive?folder=combos";
+        return "/archive";
     }
 
     private static List<String> comboMembers(String combo) {
@@ -641,6 +719,8 @@ public class ArchiveController {
     private String folderTitle(String folder, List<String> comboMembers, List<ArchiveFolderClassifier.UnitMembers> units) {
         if (folder == null || folder.isBlank()) return "";
         if (folder.equalsIgnoreCase("s")) return "전체 멤버";
+        if (isUnitIndex(folder)) return "유닛별";
+        if (isComboIndex(folder)) return "케미";
         Integer comboSize = ArchiveFolderClassifier.comboSize(folder);
         if (comboSize != null) return ArchiveFolderClassifier.comboLabel(comboSize);
         if (isComboFolder(folder)) {
@@ -662,6 +742,8 @@ public class ArchiveController {
     private String folderAccent(String folder, List<Unit> units, List<Artist> artists) {
         if (folder == null || folder.isBlank()) return "#00f5d4";
         if (folder.equalsIgnoreCase("s")) return "#f5c518";
+        if (isUnitIndex(folder)) return "#a78bfa";
+        if (isComboIndex(folder)) return "#7dd3fc";
         Integer comboSize = ArchiveFolderClassifier.comboSize(folder);
         if (comboSize != null) {
             String[] comboColors = { "#7dd3fc", "#a5b4fc", "#c4b5fd", "#86efac" };
@@ -691,39 +773,43 @@ public class ArchiveController {
         return "#00f5d4";
     }
 
-    private List<Map<String, Object>> folderCards(List<Archive> archives, List<Unit> units,
-                                                  List<ArchiveFolderClassifier.UnitMembers> unitMembers,
-                                                  List<Artist> artists) {
+    private record FolderCounts(Map<String, Integer> counts, Map<String, String> previews) {}
+
+    private FolderCounts folderCounts(List<Archive> archives, List<ArchiveFolderClassifier.UnitMembers> unitMembers) {
         Map<String, Integer> counts = new LinkedHashMap<>();
         Map<String, String> previews = new LinkedHashMap<>();
         for (Archive archive : archives) {
             ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(archive.getArtistNames(), unitMembers);
             if (match.kind() == ArchiveFolderClassifier.Kind.OTHER) continue;
-            String preview = match.kind() == ArchiveFolderClassifier.Kind.SOLO ? "" : archivePreview(archive);
+            boolean hideArt = match.kind() == ArchiveFolderClassifier.Kind.SOLO
+                    || match.kind() == ArchiveFolderClassifier.Kind.COMBO
+                    || match.kind() == ArchiveFolderClassifier.Kind.GROUP;
+            String preview = hideArt ? "" : archivePreview(archive);
             String key = match.key();
             counts.merge(key, 1, Integer::sum);
             if (!preview.isBlank()) previews.putIfAbsent(key, preview);
         }
-        List<Map<String, Object>> folders = new ArrayList<>();
-        folders.add(folderCard("s", "전체 멤버", "#f5c518", "/archive?folder=s", counts.getOrDefault("s", 0),
-                previews.get("s"), ArchiveFolderClassifier.Kind.GROUP, true));
+        return new FolderCounts(counts, previews);
+    }
+
+    private List<Map<String, Object>> folderCards(List<Archive> archives, List<Unit> units,
+                                                  List<ArchiveFolderClassifier.UnitMembers> unitMembers,
+                                                  List<Artist> artists) {
+        FolderCounts counted = folderCounts(archives, unitMembers);
+        int unitPhotos = 0;
+        int comboPhotos = 0;
         for (Unit unit : units == null ? List.<Unit>of() : units) {
             if (unit == null || unit.getUnitId() == null) continue;
-            String key = "unit-" + unit.getUnitId();
-            String href = "/archive?folder=" + URLEncoder.encode(key, StandardCharsets.UTF_8);
-            String color = unitColor(unit, artists);
-            folders.add(folderCard(key, unit.getUnitName(), color, href, counts.getOrDefault(key, 0),
-                    firstNonBlank(previews.get(key), registeredUnitImage(unit)),
-                    ArchiveFolderClassifier.Kind.UNIT, false));
+            unitPhotos += counted.counts().getOrDefault("unit-" + unit.getUnitId(), 0);
         }
-        String[] comboColors = { "#7dd3fc", "#a5b4fc", "#c4b5fd", "#86efac" };
-        for (int i = 0; i < ArchiveFolderClassifier.COMBO_FOLDERS.length; i++) {
-            int min = ArchiveFolderClassifier.COMBO_FOLDERS[i];
-            String key = "combo-" + min;
-            folders.add(folderCard(key, ArchiveFolderClassifier.comboLabel(min), comboColors[i],
-                    "/archive?folder=" + key, counts.getOrDefault(key, 0), previews.get(key),
-                    ArchiveFolderClassifier.Kind.COMBO, false));
+        for (int min : ArchiveFolderClassifier.COMBO_FOLDERS) {
+            comboPhotos += counted.counts().getOrDefault("combo-" + min, 0);
         }
+        List<Map<String, Object>> folders = new ArrayList<>();
+        folders.add(folderCard("s", "전체 멤버", "#f5c518", "/archive?folder=s", counted.counts().getOrDefault("s", 0),
+                "", ArchiveFolderClassifier.Kind.GROUP, true));
+        folders.add(parentCard("units", "유닛별", "#a78bfa", "/archive?folder=units", unitPhotos));
+        folders.add(parentCard("combos", "케미", "#7dd3fc", "/archive?folder=combos", comboPhotos));
         for (int i = 0; i < MemberPortraitOptions.koreanOrder().size(); i++) {
             String name = MemberPortraitOptions.koreanOrder().get(i);
             String key = "s" + (i + 1);
@@ -736,10 +822,56 @@ public class ArchiveController {
                 }
             }
             folders.add(folderCard(key, "S" + (i + 1) + " " + name, color,
-                    "/archive?folder=" + key, counts.getOrDefault(key, 0), "",
+                    "/archive?folder=" + key, counted.counts().getOrDefault(key, 0), "",
                     ArchiveFolderClassifier.Kind.SOLO, false));
         }
         return folders;
+    }
+
+    private List<Map<String, Object>> unitFolderCards(List<Unit> units, List<Artist> artists, FolderCounts counted) {
+        List<Map<String, Object>> folders = new ArrayList<>();
+        for (Unit unit : units == null ? List.<Unit>of() : units) {
+            if (unit == null || unit.getUnitId() == null) continue;
+            String key = "unit-" + unit.getUnitId();
+            String href = "/archive?folder=" + URLEncoder.encode(key, StandardCharsets.UTF_8);
+            String color = unitColor(unit, artists);
+            folders.add(folderCard(key, unit.getUnitName(), color, href, counted.counts().getOrDefault(key, 0),
+                    firstNonBlank(counted.previews().get(key), registeredUnitImage(unit)),
+                    ArchiveFolderClassifier.Kind.UNIT, false));
+        }
+        return folders;
+    }
+
+    private List<Map<String, Object>> comboFolderCards(FolderCounts counted) {
+        String[] comboColors = { "#7dd3fc", "#a5b4fc", "#c4b5fd", "#86efac" };
+        List<Map<String, Object>> folders = new ArrayList<>();
+        for (int i = 0; i < ArchiveFolderClassifier.COMBO_FOLDERS.length; i++) {
+            int min = ArchiveFolderClassifier.COMBO_FOLDERS[i];
+            String key = "combo-" + min;
+            folders.add(folderCard(key, ArchiveFolderClassifier.comboLabel(min), comboColors[i],
+                    "/archive?folder=" + key, counted.counts().getOrDefault(key, 0), "",
+                    ArchiveFolderClassifier.Kind.COMBO, false));
+        }
+        return folders;
+    }
+
+    private Map<String, Object> parentCard(String key, String label, String color, String href, int count) {
+        Map<String, Object> card = new LinkedHashMap<>();
+        card.put("key", key);
+        card.put("label", label);
+        card.put("color", color);
+        card.put("href", href);
+        card.put("count", count);
+        card.put("hasCount", count > 0);
+        card.put("preview", "");
+        card.put("hasPreview", false);
+        card.put("folderArt", "");
+        card.put("hasFolderArt", false);
+        card.put("groupFolder", false);
+        card.put("soloFolder", false);
+        card.put("comboFolder", false);
+        card.put("parentFolder", true);
+        return card;
     }
 
     private static String archivePreview(Archive archive) {
@@ -882,14 +1014,10 @@ public class ArchiveController {
     private Map<String, Object> folderCard(String key, String label, String color, String href,
                                            int count, String preview, ArchiveFolderClassifier.Kind kind, boolean group) {
         Map<String, Object> card = new LinkedHashMap<>();
-        String art = archiveFolderArt.urlFor(kind, key, label);
-        String shownPreview = kind == ArchiveFolderClassifier.Kind.SOLO ? "" : (preview == null ? "" : preview);
+        boolean hideArt = kind == ArchiveFolderClassifier.Kind.COMBO;
+        String art = hideArt ? "" : archiveFolderArt.urlFor(kind, key, label);
+        String shownPreview = hideArt || kind == ArchiveFolderClassifier.Kind.SOLO ? "" : (preview == null ? "" : preview);
         boolean customArt = !art.isBlank();
-        if (!customArt && kind == ArchiveFolderClassifier.Kind.COMBO && !shownPreview.isBlank()) {
-            art = shownPreview;
-            customArt = true;
-            shownPreview = "";
-        }
         card.put("key", key);
         card.put("label", label);
         card.put("color", color == null || color.isBlank() ? "#b9cac4" : color);
@@ -903,6 +1031,7 @@ public class ArchiveController {
         card.put("groupFolder", group);
         card.put("soloFolder", kind == ArchiveFolderClassifier.Kind.SOLO);
         card.put("comboFolder", kind == ArchiveFolderClassifier.Kind.COMBO);
+        card.put("parentFolder", false);
         return card;
     }
 

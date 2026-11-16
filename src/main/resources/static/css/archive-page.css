@@ -226,7 +226,8 @@ body.site-admin-enabled .archive-page.is-folder-home .ar-headline { padding-bott
 }
 .ar-folder.is-solo .ar-folder-preview,
 .ar-folder.is-solo .ar-folder-body img,
-.ar-folder.is-combo .ar-folder-preview {
+.ar-folder.is-combo .ar-folder-preview,
+.archive-page.is-folder-home .ar-folder.is-combo .ar-folder-art {
     display: none;
 }
 .ar-folder-label {

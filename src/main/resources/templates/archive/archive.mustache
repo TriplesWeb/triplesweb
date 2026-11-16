@@ -12,19 +12,20 @@
 <div class="ar-glow ar-glow-mint"></div>
 {{>layout/header}}
 
-<main class="archive-page{{#archiveBrowse}} is-browse{{/archiveBrowse}}{{#archiveFolderHome}} is-folder-home{{/archiveFolderHome}}{{#archiveFolderView}} is-folder-view{{/archiveFolderView}}" data-archive-kind="{{#imageArchive}}image{{/imageArchive}}{{#videoArchive}}video{{/videoArchive}}" data-date-label="{{mediaDateLabel}}">
+<main class="archive-page{{#archiveBrowse}} is-browse{{/archiveBrowse}}{{#archiveFolderHome}} is-folder-home{{/archiveFolderHome}}{{#archiveFolderIndex}} is-folder-index{{/archiveFolderIndex}}{{#archiveFolderView}} is-folder-view{{/archiveFolderView}}" data-archive-kind="{{#imageArchive}}image{{/imageArchive}}{{#videoArchive}}video{{/videoArchive}}" data-date-label="{{mediaDateLabel}}">
     <section class="ar-hero{{#archiveBrowse}} ar-hero-browse{{/archiveBrowse}}">
-        <div class="ar-panel ar-headline{{#archiveFolderView}} is-member-space{{/archiveFolderView}}"{{#archiveFolderView}} style="--folder-color: {{folderAccent}}"{{/archiveFolderView}}>
+        <div class="ar-panel ar-headline{{#archiveFolderView}} is-member-space{{/archiveFolderView}}{{#archiveFolderIndex}} is-member-space{{/archiveFolderIndex}}"{{#folderAccent}} style="--folder-color: {{folderAccent}}"{{/folderAccent}}>
             <button type="button" class="ar-stats-toggle" data-stats-toggle aria-expanded="true" aria-controls="archiveStats" aria-label="통계 접기">
                 <span data-stats-icon aria-hidden="true">−</span>
             </button>
-            {{#archiveFolderView}}<a class="site-btn site-btn--reset ar-back-folders" href="/archive">←목록으로</a>{{/archiveFolderView}}
+            {{#hasArchiveBack}}<a class="site-btn site-btn--reset ar-back-folders" href="{{archiveBackHref}}">←목록으로</a>{{/hasArchiveBack}}
             <div class="ar-headline-copy">
                 <div class="ar-kicker"><span class="material-symbols-outlined">{{#archiveFolderHome}}folder{{/archiveFolderHome}}{{^archiveFolderHome}}{{#imageArchive}}photo_library{{/imageArchive}}{{#videoArchive}}play_circle{{/videoArchive}}{{/archiveFolderHome}}</span> Archive</div>
                 <h1>아카이브</h1>
                 {{#archiveBrowse}}<p>사진 전체</p>{{/archiveBrowse}}
                 {{#archiveFolderView}}<p class="ar-folder-title">{{folderTitle}}</p>{{/archiveFolderView}}
-                {{#archiveFolderHome}}<p>폴더를 선택하세요</p>{{/archiveFolderHome}}
+                {{#archiveFolderIndex}}<p class="ar-folder-title">{{folderTitle}}</p>{{/archiveFolderIndex}}
+                {{#archiveFolderHome}}{{^archiveFolderIndex}}<p>폴더를 선택하세요</p>{{/archiveFolderIndex}}{{/archiveFolderHome}}
             </div>
             {{#archiveFolderHome}}
             <button type="button" class="ar-submit ar-home-upload" data-admin-only onclick="showAddModal()">사진 추가</button>

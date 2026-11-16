@@ -86,15 +86,19 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("S24 지연")))
                 .andExpect(content().string(containsString("ar-folder is-group")))
                 .andExpect(content().string(containsString("전체 멤버")))
+                .andExpect(content().string(containsString("ar-folder is-parent")))
+                .andExpect(content().string(containsString("ar-folder-label\">유닛별</span>")))
+                .andExpect(content().string(containsString("ar-folder-label\">케미</span>")))
+                .andExpect(content().string(containsString("folder&#x3D;units")))
+                .andExpect(content().string(containsString("folder&#x3D;combos")))
                 .andExpect(content().string(containsString("/archive?folder")))
                 .andExpect(content().string(not(containsString("id=\"archiveGrid\""))))
                 .andExpect(content().string(not(containsString("site-section-tabs"))))
                 .andExpect(content().string(containsString("ar-folder-shape")))
                 .andExpect(content().string(containsString("ar-folder is-solo")))
-                .andExpect(content().string(containsString("ar-folder-label\">2명 케미</span>")))
-                .andExpect(content().string(containsString("ar-folder-label\">3명 케미</span>")))
-                .andExpect(content().string(containsString("ar-folder-label\">4명 케미</span>")))
-                .andExpect(content().string(containsString("ar-folder-label\">5명 이상</span>")))
+                .andExpect(content().string(not(containsString("ar-folder-label\">2명 케미</span>"))))
+                .andExpect(content().string(not(containsString("ar-folder-label\">3명 케미</span>"))))
+                .andExpect(content().string(not(containsString("ar-folder-label\">5명 이상</span>"))))
                 .andExpect(content().string(containsString("ar-home-upload")))
                 .andExpect(content().string(containsString("사진 추가")))
                 .andExpect(content().string(containsString("id=\"uploadModal\"")));
@@ -115,27 +119,43 @@ class ArchiveControllerTest {
         when(archiveService.index()).thenReturn(List.of(duo, otherDuo, trio, six));
         String html = mvc.perform(get("/archive")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">2명 케미</span>");
-        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">3명 케미</span>");
-        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">4명 케미</span>");
-        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">5명 이상</span>");
-        org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;combo-2");
-        org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;combo-3");
-        org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;combo-4");
-        org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;combo-5");
-        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;combo-6");
-        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("윤서연 × 정혜린");
-        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder=combo&amp;combo=");
-        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;combo&amp;combo");
-        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder is-combo");
-        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-art");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">케미</span>");
+        org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;combos");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-label\">2명 케미</span>");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;combo-2");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder is-combo");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-art");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-preview");
-        int comboTwo = html.indexOf("folder&#x3D;combo-2");
-        int comboTwoEnd = html.indexOf("</a>", comboTwo);
-        org.assertj.core.api.Assertions.assertThat(html.substring(comboTwo, comboTwoEnd)).contains("ar-folder-count\">2</span>");
-        int comboFour = html.indexOf("folder&#x3D;combo-4");
-        int comboFourEnd = html.indexOf("</a>", comboFour);
-        org.assertj.core.api.Assertions.assertThat(html.substring(comboFour, comboFourEnd)).doesNotContain("ar-folder-count");
+        int chem = html.indexOf("folder&#x3D;combos");
+        int chemEnd = html.indexOf("</a>", chem);
+        org.assertj.core.api.Assertions.assertThat(html.substring(chem, chemEnd)).contains("ar-folder-count\">4</span>");
+
+        String index = mvc.perform(get("/archive").param("folder", "combos")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(index).contains(">케미</p>");
+        org.assertj.core.api.Assertions.assertThat(index).contains("←목록으로");
+        org.assertj.core.api.Assertions.assertThat(index).contains("href=\"/archive\"");
+        org.assertj.core.api.Assertions.assertThat(index).contains("ar-folder-label\">2명 케미</span>");
+        org.assertj.core.api.Assertions.assertThat(index).contains("ar-folder-label\">3명 케미</span>");
+        org.assertj.core.api.Assertions.assertThat(index).contains("ar-folder-label\">4명 케미</span>");
+        org.assertj.core.api.Assertions.assertThat(index).contains("ar-folder-label\">5명 이상</span>");
+        org.assertj.core.api.Assertions.assertThat(index).contains("folder&#x3D;combo-2");
+        org.assertj.core.api.Assertions.assertThat(index).contains("folder&#x3D;combo-3");
+        org.assertj.core.api.Assertions.assertThat(index).contains("folder&#x3D;combo-4");
+        org.assertj.core.api.Assertions.assertThat(index).contains("folder&#x3D;combo-5");
+        org.assertj.core.api.Assertions.assertThat(index).doesNotContain("folder&#x3D;combo-6");
+        org.assertj.core.api.Assertions.assertThat(index).doesNotContain("윤서연 × 정혜린");
+        org.assertj.core.api.Assertions.assertThat(index).doesNotContain("folder=combo&amp;combo=");
+        org.assertj.core.api.Assertions.assertThat(index).doesNotContain("folder&#x3D;combo&amp;combo");
+        org.assertj.core.api.Assertions.assertThat(index).contains("ar-folder is-combo");
+        org.assertj.core.api.Assertions.assertThat(index).doesNotContain("ar-folder-art");
+        org.assertj.core.api.Assertions.assertThat(index).doesNotContain("ar-folder-preview");
+        int comboTwo = index.indexOf("folder&#x3D;combo-2");
+        int comboTwoEnd = index.indexOf("</a>", comboTwo);
+        org.assertj.core.api.Assertions.assertThat(index.substring(comboTwo, comboTwoEnd)).contains("ar-folder-count\">2</span>");
+        int comboFour = index.indexOf("folder&#x3D;combo-4");
+        int comboFourEnd = index.indexOf("</a>", comboFour);
+        org.assertj.core.api.Assertions.assertThat(index.substring(comboFour, comboFourEnd)).doesNotContain("ar-folder-count");
     }
 
     @Test void memberFoldersHidePreviewImages() throws Exception {
@@ -154,6 +174,9 @@ class ArchiveControllerTest {
         stubFolder(MediaType.IMAGE, photo());
         mvc.perform(get("/archive").param("folder", "combo-2")).andExpect(status().isOk())
                 .andExpect(content().string(containsString(">2명 케미</p>")))
+                .andExpect(content().string(org.hamcrest.Matchers.anyOf(
+                        containsString("href=\"/archive?folder=combos\""),
+                        containsString("href=\"/archive?folder&#x3D;combos\""))))
                 .andExpect(content().string(containsString("id=\"archiveChem\"")))
                 .andExpect(content().string(containsString("케미 전체")))
                 .andExpect(content().string(containsString("id=\"archive-member-picker\"")))
@@ -166,8 +189,16 @@ class ArchiveControllerTest {
         aura.setUnitName("Aura");
         aura.setVisible(true);
         when(unitService.listVisible()).thenReturn(List.of(aura));
-        String html = mvc.perform(get("/archive")).andExpect(status().isOk())
+        String home = mvc.perform(get("/archive")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(home).contains("ar-folder-label\">유닛별</span>");
+        org.assertj.core.api.Assertions.assertThat(home).doesNotContain("folder&#x3D;unit-17");
+        org.assertj.core.api.Assertions.assertThat(home).doesNotContain("Aura");
+
+        String html = mvc.perform(get("/archive").param("folder", "units")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(html).contains(">유닛별</p>");
+        org.assertj.core.api.Assertions.assertThat(html).contains("←목록으로");
         org.assertj.core.api.Assertions.assertThat(html).contains("Aura");
         org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;unit-17");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("image-upload-pending");
