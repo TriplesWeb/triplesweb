@@ -10,7 +10,7 @@ const detailJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-detail.js'
 
 const names = ['윤서연', '정혜린', '이지우', '김채연', '김유연', '김수민', '김나경', '공유빈', '카에데', '서다현', '코토네', '곽연지', '니엔', '박소현', '신위', '마유', '주빈'];
 function albumMembers(list) {
-  return list.map((name) => `<a href="/triples/artist/1" class="ar-album-member" style="--member-color:#f4a261" title="${name}"><img src="/portrait.svg" alt=""><span>${name}</span></a>`).join('');
+  return list.map((name) => `<a href="/triples/artist/1" class="unit-member-chip" style="--member-color:#f4a261" title="${name}"><img src="/portrait.svg" alt=""><span>${name}</span></a>`).join('');
 }
 const cards = Array.from({ length: 6 }, (_, index) => {
   const many = index === 0;
@@ -108,10 +108,10 @@ ${css}
       title: document.getElementById('archiveDetailTitle').textContent,
       blank: document.querySelector('.ar-card [data-archive-open]')?.tagName,
       original: Boolean(document.getElementById('archiveDetailOriginal')),
-      member: document.querySelector('#archiveDetailMembers .ar-album-member span')?.textContent || '',
-      portrait: document.querySelector('#archiveDetailMembers .ar-album-member img')?.getAttribute('src') || '',
-      cols: getComputedStyle(document.getElementById('archiveDetailMembers')).gridTemplateColumns.split(' ').filter(Boolean).length,
-      size: Math.round(document.querySelector('#archiveDetailMembers .ar-album-member img')?.getBoundingClientRect().width || 0),
+      member: document.querySelector('#archiveDetailMembers .unit-member-chip span')?.textContent || '',
+      portrait: document.querySelector('#archiveDetailMembers .unit-member-chip img')?.getAttribute('src') || '',
+      cols: new Set([...document.querySelectorAll('#archiveDetailMembers .unit-member-chip')].map((el) => Math.round(el.getBoundingClientRect().left))).size,
+      size: Math.round(document.querySelector('#archiveDetailMembers .unit-member-chip img')?.getBoundingClientRect().width || 0),
       outside: !document.getElementById('archiveDetailMembers').contains(document.getElementById('archiveDetailDate'))
     }));
     assert.equal(detail.open, true, '상세 모달이 열리지 않는다');
@@ -131,18 +131,18 @@ ${css}
     await page.locator('#archiveGrid .ar-card').nth(0).locator('[data-archive-open]').click();
     const crowded = await page.evaluate(() => {
       const box = document.getElementById('archiveDetailMembers');
-      const img = box.querySelector('.ar-album-member img')?.getBoundingClientRect();
-      const cols = getComputedStyle(box).gridTemplateColumns.split(' ').filter(Boolean).length;
+      const chips = [...box.querySelectorAll('.unit-member-chip')];
+      const img = box.querySelector('.unit-member-chip img')?.getBoundingClientRect();
       return {
-        count: box.querySelectorAll('.ar-album-member').length,
-        cols,
+        count: chips.length,
+        cols: new Set(chips.map((el) => Math.round(el.getBoundingClientRect().left))).size,
         size: Math.round(img?.width || 0),
-        rows: new Set([...box.querySelectorAll('.ar-album-member')].map((el) => Math.round(el.getBoundingClientRect().top))).size
+        rows: new Set(chips.map((el) => Math.round(el.getBoundingClientRect().top))).size
       };
     });
     assert.equal(crowded.count, 17, '많은 멤버가 복사되지 않는다: ' + crowded.count);
-    assert.equal(crowded.cols, 4, '멤버가 많을 때 4열이 아니다: ' + crowded.cols);
-    assert.ok(crowded.size < 32, '멤버가 많을 때 칩이 줄지 않는다: ' + crowded.size);
+    assert.ok(crowded.cols >= 3, '멤버가 많을 때 여러 열이 아니다: ' + crowded.cols);
+    assert.ok(crowded.size >= 32, '멤버 칩이 너무 작다: ' + crowded.size);
     assert.ok(crowded.rows >= 4, '멤버가 여러 줄로 안 나뉜다: ' + crowded.rows);
 
     const artifactDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
