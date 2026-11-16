@@ -264,6 +264,51 @@
     return { name: "", salesStart: "", salesEnd: "", categories: [emptyCategory()] };
   }
 
+  function isMdBlank(regions) {
+    if (!regions || !regions.length) return true;
+    return regions.every((region) => {
+      const noName = !String(region.name || "").trim();
+      const noDates = !region.salesStart && !region.salesEnd;
+      const cats = region.categories || [];
+      const noCats = !cats.length || cats.every((cat) =>
+        !String(cat.title || "").trim() && !(cat.photos || []).length
+      );
+      return noName && noDates && noCats;
+    });
+  }
+
+  function hasMdPhotos(regions) {
+    return (regions || []).some((region) =>
+      (region.categories || []).some((cat) => (cat.photos || []).length > 0)
+    );
+  }
+
+  /** 공연 회차 지역·날짜로 MD 시드를 만든다. 날짜는 input[type=date]용 ISO. */
+  function seedMdRegionsFromEvent(eventOpt) {
+    const seeded = (eventOpt?.regions || []).map((region) => ({
+      name: String(region.name || "").trim(),
+      salesStart: toIsoDate(region.salesStart) || String(region.salesStart || "").trim(),
+      salesEnd: toIsoDate(region.salesEnd) || String(region.salesEnd || "").trim(),
+      categories: [emptyCategory()]
+    }));
+    return seeded.length ? seeded : [emptyRegion()];
+  }
+
+  /**
+   * 공연 선택 시 지역·판매일을 회차에서 채운다.
+   * 사진이 이미 있으면 덮어쓰지 않고, 빈 폼·지역/날짜만 있는 시드 상태는 교체한다.
+   */
+  function maybeSeedMdFromSelectedEvent() {
+    const selectedId = document.getElementById("shopEditEventId")?.value;
+    if (!selectedId) return false;
+    const match = eventOptions.find((ev) => String(ev.eventId) === String(selectedId));
+    if (!match?.regions?.length) return false;
+    // 사진이 있으면 사용자 입력을 보존하고, 빈 폼·지역/날짜 시드만 있으면 교체한다.
+    if (hasMdPhotos(mdRegions)) return false;
+    mdRegions = seedMdRegionsFromEvent(match);
+    return true;
+  }
+
   function parseImageLine(line) {
     const t = String(line || "").trim();
     if (!t) return "";
@@ -675,6 +720,10 @@
       }
     }
     syncEventFieldVisibility(loadedEventId);
+    if (!id || isMdBlank(mdRegions)) {
+      maybeSeedMdFromSelectedEvent();
+      setMdEditorMode();
+    }
     openModal("shopEditModal");
   }
 
@@ -725,6 +774,7 @@
         if (match?.eventName) cardNameEl.value = match.eventName;
       }
       syncMdBuilderFromDom();
+      maybeSeedMdFromSelectedEvent();
       setMdEditorMode();
       syncCoverUiFromEvent();
     });

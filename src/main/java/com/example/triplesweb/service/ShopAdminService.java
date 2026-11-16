@@ -4,6 +4,7 @@ import com.example.triplesweb.dto.ShopAdminDto;
 import com.example.triplesweb.dto.ShopSectionDto;
 import com.example.triplesweb.entity.Event;
 import com.example.triplesweb.entity.EventSection;
+import com.example.triplesweb.entity.EventStop;
 import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.entity.Shop;
 import com.example.triplesweb.entity.ShopSection;
@@ -110,7 +111,7 @@ public class ShopAdminService {
 
     @Transactional(readOnly = true)
     public List<ShopAdminDto.EventOption> listEventOptions() {
-        return eventRepository.findAll().stream()
+        return eventRepository.findAllWithSectionAndStops().stream()
                 .sorted(Comparator.comparing(
                         e -> e.getEventName() != null ? e.getEventName() : "",
                         String.CASE_INSENSITIVE_ORDER))
@@ -118,8 +119,76 @@ public class ShopAdminService {
                         .eventId(e.getEventId())
                         .eventName(e.getEventName())
                         .eventImage(e.getDisplayEventImage())
+                        .regions(buildRegionOptions(e))
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 공연 회차를 지역별로 묶어 MD 공지 시드(지역명·개최 기간)를 만든다.
+     * 같은 지역에 회차가 여러 날이면 가장 이른 시작~가장 늦은 종료를 쓴다.
+     */
+    static List<ShopAdminDto.EventRegionOption> buildRegionOptions(Event event) {
+        if (event == null) return List.of();
+        List<ShopAdminDto.EventRegionOption> regions = new ArrayList<>();
+        for (Event.RegionGroup group : event.getRegionGroups()) {
+            String minStart = null;
+            String maxEnd = null;
+            for (EventStop stop : group.getStops()) {
+                String[] bounds = splitEventDateBounds(stop.getEventDate());
+                String start = bounds[0];
+                String end = bounds[1].isBlank() ? bounds[0] : bounds[1];
+                if (!start.isBlank() && (minStart == null || compareDottedDate(start, minStart) < 0)) {
+                    minStart = start;
+                }
+                if (!end.isBlank() && (maxEnd == null || compareDottedDate(end, maxEnd) > 0)) {
+                    maxEnd = end;
+                }
+            }
+            String salesStart = minStart == null ? "" : minStart;
+            String salesEnd = "";
+            if (maxEnd != null && !maxEnd.isBlank() && !maxEnd.equals(salesStart)) {
+                salesEnd = maxEnd;
+            }
+            regions.add(ShopAdminDto.EventRegionOption.builder()
+                    .name(group.getRegionLabel())
+                    .salesStart(salesStart)
+                    .salesEnd(salesEnd)
+                    .build());
+        }
+        return regions;
+    }
+
+    /** {@code 2026.10.10} / {@code 2026.10.10~2026.10.11} → [start, end] */
+    static String[] splitEventDateBounds(String eventDate) {
+        if (eventDate == null || eventDate.isBlank()) {
+            return new String[]{"", ""};
+        }
+        String[] parts = eventDate.trim().split("\\s*[~～〜–—]\\s*", 2);
+        String start = parts[0].trim();
+        String end = parts.length > 1 ? parts[1].trim() : "";
+        return new String[]{start, end};
+    }
+
+    /** 점·슬래시·하이픈 구분 날짜를 YYYYMMDD 키로 비교한다. 파싱 실패 시 문자열 비교. */
+    static int compareDottedDate(String left, String right) {
+        String a = normalizeDateKey(left);
+        String b = normalizeDateKey(right);
+        if (!a.isBlank() && !b.isBlank()) {
+            return a.compareTo(b);
+        }
+        return String.valueOf(left).compareTo(String.valueOf(right));
+    }
+
+    private static String normalizeDateKey(String raw) {
+        if (raw == null) return "";
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("^(\\d{4})[.\\-/](\\d{1,2})[.\\-/](\\d{1,2})$")
+                .matcher(raw.trim());
+        if (!m.matches()) return "";
+        return m.group(1)
+                + String.format("%02d", Integer.parseInt(m.group(2)))
+                + String.format("%02d", Integer.parseInt(m.group(3)));
     }
 
     @Transactional
