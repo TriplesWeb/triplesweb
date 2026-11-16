@@ -126,6 +126,9 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-label\">케미</span>");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;combos");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-label\">2명 케미</span>");
+        int group = html.indexOf("ar-folder-label\">전체 멤버</span>");
+        int groupEnd = html.indexOf("</a>", group);
+        org.assertj.core.api.Assertions.assertThat(html.substring(group, groupEnd)).contains("ar-folder-count\">4</span>");
         org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">S1 윤서연</span>");
         int seoyeon = html.indexOf("ar-folder-label\">S1 윤서연</span>");
         int seoyeonStart = html.lastIndexOf("<a", seoyeon);

@@ -884,12 +884,10 @@ public class ArchiveController {
         Map<String, Integer> counts = new LinkedHashMap<>();
         Map<String, String> previews = new LinkedHashMap<>();
         for (Archive archive : archives) {
+            counts.merge("s", 1, Integer::sum);
             ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(archive.getArtistNames(), unitMembers);
             if (match.kind() == ArchiveFolderClassifier.Kind.OTHER) continue;
             List<String> cast = match.members();
-            if (match.kind() == ArchiveFolderClassifier.Kind.GROUP) {
-                counts.merge("s", 1, Integer::sum);
-            }
             for (String name : cast) {
                 int index = MemberPortraitOptions.memberIndex(name);
                 if (index < 24) counts.merge("s" + (index + 1), 1, Integer::sum);
