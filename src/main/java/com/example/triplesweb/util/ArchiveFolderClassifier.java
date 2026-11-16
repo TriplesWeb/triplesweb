@@ -8,8 +8,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 아카이브 출연자 문자열을 전체 멤버 / 유닛 / 2명 이상 케미 / 솔로 폴더로 나눈다.
- * 유닛·솔로·단체는 한 폴더에만 들어가고, 케미는 인원 하한 폴더에 겹쳐 들어간다.
+ * 아카이브 출연자 문자열을 전체 멤버 / 유닛 / 2·3·4명 케미 / 5명 이상 / 솔로 폴더로 나눈다.
+ * 각 사진은 인원 수에 맞는 폴더 하나에만 들어간다.
  */
 public final class ArchiveFolderClassifier {
     public enum Kind { GROUP, UNIT, COMBO, SOLO, OTHER }
@@ -59,10 +59,15 @@ public final class ArchiveFolderClassifier {
     }
 
     public static String comboLabel(int min) {
-        if (min == 2) return "2명 케미";
+        if (min <= 2) return "2명 케미";
         if (min == 3) return "3명 케미";
         if (min == 4) return "4명 케미";
-        return min + "명 이상";
+        return "5명 이상";
+    }
+
+    public static boolean comboFitsFolder(int memberCount, int folderSize) {
+        int bucket = folderSize >= 5 ? 5 : Math.max(2, folderSize);
+        return tightestComboMin(memberCount) == bucket;
     }
 
     public static String canonicalComboFolder(String folder) {
@@ -102,8 +107,8 @@ public final class ArchiveFolderClassifier {
         List<String> wanted = membersOf(String.join(",", comboMembers == null ? List.of() : comboMembers));
         Integer min = comboSize(key);
         if (min != null) {
-            if (!wanted.isEmpty()) return actual.members().equals(wanted);
-            return actual.members().size() >= min;
+            if (!wanted.isEmpty() && !actual.members().equals(wanted)) return false;
+            return comboFitsFolder(actual.members().size(), min);
         }
         if (!key.equals("combo")) return false;
         if (wanted.isEmpty()) return false;

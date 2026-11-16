@@ -696,22 +696,10 @@ public class ArchiveController {
                                                   List<Artist> artists) {
         Map<String, Integer> counts = new LinkedHashMap<>();
         Map<String, String> previews = new LinkedHashMap<>();
-        Set<String> comboKeys = new LinkedHashSet<>();
         for (Archive archive : archives) {
             ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(archive.getArtistNames(), unitMembers);
             if (match.kind() == ArchiveFolderClassifier.Kind.OTHER) continue;
             String preview = match.kind() == ArchiveFolderClassifier.Kind.SOLO ? "" : archivePreview(archive);
-            if (match.kind() == ArchiveFolderClassifier.Kind.COMBO) {
-                int n = match.members().size();
-                for (int min : ArchiveFolderClassifier.COMBO_FOLDERS) {
-                    if (n < min) continue;
-                    String key = "combo-" + min;
-                    counts.merge(key, 1, Integer::sum);
-                    comboKeys.add(key);
-                    if (!preview.isBlank()) previews.putIfAbsent(key, preview);
-                }
-                continue;
-            }
             String key = match.key();
             counts.merge(key, 1, Integer::sum);
             if (!preview.isBlank()) previews.putIfAbsent(key, preview);
@@ -732,7 +720,6 @@ public class ArchiveController {
         for (int i = 0; i < ArchiveFolderClassifier.COMBO_FOLDERS.length; i++) {
             int min = ArchiveFolderClassifier.COMBO_FOLDERS[i];
             String key = "combo-" + min;
-            if (!comboKeys.contains(key)) continue;
             folders.add(folderCard(key, ArchiveFolderClassifier.comboLabel(min), comboColors[i],
                     "/archive?folder=" + key, counts.getOrDefault(key, 0), previews.get(key),
                     ArchiveFolderClassifier.Kind.COMBO, false));
@@ -898,6 +885,11 @@ public class ArchiveController {
         String art = archiveFolderArt.urlFor(kind, key, label);
         String shownPreview = kind == ArchiveFolderClassifier.Kind.SOLO ? "" : (preview == null ? "" : preview);
         boolean customArt = !art.isBlank();
+        if (!customArt && kind == ArchiveFolderClassifier.Kind.COMBO && !shownPreview.isBlank()) {
+            art = shownPreview;
+            customArt = true;
+            shownPreview = "";
+        }
         card.put("key", key);
         card.put("label", label);
         card.put("color", color == null || color.isBlank() ? "#b9cac4" : color);
@@ -907,9 +899,10 @@ public class ArchiveController {
         card.put("preview", shownPreview);
         card.put("hasPreview", !customArt && !shownPreview.isBlank());
         card.put("folderArt", art);
-        card.put("hasFolderArt", !art.isBlank());
+        card.put("hasFolderArt", customArt);
         card.put("groupFolder", group);
         card.put("soloFolder", kind == ArchiveFolderClassifier.Kind.SOLO);
+        card.put("comboFolder", kind == ArchiveFolderClassifier.Kind.COMBO);
         return card;
     }
 

@@ -48,8 +48,9 @@ ${site}
 ${siteChrome}
 ${css}
 ${siteUi}
+body.site-admin-enabled button[data-admin-only] { display: inline-flex !important; }
 </style></head>
-<body class="site-page">
+<body class="site-page site-admin-enabled">
 <main class="archive-page is-folder-home" data-archive-kind="image">
   <section class="ar-hero">
     <div class="ar-panel ar-headline">
@@ -58,16 +59,22 @@ ${siteUi}
         <h1>아카이브</h1>
         <p>폴더를 선택하세요</p>
       </div>
+      <button type="button" class="ar-submit ar-home-upload" data-admin-only>사진 추가</button>
+      <div class="ar-stats" id="archiveStats">
+        <article class="ar-stat"><div class="ar-stat-label"><span>등록된 사진</span></div><strong>2<em>장</em></strong></article>
+        <article class="ar-stat"><div class="ar-stat-label"><span>등록된 영상</span></div><strong>1<em>개</em></strong></article>
+        <article class="ar-stat"><div class="ar-stat-label"><span>폴더</span></div><strong>42<em>개</em></strong></article>
+      </div>
     </div>
   </section>
   <section class="ar-folders" aria-label="아카이브 폴더">
     ${folder({ extraClass: ' is-group', href: '/archive?folder=s', color: '#f5c518', label: '전체 멤버' })}
     ${folder({ href: '/archive?folder=unit-17', color: '#22aeff', label: 'Aura' })}
     ${folder({ extraClass: ' is-solo', href: '/archive?folder=s1', color: '#22aeff', label: 'S1 윤서연' })}
-    ${folder({ art: true, href: '/archive?folder=combo-2', color: '#7dd3fc', label: '2명 케미', count: '1' })}
-    ${folder({ art: true, href: '/archive?folder=combo-3', color: '#a5b4fc', label: '3명 케미', count: '1' })}
-    ${folder({ art: true, href: '/archive?folder=combo-4', color: '#c4b5fd', label: '4명 케미', count: '1' })}
-    ${folder({ art: true, href: '/archive?folder=combo-5', color: '#86efac', label: '5명 이상', count: '1' })}
+    ${folder({ extraClass: ' is-combo', art: true, href: '/archive?folder=combo-2', color: '#7dd3fc', label: '2명 케미', count: '1' })}
+    ${folder({ extraClass: ' is-combo', art: true, href: '/archive?folder=combo-3', color: '#a5b4fc', label: '3명 케미', count: '1' })}
+    ${folder({ extraClass: ' is-combo', art: true, href: '/archive?folder=combo-4', color: '#c4b5fd', label: '4명 케미', count: '1' })}
+    ${folder({ extraClass: ' is-combo', art: true, href: '/archive?folder=combo-5', color: '#86efac', label: '5명 이상', count: '1' })}
   </section>
 </main>
 </body></html>`;
@@ -174,6 +181,9 @@ ${siteUi}
       const memberIcon = member.querySelector('.ar-folder-icon');
       const groupIcon = group.querySelector('.ar-folder-icon');
       const shine = getComputedStyle(groupIcon, '::after');
+      const upload = document.querySelector('.ar-home-upload');
+      const headline = document.querySelector('.ar-headline').getBoundingClientRect();
+      const uploadBox = upload.getBoundingClientRect();
       return {
         labels,
         auraPreview: Boolean(aura?.querySelector('.ar-folder-preview, .ar-folder-art')),
@@ -183,7 +193,11 @@ ${siteUi}
         artImg: artImg.getBoundingClientRect(),
         overflow: getComputedStyle(groupIcon).overflow,
         shineMask: shine.webkitMaskImage || shine.maskImage || '',
-        shineBlend: shine.mixBlendMode
+        shineBlend: shine.mixBlendMode,
+        uploadText: upload?.textContent.trim() || '',
+        uploadVisible: uploadBox.width > 0 && uploadBox.height > 0,
+        uploadRight: Math.round(headline.right - uploadBox.right),
+        uploadBottom: Math.round(headline.bottom - uploadBox.bottom)
       };
     });
     assert.deepEqual(home.labels, ['전체 멤버', 'Aura', 'S1 윤서연', '2명 케미', '3명 케미', '4명 케미', '5명 이상']);
@@ -195,11 +209,17 @@ ${siteUi}
     assert.ok(Math.abs(home.member.height - home.artImg.height) <= 1, '케미 사진이 폴더 아이콘 높이를 못 채운다: ' + JSON.stringify(home));
     assert.equal(home.overflow, 'hidden', '호버 효과가 폴더 밖으로 새지 않게 잘리지 않는다');
     assert.match(home.shineMask, /archive-folder\.svg/, '호버 샤인이 폴더 실루엣으로 잘리지 않는다: ' + home.shineMask);
+    assert.equal(home.uploadText, '사진 추가');
+    assert.equal(home.uploadVisible, true, '폴더 홈 사진 추가 버튼이 안 보인다');
+    assert.ok(home.uploadRight >= 8 && home.uploadRight <= 40, '사진 추가가 우측이 아니다: ' + JSON.stringify(home));
+    assert.ok(home.uploadBottom >= 8 && home.uploadBottom <= 40, '사진 추가가 하단이 아니다: ' + JSON.stringify(home));
 
     await page.hover('.ar-folder.is-group');
     const artifactDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
     fs.mkdirSync(artifactDir, { recursive: true });
     await page.screenshot({ path: path.join(artifactDir, 'archive-folder-home.png'), fullPage: true });
+    await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-folder-home-upload.png') });
+    await page.locator('.ar-folder.is-combo').first().screenshot({ path: path.join(artifactDir, 'archive-combo-folder.png') });
 
     await page.goto('https://archive-folders.test/combo.html', { waitUntil: 'load' });
     const combo = await page.evaluate(() => {

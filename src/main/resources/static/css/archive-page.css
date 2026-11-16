@@ -30,6 +30,13 @@ body.site-page > main.archive-page {
 }
 .ar-hero { display: grid; grid-template-columns: 1fr; gap: 1.15rem; }
 .ar-headline { position: relative; overflow: hidden; padding: 1.7rem 3.6rem 1.3rem 1.7rem; display: flex; flex-direction: column; justify-content: flex-start; min-height: 0; --folder-color: #00f5d4; }
+body.site-admin-enabled .archive-page.is-folder-home .ar-headline { padding-bottom: 4.4rem; }
+.ar-home-upload {
+    position: absolute;
+    right: 1.15rem;
+    bottom: 1.05rem;
+    z-index: 3;
+}
 .ar-stats-toggle {
     position: absolute;
     top: 1rem;
@@ -234,7 +241,8 @@ body.site-page > main.archive-page {
     .ar-folder:hover .ar-folder-icon::after { transform: none; opacity: 0.35; }
 }
 .ar-folder.is-solo .ar-folder-preview,
-.ar-folder.is-solo .ar-folder-body img {
+.ar-folder.is-solo .ar-folder-body img,
+.ar-folder.is-combo .ar-folder-preview {
     display: none;
 }
 .ar-folder-label {
@@ -1303,4 +1311,6 @@ body.site-page > main.archive-page {
     .ar-detail-photo img { max-height: 42vh; }
     .ar-folders { grid-template-columns: repeat(auto-fill, minmax(5.6rem, 1fr)); gap: 1rem 0.55rem; }
     .ar-folder-icon { width: 4.8rem; height: 3.9rem; }
+    body.site-admin-enabled .archive-page.is-folder-home .ar-headline { padding-bottom: 4.2rem; }
+    .ar-home-upload { right: 0.85rem; bottom: 0.85rem; }
 }

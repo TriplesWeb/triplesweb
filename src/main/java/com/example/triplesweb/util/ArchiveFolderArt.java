@@ -49,11 +49,9 @@ public class ArchiveFolderArt {
                 if (size != null) {
                     names.add(ArchiveFolderClassifier.comboLabel(size));
                     names.add(size + "인");
-                    names.add(size + "명");
-                    names.add(String.valueOf(size));
-                    if (size == 5) names.addAll(List.of("6명 이상", "6인", "6명", "6"));
+                    names.add(size + "명 케미");
+                    if (size >= 5) names.addAll(List.of("6명 이상", "6인"));
                 }
-                names.add("combo");
             }
             case SOLO -> {
                 if (key != null && !key.isBlank()) names.add(key.toUpperCase(Locale.ROOT));

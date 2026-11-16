@@ -1,4 +1,20 @@
 (function () {
+    const headline = document.querySelector('.ar-headline');
+    const statsToggle = document.querySelector('[data-stats-toggle]');
+    const stats = document.getElementById('archiveStats');
+    function setStatsOpen(open) {
+        headline?.classList.toggle('is-stats-collapsed', !open);
+        if (stats) stats.hidden = !open;
+        if (!statsToggle) return;
+        statsToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        statsToggle.setAttribute('aria-label', open ? '통계 접기' : '통계 펼치기');
+        const icon = statsToggle.querySelector('[data-stats-icon]');
+        if (icon) icon.textContent = open ? '−' : '+';
+    }
+    statsToggle?.addEventListener('click', () => {
+        setStatsOpen(statsToggle.getAttribute('aria-expanded') !== 'true');
+    });
+
     const grid = document.getElementById('archiveGrid');
     if (!grid) return;
     const cards = [...grid.querySelectorAll('.ar-card')];
@@ -186,21 +202,6 @@
             input.value = value;
             form.appendChild(input);
         });
-    });
-    const headline = document.querySelector('.ar-headline');
-    const statsToggle = document.querySelector('[data-stats-toggle]');
-    const stats = document.getElementById('archiveStats');
-    function setStatsOpen(open) {
-        headline?.classList.toggle('is-stats-collapsed', !open);
-        if (stats) stats.hidden = !open;
-        if (!statsToggle) return;
-        statsToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-        statsToggle.setAttribute('aria-label', open ? '통계 접기' : '통계 펼치기');
-        const icon = statsToggle.querySelector('[data-stats-icon]');
-        if (icon) icon.textContent = open ? '−' : '+';
-    }
-    statsToggle?.addEventListener('click', () => {
-        setStatsOpen(statsToggle.getAttribute('aria-expanded') !== 'true');
     });
     apply();
 })();

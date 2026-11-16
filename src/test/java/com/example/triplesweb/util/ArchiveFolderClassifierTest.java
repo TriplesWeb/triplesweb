@@ -50,14 +50,14 @@ class ArchiveFolderClassifierTest {
         assertThat(ArchiveFolderClassifier.comboSize("combo")).isNull();
     }
 
-    @Test void largerChemistryFillsEveryAtLeastFolder() {
+    @Test void largerChemistryGoesOnlyToItsCountFolder() {
         var six = ArchiveFolderClassifier.classify(
                 "윤서연,정혜린,이지우,김채연,김유연,김수민", List.of(aaa()));
         assertThat(six.kind()).isEqualTo(ArchiveFolderClassifier.Kind.COMBO);
         assertThat(six.key()).isEqualTo("combo-5");
-        assertThat(ArchiveFolderClassifier.matches(six, "combo-2", List.of())).isTrue();
-        assertThat(ArchiveFolderClassifier.matches(six, "combo-3", List.of())).isTrue();
-        assertThat(ArchiveFolderClassifier.matches(six, "combo-4", List.of())).isTrue();
+        assertThat(ArchiveFolderClassifier.matches(six, "combo-2", List.of())).isFalse();
+        assertThat(ArchiveFolderClassifier.matches(six, "combo-3", List.of())).isFalse();
+        assertThat(ArchiveFolderClassifier.matches(six, "combo-4", List.of())).isFalse();
         assertThat(ArchiveFolderClassifier.matches(six, "combo-5", List.of())).isTrue();
         assertThat(ArchiveFolderClassifier.matches(six, "combo-6", List.of())).isTrue();
         var nine = ArchiveFolderClassifier.classify(
@@ -66,8 +66,13 @@ class ArchiveFolderClassifierTest {
         assertThat(ArchiveFolderClassifier.matches(nine, "combo-5", List.of())).isTrue();
         var trio = ArchiveFolderClassifier.classify("윤서연,정혜린,이지우", List.of());
         assertThat(trio.key()).isEqualTo("combo-3");
-        assertThat(ArchiveFolderClassifier.matches(trio, "combo-2", List.of())).isTrue();
+        assertThat(ArchiveFolderClassifier.matches(trio, "combo-2", List.of())).isFalse();
+        assertThat(ArchiveFolderClassifier.matches(trio, "combo-3", List.of())).isTrue();
         assertThat(ArchiveFolderClassifier.matches(trio, "combo-4", List.of())).isFalse();
+        var quartet = ArchiveFolderClassifier.classify("윤서연,정혜린,이지우,김채연", List.of());
+        assertThat(quartet.key()).isEqualTo("combo-4");
+        assertThat(ArchiveFolderClassifier.matches(quartet, "combo-4", List.of())).isTrue();
+        assertThat(ArchiveFolderClassifier.matches(quartet, "combo-5", List.of())).isFalse();
         assertThat(ArchiveFolderClassifier.comboLabel(2)).isEqualTo("2명 케미");
         assertThat(ArchiveFolderClassifier.comboLabel(3)).isEqualTo("3명 케미");
         assertThat(ArchiveFolderClassifier.comboLabel(4)).isEqualTo("4명 케미");

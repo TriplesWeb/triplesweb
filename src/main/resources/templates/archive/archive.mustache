@@ -26,6 +26,9 @@
                 {{#archiveFolderView}}<p class="ar-folder-title">{{folderTitle}}</p>{{/archiveFolderView}}
                 {{#archiveFolderHome}}<p>폴더를 선택하세요</p>{{/archiveFolderHome}}
             </div>
+            {{#archiveFolderHome}}
+            <button type="button" class="ar-submit ar-home-upload" data-admin-only onclick="showAddModal()">사진 추가</button>
+            {{/archiveFolderHome}}
             <div class="ar-stats" id="archiveStats">
                 {{#archiveFolderHome}}
                 <article class="ar-stat"><div class="ar-stat-label"><span>등록된 사진</span><span class="material-symbols-outlined">image</span></div><strong>{{archiveTotal}}<em>장</em></strong></article>
@@ -90,7 +93,6 @@
 </main>
 
 {{#imageArchive}}
-{{^archiveFolderHome}}
 <div class="ar-dialog" id="uploadModal" hidden>
     <button type="button" class="ar-dialog-backdrop" data-ar-close aria-label="닫기"></button>
     <div class="ar-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="uploadModalLabel">
@@ -143,7 +145,7 @@
         </form>
     </div>
 </div>
-
+{{^archiveFolderHome}}
 <div class="ar-dialog" id="editModal" hidden>
     <button type="button" class="ar-dialog-backdrop" data-ar-close aria-label="닫기"></button>
     <div class="ar-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="editModalLabel">
@@ -344,11 +346,11 @@
 </dialog>
 {{/videoArchive}}
 
-{{^archiveFolderHome}}
 <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
 <script src="{{#asset}}/js/archive-manage.js{{/asset}}"></script>
 <script src="{{#asset}}/js/date-range-filter.js{{/asset}}"></script>
 <script src="{{#asset}}/js/archive-browse.js{{/asset}}"></script>
+{{^archiveFolderHome}}
 {{#imageArchive}}
 <script src="{{#asset}}/js/archive-detail.js{{/asset}}"></script>
 {{/imageArchive}}

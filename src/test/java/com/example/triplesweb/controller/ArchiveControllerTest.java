@@ -90,7 +90,14 @@ class ArchiveControllerTest {
                 .andExpect(content().string(not(containsString("id=\"archiveGrid\""))))
                 .andExpect(content().string(not(containsString("site-section-tabs"))))
                 .andExpect(content().string(containsString("ar-folder-shape")))
-                .andExpect(content().string(containsString("ar-folder is-solo")));
+                .andExpect(content().string(containsString("ar-folder is-solo")))
+                .andExpect(content().string(containsString("ar-folder-label\">2명 케미</span>")))
+                .andExpect(content().string(containsString("ar-folder-label\">3명 케미</span>")))
+                .andExpect(content().string(containsString("ar-folder-label\">4명 케미</span>")))
+                .andExpect(content().string(containsString("ar-folder-label\">5명 이상</span>")))
+                .andExpect(content().string(containsString("ar-home-upload")))
+                .andExpect(content().string(containsString("사진 추가")))
+                .andExpect(content().string(containsString("id=\"uploadModal\"")));
     }
 
     @Test void folderHomeGroupsNonUnitChemistryByMemberCount() throws Exception {
@@ -120,7 +127,15 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("윤서연 × 정혜린");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder=combo&amp;combo=");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;combo&amp;combo");
-        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-preview");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder is-combo");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-art");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-preview");
+        int comboTwo = html.indexOf("folder&#x3D;combo-2");
+        int comboTwoEnd = html.indexOf("</a>", comboTwo);
+        org.assertj.core.api.Assertions.assertThat(html.substring(comboTwo, comboTwoEnd)).contains("ar-folder-count\">2</span>");
+        int comboFour = html.indexOf("folder&#x3D;combo-4");
+        int comboFourEnd = html.indexOf("</a>", comboFour);
+        org.assertj.core.api.Assertions.assertThat(html.substring(comboFour, comboFourEnd)).doesNotContain("ar-folder-count");
     }
 
     @Test void memberFoldersHidePreviewImages() throws Exception {
@@ -210,6 +225,25 @@ class ArchiveControllerTest {
                         .param("artistNames", "김채연").param("artistNames", "김유연").param("artistNames", "김수민")
                         .param("registeredOn", "2026-10-03").param("source", "FANCAM"))
                 .andExpect(redirectedUrl("/archive?folder=combo-5"));
+    }
+
+    @Test void imageUploadOfThreeMembersOpensTheTrioFolder() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
+        mvc.perform(multipart("/archive/upload/image").file(file)
+                        .param("title", "사진")
+                        .param("artistNames", "윤서연").param("artistNames", "정혜린").param("artistNames", "이지우")
+                        .param("registeredOn", "2026-10-03").param("source", "FANCAM"))
+                .andExpect(redirectedUrl("/archive?folder=combo-3"));
+    }
+
+    @Test void imageUploadOfFourMembersOpensTheQuartetFolder() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
+        mvc.perform(multipart("/archive/upload/image").file(file)
+                        .param("title", "사진")
+                        .param("artistNames", "윤서연").param("artistNames", "정혜린").param("artistNames", "이지우")
+                        .param("artistNames", "김채연")
+                        .param("registeredOn", "2026-10-03").param("source", "FANCAM"))
+                .andExpect(redirectedUrl("/archive?folder=combo-4"));
     }
 
     @Test void adminImageArchiveShowsEditAndDelete() throws Exception {

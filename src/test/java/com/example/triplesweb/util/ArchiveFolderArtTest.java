@@ -34,9 +34,12 @@ class ArchiveFolderArtTest {
     @Test void fivePlusComboStillUsesSixPersonArtFile() throws Exception {
         Path dir = uploads.resolve(ArchiveFolderArt.DIR_NAME);
         Files.createDirectories(dir);
-        Files.writeString(dir.resolve("6.png"), "six");
+        Files.writeString(dir.resolve("6인.png"), "six");
+        Files.writeString(dir.resolve("combo.png"), "generic");
+        Files.writeString(dir.resolve("2.png"), "two");
         ArchiveFolderArt art = new ArchiveFolderArt(uploads.toString());
         assertThat(art.urlFor(ArchiveFolderClassifier.Kind.COMBO, "combo-5", "5명 이상"))
-                .isEqualTo("/uploads/%EB%AF%B8%EB%94%94%EC%96%B4%20%ED%8F%B4%EB%8D%94/6.png");
+                .isEqualTo("/uploads/%EB%AF%B8%EB%94%94%EC%96%B4%20%ED%8F%B4%EB%8D%94/6%EC%9D%B8.png");
+        assertThat(art.urlFor(ArchiveFolderClassifier.Kind.COMBO, "combo-2", "2명 케미")).isEmpty();
     }
 }
