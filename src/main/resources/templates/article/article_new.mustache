@@ -1,8 +1,10 @@
 {{>layout/head-open}}
 
-    <title>트리플에스 커뮤니티 - {{categoryName}} 게시판</title>
-    <link rel="stylesheet" href="{{#asset}}/css/article-page.css{{/asset}}">
+    <title>트리플에스 커뮤니티 - {{#isMarketBoard}}새 {{categoryName}}{{/isMarketBoard}}{{^isMarketBoard}}{{categoryName}} 게시판{{/isMarketBoard}}</title>
+    <link rel="stylesheet" href="{{#asset}}/css/objekt-filter.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/objekt-page.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/article-page.css{{/asset}}">
 </head><body class="site-page article-page bg-surface text-on-surface min-h-screen flex flex-col">
 {{>layout/header}}
 
@@ -11,50 +13,64 @@
 <meta name="_csrf_header" content="{{headerName}}">
 {{/_csrf}}
 <div id="editorRoot" data-category="{{category}}"></div>
-<main class="flex-1 flex items-center justify-center px-4 sm:px-6 py-12 z-10 relative">
-    <div class="w-full max-w-2xl relative">
+<main class="flex-1 flex {{#isMarketBoard}}items-start{{/isMarketBoard}}{{^isMarketBoard}}items-center{{/isMarketBoard}} justify-center px-4 sm:px-6 {{#isMarketBoard}}py-6 sm:py-8{{/isMarketBoard}}{{^isMarketBoard}}py-12{{/isMarketBoard}} z-10 relative">
+    <div class="w-full {{#isMarketBoard}}max-w-4xl{{/isMarketBoard}}{{^isMarketBoard}}max-w-2xl{{/isMarketBoard}} relative">
         <div class="absolute -inset-1 rounded-3xl bg-gradient-to-b from-primary-container/20 via-transparent to-secondary-container/30 blur-xl opacity-75 pointer-events-none"></div>
         <div class="relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl overflow-hidden backdrop-blur-2xl shadow-2xl">
-        <nav class="site-back site-back--bar" aria-label="게시판 목록으로">
-            <a href="/article/{{category}}">← {{categoryName}}</a>
+        <nav class="site-back site-back--bar" aria-label="목록으로">
+            <a href="{{boardBase}}">← {{categoryName}}</a>
         </nav>
         <div class="p-6 sm:p-10">
         {{#errorMessage}}
-            <div class="mb-6 p-3.5 rounded-xl bg-error-container/20 border border-error/40 flex items-start gap-3">
+            <div class="mb-6 p-3.5 rounded-xl bg-error-container/20 border border-error/40 flex items-start gap-3" id="formServerError">
                 <span class="material-symbols-outlined text-error text-[20px] flex-shrink-0 mt-0.5" data-icon="error">error</span>
                 <div class="flex-1">
                     <p class="font-body-sm text-body-sm text-error font-medium">{{errorMessage}}</p>
                 </div>
             </div>
         {{/errorMessage}}
+            <p id="formInlineError" class="mb-4 text-sm text-error font-medium" hidden role="alert"></p>
 
-            <form id="articleForm" action="/article/{{category}}/new" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit(this)" class="space-y-5">
+            <form id="articleForm" action="{{boardBase}}/new" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit(this)" class="space-y-5" data-market-board="{{#isMarketBoard}}true{{/isMarketBoard}}{{^isMarketBoard}}false{{/isMarketBoard}}">
+                {{#isMarketBoard}}
+                {{>article/objekt_picker}}
+                <div class="space-y-2">
+                    <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">
+                        설명 <span class="text-outline font-normal">(선택)</span>
+                    </label>
+                    <div id="content" contenteditable="true" class="w-full min-h-[5.5rem] p-4 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" aria-multiline="true"></div>
+                    <input type="hidden" name="content" id="hiddenContent" />
+                </div>
+                <div class="article-compose-actions">
+                    <button type="submit" class="btn btn-primary">
+                        {{#isTrade}}교환 올리기{{/isTrade}}
+                        {{#isSell}}거래 올리기{{/isSell}}
+                    </button>
+                </div>
+                {{/isMarketBoard}}
+
+                {{^isMarketBoard}}
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">작성자</label>
                     <div class="relative group">
                         <div class="absolute left-4 top-1/2 -translate-y-1/2 text-black">
                             <span class="material-symbols-outlined text-[20px]" data-icon="person">person</span>
                         </div>
-
-                        <input type="text" class="w-full px-11 pr-4 py-3 bg-surface-container-lowest/50 border border-outline-variant/40 rounded-xl font-body-md text-body-md focus:outline-none" name="userid" value="로그인 필요" readonly>
+                        <input type="text" class="w-full px-11 pr-4 py-3 bg-surface-container-lowest/50 border border-outline-variant/40 rounded-xl font-body-md text-body-md focus:outline-none" name="userid" value="익명" readonly>
                     </div>
                 </div>
-
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">제목</label>
                     <div class="relative group">
                         <input type="text" class="w-full px-3 pr-4 py-3 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md placeholder:text-outline/60 focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all text-on-surface" name="title" required>
                     </div>
                 </div>
-
                 {{>article/objekt_picker}}
-
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">내용</label>
                     <div id="content" contenteditable="true" class="w-full p-4 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" aria-multiline="true"></div>
                     <input type="hidden" name="content" id="hiddenContent" />
                 </div>
-
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">첨부 파일 (이미지 또는 영상)</label>
                     <div class="file-chooser-row relative">
@@ -67,13 +83,13 @@
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">미리보기</label>
                     <div id="previewArea" class="flex flex-wrap gap-3 p-3 bg-surface-container-lowest/40 border border-outline-variant/30 rounded-xl min-h-[80px]"> </div>
                 </div>
+                <div class="flex items-center gap-3 pt-4">
+                    <button type="submit" class="btn btn-primary flex-1">작성하기</button>
+                </div>
+                {{/isMarketBoard}}
                 {{#_csrf}}
                     <input type="hidden" name="{{parameterName}}" value="{{token}}">
                 {{/_csrf}}
-                <div class="flex items-center gap-3 pt-4">
-                    <button type="submit" class="btn btn-primary flex-1">작성하기</button>
-                    <a href="/article/{{category}}" class="site-btn site-btn--reset site-back-link">←목록으로</a>
-                </div>
         </form>
         </div>
     </div>
@@ -82,16 +98,29 @@
 <script src="{{#asset}}/js/site-ui.js{{/asset}}"></script>
 <script src="/js/article-content.js"></script>
 <script src="{{#asset}}/js/article-editor-media.js{{/asset}}"></script>
+<script src="{{#asset}}/js/objekt-dropdown-core.js{{/asset}}"></script>
 <script src="{{#asset}}/js/objekt-kind-combo.js{{/asset}}"></script>
+<script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
 <script src="{{#asset}}/js/article-objekt-picker.js{{/asset}}"></script>
 <script>
+    function showFormError(message) {
+        const el = document.getElementById('formInlineError');
+        if (!el) {
+            alert(message);
+            return;
+        }
+        el.textContent = message || '';
+        el.hidden = !message;
+        if (message) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+
     window.beforeSubmit = function(form) {
+    const marketBoard = form.dataset.marketBoard === 'true';
     const titleInput    = form.querySelector('input[name="title"]');
     const contentDiv    = document.getElementById('content');
     const hiddenContent = document.getElementById('hiddenContent');
     const cleaned = (window.ArticleContent?.cleanEditorHtml(contentDiv?.innerHTML || '') || (contentDiv?.innerHTML || '').trim());
 
-    // 본문 HTML을 hidden으로 동기화 (편집 UI 제거·상대경로 정규화)
     hiddenContent.value = cleaned;
     const titleOk = !!(titleInput && titleInput.value.trim());
 
@@ -99,34 +128,40 @@
     const hasImg   = /<img\s[^>]*src=['"][^'"]+['"][^>]*>/i.test(cleaned);
     const hasVideo = /<video\s[^>]*>.*?<\/video>/i.test(cleaned) || /<source\s[^>]*src=['"][^'"]+['"][^>]*>/i.test(cleaned);
 
-    if (!titleOk) {
-            alert('제목을 입력해주세요.');
-            return false;
-        }
-    const visible = window.articleHasVisibleContent ? window.articleHasVisibleContent(cleaned) : (hasText || hasImg || hasVideo);
-    if (!visible) {
-            alert('내용을 입력해주세요.');
-            return false;
-        }
     if (window.ArticleObjektPicker && !window.ArticleObjektPicker.validateTrade()) {
             return false;
         }
 
-        return window.confirm('이 글을 등록하시겠습니까?');
+    if (!marketBoard) {
+        if (!titleOk) {
+            showFormError('제목을 입력해주세요.');
+            return false;
+        }
+        const visible = window.articleHasVisibleContent ? window.articleHasVisibleContent(cleaned) : (hasText || hasImg || hasVideo);
+        if (!visible) {
+            showFormError('내용을 입력해주세요.');
+            return false;
+        }
+    }
+
+    showFormError('');
+    return true;
   };
 
    document.addEventListener('DOMContentLoaded', () => {
-     const form          = document.getElementById('articleForm');       // ← id 일치 필수
+     const form          = document.getElementById('articleForm');
      const contentDiv    = document.getElementById('content');
      const hiddenContent = document.getElementById('hiddenContent');
      const fileInput     = document.getElementById('fileInput');
      const previewArea   = document.getElementById('previewArea');
      const category = document.getElementById('editorRoot')?.dataset.category || 'category';
 
-     if (!form || !contentDiv || !fileInput || !previewArea) {
+     if (!form || !contentDiv) {
        console.error('필수 엘리먼트(id) 누락 확인 필요');
        return;
      }
+     // 교환·거래는 첨부 UI 없음
+     if (!fileInput || !previewArea) return;
 
      const UPLOAD_ENDPOINT = `/api/article/${category}/uploadFile`;
      const FALLBACK_IMG    = '/images/no-image.png';
@@ -144,7 +179,6 @@
        }
      }
 
-     // ---- helpers ----
      const pick = (o, ks) => ks.find(k => o && o[k]) ? o[ks.find(k => o && o[k])] : null;
 
      function toUploadsUrl(pathLike) {
@@ -154,7 +188,7 @@
          const p = u.pathname.startsWith('/uploads/') ? u.pathname : '/uploads' + (u.pathname.startsWith('/') ? '' : '/') + u.pathname;
          return p.replace(/\/{2,}/g, '/');
        } catch {
-         if (!pathLike.includes('/')) return null; // basename alone is not a valid upload path
+         if (!pathLike.includes('/')) return null;
          const p = pathLike.startsWith('/uploads/') ? pathLike : '/uploads/' + pathLike.replace(/^\/+/, '');
          return p.replace(/\/{2,}/g, '/');
        }
@@ -171,7 +205,6 @@
 
      const editorMedia = window.ArticleEditorMedia;
      editorMedia?.bindSelectionMemory(contentDiv, document.querySelector('.file-chooser-row'));
-     function placeCaretIn(node) { editorMedia?.placeCaretIn(node, true); }
 
      const fileNamesEl = document.getElementById('uploadFileNames');
      function refreshFileNames() {
@@ -219,7 +252,6 @@
      }
 
      function insertMediaAtCaret(url, mime, key, fileName) {
-       // 본문
        const wrap = document.createElement('div'); wrap.className='content-media'; wrap.dataset.key=key;
        wrap.dataset.fileName = fileName || key;
        wrap.contentEditable = 'false';
@@ -248,7 +280,6 @@
        editorMedia?.placeMediaInEditor(contentDiv, wrap);
        contentDiv.focus({ preventScroll: true });
 
-       // 미리보기
        const thumbBox = document.createElement('div'); thumbBox.className='preview-item'; thumbBox.dataset.key=key; thumbBox.dataset.fileName = fileName || key;
        const thumb = mime?.startsWith('video') ? document.createElement('video') : document.createElement('img');
        thumb.src=url; if (thumb.tagName==='VIDEO') thumb.controls=true;
@@ -298,7 +329,7 @@
      form.addEventListener('submit', (event) => {
        if (uploadsInFlight > 0) {
          event.preventDefault();
-         alert('파일 업로드가 끝날 때까지 기다려 주세요.');
+         showFormError('파일 업로드가 끝날 때까지 기다려 주세요.');
        }
      });
 
@@ -309,7 +340,7 @@
        try {
          for (const f of files) {
            try { await uploadOne(f); }
-           catch (err) { console.error(err); alert('업로드 실패: ' + (err.message || err)); }
+           catch (err) { console.error(err); showFormError('업로드 실패: ' + (err.message || err)); }
          }
        } finally {
          uploadsInFlight = Math.max(0, uploadsInFlight - 1);

@@ -1,8 +1,10 @@
 {{>layout/head-open}}
 
-    <title>트리플에스 커뮤니티 - {{categoryName}} 게시판 (글 수정)</title>
-    <link rel="stylesheet" href="{{#asset}}/css/article-page.css{{/asset}}">
+    <title>트리플에스 커뮤니티 - {{#isMarketBoard}}{{categoryName}} 수정{{/isMarketBoard}}{{^isMarketBoard}}{{categoryName}} 게시판 (글 수정){{/isMarketBoard}}</title>
+    <link rel="stylesheet" href="{{#asset}}/css/objekt-filter.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/objekt-page.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/article-page.css{{/asset}}">
 </head><body class="site-page article-page bg-surface text-on-surface min-h-screen flex flex-col">
 
 {{>layout/header}}
@@ -13,50 +15,60 @@
 {{/_csrf}}
 
 <div id="editorRoot" data-category="{{article.category}}"></div>
-
-<main class="flex-1 flex items-center justify-center px-4 sm:px-6 py-12 z-10 relative">
-    <div class="w-full max-w-2xl relative">
-        <!-- 배경 글로우 효과 -->
+<main class="flex-1 flex {{#isMarketBoard}}items-start{{/isMarketBoard}}{{^isMarketBoard}}items-center{{/isMarketBoard}} justify-center px-4 sm:px-6 {{#isMarketBoard}}py-6 sm:py-8{{/isMarketBoard}}{{^isMarketBoard}}py-12{{/isMarketBoard}} z-10 relative">
+    <div class="w-full {{#isMarketBoard}}max-w-4xl{{/isMarketBoard}}{{^isMarketBoard}}max-w-2xl{{/isMarketBoard}} relative">
         <div class="absolute -inset-1 rounded-3xl bg-gradient-to-b from-primary-container/20 via-transparent to-secondary-container/30 blur-xl opacity-75 pointer-events-none"></div>
-
-        <!-- 메인 수정 카드 컨테이너 -->
         <div class="relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl overflow-hidden backdrop-blur-2xl shadow-2xl">
-        <nav class="site-back site-back--bar" aria-label="게시판 목록으로">
-            <a href="/article/{{category}}">← {{categoryName}}</a>
+        <nav class="site-back site-back--bar" aria-label="목록으로">
+            <a href="{{boardBase}}">← {{categoryName}}</a>
         </nav>
         <div class="p-6 sm:p-10">
-
-            <h1 class="font-headline-lg text-headline-md font-bold text-on-surface tracking-tight mb-6">
-                게시글 수정
-            </h1>
-
-            {{#errorMessage}}
-                <div class="mb-6 p-3.5 rounded-xl bg-error-container/20 border border-error/40 flex items-start gap-3">
-                    <span class="material-symbols-outlined text-error text-[20px] flex-shrink-0 mt-0.5" data-icon="error">error</span>
-                    <div class="flex-1">
-                        <p class="font-body-sm text-body-sm text-error font-medium">{{errorMessage}}</p>
-                    </div>
+        {{#errorMessage}}
+            <div class="mb-6 p-3.5 rounded-xl bg-error-container/20 border border-error/40 flex items-start gap-3" id="formServerError">
+                <span class="material-symbols-outlined text-error text-[20px] flex-shrink-0 mt-0.5" data-icon="error">error</span>
+                <div class="flex-1">
+                    <p class="font-body-sm text-body-sm text-error font-medium">{{errorMessage}}</p>
                 </div>
-            {{/errorMessage}}
+            </div>
+        {{/errorMessage}}
+            <p id="formInlineError" class="mb-4 text-sm text-error font-medium" hidden role="alert"></p>
 
-            <form id="editForm" action="/article/{{article.category}}/{{article.id}}" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit(this)" class="space-y-5">
+            <form id="editForm" action="{{boardBase}}/{{article.id}}" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit(this)" class="space-y-5" data-market-board="{{#isMarketBoard}}true{{/isMarketBoard}}{{^isMarketBoard}}false{{/isMarketBoard}}">
                 <input type="hidden" name="id" value="{{article.id}}">
 
-                <!-- 작성자 -->
+                {{#isMarketBoard}}
+                <input type="hidden" name="title" value="{{#isTrade}}교환{{/isTrade}}{{#isSell}}거래{{/isSell}}">
+                {{>article/objekt_picker}}
+                <div class="space-y-2">
+                    <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">
+                        설명 <span class="text-outline font-normal">(선택)</span>
+                    </label>
+                    <div id="content" contenteditable="true" class="w-full min-h-[5.5rem] p-4 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" aria-multiline="true">
+                        {{{article.content}}}
+                    </div>
+                    <input type="hidden" name="content" id="hiddenContent">
+                </div>
+                <div class="article-compose-actions">
+                    <button type="submit" class="btn btn-primary">
+                        {{#isTrade}}교환 수정{{/isTrade}}
+                        {{#isSell}}거래 수정{{/isSell}}
+                    </button>
+                </div>
+                {{/isMarketBoard}}
+
+                {{^isMarketBoard}}
+                <h1 class="font-headline-lg text-headline-md font-bold text-on-surface tracking-tight mb-6">
+                    게시글 수정
+                </h1>
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">작성자</label>
-                    <input type="text" class="w-full px-4 py-3 bg-surface-container-lowest/50 border border-outline-variant/40 rounded-xl font-body-md text-body-md text-black focus:outline-none" name="userid" value="{{article.userId}}" readonly>
+                    <input type="text" class="w-full px-4 py-3 bg-surface-container-lowest/50 border border-outline-variant/40 rounded-xl font-body-md text-body-md text-on-surface focus:outline-none" name="userid" value="{{article.userId}}" readonly>
                 </div>
-
-                <!-- 제목 -->
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">제목</label>
                     <input type="text" class="w-full px-4 py-3 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md placeholder:text-outline/60 focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all text-on-surface" name="title" value="{{article.title}}" required>
                 </div>
-
                 {{>article/objekt_picker}}
-
-                <!-- 내용 -->
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">내용</label>
                     <div id="content" contenteditable="true" class="w-full p-4 bg-surface-container-lowest/70 border border-outline-variant/60 rounded-xl font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" aria-multiline="true">
@@ -64,8 +76,6 @@
                     </div>
                     <input type="hidden" name="content" id="hiddenContent">
                 </div>
-
-                <!-- 첨부 파일 -->
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">첨부 파일 (이미지 또는 영상)</label>
                     <div class="file-chooser-row relative">
@@ -74,22 +84,19 @@
                         <span id="uploadFileNames" class="upload-file-names" aria-live="polite" hidden></span>
                     </div>
                 </div>
-
-                <!-- 미리보기 -->
                 <div class="space-y-2">
                     <label class="form-label block font-label-md text-label-md text-on-surface-variant font-medium">미리보기</label>
                     <div id="previewArea" class="flex flex-wrap gap-3 p-3 bg-surface-container-lowest/40 border border-outline-variant/30 rounded-xl min-h-[80px]"></div>
                 </div>
+                <div class="flex items-center gap-3 pt-4">
+                    <button type="submit" class="btn btn-primary flex-1">수정하기</button>
+                    <a href="{{boardBase}}" class="site-back-link">← 목록으로</a>
+                </div>
+                {{/isMarketBoard}}
 
                 {{#_csrf}}
                     <input type="hidden" name="{{parameterName}}" value="{{token}}">
                 {{/_csrf}}
-
-                <!-- 버튼 그룹 -->
-                <div class="flex items-center gap-3 pt-4">
-                    <button type="submit" class="site-btn site-btn--primary flex-1">수정하기</button>
-                    <a href="/article/{{category}}" class="site-btn site-btn--reset site-back-link">←목록으로</a>
-                </div>
             </form>
         </div>
         </div>
@@ -99,9 +106,22 @@
 <script src="{{#asset}}/js/site-ui.js{{/asset}}"></script>
 <script src="/js/article-content.js"></script>
 <script src="{{#asset}}/js/article-editor-media.js{{/asset}}"></script>
+<script src="{{#asset}}/js/objekt-dropdown-core.js{{/asset}}"></script>
 <script src="{{#asset}}/js/objekt-kind-combo.js{{/asset}}"></script>
+<script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
 <script src="{{#asset}}/js/article-objekt-picker.js{{/asset}}"></script>
 <script>
+    function showFormError(message) {
+        const el = document.getElementById('formInlineError');
+        if (!el) {
+            alert(message);
+            return;
+        }
+        el.textContent = message || '';
+        el.hidden = !message;
+        if (message) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+
     /* -------------------- helpers -------------------- */
     function savedFromUrl(u) {
         if (!u) return null;
@@ -156,6 +176,7 @@
         editorMedia?.bindSelectionMemory(contentDiv, document.querySelector('.file-chooser-row'));
         function placeCaretIn(node) { editorMedia?.placeCaretIn(node, true); }
         function refreshFileNames() {
+            if (!previewArea) return;
             const names = [...previewArea.querySelectorAll('.preview-item')]
                 .map((item) => item.dataset.fileName || item.dataset.key || '')
                 .filter(Boolean);
@@ -171,7 +192,7 @@
         function selectMedia(key) {
             if (!key) return;
             contentDiv.querySelectorAll('.content-media').forEach((el) => el.classList.toggle('is-selected', el.dataset.key === key));
-            previewArea.querySelectorAll('.preview-item').forEach((el) => el.classList.toggle('is-selected', el.dataset.key === key));
+            previewArea?.querySelectorAll('.preview-item').forEach((el) => el.classList.toggle('is-selected', el.dataset.key === key));
             const wrap = contentDiv.querySelector(`.content-media[data-key="${CSS.escape(key)}"]`);
             if (!wrap) return;
             wrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -284,7 +305,7 @@
             deleteMediaFromButton(btn);
         });
 
-        fileInput.addEventListener('change', async (e) => {
+        fileInput?.addEventListener('change', async (e) => {
             const files = Array.from(e.target.files || []);
             uploadsInFlight += 1;
             setUploadBusy(true);
@@ -325,7 +346,7 @@
             } finally {
                 uploadsInFlight = Math.max(0, uploadsInFlight - 1);
                 setUploadBusy(uploadsInFlight > 0);
-                fileInput.value = '';
+                if (fileInput) fileInput.value = '';
             }
         });
 
@@ -344,19 +365,24 @@
                 .map((input) => (input.dataset.side ? input.dataset.side[0].toUpperCase() + ':' : '') + input.value).sort().join('\n');
 
         window.beforeSubmit = function(form) {
+            const marketBoard = form.dataset.marketBoard === 'true';
+            showFormError('');
             if (uploadsInFlight > 0) {
-                alert('파일 업로드가 끝날 때까지 기다려 주세요.');
+                showFormError('파일 업로드가 끝날 때까지 기다려 주세요.');
                 return false;
             }
             const cleaned = window.ArticleContent?.cleanEditorHtml(contentDiv.innerHTML) || contentDiv.innerHTML.trim();
             hiddenContent.value = cleaned;
 
             const title = form.querySelector('input[name="title"]')?.value?.trim() || '';
-            if (!title) { alert('제목을 입력해주세요.'); return false; }
+            if (!marketBoard && !title) {
+                showFormError('제목을 입력해주세요.');
+                return false;
+            }
 
             const body = hiddenContent.value;
-            if (!(window.articleHasVisibleContent && window.articleHasVisibleContent(body))) {
-                alert('내용을 입력해주세요.');
+            if (!marketBoard && !(window.articleHasVisibleContent && window.articleHasVisibleContent(body))) {
+                showFormError('내용을 입력해주세요.');
                 return false;
             }
             if (window.ArticleObjektPicker && !window.ArticleObjektPicker.validateTrade()) {
@@ -368,11 +394,11 @@
                     .map((input) => (input.dataset.side ? input.dataset.side[0].toUpperCase() + ':' : '') + input.value).sort().join('\n');
             const changedFiles = (form.querySelector('#fileInput')?.files?.length || 0) > 0
                 || form.querySelector('input[name="uploadedFiles"], input[name="deletedFiles"]');
-            if (title === initialTitle
+            if ((!marketBoard ? title === initialTitle : true)
                     && articleFingerprint(cleaned) === initialFingerprint
                     && objekts === initialObjekts
                     && !changedFiles) {
-                alert('게시글을 수정해주세요.');
+                showFormError('게시글을 수정해주세요.');
                 return false;
             }
             return window.confirm('이 글을 수정하시겠습니까?');
@@ -434,6 +460,7 @@
         }
 
         function syncPreviewFromContent() {
+            if (!previewArea) return;
             syncingPreview = true;
             try {
                 previewArea.innerHTML = '';
@@ -496,7 +523,7 @@
                     const v = node.tagName.toLowerCase() === 'source' ? node.parentElement : node;
                     (v.closest('.content-media') || v).remove();
                 });
-                previewArea.querySelectorAll(selectors).forEach(node => {
+                previewArea?.querySelectorAll(selectors).forEach(node => {
                     node.closest('.preview-item')?.remove() || node.remove();
                 });
             } finally {

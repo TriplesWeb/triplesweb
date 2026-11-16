@@ -302,8 +302,8 @@ class ObjektFeaturesTest {
                 .andExpect(jsonPath("$.detailUrl").value("/cosmo/objekt/detail/hayeoncc367z"))
                 .andExpect(jsonPath("$.memberUrl").value("/cosmo/objekt?group=members&member=HaYeon"))
                 .andExpect(jsonPath("$.memberColor").value("#ff6bb5"))
-                .andExpect(jsonPath("$.tradeUrl").value("/article/trade/new?selectedObjektIds=uuid"))
-                .andExpect(jsonPath("$.sellUrl").value("/article/sell/new?selectedObjektIds=uuid"));
+                .andExpect(jsonPath("$.tradeUrl").value("/trade/new?selectedObjektIds=uuid"))
+                .andExpect(jsonPath("$.sellUrl").value("/sell/new?selectedObjektIds=uuid"));
         mvc.perform(get("/cosmo/objekt/member").param("name", "HaYeon"))
                 .andExpect(redirectedUrl("/cosmo/objekt?group=members&member=HaYeon"));
     }

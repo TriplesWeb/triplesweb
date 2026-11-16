@@ -109,6 +109,14 @@ class MobilePageTemplatesTest {
             row.put("haveLeadColor", "#8decd9"); row.put("showTradeSwap", "trade".equals(category));
             row.put("hasWantLead", "trade".equals(category)); row.put("wantLeadName", "코토네");
             row.put("wantLeadColor", "#ff8389");
+            row.put("boardBase", "/"+category);
+            Map<String,Object> thumb=Map.of("hasImage",true,"thumbnailImage","/images/no-image.png","collectionNo","367Z");
+            row.put("hasObjektPreview", true);
+            row.put("hasHavePreview", true); row.put("havePreview", List.of(thumb));
+            if ("trade".equals(category)) {
+                row.put("hasWantPreview", true); row.put("wantPreview", List.of(thumb));
+            }
+            board.put("boardBase", "/"+category);
             board.put("articleList", List.of(row));
             Files.writeString(output.resolve("board-" + category + ".html"),
                 compiler.compile(Files.readString(root.resolve("article/article.mustache"))).execute(board));

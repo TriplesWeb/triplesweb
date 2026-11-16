@@ -1138,8 +1138,8 @@
         if (detailMemberLink) detailMemberLink.href = data.memberUrl || '/cosmo/objekt';
         if (detailFullLink) detailFullLink.href = data.detailUrl || ('/cosmo/objekt/detail/' + encodeURIComponent(key));
         if (detailFavorite) detailFavorite.dataset.key = key;
-        if (detailTradeLink) detailTradeLink.href = data.tradeUrl || '/article/trade/new';
-        if (detailSellLink) detailSellLink.href = data.sellUrl || '/article/sell/new';
+        if (detailTradeLink) detailTradeLink.href = data.tradeUrl || '/trade/new';
+        if (detailSellLink) detailSellLink.href = data.sellUrl || '/sell/new';
         window.ObjektSerialLookup?.setCollection(
             data.lookupUrl || ('/cosmo/objekt/detail/' + encodeURIComponent(key) + '/lookup')
         );
