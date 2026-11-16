@@ -386,10 +386,21 @@
         updateMemberToggle();
     });
     let filterTimer = 0;
+    let submitWhenDateCloses = false;
+    function dateOverlayOpen() {
+        return Boolean(document.querySelector('.ar-cal-board:not([hidden]), [data-date-popover]:not([hidden])'));
+    }
     function scheduleFilterSubmit() {
         window.clearTimeout(filterTimer);
+        if (dateOverlayOpen()) {
+            submitWhenDateCloses = true;
+            return;
+        }
         filterTimer = window.setTimeout(() => {
-            if (document.querySelector('.ar-cal-board:not([hidden]), [data-date-popover]:not([hidden])')) return;
+            if (dateOverlayOpen()) {
+                submitWhenDateCloses = true;
+                return;
+            }
             form?.requestSubmit();
         }, 280);
     }
@@ -397,24 +408,31 @@
         paintFilterSummary();
         scheduleFilterSubmit();
     });
-    const dateSnapshot = () => [...(form?.querySelectorAll('[data-date-filter] input') || [])]
-        .map((input) => input.name + '=' + input.value).join('&');
+    const dateSnapshot = () => ['on', 'from', 'to'].map((name) => {
+        const input = form?.querySelector('[data-date-filter] input[name="' + name + '"]');
+        return name + '=' + (input ? input.value : '');
+    }).join('&');
     let appliedDates = dateSnapshot();
     form?.addEventListener('archive-date-close', () => {
         const next = dateSnapshot();
-        if (next === appliedDates) return;
-        appliedDates = next;
+        const datesChanged = next !== appliedDates;
+        if (datesChanged) appliedDates = next;
+        if (!datesChanged && !submitWhenDateCloses) return;
+        submitWhenDateCloses = false;
         scheduleFilterSubmit();
     });
+    let memberFilterReady = false;
     if (window.MemberPortraitPicker && panel) {
         MemberPortraitPicker.bindMultiSelect(panel, {
             onChange: (values) => {
                 updateMemberToggle(values);
+                if (!memberFilterReady) return;
                 paintFilterSummary();
                 scheduleFilterSubmit();
             }
         });
     }
+    memberFilterReady = true;
     updateMemberToggle();
     form?.addEventListener('submit', () => {
         form.querySelectorAll('input[name="members"]').forEach(node => node.remove());

@@ -412,6 +412,19 @@ ${siteUi}
     assert.ok(calKo.days >= 28, '달력 날짜 칸이 없다');
     const dateShotDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
     fs.mkdirSync(dateShotDir, { recursive: true });
+    await page.waitForTimeout(400);
+    const calStill = await page.evaluate(() => {
+      const board = document.querySelector('.ar-cal-board:not([hidden])');
+      const pop = document.querySelector('[data-date-popover]');
+      const box = board?.getBoundingClientRect();
+      return {
+        popOpen: pop?.hidden === false,
+        days: board?.querySelectorAll('.ar-cal-day').length || 0,
+        visible: Boolean(box && box.width > 40 && box.height > 40)
+      };
+    });
+    assert.equal(calStill.popOpen, true, '달력 확인 전에 날짜 팝오버가 닫힌다');
+    assert.ok(calStill.days >= 28 && calStill.visible, '달력이 다시 숨겨졌다: ' + JSON.stringify(calStill));
     await page.locator('.ar-cal-board:not([hidden])').screenshot({ path: path.join(dateShotDir, 'archive-date-calendar-ko.png') });
     await page.locator('[data-date-popover]').screenshot({ path: path.join(dateShotDir, 'archive-date-calendar.png') });
     await page.locator('.ar-cal-board:not([hidden]) .ar-cal-day').filter({ hasText: /^16$/ }).click();
