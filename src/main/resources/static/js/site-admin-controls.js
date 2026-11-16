@@ -16,7 +16,8 @@
   style.textContent = `
     ${protectedSelector} { display: none !important; }
     body.site-admin-enabled [data-admin-only], body.site-admin-enabled .admin-only { display: revert !important; }
-    body.site-admin-enabled .ar-actions[data-admin-only] { display: flex !important; }
+    body.site-admin-enabled .ar-actions[data-admin-only],
+    body.site-admin-enabled .ar-detail-actions[data-admin-only] { display: flex !important; }
     body.site-admin-enabled a[data-admin-only], body.site-admin-enabled button[data-admin-only] { display: inline-flex !important; }
     body.site-admin-enabled form[data-admin-only] { display: block !important; }
     #siteAdminBtn {

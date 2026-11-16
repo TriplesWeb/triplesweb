@@ -26,6 +26,7 @@ class MemberPortraitOptionsTest {
         assertThat(MemberPortraitOptions.earliestMemberIndex("S5 X S20")).isEqualTo(4);
         assertThat(MemberPortraitOptions.earliestMemberIndex("S24 X S1")).isZero();
         assertThat(MemberPortraitOptions.earliestMemberIndex("zenith")).isEqualTo(24);
+        assertThat(MemberPortraitOptions.earliestMemberIndex("지연, 윤서연")).isZero();
     }
 
     @Test void unitLabelsResolveToTheirMembersAndOtherLabelsDoNot() {
@@ -68,5 +69,15 @@ class MemberPortraitOptionsTest {
         assertThat(MemberPortraitOptions.objektMemberLogo("S8 X S12")).isEmpty();
         assertThat(MemberPortraitOptions.objektMemberLogo("윤서연 X 기타")).isEmpty();
         assertThat(MemberPortraitOptions.objektMemberLogo("zenith")).isEmpty();
+    }
+
+    @Test void archiveSymbolLogoMapsS1SeoyeonThroughS24Jiyeon() {
+        assertThat(MemberPortraitOptions.archiveSymbolLogo("윤서연")).endsWith("/S1.png");
+        assertThat(MemberPortraitOptions.archiveSymbolLogo("서연")).endsWith("/S1.png");
+        assertThat(MemberPortraitOptions.archiveSymbolLogo("SeoYeon")).endsWith("/S1.png");
+        assertThat(MemberPortraitOptions.archiveSymbolLogo("지연")).endsWith("/S24.png");
+        assertThat(MemberPortraitOptions.archiveSymbolLogo("S1 X S9")).isEmpty();
+        assertThat(MemberPortraitOptions.archiveSymbolLogo("zenith")).isEmpty();
+        assertThat(MemberPortraitOptions.archiveSymbolLogo("윤서연")).contains("/uploads/images/");
     }
 }

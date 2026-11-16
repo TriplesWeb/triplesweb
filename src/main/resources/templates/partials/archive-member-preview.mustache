@@ -1,0 +1,7 @@
+{{#firstMemberBadge}}
+<span class="archive-member-chip{{#hasSymbol}} archive-symbol-chip{{/hasSymbol}}" style="--member-color: {{color}};" title="{{name}}" aria-label="{{name}}">
+    {{#hasImage}}<img src="{{image}}" alt="{{name}}" referrerpolicy="no-referrer">{{/hasImage}}
+    <span class="archive-chip-name">{{name}}</span>
+</span>
+{{/firstMemberBadge}}
+{{#hasOtherMembers}}<span class="archive-member-more" title="{{otherMemberNames}}">외 {{otherMemberCount}}명<span class="archive-member-rest">{{otherMemberNames}}</span></span>{{/hasOtherMembers}}

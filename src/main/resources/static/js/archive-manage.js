@@ -1,7 +1,7 @@
 (function () {
     const kind = document.querySelector("[data-archive-kind]")?.dataset.archiveKind || "image";
     const noun = kind === "video" ? "영상" : "사진";
-    const extraNames = new WeakMap();
+    const dateLabel = document.querySelector("[data-date-label]")?.dataset.dateLabel || (noun + " 날짜");
     const dialogTriggers = new WeakMap();
 
     function authHeaders() {
@@ -46,6 +46,63 @@
         return node;
     }
 
+    function previewCardBody() {
+        const body = document.createElement('div');
+        body.className = 'ar-body';
+        const title = document.createElement('h3');
+        title.dataset.previewTitle = '';
+        const meta = document.createElement('div');
+        meta.className = 'ar-meta';
+        meta.dataset.previewArtists = '';
+        body.append(title, meta);
+        return body;
+    }
+
+    function archiveSymbolLogo(frame) {
+        const n = Number(frame);
+        if (!Number.isInteger(n) || n < 1 || n > 24) return '';
+        return '/uploads/images/' + encodeURIComponent('상징로고') + '/S' + n + '.png';
+    }
+
+    function memberColor(button) {
+        const inline = button?.style?.getPropertyValue('--artist-color')?.trim();
+        if (inline) return inline;
+        if (button && button.isConnected) {
+            const computed = getComputedStyle(button).getPropertyValue('--artist-color').trim();
+            if (computed) return computed;
+        }
+        return '#b9cac4';
+    }
+
+    function memberChip(button, name) {
+        const color = memberColor(button);
+        const symbol = archiveSymbolLogo(button?.dataset.frame);
+        const portrait = button?.querySelector('.artist-tab-photo')?.getAttribute('src') || '';
+        const image = symbol || portrait;
+        const chip = document.createElement('span');
+        chip.className = 'archive-member-chip' + (symbol ? ' archive-symbol-chip' : '');
+        chip.style.setProperty('--member-color', color);
+        chip.title = name;
+        chip.setAttribute('aria-label', name);
+        if (image) {
+            const img = document.createElement('img');
+            img.src = image;
+            img.alt = name;
+            img.referrerPolicy = 'no-referrer';
+            chip.appendChild(img);
+        }
+        const label = document.createElement('span');
+        label.className = 'archive-chip-name';
+        label.textContent = name;
+        chip.appendChild(label);
+        return chip;
+    }
+
+    function selectedMemberItems(root) {
+        const picker = root?.querySelector?.('.member-portrait-picker') || root;
+        return Array.from((picker || document).querySelectorAll('.mpp-item.is-active'));
+    }
+
     function showPreview(box, url) {
         if (!box) return;
         const full = box.querySelector(".ar-preview-full");
@@ -61,10 +118,12 @@
             return;
         }
         full.replaceChildren(mediaNode(url, false));
+        const article = document.createElement('article');
+        article.className = 'ar-panel ar-card';
         if (kind === 'image') {
             card.classList.add('is-photo-preview');
-            const article = document.createElement('article');
-            article.className = 'ar-panel ar-card ar-preview-photo-card';
+            card.classList.remove('is-video-preview');
+            article.classList.add('ar-preview-photo-card');
             const image = mediaNode(url, true);
             box.dataset.pending = 'true';
             image.addEventListener('load', () => { if (image.isConnected) delete box.dataset.pending; });
@@ -77,19 +136,33 @@
                     error.hidden = false;
                 }
             });
-            const body = document.createElement('div');
-            body.className = 'ar-body';
-            const title = document.createElement('h3');
-            title.dataset.previewTitle = '';
-            const artists = document.createElement('div');
-            artists.className = 'ar-meta';
-            artists.dataset.previewArtists = '';
-            body.append(title, artists);
-            article.append(image, body);
-            card.replaceChildren(article);
+            const link = document.createElement('button');
+            link.type = 'button';
+            link.className = 'ar-photo-link';
+            link.tabIndex = -1;
+            link.append(image);
+            article.append(link, previewCardBody());
         } else {
-            card.replaceChildren(mediaNode(url, true));
+            card.classList.add('is-video-preview');
+            card.classList.remove('is-photo-preview');
+            article.classList.add('ar-preview-video-card');
+            const thumb = document.createElement('div');
+            thumb.className = 'ar-video-thumb';
+            const poster = document.createElement('img');
+            poster.alt = '목록 카드 미리보기';
+            poster.hidden = true;
+            poster.dataset.previewPoster = '';
+            const placeholder = document.createElement('span');
+            placeholder.className = 'ar-video-placeholder';
+            placeholder.textContent = '영상';
+            const play = document.createElement('span');
+            play.className = 'ar-video-play';
+            play.setAttribute('aria-hidden', 'true');
+            play.textContent = '▶';
+            thumb.append(poster, placeholder, play);
+            article.append(thumb, previewCardBody());
         }
+        card.replaceChildren(article);
         box.hidden = false;
         syncPreview(box.closest('form'));
         syncThumbnail(box.closest('form'));
@@ -111,13 +184,23 @@
         }
     }
 
-    function selectedArtists(root, extra) {
-        const values = window.MemberPortraitPicker ? MemberPortraitPicker.selectedValues(root) : [];
-        (extraNames.get(root) || []).forEach(name => { if (!values.includes(name)) values.push(name); });
-        (extra?.value || "").split(",").map(part => part.trim()).filter(Boolean).forEach(name => {
-            if (!values.includes(name)) values.push(name);
+    function selectedArtists(root) {
+        return window.MemberPortraitPicker ? MemberPortraitPicker.selectedValues(root) : [];
+    }
+
+    function syncFileName(input) {
+        const label = input?.closest('.ar-file')?.querySelector('[data-file-name]');
+        if (label) label.textContent = input.files?.[0]?.name || '선택된 파일 없음';
+    }
+
+    function bindFileNames(form) {
+        if (!form) return;
+        form.querySelectorAll('.ar-file input[type="file"]').forEach(input => {
+            input.addEventListener('change', () => syncFileName(input));
         });
-        return values;
+        form.addEventListener('reset', () => {
+            queueMicrotask(() => form.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName));
+        });
     }
 
     function syncPreview(form) {
@@ -125,17 +208,24 @@
         const preview = form.querySelector('.ar-preview');
         if (!preview) return;
         const title = preview.querySelector('[data-preview-title]');
-        if (title) title.textContent = form.querySelector('[name="title"]')?.value.trim() || '사진 제목';
-        const artists = preview.querySelector('[data-preview-artists]');
-        if (artists) {
-            artists.replaceChildren();
-            const names = selectedArtists(form.closest('.ar-dialog'), form.querySelector('[name="extraArtists"]'));
-            (names.length ? names : ['출연자 미지정']).forEach(name => {
-                const badge = document.createElement('span');
-                badge.className = 'ar-badge';
-                badge.textContent = name;
-                artists.appendChild(badge);
+        if (title) title.textContent = form.querySelector('[name="title"]')?.value.trim() || (kind === 'video' ? '영상 제목' : '사진 제목');
+        const meta = preview.querySelector('[data-preview-artists]');
+        if (meta) {
+            const items = selectedMemberItems(form.closest('.ar-dialog'));
+            meta.style.setProperty('--member-count', String(items.length || 1));
+            meta.replaceChildren();
+            items.forEach(button => {
+                const name = (button.dataset.value || button.dataset.name || '').trim();
+                if (name) meta.appendChild(memberChip(button, name));
             });
+            const registered = form.querySelector('[name="registeredOn"]')?.value || '';
+            if (registered) {
+                const time = document.createElement('time');
+                time.className = 'ar-card-date';
+                time.dateTime = registered;
+                time.textContent = registered.replaceAll('-', '/');
+                meta.appendChild(time);
+            }
         }
         const info = preview.querySelector('[data-preview-file]');
         const file = form.querySelector('input[type="file"]')?.files?.[0];
@@ -144,7 +234,7 @@
 
     function renderArtists(root) {
         if (!root) return;
-        const values = selectedArtists(root, null);
+        const values = selectedArtists(root);
         const count = root.querySelector('[data-picker-count]');
         if (count) count.textContent = String(values.length);
         const chips = root.querySelector('[data-artist-chips]');
@@ -160,9 +250,7 @@
                     root.querySelectorAll('.mpp-item').forEach(button => {
                         if (button.dataset.value === name) window.MemberPortraitPicker?.setActive(button, false);
                     });
-                    extraNames.set(root, (extraNames.get(root) || []).filter(value => value !== name));
                     renderArtists(root);
-                    root.querySelector('[name="extraArtists"]')?.focus();
                 });
                 chips.appendChild(chip);
             });
@@ -171,20 +259,15 @@
         syncPreview(root.querySelector('form'));
     }
 
-    function applyArtists(root, extra, raw) {
+    function applyArtists(root, raw) {
         if (window.MemberPortraitPicker) MemberPortraitPicker.clear(root);
         const names = (raw || "").split(",").map(part => part.trim()).filter(Boolean);
-        const known = new Set();
         root.querySelectorAll(".mpp-item").forEach(button => {
             const value = (button.dataset.value || "").trim();
             if (names.includes(value) && window.MemberPortraitPicker) {
-                window.MemberPortraitPicker?.setActive(button, true);
-                known.add(value);
+                window.MemberPortraitPicker.setActive(button, true);
             }
         });
-        const unknown = names.filter(name => !known.has(name));
-        extraNames.set(root, root.querySelector('[data-artist-tags]') ? unknown : []);
-        if (extra) extra.value = root.querySelector('[data-artist-tags]') ? '' : unknown.join(', ');
         renderArtists(root);
     }
 
@@ -195,31 +278,10 @@
         });
         root.querySelector("[data-picker-clear]")?.addEventListener("click", () => {
             window.MemberPortraitPicker?.clear(root);
-            extraNames.set(root, []);
-            const input = root.querySelector('[name="extraArtists"]');
-            if (input) input.value = '';
             renderArtists(root);
-        });
-        const input = root.querySelector('[data-artist-tags] [name="extraArtists"]');
-        function addNames() {
-            const names = (input?.value || '').split(/[,\n]/).map(name => name.trim()).filter(Boolean);
-            const added = extraNames.get(root) || [];
-            names.forEach(name => {
-                const button = [...root.querySelectorAll('.mpp-item')].find(item => (item.dataset.value || '').toLocaleLowerCase() === name.toLocaleLowerCase());
-                if (button && window.MemberPortraitPicker) MemberPortraitPicker.setActive(button, true);
-                else if (!added.some(value => value.toLocaleLowerCase() === name.toLocaleLowerCase())) added.push(name);
-            });
-            extraNames.set(root, added);
-            if (input) { input.value = ''; input.focus(); }
-            renderArtists(root);
-        }
-        root.querySelector('[data-artist-add]')?.addEventListener('click', addNames);
-        input?.addEventListener('keydown', event => {
-            if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); addNames(); }
         });
         root.querySelector('form')?.addEventListener('input', () => syncPreview(root.querySelector('form')));
         window.MemberPortraitPicker?.clear(root);
-        extraNames.set(root, []);
         renderArtists(root);
     }
 
@@ -235,6 +297,19 @@
             if (url) video.poster = url;
             else video.removeAttribute('poster');
         });
+        const poster = form.querySelector('[data-preview-poster]');
+        const placeholder = form.querySelector('.ar-preview-card .ar-video-placeholder');
+        if (poster) {
+            if (url) {
+                poster.src = url;
+                poster.hidden = false;
+                if (placeholder) placeholder.hidden = true;
+            } else {
+                poster.removeAttribute('src');
+                poster.hidden = true;
+                if (placeholder) placeholder.hidden = false;
+            }
+        }
     }
 
     function showThumbnail(form, url) {
@@ -272,6 +347,7 @@
         releaseUrl(input._archiveLastFile);
         input._archiveLastFile = null;
         input.value = '';
+        syncFileName(input);
         form.dataset.originalThumbnail = original;
         const clear = form.querySelector('[name="clearThumbnail"]');
         if (clear) clear.value = 'false';
@@ -290,6 +366,7 @@
             if (!/\.(jpe?g|jfif|png|webp|gif|bmp)$/i.test(file.name)) {
                 alert('썸네일은 JPG, JFIF, PNG, WebP, GIF, BMP 이미지 파일로 선택해 주세요.');
                 input.value = '';
+                syncFileName(input);
                 showThumbnail(form, clear?.value === 'true' ? '' : form.dataset.originalThumbnail || '');
                 return;
             }
@@ -301,6 +378,7 @@
             releaseUrl(input._archiveLastFile);
             input._archiveLastFile = null;
             input.value = '';
+            syncFileName(input);
             if (clear) clear.value = 'true';
             showThumbnail(form, '');
         });
@@ -328,17 +406,20 @@
     const uploadDialog = document.getElementById("uploadModal");
     const uploadForm = document.getElementById("archiveUploadForm");
     const uploadPreview = document.getElementById("uploadPreview");
-    const uploadFile = uploadForm?.querySelector('input[type="file"]');
+    const uploadFile = uploadForm?.querySelector('input[name="file"]');
     bindPicker(uploadDialog);
     bindThumbnail(uploadForm);
+    bindFileNames(uploadForm);
 
     window.showAddModal = function () {
         if (!uploadForm || !uploadDialog) return;
         uploadForm.reset();
         resetThumbnail(uploadForm);
-        applyArtists(uploadDialog, uploadForm.querySelector("[name='extraArtists']"), "");
+        applyArtists(uploadDialog, "");
         if (uploadFile) releaseUrl(uploadFile._archiveLastFile);
         showPreview(uploadPreview, "");
+        window.bindArchiveDateFields?.(uploadForm);
+        uploadForm.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName);
         openDialog(uploadDialog);
     };
 
@@ -353,6 +434,7 @@
         if (!acceptedFile(file)) {
             alert(kind === "video" ? "동영상 파일만 선택할 수 있습니다." : "이미지 파일만 선택할 수 있습니다.");
             uploadFile.value = "";
+            syncFileName(uploadFile);
             showPreview(uploadPreview, "");
             return;
         }
@@ -372,7 +454,11 @@
             return;
         }
         if (!uploadForm.querySelector("[name='registeredOn']")?.value) {
-            alert("등록일을 입력해 주세요.");
+            alert(dateLabel + "를 선택해 주세요.");
+            return;
+        }
+        if (!uploadForm.querySelector("[name='source']")?.value) {
+            alert("출처를 선택해 주세요.");
             return;
         }
         if (!uploadPreview || uploadPreview.hidden || uploadPreview.dataset.invalid || uploadPreview.dataset.pending) {
@@ -384,7 +470,7 @@
         const body = new FormData(uploadForm);
         body.delete("artistNames");
         body.delete("extraArtists");
-        selectedArtists(uploadDialog, uploadForm.querySelector("[name='extraArtists']")).forEach(name => body.append("artistNames", name));
+        selectedArtists(uploadDialog).forEach(name => body.append("artistNames", name));
         const button = uploadForm.querySelector("[type='submit']");
         if (button) button.disabled = true;
         try {
@@ -407,9 +493,10 @@
     const editDialog = document.getElementById("editModal");
     const editForm = document.getElementById("archiveEditForm");
     const editPreview = document.getElementById("editPreview");
-    const editFile = editForm?.querySelector('input[type="file"]');
+    const editFile = editForm?.querySelector('input[name="file"]');
     bindPicker(editDialog);
     bindThumbnail(editForm);
+    bindFileNames(editForm);
 
     function showEdit(button) {
         if (!editForm || !editDialog) return;
@@ -419,10 +506,17 @@
         editForm.dataset.originalUrl = button.dataset.url || '';
         editForm.querySelector("[name='title']").value = button.dataset.title || "";
         const registered = editForm.querySelector("[name='registeredOn']");
-        if (registered) registered.value = button.dataset.registered || "";
-        applyArtists(editDialog, editForm.querySelector("[name='extraArtists']"), button.dataset.artists || "");
+        if (registered) {
+            registered.value = button.dataset.registered || "";
+            registered.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        applyArtists(editDialog, button.dataset.artists || "");
+        const sourceSelect = editForm.querySelector("[name='source']");
+        if (sourceSelect) sourceSelect.value = button.dataset.source || "";
         if (editFile) releaseUrl(editFile._archiveLastFile);
         showPreview(editPreview, button.dataset.url || "");
+        window.bindArchiveDateFields?.(editForm);
+        editForm.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName);
         openDialog(editDialog);
     }
 
@@ -434,6 +528,7 @@
         if (!acceptedFile(file)) {
             alert(kind === "video" ? "동영상 파일만 선택할 수 있습니다." : "이미지 파일만 선택할 수 있습니다.");
             editFile.value = "";
+            syncFileName(editFile);
             showPreview(editPreview, editForm.dataset.originalUrl || '');
             return;
         }
@@ -480,7 +575,7 @@
         }
         const registeredOn = editForm.querySelector("[name='registeredOn']")?.value || "";
         if (!registeredOn) {
-            alert("등록일을 입력해 주세요.");
+            alert(dateLabel + "를 선택해 주세요.");
             return;
         }
         if (!editForm.dataset.id) {
@@ -500,7 +595,9 @@
         const body = new FormData();
         body.set("title", title);
         body.set("registeredOn", registeredOn);
-        body.set("artistNames", selectedArtists(editDialog, editForm.querySelector("[name='extraArtists']")).join(","));
+        body.set("artistNames", selectedArtists(editDialog).join(","));
+        const source = editForm.querySelector("[name='source']")?.value || "";
+        if (source) body.set("source", source);
         if (replacing) body.set("file", editFile.files[0]);
         const thumbnail = editForm.querySelector('[name="thumbnail"]')?.files?.[0];
         if (thumbnail) body.set('thumbnail', thumbnail);

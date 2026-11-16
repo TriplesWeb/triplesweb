@@ -1,0 +1,62 @@
+<section class="ar-panel ar-toolbar">
+    <form class="ar-filters" id="archiveFilterForm" method="get" action="{{archivePath}}">
+        {{#videoArchive}}<input type="hidden" name="type" value="video">{{/videoArchive}}
+        {{#folderKey}}<input type="hidden" name="folder" value="{{folderKey}}">{{/folderKey}}
+        {{#hasCombo}}<input type="hidden" name="combo" value="{{comboValue}}">{{/hasCombo}}
+        {{#hasSourceFilter}}<input type="hidden" name="source" value="{{sourceKey}}">{{/hasSourceFilter}}
+        <div class="ar-filter-tools">
+            <label class="ar-sort">
+                <span class="ar-sort-label">정렬</span>
+                <span class="ar-sort-control">
+                    <select id="archiveSort" aria-label="정렬">
+                        <option value="newest">최신순</option>
+                        <option value="oldest">오래된 순</option>
+                        <option value="title">제목순</option>
+                        {{^folderIsSolo}}
+                        <option value="first-member">첫멤버순</option>
+                        <option value="last-member">마지막멤버순</option>
+                        {{/folderIsSolo}}
+                    </select>
+                    <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
+                </span>
+            </label>
+            {{>partials/date-range-filter}}
+            {{#showChemistryFilter}}
+            <select class="ar-chem-select" id="archiveChem" name="chem" aria-label="케미">
+                <option value="">케미 전체</option>
+                {{#chemistryOptions}}
+                <option value="{{value}}" data-members="{{members}}" data-chem-name="{{shortLabel}}"{{#selected}} selected{{/selected}}>{{label}}</option>
+                {{/chemistryOptions}}
+            </select>
+            {{/showChemistryFilter}}
+            {{#showMemberFilter}}
+            <button type="button" class="ar-member-toggle" id="archiveMemberToggle" aria-expanded="false" aria-controls="archiveMemberPanel">
+                <span class="material-symbols-outlined" aria-hidden="true">group</span>
+                <span data-member-toggle-label>{{#showChemistryFilter}}멤버 · 케미{{/showChemistryFilter}}{{^showChemistryFilter}}멤버 선택{{/showChemistryFilter}}</span>
+                <span class="ar-member-count" id="archiveMemberCount" hidden>0</span>
+                <span class="material-symbols-outlined ar-member-chevron" aria-hidden="true">expand_more</span>
+            </button>
+            {{/showMemberFilter}}
+            <div class="ar-search-row">
+                <label class="ar-search-wrap">
+                    <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                    <input class="ar-search" type="search" name="q" value="{{query}}" placeholder="{{#imageArchive}}사진 제목 검색{{/imageArchive}}{{^imageArchive}}영상 제목 검색{{/imageArchive}}" aria-label="{{#imageArchive}}사진 제목 검색{{/imageArchive}}{{^imageArchive}}영상 제목 검색{{/imageArchive}}">
+                </label>
+                <button type="submit" class="ar-submit">검색</button>
+            </div>
+            <a class="site-btn site-btn--reset ar-reset" href="{{archiveHomePath}}">초기화</a>
+        </div>
+    </form>
+    {{#showMemberFilter}}
+    <div class="ar-member-panel" id="archiveMemberPanel" hidden>
+        {{#showChemistryFilter}}
+        <div class="ar-chem-matches" data-chem-matches>
+            <p class="ar-chem-matches-hint" data-chem-hint>멤버를 고르면 케미가 나타납니다</p>
+        </div>
+        {{/showChemistryFilter}}
+        <div class="member-portrait-picker" id="archive-member-picker" role="group" aria-label="멤버 선택">
+            {{>partials/member-portrait-picker}}
+        </div>
+    </div>
+    {{/showMemberFilter}}
+</section>

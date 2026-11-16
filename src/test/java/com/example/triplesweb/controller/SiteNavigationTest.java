@@ -41,6 +41,11 @@ class SiteNavigationTest {
             .containsExactly("/cosmo/objekt", "/cosmo/collection", "/trade", "/cosmo/gravity");
         assertThat(SiteNavigation.PRIMARY.get(1).items()).extracting(SiteNavigation.Item::label)
             .containsExactly("오브젝트", "코스모 아이디 검색", "교환/거래", "그래비티");
+        assertThat(SiteNavigation.PRIMARY.get(2).items()).extracting(SiteNavigation.Item::label)
+            .containsExactly("아카이브", "공식 미디어");
+        assertThat(SiteNavigation.PRIMARY.get(2).items()).extracting(SiteNavigation.Item::href)
+            .containsExactly("/archive", "/media");
+        assertThat(SiteNavigation.PRIMARY.get(2).items().get(0).isNested()).isFalse();
         assertThat(SiteNavigation.PRIMARY.get(3).items()).extracting(SiteNavigation.Item::label)
             .containsExactly("공연/이벤트", "굿즈리스트", "총공", "기사/그외");
         mvc.perform(get("/sitemap")).andExpect(status().isNotFound());

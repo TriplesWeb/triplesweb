@@ -147,50 +147,40 @@
         </div>
     </section>
 
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+    <section class="grid grid-cols-1 gap-6 items-start">
         <div class="main-fade-up bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
             <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-4">
                 <div class="flex items-center gap-2">
                     <span class="material-symbols-outlined text-primary-container text-xl">photo_library</span>
-                    <h3 class="text-base font-bold text-on-surface">사진 아카이브</h3>
+                    <h3 class="text-base font-bold text-on-surface">아카이브</h3>
                 </div>
-                <a href="/archive/image_archive" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
+                <a href="/archive" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
                     전체보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
                 </a>
             </div>
-            <div class="grid grid-cols-2 gap-3">
+            <nav class="site-section-tabs mb-4" aria-label="아카이브 종류">
+                <a class="site-section-tab" href="/archive">사진</a>
+                <a class="site-section-tab" href="/archive?type=video">영상</a>
+            </nav>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {{#recentPhotos}}
-                    <a href="/archive/image_archive" class="main-archive-card group block rounded-xl overflow-hidden border border-outline-variant/30 bg-black/30 no-underline">
+                    <a href="/archive" class="main-archive-card group block rounded-xl overflow-hidden border border-outline-variant/30 bg-black/30 no-underline">
                         <img src="{{file.url}}" alt="{{title}}" referrerpolicy="no-referrer" loading="lazy" class="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-105">
                         <span class="block truncate px-2.5 py-2 text-xs font-medium text-on-surface">{{title}}</span>
                     </a>
                 {{/recentPhotos}}
-                {{^recentPhotos}}
-                    <p class="col-span-full py-6 text-center text-sm text-on-surface-variant/60">등록된 사진이 없습니다.</p>
-                {{/recentPhotos}}
-            </div>
-        </div>
-        <div class="main-fade-up bg-surface-container-low/80 border border-outline-variant/40 rounded-2xl p-5 backdrop-blur-md shadow-xl">
-            <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-4">
-                <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary-container text-xl">movie</span>
-                    <h3 class="text-base font-bold text-on-surface">영상 아카이브</h3>
-                </div>
-                <a href="/archive/video_archive" class="text-xs text-on-surface-variant hover:text-primary-container flex items-center gap-0.5 transition-colors">
-                    전체보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
-                </a>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
                 {{#recentVideos}}
-                    <a href="/archive/video_archive" class="main-archive-card group block rounded-xl overflow-hidden border border-outline-variant/30 bg-black/30 no-underline">
+                    <a href="/archive?type=video" class="main-archive-card group block rounded-xl overflow-hidden border border-outline-variant/30 bg-black/30 no-underline">
                         {{#thumbnailUrl}}<img src="{{thumbnailUrl}}" alt="{{title}}" referrerpolicy="no-referrer" loading="lazy" class="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-105">{{/thumbnailUrl}}
-                        {{^thumbnailUrl}}<span class="main-video-placeholder aspect-[4/3] w-full flex items-center justify-center text-xs text-on-surface-variant">영상 아카이브</span>{{/thumbnailUrl}}
+                        {{^thumbnailUrl}}<span class="main-video-placeholder aspect-[4/3] w-full flex items-center justify-center text-xs text-on-surface-variant">영상</span>{{/thumbnailUrl}}
                         <span class="block truncate px-2.5 py-2 text-xs font-medium text-on-surface">{{title}}</span>
                     </a>
                 {{/recentVideos}}
+                {{^recentPhotos}}
                 {{^recentVideos}}
-                    <p class="col-span-full py-6 text-center text-sm text-on-surface-variant/60">등록된 영상이 없습니다.</p>
+                    <p class="col-span-full py-6 text-center text-sm text-on-surface-variant/60">등록된 사진과 영상이 없습니다.</p>
                 {{/recentVideos}}
+                {{/recentPhotos}}
             </div>
         </div>
     </section>

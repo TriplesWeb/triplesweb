@@ -243,12 +243,12 @@ public class SiteSearchService {
     private List<Hit> mediaHits(String query) {
         List<DatedHit> hits = new ArrayList<>();
         for (Archive archive : archiveHits(MediaType.IMAGE, query)) {
-            hits.add(new DatedHit(hit(archive.getTitle(), "/archive/image_archive?q=" + encode(archive.getTitle()), "사진",
-                    blankTo(archive.getArtistNames(), "사진 아카이브")), dateTime(archive.getRegisteredOn())));
+            hits.add(new DatedHit(hit(archive.getTitle(), "/archive?q=" + encode(archive.getTitle()), "사진",
+                    blankTo(archive.getArtistNames(), "아카이브")), dateTime(archive.getRegisteredOn())));
         }
         for (Archive archive : archiveHits(MediaType.VIDEO, query)) {
-            hits.add(new DatedHit(hit(archive.getTitle(), "/archive/video_archive?q=" + encode(archive.getTitle()), "영상",
-                    blankTo(archive.getArtistNames(), "영상 아카이브")), dateTime(archive.getRegisteredOn())));
+            hits.add(new DatedHit(hit(archive.getTitle(), "/archive?type=video&q=" + encode(archive.getTitle()), "영상",
+                    blankTo(archive.getArtistNames(), "아카이브")), dateTime(archive.getRegisteredOn())));
         }
         for (MediaTab tab : MediaTab.values()) {
             for (MediaDto item : safeList(() -> media.allByTab(tab.getKey()))) {

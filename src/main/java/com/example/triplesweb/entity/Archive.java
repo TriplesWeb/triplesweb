@@ -32,6 +32,10 @@ public class Archive {
     @Column(name = "registered_on")
     private LocalDate registeredOn;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 32)
+    private ArchiveSource source;
+
     @Embedded
     private SavedMeta file;
 

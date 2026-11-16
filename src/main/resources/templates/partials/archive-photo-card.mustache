@@ -1,0 +1,13 @@
+<article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-member-order="{{memberOrder}}" data-url="{{file.url}}" data-registered="{{registeredOn}}" data-source="{{sourceValue}}" data-source-label="{{sourceLabel}}">
+    <button type="button" class="ar-photo-link" data-archive-open aria-label="{{title}} 자세히 보기">
+        <img src="{{file.url}}" alt="{{title}}" loading="lazy" decoding="async">
+    </button>
+    <div class="ar-body">
+        <h3>{{title}}</h3>
+        <div class="ar-meta" style="--member-count: {{memberCount}}" title="{{memberNames}}">
+            {{>partials/archive-member-badges}}
+            {{#hasRegisteredOn}}<time class="ar-card-date" datetime="{{registeredOn}}">{{registeredOnDisplay}}</time>{{/hasRegisteredOn}}
+        </div>
+        <div class="ar-card-members" hidden>{{>partials/archive-album-members}}</div>
+    </div>
+</article>

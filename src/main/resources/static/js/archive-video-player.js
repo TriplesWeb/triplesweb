@@ -5,6 +5,11 @@
     const title = document.getElementById('archiveVideoTitle');
     const original = document.getElementById('archiveVideoOriginal');
     const status = document.getElementById('archiveVideoStatus');
+    const date = document.getElementById('archiveVideoDate');
+    const source = document.getElementById('archiveVideoSource');
+    const members = document.getElementById('archiveVideoMembers');
+    const edit = document.getElementById('archiveVideoEdit');
+    const remove = document.getElementById('archiveVideoDelete');
     let trigger = null;
     let previousOverflow = '';
 
@@ -31,11 +36,38 @@
         if (!link || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
         trigger = link;
+        const card = link.closest('[data-id]');
         title.textContent = link.dataset.title || '영상 재생';
         original.href = link.href;
         video.src = link.href;
         if (link.dataset.poster) video.poster = link.dataset.poster;
         else video.removeAttribute('poster');
+        if (date) {
+            date.hidden = !card?.dataset.registered;
+            const label = document.querySelector('.archive-page')?.dataset.dateLabel || '날짜';
+            date.textContent = card?.dataset.registered ? label + ' ' + card.dataset.registered : '';
+        }
+        if (source) {
+            const label = card?.dataset.sourceLabel || '기타/팬메이드';
+            source.hidden = false;
+            source.dataset.source = (card?.dataset.source || '').toLowerCase();
+            source.textContent = label;
+        }
+        if (members) {
+            const chips = card?.querySelector('.ar-card-members');
+            members.replaceChildren();
+            if (chips) members.innerHTML = chips.innerHTML;
+        }
+        [edit, remove].forEach(button => {
+            if (!button || !card) return;
+            button.dataset.id = card.dataset.id || '';
+            button.dataset.title = card.dataset.title || '';
+            button.dataset.artists = card.dataset.artists || '';
+            button.dataset.url = card.dataset.url || link.href;
+            button.dataset.registered = card.dataset.registered || '';
+            button.dataset.source = card.dataset.source || '';
+            button.dataset.thumbnailUrl = link.dataset.poster || '';
+        });
         message('');
         if (!dialog.open) {
             previousOverflow = document.body.style.overflow;

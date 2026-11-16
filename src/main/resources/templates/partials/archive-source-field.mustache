@@ -1,0 +1,8 @@
+<label class="ar-field ar-source-field">출처
+    <select name="source" {{#sourceRequired}}required{{/sourceRequired}} aria-label="출처">
+        <option value="">출처를 선택하세요</option>
+        {{#archiveSources}}
+        <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+        {{/archiveSources}}
+    </select>
+</label>
