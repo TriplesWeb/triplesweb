@@ -33,6 +33,7 @@
             members.replaceChildren();
             if (chips) members.innerHTML = chips.innerHTML;
             members.dataset.memberCount = String(members.querySelectorAll('.unit-member-chip').length);
+            window.paintArchiveChemistry?.(members);
         }
         [edit, remove].forEach(button => {
             if (!button) return;

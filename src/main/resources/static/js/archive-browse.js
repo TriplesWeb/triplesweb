@@ -178,7 +178,19 @@
     const baseFolderTitle = folderTitle?.dataset.baseTitle || folderTitle?.textContent.trim() || '';
     const chemMatches = panel?.querySelector('[data-chem-matches]');
 
-    function chemEntries() {
+    function memberKey(name) {
+        return String(name || '').trim().toLowerCase().replace(/\s+/g, '');
+    }
+
+    function sameMemberSet(left, right) {
+        if (!left.length || left.length !== right.length) return false;
+        const leftKeys = left.map(memberKey);
+        const rightKeys = new Set(right.map(memberKey));
+        if (new Set(leftKeys).size !== rightKeys.size) return false;
+        return leftKeys.every((key) => rightKeys.has(key));
+    }
+
+    function selectEntries() {
         return [...(chem?.options || [])]
             .filter((option) => option.value)
             .map((option) => ({
@@ -188,15 +200,70 @@
             }));
     }
 
+    function catalogEntries() {
+        const node = document.getElementById('archiveChemistryNames');
+        if (!node) return [];
+        let data = [];
+        try {
+            data = JSON.parse(node.textContent || '[]');
+        } catch (error) {
+            data = [];
+        }
+        if (!Array.isArray(data)) return [];
+        return data.map((entry) => ({
+            value: '',
+            name: String(entry?.label || '').trim(),
+            members: (Array.isArray(entry?.members) ? entry.members : String(entry?.members || '').split(','))
+                .map((name) => String(name).trim()).filter(Boolean)
+        })).filter((entry) => entry.name && entry.members.length >= 2);
+    }
+
+    function chemEntries() {
+        const selected = selectEntries();
+        return selected.length ? selected : catalogEntries();
+    }
+
     function matchingChems(selected) {
         if (!selected.length) return [];
-        return chemEntries().filter((entry) => selected.every((name) => entry.members.includes(name)));
+        const keys = selected.map(memberKey);
+        return chemEntries().filter((entry) => {
+            const entryKeys = entry.members.map(memberKey);
+            return keys.every((key) => entryKeys.includes(key));
+        });
     }
 
     function exactChem(selected) {
-        const matches = matchingChems(selected);
-        return matches.find((entry) => entry.members.length === selected.length) || null;
+        return matchingChems(selected).find((entry) => sameMemberSet(entry.members, selected) && entry.name) || null;
     }
+
+    function memberNamesFrom(root) {
+        return [...root.querySelectorAll('.unit-member-chip')].map((chip) => {
+            return (chip.querySelector('span')?.textContent || chip.getAttribute('title') || '').trim();
+        }).filter(Boolean);
+    }
+
+    window.archiveChemistryLabel = function (names) {
+        const selected = (Array.isArray(names) ? names : []).map((name) => String(name).trim()).filter(Boolean);
+        const exact = exactChem(selected);
+        return exact ? exact.name : '';
+    };
+
+    window.paintArchiveChemistry = function (membersEl) {
+        if (!membersEl) return;
+        const name = window.archiveChemistryLabel(memberNamesFrom(membersEl));
+        const parent = membersEl.parentElement;
+        let label = parent ? parent.querySelector(':scope > .ar-detail-chem') : null;
+        if (!name) {
+            label?.remove();
+            return;
+        }
+        if (!label && parent) {
+            label = document.createElement('p');
+            label.className = 'ar-detail-chem';
+            membersEl.before(label);
+        }
+        if (label) label.textContent = name;
+    };
 
     function renderChemMatches(selected) {
         if (!chemMatches) return;
@@ -251,7 +318,7 @@
         if (memberLabel) {
             memberLabel.textContent = exact ? exact.name : (count ? count + '명' : defaultMemberLabel);
         }
-        if (folderTitle && !folderTitle.classList.contains('is-solo') && (exact || Array.isArray(values) || !chem?.value)) {
+        if (chem && folderTitle && !folderTitle.classList.contains('is-solo') && (exact || Array.isArray(values) || !chem.value)) {
             folderTitle.textContent = exact ? exact.name : baseFolderTitle;
         }
         memberToggle?.classList.toggle('has-selection', count > 0);

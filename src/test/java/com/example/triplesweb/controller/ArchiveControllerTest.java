@@ -230,6 +230,31 @@ class ArchiveControllerTest {
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0&members=%EC%A0%95%ED%98%9C%EB%A6%B0&members=%EC%9D%B4%EC%A7%80%EC%9A%B0"));
     }
 
+    @Test void archivePageSendsNamedChemistryLabelsWithoutTheDropdown() throws Exception {
+        ChemistryDto pair = ChemistryDto.builder()
+                .id(3L).memberA("주빈").memberB("마유").label("심장\n마빈즈").build();
+        ChemistryDto unlabeled = ChemistryDto.builder()
+                .id(4L).memberA("윤서연").memberB("정혜린").label("  ").build();
+        ChemistryGroupDto duplicate = ChemistryGroupDto.builder()
+                .id(8L).members(List.of("마유", "주빈")).label("다른이름").build();
+        ChemistryGroupDto trio = ChemistryGroupDto.builder()
+                .id(9L).members(List.of("지연", "마유", "주빈")).label("A<b>셋").build();
+        when(chemistryService.findAll()).thenReturn(List.of(pair, unlabeled));
+        when(chemistryGroupService.findAll()).thenReturn(List.of(duplicate, trio));
+        when(artistRepository.findAll()).thenReturn(List.of());
+        stubFolder(MediaType.IMAGE, photo());
+
+        String html = mvc.perform(get("/archive").param("folder", "s").param("members", "주빈").param("members", "마유"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(html).contains("id=\"archiveChemistryNames\"");
+        org.assertj.core.api.Assertions.assertThat(html).contains("심장 · 마빈즈");
+        org.assertj.core.api.Assertions.assertThat(html).contains("A\\u003cb>셋");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("다른이름");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("윤서연");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("id=\"archiveChem\"");
+    }
+
     @Test void groupFolderWithMembersRequiresEverySelectedMember() throws Exception {
         when(artistRepository.findAll()).thenReturn(List.of());
         stubFolder(MediaType.IMAGE, photo());

@@ -794,6 +794,7 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 }
 .ar-member-toggle:hover, .ar-member-toggle.is-open, .ar-member-toggle.has-selection { border-color: rgba(0, 245, 212, 0.62); color: #00f5d4; }
 .ar-member-toggle .material-symbols-outlined { font-size: 1.1rem; }
+.ar-member-toggle [data-member-toggle-label] { min-width: 0; }
 .ar-member-count { min-width: 1.25rem; padding: 0.05rem 0.35rem; border-radius: 9999px; background: rgba(0, 245, 212, 0.16); color: #00f5d4; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.72rem; text-align: center; }
 .ar-member-count[hidden] { display: none; }
 .archive-member-chip {
@@ -1061,6 +1062,10 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     display: block;
     width: 100%;
 }
+.ar-date-field .ar-cal {
+    width: 10.75rem;
+    max-width: 100%;
+}
 .ar-cal-native {
     color: transparent !important;
     caret-color: transparent;
@@ -1091,6 +1096,26 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     display: flex;
     align-items: center;
     gap: 0.08rem;
+}
+.ar-date-field .ar-cal-parts {
+    left: 0.6rem;
+    right: 1.9rem;
+    justify-content: flex-start;
+    gap: 0.12rem;
+}
+.ar-field.ar-date-field input.ar-cal-part[type="text"] {
+    flex: 0 0 auto;
+    width: 2.15ch;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+.ar-field.ar-date-field input.ar-cal-part[data-part="year"] {
+    width: 4.5ch;
+    text-align: center;
 }
 .ar-cal-part {
     width: 2.35ch;
@@ -1541,6 +1566,21 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-detail-date { margin: 0; color: #b9cac4; font-size: 0.82rem; }
 .ar-detail-cast {
     min-width: 0;
+}
+.ar-detail-chem {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    margin: 0 0 0.55rem;
+    padding: 0.16rem 0.62rem;
+    border: 1px solid rgba(0, 245, 212, 0.34);
+    border-radius: 999px;
+    background: rgba(0, 245, 212, 0.1);
+    color: #8decd9;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.35;
 }
 .ar-detail-members {
     display: flex;

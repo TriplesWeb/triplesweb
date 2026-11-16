@@ -272,6 +272,7 @@ public class ArchiveController {
         model.addAttribute("showChemistryFilter", false);
         model.addAttribute("chemistryOptions", List.of());
         model.addAttribute("hasChemistryOptions", false);
+        model.addAttribute("chemistryNamesJson", chemistryNamesJson());
         model.addAttribute("folderKey", folderKey);
         model.addAttribute("comboValue", "");
         model.addAttribute("hasCombo", false);
@@ -1059,6 +1060,66 @@ public class ArchiveController {
         option.put("label", names.isEmpty() ? label : label + " · " + String.join(" × ", names));
         option.put("selected", selected);
         return option;
+    }
+
+    private String chemistryNamesJson() {
+        StringBuilder json = new StringBuilder("[");
+        boolean first = true;
+        Set<String> seen = new LinkedHashSet<>();
+        for (ChemistryDto item : safeChemistries()) {
+            String rawMembers = (item.getMemberA() == null ? "" : item.getMemberA())
+                    + "," + (item.getMemberB() == null ? "" : item.getMemberB());
+            first = appendChemistryName(json, first, seen, ArchiveFolderClassifier.membersOf(rawMembers), item.getLabel());
+        }
+        for (ChemistryGroupDto item : safeChemistryGroups()) {
+            List<String> members = item.getMembers() == null ? List.of() : item.getMembers();
+            first = appendChemistryName(json, first, seen,
+                    ArchiveFolderClassifier.membersOf(String.join(",", members)), item.getLabel());
+        }
+        return json.append(']').toString();
+    }
+
+    private static boolean appendChemistryName(StringBuilder json, boolean first, Set<String> seen,
+                                               List<String> members, String rawLabel) {
+        if (members == null || members.size() < 2) return first;
+        String label = chemistryDisplayLabel(rawLabel);
+        if (label.isEmpty()) return first;
+        if (!seen.add(String.join("\u0000", members))) return first;
+        if (!first) json.append(',');
+        json.append("{\"members\":[");
+        for (int i = 0; i < members.size(); i++) {
+            if (i > 0) json.append(',');
+            json.append(jsonString(members.get(i)));
+        }
+        json.append("],\"label\":").append(jsonString(label)).append('}');
+        return false;
+    }
+
+    private static String chemistryDisplayLabel(String label) {
+        if (label == null || label.isBlank()) return "";
+        List<String> parts = new ArrayList<>();
+        for (String line : label.split("\\R+")) {
+            String trimmed = line.trim().replaceAll("\\s+", " ");
+            if (!trimmed.isEmpty()) parts.add(trimmed);
+        }
+        return String.join(" · ", parts);
+    }
+
+    private static String jsonString(String value) {
+        StringBuilder out = new StringBuilder(value.length() + 2);
+        out.append('"');
+        for (int i = 0; i < value.length(); i++) {
+            char ch = value.charAt(i);
+            switch (ch) {
+                case '\\' -> out.append("\\\\");
+                case '"' -> out.append("\\\"");
+                case '\n' -> out.append("\\n");
+                case '\r' -> out.append("\\r");
+                case '<' -> out.append("\\u003c");
+                default -> out.append(ch);
+            }
+        }
+        return out.append('"').toString();
     }
 
     private List<ChemistryDto> safeChemistries() {

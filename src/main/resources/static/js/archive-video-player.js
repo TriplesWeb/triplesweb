@@ -57,6 +57,7 @@
             const chips = card?.querySelector('.ar-card-members');
             members.replaceChildren();
             if (chips) members.innerHTML = chips.innerHTML;
+            window.paintArchiveChemistry?.(members);
         }
         [edit, remove].forEach(button => {
             if (!button || !card) return;
