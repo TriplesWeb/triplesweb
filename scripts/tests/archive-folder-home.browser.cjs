@@ -28,20 +28,16 @@ function folder(attrs) {
     label,
     count = '',
     art = false,
-    preview = '',
-    member = ''
+    preview = ''
   } = attrs;
-  const open = member
-    ? `<button type="button" class="ar-folder${extraClass}" data-member="${member}" aria-pressed="false" style="--folder-color: ${color};">`
-    : `<a class="ar-folder${extraClass}${art ? ' has-art' : ''}" href="${href}" style="--folder-color: ${color};">`;
-  return `${open}
+  return `<a class="ar-folder${extraClass}${art ? ' has-art' : ''}" href="${href}" style="--folder-color: ${color};">
     <span class="ar-folder-icon" aria-hidden="true">
       ${art ? '<img class="ar-folder-art" src="/folder-art.svg" alt="">' : '<span class="ar-folder-shape"></span>'}
       ${preview ? `<img class="ar-folder-preview" src="${preview}" alt="">` : ''}
     </span>
-    <span class="ar-folder-label">${label}</span>
+    ${label ? `<span class="ar-folder-label">${label}</span>` : ''}
     ${count ? `<span class="ar-folder-count">${count}</span>` : ''}
-  ${member ? '</button>' : '</a>'}`;
+  </a>`;
 }
 
 const homeHtml = `<!doctype html><html><head><meta charset="utf-8">
@@ -73,18 +69,12 @@ body.site-admin-enabled button[data-admin-only] { display: inline-flex !importan
     </div>
   </section>
   <section class="ar-folders" aria-label="아카이브 폴더">
-    ${folder({ extraClass: ' is-group', href: '/archive?folder=s', color: '#f5c518', label: '전체 멤버' })}
+    ${folder({ extraClass: ' is-group', href: '/archive?folder=s', color: '#f5c518', label: '' })}
     ${folder({ extraClass: ' is-parent', href: '/archive?folder=units', color: '#a78bfa', label: '유닛별' })}
-    ${folder({ extraClass: ' is-solo', member: '윤서연', color: '#22aeff', label: 'S1 윤서연' })}
-    ${folder({ extraClass: ' is-solo', member: '정혜린', color: '#ff8ad4', label: 'S2 정혜린' })}
+    ${folder({ extraClass: ' is-solo', href: '/archive?folder=s&members=윤서연', color: '#22aeff', label: 'S1 윤서연' })}
+    ${folder({ extraClass: ' is-solo', href: '/archive?folder=s&members=정혜린', color: '#ff8ad4', label: 'S2 정혜린' })}
   </section>
-  <div class="ar-folder-selection" data-folder-selection hidden>
-    <p class="ar-folder-selection-count"><span data-folder-selection-count>0</span>명 선택</p>
-    <button type="button" data-folder-selection-clear>해제</button>
-    <button type="button" data-folder-selection-open>보기</button>
-  </div>
 </main>
-<script>${browseJs}</script>
 </body></html>`;
 
 const unitsHtml = `<!doctype html><html><head><meta charset="utf-8">
@@ -246,6 +236,18 @@ ${siteUi}
       </div>
     </div>
   </section>
+  <section class="ar-panel ar-toolbar">
+    <form class="ar-filters" id="archiveFilterForm">
+      <div class="ar-filter-tools">
+        <label class="ar-sort"><span class="ar-sort-label">정렬</span></label>
+        <button type="button" class="ar-member-toggle">멤버 선택</button>
+        <div class="ar-search-row">
+          <label class="ar-search-wrap"><input class="ar-search" type="search" placeholder="사진 제목 검색"></label>
+          <button type="submit" class="ar-submit">검색</button>
+        </div>
+      </div>
+    </form>
+  </section>
 </main>
 </body></html>`;
 
@@ -324,11 +326,13 @@ ${siteUi}
         foldersWidth: Math.round(folders.width),
         statWidth: Math.round(stat.width),
         statHeight: Math.round(stat.height),
-        selectionHidden: document.querySelector('[data-folder-selection]')?.hidden === true
+        memberHref: member?.getAttribute('href') || '',
+        wholeMember: document.body.textContent.includes('전체 멤버')
       };
     });
-    assert.deepEqual(home.labels, ['전체 멤버', '유닛별', 'S1 윤서연', 'S2 정혜린']);
-    assert.equal(home.selectionHidden, true);
+    assert.deepEqual(home.labels, ['유닛별', 'S1 윤서연', 'S2 정혜린']);
+    assert.equal(home.memberHref, '/archive?folder=s&members=윤서연');
+    assert.equal(home.wholeMember, false);
     assert.equal(home.comboArt, false, '초기 화면에 케미·유닛 폴더 이미지가 보인다');
     assert.equal(home.placeholder, false, '업로드 예정 플레이스홀더가 남아 있다');
     assert.ok(Math.abs(home.member.width - home.parent.width) <= 1, '상위 폴더 너비가 멤버 폴더와 다르다: ' + JSON.stringify(home));
@@ -351,23 +355,6 @@ ${siteUi}
     await page.screenshot({ path: path.join(artifactDir, 'archive-folder-home.png'), fullPage: true });
     await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-folder-home-upload.png') });
     await page.locator('.ar-folder.is-solo').first().screenshot({ path: path.join(artifactDir, 'archive-member-folder.png') });
-    await page.click('.ar-folder[data-member="윤서연"]');
-    await page.click('.ar-folder[data-member="정혜린"]');
-    const picked = await page.evaluate(() => ({
-      count: document.querySelector('[data-folder-selection-count]')?.textContent.trim() || '',
-      hidden: document.querySelector('[data-folder-selection]')?.hidden === true,
-      pressed: [...document.querySelectorAll('.ar-folder[aria-pressed="true"]')].map((el) => el.dataset.member)
-    }));
-    assert.equal(picked.hidden, false);
-    assert.equal(picked.count, '2');
-    assert.deepEqual(picked.pressed, ['윤서연', '정혜린']);
-    const opened = page.waitForRequest((request) => request.url().includes('folder=s') && request.url().includes('members='));
-    await page.click('[data-folder-selection-open]');
-    const request = await opened;
-    const target = new URL(request.url());
-    assert.equal(target.searchParams.get('folder'), 's');
-    assert.deepEqual(target.searchParams.getAll('members'), ['윤서연', '정혜린']);
-    await page.goto('https://archive-folders.test/home.html', { waitUntil: 'load' });
 
     await page.goto('https://archive-folders.test/units.html', { waitUntil: 'load' });
     const units = await page.evaluate(() => {
@@ -414,9 +401,17 @@ ${siteUi}
         underlineWidth: parseFloat(nameStyle.borderBottomWidth),
         numUnderline: parseFloat(getComputedStyle(num).borderBottomWidth),
         dateStat: document.querySelector('.ar-stat-date strong')?.textContent.trim() || '',
-        dateIcon: document.querySelector('.ar-stat-date .material-symbols-outlined')?.textContent.trim() || ''
+        dateIcon: document.querySelector('.ar-stat-date .material-symbols-outlined')?.textContent.trim() || '',
+        filterCenter: (() => {
+          const tools = document.querySelector('.ar-filter-tools');
+          if (!tools) return null;
+          const box = tools.getBoundingClientRect();
+          const mid = (box.left + box.right) / 2;
+          return Math.abs(mid - window.innerWidth / 2);
+        })()
       };
     });
+    assert.ok(memberTitle.filterCenter != null && memberTitle.filterCenter <= 24, '검색 필터가 가운데 있지 않다: ' + memberTitle.filterCenter);
     assert.equal(memberTitle.centered, true, '멤버 이름이 가운데 있지 않다: ' + JSON.stringify(memberTitle));
     assert.equal(memberTitle.kickerLeft, true, 'ARCHIVE 라벨이 왼쪽에 있지 않다');
     assert.equal(memberTitle.nameText, '윤서연');

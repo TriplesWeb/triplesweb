@@ -16,41 +16,6 @@
         setStatsOpen(statsToggle.getAttribute('aria-expanded') !== 'true');
     });
 
-    const folderButtons = [...document.querySelectorAll('.archive-page.is-folder-home:not(.is-folder-index) .ar-folder[data-member]')];
-    const folderSelection = document.querySelector('[data-folder-selection]');
-    if (folderButtons.length && folderSelection) {
-        const countEl = folderSelection.querySelector('[data-folder-selection-count]');
-        const selectedButtons = () => folderButtons.filter((button) => button.getAttribute('aria-pressed') === 'true');
-        const syncFolderSelection = () => {
-            const picked = selectedButtons();
-            folderSelection.hidden = picked.length === 0;
-            if (countEl) countEl.textContent = String(picked.length);
-        };
-        folderButtons.forEach((button) => {
-            button.addEventListener('click', () => {
-                const on = button.getAttribute('aria-pressed') === 'true';
-                button.setAttribute('aria-pressed', on ? 'false' : 'true');
-                button.classList.toggle('is-selected', !on);
-                syncFolderSelection();
-            });
-        });
-        folderSelection.querySelector('[data-folder-selection-clear]')?.addEventListener('click', () => {
-            folderButtons.forEach((button) => {
-                button.setAttribute('aria-pressed', 'false');
-                button.classList.remove('is-selected');
-            });
-            syncFolderSelection();
-        });
-        folderSelection.querySelector('[data-folder-selection-open]')?.addEventListener('click', () => {
-            const names = selectedButtons().map((button) => button.dataset.member).filter(Boolean);
-            if (!names.length) return;
-            const params = new URLSearchParams();
-            params.set('folder', 's');
-            names.forEach((name) => params.append('members', name));
-            window.location.href = '/archive?' + params.toString();
-        });
-    }
-
     const grid = document.getElementById('archiveGrid');
     if (!grid) return;
     const cards = [...grid.querySelectorAll('.ar-card')];

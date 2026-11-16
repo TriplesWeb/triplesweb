@@ -86,15 +86,15 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("S1 윤서연")))
                 .andExpect(content().string(containsString("S24 지연")))
                 .andExpect(content().string(containsString("ar-folder is-group")))
-                .andExpect(content().string(containsString("전체 멤버")))
+                .andExpect(content().string(not(containsString("전체 멤버"))))
                 .andExpect(content().string(containsString("ar-folder is-parent")))
                 .andExpect(content().string(containsString("ar-folder-label\">유닛별</span>")))
                 .andExpect(content().string(not(containsString("ar-folder-label\">케미</span>"))))
                 .andExpect(content().string(containsString("folder&#x3D;units")))
                 .andExpect(content().string(not(containsString("folder&#x3D;combos"))))
-                .andExpect(content().string(containsString("data-member=\"윤서연\"")))
-                .andExpect(content().string(containsString("data-folder-selection")))
-                .andExpect(content().string(containsString(">보기</button>")))
+                .andExpect(content().string(containsString("members&#x3D;")))
+                .andExpect(content().string(not(containsString("data-folder-selection"))))
+                .andExpect(content().string(not(containsString(">보기</button>"))))
                 .andExpect(content().string(containsString("/archive?folder")))
                 .andExpect(content().string(not(containsString("id=\"archiveGrid\""))))
                 .andExpect(content().string(not(containsString("site-section-tabs"))))
@@ -126,13 +126,16 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-label\">케미</span>");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;combos");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-label\">2명 케미</span>");
-        org.assertj.core.api.Assertions.assertThat(html).contains("data-member=\"윤서연\"");
-        int seoyeon = html.indexOf("data-member=\"윤서연\"");
-        int seoyeonEnd = html.indexOf("</button>", seoyeon);
-        org.assertj.core.api.Assertions.assertThat(html.substring(seoyeon, seoyeonEnd)).contains("ar-folder-count\">3</span>");
-        int chaeyeon = html.indexOf("data-member=\"김채연\"");
-        int chaeyeonEnd = html.indexOf("</button>", chaeyeon);
-        org.assertj.core.api.Assertions.assertThat(html.substring(chaeyeon, chaeyeonEnd)).contains("ar-folder-count\">2</span>");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">S1 윤서연</span>");
+        int seoyeon = html.indexOf("ar-folder-label\">S1 윤서연</span>");
+        int seoyeonStart = html.lastIndexOf("<a", seoyeon);
+        int seoyeonEnd = html.indexOf("</a>", seoyeon);
+        org.assertj.core.api.Assertions.assertThat(html.substring(seoyeonStart, seoyeonEnd)).contains("ar-folder-count\">3</span>");
+        org.assertj.core.api.Assertions.assertThat(html.substring(seoyeonStart, seoyeonEnd)).contains("members&#x3D;%EC%9C%A4%EC%84%9C%EC%97%B0");
+        int chaeyeon = html.indexOf("ar-folder-label\">S4 김채연</span>");
+        int chaeyeonStart = html.lastIndexOf("<a", chaeyeon);
+        int chaeyeonEnd = html.indexOf("</a>", chaeyeon);
+        org.assertj.core.api.Assertions.assertThat(html.substring(chaeyeonStart, chaeyeonEnd)).contains("ar-folder-count\">2</span>");
 
         mvc.perform(get("/archive").param("folder", "combos").param("q", "heart").param("source", "cosmo_room"))
                 .andExpect(status().isFound())
@@ -232,7 +235,7 @@ class ArchiveControllerTest {
         stubFolder(MediaType.IMAGE, photo());
         mvc.perform(get("/archive").param("folder", "s").param("members", "윤서연").param("members", "정혜린"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString(">전체 멤버</p>")))
+                .andExpect(content().string(not(containsString("전체 멤버"))))
                 .andExpect(content().string(containsString("id=\"archive-member-picker\"")))
                 .andExpect(content().string(not(containsString("id=\"archiveChem\""))));
         verify(archiveService).pageInFolder(eq(MediaType.IMAGE), anyInt(), anyInt(), nullable(String.class),
@@ -408,7 +411,7 @@ class ArchiveControllerTest {
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%A0%95%ED%95%98%EC%97%B0"));
         String html = mvc.perform(get("/archive").param("folder", "s")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        org.assertj.core.api.Assertions.assertThat(html).contains(">전체 멤버</p>");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("전체 멤버");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-title is-solo");
         org.assertj.core.api.Assertions.assertThat(html).contains(">날짜<");
         org.assertj.core.api.Assertions.assertThat(html).contains("calendar_month");
