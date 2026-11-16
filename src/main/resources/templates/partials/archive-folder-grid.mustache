@@ -1,0 +1,14 @@
+<section class="ar-folders" aria-label="아카이브 폴더">
+    {{#archiveFolders}}
+    <a class="ar-folder{{#groupFolder}} is-group{{/groupFolder}}" href="{{href}}" style="--folder-color: {{color}};">
+        <span class="ar-folder-icon" aria-hidden="true">
+            <span class="ar-folder-tab"></span>
+            <span class="ar-folder-body">
+                {{#hasPreview}}<img src="{{preview}}" alt="" loading="lazy" decoding="async">{{/hasPreview}}
+            </span>
+        </span>
+        <span class="ar-folder-label">{{label}}</span>
+        {{#hasCount}}<span class="ar-folder-count">{{count}}</span>{{/hasCount}}
+    </a>
+    {{/archiveFolders}}
+</section>

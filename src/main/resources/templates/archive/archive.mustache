@@ -12,28 +12,46 @@
 <div class="ar-glow ar-glow-mint"></div>
 {{>layout/header}}
 
-<main class="archive-page{{#archiveBrowse}} is-browse{{/archiveBrowse}}" data-archive-kind="{{#imageArchive}}image{{/imageArchive}}{{#videoArchive}}video{{/videoArchive}}" data-date-label="{{mediaDateLabel}}">
+<main class="archive-page{{#archiveBrowse}} is-browse{{/archiveBrowse}}{{#archiveFolderHome}} is-folder-home{{/archiveFolderHome}}{{#archiveFolderView}} is-folder-view{{/archiveFolderView}}" data-archive-kind="{{#imageArchive}}image{{/imageArchive}}{{#videoArchive}}video{{/videoArchive}}" data-date-label="{{mediaDateLabel}}">
     <section class="ar-hero{{#archiveBrowse}} ar-hero-browse{{/archiveBrowse}}">
         <div class="ar-panel ar-headline">
             <button type="button" class="ar-stats-toggle" data-stats-toggle aria-expanded="true" aria-controls="archiveStats" aria-label="통계 접기">
                 <span data-stats-icon aria-hidden="true">−</span>
             </button>
             <div>
-                <div class="ar-kicker"><span class="material-symbols-outlined">{{#imageArchive}}photo_library{{/imageArchive}}{{#videoArchive}}play_circle{{/videoArchive}}</span> Archive</div>
+                <div class="ar-kicker"><span class="material-symbols-outlined">{{#archiveFolderHome}}folder{{/archiveFolderHome}}{{^archiveFolderHome}}{{#imageArchive}}photo_library{{/imageArchive}}{{#videoArchive}}play_circle{{/videoArchive}}{{/archiveFolderHome}}</span> Archive</div>
                 <h1>아카이브</h1>
                 {{#archiveBrowse}}<p>사진 전체</p>{{/archiveBrowse}}
+                {{#archiveFolderView}}<p>{{folderTitle}}</p>{{/archiveFolderView}}
+                {{#archiveFolderHome}}<p>폴더를 선택하세요</p>{{/archiveFolderHome}}
+                {{#archiveFolderView}}<a class="ar-back-folders" href="/archive">폴더 목록</a>{{/archiveFolderView}}
             </div>
-            {{>partials/archive-type-tabs}}
             <div class="ar-stats" id="archiveStats">
+                {{#archiveFolderHome}}
+                <article class="ar-stat"><div class="ar-stat-label"><span>등록된 사진</span><span class="material-symbols-outlined">image</span></div><strong>{{archiveTotal}}<em>장</em></strong></article>
+                <article class="ar-stat"><div class="ar-stat-label"><span>등록된 영상</span><span class="material-symbols-outlined">movie</span></div><strong>{{archiveVideoTotal}}<em>개</em></strong></article>
+                <article class="ar-stat"><div class="ar-stat-label"><span>폴더</span><span class="material-symbols-outlined">folder</span></div><strong>{{archiveFolderCount}}<em>개</em></strong></article>
+                {{/archiveFolderHome}}
+                {{^archiveFolderHome}}
                 <article class="ar-stat"><div class="ar-stat-label"><span>{{#imageArchive}}등록된 사진{{/imageArchive}}{{#videoArchive}}등록된 영상{{/videoArchive}}</span><span class="material-symbols-outlined">{{#imageArchive}}image{{/imageArchive}}{{#videoArchive}}movie{{/videoArchive}}</span></div><strong>{{archiveTotal}}<em>{{#imageArchive}}장{{/imageArchive}}{{#videoArchive}}개{{/videoArchive}}</em></strong></article>
                 <article class="ar-stat"><div class="ar-stat-label"><span>이 페이지</span><span class="material-symbols-outlined">grid_view</span></div><strong>{{archivePageCount}}<em>{{#imageArchive}}장{{/imageArchive}}{{#videoArchive}}개{{/videoArchive}}</em></strong></article>
                 <article class="ar-stat"><div class="ar-stat-label"><span>페이지</span><span class="material-symbols-outlined">layers</span></div><strong>{{archivePageDisplay}}<em>/ {{archiveTotalPages}}</em></strong></article>
                 {{>partials/archive-filter-stat}}
+                {{/archiveFolderHome}}
             </div>
         </div>
     </section>
 
+    {{#archiveFolderHome}}
+    {{>partials/archive-folder-grid}}
+    {{/archiveFolderHome}}
+
+    {{^archiveFolderHome}}
     {{>partials/archive-toolbar}}
+    <div class="ar-folder-tabs">
+        {{>partials/archive-type-tabs}}
+        {{>partials/archive-source-tabs}}
+    </div>
 
     <section class="ar-grid{{#archiveBrowse}} ar-grid-browse{{/archiveBrowse}}" id="archiveGrid" aria-label="{{#imageArchive}}사진 목록{{/imageArchive}}{{#videoArchive}}영상 목록{{/videoArchive}}" data-number-offset="{{archiveOffset}}">
         {{#archiveCards}}
@@ -41,8 +59,8 @@
         {{>partials/archive-photo-card}}
         {{/imageArchive}}
         {{#videoArchive}}
-        <article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-member-order="{{memberOrder}}" data-registered="{{registeredOn}}">
-            <a class="ar-video-thumb" href="{{file.url}}" data-archive-video data-title="{{title}}" data-poster="{{thumbnailUrl}}" aria-label="{{title}} 재생">
+        <article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-member-order="{{memberOrder}}" data-registered="{{registeredOn}}" data-url="{{file.url}}" data-source="{{sourceValue}}" data-source-label="{{sourceLabel}}">
+            <a class="ar-video-thumb" href="{{file.url}}" data-archive-video data-title="{{title}}" data-poster="{{thumbnailUrl}}" aria-label="{{title}} 자세히 보기">
                 {{#thumbnailUrl}}<img src="{{thumbnailUrl}}" alt="{{title}} 썸네일" loading="lazy" decoding="async">{{/thumbnailUrl}}
                 {{^thumbnailUrl}}<span class="ar-video-placeholder">영상</span>{{/thumbnailUrl}}
                 <span class="ar-video-play" aria-hidden="true">▶</span>
@@ -50,9 +68,10 @@
             <div class="ar-body">
                 <h3>{{title}}</h3>
                 <div class="ar-meta" style="--member-count: {{memberCount}}">{{>partials/archive-member-badges}}</div>
+                <div class="ar-card-members" hidden>{{>partials/archive-album-members}}</div>
                 {{#hasRegisteredOn}}<time class="ar-card-date" datetime="{{registeredOn}}">{{registeredOn}}</time>{{/hasRegisteredOn}}
                 <div class="ar-actions" data-admin-only>
-                    <button type="button" data-archive-edit data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-url="{{file.url}}" data-thumbnail-url="{{thumbnailUrl}}" data-registered="{{registeredOn}}">수정</button>
+                    <button type="button" data-archive-edit data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-url="{{file.url}}" data-thumbnail-url="{{thumbnailUrl}}" data-registered="{{registeredOn}}" data-source="{{sourceValue}}">수정</button>
                     <button type="button" class="ar-delete" data-archive-delete data-id="{{id}}" data-title="{{title}}">삭제</button>
                 </div>
             </div>
@@ -66,9 +85,11 @@
     {{/hasArchives}}
 
     {{>partials/archive-pager}}
+    {{/archiveFolderHome}}
 </main>
 
 {{#imageArchive}}
+{{^archiveFolderHome}}
 <div class="ar-dialog" id="uploadModal" hidden>
     <button type="button" class="ar-dialog-backdrop" data-ar-close aria-label="닫기"></button>
     <div class="ar-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="uploadModalLabel">
@@ -82,6 +103,14 @@
                     <input type="text" name="title" placeholder="사진 제목을 입력하세요" required>
                 </label>
                 {{>partials/archive-date-field}}
+                <label class="ar-field">출처
+                    <select name="source" required aria-label="출처">
+                        <option value="">출처를 선택하세요</option>
+                        {{#archiveSources}}
+                        <option value="{{value}}">{{label}}</option>
+                        {{/archiveSources}}
+                    </select>
+                </label>
                 <div class="ar-field">출연 멤버
                     <div class="member-portrait-picker" id="archive-upload-picker" role="group" aria-label="출연 멤버">
                         {{>partials/member-portrait-picker}}
@@ -127,6 +156,7 @@
                     <input type="text" name="title" required>
                 </label>
                 {{>partials/archive-date-field}}
+                {{>partials/archive-source-field}}
                 <div class="ar-field">출연 멤버
                     <div class="member-portrait-picker" id="archive-edit-picker" role="group" aria-label="출연 멤버">
                         {{>partials/member-portrait-picker}}
@@ -159,6 +189,7 @@
     </div>
 </div>
 {{>partials/archive-photo-detail}}
+{{/archiveFolderHome}}
 {{/imageArchive}}
 
 {{#videoArchive}}
@@ -175,11 +206,22 @@
                     <input type="text" name="title" placeholder="영상 제목을 입력하세요" required>
                 </label>
                 {{>partials/archive-date-field}}
+                <label class="ar-field">출처
+                    <select name="source" required aria-label="출처">
+                        <option value="">출처를 선택하세요</option>
+                        {{#archiveSources}}
+                        <option value="{{value}}">{{label}}</option>
+                        {{/archiveSources}}
+                    </select>
+                </label>
                 <div class="ar-field">출연 멤버
                     <div class="member-portrait-picker" id="archive-upload-picker" role="group" aria-label="출연 멤버">
                         {{>partials/member-portrait-picker}}
                     </div>
                     <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
+                    <div class="ar-artist-editor" data-artist-tags>
+                        <div class="ar-artist-chips" data-artist-chips aria-label="선택한 출연자"></div>
+                    </div>
                 </div>
                 <div class="ar-field">영상 파일
                     <span class="ar-file">
@@ -227,11 +269,15 @@
                     <input type="text" name="title" required>
                 </label>
                 {{>partials/archive-date-field}}
+                {{>partials/archive-source-field}}
                 <div class="ar-field">출연 멤버
                     <div class="member-portrait-picker" id="archive-edit-picker" role="group" aria-label="출연 멤버">
                         {{>partials/member-portrait-picker}}
                     </div>
                     <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
+                    <div class="ar-artist-editor" data-artist-tags>
+                        <div class="ar-artist-chips" data-artist-chips aria-label="선택한 출연자"></div>
+                    </div>
                 </div>
                 <div class="ar-field">파일 교체 (선택)
                     <span class="ar-file">
@@ -268,20 +314,36 @@
 </div>
 
 <dialog class="ar-video-player" id="archiveVideoPlayer" aria-labelledby="archiveVideoTitle">
-    <div class="ar-video-player-inner">
-        <div class="ar-dialog-head">
-            <h2 id="archiveVideoTitle">영상 재생</h2>
-            <button type="button" class="ar-close" id="archiveVideoClose" aria-label="영상 닫기">&times;</button>
+    <div class="ar-detail-panel ar-video-detail">
+        <div class="ar-detail-photo ar-video-pane">
+            <video id="archiveVideoElement" controls playsinline preload="none"></video>
+            <div class="ar-video-player-foot">
+                <p id="archiveVideoStatus" role="status" aria-live="polite" hidden></p>
+                <a id="archiveVideoOriginal" target="_blank" rel="noopener noreferrer">원본 영상 열기 ↗</a>
+            </div>
         </div>
-        <video id="archiveVideoElement" controls playsinline preload="none"></video>
-        <div class="ar-video-player-foot">
-            <p id="archiveVideoStatus" role="status" aria-live="polite" hidden></p>
-            <a id="archiveVideoOriginal" target="_blank" rel="noopener noreferrer">원본 영상 열기 ↗</a>
+        <div class="ar-detail-side">
+            <div class="ar-dialog-head">
+                <h2 id="archiveVideoTitle">영상 재생</h2>
+                <button type="button" class="ar-close" id="archiveVideoClose" aria-label="영상 닫기">&times;</button>
+            </div>
+            <div class="ar-detail-body">
+                <p class="ar-detail-date" id="archiveVideoDate" hidden></p>
+                <p class="ar-detail-source" id="archiveVideoSource" hidden></p>
+                <section class="ar-detail-cast" aria-label="출연 멤버">
+                    <div class="ar-detail-members" id="archiveVideoMembers"></div>
+                </section>
+            </div>
+            <div class="ar-dialog-foot ar-detail-actions" data-admin-only>
+                <button type="button" class="ar-submit" data-archive-edit id="archiveVideoEdit">수정</button>
+                <button type="button" class="ar-delete" data-archive-delete id="archiveVideoDelete">삭제</button>
+            </div>
         </div>
     </div>
 </dialog>
 {{/videoArchive}}
 
+{{^archiveFolderHome}}
 <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
 <script src="{{#asset}}/js/archive-manage.js{{/asset}}"></script>
 <script src="{{#asset}}/js/date-range-filter.js{{/asset}}"></script>
@@ -292,4 +354,5 @@
 {{#videoArchive}}
 <script src="{{#asset}}/js/archive-video-player.js{{/asset}}"></script>
 {{/videoArchive}}
+{{/archiveFolderHome}}
 {{>layout/page-end}}
