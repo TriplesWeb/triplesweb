@@ -42,12 +42,14 @@ public class ArchiveFolderArt {
         if (key != null && !key.isBlank()) names.add(key);
         if (label != null && !label.isBlank()) names.add(label.trim());
         switch (kind) {
-            case GROUP -> names.addAll(List.of("S", "s", "group", "단체"));
+            case GROUP -> names.addAll(List.of("S", "s", "group", "단체", "전체 멤버", "전체멤버"));
             case UNIT -> names.addAll(List.of("unit", "유닛"));
             case COMBO -> {
                 Integer size = ArchiveFolderClassifier.comboSize(key);
                 if (size != null) {
+                    names.add(ArchiveFolderClassifier.comboLabel(size));
                     names.add(size + "인");
+                    names.add(size + "명");
                     names.add(String.valueOf(size));
                 }
                 names.add("combo");

@@ -76,6 +76,7 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("S1 윤서연")))
                 .andExpect(content().string(containsString("S24 지연")))
                 .andExpect(content().string(containsString("ar-folder is-group")))
+                .andExpect(content().string(containsString("전체 멤버")))
                 .andExpect(content().string(containsString("/archive?folder")))
                 .andExpect(content().string(not(containsString("id=\"archiveGrid\""))))
                 .andExpect(content().string(not(containsString("site-section-tabs"))))
@@ -92,13 +93,20 @@ class ArchiveControllerTest {
         Archive trio = photo();
         trio.setId(9L);
         trio.setArtistNames("윤서연,정혜린,이지우");
-        when(archiveService.index()).thenReturn(List.of(duo, otherDuo, trio));
+        Archive six = photo();
+        six.setId(10L);
+        six.setArtistNames("윤서연,정혜린,이지우,김채연,김유연,김수민");
+        when(archiveService.index()).thenReturn(List.of(duo, otherDuo, trio, six));
         String html = mvc.perform(get("/archive")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">2인</span>");
-        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">3인</span>");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">2명 케미</span>");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">3명 이상</span>");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">4명 이상</span>");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">6명 이상</span>");
         org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;combo-2");
         org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;combo-3");
+        org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;combo-4");
+        org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;combo-6");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("윤서연 × 정혜린");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder=combo&amp;combo=");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;combo&amp;combo");
@@ -120,7 +128,7 @@ class ArchiveControllerTest {
         when(artistRepository.findAll()).thenReturn(List.of());
         stubFolder(MediaType.IMAGE, photo());
         mvc.perform(get("/archive").param("folder", "combo-2")).andExpect(status().isOk())
-                .andExpect(content().string(containsString(">2인</p>")))
+                .andExpect(content().string(containsString(">2명 케미</p>")))
                 .andExpect(content().string(containsString("id=\"archive-member-picker\"")))
                 .andExpect(content().string(containsString(">멤버 선택<")));
     }
@@ -131,6 +139,16 @@ class ArchiveControllerTest {
                         .param("title", "사진").param("artistNames", "윤서연").param("artistNames", "정혜린")
                         .param("registeredOn", "2026-10-03").param("source", "FANCAM"))
                 .andExpect(redirectedUrl("/archive?folder=combo-2"));
+    }
+
+    @Test void imageUploadOfSixMembersOpensTheSixPlusFolder() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
+        mvc.perform(multipart("/archive/upload/image").file(file)
+                        .param("title", "사진")
+                        .param("artistNames", "윤서연").param("artistNames", "정혜린").param("artistNames", "이지우")
+                        .param("artistNames", "김채연").param("artistNames", "김유연").param("artistNames", "김수민")
+                        .param("registeredOn", "2026-10-03").param("source", "FANCAM"))
+                .andExpect(redirectedUrl("/archive?folder=combo-6"));
     }
 
     @Test void adminImageArchiveShowsEditAndDelete() throws Exception {

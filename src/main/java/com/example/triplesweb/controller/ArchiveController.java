@@ -575,12 +575,12 @@ public class ArchiveController {
 
     private String folderTitle(String folder, List<String> comboMembers, List<ArchiveFolderClassifier.UnitMembers> units) {
         if (folder == null || folder.isBlank()) return "";
-        if (folder.equalsIgnoreCase("s")) return "S · 24명 단체";
+        if (folder.equalsIgnoreCase("s")) return "전체 멤버";
         Integer comboSize = ArchiveFolderClassifier.comboSize(folder);
-        if (comboSize != null) return comboSize + "인";
+        if (comboSize != null) return ArchiveFolderClassifier.comboLabel(comboSize);
         if (isComboFolder(folder)) {
             List<String> names = ArchiveFolderClassifier.membersOf(String.join(",", comboMembers));
-            return names.isEmpty() ? "2인 이상" : String.join(" × ", names);
+            return names.isEmpty() ? "2명 케미" : String.join(" × ", names);
         }
         if (isSoloFolder(folder)) {
             int index = Integer.parseInt(folder.substring(1)) - 1;
@@ -603,16 +603,24 @@ public class ArchiveController {
         for (Archive archive : archives) {
             ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(archive.getArtistNames(), unitMembers);
             if (match.kind() == ArchiveFolderClassifier.Kind.OTHER) continue;
+            String preview = match.kind() == ArchiveFolderClassifier.Kind.SOLO ? "" : archivePreview(archive);
+            if (match.kind() == ArchiveFolderClassifier.Kind.COMBO) {
+                int n = match.members().size();
+                for (int min : ArchiveFolderClassifier.COMBO_FOLDERS) {
+                    if (n < min) continue;
+                    String key = "combo-" + min;
+                    counts.merge(key, 1, Integer::sum);
+                    comboKeys.add(key);
+                    if (!preview.isBlank()) previews.putIfAbsent(key, preview);
+                }
+                continue;
+            }
             String key = match.key();
             counts.merge(key, 1, Integer::sum);
-            if (match.kind() == ArchiveFolderClassifier.Kind.COMBO) comboKeys.add(key);
-            if (match.kind() != ArchiveFolderClassifier.Kind.SOLO && !previews.containsKey(key)) {
-                String preview = archivePreview(archive);
-                if (!preview.isBlank()) previews.put(key, preview);
-            }
+            if (!preview.isBlank()) previews.putIfAbsent(key, preview);
         }
         List<Map<String, Object>> folders = new ArrayList<>();
-        folders.add(folderCard("s", "S", "#f5c518", "/archive?folder=s", counts.getOrDefault("s", 0),
+        folders.add(folderCard("s", "전체 멤버", "#f5c518", "/archive?folder=s", counts.getOrDefault("s", 0),
                 previews.get("s"), ArchiveFolderClassifier.Kind.GROUP, true));
         for (Unit unit : units == null ? List.<Unit>of() : units) {
             if (unit == null || unit.getUnitId() == null) continue;
@@ -623,11 +631,12 @@ public class ArchiveController {
                     firstNonBlank(previews.get(key), unit.getDisplayUnitImage()),
                     ArchiveFolderClassifier.Kind.UNIT, false));
         }
-        String[] comboColors = { "#7dd3fc", "#a5b4fc", "#c4b5fd", "#f0abfc", "#fda4af", "#fcd34d", "#86efac" };
-        for (int size = ArchiveFolderClassifier.MIN_COMBO; size <= ArchiveFolderClassifier.MAX_COMBO; size++) {
-            String key = "combo-" + size;
+        String[] comboColors = { "#7dd3fc", "#a5b4fc", "#c4b5fd", "#86efac" };
+        for (int i = 0; i < ArchiveFolderClassifier.COMBO_FOLDERS.length; i++) {
+            int min = ArchiveFolderClassifier.COMBO_FOLDERS[i];
+            String key = "combo-" + min;
             if (!comboKeys.contains(key)) continue;
-            folders.add(folderCard(key, size + "인", comboColors[size - 2],
+            folders.add(folderCard(key, ArchiveFolderClassifier.comboLabel(min), comboColors[i],
                     "/archive?folder=" + key, counts.getOrDefault(key, 0), previews.get(key),
                     ArchiveFolderClassifier.Kind.COMBO, false));
         }

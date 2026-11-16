@@ -8,15 +8,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 아카이브 출연자 문자열을 S / 유닛 / 2~8인 / 솔로 폴더로 나눈다.
- * 한 자료는 한 폴더에만 들어간다.
+ * 아카이브 출연자 문자열을 전체 멤버 / 유닛 / 2명 이상 케미 / 솔로 폴더로 나눈다.
+ * 유닛·솔로·단체는 한 폴더에만 들어가고, 케미는 인원 하한 폴더에 겹쳐 들어간다.
  */
 public final class ArchiveFolderClassifier {
     public enum Kind { GROUP, UNIT, COMBO, SOLO, OTHER }
 
-    public static final int MIN_COMBO = 2;
-    public static final int MAX_COMBO = 8;
-    private static final Pattern COMBO_FOLDER = Pattern.compile("(?i)combo-([2-8])");
+    public static final int[] COMBO_FOLDERS = {2, 3, 4, 6};
+    private static final Pattern COMBO_FOLDER = Pattern.compile("(?i)combo-(\\d+)");
 
     public record UnitMembers(long unitId, String unitName, Set<String> members) {}
 
@@ -33,7 +32,7 @@ public final class ArchiveFolderClassifier {
         List<String> members = membersOf(artistNames);
         Set<String> unique = new LinkedHashSet<>(members);
         if (unique.size() == 24 && unique.containsAll(MemberPortraitOptions.koreanOrder())) {
-            return new Match(Kind.GROUP, "s", List.copyOf(unique), null, "S");
+            return new Match(Kind.GROUP, "s", List.copyOf(unique), null, "전체 멤버");
         }
         if (unique.size() == 1) {
             String name = unique.iterator().next();
@@ -52,18 +51,33 @@ public final class ArchiveFolderClassifier {
                 }
             }
         }
-        if (unique.size() >= MIN_COMBO && unique.size() <= MAX_COMBO) {
-            int count = unique.size();
-            return new Match(Kind.COMBO, "combo-" + count, List.copyOf(unique), null, count + "인");
+        if (unique.size() >= 2) {
+            int min = tightestComboMin(unique.size());
+            return new Match(Kind.COMBO, "combo-" + min, List.copyOf(unique), null, comboLabel(min));
         }
         return new Match(Kind.OTHER, "other", List.copyOf(unique), null, "기타");
+    }
+
+    public static String comboLabel(int min) {
+        if (min == 2) return "2명 케미";
+        return min + "명 이상";
+    }
+
+    public static int tightestComboMin(int memberCount) {
+        int chosen = COMBO_FOLDERS[0];
+        for (int min : COMBO_FOLDERS) {
+            if (memberCount >= min) chosen = min;
+        }
+        return chosen;
     }
 
     public static Integer comboSize(String folder) {
         if (folder == null) return null;
         Matcher matcher = COMBO_FOLDER.matcher(folder.trim());
         if (!matcher.matches()) return null;
-        return Integer.parseInt(matcher.group(1));
+        int size = Integer.parseInt(matcher.group(1));
+        if (size < 2 || size > 23) return null;
+        return size;
     }
 
     public static boolean matches(Match actual, String folder, List<String> comboMembers) {
@@ -78,8 +92,8 @@ public final class ArchiveFolderClassifier {
     }
 
     private static boolean matchesCombo(Match actual, String key, List<String> comboMembers) {
-        Integer size = comboSize(key);
-        if (size != null) return actual.members().size() == size;
+        Integer min = comboSize(key);
+        if (min != null) return actual.members().size() >= min;
         if (!key.equals("combo")) return false;
         List<String> wanted = membersOf(String.join(",", comboMembers == null ? List.of() : comboMembers));
         if (wanted.isEmpty()) return false;
