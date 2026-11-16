@@ -1,12 +1,12 @@
 (() => {
-  const placeholder = "yyyy/mm/dd";
   const isoDate = /^(\d{4})-(\d{2})-(\d{2})$/;
-
-  const formatCal = (iso) => {
-    const match = isoDate.exec(iso || "");
-    if (!match) return "";
-    return match[1] + "/" + match[2] + "/" + match[3];
-  };
+  const keepers = [
+    "[data-date-filter]",
+    ".ar-sort-control",
+    "#archiveMemberPanel",
+    "#archiveMemberToggle",
+    ".ar-member-toggle"
+  ].join(", ");
 
   const validIso = (iso) => {
     const match = isoDate.exec(iso || "");
@@ -19,18 +19,36 @@
     return match[1] + "-" + match[2] + "-" + match[3];
   };
 
-  const parseTyped = (raw) => {
-    const digits = String(raw || "").replace(/\D/g, "").slice(0, 8);
-    if (digits.length !== 8) return "";
-    return validIso(digits.slice(0, 4) + "-" + digits.slice(4, 6) + "-" + digits.slice(6, 8));
-  };
+  const digitsOnly = (raw, max) => String(raw || "").replace(/\D/g, "").slice(0, max);
 
-  const maskTyped = (raw) => {
-    const digits = String(raw || "").replace(/\D/g, "").slice(0, 8);
-    if (digits.length <= 4) return digits;
-    if (digits.length <= 6) return digits.slice(0, 4) + "/" + digits.slice(4);
-    return digits.slice(0, 4) + "/" + digits.slice(4, 6) + "/" + digits.slice(6);
+  const closeArchiveOverlays = (except) => {
+    const keep = except instanceof Element ? except : null;
+    const keepRoot = keep?.closest(keepers);
+    document.querySelectorAll("[data-date-popover]").forEach((pop) => {
+      if (keepRoot && keepRoot.contains(pop)) return;
+      pop.hidden = true;
+    });
+    document.querySelectorAll("[data-date-toggle]").forEach((toggle) => {
+      if (keepRoot && keepRoot.contains(toggle)) return;
+      toggle.setAttribute("aria-expanded", "false");
+    });
+    document.querySelectorAll(".ar-sort-menu").forEach((menu) => {
+      if (keepRoot && keepRoot.contains(menu)) return;
+      menu.hidden = true;
+    });
+    document.querySelectorAll(".ar-sort-trigger").forEach((trigger) => {
+      if (keepRoot && keepRoot.contains(trigger)) return;
+      trigger.setAttribute("aria-expanded", "false");
+    });
+    const panel = document.getElementById("archiveMemberPanel");
+    const memberToggle = document.getElementById("archiveMemberToggle");
+    if (panel && !(keepRoot && (keepRoot === panel || keepRoot.contains(panel) || panel.contains(keepRoot) || keepRoot === memberToggle || memberToggle?.contains(keepRoot)))) {
+      panel.hidden = true;
+      memberToggle?.setAttribute("aria-expanded", "false");
+      memberToggle?.classList.remove("is-open");
+    }
   };
+  window.closeArchiveOverlays = closeArchiveOverlays;
 
   const bindCalendarField = (input) => {
     if (!input) return;
@@ -45,64 +63,146 @@
     wrap.className = "ar-cal is-empty";
     input.before(wrap);
     wrap.append(input);
-    const typed = document.createElement("input");
-    typed.type = "text";
-    typed.className = "ar-cal-typed";
-    typed.inputMode = "numeric";
-    typed.autocomplete = "off";
-    typed.spellcheck = false;
-    typed.placeholder = placeholder;
-    typed.setAttribute("aria-label", (input.getAttribute("aria-label") || input.name || "날짜") + " 직접 입력");
-    wrap.append(typed);
+    const parts = document.createElement("span");
+    parts.className = "ar-cal-parts";
+    const label = input.getAttribute("aria-label") || input.name || "날짜";
+    parts.setAttribute("aria-label", label + " 직접 입력");
+
+    const makePart = (key, max, placeholder) => {
+      const field = document.createElement("input");
+      field.type = "text";
+      field.className = "ar-cal-part";
+      field.dataset.part = key;
+      field.maxLength = max;
+      field.inputMode = "numeric";
+      field.autocomplete = "off";
+      field.spellcheck = false;
+      field.placeholder = placeholder;
+      field.setAttribute("aria-label", placeholder);
+      field.setAttribute("pattern", "\\d*");
+      return field;
+    };
+    const year = makePart("year", 4, "yyyy");
+    const month = makePart("month", 2, "mm");
+    const day = makePart("day", 2, "dd");
+    const slash = () => {
+      const sep = document.createElement("span");
+      sep.className = "ar-cal-sep";
+      sep.setAttribute("aria-hidden", "true");
+      sep.textContent = "/";
+      return sep;
+    };
+    parts.append(year, slash(), month, slash(), day);
+    wrap.append(parts);
+    const fields = [year, month, day];
+
+    const composeIso = (pad) => {
+      const y = digitsOnly(year.value, 4);
+      const m = digitsOnly(month.value, 2);
+      const d = digitsOnly(day.value, 2);
+      if (y.length !== 4 || !m || !d) return "";
+      if (!pad && (m.length !== 2 || d.length !== 2)) return "";
+      return validIso(y + "-" + m.padStart(2, "0") + "-" + d.padStart(2, "0"));
+    };
+
+    const syncEmpty = () => {
+      wrap.classList.toggle("is-empty", !input.value && !year.value && !month.value && !day.value);
+    };
 
     const syncFromNative = () => {
-      typed.value = formatCal(input.value);
-      wrap.classList.toggle("is-empty", !input.value);
+      const match = isoDate.exec(input.value || "");
+      if (match) {
+        year.value = match[1];
+        month.value = match[2];
+        day.value = match[3];
+      } else {
+        year.value = "";
+        month.value = "";
+        day.value = "";
+      }
+      syncEmpty();
     };
-    const applyTyped = () => {
-      const iso = parseTyped(typed.value);
+
+    const applyIso = (iso) => {
       if (!iso) return false;
       if (input.value !== iso) {
         input.value = iso;
         input.dispatchEvent(new Event("input", { bubbles: true }));
         input.dispatchEvent(new Event("change", { bubbles: true }));
       }
-      typed.value = formatCal(iso);
+      const match = isoDate.exec(iso);
+      if (match) {
+        year.value = match[1];
+        month.value = match[2];
+        day.value = match[3];
+      }
       wrap.classList.remove("is-empty");
       return true;
     };
 
+    const fillFromDigits = (raw) => {
+      const digits = digitsOnly(raw, 8);
+      if (!digits) return false;
+      year.value = digits.slice(0, 4);
+      month.value = digits.slice(4, 6);
+      day.value = digits.slice(6, 8);
+      const iso = composeIso(digits.length >= 8);
+      if (iso) applyIso(iso);
+      else syncEmpty();
+      return digits.length >= 8 && Boolean(iso);
+    };
+
     input.addEventListener("input", syncFromNative);
     input.addEventListener("change", syncFromNative);
-    typed.addEventListener("input", () => {
-      const start = typed.selectionStart;
-      const before = typed.value;
-      typed.value = maskTyped(typed.value);
-      if (typeof start === "number") {
-        const delta = typed.value.length - before.length;
-        typed.setSelectionRange(Math.max(0, start + delta), Math.max(0, start + delta));
-      }
-      const iso = parseTyped(typed.value);
-      wrap.classList.toggle("is-empty", !iso);
-      if (iso && input.value !== iso) {
-        input.value = iso;
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-      }
+
+    fields.forEach((field, index) => {
+      const max = Number(field.maxLength);
+      const next = fields[index + 1];
+      const prev = fields[index - 1];
+      field.addEventListener("beforeinput", (event) => {
+        if (event.inputType && event.inputType.startsWith("insert") && event.data && /\D/.test(event.data)) {
+          event.preventDefault();
+        }
+      });
+      field.addEventListener("input", () => {
+        field.value = digitsOnly(field.value, max);
+        const iso = composeIso(false);
+        wrap.classList.toggle("is-empty", !iso && !year.value && !month.value && !day.value);
+        if (iso) applyIso(iso);
+        if (/^\d+$/.test(field.value) && field.value.length >= max && next) next.focus();
+      });
+      field.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          applyIso(composeIso(true)) || syncFromNative();
+          field.blur();
+          return;
+        }
+        if (event.key === "Backspace" && !field.value && prev) {
+          event.preventDefault();
+          prev.focus();
+          prev.value = prev.value.slice(0, -1);
+          prev.dispatchEvent(new Event("input"));
+        }
+      });
     });
-    typed.addEventListener("change", applyTyped);
-    typed.addEventListener("blur", () => {
-      if (!applyTyped()) {
-        typed.value = formatCal(input.value);
-        wrap.classList.toggle("is-empty", !input.value);
-      }
+
+    parts.addEventListener("paste", (event) => {
+      const text = event.clipboardData?.getData("text") || "";
+      const digits = digitsOnly(text, 8);
+      if (digits.length < 4) return;
+      event.preventDefault();
+      fillFromDigits(digits);
+      (digits.length >= 8 ? day : digits.length >= 6 ? day : month).focus();
     });
-    typed.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        applyTyped();
-        typed.blur();
-      }
+
+    wrap.addEventListener("focusout", (event) => {
+      if (wrap.contains(event.relatedTarget)) return;
+      const iso = composeIso(true);
+      if (iso) applyIso(iso);
+      else syncFromNative();
     });
+
     syncFromNative();
   };
   window.bindArchiveDateFields = (root) => {
@@ -118,14 +218,11 @@
     const to = root.querySelector("[data-date-to]");
     if (!toggle || !pop) return;
     [exact, from, to].filter(Boolean).forEach(bindCalendarField);
-    toggle.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const open = pop.hasAttribute("hidden");
-      document.querySelectorAll("[data-date-popover]").forEach((other) => {
-        if (other !== pop) other.hidden = true;
-      });
-      pop.hidden = !open;
-      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    toggle.addEventListener("click", () => {
+      const willOpen = pop.hidden;
+      closeArchiveOverlays(toggle);
+      pop.hidden = !willOpen;
+      toggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
     });
     exact?.addEventListener("change", () => {
       if (!exact.value) return;
@@ -155,8 +252,9 @@
     });
   });
   document.addEventListener("click", (event) => {
-    if (event.target.closest("[data-date-filter]")) return;
-    document.querySelectorAll("[data-date-popover]").forEach((pop) => { pop.hidden = true; });
-    document.querySelectorAll("[data-date-toggle]").forEach((toggle) => toggle.setAttribute("aria-expanded", "false"));
+    closeArchiveOverlays(event.target);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeArchiveOverlays();
   });
 })();

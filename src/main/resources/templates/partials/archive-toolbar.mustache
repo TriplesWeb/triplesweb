@@ -12,8 +12,10 @@
                         <option value="newest">최신순</option>
                         <option value="oldest">오래된 순</option>
                         <option value="title">제목순</option>
+                        {{^folderIsSolo}}
                         <option value="first-member">첫멤버순</option>
                         <option value="last-member">마지막멤버순</option>
+                        {{/folderIsSolo}}
                     </select>
                     <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
                 </span>

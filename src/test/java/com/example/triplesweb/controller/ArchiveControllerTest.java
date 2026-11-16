@@ -182,6 +182,8 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("data-chem-matches")))
                 .andExpect(content().string(containsString("id=\"archive-member-picker\"")))
                 .andExpect(content().string(containsString("멤버 · 케미")))
+                .andExpect(content().string(containsString("첫멤버순")))
+                .andExpect(content().string(containsString("마지막멤버순")))
                 .andExpect(content().string(containsString("ar-home-upload")));
     }
 
@@ -396,6 +398,10 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;s1&amp;folder&#x3D;s1");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("id=\"archive-member-picker\"");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain(">멤버 선택<");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("첫멤버순");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("마지막멤버순");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("first-member");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("last-member");
     }
 
     @Test void emptyFolderShowsPageOneAndMemberTitle() throws Exception {

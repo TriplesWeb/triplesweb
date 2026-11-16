@@ -67,7 +67,7 @@ ${siteUi}
             </div>
           </div>
         </div>
-        <button type="button" class="ar-member-toggle">멤버 선택</button>
+        <button type="button" class="ar-member-toggle" id="archiveMemberToggle" aria-expanded="false" aria-controls="archiveMemberPanel">멤버 선택</button>
         <div class="ar-search-row">
           <label class="ar-search-wrap"><span class="material-symbols-outlined">search</span><input class="ar-search" type="search" placeholder="사진 제목 검색"></label>
           <button type="submit" class="ar-submit">검색</button>
@@ -75,6 +75,7 @@ ${siteUi}
         <a class="site-btn site-btn--reset ar-reset" href="/archive">초기화</a>
       </div>
     </form>
+    <div class="ar-member-panel" id="archiveMemberPanel" hidden>멤버 패널</div>
   </section>
   <div class="ar-dialog-body">
     <label class="ar-field">사진 날짜<input type="date" name="registeredOn" required><span class="ar-field-hint">실제로 올라온 날짜를 선택하세요.</span></label>
@@ -104,8 +105,12 @@ ${siteUi}
   </section>
   <nav class="ar-panel ar-pager">
     <span class="ar-pager-summary">총 2장 중 2장 표시</span>
-    <div class="ar-pager-controls"><a>이전</a><div class="ar-pages"><a class="is-current">1</a></div><a>다음</a></div>
-    <form class="ar-page-jump"><label>페이지 <input type="number" name="go" min="1" max="1" value="1"></label><button type="submit">이동</button></form>
+    <div class="ar-pager-controls">
+      <a>이전</a>
+      <div class="ar-pages"><a class="is-current">1</a></div>
+      <a>다음</a>
+      <form class="ar-page-jump"><label>페이지 <input type="number" name="go" min="1" max="1" value="1"></label><button type="submit">이동</button></form>
+    </div>
   </nav>
 </main>
 <script>${browseJs}</script>
@@ -323,6 +328,33 @@ ${siteUi}
     const lastMember = await page.evaluate(() => [...document.querySelectorAll('#archiveGrid .ar-card')].map((card) => card.dataset.title));
     assert.deepEqual(lastMember, ['지서연', '주빈', '심장마빈즈'], '마지막멤버순이 S24부터 S1로 가지 않는다: ' + lastMember.join(','));
 
+    await page.click('.ar-sort-trigger');
+    await page.click('[data-date-toggle]');
+    let overlays = await page.evaluate(() => ({
+      sortOpen: document.querySelector('.ar-sort-menu')?.hidden === false,
+      dateOpen: document.querySelector('[data-date-popover]')?.hidden === false,
+      memberOpen: document.getElementById('archiveMemberPanel')?.hidden === false
+    }));
+    assert.equal(overlays.sortOpen, false, '날짜를 열어도 정렬 메뉴가 남아 있다');
+    assert.equal(overlays.dateOpen, true, '날짜 팝오버가 열리지 않는다');
+    await page.click('#archiveMemberToggle');
+    overlays = await page.evaluate(() => ({
+      sortOpen: document.querySelector('.ar-sort-menu')?.hidden === false,
+      dateOpen: document.querySelector('[data-date-popover]')?.hidden === false,
+      memberOpen: document.getElementById('archiveMemberPanel')?.hidden === false
+    }));
+    assert.equal(overlays.dateOpen, false, '멤버를 열어도 날짜 팝오버가 남아 있다');
+    assert.equal(overlays.memberOpen, true, '멤버 패널이 열리지 않는다');
+    await page.click('.ar-search');
+    overlays = await page.evaluate(() => ({
+      sortOpen: document.querySelector('.ar-sort-menu')?.hidden === false,
+      dateOpen: document.querySelector('[data-date-popover]')?.hidden === false,
+      memberOpen: document.getElementById('archiveMemberPanel')?.hidden === false
+    }));
+    assert.equal(overlays.sortOpen, false, '검색을 눌러도 정렬이 열려 있다');
+    assert.equal(overlays.dateOpen, false, '검색을 눌러도 날짜가 열려 있다');
+    assert.equal(overlays.memberOpen, false, '검색을 눌러도 멤버 패널이 열려 있다');
+
     await page.click('[data-date-toggle]');
     const ymd = await page.evaluate(() => {
       const pop = document.querySelector('[data-date-popover]');
@@ -348,37 +380,59 @@ ${siteUi}
     assert.equal(ymd.exact, false, '이 사진 날짜 칸이 남아 있다');
     assert.equal(ymd.hint, '', '날짜 힌트가 남아 있다');
     assert.equal(ymd.more, false, '더보기 버튼이 남아 있다');
-    const typedFrom = page.locator('.ar-date-popover .ar-cal-typed').nth(0);
-    const typedTo = page.locator('.ar-date-popover .ar-cal-typed').nth(1);
-    assert.equal(await page.locator('.ar-date-popover .ar-cal-typed').count(), 2, '날짜 텍스트 칸이 없다');
-    await typedFrom.click();
-    await typedFrom.fill('20261116');
-    await typedTo.click();
-    await typedTo.fill('2026/12/02');
+    const yearFrom = page.locator('.ar-date-popover [data-part="year"]').nth(0);
+    const yearTo = page.locator('.ar-date-popover [data-part="year"]').nth(1);
+    assert.equal(await page.locator('.ar-date-popover .ar-cal-part').count(), 6, '연·월·일 칸이 없다');
+    await yearFrom.click();
+    await page.keyboard.type('abcd20261116');
+    await yearTo.click();
+    await page.keyboard.type('20261202');
     const typed = await page.evaluate(() => {
       const from = document.querySelector('[data-date-from]');
       const to = document.querySelector('[data-date-to]');
-      const texts = [...document.querySelectorAll('.ar-date-popover .ar-cal-typed')].map((el) => el.value);
-      return { from: from?.value || '', to: to?.value || '', texts };
+      const values = (root) => [...root.querySelectorAll('.ar-cal-part')].map((el) => el.value);
+      const fromWrap = document.querySelector('[data-date-from]')?.closest('.ar-cal');
+      const toWrap = document.querySelector('[data-date-to]')?.closest('.ar-cal');
+      return { from: from?.value || '', to: to?.value || '', fromParts: values(fromWrap), toParts: values(toWrap) };
     });
-    assert.equal(typed.from, '2026-11-16', '시작 날짜를 텍스트로 넣지 못한다: ' + JSON.stringify(typed));
-    assert.equal(typed.to, '2026-12-02', '끝 날짜를 텍스트로 넣지 못한다: ' + JSON.stringify(typed));
-    assert.deepEqual(typed.texts, ['2026/11/16', '2026/12/02']);
+    assert.equal(typed.from, '2026-11-16', '시작 날짜를 숫자로 넣지 못한다: ' + JSON.stringify(typed));
+    assert.equal(typed.to, '2026-12-02', '끝 날짜를 숫자로 넣지 못한다: ' + JSON.stringify(typed));
+    assert.deepEqual(typed.fromParts, ['2026', '11', '16']);
+    assert.deepEqual(typed.toParts, ['2026', '12', '02']);
     const dateShotDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
     fs.mkdirSync(dateShotDir, { recursive: true });
     await page.locator('[data-date-popover]').screenshot({ path: path.join(dateShotDir, 'archive-date-calendar.png') });
 
     const pager = await page.evaluate(() => {
+      const controls = document.querySelector('.ar-pager-controls');
       const jump = document.querySelector('.ar-page-jump');
+      const next = [...(controls?.querySelectorAll('a') || [])].find((el) => el.textContent.trim() === '다음');
+      const jumpBox = jump?.getBoundingClientRect();
+      const nextBox = next?.getBoundingClientRect();
+      const goBox = jump?.querySelector('input[name="go"]')?.getBoundingClientRect();
+      const moveBox = jump?.querySelector('button')?.getBoundingClientRect();
       return {
         hasJump: Boolean(jump),
+        insideControls: Boolean(controls?.contains(jump)),
         goName: jump?.querySelector('input[name="go"]')?.name || '',
-        label: jump?.querySelector('button')?.textContent.trim() || ''
+        label: jump?.querySelector('button')?.textContent.trim() || '',
+        afterNext: Boolean(next && jump && (next.compareDocumentPosition(jump) & Node.DOCUMENT_POSITION_FOLLOWING)),
+        gap: nextBox && jumpBox ? jumpBox.left - nextBox.right : 999,
+        aligned: nextBox && jumpBox ? Math.abs(nextBox.top - jumpBox.top) <= 6 : false,
+        goWidth: goBox ? Math.round(goBox.width) : 0,
+        moveHeight: moveBox ? Math.round(moveBox.height) : 0
       };
     });
     assert.equal(pager.hasJump, true, '페이지 이동 UI가 없다');
+    assert.equal(pager.insideControls, true, '페이지 이동이 다음 버튼 옆에 없다');
+    assert.equal(pager.afterNext, true, '페이지 이동이 다음 버튼 뒤에 없다');
     assert.equal(pager.goName, 'go');
     assert.equal(pager.label, '이동');
+    assert.ok(pager.gap >= 0 && pager.gap <= 48, '페이지 이동이 다음에서 너무 떨어져 있다: ' + pager.gap);
+    assert.equal(pager.aligned, true, '페이지 이동이 다음과 세로로 안 맞는다');
+    assert.ok(pager.goWidth >= 50 && pager.goWidth <= 90, '페이지 숫자 칸 크기가 달라졌다: ' + pager.goWidth);
+    assert.ok(pager.moveHeight >= 28 && pager.moveHeight <= 40, '이동 버튼 크기가 달라졌다: ' + pager.moveHeight);
+    await page.locator('.ar-pager').screenshot({ path: path.join(dateShotDir, 'archive-pager-jump.png') });
 
     const tabs = await page.evaluate(() => {
       const current = document.querySelector('.site-section-tab[aria-current="page"]');

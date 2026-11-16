@@ -173,11 +173,13 @@ ${site}${css}${siteUi}
     const form = await page.evaluate(() => {
       const select = document.querySelector('.ar-source-field select');
       const panel = document.querySelector('#editModal .ar-dialog-body');
-      const cal = document.querySelector('.ar-cal-typed');
+      const year = document.querySelector('.ar-cal-part[data-part="year"]');
+      const month = document.querySelector('.ar-cal-part[data-part="month"]');
+      const day = document.querySelector('.ar-cal-part[data-part="day"]');
       const selectBox = select.getBoundingClientRect();
       const panelBox = panel.getBoundingClientRect();
       return {
-        calText: cal?.value.trim() || '',
+        calText: [year?.value, month?.value, day?.value].filter(Boolean).join('/') || '',
         selectGap: panelBox.right - selectBox.right,
         selectNarrower: selectBox.width < panelBox.width - 24
       };

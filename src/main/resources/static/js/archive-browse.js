@@ -12,6 +12,7 @@
         if (icon) icon.textContent = open ? '−' : '+';
     }
     statsToggle?.addEventListener('click', () => {
+        window.closeArchiveOverlays?.(statsToggle);
         setStatsOpen(statsToggle.getAttribute('aria-expanded') !== 'true');
     });
 
@@ -149,8 +150,13 @@
             });
             menu.appendChild(item);
         });
-        trigger.addEventListener('click', () => setOpen(menu.hidden));
+        trigger.addEventListener('click', () => {
+            const willOpen = menu.hidden;
+            window.closeArchiveOverlays?.(trigger);
+            setOpen(willOpen);
+        });
         document.addEventListener('click', event => {
+            if (window.closeArchiveOverlays) return;
             if (!control.contains(event.target)) setOpen(false);
         });
         document.addEventListener('keydown', event => {
@@ -255,8 +261,10 @@
 
     memberToggle?.addEventListener('click', () => {
         if (!panel) return;
-        panel.hidden = !panel.hidden;
-        memberToggle.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
+        const willOpen = panel.hidden;
+        window.closeArchiveOverlays?.(memberToggle);
+        panel.hidden = !willOpen;
+        memberToggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
         updateMemberToggle();
     });
     if (window.MemberPortraitPicker && panel) {
