@@ -1,9 +1,37 @@
 (() => {
+  const placeholder = "yyyy/mm/dd";
+  const isoDate = /^(\d{4})-(\d{2})-(\d{2})$/;
+
   const formatCal = (iso) => {
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
-    if (!match) return "yyyy/mm/dd";
+    const match = isoDate.exec(iso || "");
+    if (!match) return "";
     return match[1] + "/" + match[2] + "/" + match[3];
   };
+
+  const validIso = (iso) => {
+    const match = isoDate.exec(iso || "");
+    if (!match) return "";
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return "";
+    return match[1] + "-" + match[2] + "-" + match[3];
+  };
+
+  const parseTyped = (raw) => {
+    const digits = String(raw || "").replace(/\D/g, "").slice(0, 8);
+    if (digits.length !== 8) return "";
+    return validIso(digits.slice(0, 4) + "-" + digits.slice(4, 6) + "-" + digits.slice(6, 8));
+  };
+
+  const maskTyped = (raw) => {
+    const digits = String(raw || "").replace(/\D/g, "").slice(0, 8);
+    if (digits.length <= 4) return digits;
+    if (digits.length <= 6) return digits.slice(0, 4) + "/" + digits.slice(4);
+    return digits.slice(0, 4) + "/" + digits.slice(4, 6) + "/" + digits.slice(6);
+  };
+
   const bindCalendarField = (input) => {
     if (!input) return;
     if (input.dataset.calReady) {
@@ -17,22 +45,65 @@
     wrap.className = "ar-cal is-empty";
     input.before(wrap);
     wrap.append(input);
-    const text = document.createElement("span");
-    text.className = "ar-cal-text";
-    text.setAttribute("aria-hidden", "true");
-    wrap.append(text);
-    const sync = () => {
-      text.textContent = formatCal(input.value);
+    const typed = document.createElement("input");
+    typed.type = "text";
+    typed.className = "ar-cal-typed";
+    typed.inputMode = "numeric";
+    typed.autocomplete = "off";
+    typed.spellcheck = false;
+    typed.placeholder = placeholder;
+    typed.setAttribute("aria-label", (input.getAttribute("aria-label") || input.name || "날짜") + " 직접 입력");
+    wrap.append(typed);
+
+    const syncFromNative = () => {
+      typed.value = formatCal(input.value);
       wrap.classList.toggle("is-empty", !input.value);
     };
-    input.addEventListener("input", sync);
-    input.addEventListener("change", sync);
-    wrap.addEventListener("click", (event) => {
-      if (event.target === input) return;
-      if (typeof input.showPicker === "function") input.showPicker();
-      else input.focus();
+    const applyTyped = () => {
+      const iso = parseTyped(typed.value);
+      if (!iso) return false;
+      if (input.value !== iso) {
+        input.value = iso;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      typed.value = formatCal(iso);
+      wrap.classList.remove("is-empty");
+      return true;
+    };
+
+    input.addEventListener("input", syncFromNative);
+    input.addEventListener("change", syncFromNative);
+    typed.addEventListener("input", () => {
+      const start = typed.selectionStart;
+      const before = typed.value;
+      typed.value = maskTyped(typed.value);
+      if (typeof start === "number") {
+        const delta = typed.value.length - before.length;
+        typed.setSelectionRange(Math.max(0, start + delta), Math.max(0, start + delta));
+      }
+      const iso = parseTyped(typed.value);
+      wrap.classList.toggle("is-empty", !iso);
+      if (iso && input.value !== iso) {
+        input.value = iso;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      }
     });
-    sync();
+    typed.addEventListener("change", applyTyped);
+    typed.addEventListener("blur", () => {
+      if (!applyTyped()) {
+        typed.value = formatCal(input.value);
+        wrap.classList.toggle("is-empty", !input.value);
+      }
+    });
+    typed.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        applyTyped();
+        typed.blur();
+      }
+    });
+    syncFromNative();
   };
   window.bindArchiveDateFields = (root) => {
     (root || document).querySelectorAll('input[type="date"][name="registeredOn"]').forEach(bindCalendarField);

@@ -290,6 +290,8 @@ public class ArchiveController {
         String chemKey = chemistry == null ? "" : chemistry.key();
         model.addAttribute("chemKey", chemKey);
         model.addAttribute("hasChemFilter", !chemKey.isBlank());
+        String baseTitle = folderTitle(folderKey, List.of(), units);
+        model.addAttribute("folderBaseTitle", baseTitle);
         model.addAttribute("folderTitle", chemistry != null ? chemistry.label() : folderTitle(folderKey, comboMembers, units));
         model.addAttribute("folderAccent", folderAccent(folderKey, visibleUnits, artists));
         model.addAttribute("folderIsSolo", isSoloFolder(folderKey));
@@ -953,7 +955,7 @@ public class ArchiveController {
                 String key = "pair-" + item.getId();
                 String label = item.getLabel() == null || item.getLabel().isBlank()
                         ? String.join(" × ", members) : item.getLabel().trim();
-                options.add(chemistryOption(key, label + " · " + String.join(" × ", members), key.equals(selectedKey)));
+                options.add(chemistryOption(key, label, members, key.equals(selectedKey)));
             }
             return options;
         }
@@ -965,7 +967,7 @@ public class ArchiveController {
             String key = "group-" + item.getId();
             String label = item.getLabel() == null || item.getLabel().isBlank()
                     ? String.join(" × ", members) : item.getLabel().trim();
-            options.add(chemistryOption(key, label + " · " + String.join(" × ", members), key.equals(selectedKey)));
+            options.add(chemistryOption(key, label, members, key.equals(selectedKey)));
         }
         return options;
     }
@@ -976,10 +978,13 @@ public class ArchiveController {
         return memberCount >= comboMin;
     }
 
-    private static Map<String, Object> chemistryOption(String value, String label, boolean selected) {
+    private static Map<String, Object> chemistryOption(String value, String label, List<String> members, boolean selected) {
         Map<String, Object> option = new LinkedHashMap<>();
+        List<String> names = members == null ? List.of() : members;
         option.put("value", value);
-        option.put("label", label);
+        option.put("shortLabel", label);
+        option.put("members", String.join(",", names));
+        option.put("label", names.isEmpty() ? label : label + " · " + String.join(" × ", names));
         option.put("selected", selected);
         return option;
     }

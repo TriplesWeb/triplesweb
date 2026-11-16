@@ -162,24 +162,95 @@
     }
     enhanceSort(sort);
     const chem = document.getElementById('archiveChem');
-    enhanceSort(chem);
     const form = document.getElementById('archiveFilterForm');
-    chem?.addEventListener('change', () => form?.requestSubmit());
     const panel = document.getElementById('archiveMemberPanel');
     const memberToggle = document.getElementById('archiveMemberToggle');
     const memberCount = document.getElementById('archiveMemberCount');
+    const memberLabel = memberToggle?.querySelector('[data-member-toggle-label]');
+    const defaultMemberLabel = memberLabel?.textContent.trim() || '멤버 선택';
+    const folderTitle = document.querySelector('.ar-folder-title');
+    const baseFolderTitle = folderTitle?.dataset.baseTitle || folderTitle?.textContent.trim() || '';
+    const chemMatches = panel?.querySelector('[data-chem-matches]');
+
+    function chemEntries() {
+        return [...(chem?.options || [])]
+            .filter((option) => option.value)
+            .map((option) => ({
+                value: option.value,
+                name: option.dataset.chemName || option.textContent.split('·')[0].trim(),
+                members: String(option.dataset.members || '').split(',').map((name) => name.trim()).filter(Boolean)
+            }));
+    }
+
+    function matchingChems(selected) {
+        if (!selected.length) return [];
+        return chemEntries().filter((entry) => selected.every((name) => entry.members.includes(name)));
+    }
+
+    function exactChem(selected) {
+        const matches = matchingChems(selected);
+        return matches.find((entry) => entry.members.length === selected.length) || null;
+    }
+
+    function renderChemMatches(selected) {
+        if (!chemMatches) return;
+        chemMatches.querySelectorAll('.ar-chem-match').forEach((node) => node.remove());
+        const hint = chemMatches.querySelector('[data-chem-hint]');
+        const matches = matchingChems(selected);
+        const exact = exactChem(selected);
+        if (hint) {
+            hint.hidden = matches.length > 0;
+            hint.textContent = selected.length
+                ? '이름 붙은 케미가 없습니다'
+                : '멤버를 고르면 케미가 나타납니다';
+        }
+        matches.forEach((entry) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'ar-chem-match' + (exact && exact.value === entry.value ? ' is-exact' : '');
+            button.dataset.chem = entry.value;
+            button.textContent = entry.name;
+            button.title = entry.members.join(' × ');
+            button.addEventListener('click', () => applyChemistry(entry));
+            chemMatches.appendChild(button);
+        });
+    }
+
+    function applyChemistry(entry) {
+        if (!entry) return;
+        if (window.MemberPortraitPicker && panel) {
+            MemberPortraitPicker.setValues(panel, entry.members);
+        }
+        if (chem && chem.value !== entry.value) {
+            chem.value = entry.value;
+        }
+        updateMemberToggle(entry.members);
+        form?.requestSubmit();
+    }
 
     function updateMemberToggle(values) {
         const selected = values || (window.MemberPortraitPicker && panel
             ? MemberPortraitPicker.selectedValues(panel)
             : []);
         const count = selected.length;
+        const exact = exactChem(selected);
+        if (chem) {
+            if (exact) chem.value = exact.value;
+            else if (Array.isArray(values)) chem.value = '';
+        }
         if (memberCount) {
             memberCount.hidden = count === 0;
             memberCount.textContent = String(count);
         }
+        if (memberLabel) {
+            memberLabel.textContent = exact ? exact.name : (count ? count + '명' : defaultMemberLabel);
+        }
+        if (folderTitle && (exact || Array.isArray(values) || !chem?.value)) {
+            folderTitle.textContent = exact ? exact.name : baseFolderTitle;
+        }
         memberToggle?.classList.toggle('has-selection', count > 0);
         memberToggle?.classList.toggle('is-open', Boolean(panel && !panel.hidden));
+        renderChemMatches(selected);
     }
 
     memberToggle?.addEventListener('click', () => {

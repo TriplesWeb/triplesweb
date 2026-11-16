@@ -148,6 +148,15 @@
     });
   }
 
+  function setValues(root, values) {
+    const picker = resolvePicker(root) || root;
+    const wanted = new Set((values || []).map((value) => String(value)));
+    (picker || document).querySelectorAll(".mpp-item").forEach((btn) => {
+      const value = btn.dataset.value || btn.dataset.name || "";
+      setActive(btn, wanted.has(value));
+    });
+  }
+
   /**
    * @param {ParentNode} root
    * @param {{ onChange?: (values: string[]) => void, multi?: boolean }} opts
@@ -184,6 +193,7 @@
     bindFrames,
     bindMultiSelect,
     selectedValues,
+    setValues,
     setActive,
     clear
   };

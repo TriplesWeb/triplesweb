@@ -179,8 +179,10 @@ class ArchiveControllerTest {
                         containsString("href=\"/archive?folder&#x3D;combos\""))))
                 .andExpect(content().string(containsString("id=\"archiveChem\"")))
                 .andExpect(content().string(containsString("케미 전체")))
+                .andExpect(content().string(containsString("data-chem-matches")))
                 .andExpect(content().string(containsString("id=\"archive-member-picker\"")))
-                .andExpect(content().string(containsString(">멤버 선택<")));
+                .andExpect(content().string(containsString("멤버 · 케미")))
+                .andExpect(content().string(containsString("ar-home-upload")));
     }
 
     @Test void unitFolderWithoutImageOmitsPlaceholderPreview() throws Exception {
@@ -215,7 +217,10 @@ class ArchiveControllerTest {
                 .andReturn().getResponse().getContentAsString();
         org.assertj.core.api.Assertions.assertThat(html).contains("id=\"archiveChem\"");
         org.assertj.core.api.Assertions.assertThat(html).contains("시선강탈");
+        org.assertj.core.api.Assertions.assertThat(html).contains("data-members=\"윤서연,정혜린\"");
+        org.assertj.core.api.Assertions.assertThat(html).contains("data-chem-name=\"시선강탈\"");
         org.assertj.core.api.Assertions.assertThat(html).contains("value=\"pair-3\"");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-home-upload");
         org.assertj.core.api.Assertions.assertThat(html).contains(">시선강탈</p>");
         org.assertj.core.api.Assertions.assertThat(html).containsAnyOf("chem=pair-3", "chem&#x3D;pair-3");
         verify(archiveService).pageInFolder(eq(MediaType.IMAGE), anyInt(), anyInt(), nullable(String.class),

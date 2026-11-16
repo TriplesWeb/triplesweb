@@ -348,6 +348,22 @@ ${siteUi}
     assert.equal(ymd.exact, false, '이 사진 날짜 칸이 남아 있다');
     assert.equal(ymd.hint, '', '날짜 힌트가 남아 있다');
     assert.equal(ymd.more, false, '더보기 버튼이 남아 있다');
+    const typedFrom = page.locator('.ar-date-popover .ar-cal-typed').nth(0);
+    const typedTo = page.locator('.ar-date-popover .ar-cal-typed').nth(1);
+    assert.equal(await page.locator('.ar-date-popover .ar-cal-typed').count(), 2, '날짜 텍스트 칸이 없다');
+    await typedFrom.click();
+    await typedFrom.fill('20261116');
+    await typedTo.click();
+    await typedTo.fill('2026/12/02');
+    const typed = await page.evaluate(() => {
+      const from = document.querySelector('[data-date-from]');
+      const to = document.querySelector('[data-date-to]');
+      const texts = [...document.querySelectorAll('.ar-date-popover .ar-cal-typed')].map((el) => el.value);
+      return { from: from?.value || '', to: to?.value || '', texts };
+    });
+    assert.equal(typed.from, '2026-11-16', '시작 날짜를 텍스트로 넣지 못한다: ' + JSON.stringify(typed));
+    assert.equal(typed.to, '2026-12-02', '끝 날짜를 텍스트로 넣지 못한다: ' + JSON.stringify(typed));
+    assert.deepEqual(typed.texts, ['2026/11/16', '2026/12/02']);
     const dateShotDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
     fs.mkdirSync(dateShotDir, { recursive: true });
     await page.locator('[data-date-popover]').screenshot({ path: path.join(dateShotDir, 'archive-date-calendar.png') });

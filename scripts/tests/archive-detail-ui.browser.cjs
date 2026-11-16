@@ -173,11 +173,11 @@ ${site}${css}${siteUi}
     const form = await page.evaluate(() => {
       const select = document.querySelector('.ar-source-field select');
       const panel = document.querySelector('#editModal .ar-dialog-body');
-      const cal = document.querySelector('.ar-cal-text');
+      const cal = document.querySelector('.ar-cal-typed');
       const selectBox = select.getBoundingClientRect();
       const panelBox = panel.getBoundingClientRect();
       return {
-        calText: cal?.textContent.trim() || '',
+        calText: cal?.value.trim() || '',
         selectGap: panelBox.right - selectBox.right,
         selectNarrower: selectBox.width < panelBox.width - 24
       };

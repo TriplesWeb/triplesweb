@@ -10,6 +10,7 @@ const site = fs.readFileSync(path.join(staticRoot, 'css', 'site.css'), 'utf8');
 const siteChrome = fs.readFileSync(path.join(staticRoot, 'css', 'site-chrome.css'), 'utf8');
 const siteUi = fs.readFileSync(path.join(staticRoot, 'css', 'site-ui.css'), 'utf8');
 const browseJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-browse.js'), 'utf8');
+const pickerJs = fs.readFileSync(path.join(staticRoot, 'js', 'member-portrait-picker.js'), 'utf8');
 
 const folderSvg = fs.readFileSync(path.join(staticRoot, 'images', 'archive-folder.svg'), 'utf8');
 const artSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="180" viewBox="0 0 240 180">
@@ -145,7 +146,7 @@ ${siteChrome}
 ${css}
 ${siteUi}
 </style></head>
-<body class="site-page">
+<body class="site-page site-admin-enabled">
 <main class="archive-page is-folder-view" data-archive-kind="image">
   <section class="ar-hero">
     <div class="ar-panel ar-headline is-member-space" style="--folder-color:#7dd3fc">
@@ -153,8 +154,9 @@ ${siteUi}
       <div class="ar-headline-copy">
         <div class="ar-kicker">Archive</div>
         <h1>아카이브</h1>
-        <p class="ar-folder-title">시선강탈</p>
+        <p class="ar-folder-title" data-base-title="2명 케미">시선강탈</p>
       </div>
+      <button type="button" class="ar-submit ar-home-upload" data-admin-only>사진 추가</button>
     </div>
   </section>
   <section class="ar-panel ar-toolbar">
@@ -171,17 +173,14 @@ ${siteUi}
             <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
           </span>
         </label>
-        <label class="ar-chem">
-          <span class="ar-sort-label">케미</span>
-          <span class="ar-sort-control ar-chem-control">
-            <select id="archiveChem" name="chem" aria-label="케미씃트리 케미">
-              <option value="">케미 전체</option>
-              <option value="pair-3" selected>시선강탈 · 윤서연 × 정혜린</option>
-              <option value="pair-4">하트시그널 · 김채연 × 김유연</option>
-            </select>
-            <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
-          </span>
-        </label>
+        <select class="ar-chem-select" id="archiveChem" name="chem" aria-label="케미">
+          <option value="">케미 전체</option>
+          <option value="pair-3" selected data-members="윤서연,정혜린" data-chem-name="시선강탈">시선강탈 · 윤서연 × 정혜린</option>
+          <option value="pair-4" data-members="김채연,김유연" data-chem-name="하트시그널">하트시그널 · 김채연 × 김유연</option>
+        </select>
+        <button type="button" class="ar-member-toggle" id="archiveMemberToggle" aria-expanded="false" aria-controls="archiveMemberPanel">
+          <span data-member-toggle-label>멤버 · 케미</span>
+        </button>
         <div class="ar-search-row">
           <label class="ar-search-wrap">
             <span class="material-symbols-outlined" aria-hidden="true">search</span>
@@ -189,11 +188,25 @@ ${siteUi}
           </label>
           <button type="submit" class="ar-submit">검색</button>
         </div>
+        <a class="site-btn site-btn--reset ar-reset" href="/archive">초기화</a>
       </div>
     </form>
+    <div class="ar-member-panel" id="archiveMemberPanel" hidden>
+      <div class="ar-chem-matches" data-chem-matches>
+        <p class="ar-chem-matches-hint" data-chem-hint>멤버를 고르면 케미가 나타납니다</p>
+      </div>
+      <div class="member-portrait-picker" id="archive-member-picker">
+        <button type="button" class="mpp-item is-active" data-value="윤서연">윤서연</button>
+        <button type="button" class="mpp-item is-active" data-value="정혜린">정혜린</button>
+        <button type="button" class="mpp-item" data-value="이지우">이지우</button>
+        <button type="button" class="mpp-item" data-value="김채연">김채연</button>
+        <button type="button" class="mpp-item" data-value="김유연">김유연</button>
+      </div>
+    </div>
   </section>
   <section class="ar-grid" id="archiveGrid"></section>
 </main>
+<script>${pickerJs}</script>
 <script>${browseJs}</script>
 </body></html>`;
 
@@ -312,7 +325,10 @@ ${siteUi}
     await page.goto('https://archive-folders.test/combo.html', { waitUntil: 'load' });
     const combo = await page.evaluate(() => {
       const select = document.getElementById('archiveChem');
-      const trigger = document.querySelector('.ar-chem .ar-sort-trigger');
+      const upload = document.querySelector('.ar-home-upload');
+      const toolbarUpload = document.querySelector('.ar-filter-tools [data-admin-only], .ar-filter-tools .ar-home-upload');
+      const headline = document.querySelector('.ar-headline').getBoundingClientRect();
+      const uploadBox = upload.getBoundingClientRect();
       return {
         title: document.querySelector('.ar-folder-title')?.textContent.trim() || '',
         kickerLeft: Math.round(document.querySelector('.ar-kicker').getBoundingClientRect().left),
@@ -322,7 +338,12 @@ ${siteUi}
         values: [...(select?.options || [])].map((option) => option.value),
         labels: [...(select?.options || [])].map((option) => option.textContent.trim()),
         selected: select?.value || '',
-        enhanced: Boolean(trigger)
+        chemDropdown: Boolean(document.querySelector('.ar-chem .ar-sort-trigger')),
+        toggle: document.querySelector('[data-member-toggle-label]')?.textContent.trim() || '',
+        uploadInHeadline: Boolean(upload) && document.querySelector('.ar-headline').contains(upload),
+        toolbarUpload: Boolean(toolbarUpload),
+        uploadRight: Math.round(headline.right - uploadBox.right),
+        uploadBottom: Math.round(headline.bottom - uploadBox.bottom)
       };
     });
     assert.equal(combo.title, '시선강탈');
@@ -333,9 +354,27 @@ ${siteUi}
     assert.deepEqual(combo.values, ['', 'pair-3', 'pair-4']);
     assert.ok(combo.labels[1].includes('시선강탈'));
     assert.equal(combo.selected, 'pair-3');
-    assert.equal(combo.enhanced, true, '케미 드롭다운이 정렬과 같은 스타일로 열리지 않는다');
-    await page.click('.ar-chem .ar-sort-trigger');
+    assert.equal(combo.chemDropdown, false, '케미 드롭다운이 툴바에 남아 있다');
+    assert.equal(combo.toggle, '시선강탈');
+    assert.equal(combo.uploadInHeadline, true, '폴더 안 사진 추가가 제목 패널에 없다');
+    assert.equal(combo.toolbarUpload, false, '폴더 안 툴바에 사진 추가가 남아 있다');
+    assert.ok(combo.uploadRight >= 8 && combo.uploadRight <= 40, '폴더 안 사진 추가가 우측이 아니다: ' + JSON.stringify(combo));
+    assert.ok(combo.uploadBottom >= 8 && combo.uploadBottom <= 40, '폴더 안 사진 추가가 하단이 아니다: ' + JSON.stringify(combo));
+    await page.click('#archiveMemberToggle');
+    const matched = await page.evaluate(() => [...document.querySelectorAll('.ar-chem-match')].map((el) => el.textContent.trim()));
+    assert.deepEqual(matched, ['시선강탈']);
+    await page.click('.mpp-item[data-value="정혜린"]');
+    const afterOne = await page.evaluate(() => ({
+      chips: [...document.querySelectorAll('.ar-chem-match')].map((el) => el.textContent.trim()),
+      title: document.querySelector('.ar-folder-title')?.textContent.trim() || '',
+      toggle: document.querySelector('[data-member-toggle-label]')?.textContent.trim() || ''
+    }));
+    assert.ok(afterOne.chips.includes('시선강탈'));
+    assert.ok(afterOne.chips.length >= 1);
+    assert.equal(afterOne.title, '2명 케미');
+    assert.equal(afterOne.toggle, '1명');
     await page.screenshot({ path: path.join(artifactDir, 'archive-chem-filter.png'), fullPage: true });
+    await page.locator('.ar-toolbar').screenshot({ path: path.join(artifactDir, 'archive-toolbar-compact.png') });
     console.log('PASS: 아카이브 폴더 홈 실루엣·케미 필터');
   } finally {
     await browser.close();
