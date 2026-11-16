@@ -409,8 +409,15 @@ class ArchiveControllerTest {
         stubFolder(MediaType.IMAGE);
         String html = mvc.perform(get("/archive").param("folder", "s19")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-title");
-        org.assertj.core.api.Assertions.assertThat(html).contains("S19 정하연");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-title is-solo");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-num");
+        org.assertj.core.api.Assertions.assertThat(html).contains(">S19<");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-name");
+        org.assertj.core.api.Assertions.assertThat(html).contains(">정하연<");
+        org.assertj.core.api.Assertions.assertThat(html).contains(">날짜<");
+        org.assertj.core.api.Assertions.assertThat(html).contains("calendar_month");
+        org.assertj.core.api.Assertions.assertThat(html).contains(">전체<");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain(">이 페이지<");
         org.assertj.core.api.Assertions.assertThat(html).contains("←목록으로");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain(">폴더 목록<");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("이 페이지에서 조건에 맞는");
@@ -444,6 +451,8 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(summary).contains("코스모룸");
         org.assertj.core.api.Assertions.assertThat(summary).contains("2026/11/16");
         org.assertj.core.api.Assertions.assertThat(summary).doesNotContain(">전체<");
+        org.assertj.core.api.Assertions.assertThat(html).contains("11월 16일");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-stat-date");
     }
 
     @Test void photoCardShowsDateBesideMembers() throws Exception {

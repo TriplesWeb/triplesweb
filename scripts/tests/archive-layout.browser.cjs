@@ -46,7 +46,7 @@ ${siteUi}
       </nav>
       <div class="ar-stats" id="archiveStats">
         <article class="ar-stat"><div class="ar-stat-label"><span>등록된 사진</span><span class="material-symbols-outlined">image</span></div><strong>2<em>장</em></strong></article>
-        <article class="ar-stat"><div class="ar-stat-label"><span>이 페이지</span><span class="material-symbols-outlined">grid_view</span></div><strong>2<em>장</em></strong></article>
+        <article class="ar-stat ar-stat-date"><div class="ar-stat-label"><span>날짜</span><span class="material-symbols-outlined">calendar_month</span></div><strong>전체</strong></article>
         <article class="ar-stat"><div class="ar-stat-label"><span>페이지</span><span class="material-symbols-outlined">layers</span></div><strong>1<em>/ 1</em></strong></article>
         <article class="ar-stat ar-stat-filter" style="--filter-count: 3"><div class="ar-stat-label"><span>검색</span><span class="material-symbols-outlined">search</span></div><div class="ar-filter-summary"><span class="ar-filter-member" style="--member-color:#22aeff">윤서연</span><span class="ar-filter-more">외 1명</span><span class="ar-filter-sep">,</span><strong>심장</strong><span class="ar-filter-sep">,</span><strong>2026-01-01 ~ 2026-12-31</strong></div></article>
       </div>
@@ -311,7 +311,7 @@ ${siteUi}
     assert.equal(toolbar.memberInTools, true);
     assert.equal(toolbar.resetInTools, true);
     assert.equal(toolbar.searchInTools, true);
-    assert.ok(parseFloat(toolbar.filterSize) < 22, '필터 글자가 줄지 않는다: ' + toolbar.filterSize);
+    assert.ok(parseFloat(toolbar.filterSize) <= 16, '검색 요약 글자가 크다: ' + toolbar.filterSize);
     assert.match(toolbar.resetClass, /site-btn--reset/, '초기화가 회색 유리 버튼이 아니다: ' + toolbar.resetClass);
     assert.ok(toolbar.resetColor.includes('255') || toolbar.resetColor.includes('#fff'), '초기화 글자가 흰색이 아니다: ' + toolbar.resetColor);
     assert.equal(toolbar.resetAlign, true, '초기화가 검색 버튼과 세로로 안 맞는다');
@@ -399,9 +399,27 @@ ${siteUi}
     assert.equal(typed.to, '2026-12-02', '끝 날짜를 숫자로 넣지 못한다: ' + JSON.stringify(typed));
     assert.deepEqual(typed.fromParts, ['2026', '11', '16']);
     assert.deepEqual(typed.toParts, ['2026', '12', '02']);
+    await page.locator('.ar-date-popover .ar-cal-open').nth(0).click();
+    const calKo = await page.evaluate(() => {
+      const board = document.querySelector('.ar-cal-board:not([hidden])');
+      return {
+        title: board?.querySelector('.ar-cal-board-title')?.textContent || '',
+        week: [...(board?.querySelectorAll('.ar-cal-board-week span') || [])].map((el) => el.textContent).join(''),
+        popOpen: document.querySelector('[data-date-popover]')?.hidden === false,
+        days: board?.querySelectorAll('.ar-cal-day').length || 0
+      };
+    });
+    assert.match(calKo.title, /2026년 11월/, '달력 제목이 한국어가 아니다: ' + calKo.title);
+    assert.equal(calKo.week, '일월화수목금토', '달력 요일이 한국어가 아니다: ' + calKo.week);
+    assert.equal(calKo.popOpen, true, '달력을 열면 날짜 팝오버가 닫힌다');
+    assert.ok(calKo.days >= 28, '달력 날짜 칸이 없다');
     const dateShotDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
     fs.mkdirSync(dateShotDir, { recursive: true });
+    await page.locator('.ar-cal-board:not([hidden])').screenshot({ path: path.join(dateShotDir, 'archive-date-calendar-ko.png') });
     await page.locator('[data-date-popover]').screenshot({ path: path.join(dateShotDir, 'archive-date-calendar.png') });
+    await page.locator('.ar-cal-board:not([hidden]) .ar-cal-day').filter({ hasText: /^16$/ }).click();
+    const picked = await page.evaluate(() => document.querySelector('[data-date-from]')?.value || '');
+    assert.equal(picked, '2026-11-16', '한국어 달력에서 날짜를 고르지 못한다: ' + picked);
 
     const pager = await page.evaluate(() => {
       const controls = document.querySelector('.ar-pager-controls');

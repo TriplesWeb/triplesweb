@@ -210,6 +210,35 @@ ${siteUi}
 <script>${browseJs}</script>
 </body></html>`;
 
+const memberHtml = `<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:#0d0e12;color:#e3e2e8;font-family:"Pretendard Variable",Pretendard,sans-serif}
+${site}
+${siteChrome}
+${css}
+${siteUi}
+</style></head>
+<body class="site-page">
+<main class="archive-page is-folder-view" data-archive-kind="image">
+  <section class="ar-hero">
+    <div class="ar-panel ar-headline is-member-space" style="--folder-color:#22aeff">
+      <a class="site-btn site-btn--reset ar-back-folders" href="/archive">←목록으로</a>
+      <div class="ar-headline-copy">
+        <div class="ar-kicker">Archive</div>
+        <h1>아카이브</h1>
+        <p class="ar-folder-title is-solo" data-base-title="S1 윤서연"><span class="ar-folder-num">S1</span> <span class="ar-folder-name">윤서연</span></p>
+      </div>
+      <div class="ar-stats" id="archiveStats">
+        <article class="ar-stat"><div class="ar-stat-label"><span>등록된 사진</span><span class="material-symbols-outlined">image</span></div><strong>0<em>장</em></strong></article>
+        <article class="ar-stat ar-stat-date"><div class="ar-stat-label"><span>날짜</span><span class="material-symbols-outlined">calendar_month</span></div><strong>11월 16일</strong></article>
+      </div>
+    </div>
+  </section>
+</main>
+</body></html>`;
+
 (async () => {
   const browser = await chromium.launch({
     headless: true,
@@ -231,6 +260,9 @@ ${siteUi}
       }
       if (url.pathname.endsWith('combo.html')) {
         return route.fulfill({ contentType: 'text/html', body: comboHtml });
+      }
+      if (url.pathname.endsWith('member.html')) {
+        return route.fulfill({ contentType: 'text/html', body: memberHtml });
       }
       if (url.pathname === '/images/archive-folder.svg') {
         return route.fulfill({ contentType: 'image/svg+xml', body: folderSvg });
@@ -375,6 +407,47 @@ ${siteUi}
     assert.equal(afterOne.toggle, '1명');
     await page.screenshot({ path: path.join(artifactDir, 'archive-chem-filter.png'), fullPage: true });
     await page.locator('.ar-toolbar').screenshot({ path: path.join(artifactDir, 'archive-toolbar-compact.png') });
+
+    await page.goto('https://archive-folders.test/member.html', { waitUntil: 'load' });
+    const memberTitle = await page.evaluate(() => {
+      const headline = document.querySelector('.ar-headline');
+      const title = document.querySelector('.ar-folder-title');
+      const name = document.querySelector('.ar-folder-name');
+      const num = document.querySelector('.ar-folder-num');
+      const kicker = document.querySelector('.ar-kicker');
+      const headlineBox = headline.getBoundingClientRect();
+      const titleBox = title.getBoundingClientRect();
+      const nameBox = name.getBoundingClientRect();
+      const numBox = num.getBoundingClientRect();
+      const kickerBox = kicker.getBoundingClientRect();
+      const style = getComputedStyle(headline);
+      const innerLeft = headlineBox.left + parseFloat(style.paddingLeft);
+      const innerRight = headlineBox.right - parseFloat(style.paddingRight);
+      const nameStyle = getComputedStyle(name);
+      const clusterCenter = (numBox.left + nameBox.right) / 2;
+      const panelCenter = (innerLeft + innerRight) / 2;
+      return {
+        centered: Math.abs(clusterCenter - panelCenter) <= 12,
+        kickerLeft: kickerBox.left - innerLeft <= 4,
+        nameText: name.textContent.trim(),
+        numText: num.textContent.trim(),
+        underline: nameStyle.borderBottomColor,
+        underlineWidth: parseFloat(nameStyle.borderBottomWidth),
+        numUnderline: parseFloat(getComputedStyle(num).borderBottomWidth),
+        dateStat: document.querySelector('.ar-stat-date strong')?.textContent.trim() || '',
+        dateIcon: document.querySelector('.ar-stat-date .material-symbols-outlined')?.textContent.trim() || ''
+      };
+    });
+    assert.equal(memberTitle.centered, true, '멤버 이름이 가운데 있지 않다: ' + JSON.stringify(memberTitle));
+    assert.equal(memberTitle.kickerLeft, true, 'ARCHIVE 라벨이 왼쪽에 있지 않다');
+    assert.equal(memberTitle.nameText, '윤서연');
+    assert.equal(memberTitle.numText, 'S1');
+    assert.ok(memberTitle.underlineWidth >= 2, '이름 밑줄이 없다: ' + memberTitle.underlineWidth);
+    assert.ok(memberTitle.numUnderline < 1, 'S1에도 밑줄이 있다');
+    assert.ok(memberTitle.underline.includes('34, 174, 255') || memberTitle.underline.includes('22aeff') || memberTitle.underline.includes('34,174,255'), '이름 밑줄이 멤버색이 아니다: ' + memberTitle.underline);
+    assert.equal(memberTitle.dateStat, '11월 16일');
+    assert.equal(memberTitle.dateIcon, 'calendar_month');
+    await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-member-title-center.png') });
     console.log('PASS: 아카이브 폴더 홈 실루엣·케미 필터');
   } finally {
     await browser.close();

@@ -251,7 +251,7 @@
         if (memberLabel) {
             memberLabel.textContent = exact ? exact.name : (count ? count + '명' : defaultMemberLabel);
         }
-        if (folderTitle && (exact || Array.isArray(values) || !chem?.value)) {
+        if (folderTitle && !folderTitle.classList.contains('is-solo') && (exact || Array.isArray(values) || !chem?.value)) {
             folderTitle.textContent = exact ? exact.name : baseFolderTitle;
         }
         memberToggle?.classList.toggle('has-selection', count > 0);

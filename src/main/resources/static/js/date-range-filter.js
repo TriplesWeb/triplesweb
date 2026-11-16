@@ -7,6 +7,7 @@
     "#archiveMemberToggle",
     ".ar-member-toggle"
   ].join(", ");
+  const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
   const validIso = (iso) => {
     const match = isoDate.exec(iso || "");
@@ -27,6 +28,12 @@
     document.querySelectorAll("[data-date-popover]").forEach((pop) => {
       if (keepRoot && keepRoot.contains(pop)) return;
       pop.hidden = true;
+      pop.querySelectorAll(".ar-cal-board").forEach((board) => { board.hidden = true; });
+    });
+    document.querySelectorAll(".ar-cal-board").forEach((board) => {
+      if (keep && keep.closest(".ar-cal")?.contains(board)) return;
+      if (keep && board.contains(keep)) return;
+      board.hidden = true;
     });
     document.querySelectorAll("[data-date-toggle]").forEach((toggle) => {
       if (keepRoot && keepRoot.contains(toggle)) return;
@@ -202,6 +209,120 @@
       if (iso) applyIso(iso);
       else syncFromNative();
     });
+
+    const board = document.createElement("div");
+    board.className = "ar-cal-board";
+    board.hidden = true;
+    board.setAttribute("role", "dialog");
+    board.setAttribute("aria-label", "날짜 선택");
+    const openBtn = document.createElement("button");
+    openBtn.type = "button";
+    openBtn.className = "ar-cal-open";
+    openBtn.setAttribute("aria-haspopup", "dialog");
+    openBtn.setAttribute("aria-label", "달력 열기");
+    openBtn.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>';
+    wrap.append(openBtn, board);
+    let viewYear = 0;
+    let viewMonth = 0;
+    const selectedDate = () => {
+      const iso = validIso(input.value);
+      return iso ? new Date(iso + "T00:00:00") : null;
+    };
+    const setViewFromValue = () => {
+      const selected = selectedDate() || new Date();
+      viewYear = selected.getFullYear();
+      viewMonth = selected.getMonth();
+    };
+    const renderBoard = () => {
+      const first = new Date(viewYear, viewMonth, 1);
+      const startWeekday = first.getDay();
+      const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+      const selected = selectedDate();
+      const today = new Date();
+      board.replaceChildren();
+      const head = document.createElement("div");
+      head.className = "ar-cal-board-head";
+      const prev = document.createElement("button");
+      prev.type = "button";
+      prev.className = "ar-cal-nav";
+      prev.setAttribute("aria-label", "이전 달");
+      prev.textContent = "‹";
+      const next = document.createElement("button");
+      next.type = "button";
+      next.className = "ar-cal-nav";
+      next.setAttribute("aria-label", "다음 달");
+      next.textContent = "›";
+      const title = document.createElement("span");
+      title.className = "ar-cal-board-title";
+      title.textContent = viewYear + "년 " + (viewMonth + 1) + "월";
+      prev.addEventListener("click", (event) => {
+        event.stopPropagation();
+        viewMonth -= 1;
+        if (viewMonth < 0) {
+          viewMonth = 11;
+          viewYear -= 1;
+        }
+        renderBoard();
+      });
+      next.addEventListener("click", (event) => {
+        event.stopPropagation();
+        viewMonth += 1;
+        if (viewMonth > 11) {
+          viewMonth = 0;
+          viewYear += 1;
+        }
+        renderBoard();
+      });
+      head.append(prev, title, next);
+      const week = document.createElement("div");
+      week.className = "ar-cal-board-week";
+      WEEKDAYS.forEach((label, index) => {
+        const cell = document.createElement("span");
+        cell.textContent = label;
+        if (index === 0) cell.classList.add("is-sun");
+        if (index === 6) cell.classList.add("is-sat");
+        week.append(cell);
+      });
+      const days = document.createElement("div");
+      days.className = "ar-cal-board-days";
+      for (let i = 0; i < startWeekday; i++) days.append(document.createElement("span"));
+      for (let day = 1; day <= daysInMonth; day++) {
+        const cell = document.createElement("button");
+        cell.type = "button";
+        cell.className = "ar-cal-day";
+        cell.textContent = String(day);
+        const weekday = new Date(viewYear, viewMonth, day).getDay();
+        if (weekday === 0) cell.classList.add("is-sun");
+        if (weekday === 6) cell.classList.add("is-sat");
+        if (selected && selected.getFullYear() === viewYear && selected.getMonth() === viewMonth && selected.getDate() === day) {
+          cell.classList.add("is-selected");
+        }
+        if (today.getFullYear() === viewYear && today.getMonth() === viewMonth && today.getDate() === day) {
+          cell.classList.add("is-today");
+        }
+        cell.addEventListener("click", (event) => {
+          event.stopPropagation();
+          const iso = validIso(viewYear + "-" + String(viewMonth + 1).padStart(2, "0") + "-" + String(day).padStart(2, "0"));
+          if (iso) applyIso(iso);
+          board.hidden = true;
+        });
+        days.append(cell);
+      }
+      board.append(head, week, days);
+    };
+    openBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      const willOpen = board.hidden;
+      document.querySelectorAll(".ar-cal-board").forEach((other) => {
+        if (other !== board) other.hidden = true;
+      });
+      if (willOpen) {
+        setViewFromValue();
+        renderBoard();
+      }
+      board.hidden = !willOpen;
+    });
+    input.addEventListener("click", (event) => event.preventDefault());
 
     syncFromNative();
   };

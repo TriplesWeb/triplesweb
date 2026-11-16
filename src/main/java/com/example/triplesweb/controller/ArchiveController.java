@@ -295,6 +295,11 @@ public class ArchiveController {
         model.addAttribute("folderTitle", chemistry != null ? chemistry.label() : folderTitle(folderKey, comboMembers, units));
         model.addAttribute("folderAccent", folderAccent(folderKey, visibleUnits, artists));
         model.addAttribute("folderIsSolo", isSoloFolder(folderKey));
+        if (isSoloFolder(folderKey)) {
+            int index = Integer.parseInt(folderKey.substring(1)) - 1;
+            model.addAttribute("folderTitleNumber", "S" + (index + 1));
+            model.addAttribute("folderTitleName", MemberPortraitOptions.koreanOrder().get(index));
+        }
         String onText = onDate == null ? "" : onDate.toString();
         String fromText = onDate != null ? "" : (fromDate == null ? "" : fromDate.toString());
         String toText = onDate != null ? "" : (toDate == null ? "" : toDate.toString());
@@ -303,6 +308,8 @@ public class ArchiveController {
         model.addAttribute("to", toText);
         model.addAttribute("hasExactDate", onDate != null);
         model.addAttribute("hasDateFilter", onDate != null || fromDate != null || toDate != null);
+        model.addAttribute("hasDateStat", onDate != null || fromDate != null || toDate != null);
+        model.addAttribute("dateStatLabel", dateStatLabel(onDate, fromDate, toDate));
         model.addAttribute("dateExactEnabled", false);
         String dateQuery = dateQuery(fromText, toText, onText);
         model.addAttribute("dateQuery", dateQuery);
@@ -527,6 +534,22 @@ public class ArchiveController {
 
     private static String safeColor(String color) {
         return color != null && color.matches("#[0-9a-fA-F]{6}") ? color : "#b9cac4";
+    }
+
+    private static String koreanDay(LocalDate date) {
+        if (date == null) return "";
+        return date.getMonthValue() + "월 " + date.getDayOfMonth() + "일";
+    }
+
+    private static String dateStatLabel(LocalDate on, LocalDate from, LocalDate to) {
+        if (on != null) return koreanDay(on);
+        if (from != null && to != null) {
+            if (from.equals(to)) return koreanDay(from);
+            return koreanDay(from) + " ~ " + koreanDay(to);
+        }
+        if (from != null) return koreanDay(from) + " ~";
+        if (to != null) return "~ " + koreanDay(to);
+        return "전체";
     }
 
     private void addArchivePage(Model model, Page<Archive> archives, MediaType type, String q, String memberQuery,
