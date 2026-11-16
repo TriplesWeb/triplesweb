@@ -1,17 +1,7 @@
 <section class="ar-folders" aria-label="아카이브 폴더">
     {{#archiveFolders}}
     <a class="ar-folder{{#groupFolder}} is-group{{/groupFolder}}{{#soloFolder}} is-solo{{/soloFolder}}{{#comboFolder}} is-combo{{/comboFolder}}{{#parentFolder}} is-parent{{/parentFolder}}{{#hasFolderArt}} has-art{{/hasFolderArt}}" href="{{href}}" style="--folder-color: {{color}};">
-        <span class="ar-folder-icon" aria-hidden="true">
-            {{#hasFolderArt}}
-            <img class="ar-folder-art" src="{{folderArt}}" alt="">
-            {{/hasFolderArt}}
-            {{^hasFolderArt}}
-            <span class="ar-folder-shape"></span>
-            {{/hasFolderArt}}
-            {{#hasPreview}}<img class="ar-folder-preview" src="{{preview}}" alt="" loading="lazy" decoding="async">{{/hasPreview}}
-        </span>
-        <span class="ar-folder-label">{{label}}</span>
-        {{#hasCount}}<span class="ar-folder-count">{{count}}</span>{{/hasCount}}
+        {{>partials/archive-folder-face}}
     </a>
     {{/archiveFolders}}
 </section>

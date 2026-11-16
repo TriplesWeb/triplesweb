@@ -23,9 +23,8 @@
                 <div class="ar-kicker"><span class="material-symbols-outlined">{{#archiveFolderHome}}folder{{/archiveFolderHome}}{{^archiveFolderHome}}{{#imageArchive}}photo_library{{/imageArchive}}{{#videoArchive}}play_circle{{/videoArchive}}{{/archiveFolderHome}}</span> Archive</div>
                 <h1>아카이브</h1>
                 {{#archiveBrowse}}<p>사진 전체</p>{{/archiveBrowse}}
-                {{#archiveFolderView}}<p class="ar-folder-title{{#folderIsSolo}} is-solo{{/folderIsSolo}}" data-base-title="{{folderBaseTitle}}">{{#folderIsSolo}}<span class="ar-folder-num">{{folderTitleNumber}}</span> <span class="ar-folder-name">{{folderTitleName}}</span>{{/folderIsSolo}}{{^folderIsSolo}}{{folderTitle}}{{/folderIsSolo}}</p>{{/archiveFolderView}}
+                {{#archiveFolderView}}{{#hasFolderTitle}}<p class="ar-folder-title{{#folderIsSolo}} is-solo{{/folderIsSolo}}" data-base-title="{{folderBaseTitle}}">{{#folderIsSolo}}<span class="ar-folder-num">{{folderTitleNumber}}</span> <span class="ar-folder-name">{{folderTitleName}}</span>{{/folderIsSolo}}{{^folderIsSolo}}{{folderTitle}}{{/folderIsSolo}}</p>{{/hasFolderTitle}}{{/archiveFolderView}}
                 {{#archiveFolderIndex}}<p class="ar-folder-title">{{folderTitle}}</p>{{/archiveFolderIndex}}
-                {{#archiveFolderHome}}{{^archiveFolderIndex}}<p>폴더를 선택하세요</p>{{/archiveFolderIndex}}{{/archiveFolderHome}}
             </div>
             <button type="button" class="ar-submit ar-home-upload" data-admin-only onclick="showAddModal()">{{#imageArchive}}사진 추가{{/imageArchive}}{{^imageArchive}}영상 추가{{/imageArchive}}</button>
             <div class="ar-stats" id="archiveStats">
@@ -331,7 +330,7 @@
             </div>
             <div class="ar-detail-body">
                 <p class="ar-detail-date" id="archiveVideoDate" hidden></p>
-                <div class="ar-source-badge" id="archiveVideoSource" hidden></div>
+                <div class="ar-detail-line"><div class="ar-source-badge" id="archiveVideoSource" hidden></div></div>
                 <section class="ar-detail-cast" aria-label="출연 멤버">
                     <div class="ar-detail-members" id="archiveVideoMembers"></div>
                 </section>
@@ -345,6 +344,9 @@
 </dialog>
 {{/videoArchive}}
 
+{{#chemistryNamesJson}}
+<script type="application/json" id="archiveChemistryNames">{{{chemistryNamesJson}}}</script>
+{{/chemistryNamesJson}}
 <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
 <script src="{{#asset}}/js/archive-manage.js{{/asset}}"></script>
 <script src="{{#asset}}/js/date-range-filter.js{{/asset}}"></script>

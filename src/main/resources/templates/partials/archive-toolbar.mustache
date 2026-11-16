@@ -42,9 +42,8 @@
                     <span class="material-symbols-outlined" aria-hidden="true">search</span>
                     <input class="ar-search" type="search" name="q" value="{{query}}" placeholder="{{#imageArchive}}사진 제목 검색{{/imageArchive}}{{^imageArchive}}영상 제목 검색{{/imageArchive}}" aria-label="{{#imageArchive}}사진 제목 검색{{/imageArchive}}{{^imageArchive}}영상 제목 검색{{/imageArchive}}">
                 </label>
-                <button type="submit" class="ar-submit">검색</button>
+                <a class="site-btn site-btn--reset ar-reset" href="{{archiveHomePath}}">초기화</a>
             </div>
-            <a class="site-btn site-btn--reset ar-reset" href="{{archiveHomePath}}">초기화</a>
         </div>
     </form>
     {{#showMemberFilter}}

@@ -18,9 +18,9 @@
 
     const grid = document.getElementById('archiveGrid');
     if (!grid) return;
-    const cards = [...grid.querySelectorAll('.ar-card')];
+    let cards = [...grid.querySelectorAll('.ar-card')];
     const sort = document.getElementById('archiveSort');
-    const numberOffset = Math.max(0, Number(grid.dataset.numberOffset) || 0);
+    let numberOffset = Math.max(0, Number(grid.dataset.numberOffset) || 0);
 
     const MEMBER_INDEX = (() => {
         const names = [
@@ -178,7 +178,19 @@
     const baseFolderTitle = folderTitle?.dataset.baseTitle || folderTitle?.textContent.trim() || '';
     const chemMatches = panel?.querySelector('[data-chem-matches]');
 
-    function chemEntries() {
+    function memberKey(name) {
+        return String(name || '').trim().toLowerCase().replace(/\s+/g, '');
+    }
+
+    function sameMemberSet(left, right) {
+        if (!left.length || left.length !== right.length) return false;
+        const leftKeys = left.map(memberKey);
+        const rightKeys = new Set(right.map(memberKey));
+        if (new Set(leftKeys).size !== rightKeys.size) return false;
+        return leftKeys.every((key) => rightKeys.has(key));
+    }
+
+    function selectEntries() {
         return [...(chem?.options || [])]
             .filter((option) => option.value)
             .map((option) => ({
@@ -188,15 +200,70 @@
             }));
     }
 
+    function catalogEntries() {
+        const node = document.getElementById('archiveChemistryNames');
+        if (!node) return [];
+        let data = [];
+        try {
+            data = JSON.parse(node.textContent || '[]');
+        } catch (error) {
+            data = [];
+        }
+        if (!Array.isArray(data)) return [];
+        return data.map((entry) => ({
+            value: '',
+            name: String(entry?.label || '').trim(),
+            members: (Array.isArray(entry?.members) ? entry.members : String(entry?.members || '').split(','))
+                .map((name) => String(name).trim()).filter(Boolean)
+        })).filter((entry) => entry.name && entry.members.length >= 2);
+    }
+
+    function chemEntries() {
+        const selected = selectEntries();
+        return selected.length ? selected : catalogEntries();
+    }
+
     function matchingChems(selected) {
         if (!selected.length) return [];
-        return chemEntries().filter((entry) => selected.every((name) => entry.members.includes(name)));
+        const keys = selected.map(memberKey);
+        return chemEntries().filter((entry) => {
+            const entryKeys = entry.members.map(memberKey);
+            return keys.every((key) => entryKeys.includes(key));
+        });
     }
 
     function exactChem(selected) {
-        const matches = matchingChems(selected);
-        return matches.find((entry) => entry.members.length === selected.length) || null;
+        return matchingChems(selected).find((entry) => sameMemberSet(entry.members, selected) && entry.name) || null;
     }
+
+    function memberNamesFrom(root) {
+        return [...root.querySelectorAll('.unit-member-chip')].map((chip) => {
+            return (chip.querySelector('span')?.textContent || chip.getAttribute('title') || '').trim();
+        }).filter(Boolean);
+    }
+
+    window.archiveChemistryLabel = function (names) {
+        const selected = (Array.isArray(names) ? names : []).map((name) => String(name).trim()).filter(Boolean);
+        const exact = exactChem(selected);
+        return exact ? exact.name : '';
+    };
+
+    window.paintArchiveChemistry = function (membersEl) {
+        if (!membersEl) return;
+        const name = window.archiveChemistryLabel(memberNamesFrom(membersEl));
+        const parent = membersEl.parentElement;
+        let label = parent ? parent.querySelector(':scope > .ar-detail-chem') : null;
+        if (!name) {
+            label?.remove();
+            return;
+        }
+        if (!label && parent) {
+            label = document.createElement('p');
+            label.className = 'ar-detail-chem';
+            membersEl.before(label);
+        }
+        if (label) label.textContent = name;
+    };
 
     function renderChemMatches(selected) {
         if (!chemMatches) return;
@@ -249,14 +316,67 @@
             memberCount.textContent = String(count);
         }
         if (memberLabel) {
-            memberLabel.textContent = exact ? exact.name : (count ? count + '명' : defaultMemberLabel);
+            memberLabel.textContent = count === 1
+                ? selected[0]
+                : (exact ? exact.name : (count ? count + '명' : defaultMemberLabel));
         }
-        if (folderTitle && !folderTitle.classList.contains('is-solo') && (exact || Array.isArray(values) || !chem?.value)) {
+        if (chem && folderTitle && !folderTitle.classList.contains('is-solo') && (exact || Array.isArray(values) || !chem.value)) {
             folderTitle.textContent = exact ? exact.name : baseFolderTitle;
         }
         memberToggle?.classList.toggle('has-selection', count > 0);
         memberToggle?.classList.toggle('is-open', Boolean(panel && !panel.hidden));
         renderChemMatches(selected);
+    }
+
+    function paintFilterSummary() {
+        const summary = document.querySelector('.ar-filter-summary');
+        if (!summary) return;
+        const typeTab = document.querySelector('nav[aria-label="아카이브 종류"] [aria-current="page"]');
+        const sourceTab = document.querySelector('.ar-source-tabs [aria-current="page"]');
+        const kind = document.querySelector('[data-archive-kind]')?.dataset.archiveKind;
+        const bits = [];
+        bits.push({ text: typeTab?.textContent.trim() || (kind === 'video' ? '영상' : '사진') });
+        bits.push({ text: sourceTab?.textContent.trim() || '전체 출처' });
+        const selected = window.MemberPortraitPicker && panel
+            ? MemberPortraitPicker.selectedValues(panel)
+            : [];
+        const chemName = selected.length >= 2 ? (window.archiveChemistryLabel(selected) || '') : '';
+        if (chemName) {
+            bits.push({ text: chemName });
+        } else if (selected.length) {
+            const button = panel.querySelector('.mpp-item.is-active');
+            const color = button ? getComputedStyle(button).getPropertyValue('--artist-color').trim() : '';
+            bits.push({ member: selected[0], color: color || '#b9cac4', more: selected.length - 1 });
+        }
+        const query = form?.querySelector('.ar-search')?.value.trim() || '';
+        if (query) bits.push({ text: query });
+        summary.closest('.ar-stat-filter')?.style.setProperty('--filter-count', String(Math.max(1, bits.length)));
+        summary.replaceChildren();
+        bits.forEach((bit, index) => {
+            if (index > 0) {
+                const sep = document.createElement('span');
+                sep.className = 'ar-filter-sep';
+                sep.textContent = ',';
+                summary.append(sep);
+            }
+            if (bit.member) {
+                const member = document.createElement('span');
+                member.className = 'ar-filter-member';
+                member.style.setProperty('--member-color', bit.color);
+                member.textContent = bit.member;
+                summary.append(member);
+                if (bit.more > 0) {
+                    const more = document.createElement('span');
+                    more.className = 'ar-filter-more';
+                    more.textContent = '외 ' + bit.more + '명';
+                    summary.append(more);
+                }
+                return;
+            }
+            const text = document.createElement('strong');
+            text.textContent = bit.text;
+            summary.append(text);
+        });
     }
 
     memberToggle?.addEventListener('click', () => {
@@ -267,20 +387,140 @@
         memberToggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
         updateMemberToggle();
     });
-    if (window.MemberPortraitPicker && panel) {
-        MemberPortraitPicker.bindMultiSelect(panel, { onChange: updateMemberToggle });
+    let filterTimer = 0;
+    let submitWhenDateCloses = false;
+    function dateOverlayOpen() {
+        return Boolean(document.querySelector('.ar-cal-board:not([hidden]), [data-date-popover]:not([hidden])'));
     }
-    updateMemberToggle();
-    form?.addEventListener('submit', () => {
-        form.querySelectorAll('input[name="members"]').forEach(node => node.remove());
-        if (!window.MemberPortraitPicker || !panel) return;
-        MemberPortraitPicker.selectedValues(panel).forEach(value => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'members';
-            input.value = value;
-            form.appendChild(input);
+    function scheduleFilterSubmit() {
+        window.clearTimeout(filterTimer);
+        if (dateOverlayOpen()) {
+            submitWhenDateCloses = true;
+            return;
+        }
+        filterTimer = window.setTimeout(() => {
+            if (dateOverlayOpen()) {
+                submitWhenDateCloses = true;
+                return;
+            }
+            form?.requestSubmit();
+        }, 280);
+    }
+    form?.querySelector('.ar-search')?.addEventListener('input', () => {
+        paintFilterSummary();
+        scheduleFilterSubmit();
+    });
+    const dateSnapshot = () => ['on', 'from', 'to'].map((name) => {
+        const input = form?.querySelector('[data-date-filter] input[name="' + name + '"]');
+        return name + '=' + (input ? input.value : '');
+    }).join('&');
+    let appliedDates = dateSnapshot();
+    form?.addEventListener('archive-date-close', () => {
+        const next = dateSnapshot();
+        const datesChanged = next !== appliedDates;
+        if (datesChanged) appliedDates = next;
+        if (!datesChanged && !submitWhenDateCloses) return;
+        submitWhenDateCloses = false;
+        scheduleFilterSubmit();
+    });
+    let memberFilterReady = false;
+    if (window.MemberPortraitPicker && panel) {
+        MemberPortraitPicker.bindMultiSelect(panel, {
+            onChange: (values) => {
+                updateMemberToggle(values);
+                if (!memberFilterReady) return;
+                paintFilterSummary();
+                scheduleFilterSubmit();
+            }
         });
+    }
+    memberFilterReady = true;
+    updateMemberToggle();
+    function archiveFilterUrl() {
+        form.querySelectorAll('input[name="members"]').forEach(node => node.remove());
+        if (window.MemberPortraitPicker && panel) {
+            MemberPortraitPicker.selectedValues(panel).forEach(value => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'members';
+                input.value = value;
+                form.appendChild(input);
+            });
+        }
+        const params = new URLSearchParams();
+        new FormData(form).forEach((value, key) => {
+            if (String(value).trim() === '') return;
+            params.append(key, value);
+        });
+        const action = form.getAttribute('action') || location.pathname;
+        const query = params.toString();
+        return query ? action + (action.includes('?') ? '&' : '?') + query : action;
+    }
+    let filterSeq = 0;
+    async function loadArchiveFilter(url, push) {
+        const seq = ++filterSeq;
+        const y = window.scrollY;
+        const x = window.scrollX;
+        const response = await fetch(url, { credentials: 'same-origin', headers: { 'X-Archive-Filter': '1' } });
+        if (seq !== filterSeq) return;
+        if (!response.ok) throw new Error(String(response.status));
+        const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
+        if (seq !== filterSeq) return;
+        const nextGrid = doc.getElementById('archiveGrid');
+        if (!nextGrid) throw new Error('grid');
+        const nextOffset = nextGrid.dataset.numberOffset || '0';
+        if (grid.innerHTML !== nextGrid.innerHTML || grid.dataset.numberOffset !== nextOffset) {
+            grid.innerHTML = nextGrid.innerHTML;
+            grid.dataset.numberOffset = nextOffset;
+            numberOffset = Math.max(0, Number(nextOffset) || 0);
+            cards = [...grid.querySelectorAll('.ar-card')];
+            apply();
+        }
+        const nextEmpty = doc.querySelector('.archive-page > .ar-empty');
+        const empty = document.querySelector('.archive-page > .ar-empty');
+        if (nextEmpty) {
+            if (!empty || empty.textContent !== nextEmpty.textContent) {
+                const imported = document.importNode(nextEmpty, true);
+                if (empty) empty.replaceWith(imported);
+                else grid.after(imported);
+            }
+        } else {
+            empty?.remove();
+        }
+        const nextPager = doc.querySelector('.ar-pager');
+        const pager = document.querySelector('.ar-pager');
+        if (nextPager && pager && pager.innerHTML !== nextPager.innerHTML) {
+            pager.replaceWith(document.importNode(nextPager, true));
+        }
+        const nextStats = doc.getElementById('archiveStats');
+        if (nextStats && stats) {
+            const open = !stats.hidden;
+            const dateNode = nextStats.querySelector('.ar-stat-date strong');
+            const currentDate = stats.querySelector('.ar-stat-date strong');
+            const countNode = nextStats.querySelector('.ar-stat strong');
+            const currentCount = stats.querySelector('.ar-stat strong');
+            if (dateNode && currentDate && currentDate.textContent !== dateNode.textContent) currentDate.textContent = dateNode.textContent;
+            if (countNode && currentCount && currentCount.innerHTML !== countNode.innerHTML) currentCount.innerHTML = countNode.innerHTML;
+            const pageNode = nextStats.querySelectorAll('.ar-stat strong')[2];
+            const currentPage = stats.querySelectorAll('.ar-stat strong')[2];
+            if (pageNode && currentPage && currentPage.innerHTML !== pageNode.innerHTML) currentPage.innerHTML = pageNode.innerHTML;
+            stats.hidden = !open;
+        }
+        paintFilterSummary();
+        const nextUrl = new URL(url, location.href);
+        const same = nextUrl.pathname === location.pathname && nextUrl.search === location.search;
+        if (push !== false && !same) history.pushState({ archiveLive: true }, '', nextUrl.pathname + nextUrl.search);
+        window.scrollTo(x, y);
+        requestAnimationFrame(() => window.scrollTo(x, y));
+    }
+    form?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const url = archiveFilterUrl();
+        loadArchiveFilter(url).catch(() => { window.location.assign(url); });
+    });
+    window.addEventListener('popstate', () => {
+        if (!form) return;
+        window.location.reload();
     });
     apply();
 })();
