@@ -119,6 +119,7 @@ jobs:
           node scripts/tests/archive-layout.browser.cjs
           node scripts/tests/archive-folder-home.browser.cjs
           node scripts/tests/archive-detail-ui.browser.cjs
+          node scripts/tests/archive-manage-preview.browser.cjs
           node scripts/tests/archive-carousel.browser.cjs
           node scripts/tests/objekt-grid-cols.browser.cjs
           node scripts/tests/profile-ownership-tabs.browser.cjs

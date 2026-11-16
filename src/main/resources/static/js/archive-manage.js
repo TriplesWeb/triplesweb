@@ -46,6 +46,63 @@
         return node;
     }
 
+    function previewCardBody() {
+        const body = document.createElement('div');
+        body.className = 'ar-body';
+        const title = document.createElement('h3');
+        title.dataset.previewTitle = '';
+        const meta = document.createElement('div');
+        meta.className = 'ar-meta';
+        meta.dataset.previewArtists = '';
+        body.append(title, meta);
+        return body;
+    }
+
+    function archiveSymbolLogo(frame) {
+        const n = Number(frame);
+        if (!Number.isInteger(n) || n < 1 || n > 24) return '';
+        return '/uploads/images/' + encodeURIComponent('상징로고') + '/S' + n + '.png';
+    }
+
+    function memberColor(button) {
+        const inline = button?.style?.getPropertyValue('--artist-color')?.trim();
+        if (inline) return inline;
+        if (button && button.isConnected) {
+            const computed = getComputedStyle(button).getPropertyValue('--artist-color').trim();
+            if (computed) return computed;
+        }
+        return '#b9cac4';
+    }
+
+    function memberChip(button, name) {
+        const color = memberColor(button);
+        const symbol = archiveSymbolLogo(button?.dataset.frame);
+        const portrait = button?.querySelector('.artist-tab-photo')?.getAttribute('src') || '';
+        const image = symbol || portrait;
+        const chip = document.createElement('span');
+        chip.className = 'archive-member-chip' + (symbol ? ' archive-symbol-chip' : '');
+        chip.style.setProperty('--member-color', color);
+        chip.title = name;
+        chip.setAttribute('aria-label', name);
+        if (image) {
+            const img = document.createElement('img');
+            img.src = image;
+            img.alt = name;
+            img.referrerPolicy = 'no-referrer';
+            chip.appendChild(img);
+        }
+        const label = document.createElement('span');
+        label.className = 'archive-chip-name';
+        label.textContent = name;
+        chip.appendChild(label);
+        return chip;
+    }
+
+    function selectedMemberItems(root) {
+        const picker = root?.querySelector?.('.member-portrait-picker') || root;
+        return Array.from((picker || document).querySelectorAll('.mpp-item.is-active'));
+    }
+
     function showPreview(box, url) {
         if (!box) return;
         const full = box.querySelector(".ar-preview-full");
@@ -61,10 +118,12 @@
             return;
         }
         full.replaceChildren(mediaNode(url, false));
+        const article = document.createElement('article');
+        article.className = 'ar-panel ar-card';
         if (kind === 'image') {
             card.classList.add('is-photo-preview');
-            const article = document.createElement('article');
-            article.className = 'ar-panel ar-card ar-preview-photo-card';
+            card.classList.remove('is-video-preview');
+            article.classList.add('ar-preview-photo-card');
             const image = mediaNode(url, true);
             box.dataset.pending = 'true';
             image.addEventListener('load', () => { if (image.isConnected) delete box.dataset.pending; });
@@ -77,19 +136,33 @@
                     error.hidden = false;
                 }
             });
-            const body = document.createElement('div');
-            body.className = 'ar-body';
-            const title = document.createElement('h3');
-            title.dataset.previewTitle = '';
-            const artists = document.createElement('div');
-            artists.className = 'ar-meta';
-            artists.dataset.previewArtists = '';
-            body.append(title, artists);
-            article.append(image, body);
-            card.replaceChildren(article);
+            const link = document.createElement('button');
+            link.type = 'button';
+            link.className = 'ar-photo-link';
+            link.tabIndex = -1;
+            link.append(image);
+            article.append(link, previewCardBody());
         } else {
-            card.replaceChildren(mediaNode(url, true));
+            card.classList.add('is-video-preview');
+            card.classList.remove('is-photo-preview');
+            article.classList.add('ar-preview-video-card');
+            const thumb = document.createElement('div');
+            thumb.className = 'ar-video-thumb';
+            const poster = document.createElement('img');
+            poster.alt = '목록 카드 미리보기';
+            poster.hidden = true;
+            poster.dataset.previewPoster = '';
+            const placeholder = document.createElement('span');
+            placeholder.className = 'ar-video-placeholder';
+            placeholder.textContent = '영상';
+            const play = document.createElement('span');
+            play.className = 'ar-video-play';
+            play.setAttribute('aria-hidden', 'true');
+            play.textContent = '▶';
+            thumb.append(poster, placeholder, play);
+            article.append(thumb, previewCardBody());
         }
+        card.replaceChildren(article);
         box.hidden = false;
         syncPreview(box.closest('form'));
         syncThumbnail(box.closest('form'));
@@ -135,17 +208,24 @@
         const preview = form.querySelector('.ar-preview');
         if (!preview) return;
         const title = preview.querySelector('[data-preview-title]');
-        if (title) title.textContent = form.querySelector('[name="title"]')?.value.trim() || '사진 제목';
-        const artists = preview.querySelector('[data-preview-artists]');
-        if (artists) {
-            artists.replaceChildren();
-            const names = selectedArtists(form.closest('.ar-dialog'));
-            (names.length ? names : ['출연자 미지정']).forEach(name => {
-                const badge = document.createElement('span');
-                badge.className = 'ar-badge';
-                badge.textContent = name;
-                artists.appendChild(badge);
+        if (title) title.textContent = form.querySelector('[name="title"]')?.value.trim() || (kind === 'video' ? '영상 제목' : '사진 제목');
+        const meta = preview.querySelector('[data-preview-artists]');
+        if (meta) {
+            const items = selectedMemberItems(form.closest('.ar-dialog'));
+            meta.style.setProperty('--member-count', String(items.length || 1));
+            meta.replaceChildren();
+            items.forEach(button => {
+                const name = (button.dataset.value || button.dataset.name || '').trim();
+                if (name) meta.appendChild(memberChip(button, name));
             });
+            const registered = form.querySelector('[name="registeredOn"]')?.value || '';
+            if (registered) {
+                const time = document.createElement('time');
+                time.className = 'ar-card-date';
+                time.dateTime = registered;
+                time.textContent = registered.replaceAll('-', '/');
+                meta.appendChild(time);
+            }
         }
         const info = preview.querySelector('[data-preview-file]');
         const file = form.querySelector('input[type="file"]')?.files?.[0];
@@ -217,6 +297,19 @@
             if (url) video.poster = url;
             else video.removeAttribute('poster');
         });
+        const poster = form.querySelector('[data-preview-poster]');
+        const placeholder = form.querySelector('.ar-preview-card .ar-video-placeholder');
+        if (poster) {
+            if (url) {
+                poster.src = url;
+                poster.hidden = false;
+                if (placeholder) placeholder.hidden = true;
+            } else {
+                poster.removeAttribute('src');
+                poster.hidden = true;
+                if (placeholder) placeholder.hidden = false;
+            }
+        }
     }
 
     function showThumbnail(form, url) {

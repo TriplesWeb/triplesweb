@@ -315,7 +315,7 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("archive-upload-picker")))
                 .andExpect(content().string(containsString("data-upload-url=\"/archive/upload/image\"")))
                 .andExpect(content().string(containsString("data-url=\"/uploads/a.jpg\"")))
-                .andExpect(content().string(containsString("목록에서 보이는 모습")))
+                .andExpect(content().string(containsString("목록에서 보이는 모습 · 카드/슬라이드")))
                 .andExpect(content().string(containsString("id=\"archiveDetail\"")))
                 .andExpect(content().string(not(containsString("더보기"))))
                 .andExpect(content().string(not(containsString("원본 열기"))))
@@ -510,6 +510,7 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("영상 추가")))
                 .andExpect(content().string(containsString("archive-upload-picker")))
                 .andExpect(content().string(containsString("id=\"editModal\" hidden")))
+                .andExpect(content().string(containsString("목록에서 보이는 모습")))
                 .andExpect(content().string(containsString("data-url=\"/uploads/a.mp4\"")));
     }
 
