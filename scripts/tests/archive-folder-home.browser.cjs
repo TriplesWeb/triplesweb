@@ -288,8 +288,12 @@ ${siteUi}
       const groupIcon = group.querySelector('.ar-folder-icon');
       const shine = getComputedStyle(groupIcon, '::after');
       const upload = document.querySelector('.ar-home-upload');
+      const pageRoot = document.querySelector('.archive-page');
       const headline = document.querySelector('.ar-headline').getBoundingClientRect();
+      const folders = document.querySelector('.ar-folders').getBoundingClientRect();
+      const stat = document.querySelector('.ar-stat').getBoundingClientRect();
       const uploadBox = upload.getBoundingClientRect();
+      const pageStyle = getComputedStyle(pageRoot);
       return {
         labels,
         comboArt: Boolean(document.querySelector('.ar-folder-art, .ar-folder-preview')),
@@ -302,7 +306,14 @@ ${siteUi}
         uploadText: upload?.textContent.trim() || '',
         uploadVisible: uploadBox.width > 0 && uploadBox.height > 0,
         uploadRight: Math.round(headline.right - uploadBox.right),
-        uploadBottom: Math.round(headline.bottom - uploadBox.bottom)
+        uploadBottom: Math.round(headline.bottom - uploadBox.bottom),
+        pageMax: pageStyle.maxWidth,
+        padL: parseFloat(pageStyle.paddingLeft),
+        padR: parseFloat(pageStyle.paddingRight),
+        headlineWidth: Math.round(headline.width),
+        foldersWidth: Math.round(folders.width),
+        statWidth: Math.round(stat.width),
+        statHeight: Math.round(stat.height)
       };
     });
     assert.deepEqual(home.labels, ['전체 멤버', '유닛별', '케미', 'S1 윤서연']);
@@ -316,6 +327,11 @@ ${siteUi}
     assert.equal(home.uploadVisible, true, '폴더 홈 사진 추가 버튼이 안 보인다');
     assert.ok(home.uploadRight >= 8 && home.uploadRight <= 40, '사진 추가가 우측이 아니다: ' + JSON.stringify(home));
     assert.ok(home.uploadBottom >= 8 && home.uploadBottom <= 40, '사진 추가가 하단이 아니다: ' + JSON.stringify(home));
+    assert.equal(home.pageMax, '1440px', '폴더 홈이 오브젝트처럼 1440px로 안 묶인다: ' + home.pageMax);
+    assert.ok(home.padL >= 40 && home.padR >= 40, '폴더 홈 좌우 여백이 좁다: ' + JSON.stringify(home));
+    assert.ok(Math.abs(home.headlineWidth - home.foldersWidth) <= 1, '제목 패널과 폴더 폭이 다르다: ' + JSON.stringify(home));
+    assert.ok(home.statWidth <= 320, '통계 카드가 여전히 크다: ' + home.statWidth);
+    assert.ok(home.statHeight <= 100, '통계 카드 높이가 그대로다: ' + home.statHeight);
 
     await page.hover('.ar-folder.is-group');
     const artifactDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
