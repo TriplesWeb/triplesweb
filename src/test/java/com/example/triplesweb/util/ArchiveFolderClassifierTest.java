@@ -20,6 +20,7 @@ class ArchiveFolderClassifierTest {
         assertThat(match.key()).isEqualTo("s");
         assertThat(match.label()).isEqualTo("전체 멤버");
         assertThat(ArchiveFolderClassifier.matches(match, "s", List.of())).isTrue();
+        assertThat(ArchiveFolderClassifier.matches(match, "s", List.of("윤서연", "정혜린"))).isTrue();
         assertThat(ArchiveFolderClassifier.matches(match, "s1", List.of())).isFalse();
     }
 
@@ -46,6 +47,10 @@ class ArchiveFolderClassifierTest {
         assertThat(ArchiveFolderClassifier.matches(seoyeonHyein, "combo-2", List.of("윤서연", "정혜린"))).isTrue();
         assertThat(ArchiveFolderClassifier.matches(chaeyeonYuyeon, "combo-2", List.of("윤서연", "정혜린"))).isFalse();
         assertThat(ArchiveFolderClassifier.matches(seoyeonHyein, "combo-3", List.of())).isFalse();
+        assertThat(ArchiveFolderClassifier.matches(seoyeonHyein, "s", List.of("윤서연", "정혜린"))).isTrue();
+        assertThat(ArchiveFolderClassifier.matches(seoyeonHyein, "s", List.of("윤서연"))).isTrue();
+        assertThat(ArchiveFolderClassifier.matches(seoyeonHyein, "s", List.of())).isFalse();
+        assertThat(ArchiveFolderClassifier.matches(chaeyeonYuyeon, "s", List.of("윤서연", "정혜린"))).isFalse();
         assertThat(ArchiveFolderClassifier.comboSize("combo-2")).isEqualTo(2);
         assertThat(ArchiveFolderClassifier.comboSize("combo")).isNull();
     }

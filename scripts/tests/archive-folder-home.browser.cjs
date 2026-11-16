@@ -28,16 +28,20 @@ function folder(attrs) {
     label,
     count = '',
     art = false,
-    preview = ''
+    preview = '',
+    member = ''
   } = attrs;
-  return `<a class="ar-folder${extraClass}${art ? ' has-art' : ''}" href="${href}" style="--folder-color: ${color};">
+  const open = member
+    ? `<button type="button" class="ar-folder${extraClass}" data-member="${member}" aria-pressed="false" style="--folder-color: ${color};">`
+    : `<a class="ar-folder${extraClass}${art ? ' has-art' : ''}" href="${href}" style="--folder-color: ${color};">`;
+  return `${open}
     <span class="ar-folder-icon" aria-hidden="true">
       ${art ? '<img class="ar-folder-art" src="/folder-art.svg" alt="">' : '<span class="ar-folder-shape"></span>'}
       ${preview ? `<img class="ar-folder-preview" src="${preview}" alt="">` : ''}
     </span>
     <span class="ar-folder-label">${label}</span>
     ${count ? `<span class="ar-folder-count">${count}</span>` : ''}
-  </a>`;
+  ${member ? '</button>' : '</a>'}`;
 }
 
 const homeHtml = `<!doctype html><html><head><meta charset="utf-8">
@@ -71,10 +75,16 @@ body.site-admin-enabled button[data-admin-only] { display: inline-flex !importan
   <section class="ar-folders" aria-label="아카이브 폴더">
     ${folder({ extraClass: ' is-group', href: '/archive?folder=s', color: '#f5c518', label: '전체 멤버' })}
     ${folder({ extraClass: ' is-parent', href: '/archive?folder=units', color: '#a78bfa', label: '유닛별' })}
-    ${folder({ extraClass: ' is-parent', href: '/archive?folder=combos', color: '#7dd3fc', label: '케미', count: '4' })}
-    ${folder({ extraClass: ' is-solo', href: '/archive?folder=s1', color: '#22aeff', label: 'S1 윤서연' })}
+    ${folder({ extraClass: ' is-solo', member: '윤서연', color: '#22aeff', label: 'S1 윤서연' })}
+    ${folder({ extraClass: ' is-solo', member: '정혜린', color: '#ff8ad4', label: 'S2 정혜린' })}
   </section>
+  <div class="ar-folder-selection" data-folder-selection hidden>
+    <p class="ar-folder-selection-count"><span data-folder-selection-count>0</span>명 선택</p>
+    <button type="button" data-folder-selection-clear>해제</button>
+    <button type="button" data-folder-selection-open>보기</button>
+  </div>
 </main>
+<script>${browseJs}</script>
 </body></html>`;
 
 const unitsHtml = `<!doctype html><html><head><meta charset="utf-8">
@@ -100,7 +110,7 @@ ${siteUi}
     </div>
   </section>
   <section class="ar-folders" aria-label="아카이브 폴더">
-    ${folder({ href: '/archive?folder=unit-17', color: '#22aeff', label: 'Aura' })}
+    ${folder({ href: '/archive?folder=s&members=윤서연&members=정혜린', color: '#22aeff', label: 'Aura' })}
   </section>
 </main>
 </body></html>`;
@@ -313,10 +323,12 @@ ${siteUi}
         headlineWidth: Math.round(headline.width),
         foldersWidth: Math.round(folders.width),
         statWidth: Math.round(stat.width),
-        statHeight: Math.round(stat.height)
+        statHeight: Math.round(stat.height),
+        selectionHidden: document.querySelector('[data-folder-selection]')?.hidden === true
       };
     });
-    assert.deepEqual(home.labels, ['전체 멤버', '유닛별', '케미', 'S1 윤서연']);
+    assert.deepEqual(home.labels, ['전체 멤버', '유닛별', 'S1 윤서연', 'S2 정혜린']);
+    assert.equal(home.selectionHidden, true);
     assert.equal(home.comboArt, false, '초기 화면에 케미·유닛 폴더 이미지가 보인다');
     assert.equal(home.placeholder, false, '업로드 예정 플레이스홀더가 남아 있다');
     assert.ok(Math.abs(home.member.width - home.parent.width) <= 1, '상위 폴더 너비가 멤버 폴더와 다르다: ' + JSON.stringify(home));
@@ -338,7 +350,24 @@ ${siteUi}
     fs.mkdirSync(artifactDir, { recursive: true });
     await page.screenshot({ path: path.join(artifactDir, 'archive-folder-home.png'), fullPage: true });
     await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-folder-home-upload.png') });
-    await page.locator('.ar-folder.is-parent').nth(1).screenshot({ path: path.join(artifactDir, 'archive-combo-parent.png') });
+    await page.locator('.ar-folder.is-solo').first().screenshot({ path: path.join(artifactDir, 'archive-member-folder.png') });
+    await page.click('.ar-folder[data-member="윤서연"]');
+    await page.click('.ar-folder[data-member="정혜린"]');
+    const picked = await page.evaluate(() => ({
+      count: document.querySelector('[data-folder-selection-count]')?.textContent.trim() || '',
+      hidden: document.querySelector('[data-folder-selection]')?.hidden === true,
+      pressed: [...document.querySelectorAll('.ar-folder[aria-pressed="true"]')].map((el) => el.dataset.member)
+    }));
+    assert.equal(picked.hidden, false);
+    assert.equal(picked.count, '2');
+    assert.deepEqual(picked.pressed, ['윤서연', '정혜린']);
+    const opened = page.waitForRequest((request) => request.url().includes('folder=s') && request.url().includes('members='));
+    await page.click('[data-folder-selection-open]');
+    const request = await opened;
+    const target = new URL(request.url());
+    assert.equal(target.searchParams.get('folder'), 's');
+    assert.deepEqual(target.searchParams.getAll('members'), ['윤서연', '정혜린']);
+    await page.goto('https://archive-folders.test/home.html', { waitUntil: 'load' });
 
     await page.goto('https://archive-folders.test/units.html', { waitUntil: 'load' });
     const units = await page.evaluate(() => {
@@ -347,82 +376,16 @@ ${siteUi}
         title: document.querySelector('.ar-folder-title')?.textContent.trim() || '',
         labels: [...document.querySelectorAll('.ar-folder-label')].map((el) => el.textContent.trim()),
         back: document.querySelector('.ar-back-folders')?.getAttribute('href') || '',
-        auraPreview: Boolean(aura?.querySelector('.ar-folder-preview, .ar-folder-art'))
+        auraPreview: Boolean(aura?.querySelector('.ar-folder-preview, .ar-folder-art')),
+        href: aura?.getAttribute('href') || ''
       };
     });
     assert.equal(units.title, '유닛별');
     assert.deepEqual(units.labels, ['Aura']);
     assert.equal(units.back, '/archive');
+    assert.equal(units.href, '/archive?folder=s&members=윤서연&members=정혜린');
     assert.equal(units.auraPreview, false, '유닛 이미지가 없는데 미리보기가 있다');
     await page.screenshot({ path: path.join(artifactDir, 'archive-units-index.png'), fullPage: true });
-
-    await page.goto('https://archive-folders.test/combos.html', { waitUntil: 'load' });
-    const combos = await page.evaluate(() => ({
-      title: document.querySelector('.ar-folder-title')?.textContent.trim() || '',
-      labels: [...document.querySelectorAll('.ar-folder-label')].map((el) => el.textContent.trim()),
-      back: document.querySelector('.ar-back-folders')?.getAttribute('href') || '',
-      art: Boolean(document.querySelector('.ar-folder-art, .ar-folder-preview'))
-    }));
-    assert.equal(combos.title, '케미');
-    assert.deepEqual(combos.labels, ['2명 케미', '3명 케미', '4명 케미', '5명 이상']);
-    assert.equal(combos.back, '/archive');
-    assert.equal(combos.art, false, '케미 폴더에 이미지가 남아 있다');
-    await page.locator('.ar-folder.is-combo').first().screenshot({ path: path.join(artifactDir, 'archive-combo-folder.png') });
-    await page.screenshot({ path: path.join(artifactDir, 'archive-combos-index.png'), fullPage: true });
-
-    await page.goto('https://archive-folders.test/combo.html', { waitUntil: 'load' });
-    const combo = await page.evaluate(() => {
-      const select = document.getElementById('archiveChem');
-      const upload = document.querySelector('.ar-home-upload');
-      const toolbarUpload = document.querySelector('.ar-filter-tools [data-admin-only], .ar-filter-tools .ar-home-upload');
-      const headline = document.querySelector('.ar-headline').getBoundingClientRect();
-      const uploadBox = upload.getBoundingClientRect();
-      return {
-        title: document.querySelector('.ar-folder-title')?.textContent.trim() || '',
-        kickerLeft: Math.round(document.querySelector('.ar-kicker').getBoundingClientRect().left),
-        copyLeft: Math.round(document.querySelector('.ar-headline-copy').getBoundingClientRect().left),
-        h1Size: parseFloat(getComputedStyle(document.querySelector('.ar-headline h1')).fontSize),
-        titleSize: parseFloat(getComputedStyle(document.querySelector('.ar-folder-title')).fontSize),
-        values: [...(select?.options || [])].map((option) => option.value),
-        labels: [...(select?.options || [])].map((option) => option.textContent.trim()),
-        selected: select?.value || '',
-        chemDropdown: Boolean(document.querySelector('.ar-chem .ar-sort-trigger')),
-        toggle: document.querySelector('[data-member-toggle-label]')?.textContent.trim() || '',
-        uploadInHeadline: Boolean(upload) && document.querySelector('.ar-headline').contains(upload),
-        toolbarUpload: Boolean(toolbarUpload),
-        uploadRight: Math.round(headline.right - uploadBox.right),
-        uploadBottom: Math.round(headline.bottom - uploadBox.bottom)
-      };
-    });
-    assert.equal(combo.title, '시선강탈');
-    assert.ok(Math.abs(combo.kickerLeft - combo.copyLeft) <= 4, 'ARCHIVE 제목이 왼쪽에 있지 않다: ' + JSON.stringify(combo));
-    assert.ok(combo.h1Size >= 24, '아카이브 제목이 예전 크기가 아니다: ' + combo.h1Size);
-    assert.ok(combo.titleSize < combo.h1Size, '폴더 이름이 아카이브 제목보다 크다: ' + JSON.stringify(combo));
-    await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-folder-title-left.png') });
-    assert.deepEqual(combo.values, ['', 'pair-3', 'pair-4']);
-    assert.ok(combo.labels[1].includes('시선강탈'));
-    assert.equal(combo.selected, 'pair-3');
-    assert.equal(combo.chemDropdown, false, '케미 드롭다운이 툴바에 남아 있다');
-    assert.equal(combo.toggle, '시선강탈');
-    assert.equal(combo.uploadInHeadline, true, '폴더 안 사진 추가가 제목 패널에 없다');
-    assert.equal(combo.toolbarUpload, false, '폴더 안 툴바에 사진 추가가 남아 있다');
-    assert.ok(combo.uploadRight >= 8 && combo.uploadRight <= 40, '폴더 안 사진 추가가 우측이 아니다: ' + JSON.stringify(combo));
-    assert.ok(combo.uploadBottom >= 8 && combo.uploadBottom <= 40, '폴더 안 사진 추가가 하단이 아니다: ' + JSON.stringify(combo));
-    await page.click('#archiveMemberToggle');
-    const matched = await page.evaluate(() => [...document.querySelectorAll('.ar-chem-match')].map((el) => el.textContent.trim()));
-    assert.deepEqual(matched, ['시선강탈']);
-    await page.click('.mpp-item[data-value="정혜린"]');
-    const afterOne = await page.evaluate(() => ({
-      chips: [...document.querySelectorAll('.ar-chem-match')].map((el) => el.textContent.trim()),
-      title: document.querySelector('.ar-folder-title')?.textContent.trim() || '',
-      toggle: document.querySelector('[data-member-toggle-label]')?.textContent.trim() || ''
-    }));
-    assert.ok(afterOne.chips.includes('시선강탈'));
-    assert.ok(afterOne.chips.length >= 1);
-    assert.equal(afterOne.title, '2명 케미');
-    assert.equal(afterOne.toggle, '1명');
-    await page.screenshot({ path: path.join(artifactDir, 'archive-chem-filter.png'), fullPage: true });
-    await page.locator('.ar-toolbar').screenshot({ path: path.join(artifactDir, 'archive-toolbar-compact.png') });
 
     await page.goto('https://archive-folders.test/member.html', { waitUntil: 'load' });
     const memberTitle = await page.evaluate(() => {

@@ -95,6 +95,13 @@ public final class ArchiveFolderClassifier {
     public static boolean matches(Match actual, String folder, List<String> comboMembers) {
         if (actual == null || folder == null || folder.isBlank()) return false;
         String key = folder.trim().toLowerCase(Locale.ROOT);
+        if (key.equals("s")) {
+            List<String> wanted = membersOf(String.join(",", comboMembers == null ? List.of() : comboMembers));
+            if (!wanted.isEmpty()) {
+                return new LinkedHashSet<>(actual.members()).containsAll(wanted);
+            }
+            return actual.kind() == Kind.GROUP;
+        }
         return switch (actual.kind()) {
             case GROUP -> key.equals("s");
             case SOLO, UNIT -> key.equals(actual.key());

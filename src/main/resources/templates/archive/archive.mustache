@@ -46,6 +46,13 @@
 
     {{#archiveFolderHome}}
     {{>partials/archive-folder-grid}}
+    {{^archiveFolderIndex}}
+    <div class="ar-folder-selection" data-folder-selection hidden>
+        <p class="ar-folder-selection-count"><span data-folder-selection-count>0</span>명 선택</p>
+        <button type="button" class="site-btn site-btn--reset" data-folder-selection-clear>해제</button>
+        <button type="button" class="ar-submit" data-folder-selection-open>보기</button>
+    </div>
+    {{/archiveFolderIndex}}
     {{/archiveFolderHome}}
 
     {{^archiveFolderHome}}

@@ -168,6 +168,42 @@ body.site-admin-enabled .archive-page.is-browse .ar-headline { padding-bottom: 4
     color: #e3e2e8;
     font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 }
+button.ar-folder {
+    appearance: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+}
+.ar-folder.is-selected .ar-folder-label { color: var(--folder-color); }
+.ar-folder.is-selected .ar-folder-icon {
+    filter: drop-shadow(0 0 0.45rem var(--folder-color));
+}
+.ar-folder-selection {
+    position: sticky;
+    bottom: 0.85rem;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0.2rem auto 1.2rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 999px;
+    background: rgba(16, 17, 22, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.ar-folder-selection[hidden] { display: none; }
+.ar-folder-selection-count {
+    margin: 0 0.35rem 0 0.15rem;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
 .ar-folder:hover { color: var(--folder-color); }
 .ar-folder-icon {
     position: relative;
