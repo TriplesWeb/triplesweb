@@ -326,6 +326,7 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     font-weight: 600;
     color: #b9cac4;
 }
+.archive-page.is-folder-home .ar-folder-count { display: none; }
 .ar-source-badge {
     display: inline-flex;
     align-items: center;
@@ -390,7 +391,12 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .archive-page.is-folder-home .ar-stats {
     max-width: 38rem;
     gap: 0.55rem;
-    margin-top: 1rem;
+    margin-top: 0.35rem;
+}
+@media (min-width: 820px) {
+    .archive-page.is-folder-home .ar-stats {
+        transform: translate(3.6rem, -1.25rem);
+    }
 }
 .archive-page.is-folder-view .ar-stats,
 .archive-page.is-browse .ar-stats {

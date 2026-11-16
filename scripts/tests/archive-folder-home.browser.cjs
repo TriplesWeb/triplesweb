@@ -69,7 +69,7 @@ body.site-admin-enabled button[data-admin-only] { display: inline-flex !importan
     </div>
   </section>
   <section class="ar-folders" aria-label="아카이브 폴더">
-    ${folder({ extraClass: ' is-group', href: '/archive?folder=s', color: '#f5c518', label: '전체 멤버' })}
+    ${folder({ extraClass: ' is-group', href: '/archive?folder=s', color: '#f5c518', label: '전체 멤버', count: '3' })}
     ${folder({ extraClass: ' is-parent', href: '/archive?folder=units', color: '#a78bfa', label: '유닛별' })}
     ${folder({ extraClass: ' is-solo', href: '/archive?folder=s&members=윤서연', color: '#22aeff', label: 'S1 윤서연' })}
     ${folder({ extraClass: ' is-solo', href: '/archive?folder=s&members=정혜린', color: '#ff8ad4', label: 'S2 정혜린' })}
@@ -345,6 +345,11 @@ ${siteUi}
       const headline = document.querySelector('.ar-headline').getBoundingClientRect();
       const folders = document.querySelector('.ar-folders').getBoundingClientRect();
       const stat = document.querySelector('.ar-stat').getBoundingClientRect();
+      const stats = document.getElementById('archiveStats').getBoundingClientRect();
+      const style = getComputedStyle(document.querySelector('.ar-headline'));
+      const innerLeft = headline.left + parseFloat(style.paddingLeft);
+      const innerRight = headline.right - parseFloat(style.paddingRight);
+      const count = document.querySelector('.ar-folder-count');
       const uploadBox = upload.getBoundingClientRect();
       const pageStyle = getComputedStyle(pageRoot);
       return {
@@ -367,6 +372,8 @@ ${siteUi}
         foldersWidth: Math.round(folders.width),
         statWidth: Math.round(stat.width),
         statHeight: Math.round(stat.height),
+        statShift: ((stats.left + stats.right) / 2) - ((innerLeft + innerRight) / 2),
+        countHidden: count ? getComputedStyle(count).display === 'none' : false,
         memberHref: member?.getAttribute('href') || '',
         wholeMember: document.body.textContent.includes('전체 멤버')
       };
@@ -389,6 +396,8 @@ ${siteUi}
     assert.ok(Math.abs(home.headlineWidth - home.foldersWidth) <= 1, '제목 패널과 폴더 폭이 다르다: ' + JSON.stringify(home));
     assert.ok(home.statWidth <= 320, '통계 카드가 여전히 크다: ' + home.statWidth);
     assert.ok(home.statHeight <= 100, '통계 카드 높이가 그대로다: ' + home.statHeight);
+    assert.ok(home.statShift >= 48 && home.statShift <= 72, '홈 통계가 오른쪽 위로 이동하지 않았다: ' + home.statShift);
+    assert.equal(home.countHidden, true, '폴더 사진 숫자가 보인다');
 
     await page.hover('.ar-folder.is-group');
     const artifactDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
