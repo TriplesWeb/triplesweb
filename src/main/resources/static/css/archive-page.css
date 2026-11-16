@@ -188,6 +188,15 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     width: 100%;
     border-bottom-color: rgba(255, 255, 255, 0.08);
 }
+.ar-type-tabs .site-section-tab {
+    padding: 0.62rem 0.95rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+.ar-type-tabs .site-section-tab[aria-current="page"] {
+    font-weight: 800;
+}
 .ar-source-tabs {
     padding-bottom: 0.35rem;
 }
@@ -387,12 +396,12 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .archive-page.is-browse .ar-stats {
     max-width: 35.5rem;
     gap: 0.5rem;
-    margin-top: 0.95rem;
+    margin-top: 0.35rem;
 }
 @media (min-width: 820px) {
     .archive-page.is-folder-view .ar-stats,
     .archive-page.is-browse .ar-stats {
-        transform: translateX(1.5rem);
+        transform: translate(2.85rem, -0.45rem);
     }
 }
 .ar-stat {
@@ -679,6 +688,12 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     padding: 0.35rem 0.95rem;
     font-size: 0.875rem;
     line-height: 1;
+}
+.ar-toolbar .ar-search-row a.ar-reset {
+    display: inline-flex;
+    align-items: center;
+    align-self: stretch;
+    height: auto;
 }
 @media (max-width: 720px) {
     .ar-search-row, .ar-search-wrap, .ar-filter-tools { width: 100%; margin-left: 0; }
@@ -1383,17 +1398,17 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 }
 .ar-pager-summary { justify-self: start; min-width: 0; }
 .ar-pager-controls { justify-self: center; grid-column: 2; }
-.ar-pager-controls, .ar-pages { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+.ar-pager-controls, .ar-pages { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; }
 .ar-page-jump {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    margin-inline-start: 0.35rem;
+    gap: 0.7rem;
+    margin-inline-start: 0.75rem;
 }
 .ar-page-jump label {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.55rem;
     color: #c6d3d0;
     font-size: 0.78rem;
     font-weight: 650;

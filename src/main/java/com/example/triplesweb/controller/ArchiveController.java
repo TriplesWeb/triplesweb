@@ -312,7 +312,7 @@ public class ArchiveController {
         model.addAttribute("hasSourceFilter", sourceSlug != null && !sourceSlug.isBlank());
         model.addAttribute("chemQuery", "");
         model.addAttribute("archiveSources", sourceOptions(source));
-        addFilterSummary(model, q, selectedMembers, artists, type, sourceSlug, "");
+        addFilterSummary(model, q, selectedMembers, artists, type, sourceSlug);
         addArchivePage(model, archives, type, q, memberQuery(selectedMembers), dateQuery, browse,
                 folderQuery(folderKey, ""), sourceQuery, sourceSlug, "");
         return "archive/archive";
@@ -502,18 +502,18 @@ public class ArchiveController {
     }
 
     private void addFilterSummary(Model model, String q, List<String> selectedMembers, List<Artist> artists,
-                                  MediaType type, String sourceSlug, String chemistryLabel) {
+                                  MediaType type, String sourceSlug) {
         List<Map<String, Object>> parts = new ArrayList<>();
         int groups = 0;
         groups++;
         appendFilterText(parts, type == MediaType.VIDEO ? "영상" : "사진");
         groups++;
         appendFilterText(parts, sourceSummary(sourceSlug));
-        if (chemistryLabel != null && !chemistryLabel.isBlank()) {
+        String chemistryName = exactChemistryLabel(selectedMembers);
+        if (!chemistryName.isEmpty()) {
             groups++;
-            appendFilterText(parts, chemistryLabel.trim());
-        }
-        if (!selectedMembers.isEmpty()) {
+            appendFilterText(parts, chemistryName);
+        } else if (!selectedMembers.isEmpty()) {
             groups++;
             if (!parts.isEmpty()) parts.add(Map.of("isSep", true));
             Map<String, Object> first = memberFilterPart(selectedMembers.get(0), artists);
@@ -534,6 +534,31 @@ public class ArchiveController {
         model.addAttribute("hasFilters", !parts.isEmpty());
         model.addAttribute("filterParts", parts);
         model.addAttribute("filterCount", Math.max(1, groups));
+    }
+
+    private String exactChemistryLabel(List<String> selected) {
+        if (selected == null || selected.size() < 2) return "";
+        Set<String> wanted = new LinkedHashSet<>(ArchiveFolderClassifier.membersOf(String.join(",", selected)));
+        if (wanted.size() < 2) return "";
+        for (ChemistryDto item : safeChemistries()) {
+            String raw = (item.getMemberA() == null ? "" : item.getMemberA())
+                    + "," + (item.getMemberB() == null ? "" : item.getMemberB());
+            String label = labelWhenSameMembers(wanted, ArchiveFolderClassifier.membersOf(raw), item.getLabel());
+            if (!label.isEmpty()) return label;
+        }
+        for (ChemistryGroupDto item : safeChemistryGroups()) {
+            List<String> members = item.getMembers() == null ? List.of() : item.getMembers();
+            String label = labelWhenSameMembers(wanted,
+                    ArchiveFolderClassifier.membersOf(String.join(",", members)), item.getLabel());
+            if (!label.isEmpty()) return label;
+        }
+        return "";
+    }
+
+    private static String labelWhenSameMembers(Set<String> wanted, List<String> members, String rawLabel) {
+        if (members == null || members.size() != wanted.size()) return "";
+        if (!wanted.containsAll(members)) return "";
+        return chemistryDisplayLabel(rawLabel);
     }
 
     private static void appendFilterText(List<Map<String, Object>> parts, String text) {

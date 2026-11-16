@@ -326,6 +326,57 @@
         renderChemMatches(selected);
     }
 
+    function paintFilterSummary() {
+        const summary = document.querySelector('.ar-filter-summary');
+        if (!summary) return;
+        const typeTab = document.querySelector('nav[aria-label="아카이브 종류"] [aria-current="page"]');
+        const sourceTab = document.querySelector('.ar-source-tabs [aria-current="page"]');
+        const kind = document.querySelector('[data-archive-kind]')?.dataset.archiveKind;
+        const bits = [];
+        bits.push({ text: typeTab?.textContent.trim() || (kind === 'video' ? '영상' : '사진') });
+        bits.push({ text: sourceTab?.textContent.trim() || '전체 출처' });
+        const selected = window.MemberPortraitPicker && panel
+            ? MemberPortraitPicker.selectedValues(panel)
+            : [];
+        const chemName = selected.length >= 2 ? (window.archiveChemistryLabel(selected) || '') : '';
+        if (chemName) {
+            bits.push({ text: chemName });
+        } else if (selected.length) {
+            const button = panel.querySelector('.mpp-item.is-active');
+            const color = button ? getComputedStyle(button).getPropertyValue('--artist-color').trim() : '';
+            bits.push({ member: selected[0], color: color || '#b9cac4', more: selected.length - 1 });
+        }
+        const query = form?.querySelector('.ar-search')?.value.trim() || '';
+        if (query) bits.push({ text: query });
+        summary.closest('.ar-stat-filter')?.style.setProperty('--filter-count', String(Math.max(1, bits.length)));
+        summary.replaceChildren();
+        bits.forEach((bit, index) => {
+            if (index > 0) {
+                const sep = document.createElement('span');
+                sep.className = 'ar-filter-sep';
+                sep.textContent = ',';
+                summary.append(sep);
+            }
+            if (bit.member) {
+                const member = document.createElement('span');
+                member.className = 'ar-filter-member';
+                member.style.setProperty('--member-color', bit.color);
+                member.textContent = bit.member;
+                summary.append(member);
+                if (bit.more > 0) {
+                    const more = document.createElement('span');
+                    more.className = 'ar-filter-more';
+                    more.textContent = '외 ' + bit.more + '명';
+                    summary.append(more);
+                }
+                return;
+            }
+            const text = document.createElement('strong');
+            text.textContent = bit.text;
+            summary.append(text);
+        });
+    }
+
     memberToggle?.addEventListener('click', () => {
         if (!panel) return;
         const willOpen = panel.hidden;
@@ -334,8 +385,35 @@
         memberToggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
         updateMemberToggle();
     });
+    let filterTimer = 0;
+    function scheduleFilterSubmit() {
+        window.clearTimeout(filterTimer);
+        filterTimer = window.setTimeout(() => {
+            if (document.querySelector('.ar-cal-board:not([hidden]), [data-date-popover]:not([hidden])')) return;
+            form?.requestSubmit();
+        }, 280);
+    }
+    form?.querySelector('.ar-search')?.addEventListener('input', () => {
+        paintFilterSummary();
+        scheduleFilterSubmit();
+    });
+    const dateSnapshot = () => [...(form?.querySelectorAll('[data-date-filter] input') || [])]
+        .map((input) => input.name + '=' + input.value).join('&');
+    let appliedDates = dateSnapshot();
+    form?.addEventListener('archive-date-close', () => {
+        const next = dateSnapshot();
+        if (next === appliedDates) return;
+        appliedDates = next;
+        scheduleFilterSubmit();
+    });
     if (window.MemberPortraitPicker && panel) {
-        MemberPortraitPicker.bindMultiSelect(panel, { onChange: updateMemberToggle });
+        MemberPortraitPicker.bindMultiSelect(panel, {
+            onChange: (values) => {
+                updateMemberToggle(values);
+                paintFilterSummary();
+                scheduleFilterSubmit();
+            }
+        });
     }
     updateMemberToggle();
     form?.addEventListener('submit', () => {

@@ -27,8 +27,10 @@
     const keepRoot = keep?.closest(keepers);
     document.querySelectorAll("[data-date-popover]").forEach((pop) => {
       if (keepRoot && keepRoot.contains(pop)) return;
+      const wasOpen = !pop.hidden;
       pop.hidden = true;
       pop.querySelectorAll(".ar-cal-board").forEach((board) => { board.hidden = true; });
+      if (wasOpen) pop.dispatchEvent(new CustomEvent("archive-date-close", { bubbles: true }));
     });
     document.querySelectorAll(".ar-cal-board").forEach((board) => {
       if (keep && keep.closest(".ar-cal")?.contains(board)) return;
@@ -344,6 +346,7 @@
       closeArchiveOverlays(toggle);
       pop.hidden = !willOpen;
       toggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      if (!willOpen) pop.dispatchEvent(new CustomEvent("archive-date-close", { bubbles: true }));
     });
     exact?.addEventListener("change", () => {
       if (!exact.value) return;

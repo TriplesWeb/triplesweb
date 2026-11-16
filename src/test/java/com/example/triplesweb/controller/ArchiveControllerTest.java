@@ -345,7 +345,8 @@ class ArchiveControllerTest {
                 .andExpect(content().string(not(containsString("더보기"))))
                 .andExpect(content().string(not(containsString("원본 열기"))))
                 .andExpect(content().string(not(containsString("archiveDetailOriginal"))))
-                .andExpect(content().string(containsString(">검색</button>")))
+                .andExpect(content().string(not(containsString("class=\"ar-submit\">검색</button>"))))
+                .andExpect(content().string(containsString(">초기화</a>")))
                 .andExpect(content().string(containsString("class=\"ar-submit\"")))
                 .andExpect(content().string(not(containsString("ar-search-go"))))
                 .andExpect(content().string(containsString("첫멤버순")))
@@ -664,6 +665,23 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).contains("전체 출처");
         org.assertj.core.api.Assertions.assertThat(html).contains("--filter-count: 4");
         org.assertj.core.api.Assertions.assertThat(html).contains("사진 날짜 시작");
+    }
+
+    @Test void filterSummaryUsesChemistryNameInsteadOfMembers() throws Exception {
+        when(chemistryService.findAll()).thenReturn(List.of(ChemistryDto.builder()
+                .id(3L).memberA("윤서연").memberB("정혜린").label("시선강탈").build()));
+        when(artistRepository.findAll()).thenReturn(List.of());
+        stubFolder(MediaType.IMAGE, photo());
+        String html = mvc.perform(get("/archive").param("folder", "s")
+                        .param("members", "정혜린").param("members", "윤서연"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        int start = html.indexOf("ar-filter-summary");
+        int end = html.indexOf("</div>", start);
+        String summary = html.substring(start, end);
+        org.assertj.core.api.Assertions.assertThat(summary).contains("시선강탈");
+        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("외 1명");
+        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("ar-filter-member");
     }
 
     @Test void exactPhotoDateFilterUsesRegisteredOn() throws Exception {
