@@ -185,6 +185,7 @@ public class ShopService {
                     .salesPeriod(region.salesPeriod())
                     .hasSalesPeriod(region.hasSalesPeriod())
                     .hasPhotos(true)
+                    .hasMultipleCategories(categories.size() > 1)
                     .categories(categories)
                     .build());
             index++;

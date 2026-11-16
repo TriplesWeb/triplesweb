@@ -44,6 +44,8 @@ public class ShopDetailDto {
         private boolean hasPhotos;
         private boolean firstRegion;
         private boolean regionHidden;
+        /** 카테고리가 2개 이상일 때만 패널 안 제목을 보여 탭과 중복을 피한다. */
+        private boolean hasMultipleCategories;
         @Builder.Default
         private List<MdCategory> categories = new ArrayList<>();
 

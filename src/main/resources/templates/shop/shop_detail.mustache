@@ -68,7 +68,9 @@
                     {{#categories}}
                     {{#hasPhotos}}
                     <div class="shop-md-category">
+                        {{#hasMultipleCategories}}
                         <h3 class="shop-md-category-title">{{title}}</h3>
+                        {{/hasMultipleCategories}}
                         <div class="shop-md-notices">
                             {{#photos}}
                             <figure class="shop-md-notice">

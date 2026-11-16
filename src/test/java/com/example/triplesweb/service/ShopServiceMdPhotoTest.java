@@ -95,9 +95,11 @@ class ShopServiceMdPhotoTest {
         assertThat(detail.getMdRegions().get(0).isHasSalesPeriod()).isTrue();
         assertThat(detail.getMdRegions().get(0).getSalesPeriod()).isEqualTo("2025.01.01~2025.01.11");
         assertThat(detail.getMdRegions().get(0).getCategories()).hasSize(2);
+        assertThat(detail.getMdRegions().get(0).isHasMultipleCategories()).isTrue();
         assertThat(detail.getMdRegions().get(0).getCategories().get(0).getTitle()).isEqualTo("Official MD");
         assertThat(detail.getMdRegions().get(1).getLabel()).isEqualTo("서울");
         assertThat(detail.getMdRegions().get(1).isRegionHidden()).isTrue();
+        assertThat(detail.getMdRegions().get(1).isHasMultipleCategories()).isFalse();
         assertThat(detail.getSalesPeriod()).isEqualTo("2025.01.01~2025.01.11 / 2025.03.29~2025.03.30");
     }
 }
