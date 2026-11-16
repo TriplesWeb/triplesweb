@@ -235,7 +235,8 @@ class ArchiveControllerTest {
         stubFolder(MediaType.IMAGE, photo());
         mvc.perform(get("/archive").param("folder", "s").param("members", "윤서연").param("members", "정혜린"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString(">전체 사진</p>")))
+                .andExpect(content().string(not(containsString("전체 사진"))))
+                .andExpect(content().string(not(containsString("ar-folder-title"))))
                 .andExpect(content().string(not(containsString("전체 멤버"))))
                 .andExpect(content().string(containsString("id=\"archive-member-picker\"")))
                 .andExpect(content().string(not(containsString("id=\"archiveChem\""))));
@@ -412,7 +413,8 @@ class ArchiveControllerTest {
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%A0%95%ED%95%98%EC%97%B0"));
         String html = mvc.perform(get("/archive").param("folder", "s")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        org.assertj.core.api.Assertions.assertThat(html).contains(">전체 사진</p>");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("전체 사진");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-title");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("전체 멤버");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-title is-solo");
         org.assertj.core.api.Assertions.assertThat(html).contains(">날짜<");

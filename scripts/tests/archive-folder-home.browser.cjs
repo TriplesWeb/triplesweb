@@ -251,10 +251,7 @@ ${siteUi}
 </main>
 </body></html>`;
 
-const groupHtml = memberHtml.replace(
-  /<p class="ar-folder-title[\s\S]*?<\/p>/,
-  '<p class="ar-folder-title">전체 사진</p>'
-);
+const groupHtml = memberHtml.replace(/<p class="ar-folder-title[\s\S]*?<\/p>/, '');
 
 (async () => {
   const browser = await chromium.launch({
@@ -432,8 +429,7 @@ const groupHtml = memberHtml.replace(
     await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-member-title-center.png') });
 
     await page.goto('https://archive-folders.test/group.html', { waitUntil: 'load' });
-    const groupTitle = await page.locator('.ar-folder-title').innerText();
-    assert.equal(groupTitle.trim(), '전체 사진');
+    assert.equal(await page.locator('.ar-folder-title').count(), 0);
     await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-group-title.png') });
     console.log('PASS: 아카이브 폴더 홈 실루엣·케미 필터');
   } finally {

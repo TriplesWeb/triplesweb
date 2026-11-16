@@ -280,6 +280,7 @@ public class ArchiveController {
         String baseTitle = folderTitle(folderKey, List.of(), units);
         model.addAttribute("folderBaseTitle", baseTitle);
         model.addAttribute("folderTitle", baseTitle);
+        model.addAttribute("hasFolderTitle", baseTitle != null && !baseTitle.isBlank());
         model.addAttribute("folderAccent", folderAccent(folderKey, visibleUnits, artists));
         boolean soloFolder = isSoloFolder(folderKey);
         model.addAttribute("folderIsSolo", soloFolder);
@@ -796,7 +797,7 @@ public class ArchiveController {
 
     private String folderTitle(String folder, List<String> comboMembers, List<ArchiveFolderClassifier.UnitMembers> units) {
         if (folder == null || folder.isBlank()) return "";
-        if (folder.equalsIgnoreCase("s")) return "전체 사진";
+        if (folder.equalsIgnoreCase("s")) return "";
         if (isUnitIndex(folder)) return "유닛별";
         if (isComboIndex(folder)) return "케미";
         Integer comboSize = ArchiveFolderClassifier.comboSize(folder);
