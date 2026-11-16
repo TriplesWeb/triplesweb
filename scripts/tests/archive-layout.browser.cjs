@@ -48,7 +48,7 @@ ${siteUi}
         <article class="ar-stat"><div class="ar-stat-label"><span>등록된 사진</span><span class="material-symbols-outlined">image</span></div><strong>2<em>장</em></strong></article>
         <article class="ar-stat ar-stat-date"><div class="ar-stat-label"><span>날짜</span><span class="material-symbols-outlined">calendar_month</span></div><strong>전체</strong></article>
         <article class="ar-stat"><div class="ar-stat-label"><span>페이지</span><span class="material-symbols-outlined">layers</span></div><strong>1<em>/ 1</em></strong></article>
-        <article class="ar-stat ar-stat-filter" style="--filter-count: 3"><div class="ar-stat-label"><span>검색</span><span class="material-symbols-outlined">search</span></div><div class="ar-filter-summary"><span class="ar-filter-member" style="--member-color:#22aeff">윤서연</span><span class="ar-filter-more">외 1명</span><span class="ar-filter-sep">,</span><strong>심장</strong><span class="ar-filter-sep">,</span><strong>2026-01-01 ~ 2026-12-31</strong></div></article>
+        <article class="ar-stat ar-stat-filter" style="--filter-count: 2"><div class="ar-stat-label"><span>검색</span><span class="material-symbols-outlined">search</span></div><div class="ar-filter-summary"><span class="ar-filter-member" style="--member-color:#22aeff">윤서연</span><span class="ar-filter-more">외 1명</span><span class="ar-filter-sep">,</span><strong>심장</strong></div></article>
       </div>
     </div>
   </section>

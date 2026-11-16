@@ -22,12 +22,11 @@ ${site}${css}${siteUi}
   <section class="ar-hero">
     <div class="ar-panel ar-headline">
       <div class="ar-stats" id="archiveStats">
-        <article class="ar-stat ar-stat-filter" style="--filter-count: 3">
+        <article class="ar-stat ar-stat-filter" style="--filter-count: 2">
           <div class="ar-stat-label"><span>검색</span><span class="material-symbols-outlined">search</span></div>
           <div class="ar-filter-summary">
             <strong>사진</strong><span class="ar-filter-sep">,</span>
-            <strong>코스모룸</strong><span class="ar-filter-sep">,</span>
-            <strong>2026/11/16</strong>
+            <strong>코스모룸</strong>
           </div>
         </article>
       </div>
@@ -133,7 +132,7 @@ ${site}${css}${siteUi}
         calReady: native?.dataset.calReady === 'true'
       };
     });
-    assert.equal(layout.summary, '사진, 코스모룸, 2026/11/16');
+    assert.equal(layout.summary, '사진, 코스모룸');
     assert.equal(layout.dateText, '2026/11/16');
     assert.equal(layout.dateAfterChip, true, '날짜가 멤버 오른쪽에 없다');
     assert.ok(layout.dateSize <= 13, '카드 날짜가 작지 않다: ' + layout.dateSize);

@@ -232,7 +232,7 @@ ${siteUi}
       </div>
       <div class="ar-stats" id="archiveStats">
         <article class="ar-stat"><div class="ar-stat-label"><span>등록된 사진</span><span class="material-symbols-outlined">image</span></div><strong>0<em>장</em></strong></article>
-        <article class="ar-stat ar-stat-date"><div class="ar-stat-label"><span>날짜</span><span class="material-symbols-outlined">calendar_month</span></div><strong>11월 16일</strong></article>
+        <article class="ar-stat ar-stat-date"><div class="ar-stat-label"><span>날짜</span><span class="material-symbols-outlined">calendar_month</span></div><strong>2026년 11월 16일</strong></article>
       </div>
     </div>
   </section>
@@ -445,7 +445,7 @@ ${siteUi}
     assert.ok(memberTitle.underlineWidth >= 2, '이름 밑줄이 없다: ' + memberTitle.underlineWidth);
     assert.ok(memberTitle.numUnderline < 1, 'S1에도 밑줄이 있다');
     assert.ok(memberTitle.underline.includes('34, 174, 255') || memberTitle.underline.includes('22aeff') || memberTitle.underline.includes('34,174,255'), '이름 밑줄이 멤버색이 아니다: ' + memberTitle.underline);
-    assert.equal(memberTitle.dateStat, '11월 16일');
+    assert.equal(memberTitle.dateStat, '2026년 11월 16일');
     assert.equal(memberTitle.dateIcon, 'calendar_month');
     await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-member-title-center.png') });
     console.log('PASS: 아카이브 폴더 홈 실루엣·케미 필터');

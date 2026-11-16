@@ -317,8 +317,8 @@ public class ArchiveController {
         String chemQuery = chemQuery(chemKey);
         model.addAttribute("chemQuery", chemQuery);
         model.addAttribute("archiveSources", sourceOptions(source));
-        addFilterSummary(model, q, selectedMembers, artists, fromText, toText, onText,
-                type, sourceSlug, chemistry == null ? "" : chemistry.label());
+        addFilterSummary(model, q, selectedMembers, artists, type, sourceSlug,
+                chemistry == null ? "" : chemistry.label());
         addArchivePage(model, archives, type, q, memberQuery(selectedMembers), dateQuery, browse,
                 folderQuery(folderKey, combo), sourceQuery, sourceSlug, chemQuery);
         return "archive/archive";
@@ -450,23 +450,13 @@ public class ArchiveController {
     }
 
     private void addFilterSummary(Model model, String q, List<String> selectedMembers, List<Artist> artists,
-                                  String fromText, String toText, String onText, MediaType type, String sourceSlug,
-                                  String chemistryLabel) {
+                                  MediaType type, String sourceSlug, String chemistryLabel) {
         List<Map<String, Object>> parts = new ArrayList<>();
         int groups = 0;
         groups++;
         appendFilterText(parts, type == MediaType.VIDEO ? "영상" : "사진");
         groups++;
         appendFilterText(parts, sourceSummary(sourceSlug));
-        if (onText != null && !onText.isBlank()) {
-            groups++;
-            appendFilterText(parts, onText.replace('-', '/'));
-        } else if ((fromText != null && !fromText.isBlank()) || (toText != null && !toText.isBlank())) {
-            groups++;
-            String start = fromText == null || fromText.isBlank() ? "처음" : fromText.replace('-', '/');
-            String end = toText == null || toText.isBlank() ? "최근" : toText.replace('-', '/');
-            appendFilterText(parts, start + " ~ " + end);
-        }
         if (chemistryLabel != null && !chemistryLabel.isBlank()) {
             groups++;
             appendFilterText(parts, chemistryLabel.trim());
@@ -535,7 +525,7 @@ public class ArchiveController {
 
     private static String koreanDay(LocalDate date) {
         if (date == null) return "";
-        return date.getMonthValue() + "월 " + date.getDayOfMonth() + "일";
+        return date.getYear() + "년 " + date.getMonthValue() + "월 " + date.getDayOfMonth() + "일";
     }
 
     private static String dateStatLabel(LocalDate on, LocalDate from, LocalDate to) {

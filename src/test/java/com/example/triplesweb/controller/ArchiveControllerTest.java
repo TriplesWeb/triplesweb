@@ -449,9 +449,12 @@ class ArchiveControllerTest {
         String summary = html.substring(start, end);
         org.assertj.core.api.Assertions.assertThat(summary).contains(">사진<");
         org.assertj.core.api.Assertions.assertThat(summary).contains("코스모룸");
-        org.assertj.core.api.Assertions.assertThat(summary).contains("2026/11/16");
+        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("2026/11/16");
+        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("2026년");
+        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("~");
         org.assertj.core.api.Assertions.assertThat(summary).doesNotContain(">전체<");
-        org.assertj.core.api.Assertions.assertThat(html).contains("11월 16일");
+        org.assertj.core.api.Assertions.assertThat(html).contains("--filter-count: 2");
+        org.assertj.core.api.Assertions.assertThat(html).contains("2026년 11월 16일");
         org.assertj.core.api.Assertions.assertThat(html).contains("ar-stat-date");
     }
 
@@ -622,9 +625,15 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).contains("--member-color: #22aeff");
         org.assertj.core.api.Assertions.assertThat(html).contains("외 1명");
         org.assertj.core.api.Assertions.assertThat(html).contains("심장");
-        org.assertj.core.api.Assertions.assertThat(html).contains("2026/01/01 ~ 2026/12/31");
+        int start = html.indexOf("ar-filter-summary");
+        int end = html.indexOf("</div>", start);
+        String summary = html.substring(start, end);
+        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("2026/01/01");
+        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("2026/12/31");
+        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("~");
+        org.assertj.core.api.Assertions.assertThat(html).contains("2026년 1월 1일 ~ 2026년 12월 31일");
         org.assertj.core.api.Assertions.assertThat(html).contains("전체 출처");
-        org.assertj.core.api.Assertions.assertThat(html).contains("--filter-count: 5");
+        org.assertj.core.api.Assertions.assertThat(html).contains("--filter-count: 4");
         org.assertj.core.api.Assertions.assertThat(html).contains("사진 날짜 시작");
     }
 
