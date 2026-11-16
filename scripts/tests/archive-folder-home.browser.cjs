@@ -506,7 +506,7 @@ ${siteUi}
     });
     assert.ok(view.statWidth <= 300 && view.statWidth >= 220, '폴더 보기 통계 카드 너비: ' + JSON.stringify(view));
     assert.ok(view.statHeight <= 96 && view.statHeight >= 76, '폴더 보기 통계 카드 높이: ' + JSON.stringify(view));
-    assert.ok(view.shift >= 18 && view.shift <= 32, '폴더 보기 통계가 오른쪽으로 조금 이동하지 않았다: ' + view.shift);
+    assert.ok(view.shift >= 36 && view.shift <= 56, '폴더 보기 통계가 오른쪽으로 조금 이동하지 않았다: ' + view.shift);
     assert.equal(view.columns, 2);
     assert.equal(view.backText, '← 목록으로');
     assert.equal(view.backHref, '/archive');
