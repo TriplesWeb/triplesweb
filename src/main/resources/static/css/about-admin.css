@@ -240,10 +240,22 @@
 
 .about-edit-actions {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 0.5rem;
     justify-content: flex-end;
+    align-items: center;
     margin-top: 0.35rem;
+}
+
+.about-edit-actions > .about-mode-btn,
+.about-edit-actions > .btn {
+    flex: 0 0 auto;
+    width: auto;
+}
+
+.about-edit-actions > .btn-error,
+.about-edit-actions > .about-btn-danger {
+    margin-right: auto;
 }
 
 .about-mode-btn {
