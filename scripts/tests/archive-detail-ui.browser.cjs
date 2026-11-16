@@ -87,7 +87,7 @@ ${site}${css}${siteUi}
       <div class="ar-dialog-head"><h2 id="archiveDetailTitle">사진</h2><button type="button" class="ar-close" data-ar-close>&times;</button></div>
       <div class="ar-detail-body">
         <p class="ar-detail-date" id="archiveDetailDate" hidden></p>
-        <div class="ar-source-badge" id="archiveDetailSource" hidden></div>
+        <div class="ar-detail-line"><div class="ar-source-badge" id="archiveDetailSource" hidden></div></div>
         <section class="ar-detail-cast"><div class="ar-detail-members" id="archiveDetailMembers"></div></section>
       </div>
     </div>
@@ -225,20 +225,33 @@ ${site}${css}${siteUi}
     const detail = await page.evaluate(() => {
       const badge = document.getElementById('archiveDetailSource');
       const members = document.getElementById('archiveDetailMembers');
+      const date = document.getElementById('archiveDetailDate');
+      const cast = document.querySelector('#archiveDetail .ar-detail-cast');
       const badgeBox = badge.getBoundingClientRect();
       const membersBox = members.getBoundingClientRect();
+      const dateStyle = getComputedStyle(date);
       return {
         hidden: badge.hidden,
         text: badge.textContent.trim(),
         source: badge.dataset.source,
         aboveMembers: badgeBox.bottom <= membersBox.top + 1,
-        radius: getComputedStyle(badge).borderRadius
+        radius: getComputedStyle(badge).borderRadius,
+        dateSize: parseFloat(dateStyle.fontSize),
+        dateWeight: Number(dateStyle.fontWeight),
+        dateBorder: getComputedStyle(date).borderTopWidth,
+        sourceBorder: getComputedStyle(badge.parentElement).borderTopWidth,
+        castBorder: getComputedStyle(cast).borderTopWidth
       };
     });
     assert.equal(detail.hidden, false);
     assert.equal(detail.text, '코스모룸');
     assert.equal(detail.source, 'cosmo_room');
     assert.equal(detail.aboveMembers, true, '출처 배지가 멤버 위에 없다');
+    assert.ok(detail.dateSize >= 15 && detail.dateSize <= 18, '사진 날짜 글자가 커지지 않았다: ' + detail.dateSize);
+    assert.ok(detail.dateWeight >= 600, '사진 날짜가 굵지 않다: ' + detail.dateWeight);
+    assert.equal(detail.dateBorder, '0px', '첫 항목 위에 구분선이 있다');
+    assert.equal(detail.sourceBorder, '1px', '출처 위에 구분선이 없다');
+    assert.equal(detail.castBorder, '1px', '멤버 위에 구분선이 없다');
     assert.ok(detail.radius.includes('999') || parseFloat(detail.radius) >= 12, '출처가 버튼처럼 보이지 않는다: ' + detail.radius);
     assert.equal(await page.locator('#archiveDetail .ar-detail-chem').count(), 0, '케미명이 없는 멤버에도 케미 라벨이 있다');
     const detailBox = await page.locator('#archiveDetail .ar-detail-side').boundingBox();

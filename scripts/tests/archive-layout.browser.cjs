@@ -283,9 +283,12 @@ ${siteUi}
         resetClass: reset.className,
         resetFont: resetStyle.fontSize,
         resetColor: resetStyle.color,
-        resetAlign: Math.abs(resetBox.top - searchBox.top) <= 6,
+        resetAlign: Math.abs((resetBox.top + resetBox.bottom) / 2 - (searchBox.top + searchBox.bottom) / 2) <= 6,
         resetHeight: Math.round(resetBox.height),
         searchHeight: Math.round(searchBox.height),
+        memberHeight: Math.round(memberBox.height),
+        resetWrap: resetStyle.whiteSpace,
+        resetOneLine: reset.scrollWidth <= reset.clientWidth + 1,
         sortEnhanced: Boolean(trigger && option),
         sortLabels: [...document.querySelectorAll('.ar-sort-option')].map((el) => el.dataset.value),
         sortMatch: Boolean(triggerStyle && optionStyle
@@ -312,7 +315,9 @@ ${siteUi}
     assert.match(toolbar.resetClass, /site-btn--reset/, '초기화가 회색 유리 버튼이 아니다: ' + toolbar.resetClass);
     assert.ok(toolbar.resetColor.includes('255') || toolbar.resetColor.includes('#fff'), '초기화 글자가 흰색이 아니다: ' + toolbar.resetColor);
     assert.equal(toolbar.resetAlign, true, '초기화가 검색창과 세로로 안 맞는다');
-    assert.ok(Math.abs(toolbar.resetHeight - toolbar.searchHeight) <= 4, '초기화 크기가 검색창과 다르다: ' + JSON.stringify({ reset: toolbar.resetHeight, search: toolbar.searchHeight }));
+    assert.equal(toolbar.resetWrap, 'nowrap', '초기화 글자가 한 줄이 아니다');
+    assert.equal(toolbar.resetOneLine, true, '초기화 글자가 버튼 안에서 잘린다');
+    assert.ok(Math.abs(toolbar.resetHeight - toolbar.memberHeight) <= 4, '초기화 높이가 다른 버튼과 다르다: ' + JSON.stringify({ reset: toolbar.resetHeight, member: toolbar.memberHeight }));
     assert.equal(toolbar.sortEnhanced, true, '정렬 드롭다운이 같은 스타일로 열리지 않는다');
     assert.equal(toolbar.sortMatch, true, '정렬 항목 스타일이 닫힌 버튼과 다르다');
 
