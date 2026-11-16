@@ -70,31 +70,30 @@ public class DataInitializer implements ApplicationRunner {
             }
         }
 
-        // DB에서 최신 저장된 아티스트 참조 가져오기
-        Artist seoyeon = artistrepository.findByEngName("seoyeon").orElse(null);
-        Artist hyerin = artistrepository.findByEngName("hyerin").orElse(null);
-        Artist jiwoo = artistrepository.findByEngName("jiwoo").orElse(null);
-        Artist chaeyeon = artistrepository.findByEngName("chaeyeon").orElse(null);
-        Artist yooyeon = artistrepository.findByEngName("yooyeon").orElse(null);
-        Artist soomin = artistrepository.findByEngName("soomin").orElse(null);
-        Artist nakyoung = artistrepository.findByEngName("nakyoung").orElse(null);
-        Artist yubin = artistrepository.findByEngName("yubin").orElse(null);
-        Artist kaede = artistrepository.findByEngName("kaede").orElse(null);
-        Artist dahyun = artistrepository.findByEngName("dahyun").orElse(null);
-        Artist kotone = artistrepository.findByEngName("kotone").orElse(null);
-        Artist yeonji = artistrepository.findByEngName("yeonji").orElse(null);
-        Artist nien = artistrepository.findByEngName("nien").orElse(null);
-        Artist sohyun = artistrepository.findByEngName("sohyun").orElse(null);
-        Artist xinyu = artistrepository.findByEngName("xinyu").orElse(null);
-        Artist mayu = artistrepository.findByEngName("mayu").orElse(null);
-        Artist lynn = artistrepository.findByEngName("lynn").orElse(null);
-        Artist joobin = artistrepository.findByEngName("joobin").orElse(null);
-        Artist hayeon = artistrepository.findByEngName("hayeon").orElse(null);
-        Artist shion = artistrepository.findByEngName("shion").orElse(null);
-        Artist chaewon = artistrepository.findByEngName("chaewon").orElse(null);
-        Artist sullin = artistrepository.findByEngName("sullin").orElse(null);
-        Artist seoah = artistrepository.findByEngName("seoah").orElse(null);
-        Artist jiyeon = artistrepository.findByEngName("jiyeon").orElse(null);
+        Artist seoyeon = artist("seoyeon");
+        Artist hyerin = artist("hyerin");
+        Artist jiwoo = artist("jiwoo");
+        Artist chaeyeon = artist("chaeyeon");
+        Artist yooyeon = artist("yooyeon");
+        Artist soomin = artist("soomin");
+        Artist nakyoung = artist("nakyoung");
+        Artist yubin = artist("yubin");
+        Artist kaede = artist("kaede");
+        Artist dahyun = artist("dahyun");
+        Artist kotone = artist("kotone");
+        Artist yeonji = artist("yeonji");
+        Artist nien = artist("nien");
+        Artist sohyun = artist("sohyun");
+        Artist xinyu = artist("xinyu");
+        Artist mayu = artist("mayu");
+        Artist lynn = artist("lynn");
+        Artist joobin = artist("joobin");
+        Artist hayeon = artist("hayeon");
+        Artist shion = artist("shion");
+        Artist chaewon = artist("chaewon");
+        Artist sullin = artist("sullin");
+        Artist seoah = artist("seoah");
+        Artist jiyeon = artist("jiyeon");
 
         // 2. Unit (유닛 4개) 생성 및 저장
             Unit aaa = new Unit(null, "ACID ANGEL OF ASIA", "aaa", "/uploads/images/aaa.jpg", "2022-09-25", "2022-10-28", null);
@@ -173,15 +172,15 @@ public class DataInitializer implements ApplicationRunner {
             Album loveSide = new Album(null,"LOVE & POP Pt.1","/uploads/images/loveandpop1.jpg","2026-06-01",
                 "트리플에스 2026년 첫 앨범", new ArrayList<>(),null, AlbumType.FULL_24);
 
-            if (msnz != null) msnz.getAlbums().add(beyondBeauty);
-            if (aaa != null) aaa.getAlbums().add(access);
-            if (kre != null) kre.getAlbums().add(aesthetic);
-            if (lovelution != null) lovelution.getAlbums().add(lovelAlbum);
-            if (evolution != null) evolution.getAlbums().add(evolAlbum);
-            if (aria != null) aria.getAlbums().add(sadness);
-            if (vv != null) vv.getAlbums().add(vvAlbum);
-            if (nxt != null) nxt.getAlbums().add(nxtAlbum);
-            if (glow != null) glow.getAlbums().add(glowAlbum);
+            msnz.getAlbums().add(beyondBeauty);
+            aaa.getAlbums().add(access);
+            kre.getAlbums().add(aesthetic);
+            lovelution.getAlbums().add(lovelAlbum);
+            evolution.getAlbums().add(evolAlbum);
+            aria.getAlbums().add(sadness);
+            vv.getAlbums().add(vvAlbum);
+            nxt.getAlbums().add(nxtAlbum);
+            glow.getAlbums().add(glowAlbum);
 
             addTracksToAlbum(access, TrackInfo.ACCESS_TRACK);
             addTracksToAlbum(aesthetic, TrackInfo.AESTHETIC_TRACK);
@@ -217,14 +216,16 @@ public class DataInitializer implements ApplicationRunner {
     }
 
 
-    // 유닛과 아티스트 다대다 연결 헬퍼 메소드
+    private Artist artist(String engName) {
+        return artistrepository.findByEngName(engName)
+                .orElseThrow(() -> new IllegalStateException("시드 아티스트가 없습니다: " + engName));
+    }
+
     private void addUnitMembers(Unit unit, List<Artist> artists) {
-        if (unit == null) return;
+        if (unit == null || artists == null) return;
         for (Artist artist : artists) {
-            if (artist != null) {
-                UnitMember um = new UnitMember(null, artist, unit);
-                unit.getUnitMembers().add(um);
-            }
+            UnitMember um = new UnitMember(null, artist, unit);
+            unit.getUnitMembers().add(um);
         }
     }
 }

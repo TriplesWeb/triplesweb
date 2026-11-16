@@ -245,15 +245,8 @@ public class ArchiveController {
             fromDate = toDate;
             toDate = swap;
         }
-        ArchiveSource source = null;
         boolean unclassified = isFanmadeSource(sourceSlug);
-        if (!unclassified && sourceSlug != null && !sourceSlug.isBlank()) {
-            try {
-                source = ArchiveSource.parse(sourceSlug);
-            } catch (IllegalArgumentException ignored) {
-                source = null;
-            }
-        }
+        ArchiveSource source = parseSourceFilter(sourceSlug, unclassified);
         List<Unit> visibleUnits = unitService.listVisible();
         List<ArchiveFolderClassifier.UnitMembers> units = unitSnapshots(visibleUnits);
         Page<Archive> archives = browse
@@ -294,11 +287,15 @@ public class ArchiveController {
         model.addAttribute("folderBaseTitle", baseTitle);
         model.addAttribute("folderTitle", chemistry != null ? chemistry.label() : folderTitle(folderKey, comboMembers, units));
         model.addAttribute("folderAccent", folderAccent(folderKey, visibleUnits, artists));
-        model.addAttribute("folderIsSolo", isSoloFolder(folderKey));
-        if (isSoloFolder(folderKey)) {
+        boolean soloFolder = isSoloFolder(folderKey);
+        model.addAttribute("folderIsSolo", soloFolder);
+        if (soloFolder) {
             int index = Integer.parseInt(folderKey.substring(1)) - 1;
             model.addAttribute("folderTitleNumber", "S" + (index + 1));
             model.addAttribute("folderTitleName", MemberPortraitOptions.koreanOrder().get(index));
+        } else {
+            model.addAttribute("folderTitleNumber", "");
+            model.addAttribute("folderTitleName", "");
         }
         String onText = onDate == null ? "" : onDate.toString();
         String fromText = onDate != null ? "" : (fromDate == null ? "" : fromDate.toString());
@@ -618,6 +615,11 @@ public class ArchiveController {
         model.addAttribute("hasExactDate", false);
         model.addAttribute("hasDateFilter", false);
         model.addAttribute("dateExactEnabled", false);
+        model.addAttribute("hasDateStat", false);
+        model.addAttribute("dateStatLabel", "전체");
+        model.addAttribute("folderIsSolo", false);
+        model.addAttribute("folderTitleNumber", "");
+        model.addAttribute("folderTitleName", "");
         model.addAttribute("query", "");
         model.addAttribute("hasQuery", false);
         model.addAttribute("mediaDateLabel", "사진 날짜");
@@ -625,6 +627,17 @@ public class ArchiveController {
         model.addAttribute("dateFromLabel", "사진 날짜 시작");
         model.addAttribute("dateToLabel", "사진 날짜 끝");
         model.addAttribute("dateExactLabel", "이 사진 날짜");
+    }
+
+    private static ArchiveSource parseSourceFilter(String sourceSlug, boolean unclassified) {
+        if (unclassified || sourceSlug == null || sourceSlug.isBlank()) {
+            return null;
+        }
+        try {
+            return ArchiveSource.parse(sourceSlug);
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     private static boolean isSoloFolder(String folder) {
@@ -824,7 +837,7 @@ public class ArchiveController {
         int unitPhotos = 0;
         int comboPhotos = 0;
         for (Unit unit : units == null ? List.<Unit>of() : units) {
-            if (unit == null || unit.getUnitId() == null) continue;
+            if (unit.getUnitId() == null) continue;
             unitPhotos += counted.counts().getOrDefault("unit-" + unit.getUnitId(), 0);
         }
         for (int min : ArchiveFolderClassifier.COMBO_FOLDERS) {
@@ -856,7 +869,7 @@ public class ArchiveController {
     private List<Map<String, Object>> unitFolderCards(List<Unit> units, List<Artist> artists, FolderCounts counted) {
         List<Map<String, Object>> folders = new ArrayList<>();
         for (Unit unit : units == null ? List.<Unit>of() : units) {
-            if (unit == null || unit.getUnitId() == null) continue;
+            if (unit.getUnitId() == null) continue;
             String key = "unit-" + unit.getUnitId();
             String href = "/archive?folder=" + URLEncoder.encode(key, StandardCharsets.UTF_8);
             String color = unitColor(unit, artists);

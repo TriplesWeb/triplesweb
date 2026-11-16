@@ -29,8 +29,8 @@ jobs:
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
-          # When pr-mode is set to true, Qodana analyzes only the files that have been changed
-          pr-mode: false
+          # PR에서는 이 브랜치에서 바뀐 파일만 검사한다. 전체 저장소 경고를 폴더마다 새로 찍지 않는다.
+          pr-mode: true
           use-caches: true
           post-pr-comment: true
           use-annotations: true

@@ -291,7 +291,7 @@ public final class MemberPortraitOptions {
         int selectedIndex = memberIndex(selectedMember);
         Set<String> aliases = new LinkedHashSet<>();
         for (String token : selectedTokens) {
-            if (token.length() >= 2 && !"x".equals(token)) aliases.add(token);
+            if (token.length() >= 2) aliases.add(token);
         }
         for (int i = 0; i < ENGLISH_ORDER.size(); i++) {
             String english = ENGLISH_ORDER.get(i);
