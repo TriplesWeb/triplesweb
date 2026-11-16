@@ -133,7 +133,7 @@ class ArchiveControllerTest {
         String index = mvc.perform(get("/archive").param("folder", "combos")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         org.assertj.core.api.Assertions.assertThat(index).contains(">케미</p>");
-        org.assertj.core.api.Assertions.assertThat(index).contains("←목록으로");
+        org.assertj.core.api.Assertions.assertThat(index).contains("← 목록으로");
         org.assertj.core.api.Assertions.assertThat(index).contains("href=\"/archive\"");
         org.assertj.core.api.Assertions.assertThat(index).contains("ar-folder-label\">2명 케미</span>");
         org.assertj.core.api.Assertions.assertThat(index).contains("ar-folder-label\">3명 케미</span>");
@@ -202,7 +202,7 @@ class ArchiveControllerTest {
         String html = mvc.perform(get("/archive").param("folder", "units")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         org.assertj.core.api.Assertions.assertThat(html).contains(">유닛별</p>");
-        org.assertj.core.api.Assertions.assertThat(html).contains("←목록으로");
+        org.assertj.core.api.Assertions.assertThat(html).contains("← 목록으로");
         org.assertj.core.api.Assertions.assertThat(html).contains("Aura");
         org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;unit-17");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("image-upload-pending");
@@ -418,7 +418,7 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).contains("calendar_month");
         org.assertj.core.api.Assertions.assertThat(html).contains(">전체<");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain(">이 페이지<");
-        org.assertj.core.api.Assertions.assertThat(html).contains("←목록으로");
+        org.assertj.core.api.Assertions.assertThat(html).contains("← 목록으로");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain(">폴더 목록<");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("이 페이지에서 조건에 맞는");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("id=\"archiveNone\"");
