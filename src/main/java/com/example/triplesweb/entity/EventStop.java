@@ -104,6 +104,58 @@ public class EventStop {
         return name;
     }
 
+    /** Mustache용: 지역 탭 라벨 (예: 서울 · 10.10–10.11) */
+    @Transient
+    public String getTabLabel() {
+        String place = isHasRegion() ? region.trim() : "";
+        String date = shortTabDate(eventDate);
+        if (!place.isBlank() && !date.isBlank()) return place + " · " + date;
+        if (!place.isBlank()) return place;
+        if (!date.isBlank()) return date;
+        return getDisplayTitle();
+    }
+
+    /** Mustache용: 부모 이벤트에 회차가 2개 이상인지 (루프 안 조회용) */
+    @Transient
+    public boolean isHasMultipleStops() {
+        return event != null && event.isHasMultipleStops();
+    }
+
+    /** Mustache용: 정렬상 첫 회차(기본 활성 탭) */
+    @Transient
+    public boolean isFirstOrderedStop() {
+        if (event == null || stopId == null) return false;
+        List<EventStop> ordered = event.getOrderedStops();
+        return !ordered.isEmpty() && stopId.equals(ordered.get(0).getStopId());
+    }
+
+    /** Mustache용: 다중 회차에서 비활성 패널을 숨김 */
+    @Transient
+    public boolean isStopPanelHidden() {
+        return isHasMultipleStops() && !isFirstOrderedStop();
+    }
+
+    static String shortTabDate(String raw) {
+        if (raw == null || raw.isBlank()) return "";
+        String normalized = raw.trim().replace('~', '–');
+        return Arrays.stream(normalized.split("–", -1))
+                .map(String::trim)
+                .map(EventStop::stripLeadingYear)
+                .filter(part -> !part.isBlank())
+                .collect(Collectors.joining("–"));
+    }
+
+    private static String stripLeadingYear(String part) {
+        // 2026.10.10 → 10.10 , 2026-10-10 → 10-10
+        if (part.matches("^\\d{4}[./-]\\d{1,2}[./-]\\d{1,2}$")) {
+            return part.substring(5).replace('-', '.');
+        }
+        if (part.matches("^\\d{4}\\.\\d{1,2}$")) {
+            return part.substring(5);
+        }
+        return part;
+    }
+
     /** Mustache용: 굿즈 구역 제목 (예: tripleS Come True in 서울) */
     @Transient
     public String getGoodsLabel() {

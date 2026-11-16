@@ -34,96 +34,109 @@
             <span class="material-symbols-outlined text-[1.25rem] text-[#00f5d4]" aria-hidden="true">location_on</span> 지역별 공연
         </h2>
         {{#hasStops}}
-        <ul class="event-stop-list" id="eventStopList">
+        {{#hasMultipleStops}}
+        <div class="site-section-tabs event-stop-tabs" id="eventStopTabs" role="tablist" aria-label="지역 회차">
             {{#orderedStops}}
-            <li class="event-stop-item">
-                <button type="button" class="event-stop-toggle" aria-expanded="false" data-event-stop>
-                    <div class="event-stop-main">
-                        <div class="event-stop-date">{{eventDate}}</div>
-                        <div class="event-stop-title-row">
-                            <span class="event-stop-title">{{displayTitle}}</span>
-                            <span class="material-symbols-outlined event-stop-chevron" aria-hidden="true">expand_more</span>
-                        </div>
-                        {{#hasVenue}}
-                        <div class="event-stop-venue">{{venue}}</div>
-                        {{/hasVenue}}
-                    </div>
-                </button>
-                <div class="event-stop-panel" hidden>
-                    {{#hasDetail}}
-                    <p class="event-stop-detail">{{detail}}</p>
-                    {{/hasDetail}}
-
-                    {{#hasSetlist}}
-                    <div class="event-stop-block event-stop-block--setlist">
-                        <h3 class="event-stop-block-title">
-                            <span class="material-symbols-outlined" aria-hidden="true">graphic_eq</span>
-                            셋리스트
-                        </h3>
-                        <div class="event-setlist-wrap">
-                            <table class="event-setlist-table">
-                                <thead>
-                                    <tr>
-                                        <th scope="col" class="event-setlist-col-order">순서</th>
-                                        <th scope="col" class="event-setlist-col-title">곡명</th>
-                                        <th scope="col" class="event-setlist-col-note">비고</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {{#setlistRows}}
-                                    {{#section}}
-                                    <tr class="event-setlist-section">
-                                        <td colspan="3">{{sectionLabel}}</td>
-                                    </tr>
-                                    {{/section}}
-                                    {{^section}}
-                                    {{#split}}
-                                    <tr class="event-setlist-split-row">
-                                        <td class="event-setlist-col-order">{{#hasOrder}}{{orderNum}}{{/hasOrder}}</td>
-                                        <td class="event-setlist-col-split" colspan="2">
-                                            <div class="event-setlist-variants">
-                                                {{#variants}}
-                                                <div class="event-setlist-variant">
-                                                    <span class="event-setlist-song">{{title}}</span>
-                                                    {{#hasSubtitle}}
-                                                    <span class="event-setlist-album">{{subtitle}}</span>
-                                                    {{/hasSubtitle}}
-                                                    {{#hasNote}}
-                                                    <span class="event-setlist-album">{{note}}</span>
-                                                    {{/hasNote}}
-                                                </div>
-                                                {{/variants}}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {{/split}}
-                                    {{^split}}
-                                    <tr>
-                                        <td class="event-setlist-col-order">{{#hasOrder}}{{orderNum}}{{/hasOrder}}</td>
-                                        <td class="event-setlist-col-title">
-                                            <span class="event-setlist-song">{{title}}</span>
-                                            {{#hasSubtitle}}
-                                            <span class="event-setlist-album">{{subtitle}}</span>
-                                            {{/hasSubtitle}}
-                                        </td>
-                                        <td class="event-setlist-col-note">{{#hasNote}}{{note}}{{/hasNote}}</td>
-                                    </tr>
-                                    {{/split}}
-                                    {{/section}}
-                                    {{/setlistRows}}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    {{/hasSetlist}}
-
-                    {{^hasPanelContent}}
-                    <p class="event-stop-detail event-stop-detail--empty">상세 안내·셋리스트가 아직 등록되지 않았습니다.</p>
-                    {{/hasPanelContent}}
-                </div>
-            </li>
+            <button type="button"
+                    class="site-section-tab{{#firstOrderedStop}} is-active{{/firstOrderedStop}}"
+                    role="tab"
+                    id="tab-event-stop-{{stopId}}"
+                    aria-controls="event-stop-{{stopId}}"
+                    aria-selected="{{#firstOrderedStop}}true{{/firstOrderedStop}}{{^firstOrderedStop}}false{{/firstOrderedStop}}"
+                    tabindex="{{#firstOrderedStop}}0{{/firstOrderedStop}}{{^firstOrderedStop}}-1{{/firstOrderedStop}}"
+                    data-event-stop-tab
+                    data-target="event-stop-{{stopId}}">{{tabLabel}}</button>
             {{/orderedStops}}
-        </ul>
+        </div>
+        {{/hasMultipleStops}}
+        <div class="event-stop-panels" id="eventStopPanels">
+            {{#orderedStops}}
+            <div class="event-stop-panel"
+                 id="event-stop-{{stopId}}"
+                 role="tabpanel"
+                 {{#hasMultipleStops}}aria-labelledby="tab-event-stop-{{stopId}}"{{/hasMultipleStops}}
+                 {{#stopPanelHidden}}hidden{{/stopPanelHidden}}>
+                <div class="event-stop-meta">
+                    <div class="event-stop-date">{{eventDate}}</div>
+                    <div class="event-stop-title">{{displayTitle}}</div>
+                    {{#hasVenue}}
+                    <div class="event-stop-venue">{{venue}}</div>
+                    {{/hasVenue}}
+                </div>
+
+                {{#hasDetail}}
+                <p class="event-stop-detail">{{detail}}</p>
+                {{/hasDetail}}
+
+                {{#hasSetlist}}
+                <div class="event-stop-block event-stop-block--setlist">
+                    <h3 class="event-stop-block-title">
+                        <span class="material-symbols-outlined" aria-hidden="true">graphic_eq</span>
+                        셋리스트
+                    </h3>
+                    <div class="event-setlist-wrap">
+                        <table class="event-setlist-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="event-setlist-col-order">순서</th>
+                                    <th scope="col" class="event-setlist-col-title">곡명</th>
+                                    <th scope="col" class="event-setlist-col-note">비고</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#setlistRows}}
+                                {{#section}}
+                                <tr class="event-setlist-section">
+                                    <td colspan="3">{{sectionLabel}}</td>
+                                </tr>
+                                {{/section}}
+                                {{^section}}
+                                {{#split}}
+                                <tr class="event-setlist-split-row">
+                                    <td class="event-setlist-col-order">{{#hasOrder}}{{orderNum}}{{/hasOrder}}</td>
+                                    <td class="event-setlist-col-split" colspan="2">
+                                        <div class="event-setlist-variants">
+                                            {{#variants}}
+                                            <div class="event-setlist-variant">
+                                                <span class="event-setlist-song">{{title}}</span>
+                                                {{#hasSubtitle}}
+                                                <span class="event-setlist-album">{{subtitle}}</span>
+                                                {{/hasSubtitle}}
+                                                {{#hasNote}}
+                                                <span class="event-setlist-album">{{note}}</span>
+                                                {{/hasNote}}
+                                            </div>
+                                            {{/variants}}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {{/split}}
+                                {{^split}}
+                                <tr>
+                                    <td class="event-setlist-col-order">{{#hasOrder}}{{orderNum}}{{/hasOrder}}</td>
+                                    <td class="event-setlist-col-title">
+                                        <span class="event-setlist-song">{{title}}</span>
+                                        {{#hasSubtitle}}
+                                        <span class="event-setlist-album">{{subtitle}}</span>
+                                        {{/hasSubtitle}}
+                                    </td>
+                                    <td class="event-setlist-col-note">{{#hasNote}}{{note}}{{/hasNote}}</td>
+                                </tr>
+                                {{/split}}
+                                {{/section}}
+                                {{/setlistRows}}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {{/hasSetlist}}
+
+                {{^hasPanelContent}}
+                <p class="event-stop-detail event-stop-detail--empty">상세 안내·셋리스트가 아직 등록되지 않았습니다.</p>
+                {{/hasPanelContent}}
+            </div>
+            {{/orderedStops}}
+        </div>
         {{/hasStops}}
         {{^hasStops}}
         <p class="text-sm text-[#b9cac4]/70 py-6 text-center">등록된 지역 회차가 없습니다.</p>
@@ -149,6 +162,7 @@
             {{/event}}
 
 </main>
+<script src="{{#asset}}/js/about-tabs.js{{/asset}}"></script>
 <script>
 (function () {
   var text = document.getElementById("eventInfoText");
@@ -165,17 +179,39 @@
     });
   }
 
-  document.querySelectorAll("[data-event-stop]").forEach(function (toggle) {
-    toggle.addEventListener("click", function () {
-      var item = toggle.closest(".event-stop-item");
-      if (!item) return;
-      var panel = item.querySelector(".event-stop-panel");
-      var open = toggle.getAttribute("aria-expanded") === "true";
-      toggle.setAttribute("aria-expanded", open ? "false" : "true");
-      item.classList.toggle("is-open", !open);
-      if (panel) panel.hidden = open;
+  var tabRoot = document.getElementById("eventStopTabs");
+  var panelsRoot = document.getElementById("eventStopPanels");
+  if (!tabRoot || !panelsRoot) return;
+
+  function activateStopTab(btn) {
+    if (!btn) return;
+    var targetId = btn.getAttribute("data-target");
+    tabRoot.querySelectorAll('[role="tab"]').forEach(function (tab) {
+      var selected = tab === btn;
+      tab.setAttribute("aria-selected", selected ? "true" : "false");
+      tab.tabIndex = selected ? 0 : -1;
+      tab.classList.toggle("is-active", selected);
+    });
+    panelsRoot.querySelectorAll('[role="tabpanel"]').forEach(function (panel) {
+      panel.hidden = panel.id !== targetId;
+    });
+  }
+
+  tabRoot.querySelectorAll('[role="tab"]').forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      activateStopTab(tab);
     });
   });
+
+  if (window.AboutTabs && typeof window.AboutTabs.enhanceTabs === "function") {
+    window.AboutTabs.enhanceTabs(tabRoot, {
+      onActivate: activateStopTab
+    });
+  } else {
+    var initial = tabRoot.querySelector('[role="tab"].is-active')
+      || tabRoot.querySelector('[role="tab"]');
+    activateStopTab(initial);
+  }
 })();
 </script>
 {{>layout/page-end}}

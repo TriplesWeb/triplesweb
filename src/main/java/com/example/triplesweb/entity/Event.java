@@ -53,6 +53,11 @@ public class Event {
         return stops != null && !stops.isEmpty();
     }
 
+    /** Mustache용: 회차가 2개 이상이면 지역 탭을 쓴다 */
+    public boolean isHasMultipleStops() {
+        return getOrderedStops().size() > 1;
+    }
+
     /** Mustache용: sortOrder·날짜 순 정렬된 회차 */
     public List<EventStop> getOrderedStops() {
         if (stops == null || stops.isEmpty()) return List.of();
