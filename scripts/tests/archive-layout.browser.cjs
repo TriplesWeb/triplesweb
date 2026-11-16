@@ -9,6 +9,7 @@ const css = fs.readFileSync(path.join(staticRoot, 'css', 'archive-page.css'), 'u
 const site = fs.readFileSync(path.join(staticRoot, 'css', 'site.css'), 'utf8');
 const siteChrome = fs.readFileSync(path.join(staticRoot, 'css', 'site-chrome.css'), 'utf8');
 const siteUi = fs.readFileSync(path.join(staticRoot, 'css', 'site-ui.css'), 'utf8');
+const siteMobile = fs.readFileSync(path.join(staticRoot, 'css', 'site-mobile.css'), 'utf8');
 const browseJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-browse.js'), 'utf8');
 const dateJs = fs.readFileSync(path.join(staticRoot, 'js', 'date-range-filter.js'), 'utf8');
 
@@ -28,6 +29,7 @@ ${site}
 ${siteChrome}
 ${css}
 ${siteUi}
+${siteMobile}
 </style></head>
 <body class="site-page">
 <main class="archive-page" data-archive-kind="image" data-date-label="사진 날짜">
@@ -40,6 +42,7 @@ ${siteUi}
         <div class="ar-kicker">Archive</div>
         <h1>아카이브</h1>
       </div>
+      <button type="button" class="ar-submit ar-home-upload" data-admin-only>사진 추가</button>
       <nav class="site-section-tabs ar-type-tabs" aria-label="아카이브 종류">
         <a class="site-section-tab" href="/archive" aria-current="page">사진</a>
         <a class="site-section-tab" href="/archive?type=video">영상</a>
@@ -520,6 +523,43 @@ ${siteUi}
     assert.deepEqual(registeredYmd.labels, [], '등록 날짜가 다시 연-월-일 셀렉트다: ' + JSON.stringify(registeredYmd.labels));
     assert.equal(registeredYmd.hidden, false, '등록 날짜 네이티브 입력이 숨겨져 있다');
     assert.equal(registeredYmd.extra, false, '멤버 외 출연자 입력이 남아 있다');
+
+    await page.setViewportSize({ width: 412, height: 900 });
+    const mobile = await page.evaluate(() => {
+      const headline = document.querySelector('.ar-headline').getBoundingClientRect();
+      const upload = document.querySelector('.ar-home-upload').getBoundingClientRect();
+      const tools = document.querySelector('.ar-filter-tools').getBoundingClientRect();
+      const date = document.querySelector('.ar-date-toggle').getBoundingClientRect();
+      const member = document.querySelector('.ar-member-toggle').getBoundingClientRect();
+      const reset = document.querySelector('.ar-reset').getBoundingClientRect();
+      const sort = document.querySelector('.ar-sort-control').getBoundingClientRect();
+      return {
+        uploadWidth: Math.round(upload.width),
+        headlineWidth: Math.round(headline.width),
+        uploadInside: upload.right <= headline.right + 1 && upload.left >= headline.left - 1,
+        dateWidth: Math.round(date.width),
+        memberWidth: Math.round(member.width),
+        sameRow: Math.abs(date.top - member.top) <= 8,
+        sideBySide: member.left >= date.right - 2,
+        resetWidth: Math.round(reset.width),
+        resetInside: reset.right <= tools.right + 1 && reset.left >= tools.left - 1,
+        sortWidth: Math.round(sort.width),
+        toolsWidth: Math.round(tools.width)
+      };
+    });
+    assert.ok(mobile.uploadWidth < mobile.headlineWidth * 0.55, '모바일 사진 추가가 가로로 길다: ' + JSON.stringify(mobile));
+    assert.equal(mobile.uploadInside, true, '모바일 사진 추가가 헤드라인 밖에 있다');
+    assert.equal(mobile.sameRow, true, '날짜와 멤버 버튼이 한 줄이 아니다');
+    assert.equal(mobile.sideBySide, true, '날짜와 멤버 버튼이 나란히 있지 않다');
+    assert.ok(mobile.dateWidth < mobile.toolsWidth * 0.7, '날짜 버튼이 한 줄을 다 차지한다: ' + mobile.dateWidth);
+    assert.ok(mobile.resetWidth < 140 && mobile.resetInside, '초기화 버튼이 잘리거나 길다: ' + JSON.stringify(mobile));
+    assert.ok(mobile.sortWidth < mobile.toolsWidth * 0.8, '정렬 칸이 한 줄을 다 차지한다: ' + mobile.sortWidth);
+    await page.evaluate(() => {
+      document.querySelectorAll('[data-date-popover], .ar-cal-board').forEach((node) => { node.hidden = true; });
+    });
+    await page.locator('.ar-toolbar').screenshot({ path: path.join(dateShotDir, 'archive-mobile-filters.png') });
+    await page.locator('.ar-home-upload').screenshot({ path: path.join(dateShotDir, 'archive-mobile-upload.png') });
+    await page.setViewportSize({ width: 1280, height: 900 });
 
     await page.evaluate(() => {
       document.body.style.minHeight = '1800px';

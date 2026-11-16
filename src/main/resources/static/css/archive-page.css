@@ -720,6 +720,78 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     .ar-headline.is-member-space { padding: 4.5rem 1.2rem 1.4rem; }
     .ar-back-folders { right: 3.55rem; }
 }
+@media (max-width: 1023px) {
+    .archive-page .ar-home-upload {
+        width: auto;
+        max-width: calc(100% - 1.6rem);
+        left: auto;
+        right: 0.85rem;
+        min-height: 2.25rem;
+        height: auto;
+        padding: 0.35rem 0.95rem;
+    }
+    .archive-page .ar-filter-tools {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: center;
+        justify-content: stretch;
+        gap: 0.45rem;
+        width: 100%;
+    }
+    .archive-page .ar-sort {
+        grid-column: 1 / -1;
+        width: auto;
+        max-width: 100%;
+        justify-self: start;
+    }
+    .archive-page .ar-sort-control {
+        width: auto;
+        min-width: 0;
+        max-width: 100%;
+        height: 2.5rem;
+    }
+    .archive-page .ar-sort-control select,
+    .archive-page .ar-sort-trigger {
+        width: auto;
+        min-width: 6.2rem;
+        min-height: 0;
+        height: 2.5rem;
+    }
+    .archive-page .ar-date-filter {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+    .archive-page .ar-date-toggle,
+    .archive-page .ar-member-toggle {
+        width: 100%;
+        max-width: 100%;
+        min-height: 2.5rem;
+        justify-content: center;
+    }
+    .archive-page .ar-search-row {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        width: 100%;
+        min-width: 0;
+        gap: 0.45rem;
+    }
+    .archive-page .ar-search-row .ar-search-wrap,
+    .archive-page .ar-filters .ar-search-wrap {
+        flex: 1 1 auto;
+        width: auto;
+        min-width: 0;
+        max-width: none;
+    }
+    .archive-page .ar-toolbar a.ar-reset {
+        width: auto;
+        flex: 0 0 auto;
+        min-height: 2.5rem;
+        height: auto;
+        padding: 0 0.85rem;
+    }
+}
 
 .ar-grid { display: grid; grid-template-columns: 1fr; gap: 1.1rem; }
 @media (min-width: 768px) { .ar-grid { grid-template-columns: 1fr 1fr; } }
