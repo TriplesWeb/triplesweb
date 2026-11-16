@@ -10,6 +10,7 @@ import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.ArchiveService;
 import com.example.triplesweb.service.UnitService;
+import com.example.triplesweb.util.ArchiveFolderArt;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -53,10 +54,12 @@ class ArchiveControllerTest {
     @MockitoBean AboutAdminAuth aboutAdminAuth;
     @MockitoBean ArtistRepository artistRepository;
     @MockitoBean UnitService unitService;
+    @MockitoBean ArchiveFolderArt archiveFolderArt;
 
     @BeforeEach void stubs() {
         lenient().when(unitService.listVisible()).thenReturn(List.of());
         lenient().when(archiveService.index()).thenReturn(List.of());
+        lenient().when(archiveFolderArt.urlFor(any(), any(), any())).thenReturn("");
     }
 
     private void stubFolder(MediaType type, Archive... items) {
@@ -75,7 +78,59 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("ar-folder is-group")))
                 .andExpect(content().string(containsString("/archive?folder")))
                 .andExpect(content().string(not(containsString("id=\"archiveGrid\""))))
-                .andExpect(content().string(not(containsString("site-section-tabs"))));
+                .andExpect(content().string(not(containsString("site-section-tabs"))))
+                .andExpect(content().string(containsString("ar-folder-shape")))
+                .andExpect(content().string(containsString("ar-folder is-solo")));
+    }
+
+    @Test void folderHomeGroupsNonUnitChemistryByMemberCount() throws Exception {
+        Archive duo = photo();
+        duo.setArtistNames("윤서연,정혜린");
+        Archive otherDuo = photo();
+        otherDuo.setId(8L);
+        otherDuo.setArtistNames("김채연,김유연");
+        Archive trio = photo();
+        trio.setId(9L);
+        trio.setArtistNames("윤서연,정혜린,이지우");
+        when(archiveService.index()).thenReturn(List.of(duo, otherDuo, trio));
+        String html = mvc.perform(get("/archive")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">2인</span>");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">3인</span>");
+        org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;combo-2");
+        org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;combo-3");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("윤서연 × 정혜린");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder=combo&amp;combo=");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;combo&amp;combo");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-preview");
+    }
+
+    @Test void memberFoldersHidePreviewImages() throws Exception {
+        Archive solo = photo();
+        solo.setArtistNames("윤서연");
+        when(archiveService.index()).thenReturn(List.of(solo));
+        String html = mvc.perform(get("/archive")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder is-solo");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-preview");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("src=\"/uploads/a.jpg\"");
+    }
+
+    @Test void comboCountFolderKeepsMemberFilter() throws Exception {
+        when(artistRepository.findAll()).thenReturn(List.of());
+        stubFolder(MediaType.IMAGE, photo());
+        mvc.perform(get("/archive").param("folder", "combo-2")).andExpect(status().isOk())
+                .andExpect(content().string(containsString(">2인</p>")))
+                .andExpect(content().string(containsString("id=\"archive-member-picker\"")))
+                .andExpect(content().string(containsString(">멤버 선택<")));
+    }
+
+    @Test void imageUploadOfTwoMembersOpensTheCountFolder() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
+        mvc.perform(multipart("/archive/upload/image").file(file)
+                        .param("title", "사진").param("artistNames", "윤서연").param("artistNames", "정혜린")
+                        .param("registeredOn", "2026-10-03").param("source", "FANCAM"))
+                .andExpect(redirectedUrl("/archive?folder=combo-2"));
     }
 
     @Test void adminImageArchiveShowsEditAndDelete() throws Exception {
@@ -89,8 +144,13 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("site-section-tabs")))
                 .andExpect(content().string(containsString("사진 날짜")))
                 .andExpect(content().string(containsString("실제로 올라온 날짜를 선택하세요.")))
-                .andExpect(content().string(containsString("data-ymd-year")))
-                .andExpect(content().string(containsString("aria-label=\"연도\"")))
+                .andExpect(content().string(containsString("type=\"date\"")))
+                .andExpect(content().string(containsString("name=\"registeredOn\"")))
+                .andExpect(content().string(containsString("data-date-clear")))
+                .andExpect(content().string(containsString(">초기화</button>")))
+                .andExpect(content().string(not(containsString(">지우기</button>"))))
+                .andExpect(content().string(not(containsString("data-ymd-year"))))
+                .andExpect(content().string(not(containsString("aria-label=\"연도\""))))
                 .andExpect(content().string(containsString("S1.png")))
                 .andExpect(content().string(containsString("id=\"archive-member-picker\"")))
                 .andExpect(content().string(not(containsString("archive-symbol-picker"))))

@@ -110,39 +110,39 @@ body.site-page > main.archive-page {
 .ar-folder-icon {
     position: relative;
     width: 5.6rem;
-    height: 4.35rem;
+    height: 4.5rem;
     filter: drop-shadow(0 8px 12px color-mix(in srgb, var(--folder-color) 28%, transparent));
 }
-.ar-folder-tab {
-    position: absolute;
-    top: 0.12rem;
-    left: 0.18rem;
-    width: 2.05rem;
-    height: 1.05rem;
-    border-radius: 0.45rem 0.45rem 0 0;
-    background: color-mix(in srgb, var(--folder-color) 86%, #fff 14%);
-}
-.ar-folder-body {
-    position: absolute;
-    inset: 0.72rem 0 0;
-    overflow: hidden;
-    border-radius: 0.35rem 0.85rem 0.7rem 0.7rem;
-    background:
-        repeating-linear-gradient(
-            -32deg,
-            color-mix(in srgb, var(--folder-color) 92%, #fff 8%) 0 12px,
-            color-mix(in srgb, var(--folder-color) 72%, #000 10%) 12px 24px
-        );
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
-}
-.ar-folder-body img {
+.ar-folder-shape {
     display: block;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    background-color: var(--folder-color);
+    -webkit-mask: url("/images/archive-folder.svg") center / contain no-repeat;
+    mask: url("/images/archive-folder.svg") center / contain no-repeat;
 }
-.ar-folder.is-group .ar-folder-body {
-    background: #f5c518;
+.ar-folder-art {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+.ar-folder-preview {
+    position: absolute;
+    left: 14%;
+    right: 14%;
+    top: 42%;
+    bottom: 12%;
+    z-index: 1;
+    width: auto;
+    height: auto;
+    object-fit: cover;
+    border-radius: 0.2rem;
+    pointer-events: none;
+}
+.ar-folder.is-solo .ar-folder-preview,
+.ar-folder.is-solo .ar-folder-body img {
+    display: none;
 }
 .ar-folder-label {
     display: block;
@@ -754,6 +754,7 @@ body.site-page > main.archive-page {
 .ar-dialog-body { display: flex; flex-direction: column; gap: 0.9rem; padding: 1rem 1.15rem 1.15rem; }
 .ar-field { display: flex; flex-direction: column; gap: 0.35rem; color: #b9cac4; font-size: 0.85rem; font-weight: 650; }
 .ar-field select,
+.ar-field input[type="date"],
 .ar-field input[type="text"], .ar-field input[type="search"] {
     box-sizing: border-box;
     width: 100%;
@@ -764,6 +765,7 @@ body.site-page > main.archive-page {
     color: #e3e2e8;
     padding: 0.625rem 0.75rem;
     font-size: 0.875rem;
+    color-scheme: dark;
 }
 .ar-field input[type="file"] {
     min-height: 2.625rem;
@@ -1134,5 +1136,5 @@ body.site-page > main.archive-page {
     .ar-detail-panel { grid-template-columns: 1fr; }
     .ar-detail-photo img { max-height: 42vh; }
     .ar-folders { grid-template-columns: repeat(auto-fill, minmax(5.6rem, 1fr)); gap: 1rem 0.55rem; }
-    .ar-folder-icon { width: 4.8rem; height: 3.7rem; }
+    .ar-folder-icon { width: 4.8rem; height: 3.9rem; }
 }

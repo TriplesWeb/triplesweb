@@ -28,15 +28,30 @@ class ArchiveFolderClassifierTest {
         assertThat(match.key()).isEqualTo("unit-1");
         assertThat(match.label()).isEqualTo("Acid Angel from Asia");
         assertThat(ArchiveFolderClassifier.matches(match, "unit-1", List.of())).isTrue();
+        assertThat(ArchiveFolderClassifier.matches(match, "combo-4", List.of())).isFalse();
         assertThat(ArchiveFolderClassifier.matches(match, "combo", List.of("윤서연", "김유연", "김나경", "공유빈"))).isFalse();
     }
 
-    @Test void twoMembersWithoutAMatchingUnitAreAComboFolder() {
-        var match = ArchiveFolderClassifier.classify("윤서연, 정혜린", List.of(aaa()));
-        assertThat(match.kind()).isEqualTo(ArchiveFolderClassifier.Kind.COMBO);
-        assertThat(match.label()).isEqualTo("윤서연 × 정혜린");
-        assertThat(ArchiveFolderClassifier.matches(match, "combo", List.of("정혜린", "윤서연"))).isTrue();
-        assertThat(ArchiveFolderClassifier.matches(match, "s1", List.of())).isFalse();
+    @Test void twoMembersWithoutAMatchingUnitShareTheCountFolder() {
+        var seoyeonHyein = ArchiveFolderClassifier.classify("윤서연, 정혜린", List.of(aaa()));
+        var chaeyeonYuyeon = ArchiveFolderClassifier.classify("김채연,김유연", List.of(aaa()));
+        assertThat(seoyeonHyein.kind()).isEqualTo(ArchiveFolderClassifier.Kind.COMBO);
+        assertThat(seoyeonHyein.key()).isEqualTo("combo-2");
+        assertThat(seoyeonHyein.label()).isEqualTo("2인");
+        assertThat(chaeyeonYuyeon.key()).isEqualTo("combo-2");
+        assertThat(ArchiveFolderClassifier.matches(seoyeonHyein, "combo-2", List.of())).isTrue();
+        assertThat(ArchiveFolderClassifier.matches(chaeyeonYuyeon, "combo-2", List.of())).isTrue();
+        assertThat(ArchiveFolderClassifier.matches(seoyeonHyein, "combo", List.of("정혜린", "윤서연"))).isTrue();
+        assertThat(ArchiveFolderClassifier.matches(seoyeonHyein, "combo-3", List.of())).isFalse();
+        assertThat(ArchiveFolderClassifier.comboSize("combo-2")).isEqualTo(2);
+        assertThat(ArchiveFolderClassifier.comboSize("combo")).isNull();
+    }
+
+    @Test void nineNonUnitMembersAreNotAComboFolder() {
+        var match = ArchiveFolderClassifier.classify(
+                "윤서연,정혜린,이지우,김채연,김유연,김수민,김나경,공유빈,카에데", List.of(aaa()));
+        assertThat(match.kind()).isEqualTo(ArchiveFolderClassifier.Kind.OTHER);
+        assertThat(ArchiveFolderClassifier.matches(match, "combo-8", List.of())).isFalse();
     }
 
     @Test void soloFolderIsOnlyThatOneMember() {

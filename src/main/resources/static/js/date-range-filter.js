@@ -87,10 +87,7 @@
     input.closest("label")?.classList.add("is-ymd");
     read();
   };
-  const bindRegisteredDates = (root) => {
-    (root || document).querySelectorAll('input[type="date"][name="registeredOn"]').forEach(enhanceDateInput);
-  };
-  window.bindArchiveDateFields = bindRegisteredDates;
+  window.bindArchiveDateFields = () => {};
 
   document.querySelectorAll("[data-date-filter]").forEach((root) => {
     const toggle = root.querySelector("[data-date-toggle]");
@@ -146,7 +143,6 @@
       root.closest("form")?.requestSubmit();
     });
   });
-  bindRegisteredDates(document);
   document.addEventListener("click", (event) => {
     if (event.target.closest("[data-date-filter]")) return;
     document.querySelectorAll("[data-date-popover]").forEach((pop) => { pop.hidden = true; });
