@@ -19,7 +19,6 @@
     margin-right: 4px;
 }
 #top-header a[aria-label="tripleS 홈"] .sss-mascot-wave,
-#top-header a[aria-label="tripleS 홈"] .sss-mascot-trail,
 .sss-mascot-wave {
     height: 28px !important;
     max-height: 28px !important;
@@ -31,15 +30,6 @@
 }
 .sss-mascot-wrap:not(.is-ready):not(.is-intro) .sss-mascot-wave {
     opacity: 0;
-}
-.sss-mascot-trail {
-    position: absolute;
-    left: 0;
-    top: 0;
-    pointer-events: none;
-    opacity: 0;
-    z-index: 2;
-    will-change: transform, opacity;
 }
 .sss-mascot-wrap .sss-mascot-wave { position: relative; z-index: 3; }
 #top-header a[aria-label="tripleS 홈"] #sss-wordmark {
@@ -200,8 +190,8 @@
     <!-- 모바일 메뉴 패널 -->
     <div id="mobile-menu" class="lg:hidden hidden">
         <div class="mobile-menu-sheet">
+            {{#member}}
             <div class="mobile-menu-head">
-                {{#member}}
                 <div class="mobile-menu-user">
                     <span class="mobile-menu-user__avatar" aria-hidden="true">
                         <svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3.2"/><path d="M6.2 18.2c.9-2.6 3-4.2 5.8-4.2s4.9 1.6 5.8 4.2"/></svg>
@@ -211,11 +201,8 @@
                         <span>Lv.{{level}} {{points}}P</span>
                     </span>
                 </div>
-                {{/member}}
-                <button type="button" class="mobile-menu-close" data-mobile-menu-close aria-label="메뉴 닫기">
-                    <span class="mobile-menu-close__icon" aria-hidden="true"></span>
-                </button>
             </div>
+            {{/member}}
 
             <form action="/search" method="get" role="search" class="site-search w-full mobile-menu-search">
                 <button type="submit" class="site-search__submit" title="검색" aria-label="검색">
@@ -226,13 +213,11 @@
 
             <nav class="mobile-menu-nav" aria-label="전체 메뉴">
                 <a class="mobile-direct-link" href="/" data-nav="home">
-                    <span class="mobile-nav-icon" aria-hidden="true"></span>
                     홈
                 </a>
                 {{#siteNavigation}}
                 {{#direct}}
                 <a class="mobile-direct-link" href="{{href}}" data-nav="{{id}}">
-                    <span class="mobile-nav-icon" aria-hidden="true"></span>
                     {{label}}
                 </a>
                 {{/direct}}
@@ -240,7 +225,6 @@
                 <div class="mobile-nav-group" data-nav="{{id}}">
                     <button type="button" class="mobile-nav-toggle w-full flex items-center justify-between px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] bg-transparent border-0 cursor-pointer rounded-lg hover:bg-white/5">
                         <span class="mobile-nav-label">
-                            <span class="mobile-nav-icon" aria-hidden="true"></span>
                             {{label}}
                         </span>
                         <span class="material-symbols-outlined text-sm transition-transform">expand_more</span>
@@ -262,11 +246,6 @@
                 </div>
                 {{/direct}}
                 {{/siteNavigation}}
-
-                <button type="button" class="mobile-direct-link" id="siteAdminMobileBtn" data-site-admin-open data-nav="admin" hidden>
-                    <span class="mobile-nav-icon" aria-hidden="true"></span>
-                    <span data-site-admin-mobile-label>관리자 로그인</span>
-                </button>
 
                 {{#member}}
                 <div class="mobile-account">

@@ -125,22 +125,10 @@
         }
         const holdMs = 450;
         const moveMs = (MASCOT_FRAME_COUNT / MASCOT_FRAME_FPS) * 1000; // 54프레임 1회
-        // 본체 진행도 e보다 뒤처진 지점에 잔상 → 초반에 앞서 나가지 않음
-        const trailLags = [0.05, 0.1, 0.16, 0.22, 0.28];
-        const trails = [];
-        for (const lag of trailLags) {
-          const ghost = mascot.cloneNode(true);
-          ghost.removeAttribute("id");
-          ghost.removeAttribute("data-motion-running");
-          ghost.className = "sss-mascot-trail";
-          ghost.src = mascotFrameSrc(1);
-          ghost.style.opacity = "0";
-          wrap.insertBefore(ghost, mascot);
-          trails.push({ el: ghost, lag: lag, lastFrame: 1 });
-        }
 
         wrap.classList.add("is-intro");
         wrap.classList.remove("is-ready");
+        wrap.querySelectorAll(".sss-mascot-trail").forEach((el) => el.remove());
         mascot.src = mascotFrameSrc(1);
         mascot.style.opacity = "1";
         mascot.style.transform = "translate(" + fly.x.toFixed(2) + "px, " + fly.y.toFixed(2) + "px) scale(0.85)";
@@ -155,28 +143,6 @@
             const scale = 0.85 + 0.15 * e;
             mascot.style.opacity = "1";
             mascot.style.transform = "translate(" + x.toFixed(2) + "px, " + y.toFixed(2) + "px) scale(" + scale.toFixed(3) + ")";
-
-            for (const trail of trails) {
-              if (e <= 0) {
-                trail.el.style.opacity = "0";
-                continue;
-              }
-              const te = Math.max(0, e - trail.lag);
-              const tx = fly.x * (1 - te);
-              const ty = fly.y * (1 - te) + Math.sin(te * Math.PI) * 18;
-              const tScale = 0.85 + 0.15 * te;
-              const fadeIn = Math.min(1, e / Math.max(0.04, trail.lag));
-              const strength = 0.4 * (1 - trail.lag / 0.34);
-              trail.el.style.opacity = String(Math.max(0, strength * fadeIn));
-              trail.el.style.transform = "translate(" + tx.toFixed(2) + "px, " + ty.toFixed(2) + "px) scale(" + tScale.toFixed(3) + ")";
-              const trailFrame = te >= 1
-                ? MASCOT_FRAME_COUNT
-                : Math.min(MASCOT_FRAME_COUNT, 1 + Math.floor(te * (MASCOT_FRAME_COUNT - 1)));
-              if (trailFrame !== trail.lastFrame) {
-                trail.lastFrame = trailFrame;
-                trail.el.src = mascotFrameSrc(trailFrame);
-              }
-            }
           },
           onDone: () => {
             wrap.classList.remove("is-intro");
@@ -218,15 +184,6 @@
     mobileMenuBtn.addEventListener("click", function () {
       const willOpen = mobileMenu.classList.contains("hidden");
       setMobileMenuOpen(willOpen);
-    });
-
-    mobileMenu.querySelectorAll("[data-mobile-menu-close]").forEach(function (btn) {
-      btn.addEventListener("click", function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        setMobileMenuOpen(false);
-        mobileMenuBtn.focus();
-      });
     });
 
     mobileMenu.querySelectorAll(".mobile-nav-toggle").forEach(function (btn) {
