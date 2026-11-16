@@ -20,7 +20,7 @@
     if (!grid) return;
     let cards = [...grid.querySelectorAll('.ar-card')];
     const sort = document.getElementById('archiveSort');
-    const numberOffset = Math.max(0, Number(grid.dataset.numberOffset) || 0);
+    let numberOffset = Math.max(0, Number(grid.dataset.numberOffset) || 0);
 
     const MEMBER_INDEX = (() => {
         const names = [
@@ -472,6 +472,7 @@
         if (grid.innerHTML !== nextGrid.innerHTML || grid.dataset.numberOffset !== nextOffset) {
             grid.innerHTML = nextGrid.innerHTML;
             grid.dataset.numberOffset = nextOffset;
+            numberOffset = Math.max(0, Number(nextOffset) || 0);
             cards = [...grid.querySelectorAll('.ar-card')];
             apply();
         }
@@ -519,7 +520,7 @@
     });
     window.addEventListener('popstate', () => {
         if (!form) return;
-        loadArchiveFilter(location.href, false).catch(() => window.location.reload());
+        window.location.reload();
     });
     apply();
 })();
