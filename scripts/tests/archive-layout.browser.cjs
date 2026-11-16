@@ -276,7 +276,7 @@ ${siteUi}
         radius: getComputedStyle(field).borderRadius,
         searchAfterMember: searchBox.left >= memberBox.right - 8,
         resetAfterSearch: resetBox.left >= goBox.right - 8,
-        toolsLeft: Math.abs(toolsBox.left - barBox.left) <= 24,
+        toolsCenter: Math.abs(((toolsBox.left + toolsBox.right) / 2) - ((barBox.left + barBox.right) / 2)) <= 24,
         dateInTools: tools.contains(date),
         memberInTools: tools.contains(member),
         resetInTools: tools.contains(reset),
@@ -306,7 +306,7 @@ ${siteUi}
     assert.equal(toolbar.searchAfterMember, true, '검색창이 멤버 선택 오른쪽에 없다');
     assert.equal(toolbar.resetAfterSearch, true, '초기화가 검색 버튼 오른쪽에 없다');
     assert.deepEqual(toolbar.sortLabels, ['newest', 'oldest', 'title', 'first-member', 'last-member']);
-    assert.equal(toolbar.toolsLeft, true, '필터가 왼쪽에 붙어 있지 않다');
+    assert.equal(toolbar.toolsCenter, true, '검색 필터가 가운데 있지 않다');
     assert.equal(toolbar.dateInTools, true);
     assert.equal(toolbar.memberInTools, true);
     assert.equal(toolbar.resetInTools, true);

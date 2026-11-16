@@ -69,7 +69,7 @@ body.site-admin-enabled button[data-admin-only] { display: inline-flex !importan
     </div>
   </section>
   <section class="ar-folders" aria-label="아카이브 폴더">
-    ${folder({ extraClass: ' is-group', href: '/archive?folder=s', color: '#f5c518', label: '' })}
+    ${folder({ extraClass: ' is-group', href: '/archive?folder=s', color: '#f5c518', label: '전체 멤버' })}
     ${folder({ extraClass: ' is-parent', href: '/archive?folder=units', color: '#a78bfa', label: '유닛별' })}
     ${folder({ extraClass: ' is-solo', href: '/archive?folder=s&members=윤서연', color: '#22aeff', label: 'S1 윤서연' })}
     ${folder({ extraClass: ' is-solo', href: '/archive?folder=s&members=정혜린', color: '#ff8ad4', label: 'S2 정혜린' })}
@@ -251,6 +251,11 @@ ${siteUi}
 </main>
 </body></html>`;
 
+const groupHtml = memberHtml.replace(
+  /<p class="ar-folder-title[\s\S]*?<\/p>/,
+  '<p class="ar-folder-title">전체 사진</p>'
+);
+
 (async () => {
   const browser = await chromium.launch({
     headless: true,
@@ -275,6 +280,9 @@ ${siteUi}
       }
       if (url.pathname.endsWith('member.html')) {
         return route.fulfill({ contentType: 'text/html', body: memberHtml });
+      }
+      if (url.pathname.endsWith('group.html')) {
+        return route.fulfill({ contentType: 'text/html', body: groupHtml });
       }
       if (url.pathname === '/images/archive-folder.svg') {
         return route.fulfill({ contentType: 'image/svg+xml', body: folderSvg });
@@ -330,9 +338,9 @@ ${siteUi}
         wholeMember: document.body.textContent.includes('전체 멤버')
       };
     });
-    assert.deepEqual(home.labels, ['유닛별', 'S1 윤서연', 'S2 정혜린']);
+    assert.deepEqual(home.labels, ['전체 멤버', '유닛별', 'S1 윤서연', 'S2 정혜린']);
     assert.equal(home.memberHref, '/archive?folder=s&members=윤서연');
-    assert.equal(home.wholeMember, false);
+    assert.equal(home.wholeMember, true);
     assert.equal(home.comboArt, false, '초기 화면에 케미·유닛 폴더 이미지가 보인다');
     assert.equal(home.placeholder, false, '업로드 예정 플레이스홀더가 남아 있다');
     assert.ok(Math.abs(home.member.width - home.parent.width) <= 1, '상위 폴더 너비가 멤버 폴더와 다르다: ' + JSON.stringify(home));
@@ -422,6 +430,11 @@ ${siteUi}
     assert.equal(memberTitle.dateStat, '2026년 11월 16일');
     assert.equal(memberTitle.dateIcon, 'calendar_month');
     await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-member-title-center.png') });
+
+    await page.goto('https://archive-folders.test/group.html', { waitUntil: 'load' });
+    const groupTitle = await page.locator('.ar-folder-title').innerText();
+    assert.equal(groupTitle.trim(), '전체 사진');
+    await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-group-title.png') });
     console.log('PASS: 아카이브 폴더 홈 실루엣·케미 필터');
   } finally {
     await browser.close();
