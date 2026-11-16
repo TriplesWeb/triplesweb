@@ -165,12 +165,13 @@
 }
 
 .event-setlist-section td {
-  background: rgba(58, 74, 70, 0.28) !important;
-  color: #e3e2e8;
+  background: #12141a !important;
+  color: #b9cac4;
   font-weight: 700;
   text-align: center;
   padding: 0.55rem 0.6rem;
-  border-bottom-color: rgba(58, 74, 70, 0.45);
+  border-bottom-color: rgba(58, 74, 70, 0.55);
+  letter-spacing: 0.01em;
 }
 
 .event-setlist-col-split {
