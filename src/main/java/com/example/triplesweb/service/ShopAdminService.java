@@ -117,6 +117,7 @@ public class ShopAdminService {
                 .map(e -> ShopAdminDto.EventOption.builder()
                         .eventId(e.getEventId())
                         .eventName(e.getEventName())
+                        .eventImage(e.getDisplayEventImage())
                         .build())
                 .collect(Collectors.toList());
     }

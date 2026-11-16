@@ -206,6 +206,56 @@
       fillEventSelect(preferredEventId ?? sel?.value ?? null);
     }
     setMdEditorMode();
+    syncCoverUiFromEvent();
+  }
+
+  /** 공연 구분·공연 선택 시 커버는 공연 포스터를 미리보기로 쓴다. */
+  function syncCoverUiFromEvent() {
+    const linked = hasLinkedEvent();
+    const fromEvent = document.getElementById("shopEditCoverFromEvent");
+    const fileLabel = document.getElementById("shopEditCoverFileLabel");
+    const urlLabel = document.getElementById("shopEditCoverUrlLabel");
+    const clearLabel = document.getElementById("shopEditClearImageLabel");
+    const filePreview = document.getElementById("shopEditImagePreview");
+    const eventPreview = document.getElementById("shopEditEventCoverPreview");
+    const fileInput = document.getElementById("shopEditImage");
+    const urlInput = document.getElementById("shopEditImageUrl");
+    const clearInput = document.getElementById("shopEditClearImage");
+
+    if (fromEvent) fromEvent.hidden = !linked;
+    if (fileLabel) fileLabel.hidden = linked;
+    if (urlLabel) urlLabel.hidden = linked;
+    if (clearLabel) clearLabel.hidden = linked;
+    if (filePreview) filePreview.classList.toggle("hidden", linked || !filePreview.src);
+
+    if (!linked) {
+      if (eventPreview) {
+        eventPreview.src = "";
+        eventPreview.classList.add("hidden");
+      }
+      return;
+    }
+
+    if (fileInput) fileInput.value = "";
+    if (urlInput) urlInput.value = "";
+    if (clearInput) clearInput.checked = true;
+    if (filePreview) {
+      filePreview.src = "";
+      filePreview.classList.add("hidden");
+    }
+
+    const eventId = document.getElementById("shopEditEventId")?.value;
+    const match = eventOptions.find((ev) => String(ev.eventId) === String(eventId || ""));
+    const src = match?.eventImage || "";
+    if (eventPreview) {
+      if (src) {
+        eventPreview.src = src;
+        eventPreview.classList.remove("hidden");
+      } else {
+        eventPreview.src = "";
+        eventPreview.classList.add("hidden");
+      }
+    }
   }
 
   function emptyCategory() {
@@ -678,6 +728,7 @@
       }
       syncMdBuilderFromDom();
       setMdEditorMode();
+      syncCoverUiFromEvent();
     });
 
     document.getElementById("shopEditMdBuilder")?.addEventListener("click", (e) => {
@@ -911,15 +962,23 @@
       fd.append("mdList", mdList);
       const sectionId = document.getElementById("shopEditSectionId")?.value;
       if (sectionId) fd.append("sectionId", sectionId);
-      const file = document.getElementById("shopEditImage").files?.[0];
-      if (file) fd.append("image", file);
-      const imageUrl = document.getElementById("shopEditImageUrl").value.trim();
-      if (imageUrl) fd.append("imageUrl", imageUrl);
-      const clearImage = document.getElementById("shopEditClearImage").checked;
-      if (clearImage) fd.append("clearImage", "true");
-      if (!window.confirm(clearImage
-        ? "이 굿즈리스트를 저장하시겠습니까? 체크한 커버는 삭제됩니다."
-        : (id ? "이 굿즈리스트를 수정하시겠습니까?" : "이 굿즈리스트를 추가하시겠습니까?"))) return;
+      if (linked) {
+        // 공연 연결 시 샵 고유 커버를 비우고 공연 포스터를 쓴다.
+        fd.append("clearImage", "true");
+      } else {
+        const file = document.getElementById("shopEditImage").files?.[0];
+        if (file) fd.append("image", file);
+        const imageUrl = document.getElementById("shopEditImageUrl").value.trim();
+        if (imageUrl) fd.append("imageUrl", imageUrl);
+        const clearImage = document.getElementById("shopEditClearImage").checked;
+        if (clearImage) fd.append("clearImage", "true");
+      }
+      const confirmMsg = linked
+        ? (id ? "이 굿즈리스트를 수정하시겠습니까? 커버는 연결 공연 포스터를 씁니다." : "이 굿즈리스트를 추가하시겠습니까? 커버는 연결 공연 포스터를 씁니다.")
+        : (document.getElementById("shopEditClearImage")?.checked
+          ? "이 굿즈리스트를 저장하시겠습니까? 체크한 커버는 삭제됩니다."
+          : (id ? "이 굿즈리스트를 수정하시겠습니까?" : "이 굿즈리스트를 추가하시겠습니까?"));
+      if (!window.confirm(confirmMsg)) return;
       try {
         const url = id ? API + "/" + id : API;
         const res = await apiFetch(url, { method: "POST", body: fd });
