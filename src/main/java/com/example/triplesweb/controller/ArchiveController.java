@@ -178,17 +178,16 @@ public class ArchiveController {
             toDate = swap;
         }
         ArchiveSource source = null;
-        boolean unclassified = false;
-        if (sourceSlug != null && sourceSlug.trim().equalsIgnoreCase("unclassified")) {
-            unclassified = true;
-        } else if (sourceSlug != null && !sourceSlug.isBlank()) {
+        boolean unclassified = isFanmadeSource(sourceSlug);
+        if (!unclassified && sourceSlug != null && !sourceSlug.isBlank()) {
             try {
                 source = ArchiveSource.parse(sourceSlug);
             } catch (IllegalArgumentException ignored) {
                 source = null;
             }
         }
-        List<ArchiveFolderClassifier.UnitMembers> units = unitSnapshots(unitService.listVisible());
+        List<Unit> visibleUnits = unitService.listVisible();
+        List<ArchiveFolderClassifier.UnitMembers> units = unitSnapshots(visibleUnits);
         Page<Archive> archives = browse
                 ? archiveService.pageByType(type, page, size, q, selectedMembers, fromDate, toDate)
                 : archiveService.pageInFolder(type, page, size, q, selectedMembers, fromDate, toDate,
@@ -214,6 +213,8 @@ public class ArchiveController {
         model.addAttribute("comboValue", combo == null ? "" : combo.trim());
         model.addAttribute("hasCombo", combo != null && !combo.isBlank());
         model.addAttribute("folderTitle", folderTitle(folderKey, comboMembers, units));
+        model.addAttribute("folderAccent", folderAccent(folderKey, visibleUnits, artists));
+        model.addAttribute("folderIsSolo", isSoloFolder(folderKey));
         String onText = onDate == null ? "" : onDate.toString();
         String fromText = onDate != null ? "" : (fromDate == null ? "" : fromDate.toString());
         String toText = onDate != null ? "" : (toDate == null ? "" : toDate.toString());
@@ -353,7 +354,7 @@ public class ArchiveController {
             card.put("hasRegisteredOn", !registered.isBlank());
             ArchiveSource source = archive.getSource();
             card.put("sourceValue", source == null ? "" : source.name());
-            card.put("sourceLabel", source == null ? "미분류" : source.getLabel());
+            card.put("sourceLabel", source == null || source == ArchiveSource.FANCAM ? "기타/팬메이드" : source.getLabel());
             card.put("hasSource", source != null);
             cards.add(card);
         }
@@ -422,7 +423,7 @@ public class ArchiveController {
 
     private void addArchivePage(Model model, Page<Archive> archives, MediaType type, String q, String memberQuery,
                                 String dateQuery, boolean browse, String folderQuery, String sourceQuery, String sourceSlug) {
-        int totalPages = archives.getTotalPages();
+        int totalPages = Math.max(1, archives.getTotalPages());
         int current = archives.getNumber();
         String query = q == null ? "" : q.trim();
         model.addAttribute("archiveTotal", archives.getTotalElements());
@@ -468,13 +469,11 @@ public class ArchiveController {
         model.addAttribute("sourceTabs", sourceTabs(folderBase, typeQuery + keptFolder
                 + qQuery + (memberQuery == null ? "" : memberQuery) + (dateQuery == null ? "" : dateQuery), sourceSlug));
         List<Map<String, Object>> archivePages = new ArrayList<>();
-        if (totalPages > 0) {
-            int start = Math.max(0, current - 2);
-            int end = Math.min(totalPages - 1, start + 4);
-            start = Math.max(0, end - 4);
-            for (int i = start; i <= end; i++) {
-                archivePages.add(Map.of("num", i, "label", i + 1, "active", i == current));
-            }
+        int start = Math.max(0, current - 2);
+        int end = Math.min(totalPages - 1, start + 4);
+        start = Math.max(0, end - 4);
+        for (int i = start; i <= end; i++) {
+            archivePages.add(Map.of("num", i, "label", i + 1, "active", i == current));
         }
         model.addAttribute("archivePages", archivePages);
     }
@@ -539,13 +538,26 @@ public class ArchiveController {
         List<Map<String, Object>> tabs = new ArrayList<>();
         String current = sourceSlug == null ? "" : sourceSlug.trim();
         tabs.add(sourceTab("전체", joinHref(path, extraQuery), current.isBlank()));
-        tabs.add(sourceTab("미분류", joinHref(path, extraQuery + "&source=unclassified"), current.equalsIgnoreCase("unclassified")));
         for (ArchiveSource source : ArchiveSource.values()) {
+            if (source == ArchiveSource.FANCAM) continue;
             tabs.add(sourceTab(source.getLabel(),
                     joinHref(path, extraQuery + "&source=" + source.getSlug()),
                     current.equalsIgnoreCase(source.getSlug()) || current.equalsIgnoreCase(source.name())));
         }
+        tabs.add(sourceTab("기타/팬메이드",
+                joinHref(path, extraQuery + "&source=fanmade"),
+                isFanmadeSource(current)));
         return tabs;
+    }
+
+    private static boolean isFanmadeSource(String slug) {
+        if (slug == null || slug.isBlank()) return false;
+        String value = slug.trim();
+        return value.equalsIgnoreCase("unclassified")
+                || value.equalsIgnoreCase("fanmade")
+                || value.equalsIgnoreCase("other")
+                || value.equalsIgnoreCase("fancam")
+                || value.equalsIgnoreCase(ArchiveSource.FANCAM.name());
     }
 
     private static Map<String, Object> sourceTab(String label, String href, boolean active) {
@@ -592,6 +604,38 @@ public class ArchiveController {
             }
         }
         return folder;
+    }
+
+    private String folderAccent(String folder, List<Unit> units, List<Artist> artists) {
+        if (folder == null || folder.isBlank()) return "#00f5d4";
+        if (folder.equalsIgnoreCase("s")) return "#f5c518";
+        Integer comboSize = ArchiveFolderClassifier.comboSize(folder);
+        if (comboSize != null) {
+            String[] comboColors = { "#7dd3fc", "#a5b4fc", "#c4b5fd", "#86efac" };
+            int[] folders = ArchiveFolderClassifier.COMBO_FOLDERS;
+            for (int i = 0; i < folders.length; i++) {
+                if (folders[i] == comboSize) return comboColors[i];
+            }
+            return "#a5b4fc";
+        }
+        if (isSoloFolder(folder)) {
+            int index = Integer.parseInt(folder.substring(1)) - 1;
+            for (Artist artist : artists) {
+                if (MemberPortraitOptions.memberIndex(artist.getName()) == index
+                        || MemberPortraitOptions.memberIndex(artist.getEngName()) == index) {
+                    return safeColor(artist.getColor());
+                }
+            }
+            return "#b9cac4";
+        }
+        if (folder.toLowerCase(Locale.ROOT).startsWith("unit-")) {
+            for (Unit unit : units == null ? List.<Unit>of() : units) {
+                if (unit.getUnitId() != null && ("unit-" + unit.getUnitId()).equalsIgnoreCase(folder)) {
+                    return unitColor(unit, artists);
+                }
+            }
+        }
+        return "#00f5d4";
     }
 
     private List<Map<String, Object>> folderCards(List<Archive> archives, List<Unit> units,

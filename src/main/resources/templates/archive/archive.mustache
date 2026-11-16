@@ -14,17 +14,17 @@
 
 <main class="archive-page{{#archiveBrowse}} is-browse{{/archiveBrowse}}{{#archiveFolderHome}} is-folder-home{{/archiveFolderHome}}{{#archiveFolderView}} is-folder-view{{/archiveFolderView}}" data-archive-kind="{{#imageArchive}}image{{/imageArchive}}{{#videoArchive}}video{{/videoArchive}}" data-date-label="{{mediaDateLabel}}">
     <section class="ar-hero{{#archiveBrowse}} ar-hero-browse{{/archiveBrowse}}">
-        <div class="ar-panel ar-headline">
+        <div class="ar-panel ar-headline{{#archiveFolderView}} is-member-space{{/archiveFolderView}}"{{#archiveFolderView}} style="--folder-color: {{folderAccent}}"{{/archiveFolderView}}>
             <button type="button" class="ar-stats-toggle" data-stats-toggle aria-expanded="true" aria-controls="archiveStats" aria-label="통계 접기">
                 <span data-stats-icon aria-hidden="true">−</span>
             </button>
-            <div>
+            {{#archiveFolderView}}<a class="site-btn site-btn--reset ar-back-folders" href="/archive">←목록으로</a>{{/archiveFolderView}}
+            <div class="ar-headline-copy">
                 <div class="ar-kicker"><span class="material-symbols-outlined">{{#archiveFolderHome}}folder{{/archiveFolderHome}}{{^archiveFolderHome}}{{#imageArchive}}photo_library{{/imageArchive}}{{#videoArchive}}play_circle{{/videoArchive}}{{/archiveFolderHome}}</span> Archive</div>
                 <h1>아카이브</h1>
                 {{#archiveBrowse}}<p>사진 전체</p>{{/archiveBrowse}}
-                {{#archiveFolderView}}<p>{{folderTitle}}</p>{{/archiveFolderView}}
+                {{#archiveFolderView}}<p class="ar-folder-title">{{folderTitle}}</p>{{/archiveFolderView}}
                 {{#archiveFolderHome}}<p>폴더를 선택하세요</p>{{/archiveFolderHome}}
-                {{#archiveFolderView}}<a class="ar-back-folders" href="/archive">폴더 목록</a>{{/archiveFolderView}}
             </div>
             <div class="ar-stats" id="archiveStats">
                 {{#archiveFolderHome}}
@@ -71,15 +71,14 @@
                 <div class="ar-card-members" hidden>{{>partials/archive-album-members}}</div>
                 {{#hasRegisteredOn}}<time class="ar-card-date" datetime="{{registeredOn}}">{{registeredOn}}</time>{{/hasRegisteredOn}}
                 <div class="ar-actions" data-admin-only>
-                    <button type="button" data-archive-edit data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-url="{{file.url}}" data-thumbnail-url="{{thumbnailUrl}}" data-registered="{{registeredOn}}" data-source="{{sourceValue}}">수정</button>
-                    <button type="button" class="ar-delete" data-archive-delete data-id="{{id}}" data-title="{{title}}">삭제</button>
+                    <button type="button" class="site-btn site-btn--primary site-btn--sm" data-archive-edit data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-url="{{file.url}}" data-thumbnail-url="{{thumbnailUrl}}" data-registered="{{registeredOn}}" data-source="{{sourceValue}}">수정하기</button>
+                    <button type="button" class="site-btn site-btn--danger site-btn--sm ar-delete" data-archive-delete data-id="{{id}}" data-title="{{title}}">삭제하기</button>
                 </div>
             </div>
         </article>
         {{/videoArchive}}
         {{/archiveCards}}
     </section>
-    <p id="archiveNone" class="ar-panel ar-empty" hidden>이 페이지에서 조건에 맞는 {{#imageArchive}}사진{{/imageArchive}}{{#videoArchive}}영상{{/videoArchive}}이 없습니다.</p>
     {{^hasArchives}}
     <p class="ar-panel ar-empty">{{#hasQuery}}검색 결과가 없습니다.{{/hasQuery}}{{^hasQuery}}등록된 {{#imageArchive}}사진{{/imageArchive}}{{#videoArchive}}영상{{/videoArchive}}이 없습니다.{{/hasQuery}}</p>
     {{/hasArchives}}
@@ -335,8 +334,8 @@
                 </section>
             </div>
             <div class="ar-dialog-foot ar-detail-actions" data-admin-only>
-                <button type="button" class="ar-submit" data-archive-edit id="archiveVideoEdit">수정</button>
-                <button type="button" class="ar-delete" data-archive-delete id="archiveVideoDelete">삭제</button>
+                <button type="button" class="site-btn site-btn--primary" data-archive-edit id="archiveVideoEdit">수정하기</button>
+                <button type="button" class="site-btn site-btn--danger ar-delete" data-archive-delete id="archiveVideoDelete">삭제하기</button>
             </div>
         </div>
     </div>

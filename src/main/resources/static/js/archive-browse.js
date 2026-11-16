@@ -3,7 +3,6 @@
     if (!grid) return;
     const cards = [...grid.querySelectorAll('.ar-card')];
     const sort = document.getElementById('archiveSort');
-    const none = document.getElementById('archiveNone');
     const numberOffset = Math.max(0, Number(grid.dataset.numberOffset) || 0);
 
     const MEMBER_INDEX = (() => {
@@ -83,7 +82,6 @@
             if (badge) badge.textContent = String(numberOffset + index + 1);
             grid.appendChild(card);
         });
-        if (none) none.hidden = shown.length !== 0;
         grid.dispatchEvent(new CustomEvent('archive:updated'));
     }
 

@@ -29,7 +29,7 @@ body.site-page > main.archive-page {
     backdrop-filter: blur(20px);
 }
 .ar-hero { display: grid; grid-template-columns: 1fr; gap: 1.15rem; }
-.ar-headline { position: relative; overflow: hidden; padding: 1.7rem 3.6rem 1.3rem 1.7rem; display: flex; flex-direction: column; justify-content: flex-start; min-height: 0; }
+.ar-headline { position: relative; overflow: hidden; padding: 1.7rem 3.6rem 1.3rem 1.7rem; display: flex; flex-direction: column; justify-content: flex-start; min-height: 0; --folder-color: #00f5d4; }
 .ar-stats-toggle {
     position: absolute;
     top: 1rem;
@@ -58,6 +58,49 @@ body.site-page > main.archive-page {
 .ar-headline h1 { margin: 0.7rem 0 0; font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: clamp(2rem, 4vw, 2.8rem); line-height: 1.12; font-weight: 700; letter-spacing: -0.02em; color: #d7fff3; }
 .ar-headline h1 span { color: #00f5d4; font-weight: 500; font-size: 0.58em; }
 .ar-headline p { max-width: 38rem; margin: 0.8rem 0 0; color: #b9cac4; line-height: 1.7; }
+.ar-headline.is-member-space {
+    padding: 1.7rem 11rem 1.55rem 1.7rem;
+}
+.ar-headline.is-member-space::after {
+    background: color-mix(in srgb, var(--folder-color) 22%, transparent);
+}
+.ar-headline.is-member-space .ar-headline-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    text-align: center;
+}
+.ar-headline.is-member-space .ar-kicker { justify-content: center; }
+.ar-headline.is-member-space h1 {
+    margin-top: 0.45rem;
+    font-size: 0.92rem;
+    font-weight: 650;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--folder-color) 72%, #d7fff3);
+}
+.ar-folder-title {
+    max-width: none;
+    margin: 0.55rem 0 0;
+    color: #f7fffc;
+    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-size: clamp(1.9rem, 4.4vw, 3.05rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.12;
+    text-shadow: 0 0 32px color-mix(in srgb, var(--folder-color) 58%, transparent);
+}
+.ar-folder-title::after {
+    content: "";
+    display: block;
+    width: 4.6rem;
+    height: 3px;
+    margin: 0.75rem auto 0;
+    border-radius: 999px;
+    background: var(--folder-color);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--folder-color) 75%, transparent);
+}
 .ar-headline .site-section-tabs {
     margin-top: 1.25rem;
     padding-top: 0.35rem;
@@ -65,14 +108,14 @@ body.site-page > main.archive-page {
     border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 .ar-back-folders {
-    display: inline-flex;
-    margin-top: 0.75rem;
-    color: #8bf5dc;
-    font-size: 0.88rem;
-    font-weight: 700;
-    text-decoration: none;
+    position: absolute;
+    top: 1rem;
+    right: 3.55rem;
+    z-index: 2;
+    margin: 0;
+    min-height: 2.15rem;
+    padding: 0.35rem 0.95rem;
 }
-.ar-back-folders:hover { color: #00f5d4; }
 .ar-folder-tabs {
     display: flex;
     flex-direction: column;
@@ -271,7 +314,7 @@ body.site-page > main.archive-page {
 .ar-muted { color: #b9cac4; font-size: 0.85rem; }
 
 .ar-toolbar { position: relative; z-index: 5; padding: 0.85rem 1.05rem; display: flex; flex-direction: column; gap: 0.65rem; }
-.ar-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: center; }
+.ar-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: flex-start; }
 .ar-search-row {
     display: flex;
     align-items: center;
@@ -310,7 +353,7 @@ body.site-page > main.archive-page {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 0.5rem;
     margin-left: 0;
 }
@@ -328,7 +371,7 @@ body.site-page > main.archive-page {
     position: relative;
     display: inline-flex;
     align-items: center;
-    min-width: 9rem;
+    min-width: 12.25rem;
     height: 2.1rem;
     padding: 0 0.35rem 0 0.75rem;
     border-radius: 999px;
@@ -447,32 +490,13 @@ body.site-page > main.archive-page {
     outline: none;
     border-color: #00f5d4;
 }
-.ar-toolbar a.ar-reset {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    min-height: 2.1rem;
-    height: 2.1rem;
-    padding: 0.3rem 0.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.045);
-    color: #e3e2e8;
-    font-family: inherit;
-    font-size: 0.82rem;
-    font-weight: 650;
-    line-height: 1;
-    text-decoration: none;
-}
-.ar-toolbar a.ar-reset:hover {
-    border-color: rgba(0, 245, 212, 0.45);
-    color: #00f5d4;
-}
+.ar-toolbar a.ar-reset,
 .ar-toolbar .ar-submit { min-height: 2.1rem; padding: 0.35rem 0.95rem; }
 @media (max-width: 720px) {
     .ar-search-row, .ar-search-wrap, .ar-filter-tools { width: 100%; margin-left: 0; }
     .ar-search-row .ar-search-wrap { flex: 1 1 auto; max-width: none; }
+    .ar-headline.is-member-space { padding: 4.5rem 1.2rem 1.4rem; }
+    .ar-back-folders { right: 3.55rem; }
 }
 
 .ar-grid { display: grid; grid-template-columns: 1fr; gap: 1.1rem; }
@@ -915,8 +939,6 @@ body.site-page > main.archive-page {
 @media (max-width: 700px) { .ar-preview { grid-template-columns: 1fr; } }
 .ar-close { border: 0; background: transparent; color: #b9cac4; font-size: 1.4rem; line-height: 1; cursor: pointer; }
 .ar-actions { display: flex; gap: 0.4rem; margin-top: 0.45rem; }
-.ar-actions button { padding: 0.32rem 0.65rem; border-radius: 9999px; border: 1px solid rgba(0, 245, 212, 0.45); background: rgba(0, 245, 212, 0.1); color: #00f5d4; font-size: 0.75rem; font-weight: 700; }
-.ar-actions button.ar-delete { color: #ffb4ab; border-color: rgba(255, 180, 171, 0.35); }
 .ar-empty { padding: 2.5rem 1rem; text-align: center; color: #b9cac4; }
 .ar-pager {
     padding: 0.9rem 1rem;
@@ -1164,15 +1186,7 @@ body.site-page > main.archive-page {
     justify-content: flex-end;
     gap: 0.5rem;
 }
-.ar-detail-actions .ar-delete {
-    padding: 0.45rem 0.9rem;
-    border-radius: 9999px;
-    border: 1px solid rgba(255, 180, 171, 0.35);
-    background: rgba(255, 180, 171, 0.08);
-    color: #ffb4ab;
-    font-size: 0.8rem;
-    font-weight: 700;
-}
+.ar-detail-actions .ar-delete { min-height: 2.1rem; }
 @media (max-width: 860px) {
     .ar-detail-panel { grid-template-columns: 1fr; }
     .ar-detail-photo img { max-height: 42vh; }

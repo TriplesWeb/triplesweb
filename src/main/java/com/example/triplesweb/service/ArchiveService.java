@@ -121,7 +121,9 @@ public class ArchiveService {
             if (from != null) predicates.add(cb.greaterThanOrEqualTo(root.get("registeredOn"), from));
             if (to != null) predicates.add(cb.lessThanOrEqualTo(root.get("registeredOn"), to));
             if (unclassifiedOnly) {
-                predicates.add(cb.isNull(root.get("source")));
+                predicates.add(cb.or(
+                        cb.isNull(root.get("source")),
+                        cb.equal(root.get("source"), ArchiveSource.FANCAM)));
             } else if (source != null) {
                 predicates.add(cb.equal(root.get("source"), source));
             }

@@ -215,7 +215,9 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("코스모톡/프롬")))
                 .andExpect(content().string(containsString("공식 SNS")))
                 .andExpect(content().string(containsString("외부 컨텐츠/방송")))
-                .andExpect(content().string(containsString("직찍")))
+                .andExpect(content().string(containsString("기타/팬메이드")))
+                .andExpect(content().string(not(containsString("직찍"))))
+                .andExpect(content().string(not(containsString(">미분류<"))))
                 .andExpect(content().string(containsString("unit-member-chip")))
                 .andExpect(content().string(containsString("ar-source-tabs")))
                 .andExpect(content().string(containsString("ar-folder-tabs")));
@@ -247,8 +249,10 @@ class ArchiveControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("ar-folder-tabs")))
                 .andExpect(content().string(containsString("ar-source-tabs")))
-                .andExpect(content().string(containsString("직찍")))
+                .andExpect(content().string(containsString("기타/팬메이드")))
+                .andExpect(content().string(not(containsString("직찍"))))
                 .andReturn().getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(html).containsAnyOf("source=fanmade", "source&#x3D;fanmade");
         int toolbar = html.indexOf("id=\"archiveFilterForm\"");
         int typeTabs = html.indexOf("ar-folder-tabs");
         int sourceTabs = html.indexOf("ar-source-tabs");
@@ -261,6 +265,26 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;s1&amp;folder&#x3D;s1");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("id=\"archive-member-picker\"");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain(">멤버 선택<");
+    }
+
+    @Test void emptyFolderShowsPageOneAndMemberTitle() throws Exception {
+        when(artistRepository.findAll()).thenReturn(List.of());
+        stubFolder(MediaType.IMAGE);
+        String html = mvc.perform(get("/archive").param("folder", "s19")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-title");
+        org.assertj.core.api.Assertions.assertThat(html).contains("S19 정하연");
+        org.assertj.core.api.Assertions.assertThat(html).contains("←목록으로");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain(">폴더 목록<");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("이 페이지에서 조건에 맞는");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("id=\"archiveNone\"");
+        org.assertj.core.api.Assertions.assertThat(html).contains("페이지 1 / 1");
+        org.assertj.core.api.Assertions.assertThat(html).contains("is-current");
+        org.assertj.core.api.Assertions.assertThat(html).contains("기타/팬메이드");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("직찍");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain(">미분류<");
+        org.assertj.core.api.Assertions.assertThat(html).contains("수정하기");
+        org.assertj.core.api.Assertions.assertThat(html).contains("삭제하기");
     }
 
     @Test void guestImageArchiveHidesEditAndDelete() throws Exception {

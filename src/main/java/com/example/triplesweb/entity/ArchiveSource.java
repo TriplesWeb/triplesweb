@@ -8,7 +8,7 @@ public enum ArchiveSource {
     COSMO_TALK("코스모톡/프롬"),
     OFFICIAL_SNS("공식 SNS"),
     EXTERNAL("외부 컨텐츠/방송"),
-    FANCAM("직찍");
+    FANCAM("기타/팬메이드");
 
     private final String label;
 
