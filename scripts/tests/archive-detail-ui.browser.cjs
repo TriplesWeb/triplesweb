@@ -208,6 +208,7 @@ ${site}${css}${siteUi}
     await pick('주빈');
     assert.equal(await page.locator('[data-member-toggle-label]').innerText(), '2명', '케미명이 없는 조합이 인원 수를 유지하지 않는다');
     await pick('지연');
+    assert.equal(await page.locator('[data-member-toggle-label]').innerText(), '마유', '멤버 한 명일 때 이름이 보이지 않는다');
     await pick('주빈');
     assert.equal(await page.locator('[data-member-toggle-label]').innerText(), '심장마빈즈');
     const toggleBox = await page.locator('#archiveMemberToggle').boundingBox();
@@ -328,7 +329,8 @@ ${site}${css}${siteUi}
       return {
         edit: measure(document.getElementById('editModal')),
         selectGap: panelBox.right - selectBox.right,
-        selectNarrower: selectBox.width < panelBox.width - 24
+        selectNarrower: selectBox.width < panelBox.width - 24,
+        selectHeight: selectBox.height
       };
     });
     assert.equal(form.edit.text, '2026/11/16');
@@ -339,6 +341,7 @@ ${site}${css}${siteUi}
     assert.equal(form.edit.openInside, true, '달력 버튼이 날짜 칸 밖에 있다');
     assert.ok(form.selectNarrower, '출처 셀렉트가 여전히 가득 차 있다');
     assert.ok(form.selectGap >= 24, '출처 셀렉트 오른쪽 여백이 없다: ' + form.selectGap);
+    assert.ok(form.selectHeight >= 34 && form.selectHeight <= 40, '출처 칸 높이가 맞지 않다: ' + form.selectHeight);
     await page.evaluate(() => { document.getElementById('uploadModal').hidden = false; document.getElementById('editModal').hidden = true; });
     const uploadDate = await page.evaluate(() => {
       const root = document.getElementById('uploadModal');

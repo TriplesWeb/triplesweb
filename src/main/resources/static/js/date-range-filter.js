@@ -1,4 +1,9 @@
 (() => {
+  if (window.__archiveDateFilterReady) {
+    window.bindArchiveDateFields?.(document);
+    return;
+  }
+  window.__archiveDateFilterReady = true;
   const isoDate = /^(\d{4})-(\d{2})-(\d{2})$/;
   const keepers = [
     "[data-date-filter]",
@@ -254,9 +259,87 @@
       next.className = "ar-cal-nav";
       next.setAttribute("aria-label", "다음 달");
       next.textContent = "›";
-      const title = document.createElement("span");
+      const title = document.createElement("div");
       title.className = "ar-cal-board-title";
-      title.textContent = viewYear + "년 " + (viewMonth + 1) + "월";
+      const yearBtn = document.createElement("button");
+      yearBtn.type = "button";
+      yearBtn.className = "ar-cal-pick";
+      yearBtn.textContent = viewYear + "년";
+      yearBtn.setAttribute("aria-label", "연도 선택");
+      const monthBtn = document.createElement("button");
+      monthBtn.type = "button";
+      monthBtn.className = "ar-cal-pick";
+      monthBtn.textContent = (viewMonth + 1) + "월";
+      monthBtn.setAttribute("aria-label", "월 선택");
+      const menu = document.createElement("div");
+      menu.className = "ar-cal-menu";
+      menu.hidden = true;
+      menu.setAttribute("role", "listbox");
+      const yearRange = () => {
+        const minAttr = Number(String(input.min || "").slice(0, 4));
+        const maxAttr = Number(String(input.max || "").slice(0, 4));
+        const now = new Date().getFullYear();
+        const start = Math.min(Number.isFinite(minAttr) && minAttr >= 1900 ? minAttr : 2000, viewYear);
+        const end = Math.max(Number.isFinite(maxAttr) && maxAttr >= 1900 ? maxAttr : now + 5, viewYear);
+        return { start, end };
+      };
+      const openMenu = (kind) => {
+        menu.hidden = false;
+        menu.classList.toggle("is-year", kind === "year");
+        menu.classList.toggle("is-month", kind === "month");
+        menu.replaceChildren();
+        yearBtn.classList.toggle("is-open", kind === "year");
+        monthBtn.classList.toggle("is-open", kind === "month");
+        if (kind === "year") {
+          const range = yearRange();
+          for (let y = range.end; y >= range.start; y -= 1) {
+            const item = document.createElement("button");
+            item.type = "button";
+            item.textContent = y + "년";
+            if (y === viewYear) item.classList.add("is-current");
+            item.addEventListener("click", (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              viewYear = y;
+              renderBoard();
+            });
+            menu.append(item);
+          }
+        } else {
+          for (let m = 0; m < 12; m += 1) {
+            const item = document.createElement("button");
+            item.type = "button";
+            item.textContent = (m + 1) + "월";
+            if (m === viewMonth) item.classList.add("is-current");
+            item.addEventListener("click", (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              viewMonth = m;
+              renderBoard();
+            });
+            menu.append(item);
+          }
+        }
+        requestAnimationFrame(() => {
+          const current = menu.querySelector(".is-current");
+          if (current && !menu.hidden) menu.scrollTop = Math.max(0, current.offsetTop - menu.clientHeight / 2);
+        });
+      };
+      const toggleMenu = (kind, event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const open = !menu.hidden && menu.classList.contains(kind === "year" ? "is-year" : "is-month");
+        if (open) {
+          menu.hidden = true;
+          yearBtn.classList.remove("is-open");
+          monthBtn.classList.remove("is-open");
+          return;
+        }
+        openMenu(kind);
+      };
+      yearBtn.addEventListener("click", (event) => toggleMenu("year", event));
+      monthBtn.addEventListener("click", (event) => toggleMenu("month", event));
+      title.append(yearBtn, monthBtn, menu);
       prev.addEventListener("click", (event) => {
         event.stopPropagation();
         viewMonth -= 1;
@@ -329,9 +412,19 @@
     syncFromNative();
   };
   window.bindArchiveDateFields = (root) => {
-    (root || document).querySelectorAll('input[type="date"][name="registeredOn"]').forEach(bindCalendarField);
+    (root || document).querySelectorAll('input[type="date"]').forEach(bindCalendarField);
   };
   window.bindArchiveDateFields(document);
+  const dateObserver = new MutationObserver((records) => {
+    records.forEach((record) => {
+      record.addedNodes.forEach((node) => {
+        if (!(node instanceof Element)) return;
+        if (node.matches('input[type="date"]')) bindCalendarField(node);
+        node.querySelectorAll?.('input[type="date"]').forEach(bindCalendarField);
+      });
+    });
+  });
+  dateObserver.observe(document.documentElement, { childList: true, subtree: true });
 
   document.querySelectorAll("[data-date-filter]").forEach((root) => {
     const toggle = root.querySelector("[data-date-toggle]");

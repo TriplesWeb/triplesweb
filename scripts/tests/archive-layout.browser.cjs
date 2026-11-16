@@ -411,7 +411,7 @@ ${siteUi}
         days: board?.querySelectorAll('.ar-cal-day').length || 0
       };
     });
-    assert.match(calKo.title, /2026년 11월/, '달력 제목이 한국어가 아니다: ' + calKo.title);
+    assert.match(calKo.title.replace(/\s+/g, ''), /2026년11월/, '달력 제목이 한국어가 아니다: ' + calKo.title);
     assert.equal(calKo.week, '일월화수목금토', '달력 요일이 한국어가 아니다: ' + calKo.week);
     assert.equal(calKo.popOpen, true, '달력을 열면 날짜 팝오버가 닫힌다');
     assert.ok(calKo.days >= 28, '달력 날짜 칸이 없다');
@@ -435,6 +435,19 @@ ${siteUi}
     await page.locator('.ar-cal-board:not([hidden]) .ar-cal-day').filter({ hasText: /^16$/ }).click();
     const picked = await page.evaluate(() => document.querySelector('[data-date-from]')?.value || '');
     assert.equal(picked, '2026-11-16', '한국어 달력에서 날짜를 고르지 못한다: ' + picked);
+    await page.locator('.ar-date-popover .ar-cal-open').nth(0).click();
+    await page.locator('.ar-cal-board:not([hidden]) .ar-cal-pick').nth(0).click();
+    const yearMenu = await page.locator('.ar-cal-menu:not([hidden]) button').allTextContents();
+    assert.ok(yearMenu.some((text) => text === '2024년'), '연도 목록이 없다: ' + yearMenu.slice(0, 4).join(','));
+    await page.locator('.ar-cal-menu button', { hasText: '2024년' }).click();
+    await page.locator('.ar-cal-board:not([hidden]) .ar-cal-pick').nth(1).click();
+    const monthMenu = await page.locator('.ar-cal-menu:not([hidden]) button').allTextContents();
+    assert.equal(monthMenu.length, 12, '월 목록이 12개가 아니다: ' + monthMenu.join(','));
+    await page.locator('.ar-cal-menu button', { hasText: '3월' }).click();
+    const movedTitle = await page.locator('.ar-cal-board-title').innerText();
+    assert.match(movedTitle.replace(/\s+/g, ''), /2024년3월/, '연·월을 고르지 못한다: ' + movedTitle);
+    await page.locator('.ar-cal-board:not([hidden])').screenshot({ path: path.join(dateShotDir, 'archive-date-year-month.png') });
+    await page.evaluate(() => document.querySelectorAll('.ar-cal-board').forEach((board) => { board.hidden = true; }));
 
     const pager = await page.evaluate(() => {
       const controls = document.querySelector('.ar-pager-controls');
@@ -507,6 +520,17 @@ ${siteUi}
     assert.deepEqual(registeredYmd.labels, [], '등록 날짜가 다시 연-월-일 셀렉트다: ' + JSON.stringify(registeredYmd.labels));
     assert.equal(registeredYmd.hidden, false, '등록 날짜 네이티브 입력이 숨겨져 있다');
     assert.equal(registeredYmd.extra, false, '멤버 외 출연자 입력이 남아 있다');
+
+    await page.evaluate(() => {
+      document.body.style.minHeight = '1800px';
+      window.scrollTo(0, 420);
+      const input = document.querySelector('.ar-search');
+      input.value = '지연';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.waitForTimeout(700);
+    const stayed = await page.evaluate(() => window.scrollY);
+    assert.ok(stayed >= 360, '필터 적용이 페이지를 위로 올렸다: ' + stayed);
 
     const artifactDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
     fs.mkdirSync(artifactDir, { recursive: true });
