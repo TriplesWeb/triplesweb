@@ -171,8 +171,6 @@
       btn.setAttribute("title", label);
       btn.setAttribute("aria-pressed", admin ? "true" : "false");
       btn.classList.toggle("is-active", admin);
-      const text = btn.querySelector("[data-site-admin-mobile-label]");
-      if (text) text.textContent = label;
     });
   }
 

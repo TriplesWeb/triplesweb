@@ -118,12 +118,10 @@ body.site-admin-enabled .archive-page.is-browse .ar-headline { padding-bottom: 4
 }
 .ar-back-folders {
     position: absolute;
-    top: 1rem;
+    top: 1.15rem;
     right: 3.55rem;
     z-index: 2;
     margin: 0;
-    min-height: 2.15rem;
-    padding: 0.35rem 0.95rem;
 }
 .ar-folder-tabs {
     display: flex;

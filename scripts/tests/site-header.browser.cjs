@@ -107,16 +107,7 @@ const emptyAlerts={catalogSig:'sig-empty',catalogCount:2,dropWindow:false,notice
     assert.equal(await page.locator('#mobile-menu form[action="/search"] input').isVisible(),true,`전체 메뉴 검색 ${width}`);
     assert.equal(await page.locator('#mobile-menu .mobile-menu-brand').count(),0,`전체 메뉴에 로고 없음 ${width}`);
     assert.equal(await page.locator('#mobile-menu img[alt="tripleS"]').count(),0,`전체 메뉴에 워드마크 없음 ${width}`);
-    const mobileAdmin=page.locator('#siteAdminMobileBtn');
-    assert.equal(await mobileAdmin.isVisible(),true,`전체 메뉴 관리자 로그인 ${width}`);
-    assert.equal(await mobileAdmin.locator('[data-site-admin-mobile-label]').innerText(),'관리자 로그인');
-    await mobileAdmin.click();
-    await page.waitForFunction(()=>document.getElementById('siteAdminLoginModal')?.classList.contains('is-open'));
-    assert.equal(await page.locator('#siteAdminLoginTitle').isVisible(),true,`모바일 관리자 로그인 모달 ${width}`);
-    await page.keyboard.press('Escape');
-    await page.waitForFunction(()=>!document.getElementById('siteAdminLoginModal')?.classList.contains('is-open'));
-    await page.locator('#mobile-menu-btn').click();
-    await page.waitForFunction(()=>!document.getElementById('mobile-menu').classList.contains('hidden'));
+    assert.equal(await page.locator('#siteAdminMobileBtn').count(),0,`전체 메뉴에 관리자 버튼 없음 ${width}`);
     const cosmoToggle=page.locator('.mobile-nav-toggle').filter({hasText:'코스모'});
     await cosmoToggle.click();
     assert.equal(await page.locator('.mobile-nav-panel a[href="/trade"]').first().isVisible(),true);
@@ -124,9 +115,9 @@ const emptyAlerts={catalogSig:'sig-empty',catalogCount:2,dropWindow:false,notice
     assert.equal(await page.locator('a[href="/community"]').count(),0);
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/flat-menu-chromium-${width}.png`}).catch(error=>console.warn(`[preview] chromium ${width}px screenshot skipped: ${error.message}`));
     assert.equal(await page.locator('.mobile-account a[href="/mypage"]').isVisible(),true);
-    await page.locator('[data-mobile-menu-close]').click();
+    assert.equal(await page.locator('[data-mobile-menu-close]').count(),0,`전체 메뉴에 닫기 버튼 없음 ${width}`);
+    await page.locator('#mobile-menu-btn').click();
     await page.waitForFunction(()=>document.getElementById('mobile-menu').classList.contains('hidden'));
-    assert.equal(await page.locator('#mobile-menu-btn').evaluate(n=>n===document.activeElement),true);
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/header-chromium-${width}.png`,fullPage:false}).catch(error=>console.warn(`[preview] chromium ${width}px screenshot skipped: ${error.message}`));
    }else{
     const labels=await page.locator('#navbar > a.nav-item-link, #navbar > .relative > button.nav-item-link').evaluateAll(nodes=>

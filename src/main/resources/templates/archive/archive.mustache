@@ -18,7 +18,7 @@
             <button type="button" class="ar-stats-toggle" data-stats-toggle aria-expanded="true" aria-controls="archiveStats" aria-label="통계 접기">
                 <span data-stats-icon aria-hidden="true">−</span>
             </button>
-            {{#hasArchiveBack}}<a class="site-btn site-btn--reset ar-back-folders" href="{{archiveBackHref}}">←목록으로</a>{{/hasArchiveBack}}
+            {{#hasArchiveBack}}<a class="site-back-link ar-back-folders" href="{{archiveBackHref}}">← 목록으로</a>{{/hasArchiveBack}}
             <div class="ar-headline-copy">
                 <div class="ar-kicker"><span class="material-symbols-outlined">{{#archiveFolderHome}}folder{{/archiveFolderHome}}{{^archiveFolderHome}}{{#imageArchive}}photo_library{{/imageArchive}}{{#videoArchive}}play_circle{{/videoArchive}}{{/archiveFolderHome}}</span> Archive</div>
                 <h1>아카이브</h1>
