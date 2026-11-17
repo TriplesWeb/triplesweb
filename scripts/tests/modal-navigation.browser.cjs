@@ -90,7 +90,7 @@ document.getElementById('nativeClose').onclick = () => nativeDialog.close();
       await page.locator('#site').evaluate(element => element.click());
       assert.equal(await page.locator('#site').getAttribute('aria-hidden'), 'false', '배경 클릭은 모달을 닫지 않는다');
 
-      await page.click('#openAbout', { force: true });
+      await page.evaluate(() => document.getElementById('openAbout').click());
       await page.waitForFunction(() => SiteModalNavigation.openCount === 2);
       await page.keyboard.press('Escape');
       await page.waitForFunction(() => SiteModalNavigation.openCount === 1);
