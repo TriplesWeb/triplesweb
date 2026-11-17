@@ -42,6 +42,14 @@
       close.click();
     } else {
       // Defensive fallback for a custom modal without a close control.
+      if (entry.element.matches('.site-modal') && window.SiteUi?.modal) {
+        window.SiteUi.modal(entry.element).hide();
+        return;
+      }
+      if (entry.element.matches('.modal') && window.bootstrap?.Modal) {
+        window.bootstrap.Modal.getOrCreateInstance(entry.element).hide();
+        return;
+      }
       entry.element.hidden = true;
       entry.element.classList.remove('flex', 'show', 'is-open');
       entry.element.classList.add('hidden');
@@ -133,6 +141,7 @@
 
   document.addEventListener('keydown', event => {
     if (event.key !== 'Escape' || event.defaultPrevented) return;
+    if (document.querySelector('dialog[open]')) return; // Native dialog owns Escape.
     const entry = topModal();
     if (!entry) return;
     event.preventDefault();
