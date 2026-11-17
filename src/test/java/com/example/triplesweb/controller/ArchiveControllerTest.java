@@ -470,6 +470,18 @@ class ArchiveControllerTest {
     }
 
 
+    @Test void archiveMemberOptionsSurviveProfileImageErrors() throws Exception {
+        var artist = new Artist();
+        artist.setName("윤서연");
+        artist.setProfileImage("/missing-profile.jpg");
+        when(artistRepository.findAll()).thenReturn(List.of(artist));
+        stubFolder(MediaType.IMAGE);
+        var html = mvc.perform(get("/archive").param("folder", "s"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        var option = org.jsoup.Jsoup.parse(html).selectFirst("#archiveMemberPanel .mpp-item");
+        org.assertj.core.api.Assertions.assertThat(option.attr("data-keep-option")).isEqualTo("true");
+    }
+
     @Test void resetButtonFollowsActiveFiltersAndSearchStatIsRemoved() throws Exception {
         when(artistRepository.findAll()).thenReturn(List.of());
         stubFolder(MediaType.IMAGE);

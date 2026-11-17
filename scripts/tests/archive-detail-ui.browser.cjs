@@ -36,7 +36,7 @@ ${site}${css}${siteUi}
       <div class="member-portrait-picker" id="archive-member-picker">
         <button type="button" class="mpp-item is-active" data-value="주빈">주빈</button>
         <button type="button" class="mpp-item is-active" data-value="마유">마유</button>
-        <button type="button" class="mpp-item" data-value="지연">지연</button>
+        <button type="button" class="mpp-item" data-value="지연" data-name="지연" data-keep-option="true"><span class="artist-tab-avatar"><img class="artist-tab-photo" src="/missing-profile.jpg"></span><span>지연</span></button>
       </div>
     </div>
   </section>
@@ -151,6 +151,8 @@ ${site}${css}${siteUi}
     const artifactDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
     fs.mkdirSync(artifactDir, { recursive: true });
 
+    await page.locator('#archiveMemberPanel .artist-tab-fallback').waitFor({ state: 'attached' });
+    assert.equal(await page.locator('#archiveMemberPanel .mpp-item').count(), 3, '프로필 오류로 멤버 선택이 사라졌다');
     const layout = await page.evaluate(() => {
       const meta = document.querySelector('.ar-meta');
       const date = document.querySelector('.ar-card-date');

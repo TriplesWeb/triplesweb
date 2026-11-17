@@ -396,6 +396,7 @@ public class ArchiveController {
         Set<String> chosen = Set.copyOf(selected);
         List<Map<String, Object>> options = MemberPortraitOptions.fromArtists(artists, false);
         for (Map<String, Object> option : options) {
+            option.put("keepOption", true);
             option.put("active", chosen.contains(String.valueOf(option.get("value"))));
         }
         return options;
