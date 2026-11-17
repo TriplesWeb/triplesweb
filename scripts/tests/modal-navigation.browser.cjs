@@ -4,7 +4,6 @@ const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
 
 const root = path.resolve(__dirname, '../..');
-const controller = path.join(root, 'src/main/resources/static/js/modal-navigation.js');
 const html = `<!doctype html>
 <html lang="ko">
 <head>
@@ -18,6 +17,8 @@ const html = `<!doctype html>
 .site-modal-dialog,.about-modal-panel,.ar-dialog-panel{margin:15vh auto;background:white;padding:24px;height:120px}
 </style>
 <script defer src="/js/modal-navigation.js"></script>
+<script defer src="/js/site-ui.js"></script>
+<script defer src="/js/about-modal.js"></script>
 </head>
 <body>
 <button id="openSite">사이트 모달</button>
@@ -41,20 +42,13 @@ const about = document.getElementById('about');
 const archive = document.getElementById('archive');
 const nativeDialog = document.getElementById('native');
 document.getElementById('openSite').onclick = () => {
-  site.classList.add('is-open','show');
-  site.setAttribute('aria-hidden','false');
-};
-site.querySelector('[data-site-dismiss]').onclick = () => {
-  site.classList.remove('is-open','show');
-  site.setAttribute('aria-hidden','true');
+  SiteUi.modal(site).show();
 };
 document.getElementById('openAbout').onclick = () => {
-  about.classList.remove('hidden');
-  about.classList.add('flex');
+  AboutModal.openModal(about);
 };
 about.querySelector('.about-close').onclick = () => {
-  about.classList.add('hidden');
-  about.classList.remove('flex');
+  AboutModal.closeModal(about);
 };
 document.getElementById('openArchive').onclick = () => {
   archive.hidden = false;
@@ -80,7 +74,9 @@ document.getElementById('nativeClose').onclick = () => nativeDialog.close();
       await page.route('**/*', route => {
         const url = new URL(route.request().url());
         if (url.pathname === '/') return route.fulfill({ contentType: 'text/html', body: html });
-        if (url.pathname === '/js/modal-navigation.js') return route.fulfill({ contentType: 'application/javascript', path: controller });
+        if (url.pathname.startsWith('/js/') && ['modal-navigation.js', 'site-ui.js', 'about-modal.js'].includes(path.basename(url.pathname))) {
+          return route.fulfill({ contentType: 'application/javascript', path: path.join(root, 'src/main/resources/static', url.pathname) });
+        }
         return route.fulfill({ status: 404 });
       });
       await page.goto('https://modal.test/');
