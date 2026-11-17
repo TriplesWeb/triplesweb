@@ -278,7 +278,6 @@ ${siteUi}
         <article class="ar-stat"><div class="ar-stat-label"><span>등록된 사진</span><span class="material-symbols-outlined">image</span></div><strong>0<em>장</em></strong></article>
         <article class="ar-stat ar-stat-date"><div class="ar-stat-label"><span>날짜</span><span class="material-symbols-outlined">calendar_month</span></div><strong>전체</strong></article>
         <article class="ar-stat"><div class="ar-stat-label"><span>페이지</span><span class="material-symbols-outlined">layers</span></div><strong>1<em>/ 1</em></strong></article>
-        <article class="ar-stat ar-stat-filter" style="--filter-count: 3"><div class="ar-stat-label"><span>검색</span><span class="material-symbols-outlined">search</span></div><div class="ar-filter-summary"><strong>사진</strong><span class="ar-filter-sep">,</span><strong>전체 출처</strong><span class="ar-filter-sep">,</span><span class="ar-filter-member" style="--member-color:#22aeff">윤서연</span></div></article>
       </div>
     </div>
   </section>
@@ -497,8 +496,6 @@ ${siteUi}
       const backStyle = getComputedStyle(back);
       const innerLeft = headlineBox.left + parseFloat(style.paddingLeft);
       const innerRight = headlineBox.right - parseFloat(style.paddingRight);
-      const member = document.querySelector('.ar-filter-member');
-      const text = document.querySelector('.ar-filter-summary strong');
       const columns = getComputedStyle(stats).gridTemplateColumns.split(' ').filter(Boolean).length;
       return {
         statWidth: Math.round(statBox.width),
@@ -516,7 +513,6 @@ ${siteUi}
         backBorder: backStyle.borderTopWidth,
         gap: toggleBox.left - backBox.right,
         overlap: backBox.right > toggleBox.left + 1 || backBox.bottom > headlineBox.bottom,
-        filterMatch: getComputedStyle(text).fontSize === getComputedStyle(member).fontSize
       };
     });
     assert.ok(view.statWidth <= 300 && view.statWidth >= 220, '폴더 보기 통계 카드 너비: ' + JSON.stringify(view));
@@ -525,6 +521,7 @@ ${siteUi}
     assert.equal(view.pageMax, '1440px', '폴더 보기 폭이 홈과 다르다: ' + view.pageMax);
     assert.ok(view.dateSize < view.photoSize && view.dateSize >= 13 && view.dateSize <= 17, '날짜 글자 크기가 맞지 않다: ' + view.dateSize);
     assert.equal(view.columns, 2);
+    assert.equal(await page.locator('.ar-stat-filter').count(), 0);
     assert.equal(view.backText, '← 목록으로');
     assert.equal(view.backHref, '/archive');
     assert.ok(view.backRadius >= 16, '목록으로가 알약 버튼이 아니다: ' + view.backRadius);
@@ -533,7 +530,6 @@ ${siteUi}
     assert.equal(view.backBorder, '1px');
     assert.ok(view.gap >= 2, '목록으로가 통계 접기 버튼과 겹친다: ' + view.gap);
     assert.equal(view.overlap, false);
-    assert.equal(view.filterMatch, true, '검색 요약 글자 크기가 멤버 이름과 다르다');
     await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-folder-view-stats.png') });
     await page.locator('.ar-back-folders').screenshot({ path: path.join(artifactDir, 'archive-folder-view-back.png') });
     await page.hover('.ar-back-folders');

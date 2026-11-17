@@ -43,13 +43,6 @@ ${site}${css}${siteUi}
   <section class="ar-hero">
     <div class="ar-panel ar-headline">
       <div class="ar-stats" id="archiveStats">
-        <article class="ar-stat ar-stat-filter" style="--filter-count: 2">
-          <div class="ar-stat-label"><span>검색</span><span class="material-symbols-outlined">search</span></div>
-          <div class="ar-filter-summary">
-            <strong>사진</strong><span class="ar-filter-sep">,</span>
-            <strong>코스모룸</strong>
-          </div>
-        </article>
       </div>
     </div>
   </section>
@@ -162,13 +155,11 @@ ${site}${css}${siteUi}
       const meta = document.querySelector('.ar-meta');
       const date = document.querySelector('.ar-card-date');
       const chip = document.querySelector('.ar-meta .archive-member-chip');
-      const summary = document.querySelector('.ar-filter-summary').textContent.replace(/\s+/g, ' ').trim();
       const metaBox = meta.getBoundingClientRect();
       const dateBox = date.getBoundingClientRect();
       const chipBox = chip.getBoundingClientRect();
       const native = document.querySelector('input[name="registeredOn"]');
       return {
-        summary,
         dateText: date.textContent.trim(),
         dateRight: metaBox.right - dateBox.right < 8,
         dateAfterChip: dateBox.left >= chipBox.right - 2,
@@ -178,7 +169,6 @@ ${site}${css}${siteUi}
         calReady: native?.dataset.calReady === 'true'
       };
     });
-    assert.equal(layout.summary, '사진, 코스모룸');
     assert.equal(layout.dateText, '2026/11/16');
     assert.equal(layout.dateAfterChip, true, '날짜가 멤버 오른쪽에 없다');
     assert.ok(layout.dateSize <= 13, '카드 날짜가 작지 않다: ' + layout.dateSize);
@@ -384,7 +374,6 @@ ${site}${css}${siteUi}
       const card = document.querySelector('.ar-card');
       if (card) card.style.display = 'none';
     });
-    await page.locator('.ar-stat-filter').screenshot({ path: path.join(artifactDir, 'archive-search-stat.png') });
     console.log('PASS: 아카이브 출처 배지·달력 표시·카드 날짜');
   } finally {
     await browser.close();

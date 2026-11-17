@@ -312,7 +312,9 @@ public class ArchiveController {
         model.addAttribute("hasSourceFilter", sourceSlug != null && !sourceSlug.isBlank());
         model.addAttribute("chemQuery", "");
         model.addAttribute("archiveSources", sourceOptions(source));
-        addFilterSummary(model, q, selectedMembers, artists, type, sourceSlug);
+        model.addAttribute("hasActiveArchiveFilters", (q != null && !q.isBlank())
+                || !selectedMembers.isEmpty() || fromDate != null || toDate != null
+                || (sourceSlug != null && !sourceSlug.isBlank()));
         addArchivePage(model, archives, type, q, memberQuery(selectedMembers), dateQuery, browse,
                 folderQuery(folderKey, ""), sourceQuery, sourceSlug, "");
         return "archive/archive";
@@ -499,101 +501,6 @@ public class ArchiveController {
             cards.add(card);
         }
         return cards;
-    }
-
-    private void addFilterSummary(Model model, String q, List<String> selectedMembers, List<Artist> artists,
-                                  MediaType type, String sourceSlug) {
-        List<Map<String, Object>> parts = new ArrayList<>();
-        int groups = 0;
-        groups++;
-        appendFilterText(parts, type == MediaType.VIDEO ? "영상" : "사진");
-        groups++;
-        appendFilterText(parts, sourceSummary(sourceSlug));
-        String chemistryName = exactChemistryLabel(selectedMembers);
-        if (!chemistryName.isEmpty()) {
-            groups++;
-            appendFilterText(parts, chemistryName);
-        } else if (!selectedMembers.isEmpty()) {
-            groups++;
-            if (!parts.isEmpty()) parts.add(Map.of("isSep", true));
-            Map<String, Object> first = memberFilterPart(selectedMembers.get(0), artists);
-            first.put("isMember", true);
-            parts.add(first);
-            if (selectedMembers.size() > 1) {
-                Map<String, Object> more = new LinkedHashMap<>();
-                more.put("isMore", true);
-                more.put("text", "외 " + (selectedMembers.size() - 1) + "명");
-                parts.add(more);
-            }
-        }
-        String query = q == null ? "" : q.trim();
-        if (!query.isEmpty()) {
-            groups++;
-            appendFilterText(parts, query);
-        }
-        model.addAttribute("hasFilters", !parts.isEmpty());
-        model.addAttribute("filterParts", parts);
-        model.addAttribute("filterCount", Math.max(1, groups));
-    }
-
-    private String exactChemistryLabel(List<String> selected) {
-        if (selected == null || selected.size() < 2) return "";
-        Set<String> wanted = new LinkedHashSet<>(ArchiveFolderClassifier.membersOf(String.join(",", selected)));
-        if (wanted.size() < 2) return "";
-        for (ChemistryDto item : safeChemistries()) {
-            String raw = (item.getMemberA() == null ? "" : item.getMemberA())
-                    + "," + (item.getMemberB() == null ? "" : item.getMemberB());
-            String label = labelWhenSameMembers(wanted, ArchiveFolderClassifier.membersOf(raw), item.getLabel());
-            if (!label.isEmpty()) return label;
-        }
-        for (ChemistryGroupDto item : safeChemistryGroups()) {
-            List<String> members = item.getMembers() == null ? List.of() : item.getMembers();
-            String label = labelWhenSameMembers(wanted,
-                    ArchiveFolderClassifier.membersOf(String.join(",", members)), item.getLabel());
-            if (!label.isEmpty()) return label;
-        }
-        return "";
-    }
-
-    private static String labelWhenSameMembers(Set<String> wanted, List<String> members, String rawLabel) {
-        if (members == null || members.size() != wanted.size()) return "";
-        if (!wanted.containsAll(members)) return "";
-        return chemistryDisplayLabel(rawLabel);
-    }
-
-    private static void appendFilterText(List<Map<String, Object>> parts, String text) {
-        if (text == null || text.isBlank()) return;
-        if (!parts.isEmpty()) parts.add(Map.of("isSep", true));
-        parts.add(Map.of("isText", true, "text", text));
-    }
-
-    private static String sourceSummary(String sourceSlug) {
-        if (sourceSlug == null || sourceSlug.isBlank()) return "전체 출처";
-        if (isFanmadeSource(sourceSlug)) return "기타/팬메이드";
-        try {
-            ArchiveSource source = ArchiveSource.parse(sourceSlug);
-            return source == ArchiveSource.FANCAM ? "기타/팬메이드" : source.getLabel();
-        } catch (IllegalArgumentException ignored) {
-            return "전체 출처";
-        }
-    }
-
-    private static Map<String, Object> memberFilterPart(String name, List<Artist> artists) {
-        Map<String, Object> part = new LinkedHashMap<>();
-        part.put("text", name);
-        String color = "#b9cac4";
-        for (Artist artist : artists) {
-            if (artist.getName() != null && artist.getName().trim().equalsIgnoreCase(name)) {
-                color = safeColor(artist.getColor());
-                break;
-            }
-            if (artist.getEngName() != null && artist.getEngName().trim().equalsIgnoreCase(name)) {
-                color = safeColor(artist.getColor());
-                break;
-            }
-        }
-        part.put("color", color);
-        return part;
     }
 
     private static String safeColor(String color) {

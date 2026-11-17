@@ -461,7 +461,7 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain(">미분류<");
         org.assertj.core.api.Assertions.assertThat(html).contains("수정하기");
         org.assertj.core.api.Assertions.assertThat(html).contains("삭제하기");
-        org.assertj.core.api.Assertions.assertThat(html).contains("전체 출처");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-stat-filter");
         org.assertj.core.api.Assertions.assertThat(html).contains("class=\"ar-source-badge\"");
         org.assertj.core.api.Assertions.assertThat(html).contains("ar-source-field");
         org.assertj.core.api.Assertions.assertThat(html).contains("lang=\"ko\"");
@@ -469,25 +469,25 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("is-violet");
     }
 
-    @Test void folderSearchStatFollowsTypeSourceAndDate() throws Exception {
+
+    @Test void resetButtonFollowsActiveFiltersAndSearchStatIsRemoved() throws Exception {
         when(artistRepository.findAll()).thenReturn(List.of());
         stubFolder(MediaType.IMAGE);
-        String html = mvc.perform(get("/archive").param("folder", "s")
-                        .param("source", "cosmo_room").param("on", "2026-11-16"))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        int start = html.indexOf("ar-filter-summary");
-        int end = html.indexOf("</div>", start);
-        String summary = html.substring(start, end);
-        org.assertj.core.api.Assertions.assertThat(summary).contains(">사진<");
-        org.assertj.core.api.Assertions.assertThat(summary).contains("코스모룸");
-        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("2026/11/16");
-        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("2026년");
-        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("~");
-        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain(">전체<");
-        org.assertj.core.api.Assertions.assertThat(html).contains("--filter-count: 2");
-        org.assertj.core.api.Assertions.assertThat(html).contains("2026년 11월 16일");
-        org.assertj.core.api.Assertions.assertThat(html).contains("ar-stat-date");
+        var baseline = mvc.perform(get("/archive").param("folder", "s"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        var baseDoc = org.jsoup.Jsoup.parse(baseline);
+        org.assertj.core.api.Assertions.assertThat(baseDoc.selectFirst(".ar-reset").hasAttr("hidden")).isTrue();
+        org.assertj.core.api.Assertions.assertThat(baseDoc.select(".ar-stat-filter")).isEmpty();
+        org.assertj.core.api.Assertions.assertThat(baseDoc.select("#archiveStats .ar-stat")).hasSize(3);
+        for (String[] filter : new String[][] {{"q", "심장"}, {"members", "윤서연"},
+                {"from", "2026-11-17"}, {"to", "2026-11-17"}, {"on", "2026-11-17"}, {"source", "cosmo_room"}}) {
+            var html = mvc.perform(get("/archive").param("folder", "s").param(filter[0], filter[1]))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            var doc = org.jsoup.Jsoup.parse(html);
+            org.assertj.core.api.Assertions.assertThat(doc.selectFirst(".ar-reset").hasAttr("hidden"))
+                    .as(filter[0]).isFalse();
+            org.assertj.core.api.Assertions.assertThat(doc.selectFirst(".ar-reset").attr("href")).isEqualTo("/archive?folder=s");
+        }
     }
 
     @Test void photoCardShowsDateBesideMembers() throws Exception {
@@ -639,53 +639,7 @@ class ArchiveControllerTest {
                 .andExpect(redirectedUrl("/archive/all?members=%EC%9C%A4%EC%84%9C%EC%97%B0&page=2"));
     }
 
-    @Test void searchStatShowsColoredMembersAndOtherFilters() throws Exception {
-        var seoyeon = new Artist();
-        seoyeon.setName("윤서연");
-        seoyeon.setColor("#22aeff");
-        when(artistRepository.findAll()).thenReturn(List.of(seoyeon));
-        stubFolder(MediaType.IMAGE, photo());
-        String html = mvc.perform(get("/archive")
-                        .param("folder", "s")
-                        .param("members", "윤서연")
-                        .param("members", "지연")
-                        .param("q", "심장")
-                        .param("from", "2026-01-01")
-                        .param("to", "2026-12-31"))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        org.assertj.core.api.Assertions.assertThat(html).contains("ar-filter-member");
-        org.assertj.core.api.Assertions.assertThat(html).contains("--member-color: #22aeff");
-        org.assertj.core.api.Assertions.assertThat(html).contains("외 1명");
-        org.assertj.core.api.Assertions.assertThat(html).contains("심장");
-        int start = html.indexOf("ar-filter-summary");
-        int end = html.indexOf("</div>", start);
-        String summary = html.substring(start, end);
-        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("2026/01/01");
-        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("2026/12/31");
-        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("~");
-        org.assertj.core.api.Assertions.assertThat(html).contains("2026년 1월 1일 ~ 2026년 12월 31일");
-        org.assertj.core.api.Assertions.assertThat(html).contains("전체 출처");
-        org.assertj.core.api.Assertions.assertThat(html).contains("--filter-count: 4");
-        org.assertj.core.api.Assertions.assertThat(html).contains("사진 날짜 시작");
-    }
 
-    @Test void filterSummaryUsesChemistryNameInsteadOfMembers() throws Exception {
-        when(chemistryService.findAll()).thenReturn(List.of(ChemistryDto.builder()
-                .id(3L).memberA("윤서연").memberB("정혜린").label("시선강탈").build()));
-        when(artistRepository.findAll()).thenReturn(List.of());
-        stubFolder(MediaType.IMAGE, photo());
-        String html = mvc.perform(get("/archive").param("folder", "s")
-                        .param("members", "정혜린").param("members", "윤서연"))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        int start = html.indexOf("ar-filter-summary");
-        int end = html.indexOf("</div>", start);
-        String summary = html.substring(start, end);
-        org.assertj.core.api.Assertions.assertThat(summary).contains("시선강탈");
-        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("외 1명");
-        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("ar-filter-member");
-    }
 
     @Test void exactPhotoDateFilterUsesRegisteredOn() throws Exception {
         when(artistRepository.findAll()).thenReturn(List.of());
