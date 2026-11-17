@@ -90,7 +90,7 @@ public class MemberSpotlightService {
             feeds.add(feed(
                     "공식 미디어",
                     "이 멤버가 포함된 공식 미디어예요.",
-                    "연결된 공식 미디어가 없습니다.",
+                    "이 멤버의 공식 미디어가 없습니다.",
                     "/media?artist=" + encoded,
                     mediaCards(media.getOrDefault(artist.getArtistId(), List.of()))));
             feeds.add(feed(
