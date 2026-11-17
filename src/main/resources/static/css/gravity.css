@@ -1495,15 +1495,40 @@ textarea.form-control {
 }
 
 .event-stop-row-top input[type="date"],
-.event-stop-row-top .ar-cal > input[type="date"] {
-    width: 9.75rem;
-    min-width: 9.75rem;
-    max-width: 9.75rem;
-    flex: 0 0 auto;
+.event-stop-row-top .ar-cal > input[type="date"],
+.shop-sales-period input[type="date"],
+.shop-md-region-sales input[type="date"] {
     box-sizing: border-box;
     font-size: 0.82rem;
     line-height: 1.25;
     color-scheme: dark;
+    /* 네이티브 달력 아이콘이 날짜 숫자를 가리지 않게 오른쪽 여백을 둔다. */
+    padding-right: 2.1rem;
+}
+
+.event-stop-row-top input[type="date"],
+.event-stop-row-top .ar-cal > input[type="date"] {
+    width: 10.5rem;
+    min-width: 10.5rem;
+    max-width: 10.5rem;
+    flex: 0 0 auto;
+}
+
+.event-stop-row-top input[type="date"]::-webkit-calendar-picker-indicator,
+.shop-sales-period input[type="date"]::-webkit-calendar-picker-indicator,
+.shop-md-region-sales input[type="date"]::-webkit-calendar-picker-indicator {
+    position: absolute;
+    right: 0.45rem;
+    width: 1.15rem;
+    height: 1.15rem;
+    cursor: pointer;
+    opacity: 0.85;
+}
+
+.event-stop-row-top input[type="date"],
+.shop-sales-period input[type="date"],
+.shop-md-region-sales input[type="date"] {
+    position: relative;
 }
 
 .shop-sales-period,
@@ -1589,12 +1614,13 @@ textarea.form-control {
         grid-template-columns: 1fr 1fr 2rem;
     }
 
-    /* 날짜는 삭제 버튼 칸을 침범하지 않고, 시작일 ~ 종료일을 한 줄로 둔다. */
+    /* 좁은 폭에서는 날짜를 세로로 쌓아 숫자·달력 아이콘이 겹치지 않게 한다. */
     .event-stop-row-top .stop-date-range {
         grid-column: 1 / 3;
         display: flex;
+        flex-direction: column;
         flex-wrap: nowrap;
-        align-items: center;
+        align-items: stretch;
         gap: 0.35rem;
         width: 100%;
         min-width: 0;
@@ -1602,8 +1628,8 @@ textarea.form-control {
 
     .event-stop-row-top .stop-date-range > input[type="date"],
     .event-stop-row-top .stop-date-range > .ar-cal {
-        flex: 1 1 0;
-        width: auto;
+        flex: 0 0 auto;
+        width: 100%;
         min-width: 0;
         max-width: none;
     }
@@ -1617,13 +1643,15 @@ textarea.form-control {
     .event-stop-row-top .stop-date-sep {
         flex: 0 0 auto;
         align-self: center;
+        line-height: 1;
     }
 
     .event-stop-row-top .stop-remove {
         grid-column: 3;
         grid-row: 1;
-        align-self: center;
+        align-self: start;
         justify-self: end;
+        margin-top: 0.35rem;
     }
 
     .event-stop-lists {
