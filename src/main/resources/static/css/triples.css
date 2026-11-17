@@ -981,11 +981,6 @@ textarea.form-control {
     width: auto;
 }
 
-.about-edit-actions > .btn-error,
-.about-edit-actions > .about-btn-danger {
-    margin-right: auto;
-}
-
 .about-mode-btn {
     appearance: none;
     display: inline-flex;
