@@ -57,9 +57,6 @@
       closeModal(closeBtn.closest('.modal'));
       return;
     }
-    if (event.target.classList.contains('modal')) {
-      closeModal(event.target);
-    }
   });
 
   document.addEventListener('keydown', (event) => {
