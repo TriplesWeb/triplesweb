@@ -83,9 +83,9 @@ public class MemberSpotlightService {
                     objektCards(newestObjekts, name, objektQuery));
             objektFeed.put("objektFeed", true);
             feeds.add(objektFeed);
-            feeds.add(archiveFeed("사진", "등록된 사진 최신 5개입니다.", "이 멤버의 사진이 없습니다.",
+            feeds.add(archiveFeed("사진", "이 멤버의 최신 사진이에요.", "이 멤버의 사진이 없습니다.",
                     imageIndex, MediaType.IMAGE, name, "/archive?members=" + encoded, !single));
-            feeds.add(archiveFeed("영상", "등록된 영상 최신 5개입니다.", "이 멤버의 영상이 없습니다.",
+            feeds.add(archiveFeed("영상", "이 멤버의 최신 영상이에요.", "이 멤버의 영상이 없습니다.",
                     videoIndex, MediaType.VIDEO, name, "/archive?type=video&members=" + encoded, !single));
             feeds.add(feed(
                     "공식 미디어",
