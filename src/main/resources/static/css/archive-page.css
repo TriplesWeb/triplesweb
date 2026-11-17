@@ -1815,3 +1815,22 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     .archive-page .ar-member-panel { box-sizing: border-box; min-width: 0; max-width: 100%; }
     .archive-page .ar-source-tabs { min-width: 0; max-width: 100%; overflow-x: auto; }
 }
+
+/* Keep the archive controls within a phone viewport, including display cutouts. */
+@media (max-width: 480px) {
+    body.site-page > main.archive-page {
+        padding-inline: max(0.75rem, env(safe-area-inset-left, 0px)) max(0.75rem, env(safe-area-inset-right, 0px));
+        gap: 1.25rem;
+    }
+    .archive-page .ar-toolbar { padding: 0.85rem; }
+    .archive-page:not(.is-folder-home) .ar-stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.4rem;
+    }
+    .archive-page:not(.is-folder-home) .ar-stats > .ar-stat:last-child { grid-column: auto; }
+    .archive-page:not(.is-folder-home) .ar-stat { padding: 0.65rem 0.5rem; min-height: 5rem; }
+    .archive-page:not(.is-folder-home) .ar-stat-label { gap: 0.2rem; font-size: 0.68rem; }
+    .archive-page:not(.is-folder-home) .ar-stat strong { font-size: 1.1rem; overflow-wrap: anywhere; }
+    .archive-page .ar-search { font-size: 16px; }
+    .archive-page .ar-source-tabs { scroll-padding-inline: 0.5rem; }
+}
