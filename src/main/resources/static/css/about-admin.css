@@ -349,9 +349,7 @@
     color: #b9cac4;
     font-size: 0.7rem;
     font-weight: 650;
-    white-space: normal;
-    overflow-wrap: anywhere;
-    word-break: break-word;
+    white-space: nowrap;
 }
 
 .about-link-rows {
