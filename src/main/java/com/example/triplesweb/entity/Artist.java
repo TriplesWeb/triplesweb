@@ -1,6 +1,7 @@
 package com.example.triplesweb.entity;
 
 import com.example.triplesweb.util.ContentLinks;
+import com.example.triplesweb.dto.ArtistOstAlbumCard;
 import com.example.triplesweb.dto.MediaDto;
 import jakarta.persistence.*;
 import lombok.*;
@@ -156,6 +157,10 @@ public class Artist {
     @Transient
     private List<Map<String, Object>> memberFeeds = List.of();
 
+    /** 멤버 프로필에 붙는 OST 참여(24인 전체 제외). */
+    @Transient
+    private List<ArtistOstAlbumCard> displayOstAlbums = List.of();
+
     /**
      * DataInitializer와 기존 호출부를 위한 호환 생성자(미디어 목록은 페이지에서 채운다).
      * {@code dormEntryDate}는 마이그레이션 V40과 같이 빈 문자열로 두고, {@code mediaContents}는 넣지 않는다.
@@ -241,5 +246,10 @@ public class Artist {
     @Transient
     public boolean isHasMediaContents() {
         return mediaContents != null && !mediaContents.isEmpty();
+    }
+
+    @Transient
+    public boolean isHasOstAlbums() {
+        return displayOstAlbums != null && !displayOstAlbums.isEmpty();
     }
 }

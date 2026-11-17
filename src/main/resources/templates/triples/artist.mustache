@@ -138,6 +138,19 @@
                                 {{/displayAffiliatedUnit}}
                             </div>
                         </div>
+                        {{#hasOstAlbums}}
+                        <div class="bg-[#0d0e12]/40 border border-[#3a4a46]/30 rounded-xl p-4 space-y-2.5">
+                            <span class="text-xl font-semibold text-[#b9cac4] block whitespace-nowrap">참여 OST</span>
+                            <div class="artist-unit-chips">
+                                {{#displayOstAlbums}}
+                                <a href="/triples/album/{{albumId}}" class="artist-unit-chip" title="{{albumName}}">
+                                    <img class="artist-unit-chip-photo" src="{{displayAlbumImage}}" alt="" referrerpolicy="no-referrer" loading="lazy">
+                                    <span class="artist-unit-chip-name">{{albumName}}</span>
+                                </a>
+                                {{/displayOstAlbums}}
+                            </div>
+                        </div>
+                        {{/hasOstAlbums}}
                         {{#hasSignOrBiteRow}}
                         <div class="artist-sign-bytes-row">
                             {{#hasSignatureImage}}
