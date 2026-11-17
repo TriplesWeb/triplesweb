@@ -57,6 +57,7 @@
             const chips = card?.querySelector('.ar-card-members');
             members.replaceChildren();
             if (chips) members.innerHTML = chips.innerHTML;
+            window.paintArchiveChemistry?.(members);
         }
         [edit, remove].forEach(button => {
             if (!button || !card) return;
@@ -81,11 +82,6 @@
     });
 
     document.getElementById('archiveVideoClose')?.addEventListener('click', () => dialog.close());
-    dialog.addEventListener('click', event => {
-        if (event.target !== dialog) return;
-        const bounds = dialog.getBoundingClientRect();
-        if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
-    });
     dialog.addEventListener('close', () => {
         video.pause();
         video.removeAttribute('src');

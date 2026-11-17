@@ -298,10 +298,10 @@
 
             bindCategoryPreview('add','titleInput','addArtistNames');
             bindCategoryPreview('edit','editTitleInput','editArtistNames');
-            // Bootstrap의 열림 전환 중에도 닫기·바깥 영역·Escape 요청을 잃지 않는다.
+            // 모달 닫기 버튼과 Escape 처리 (배경 클릭은 닫지 않음).
             document.querySelectorAll('.site-modal').forEach(element => {
                 element.addEventListener('click', event => {
-                    if (event.target === element || event.target.closest('[data-site-dismiss="modal"]')) {
+                    if (event.target.closest('[data-site-dismiss="modal"]')) {
                         event.preventDefault();
                         event.stopPropagation();
                         hideScheduleModalThen(element);

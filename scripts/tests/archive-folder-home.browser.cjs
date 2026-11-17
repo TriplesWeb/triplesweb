@@ -35,7 +35,7 @@ function folder(attrs) {
       ${art ? '<img class="ar-folder-art" src="/folder-art.svg" alt="">' : '<span class="ar-folder-shape"></span>'}
       ${preview ? `<img class="ar-folder-preview" src="${preview}" alt="">` : ''}
     </span>
-    <span class="ar-folder-label">${label}</span>
+    ${label ? `<span class="ar-folder-label">${label}</span>` : ''}
     ${count ? `<span class="ar-folder-count">${count}</span>` : ''}
   </a>`;
 }
@@ -58,7 +58,6 @@ body.site-admin-enabled button[data-admin-only] { display: inline-flex !importan
       <div class="ar-headline-copy">
         <div class="ar-kicker">Archive</div>
         <h1>아카이브</h1>
-        <p>폴더를 선택하세요</p>
       </div>
       <button type="button" class="ar-submit ar-home-upload" data-admin-only>사진 추가</button>
       <div class="ar-stats" id="archiveStats">
@@ -69,10 +68,10 @@ body.site-admin-enabled button[data-admin-only] { display: inline-flex !importan
     </div>
   </section>
   <section class="ar-folders" aria-label="아카이브 폴더">
-    ${folder({ extraClass: ' is-group', href: '/archive?folder=s', color: '#f5c518', label: '전체 멤버' })}
+    ${folder({ extraClass: ' is-group', href: '/archive?folder=s', color: '#f5c518', label: '전체 멤버', count: '3' })}
     ${folder({ extraClass: ' is-parent', href: '/archive?folder=units', color: '#a78bfa', label: '유닛별' })}
-    ${folder({ extraClass: ' is-parent', href: '/archive?folder=combos', color: '#7dd3fc', label: '케미', count: '4' })}
-    ${folder({ extraClass: ' is-solo', href: '/archive?folder=s1', color: '#22aeff', label: 'S1 윤서연' })}
+    ${folder({ extraClass: ' is-solo', href: '/archive?folder=s&members=윤서연', color: '#22aeff', label: 'S1 윤서연' })}
+    ${folder({ extraClass: ' is-solo', href: '/archive?folder=s&members=정혜린', color: '#ff8ad4', label: 'S2 정혜린' })}
   </section>
 </main>
 </body></html>`;
@@ -100,7 +99,7 @@ ${siteUi}
     </div>
   </section>
   <section class="ar-folders" aria-label="아카이브 폴더">
-    ${folder({ href: '/archive?folder=unit-17', color: '#22aeff', label: 'Aura' })}
+    ${folder({ href: '/archive?folder=s&members=윤서연&members=정혜린', color: '#22aeff', label: 'Aura' })}
   </section>
 </main>
 </body></html>`;
@@ -236,6 +235,53 @@ ${siteUi}
       </div>
     </div>
   </section>
+  <section class="ar-panel ar-toolbar">
+    <form class="ar-filters" id="archiveFilterForm">
+      <div class="ar-filter-tools">
+        <label class="ar-sort"><span class="ar-sort-label">정렬</span></label>
+        <button type="button" class="ar-member-toggle">멤버 선택</button>
+        <div class="ar-search-row">
+          <label class="ar-search-wrap"><input class="ar-search" type="search" placeholder="사진 제목 검색"></label>
+          <button type="submit" class="ar-submit">검색</button>
+        </div>
+      </div>
+    </form>
+  </section>
+</main>
+</body></html>`;
+
+const groupHtml = memberHtml.replace(/<p class="ar-folder-title[\s\S]*?<\/p>/, '');
+
+const viewHtml = `<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:#0d0e12;color:#e3e2e8;font-family:"Pretendard Variable",Pretendard,sans-serif}
+${site}
+${siteChrome}
+${css}
+${siteUi}
+</style></head>
+<body class="site-page">
+<main class="archive-page is-folder-view" data-archive-kind="image">
+  <section class="ar-hero">
+    <div class="ar-panel ar-headline is-member-space" style="--folder-color:#f5c518">
+      <button type="button" class="ar-stats-toggle" data-stats-toggle aria-expanded="true" aria-controls="archiveStats" aria-label="통계 접기">
+        <span data-stats-icon>−</span>
+      </button>
+      <a class="site-back-link ar-back-folders" href="/archive">← 목록으로</a>
+      <div class="ar-headline-copy">
+        <div class="ar-kicker">Archive</div>
+        <h1>아카이브</h1>
+      </div>
+      <div class="ar-stats" id="archiveStats">
+        <article class="ar-stat"><div class="ar-stat-label"><span>등록된 사진</span><span class="material-symbols-outlined">image</span></div><strong>0<em>장</em></strong></article>
+        <article class="ar-stat ar-stat-date"><div class="ar-stat-label"><span>날짜</span><span class="material-symbols-outlined">calendar_month</span></div><strong>전체</strong></article>
+        <article class="ar-stat"><div class="ar-stat-label"><span>페이지</span><span class="material-symbols-outlined">layers</span></div><strong>1<em>/ 1</em></strong></article>
+        <article class="ar-stat ar-stat-filter" style="--filter-count: 3"><div class="ar-stat-label"><span>검색</span><span class="material-symbols-outlined">search</span></div><div class="ar-filter-summary"><strong>사진</strong><span class="ar-filter-sep">,</span><strong>전체 출처</strong><span class="ar-filter-sep">,</span><span class="ar-filter-member" style="--member-color:#22aeff">윤서연</span></div></article>
+      </div>
+    </div>
+  </section>
 </main>
 </body></html>`;
 
@@ -264,6 +310,12 @@ ${siteUi}
       if (url.pathname.endsWith('member.html')) {
         return route.fulfill({ contentType: 'text/html', body: memberHtml });
       }
+      if (url.pathname.endsWith('group.html')) {
+        return route.fulfill({ contentType: 'text/html', body: groupHtml });
+      }
+      if (url.pathname.endsWith('view.html')) {
+        return route.fulfill({ contentType: 'text/html', body: viewHtml });
+      }
       if (url.pathname === '/images/archive-folder.svg') {
         return route.fulfill({ contentType: 'image/svg+xml', body: folderSvg });
       }
@@ -288,8 +340,17 @@ ${siteUi}
       const groupIcon = group.querySelector('.ar-folder-icon');
       const shine = getComputedStyle(groupIcon, '::after');
       const upload = document.querySelector('.ar-home-upload');
+      const pageRoot = document.querySelector('.archive-page');
       const headline = document.querySelector('.ar-headline').getBoundingClientRect();
+      const folders = document.querySelector('.ar-folders').getBoundingClientRect();
+      const stat = document.querySelector('.ar-stat').getBoundingClientRect();
+      const stats = document.getElementById('archiveStats').getBoundingClientRect();
+      const style = getComputedStyle(document.querySelector('.ar-headline'));
+      const innerLeft = headline.left + parseFloat(style.paddingLeft);
+      const innerRight = headline.right - parseFloat(style.paddingRight);
+      const count = document.querySelector('.ar-folder-count');
       const uploadBox = upload.getBoundingClientRect();
+      const pageStyle = getComputedStyle(pageRoot);
       return {
         labels,
         comboArt: Boolean(document.querySelector('.ar-folder-art, .ar-folder-preview')),
@@ -301,11 +362,26 @@ ${siteUi}
         shineBlend: shine.mixBlendMode,
         uploadText: upload?.textContent.trim() || '',
         uploadVisible: uploadBox.width > 0 && uploadBox.height > 0,
+        uploadHeight: Math.round(uploadBox.height),
+        hint: document.querySelector('.ar-headline-copy p')?.textContent.trim() || '',
         uploadRight: Math.round(headline.right - uploadBox.right),
-        uploadBottom: Math.round(headline.bottom - uploadBox.bottom)
+        uploadBottom: Math.round(headline.bottom - uploadBox.bottom),
+        pageMax: pageStyle.maxWidth,
+        padL: parseFloat(pageStyle.paddingLeft),
+        padR: parseFloat(pageStyle.paddingRight),
+        headlineWidth: Math.round(headline.width),
+        foldersWidth: Math.round(folders.width),
+        statWidth: Math.round(stat.width),
+        statHeight: Math.round(stat.height),
+        statShift: ((stats.left + stats.right) / 2) - ((innerLeft + innerRight) / 2),
+        countHidden: count ? getComputedStyle(count).display === 'none' : false,
+        memberHref: member?.getAttribute('href') || '',
+        wholeMember: document.body.textContent.includes('전체 멤버')
       };
     });
-    assert.deepEqual(home.labels, ['전체 멤버', '유닛별', '케미', 'S1 윤서연']);
+    assert.deepEqual(home.labels, ['전체 멤버', '유닛별', 'S1 윤서연', 'S2 정혜린']);
+    assert.equal(home.memberHref, '/archive?folder=s&members=윤서연');
+    assert.equal(home.wholeMember, true);
     assert.equal(home.comboArt, false, '초기 화면에 케미·유닛 폴더 이미지가 보인다');
     assert.equal(home.placeholder, false, '업로드 예정 플레이스홀더가 남아 있다');
     assert.ok(Math.abs(home.member.width - home.parent.width) <= 1, '상위 폴더 너비가 멤버 폴더와 다르다: ' + JSON.stringify(home));
@@ -316,13 +392,22 @@ ${siteUi}
     assert.equal(home.uploadVisible, true, '폴더 홈 사진 추가 버튼이 안 보인다');
     assert.ok(home.uploadRight >= 8 && home.uploadRight <= 40, '사진 추가가 우측이 아니다: ' + JSON.stringify(home));
     assert.ok(home.uploadBottom >= 8 && home.uploadBottom <= 40, '사진 추가가 하단이 아니다: ' + JSON.stringify(home));
+    assert.equal(home.pageMax, '1440px', '폴더 홈이 오브젝트처럼 1440px로 안 묶인다: ' + home.pageMax);
+    assert.ok(home.padL >= 40 && home.padR >= 40, '폴더 홈 좌우 여백이 좁다: ' + JSON.stringify(home));
+    assert.ok(Math.abs(home.headlineWidth - home.foldersWidth) <= 1, '제목 패널과 폴더 폭이 다르다: ' + JSON.stringify(home));
+    assert.ok(home.statWidth <= 320, '통계 카드가 여전히 크다: ' + home.statWidth);
+    assert.ok(home.statHeight <= 84, '통계 카드 높이가 그대로다: ' + home.statHeight);
+    assert.ok(home.statShift >= 76 && home.statShift <= 102, '홈 통계가 오른쪽 위로 이동하지 않았다: ' + home.statShift);
+    assert.equal(home.hint, '', '폴더를 선택하세요 안내가 남아 있다');
+    assert.ok(home.uploadHeight >= 32 && home.uploadHeight <= 38, '사진 추가 버튼이 여전히 두껍다: ' + home.uploadHeight);
+    assert.equal(home.countHidden, true, '폴더 사진 숫자가 보인다');
 
     await page.hover('.ar-folder.is-group');
     const artifactDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
     fs.mkdirSync(artifactDir, { recursive: true });
     await page.screenshot({ path: path.join(artifactDir, 'archive-folder-home.png'), fullPage: true });
     await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-folder-home-upload.png') });
-    await page.locator('.ar-folder.is-parent').nth(1).screenshot({ path: path.join(artifactDir, 'archive-combo-parent.png') });
+    await page.locator('.ar-folder.is-solo').first().screenshot({ path: path.join(artifactDir, 'archive-member-folder.png') });
 
     await page.goto('https://archive-folders.test/units.html', { waitUntil: 'load' });
     const units = await page.evaluate(() => {
@@ -331,82 +416,16 @@ ${siteUi}
         title: document.querySelector('.ar-folder-title')?.textContent.trim() || '',
         labels: [...document.querySelectorAll('.ar-folder-label')].map((el) => el.textContent.trim()),
         back: document.querySelector('.ar-back-folders')?.getAttribute('href') || '',
-        auraPreview: Boolean(aura?.querySelector('.ar-folder-preview, .ar-folder-art'))
+        auraPreview: Boolean(aura?.querySelector('.ar-folder-preview, .ar-folder-art')),
+        href: aura?.getAttribute('href') || ''
       };
     });
     assert.equal(units.title, '유닛별');
     assert.deepEqual(units.labels, ['Aura']);
     assert.equal(units.back, '/archive');
+    assert.equal(units.href, '/archive?folder=s&members=윤서연&members=정혜린');
     assert.equal(units.auraPreview, false, '유닛 이미지가 없는데 미리보기가 있다');
     await page.screenshot({ path: path.join(artifactDir, 'archive-units-index.png'), fullPage: true });
-
-    await page.goto('https://archive-folders.test/combos.html', { waitUntil: 'load' });
-    const combos = await page.evaluate(() => ({
-      title: document.querySelector('.ar-folder-title')?.textContent.trim() || '',
-      labels: [...document.querySelectorAll('.ar-folder-label')].map((el) => el.textContent.trim()),
-      back: document.querySelector('.ar-back-folders')?.getAttribute('href') || '',
-      art: Boolean(document.querySelector('.ar-folder-art, .ar-folder-preview'))
-    }));
-    assert.equal(combos.title, '케미');
-    assert.deepEqual(combos.labels, ['2명 케미', '3명 케미', '4명 케미', '5명 이상']);
-    assert.equal(combos.back, '/archive');
-    assert.equal(combos.art, false, '케미 폴더에 이미지가 남아 있다');
-    await page.locator('.ar-folder.is-combo').first().screenshot({ path: path.join(artifactDir, 'archive-combo-folder.png') });
-    await page.screenshot({ path: path.join(artifactDir, 'archive-combos-index.png'), fullPage: true });
-
-    await page.goto('https://archive-folders.test/combo.html', { waitUntil: 'load' });
-    const combo = await page.evaluate(() => {
-      const select = document.getElementById('archiveChem');
-      const upload = document.querySelector('.ar-home-upload');
-      const toolbarUpload = document.querySelector('.ar-filter-tools [data-admin-only], .ar-filter-tools .ar-home-upload');
-      const headline = document.querySelector('.ar-headline').getBoundingClientRect();
-      const uploadBox = upload.getBoundingClientRect();
-      return {
-        title: document.querySelector('.ar-folder-title')?.textContent.trim() || '',
-        kickerLeft: Math.round(document.querySelector('.ar-kicker').getBoundingClientRect().left),
-        copyLeft: Math.round(document.querySelector('.ar-headline-copy').getBoundingClientRect().left),
-        h1Size: parseFloat(getComputedStyle(document.querySelector('.ar-headline h1')).fontSize),
-        titleSize: parseFloat(getComputedStyle(document.querySelector('.ar-folder-title')).fontSize),
-        values: [...(select?.options || [])].map((option) => option.value),
-        labels: [...(select?.options || [])].map((option) => option.textContent.trim()),
-        selected: select?.value || '',
-        chemDropdown: Boolean(document.querySelector('.ar-chem .ar-sort-trigger')),
-        toggle: document.querySelector('[data-member-toggle-label]')?.textContent.trim() || '',
-        uploadInHeadline: Boolean(upload) && document.querySelector('.ar-headline').contains(upload),
-        toolbarUpload: Boolean(toolbarUpload),
-        uploadRight: Math.round(headline.right - uploadBox.right),
-        uploadBottom: Math.round(headline.bottom - uploadBox.bottom)
-      };
-    });
-    assert.equal(combo.title, '시선강탈');
-    assert.ok(Math.abs(combo.kickerLeft - combo.copyLeft) <= 4, 'ARCHIVE 제목이 왼쪽에 있지 않다: ' + JSON.stringify(combo));
-    assert.ok(combo.h1Size >= 24, '아카이브 제목이 예전 크기가 아니다: ' + combo.h1Size);
-    assert.ok(combo.titleSize < combo.h1Size, '폴더 이름이 아카이브 제목보다 크다: ' + JSON.stringify(combo));
-    await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-folder-title-left.png') });
-    assert.deepEqual(combo.values, ['', 'pair-3', 'pair-4']);
-    assert.ok(combo.labels[1].includes('시선강탈'));
-    assert.equal(combo.selected, 'pair-3');
-    assert.equal(combo.chemDropdown, false, '케미 드롭다운이 툴바에 남아 있다');
-    assert.equal(combo.toggle, '시선강탈');
-    assert.equal(combo.uploadInHeadline, true, '폴더 안 사진 추가가 제목 패널에 없다');
-    assert.equal(combo.toolbarUpload, false, '폴더 안 툴바에 사진 추가가 남아 있다');
-    assert.ok(combo.uploadRight >= 8 && combo.uploadRight <= 40, '폴더 안 사진 추가가 우측이 아니다: ' + JSON.stringify(combo));
-    assert.ok(combo.uploadBottom >= 8 && combo.uploadBottom <= 40, '폴더 안 사진 추가가 하단이 아니다: ' + JSON.stringify(combo));
-    await page.click('#archiveMemberToggle');
-    const matched = await page.evaluate(() => [...document.querySelectorAll('.ar-chem-match')].map((el) => el.textContent.trim()));
-    assert.deepEqual(matched, ['시선강탈']);
-    await page.click('.mpp-item[data-value="정혜린"]');
-    const afterOne = await page.evaluate(() => ({
-      chips: [...document.querySelectorAll('.ar-chem-match')].map((el) => el.textContent.trim()),
-      title: document.querySelector('.ar-folder-title')?.textContent.trim() || '',
-      toggle: document.querySelector('[data-member-toggle-label]')?.textContent.trim() || ''
-    }));
-    assert.ok(afterOne.chips.includes('시선강탈'));
-    assert.ok(afterOne.chips.length >= 1);
-    assert.equal(afterOne.title, '2명 케미');
-    assert.equal(afterOne.toggle, '1명');
-    await page.screenshot({ path: path.join(artifactDir, 'archive-chem-filter.png'), fullPage: true });
-    await page.locator('.ar-toolbar').screenshot({ path: path.join(artifactDir, 'archive-toolbar-compact.png') });
 
     await page.goto('https://archive-folders.test/member.html', { waitUntil: 'load' });
     const memberTitle = await page.evaluate(() => {
@@ -435,9 +454,17 @@ ${siteUi}
         underlineWidth: parseFloat(nameStyle.borderBottomWidth),
         numUnderline: parseFloat(getComputedStyle(num).borderBottomWidth),
         dateStat: document.querySelector('.ar-stat-date strong')?.textContent.trim() || '',
-        dateIcon: document.querySelector('.ar-stat-date .material-symbols-outlined')?.textContent.trim() || ''
+        dateIcon: document.querySelector('.ar-stat-date .material-symbols-outlined')?.textContent.trim() || '',
+        filterCenter: (() => {
+          const tools = document.querySelector('.ar-filter-tools');
+          if (!tools) return null;
+          const box = tools.getBoundingClientRect();
+          const mid = (box.left + box.right) / 2;
+          return Math.abs(mid - window.innerWidth / 2);
+        })()
       };
     });
+    assert.ok(memberTitle.filterCenter != null && memberTitle.filterCenter <= 24, '검색 필터가 가운데 있지 않다: ' + memberTitle.filterCenter);
     assert.equal(memberTitle.centered, true, '멤버 이름이 가운데 있지 않다: ' + JSON.stringify(memberTitle));
     assert.equal(memberTitle.kickerLeft, true, 'ARCHIVE 라벨이 왼쪽에 있지 않다');
     assert.equal(memberTitle.nameText, '윤서연');
@@ -448,6 +475,93 @@ ${siteUi}
     assert.equal(memberTitle.dateStat, '2026년 11월 16일');
     assert.equal(memberTitle.dateIcon, 'calendar_month');
     await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-member-title-center.png') });
+
+    await page.goto('https://archive-folders.test/group.html', { waitUntil: 'load' });
+    assert.equal(await page.locator('.ar-folder-title').count(), 0);
+    await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-group-title.png') });
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('https://archive-folders.test/view.html', { waitUntil: 'load' });
+    const view = await page.evaluate(() => {
+      const headline = document.querySelector('.ar-headline');
+      const stats = document.getElementById('archiveStats');
+      const stat = document.querySelector('.ar-stat');
+      const back = document.querySelector('.ar-back-folders');
+      const toggle = document.querySelector('.ar-stats-toggle');
+      const headlineBox = headline.getBoundingClientRect();
+      const statsBox = stats.getBoundingClientRect();
+      const statBox = stat.getBoundingClientRect();
+      const backBox = back.getBoundingClientRect();
+      const toggleBox = toggle.getBoundingClientRect();
+      const style = getComputedStyle(headline);
+      const backStyle = getComputedStyle(back);
+      const innerLeft = headlineBox.left + parseFloat(style.paddingLeft);
+      const innerRight = headlineBox.right - parseFloat(style.paddingRight);
+      const member = document.querySelector('.ar-filter-member');
+      const text = document.querySelector('.ar-filter-summary strong');
+      const columns = getComputedStyle(stats).gridTemplateColumns.split(' ').filter(Boolean).length;
+      return {
+        statWidth: Math.round(statBox.width),
+        statHeight: Math.round(statBox.height),
+        shift: ((statsBox.left + statsBox.right) / 2) - ((innerLeft + innerRight) / 2),
+        pageMax: getComputedStyle(document.querySelector('.archive-page')).maxWidth,
+        dateSize: parseFloat(getComputedStyle(document.querySelector('.ar-stat-date strong')).fontSize),
+        photoSize: parseFloat(getComputedStyle(document.querySelector('.ar-stat strong')).fontSize),
+        columns,
+        backText: back.textContent.trim(),
+        backHref: back.getAttribute('href'),
+        backRadius: parseFloat(backStyle.borderRadius),
+        backBg: backStyle.backgroundColor,
+        backColor: backStyle.color,
+        backBorder: backStyle.borderTopWidth,
+        gap: toggleBox.left - backBox.right,
+        overlap: backBox.right > toggleBox.left + 1 || backBox.bottom > headlineBox.bottom,
+        filterMatch: getComputedStyle(text).fontSize === getComputedStyle(member).fontSize
+      };
+    });
+    assert.ok(view.statWidth <= 300 && view.statWidth >= 220, '폴더 보기 통계 카드 너비: ' + JSON.stringify(view));
+    assert.ok(view.statHeight <= 96 && view.statHeight >= 76, '폴더 보기 통계 카드 높이: ' + JSON.stringify(view));
+    assert.ok(view.shift >= 52 && view.shift <= 72, '폴더 보기 통계가 오른쪽으로 조금 이동하지 않았다: ' + view.shift);
+    assert.equal(view.pageMax, '1440px', '폴더 보기 폭이 홈과 다르다: ' + view.pageMax);
+    assert.ok(view.dateSize < view.photoSize && view.dateSize >= 13 && view.dateSize <= 17, '날짜 글자 크기가 맞지 않다: ' + view.dateSize);
+    assert.equal(view.columns, 2);
+    assert.equal(view.backText, '← 목록으로');
+    assert.equal(view.backHref, '/archive');
+    assert.ok(view.backRadius >= 16, '목록으로가 알약 버튼이 아니다: ' + view.backRadius);
+    assert.ok(view.backBg.includes('41, 42, 46'), '목록으로 배경이 토글과 다르다: ' + view.backBg);
+    assert.ok(view.backColor.includes('0, 245, 212'), '목록으로 글자가 민트가 아니다: ' + view.backColor);
+    assert.equal(view.backBorder, '1px');
+    assert.ok(view.gap >= 2, '목록으로가 통계 접기 버튼과 겹친다: ' + view.gap);
+    assert.equal(view.overlap, false);
+    assert.equal(view.filterMatch, true, '검색 요약 글자 크기가 멤버 이름과 다르다');
+    await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-folder-view-stats.png') });
+    await page.locator('.ar-back-folders').screenshot({ path: path.join(artifactDir, 'archive-folder-view-back.png') });
+    await page.hover('.ar-back-folders');
+    await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-folder-view-back-hover.png') });
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('https://archive-folders.test/view.html', { waitUntil: 'load' });
+    const narrow = await page.evaluate(() => {
+      const headline = document.querySelector('.ar-headline');
+      const back = document.querySelector('.ar-back-folders');
+      const toggle = document.querySelector('.ar-stats-toggle');
+      const copy = document.querySelector('.ar-headline-copy');
+      const backBox = back.getBoundingClientRect();
+      const toggleBox = toggle.getBoundingClientRect();
+      const copyBox = copy.getBoundingClientRect();
+      const headlineBox = headline.getBoundingClientRect();
+      return {
+        backText: back.textContent.trim(),
+        gap: toggleBox.left - backBox.right,
+        inside: backBox.left >= headlineBox.left - 1 && backBox.right <= headlineBox.right + 1,
+        aboveCopy: backBox.bottom <= copyBox.top + 4
+      };
+    });
+    assert.equal(narrow.backText, '← 목록으로');
+    assert.ok(narrow.gap >= 2, '좁은 화면에서 목록으로가 접기 버튼과 겹친다: ' + narrow.gap);
+    assert.equal(narrow.inside, true, '좁은 화면에서 목록으로가 헤드라인 밖으로 나간다');
+    assert.equal(narrow.aboveCopy, true, '좁은 화면에서 목록으로가 제목을 가린다');
+    await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-folder-view-narrow.png') });
     console.log('PASS: 아카이브 폴더 홈 실루엣·케미 필터');
   } finally {
     await browser.close();

@@ -353,10 +353,6 @@
       el.addEventListener("click", closeLogin);
     });
 
-    modal?.addEventListener("click", (event) => {
-      if (event.target === modal) closeLogin();
-    });
-
     document.addEventListener("keydown", (event) => {
       if (!modal || !modal.classList.contains("is-open")) return;
       if (event.key === "Escape") closeLogin();

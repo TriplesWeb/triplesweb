@@ -8,8 +8,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 아카이브 출연자 문자열을 전체 멤버 / 유닛 / 2·3·4명 케미 / 5명 이상 / 솔로 폴더로 나눈다.
- * 각 사진은 인원 수에 맞는 폴더 하나에만 들어간다.
+ * 아카이브 출연자 문자열을 전체 멤버 / 유닛 / 2·3·4명 케미 / 5명 이상 / 솔로로 나눈다.
+ * 전체 멤버 폴더는 멤버를 고르지 않으면 등록된 자료를 모두 포함하고, 멤버를 고르면 그 멤버가 모두 나온 자료만 포함한다.
  */
 public final class ArchiveFolderClassifier {
     public enum Kind { GROUP, UNIT, COMBO, SOLO, OTHER }
@@ -95,6 +95,13 @@ public final class ArchiveFolderClassifier {
     public static boolean matches(Match actual, String folder, List<String> comboMembers) {
         if (actual == null || folder == null || folder.isBlank()) return false;
         String key = folder.trim().toLowerCase(Locale.ROOT);
+        if (key.equals("s")) {
+            List<String> wanted = membersOf(String.join(",", comboMembers == null ? List.of() : comboMembers));
+            if (!wanted.isEmpty()) {
+                return new LinkedHashSet<>(actual.members()).containsAll(wanted);
+            }
+            return true;
+        }
         return switch (actual.kind()) {
             case GROUP -> key.equals("s");
             case SOLO, UNIT -> key.equals(actual.key());

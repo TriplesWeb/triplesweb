@@ -9,6 +9,7 @@ const css = fs.readFileSync(path.join(staticRoot, 'css', 'archive-page.css'), 'u
 const site = fs.readFileSync(path.join(staticRoot, 'css', 'site.css'), 'utf8');
 const siteChrome = fs.readFileSync(path.join(staticRoot, 'css', 'site-chrome.css'), 'utf8');
 const siteUi = fs.readFileSync(path.join(staticRoot, 'css', 'site-ui.css'), 'utf8');
+const siteMobile = fs.readFileSync(path.join(staticRoot, 'css', 'site-mobile.css'), 'utf8');
 const browseJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-browse.js'), 'utf8');
 const dateJs = fs.readFileSync(path.join(staticRoot, 'js', 'date-range-filter.js'), 'utf8');
 
@@ -28,6 +29,7 @@ ${site}
 ${siteChrome}
 ${css}
 ${siteUi}
+${siteMobile}
 </style></head>
 <body class="site-page">
 <main class="archive-page" data-archive-kind="image" data-date-label="사진 날짜">
@@ -40,7 +42,8 @@ ${siteUi}
         <div class="ar-kicker">Archive</div>
         <h1>아카이브</h1>
       </div>
-      <nav class="site-section-tabs" aria-label="아카이브 종류">
+      <button type="button" class="ar-submit ar-home-upload" data-admin-only>사진 추가</button>
+      <nav class="site-section-tabs ar-type-tabs" aria-label="아카이브 종류">
         <a class="site-section-tab" href="/archive" aria-current="page">사진</a>
         <a class="site-section-tab" href="/archive?type=video">영상</a>
       </nav>
@@ -70,9 +73,8 @@ ${siteUi}
         <button type="button" class="ar-member-toggle" id="archiveMemberToggle" aria-expanded="false" aria-controls="archiveMemberPanel">멤버 선택</button>
         <div class="ar-search-row">
           <label class="ar-search-wrap"><span class="material-symbols-outlined">search</span><input class="ar-search" type="search" placeholder="사진 제목 검색"></label>
-          <button type="submit" class="ar-submit">검색</button>
+          <a class="site-btn site-btn--reset ar-reset" href="/archive">초기화</a>
         </div>
-        <a class="site-btn site-btn--reset ar-reset" href="/archive">초기화</a>
       </div>
     </form>
     <div class="ar-member-panel" id="archiveMemberPanel" hidden>멤버 패널</div>
@@ -108,8 +110,8 @@ ${siteUi}
     <div class="ar-pager-controls">
       <a>이전</a>
       <div class="ar-pages"><a class="is-current">1</a></div>
-      <a>다음</a>
       <form class="ar-page-jump"><label>페이지 <input type="number" name="go" min="1" max="1" value="1"></label><button type="submit">이동</button></form>
+      <a>다음</a>
     </div>
   </nav>
 </main>
@@ -247,7 +249,6 @@ ${siteUi}
     const toolbar = await page.evaluate(() => {
       const search = document.querySelector('.ar-search-wrap');
       const icon = document.querySelector('.ar-search-wrap > .material-symbols-outlined');
-      const go = document.querySelector('.ar-search-row .ar-submit');
       const tools = document.querySelector('.ar-filter-tools');
       const bar = document.querySelector('.ar-toolbar');
       const date = document.querySelector('.ar-date-toggle');
@@ -257,7 +258,6 @@ ${siteUi}
       const option = document.querySelector('.ar-sort-option[aria-selected="false"]') || document.querySelector('.ar-sort-option');
       const searchBox = search.getBoundingClientRect();
       const iconBox = icon.getBoundingClientRect();
-      const goBox = go.getBoundingClientRect();
       const toolsBox = tools.getBoundingClientRect();
       const barBox = bar.getBoundingClientRect();
       const memberBox = member.getBoundingClientRect();
@@ -271,24 +271,27 @@ ${siteUi}
         searchW: Math.round(searchBox.width),
         iconLeft: iconBox.left < searchBox.left + 24,
         iconInside: iconBox.left >= searchBox.left - 1 && iconBox.right <= searchBox.right + 2,
-        goAfter: goBox.left >= searchBox.right - 2,
-        goMint: getComputedStyle(go).backgroundColor,
+        searchButton: Boolean(document.querySelector('.ar-search-row .ar-submit')),
         radius: getComputedStyle(field).borderRadius,
         searchAfterMember: searchBox.left >= memberBox.right - 8,
-        resetAfterSearch: resetBox.left >= goBox.right - 8,
-        toolsLeft: Math.abs(toolsBox.left - barBox.left) <= 24,
+        resetAfterSearch: resetBox.left >= searchBox.right - 8,
+        toolsCenter: Math.abs(((toolsBox.left + toolsBox.right) / 2) - ((barBox.left + barBox.right) / 2)) <= 24,
         dateInTools: tools.contains(date),
         memberInTools: tools.contains(member),
         resetInTools: tools.contains(reset),
         searchInTools: tools.contains(search),
         filterSize: getComputedStyle(document.querySelector('.ar-filter-summary')).fontSize,
+        filterMemberSize: getComputedStyle(document.querySelector('.ar-filter-member')).fontSize,
+        filterTextSize: getComputedStyle(document.querySelector('.ar-filter-summary strong')).fontSize,
         resetClass: reset.className,
         resetFont: resetStyle.fontSize,
-        goFont: getComputedStyle(go).fontSize,
         resetColor: resetStyle.color,
-        resetAlign: Math.abs(resetBox.top - goBox.top) <= 4,
+        resetAlign: Math.abs((resetBox.top + resetBox.bottom) / 2 - (searchBox.top + searchBox.bottom) / 2) <= 6,
         resetHeight: Math.round(resetBox.height),
-        goHeight: Math.round(goBox.height),
+        searchHeight: Math.round(searchBox.height),
+        memberHeight: Math.round(memberBox.height),
+        resetWrap: resetStyle.whiteSpace,
+        resetOneLine: reset.scrollWidth <= reset.clientWidth + 1,
         sortEnhanced: Boolean(trigger && option),
         sortLabels: [...document.querySelectorAll('.ar-sort-option')].map((el) => el.dataset.value),
         sortMatch: Boolean(triggerStyle && optionStyle
@@ -300,22 +303,24 @@ ${siteUi}
     assert.ok(toolbar.searchW < 420, '검색창이 한 줄을 차지한다: ' + toolbar.searchW);
     assert.equal(toolbar.iconLeft, true, '돋보기가 검색창 왼쪽에 없다');
     assert.equal(toolbar.iconInside, true, '돋보기가 검색창 밖에 있다');
-    assert.equal(toolbar.goAfter, true, '검색 버튼이 검색창 오른쪽에 없다');
-    assert.ok(toolbar.goMint.includes('0, 245, 212') || toolbar.goMint.includes('00f5d4'), '검색 버튼이 민트 색이 아니다: ' + toolbar.goMint);
+    assert.equal(toolbar.searchButton, false, '검색 버튼이 남아 있다');
     assert.ok(toolbar.radius.includes('12px') || toolbar.radius.includes('0.75rem'), '검색창 모서리가 전역 스타일과 다르다: ' + toolbar.radius);
     assert.equal(toolbar.searchAfterMember, true, '검색창이 멤버 선택 오른쪽에 없다');
-    assert.equal(toolbar.resetAfterSearch, true, '초기화가 검색 버튼 오른쪽에 없다');
+    assert.equal(toolbar.resetAfterSearch, true, '초기화가 검색창 오른쪽에 없다');
     assert.deepEqual(toolbar.sortLabels, ['newest', 'oldest', 'title', 'first-member', 'last-member']);
-    assert.equal(toolbar.toolsLeft, true, '필터가 왼쪽에 붙어 있지 않다');
+    assert.equal(toolbar.toolsCenter, true, '검색 필터가 가운데 있지 않다');
     assert.equal(toolbar.dateInTools, true);
     assert.equal(toolbar.memberInTools, true);
     assert.equal(toolbar.resetInTools, true);
     assert.equal(toolbar.searchInTools, true);
     assert.ok(parseFloat(toolbar.filterSize) <= 16, '검색 요약 글자가 크다: ' + toolbar.filterSize);
+    assert.equal(toolbar.filterTextSize, toolbar.filterMemberSize, '검색 요약 글자 크기가 멤버 이름과 다르다: ' + JSON.stringify({ text: toolbar.filterTextSize, member: toolbar.filterMemberSize }));
     assert.match(toolbar.resetClass, /site-btn--reset/, '초기화가 회색 유리 버튼이 아니다: ' + toolbar.resetClass);
     assert.ok(toolbar.resetColor.includes('255') || toolbar.resetColor.includes('#fff'), '초기화 글자가 흰색이 아니다: ' + toolbar.resetColor);
-    assert.equal(toolbar.resetAlign, true, '초기화가 검색 버튼과 세로로 안 맞는다');
-    assert.ok(Math.abs(toolbar.resetHeight - toolbar.goHeight) <= 2, '초기화 크기가 검색 버튼과 다르다: ' + JSON.stringify({ reset: toolbar.resetHeight, go: toolbar.goHeight }));
+    assert.equal(toolbar.resetAlign, true, '초기화가 검색창과 세로로 안 맞는다');
+    assert.equal(toolbar.resetWrap, 'nowrap', '초기화 글자가 한 줄이 아니다');
+    assert.equal(toolbar.resetOneLine, true, '초기화 글자가 버튼 안에서 잘린다');
+    assert.ok(Math.abs(toolbar.resetHeight - toolbar.memberHeight) <= 4, '초기화 높이가 다른 버튼과 다르다: ' + JSON.stringify({ reset: toolbar.resetHeight, member: toolbar.memberHeight }));
     assert.equal(toolbar.sortEnhanced, true, '정렬 드롭다운이 같은 스타일로 열리지 않는다');
     assert.equal(toolbar.sortMatch, true, '정렬 항목 스타일이 닫힌 버튼과 다르다');
 
@@ -409,24 +414,52 @@ ${siteUi}
         days: board?.querySelectorAll('.ar-cal-day').length || 0
       };
     });
-    assert.match(calKo.title, /2026년 11월/, '달력 제목이 한국어가 아니다: ' + calKo.title);
+    assert.match(calKo.title.replace(/\s+/g, ''), /2026년11월/, '달력 제목이 한국어가 아니다: ' + calKo.title);
     assert.equal(calKo.week, '일월화수목금토', '달력 요일이 한국어가 아니다: ' + calKo.week);
     assert.equal(calKo.popOpen, true, '달력을 열면 날짜 팝오버가 닫힌다');
     assert.ok(calKo.days >= 28, '달력 날짜 칸이 없다');
     const dateShotDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
     fs.mkdirSync(dateShotDir, { recursive: true });
+    await page.waitForTimeout(400);
+    const calStill = await page.evaluate(() => {
+      const board = document.querySelector('.ar-cal-board:not([hidden])');
+      const pop = document.querySelector('[data-date-popover]');
+      const box = board?.getBoundingClientRect();
+      return {
+        popOpen: pop?.hidden === false,
+        days: board?.querySelectorAll('.ar-cal-day').length || 0,
+        visible: Boolean(box && box.width > 40 && box.height > 40)
+      };
+    });
+    assert.equal(calStill.popOpen, true, '달력 확인 전에 날짜 팝오버가 닫힌다');
+    assert.ok(calStill.days >= 28 && calStill.visible, '달력이 다시 숨겨졌다: ' + JSON.stringify(calStill));
     await page.locator('.ar-cal-board:not([hidden])').screenshot({ path: path.join(dateShotDir, 'archive-date-calendar-ko.png') });
     await page.locator('[data-date-popover]').screenshot({ path: path.join(dateShotDir, 'archive-date-calendar.png') });
     await page.locator('.ar-cal-board:not([hidden]) .ar-cal-day').filter({ hasText: /^16$/ }).click();
     const picked = await page.evaluate(() => document.querySelector('[data-date-from]')?.value || '');
     assert.equal(picked, '2026-11-16', '한국어 달력에서 날짜를 고르지 못한다: ' + picked);
+    await page.locator('.ar-date-popover .ar-cal-open').nth(0).click();
+    await page.locator('.ar-cal-board:not([hidden]) .ar-cal-pick').nth(0).click();
+    const yearMenu = await page.locator('.ar-cal-menu:not([hidden]) button').allTextContents();
+    assert.ok(yearMenu.some((text) => text === '2024년'), '연도 목록이 없다: ' + yearMenu.slice(0, 4).join(','));
+    await page.locator('.ar-cal-menu button', { hasText: '2024년' }).click();
+    await page.locator('.ar-cal-board:not([hidden]) .ar-cal-pick').nth(1).click();
+    const monthMenu = await page.locator('.ar-cal-menu:not([hidden]) button').allTextContents();
+    assert.equal(monthMenu.length, 12, '월 목록이 12개가 아니다: ' + monthMenu.join(','));
+    await page.locator('.ar-cal-menu button', { hasText: '3월' }).click();
+    const movedTitle = await page.locator('.ar-cal-board-title').innerText();
+    assert.match(movedTitle.replace(/\s+/g, ''), /2024년3월/, '연·월을 고르지 못한다: ' + movedTitle);
+    await page.locator('.ar-cal-board:not([hidden])').screenshot({ path: path.join(dateShotDir, 'archive-date-year-month.png') });
+    await page.evaluate(() => document.querySelectorAll('.ar-cal-board').forEach((board) => { board.hidden = true; }));
 
     const pager = await page.evaluate(() => {
       const controls = document.querySelector('.ar-pager-controls');
       const jump = document.querySelector('.ar-page-jump');
-      const next = [...(controls?.querySelectorAll('a') || [])].find((el) => el.textContent.trim() === '다음');
+      const next = [...(controls?.querySelectorAll(':scope > a') || [])].find((el) => el.textContent.trim() === '다음');
+      const pageLink = controls?.querySelector('.ar-pages a:last-child');
       const jumpBox = jump?.getBoundingClientRect();
       const nextBox = next?.getBoundingClientRect();
+      const pageBox = pageLink?.getBoundingClientRect();
       const goBox = jump?.querySelector('input[name="go"]')?.getBoundingClientRect();
       const moveBox = jump?.querySelector('button')?.getBoundingClientRect();
       return {
@@ -434,8 +467,10 @@ ${siteUi}
         insideControls: Boolean(controls?.contains(jump)),
         goName: jump?.querySelector('input[name="go"]')?.name || '',
         label: jump?.querySelector('button')?.textContent.trim() || '',
-        afterNext: Boolean(next && jump && (next.compareDocumentPosition(jump) & Node.DOCUMENT_POSITION_FOLLOWING)),
-        gap: nextBox && jumpBox ? jumpBox.left - nextBox.right : 999,
+        beforeNext: Boolean(next && jump && (jump.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING)),
+        afterPage: Boolean(pageLink && jump && (pageLink.compareDocumentPosition(jump) & Node.DOCUMENT_POSITION_FOLLOWING)),
+        gap: nextBox && jumpBox ? nextBox.left - jumpBox.right : 999,
+        pageGap: pageBox && jumpBox ? jumpBox.left - pageBox.right : 999,
         aligned: nextBox && jumpBox ? Math.abs(nextBox.top - jumpBox.top) <= 6 : false,
         goWidth: goBox ? Math.round(goBox.width) : 0,
         moveHeight: moveBox ? Math.round(moveBox.height) : 0
@@ -443,10 +478,12 @@ ${siteUi}
     });
     assert.equal(pager.hasJump, true, '페이지 이동 UI가 없다');
     assert.equal(pager.insideControls, true, '페이지 이동이 다음 버튼 옆에 없다');
-    assert.equal(pager.afterNext, true, '페이지 이동이 다음 버튼 뒤에 없다');
+    assert.equal(pager.beforeNext, true, '페이지 이동이 다음 버튼 앞에 없다');
+    assert.equal(pager.afterPage, true, '페이지 이동이 마지막 페이지 번호 뒤에 없다');
     assert.equal(pager.goName, 'go');
     assert.equal(pager.label, '이동');
     assert.ok(pager.gap >= 0 && pager.gap <= 48, '페이지 이동이 다음에서 너무 떨어져 있다: ' + pager.gap);
+    assert.ok(pager.pageGap >= 0 && pager.pageGap <= 48, '페이지 이동이 번호에서 너무 떨어져 있다: ' + pager.pageGap);
     assert.equal(pager.aligned, true, '페이지 이동이 다음과 세로로 안 맞는다');
     assert.ok(pager.goWidth >= 50 && pager.goWidth <= 90, '페이지 숫자 칸 크기가 달라졌다: ' + pager.goWidth);
     assert.ok(pager.moveHeight >= 28 && pager.moveHeight <= 40, '이동 버튼 크기가 달라졌다: ' + pager.moveHeight);
@@ -458,11 +495,15 @@ ${siteUi}
       return {
         current: current?.textContent.trim() || '',
         underline: current ? getComputedStyle(current).borderBottomColor : '',
+        typeSize: current ? parseFloat(getComputedStyle(current).fontSize) : 0,
+        typeWeight: current ? Number(getComputedStyle(current).fontWeight) : 0,
         dateLabel: dateField?.childNodes[0]?.textContent.trim() || '',
         dateHint: dateField?.querySelector('.ar-field-hint')?.textContent.trim() || ''
       };
     });
     assert.equal(tabs.current, '사진');
+    assert.ok(tabs.typeSize >= 16, '사진·영상 탭 글자가 작다: ' + tabs.typeSize);
+    assert.ok(tabs.typeWeight >= 700, '사진·영상 탭이 굵지 않다: ' + tabs.typeWeight);
     assert.ok(tabs.underline.includes('0, 245, 212') || tabs.underline.includes('rgb(0, 245, 212)'), '사진 탭 underline이 없다: ' + tabs.underline);
     assert.equal(tabs.dateLabel, '사진 날짜');
     assert.equal(tabs.dateHint, '실제로 올라온 날짜를 선택하세요.');
@@ -483,9 +524,58 @@ ${siteUi}
     assert.equal(registeredYmd.hidden, false, '등록 날짜 네이티브 입력이 숨겨져 있다');
     assert.equal(registeredYmd.extra, false, '멤버 외 출연자 입력이 남아 있다');
 
+    await page.setViewportSize({ width: 412, height: 900 });
+    const mobile = await page.evaluate(() => {
+      const headline = document.querySelector('.ar-headline').getBoundingClientRect();
+      const upload = document.querySelector('.ar-home-upload').getBoundingClientRect();
+      const tools = document.querySelector('.ar-filter-tools').getBoundingClientRect();
+      const date = document.querySelector('.ar-date-toggle').getBoundingClientRect();
+      const member = document.querySelector('.ar-member-toggle').getBoundingClientRect();
+      const reset = document.querySelector('.ar-reset').getBoundingClientRect();
+      const sort = document.querySelector('.ar-sort-control').getBoundingClientRect();
+      return {
+        uploadWidth: Math.round(upload.width),
+        headlineWidth: Math.round(headline.width),
+        uploadInside: upload.right <= headline.right + 1 && upload.left >= headline.left - 1,
+        dateWidth: Math.round(date.width),
+        memberWidth: Math.round(member.width),
+        sameRow: Math.abs(date.top - member.top) <= 8,
+        sideBySide: member.left >= date.right - 2,
+        resetWidth: Math.round(reset.width),
+        resetInside: reset.right <= tools.right + 1 && reset.left >= tools.left - 1,
+        sortWidth: Math.round(sort.width),
+        toolsWidth: Math.round(tools.width)
+      };
+    });
+    assert.ok(mobile.uploadWidth < mobile.headlineWidth * 0.55, '모바일 사진 추가가 가로로 길다: ' + JSON.stringify(mobile));
+    assert.equal(mobile.uploadInside, true, '모바일 사진 추가가 헤드라인 밖에 있다');
+    assert.equal(mobile.sameRow, true, '날짜와 멤버 버튼이 한 줄이 아니다');
+    assert.equal(mobile.sideBySide, true, '날짜와 멤버 버튼이 나란히 있지 않다');
+    assert.ok(mobile.dateWidth < mobile.toolsWidth * 0.7, '날짜 버튼이 한 줄을 다 차지한다: ' + mobile.dateWidth);
+    assert.ok(mobile.resetWidth < 140 && mobile.resetInside, '초기화 버튼이 잘리거나 길다: ' + JSON.stringify(mobile));
+    assert.ok(mobile.sortWidth < mobile.toolsWidth * 0.8, '정렬 칸이 한 줄을 다 차지한다: ' + mobile.sortWidth);
+    await page.evaluate(() => {
+      document.querySelectorAll('[data-date-popover], .ar-cal-board').forEach((node) => { node.hidden = true; });
+    });
+    await page.locator('.ar-toolbar').screenshot({ path: path.join(dateShotDir, 'archive-mobile-filters.png') });
+    await page.locator('.ar-home-upload').screenshot({ path: path.join(dateShotDir, 'archive-mobile-upload.png') });
+    await page.setViewportSize({ width: 1280, height: 900 });
+
+    await page.evaluate(() => {
+      document.body.style.minHeight = '1800px';
+      window.scrollTo(0, 420);
+      const input = document.querySelector('.ar-search');
+      input.value = '지연';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.waitForTimeout(700);
+    const stayed = await page.evaluate(() => window.scrollY);
+    assert.ok(stayed >= 360, '필터 적용이 페이지를 위로 올렸다: ' + stayed);
+
     const artifactDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
     fs.mkdirSync(artifactDir, { recursive: true });
     await page.locator('.ar-filter-tools').screenshot({ path: path.join(artifactDir, 'archive-reset-search-size.png') });
+    await page.locator('.ar-stat-filter').screenshot({ path: path.join(artifactDir, 'archive-filter-summary-size.png') });
     await page.screenshot({ path: path.join(artifactDir, 'archive-layout-stats-members.png'), fullPage: true });
     console.log('PASS: 아카이브 통계 접기·검색 버튼·매슨리 그리드');
   } finally {
