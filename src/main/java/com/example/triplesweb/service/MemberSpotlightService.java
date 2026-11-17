@@ -77,7 +77,7 @@ public class MemberSpotlightService {
             String objektQuery = URLEncoder.encode(objektMember, StandardCharsets.UTF_8);
             Map<String, Object> objektFeed = feed(
                     "오브젝트",
-                    "이 멤버만 고른 오브젝트 최신 5개입니다.",
+                    "이 멤버의 최신 오브젝트예요.",
                     "이 멤버의 오브젝트가 없습니다.",
                     "/cosmo/objekt?member=" + objektQuery,
                     objektCards(newestObjekts, name, objektQuery));
@@ -89,13 +89,13 @@ public class MemberSpotlightService {
                     videoIndex, MediaType.VIDEO, name, "/archive?type=video&members=" + encoded, !single));
             feeds.add(feed(
                     "공식 미디어",
-                    "공식 미디어에서 이 멤버가 선택된 최신 5개입니다.",
+                    "이 멤버가 포함된 공식 미디어예요.",
                     "연결된 공식 미디어가 없습니다.",
                     "/media?artist=" + encoded,
                     mediaCards(media.getOrDefault(artist.getArtistId(), List.of()))));
             feeds.add(feed(
                     "일정",
-                    "이 멤버만 고른 일정 5개입니다.",
+                    "이 멤버가 포함된 일정이에요.",
                     "이 멤버의 일정이 없습니다.",
                     "/schedule?artist=" + encoded,
                     scheduleCards(scheduleIndex.getOrDefault(normalizeMemberKey(name), List.of()), encoded)));
