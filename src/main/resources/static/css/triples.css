@@ -2447,9 +2447,9 @@ textarea.form-control {
     display: block;
 }
 
-/* 오브젝트는 세로 카드 비율을 유지해 원본 사진이 잘리지 않게 표시한다. */
+/* 오브젝트는 세로 비율을 유지하되, 칸 너비는 그리드를 꽉 채운다. */
 .artist-content-grid--objekt {
-    grid-template-columns: repeat(auto-fill, minmax(9.25rem, 12rem));
+    grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
 }
 
 .artist-content-thumb--objekt {
