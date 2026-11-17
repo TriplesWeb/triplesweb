@@ -174,8 +174,11 @@ public class MemberSpotlightService {
                     ? "/cosmo/objekt?member=" + objektQuery
                     : "/cosmo/objekt/detail/" + URLEncoder.encode(id, StandardCharsets.UTF_8);
             String image = firstNonBlank(text(objekt.get("thumbnailImage")), text(objekt.get("frontImage")));
+            // 멤버 탭에서는 시즌·번호만 보여 컬렉션ID(시즌+멤버+번호) 중복을 피한다.
+            String number = firstNonBlank(text(objekt.get("collectionNo")), text(objekt.get("collectionNumber")));
+            String title = !number.isBlank() ? number : text(objekt.get("collectionId"));
             String meta = joinMeta(text(objekt.get("season")), text(objekt.get("class")));
-            cards.add(card(text(objekt.get("collectionId")), href, !image.isBlank(), image, meta, !image.isBlank()));
+            cards.add(card(title, href, !image.isBlank(), image, meta, !image.isBlank()));
             if (cards.size() == LIMIT) break;
         }
         return cards;
