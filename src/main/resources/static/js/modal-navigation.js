@@ -20,6 +20,8 @@
   let nextToken = 0;
   let pendingHistoryBack = 0;
   let scanning = false;
+  let watcher = null;
+  let useHistory = typeof window.CloseWatcher !== 'function';
 
   function isOpen(element) {
     return element.isConnected &&
@@ -62,27 +64,47 @@
     });
   }
 
-  function track(element) {
-    const entry = { element, watcher: null, mode: 'watcher', closing: false, fromPop: false, token: ++nextToken };
-    tracked.set(element, entry);
-    if ('CloseWatcher' in window) {
-      try {
-        entry.watcher = new CloseWatcher();
-        entry.watcher.addEventListener('close', () => {
-          if (topModal() === entry) closeViaExistingHandler(entry);
+  // Keep one active CloseWatcher, so one Android Back closes exactly one modal.
+  function ensureWatcher() {
+    if (useHistory || watcher || !tracked.size) return;
+    try {
+      watcher = new CloseWatcher();
+      watcher.addEventListener('close', () => {
+        watcher = null;
+        const entry = topModal();
+        if (entry) closeViaExistingHandler(entry);
+        queueMicrotask(() => {
+          scan();
+          ensureWatcher(); // A lower modal may still be open.
         });
-        return;
-      } catch (_) { /* Use the history fallback. */ }
+      });
+    } catch (_) {
+      useHistory = true;
+      for (const entry of tracked.values()) {
+        entry.mode = 'history';
+        history.pushState({ ...history.state, __siteModalToken: entry.token }, '', location.href);
+      }
     }
-    entry.mode = 'history';
-    history.pushState({ ...history.state, __siteModalToken: entry.token }, '', location.href);
+  }
+
+  function track(element) {
+    const entry = { element, mode: useHistory ? 'history' : 'watcher', closing: false, fromPop: false, token: ++nextToken };
+    tracked.set(element, entry);
+    if (useHistory) {
+      history.pushState({ ...history.state, __siteModalToken: entry.token }, '', location.href);
+    } else {
+      ensureWatcher();
+    }
   }
 
   function untrack(element) {
     const entry = tracked.get(element);
     if (!entry) return;
     tracked.delete(element);
-    entry.watcher?.destroy();
+    if (!tracked.size && watcher) {
+      watcher.destroy();
+      watcher = null;
+    }
     if (entry.mode === 'history' && !entry.fromPop) {
       pendingHistoryBack++;
       history.back();
@@ -146,7 +168,13 @@
     if (!entry) return;
     event.preventDefault();
     event.stopImmediatePropagation();
+    // Prevent a second native close request from also closing the next modal.
+    if (watcher) {
+      watcher.destroy();
+      watcher = null;
+    }
     closeViaExistingHandler(entry);
+    queueMicrotask(() => { scan(); ensureWatcher(); });
   }, true);
 
   window.SiteModalNavigation = { scan, get openCount() { return tracked.size; } };
