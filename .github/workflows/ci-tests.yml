@@ -118,6 +118,7 @@ jobs:
           node scripts/tests/collection-dropdown-layout.browser.cjs
           node scripts/tests/archive-layout.browser.cjs
           node scripts/tests/archive-history.browser.cjs
+          node scripts/tests/archive-live-state.browser.cjs
           node scripts/tests/archive-folder-home.browser.cjs
           node scripts/tests/archive-detail-ui.browser.cjs
           node scripts/tests/archive-manage-preview.browser.cjs

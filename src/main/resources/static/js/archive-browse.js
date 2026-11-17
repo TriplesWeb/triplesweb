@@ -394,6 +394,7 @@
     }
     function scheduleFilterSubmit() {
         window.clearTimeout(filterTimer);
+        filterSeq++;
         if (dateOverlayOpen()) {
             submitWhenDateCloses = true;
             return;
@@ -459,64 +460,76 @@
     let filterSeq = 0;
     async function loadArchiveFilter(url, push) {
         const seq = ++filterSeq;
-        const y = window.scrollY;
-        const x = window.scrollX;
-        const response = await fetch(url, { credentials: 'same-origin', headers: { 'X-Archive-Filter': '1' } });
-        if (seq !== filterSeq) return;
-        if (!response.ok) throw new Error(String(response.status));
-        const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
-        if (seq !== filterSeq) return;
-        const nextGrid = doc.getElementById('archiveGrid');
-        if (!nextGrid) throw new Error('grid');
-        const nextOffset = nextGrid.dataset.numberOffset || '0';
-        if (grid.innerHTML !== nextGrid.innerHTML || grid.dataset.numberOffset !== nextOffset) {
-            grid.innerHTML = nextGrid.innerHTML;
-            grid.dataset.numberOffset = nextOffset;
-            numberOffset = Math.max(0, Number(nextOffset) || 0);
-            cards = [...grid.querySelectorAll('.ar-card')];
-            apply();
-        }
-        const nextEmpty = doc.querySelector('.archive-page > .ar-empty');
-        const empty = document.querySelector('.archive-page > .ar-empty');
-        if (nextEmpty) {
-            if (!empty || empty.textContent !== nextEmpty.textContent) {
-                const imported = document.importNode(nextEmpty, true);
-                if (empty) empty.replaceWith(imported);
-                else grid.after(imported);
+        try {
+            const response = await fetch(url, { credentials: 'same-origin', headers: { 'X-Archive-Filter': '1' } });
+            if (seq !== filterSeq) return;
+            if (!response.ok) throw new Error(String(response.status));
+            const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
+            if (seq !== filterSeq) return;
+            const nextGrid = doc.getElementById('archiveGrid');
+            if (!nextGrid) throw new Error('grid');
+            const y = window.scrollY;
+            const x = window.scrollX;
+            const nextOffset = nextGrid.dataset.numberOffset || '0';
+            if (grid.innerHTML !== nextGrid.innerHTML || grid.dataset.numberOffset !== nextOffset) {
+                grid.innerHTML = nextGrid.innerHTML;
+                grid.dataset.numberOffset = nextOffset;
+                numberOffset = Math.max(0, Number(nextOffset) || 0);
+                cards = [...grid.querySelectorAll('.ar-card')];
+                apply();
             }
-        } else {
-            empty?.remove();
+            const nextEmpty = doc.querySelector('.archive-page > .ar-empty');
+            const empty = document.querySelector('.archive-page > .ar-empty');
+            if (nextEmpty) {
+                if (!empty || empty.textContent !== nextEmpty.textContent) {
+                    const imported = document.importNode(nextEmpty, true);
+                    if (empty) empty.replaceWith(imported);
+                    else grid.after(imported);
+                }
+            } else {
+                empty?.remove();
+            }
+            const nextPager = doc.querySelector('.ar-pager');
+            const pager = document.querySelector('.ar-pager');
+            if (nextPager && pager && pager.innerHTML !== nextPager.innerHTML) {
+                pager.replaceWith(document.importNode(nextPager, true));
+            }
+            for (const selector of ['.ar-type-tabs', '.ar-source-tabs']) {
+                const current = document.querySelector(selector);
+                const next = doc.querySelector(selector);
+                if (current && next) current.replaceWith(document.importNode(next, true));
+            }
+            const nextStats = doc.getElementById('archiveStats');
+            if (nextStats && stats) {
+                const open = !stats.hidden;
+                const dateNode = nextStats.querySelector('.ar-stat-date strong');
+                const currentDate = stats.querySelector('.ar-stat-date strong');
+                const countNode = nextStats.querySelector('.ar-stat strong');
+                const currentCount = stats.querySelector('.ar-stat strong');
+                if (dateNode && currentDate && currentDate.textContent !== dateNode.textContent) currentDate.textContent = dateNode.textContent;
+                if (countNode && currentCount && currentCount.innerHTML !== countNode.innerHTML) currentCount.innerHTML = countNode.innerHTML;
+                const pageNode = nextStats.querySelectorAll('.ar-stat strong')[2];
+                const currentPage = stats.querySelectorAll('.ar-stat strong')[2];
+                if (pageNode && currentPage && currentPage.innerHTML !== pageNode.innerHTML) currentPage.innerHTML = pageNode.innerHTML;
+                stats.hidden = !open;
+            }
+            paintFilterSummary();
+            const nextUrl = new URL(url, location.href);
+            const same = nextUrl.pathname === location.pathname && nextUrl.search === location.search;
+            if (push !== false && !same) history.pushState({ archiveLive: true }, '', nextUrl.pathname + nextUrl.search);
+            window.scrollTo(x, y);
+        } catch (error) {
+            if (seq === filterSeq) window.location.assign(url);
         }
-        const nextPager = doc.querySelector('.ar-pager');
-        const pager = document.querySelector('.ar-pager');
-        if (nextPager && pager && pager.innerHTML !== nextPager.innerHTML) {
-            pager.replaceWith(document.importNode(nextPager, true));
-        }
-        const nextStats = doc.getElementById('archiveStats');
-        if (nextStats && stats) {
-            const open = !stats.hidden;
-            const dateNode = nextStats.querySelector('.ar-stat-date strong');
-            const currentDate = stats.querySelector('.ar-stat-date strong');
-            const countNode = nextStats.querySelector('.ar-stat strong');
-            const currentCount = stats.querySelector('.ar-stat strong');
-            if (dateNode && currentDate && currentDate.textContent !== dateNode.textContent) currentDate.textContent = dateNode.textContent;
-            if (countNode && currentCount && currentCount.innerHTML !== countNode.innerHTML) currentCount.innerHTML = countNode.innerHTML;
-            const pageNode = nextStats.querySelectorAll('.ar-stat strong')[2];
-            const currentPage = stats.querySelectorAll('.ar-stat strong')[2];
-            if (pageNode && currentPage && currentPage.innerHTML !== pageNode.innerHTML) currentPage.innerHTML = pageNode.innerHTML;
-            stats.hidden = !open;
-        }
-        paintFilterSummary();
-        const nextUrl = new URL(url, location.href);
-        const same = nextUrl.pathname === location.pathname && nextUrl.search === location.search;
-        if (push !== false && !same) history.pushState({ archiveLive: true }, '', nextUrl.pathname + nextUrl.search);
-        window.scrollTo(x, y);
-        requestAnimationFrame(() => window.scrollTo(x, y));
     }
     form?.addEventListener('submit', (event) => {
         event.preventDefault();
+        appliedDates = dateSnapshot();
+        submitWhenDateCloses = false;
+        window.closeArchiveOverlays?.();
+        window.clearTimeout(filterTimer);
         const url = archiveFilterUrl();
-        loadArchiveFilter(url).catch(() => { window.location.assign(url); });
+        loadArchiveFilter(url);
     });
     window.addEventListener('popstate', () => {
         if (!form) return;
