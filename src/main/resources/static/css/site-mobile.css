@@ -100,13 +100,12 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   input.objekt-kind-select:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=range]){font-size:.82rem!important;font-weight:600!important;line-height:1!important}
   .objekt-detail-heading .objekt-fav-toggle{min-width:2rem;min-height:2rem;width:2rem;height:2rem;padding:0;gap:0;justify-content:center}
   .objekt-detail-heading .objekt-fav-count{display:none}
-  button,input[type=submit],.btn,.site-btn,.ar-submit,.btn-custom-primary,.btn-custom-secondary,.btn-custom-danger,.objekt-reset-button{min-height:44px;touch-action:manipulation}
+  /* 버튼 전역 44px 강제 제거: 컴포넌트 패딩 그대로 쓰고, 폼/탭 등만 개별 유지 */
+  button,input[type=submit],.btn,.site-btn,.ar-submit,.btn-custom-primary,.btn-custom-secondary,.btn-custom-danger,.objekt-reset-button{touch-action:manipulation}
   .objekt-description-edit,
   .objekt-description-buttons button,
   .objekt-description-share-toggle{min-height:1.65rem;height:1.65rem}
   .objekt-description-share-actions button{min-height:1.45rem;height:1.45rem}
-  /* 멤버/그룹 수정 등 인라인 액션: 44px면 제목 옆에서 너무 뚱뚱해 보임 */
-  .artist-mode-btn{min-height:0;height:auto;padding:.28rem .72rem;line-height:1.2;font-size:.8rem}
   a,summary{touch-action:manipulation}
   textarea{max-width:100%;resize:vertical}
   [contenteditable=true]{max-width:100%;font-size:16px;overflow-wrap:anywhere;overflow-x:auto}
