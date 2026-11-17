@@ -708,11 +708,12 @@
     cursor: pointer;
 }
 
-.event-stop-row-top input[type="text"],
+.event-stop-row-top input[type="text"]:not(.ar-cal-part),
 .event-stop-row-top input[type="date"],
+.event-stop-row-top .ar-cal > input[type="date"],
 .shop-sales-period input[type="date"],
 .shop-md-region-sales input[type="date"],
-.event-stop-field input[type="text"],
+.event-stop-field input[type="text"]:not(.ar-cal-part),
 .event-stop-field textarea {
     appearance: none;
     width: 100%;
@@ -726,7 +727,8 @@
     font-weight: 500;
 }
 
-.event-stop-row-top input[type="date"] {
+.event-stop-row-top input[type="date"],
+.event-stop-row-top .ar-cal > input[type="date"] {
     width: 9.75rem;
     min-width: 9.75rem;
     max-width: 9.75rem;
@@ -821,20 +823,30 @@
     }
 
     .event-stop-row-top .stop-date-range {
-        grid-column: 1 / -2;
+        grid-column: 1 / -1;
         flex-wrap: wrap;
+        width: 100%;
     }
 
-    .event-stop-row-top input[type="date"] {
-        width: min(9.75rem, calc(50% - 0.4rem));
-        min-width: 8.5rem;
-        max-width: 9.75rem;
-        flex: 1 1 8.5rem;
+    .event-stop-row-top .stop-date-range > .ar-cal {
+        flex: 1 1 calc(50% - 0.55rem);
+        width: auto;
+        min-width: 9.25rem;
+        max-width: none;
+    }
+
+    .event-stop-row-top input[type="date"],
+    .event-stop-row-top .ar-cal > input[type="date"] {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        flex: 1 1 auto;
     }
 
     .event-stop-row-top .stop-remove {
         grid-column: 3;
         grid-row: 1;
+        align-self: start;
     }
 
     .event-stop-lists {
