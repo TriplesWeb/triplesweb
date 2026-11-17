@@ -393,7 +393,7 @@
     }
 
     document.querySelectorAll(".ar-dialog").forEach(dialog => {
-        dialog.querySelectorAll("[data-ar-close]").forEach(button => {
+        dialog.querySelectorAll("[data-ar-close]:not(.ar-dialog-backdrop)").forEach(button => {
             button.addEventListener("click", () => closeDialog(dialog));
         });
     });
