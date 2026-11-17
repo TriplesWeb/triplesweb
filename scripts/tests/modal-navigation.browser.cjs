@@ -14,7 +14,8 @@ const html = `<!doctype html>
 .site-modal.is-open{display:block}
 .about-modal.flex,.ar-dialog:not([hidden]){display:flex}
 .site-modal,.about-modal,.ar-dialog{position:fixed;inset:0;background:#0008}
-.site-modal-dialog,.about-modal-panel,.ar-dialog-panel{margin:15vh auto;background:white;padding:24px;height:120px}
+.site-modal-dialog,.about-modal-panel,.ar-dialog-panel{position:relative;z-index:1;margin:15vh auto;background:white;padding:24px;height:120px}
+.ar-dialog-backdrop{position:absolute;inset:0}
 </style>
 <script defer src="/js/modal-navigation.js"></script>
 <script defer src="/js/site-ui.js"></script>
@@ -94,11 +95,12 @@ document.getElementById('nativeClose').onclick = () => nativeDialog.close();
 
       await page.keyboard.press('Escape');
       await page.waitForFunction(() => SiteModalNavigation.openCount === 0);
+      if (fallback) await page.waitForFunction(() => !history.state?.__siteModalToken);
       assert.equal(await page.locator('#site').getAttribute('aria-hidden'), 'true');
 
       await page.click('#openArchive');
       await page.waitForFunction(() => SiteModalNavigation.openCount === 1);
-      await page.locator('.ar-dialog-backdrop').click({ force: true });
+      await page.locator('.ar-dialog-backdrop').click({ position: { x: 5, y: 5 } });
       assert.equal(await page.locator('#archive').evaluate(element => element.hidden), false, '아카이브 배경 클릭은 무시한다');
       await page.locator('#archive .ar-close').click();
       await page.waitForFunction(() => SiteModalNavigation.openCount === 0);
