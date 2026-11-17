@@ -23,6 +23,7 @@ public class ShopDetailDto {
     private String displayCoverImage;
     private boolean hasSalesPeriod;
     private boolean hasMdPhotos;
+    private boolean hasMultipleMdRegions;
     @Builder.Default
     private List<MdRegion> mdRegions = new ArrayList<>();
 
@@ -41,8 +42,16 @@ public class ShopDetailDto {
         private String venue;
         private boolean hasVenue;
         private boolean hasPhotos;
+        private boolean firstRegion;
+        private boolean regionHidden;
+        /** 카테고리가 2개 이상일 때만 패널 안 제목을 보여 탭과 중복을 피한다. */
+        private boolean hasMultipleCategories;
         @Builder.Default
         private List<MdCategory> categories = new ArrayList<>();
+
+        public String getRegionPanelId() {
+            return "shop-md-" + regionKey;
+        }
     }
 
     @Getter

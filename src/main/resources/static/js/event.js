@@ -216,7 +216,6 @@
     document.getElementById("eventEditInfo").value = "";
     document.getElementById("eventEditClearImage").checked = false;
     document.getElementById("eventEditImage").value = "";
-    document.getElementById("eventEditImageUrl").value = "";
     const preview = document.getElementById("eventEditImagePreview");
     preview.classList.add("hidden");
     preview.removeAttribute("src");
@@ -234,7 +233,6 @@
       document.getElementById("eventEditInfo").value = data.eventInfo || "";
       fillSectionSelect(data.sectionId);
       document.getElementById("eventEditStops").innerHTML = stopRowsHtml(data.stops);
-      if (/^https?:\/\//i.test(data.eventImage || "")) document.getElementById("eventEditImageUrl").value = data.eventImage;
       if (data.eventImage) {
         preview.src = data.eventImage;
         preview.classList.remove("hidden");
@@ -365,8 +363,6 @@
       if (sectionId) fd.append("sectionId", sectionId);
       const file = document.getElementById("eventEditImage").files?.[0];
       if (file) fd.append("image", file);
-      const imageUrl = document.getElementById("eventEditImageUrl").value.trim();
-      if (imageUrl) fd.append("imageUrl", imageUrl);
       const clearImage = document.getElementById("eventEditClearImage").checked;
       if (clearImage) fd.append("clearImage", "true");
       if (!window.confirm(clearImage

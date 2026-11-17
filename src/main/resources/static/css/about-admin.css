@@ -240,10 +240,17 @@
 
 .about-edit-actions {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 0.5rem;
     justify-content: flex-end;
+    align-items: center;
     margin-top: 0.35rem;
+}
+
+.about-edit-actions > .about-mode-btn,
+.about-edit-actions > .btn {
+    flex: 0 0 auto;
+    width: auto;
 }
 
 .about-mode-btn {
@@ -328,7 +335,21 @@
     margin: 0;
     font-size: 0.75rem;
     font-weight: 600;
+    line-height: 1.45;
     color: #8a9a94;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+}
+
+.about-edit-field-hint code {
+    display: inline;
+    padding: 0.05rem 0.25rem;
+    border-radius: 0.3rem;
+    background: rgba(13, 14, 18, 0.7);
+    color: #b9cac4;
+    font-size: 0.7rem;
+    font-weight: 650;
+    white-space: nowrap;
 }
 
 .about-link-rows {
@@ -508,6 +529,26 @@
     align-items: center;
 }
 
+.event-stop-row-top .stop-remove {
+    width: 1.75rem;
+    height: 1.75rem;
+    min-width: 1.75rem;
+    min-height: 1.75rem;
+    max-width: 1.75rem;
+    max-height: 1.75rem;
+    align-self: center;
+    box-sizing: border-box;
+    overflow: hidden;
+    line-height: 1;
+}
+
+.event-stop-row-top .stop-remove .material-symbols-outlined {
+    font-size: 1rem;
+    line-height: 1;
+    width: 1rem;
+    height: 1rem;
+}
+
 .stop-date-range {
     display: flex;
     flex-wrap: nowrap;
@@ -634,6 +675,24 @@
     gap: 0.4rem;
 }
 
+.shop-md-category-head .shop-md-input {
+    flex: 1 1 100%;
+}
+
+.shop-md-category-actions {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.4rem;
+    flex: 0 0 auto;
+}
+
+.shop-md-category-actions > .about-mode-btn,
+.shop-md-category-actions > .btn {
+    flex: 0 0 auto;
+    width: auto;
+}
+
 .shop-md-input {
     flex: 1 1 10rem;
     min-width: 0;
@@ -696,11 +755,12 @@
     cursor: pointer;
 }
 
-.event-stop-row-top input[type="text"],
+.event-stop-row-top input[type="text"]:not(.ar-cal-part),
 .event-stop-row-top input[type="date"],
+.event-stop-row-top .ar-cal > input[type="date"],
 .shop-sales-period input[type="date"],
 .shop-md-region-sales input[type="date"],
-.event-stop-field input[type="text"],
+.event-stop-field input[type="text"]:not(.ar-cal-part),
 .event-stop-field textarea {
     appearance: none;
     width: 100%;
@@ -714,15 +774,41 @@
     font-weight: 500;
 }
 
-.event-stop-row-top input[type="date"] {
-    width: 9.75rem;
-    min-width: 9.75rem;
-    max-width: 9.75rem;
-    flex: 0 0 auto;
+.event-stop-row-top input[type="date"],
+.event-stop-row-top .ar-cal > input[type="date"],
+.shop-sales-period input[type="date"],
+.shop-md-region-sales input[type="date"] {
     box-sizing: border-box;
     font-size: 0.82rem;
     line-height: 1.25;
     color-scheme: dark;
+    /* 네이티브 달력 아이콘이 날짜 숫자를 가리지 않게 오른쪽 여백을 둔다. */
+    padding-right: 2.1rem;
+}
+
+.event-stop-row-top input[type="date"],
+.event-stop-row-top .ar-cal > input[type="date"] {
+    width: 10.5rem;
+    min-width: 10.5rem;
+    max-width: 10.5rem;
+    flex: 0 0 auto;
+}
+
+.event-stop-row-top input[type="date"]::-webkit-calendar-picker-indicator,
+.shop-sales-period input[type="date"]::-webkit-calendar-picker-indicator,
+.shop-md-region-sales input[type="date"]::-webkit-calendar-picker-indicator {
+    position: absolute;
+    right: 0.45rem;
+    width: 1.15rem;
+    height: 1.15rem;
+    cursor: pointer;
+    opacity: 0.85;
+}
+
+.event-stop-row-top input[type="date"],
+.shop-sales-period input[type="date"],
+.shop-md-region-sales input[type="date"] {
+    position: relative;
 }
 
 .shop-sales-period,
@@ -808,21 +894,43 @@
         grid-template-columns: 1fr 1fr 2rem;
     }
 
+    /* 좁은 폭에서는 날짜를 세로로 쌓아 숫자·달력 아이콘이 겹치지 않게 한다.
+       삭제 버튼은 날짜 옆이 아니라 지역·공연장 줄에 둔다. */
     .event-stop-row-top .stop-date-range {
-        grid-column: 1 / -2;
-        flex-wrap: wrap;
+        grid-column: 1 / -1;
+        display: flex;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: stretch;
+        gap: 0.35rem;
+        width: 100%;
+        min-width: 0;
     }
 
-    .event-stop-row-top input[type="date"] {
-        width: min(9.75rem, calc(50% - 0.4rem));
-        min-width: 8.5rem;
-        max-width: 9.75rem;
-        flex: 1 1 8.5rem;
+    .event-stop-row-top .stop-date-range > input[type="date"],
+    .event-stop-row-top .stop-date-range > .ar-cal {
+        flex: 0 0 auto;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+    }
+
+    .event-stop-row-top .stop-date-range > .ar-cal > input[type="date"] {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+    }
+
+    .event-stop-row-top .stop-date-sep {
+        flex: 0 0 auto;
+        align-self: center;
+        line-height: 1;
     }
 
     .event-stop-row-top .stop-remove {
         grid-column: 3;
-        grid-row: 1;
+        align-self: center;
+        justify-self: end;
     }
 
     .event-stop-lists {

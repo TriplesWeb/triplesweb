@@ -64,8 +64,24 @@
   };
   window.closeArchiveOverlays = closeArchiveOverlays;
 
+  /**
+   * 커스텀 달력은 아카이브 날짜 UI만 대상으로 한다.
+   * 이벤트/샵/일정 등 일반 input[type=date]까지 감싸면 관리 모달 CSS와 충돌한다.
+   */
+  const shouldBindCalendar = (input) => {
+    if (!(input instanceof HTMLInputElement) || input.type !== "date") return false;
+    if (input.dataset.nativeDate != null || input.getAttribute("data-ar-cal") === "0") return false;
+    if (input.hasAttribute("data-ar-cal")) return true;
+    if (input.hasAttribute("data-date-exact")
+      || input.hasAttribute("data-date-from")
+      || input.hasAttribute("data-date-to")) {
+      return true;
+    }
+    return Boolean(input.closest("[data-date-filter], .ar-date-field, [data-ar-cal-root]"));
+  };
+
   const bindCalendarField = (input) => {
-    if (!input) return;
+    if (!shouldBindCalendar(input)) return;
     if (input.dataset.calReady) {
       input.dispatchEvent(new Event("input"));
       return;
@@ -412,7 +428,12 @@
     syncFromNative();
   };
   window.bindArchiveDateFields = (root) => {
-    (root || document).querySelectorAll('input[type="date"]').forEach(bindCalendarField);
+    const scope = root || document;
+    if (scope instanceof HTMLInputElement) {
+      bindCalendarField(scope);
+      return;
+    }
+    scope.querySelectorAll?.('input[type="date"]').forEach(bindCalendarField);
   };
   window.bindArchiveDateFields(document);
   const dateObserver = new MutationObserver((records) => {

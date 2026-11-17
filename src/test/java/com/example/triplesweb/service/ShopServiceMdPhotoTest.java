@@ -87,13 +87,19 @@ class ShopServiceMdPhotoTest {
 
         ShopDetailDto detail = ShopService.toDetail(shop);
 
+        assertThat(detail.isHasMultipleMdRegions()).isTrue();
         assertThat(detail.getMdRegions()).hasSize(2);
         assertThat(detail.getMdRegions().get(0).getLabel()).isEqualTo("방콕");
+        assertThat(detail.getMdRegions().get(0).isFirstRegion()).isTrue();
+        assertThat(detail.getMdRegions().get(0).isRegionHidden()).isFalse();
         assertThat(detail.getMdRegions().get(0).isHasSalesPeriod()).isTrue();
         assertThat(detail.getMdRegions().get(0).getSalesPeriod()).isEqualTo("2025.01.01~2025.01.11");
         assertThat(detail.getMdRegions().get(0).getCategories()).hasSize(2);
+        assertThat(detail.getMdRegions().get(0).isHasMultipleCategories()).isTrue();
         assertThat(detail.getMdRegions().get(0).getCategories().get(0).getTitle()).isEqualTo("Official MD");
         assertThat(detail.getMdRegions().get(1).getLabel()).isEqualTo("서울");
+        assertThat(detail.getMdRegions().get(1).isRegionHidden()).isTrue();
+        assertThat(detail.getMdRegions().get(1).isHasMultipleCategories()).isFalse();
         assertThat(detail.getSalesPeriod()).isEqualTo("2025.01.01~2025.01.11 / 2025.03.29~2025.03.30");
     }
 }
