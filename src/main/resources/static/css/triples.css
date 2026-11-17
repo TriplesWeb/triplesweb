@@ -1374,6 +1374,24 @@ textarea.form-control {
     gap: 0.4rem;
 }
 
+.shop-md-category-head .shop-md-input {
+    flex: 1 1 100%;
+}
+
+.shop-md-category-actions {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.4rem;
+    flex: 0 0 auto;
+}
+
+.shop-md-category-actions > .about-mode-btn,
+.shop-md-category-actions > .btn {
+    flex: 0 0 auto;
+    width: auto;
+}
+
 .shop-md-input {
     flex: 1 1 10rem;
     min-width: 0;

@@ -552,8 +552,10 @@
               <div class="shop-md-category-head">
                 <input type="text" class="shop-md-input" data-md-cat-title maxlength="120"
                        placeholder="구분 이름 (예: Official MD)" value="${escapeAttr(cat.title || "")}" aria-label="구분 이름">
-                <button type="button" class="about-mode-btn shop-md-file-btn shop-md-file-btn--sm" data-md-add-photos>사진 추가</button>
-                <button type="button" class="about-mode-btn btn btn-xs btn-error" data-md-remove-category title="구분 삭제">삭제</button>
+                <div class="shop-md-category-actions">
+                  <button type="button" class="about-mode-btn shop-md-file-btn shop-md-file-btn--sm" data-md-add-photos>사진 추가</button>
+                  <button type="button" class="about-mode-btn btn btn-xs btn-error" data-md-remove-category title="구분 삭제">삭제</button>
+                </div>
               </div>
               <div class="shop-md-photo-list">
                 ${(cat.photos || []).map((url, pi) => `
