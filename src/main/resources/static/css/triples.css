@@ -3042,8 +3042,8 @@ textarea.form-control {
 }
 
 .artist-unit-chips {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.55rem;
 }
 
@@ -3051,7 +3051,8 @@ textarea.form-control {
     display: inline-flex;
     align-items: center;
     gap: 0.55rem;
-    max-width: 100%;
+    width: 100%;
+    min-width: 0;
     padding: 0.28rem 0.85rem 0.28rem 0.28rem;
     border-radius: 999px;
     background: rgba(22, 24, 31, 0.9);
