@@ -1068,7 +1068,23 @@ textarea.form-control {
     margin: 0;
     font-size: 0.75rem;
     font-weight: 600;
+    line-height: 1.45;
     color: #8a9a94;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+}
+
+.about-edit-field-hint code {
+    display: inline;
+    padding: 0.05rem 0.25rem;
+    border-radius: 0.3rem;
+    background: rgba(13, 14, 18, 0.7);
+    color: #b9cac4;
+    font-size: 0.7rem;
+    font-weight: 650;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .about-link-rows {
