@@ -105,6 +105,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .objekt-description-buttons button,
   .objekt-description-share-toggle{min-height:1.65rem;height:1.65rem}
   .objekt-description-share-actions button{min-height:1.45rem;height:1.45rem}
+  /* 멤버/그룹 수정 등 인라인 액션: 44px면 제목 옆에서 너무 뚱뚱해 보임 */
+  .artist-mode-btn{min-height:0;height:auto;padding:.28rem .72rem;line-height:1.2;font-size:.8rem}
   a,summary{touch-action:manipulation}
   textarea{max-width:100%;resize:vertical}
   [contenteditable=true]{max-width:100%;font-size:16px;overflow-wrap:anywhere;overflow-x:auto}
