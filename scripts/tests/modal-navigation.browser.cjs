@@ -91,6 +91,7 @@ document.getElementById('nativeClose').onclick = () => nativeDialog.close();
       await page.waitForFunction(() => SiteModalNavigation.openCount === 2);
       await page.keyboard.press('Escape');
       await page.waitForFunction(() => SiteModalNavigation.openCount === 1);
+      if (fallback) await page.waitForFunction(() => history.state?.__siteModalToken === 1);
       assert.equal(await page.locator('#site').getAttribute('aria-hidden'), 'false', '중첩 모달은 최상단만 닫는다');
 
       await page.keyboard.press('Escape');
@@ -104,6 +105,7 @@ document.getElementById('nativeClose').onclick = () => nativeDialog.close();
       assert.equal(await page.locator('#archive').evaluate(element => element.hidden), false, '아카이브 배경 클릭은 무시한다');
       await page.locator('#archive .ar-close').click();
       await page.waitForFunction(() => SiteModalNavigation.openCount === 0);
+      if (fallback) await page.waitForFunction(() => !history.state?.__siteModalToken);
 
       await page.click('#openSite');
       await page.waitForFunction(() => SiteModalNavigation.openCount === 1);
