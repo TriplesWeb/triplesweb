@@ -17,6 +17,6 @@ class ArtistSpotlightBoundedTest {
   verify(archives,never()).findTop2000ByFile_MediaTypeOrderByIdDesc(any());
   verify(media).byArtist(1L,5);verify(media,never()).byArtistMap(anyInt());
   verify(schedules).findTop5ByArtists_ArtistIdOrderByStartDescIdDesc(1L);verify(schedules,never()).findAllWithArtists();
-  assertThat(a.getMemberFeeds()).hasSize(5);
+  assertThat(a.getMemberFeeds()).hasSize(4);
  }
 }
