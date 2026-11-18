@@ -3,7 +3,7 @@
                     <section class="artist-content-section" aria-labelledby="solo-heading-{{artistId}}">
                         <div class="artist-content-head">
                             <h2 id="solo-heading-{{artistId}}" class="artist-content-title">멤버 단독 컨텐츠</h2>
-                            <p class="artist-content-desc">개인 콘텐츠·커버·브이로그 등 단독 출연 영상입니다.</p>
+                            <p class="artist-content-desc">커버·브이로그처럼 멤버가 단독으로 나온 영상이에요.</p>
                         </div>
                         {{#hasSoloLinks}}
                         <div class="artist-content-grid">
@@ -40,7 +40,7 @@
                         </div>
                         {{/hasSoloLinks}}
                         {{^hasSoloLinks}}
-                        <p class="artist-content-empty">등록된 단독 컨텐츠가 없습니다. 관리자 모드에서 링크를 추가할 수 있습니다.</p>
+                        <p class="artist-content-empty">이 멤버의 단독 컨텐츠가 없습니다.</p>
                         {{/hasSoloLinks}}
                     </section>
 
@@ -117,7 +117,7 @@
                         </div>
                         {{/hasBroadcastLinks}}
                         {{^hasBroadcastLinks}}
-                        <p class="artist-content-empty">등록된 출연 방송이 없습니다. 관리자 모드에서 링크를 추가할 수 있습니다.</p>
+                        <p class="artist-content-empty">이 멤버의 출연 방송이 없습니다.</p>
                         {{/hasBroadcastLinks}}
                     </section>
                 </div>
