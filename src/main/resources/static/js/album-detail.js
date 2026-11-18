@@ -76,6 +76,13 @@
     }
     if (!html) html = wrapSegment(text, DEFAULT_COLOR);
 
+    // ALL은 범례 맨 앞
+    legendOrder.sort(function (a, b) {
+      if (a.label === ALL_LABEL) return -1;
+      if (b.label === ALL_LABEL) return 1;
+      return 0;
+    });
+
     return { html: html, legend: legendOrder };
   }
 
