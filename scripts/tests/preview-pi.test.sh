@@ -17,6 +17,7 @@ case "$1 $2" in
   'compose ps') echo production-db ;;
   'info --format') echo "$TEST_ROOT" ;;
   'network create') touch "$TEST_ROOT/state/net-${*: -1}" ;;
+  'network connect') test -f "$TEST_ROOT/state/$4" ;;
   'network inspect') test -f "$TEST_ROOT/state/net-$3" ;;
   'network rm') rm -f "$TEST_ROOT/state/net-$3" ;;
   'run -d')
@@ -84,6 +85,7 @@ test "$(cat "$test_root/production/uploads/image.txt")" = 'production image'
 grep -q "exec twpr42${first}-db sh -c" "$test_root/docker.log"
 grep -q 'sh site$' "$test_root/docker.log"
 grep -q 'sh full$' "$test_root/docker.log"
+grep -q '127.0.0.1::8080 .* nginx:alpine' "$test_root/docker.log"
 grep -q "exec twpr42${second}-db timeout -k 10s 12m" "$test_root/docker.log"
 [[ ! -f $dir/$second/snapshot/db.sql.gz ]]
 

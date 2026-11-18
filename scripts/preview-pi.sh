@@ -27,11 +27,16 @@ remove_generation() {
   [[ $generation =~ ^g[0-9]+-[0-9]+$ ]] || return 1
   name="twpr${pr}${generation}"
   local container
-  for container in "${name}-app" "${name}-db"; do
+  for container in "${name}-proxy" "${name}-app" "${name}-db"; do
     if docker inspect "$container" >/dev/null 2>&1; then docker rm -fv "$container" >/dev/null; fi
   done
   if docker network inspect "$name" >/dev/null 2>&1; then docker network rm "$name" >/dev/null; fi
-  rm -rf -- "$dir/$generation"
+  if ! rm -rf -- "$dir/$generation" 2>/dev/null; then
+    # Earlier preview containers could leave root-owned directories in this copy.
+    docker run --rm --network none -v "$dir/$generation:/preview" alpine:3.20 \
+      chown -hR "$(id -u):$(id -g)" /preview >/dev/null
+    rm -rf -- "$dir/$generation" 2>/dev/null
+  fi
 }
 
 if [[ $operation == cleanup ]]; then
@@ -78,6 +83,10 @@ if [[ -f $dir/active ]]; then
   read -r old < "$dir/active"
   [[ $old =~ ^g[0-9]+-[0-9]+$ && -d $dir/$old ]] || exit 1
 fi
+for path in "$dir"/g[0-9]*-[0-9]*; do
+  [[ -d $path && ${path##*/} != "$old" ]] || continue
+  remove_generation "${path##*/}"
+done
 generation="g$(date +%s)-$$"
 name="twpr${pr}${generation}"
 candidate="$dir/$generation"
@@ -91,7 +100,7 @@ rollback() {
   if ! $committed; then
     if $switched; then
       if [[ -n $old ]]; then
-        old_backend=$(docker port "twpr${pr}${old}-app" 8080/tcp | head -n1 | sed 's/.*://')
+        old_backend=$(docker port "twpr${pr}${old}-proxy" 8080/tcp | head -n1 | sed 's/.*://')
         tailscale serve --bg --https="$port" "http://127.0.0.1:$old_backend" >&2 || true
       else
         tailscale serve --https="$port" off >&2 || true
@@ -133,8 +142,9 @@ if [[ $(stat -c %d "$candidate") == "$(stat -c %d "$docker_root")" ]]; then
 else
   ((file_free > files_kib + db_kib + 524288 && docker_free > db_kib + 524288)) || { echo 'Insufficient disk space for preview and 512 MiB reserves' >&2; exit 1; }
 fi
-cp -a --reflink=auto "$source_files/uploads/." "$candidate/uploads/"
-[[ ! -f $source_files/data/videos.json ]] || cp -a "$source_files/data/videos.json" "$candidate/data/"
+cp -a --no-preserve=ownership --reflink=auto "$source_files/uploads/." "$candidate/uploads/"
+chmod -R u+rwX "$candidate/uploads"
+[[ ! -f $source_files/data/videos.json ]] || cp -a --no-preserve=ownership "$source_files/data/videos.json" "$candidate/data/"
 
 # Stage the compressed dump on the Pi so the source and import can fail independently.
 # SQL errors can include data values, so only the stage and exit status go to CI.
@@ -193,7 +203,8 @@ rm -f -- "$candidate/snapshot/db.sql.gz"
 
 docker pull "$image" >&2
 echo 'Starting preview application' >&2
-docker run -d --restart unless-stopped --name "${name}-app" --network "$name" -p 127.0.0.1::8080 \
+docker run -d --restart unless-stopped --name "${name}-app" --network "$name" --network-alias preview-app \
+  --user "$(id -u):$(id -g)" \
   -e SPRING_DATASOURCE_URL='jdbc:mariadb://db:3306/triples?useSSL=false' \
   -e SPRING_DATASOURCE_USERNAME=root -e SPRING_DATASOURCE_PASSWORD="$password" \
   -e SPRING_JPA_HIBERNATE_DDL_AUTO=none -e APP_SCHEDULING_ENABLED=false \
@@ -203,7 +214,27 @@ docker run -d --restart unless-stopped --name "${name}-app" --network "$name" -p
   -e FILE_UPLOAD_DIR=/app/uploads -e MEDIA_CATALOG_PATH=/app/data/videos.json \
   -v "$candidate/uploads:/app/uploads" -v "$candidate/data:/app/data" \
   "$image" >/dev/null
-backend=$(docker port "${name}-app" 8080/tcp | head -n1 | sed 's/.*://')
+# Only the reverse proxy joins the publishable bridge. App and DB stay isolated.
+cat > "$candidate/proxy.conf" <<'NGINX'
+server {
+    listen 8080;
+    client_max_body_size 0;
+    access_log off;
+    resolver 127.0.0.11 valid=10s ipv6=off;
+    location / {
+        set $app http://preview-app:8080;
+        proxy_pass $app;
+        proxy_set_header Host $http_host;
+        proxy_request_buffering off;
+        proxy_buffering off;
+        proxy_http_version 1.1;
+    }
+}
+NGINX
+docker run -d --restart unless-stopped --name "${name}-proxy" --network bridge -p 127.0.0.1::8080 \
+  -v "$candidate/proxy.conf:/etc/nginx/conf.d/default.conf:ro" nginx:alpine >/dev/null
+docker network connect "$name" "${name}-proxy"
+backend=$(docker port "${name}-proxy" 8080/tcp | head -n1 | sed 's/.*://')
 [[ $backend =~ ^[0-9]+$ ]] || exit 1
 for ((i=0; i<120; i++)); do
   if curl --fail --silent --max-time 8 --output /dev/null "http://127.0.0.1:$backend/actuator/health/readiness"; then break; fi
