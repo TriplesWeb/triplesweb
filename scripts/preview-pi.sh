@@ -140,11 +140,18 @@ password=$(openssl rand -hex 24)
 docker network create --internal "$name" >/dev/null
 docker run -d --restart unless-stopped --name "${name}-db" --network "$name" --network-alias db \
   -e MARIADB_ROOT_PASSWORD="$password" -e MARIADB_DATABASE=triples mariadb:11.4 >/dev/null
-for ((i=0; i<90; i++)); do
+echo 'Waiting for preview MariaDB authentication' >&2
+for ((i=0; i<30; i++)); do
   if docker exec "${name}-db" sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb -uroot -e "SELECT 1"' >/dev/null 2>&1; then break; fi
-  ((i < 89)) || { echo 'Preview DB did not start' >&2; exit 1; }
+  if ((i == 29)); then
+    echo 'Preview DB did not start; last connection error and server log follow' >&2
+    docker exec "${name}-db" sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb -uroot -e "SELECT 1"' >&2 || true
+    docker logs --tail 80 "${name}-db" >&2 || true
+    exit 1
+  fi
   sleep 2
 done
+echo 'Copying database snapshot' >&2
 set +e
 docker exec "$source_db" sh -c 'exec env MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb-dump -uroot --single-transaction --quick --skip-lock-tables -- "$MARIADB_DATABASE"' \
   | docker exec -i "${name}-db" sh -c 'exec env MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb -uroot triples'
@@ -154,6 +161,7 @@ if ((dump_status[0] != 0)); then echo 'Source database dump failed' >&2; exit 1;
 if ((dump_status[1] != 0)); then echo 'Preview database import failed' >&2; exit 1; fi
 
 docker pull "$image" >&2
+echo 'Starting preview application' >&2
 docker run -d --restart unless-stopped --name "${name}-app" --network "$name" -p 127.0.0.1::8080 \
   -e SPRING_DATASOURCE_URL='jdbc:mariadb://db:3306/triples?useSSL=false' \
   -e SPRING_DATASOURCE_USERNAME=root -e SPRING_DATASOURCE_PASSWORD="$password" \
