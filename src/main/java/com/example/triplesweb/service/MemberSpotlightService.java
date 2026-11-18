@@ -83,10 +83,7 @@ public class MemberSpotlightService {
                     objektCards(newestObjekts, name, objektQuery));
             objektFeed.put("objektFeed", true);
             feeds.add(objektFeed);
-            feeds.add(archiveFeed("사진", "이 멤버의 최신 사진이에요.", "이 멤버의 사진이 없습니다.",
-                    imageIndex, MediaType.IMAGE, name, "/archive?members=" + encoded, !single));
-            feeds.add(archiveFeed("영상", "이 멤버의 최신 영상이에요.", "이 멤버의 영상이 없습니다.",
-                    videoIndex, MediaType.VIDEO, name, "/archive?type=video&members=" + encoded, !single));
+            feeds.add(combinedArchiveFeed(imageIndex, videoIndex, name, "/archive?members=" + encoded, !single));
             feeds.add(feed(
                     "공식 미디어",
                     "이 멤버가 포함된 공식 미디어예요.",
@@ -104,40 +101,76 @@ public class MemberSpotlightService {
         }
     }
 
-    private Map<String, Object> archiveFeed(String title, String description, String emptyText,
-                                            Map<String, List<Archive>> index, MediaType type,
-                                            String name, String moreUrl, boolean allowFallback) {
-        List<Archive> matched = takeFromIndex(index, name);
-        if (allowFallback && matched.size() < LIMIT) {
-            // 전역 최신 2000 밖에만 있는 멤버 자료를 보완 조회
-            List<Archive> fallback = archiveRepository
-                    .findTop40ByFile_MediaTypeAndArtistNamesContainingIgnoreCaseOrderByIdDesc(type, name);
-            for (Archive archive : fallback) {
-                if (matched.size() >= LIMIT) break;
-                if (!archiveHasMember(archive.getArtistNames(), name)) continue;
-                if (matched.stream().anyMatch(a -> a.getId() != null && a.getId().equals(archive.getId()))) {
-                    continue;
-                }
-                matched.add(archive);
-            }
+    /** 사진·영상을 한데 모아 최신순 아카이브 피드로 만든다. */
+    private Map<String, Object> combinedArchiveFeed(Map<String, List<Archive>> imageIndex,
+                                                    Map<String, List<Archive>> videoIndex,
+                                                    String name, String moreUrl, boolean allowFallback) {
+        List<Archive> matched = new ArrayList<>();
+        matched.addAll(takeFromIndex(imageIndex, name, LIMIT));
+        matched.addAll(takeFromIndex(videoIndex, name, LIMIT));
+        if (allowFallback && matched.size() < LIMIT * 2) {
+            fillArchiveFallback(matched, MediaType.IMAGE, name);
+            fillArchiveFallback(matched, MediaType.VIDEO, name);
         }
-        List<Map<String, Object>> cards = new ArrayList<>();
+        matched.sort(Comparator.comparing(Archive::getId, Comparator.nullsLast(Comparator.reverseOrder())));
+        if (matched.size() > LIMIT) {
+            matched = new ArrayList<>(matched.subList(0, LIMIT));
+        }
+        List<Map<String, Object>> cards = new ArrayList<>(matched.size());
         for (Archive archive : matched) {
-            if (cards.size() >= LIMIT) break;
-            SavedMeta file = archive.getFile();
-            String url = file == null || file.getUrl() == null ? "" : file.getUrl();
-            boolean image = type == MediaType.IMAGE && !url.isBlank();
-            String href = url.isBlank() ? moreUrl : url;
-            cards.add(card(archive.getTitle(), href, !url.isBlank(), image ? url : "", archive.getArtistNames(), image));
+            cards.add(archiveCard(archive, moreUrl));
         }
-        return feed(title, description, emptyText, moreUrl, cards);
+        return feed(
+                "아카이브",
+                "이 멤버의 최신 아카이브예요.",
+                "이 멤버의 아카이브가 없습니다.",
+                moreUrl,
+                cards);
     }
 
-    private static List<Archive> takeFromIndex(Map<String, List<Archive>> index, String name) {
+    private void fillArchiveFallback(List<Archive> matched, MediaType type, String name) {
+        if (matched.size() >= LIMIT * 2) {
+            return;
+        }
+        List<Archive> fallback = archiveRepository
+                .findTop40ByFile_MediaTypeAndArtistNamesContainingIgnoreCaseOrderByIdDesc(type, name);
+        for (Archive archive : fallback) {
+            if (matched.size() >= LIMIT * 2) {
+                break;
+            }
+            if (!archiveHasMember(archive.getArtistNames(), name)) {
+                continue;
+            }
+            if (matched.stream().anyMatch(a -> a.getId() != null && a.getId().equals(archive.getId()))) {
+                continue;
+            }
+            matched.add(archive);
+        }
+    }
+
+    private static Map<String, Object> archiveCard(Archive archive, String moreUrl) {
+        SavedMeta file = archive.getFile();
+        String url = file == null || file.getUrl() == null ? "" : file.getUrl();
+        boolean image = archive.getType() == MediaType.IMAGE;
+        String thumb = image
+                ? url
+                : firstNonBlank(text(archive.getThumbnailUrl()), "");
+        String href = url.isBlank() ? moreUrl : url;
+        String meta = image ? "사진" : "영상";
+        Map<String, Object> item = card(archive.getTitle(), href, !url.isBlank(), thumb, meta, !thumb.isBlank());
+        if (!image) {
+            item.put("icon", "movie");
+        }
+        return item;
+    }
+
+    private static List<Archive> takeFromIndex(Map<String, List<Archive>> index, String name, int limit) {
         List<Archive> fromIndex = index.getOrDefault(normalizeMemberKey(name), List.of());
         List<Archive> matched = new ArrayList<>();
         for (Archive archive : fromIndex) {
-            if (matched.size() >= LIMIT) break;
+            if (matched.size() >= limit) {
+                break;
+            }
             matched.add(archive);
         }
         return matched;
