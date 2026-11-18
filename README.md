@@ -118,6 +118,19 @@ DB를 서버와 같이 쓰면 **파일도 같이** 보여야 합니다.
 
 ## Raspberry Pi 4 Docker CI/CD (Tailscale SSH)
 
+### PR 모바일 미리보기
+
+같은 저장소의 PR을 열거나 업데이트하면 Actions가 Pi에 PR별 미리보기를 만들고 PR 댓글에 HTTPS 링크를 남깁니다. 휴대폰은 Pi에 접근할 수 있는 Tailscale 네트워크에 연결되어 있어야 합니다. 외부 포크의 PR은 실행하지 않습니다.
+
+- 최초 실행에는 운영 MariaDB와 `uploads/`의 복사본을 사용합니다. PR 업데이트 시에는 기존 미리보기의 DB와 파일 변경을 유지합니다. PR을 닫거나 병합하면 해당 복사본도 삭제됩니다.
+- 새 버전을 검사하는 동안 기존 미리보기가 잠시 중단됩니다. 새 버전이 정상 기동하지 못하면 이전 버전을 다시 시작합니다. 미리보기에서는 예약 작업, 업로드 동기화, 앱 서버의 외부 네트워크 연결 및 운영 서비스 자격 증명을 사용하지 않습니다. 따라서 외부 API 호출이 필요한 기능은 미리보기에서 제한됩니다.
+- 워크플로는 아래 운영 배포와 같은 `TS_OAUTH_CLIENT_ID`, `TS_OAUTH_SECRET`, `PI_HOST`, `PI_USER`, `PI_SSH_KEY`, `PI_DEPLOY_PATH`를 사용합니다. 비공개 GHCR 패키지라면 `GHCR_TOKEN`에 Pi에서 이미지를 읽을 수 있는 토큰을 설정합니다.
+- Pi에는 Docker/Compose, Tailscale Serve, `curl`, `python3`, `openssl`, `flock`, `ss`가 필요합니다. 배포 사용자는 Docker와 Tailscale Serve를 실행할 수 있어야 하며, Tailnet에서 HTTPS와 Pi의 미리보기 포트 20000–20999 접근이 허용되어야 합니다.
+- 미리보기 파일은 `${PI_DEPLOY_PATH}/.previews`, DB는 별도 Docker 컨테이너에 저장됩니다. 업데이트 중에는 두 세대의 DB와 파일을 동시에 보관하므로 Pi의 디스크·메모리 여유가 필요합니다. 운영 데이터가 포함되므로 링크 접근 권한은 Tailnet 정책으로 제한하세요.
+- 이 워크플로가 기본 브랜치에 반영된 뒤 새 PR 이벤트부터 자동 실행됩니다. 기존 PR은 새 커밋을 푸시하거나 Actions 실행을 다시 시작해 갱신합니다.
+
+최초 배포 후 PR 댓글의 링크에서 데이터, 이미지, 모바일 화면을 확인하세요. 실패하면 댓글에 연결된 Actions 로그를 확인합니다.
+
 `main` 푸시 시 GitHub Actions가 **linux/arm64** 이미지를 빌드해 GHCR에 올리고, Tailscale으로 Pi에 SSH해 `docker compose pull && up`까지 자동 실행합니다.
 
 ```text
