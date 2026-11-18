@@ -147,8 +147,9 @@ if ! docker exec "$source_db" sh -c '
   scope=$1
   set --
   if [ "$scope" = site ]; then
-    # Keep schema, site records and catalog data. File bytes are copied separately.
-    for table in upload_blob abstract_objekt_transfer abstract_objekt_owner objekt_observed_transfer; do
+    # The observer continuously rebuilds these indexes from its external source.
+    # Keep their schema so migrations still run against the snapshot.
+    for table in objekt_observed_transfer objekt_observed_token; do
       set -- "$@" "--ignore-table-data=$MARIADB_DATABASE.$table"
     done
   fi
