@@ -40,7 +40,20 @@ esac
 EOF
 cat > "$test_root/bin/tailscale" <<'EOF'
 #!/usr/bin/env bash
-if [[ $1 == status ]]; then echo '{"Self":{"DNSName":"pi.example.ts.net."}}'; else echo "$*" >> "$TEST_ROOT/serve.log"; fi
+if [[ $1 == status ]]; then
+  echo '{"Self":{"DNSName":"pi.example.ts.net."}}'
+elif [[ -f "$TEST_ROOT/serve-denied" && ${TEST_SERVE_ELEVATED:-} != yes ]]; then
+  echo 'sending serve config: Access denied: serve config denied' >&2
+  exit 1
+else
+  echo "$*" >> "$TEST_ROOT/serve.log"
+fi
+EOF
+cat > "$test_root/bin/sudo" <<'EOF'
+#!/usr/bin/env bash
+[[ $1 == -n && $2 == -- ]] || exit 1
+shift 2
+TEST_SERVE_ELEVATED=yes "$@"
 EOF
 cat > "$test_root/bin/flock" <<'EOF'
 #!/usr/bin/env bash
@@ -71,8 +84,10 @@ image="ghcr.io/triplesweb/triplesweb:pr-42-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 sha=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 dir="$test_root/production/.previews/pr-42"
 
+touch "$test_root/serve-denied"
 bash "$script" deploy "$test_root/production" 42 "$image" "$sha" > "$test_root/result"
 grep -q 'https://pi.example.ts.net:20000/' "$test_root/result"
+rm "$test_root/serve-denied"
 first=$(<"$dir/active")
 test "$(cat "$dir/$first/uploads/image.txt")" = 'production image'
 printf 'preview edit' > "$dir/$first/uploads/image.txt"

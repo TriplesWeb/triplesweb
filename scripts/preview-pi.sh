@@ -22,6 +22,20 @@ exec 9>"$root/.lock"
 flock -x -w 45 9 || { echo 'Another preview operation still holds the Pi deployment lock' >&2; exit 1; }
 dir="$root/pr-$pr"
 
+serve_preview() {
+  local output
+  if output=$(tailscale serve "$@" 2>&1); then
+    if [[ -n $output ]]; then printf '%s\n' "$output" >&2; fi
+    return 0
+  fi
+  printf '%s\n' "$output" >&2
+  if [[ $output != *'serve config denied'* && $output != *'must be root'* ]]; then
+    return 1
+  fi
+  # Use the existing non-interactive sudo grant, if this Pi has one.
+  sudo -n -- "$(command -v tailscale)" serve "$@"
+}
+
 remove_generation() {
   local generation=$1 name
   [[ $generation =~ ^g[0-9]+-[0-9]+$ ]] || return 1
@@ -43,7 +57,7 @@ if [[ $operation == cleanup ]]; then
   if [[ -f $dir/port ]]; then
     read -r port < "$dir/port"
     [[ $port =~ ^[0-9]+$ ]] && ((port >= 20000 && port <= 20999)) || exit 2
-    tailscale serve --https="$port" off >&2
+    serve_preview --https="$port" off >&2
   fi
   if [[ -d $dir ]]; then
     for path in "$dir"/g[0-9]*-[0-9]*; do
@@ -101,9 +115,9 @@ rollback() {
     if $switched; then
       if [[ -n $old ]]; then
         old_backend=$(docker port "twpr${pr}${old}-proxy" 8080/tcp | head -n1 | sed 's/.*://')
-        tailscale serve --bg --https="$port" "http://127.0.0.1:$old_backend" >&2 || true
+        serve_preview --bg --https="$port" "http://127.0.0.1:$old_backend" >&2 || true
       else
-        tailscale serve --https="$port" off >&2 || true
+        serve_preview --https="$port" off >&2 || true
       fi
     fi
     remove_generation "$generation" || true
@@ -246,7 +260,7 @@ curl --fail --silent --max-time 15 --output /dev/null "http://127.0.0.1:$backend
   { echo 'Preview main page did not load' >&2; exit 1; }
 dns=$(tailscale status --json | python3 -c 'import json,sys; print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))')
 [[ $dns =~ ^[a-zA-Z0-9.-]+\.ts\.net$ ]] || { echo 'Pi Tailscale DNS name unavailable' >&2; exit 1; }
-tailscale serve --bg --https="$port" "http://127.0.0.1:$backend" >&2
+serve_preview --bg --https="$port" "http://127.0.0.1:$backend" >&2
 switched=true
 printf '%s\n' "$snapshot_at" > "$dir/snapshot-at"
 printf '%s\n' "$generation" > "$dir/active.tmp"
