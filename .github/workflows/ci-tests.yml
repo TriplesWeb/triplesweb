@@ -4,6 +4,7 @@ name: CI tests
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, closed]
 
 # Avoid paying for obsolete commits when a PR is updated.
 concurrency:
@@ -14,9 +15,17 @@ permissions:
   contents: write
   pull-requests: write
   checks: write
+  issues: write
+  packages: write
 
 jobs:
+  preview:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    uses: ./.github/workflows/preview.yml
+    secrets: inherit
+
   changes:
+    if: github.event.action != 'closed'
     name: detect changes
     runs-on: ubuntu-latest
     outputs:
@@ -251,7 +260,7 @@ jobs:
 
   required:
     name: required
-    if: ${{ always() }}
+    if: ${{ always() && github.event.action != 'closed' }}
     needs: [changes, test, package, qodana]
     runs-on: ubuntu-latest
     steps:

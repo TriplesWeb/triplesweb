@@ -1,8 +1,7 @@
 name: PR Tailscale preview
 
 'on':
-  pull_request:
-    types: [opened, synchronize, reopened, closed]
+  workflow_call:
 
 concurrency:
   group: preview-${{ github.event.pull_request.number }}
