@@ -141,12 +141,17 @@ docker network create --internal "$name" >/dev/null
 docker run -d --restart unless-stopped --name "${name}-db" --network "$name" --network-alias db \
   -e MARIADB_ROOT_PASSWORD="$password" -e MARIADB_DATABASE=triples mariadb:11.4 >/dev/null
 for ((i=0; i<90; i++)); do
-  if docker exec "${name}-db" sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb-admin ping -uroot --silent' >/dev/null 2>&1; then break; fi
+  if docker exec "${name}-db" sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb -uroot -e "SELECT 1"' >/dev/null 2>&1; then break; fi
   ((i < 89)) || { echo 'Preview DB did not start' >&2; exit 1; }
   sleep 2
 done
+set +e
 docker exec "$source_db" sh -c 'exec env MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb-dump -uroot --single-transaction --quick --skip-lock-tables -- "$MARIADB_DATABASE"' \
   | docker exec -i "${name}-db" sh -c 'exec env MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb -uroot triples'
+dump_status=("${PIPESTATUS[@]}")
+set -e
+if ((dump_status[0] != 0)); then echo 'Source database dump failed' >&2; exit 1; fi
+if ((dump_status[1] != 0)); then echo 'Preview database import failed' >&2; exit 1; fi
 
 docker pull "$image" >&2
 docker run -d --restart unless-stopped --name "${name}-app" --network "$name" -p 127.0.0.1::8080 \
