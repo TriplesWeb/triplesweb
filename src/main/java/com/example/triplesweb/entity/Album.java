@@ -70,6 +70,10 @@ public class Album {
     @Column(name = "album_format", length = 120)
     private String albumFormat;
 
+    /** 앨범 뮤직비디오 YouTube ID(11자). 비어 있으면 미표시 */
+    @Column(name = "music_video_youtube_id", length = 20)
+    private String musicVideoYoutubeId;
+
     public Album(
             Long albumId,
             String albumName,
@@ -118,6 +122,11 @@ public class Album {
     /** Mustache용: 소개 문구가 있을 때 */
     public boolean isHasAlbumInfo() {
         return albumInfo != null && !albumInfo.isBlank();
+    }
+
+    /** Mustache용: 뮤직비디오가 있을 때 */
+    public boolean isHasMusicVideo() {
+        return musicVideoYoutubeId != null && !musicVideoYoutubeId.isBlank();
     }
 
     /** Mustache용: 참여 멤버가 있을 때 */
