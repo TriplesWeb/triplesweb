@@ -84,9 +84,7 @@
     return '<span style="color:' + escapeHtml(color) + '">' + escapeHtml(segment) + "</span>";
   }
 
-  function renderLegend(legend) {
-    var root = document.getElementById("albumLyricsLegend");
-    if (!root) return;
+  function fillLegend(root, legend) {
     root.innerHTML = "";
     if (!legend.length) {
       root.hidden = true;
@@ -109,23 +107,51 @@
     });
   }
 
-  function openLyricsModal(title, lyrics, colorMap) {
-    var modal = document.getElementById("albumLyricsModal");
-    var titleEl = document.getElementById("albumLyricsTitle");
-    var bodyEl = document.getElementById("albumLyricsBody");
-    if (!modal || !titleEl || !bodyEl) return;
+  function closePanel(panel, trigger) {
+    if (!panel) return;
+    var slide = panel.querySelector(".album-lyrics-slide");
+    panel.classList.remove("is-open");
+    if (trigger) {
+      trigger.setAttribute("aria-expanded", "false");
+      trigger.classList.remove("is-expanded");
+    }
+    if (!slide) {
+      panel.hidden = true;
+      return;
+    }
+    var done = false;
+    var finish = function () {
+      if (done) return;
+      done = true;
+      panel.hidden = true;
+    };
+    slide.addEventListener("transitionend", function onEnd(event) {
+      if (event.target !== slide) return;
+      slide.removeEventListener("transitionend", onEnd);
+      finish();
+    });
+    window.setTimeout(finish, 320);
+  }
 
-    var rendered = renderLyrics(lyrics, colorMap);
-    titleEl.textContent = title || "가사";
-    renderLegend(rendered.legend);
-    bodyEl.innerHTML = rendered.html;
+  function openPanel(panel, trigger, lyrics, colorMap) {
+    var legendEl = panel.querySelector(".album-lyrics-legend");
+    var bodyEl = panel.querySelector(".album-lyrics-body");
+    if (!legendEl || !bodyEl) return;
 
-    if (window.SiteUi && typeof window.SiteUi.modal === "function") {
-      window.SiteUi.modal(modal).show();
-    } else {
-      modal.classList.add("is-open", "show");
-      modal.setAttribute("aria-hidden", "false");
-      document.body.classList.add("site-modal-open");
+    if (!panel.dataset.rendered) {
+      var rendered = renderLyrics(lyrics, colorMap);
+      fillLegend(legendEl, rendered.legend);
+      bodyEl.innerHTML = rendered.html;
+      panel.dataset.rendered = "1";
+    }
+
+    panel.hidden = false;
+    // force reflow so CSS transition runs
+    void panel.offsetHeight;
+    panel.classList.add("is-open");
+    if (trigger) {
+      trigger.setAttribute("aria-expanded", "true");
+      trigger.classList.add("is-expanded");
     }
   }
 
@@ -136,13 +162,29 @@
 
     section.addEventListener("click", function (event) {
       if (event.target.closest(".album-track-link")) return;
-      var trigger = event.target.closest("[data-track-lyrics-open]");
+      var trigger = event.target.closest("[data-track-lyrics-toggle]");
       if (!trigger) return;
-      var src = trigger.parentElement && trigger.parentElement.querySelector(".album-track-lyrics-src");
+
+      var trackRow = trigger.closest("tr");
+      var panel = trackRow && trackRow.nextElementSibling;
+      if (!panel || !panel.classList.contains("album-track-lyrics-panel")) return;
+
+      var src = trackRow.querySelector(".album-track-lyrics-src");
       var lyrics = src ? src.textContent : "";
       if (!lyrics || !lyrics.trim()) return;
+
       event.preventDefault();
-      openLyricsModal(trigger.getAttribute("data-track-title") || trigger.textContent.trim(), lyrics, colorMap);
+      var isOpen = panel.classList.contains("is-open");
+
+      section.querySelectorAll(".album-track-lyrics-panel.is-open").forEach(function (openPanelEl) {
+        var prevRow = openPanelEl.previousElementSibling;
+        var prevBtn = prevRow && prevRow.querySelector("[data-track-lyrics-toggle]");
+        closePanel(openPanelEl, prevBtn);
+      });
+
+      if (!isOpen) {
+        openPanel(panel, trigger, lyrics, colorMap);
+      }
     });
   }
 

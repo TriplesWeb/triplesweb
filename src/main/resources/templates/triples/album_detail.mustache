@@ -130,10 +130,10 @@
                         {{#hasLyrics}}
                         <button type="button"
                                 class="album-track-name album-track-name--lyrics group-hover:text-[#00f5d4] transition-colors"
-                                data-track-lyrics-open
+                                data-track-lyrics-toggle
                                 data-track-title="{{title}}"
-                                aria-haspopup="dialog"
-                                aria-controls="albumLyricsModal">{{title}}</button>
+                                aria-expanded="false"
+                                aria-controls="track-lyrics-{{trackId}}">{{title}}</button>
                         <pre class="album-track-lyrics-src" hidden>{{lyrics}}</pre>
                         {{/hasLyrics}}
                         {{^hasLyrics}}
@@ -154,6 +154,18 @@
                 </td>
                 <td class="album-track-dur py-3 px-3 text-center font-mono text-xs text-[#8b9b95]">{{duration}}</td>
             </tr>
+            {{#hasLyrics}}
+            <tr class="album-track-lyrics-panel" id="track-lyrics-{{trackId}}" hidden>
+                <td colspan="3" class="album-track-lyrics-cell p-0">
+                    <div class="album-lyrics-slide">
+                        <div class="album-lyrics-slide-inner">
+                            <div class="album-lyrics-legend" hidden aria-label="파트 범례"></div>
+                            <div class="album-lyrics-body"></div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {{/hasLyrics}}
         {{/tracks}}
         {{^tracks}}
             <tr>
@@ -171,21 +183,6 @@
 </main>
 
 <script type="application/json" id="albumLyricsMembers">{{{lyricsMembersJson}}}</script>
-
-<div class="site-modal" id="albumLyricsModal" tabindex="-1" aria-labelledby="albumLyricsTitle" aria-hidden="true">
-    <div class="site-modal-dialog">
-        <div class="site-modal-panel album-lyrics-panel">
-            <div class="site-modal-header">
-                <h2 class="site-modal-title" id="albumLyricsTitle">가사</h2>
-                <button type="button" class="site-modal-close" data-site-dismiss="modal" aria-label="닫기"></button>
-            </div>
-            <div class="site-modal-body album-lyrics-modal-body">
-                <div id="albumLyricsLegend" class="album-lyrics-legend" hidden aria-label="파트 범례"></div>
-                <div id="albumLyricsBody" class="album-lyrics-body"></div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <script>
 (function () {
@@ -205,6 +202,5 @@
   });
 })();
 </script>
-<script src="{{#asset}}/js/site-ui.js{{/asset}}"></script>
 <script src="{{#asset}}/js/album-detail.js{{/asset}}" defer></script>
 {{>layout/page-end}}

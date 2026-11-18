@@ -70,16 +70,45 @@ button.album-track-name--lyrics {
 }
 
 button.album-track-name--lyrics:hover,
-button.album-track-name--lyrics:focus-visible {
+button.album-track-name--lyrics:focus-visible,
+button.album-track-name--lyrics.is-expanded {
     color: #00f5d4;
     outline: none;
 }
 
-.album-lyrics-modal-body {
+.album-track-lyrics-panel {
+    background: rgba(16, 17, 22, 0.72);
+}
+
+.album-track-lyrics-panel[hidden] {
+    display: none !important;
+}
+
+.album-track-lyrics-cell {
+    border-top: 0;
+}
+
+.album-lyrics-slide {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.28s ease;
+}
+
+.album-track-lyrics-panel.is-open .album-lyrics-slide {
+    grid-template-rows: 1fr;
+}
+
+.album-lyrics-slide-inner {
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
-    max-height: min(70vh, 32rem);
+    gap: 0.75rem;
+    padding: 0 0.85rem;
+    min-height: 0;
+}
+
+.album-track-lyrics-panel.is-open .album-lyrics-slide-inner {
+    padding: 0.85rem;
 }
 
 .album-lyrics-legend {
@@ -112,15 +141,14 @@ button.album-track-name--lyrics:focus-visible {
 }
 
 .album-lyrics-body {
-    flex: 1 1 auto;
-    overflow-y: auto;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
     word-break: break-word;
     line-height: 1.65;
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     color: #e3e2e8;
-    min-height: 8rem;
+    max-height: min(50vh, 22rem);
+    overflow-y: auto;
 }
 
 .album-track-links {
