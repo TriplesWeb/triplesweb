@@ -2075,13 +2075,18 @@ button.album-track-name--lyrics.is-expanded {
 
 .album-lyrics-body {
     white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    word-break: break-word;
+    overflow-wrap: break-word;
+    word-break: keep-all;
+    letter-spacing: 0;
     line-height: 1.65;
     font-size: 0.92rem;
     color: #e3e2e8;
     max-height: min(50vh, 22rem);
     overflow-y: auto;
+}
+
+.album-lyrics-body span {
+    letter-spacing: 0;
 }
 
 .album-track-links {
