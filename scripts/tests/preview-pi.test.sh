@@ -33,7 +33,7 @@ case "$1 $2" in
   'inspect '*) test -f "$TEST_ROOT/state/$2" ;;
   'stop '*) : ;;
   'start '*) : ;;
-  'rm -f') rm -f "$TEST_ROOT/state/$3" ;;
+  'rm -fv') rm -f "$TEST_ROOT/state/$3" ;;
   *) echo "unexpected docker call: $*" >&2; exit 1 ;;
 esac
 EOF
@@ -51,7 +51,8 @@ exit 0
 EOF
 cat > "$test_root/bin/df" <<'EOF'
 #!/usr/bin/env bash
-printf 'Filesystem 1024-blocks Used Available Capacity Mounted\nmock 10000000 0 10000000 0%% /\n'
+if [[ -f "$TEST_ROOT/fail-space" ]]; then available=1; else available=10000000; fi
+printf 'Filesystem 1024-blocks Used Available Capacity Mounted\nmock 10000000 0 %s 0%% /\n' "$available"
 EOF
 cat > "$test_root/bin/curl" <<'EOF'
 #!/usr/bin/env bash
@@ -80,7 +81,18 @@ second=$(<"$dir/active")
 [[ $first != "$second" && ! -d $dir/$first ]]
 test "$(cat "$dir/$second/uploads/image.txt")" = 'preview edit'
 test "$(cat "$test_root/production/uploads/image.txt")" = 'production image'
-grep -q "exec twpr42${first}-db .*mariadb-dump" "$test_root/docker.log"
+grep -q "exec twpr42${first}-db sh -c" "$test_root/docker.log"
+grep -q "exec twpr42${second}-db timeout -k 10s 12m" "$test_root/docker.log"
+[[ ! -f $dir/$second/snapshot/db.sql.gz ]]
+
+touch "$test_root/fail-space"
+if bash "$script" deploy "$test_root/production" 42 "$image" "$sha" > /dev/null; then
+  echo 'deployment unexpectedly proceeded without free space' >&2
+  exit 1
+fi
+[[ $(<"$dir/active") == "$second" ]]
+grep -q "start twpr42${second}-app" "$test_root/docker.log"
+rm "$test_root/fail-space"
 
 touch "$test_root/fail-health"
 if bash "$script" deploy "$test_root/production" 42 "$image" "$sha" > /dev/null; then

@@ -6,10 +6,10 @@ on:
     branches: [main]
     types: [opened, synchronize, reopened, closed]
 
-# Avoid paying for obsolete commits when a PR is updated.
+# Allow a running Pi deployment to finish or roll back before the next update.
 concurrency:
   group: ci-pr-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: write

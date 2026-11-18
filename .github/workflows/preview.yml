@@ -36,7 +36,7 @@ jobs:
         if: steps.current.outputs.run == 'true'
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.current.outputs.closing == 'true' && github.event.repository.default_branch || github.sha }}
+          ref: ${{ steps.current.outputs.closing == 'true' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Compute image name
         if: steps.current.outputs.run == 'true' && steps.current.outputs.closing == 'false'
@@ -123,9 +123,9 @@ jobs:
             ssh pi bash -s -- cleanup "$PI_DEPLOY_PATH" "$PR" < scripts/preview-pi.sh > result.json
           else
             # A private Docker config avoids changing the production registry login.
-            config="/tmp/triples-preview-registry-${PR}"
+            config=$(ssh pi 'mktemp -d /tmp/triples-preview-registry.XXXXXXXX')
+            [[ "$config" =~ ^/tmp/triples-preview-registry\.[a-zA-Z0-9]+$ ]]
             trap 'ssh pi rm -rf -- "$config" || true' EXIT
-            ssh pi mkdir -p "$config"
             printf '%s' "$GHCR_TOKEN" | ssh pi docker --config "$config" login ghcr.io -u "$GHCR_USER" --password-stdin >&2
             ssh pi env DOCKER_CONFIG="$config" bash -s -- deploy "$PI_DEPLOY_PATH" "$PR" "$IMAGE" "$SHA" < scripts/preview-pi.sh > result.json
           fi

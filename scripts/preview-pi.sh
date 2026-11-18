@@ -19,7 +19,7 @@ fi
 root="${production%/}/.previews"
 mkdir -p "$root"
 exec 9>"$root/.lock"
-flock -x 9
+flock -x -w 45 9 || { echo 'Another preview operation still holds the Pi deployment lock' >&2; exit 1; }
 dir="$root/pr-$pr"
 
 remove_generation() {
@@ -28,7 +28,7 @@ remove_generation() {
   name="twpr${pr}${generation}"
   local container
   for container in "${name}-app" "${name}-db"; do
-    if docker inspect "$container" >/dev/null 2>&1; then docker rm -f "$container" >/dev/null; fi
+    if docker inspect "$container" >/dev/null 2>&1; then docker rm -fv "$container" >/dev/null; fi
   done
   if docker network inspect "$name" >/dev/null 2>&1; then docker network rm "$name" >/dev/null; fi
   rm -rf -- "$dir/$generation"
@@ -129,36 +129,52 @@ file_free=$(df -Pk "$candidate" | awk 'NR == 2 {print $4}')
 docker_free=$(df -Pk "$docker_root" | awk 'NR == 2 {print $4}')
 [[ $files_kib =~ ^[0-9]+$ && $db_kib =~ ^[0-9]+$ && $file_free =~ ^[0-9]+$ && $docker_free =~ ^[0-9]+$ ]] || exit 1
 if [[ $(stat -c %d "$candidate") == "$(stat -c %d "$docker_root")" ]]; then
-  ((file_free > files_kib + db_kib + 1048576)) || { echo 'Insufficient disk space for preview and 1 GiB reserve' >&2; exit 1; }
+  ((file_free > files_kib + 2 * db_kib + 1048576)) || { echo 'Insufficient disk space for preview and 1 GiB reserve' >&2; exit 1; }
 else
-  ((file_free > files_kib + 524288 && docker_free > db_kib + 524288)) || { echo 'Insufficient disk space for preview and 512 MiB reserves' >&2; exit 1; }
+  ((file_free > files_kib + db_kib + 524288 && docker_free > db_kib + 524288)) || { echo 'Insufficient disk space for preview and 512 MiB reserves' >&2; exit 1; }
 fi
 cp -a --reflink=auto "$source_files/uploads/." "$candidate/uploads/"
 [[ ! -f $source_files/data/videos.json ]] || cp -a "$source_files/data/videos.json" "$candidate/data/"
 
+# Stage the compressed dump on the Pi so the source and import can fail independently.
+# SQL errors can include data values, so only the stage and exit status go to CI.
+mkdir "$candidate/snapshot"
+echo 'Exporting database snapshot' >&2
+if ! docker exec "$source_db" sh -c '
+  export MYSQL_PWD="$MARIADB_ROOT_PASSWORD"
+  exec timeout -k 10s 8m mariadb-dump -uroot --single-transaction --quick --skip-lock-tables \
+    --hex-blob --max-allowed-packet=1G -- "$MARIADB_DATABASE"
+' 2>/dev/null | timeout -k 10s 9m gzip -1 > "$candidate/snapshot/db.sql.gz"; then
+  echo 'Database snapshot export failed or exceeded the time limit' >&2
+  exit 1
+fi
+
 password=$(openssl rand -hex 24)
 docker network create --internal "$name" >/dev/null
 docker run -d --restart unless-stopped --name "${name}-db" --network "$name" --network-alias db \
-  -e MARIADB_ROOT_PASSWORD="$password" -e MARIADB_DATABASE=triples mariadb:11.4 >/dev/null
+  -e MARIADB_ROOT_PASSWORD="$password" -e MARIADB_DATABASE=triples \
+  -v "$candidate/snapshot:/preview-snapshot:ro" mariadb:11.4 \
+  --max-allowed-packet=1G --skip-log-bin >/dev/null
 echo 'Waiting for preview MariaDB authentication' >&2
-for ((i=0; i<30; i++)); do
-  if docker exec "${name}-db" sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb -uroot -e "SELECT 1"' >/dev/null 2>&1; then break; fi
-  if ((i == 29)); then
-    echo 'Preview DB did not start; last connection error and server log follow' >&2
-    docker exec "${name}-db" sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb -uroot -e "SELECT 1"' >&2 || true
-    docker logs --tail 80 "${name}-db" >&2 || true
+for ((i=0; i<60; i++)); do
+  if docker exec "${name}-db" sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb -h127.0.0.1 -uroot -e "SELECT 1"' >/dev/null 2>&1; then break; fi
+  if ((i == 59)); then
+    echo 'Preview DB did not start or accept authenticated TCP connections' >&2
     exit 1
   fi
   sleep 2
 done
-echo 'Copying database snapshot' >&2
-set +e
-docker exec "$source_db" sh -c 'exec env MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb-dump -uroot --single-transaction --quick --skip-lock-tables -- "$MARIADB_DATABASE"' \
-  | docker exec -i "${name}-db" sh -c 'exec env MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb -uroot triples'
-dump_status=("${PIPESTATUS[@]}")
-set -e
-if ((dump_status[0] != 0)); then echo 'Source database dump failed' >&2; exit 1; fi
-if ((dump_status[1] != 0)); then echo 'Preview database import failed' >&2; exit 1; fi
+echo 'Importing database snapshot' >&2
+if ! docker exec "${name}-db" timeout -k 10s 12m bash -o pipefail -c '
+  export MYSQL_PWD="$MARIADB_ROOT_PASSWORD"
+  mariadb -uroot -e "SET GLOBAL innodb_flush_log_at_trx_commit = 2" &&
+    gzip -dc /preview-snapshot/db.sql.gz | mariadb -uroot --binary-mode --max-allowed-packet=1G triples &&
+    mariadb -uroot -e "SET GLOBAL innodb_flush_log_at_trx_commit = 1"
+' >/dev/null 2>&1; then
+  echo 'Preview database import failed or exceeded the time limit' >&2
+  exit 1
+fi
+rm -f -- "$candidate/snapshot/db.sql.gz"
 
 docker pull "$image" >&2
 echo 'Starting preview application' >&2
@@ -175,11 +191,13 @@ docker run -d --restart unless-stopped --name "${name}-app" --network "$name" -p
 backend=$(docker port "${name}-app" 8080/tcp | head -n1 | sed 's/.*://')
 [[ $backend =~ ^[0-9]+$ ]] || exit 1
 for ((i=0; i<120; i++)); do
-  if curl --fail --silent --output /dev/null "http://127.0.0.1:$backend/actuator/health/readiness"; then break; fi
+  if curl --fail --silent --max-time 8 --output /dev/null "http://127.0.0.1:$backend/actuator/health/readiness"; then break; fi
   [[ $(docker inspect -f '{{.State.Running}}' "${name}-app") == true ]] || { echo 'Preview app exited during startup' >&2; exit 1; }
   ((i < 119)) || { echo 'Preview app health check timed out' >&2; exit 1; }
   sleep 2
 done
+curl --fail --silent --max-time 15 --output /dev/null "http://127.0.0.1:$backend/main" ||
+  { echo 'Preview main page did not load' >&2; exit 1; }
 dns=$(tailscale status --json | python3 -c 'import json,sys; print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))')
 [[ $dns =~ ^[a-zA-Z0-9.-]+\.ts\.net$ ]] || { echo 'Pi Tailscale DNS name unavailable' >&2; exit 1; }
 tailscale serve --bg --https="$port" "http://127.0.0.1:$backend" >&2
