@@ -139,15 +139,29 @@ cp -a --reflink=auto "$source_files/uploads/." "$candidate/uploads/"
 # Stage the compressed dump on the Pi so the source and import can fail independently.
 # SQL errors can include data values, so only the stage and exit status go to CI.
 mkdir "$candidate/snapshot"
+snapshot_scope=full
+if [[ -z $old ]]; then snapshot_scope=site; fi
 echo 'Exporting database snapshot' >&2
 if ! docker exec "$source_db" sh -c '
   export MYSQL_PWD="$MARIADB_ROOT_PASSWORD"
+  scope=$1
+  set --
+  if [ "$scope" = site ]; then
+    # Keep schema, site records and catalog data. File bytes are copied separately.
+    for table in upload_blob abstract_objekt_transfer abstract_objekt_owner objekt_observed_transfer; do
+      set -- "$@" "--ignore-table-data=$MARIADB_DATABASE.$table"
+    done
+  fi
   exec timeout -k 10s 8m mariadb-dump -uroot --single-transaction --quick --skip-lock-tables \
-    --hex-blob --max-allowed-packet=1G -- "$MARIADB_DATABASE"
-' 2>/dev/null | timeout -k 10s 9m gzip -1 > "$candidate/snapshot/db.sql.gz"; then
+    --hex-blob --max-allowed-packet=1G "$@" -- "$MARIADB_DATABASE"
+' sh "$snapshot_scope" 2>"$candidate/snapshot/export.err" | timeout -k 10s 9m gzip -1 > "$candidate/snapshot/db.sql.gz"; then
+  if grep -qi 'access denied' "$candidate/snapshot/export.err"; then
+    echo 'Source database rejected the snapshot credentials' >&2
+  fi
   echo 'Database snapshot export failed or exceeded the time limit' >&2
   exit 1
 fi
+rm -f -- "$candidate/snapshot/export.err"
 
 password=$(openssl rand -hex 24)
 docker network create --internal "$name" >/dev/null
@@ -196,7 +210,7 @@ for ((i=0; i<120; i++)); do
   ((i < 119)) || { echo 'Preview app health check timed out' >&2; exit 1; }
   sleep 2
 done
-curl --fail --silent --max-time 15 --output /dev/null "http://127.0.0.1:$backend/main" ||
+curl --fail --silent --max-time 15 --output /dev/null "http://127.0.0.1:$backend/" ||
   { echo 'Preview main page did not load' >&2; exit 1; }
 dns=$(tailscale status --json | python3 -c 'import json,sys; print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))')
 [[ $dns =~ ^[a-zA-Z0-9.-]+\.ts\.net$ ]] || { echo 'Pi Tailscale DNS name unavailable' >&2; exit 1; }
@@ -207,4 +221,4 @@ printf '%s\n' "$generation" > "$dir/active.tmp"
 mv -f "$dir/active.tmp" "$dir/active"
 committed=true
 if [[ -n $old ]]; then remove_generation "$old" || echo 'Old preview cleanup failed' >&2; fi
-printf '{"status":"ready","url":"https://%s:%s/main","sha":"%s","snapshotAt":"%s"}\n' "$dns" "$port" "$sha" "$snapshot_at"
+printf '{"status":"ready","url":"https://%s:%s/","sha":"%s","snapshotAt":"%s"}\n' "$dns" "$port" "$sha" "$snapshot_at"

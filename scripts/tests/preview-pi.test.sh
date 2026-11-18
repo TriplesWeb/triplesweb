@@ -71,7 +71,7 @@ sha=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 dir="$test_root/production/.previews/pr-42"
 
 bash "$script" deploy "$test_root/production" 42 "$image" "$sha" > "$test_root/result"
-grep -q 'https://pi.example.ts.net:20000/main' "$test_root/result"
+grep -q 'https://pi.example.ts.net:20000/' "$test_root/result"
 first=$(<"$dir/active")
 test "$(cat "$dir/$first/uploads/image.txt")" = 'production image'
 printf 'preview edit' > "$dir/$first/uploads/image.txt"
@@ -82,6 +82,8 @@ second=$(<"$dir/active")
 test "$(cat "$dir/$second/uploads/image.txt")" = 'preview edit'
 test "$(cat "$test_root/production/uploads/image.txt")" = 'production image'
 grep -q "exec twpr42${first}-db sh -c" "$test_root/docker.log"
+grep -q 'sh site$' "$test_root/docker.log"
+grep -q 'sh full$' "$test_root/docker.log"
 grep -q "exec twpr42${second}-db timeout -k 10s 12m" "$test_root/docker.log"
 [[ ! -f $dir/$second/snapshot/db.sql.gz ]]
 
