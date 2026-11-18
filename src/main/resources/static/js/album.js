@@ -77,7 +77,7 @@
   function trackRowsHtml(tracks) {
     const list = Array.isArray(tracks) && tracks.length
       ? tracks
-      : [{ trackNum: 1, title: "", duration: "", isTitle: false, youtubeVideoId: "", melonSongId: "" }];
+      : [{ trackNum: 1, title: "", duration: "", isTitle: false, youtubeVideoId: "", melonSongId: "", lyrics: "" }];
     return list.map((t, i) => `
       <div class="album-track-row" data-idx="${i}">
         <div class="album-track-main">
@@ -102,11 +102,22 @@
             <input type="text" class="track-melon-id" placeholder="곡 ID 또는 URL" value="${escapeAttr(t.melonSongId || "")}" title="멜론 곡 ID 또는 곡 상세 URL" aria-label="멜론 곡 ID">
           </label>
         </div>
+        <label class="album-track-lyrics-field">
+          <span>가사</span>
+          <textarea class="track-lyrics" rows="3" placeholder="[윤서연]&#10;가사 줄&#10;[ALL]&#10;후렴" title="파트는 [멤버명] 태그로 표시" aria-label="가사">${escapeText(t.lyrics || "")}</textarea>
+        </label>
       </div>`).join("");
   }
 
   function escapeAttr(s) {
     return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  }
+
+  function escapeText(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
   }
 
   function collectTracks() {
@@ -121,7 +132,8 @@
         duration: row.querySelector(".track-duration")?.value?.trim() || "",
         isTitle: Boolean(row.querySelector(".track-title-flag")?.checked),
         youtubeVideoId: row.querySelector(".track-youtube-id")?.value?.trim() || "",
-        melonSongId: row.querySelector(".track-melon-id")?.value?.trim() || ""
+        melonSongId: row.querySelector(".track-melon-id")?.value?.trim() || "",
+        lyrics: row.querySelector(".track-lyrics")?.value?.trim() || ""
       });
     });
     return out;
