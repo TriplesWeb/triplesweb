@@ -11,6 +11,14 @@
     min-width: 0;
 }
 
+.album-mv {
+    min-width: 0;
+}
+
+.album-mv .site-ratio-16x9 {
+    border-radius: 0.75rem;
+}
+
 .album-track-scroll {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
