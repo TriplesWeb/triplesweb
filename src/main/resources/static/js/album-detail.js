@@ -1,6 +1,5 @@
 (function () {
   var ALL_LABEL = "ALL";
-  var ALL_COLOR = "#00f5d4";
   var DEFAULT_COLOR = "#e3e2e8";
   var TAG_RE = /\[([^\]]+)\]/g;
 
@@ -39,7 +38,8 @@
     var name = String(rawName || "").trim();
     if (!name) return { kind: "plain", label: "", color: DEFAULT_COLOR };
     if (isAllTag(name)) {
-      return { kind: "all", label: ALL_LABEL, color: ALL_COLOR };
+      // 전원 파트는 멤버 색 없이 기본 본문색
+      return { kind: "all", label: ALL_LABEL, color: DEFAULT_COLOR };
     }
     if (Object.prototype.hasOwnProperty.call(colorMap, name)) {
       return { kind: "member", label: name, color: colorMap[name] || DEFAULT_COLOR };
@@ -94,15 +94,24 @@
     legend.forEach(function (item) {
       var chip = document.createElement("span");
       chip.className = "album-lyrics-legend-chip";
-      chip.innerHTML =
-        '<span class="album-lyrics-legend-dot" style="background:' +
-        escapeHtml(item.color) +
-        '"></span>' +
-        '<span class="album-lyrics-legend-name" style="color:' +
-        escapeHtml(item.color) +
-        '">' +
-        escapeHtml(item.label) +
-        "</span>";
+      if (item.label === ALL_LABEL) {
+        chip.classList.add("is-all");
+        chip.innerHTML =
+          '<span class="album-lyrics-legend-dot"></span>' +
+          '<span class="album-lyrics-legend-name">' +
+          escapeHtml(item.label) +
+          "</span>";
+      } else {
+        chip.innerHTML =
+          '<span class="album-lyrics-legend-dot" style="background:' +
+          escapeHtml(item.color) +
+          '"></span>' +
+          '<span class="album-lyrics-legend-name" style="color:' +
+          escapeHtml(item.color) +
+          '">' +
+          escapeHtml(item.label) +
+          "</span>";
+      }
       root.appendChild(chip);
     });
   }

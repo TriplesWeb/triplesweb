@@ -2062,6 +2062,15 @@ button.album-track-name--lyrics.is-expanded {
     height: 0.55rem;
     border-radius: 999px;
     flex-shrink: 0;
+    background: #8b9b95;
+}
+
+.album-lyrics-legend-chip.is-all .album-lyrics-legend-name {
+    color: #b9cac4;
+}
+
+.album-lyrics-legend-chip.is-all .album-lyrics-legend-dot {
+    background: #8b9b95;
 }
 
 .album-lyrics-body {
