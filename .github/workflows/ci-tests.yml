@@ -119,12 +119,8 @@ jobs:
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     steps:
+      # Tailwind's automatic scan must see the same files as a full checkout.
       - uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            gradle
-            scripts
-            src
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
