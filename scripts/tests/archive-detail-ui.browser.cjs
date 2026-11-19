@@ -101,7 +101,7 @@ ${site}${css}${siteUi}
       <p class="ar-detail-count" id="archiveDetailCount" hidden></p>
     </div>
     <div class="ar-detail-side">
-      <div class="ar-dialog-head ar-detail-head"><button type="button" class="ar-close" data-ar-close>&times;</button></div>
+      <button type="button" class="ar-close ar-detail-close" data-ar-close>&times;</button>
       <div class="ar-detail-body">
         <p class="ar-detail-desc" id="archiveDetailDescription" hidden></p>
         <div class="ar-detail-meta" id="archiveDetailMeta" hidden>

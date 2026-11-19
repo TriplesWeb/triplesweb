@@ -45,7 +45,7 @@ ${css}
   <div class="ar-dialog-panel ar-detail-panel">
     <div class="ar-detail-photo"><img id="archiveDetailImage" alt=""></div>
     <div class="ar-detail-side">
-      <div class="ar-dialog-head ar-detail-head"><button type="button" class="ar-close" data-ar-close aria-label="닫기">&times;</button></div>
+      <button type="button" class="ar-close ar-detail-close" data-ar-close aria-label="닫기">&times;</button>
       <div class="ar-detail-body">
         <p class="ar-detail-desc" id="archiveDetailDescription" hidden></p>
         <div class="ar-detail-meta" id="archiveDetailMeta" hidden>
