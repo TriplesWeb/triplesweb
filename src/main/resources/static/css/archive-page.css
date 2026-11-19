@@ -299,12 +299,6 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     -webkit-mask: none;
     mask: none;
 }
-.ar-folder.is-group .is-bundled-art {
-    filter: hue-rotate(8deg) saturate(1.12);
-}
-.ar-folder.is-group:hover .is-bundled-art {
-    filter: hue-rotate(8deg) saturate(1.12) brightness(1.11);
-}
 .ar-folder-preview {
     position: absolute;
     left: 50%;

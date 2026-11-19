@@ -37,7 +37,7 @@ public class ArchiveFolderArt {
             }
         }
         if (kind == ArchiveFolderClassifier.Kind.GROUP) {
-            return BUNDLED_ART_PATH + "member-folders/9.png";
+            return BUNDLED_ART_PATH + "member-folders/3.png";
         }
         if (kind == ArchiveFolderClassifier.Kind.SOLO && key != null && key.matches("s(?:[1-9]|1[0-9]|2[0-4])")) {
             return BUNDLED_ART_PATH + "member-folders/" + key.substring(1) + ".png";
@@ -46,7 +46,7 @@ public class ArchiveFolderArt {
     }
 
     public String dimensionUrl() {
-        return BUNDLED_ART_PATH + "dimension.png";
+        return BUNDLED_ART_PATH + "member-folders/2.png";
     }
 
     public boolean isBundled(String url) {

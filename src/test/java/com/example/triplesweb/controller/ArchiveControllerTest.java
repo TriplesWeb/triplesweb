@@ -108,8 +108,8 @@ class ArchiveControllerTest {
         var images = java.util.regex.Pattern.compile("is-bundled-art\" src=\"([^\"]+)").matcher(html)
                 .results().map(match -> match.group(1)).toList();
         org.assertj.core.api.Assertions.assertThat(images).hasSize(26);
-        org.assertj.core.api.Assertions.assertThat(images.get(0)).endsWith("/member-folders/9.png");
-        org.assertj.core.api.Assertions.assertThat(images.get(1)).endsWith("/dimension.png");
+        org.assertj.core.api.Assertions.assertThat(images.get(0)).endsWith("/member-folders/3.png");
+        org.assertj.core.api.Assertions.assertThat(images.get(1)).endsWith("/member-folders/2.png");
         for (int number = 1; number <= 24; number++) {
             org.assertj.core.api.Assertions.assertThat(images.get(number + 1)).endsWith("/member-folders/" + number + ".png");
         }
