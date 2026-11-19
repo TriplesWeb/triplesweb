@@ -62,31 +62,35 @@ jobs:
             StrictHostKeyChecking accept-new
           EOF
 
-      - name: Retire obsolete Pi development container (never remove data)
+      - name: Check current production image and tracked assets
+        id: assets
+        run: echo "tree=$(git rev-parse HEAD:uploads/chemistry)" >> "$GITHUB_OUTPUT"
+
+      - name: Preflight — retire dev and skip unchanged production
+        id: skip
         env:
           PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
           PI_DEV_DEPLOY_PATH: ${{ secrets.PI_DEV_DEPLOY_PATH }}
+          WANT_IMAGE: ${{ steps.image.outputs.name }}:${{ steps.sha.outputs.sha }}
+          CHEMISTRY_TREE: ${{ steps.assets.outputs.tree }}
         run: |
           set -euo pipefail
           : "${PI_DEPLOY_PATH:?PI_DEPLOY_PATH is required}"
           PI_DEV_DEPLOY_PATH="${PI_DEV_DEPLOY_PATH:-${PI_DEPLOY_PATH}-dev}"
+          # 첫 전환 때만 개발 앱을 종료하고 DB/파일은 보존한다.
           scp scripts/retire-pi-dev.sh "pi:${PI_DEPLOY_PATH}/retire-pi-dev.sh"
-          ssh pi env PI_DEPLOY_PATH="$PI_DEPLOY_PATH" PI_DEV_DEPLOY_PATH="$PI_DEV_DEPLOY_PATH" bash -s <<'EOF'
+          DECISION="$(ssh pi env PI_DEPLOY_PATH="$PI_DEPLOY_PATH" PI_DEV_DEPLOY_PATH="$PI_DEV_DEPLOY_PATH" WANT_IMAGE="$WANT_IMAGE" CHEMISTRY_TREE="$CHEMISTRY_TREE" bash -s <<'EOF'
           set -euo pipefail
-          bash "${PI_DEPLOY_PATH}/retire-pi-dev.sh" "$PI_DEPLOY_PATH" "$PI_DEV_DEPLOY_PATH"
-          EOF
-
-      - name: Skip if prod container already healthy on this commit
-        id: skip
-        env:
-          PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
-          WANT_IMAGE: ${{ steps.image.outputs.name }}:${{ steps.sha.outputs.sha }}
-        run: |
-          set -euo pipefail
-          # .env IMAGE와 무관하게 실제 실행 중인 이미지·readiness로 재배포를 판단
-          DECISION="$(ssh pi env PI_DEPLOY_PATH="$PI_DEPLOY_PATH" WANT_IMAGE="$WANT_IMAGE" bash -s <<'EOF'
-          set -euo pipefail
+          if [[ ! -f "${PI_DEPLOY_PATH}/.dev-retired" ]]; then
+            bash "${PI_DEPLOY_PATH}/retire-pi-dev.sh" "${PI_DEPLOY_PATH}" "${PI_DEV_DEPLOY_PATH}"
+            touch "${PI_DEPLOY_PATH}/.dev-retired"
+          fi
           cd "${PI_DEPLOY_PATH}"
+          if [[ -f .chemistry-tree ]] && [[ "$(cat .chemistry-tree)" == "${CHEMISTRY_TREE}" ]] && [[ -d uploads/chemistry ]]; then
+            echo "chemistry_sync=false"
+          else
+            echo "chemistry_sync=true"
+          fi
           APP_PORT="$(grep -E '^APP_PORT=' .env 2>/dev/null | cut -d= -f2- || true)"
           APP_PORT="${APP_PORT:-8080}"
           CID="$(docker compose ps -q app 2>/dev/null || true)"
@@ -110,7 +114,9 @@ jobs:
           EOF
           )"
           SKIP="$(echo "$DECISION" | grep -E '^skip=' | tail -n1 | cut -d= -f2)"
+          CHEMISTRY_SYNC="$(echo "$DECISION" | grep -E '^chemistry_sync=' | tail -n1 | cut -d= -f2)"
           echo "skip=${SKIP}" >> "$GITHUB_OUTPUT"
+          echo "chemistry_sync=${CHEMISTRY_SYNC}" >> "$GITHUB_OUTPUT"
           if [[ "$SKIP" == "true" ]]; then
             echo "::notice::Prod already healthy on ${WANT_IMAGE}; skipping rebuild/restart"
           else
@@ -149,7 +155,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=triplesweb-arm64
-          cache-to: type=gha,mode=max,scope=triplesweb-arm64
+          cache-to: type=gha,mode=max,scope=triplesweb-arm64,ignore-error=true
           provenance: false
 
       - name: Sync only chemistry assets and deploy
@@ -164,10 +170,16 @@ jobs:
           : "${PI_DEPLOY_PATH:?PI_DEPLOY_PATH secret is required}"
           scp docker-compose.yml "pi:${PI_DEPLOY_PATH}/docker-compose.yml"
           scp scripts/deploy-pi-app.sh "pi:${PI_DEPLOY_PATH}/deploy-pi-app.sh"
-          # 업로드 루트 삭제/재귀 chown 없이 관리 대상 chemistry만 증분 복사한다.
-          ssh pi "mkdir -p '${PI_DEPLOY_PATH}/uploads/chemistry'"
-          rsync -az --no-owner --no-group --exclude '.DS_Store' \
-            uploads/chemistry/ "pi:${PI_DEPLOY_PATH}/uploads/chemistry/"
+          # chemistry Git tree SHA가 동일하면 원격 스캔·전송을 건너뛴다.
+          if [[ "${{ steps.skip.outputs.chemistry_sync }}" == "true" ]]; then
+            ssh pi "mkdir -p '${PI_DEPLOY_PATH}/uploads/chemistry'"
+            rsync -az --no-owner --no-group --exclude '.DS_Store' \
+              uploads/chemistry/ "pi:${PI_DEPLOY_PATH}/uploads/chemistry/"
+            ssh pi "printf '%s\\n' '${{ steps.assets.outputs.tree }}' > '${PI_DEPLOY_PATH}/.chemistry-tree'"
+            echo "Chemistry files synchronized for ${{ steps.assets.outputs.tree }}"
+          else
+            echo "Chemistry unchanged — skipping rsync"
+          fi
 
           ssh pi env \
             PI_DEPLOY_PATH="$PI_DEPLOY_PATH" \
