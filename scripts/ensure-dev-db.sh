@@ -49,6 +49,8 @@ set_env DATA_DIR "${DEV_DIR}/data"
 set_env PROD_CHEMISTRY_DIR "${PROD_DIR}/uploads/chemistry"
 set_env APP_PORT "8091"
 set_env SPRING_JPA_HIBERNATE_DDL_AUTO "none"
+# 기존 개발 환경에 복사된 운영 root 비밀번호는 더 이상 보관하지 않는다.
+sed -i '/^MYSQL_ROOT_PASSWORD=/d' "${DEV_DIR}/.env"
 
 DB_CONTAINER="$(cd "$PROD_DIR" && docker compose ps -q mariadb)"
 [[ -n "$DB_CONTAINER" ]] || { echo "Production MariaDB container not found" >&2; exit 1; }
@@ -56,11 +58,10 @@ DB_CONTAINER="$(cd "$PROD_DIR" && docker compose ps -q mariadb)"
 mariadb_root() {
   docker exec -i "$DB_CONTAINER" sh -c 'export MYSQL_PWD="$MARIADB_ROOT_PASSWORD"; exec mariadb -uroot' 
 }
-# 개발 사용자 계정은 개발 DB에만 GRANT한다. 비밀번호는 임의 생성 64자리 hex.
-printf "CREATE DATABASE IF NOT EXISTS \`%s\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\nCREATE USER IF NOT EXISTS '%s'@'%%' IDENTIFIED BY '%s';\nALTER USER '%s'@'%%' IDENTIFIED BY '%s';\nGRANT ALL PRIVILEGES ON \`%s\`.* TO '%s'@'%%';\n" \
-  "$DEV_DB" "$DEV_USER" "$PASS" "$DEV_USER" "$PASS" "$DEV_DB" "$DEV_USER" | mariadb_root
-
 if [[ ! -f "$MARKER" ]]; then
+  # 계정·스키마 최초 생성만 수행한다. 매 배포마다 사용자 ALTER를 하지 않는다.
+  printf "CREATE DATABASE IF NOT EXISTS \`%s\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\nCREATE USER IF NOT EXISTS '%s'@'%%' IDENTIFIED BY '%s';\nALTER USER '%s'@'%%' IDENTIFIED BY '%s';\nGRANT ALL PRIVILEGES ON \`%s\`.* TO '%s'@'%%';\n" \
+    "$DEV_DB" "$DEV_USER" "$PASS" "$DEV_USER" "$PASS" "$DEV_DB" "$DEV_USER" | mariadb_root
   COUNT="$(printf "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='%s';\n" "$DEV_DB" | mariadb_root | tail -n1)"
   if [[ "$COUNT" != "0" ]]; then
     echo "Dev schema has tables but marker is missing. Refusing to overwrite; inspect manually." >&2
