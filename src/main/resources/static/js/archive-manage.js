@@ -155,16 +155,85 @@
         return Array.from((picker || document).querySelectorAll('.mpp-item.is-active'));
     }
 
+    function bumpImageEditToken(input) {
+        if (!input) return 0;
+        input._archiveEditToken = (input._archiveEditToken || 0) + 1;
+        return input._archiveEditToken;
+    }
+
+    function isGifOrWebpFile(file) {
+        if (!file) return false;
+        const type = (file.type || '').toLowerCase();
+        if (type === 'image/gif' || type === 'image/webp') return true;
+        return /\.(gif|webp)$/i.test(file.name || '');
+    }
+
+    function findFourCC(bytes, label) {
+        const a = label.charCodeAt(0);
+        const b = label.charCodeAt(1);
+        const c = label.charCodeAt(2);
+        const d = label.charCodeAt(3);
+        for (let i = 0; i < bytes.length - 3; i += 1) {
+            if (bytes[i] === a && bytes[i + 1] === b && bytes[i + 2] === c && bytes[i + 3] === d) return true;
+        }
+        return false;
+    }
+
+    async function ensureAnimationFlag(file) {
+        if (!file) return false;
+        if (file._archiveAnimated != null) return file._archiveAnimated === true;
+        if (!isGifOrWebpFile(file)) {
+            file._archiveAnimated = false;
+            return false;
+        }
+        try {
+            const sampleSize = Math.min(file.size || 0, 2 * 1024 * 1024);
+            const bytes = new Uint8Array(await file.slice(0, sampleSize).arrayBuffer());
+            const type = (file.type || '').toLowerCase();
+            const name = (file.name || '').toLowerCase();
+            let animated = false;
+            if (type === 'image/gif' || name.endsWith('.gif')) {
+                let frames = 0;
+                for (let i = 0; i < bytes.length; i += 1) {
+                    if (bytes[i] === 0x2C) {
+                        frames += 1;
+                        if (frames > 1) {
+                            animated = true;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                animated = findFourCC(bytes, 'ANIM') || findFourCC(bytes, 'ANMF');
+            }
+            file._archiveAnimated = animated;
+            return animated;
+        } catch (_) {
+            file._archiveAnimated = false;
+            return false;
+        }
+    }
+
     function syncImageEditTools(box) {
         const tools = box?.querySelector('[data-image-edit-tools]');
         if (!tools) return;
+        const source = box._previewSource;
+        const animated = !!(source && source._archiveAnimated === true);
+        const checking = !!(source && isGifOrWebpFile(source) && source._archiveAnimated == null);
         const editable = kind === 'image'
             && !box.hidden
-            && !!box._previewSource
-            && isImageFile(box._previewSource);
-        tools.hidden = !editable;
+            && !!source
+            && isImageFile(source)
+            && !animated
+            && !checking
+            && !box._archiveEditBusy;
+        tools.hidden = !(kind === 'image' && !box.hidden && !!source && isImageFile(source)) || animated;
         tools.querySelectorAll('button').forEach(button => {
-            if (!editable) button.disabled = false;
+            button.disabled = !editable;
+            if (!button.dataset.defaultTitle) button.dataset.defaultTitle = button.getAttribute('title') || '';
+            button.title = animated
+                ? '애니메이션 이미지는 편집할 수 없습니다.'
+                : (button.dataset.defaultTitle || button.title);
         });
     }
 
@@ -181,6 +250,12 @@
         const form = box.closest('form');
         const fileInput = form?.querySelector('input[name="file"]');
         if (fileInput) fileInput._archivePreviewIndex = box._previewSource ? box._previewIndex : 0;
+        if (options.sourceFile && isGifOrWebpFile(options.sourceFile)) {
+            const watched = options.sourceFile;
+            ensureAnimationFlag(watched).then(() => {
+                if (box._previewSource === watched) syncImageEditTools(box);
+            });
+        }
         if (!url || !full || !card) {
             box.hidden = true;
             full && (full.innerHTML = "");
@@ -277,6 +352,7 @@
 
     function setInputFiles(input, files, { silent = false, previewIndex = 0 } = {}) {
         if (!input) return;
+        bumpImageEditToken(input);
         const transfer = new DataTransfer();
         files.forEach(file => transfer.items.add(file));
         input.files = transfer.files;
@@ -413,7 +489,7 @@
         if (kind !== 'image' || !form) return;
         const input = form.querySelector('input[name="file"]');
         const preview = form.querySelector('.ar-preview');
-        if (!input || !preview || preview.hidden) return;
+        if (!input || !preview || preview.hidden || preview._archiveEditBusy) return;
         const files = Array.from(input.files || []);
         const index = Number.isInteger(preview._previewIndex) ? preview._previewIndex : 0;
         const source = files[index];
@@ -421,23 +497,40 @@
             alert('편집할 사진을 먼저 선택해 주세요.');
             return;
         }
+        if (await ensureAnimationFlag(source)) {
+            syncImageEditTools(preview);
+            alert('애니메이션 이미지는 회전·뒤집기를 할 수 없습니다.');
+            return;
+        }
+        const editToken = input._archiveEditToken || 0;
         const tools = preview.querySelector('[data-image-edit-tools]');
         const buttons = tools ? Array.from(tools.querySelectorAll('button')) : [];
+        preview._archiveEditBusy = true;
         buttons.forEach(button => { button.disabled = true; });
         preview.dataset.pending = 'true';
         try {
             const edited = await transformImageFile(source, operation);
+            if ((input._archiveEditToken || 0) !== editToken) return;
+            const current = Array.from(input.files || [])[index];
+            if (current !== source) return;
             releaseUrl(source);
-            const next = files.slice();
+            const next = Array.from(input.files || []);
+            if (index >= next.length) return;
             next[index] = edited;
             setInputFiles(input, next, { silent: true, previewIndex: index });
             showPreview(preview, rememberUrl(edited), { sourceFile: edited, index });
         } catch (_) {
-            delete preview.dataset.pending;
-            alert('사진을 편집하지 못했습니다. 다른 이미지로 다시 시도해 주세요.');
-            syncImageEditTools(preview);
+            if ((input._archiveEditToken || 0) === editToken) {
+                delete preview.dataset.pending;
+                alert('사진을 편집하지 못했습니다. 다른 이미지로 다시 시도해 주세요.');
+                syncImageEditTools(preview);
+            }
         } finally {
-            buttons.forEach(button => { button.disabled = false; });
+            preview._archiveEditBusy = false;
+            if ((input._archiveEditToken || 0) === editToken) {
+                buttons.forEach(button => { button.disabled = false; });
+                syncImageEditTools(preview);
+            }
         }
     }
 
@@ -880,6 +973,7 @@
     };
 
     uploadFile?.addEventListener("change", () => {
+        bumpImageEditToken(uploadFile);
         const files = Array.from(uploadFile.files || []);
         releaseUnusedFiles(uploadFile._archiveLastFiles, files);
         uploadFile._archiveLastFile = files[0] || null;
@@ -1027,6 +1121,7 @@
     }
 
     editFile?.addEventListener("change", () => {
+        bumpImageEditToken(editFile);
         const files = Array.from(editFile.files || []);
         releaseUnusedFiles(editFile._archiveLastFiles, files);
         editFile._archiveLastFile = files[0] || null;
