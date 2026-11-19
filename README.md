@@ -127,13 +127,9 @@ main 머지 + PR 코멘트「즉시 배포」 → deploy-main → 운영 즉시
 매일 04:00 KST / 수동 → deploy-main → /opt/stacks/triplesweb (:8090)
 ```
 
-### PR별 비공개 모바일 미리보기 (선택)
+### GitHub Codespaces 모바일 테스트
 
-기본 PR 미리보기는 위 개발 서버입니다. PR마다 독립된 DB와 Tailscale HTTPS 링크가 필요한 경우 [PR Tailscale preview](.github/workflows/preview.yml)를 활성화할 수 있습니다.
-
-- Pi에 테스트 데이터와 `uploads/`를 준비하고, 별도 MariaDB 서비스가 있는 Compose 경로를 Actions Variable `PI_PR_PREVIEW_SOURCE_PATH`에 등록합니다. 운영 경로는 사용할 수 없습니다.
-- 배포 계정에는 Docker와 Tailscale Serve 실행 권한이 필요합니다. Tailnet 정책에서 HTTPS와 Pi의 미리보기 포트 20000–20999 접근을 허용합니다.
-- PR 최초 실행 시 테스트 데이터 복사본이 만들어집니다. PR 업데이트는 미리보기에서 바꾼 DB와 파일을 유지하고, PR을 닫으면 복사본이 정리됩니다. 링크와 반영된 커밋은 PR 댓글에서 확인합니다.
+모바일 테스트가 필요하면 Codespace에서 현재 PR 커밋을 실행합니다. 기존 미리보기용 MariaDB와 `uploads/` 복사본을 연결하고 `APP_SCHEDULING_ENABLED=false`로 예약 작업을 끕니다. Codespaces의 포트 공개 범위를 **Private**으로 유지하고, 휴대폰에서 해당 Codespace를 만든 GitHub 계정으로 로그인해 HTTPS 링크를 엽니다.
 
 ### 1. GitHub Secrets / Variables
 

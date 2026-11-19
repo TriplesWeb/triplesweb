@@ -1,5 +1,5 @@
 ---
-description: 메뉴별 브랜치 유지·커밋 후 푸시·PR, 브랜치당 PR 하나, 미리보기는 Pi 개발 서버
+description: 메뉴별 브랜치와 PR, Pi 개발 배포, GitHub Codespaces 모바일 테스트
 alwaysApply: true
 ---
 
@@ -17,8 +17,6 @@ alwaysApply: true
 - **커밋하면 바로 푸시**하고, 해당 브랜치에 열린 PR이 없으면 **PR도 바로 만든다.**
 - **브랜치당 PR은 하나**다. 이미 열린 PR이 있으면 새 PR을 만들지 말고 그 브랜치에 푸시만 한다.
 - PR을 생성하거나 갱신한 뒤에는 **최우선으로 PR 링크를 전달**한다.
-- **PC(로컬 Desktop)에서 작업 중이면** 모바일 HTTPS 미리보기(Funnel·기본 인증 프록시)를 **열지 않는다.** 사용자가 요청한 경우에만 연다.
-- **미리보기는 Pi 개발 서버**다. PR open/동기화 시 Actions가 `/opt/stacks/triplesweb-dev`(8091)에 반영한다.
-  1. 로컬 `bootRun` 8081·Funnel을 열지 않는다.
-  2. `Deploy PR to Pi (dev)` 성공 후 개발 URL을 **PR 링크 다음에** 전달한다 (`PI_DEV_PUBLIC_URL` 또는 `http://<PI_HOST>:8091/main`).
-  3. **운영** Pi(`/opt/stacks/triplesweb`)는 기본적으로 재배포하지 않는다. 새벽 4시(KST)·수동, 또는 PR 코멘트 **`즉시 배포`** 후 머지 시에만 반영한다.
+- 모바일 테스트 링크를 요청받으면 현재 PR 커밋을 GitHub Codespaces에서 실행하고 비공개 포트 URL을 전달한다. 미리보기용 DB와 업로드 복사본을 사용한다.
+- PR을 열거나 갱신하면 Actions가 Pi 개발 서버(`/opt/stacks/triplesweb-dev`, 포트 8091)에 반영한다. `Deploy PR to Pi (dev)` 성공 후 개발 URL을 **PR 링크 다음에** 전달한다 (`PI_DEV_PUBLIC_URL` 또는 `http://<PI_HOST>:8091/main`).
+- **운영** Pi(`/opt/stacks/triplesweb`)는 새벽 4시(KST), 수동 실행 또는 PR 코멘트 **`즉시 배포`** 후 머지할 때 반영한다.
