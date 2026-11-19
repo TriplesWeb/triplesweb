@@ -14,7 +14,7 @@ run_deploy() {
     if [[ -n "$previous_image" && "$previous_image" != "$IMAGE" ]]; then
       echo "Attempting container rollback to $previous_image" >&2
       sed -i "s|^IMAGE=.*|IMAGE=$previous_image|" .env
-      IMAGE="$previous_image" docker compose up -d app || true
+      IMAGE="$previous_image" docker compose up -d --no-deps app || true
     fi
   }
   cid="$(docker compose ps -q app 2>/dev/null || true)"
@@ -26,17 +26,19 @@ run_deploy() {
     fi
   fi
 
+  # pi/containerd 일시 오류는 재시도하되, 성공 시 즉시 진행한다.
   for attempt in 1 2 3 4 5; do
     if docker compose pull app; then break; fi
     if [[ "$attempt" == 5 ]]; then
       echo "Pull failed after five attempts" >&2
       return 1
     fi
-    sleep "$((attempt * 8))"
+    sleep "$((attempt * 4))"
   done
   echo "Image pulled in $((SECONDS-start))s"
   local started="$SECONDS"
-  if ! docker compose up -d; then
+  # 이미 정상인 MariaDB를 다시 평가하거나 재생성하지 않고 앱만 갱신한다.
+  if ! docker compose up -d --no-deps app; then
     echo "Compose up failed" >&2
     rollback
     return 1
@@ -54,12 +56,13 @@ run_deploy() {
     return 1
   fi
 
-  for attempt in $(seq 1 60); do
+  # readiness를 2초 단위로 확인해 불필요한 폴링 대기를 줄인다.
+  for attempt in $(seq 1 180); do
     if curl --silent --show-error --fail --max-time 8 "$HEALTH_URL" >/dev/null 2>&1; then
       echo "Readiness OK, startup=$((SECONDS-started))s, total=$((SECONDS-start))s, mode=$MODE"
       return 0
     fi
-    sleep 5
+    sleep 2
   done
   echo "Readiness failed on $HEALTH_URL" >&2
   docker compose ps >&2 || true
