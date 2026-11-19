@@ -9,6 +9,15 @@ on:
       - '**.md'
       - 'qodana.yaml'
       - 'scripts/tests/**'
+      # CI/tooling-only changes do not change the running application.
+      - '.github/**'
+      - 'scripts/ci-path-filter.py'
+      - '.cursor/**'
+      - '.githooks/**'
+      - '.vscode/**'
+      - '.env.example'
+      - '.gitignore'
+      - '.gitattributes'
   schedule:
     - cron: '0 19 * * *' # 04:00 KST, fallback/reconciliation
   workflow_dispatch:
