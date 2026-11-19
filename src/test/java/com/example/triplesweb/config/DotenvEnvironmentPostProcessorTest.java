@@ -60,7 +60,7 @@ class DotenvEnvironmentPostProcessorTest {
     @Test
     void nativeMainLoadsComposeDatabaseSettingsAndQuotedValues() throws Exception {
         var env = environment("""
-                MYSQL_HOST=100.89.171.59
+                MYSQL_HOST=100.64.0.1
                 MYSQL_PORT=3306
                 MYSQL_DATABASE=triples
                 MYSQL_USER='developer'
@@ -69,7 +69,7 @@ class DotenvEnvironmentPostProcessorTest {
                 """, Map.of());
         new DotenvEnvironmentPostProcessor().postProcessEnvironment(env, new SpringApplication());
         assertThat(env.getProperty("spring.datasource.url"))
-                .isEqualTo("jdbc:mariadb://100.89.171.59:3306/triples?useSSL=false");
+                .isEqualTo("jdbc:mariadb://100.64.0.1:3306/triples?useSSL=false");
         assertThat(env.getProperty("spring.datasource.username")).isEqualTo("developer");
         assertThat(env.getProperty("spring.datasource.password")).isEqualTo("sample # password=1");
         assertThat(env.getProperty("cosmo.credentials.file")).isEqualTo("C:\\project\\credentials.json");
