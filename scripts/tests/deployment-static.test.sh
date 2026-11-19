@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
 # Syntax and single-production-environment invariants
-for script in scripts/tests/deployment-static.test.sh scripts/deploy-pi-app.sh scripts/retire-pi-dev.sh; do
+for script in scripts/tests/deployment-static.test.sh scripts/deploy-pi-app.sh scripts/deploy-pi-image-retention.sh scripts/retire-pi-dev.sh; do
   bash -n "$script"
 done
 

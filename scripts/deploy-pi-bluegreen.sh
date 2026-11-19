@@ -16,6 +16,7 @@ STATE_FILE="$STATE_DIR/active-slot"
 MIGRATION_FILE="$STATE_DIR/migration-tree"
 NGINX_CONF="$STATE_DIR/active.conf"
 LOCK=/tmp/triplesweb-docker-deploy.lock
+source "$(dirname "${BASH_SOURCE[0]}")/deploy-pi-image-retention.sh"
 
 # Clean up only the unpromoted candidate on failure; never stop a live upstream.
 CANDIDATE_SLOT=""
@@ -210,9 +211,10 @@ stage_candidate() {
 }
 
 bootstrap_proxy() {
-  local legacy_cid proxy_cid
+  local legacy_cid proxy_cid previous_image
   legacy_cid="$("${BASE_COMPOSE[@]}" ps -q app 2>/dev/null || true)"
   is_running "$legacy_cid" || fail "No active legacy app found. Manual recovery required."
+  previous_image="$(docker inspect -f '{{.Config.Image}}' "$legacy_cid")"
   log "Legacy app serves $APP_PORT. Warm the new blue slot before the first port transfer."
   stage_candidate blue
   write_proxy_config blue "$NGINX_CONF.tmp.$"
@@ -236,11 +238,12 @@ bootstrap_proxy() {
   # Proxy is now serving blue; never auto-stop it if metadata write fails.
   CANDIDATE_SLOT=""
   remember_success blue
+  cleanup_after_deploy "$previous_image"
   log "First cutover finished. Next deployments will warm the inactive slot."
 }
 
 switch_proxy() {
-  local old="$1" candidate="$2" proxy_cid previous="$NGINX_CONF.previous"
+  local old="$1" candidate="$2" previous_image="$3" proxy_cid previous="$NGINX_CONF.previous"
   proxy_cid="$(container_of proxy)"
   is_running "$proxy_cid" || fail "Proxy not running. Refusing switch to protect active slot."
   cp -f "$NGINX_CONF" "$previous"
@@ -280,6 +283,7 @@ switch_proxy() {
   if [[ "$candidate" != "$old" ]]; then
     "${COMPOSE[@]}" stop -t 30 "app_$old" || log "WARNING: stale slot could not be stopped"
   fi
+  cleanup_after_deploy "$previous_image"
 }
 
 run_deploy() {
@@ -317,7 +321,7 @@ run_deploy() {
   [[ "$active" == green ]] && next=blue
   log "Active: app_$active ($running_image); staging app_$next ($IMAGE)"
   stage_candidate "$next"
-  switch_proxy "$active" "$next"
+  switch_proxy "$active" "$next" "$running_image"
 }
 
 # Keep flock and EXIT cleanup trap in the same shell (no subshell state loss).
