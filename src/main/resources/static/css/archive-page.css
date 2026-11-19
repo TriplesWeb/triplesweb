@@ -2103,8 +2103,8 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 }
 .ar-detail-close {
     position: absolute;
-    top: 0.55rem;
-    right: 0.55rem;
+    top: 0.7rem;
+    right: 0.7rem;
     z-index: 3;
     display: inline-flex;
     align-items: center;
@@ -2126,7 +2126,8 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     flex-direction: column;
     gap: 1.25rem;
     min-height: 0;
-    padding: 1.35rem 1.2rem 1.2rem;
+    /* 닫기 버튼(2rem) + 여백 — 날짜/출처 박스와 겹치지 않게 */
+    padding: 3.15rem 1.2rem 1.2rem;
     overflow: auto;
 }
 .ar-detail-line { min-width: 0; }
@@ -2142,7 +2143,6 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 }
 .ar-detail-desc {
     margin: 0;
-    padding-right: 2rem;
     color: #f4faf7;
     font-size: 1.2rem;
     font-weight: 700;
