@@ -198,7 +198,7 @@ cd /opt/stacks/triplesweb && docker compose pull && docker compose up -d
 
 ### 4. 이후 자동 배포
 
-1. **PR 검사:** [ci-tests.yml](.github/workflows/ci-tests.yml)이 Java 테스트+WAR와 CSS/브라우저 테스트를 병렬 실행하고 Qodana를 한 번만 검사합니다.
+1. **PR 검사:** [ci-tests.yml](.github/workflows/ci-tests.yml)이 Java 테스트+WAR와 HTML 의존 브라우저 검사를 한 Job에서 실행하고, CSS/JavaScript 검사와 Qodana를 병렬 실행합니다.
 2. **운영:** 머지 즉시 [deploy-main.yml](.github/workflows/deploy-main.yml) 실행. 매일 **04:00 KST** 재확인 또는 Actions 수동 실행도 지원하며 이미 같은 SHA·정상이면 스킵합니다.
 3. **개발 서버 폐지:** 첫 운영 배포에서 기존 Pi 개발 앱만 종료합니다. 개발 데이터는 삭제하지 않습니다.
 
