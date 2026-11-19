@@ -8,8 +8,6 @@
     <meta name="_csrf_header" content="{{headerName}}">
     {{/_csrf}}
 </head><body class="site-page bg-surface text-on-surface min-h-screen flex flex-col">
-<div class="ar-glow ar-glow-violet"></div>
-<div class="ar-glow ar-glow-mint"></div>
 {{>layout/header}}
 
 <main class="archive-page{{#archiveBrowse}} is-browse{{/archiveBrowse}}{{#archiveFolderHome}} is-folder-home{{/archiveFolderHome}}{{#archiveFolderIndex}} is-folder-index{{/archiveFolderIndex}}{{#archiveFolderView}} is-folder-view{{/archiveFolderView}}" data-archive-kind="{{#imageArchive}}image{{/imageArchive}}{{#videoArchive}}video{{/videoArchive}}" data-date-label="{{mediaDateLabel}}" data-default-artists="{{defaultUploadArtists}}">

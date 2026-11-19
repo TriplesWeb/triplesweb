@@ -11,7 +11,7 @@ const siteUi = fs.readFileSync(path.join(staticRoot, 'css', 'site-ui.css'), 'utf
 const pickerJs = fs.readFileSync(path.join(staticRoot, 'js', 'member-portrait-picker.js'), 'utf8');
 const manageJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-manage.js'), 'utf8');
 
-const jiyeonLogo = '/uploads/images/' + encodeURIComponent('상징로고') + '/S24.png';
+const jiyeonLogo = '/images/archive/member-logos/24.png';
 
 function pageHtml(kind) {
   const isVideo = kind === 'video';
@@ -205,7 +205,7 @@ async function withPage(html, run) {
     assert.equal(preview.chipName, '지연');
     assert.equal(preview.chipLabel, '지연');
     assert.equal(preview.symbol, true, '목록 미리보기가 상징로고 칩이 아니다');
-    assert.match(preview.logo, /S24\.png/);
+    assert.equal(preview.logo, jiyeonLogo);
     assert.equal(preview.date, '2026/10/25');
     assert.equal(preview.datetime, '2026-10-25');
     assert.equal(preview.badges, 0, '예전 ar-badge가 남아 있다');

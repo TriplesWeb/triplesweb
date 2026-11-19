@@ -233,7 +233,7 @@ ${siteMobile}
         chipBorder: getComputedStyle(one.querySelector('.archive-symbol-chip img')).borderWidth
       };
     });
-    assert.ok(grid.oneImg > 20 && grid.oneImg <= 40, '한 명 카드 배지 크기가 깨졌다: ' + grid.oneImg);
+    assert.ok(grid.oneImg > 20 && grid.oneImg <= 26, '한 명 카드 로고 크기가 깨졌다: ' + grid.oneImg);
     assert.ok(grid.manyImg < grid.oneImg - 4, '멤버가 많을 때 배지가 작아지지 않는다: ' + JSON.stringify(grid));
     assert.equal(grid.nameHidden, true, '상징로고 칩에 이름이 드러난다: ' + JSON.stringify(grid));
     assert.equal(grid.logo, true, '상징로고 칩 클래스가 없다');

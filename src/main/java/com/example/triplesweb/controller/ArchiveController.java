@@ -197,7 +197,7 @@ public class ArchiveController {
             if (archive.getType() == MediaType.IMAGE) photoCount++;
             else if (archive.getType() == MediaType.VIDEO) videoCount++;
         }
-        String title = "유닛별";
+        String title = "디멘션";
         String accent = "#a78bfa";
         model.addAttribute("archiveFolderHome", true);
         model.addAttribute("archiveFolderIndex", true);
@@ -741,7 +741,7 @@ public class ArchiveController {
     private String folderTitle(String folder, List<String> comboMembers, List<ArchiveFolderClassifier.UnitMembers> units) {
         if (folder == null || folder.isBlank()) return "";
         if (folder.equalsIgnoreCase("s")) return "";
-        if (isUnitIndex(folder)) return "유닛별";
+        if (isUnitIndex(folder)) return "디멘션";
         if (isComboIndex(folder)) return "케미";
         Integer comboSize = ArchiveFolderClassifier.comboSize(folder);
         if (comboSize != null) return ArchiveFolderClassifier.comboLabel(comboSize);
@@ -832,9 +832,9 @@ public class ArchiveController {
             unitPhotos += counted.counts().getOrDefault("unit-" + unit.getUnitId(), 0);
         }
         List<Map<String, Object>> folders = new ArrayList<>();
-        folders.add(folderCard("s", "전체 멤버", "#f5c518", "/archive?folder=s", counted.counts().getOrDefault("s", 0),
+        folders.add(folderCard("s", "tripleS", "#f5c518", "/archive?folder=s", counted.counts().getOrDefault("s", 0),
                 "", ArchiveFolderClassifier.Kind.GROUP, true));
-        folders.add(parentCard("units", "유닛별", "#a78bfa", "/archive?folder=units", unitPhotos));
+        folders.add(parentCard("units", "디멘션", "#a78bfa", "/archive?folder=units", unitPhotos));
         for (int i = 0; i < MemberPortraitOptions.koreanOrder().size(); i++) {
             String name = MemberPortraitOptions.koreanOrder().get(i);
             String key = "s" + (i + 1);
@@ -1093,7 +1093,9 @@ public class ArchiveController {
                                            int count, String preview, ArchiveFolderClassifier.Kind kind, boolean group) {
         Map<String, Object> card = new LinkedHashMap<>();
         boolean hideArt = kind == ArchiveFolderClassifier.Kind.COMBO;
-        String art = hideArt ? "" : archiveFolderArt.urlFor(kind, key, label);
+        String unitIcon = kind == ArchiveFolderClassifier.Kind.UNIT ? ArchiveFolderArt.unitIcon(label) : "";
+        String art = unitIcon;
+        if (art.isBlank() && !hideArt) art = archiveFolderArt.urlFor(kind, key, label);
         String shownPreview = hideArt || kind == ArchiveFolderClassifier.Kind.SOLO ? "" : (preview == null ? "" : preview);
         boolean customArt = !art.isBlank();
         card.put("key", key);
@@ -1106,6 +1108,7 @@ public class ArchiveController {
         card.put("hasPreview", !customArt && !shownPreview.isBlank());
         card.put("folderArt", art);
         card.put("hasFolderArt", customArt);
+        card.put("hasUnitFolderArt", !unitIcon.isBlank());
         card.put("groupFolder", group);
         card.put("soloFolder", kind == ArchiveFolderClassifier.Kind.SOLO);
         card.put("comboFolder", kind == ArchiveFolderClassifier.Kind.COMBO);

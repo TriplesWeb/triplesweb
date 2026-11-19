@@ -87,9 +87,9 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("S1 윤서연")))
                 .andExpect(content().string(containsString("S24 지연")))
                 .andExpect(content().string(containsString("ar-folder is-group")))
-                .andExpect(content().string(containsString("ar-folder-label\">전체 멤버</span>")))
+                .andExpect(content().string(containsString("ar-folder-label\">tripleS</span>")))
                 .andExpect(content().string(containsString("ar-folder is-parent")))
-                .andExpect(content().string(containsString("ar-folder-label\">유닛별</span>")))
+                .andExpect(content().string(containsString("ar-folder-label\">디멘션</span>")))
                 .andExpect(content().string(not(containsString("ar-folder-label\">케미</span>"))))
                 .andExpect(content().string(containsString("folder&#x3D;units")))
                 .andExpect(content().string(not(containsString("folder&#x3D;combos"))))
@@ -127,7 +127,7 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-label\">케미</span>");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;combos");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-label\">2명 케미</span>");
-        int group = html.indexOf("ar-folder-label\">전체 멤버</span>");
+        int group = html.indexOf("ar-folder-label\">tripleS</span>");
         int groupEnd = html.indexOf("</a>", group);
         org.assertj.core.api.Assertions.assertThat(html.substring(group, groupEnd)).contains("ar-folder-count\">4</span>");
         org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">S1 윤서연</span>");
@@ -166,7 +166,7 @@ class ArchiveControllerTest {
                 .andExpect(redirectedUrl("/archive?folder=s"));
     }
 
-    @Test void unitFolderWithoutImageOmitsPlaceholderPreview() throws Exception {
+    @Test void unitFolderUsesBundledArtWithoutRegisteredImage() throws Exception {
         Unit aura = new Unit();
         aura.setUnitId(17L);
         aura.setUnitName("Aura");
@@ -174,15 +174,17 @@ class ArchiveControllerTest {
         when(unitService.listVisible()).thenReturn(List.of(aura));
         String home = mvc.perform(get("/archive")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        org.assertj.core.api.Assertions.assertThat(home).contains("ar-folder-label\">유닛별</span>");
+        org.assertj.core.api.Assertions.assertThat(home).contains("ar-folder-label\">디멘션</span>");
         org.assertj.core.api.Assertions.assertThat(home).doesNotContain("folder&#x3D;unit-17");
         org.assertj.core.api.Assertions.assertThat(home).doesNotContain("Aura");
 
         String html = mvc.perform(get("/archive").param("folder", "units")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        org.assertj.core.api.Assertions.assertThat(html).contains(">유닛별</p>");
+        org.assertj.core.api.Assertions.assertThat(html).contains(">디멘션</p>");
         org.assertj.core.api.Assertions.assertThat(html).contains("← 목록으로");
         org.assertj.core.api.Assertions.assertThat(html).contains("Aura");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-art is-unit-art", "/images/archive/unit-folders/42.png");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-preview");
         org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;s");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;unit-17");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("image-upload-pending");
@@ -266,7 +268,7 @@ class ArchiveControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("전체 사진"))))
                 .andExpect(content().string(not(containsString("ar-folder-title"))))
-                .andExpect(content().string(not(containsString("전체 멤버"))))
+                .andExpect(content().string(not(containsString("ar-folder-label\">tripleS</span>"))))
                 .andExpect(content().string(containsString("id=\"archive-member-picker\"")))
                 .andExpect(content().string(not(containsString("id=\"archiveChem\""))));
         verify(archiveService).pageInFolder(eq(MediaType.IMAGE), anyInt(), anyInt(), nullable(String.class),
@@ -331,7 +333,7 @@ class ArchiveControllerTest {
                 .andExpect(content().string(not(containsString(">지우기</button>"))))
                 .andExpect(content().string(not(containsString("data-ymd-year"))))
                 .andExpect(content().string(not(containsString("aria-label=\"연도\""))))
-                .andExpect(content().string(containsString("S1.png")))
+                .andExpect(content().string(containsString("/images/archive/member-logos/1.png")))
                 .andExpect(content().string(containsString("id=\"archive-member-picker\"")))
                 .andExpect(content().string(not(containsString("archive-symbol-picker"))))
                 .andExpect(content().string(containsString("archive-symbol-chip")))
@@ -405,8 +407,8 @@ class ArchiveControllerTest {
         int end = html.indexOf("</div>", start);
         String picker = html.substring(start, end);
         org.assertj.core.api.Assertions.assertThat(picker).contains("/uploads/portraits/seoyeon.jpg");
-        org.assertj.core.api.Assertions.assertThat(picker).doesNotContain("S1.png");
-        org.assertj.core.api.Assertions.assertThat(html).contains("S1.png");
+        org.assertj.core.api.Assertions.assertThat(picker).doesNotContain("/images/archive/member-logos/1.png");
+        org.assertj.core.api.Assertions.assertThat(html).contains("/images/archive/member-logos/1.png");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("archive-symbol-picker");
     }
 
@@ -451,7 +453,7 @@ class ArchiveControllerTest {
                 .andReturn().getResponse().getContentAsString();
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("전체 사진");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-title");
-        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("전체 멤버");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-label\">tripleS</span>");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-title is-solo");
         org.assertj.core.api.Assertions.assertThat(html).contains(">날짜<");
         org.assertj.core.api.Assertions.assertThat(html).contains("calendar_month");

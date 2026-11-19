@@ -28,11 +28,12 @@ function folder(attrs) {
     label,
     count = '',
     art = false,
+    unitArt = '',
     preview = ''
   } = attrs;
-  return `<a class="ar-folder${extraClass}${art ? ' has-art' : ''}" href="${href}" style="--folder-color: ${color};">
+  return `<a class="ar-folder${extraClass}${art || unitArt ? ' has-art' : ''}" href="${href}" style="--folder-color: ${color};">
     <span class="ar-folder-icon" aria-hidden="true">
-      ${art ? '<img class="ar-folder-art" src="/folder-art.svg" alt="">' : '<span class="ar-folder-shape"></span>'}
+      ${unitArt ? `<img class="ar-folder-art is-unit-art" src="${unitArt}" alt="">` : art ? '<img class="ar-folder-art" src="/folder-art.svg" alt="">' : '<span class="ar-folder-shape"></span>'}
       ${preview ? `<img class="ar-folder-preview" src="${preview}" alt="">` : ''}
     </span>
     ${label ? `<span class="ar-folder-label">${label}</span>` : ''}
@@ -68,8 +69,8 @@ body.site-admin-enabled button[data-admin-only] { display: inline-flex !importan
     </div>
   </section>
   <section class="ar-folders" aria-label="아카이브 폴더">
-    ${folder({ extraClass: ' is-group', href: '/archive?folder=s', color: '#f5c518', label: '전체 멤버', count: '3' })}
-    ${folder({ extraClass: ' is-parent', href: '/archive?folder=units', color: '#a78bfa', label: '유닛별' })}
+    ${folder({ extraClass: ' is-group', href: '/archive?folder=s', color: '#f5c518', label: 'tripleS', count: '3' })}
+    ${folder({ extraClass: ' is-parent', href: '/archive?folder=units', color: '#a78bfa', label: '디멘션' })}
     ${folder({ extraClass: ' is-solo', href: '/archive?folder=s&members=윤서연', color: '#22aeff', label: 'S1 윤서연' })}
     ${folder({ extraClass: ' is-solo', href: '/archive?folder=s&members=정혜린', color: '#ff8ad4', label: 'S2 정혜린' })}
   </section>
@@ -94,12 +95,12 @@ ${siteUi}
       <div class="ar-headline-copy">
         <div class="ar-kicker">Archive</div>
         <h1>아카이브</h1>
-        <p class="ar-folder-title">유닛별</p>
+        <p class="ar-folder-title">디멘션</p>
       </div>
     </div>
   </section>
   <section class="ar-folders" aria-label="아카이브 폴더">
-    ${folder({ href: '/archive?folder=s&members=윤서연&members=정혜린', color: '#22aeff', label: 'Aura' })}
+    ${folder({ href: '/archive?folder=s&members=윤서연&members=정혜린', color: '#22aeff', label: 'Aura', unitArt: '/images/archive/unit-folders/42.png' })}
   </section>
 </main>
 </body></html>`;
@@ -357,8 +358,7 @@ ${siteUi}
         member: memberIcon.getBoundingClientRect(),
         parent: parentIcon.getBoundingClientRect(),
         overflow: getComputedStyle(groupIcon).overflow,
-        shineMask: shine.webkitMaskImage || shine.maskImage || '',
-        shineBlend: shine.mixBlendMode,
+        shine: shine.content,
         uploadText: upload?.textContent.trim() || '',
         uploadVisible: uploadBox.width > 0 && uploadBox.height > 0,
         uploadHeight: Math.round(uploadBox.height),
@@ -375,18 +375,18 @@ ${siteUi}
         statShift: ((stats.left + stats.right) / 2) - ((innerLeft + innerRight) / 2),
         countHidden: count ? getComputedStyle(count).display === 'none' : false,
         memberHref: member?.getAttribute('href') || '',
-        wholeMember: document.body.textContent.includes('전체 멤버')
+        headlineGlow: getComputedStyle(document.querySelector('.ar-headline'), '::after').content
       };
     });
-    assert.deepEqual(home.labels, ['전체 멤버', '유닛별', 'S1 윤서연', 'S2 정혜린']);
+    assert.deepEqual(home.labels, ['tripleS', '디멘션', 'S1 윤서연', 'S2 정혜린']);
     assert.equal(home.memberHref, '/archive?folder=s&members=윤서연');
-    assert.equal(home.wholeMember, true);
+    assert.equal(home.headlineGlow, 'none');
     assert.equal(home.comboArt, false, '초기 화면에 케미·유닛 폴더 이미지가 보인다');
     assert.equal(home.placeholder, false, '업로드 예정 플레이스홀더가 남아 있다');
     assert.ok(Math.abs(home.member.width - home.parent.width) <= 1, '상위 폴더 너비가 멤버 폴더와 다르다: ' + JSON.stringify(home));
     assert.ok(Math.abs(home.member.height - home.parent.height) <= 1, '상위 폴더 높이가 멤버 폴더와 다르다: ' + JSON.stringify(home));
-    assert.equal(home.overflow, 'hidden', '호버 효과가 폴더 밖으로 새지 않게 잘리지 않는다');
-    assert.match(home.shineMask, /archive-folder\.svg/, '호버 샤인이 폴더 실루엣으로 잘리지 않는다: ' + home.shineMask);
+    assert.equal(home.overflow, 'hidden');
+    assert.equal(home.shine, 'none', '폴더의 반짝임 효과가 남아 있다');
     assert.equal(home.uploadText, '사진 추가');
     assert.equal(home.uploadVisible, true, '폴더 홈 사진 추가 버튼이 안 보인다');
     assert.ok(home.uploadRight >= 8 && home.uploadRight <= 40, '사진 추가가 우측이 아니다: ' + JSON.stringify(home));
@@ -411,19 +411,22 @@ ${siteUi}
     await page.goto('https://archive-folders.test/units.html', { waitUntil: 'load' });
     const units = await page.evaluate(() => {
       const aura = [...document.querySelectorAll('.ar-folder')].find((el) => el.textContent.includes('Aura'));
+      const art = aura?.querySelector('.ar-folder-art');
       return {
         title: document.querySelector('.ar-folder-title')?.textContent.trim() || '',
         labels: [...document.querySelectorAll('.ar-folder-label')].map((el) => el.textContent.trim()),
         back: document.querySelector('.ar-back-folders')?.getAttribute('href') || '',
-        auraPreview: Boolean(aura?.querySelector('.ar-folder-preview, .ar-folder-art')),
+        artLoaded: (art?.naturalWidth ?? 0) > 0,
+        artMask: art && getComputedStyle(art).maskImage,
         href: aura?.getAttribute('href') || ''
       };
     });
-    assert.equal(units.title, '유닛별');
+    assert.equal(units.title, '디멘션');
     assert.deepEqual(units.labels, ['Aura']);
     assert.equal(units.back, '/archive');
     assert.equal(units.href, '/archive?folder=s&members=윤서연&members=정혜린');
-    assert.equal(units.auraPreview, false, '유닛 이미지가 없는데 미리보기가 있다');
+    assert.equal(units.artLoaded, true, '유닛 폴더 이미지를 불러오지 못했다');
+    assert.equal(units.artMask, 'none', '유닛 폴더 이미지에 별도 폴더 모양이 씌워져 있다');
     await page.screenshot({ path: path.join(artifactDir, 'archive-units-index.png'), fullPage: true });
 
     await page.goto('https://archive-folders.test/member.html', { waitUntil: 'load' });

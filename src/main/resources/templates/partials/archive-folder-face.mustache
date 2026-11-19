@@ -1,6 +1,6 @@
 <span class="ar-folder-icon" aria-hidden="true">
     {{#hasFolderArt}}
-    <img class="ar-folder-art" src="{{folderArt}}" alt="">
+    <img class="ar-folder-art{{#hasUnitFolderArt}} is-unit-art{{/hasUnitFolderArt}}" src="{{folderArt}}" alt="" decoding="async">
     {{/hasFolderArt}}
     {{^hasFolderArt}}
     <span class="ar-folder-shape"></span>
