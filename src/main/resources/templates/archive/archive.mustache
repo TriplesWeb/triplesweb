@@ -68,6 +68,7 @@
             </a>
             <div class="ar-body">
                 <h3>{{title}}</h3>
+                {{#hasSource}}<div class="ar-source-badge" data-source="{{sourceValue}}">{{sourceLabel}}</div>{{/hasSource}}
                 <div class="ar-meta" style="--member-count: {{memberCount}}">
                     {{>partials/archive-member-badges}}
                     {{#hasRegisteredOn}}<time class="ar-card-date" datetime="{{registeredOn}}">{{registeredOnDisplay}}</time>{{/hasRegisteredOn}}
