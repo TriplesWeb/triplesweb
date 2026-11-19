@@ -275,7 +275,7 @@ run_deploy() {
   switch_proxy "$active" "$next"
 }
 
-(
-  flock -w 900 9 || fail "Another production deployment holds the lock"
-  run_deploy
-) 9>"$LOCK"
+# Keep flock and EXIT cleanup trap in the same shell (no subshell state loss).
+exec 9>"$LOCK"
+flock -w 900 9 || fail "Another production deployment holds the lock"
+run_deploy
