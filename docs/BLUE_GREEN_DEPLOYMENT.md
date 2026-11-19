@@ -111,4 +111,4 @@ bash scripts/tests/bluegreen-static.test.sh
 | `BG_DRAIN_SECONDS` | 30 | 트래픽 전환 후 이전 앱 종료까지의 대기 |
 | `BG_ALLOW_SCHEMA_CHANGE` | false | **검토된** Flyway 변경만 예외적으로 허용 |
 
-배포 파이프라인에서 `BG_ALLOW_SCHEMA_CHANGE`는 GitHub Actions **Variables**로 연결되며 다른 조정값은 운영 Pi의 쉘/스크립트 환경에서 지정할 수 있습니다. 실제 성능 개선 폭은 최초/차기 운영 배포 로그에서 준비 시간과 전환 시간을 분리해 측정하세요.
+위 변수는 모두 GitHub 저장소 **Settings → Secrets and variables → Actions → Variables**에서 조절할 수 있습니다. 기본값을 유지할 때는 별도 등록이 필요 없습니다. `BG_ALLOW_SCHEMA_CHANGE`는 안전성 검토를 마친 배포에만 true로 설정하고 완료 후 false로 되돌려야 합니다. 실제 성능 개선 폭은 최초/차기 운영 배포 로그에서 준비 시간과 전환 시간을 분리해 측정하세요.
