@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * 아카이브 사진 게시글의 다중 이미지 URL 목록.
- * {@code file.url}은 표지(첫 장), {@code images_json}이 정본이다.
+ * {@code file.url}은 대표 사진, {@code images_json}이 정본이다.
  */
 public final class ArchiveImages {
 

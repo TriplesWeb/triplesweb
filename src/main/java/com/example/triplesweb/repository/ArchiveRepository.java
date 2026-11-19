@@ -22,18 +22,20 @@ public interface ArchiveRepository extends JpaRepository<Archive, Long>, JpaSpec
     Page<Archive> findByFile_MediaType(MediaType type, Pageable pageable);
     List<Archive> findTop2000ByFile_MediaTypeOrderByIdDesc(MediaType type);
 
-    /** 사진 게시글 중복: 같은 날짜·출처·설명(빈 설명 포함). */
+    /** 사진 게시글 중복: 같은 멤버·날짜·출처·설명(빈 설명 포함). */
     @Query("""
             select (count(a) > 0) from Archive a
             where a.file.mediaType = :type
               and a.registeredOn = :registeredOn
               and a.source = :source
+              and coalesce(a.artistNames, '') = :artistNames
               and coalesce(a.description, '') = :description
             """)
     boolean existsImageDuplicate(@Param("type") MediaType type,
                                  @Param("registeredOn") LocalDate registeredOn,
                                  @Param("source") ArchiveSource source,
-                                 @Param("description") String description);
+                                 @Param("description") String description,
+                                 @Param("artistNames") String artistNames);
 
     @Query("""
             select a from Archive a

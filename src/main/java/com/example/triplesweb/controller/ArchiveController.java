@@ -320,6 +320,21 @@ public class ArchiveController {
         addFilterSummary(model, q, selectedMembers, artists, type, sourceSlug);
         addArchivePage(model, archives, type, q, memberQuery(selectedMembers), dateQuery, browse,
                 folderQuery(folderKey, ""), sourceQuery, sourceSlug, "");
+        // 출처 필터와 페이지를 제외한 같은 조건에서 탭의 표시 여부를 판단한다.
+        Page<Archive> sourceCandidates = browse
+                ? archiveService.pageByType(type, 0, Integer.MAX_VALUE, q, selectedMembers, fromDate, toDate)
+                : archiveService.pageInFolder(type, 0, Integer.MAX_VALUE, q,
+                    memberSuperset ? List.of() : selectedMembers, fromDate, toDate,
+                    null, false, folderKey, memberSuperset ? selectedMembers : List.of(), units);
+        Set<ArchiveSource> availableSources = new LinkedHashSet<>();
+        sourceCandidates.forEach(item -> {
+            if (item.getSource() != null) availableSources.add(item.getSource());
+        });
+        model.addAttribute("sourceTabs", sourceTabs(browse ? "/archive/all" : "/archive",
+                (type == MediaType.VIDEO ? "&type=video" : "") + folderQuery(folderKey, "")
+                        + (q == null || q.isBlank() ? "" : "&q=" + URLEncoder.encode(q.trim(), StandardCharsets.UTF_8))
+                        + memberQuery(selectedMembers) + dateQuery,
+                sourceSlug, availableSources));
         return "archive/archive";
     }
 
@@ -685,8 +700,6 @@ public class ArchiveController {
         model.addAttribute("imageTabHref", joinHref("/archive", filterQuery + pageQuery));
         model.addAttribute("videoTabHref", joinHref("/archive?type=video", filterQuery + pageQuery));
         model.addAttribute("browseQuery", joinHref("", filterQuery));
-        model.addAttribute("sourceTabs", sourceTabs(folderBase, typeQuery + keptFolder
-                + qQuery + (memberQuery == null ? "" : memberQuery) + (dateQuery == null ? "" : dateQuery) + keptChem, sourceSlug));
         List<Map<String, Object>> archivePages = new ArrayList<>();
         int start = Math.max(0, current - 2);
         int end = Math.min(totalPages - 1, start + 4);
@@ -792,11 +805,12 @@ public class ArchiveController {
         return options;
     }
 
-    private static List<Map<String, Object>> sourceTabs(String path, String extraQuery, String sourceSlug) {
+    private static List<Map<String, Object>> sourceTabs(String path, String extraQuery, String sourceSlug, Set<ArchiveSource> availableSources) {
         List<Map<String, Object>> tabs = new ArrayList<>();
         String current = sourceSlug == null ? "" : sourceSlug.trim();
         tabs.add(sourceTab("전체", joinHref(path, extraQuery), current.isBlank()));
         for (ArchiveSource source : ArchiveSource.values()) {
+            if (!availableSources.contains(source)) continue;
             tabs.add(sourceTab(source.getLabel(),
                     joinHref(path, extraQuery + "&source=" + source.getSlug()),
                     current.equalsIgnoreCase(source.getSlug()) || current.equalsIgnoreCase(source.name())));
@@ -1278,6 +1292,7 @@ public class ArchiveController {
                               @RequestParam(value="artistNames", required=false) List<String> artistNames,
                               @RequestParam("registeredOn") LocalDate registeredOn,
                               @RequestParam("source") String source,
+                              @RequestParam(defaultValue = "0") int coverIndex,
                               HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
         String names = artistNames == null ? "" : String.join(",", artistNames);
@@ -1290,7 +1305,7 @@ public class ArchiveController {
         if (uploads.isEmpty()) {
             throw new IllegalArgumentException("사진 파일을 선택해 주세요.");
         }
-        archiveService.uploadImages(uploads, safeTitle, names, date, archiveSource, description);
+        archiveService.uploadImages(uploads, safeTitle, names, date, archiveSource, description, coverIndex);
         return "redirect:" + folderRedirect(MediaType.IMAGE, names);
     }
 
@@ -1320,6 +1335,7 @@ public class ArchiveController {
                                            @RequestParam(value = "source", required = false) String source,
                                            @RequestParam(value = "keepImageUrlsJson", required = false) String keepImageUrlsJson,
                                            @RequestParam(value = "imageOrderJson", required = false) String imageOrderJson,
+                                           @RequestParam(required = false) Integer coverIndex,
                                            HttpServletRequest request,
                                            HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
@@ -1329,7 +1345,8 @@ public class ArchiveController {
                     source == null || source.isBlank() ? null : ArchiveSource.parse(source),
                     description,
                     keepImageUrlsJson,
-                    imageOrderJson);
+                    imageOrderJson,
+                    coverIndex);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
