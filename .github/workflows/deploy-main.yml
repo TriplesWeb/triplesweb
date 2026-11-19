@@ -1,20 +1,12 @@
 name: Deploy to Raspberry Pi (prod)
 
-# 기본: 매일 새벽 4시(KST) 또는 Actions 수동 실행.
-# 예외: main 머지 푸시이면서, 해당 PR 코멘트에 「즉시 배포」가 있으면 바로 운영 반영.
+# 머지 직후가 아니라 매일 새벽 4시(KST)에 운영 반영.
+# 긴급 반영은 Actions에서 workflow_dispatch로 수동 실행.
 on:
   schedule:
     # 04:00 KST = 19:00 UTC (전날)
     - cron: '0 19 * * *'
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
-      - 'qodana.yaml'
-      - '.github/workflows/**'
-      - 'scripts/tests/**'
 
 # Serialize deployments and avoid interrupting an in-flight remote restart.
 concurrency:
@@ -24,68 +16,28 @@ concurrency:
 permissions:
   contents: read
   packages: write
-  pull-requests: read
-  issues: read
 
 env:
   REGISTRY: ghcr.io
-  IMMEDIATE_DEPLOY_PHRASE: '즉시 배포'
 
 jobs:
   resolve-main:
+    # Always deploy the current main tip (schedule / manual).
     runs-on: ubuntu-latest
     outputs:
       sha: ${{ steps.head.outputs.sha }}
-      deploy: ${{ steps.head.outputs.deploy }}
     steps:
-      - name: Resolve deploy target and gate push-to-main
+      - name: Resolve latest main tip
         id: head
         env:
           REPOSITORY: ${{ github.repository }}
-          EVENT_NAME: ${{ github.event_name }}
-          PUSH_SHA: ${{ github.sha }}
-          GH_TOKEN: ${{ github.token }}
-          PHRASE: ${{ env.IMMEDIATE_DEPLOY_PHRASE }}
         run: |
-          set -euo pipefail
           CURRENT_SHA="$(git ls-remote "https://github.com/${REPOSITORY}.git" refs/heads/main | awk '{print $1}')"
-
-          if [[ "$EVENT_NAME" == "schedule" || "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            echo "sha=${CURRENT_SHA}" >> "$GITHUB_OUTPUT"
-            echo "deploy=true" >> "$GITHUB_OUTPUT"
-            echo "Deploy (${EVENT_NAME}): ${CURRENT_SHA}"
-            exit 0
-          fi
-
-          # push to main: only when merged PR has the magic comment
-          echo "sha=${PUSH_SHA}" >> "$GITHUB_OUTPUT"
-          PR_NUMBER="$(gh api \
-            -H "Accept: application/vnd.github+json" \
-            "repos/${REPOSITORY}/commits/${PUSH_SHA}/pulls" \
-            --jq '.[0].number // empty' || true)"
-          if [[ -z "${PR_NUMBER}" ]]; then
-            echo "deploy=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::main push ${PUSH_SHA} has no associated PR; skip prod (wait for 04:00 KST or manual)"
-            exit 0
-          fi
-
-          # PR 본문 + 이슈 코멘트 + 리뷰 코멘트에서 「즉시 배포」 검색
-          BODY="$(gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}" --jq '.body // ""')"
-          ISSUE_COMMENTS="$(gh api --paginate "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" --jq '.[].body // empty' || true)"
-          REVIEW_COMMENTS="$(gh api --paginate "repos/${REPOSITORY}/pulls/${PR_NUMBER}/comments" --jq '.[].body // empty' || true)"
-          ALL="${BODY}"$'\n'"${ISSUE_COMMENTS}"$'\n'"${REVIEW_COMMENTS}"
-
-          if printf '%s' "$ALL" | grep -Fq "$PHRASE"; then
-            echo "deploy=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::PR #${PR_NUMBER} contains「${PHRASE}」→ immediate prod deploy of ${PUSH_SHA}"
-          else
-            echo "deploy=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::PR #${PR_NUMBER} has no「${PHRASE}」comment; skip prod (wait for 04:00 KST or manual)"
-          fi
+          echo "sha=${CURRENT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "Deploy target: ${CURRENT_SHA}"
 
   build-and-deploy:
     needs: resolve-main
-    if: needs.resolve-main.outputs.deploy == 'true'
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout main tip

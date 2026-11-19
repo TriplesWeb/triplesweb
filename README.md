@@ -122,9 +122,8 @@ DB를 서버와 같이 쓰면 **파일도 같이** 보여야 합니다.
 
 ```text
 PR open/push  → deploy-dev  → /opt/stacks/triplesweb-dev (:8091)  즉시
-main 머지     → 운영 재시작 없음 (기본)
-main 머지 + PR 코멘트「즉시 배포」 → deploy-main → 운영 즉시
-매일 04:00 KST / 수동 → deploy-main → /opt/stacks/triplesweb (:8090)
+main 머지     → (운영 재시작 없음)
+매일 04:00 KST → deploy-main → /opt/stacks/triplesweb (:8090)
 ```
 
 ### 1. GitHub Secrets / Variables
@@ -211,7 +210,7 @@ cd /opt/stacks/triplesweb-dev && docker compose pull app && docker compose up -d
 ### 4. 이후 자동 배포
 
 1. **개발:** PR을 열거나 푸시하면 [deploy-dev.yml](.github/workflows/deploy-dev.yml)이 `:8091`에 즉시 반영 (진행 중은 유지, 대기열은 최신 PR만)
-2. **운영:** 기본적으로 머지해도 바로 재시작하지 않음. 매일 **04:00 KST** 또는 Actions 수동. PR에 **`즉시 배포`** 코멘트를 남기고 머지하면 그때만 즉시 반영. 이미 같은 SHA·정상이면 스킵
+2. **운영:** 머지해도 바로 재시작하지 않음. 매일 **04:00 KST**에 [deploy-main.yml](.github/workflows/deploy-main.yml)이 `main` tip 반영. 이미 같은 SHA면 스킵. 긴급 시 Actions에서 **Deploy to Raspberry Pi (prod)** 수동 실행
 
 체크리스트: [docs/DEPLOY_PI.md](docs/DEPLOY_PI.md)
 
