@@ -27,6 +27,8 @@
 - `uploads/chemistry` Git tree SHA를 운영 서버의 `.chemistry-tree`와 비교해 내용이 같으면 rsync를 생략. 파일이 없거나 마커가 없으면 다시 동기화
 - PNG 등의 압축된 정적 이미지는 `rsync -a`로 중복 압축을 방지. 운영 업로드 루트에 삭제 옵션을 쓰지 않음
 - GHCR에 해당 `main` 커밋 SHA 이미지가 이미 있으면, 운영 배포 실패/재시도 상황에서 **Docker 재빌드·재푸시 생략**
+- Pi에도 동일한 불변 SHA 이미지가 남아 있으면 `docker compose pull` 자체를 생략
+- 실행 중인 이미지가 목표 SHA와 같지만 readiness가 실패하면 `--force-recreate app`으로 앱만 재시작해 장애 복구를 시도
 - Docker Compose `up -d --no-deps app`으로 기존 MariaDB 컨테이너를 다시 평가·변경하지 않음. readiness는 2초 주기로 확인
 - Docker CSS 빌드에는 필요한 `scripts/*.cjs`, `setup-css.sh`, `scripts/css`만 복사해 배포 스크립트 수정에 따른 CSS 이미지 캐시 무효화를 방지
 - 캐시 푸시 서버 오류만으로 운영 배포가 실패하지 않도록 GHA 캐시 내보내기에 `ignore-error=true` 적용
