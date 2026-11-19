@@ -58,7 +58,7 @@ ${siteMobile}
   <section class="ar-panel ar-toolbar">
     <form class="ar-filters" id="archiveFilterForm">
       <div class="ar-filter-tools">
-        <label class="ar-sort"><span class="ar-sort-label">정렬</span><span class="ar-sort-control"><select id="archiveSort" aria-label="정렬"><option value="newest">최신순</option><option value="oldest">오래된 순</option><option value="title">제목순</option><option value="first-member">첫멤버순</option><option value="last-member">마지막멤버순</option></select><span class="material-symbols-outlined">arrow_drop_down</span></span></label>
+        <div class="ar-sort"><span class="ar-sort-label" id="archiveSortLabel">정렬</span><span class="ar-sort-control"><select id="archiveSort" aria-labelledby="archiveSortLabel"><option value="newest">최신순</option><option value="oldest">오래된 순</option><option value="first-member" data-member-sort>멤버번호 낮은순</option><option value="last-member" data-member-sort>멤버번호 높은순</option></select><span class="material-symbols-outlined">arrow_drop_down</span></span></div>
         <div class="ar-date-filter" data-date-filter>
           <button type="button" class="ar-date-toggle" data-date-toggle aria-expanded="false"><span>사진 날짜</span></button>
           <div class="ar-date-popover" data-date-popover hidden>
@@ -307,7 +307,7 @@ ${siteMobile}
     assert.ok(toolbar.radius.includes('12px') || toolbar.radius.includes('0.75rem'), '검색창 모서리가 전역 스타일과 다르다: ' + toolbar.radius);
     assert.equal(toolbar.searchAfterMember, true, '검색창이 멤버 선택 오른쪽에 없다');
     assert.equal(toolbar.resetAfterSearch, true, '초기화가 검색창 오른쪽에 없다');
-    assert.deepEqual(toolbar.sortLabels, ['newest', 'oldest', 'title', 'first-member', 'last-member']);
+    assert.deepEqual(toolbar.sortLabels, ['newest', 'oldest', 'first-member', 'last-member']);
     assert.equal(toolbar.toolsCenter, true, '검색 필터가 가운데 있지 않다');
     assert.equal(toolbar.dateInTools, true);
     assert.equal(toolbar.memberInTools, true);

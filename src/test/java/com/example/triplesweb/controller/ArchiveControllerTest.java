@@ -345,7 +345,8 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("data-upload-url=\"/archive/upload/image\"")))
                 .andExpect(content().string(containsString("data-url=\"/uploads/a.jpg\"")))
                 .andExpect(content().string(containsString("data-images=")))
-                .andExpect(content().string(containsString("목록에서 보이는 모습 · 카드/슬라이드")))
+                .andExpect(content().string(not(containsString("목록에서 보이는 모습 · 카드/슬라이드"))))
+                .andExpect(content().string(containsString("사진 편집")))
                 .andExpect(content().string(containsString("id=\"archiveDetail\"")))
                 .andExpect(content().string(not(containsString("더보기"))))
                 .andExpect(content().string(not(containsString("원본 열기"))))
@@ -354,8 +355,10 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString(">초기화</a>")))
                 .andExpect(content().string(containsString("class=\"ar-submit\"")))
                 .andExpect(content().string(not(containsString("ar-search-go"))))
-                .andExpect(content().string(containsString("첫멤버순")))
-                .andExpect(content().string(containsString("마지막멤버순")))
+                .andExpect(content().string(containsString("멤버번호 낮은순")))
+                .andExpect(content().string(containsString("멤버번호 높은순")))
+                .andExpect(content().string(not(containsString("제목순"))))
+                .andExpect(content().string(not(containsString("첫멤버순"))))
                 .andExpect(content().string(containsString("data-member-order=\"0\"")))
                 .andExpect(content().string(containsString("data-stats-toggle")))
                 .andExpect(content().string(containsString("name=\"go\"")))
@@ -376,12 +379,14 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("파일 선택")))
                 .andExpect(content().string(containsString("선택된 파일 없음")))
                 .andExpect(content().string(containsString("multiple")))
-                .andExpect(content().string(containsString("여러 장 선택 가능")))
+                .andExpect(content().string(containsString("드래그로 순서 변경")))
                 .andExpect(content().string(containsString("코스모룸")))
                 .andExpect(content().string(containsString("코스모톡/프롬")))
                 .andExpect(content().string(containsString("공식 SNS")))
+                .andExpect(content().string(containsString("화보/매거진")))
                 .andExpect(content().string(containsString("외부 컨텐츠/방송")))
                 .andExpect(content().string(containsString("value=\"COSMO_ROOM\"")))
+                .andExpect(content().string(containsString("value=\"MAGAZINE\"")))
                 .andExpect(content().string(not(containsString("기타/팬메이드"))))
                 .andExpect(content().string(not(containsString("value=\"FANCAM\""))))
                 .andExpect(content().string(not(containsString("직찍"))))
@@ -437,8 +442,9 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;s1&amp;folder&#x3D;s1");
         org.assertj.core.api.Assertions.assertThat(html).contains("id=\"archive-member-picker\"");
         org.assertj.core.api.Assertions.assertThat(html).contains(">멤버 선택<");
-        org.assertj.core.api.Assertions.assertThat(html).contains("첫멤버순");
-        org.assertj.core.api.Assertions.assertThat(html).contains("마지막멤버순");
+        org.assertj.core.api.Assertions.assertThat(html).contains("멤버번호 낮은순");
+        org.assertj.core.api.Assertions.assertThat(html).contains("멤버번호 높은순");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("제목순");
     }
 
     @Test void emptyFolderShowsPageOneAndMemberTitle() throws Exception {
@@ -564,7 +570,7 @@ class ArchiveControllerTest {
 
         mvc.perform(multipart("/archive/7").file(file).param("description", "새 설명").param("artistNames", "서연").param("registeredOn", "2026-10-01").param("source", "COSMO_ROOM"))
                 .andExpect(status().isOk());
-        verify(archiveService).update(eq(7L), eq(""), anyList(), eq("서연"), isNull(), eq(false), eq(java.time.LocalDate.of(2026, 10, 1)), eq(ArchiveSource.COSMO_ROOM), eq("새 설명"));
+        verify(archiveService).update(eq(7L), eq(""), anyList(), eq("서연"), isNull(), eq(false), eq(java.time.LocalDate.of(2026, 10, 1)), eq(ArchiveSource.COSMO_ROOM), eq("새 설명"), isNull(), isNull());
         verify(aboutAdminAuth).requireAdmin(any(), any());
 
         mvc.perform(delete("/archive/7")).andExpect(status().isOk());
@@ -781,6 +787,17 @@ class ArchiveControllerTest {
         verify(archiveService, times(1)).uploadImages(any(), eq(""), eq("서연"),
                 eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), eq("묶음"));
         verify(aboutAdminAuth).requireAdmin(any(), any());
+    }
+
+    @Test void imageUploadRejectsDuplicatePost() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
+        org.mockito.Mockito.doThrow(new IllegalArgumentException("같은 날짜·출처·설명의 게시글이 이미 있습니다."))
+                .when(archiveService).uploadImages(any(), eq(""), eq("서연"),
+                        eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), eq("현장 컷"));
+        mvc.perform(multipart("/archive/upload/image").file(file)
+                        .param("description", "현장 컷").param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("같은 날짜·출처·설명")));
     }
 
     private static Archive photo() {

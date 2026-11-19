@@ -94,18 +94,27 @@ ${site}${css}${siteUi}
   <button type="button" class="ar-dialog-backdrop" data-ar-close aria-label="닫기"></button>
   <div class="ar-dialog-panel ar-detail-panel" role="dialog">
     <div class="ar-detail-photo" id="archiveDetailPhoto">
-      <button type="button" class="ar-detail-nav ar-detail-prev" id="archiveDetailPrev" aria-label="이전 사진" hidden><span aria-hidden="true">‹</span></button>
+      <button type="button" class="ar-detail-nav ar-detail-prev" id="archiveDetailPrev" aria-label="이전 사진" hidden><svg class="ar-detail-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <img id="archiveDetailImage" alt="">
-      <button type="button" class="ar-detail-nav ar-detail-next" id="archiveDetailNext" aria-label="다음 사진" hidden><span aria-hidden="true">›</span></button>
+      <button type="button" class="ar-detail-nav ar-detail-next" id="archiveDetailNext" aria-label="다음 사진" hidden><svg class="ar-detail-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5 16 12l-6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="ar-detail-dots" id="archiveDetailDots" hidden></div>
       <p class="ar-detail-count" id="archiveDetailCount" hidden></p>
     </div>
     <div class="ar-detail-side">
-      <div class="ar-dialog-head"><h2 id="archiveDetailTitle">사진</h2><button type="button" class="ar-close" data-ar-close>&times;</button></div>
+      <button type="button" class="ar-close ar-detail-close" data-ar-close>&times;</button>
       <div class="ar-detail-body">
-        <p class="ar-detail-date" id="archiveDetailDate" hidden></p>
-        <div class="ar-detail-line"><div class="ar-source-badge" id="archiveDetailSource" hidden></div></div>
-        <section class="ar-detail-cast"><div class="ar-detail-members" id="archiveDetailMembers"></div></section>
+        <p class="ar-detail-desc" id="archiveDetailDescription" hidden></p>
+        <div class="ar-detail-meta" id="archiveDetailMeta" hidden>
+          <p class="ar-detail-date" id="archiveDetailDate" hidden>
+            <span class="ar-detail-kicker" data-detail-date-label></span>
+            <time data-detail-date-value></time>
+          </p>
+          <div class="ar-source-badge" id="archiveDetailSource" hidden></div>
+        </div>
+        <section class="ar-detail-cast" aria-label="출연 멤버" hidden>
+          <p class="ar-detail-kicker">출연 멤버</p>
+          <div class="ar-detail-members" id="archiveDetailMembers"></div>
+        </section>
       </div>
     </div>
   </div>
@@ -244,10 +253,12 @@ ${site}${css}${siteUi}
       const badge = document.getElementById('archiveDetailSource');
       const members = document.getElementById('archiveDetailMembers');
       const date = document.getElementById('archiveDetailDate');
+      const dateValue = date.querySelector('[data-detail-date-value]');
+      const meta = document.getElementById('archiveDetailMeta');
       const cast = document.querySelector('#archiveDetail .ar-detail-cast');
       const badgeBox = badge.getBoundingClientRect();
       const membersBox = members.getBoundingClientRect();
-      const dateStyle = getComputedStyle(date);
+      const dateStyle = getComputedStyle(dateValue);
       return {
         hidden: badge.hidden,
         text: badge.textContent.trim(),
@@ -256,10 +267,13 @@ ${site}${css}${siteUi}
         radius: getComputedStyle(badge).borderRadius,
         dateSize: parseFloat(dateStyle.fontSize),
         dateWeight: Number(dateStyle.fontWeight),
-        dateBorder: getComputedStyle(date).borderTopWidth,
-        sourceBorder: getComputedStyle(badge.parentElement).borderTopWidth,
-        castBorder: getComputedStyle(cast).borderTopWidth,
-        title: document.getElementById('archiveDetailTitle').textContent.trim(),
+        dateLabel: date.querySelector('[data-detail-date-label]')?.textContent.trim() || '',
+        dateText: dateValue?.textContent.trim() || '',
+        metaHidden: meta.hidden,
+        castHidden: cast.hidden,
+        hasTitle: Boolean(document.getElementById('archiveDetailTitle')),
+        description: document.getElementById('archiveDetailDescription').textContent.trim(),
+        descriptionHidden: document.getElementById('archiveDetailDescription').hidden,
         count: document.getElementById('archiveDetailCount').textContent.trim(),
         countHidden: document.getElementById('archiveDetailCount').hidden,
         prevHidden: document.getElementById('archiveDetailPrev').hidden,
@@ -273,12 +287,15 @@ ${site}${css}${siteUi}
     assert.equal(detail.aboveMembers, true, '출처 배지가 멤버 위에 없다');
     assert.ok(detail.dateSize >= 15 && detail.dateSize <= 18, '사진 날짜 글자가 커지지 않았다: ' + detail.dateSize);
     assert.ok(detail.dateWeight >= 600, '사진 날짜가 굵지 않다: ' + detail.dateWeight);
-    assert.equal(detail.dateBorder, '0px', '첫 항목 위에 구분선이 있다');
-    assert.equal(detail.sourceBorder, '1px', '출처 위에 구분선이 없다');
-    assert.equal(detail.castBorder, '1px', '멤버 위에 구분선이 없다');
+    assert.equal(detail.dateLabel, '사진 날짜');
+    assert.equal(detail.dateText, '2026-11-16');
+    assert.equal(detail.metaHidden, false);
+    assert.equal(detail.castHidden, false);
     assert.ok(detail.radius.includes('999') || parseFloat(detail.radius) >= 12, '출처가 버튼처럼 보이지 않는다: ' + detail.radius);
     assert.equal(await page.locator('#archiveDetail .ar-detail-chem').count(), 0, '케미명이 없는 멤버에도 케미 라벨이 있다');
-    assert.equal(detail.title, '지연');
+    assert.equal(detail.hasTitle, false, '불필요한 사진 제목이 남아 있다');
+    assert.equal(detail.description, '지연');
+    assert.equal(detail.descriptionHidden, false);
     assert.equal(detail.count, '');
     assert.equal(detail.countHidden, true);
     assert.equal(detail.prevHidden, true);
@@ -293,7 +310,7 @@ ${site}${css}${siteUi}
     await page.evaluate(() => { document.getElementById('archiveDetail').hidden = true; });
     await page.click('#album-card [data-archive-open]');
     const album = await page.evaluate(() => ({
-      title: document.getElementById('archiveDetailTitle').textContent.trim(),
+      description: document.getElementById('archiveDetailDescription').textContent.trim(),
       count: document.getElementById('archiveDetailCount').textContent.trim(),
       countHidden: document.getElementById('archiveDetailCount').hidden,
       prevHidden: document.getElementById('archiveDetailPrev').hidden,
@@ -301,7 +318,7 @@ ${site}${css}${siteUi}
       dots: document.querySelectorAll('#archiveDetailDots .ar-detail-dot').length,
       src: document.getElementById('archiveDetailImage').getAttribute('src') || ''
     }));
-    assert.equal(album.title, '묶음');
+    assert.equal(album.description, '묶음');
     assert.equal(album.count, '1 / 3');
     assert.equal(album.countHidden, false);
     assert.equal(album.prevHidden, false);
@@ -310,11 +327,11 @@ ${site}${css}${siteUi}
     assert.equal(album.src, '/one.svg');
     await page.click('#archiveDetailNext');
     const slid = await page.evaluate(() => ({
-      title: document.getElementById('archiveDetailTitle').textContent.trim(),
+      description: document.getElementById('archiveDetailDescription').textContent.trim(),
       count: document.getElementById('archiveDetailCount').textContent.trim(),
       src: document.getElementById('archiveDetailImage').getAttribute('src') || ''
     }));
-    assert.equal(slid.title, '묶음');
+    assert.equal(slid.description, '묶음');
     assert.equal(slid.count, '2 / 3');
     assert.equal(slid.src, '/two.svg');
     await page.keyboard.press('ArrowLeft');
@@ -397,8 +414,7 @@ ${site}${css}${siteUi}
     assert.ok(form.edit.calWidth < form.edit.panelWidth * 0.55, '날짜 칸이 폼 너비에 붙어 있다: ' + JSON.stringify(form.edit));
     assert.equal(form.edit.openAfterDay, true, '달력 버튼이 날짜 뒤에 없다');
     assert.equal(form.edit.openInside, true, '달력 버튼이 날짜 칸 밖에 있다');
-    assert.ok(form.selectNarrower, '출처 셀렉트가 여전히 가득 차 있다');
-    assert.ok(form.selectGap >= 24, '출처 셀렉트 오른쪽 여백이 없다: ' + form.selectGap);
+    assert.ok(form.selectGap >= 0 && form.selectGap < 24, '출처 셀렉트 오른쪽 정렬이 이상하다: ' + form.selectGap);
     assert.ok(form.selectHeight >= 34 && form.selectHeight <= 40, '출처 칸 높이가 맞지 않다: ' + form.selectHeight);
     await page.evaluate(() => { document.getElementById('uploadModal').hidden = false; document.getElementById('editModal').hidden = true; });
     const uploadDate = await page.evaluate(() => {

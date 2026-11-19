@@ -99,6 +99,18 @@ public final class ChemistryImages {
             ObjectMapper mapper,
             UploadFn uploadFn
     ) throws IOException {
+        return merge(previous, keepImageUrlsJson, uploads, clearAll, mapper, uploadFn, MAX_IMAGES);
+    }
+
+    public static Result merge(
+            List<String> previous,
+            String keepImageUrlsJson,
+            List<MultipartFile> uploads,
+            boolean clearAll,
+            ObjectMapper mapper,
+            UploadFn uploadFn,
+            int maxImages
+    ) throws IOException {
         List<String> prev = previous != null ? previous : List.of();
         if (clearAll && uploads.isEmpty()) {
             return new Result(List.of(), prev);
@@ -121,8 +133,9 @@ public final class ChemistryImages {
         for (MultipartFile file : uploads) {
             next.add(uploadFn.save(file));
         }
-        if (next.size() > MAX_IMAGES) {
-            throw new IllegalArgumentException("사진은 최대 " + MAX_IMAGES + "장까지 등록할 수 있습니다.");
+        int limit = maxImages > 0 ? maxImages : MAX_IMAGES;
+        if (next.size() > limit) {
+            throw new IllegalArgumentException("사진은 최대 " + limit + "장까지 등록할 수 있습니다.");
         }
 
         LinkedHashSet<String> nextSet = new LinkedHashSet<>(next);
