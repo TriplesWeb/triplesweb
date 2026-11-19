@@ -155,7 +155,20 @@
         return Array.from((picker || document).querySelectorAll('.mpp-item.is-active'));
     }
 
-    function showPreview(box, url) {
+    function syncImageEditTools(box) {
+        const tools = box?.querySelector('[data-image-edit-tools]');
+        if (!tools) return;
+        const editable = kind === 'image'
+            && !box.hidden
+            && !!box._previewSource
+            && isImageFile(box._previewSource);
+        tools.hidden = !editable;
+        tools.querySelectorAll('button').forEach(button => {
+            if (!editable) button.disabled = false;
+        });
+    }
+
+    function showPreview(box, url, options = {}) {
         if (!box) return;
         const full = box.querySelector(".ar-preview-full");
         const card = box.querySelector(".ar-preview-card");
@@ -163,10 +176,16 @@
         if (error) { error.hidden = true; error.textContent = ''; }
         delete box.dataset.invalid;
         delete box.dataset.pending;
+        box._previewSource = options.sourceFile || null;
+        box._previewIndex = Number.isInteger(options.index) ? options.index : 0;
+        const form = box.closest('form');
+        const fileInput = form?.querySelector('input[name="file"]');
+        if (fileInput) fileInput._archivePreviewIndex = box._previewSource ? box._previewIndex : 0;
         if (!url || !full || !card) {
             box.hidden = true;
             full && (full.innerHTML = "");
             card && (card.innerHTML = "");
+            syncImageEditTools(box);
             return;
         }
         full.replaceChildren(mediaNode(url, false));
@@ -216,8 +235,10 @@
         }
         card.replaceChildren(article);
         box.hidden = false;
-        syncPreview(box.closest('form'));
-        syncThumbnail(box.closest('form'));
+        syncImageEditTools(box);
+        syncPreview(form);
+        syncThumbnail(form);
+        if (fileInput) syncFileName(fileInput);
     }
 
     function rememberUrl(file) {
@@ -254,13 +275,30 @@
         return window.MemberPortraitPicker ? MemberPortraitPicker.selectedValues(root) : [];
     }
 
-    function setInputFiles(input, files) {
+    function setInputFiles(input, files, { silent = false, previewIndex = 0 } = {}) {
         if (!input) return;
         const transfer = new DataTransfer();
         files.forEach(file => transfer.items.add(file));
         input.files = transfer.files;
+        input._archivePreviewIndex = previewIndex;
+        if (silent) {
+            input._archiveLastFile = files[0] || null;
+            input._archiveLastFiles = files.slice();
+            syncFileName(input);
+            return;
+        }
+        input._archiveKeepPreviewIndex = true;
         syncFileName(input);
         input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function resolvePreviewIndex(input, files) {
+        const keep = !!input._archiveKeepPreviewIndex;
+        input._archiveKeepPreviewIndex = false;
+        if (!files.length) return 0;
+        if (!keep) return 0;
+        const index = Number.isInteger(input._archivePreviewIndex) ? input._archivePreviewIndex : 0;
+        return Math.min(Math.max(index, 0), files.length - 1);
     }
 
     function removeFileAt(input, index) {
@@ -268,7 +306,151 @@
         const removed = files[index];
         if (!removed) return;
         releaseUrl(removed);
-        setInputFiles(input, files.filter((_, i) => i !== index));
+        const next = files.filter((_, i) => i !== index);
+        const previewIndex = Math.min(index, Math.max(0, next.length - 1));
+        setInputFiles(input, next, { previewIndex });
+    }
+
+    function outputTypeForImage(file) {
+        const type = (file?.type || '').toLowerCase();
+        if (type === 'image/jpeg' || type === 'image/jpg' || type === 'image/pjpeg') return 'image/jpeg';
+        if (type === 'image/png') return 'image/png';
+        if (type === 'image/webp') return 'image/webp';
+        const ext = (file?.name || '').split('.').pop()?.toLowerCase();
+        if (ext === 'jpg' || ext === 'jpeg' || ext === 'jfif') return 'image/jpeg';
+        if (ext === 'png') return 'image/png';
+        if (ext === 'webp') return 'image/webp';
+        return 'image/png';
+    }
+
+    function renameImageFile(name, type) {
+        const base = (name || 'image').replace(/\.[^.]+$/, '') || 'image';
+        return base + '.' + extensionForImageType(type);
+    }
+
+    function loadImageBitmap(file) {
+        if (typeof createImageBitmap === 'function') {
+            return createImageBitmap(file).catch(() => null);
+        }
+        return Promise.resolve(null);
+    }
+
+    function loadHtmlImage(url) {
+        return new Promise((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => resolve(image);
+            image.onerror = () => reject(new Error('image-load-failed'));
+            image.src = url;
+        });
+    }
+
+    async function transformImageFile(file, operation) {
+        const bitmap = await loadImageBitmap(file);
+        let width;
+        let height;
+        let drawSource;
+        let releaseBitmap = false;
+        if (bitmap) {
+            width = bitmap.width;
+            height = bitmap.height;
+            drawSource = bitmap;
+            releaseBitmap = true;
+        } else {
+            const url = rememberUrl(file);
+            const image = await loadHtmlImage(url);
+            width = image.naturalWidth || image.width;
+            height = image.naturalHeight || image.height;
+            drawSource = image;
+        }
+        if (!width || !height) {
+            if (releaseBitmap && drawSource.close) drawSource.close();
+            throw new Error('image-size-invalid');
+        }
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            if (releaseBitmap && drawSource.close) drawSource.close();
+            throw new Error('canvas-unavailable');
+        }
+        if (operation === 'rotate-cw' || operation === 'rotate-ccw') {
+            canvas.width = height;
+            canvas.height = width;
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(operation === 'rotate-cw' ? Math.PI / 2 : -Math.PI / 2);
+            ctx.drawImage(drawSource, -width / 2, -height / 2);
+        } else if (operation === 'flip-h') {
+            canvas.width = width;
+            canvas.height = height;
+            ctx.translate(width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(drawSource, 0, 0);
+        } else if (operation === 'flip-v') {
+            canvas.width = width;
+            canvas.height = height;
+            ctx.translate(0, height);
+            ctx.scale(1, -1);
+            ctx.drawImage(drawSource, 0, 0);
+        } else {
+            if (releaseBitmap && drawSource.close) drawSource.close();
+            throw new Error('unknown-operation');
+        }
+        if (releaseBitmap && drawSource.close) drawSource.close();
+        const type = outputTypeForImage(file);
+        const quality = type === 'image/jpeg' || type === 'image/webp' ? 0.92 : undefined;
+        const blob = await new Promise((resolve, reject) => {
+            canvas.toBlob(result => {
+                if (result) resolve(result);
+                else reject(new Error('blob-failed'));
+            }, type, quality);
+        });
+        return new File([blob], renameImageFile(file.name, type), {
+            type,
+            lastModified: Date.now()
+        });
+    }
+
+    async function applyImageEdit(form, operation) {
+        if (kind !== 'image' || !form) return;
+        const input = form.querySelector('input[name="file"]');
+        const preview = form.querySelector('.ar-preview');
+        if (!input || !preview || preview.hidden) return;
+        const files = Array.from(input.files || []);
+        const index = Number.isInteger(preview._previewIndex) ? preview._previewIndex : 0;
+        const source = files[index];
+        if (!source || !isImageFile(source)) {
+            alert('편집할 사진을 먼저 선택해 주세요.');
+            return;
+        }
+        const tools = preview.querySelector('[data-image-edit-tools]');
+        const buttons = tools ? Array.from(tools.querySelectorAll('button')) : [];
+        buttons.forEach(button => { button.disabled = true; });
+        preview.dataset.pending = 'true';
+        try {
+            const edited = await transformImageFile(source, operation);
+            releaseUrl(source);
+            const next = files.slice();
+            next[index] = edited;
+            setInputFiles(input, next, { silent: true, previewIndex: index });
+            showPreview(preview, rememberUrl(edited), { sourceFile: edited, index });
+        } catch (_) {
+            delete preview.dataset.pending;
+            alert('사진을 편집하지 못했습니다. 다른 이미지로 다시 시도해 주세요.');
+            syncImageEditTools(preview);
+        } finally {
+            buttons.forEach(button => { button.disabled = false; });
+        }
+    }
+
+    function bindImageEditTools(form) {
+        const tools = form?.querySelector('[data-image-edit-tools]');
+        if (!tools || tools.dataset.bound === 'true') return;
+        tools.dataset.bound = 'true';
+        tools.addEventListener('click', event => {
+            const button = event.target.closest('[data-image-edit]');
+            if (!button || !tools.contains(button)) return;
+            event.preventDefault();
+            applyImageEdit(form, button.dataset.imageEdit);
+        });
     }
 
     function syncFileName(input) {
@@ -277,6 +459,7 @@
         const files = Array.from(input.files || []);
         const form = input.closest('form');
         const preview = form?.querySelector('.ar-preview');
+        const activeIndex = Number.isInteger(input._archivePreviewIndex) ? input._archivePreviewIndex : 0;
         label.classList.toggle('has-files', files.length > 0);
         label.classList.toggle('has-thumbs', files.some(isImageFile));
         if (!files.length) {
@@ -288,7 +471,7 @@
         files.forEach((file, index) => {
             if (isImageFile(file)) {
                 const tile = document.createElement('div');
-                tile.className = 'ar-file-tile';
+                tile.className = 'ar-file-tile' + (index === activeIndex ? ' is-active' : '');
                 tile.title = file.name;
                 const thumb = document.createElement('button');
                 thumb.type = 'button';
@@ -302,7 +485,9 @@
                 thumb.addEventListener('click', event => {
                     event.preventDefault();
                     event.stopPropagation();
-                    if (preview && input.name === 'file') showPreview(preview, rememberUrl(file));
+                    if (preview && input.name === 'file') {
+                        showPreview(preview, rememberUrl(file), { sourceFile: file, index });
+                    }
                 });
                 const remove = document.createElement('button');
                 remove.type = 'button';
@@ -628,6 +813,7 @@
     bindPicker(uploadDialog);
     bindThumbnail(uploadForm);
     bindFileNames(uploadForm);
+    bindImageEditTools(uploadForm);
 
     function defaultUploadArtists() {
         const fromPage = document.querySelector("[data-archive-kind]")?.dataset.defaultArtists;
@@ -659,6 +845,7 @@
             uploadFile.value = "";
             uploadFile._archiveLastFile = null;
             uploadFile._archiveLastFiles = null;
+            uploadFile._archivePreviewIndex = 0;
             syncFileName(uploadFile);
         }
         resetThumbnail(uploadForm);
@@ -684,6 +871,7 @@
             (uploadFile._archiveLastFiles || []).forEach(releaseUrl);
             uploadFile._archiveLastFile = null;
             uploadFile._archiveLastFiles = null;
+            uploadFile._archivePreviewIndex = 0;
         }
         showPreview(uploadPreview, "");
         window.bindArchiveDateFields?.(uploadForm);
@@ -712,8 +900,10 @@
             showPreview(uploadPreview, "");
             return;
         }
-        showPreview(uploadPreview, rememberUrl(files[0]));
-        files.slice(1).forEach(rememberUrl);
+        const index = resolvePreviewIndex(uploadFile, files);
+        uploadFile._archivePreviewIndex = index;
+        showPreview(uploadPreview, rememberUrl(files[index]), { sourceFile: files[index], index });
+        files.forEach((file, i) => { if (i !== index) rememberUrl(file); });
         syncFileName(uploadFile);
     });
 
@@ -784,6 +974,7 @@
     bindPicker(editDialog);
     bindThumbnail(editForm);
     bindFileNames(editForm);
+    bindImageEditTools(editForm);
 
     function activeImageFileInput() {
         if (kind !== "image") return null;
@@ -827,6 +1018,7 @@
             (editFile._archiveLastFiles || []).forEach(releaseUrl);
             editFile._archiveLastFile = null;
             editFile._archiveLastFiles = null;
+            editFile._archivePreviewIndex = 0;
         }
         showPreview(editPreview, button.dataset.url || "");
         window.bindArchiveDateFields?.(editForm);
@@ -855,8 +1047,10 @@
             showPreview(editPreview, editForm.dataset.originalUrl || '');
             return;
         }
-        showPreview(editPreview, rememberUrl(files[0]));
-        files.slice(1).forEach(rememberUrl);
+        const index = resolvePreviewIndex(editFile, files);
+        editFile._archivePreviewIndex = index;
+        showPreview(editPreview, rememberUrl(files[index]), { sourceFile: files[index], index });
+        files.forEach((file, i) => { if (i !== index) rememberUrl(file); });
         syncFileName(editFile);
     });
 
