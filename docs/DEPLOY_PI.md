@@ -6,7 +6,7 @@
 
 | 스택 | 경로 | 포트 | 반영 시점 |
 |------|------|------|-----------|
-| **운영** | `/opt/stacks/triplesweb` | 8090 | 매일 04:00 KST (`deploy-main.yml`) 또는 수동 |
+| **운영** | `/opt/stacks/triplesweb` | 8090 | 매일 04:00 KST / 수동 / PR 코멘트 `즉시 배포` 후 머지 |
 | **개발** | `/opt/stacks/triplesweb-dev` | 8091 | PR open/동기화 시 즉시 (`deploy-dev.yml`) |
 
 - 개발 앱은 **운영 MariaDB·uploads·data를 공유**한다 (앱 컨테이너만 분리).
@@ -31,7 +31,7 @@
 8. [ ] 개발: `scripts/setup-pi-dev.sh` 또는 `docker-compose.dev.yml` 복사 후 `.env` (공유 네트워크·경로)
 9. [ ] GHCR: 패키지를 Public으로 두거나 Secret `GHCR_TOKEN`(PAT `read:packages`)
 10. [ ] PR 푸시 → Actions **Deploy PR to Pi (dev)** 성공, `:8091` 확인
-11. [ ] 머지 후 운영은 즉시 안 바뀜 → 새벽 4시 또는 수동 **Deploy to Raspberry Pi (prod)**
+11. [ ] 머지 후 운영은 기본 즉시 안 바뀜 → 새벽 4시·수동, 또는 PR에 `즉시 배포` 코멘트 후 머지
 12. [ ] Ruleset **`main-ci`**: Require PR + status check **`required`**
 
 ## 개발 스택 최초 설정 (Pi에서)
