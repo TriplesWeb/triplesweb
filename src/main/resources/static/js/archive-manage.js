@@ -270,11 +270,19 @@
                 if (box._previewSource === watched) syncImageEditTools(box);
             });
         }
-        if (!url || !full || !card) {
+        if (!url) {
             box.hidden = true;
             full && (full.innerHTML = "");
             card && (card.innerHTML = "");
             syncImageEditTools(box);
+            return;
+        }
+        if (!full || !card) {
+            box.hidden = false;
+            syncImageEditTools(box);
+            syncPreview(form);
+            syncThumbnail(form);
+            if (fileInput) syncFileName(fileInput);
             return;
         }
         full.replaceChildren(mediaNode(url, false));

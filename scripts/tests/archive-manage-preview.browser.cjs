@@ -16,7 +16,21 @@ const jiyeonLogo = '/uploads/images/' + encodeURIComponent('상징로고') + '/S
 function pageHtml(kind) {
   const isVideo = kind === 'video';
   const noun = isVideo ? '영상' : '사진';
-  const previewLabel = isVideo ? '목록에서 보이는 모습' : '목록에서 보이는 모습 · 카드/슬라이드';
+  const previewLabel = '목록에서 보이는 모습';
+  const imagePreviewShell = `<div class="ar-preview" id="__ID__" hidden>
+        <p class="ar-preview-info" data-preview-file></p>
+        <div class="ar-preview-tools" data-image-edit-tools hidden>
+          <span class="ar-preview-tools-label">사진 편집</span>
+          <button type="button" class="ar-edit-tool" data-image-edit="rotate-cw">cw</button>
+        </div>
+        <p class="ar-preview-error" data-preview-error hidden></p>
+      </div>`;
+  const videoPreviewShell = (id, heading) => `<div class="ar-preview" id="${id}" hidden>
+        <p class="ar-preview-info" data-preview-file></p>
+        <div><p>${heading}</p><div class="ar-preview-full"></div></div>
+        <div><p>${previewLabel}</p><div class="ar-preview-card"></div></div>
+        <p class="ar-preview-error" data-preview-error hidden></p>
+      </div>`;
   const titleField = isVideo
     ? '<label class="ar-field">제목<input type="text" name="title"></label>'
     : '<label class="ar-field">설명<textarea name="description" rows="3"></textarea></label>';
@@ -64,12 +78,7 @@ ${site}${css}${siteUi}
         <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
       </span>
       ${isVideo ? '<input type="file" name="thumbnail" accept="image/*"><div class="ar-thumbnail-preview" data-thumbnail-preview hidden><img alt=""><p data-thumbnail-info></p></div>' : ''}
-      <div class="ar-preview" id="uploadPreview" hidden>
-        <p class="ar-preview-info" data-preview-file></p>
-        <div><p>원본</p><div class="ar-preview-full"></div></div>
-        <div><p>${previewLabel}</p><div class="ar-preview-card"></div></div>
-        <p class="ar-preview-error" data-preview-error hidden></p>
-      </div>
+      ${isVideo ? videoPreviewShell('uploadPreview', '원본') : imagePreviewShell.replace('__ID__', 'uploadPreview')}
     </form>
   </div>
 </div>
@@ -93,12 +102,7 @@ ${site}${css}${siteUi}
         <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
       </span>
       ${isVideo ? '<input type="file" name="thumbnail" accept="image/*"><input type="hidden" name="clearThumbnail" value="false"><div class="ar-thumbnail-preview" data-thumbnail-preview hidden><img alt=""><p data-thumbnail-info></p></div>' : ''}
-      <div class="ar-preview" id="editPreview" hidden>
-        <p class="ar-preview-info" data-preview-file></p>
-        <div><p>현재 ${noun}</p><div class="ar-preview-full"></div></div>
-        <div><p>${previewLabel}</p><div class="ar-preview-card"></div></div>
-        <p class="ar-preview-error" data-preview-error hidden></p>
-      </div>
+      ${isVideo ? videoPreviewShell('editPreview', '현재 ' + noun) : imagePreviewShell.replace('__ID__', 'editPreview')}
     </form>
   </div>
 </div>
@@ -263,13 +267,15 @@ async function withPage(html, run) {
         name: input?.files?.[0]?.name || '',
         type: input?.files?.[0]?.type || '',
         previewHidden: preview?.hidden ?? true,
-        fullImage: Boolean(preview?.querySelector('.ar-preview-full img'))
+        toolsVisible: preview ? !preview.querySelector('[data-image-edit-tools]')?.hidden : false,
+        tileCount: document.querySelectorAll('#archiveUploadForm .ar-file-tile').length
       };
     });
     assert.equal(pasted.type, 'image/png');
     assert.match(pasted.name, /\.(png|jpe?g|webp|gif|bmp)$/i);
     assert.equal(pasted.previewHidden, false, '붙여넣은 사진 미리보기가 열리지 않는다');
-    assert.equal(pasted.fullImage, true, '붙여넣은 사진 원본 미리보기가 없다');
+    assert.equal(pasted.toolsVisible, true, '붙여넣은 사진 편집 툴이 없다');
+    assert.equal(pasted.tileCount, 1, '붙여넣은 사진 타일이 없다');
 
     const multi = await page.evaluate(() => {
       const png = Uint8Array.from(atob(
