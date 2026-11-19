@@ -79,6 +79,10 @@ EOF
 
 check_memory() {
   local available_kb
+  # Compose accepts mem_limit even when the host kernel cannot enforce it.
+  # Refuse staging rather than risk the host OOM killer taking down production.
+  [[ "$(docker info --format '{{.MemoryLimit}}')" == true ]] ||
+    fail "Docker memory limits unsupported. Enable the host memory cgroup before Blue-Green deployment. Active site remains online."
   available_kb="$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)"
   [[ "${available_kb:-0}" =~ ^[0-9]+$ ]] || fail "Cannot read MemAvailable"
   if (( available_kb < BG_MIN_AVAILABLE_MB * 1024 )); then
@@ -211,7 +215,9 @@ bootstrap_proxy() {
   if ! "${COMPOSE[@]}" up -d --no-deps proxy || ! wait_proxy_slot blue; then
     log "First cutover failed: stopping proxy and restoring legacy app"
     "${COMPOSE[@]}" stop proxy >/dev/null 2>&1 || true
-    "${BASE_COMPOSE[@]}" up -d --no-deps app || true
+    # IMAGE in this process points to the candidate and overrides .env. Start
+    # the exact original container; Compose up could recreate it with new code.
+    docker start "$legacy_cid" || log "CRITICAL: original legacy container could not be restarted"
     fail "Initial Nginx cutover failed; legacy restart attempted"
   fi
   # Proxy is now serving blue; never auto-stop it if metadata write fails.
@@ -279,9 +285,12 @@ run_deploy() {
 
   active="$(live_slot)"
   [[ "$active" == blue || "$active" == green ]] || fail "Invalid active Nginx slot"
+  # A failed reload/rollback can leave disk metadata pointing at the old slot
+  # while live workers still route to the candidate. Never stop either slot
+  # until the actual serving upstream agrees with the on-disk configuration.
+  proxy_points_to "$active" || fail "Live proxy disagrees with active config or is unhealthy; both slots preserved for manual recovery"
   # active.conf is authoritative if a previous run was interrupted mid-promotion.
   if [[ "$(cat "$STATE_FILE" 2>/dev/null || true)" != "$active" ]]; then
-    proxy_points_to "$active" || fail "Active Nginx slot is not healthy; manual recovery needed"
     printf '%s\n' "$active" > "$STATE_FILE"
   fi
   current_cid="$(container_of "app_$active")"

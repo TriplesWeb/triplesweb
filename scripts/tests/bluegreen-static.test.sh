@@ -3,6 +3,7 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
 bash -n scripts/deploy-pi-bluegreen.sh
+python3 scripts/tests/bluegreen-behavior.test.py
 # Verify that the deployment never stops a live slot before readiness checks.
 grep -Fq 'wait_candidate "$slot"' scripts/deploy-pi-bluegreen.sh
 grep -Fq 'switch_proxy "$active" "$next"' scripts/deploy-pi-bluegreen.sh
