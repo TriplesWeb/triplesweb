@@ -87,6 +87,28 @@ run_deploy
         self.assertIn("switch:blue:green", calls)
         self.assertNotIn("stage:blue", calls)
 
+    def test_warmup_requires_complete_home_page_response(self):
+        for status, curl_exit, expected_ok in ((200, 0, True), (302, 0, False), (200, 28, False)):
+            with self.subTest(status=status, curl_exit=curl_exit):
+                result, calls = self.run_script(r'''
+docker() {
+  if [[ "$1" == inspect ]]; then echo 172.18.0.3; fi
+}
+curl() {
+  echo "${@: -1}" >> calls
+  case "${@: -1}" in
+    */actuator/health/readiness) return 0 ;;
+    */) echo %d; return %d ;;
+    *) return 1 ;;
+  esac
+}
+sleep() { :; }
+BG_READY_TIMEOUT_SECONDS=2
+wait_candidate blue
+''' % (status, curl_exit))
+                self.assertEqual(result.returncode == 0, expected_ok, result.stderr)
+                self.assertIn("http://172.18.0.3:8080/\n", calls)
+
     def test_unsupported_memory_cgroup_aborts_before_container_changes(self):
         result, calls = self.run_script('''
 docker() { echo "docker:$*" >> calls; echo false; }

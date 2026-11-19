@@ -8,7 +8,7 @@
 - DB: 기존 MariaDB 컨테이너 및 볼륨 유지
 - 평상시: 운영 앱 슬롯 하나와 Nginx 프록시만 실행
 - 전환 중: Blue/Green 앱 2개를 잠시 함께 실행하고, 준비되지 않으면 전환하지 않음
-- 신규 앱이 /actuator/health/readiness와 /main에 정상 응답한 후 `nginx -t` + `nginx -s reload` + 프록시 응답 검사
+- 신규 앱의 readiness와 홈 화면(`/`) HTTP 200을 확인한 후 `nginx -t` + `nginx -s reload` + 프록시 응답 검사
 - Nginx는 기존 연결을 완만히 종료하지만, 긴 WebSocket·스트리밍·업로드 연결까지 **완전 무중단은 보장하지 않습니다.**
 
 ## 1. 최초 전환 전에 반드시 확인
@@ -39,7 +39,7 @@
                │
         새 비활성 슬롯 시작
                │
-      내부 readiness + /main 검증
+      내부 readiness + 홈 화면 검증
                │
            검증 성공?
         ┌──────┴──────┐
@@ -66,7 +66,7 @@ cd /opt/stacks/triplesweb
 cat bluegreen/active-slot
 docker compose --profile bluegreen -f docker-compose.yml -f docker-compose.bluegreen.yml ps
 curl -fsS http://127.0.0.1:8090/actuator/health/readiness
-curl -sSI http://127.0.0.1:8090/main | grep -i X-Bluegreen-Slot
+curl -fsS -D - -o /dev/null http://127.0.0.1:8090/ | grep -i X-Bluegreen-Slot
 free -h
 ```
 
@@ -87,7 +87,7 @@ docker compose --profile bluegreen -f docker-compose.yml -f docker-compose.blueg
 아래 조치는 **운영자 검토 후** 수행합니다.
 
 1. `active.conf.previous`가 가리키는 슬롯의 중지된 컨테이너를 확인하고 `docker start <container-id>`로 기동
-2. 해당 컨테이너 IP의 `/actuator/health/readiness` 및 `/main` 검증
+2. 해당 컨테이너 IP의 `/actuator/health/readiness` 및 홈 화면(`/`) HTTP 200 검증
 3. `cp bluegreen/active.conf.previous bluegreen/active.conf` 및 `docker compose --profile bluegreen -f docker-compose.yml -f docker-compose.bluegreen.yml exec -T proxy nginx -t`
 4. 검증 성공하면 `docker compose --profile bluegreen -f docker-compose.yml -f docker-compose.bluegreen.yml exec -T proxy nginx -s reload`
 5. 프록시의 `X-Bluegreen-Slot`·readiness가 복원됐는지 확인한 뒤 `bluegreen/active-slot`을 실제 슬롯으로 정정

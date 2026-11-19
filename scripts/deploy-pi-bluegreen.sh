@@ -124,7 +124,7 @@ pull_if_needed() {
 }
 
 wait_candidate() {
-  local slot="$1" cid ip attempt
+  local slot="$1" cid ip attempt home_status
   cid="$(container_of "app_$slot")"
   is_running "$cid" || fail "Candidate app_$slot did not start"
   ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$cid")"
@@ -136,8 +136,9 @@ wait_candidate() {
       fail "Candidate exited during warmup"
     fi
     if curl -fsS --connect-timeout 2 --max-time 5 "http://$ip:8080/actuator/health/readiness" >/dev/null 2>&1 &&
-       curl -fsS --connect-timeout 2 --max-time 5 "http://$ip:8080/main" >/dev/null 2>&1; then
-      log "Candidate app_$slot readiness and /main checks passed after $attempt seconds"
+       home_status="$(curl -fsS --connect-timeout 2 --max-time 5 -o /dev/null -w '%{http_code}' "http://$ip:8080/" 2>/dev/null)" &&
+       [[ "$home_status" == 200 ]]; then
+      log "Candidate app_$slot readiness and home page checks passed"
       return 0
     fi
     sleep 2
