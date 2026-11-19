@@ -86,8 +86,10 @@ jobs:
             touch "${PI_DEPLOY_PATH}/.dev-retired"
           fi
           cd "${PI_DEPLOY_PATH}"
+          ASSETS_UP_TO_DATE=false
           if [[ -f .chemistry-tree ]] && [[ "$(cat .chemistry-tree)" == "${CHEMISTRY_TREE}" ]] && [[ -d uploads/chemistry ]]; then
             echo "chemistry_sync=false"
+            ASSETS_UP_TO_DATE=true
           else
             echo "chemistry_sync=true"
           fi
@@ -106,7 +108,12 @@ jobs:
             exit 0
           fi
           if curl -fsS --max-time 8 "http://127.0.0.1:${APP_PORT}/actuator/health/readiness" >/dev/null; then
-            echo "skip=true"
+            if [[ "${ASSETS_UP_TO_DATE}" == "true" ]]; then
+              echo "skip=true"
+            else
+              echo "skip=false"
+              echo "reason=chemistry-out-of-date" >&2
+            fi
           else
             echo "skip=false"
             echo "reason=smoke-failed" >&2
@@ -189,7 +196,7 @@ jobs:
             ssh pi "mkdir -p '${PI_DEPLOY_PATH}/uploads/chemistry'"
             rsync -a --no-owner --no-group --exclude '.DS_Store' \
               uploads/chemistry/ "pi:${PI_DEPLOY_PATH}/uploads/chemistry/"
-            ssh pi "printf '%s\\n' '${{ steps.assets.outputs.tree }}' > '${PI_DEPLOY_PATH}/.chemistry-tree'"
+            ssh pi "echo '${{ steps.assets.outputs.tree }}' > '${PI_DEPLOY_PATH}/.chemistry-tree'"
             echo "Chemistry files synchronized for ${{ steps.assets.outputs.tree }}"
           else
             echo "Chemistry unchanged — skipping rsync"
