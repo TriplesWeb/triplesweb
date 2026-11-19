@@ -354,9 +354,10 @@
         return window.MemberPortraitPicker ? MemberPortraitPicker.selectedValues(root) : [];
     }
 
-    function setInputFiles(input, files, { silent = false, previewIndex = 0 } = {}) {
+    function setInputFiles(input, files, { silent = false, previewIndex = 0, bumpEditToken = !silent } = {}) {
         if (!input) return;
-        bumpImageEditToken(input);
+        // 편집 결과로 파일을 바꿀 때는 토큰을 올리지 않는다. 올리면 finally 에서 버튼이 영구 disabled 된다.
+        if (bumpEditToken) bumpImageEditToken(input);
         const transfer = new DataTransfer();
         files.forEach(file => transfer.items.add(file));
         input.files = transfer.files;
@@ -521,20 +522,16 @@
             const next = Array.from(input.files || []);
             if (index >= next.length) return;
             next[index] = edited;
-            setInputFiles(input, next, { silent: true, previewIndex: index });
+            setInputFiles(input, next, { silent: true, previewIndex: index, bumpEditToken: false });
             showPreview(preview, rememberUrl(edited), { sourceFile: edited, index });
         } catch (_) {
             if ((input._archiveEditToken || 0) === editToken) {
                 delete preview.dataset.pending;
                 alert('사진을 편집하지 못했습니다. 다른 이미지로 다시 시도해 주세요.');
-                syncImageEditTools(preview);
             }
         } finally {
             preview._archiveEditBusy = false;
-            if ((input._archiveEditToken || 0) === editToken) {
-                buttons.forEach(button => { button.disabled = false; });
-                syncImageEditTools(preview);
-            }
+            syncImageEditTools(preview);
         }
     }
 
