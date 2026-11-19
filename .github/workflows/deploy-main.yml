@@ -1,22 +1,18 @@
 name: Deploy to Raspberry Pi (prod)
 
-# 기본: 매일 새벽 4시(KST) 또는 Actions 수동 실행.
-# 예외: main 머지 푸시이면서, 해당 PR 코멘트에 「즉시 배포」가 있으면 바로 운영 반영.
+# PR에서는 검사만. main 머지 후 운영으로 배포. 새벽 4시는 실패 복구용 재확인.
 on:
-  schedule:
-    # 04:00 KST = 19:00 UTC (전날)
-    - cron: '0 19 * * *'
-  workflow_dispatch:
   push:
     branches: [main]
     paths-ignore:
       - 'docs/**'
       - '**.md'
       - 'qodana.yaml'
-      - '.github/workflows/**'
       - 'scripts/tests/**'
+  schedule:
+    - cron: '0 19 * * *' # 04:00 KST, fallback/reconciliation
+  workflow_dispatch:
 
-# Serialize deployments and avoid interrupting an in-flight remote restart.
 concurrency:
   group: deploy-main
   cancel-in-progress: false
@@ -24,74 +20,22 @@ concurrency:
 permissions:
   contents: read
   packages: write
-  pull-requests: read
-  issues: read
 
 env:
   REGISTRY: ghcr.io
-  IMMEDIATE_DEPLOY_PHRASE: '즉시 배포'
 
 jobs:
-  resolve-main:
-    runs-on: ubuntu-latest
-    outputs:
-      sha: ${{ steps.head.outputs.sha }}
-      deploy: ${{ steps.head.outputs.deploy }}
-    steps:
-      - name: Resolve deploy target and gate push-to-main
-        id: head
-        env:
-          REPOSITORY: ${{ github.repository }}
-          EVENT_NAME: ${{ github.event_name }}
-          PUSH_SHA: ${{ github.sha }}
-          GH_TOKEN: ${{ github.token }}
-          PHRASE: ${{ env.IMMEDIATE_DEPLOY_PHRASE }}
-        run: |
-          set -euo pipefail
-          CURRENT_SHA="$(git ls-remote "https://github.com/${REPOSITORY}.git" refs/heads/main | awk '{print $1}')"
-
-          if [[ "$EVENT_NAME" == "schedule" || "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            echo "sha=${CURRENT_SHA}" >> "$GITHUB_OUTPUT"
-            echo "deploy=true" >> "$GITHUB_OUTPUT"
-            echo "Deploy (${EVENT_NAME}): ${CURRENT_SHA}"
-            exit 0
-          fi
-
-          # push to main: only when merged PR has the magic comment
-          echo "sha=${PUSH_SHA}" >> "$GITHUB_OUTPUT"
-          PR_NUMBER="$(gh api \
-            -H "Accept: application/vnd.github+json" \
-            "repos/${REPOSITORY}/commits/${PUSH_SHA}/pulls" \
-            --jq '.[0].number // empty' || true)"
-          if [[ -z "${PR_NUMBER}" ]]; then
-            echo "deploy=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::main push ${PUSH_SHA} has no associated PR; skip prod (wait for 04:00 KST or manual)"
-            exit 0
-          fi
-
-          # PR 본문 + 이슈 코멘트 + 리뷰 코멘트에서 「즉시 배포」 검색
-          BODY="$(gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}" --jq '.body // ""')"
-          ISSUE_COMMENTS="$(gh api --paginate "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" --jq '.[].body // empty' || true)"
-          REVIEW_COMMENTS="$(gh api --paginate "repos/${REPOSITORY}/pulls/${PR_NUMBER}/comments" --jq '.[].body // empty' || true)"
-          ALL="${BODY}"$'\n'"${ISSUE_COMMENTS}"$'\n'"${REVIEW_COMMENTS}"
-
-          if printf '%s' "$ALL" | grep -Fq "$PHRASE"; then
-            echo "deploy=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::PR #${PR_NUMBER} contains「${PHRASE}」→ immediate prod deploy of ${PUSH_SHA}"
-          else
-            echo "deploy=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::PR #${PR_NUMBER} has no「${PHRASE}」comment; skip prod (wait for 04:00 KST or manual)"
-          fi
-
   build-and-deploy:
-    needs: resolve-main
-    if: needs.resolve-main.outputs.deploy == 'true'
     runs-on: ubuntu-24.04-arm
     steps:
-      - name: Checkout main tip
+      - name: Checkout current main
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.resolve-main.outputs.sha }}
+          ref: main
+
+      - name: Full commit SHA
+        id: sha
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Image name (lowercase)
         id: image
@@ -118,17 +62,37 @@ jobs:
             StrictHostKeyChecking accept-new
           EOF
 
-      - name: Skip if prod container already healthy on this commit
+      - name: Check current production image and tracked assets
+        id: assets
+        run: echo "tree=$(git rev-parse HEAD:uploads/chemistry)" >> "$GITHUB_OUTPUT"
+
+      - name: Preflight — retire dev and skip unchanged production
         id: skip
         env:
           PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
-          WANT_IMAGE: ${{ steps.image.outputs.name }}:${{ needs.resolve-main.outputs.sha }}
+          PI_DEV_DEPLOY_PATH: ${{ secrets.PI_DEV_DEPLOY_PATH }}
+          WANT_IMAGE: ${{ steps.image.outputs.name }}:${{ steps.sha.outputs.sha }}
+          CHEMISTRY_TREE: ${{ steps.assets.outputs.tree }}
         run: |
           set -euo pipefail
-          # .env IMAGE만 보면 실패 후 재시도가 스킵되므로, 실행 중 컨테이너 + smoke로 판정한다.
-          DECISION="$(ssh pi env PI_DEPLOY_PATH="$PI_DEPLOY_PATH" WANT_IMAGE="$WANT_IMAGE" bash -s <<'EOF'
+          : "${PI_DEPLOY_PATH:?PI_DEPLOY_PATH is required}"
+          PI_DEV_DEPLOY_PATH="${PI_DEV_DEPLOY_PATH:-${PI_DEPLOY_PATH}-dev}"
+          # 첫 전환 때만 개발 앱을 종료하고 DB/파일은 보존한다.
+          scp scripts/retire-pi-dev.sh "pi:${PI_DEPLOY_PATH}/retire-pi-dev.sh"
+          DECISION="$(ssh pi env PI_DEPLOY_PATH="$PI_DEPLOY_PATH" PI_DEV_DEPLOY_PATH="$PI_DEV_DEPLOY_PATH" WANT_IMAGE="$WANT_IMAGE" CHEMISTRY_TREE="$CHEMISTRY_TREE" bash -s <<'EOF'
           set -euo pipefail
+          if [[ ! -f "${PI_DEPLOY_PATH}/.dev-retired" ]]; then
+            bash "${PI_DEPLOY_PATH}/retire-pi-dev.sh" "${PI_DEPLOY_PATH}" "${PI_DEV_DEPLOY_PATH}"
+            touch "${PI_DEPLOY_PATH}/.dev-retired"
+          fi
           cd "${PI_DEPLOY_PATH}"
+          ASSETS_UP_TO_DATE=false
+          if [[ -f .chemistry-tree ]] && [[ "$(cat .chemistry-tree)" == "${CHEMISTRY_TREE}" ]] && [[ -d uploads/chemistry ]]; then
+            echo "chemistry_sync=false"
+            ASSETS_UP_TO_DATE=true
+          else
+            echo "chemistry_sync=true"
+          fi
           APP_PORT="$(grep -E '^APP_PORT=' .env 2>/dev/null | cut -d= -f2- || true)"
           APP_PORT="${APP_PORT:-8080}"
           CID="$(docker compose ps -q app 2>/dev/null || true)"
@@ -143,8 +107,13 @@ jobs:
             echo "reason=image-mismatch running=${RUNNING:-<none>} want=${WANT_IMAGE}" >&2
             exit 0
           fi
-          if curl -fsS --max-time 8 "http://127.0.0.1:${APP_PORT}/" >/dev/null; then
-            echo "skip=true"
+          if curl -fsS --max-time 8 "http://127.0.0.1:${APP_PORT}/actuator/health/readiness" >/dev/null; then
+            if [[ "${ASSETS_UP_TO_DATE}" == "true" ]]; then
+              echo "skip=true"
+            else
+              echo "skip=false"
+              echo "reason=chemistry-out-of-date" >&2
+            fi
           else
             echo "skip=false"
             echo "reason=smoke-failed" >&2
@@ -152,7 +121,9 @@ jobs:
           EOF
           )"
           SKIP="$(echo "$DECISION" | grep -E '^skip=' | tail -n1 | cut -d= -f2)"
+          CHEMISTRY_SYNC="$(echo "$DECISION" | grep -E '^chemistry_sync=' | tail -n1 | cut -d= -f2)"
           echo "skip=${SKIP}" >> "$GITHUB_OUTPUT"
+          echo "chemistry_sync=${CHEMISTRY_SYNC}" >> "$GITHUB_OUTPUT"
           if [[ "$SKIP" == "true" ]]; then
             echo "::notice::Prod already healthy on ${WANT_IMAGE}; skipping rebuild/restart"
           else
@@ -171,18 +142,32 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker metadata
+      - name: Reuse immutable SHA image when a previous rollout failed
+        id: published
         if: steps.skip.outputs.skip != 'true'
+        env:
+          SHA_IMAGE: ${{ steps.image.outputs.name }}:${{ steps.sha.outputs.sha }}
+        run: |
+          set -euo pipefail
+          if docker buildx imagetools inspect "$SHA_IMAGE" >/dev/null 2>&1; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Found previously built image $SHA_IMAGE — skip Docker rebuild"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Docker metadata
+        if: steps.skip.outputs.skip != 'true' && steps.published.outputs.found != 'true'
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ steps.image.outputs.name }}
           tags: |
-            type=raw,value=${{ needs.resolve-main.outputs.sha }}
+            type=raw,value=${{ steps.sha.outputs.sha }}
             type=raw,value=latest
 
       - name: Build and push (linux/arm64)
-        if: steps.skip.outputs.skip != 'true'
+        if: steps.skip.outputs.skip != 'true' && steps.published.outputs.found != 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -190,39 +175,33 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=triplesweb-arm64
+          cache-to: type=gha,mode=max,scope=triplesweb-arm64,ignore-error=true
           provenance: false
 
-      - name: Sync compose, chemistry assets, and deploy
+      - name: Sync only chemistry assets and deploy
         if: steps.skip.outputs.skip != 'true'
         env:
           PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
-          IMAGE: ${{ steps.image.outputs.name }}:${{ needs.resolve-main.outputs.sha }}
+          IMAGE: ${{ steps.image.outputs.name }}:${{ steps.sha.outputs.sha }}
           GHCR_USER: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          : "${PI_DEPLOY_PATH:?PI_DEPLOY_PATH secret is required}"
           scp docker-compose.yml "pi:${PI_DEPLOY_PATH}/docker-compose.yml"
-          ssh pi "set -euo pipefail
-            mkdir -p \"${PI_DEPLOY_PATH}/uploads\"
-            docker run --rm -v \"${PI_DEPLOY_PATH}/uploads:/uploads\" alpine:3.20 \
-              chown -R \"\$(id -u):\$(id -g)\" /uploads
-          "
-          rsync -az --delete --no-owner --no-group \
-            --exclude '.DS_Store' \
-            --exclude '*.orig' \
-            --exclude '**/.DS_Store' \
-            --exclude '**/*.orig' \
-            --filter 'P images/' \
-            --filter 'P images/**' \
-            --filter 'P videos/' \
-            --filter 'P videos/**' \
-            --filter 'P files/' \
-            --filter 'P files/**' \
-            -e ssh \
-            uploads/ "pi:${PI_DEPLOY_PATH}/uploads/"
-          ssh pi "chmod -R a+rwX \"${PI_DEPLOY_PATH}/uploads\""
+          scp scripts/deploy-pi-app.sh "pi:${PI_DEPLOY_PATH}/deploy-pi-app.sh"
+          # chemistry Git tree SHA가 동일하면 원격 스캔·전송을 건너뛴다.
+          if [[ "${{ steps.skip.outputs.chemistry_sync }}" == "true" ]]; then
+            ssh pi "mkdir -p '${PI_DEPLOY_PATH}/uploads/chemistry'"
+            rsync -a --no-owner --no-group --exclude '.DS_Store' \
+              uploads/chemistry/ "pi:${PI_DEPLOY_PATH}/uploads/chemistry/"
+            ssh pi "echo '${{ steps.assets.outputs.tree }}' > '${PI_DEPLOY_PATH}/.chemistry-tree'"
+            echo "Chemistry files synchronized for ${{ steps.assets.outputs.tree }}"
+          else
+            echo "Chemistry unchanged — skipping rsync"
+          fi
+
           ssh pi env \
             PI_DEPLOY_PATH="$PI_DEPLOY_PATH" \
             IMAGE="$IMAGE" \
@@ -230,44 +209,16 @@ jobs:
             GHCR_TOKEN="$GHCR_TOKEN" \
             bash -s <<'EOF'
           set -euo pipefail
-          cd "${PI_DEPLOY_PATH}"
+          cd "$PI_DEPLOY_PATH"
           touch .env
           if grep -q '^IMAGE=' .env; then
-            sed -i.bak "s|^IMAGE=.*|IMAGE=${IMAGE}|" .env
+            sed -i "s|^IMAGE=.*|IMAGE=$IMAGE|" .env
           else
-            echo "IMAGE=${IMAGE}" >> .env
+            printf 'IMAGE=%s\n' "$IMAGE" >> .env
           fi
-          echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
-          # 개발/운영이 같은 Pi에서 pull 하면 containerd ingest rename 이 깨질 수 있다.
-          # flock 으로 직렬화하고, 실패 시 짧게 재시도한다.
-          (
-            flock -w 900 9
-            for attempt in $(seq 1 5); do
-              if docker compose pull app; then
-                docker compose up -d
-                break
-              fi
-              if [[ "${attempt}" -eq 5 ]]; then
-                echo "docker compose pull failed after ${attempt} attempts"
-                exit 1
-              fi
-              echo "docker compose pull failed (attempt ${attempt}/5); retrying..."
-              sleep $((attempt * 8))
-            done
-          ) 9>/tmp/triplesweb-docker-pull.lock
-          docker image prune -f
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin >/dev/null
+          export APP_PORT="$(sed -n 's/^APP_PORT=//p' .env | tail -n1)"
+          APP_PORT="${APP_PORT:-8090}"
+          bash ./deploy-pi-app.sh prod
           docker logout ghcr.io >/dev/null 2>&1 || true
-          APP_PORT="$(grep -E '^APP_PORT=' .env | cut -d= -f2- || true)"
-          APP_PORT="${APP_PORT:-8080}"
-          for attempt in $(seq 1 60); do
-            if curl -fsS --max-time 8 "http://127.0.0.1:${APP_PORT}/" >/dev/null; then
-              echo "Smoke OK: / on :${APP_PORT} (attempt ${attempt})"
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "Smoke failed: / on :${APP_PORT} did not respond"
-          docker compose ps || true
-          docker compose logs --tail=200 app || true
-          exit 1
           EOF
