@@ -162,7 +162,11 @@ jobs:
       - name: CSS reproducibility and bundle checks
         run: ./scripts/setup-css.sh --check
       - name: JavaScript unit tests
-        run: node scripts/tests/objekt-detail.test.cjs && node scripts/tests/objekt-transfers.test.cjs && node scripts/tests/objekt-kind-combo.test.cjs
+        run: |
+          node scripts/tests/objekt-detail.test.cjs
+          node scripts/tests/objekt-transfers.test.cjs
+          node scripts/tests/objekt-kind-combo.test.cjs
+          node scripts/tests/gravity-admin.test.cjs
   qodana:
     needs: changes
     if: needs.changes.outputs.app == 'true'
