@@ -1544,8 +1544,13 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
     width: 1.35rem;
     height: 1.35rem;
+    min-width: 1.35rem;
+    min-height: 1.35rem;
+    max-width: 1.35rem;
+    max-height: 1.35rem;
     padding: 0;
     border: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: 999px;
@@ -1554,6 +1559,9 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     font-size: 0.85rem;
     font-weight: 700;
     line-height: 1;
+    overflow: hidden;
+    flex: none;
+    aspect-ratio: 1;
     cursor: pointer;
 }
 .ar-file-remove:hover {
