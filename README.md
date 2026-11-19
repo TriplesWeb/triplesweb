@@ -65,7 +65,7 @@ cp .env.example .env   # 최초 1회 — DB/API 값 채우기 (.gitignore)
 
 브라우저: http://localhost:8080/main
 
-`bootRun`과 IntelliJ의 메인 클래스 실행 모두 Spring 시작 단계에서 프로젝트 루트 `.env`를 로드하고, `MYSQL_*`를 `SPRING_DATASOURCE_*`로 매핑합니다. 별도 dotenv 플러그인은 필요 없습니다. 명령행·JVM 옵션·실제 환경변수의 같은 설정이 `.env`보다 우선합니다. Docker Compose도 같은 `.env`를 씁니다.
+`bootRun`과 IntelliJ의 메인 클래스 실행 모두 Spring 시작 단계에서 프로젝트 루트 `.env`를 로드하고, `MYSQL_*`를 `SPRING_DATASOURCE_*`로 매핑합니다. 별도 dotenv 플러그인은 필요 없습니다. 명령행·JVM 옵션·실제 환경변수의 같은 설정이 `.env`보다 우선합니다. Docker Compose도 같은 `.env`를 씁니다. `application.properties`에는 DB 비밀번호·운영 호스트 같은 실값을 두지 않습니다.
 
 ### IntelliJ에서 운영과 같은 DB로 실행
 
