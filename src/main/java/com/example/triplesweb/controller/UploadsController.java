@@ -33,6 +33,7 @@ import java.util.Locale;
 public class UploadsController {
 
     private final Path uploadRoot;
+    private final Path uploadRootReal;
     private final String fallbackBaseUrl;
     private final UploadContentStore uploadContentStore;
 
@@ -42,6 +43,14 @@ public class UploadsController {
             UploadContentStore uploadContentStore
     ) {
         this.uploadRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
+        Path real = this.uploadRoot;
+        try {
+            Files.createDirectories(this.uploadRoot);
+            real = this.uploadRoot.toRealPath();
+        } catch (IOException ignored) {
+            // 루트가 아직 없으면 normalize 경로로 심볼릭 링크 검사를 한다.
+        }
+        this.uploadRootReal = real;
         this.fallbackBaseUrl = StringUtils.hasText(fallbackBaseUrl)
                 ? fallbackBaseUrl.trim().replaceAll("/+$", "")
                 : "";
@@ -65,24 +74,31 @@ public class UploadsController {
 
         if (Files.isRegularFile(local) && Files.isReadable(local)) {
             try {
-                if (!local.toRealPath().startsWith(uploadRoot.toRealPath())) {
+                if (!local.toRealPath().startsWith(uploadRootReal)) {
                     return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
                 }
             } catch (IOException e) {
                 return ResponseEntity.notFound().build();
             }
-            MediaType type = imageType(local.getFileName().toString(), MediaTypeFactory.getMediaType(local.getFileName().toString())
-                    .orElse(MediaType.APPLICATION_OCTET_STREAM));
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
-                    .header("X-Content-Type-Options", "nosniff")
-                    .header(HttpHeaders.CONTENT_DISPOSITION, safeDisposition(type))
-                    .contentType(type)
-                    .body(new FileSystemResource(local));
+            return fileResponse(local);
         }
 
         UploadBlob stored = uploadContentStore.find(relative).orElse(null);
         if (stored != null && stored.getData() != null && stored.getData().length > 0) {
+            // 이후 요청은 디스크에서 바로 서빙하도록 DB 히트를 디스크에 캐시한다.
+            try {
+                Path parent = local.getParent();
+                if (parent != null) Files.createDirectories(parent);
+                if (!Files.exists(local)) {
+                    Files.write(local, stored.getData());
+                }
+                if (Files.isRegularFile(local) && Files.isReadable(local)
+                        && local.toRealPath().startsWith(uploadRootReal)) {
+                    return fileResponse(local);
+                }
+            } catch (IOException ignored) {
+                // 디스크 캐시 실패 시 메모리 응답으로 이어간다.
+            }
             MediaType type = imageType(relative, mediaType(stored.getContentType()));
             return ResponseEntity.ok()
                     .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
@@ -110,6 +126,17 @@ public class UploadsController {
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(location)
                 .build();
+    }
+
+    private ResponseEntity<Resource> fileResponse(Path local) {
+        MediaType type = imageType(local.getFileName().toString(), MediaTypeFactory.getMediaType(local.getFileName().toString())
+                .orElse(MediaType.APPLICATION_OCTET_STREAM));
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
+                .header("X-Content-Type-Options", "nosniff")
+                .header(HttpHeaders.CONTENT_DISPOSITION, safeDisposition(type))
+                .contentType(type)
+                .body(new FileSystemResource(local));
     }
 
     private static String safeDisposition(MediaType type) {

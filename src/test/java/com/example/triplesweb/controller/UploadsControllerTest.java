@@ -70,10 +70,11 @@ class UploadsControllerTest {
 
     @Test void blocksTraversalSymlinksAndPrivateSidecars() throws Exception {
         var store = mock(UploadContentStore.class);
-        var controller = new UploadsController(temp.resolve("uploads").toString(), "", store);
-        Files.createDirectory(temp.resolve("uploads"));
+        Path uploads = temp.resolve("uploads");
+        Files.createDirectories(uploads);
+        var controller = new UploadsController(uploads.toString(), "", store);
         Files.writeString(temp.resolve("secret.txt"), "secret");
-        Files.createSymbolicLink(temp.resolve("uploads/link.txt"), temp.resolve("secret.txt"));
+        Files.createSymbolicLink(uploads.resolve("link.txt"), temp.resolve("secret.txt"));
         assertThat(controller.serve(new MockHttpServletRequest("GET", "/uploads/link.txt")).getStatusCode().value()).isEqualTo(403);
         assertThat(controller.serve(new MockHttpServletRequest("GET", "/uploads/%2e%2e/secret.txt")).getStatusCode().value()).isEqualTo(403);
         assertThat(controller.serve(new MockHttpServletRequest("GET", "/uploads/photo.jpg.orig")).getStatusCode().value()).isEqualTo(404);

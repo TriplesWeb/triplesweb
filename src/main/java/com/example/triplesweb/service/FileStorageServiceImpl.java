@@ -9,7 +9,6 @@ import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,7 +33,6 @@ import java.util.concurrent.TimeUnit;
  * UUID 파일명, 공개 {@code /uploads/} URL, 경로 탈출 방지, 삭제 시 사이드카 정리를 수행한다.
  */
 @Service
-@Transactional
 public class FileStorageServiceImpl implements FileStorageService {
 
     private final String uploadRoot;
