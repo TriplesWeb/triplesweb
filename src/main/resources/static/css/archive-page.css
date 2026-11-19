@@ -1673,22 +1673,37 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 }
 .ar-preview-card.is-photo-preview,
 .ar-preview-card.is-video-preview { position: relative; isolation: isolate; padding: 0.5rem 0.7rem 0.75rem; overflow: visible; border: 0; background: none; }
+.ar-preview-card.is-photo-preview {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
 .ar-preview-photo-card,
 .ar-preview-video-card { position: relative; width: 100%; max-width: 20rem; margin: 0 auto; min-height: 0; }
+.ar-preview-photo-card {
+    width: fit-content;
+    max-width: min(20rem, 100%);
+}
 .ar-preview-card .ar-preview-photo-card .ar-photo-link {
     display: flex;
     align-items: center;
     justify-content: center;
+    width: fit-content;
+    max-width: 100%;
     min-height: 0;
+    margin: 0 auto;
     cursor: default;
+    background: transparent;
 }
 .ar-preview-card .ar-preview-photo-card .ar-photo-link > img {
-    width: 100%;
+    display: block;
+    width: auto;
+    max-width: 100%;
     height: auto;
     max-height: clamp(12rem, 30vw, 18rem);
     object-fit: contain;
     object-position: center;
-    background: #07080b;
+    background: transparent;
 }
 .ar-preview-card .ar-video-thumb img {
     position: absolute;
