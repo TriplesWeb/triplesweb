@@ -4,11 +4,11 @@ set -Eeuo pipefail
 umask 077
 
 operation=${1:?operation required}
-production=${2:?production path required}
+snapshot_source=${2:?test snapshot path required}
 pr=${3:?PR number required}
 image=${4:-}
 sha=${5:-}
-[[ $production =~ ^/[a-zA-Z0-9_./-]+$ && $production != *..* ]] || exit 2
+[[ $snapshot_source =~ ^/[a-zA-Z0-9_./-]+$ && $snapshot_source != *..* ]] || exit 2
 [[ $pr =~ ^[1-9][0-9]{0,8}$ ]] || exit 2
 [[ $operation == deploy || $operation == cleanup ]] || exit 2
 if [[ $operation == deploy ]]; then
@@ -16,7 +16,7 @@ if [[ $operation == deploy ]]; then
   [[ $sha =~ ^[a-f0-9]{40}$ ]] || exit 2
 fi
 
-root="${production%/}/.previews"
+root="${snapshot_source%/}/.previews"
 mkdir -p "$root"
 exec 9>"$root/.lock"
 flock -x -w 45 9 || { echo 'Another preview operation still holds the Pi deployment lock' >&2; exit 1; }
@@ -137,10 +137,10 @@ if [[ -n $old ]]; then
   source_files="$dir/$old"
   snapshot_at=$(<"$dir/snapshot-at")
 else
-  [[ -d $production/uploads ]] || { echo 'Production uploads directory not found' >&2; exit 1; }
-  source_db=$(cd "$production" && docker compose ps -q mariadb)
-  [[ -n $source_db ]] || { echo 'Production MariaDB container not found' >&2; exit 1; }
-  source_files="$production"
+  [[ -d $snapshot_source/uploads ]] || { echo 'Test snapshot uploads directory not found' >&2; exit 1; }
+  source_db=$(cd "$snapshot_source" && docker compose ps -q mariadb)
+  [[ -n $source_db ]] || { echo 'Test snapshot MariaDB container not found' >&2; exit 1; }
+  source_files="$snapshot_source"
   snapshot_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 fi
 

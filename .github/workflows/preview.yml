@@ -1,7 +1,9 @@
 name: PR Tailscale preview
 
 'on':
-  workflow_call:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, closed]
 
 concurrency:
   group: preview-${{ github.event.pull_request.number }}
@@ -15,8 +17,8 @@ permissions:
 
 jobs:
   preview:
-    # Code from a fork must never receive Pi credentials or production snapshots.
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # The shared dev workflow handles ordinary PRs. A private preview needs its own source stack.
+    if: github.event.pull_request.head.repo.full_name == github.repository && vars.PI_PR_PREVIEW_SOURCE_PATH != ''
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 90
     steps:
@@ -109,6 +111,7 @@ jobs:
         id: deploy
         env:
           PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
+          SNAPSHOT_SOURCE_PATH: ${{ vars.PI_PR_PREVIEW_SOURCE_PATH }}
           IMAGE: ${{ steps.image.outputs.name }}
           PR: ${{ github.event.pull_request.number }}
           SHA: ${{ github.event.pull_request.head.sha }}
@@ -117,17 +120,22 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          [[ "$SNAPSHOT_SOURCE_PATH" =~ ^/[a-zA-Z0-9_./-]+$ && "$SNAPSHOT_SOURCE_PATH" != *..* ]]
           [[ "$PI_DEPLOY_PATH" =~ ^/[a-zA-Z0-9_./-]+$ && "$PI_DEPLOY_PATH" != *..* ]]
+          if ! ssh pi "test \"\$(realpath -m '$SNAPSHOT_SOURCE_PATH')\" != \"\$(realpath -m '$PI_DEPLOY_PATH')\""; then
+            echo 'A separate test database stack is required for private PR previews.' >&2
+            exit 1
+          fi
           [[ "$PR" =~ ^[1-9][0-9]*$ && "$SHA" =~ ^[a-f0-9]{40}$ ]]
           if [[ "$CLOSING" == true ]]; then
-            ssh pi bash -s -- cleanup "$PI_DEPLOY_PATH" "$PR" < scripts/preview-pi.sh > result.json
+            ssh pi bash -s -- cleanup "$SNAPSHOT_SOURCE_PATH" "$PR" < scripts/preview-pi.sh > result.json
           else
             # A private Docker config avoids changing the production registry login.
             config=$(ssh pi 'mktemp -d /tmp/triples-preview-registry.XXXXXXXX')
             [[ "$config" =~ ^/tmp/triples-preview-registry\.[a-zA-Z0-9]+$ ]]
             trap 'ssh pi rm -rf -- "$config" || true' EXIT
             printf '%s' "$GHCR_TOKEN" | ssh pi docker --config "$config" login ghcr.io -u "$GHCR_USER" --password-stdin >&2
-            ssh pi env DOCKER_CONFIG="$config" bash -s -- deploy "$PI_DEPLOY_PATH" "$PR" "$IMAGE" "$SHA" < scripts/preview-pi.sh > result.json
+            ssh pi env DOCKER_CONFIG="$config" bash -s -- deploy "$SNAPSHOT_SOURCE_PATH" "$PR" "$IMAGE" "$SHA" < scripts/preview-pi.sh > result.json
           fi
           echo "result=$(jq -c . result.json)" >> "$GITHUB_OUTPUT"
 
@@ -147,7 +155,7 @@ jobs:
             } else {
               const result = JSON.parse(process.env.RESULT);
               body = result.status === 'cleaned' ? 'PR이 종료되어 미리보기를 정리했습니다.' :
-                `📱 **모바일 미리보기:** ${result.url}\n\n커밋: \`${result.sha}\`\n운영 DB 복사 시각: ${result.snapshotAt}\n\n휴대폰을 같은 Tailscale 네트워크에 연결해 주세요. 미리보기에서 수정한 데이터는 운영에 반영되지 않습니다.`;
+                `📱 **모바일 미리보기:** ${result.url}\n\n커밋: \`${result.sha}\`\n테스트 DB 복사 시각: ${result.snapshotAt}\n\n휴대폰을 같은 Tailscale 네트워크에 연결해 주세요. 미리보기에서 수정한 데이터는 운영에 반영되지 않습니다.`;
             }
             body = `${marker}\n${body}\n\n[Actions 실행 보기](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`;
             const comments = await github.paginate(github.rest.issues.listComments, { ...context.repo, issue_number: context.issue.number, per_page: 100 });

@@ -1,9 +1,11 @@
-<article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-member-order="{{memberOrder}}" data-url="{{file.url}}" data-registered="{{registeredOn}}" data-source="{{sourceValue}}" data-source-label="{{sourceLabel}}">
-    <button type="button" class="ar-photo-link" data-archive-open aria-label="{{title}} 자세히 보기">
-        <img src="{{file.url}}" alt="{{title}}" loading="lazy" decoding="async">
+<article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-description="{{description}}" data-headline="{{headline}}" data-artists="{{artistNames}}" data-member-order="{{memberOrder}}" data-url="{{file.url}}" data-images="{{imageUrlsJson}}" data-registered="{{registeredOn}}" data-source="{{sourceValue}}" data-source-label="{{sourceLabel}}">
+    <button type="button" class="ar-photo-link" data-archive-open aria-label="{{#hasHeadline}}{{headline}}{{/hasHeadline}}{{^hasHeadline}}사진{{/hasHeadline}} 자세히 보기">
+        <img src="{{file.url}}" alt="{{#hasHeadline}}{{headline}}{{/hasHeadline}}{{^hasHeadline}}사진{{/hasHeadline}}" loading="lazy" decoding="async">
+        {{#hasMultipleImages}}<span class="ar-card-count" aria-label="{{imageCount}}장">{{imageCount}}</span>{{/hasMultipleImages}}
     </button>
     <div class="ar-body">
-        <h3>{{title}}</h3>
+        {{#hasHeadline}}<h3>{{headline}}</h3>{{/hasHeadline}}
+        {{#hasSource}}<div class="ar-source-badge" data-source="{{sourceValue}}">{{sourceLabel}}</div>{{/hasSource}}
         <div class="ar-meta" style="--member-count: {{memberCount}}" title="{{memberNames}}">
             {{>partials/archive-member-badges}}
             {{#hasRegisteredOn}}<time class="ar-card-date" datetime="{{registeredOn}}">{{registeredOnDisplay}}</time>{{/hasRegisteredOn}}

@@ -23,6 +23,9 @@ public class Archive {
     @Column(nullable = false)
     private String title;
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @Column(name = "artist_names", columnDefinition = "TEXT")
     private String artistNames;
 
@@ -35,6 +38,10 @@ public class Archive {
     @Enumerated(EnumType.STRING)
     @Column(length = 32)
     private ArchiveSource source;
+
+    /** 이미지 URL JSON 배열. 표지(첫 장)는 {@link #file}과 동기화. */
+    @Column(name = "images_json", columnDefinition = "TEXT")
+    private String imagesJson;
 
     @Embedded
     private SavedMeta file;

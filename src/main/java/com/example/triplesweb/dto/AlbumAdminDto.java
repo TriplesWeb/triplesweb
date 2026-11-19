@@ -23,6 +23,8 @@ public class AlbumAdminDto {
     private String albumType;
     /** 앨범 규격(자유 입력). 비어 있으면 미지정 */
     private String albumFormat;
+    /** 앨범 뮤직비디오 YouTube ID(11자) 또는 URL. 비어 있으면 미표시 */
+    private String musicVideoYoutubeId;
     private Long unitId;
     private String unitName;
     private Long sectionId;

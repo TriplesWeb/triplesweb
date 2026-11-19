@@ -48,8 +48,8 @@
             date.textContent = card?.dataset.registered ? label + ' ' + card.dataset.registered : '';
         }
         if (source) {
-            const label = card?.dataset.sourceLabel || '기타/팬메이드';
-            source.hidden = false;
+            const label = (card?.dataset.sourceLabel || '').trim();
+            source.hidden = !label;
             source.dataset.source = (card?.dataset.source || '').toLowerCase();
             source.textContent = label;
         }

@@ -5,6 +5,7 @@ import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.media.FileStorageException;
 import jakarta.annotation.Nullable;
 import lombok.SneakyThrows;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,8 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 /**
  * {@link FileStorageService} 구현체. 업로드 루트 아래 이미지·영상·기타 파일을 날짜/하위폴더로 저장한다.
@@ -33,15 +36,36 @@ public class FileStorageServiceImpl implements FileStorageService {
     private final String uploadRoot;
     private final UploadSyncService uploadSyncService;
     private final UploadContentStore uploadContentStore;
+    private final Executor dbCopyExecutor;
 
+    @Autowired
     public FileStorageServiceImpl(
             @Value("${file.upload-dir}") String uploadRoot,
             UploadSyncService uploadSyncService,
             UploadContentStore uploadContentStore
     ) {
+        this(uploadRoot, uploadSyncService, uploadContentStore, defaultDbCopyExecutor());
+    }
+
+    /** 테스트에서 DB 복사를 동기화할 때 쓰는 생성자. */
+    FileStorageServiceImpl(
+            String uploadRoot,
+            UploadSyncService uploadSyncService,
+            UploadContentStore uploadContentStore,
+            Executor dbCopyExecutor
+    ) {
         this.uploadRoot = uploadRoot;
         this.uploadSyncService = uploadSyncService;
         this.uploadContentStore = uploadContentStore;
+        this.dbCopyExecutor = dbCopyExecutor;
+    }
+
+    private static Executor defaultDbCopyExecutor() {
+        return Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "upload-db-copy");
+            t.setDaemon(true);
+            return t;
+        });
     }
 
     private static final Set<String> IMAGE_EXT = Set.of("jpg","jpeg","jfif","png","gif","webp","bmp");
@@ -150,18 +174,21 @@ public class FileStorageServiceImpl implements FileStorageService {
         }
     }
 
+    /** HTTP 응답을 막지 않도록 DB 복사는 백그라운드에서 한다. */
     private void copyToDatabase(Path localFile, String relative, String contentType) {
-        try {
-            long size = Files.size(localFile);
-            if (size <= 0 || size > uploadContentStore.maxBytes()) {
-                logSkip(relative, size);
-                return;
+        dbCopyExecutor.execute(() -> {
+            try {
+                long size = Files.size(localFile);
+                if (size <= 0 || size > uploadContentStore.maxBytes()) {
+                    logSkip(relative, size);
+                    return;
+                }
+                uploadContentStore.save(relative, Files.readAllBytes(localFile), contentType);
+            } catch (Exception e) {
+                org.slf4j.LoggerFactory.getLogger(FileStorageServiceImpl.class)
+                        .warn("업로드 DB 복사 실패 {}: {}", relative, e.toString());
             }
-            uploadContentStore.save(relative, Files.readAllBytes(localFile), contentType);
-        } catch (Exception e) {
-            org.slf4j.LoggerFactory.getLogger(FileStorageServiceImpl.class)
-                    .warn("업로드 DB 복사 실패 {}: {}", relative, e.toString());
-        }
+        });
     }
 
     private void logSkip(String relative, long size) {

@@ -58,6 +58,7 @@ public class TriplesController {
 
     private String renderArtistPage(Model model, String pageHeading, String artistBase) {
         List<Artist> artistList = artistrepository.findAllWithUnits();
+        albumService.attachOstAlbums(artistList);
         GroupIntroDto group = artistAdminService.getGroupIntro();
 
         model.addAttribute("pageHeading", pageHeading);

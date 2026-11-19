@@ -3,6 +3,8 @@
     const noun = kind === "video" ? "영상" : "사진";
     const dateLabel = document.querySelector("[data-date-label]")?.dataset.dateLabel || (noun + " 날짜");
     const dialogTriggers = new WeakMap();
+    /** 업로드 성공 후 모달을 유지할 때, 닫을 때 갱신할 Location (없으면 현재 URL). */
+    let afterUploadLocation = null;
 
     function authHeaders() {
         const headerMap = {};
@@ -12,23 +14,73 @@
         return window.AboutAdminAuth ? AboutAdminAuth.applyAuthHeaders(headerMap) : headerMap;
     }
 
+    function resolveArchivePath(locationHeader) {
+        if (!locationHeader) return location.pathname + location.search;
+        try {
+            const url = new URL(locationHeader, window.location.href);
+            return url.pathname + url.search + url.hash;
+        } catch (_) {
+            return locationHeader.startsWith("/") ? locationHeader : (location.pathname + location.search);
+        }
+    }
+
+    /** 전체 reload 대신 목록 그리드만 다시 받아 붙인다. */
+    function softRefreshArchive(locationHeader) {
+        const target = resolveArchivePath(locationHeader);
+        if (typeof window.refreshArchiveGrid === "function") {
+            return window.refreshArchiveGrid(target).catch(() => {
+                window.location.assign(target);
+            });
+        }
+        window.location.assign(target);
+        return Promise.resolve();
+    }
+
+    function uploadSucceeded(response) {
+        return response.ok
+            || response.type === "opaqueredirect"
+            || response.status === 0
+            || (response.status >= 300 && response.status < 400);
+    }
+
     function openDialog(dialog) {
         if (!dialog) return;
         dialogTriggers.set(dialog, document.activeElement);
         dialog.hidden = false;
         document.body.style.overflow = "hidden";
-        dialog.querySelector("[name='title']")?.focus();
+        dialog.querySelector("[name='title'], [name='registeredOn'], [name='description']")?.focus();
     }
 
     function closeDialog(dialog) {
         if (!dialog) return;
+        const refreshAfterUpload = dialog.id === "uploadModal" && afterUploadLocation !== null;
+        const refreshTo = afterUploadLocation;
+        if (refreshAfterUpload) afterUploadLocation = null;
         dialog.hidden = true;
         dialog.querySelectorAll('input[type="file"]').forEach(input => {
             releaseUrl(input._archiveLastFile);
+            (input._archiveLastFiles || []).forEach(releaseUrl);
             input._archiveLastFile = null;
+            input._archiveLastFiles = null;
         });
         dialogTriggers.get(dialog)?.focus();
         if (!document.querySelector(".ar-dialog:not([hidden])")) document.body.style.overflow = "";
+        if (refreshAfterUpload) softRefreshArchive(refreshTo);
+    }
+
+    function removeCardFromGrid(id) {
+        if (!id) return;
+        document.querySelectorAll('#archiveGrid .ar-card[data-id="' + CSS.escape(String(id)) + '"]').forEach(card => {
+            card.remove();
+        });
+        const detail = document.getElementById("archiveDetail");
+        if (detail && !detail.hidden) {
+            const editId = document.getElementById("archiveDetailEdit")?.dataset.id;
+            if (String(editId || "") === String(id)) {
+                detail.hidden = true;
+                if (!document.querySelector(".ar-dialog:not([hidden])")) document.body.style.overflow = "";
+            }
+        }
     }
 
     function mediaNode(url, cropped) {
@@ -51,10 +103,14 @@
         body.className = 'ar-body';
         const title = document.createElement('h3');
         title.dataset.previewTitle = '';
+        const source = document.createElement('div');
+        source.className = 'ar-source-badge';
+        source.dataset.previewSource = '';
+        source.hidden = true;
         const meta = document.createElement('div');
         meta.className = 'ar-meta';
         meta.dataset.previewArtists = '';
-        body.append(title, meta);
+        body.append(title, source, meta);
         return body;
     }
 
@@ -103,7 +159,89 @@
         return Array.from((picker || document).querySelectorAll('.mpp-item.is-active'));
     }
 
-    function showPreview(box, url) {
+    function bumpImageEditToken(input) {
+        if (!input) return 0;
+        input._archiveEditToken = (input._archiveEditToken || 0) + 1;
+        return input._archiveEditToken;
+    }
+
+    function isGifOrWebpFile(file) {
+        if (!file) return false;
+        const type = (file.type || '').toLowerCase();
+        if (type === 'image/gif' || type === 'image/webp') return true;
+        return /\.(gif|webp)$/i.test(file.name || '');
+    }
+
+    function findFourCC(bytes, label) {
+        const a = label.charCodeAt(0);
+        const b = label.charCodeAt(1);
+        const c = label.charCodeAt(2);
+        const d = label.charCodeAt(3);
+        for (let i = 0; i < bytes.length - 3; i += 1) {
+            if (bytes[i] === a && bytes[i + 1] === b && bytes[i + 2] === c && bytes[i + 3] === d) return true;
+        }
+        return false;
+    }
+
+    async function ensureAnimationFlag(file) {
+        if (!file) return false;
+        if (file._archiveAnimated != null) return file._archiveAnimated === true;
+        if (!isGifOrWebpFile(file)) {
+            file._archiveAnimated = false;
+            return false;
+        }
+        try {
+            const sampleSize = Math.min(file.size || 0, 2 * 1024 * 1024);
+            const bytes = new Uint8Array(await file.slice(0, sampleSize).arrayBuffer());
+            const type = (file.type || '').toLowerCase();
+            const name = (file.name || '').toLowerCase();
+            let animated = false;
+            if (type === 'image/gif' || name.endsWith('.gif')) {
+                let frames = 0;
+                for (let i = 0; i < bytes.length; i += 1) {
+                    if (bytes[i] === 0x2C) {
+                        frames += 1;
+                        if (frames > 1) {
+                            animated = true;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                animated = findFourCC(bytes, 'ANIM') || findFourCC(bytes, 'ANMF');
+            }
+            file._archiveAnimated = animated;
+            return animated;
+        } catch (_) {
+            file._archiveAnimated = false;
+            return false;
+        }
+    }
+
+    function syncImageEditTools(box) {
+        const tools = box?.querySelector('[data-image-edit-tools]');
+        if (!tools) return;
+        const source = box._previewSource;
+        const animated = !!(source && source._archiveAnimated === true);
+        const checking = !!(source && isGifOrWebpFile(source) && source._archiveAnimated == null);
+        const editable = kind === 'image'
+            && !box.hidden
+            && !!source
+            && isImageFile(source)
+            && !animated
+            && !checking
+            && !box._archiveEditBusy;
+        tools.hidden = !(kind === 'image' && !box.hidden && !!source && isImageFile(source)) || animated;
+        tools.querySelectorAll('button').forEach(button => {
+            button.disabled = !editable;
+            if (!button.dataset.defaultTitle) button.dataset.defaultTitle = button.getAttribute('title') || '';
+            button.title = animated
+                ? '애니메이션 이미지는 편집할 수 없습니다.'
+                : (button.dataset.defaultTitle || button.title);
+        });
+    }
+
+    function showPreview(box, url, options = {}) {
         if (!box) return;
         const full = box.querySelector(".ar-preview-full");
         const card = box.querySelector(".ar-preview-card");
@@ -111,10 +249,22 @@
         if (error) { error.hidden = true; error.textContent = ''; }
         delete box.dataset.invalid;
         delete box.dataset.pending;
+        box._previewSource = options.sourceFile || null;
+        box._previewIndex = Number.isInteger(options.index) ? options.index : 0;
+        const form = box.closest('form');
+        const fileInput = form?.querySelector('input[name="file"]');
+        if (fileInput) fileInput._archivePreviewIndex = box._previewSource ? box._previewIndex : 0;
+        if (options.sourceFile && isGifOrWebpFile(options.sourceFile)) {
+            const watched = options.sourceFile;
+            ensureAnimationFlag(watched).then(() => {
+                if (box._previewSource === watched) syncImageEditTools(box);
+            });
+        }
         if (!url || !full || !card) {
             box.hidden = true;
             full && (full.innerHTML = "");
             card && (card.innerHTML = "");
+            syncImageEditTools(box);
             return;
         }
         full.replaceChildren(mediaNode(url, false));
@@ -164,12 +314,15 @@
         }
         card.replaceChildren(article);
         box.hidden = false;
-        syncPreview(box.closest('form'));
-        syncThumbnail(box.closest('form'));
+        syncImageEditTools(box);
+        syncPreview(form);
+        syncThumbnail(form);
+        if (fileInput) syncFileName(fileInput);
     }
 
     function rememberUrl(file) {
         if (!file) return "";
+        if (file._archivePreviewUrl) return file._archivePreviewUrl;
         const ext = file.name.split('.').pop().toLowerCase();
         const type = { jfif: 'image/jpeg', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp' }[ext];
         const url = URL.createObjectURL(type ? new Blob([file], { type }) : file);
@@ -184,13 +337,280 @@
         }
     }
 
+    function releaseUnusedFiles(previous, next) {
+        const keep = new Set(next || []);
+        (previous || []).forEach(file => {
+            if (!keep.has(file)) releaseUrl(file);
+        });
+    }
+
+    function isImageFile(file) {
+        if (!file) return false;
+        if (file.type && file.type.startsWith('image/')) return true;
+        return /\.(jpe?g|jfif|png|webp|gif|bmp)$/i.test(file.name || '');
+    }
+
     function selectedArtists(root) {
         return window.MemberPortraitPicker ? MemberPortraitPicker.selectedValues(root) : [];
     }
 
+    function setInputFiles(input, files, { silent = false, previewIndex = 0, bumpEditToken = !silent } = {}) {
+        if (!input) return;
+        // 편집 결과로 파일을 바꿀 때는 토큰을 올리지 않는다. 올리면 finally 에서 버튼이 영구 disabled 된다.
+        if (bumpEditToken) bumpImageEditToken(input);
+        const transfer = new DataTransfer();
+        files.forEach(file => transfer.items.add(file));
+        input.files = transfer.files;
+        input._archivePreviewIndex = previewIndex;
+        if (silent) {
+            input._archiveLastFile = files[0] || null;
+            input._archiveLastFiles = files.slice();
+            syncFileName(input);
+            return;
+        }
+        input._archiveKeepPreviewIndex = true;
+        syncFileName(input);
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function resolvePreviewIndex(input, files) {
+        const keep = !!input._archiveKeepPreviewIndex;
+        input._archiveKeepPreviewIndex = false;
+        if (!files.length) return 0;
+        if (!keep) return 0;
+        const index = Number.isInteger(input._archivePreviewIndex) ? input._archivePreviewIndex : 0;
+        return Math.min(Math.max(index, 0), files.length - 1);
+    }
+
+    function removeFileAt(input, index) {
+        const files = Array.from(input?.files || []);
+        const removed = files[index];
+        if (!removed) return;
+        releaseUrl(removed);
+        const next = files.filter((_, i) => i !== index);
+        const previewIndex = Math.min(index, Math.max(0, next.length - 1));
+        setInputFiles(input, next, { previewIndex });
+    }
+
+    function outputTypeForImage(file) {
+        const type = (file?.type || '').toLowerCase();
+        if (type === 'image/jpeg' || type === 'image/jpg' || type === 'image/pjpeg') return 'image/jpeg';
+        if (type === 'image/png') return 'image/png';
+        if (type === 'image/webp') return 'image/webp';
+        const ext = (file?.name || '').split('.').pop()?.toLowerCase();
+        if (ext === 'jpg' || ext === 'jpeg' || ext === 'jfif') return 'image/jpeg';
+        if (ext === 'png') return 'image/png';
+        if (ext === 'webp') return 'image/webp';
+        return 'image/png';
+    }
+
+    function renameImageFile(name, type) {
+        const base = (name || 'image').replace(/\.[^.]+$/, '') || 'image';
+        return base + '.' + extensionForImageType(type);
+    }
+
+    function loadImageBitmap(file) {
+        if (typeof createImageBitmap === 'function') {
+            return createImageBitmap(file).catch(() => null);
+        }
+        return Promise.resolve(null);
+    }
+
+    function loadHtmlImage(url) {
+        return new Promise((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => resolve(image);
+            image.onerror = () => reject(new Error('image-load-failed'));
+            image.src = url;
+        });
+    }
+
+    async function transformImageFile(file, operation) {
+        const bitmap = await loadImageBitmap(file);
+        let width;
+        let height;
+        let drawSource;
+        let releaseBitmap = false;
+        if (bitmap) {
+            width = bitmap.width;
+            height = bitmap.height;
+            drawSource = bitmap;
+            releaseBitmap = true;
+        } else {
+            const url = rememberUrl(file);
+            const image = await loadHtmlImage(url);
+            width = image.naturalWidth || image.width;
+            height = image.naturalHeight || image.height;
+            drawSource = image;
+        }
+        if (!width || !height) {
+            if (releaseBitmap && drawSource.close) drawSource.close();
+            throw new Error('image-size-invalid');
+        }
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            if (releaseBitmap && drawSource.close) drawSource.close();
+            throw new Error('canvas-unavailable');
+        }
+        if (operation === 'rotate-cw' || operation === 'rotate-ccw') {
+            canvas.width = height;
+            canvas.height = width;
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(operation === 'rotate-cw' ? Math.PI / 2 : -Math.PI / 2);
+            ctx.drawImage(drawSource, -width / 2, -height / 2);
+        } else if (operation === 'flip-h') {
+            canvas.width = width;
+            canvas.height = height;
+            ctx.translate(width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(drawSource, 0, 0);
+        } else if (operation === 'flip-v') {
+            canvas.width = width;
+            canvas.height = height;
+            ctx.translate(0, height);
+            ctx.scale(1, -1);
+            ctx.drawImage(drawSource, 0, 0);
+        } else {
+            if (releaseBitmap && drawSource.close) drawSource.close();
+            throw new Error('unknown-operation');
+        }
+        if (releaseBitmap && drawSource.close) drawSource.close();
+        const type = outputTypeForImage(file);
+        const quality = type === 'image/jpeg' || type === 'image/webp' ? 0.92 : undefined;
+        const blob = await new Promise((resolve, reject) => {
+            canvas.toBlob(result => {
+                if (result) resolve(result);
+                else reject(new Error('blob-failed'));
+            }, type, quality);
+        });
+        return new File([blob], renameImageFile(file.name, type), {
+            type,
+            lastModified: Date.now()
+        });
+    }
+
+    async function applyImageEdit(form, operation) {
+        if (kind !== 'image' || !form) return;
+        const input = form.querySelector('input[name="file"]');
+        const preview = form.querySelector('.ar-preview');
+        if (!input || !preview || preview.hidden || preview._archiveEditBusy) return;
+        const files = Array.from(input.files || []);
+        const index = Number.isInteger(preview._previewIndex) ? preview._previewIndex : 0;
+        const source = files[index];
+        if (!source || !isImageFile(source)) {
+            alert('편집할 사진을 먼저 선택해 주세요.');
+            return;
+        }
+        if (await ensureAnimationFlag(source)) {
+            syncImageEditTools(preview);
+            alert('애니메이션 이미지는 회전·뒤집기를 할 수 없습니다.');
+            return;
+        }
+        const editToken = input._archiveEditToken || 0;
+        const tools = preview.querySelector('[data-image-edit-tools]');
+        const buttons = tools ? Array.from(tools.querySelectorAll('button')) : [];
+        preview._archiveEditBusy = true;
+        buttons.forEach(button => { button.disabled = true; });
+        preview.dataset.pending = 'true';
+        try {
+            const edited = await transformImageFile(source, operation);
+            if ((input._archiveEditToken || 0) !== editToken) return;
+            const current = Array.from(input.files || [])[index];
+            if (current !== source) return;
+            releaseUrl(source);
+            const next = Array.from(input.files || []);
+            if (index >= next.length) return;
+            next[index] = edited;
+            setInputFiles(input, next, { silent: true, previewIndex: index, bumpEditToken: false });
+            showPreview(preview, rememberUrl(edited), { sourceFile: edited, index });
+        } catch (_) {
+            if ((input._archiveEditToken || 0) === editToken) {
+                delete preview.dataset.pending;
+                alert('사진을 편집하지 못했습니다. 다른 이미지로 다시 시도해 주세요.');
+            }
+        } finally {
+            preview._archiveEditBusy = false;
+            syncImageEditTools(preview);
+        }
+    }
+
+    function bindImageEditTools(form) {
+        const tools = form?.querySelector('[data-image-edit-tools]');
+        if (!tools || tools.dataset.bound === 'true') return;
+        tools.dataset.bound = 'true';
+        tools.addEventListener('click', event => {
+            const button = event.target.closest('[data-image-edit]');
+            if (!button || !tools.contains(button)) return;
+            event.preventDefault();
+            applyImageEdit(form, button.dataset.imageEdit);
+        });
+    }
+
     function syncFileName(input) {
         const label = input?.closest('.ar-file')?.querySelector('[data-file-name]');
-        if (label) label.textContent = input.files?.[0]?.name || '선택된 파일 없음';
+        if (!label) return;
+        const files = Array.from(input.files || []);
+        const form = input.closest('form');
+        const preview = form?.querySelector('.ar-preview');
+        const activeIndex = Number.isInteger(input._archivePreviewIndex) ? input._archivePreviewIndex : 0;
+        label.classList.toggle('has-files', files.length > 0);
+        label.classList.toggle('has-thumbs', files.some(isImageFile));
+        if (!files.length) {
+            label.replaceChildren();
+            label.textContent = '선택된 파일 없음';
+            return;
+        }
+        label.replaceChildren();
+        files.forEach((file, index) => {
+            if (isImageFile(file)) {
+                const tile = document.createElement('div');
+                tile.className = 'ar-file-tile' + (index === activeIndex ? ' is-active' : '');
+                tile.title = file.name;
+                const thumb = document.createElement('button');
+                thumb.type = 'button';
+                thumb.className = 'ar-file-thumb';
+                thumb.setAttribute('aria-label', file.name + ' 미리보기');
+                const img = document.createElement('img');
+                img.alt = '';
+                img.decoding = 'async';
+                img.src = rememberUrl(file);
+                thumb.appendChild(img);
+                thumb.addEventListener('click', event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (preview && input.name === 'file') {
+                        showPreview(preview, rememberUrl(file), { sourceFile: file, index });
+                    }
+                });
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'ar-file-remove';
+                remove.textContent = '×';
+                remove.title = file.name + ' 제거';
+                remove.setAttribute('aria-label', file.name + ' 제거');
+                remove.addEventListener('click', event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    removeFileAt(input, index);
+                });
+                tile.append(thumb, remove);
+                label.appendChild(tile);
+                return;
+            }
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'ar-file-chip';
+            chip.textContent = file.name + ' ×';
+            chip.title = file.name + ' 제거';
+            chip.setAttribute('aria-label', file.name + ' 제거');
+            chip.addEventListener('click', event => {
+                event.preventDefault();
+                event.stopPropagation();
+                removeFileAt(input, index);
+            });
+            label.appendChild(chip);
+        });
     }
 
     function bindFileNames(form) {
@@ -208,7 +628,22 @@
         const preview = form.querySelector('.ar-preview');
         if (!preview) return;
         const title = preview.querySelector('[data-preview-title]');
-        if (title) title.textContent = form.querySelector('[name="title"]')?.value.trim() || (kind === 'video' ? '영상 제목' : '사진 제목');
+        if (title) {
+            const typedTitle = form.querySelector('[name="title"]')?.value.trim() || '';
+            const typedDescription = form.querySelector('[name="description"]')?.value.trim() || '';
+            title.textContent = typedTitle || typedDescription || (kind === 'video' ? '영상 제목' : '사진');
+        }
+        const sourceBadge = preview.querySelector('[data-preview-source]');
+        if (sourceBadge) {
+            const select = form.querySelector('[name="source"]');
+            const value = (select?.value || '').trim();
+            const label = value
+                ? (select.options[select.selectedIndex]?.textContent || '').trim()
+                : '';
+            sourceBadge.hidden = !label;
+            sourceBadge.dataset.source = value.toLowerCase();
+            sourceBadge.textContent = label;
+        }
         const meta = preview.querySelector('[data-preview-artists]');
         if (meta) {
             const items = selectedMemberItems(form.closest('.ar-dialog'));
@@ -228,8 +663,16 @@
             }
         }
         const info = preview.querySelector('[data-preview-file]');
-        const file = form.querySelector('input[type="file"]')?.files?.[0];
-        if (info) info.textContent = file ? `${file.name} · ${(file.size / 1024).toLocaleString('ko', { maximumFractionDigits: 1 })} KB` : '현재 저장된 사진';
+        const files = Array.from(form.querySelector('input[name="file"]')?.files || []);
+        if (info) {
+            if (!files.length) {
+                info.textContent = kind === 'video' ? '현재 저장된 영상' : '현재 저장된 사진';
+            } else if (files.length === 1) {
+                info.textContent = `${files[0].name} · ${(files[0].size / 1024).toLocaleString('ko', { maximumFractionDigits: 1 })} KB`;
+            } else {
+                info.textContent = `${files.length}장 선택`;
+            }
+        }
     }
 
     function renderArtists(root) {
@@ -254,7 +697,7 @@
                 });
                 chips.appendChild(chip);
             });
-            if (!values.length) chips.textContent = '출연자를 선택하면 여기에 표시됩니다.';
+            if (!values.length) chips.textContent = '멤버를 선택하면 여기에 표시됩니다.';
         }
         syncPreview(root.querySelector('form'));
     }
@@ -288,6 +731,71 @@
     function acceptedFile(file) {
         if (kind === 'video') return !file.type || file.type.startsWith('video/');
         return /\.(jpe?g|jfif|png|webp|gif|bmp)$/i.test(file.name) || file.type.startsWith('image/');
+    }
+
+    function extensionForImageType(type) {
+        return ({
+            'image/jpeg': 'jpg',
+            'image/jpg': 'jpg',
+            'image/pjpeg': 'jpg',
+            'image/png': 'png',
+            'image/webp': 'webp',
+            'image/gif': 'gif',
+            'image/bmp': 'bmp',
+            'image/x-ms-bmp': 'bmp'
+        })[type] || 'png';
+    }
+
+    function normalizeClipboardImage(file) {
+        if (!file) return null;
+        const type = file.type && file.type.startsWith('image/') ? file.type : 'image/png';
+        const name = (file.name && /\.(jpe?g|jfif|png|webp|gif|bmp)$/i.test(file.name))
+            ? file.name
+            : ('clipboard.' + extensionForImageType(type));
+        if (file instanceof File && file.name === name && file.type === type) return file;
+        return new File([file], name, { type, lastModified: Date.now() });
+    }
+
+    function imageFilesFromClipboard(clipboardData) {
+        if (!clipboardData) return [];
+        const collected = [];
+        const seen = new Set();
+        const push = file => {
+            const normalized = normalizeClipboardImage(file);
+            if (!normalized) return;
+            const key = normalized.name + ':' + normalized.size + ':' + normalized.type + ':' + normalized.lastModified;
+            if (seen.has(key)) return;
+            seen.add(key);
+            collected.push(normalized);
+        };
+        const items = clipboardData.items;
+        if (items) {
+            for (let i = 0; i < items.length; i += 1) {
+                const item = items[i];
+                if (item.kind === 'file' && item.type && item.type.startsWith('image/')) {
+                    push(item.getAsFile());
+                }
+            }
+        }
+        if (!collected.length) {
+            const files = clipboardData.files;
+            if (files) {
+                for (let i = 0; i < files.length; i += 1) {
+                    const candidate = files[i];
+                    if (candidate && candidate.type && candidate.type.startsWith('image/')) push(candidate);
+                }
+            }
+        }
+        return collected;
+    }
+
+    function assignFilesToInput(input, files, { append = false } = {}) {
+        if (!input || !files?.length) return false;
+        const next = append && input.multiple
+            ? Array.from(input.files || []).concat(files)
+            : files.slice(0, input.multiple ? files.length : 1);
+        setInputFiles(input, next);
+        return true;
     }
 
     function syncThumbnail(form) {
@@ -410,13 +918,66 @@
     bindPicker(uploadDialog);
     bindThumbnail(uploadForm);
     bindFileNames(uploadForm);
+    bindImageEditTools(uploadForm);
+
+    function defaultUploadArtists() {
+        const fromPage = document.querySelector("[data-archive-kind]")?.dataset.defaultArtists;
+        if (fromPage != null && fromPage.trim()) return fromPage.trim();
+        const params = new URLSearchParams(window.location.search);
+        return [...new Set(params.getAll("members").map(name => name.trim()).filter(Boolean))].join(",");
+    }
+
+    function setUploadStatus(message) {
+        if (!uploadForm) return;
+        let status = uploadForm.querySelector("[data-upload-status]");
+        if (!status) {
+            status = document.createElement("p");
+            status.className = "ar-field-hint";
+            status.dataset.uploadStatus = "";
+            status.setAttribute("role", "status");
+            status.style.color = "#8decd9";
+            status.style.margin = "0";
+            uploadForm.querySelector(".ar-dialog-foot")?.prepend(status);
+        }
+        status.textContent = message || "";
+        status.hidden = !message;
+    }
+
+    function prepareUploadFormForNext() {
+        if (!uploadForm) return;
+        if (uploadFile) {
+            releaseUnusedFiles(uploadFile._archiveLastFiles, []);
+            uploadFile.value = "";
+            uploadFile._archiveLastFile = null;
+            uploadFile._archiveLastFiles = null;
+            uploadFile._archivePreviewIndex = 0;
+            syncFileName(uploadFile);
+        }
+        resetThumbnail(uploadForm);
+        const titleInput = uploadForm.querySelector("[name='title']");
+        if (titleInput) titleInput.value = "";
+        const descriptionInput = uploadForm.querySelector("[name='description']");
+        if (descriptionInput) descriptionInput.value = "";
+        showPreview(uploadPreview, "");
+        syncPreview(uploadForm);
+        uploadForm.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName);
+    }
 
     window.showAddModal = function () {
         if (!uploadForm || !uploadDialog) return;
+        afterUploadLocation = null;
         uploadForm.reset();
         resetThumbnail(uploadForm);
-        applyArtists(uploadDialog, "");
-        if (uploadFile) releaseUrl(uploadFile._archiveLastFile);
+        setUploadStatus("");
+        // 멤버 폴더·필터에서 열면 해당 멤버를 기본 선택(변경 가능)
+        applyArtists(uploadDialog, defaultUploadArtists());
+        if (uploadFile) {
+            releaseUrl(uploadFile._archiveLastFile);
+            (uploadFile._archiveLastFiles || []).forEach(releaseUrl);
+            uploadFile._archiveLastFile = null;
+            uploadFile._archiveLastFiles = null;
+            uploadFile._archivePreviewIndex = 0;
+        }
         showPreview(uploadPreview, "");
         window.bindArchiveDateFields?.(uploadForm);
         uploadForm.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName);
@@ -424,32 +985,43 @@
     };
 
     uploadFile?.addEventListener("change", () => {
-        const file = uploadFile.files && uploadFile.files[0];
-        releaseUrl(uploadFile._archiveLastFile);
-        uploadFile._archiveLastFile = file || null;
-        if (!file) {
+        bumpImageEditToken(uploadFile);
+        const files = Array.from(uploadFile.files || []);
+        releaseUnusedFiles(uploadFile._archiveLastFiles, files);
+        uploadFile._archiveLastFile = files[0] || null;
+        uploadFile._archiveLastFiles = files;
+        if (!files.length) {
             showPreview(uploadPreview, "");
+            syncFileName(uploadFile);
             return;
         }
-        if (!acceptedFile(file)) {
+        const invalid = files.find(file => !acceptedFile(file));
+        if (invalid) {
             alert(kind === "video" ? "동영상 파일만 선택할 수 있습니다." : "이미지 파일만 선택할 수 있습니다.");
+            (uploadFile._archiveLastFiles || []).forEach(releaseUrl);
             uploadFile.value = "";
+            uploadFile._archiveLastFile = null;
+            uploadFile._archiveLastFiles = null;
             syncFileName(uploadFile);
             showPreview(uploadPreview, "");
             return;
         }
-        showPreview(uploadPreview, rememberUrl(file));
+        const index = resolvePreviewIndex(uploadFile, files);
+        uploadFile._archivePreviewIndex = index;
+        showPreview(uploadPreview, rememberUrl(files[index]), { sourceFile: files[index], index });
+        files.forEach((file, i) => { if (i !== index) rememberUrl(file); });
+        syncFileName(uploadFile);
     });
 
     uploadForm?.addEventListener("submit", async event => {
         event.preventDefault();
         const title = uploadForm.querySelector("[name='title']")?.value.trim();
-        const file = uploadFile?.files?.[0];
-        if (!title) {
+        const files = Array.from(uploadFile?.files || []);
+        if (kind === "video" && !title) {
             alert("제목을 입력해 주세요.");
             return;
         }
-        if (!file) {
+        if (!files.length) {
             alert(noun + " 파일을 선택해 주세요.");
             return;
         }
@@ -465,7 +1037,10 @@
             alert("미리보기를 확인한 뒤 추가해 주세요.");
             return;
         }
-        if (!window.confirm("이 " + noun + "을 추가하시겠습니까?")) return;
+        const confirmMessage = kind === "image" && files.length > 1
+            ? "사진 " + files.length + "장을 한 게시글로 추가하시겠습니까?"
+            : "이 " + noun + "을 추가하시겠습니까?";
+        if (!window.confirm(confirmMessage)) return;
         if (!validThumbnail(uploadForm)) return;
         const body = new FormData(uploadForm);
         body.delete("artistNames");
@@ -475,10 +1050,18 @@
         if (button) button.disabled = true;
         try {
             const response = await fetch(uploadForm.dataset.uploadUrl || "/archive/upload", {
-                method: "POST", body, headers: authHeaders(), credentials: "same-origin"
+                method: "POST",
+                body,
+                headers: authHeaders(),
+                credentials: "same-origin",
+                // 프록시 뒤 절대 http Location 을 fetch 가 따라가면 Mixed Content 로 실패한다.
+                redirect: "manual"
             });
-            if (response.ok) {
-                location.reload();
+            if (uploadSucceeded(response)) {
+                afterUploadLocation = response.headers.get("Location") || "";
+                prepareUploadFormForNext();
+                setUploadStatus(noun + "을 추가했습니다. 이어서 더 추가할 수 있습니다.");
+                softRefreshArchive(afterUploadLocation);
                 return;
             }
             const message = (await response.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -497,6 +1080,23 @@
     bindPicker(editDialog);
     bindThumbnail(editForm);
     bindFileNames(editForm);
+    bindImageEditTools(editForm);
+
+    function activeImageFileInput() {
+        if (kind !== "image") return null;
+        if (uploadDialog && !uploadDialog.hidden) return uploadFile || null;
+        if (editDialog && !editDialog.hidden) return editFile || null;
+        return null;
+    }
+
+    document.addEventListener("paste", event => {
+        const input = activeImageFileInput();
+        if (!input) return;
+        const files = imageFilesFromClipboard(event.clipboardData);
+        if (!files.length) return;
+        event.preventDefault();
+        assignFilesToInput(input, files, { append: Boolean(input.multiple) });
+    });
 
     function showEdit(button) {
         if (!editForm || !editDialog) return;
@@ -504,7 +1104,13 @@
         resetThumbnail(editForm, button.dataset.thumbnailUrl || '');
         editForm.dataset.id = button.dataset.id || "";
         editForm.dataset.originalUrl = button.dataset.url || '';
-        editForm.querySelector("[name='title']").value = button.dataset.title || "";
+        const titleInput = editForm.querySelector("[name='title']");
+        if (titleInput) titleInput.value = button.dataset.title || "";
+        const descriptionInput = editForm.querySelector("[name='description']");
+        if (descriptionInput) {
+            descriptionInput.value = button.dataset.description
+                || (kind === "image" ? (button.dataset.title || "") : "");
+        }
         const registered = editForm.querySelector("[name='registeredOn']");
         if (registered) {
             registered.value = button.dataset.registered || "";
@@ -513,7 +1119,13 @@
         applyArtists(editDialog, button.dataset.artists || "");
         const sourceSelect = editForm.querySelector("[name='source']");
         if (sourceSelect) sourceSelect.value = button.dataset.source || "";
-        if (editFile) releaseUrl(editFile._archiveLastFile);
+        if (editFile) {
+            releaseUrl(editFile._archiveLastFile);
+            (editFile._archiveLastFiles || []).forEach(releaseUrl);
+            editFile._archiveLastFile = null;
+            editFile._archiveLastFiles = null;
+            editFile._archivePreviewIndex = 0;
+        }
         showPreview(editPreview, button.dataset.url || "");
         window.bindArchiveDateFields?.(editForm);
         editForm.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName);
@@ -521,18 +1133,32 @@
     }
 
     editFile?.addEventListener("change", () => {
-        const file = editFile.files && editFile.files[0];
-        releaseUrl(editFile._archiveLastFile);
-        editFile._archiveLastFile = file || null;
-        if (!file) { showPreview(editPreview, editForm.dataset.originalUrl || ''); return; }
-        if (!acceptedFile(file)) {
+        bumpImageEditToken(editFile);
+        const files = Array.from(editFile.files || []);
+        releaseUnusedFiles(editFile._archiveLastFiles, files);
+        editFile._archiveLastFile = files[0] || null;
+        editFile._archiveLastFiles = files;
+        if (!files.length) {
+            showPreview(editPreview, editForm.dataset.originalUrl || '');
+            syncFileName(editFile);
+            return;
+        }
+        const invalid = files.find(file => !acceptedFile(file));
+        if (invalid) {
             alert(kind === "video" ? "동영상 파일만 선택할 수 있습니다." : "이미지 파일만 선택할 수 있습니다.");
+            files.forEach(releaseUrl);
             editFile.value = "";
+            editFile._archiveLastFile = null;
+            editFile._archiveLastFiles = null;
             syncFileName(editFile);
             showPreview(editPreview, editForm.dataset.originalUrl || '');
             return;
         }
-        showPreview(editPreview, rememberUrl(file));
+        const index = resolvePreviewIndex(editFile, files);
+        editFile._archivePreviewIndex = index;
+        showPreview(editPreview, rememberUrl(files[index]), { sourceFile: files[index], index });
+        files.forEach((file, i) => { if (i !== index) rememberUrl(file); });
+        syncFileName(editFile);
     });
 
     async function removeArchive(id, title) {
@@ -547,7 +1173,8 @@
                 method: "DELETE", headers: authHeaders(), credentials: "same-origin"
             });
             if (response.ok) {
-                location.reload();
+                removeCardFromGrid(id);
+                softRefreshArchive();
                 return;
             }
             alert(response.status === 403 ? "관리자만 삭제할 수 있습니다." : (response.status === 404 ? "이미 삭제된 자료입니다." : "삭제에 실패했습니다."));
@@ -563,13 +1190,14 @@
             return;
         }
         const remove = event.target.closest("[data-archive-delete]");
-        if (remove) removeArchive(remove.dataset.id, remove.dataset.title);
+        if (remove) removeArchive(remove.dataset.id, remove.dataset.description || remove.dataset.title);
     });
 
     editForm?.addEventListener("submit", async event => {
         event.preventDefault();
-        const title = editForm.querySelector("[name='title']")?.value.trim();
-        if (!title) {
+        const title = editForm.querySelector("[name='title']")?.value.trim() || "";
+        const description = editForm.querySelector("[name='description']")?.value.trim() || "";
+        if (kind === "video" && !title) {
             alert("제목을 입력해 주세요.");
             return;
         }
@@ -582,23 +1210,27 @@
             alert("수정할 자료를 찾지 못했습니다.");
             return;
         }
-        const replacing = Boolean(editFile?.files?.[0]);
+        const replaceFiles = Array.from(editFile?.files || []);
+        const replacing = replaceFiles.length > 0;
         if (replacing && (editPreview?.dataset.invalid || editPreview?.dataset.pending)) {
             alert('사진을 읽지 못했습니다. 다른 이미지 파일을 선택해 주세요.');
             return;
         }
         const message = replacing
-            ? "이 " + noun + "을 수정하시겠습니까? 선택한 파일로 기존 미디어가 바뀝니다."
+            ? (kind === "image" && replaceFiles.length > 1
+                ? "이 게시글 사진을 " + replaceFiles.length + "장으로 통째로 교체할까요?"
+                : "이 " + noun + "을 수정하시겠습니까? 선택한 파일로 기존 미디어가 바뀝니다.")
             : "이 " + noun + "을 수정하시겠습니까?";
         if (!window.confirm(message)) return;
         if (!validThumbnail(editForm)) return;
         const body = new FormData();
-        body.set("title", title);
+        if (kind === "video") body.set("title", title);
+        else body.set("description", description);
         body.set("registeredOn", registeredOn);
         body.set("artistNames", selectedArtists(editDialog).join(","));
         const source = editForm.querySelector("[name='source']")?.value || "";
         if (source) body.set("source", source);
-        if (replacing) body.set("file", editFile.files[0]);
+        if (replacing) replaceFiles.forEach(file => body.append("file", file));
         const thumbnail = editForm.querySelector('[name="thumbnail"]')?.files?.[0];
         if (thumbnail) body.set('thumbnail', thumbnail);
         const clearThumbnail = editForm.querySelector('[name="clearThumbnail"]');
@@ -610,7 +1242,8 @@
                 method: "POST", body, headers: authHeaders(), credentials: "same-origin"
             });
             if (response.ok) {
-                location.reload();
+                closeDialog(editDialog);
+                softRefreshArchive();
                 return;
             }
             const text = (await response.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();

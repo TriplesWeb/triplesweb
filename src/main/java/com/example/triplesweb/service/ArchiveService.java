@@ -6,6 +6,8 @@ import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.repository.ArchiveRepository;
 import com.example.triplesweb.util.ArchiveFolderClassifier;
+import com.example.triplesweb.util.ArchiveImages;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -23,6 +25,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 
@@ -36,6 +39,7 @@ public class ArchiveService {
 
     private final ArchiveRepository archiveRepository;
     private final FileStorageService fileStorageService;
+    private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
     public List<Archive> index() {
@@ -106,7 +110,10 @@ public class ArchiveService {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("file").get("mediaType"), type));
             if (!q.isEmpty()) {
-                predicates.add(cb.like(cb.lower(root.get("title")), "%" + q.toLowerCase(Locale.ROOT) + "%"));
+                String pattern = "%" + q.toLowerCase(Locale.ROOT) + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("title")), pattern),
+                        cb.like(cb.lower(cb.coalesce(root.get("description"), "")), pattern)));
             }
             if (!names.isEmpty()) {
                 Expression<String> normalized = cb.lower(cb.function(
@@ -121,9 +128,7 @@ public class ArchiveService {
             if (from != null) predicates.add(cb.greaterThanOrEqualTo(root.get("registeredOn"), from));
             if (to != null) predicates.add(cb.lessThanOrEqualTo(root.get("registeredOn"), to));
             if (unclassifiedOnly) {
-                predicates.add(cb.or(
-                        cb.isNull(root.get("source")),
-                        cb.equal(root.get("source"), ArchiveSource.FANCAM)));
+                predicates.add(cb.isNull(root.get("source")));
             } else if (source != null) {
                 predicates.add(cb.equal(root.get("source"), source));
             }
@@ -155,19 +160,63 @@ public class ArchiveService {
     @Transactional
     public Archive save(MultipartFile file, String title, MediaType requestedType, String artistNames, LocalDate registeredOn,
                         ArchiveSource source) throws IOException {
+        return save(file, title, requestedType, artistNames, registeredOn, source, null);
+    }
+
+    @Transactional
+    public Archive save(MultipartFile file, String title, MediaType requestedType, String artistNames, LocalDate registeredOn,
+                        ArchiveSource source, String description) throws IOException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("업로드 할 파일이 없습니다.");
         }
+        MediaType resolved = requestedType == null ? MediaType.OTHER : requestedType;
         String safeTitle = (title == null) ? "" : title.trim();
-        if (safeTitle.isEmpty()) {
+        if (safeTitle.isEmpty() && resolved == MediaType.VIDEO) {
             throw new IllegalArgumentException("제목을 입력해주세요.");
         }
         SavedMeta meta = fileStorageService.saveWithMeta(file);   // SavedMeta 채워서 반환
         coerceType(requestedType, meta);
-        Archive archive = new Archive(title, meta);
+        Archive archive = new Archive(safeTitle, meta);
+        archive.setDescription(normalizeDescription(description));
         archive.setArtistNames(artistNames == null ? "" : artistNames.trim());
         if (registeredOn != null) archive.setRegisteredOn(registeredOn);
         archive.setSource(source);
+        if (resolved == MediaType.IMAGE) {
+            applyImageUrls(archive, List.of(meta.getUrl()));
+        }
+        return archiveRepository.save(archive);
+    }
+
+    /**
+     * 여러 사진을 한 게시글로 저장한다. 첫 장이 표지({@link Archive#getFile()})가 된다.
+     */
+    @Transactional
+    public Archive uploadImages(List<MultipartFile> files, String title, String artistNames, LocalDate registeredOn,
+                                ArchiveSource source, String description) throws IOException {
+        List<MultipartFile> uploads = files == null ? List.of() : files.stream()
+                .filter(file -> file != null && !file.isEmpty())
+                .toList();
+        if (uploads.isEmpty()) {
+            throw new IllegalArgumentException("업로드 할 파일이 없습니다.");
+        }
+        if (uploads.size() > ArchiveImages.MAX_IMAGES) {
+            throw new IllegalArgumentException("사진은 최대 " + ArchiveImages.MAX_IMAGES + "장까지 등록할 수 있습니다.");
+        }
+        String safeTitle = title == null ? "" : title.trim();
+        List<SavedMeta> metas = new ArrayList<>(uploads.size());
+        List<String> urls = new ArrayList<>(uploads.size());
+        for (MultipartFile file : uploads) {
+            SavedMeta meta = fileStorageService.saveWithMeta(file);
+            coerceType(MediaType.IMAGE, meta);
+            metas.add(meta);
+            urls.add(meta.getUrl());
+        }
+        Archive archive = new Archive(safeTitle, metas.get(0));
+        archive.setDescription(normalizeDescription(description));
+        archive.setArtistNames(artistNames == null ? "" : artistNames.trim());
+        if (registeredOn != null) archive.setRegisteredOn(registeredOn);
+        archive.setSource(source);
+        applyImageUrls(archive, urls);
         return archiveRepository.save(archive);
     }
     @Transactional
@@ -195,10 +244,16 @@ public class ArchiveService {
     @Transactional
     public Archive uploadImageOnly(MultipartFile file, String title, MediaType type, String artistNames, LocalDate registeredOn,
                                    ArchiveSource source) throws IOException {
+        return uploadImageOnly(file, title, type, artistNames, registeredOn, source, null);
+    }
+
+    @Transactional
+    public Archive uploadImageOnly(MultipartFile file, String title, MediaType type, String artistNames, LocalDate registeredOn,
+                                   ArchiveSource source, String description) throws IOException {
         if (type != null && type != MediaType.IMAGE) {
             throw new IllegalArgumentException("이미지 파일만 업로드 가능합니다.");
         }
-        return save(file, title, MediaType.IMAGE, artistNames, registeredOn, source);
+        return save(file, title, MediaType.IMAGE, artistNames, registeredOn, source, description);
     }
     @Transactional
     public Archive uploadVideoOnly(MultipartFile file, String title, MediaType type) throws IOException {
@@ -244,7 +299,7 @@ public class ArchiveService {
     @Transactional
     public boolean delete(long id) {
         return archiveRepository.findById(id).map(archive -> {
-            deleteStored(archive.getFile());
+            deleteImageSet(archive);
             deleteThumbnail(archive.getThumbnailUrl());
             archiveRepository.delete(archive);
             return true;
@@ -273,21 +328,43 @@ public class ArchiveService {
     @Transactional
     public Archive update(long id, String title, MultipartFile file, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
                           LocalDate registeredOn, ArchiveSource source) throws IOException {
-        return update(id, title, file, artistNames, thumbnail, clearThumbnail, registeredOn, source, true);
+        return update(id, title, file, artistNames, thumbnail, clearThumbnail, registeredOn, source, null);
+    }
+
+    @Transactional
+    public Archive update(long id, String title, MultipartFile file, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
+                          LocalDate registeredOn, ArchiveSource source, String description) throws IOException {
+        List<MultipartFile> files = file == null || file.isEmpty() ? List.of() : List.of(file);
+        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description);
+    }
+
+    @Transactional
+    public Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
+                          LocalDate registeredOn, ArchiveSource source, String description) throws IOException {
+        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description);
     }
 
     private Archive update(long id, String title, MultipartFile file, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
                            LocalDate registeredOn, ArchiveSource source, boolean applySource) throws IOException {
+        List<MultipartFile> files = file == null || file.isEmpty() ? List.of() : List.of(file);
+        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, applySource, null);
+    }
+
+    private Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
+                           LocalDate registeredOn, ArchiveSource source, boolean applySource, String description) throws IOException {
         Archive archive = show(id);
         validateThumbnail(thumbnail);
         if (thumbnail != null && !thumbnail.isEmpty() && archive.getType() != MediaType.VIDEO) {
             throw new IllegalArgumentException("영상 아카이브에만 썸네일을 설정할 수 있습니다.");
         }
         String safeTitle = title == null ? "" : title.trim();
-        if (safeTitle.isEmpty()) {
+        if (safeTitle.isEmpty() && archive.getType() == MediaType.VIDEO) {
             throw new IllegalArgumentException("제목을 입력해주세요.");
         }
         archive.setTitle(safeTitle);
+        if (description != null || archive.getType() == MediaType.IMAGE) {
+            archive.setDescription(normalizeDescription(description));
+        }
         if (artistNames != null) {
             archive.setArtistNames(artistNames.trim());
         }
@@ -297,12 +374,32 @@ public class ArchiveService {
         if (applySource) {
             archive.setSource(source);
         }
-        if (file != null && !file.isEmpty()) {
-            SavedMeta previous = archive.getFile();
-            SavedMeta meta = fileStorageService.saveWithMeta(file);
-            coerceType(archive.getType(), meta);
-            archive.setFile(meta);
-            deleteStored(previous);
+        List<MultipartFile> uploads = files == null ? List.of() : files.stream()
+                .filter(part -> part != null && !part.isEmpty())
+                .toList();
+        if (!uploads.isEmpty()) {
+            if (archive.getType() == MediaType.IMAGE) {
+                if (uploads.size() > ArchiveImages.MAX_IMAGES) {
+                    throw new IllegalArgumentException("사진은 최대 " + ArchiveImages.MAX_IMAGES + "장까지 등록할 수 있습니다.");
+                }
+                List<SavedMeta> metas = new ArrayList<>(uploads.size());
+                List<String> urls = new ArrayList<>(uploads.size());
+                for (MultipartFile part : uploads) {
+                    SavedMeta meta = fileStorageService.saveWithMeta(part);
+                    coerceType(MediaType.IMAGE, meta);
+                    metas.add(meta);
+                    urls.add(meta.getUrl());
+                }
+                deleteImageSet(archive);
+                archive.setFile(metas.get(0));
+                applyImageUrls(archive, urls);
+            } else {
+                SavedMeta previous = archive.getFile();
+                SavedMeta meta = fileStorageService.saveWithMeta(uploads.get(0));
+                coerceType(archive.getType(), meta);
+                archive.setFile(meta);
+                deleteStored(previous);
+            }
         }
         String previousThumbnail = archive.getThumbnailUrl();
         if (thumbnail != null && !thumbnail.isEmpty()) {
@@ -313,6 +410,38 @@ public class ArchiveService {
             deleteThumbnail(previousThumbnail);
         }
         return archiveRepository.save(archive);
+    }
+
+    private void applyImageUrls(Archive archive, List<String> urls) {
+        List<String> safe = urls == null ? List.of() : urls.stream()
+                .filter(url -> url != null && !url.isBlank())
+                .map(String::trim)
+                .toList();
+        archive.setImagesJson(ArchiveImages.write(safe, objectMapper));
+    }
+
+    private void deleteImageSet(Archive archive) {
+        LinkedHashSet<String> urls = new LinkedHashSet<>(ArchiveImages.resolve(archive, objectMapper));
+        if (archive.getFile() != null && archive.getFile().getUrl() != null) {
+            urls.add(archive.getFile().getUrl());
+        }
+        for (String url : urls) {
+            deleteStored(SavedMeta.builder().url(url).build());
+        }
+        if (archive.getFile() != null
+                && archive.getFile().getSavedName() != null
+                && !archive.getFile().getSavedName().isBlank()) {
+            String coverUrl = archive.getFile().getUrl();
+            if (coverUrl == null || !urls.contains(coverUrl)) {
+                deleteStored(archive.getFile());
+            }
+        }
+    }
+
+    private static String normalizeDescription(String description) {
+        if (description == null) return null;
+        String trimmed = description.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private void validateThumbnail(MultipartFile thumbnail) {

@@ -112,17 +112,17 @@
       field.setAttribute("pattern", "\\d*");
       return field;
     };
-    const year = makePart("year", 4, "yyyy");
-    const month = makePart("month", 2, "mm");
-    const day = makePart("day", 2, "dd");
-    const slash = () => {
+    const year = makePart("year", 4, "년");
+    const month = makePart("month", 2, "월");
+    const day = makePart("day", 2, "일");
+    const dot = () => {
       const sep = document.createElement("span");
       sep.className = "ar-cal-sep";
       sep.setAttribute("aria-hidden", "true");
-      sep.textContent = "/";
+      sep.textContent = ".";
       return sep;
     };
-    parts.append(year, slash(), month, slash(), day);
+    parts.append(year, dot(), month, dot(), day);
     wrap.append(parts);
     const fields = [year, month, day];
 

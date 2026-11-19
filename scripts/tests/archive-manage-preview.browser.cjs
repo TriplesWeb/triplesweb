@@ -17,6 +17,9 @@ function pageHtml(kind) {
   const isVideo = kind === 'video';
   const noun = isVideo ? '영상' : '사진';
   const previewLabel = isVideo ? '목록에서 보이는 모습' : '목록에서 보이는 모습 · 카드/슬라이드';
+  const titleField = isVideo
+    ? '<label class="ar-field">제목<input type="text" name="title"></label>'
+    : '<label class="ar-field">설명<textarea name="description" rows="3"></textarea></label>';
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
@@ -25,9 +28,9 @@ body{margin:0;background:#0d0e12;color:#e3e2e8;font-family:"Pretendard Variable"
 ${site}${css}${siteUi}
 </style></head>
 <body class="site-page">
-<main class="archive-page" data-archive-kind="${kind}" data-date-label="${noun} 날짜">
+<main class="archive-page" data-archive-kind="${kind}" data-date-label="${noun} 날짜" data-default-artists="지연">
   <section class="ar-grid" id="archiveGrid">
-    <article class="ar-panel ar-card" data-id="1" data-title="지서연" data-artists="지연" data-url="${isVideo ? '/clip.mp4' : '/portrait.svg'}" data-registered="2026-10-25">
+    <article class="ar-panel ar-card" data-id="1" data-title="${isVideo ? '지서연' : ''}" data-description="${isVideo ? '' : '지서연'}" data-headline="지서연" data-artists="지연" data-url="${isVideo ? '/clip.mp4' : '/portrait.svg'}" data-registered="2026-10-25">
       ${isVideo
         ? '<a class="ar-video-thumb" href="/clip.mp4"><img src="/poster.svg" alt=""><span class="ar-video-play" aria-hidden="true">▶</span></a>'
         : '<button type="button" class="ar-photo-link"><img src="/portrait.svg" alt=""></button>'}
@@ -38,14 +41,14 @@ ${site}${css}${siteUi}
           <time class="ar-card-date" datetime="2026-10-25">2026/10/25</time>
         </div>
       </div>
-      <button type="button" class="site-btn" data-archive-edit data-id="1" data-title="지서연" data-artists="지연" data-url="${isVideo ? '/clip.mp4' : '/portrait.svg'}" data-thumbnail-url="${isVideo ? '/poster.svg' : ''}" data-registered="2026-10-25" data-source="FANCAM">수정하기</button>
+      <button type="button" class="site-btn" data-archive-edit data-id="1" data-title="${isVideo ? '지서연' : ''}" data-description="${isVideo ? '' : '지서연'}" data-artists="지연" data-url="${isVideo ? '/clip.mp4' : '/portrait.svg'}" data-thumbnail-url="${isVideo ? '/poster.svg' : ''}" data-registered="2026-10-25" data-source="COSMO_ROOM">수정하기</button>
     </article>
   </section>
 </main>
 <div class="ar-dialog" id="uploadModal" hidden>
   <div class="ar-dialog-panel">
     <form id="archiveUploadForm" enctype="multipart/form-data" data-upload-url="/archive/upload/${kind}">
-      <label class="ar-field">제목<input type="text" name="title"></label>
+      ${titleField}
       <label class="ar-field">${noun} 날짜<input type="date" name="registeredOn"></label>
       <div class="member-portrait-picker" id="archive-upload-picker">
         <button type="button" class="mpp-item" data-value="지연" data-name="지연" data-frame="24" style="--artist-color:#7bba8d" aria-pressed="false">
@@ -55,7 +58,11 @@ ${site}${css}${siteUi}
       </div>
       <div data-artist-chips></div>
       <span data-picker-count>0</span>
-      <input type="file" name="file" accept="${isVideo ? 'video/*' : 'image/*'}">
+      <span class="ar-file">
+        <input type="file" id="archiveUploadFile" name="file" accept="${isVideo ? 'video/*' : 'image/*'}" ${isVideo ? '' : 'multiple'}>
+        <label for="archiveUploadFile" class="ar-file-pick">파일 선택</label>
+        <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
+      </span>
       ${isVideo ? '<input type="file" name="thumbnail" accept="image/*"><div class="ar-thumbnail-preview" data-thumbnail-preview hidden><img alt=""><p data-thumbnail-info></p></div>' : ''}
       <div class="ar-preview" id="uploadPreview" hidden>
         <p class="ar-preview-info" data-preview-file></p>
@@ -69,9 +76,9 @@ ${site}${css}${siteUi}
 <div class="ar-dialog" id="editModal" hidden>
   <div class="ar-dialog-panel">
     <form id="archiveEditForm" enctype="multipart/form-data">
-      <label class="ar-field">제목<input type="text" name="title"></label>
+      ${titleField}
       <label class="ar-field">${noun} 날짜<input type="date" name="registeredOn"></label>
-      <label class="ar-field">출처<select name="source"><option value="FANCAM">기타/팬메이드</option></select></label>
+      <label class="ar-field">출처<select name="source"><option value="COSMO_ROOM">코스모룸</option></select></label>
       <div class="member-portrait-picker" id="archive-edit-picker">
         <button type="button" class="mpp-item" data-value="지연" data-name="지연" data-frame="24" style="--artist-color:#7bba8d" aria-pressed="false">
           <span class="artist-tab-avatar"><img class="artist-tab-photo" src="/portrait.svg" alt=""></span>
@@ -143,6 +150,23 @@ async function withPage(html, run) {
     await page.locator('#archiveGrid .ar-card').screenshot({
       path: path.join(artifactDir, 'archive-live-photo-card.png')
     });
+    await page.evaluate(() => window.showAddModal());
+    const preselected = await page.evaluate(() => {
+      const active = document.querySelectorAll('#uploadModal .mpp-item.is-active');
+      return {
+        count: active.length,
+        names: Array.from(active).map((btn) => btn.dataset.value || ''),
+        chip: document.querySelector('#uploadModal [data-artist-chips]')?.textContent.trim() || ''
+      };
+    });
+    assert.equal(preselected.count, 1, '멤버 폴더 기본 선택이 없다');
+    assert.deepEqual(preselected.names, ['지연']);
+    assert.match(preselected.chip, /지연/);
+    await page.evaluate(() => {
+      document.getElementById('uploadModal').hidden = true;
+      document.body.style.overflow = '';
+    });
+
     await page.click('[data-archive-edit]');
     await page.locator('#editPreview .ar-preview-photo-card').waitFor();
 
@@ -194,7 +218,7 @@ async function withPage(html, run) {
       path: path.join(artifactDir, 'archive-edit-preview-photo-card.png')
     });
 
-    await page.fill('#archiveEditForm [name="title"]', '지서연 수정');
+    await page.fill('#archiveEditForm [name="description"]', '지서연 수정');
     await page.fill('#archiveEditForm [name="registeredOn"]', '2026-11-16');
     const updated = await page.evaluate(() => ({
       title: document.querySelector('#editPreview [data-preview-title]').textContent,
@@ -202,6 +226,80 @@ async function withPage(html, run) {
     }));
     assert.equal(updated.title, '지서연 수정');
     assert.equal(updated.date, '2026/11/16');
+
+    await page.evaluate(() => {
+      document.getElementById('editModal').hidden = true;
+      document.getElementById('uploadModal').hidden = false;
+    });
+    const pasted = await page.evaluate(() => {
+      const png = Uint8Array.from(atob(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+      ), (c) => c.charCodeAt(0));
+      const blob = new File([png], 'image.png', { type: 'image/png' });
+      const clipboardData = {
+        items: [{
+          kind: 'file',
+          type: 'image/png',
+          getAsFile: () => blob
+        }],
+        files: [blob]
+      };
+      const event = new Event('paste', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'clipboardData', { get: () => clipboardData });
+      document.dispatchEvent(event);
+      const input = document.querySelector('#archiveUploadForm input[name="file"]');
+      const preview = document.getElementById('uploadPreview');
+      return {
+        name: input?.files?.[0]?.name || '',
+        type: input?.files?.[0]?.type || '',
+        previewHidden: preview?.hidden ?? true,
+        fullImage: Boolean(preview?.querySelector('.ar-preview-full img'))
+      };
+    });
+    assert.equal(pasted.type, 'image/png');
+    assert.match(pasted.name, /\.(png|jpe?g|webp|gif|bmp)$/i);
+    assert.equal(pasted.previewHidden, false, '붙여넣은 사진 미리보기가 열리지 않는다');
+    assert.equal(pasted.fullImage, true, '붙여넣은 사진 원본 미리보기가 없다');
+
+    const multi = await page.evaluate(() => {
+      const png = Uint8Array.from(atob(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+      ), (c) => c.charCodeAt(0));
+      const input = document.querySelector('#archiveUploadForm input[name="file"]');
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([png], 'one.png', { type: 'image/png' }));
+      transfer.items.add(new File([png], 'two.png', { type: 'image/png' }));
+      transfer.items.add(new File([png], 'three.png', { type: 'image/png' }));
+      input.files = transfer.files;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      const tiles = Array.from(document.querySelectorAll('#archiveUploadForm .ar-file-tile'));
+      const thumbs = tiles.map((tile) => ({
+        src: tile.querySelector('.ar-file-thumb img')?.getAttribute('src') || '',
+        label: tile.querySelector('.ar-file-remove')?.getAttribute('aria-label') || ''
+      }));
+      const summary = document.querySelector('#uploadPreview [data-preview-file]')?.textContent.trim() || '';
+      document.querySelectorAll('#archiveUploadForm .ar-file-remove')[1]?.click();
+      const afterLabels = Array.from(document.querySelectorAll('#archiveUploadForm .ar-file-remove')).map((btn) => btn.getAttribute('aria-label') || '');
+      const afterNames = Array.from(input.files || []).map((file) => file.name);
+      const afterThumbs = Array.from(document.querySelectorAll('#archiveUploadForm .ar-file-thumb img')).map((img) => img.getAttribute('src') || '');
+      return {
+        tileCount: tiles.length,
+        thumbs,
+        summary,
+        afterLabels,
+        afterNames,
+        afterThumbs,
+        count: input.files.length
+      };
+    });
+    assert.equal(multi.tileCount, 3);
+    assert.deepEqual(multi.thumbs.map((item) => item.label), ['one.png 제거', 'two.png 제거', 'three.png 제거']);
+    assert.ok(multi.thumbs.every((item) => item.src.startsWith('blob:')), '선택 파일 썸네일이 없다');
+    assert.equal(multi.summary, '3장 선택');
+    assert.deepEqual(multi.afterLabels, ['one.png 제거', 'three.png 제거']);
+    assert.deepEqual(multi.afterNames, ['one.png', 'three.png']);
+    assert.ok(multi.afterThumbs.every((src) => src.startsWith('blob:')), '제거 후 썸네일이 깨졌다');
+    assert.equal(multi.count, 2);
   });
 
   await withPage(pageHtml('video'), async (page) => {

@@ -2,12 +2,15 @@ package com.example.triplesweb.service;
 
 import com.example.triplesweb.dto.AlbumListCard;
 import com.example.triplesweb.dto.AlbumSectionGroupDto;
+import com.example.triplesweb.dto.ArtistOstAlbumCard;
 import com.example.triplesweb.dto.HomeAlbumHero;
 import com.example.triplesweb.entity.Album;
 import com.example.triplesweb.entity.AlbumSection;
+import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.repository.AlbumRepository;
 import com.example.triplesweb.repository.AlbumSectionRepository;
 import com.example.triplesweb.util.ImageUrls;
+import com.example.triplesweb.util.MemberPortraitOptions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -15,10 +18,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 앨범 목록·상세 조회. 목록은 구분(섹션)별로 묶고 미배정은 「기타」.
@@ -30,6 +36,8 @@ public class AlbumService {
     private static final long LIST_CACHE_TTL_MS = 120_000L;
     /** 홈 히어로는 한국·일본 발매만 대상으로 한다. */
     static final List<String> HOME_HERO_SECTIONS = List.of("한국", "일본");
+    /** 앨범 목록 구분 중 OST 섹션명. */
+    static final String OST_SECTION_NAME = "OST";
 
     private final AlbumRepository albumRepository;
     private final AlbumSectionRepository albumSectionRepository;
@@ -148,6 +156,60 @@ public class AlbumService {
                 .findFirst()
                 .map(HomeAlbumHero::from)
                 .orElseGet(HomeAlbumHero::fallback);
+    }
+
+    /**
+     * 멤버 프로필에 OST 참여를 붙인다.
+     * 24인 완전체({@code FULL_24})와 참여 멤버가 전원인 OST는 제외한다.
+     */
+    @Transactional(readOnly = true)
+    public void attachOstAlbums(List<Artist> artists) {
+        if (artists == null || artists.isEmpty()) {
+            return;
+        }
+        int fullRoster = MemberPortraitOptions.koreanOrder().size();
+        Map<Long, List<ArtistOstAlbumCard>> byArtist = new LinkedHashMap<>();
+        List<Album> ostAlbums = new ArrayList<>(albumRepository.findOstAlbumsWithArtists(OST_SECTION_NAME));
+        ostAlbums.sort(Comparator
+                .comparing(Album::getReleaseDate, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(Album::getAlbumId, Comparator.nullsLast(Comparator.reverseOrder())));
+        for (Album album : ostAlbums) {
+            if (!isPartialOstParticipation(album, fullRoster)) {
+                continue;
+            }
+            ArtistOstAlbumCard card = toOstCard(album);
+            Set<Long> seen = new LinkedHashSet<>();
+            for (Artist participant : album.getArtists()) {
+                if (participant == null || participant.getArtistId() == null) {
+                    continue;
+                }
+                Long artistId = participant.getArtistId();
+                if (!seen.add(artistId)) {
+                    continue;
+                }
+                byArtist.computeIfAbsent(artistId, ignored -> new ArrayList<>()).add(card);
+            }
+        }
+        for (Artist artist : artists) {
+            if (artist == null || artist.getArtistId() == null) {
+                continue;
+            }
+            artist.setDisplayOstAlbums(List.copyOf(byArtist.getOrDefault(artist.getArtistId(), List.of())));
+        }
+    }
+
+    static boolean isPartialOstParticipation(Album album, int fullRosterSize) {
+        if (album == null || album.getArtists() == null || album.getArtists().isEmpty()) {
+            return false;
+        }
+        return album.getArtists().size() < fullRosterSize;
+    }
+
+    private static ArtistOstAlbumCard toOstCard(Album album) {
+        return new ArtistOstAlbumCard(
+                album.getAlbumId(),
+                album.getAlbumName(),
+                album.getDisplayAlbumImage());
     }
 
     static boolean isHomeHeroEligible(Album album) {

@@ -4,28 +4,19 @@ name: CI tests
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, closed]
 
-# Allow a running Pi deployment to finish or roll back before the next update.
+# Avoid paying for obsolete commits when a PR is updated.
 concurrency:
   group: ci-pr-${{ github.event.pull_request.number }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: write
   pull-requests: write
   checks: write
-  issues: write
-  packages: write
 
 jobs:
-  preview:
-    if: github.event.pull_request.head.repo.full_name == github.repository
-    uses: ./.github/workflows/preview.yml
-    secrets: inherit
-
   changes:
-    if: github.event.action != 'closed'
     name: detect changes
     runs-on: ubuntu-latest
     outputs:
@@ -260,7 +251,7 @@ jobs:
 
   required:
     name: required
-    if: ${{ always() && github.event.action != 'closed' }}
+    if: ${{ always() }}
     needs: [changes, test, package, qodana]
     runs-on: ubuntu-latest
     steps:

@@ -31,7 +31,7 @@ class FileStorageServiceImplTest {
         var sync = mock(UploadSyncService.class);
         var store = mock(UploadContentStore.class);
         when(store.maxBytes()).thenReturn(1024L);
-        var storage = new FileStorageServiceImpl(directory.toString(), sync, store);
+        var storage = new FileStorageServiceImpl(directory.toString(), sync, store, Runnable::run);
         byte[] original = new byte[]{1, 2, 3, 4};
         var saved = storage.saveWithMeta(new MockMultipartFile("file", filename, declaredType, original));
 

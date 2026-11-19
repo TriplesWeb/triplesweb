@@ -105,6 +105,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .objekt-description-buttons button,
   .objekt-description-share-toggle{min-height:1.65rem;height:1.65rem}
   .objekt-description-share-actions button{min-height:1.45rem;height:1.45rem}
+  /* 인라인 수정 버튼: 44px는 뚱뚱하고, 패딩만 줄이면 너무 납작해짐 */
+  .artist-mode-btn{min-height:2.125rem;height:2.125rem;padding:0 .8rem;line-height:1}
   a,summary{touch-action:manipulation}
   textarea{max-width:100%;resize:vertical}
   [contenteditable=true]{max-width:100%;font-size:16px;overflow-wrap:anywhere;overflow-x:auto}

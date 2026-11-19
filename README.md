@@ -118,26 +118,24 @@ DB를 서버와 같이 쓰면 **파일도 같이** 보여야 합니다.
 
 ## Raspberry Pi 4 Docker CI/CD (Tailscale SSH)
 
-### PR 모바일 미리보기
-
-같은 저장소의 PR을 열거나 업데이트하면 Actions가 Pi에 PR별 미리보기를 만들고 PR 댓글에 HTTPS 링크를 남깁니다. 휴대폰은 Pi에 접근할 수 있는 Tailscale 네트워크에 연결되어 있어야 합니다. 외부 포크의 PR은 실행하지 않습니다.
-
-- 최초 실행에는 운영 MariaDB의 사이트 데이터와 `uploads/` 복사본을 사용합니다. 스냅샷 시간을 줄이기 위해 외부 오브젝트 수집기가 생성하는 두 색인 테이블은 구조만 복사합니다. PR 업데이트 시에는 기존 미리보기의 DB와 파일 변경을 유지합니다. PR을 닫거나 병합하면 해당 복사본도 삭제됩니다.
-- 새 버전을 검사하는 동안 기존 미리보기가 잠시 중단됩니다. 새 버전이 정상 기동하지 못하면 이전 버전을 다시 시작합니다. 미리보기에서는 예약 작업, 업로드 동기화, 앱 서버의 외부 네트워크 연결 및 운영 서비스 자격 증명을 사용하지 않습니다. 따라서 외부 API 호출이 필요한 기능은 미리보기에서 제한됩니다.
-- 워크플로는 아래 운영 배포와 같은 `TS_OAUTH_CLIENT_ID`, `TS_OAUTH_SECRET`, `PI_HOST`, `PI_USER`, `PI_SSH_KEY`, `PI_DEPLOY_PATH`를 사용합니다. 비공개 GHCR 패키지라면 `GHCR_TOKEN`에 Pi에서 이미지를 읽을 수 있는 토큰을 설정합니다.
-- Pi에는 Docker/Compose, Tailscale Serve, `curl`, `python3`, `openssl`, `flock`, `ss`가 필요합니다. 배포 사용자는 Docker와 Tailscale Serve를 실행할 수 있어야 하며, Tailnet에서 HTTPS와 Pi의 미리보기 포트 20000–20999 접근이 허용되어야 합니다.
-- 미리보기 파일은 `${PI_DEPLOY_PATH}/.previews`, DB는 별도 Docker 컨테이너에 저장됩니다. 업데이트 중에는 두 세대의 DB와 파일을 동시에 보관하므로 Pi의 디스크·메모리 여유가 필요합니다. 운영 데이터가 포함되므로 링크 접근 권한은 Tailnet 정책으로 제한하세요.
-- 이 워크플로가 기본 브랜치에 반영된 뒤 새 PR 이벤트부터 자동 실행됩니다. 기존 PR은 새 커밋을 푸시하거나 Actions 실행을 다시 시작해 갱신합니다.
-
-최초 배포 후 PR 댓글의 링크에서 데이터, 이미지, 모바일 화면을 확인하세요. 실패하면 댓글에 연결된 Actions 로그를 확인합니다.
-
-`main` 푸시 시 GitHub Actions가 **linux/arm64** 이미지를 빌드해 GHCR에 올리고, Tailscale으로 Pi에 SSH해 `docker compose pull && up`까지 자동 실행합니다.
+같은 Pi에 **운영**과 **개발** 앱을 나눕니다. DB·uploads·data는 공유하고, 앱 컨테이너·포트만 분리합니다.
 
 ```text
-push → Actions (buildx arm64) → ghcr.io → Tailscale join → SSH → compose pull/up
+PR open/push  → deploy-dev  → /opt/stacks/triplesweb-dev (:8091)  즉시
+main 머지     → 운영 재시작 없음 (기본)
+main 머지 + PR 코멘트「즉시 배포」 → deploy-main → 운영 즉시
+매일 04:00 KST / 수동 → deploy-main → /opt/stacks/triplesweb (:8090)
 ```
 
-### 1. GitHub Secrets
+### PR별 비공개 모바일 미리보기 (선택)
+
+기본 PR 미리보기는 위 개발 서버입니다. PR마다 독립된 DB와 Tailscale HTTPS 링크가 필요한 경우 [PR Tailscale preview](.github/workflows/preview.yml)를 활성화할 수 있습니다.
+
+- Pi에 테스트 데이터와 `uploads/`를 준비하고, 별도 MariaDB 서비스가 있는 Compose 경로를 Actions Variable `PI_PR_PREVIEW_SOURCE_PATH`에 등록합니다. 운영 경로는 사용할 수 없습니다.
+- 배포 계정에는 Docker와 Tailscale Serve 실행 권한이 필요합니다. Tailnet 정책에서 HTTPS와 Pi의 미리보기 포트 20000–20999 접근을 허용합니다.
+- PR 최초 실행 시 테스트 데이터 복사본이 만들어집니다. PR 업데이트는 미리보기에서 바꾼 DB와 파일을 유지하고, PR을 닫으면 복사본이 정리됩니다. 링크와 반영된 커밋은 PR 댓글에서 확인합니다.
+
+### 1. GitHub Secrets / Variables
 
 레포 **Settings → Secrets and variables → Actions**에 다음을 추가합니다.
 
@@ -148,7 +146,12 @@ push → Actions (buildx arm64) → ghcr.io → Tailscale join → SSH → compo
 | `PI_HOST` | Tailscale MagicDNS 또는 `100.x` 주소 (예: `raspberrypi.tailXXXX.ts.net`) |
 | `PI_USER` | SSH 사용자 |
 | `PI_SSH_KEY` | deploy 전용 **private** SSH 키 전체 |
-| `PI_DEPLOY_PATH` | Pi의 compose 디렉터리 (`/opt/stacks/triplesweb`) |
+| `PI_DEPLOY_PATH` | 운영 compose 디렉터리 (`/opt/stacks/triplesweb`) |
+| `PI_DEV_DEPLOY_PATH` | 개발 compose 디렉터리 (`/opt/stacks/triplesweb-dev`) |
+
+| Variable (선택) | 설명 |
+|-----------------|------|
+| `PI_DEV_PUBLIC_URL` | NPG로 붙인 개발 도메인 (예: `https://dev.example.com`). PR 코멘트에 사용 |
 
 Packages 쓰기는 워크플로의 `GITHUB_TOKEN` + `packages: write`로 처리합니다.  
 Pi pull이 `unauthorized`면 (1) GHCR 패키지 visibility를 **Public**으로 바꾸거나 (2) Secret `GHCR_TOKEN`(PAT, `read:packages`)을 추가하세요. 배포 스텝이 Pi에서 `docker login` 후 pull합니다.
@@ -185,13 +188,17 @@ curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker "$USER"
 # 재로그인 후 docker 확인
 
-# 기존 stacks 패턴과 동일 경로
+# 운영
 mkdir -p /opt/stacks/triplesweb/{uploads,data}
 cd /opt/stacks/triplesweb
-
 # 레포에서 docker-compose.yml, .env 복사 후
 # .env: IMAGE, MYSQL_*, YOUTUBE_API_KEY, APP_PORT=8090
 # (Pi에서 8080/8081은 vaultwarden 등이 사용 중)
+
+# 개발 (운영이 떠 있는 뒤)
+# docker-compose.dev.yml → /opt/stacks/triplesweb-dev/docker-compose.yml
+bash scripts/setup-pi-dev.sh /opt/stacks/triplesweb /opt/stacks/triplesweb-dev
+# .env: 운영과 같은 MYSQL_* + APP_PORT=8091 + COMPOSE_NETWORK + UPLOADS_DIR/DATA_DIR
 
 # GHCR (패키지가 private인 경우)
 echo "$GHCR_PAT" | docker login ghcr.io -u YOUR_GITHUB_USER --password-stdin
@@ -202,20 +209,19 @@ echo "$GHCR_PAT" | docker login ghcr.io -u YOUR_GITHUB_USER --password-stdin
 첫 기동(이미지 푸시 전·후):
 
 ```bash
-cd /opt/stacks/triplesweb
-docker compose pull   # 이미지가 있을 때
-docker compose up -d
+cd /opt/stacks/triplesweb && docker compose pull && docker compose up -d
+cd /opt/stacks/triplesweb-dev && docker compose pull app && docker compose up -d
 ```
 
-앱: `http://<pi-lan-or-tailscale-ip>:8090/main`
+- 운영: `http://<pi-lan-or-tailscale-ip>:8090/main`
+- 개발: `http://<pi-lan-or-tailscale-ip>:8091/main` (도메인은 NPG로 별도 연결)
 
 ### 4. 이후 자동 배포
 
-1. `main`에 푸시 (또는 Actions에서 **Build and deploy to Raspberry Pi** 수동 실행)
-2. Actions가 arm64 빌드 → GHCR 푸시 → Tailscale 조인 → `PI_HOST`로 SSH
-3. Pi에서 `IMAGE` 갱신 후 `docker compose pull app && up -d`
+1. **개발:** PR을 열거나 푸시하면 [deploy-dev.yml](.github/workflows/deploy-dev.yml)이 `:8091`에 즉시 반영 (진행 중은 유지, 대기열은 최신 PR만)
+2. **운영:** 기본적으로 머지해도 바로 재시작하지 않음. 매일 **04:00 KST** 또는 Actions 수동. PR에 **`즉시 배포`** 코멘트를 남기고 머지하면 그때만 즉시 반영. 이미 같은 SHA·정상이면 스킵
 
-워크플로: [`.github/workflows/deploy-main.yml`](.github/workflows/deploy-main.yml)
+체크리스트: [docs/DEPLOY_PI.md](docs/DEPLOY_PI.md)
 
 PR 머지 게이트: Ruleset **`main-ci`**의 required status check **`required`**
 (`CI tests` 워크플로의 `test` + `package` + `qodana` 집계).

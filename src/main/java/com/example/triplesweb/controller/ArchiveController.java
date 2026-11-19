@@ -16,8 +16,10 @@ import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.util.ArchiveFolderArt;
 import com.example.triplesweb.util.ArchiveFolderClassifier;
+import com.example.triplesweb.util.ArchiveImages;
 import com.example.triplesweb.util.ImageUrls;
 import com.example.triplesweb.util.MemberPortraitOptions;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -54,6 +56,7 @@ public class ArchiveController {
     private final ArchiveFolderArt archiveFolderArt;
     private final ChemistryService chemistryService;
     private final ChemistryGroupService chemistryGroupService;
+    private final ObjectMapper objectMapper;
 
     @GetMapping
     public String showArchive(@RequestParam(defaultValue = "image") String type,
@@ -171,6 +174,7 @@ public class ArchiveController {
         model.addAttribute("archiveTotalPages", 1);
         model.addAttribute("hasArchives", !folders.isEmpty());
         model.addAttribute("archiveSources", sourceOptions(null));
+        model.addAttribute("defaultUploadArtists", "");
         model.addAttribute("hasArchiveBack", false);
         model.addAttribute("archiveBackHref", "/archive");
         model.addAttribute("archiveFolderIndex", false);
@@ -218,6 +222,7 @@ public class ArchiveController {
         model.addAttribute("archiveTotalPages", 1);
         model.addAttribute("hasArchives", !folders.isEmpty());
         model.addAttribute("archiveSources", sourceOptions(null));
+        model.addAttribute("defaultUploadArtists", "");
         addCommonDateFlags(model);
         return "archive/archive";
     }
@@ -240,15 +245,14 @@ public class ArchiveController {
             fromDate = toDate;
             toDate = swap;
         }
-        boolean unclassified = isFanmadeSource(sourceSlug);
-        ArchiveSource source = parseSourceFilter(sourceSlug, unclassified);
+        ArchiveSource source = parseSourceFilter(sourceSlug);
         List<Unit> visibleUnits = unitService.listVisible();
         List<ArchiveFolderClassifier.UnitMembers> units = unitSnapshots(visibleUnits);
         Page<Archive> archives = browse
                 ? archiveService.pageByType(type, page, size, q, selectedMembers, fromDate, toDate)
                 : archiveService.pageInFolder(type, page, size, q,
                     memberSuperset ? List.of() : selectedMembers, fromDate, toDate,
-                    source, unclassified, folderKey, memberSuperset ? selectedMembers : List.of(), units);
+                    source, false, folderKey, memberSuperset ? selectedMembers : List.of(), units);
 
         List<Artist> artists = artistRepository.findAll();
         List<Map<String, Object>> cards = archiveCards(archives, artists);
@@ -258,6 +262,7 @@ public class ArchiveController {
         model.addAttribute("memberPickerOptions", memberOptions(artists, selectedMembers));
         model.addAttribute("selectedMembers", selectedMembers);
         model.addAttribute("hasSelectedMembers", !selectedMembers.isEmpty());
+        model.addAttribute("defaultUploadArtists", String.join(",", selectedMembers));
         model.addAttribute("page", archives);
         model.addAttribute("type", type);
         model.addAttribute("isAuthenticated", isAuthenticated);
@@ -436,7 +441,7 @@ public class ArchiveController {
         return query.toString();
     }
 
-    private static List<Map<String, Object>> archiveCards(Page<Archive> archives, List<Artist> artists) {
+    private List<Map<String, Object>> archiveCards(Page<Archive> archives, List<Artist> artists) {
         Map<String, String> colors = new LinkedHashMap<>();
         for (Artist artist : artists) {
             String color = artist.getColor();
@@ -471,11 +476,29 @@ public class ArchiveController {
                 badges.add(badge);
             }
             Map<String, Object> card = new LinkedHashMap<>();
+            String title = archive.getTitle() == null ? "" : archive.getTitle().trim();
+            String description = archive.getDescription() == null ? "" : archive.getDescription().trim();
+            String headline = !description.isEmpty() ? description : title;
             card.put("id", archive.getId());
-            card.put("title", archive.getTitle());
+            card.put("title", title);
+            card.put("description", description);
+            card.put("hasDescription", !description.isEmpty());
+            card.put("headline", headline);
+            card.put("hasHeadline", !headline.isEmpty());
             card.put("artistNames", archive.getArtistNames());
             card.put("memberOrder", MemberPortraitOptions.earliestMemberIndex(archive.getArtistNames()));
             card.put("file", archive.getFile());
+            List<String> imageUrls = archive.getType() == MediaType.IMAGE
+                    ? ArchiveImages.resolve(archive, objectMapper)
+                    : List.of();
+            if (imageUrls.isEmpty() && archive.getFile() != null && archive.getFile().getUrl() != null) {
+                imageUrls = List.of(archive.getFile().getUrl());
+            }
+            String imagesJson = ArchiveImages.write(imageUrls, objectMapper);
+            card.put("imageUrls", imageUrls);
+            card.put("imageUrlsJson", imagesJson == null ? "[]" : imagesJson);
+            card.put("imageCount", imageUrls.size());
+            card.put("hasMultipleImages", imageUrls.size() > 1);
             card.put("thumbnailUrl", archive.getThumbnailUrl());
             card.put("displayNumber", offset + cards.size() + 1);
             card.put("memberBadges", badges);
@@ -494,7 +517,7 @@ public class ArchiveController {
             card.put("hasRegisteredOn", !registered.isBlank());
             ArchiveSource source = archive.getSource();
             card.put("sourceValue", source == null ? "" : source.name());
-            card.put("sourceLabel", source == null || source == ArchiveSource.FANCAM ? "기타/팬메이드" : source.getLabel());
+            card.put("sourceLabel", source == null ? "" : source.getLabel());
             card.put("hasSource", source != null);
             cards.add(card);
         }
@@ -569,10 +592,9 @@ public class ArchiveController {
 
     private static String sourceSummary(String sourceSlug) {
         if (sourceSlug == null || sourceSlug.isBlank()) return "전체 출처";
-        if (isFanmadeSource(sourceSlug)) return "기타/팬메이드";
         try {
             ArchiveSource source = ArchiveSource.parse(sourceSlug);
-            return source == ArchiveSource.FANCAM ? "기타/팬메이드" : source.getLabel();
+            return source == null ? "전체 출처" : source.getLabel();
         } catch (IllegalArgumentException ignored) {
             return "전체 출처";
         }
@@ -696,8 +718,8 @@ public class ArchiveController {
         model.addAttribute("dateExactLabel", "이 사진 날짜");
     }
 
-    private static ArchiveSource parseSourceFilter(String sourceSlug, boolean unclassified) {
-        if (unclassified || sourceSlug == null || sourceSlug.isBlank()) {
+    private static ArchiveSource parseSourceFilter(String sourceSlug) {
+        if (sourceSlug == null || sourceSlug.isBlank()) {
             return null;
         }
         try {
@@ -775,25 +797,11 @@ public class ArchiveController {
         String current = sourceSlug == null ? "" : sourceSlug.trim();
         tabs.add(sourceTab("전체", joinHref(path, extraQuery), current.isBlank()));
         for (ArchiveSource source : ArchiveSource.values()) {
-            if (source == ArchiveSource.FANCAM) continue;
             tabs.add(sourceTab(source.getLabel(),
                     joinHref(path, extraQuery + "&source=" + source.getSlug()),
                     current.equalsIgnoreCase(source.getSlug()) || current.equalsIgnoreCase(source.name())));
         }
-        tabs.add(sourceTab("기타/팬메이드",
-                joinHref(path, extraQuery + "&source=fanmade"),
-                isFanmadeSource(current)));
         return tabs;
-    }
-
-    private static boolean isFanmadeSource(String slug) {
-        if (slug == null || slug.isBlank()) return false;
-        String value = slug.trim();
-        return value.equalsIgnoreCase("unclassified")
-                || value.equalsIgnoreCase("fanmade")
-                || value.equalsIgnoreCase("other")
-                || value.equalsIgnoreCase("fancam")
-                || value.equalsIgnoreCase(ArchiveSource.FANCAM.name());
     }
 
     private static Map<String, Object> sourceTab(String label, String href, boolean active) {
@@ -1264,14 +1272,25 @@ public class ArchiveController {
     }
 
     @PostMapping("/upload/image")
-    public String uploadImage(@RequestParam("file") MultipartFile file,
-                              @RequestParam("title") String title, @RequestParam(value="artistNames", required=false) List<String> artistNames,
+    public String uploadImage(@RequestParam("file") List<MultipartFile> files,
+                              @RequestParam(value = "title", required = false) String title,
+                              @RequestParam(value = "description", required = false) String description,
+                              @RequestParam(value="artistNames", required=false) List<String> artistNames,
                               @RequestParam("registeredOn") LocalDate registeredOn,
                               @RequestParam("source") String source,
                               HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
         String names = artistNames == null ? "" : String.join(",", artistNames);
-        archiveService.uploadImageOnly(file, title, MediaType.IMAGE, names, requireDate(registeredOn), requireSource(source));
+        LocalDate date = requireDate(registeredOn);
+        ArchiveSource archiveSource = requireSource(source);
+        String safeTitle = title == null ? "" : title;
+        List<MultipartFile> uploads = files == null ? List.of() : files.stream()
+                .filter(file -> file != null && !file.isEmpty())
+                .toList();
+        if (uploads.isEmpty()) {
+            throw new IllegalArgumentException("사진 파일을 선택해 주세요.");
+        }
+        archiveService.uploadImages(uploads, safeTitle, names, date, archiveSource, description);
         return "redirect:" + folderRedirect(MediaType.IMAGE, names);
     }
 
@@ -1291,8 +1310,9 @@ public class ArchiveController {
     @PostMapping("/{id}")
     @ResponseBody
     public ResponseEntity<?> updateArchive(@PathVariable long id,
-                                           @RequestParam("title") String title,
-                                           @RequestParam(value = "file", required = false) MultipartFile file,
+                                           @RequestParam(value = "title", required = false) String title,
+                                           @RequestParam(value = "description", required = false) String description,
+                                           @RequestParam(value = "file", required = false) List<MultipartFile> files,
                                            @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnail,
                                            @RequestParam(defaultValue = "false") boolean clearThumbnail,
                                            @RequestParam(value = "artistNames", required = false) String artistNames,
@@ -1302,8 +1322,10 @@ public class ArchiveController {
                                            HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
         try {
-            archiveService.update(id, title, file, artistNames, thumbnail, clearThumbnail, requireDate(registeredOn),
-                    source == null || source.isBlank() ? null : ArchiveSource.parse(source));
+            archiveService.update(id, title == null ? "" : title, files, artistNames, thumbnail, clearThumbnail,
+                    requireDate(registeredOn),
+                    source == null || source.isBlank() ? null : ArchiveSource.parse(source),
+                    description);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

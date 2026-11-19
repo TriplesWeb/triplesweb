@@ -263,6 +263,8 @@
     document.getElementById("albumEditType").value = "SUBUNIT";
     const formatSel = document.getElementById("albumEditFormat");
     if (formatSel) formatSel.value = "";
+    const mvInput = document.getElementById("albumEditMusicVideo");
+    if (mvInput) mvInput.value = "";
     document.getElementById("albumEditClearImage").checked = false;
     document.getElementById("albumEditImage").value = "";
     document.getElementById("albumEditImageUrl").value = "";
@@ -289,6 +291,7 @@
       document.getElementById("albumEditInfo").value = data.albumInfo || "";
       document.getElementById("albumEditType").value = data.albumType || "SUBUNIT";
       if (formatSel) formatSel.value = data.albumFormat || "";
+      if (mvInput) mvInput.value = data.musicVideoYoutubeId || "";
       // 유닛·멤버는 상호 배타: 멤버가 있으면 유닛은 비움(완전체 표기 없음)
       const artistIds = data.artistIds || [];
       fillArtistChecks(artistIds);
@@ -461,6 +464,7 @@
       fd.append("albumType", albumType);
       const albumFormat = document.getElementById("albumEditFormat")?.value || "";
       fd.append("albumFormat", albumFormat);
+      fd.append("musicVideoYoutubeId", document.getElementById("albumEditMusicVideo")?.value?.trim() || "");
       if (unitId) fd.append("unitId", unitId);
       artistIds.forEach((id) => fd.append("artistIds", id));
       const sectionId = document.getElementById("albumEditSectionId")?.value;

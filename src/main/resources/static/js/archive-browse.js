@@ -522,5 +522,10 @@
         if (!form) return;
         window.location.reload();
     });
+    /** 추가·수정·삭제 후 전체 reload 대신 그리드만 갱신한다. */
+    window.refreshArchiveGrid = function (url) {
+        const target = url || (location.pathname + location.search);
+        return loadArchiveFilter(target, false);
+    };
     apply();
 })();
