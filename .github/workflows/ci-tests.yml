@@ -16,6 +16,19 @@ permissions:
   checks: write
 
 jobs:
+  deployment-check:
+    name: validate deploy configuration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bash and deployment assertions
+        run: bash scripts/tests/deployment-static.test.sh
+      - name: Docker Compose production configuration
+        env:
+          MYSQL_PASSWORD: ci
+          MYSQL_ROOT_PASSWORD: ci
+        run: docker compose -f docker-compose.yml config --quiet
+
   changes:
     name: detect changes
     runs-on: ubuntu-latest
@@ -24,14 +37,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 2
       - id: filter
         name: Decide whether app checks are needed
         run: |
           set -euo pipefail
-          BASE="${{ github.event.pull_request.base.sha }}"
-          HEAD="${{ github.event.pull_request.head.sha }}"
-          mapfile -t files < <(git diff --name-only --no-renames "$BASE"..."$HEAD")
+          # pull_request checkout은 가상의 merge commit; 첫 부모가 main입니다.
+          mapfile -t files < <(git diff --name-only --no-renames HEAD^1 HEAD)
           printf 'Changed files:\n'
           printf '  %s\n' "${files[@]:-}"
 
@@ -64,38 +76,36 @@ jobs:
             echo "Docs/scripts/meta only — skipping test, package, and qodana."
           fi
 
+
   test:
+    name: Java tests and WAR
     needs: changes
     if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - name: CSS setup + drift check
-        run: ./scripts/setup-css.sh --check
-      # Full test suite runs on PR's synthetic merge commit, including conflict fixes.
-      - name: Full Gradle test suite
-        run: ./gradlew test --no-daemon --stacktrace
-      - if: failure()
+      - name: Java tests and production WAR in one Gradle invocation
+        run: ./gradlew test bootWar --no-daemon --stacktrace --parallel
+      - name: Summarize failed SQL tests
+        if: failure()
         run: grep -n -A 10 -B 2 -E 'BadSqlGrammarException|JdbcSQLSyntaxErrorException' build/test-results/test/*.xml || true
-      - run: node scripts/tests/objekt-detail.test.cjs && node scripts/tests/objekt-transfers.test.cjs && node scripts/tests/objekt-kind-combo.test.cjs
-      - name: Validate live public APIs
-        env:
-          OBJEKT_LIVE_TEST: 'true'
-        run: ./gradlew test --tests '*ObjektLiveApiTest' --info
-      - name: Chrome 브라우저 검증
+      # 다수 브라우저 테스트가 Java MockMvc가 생성한 build/*.html을 읽는다.
+      # 브라우저 테스트는 Java job 안에서 실행하고, CSS/JS 검사는 별도 병렬 job으로 유지한다.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Browser regression suite using Java-generated HTML
         env:
           NODE_PATH: /tmp/objekt-browser/node_modules
         run: |
-          npm install --prefix /tmp/objekt-browser --no-package-lock playwright@1.56.1
+          test -f build/profile-missing-preview.html
+          npm install --prefix /tmp/objekt-browser --no-package-lock --prefer-offline playwright@1.56.1
           if [ -x /usr/bin/google-chrome ]; then
             export CHROMIUM_PATH=/usr/bin/google-chrome
           else
@@ -129,13 +139,16 @@ jobs:
           node scripts/tests/objekt-season-schedule.browser.cjs
           node scripts/tests/scroll-top.browser.cjs
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: failure()
         with:
-          name: objekt-transfers-preview
+          name: objekt-browser-failure-screenshots
           path: /tmp/objekt-ui/*.png
           if-no-files-found: ignore
 
-  package:
+
+
+  browser:
+    name: CSS and JavaScript checks
     needs: changes
     if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
@@ -145,16 +158,10 @@ jobs:
         with:
           node-version: '20'
           cache: npm
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
-      - name: CSS setup (npm ci + build:css)
-        run: ./scripts/setup-css.sh --no-run
-      - name: Spring WAR 패키징 (Docker와 동일)
-        run: ./gradlew bootWar -x test --no-daemon --stacktrace
-
+      - name: CSS reproducibility and bundle checks
+        run: ./scripts/setup-css.sh --check
+      - name: JavaScript unit tests
+        run: node scripts/tests/objekt-detail.test.cjs && node scripts/tests/objekt-transfers.test.cjs && node scripts/tests/objekt-kind-combo.test.cjs
   qodana:
     needs: changes
     if: needs.changes.outputs.app == 'true'
@@ -252,24 +259,25 @@ jobs:
   required:
     name: required
     if: ${{ always() }}
-    needs: [changes, test, package, qodana]
+    needs: [changes, deployment-check, test, browser, qodana]
     runs-on: ubuntu-latest
     steps:
       - name: Enforce merge gate
         env:
           APP: ${{ needs.changes.outputs.app }}
           CHANGES_RESULT: ${{ needs.changes.result }}
+          DEPLOYMENT_RESULT: ${{ needs.deployment-check.result }}
           TEST_RESULT: ${{ needs.test.result }}
-          PACKAGE_RESULT: ${{ needs.package.result }}
+          BROWSER_RESULT: ${{ needs.browser.result }}
           QODANA_RESULT: ${{ needs.qodana.result }}
         run: |
           set -euo pipefail
-          if [[ "$CHANGES_RESULT" != "success" ]]; then
-            echo "Change detection failed."
+          if [[ "$CHANGES_RESULT" != "success" || "$DEPLOYMENT_RESULT" != "success" ]]; then
+            echo "Change detection or deployment configuration validation failed."
             exit 1
           fi
           if [[ "$APP" != "true" ]]; then
-            echo "Docs/scripts/meta-only PR — full checks skipped."
+            echo "Non-app PR — Java, browser and Qodana jobs intentionally skipped."
             exit 0
           fi
-          [[ "$TEST_RESULT" == "success" && "$PACKAGE_RESULT" == "success" && "$QODANA_RESULT" == "success" ]] || exit 1
+          [[ "$TEST_RESULT" == "success" && "$BROWSER_RESULT" == "success" && "$QODANA_RESULT" == "success" ]] || exit 1
