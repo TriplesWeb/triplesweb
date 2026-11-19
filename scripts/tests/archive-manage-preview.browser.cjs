@@ -416,7 +416,8 @@ async function withPage(html, run) {
     await page.waitForFunction(() => {
       const tiles = Array.from(document.querySelectorAll('#archiveEditForm [data-file-name] .ar-file-tile img'))
         .map((img) => img.getAttribute('src') || '');
-      return tiles.length === 2;
+      return tiles.length === 2 && document.getElementById('archiveEditForm').dataset.originalImages
+        === JSON.stringify(['/poster.svg', '/portrait.svg']);
     });
 
     const after = await page.evaluate(() => ({
