@@ -892,8 +892,9 @@ public class ArchiveController {
         card.put("hasCount", count > 0);
         card.put("preview", "");
         card.put("hasPreview", false);
-        card.put("folderArt", "");
-        card.put("hasFolderArt", false);
+        card.put("folderArt", archiveFolderArt.dimensionUrl());
+        card.put("hasFolderArt", true);
+        card.put("hasBundledFolderArt", true);
         card.put("groupFolder", false);
         card.put("soloFolder", false);
         card.put("comboFolder", false);
@@ -1023,18 +1024,19 @@ public class ArchiveController {
         for (ChemistryDto item : safeChemistries()) {
             String rawMembers = (item.getMemberA() == null ? "" : item.getMemberA())
                     + "," + (item.getMemberB() == null ? "" : item.getMemberB());
-            first = appendChemistryName(json, first, seen, ArchiveFolderClassifier.membersOf(rawMembers), item.getLabel());
+            first = appendChemistryName(json, first, seen, ArchiveFolderClassifier.membersOf(rawMembers), item.getLabel(),
+                    "pair", item.getId());
         }
         for (ChemistryGroupDto item : safeChemistryGroups()) {
             List<String> members = item.getMembers() == null ? List.of() : item.getMembers();
             first = appendChemistryName(json, first, seen,
-                    ArchiveFolderClassifier.membersOf(String.join(",", members)), item.getLabel());
+                    ArchiveFolderClassifier.membersOf(String.join(",", members)), item.getLabel(), "group", item.getId());
         }
         return json.append(']').toString();
     }
 
     private static boolean appendChemistryName(StringBuilder json, boolean first, Set<String> seen,
-                                               List<String> members, String rawLabel) {
+                                               List<String> members, String rawLabel, String type, Long id) {
         if (members == null || members.size() < 2) return first;
         String label = chemistryDisplayLabel(rawLabel);
         if (label.isEmpty()) return first;
@@ -1045,7 +1047,11 @@ public class ArchiveController {
             if (i > 0) json.append(',');
             json.append(jsonString(members.get(i)));
         }
-        json.append("],\"label\":").append(jsonString(label)).append('}');
+        json.append("],\"label\":").append(jsonString(label));
+        if (id != null) {
+            json.append(",\"href\":").append(jsonString("/triples/chemistry?" + type + "=" + id));
+        }
+        json.append('}');
         return false;
     }
 
@@ -1107,9 +1113,7 @@ public class ArchiveController {
                                            int count, String preview, ArchiveFolderClassifier.Kind kind, boolean group) {
         Map<String, Object> card = new LinkedHashMap<>();
         boolean hideArt = kind == ArchiveFolderClassifier.Kind.COMBO;
-        String bundledIcon = ArchiveFolderArt.bundledIcon(kind, key, label);
-        String art = bundledIcon;
-        if (art.isBlank() && !hideArt) art = archiveFolderArt.urlFor(kind, key, label);
+        String art = hideArt ? "" : archiveFolderArt.urlFor(kind, key, label);
         String shownPreview = hideArt || kind == ArchiveFolderClassifier.Kind.SOLO ? "" : (preview == null ? "" : preview);
         boolean customArt = !art.isBlank();
         card.put("key", key);
@@ -1122,7 +1126,7 @@ public class ArchiveController {
         card.put("hasPreview", !customArt && !shownPreview.isBlank());
         card.put("folderArt", art);
         card.put("hasFolderArt", customArt);
-        card.put("hasBundledFolderArt", !bundledIcon.isBlank());
+        card.put("hasBundledFolderArt", archiveFolderArt.isBundled(art));
         card.put("groupFolder", group);
         card.put("soloFolder", kind == ArchiveFolderClassifier.Kind.SOLO);
         card.put("comboFolder", kind == ArchiveFolderClassifier.Kind.COMBO);

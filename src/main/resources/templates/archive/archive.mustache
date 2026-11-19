@@ -57,25 +57,13 @@
         {{>partials/archive-photo-card}}
         {{/imageArchive}}
         {{#videoArchive}}
-        <article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-member-order="{{memberOrder}}" data-registered="{{registeredOn}}" data-url="{{file.url}}" data-source="{{sourceValue}}" data-source-label="{{sourceLabel}}">
-            <a class="ar-video-thumb" href="{{file.url}}" data-archive-video data-title="{{title}}" data-poster="{{thumbnailUrl}}" aria-label="{{title}} 자세히 보기">
-                {{#thumbnailUrl}}<img src="{{thumbnailUrl}}" alt="{{title}} 썸네일" loading="lazy" decoding="async">{{/thumbnailUrl}}
-                {{^thumbnailUrl}}<span class="ar-video-placeholder">영상</span>{{/thumbnailUrl}}
+        <article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-member-order="{{memberOrder}}" data-registered="{{registeredOn}}" data-url="{{file.url}}" data-source="{{sourceValue}}" data-source-label="{{sourceLabel}}" data-thumbnail-url="{{thumbnailUrl}}">
+            <a class="ar-photo-link ar-video-thumb" href="{{file.url}}" data-archive-video data-poster="{{thumbnailUrl}}" aria-label="{{#title}}{{title}}{{/title}}{{^title}}영상{{/title}} 자세히 보기">
+                <span class="ar-video-placeholder" aria-hidden="true"></span>
+                {{#thumbnailUrl}}<img src="{{thumbnailUrl}}" alt="" loading="lazy" decoding="async">{{/thumbnailUrl}}
                 <span class="ar-video-play" aria-hidden="true">▶</span>
             </a>
-            <div class="ar-body">
-                <h3>{{title}}</h3>
-                {{#hasSource}}<div class="ar-source-badge" data-source="{{sourceValue}}">{{sourceLabel}}</div>{{/hasSource}}
-                <div class="ar-meta" style="--member-count: {{memberCount}}">
-                    {{>partials/archive-member-badges}}
-                    {{#hasRegisteredOn}}<time class="ar-card-date" datetime="{{registeredOn}}">{{registeredOnDisplay}}</time>{{/hasRegisteredOn}}
-                </div>
-                <div class="ar-card-members" hidden>{{>partials/archive-album-members}}</div>
-                <div class="ar-actions" data-admin-only>
-                    <button type="button" class="site-btn site-btn--primary site-btn--sm" data-archive-edit data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-url="{{file.url}}" data-thumbnail-url="{{thumbnailUrl}}" data-registered="{{registeredOn}}" data-source="{{sourceValue}}">수정하기</button>
-                    <button type="button" class="site-btn site-btn--danger site-btn--sm ar-delete" data-archive-delete data-id="{{id}}" data-title="{{title}}">삭제하기</button>
-                </div>
-            </div>
+            {{>partials/archive-card-body}}
         </article>
         {{/videoArchive}}
         {{/archiveCards}}
@@ -338,31 +326,33 @@
     </div>
 </div>
 
-<dialog class="ar-video-player" id="archiveVideoPlayer" aria-labelledby="archiveVideoTitle">
-    <div class="ar-detail-panel ar-video-detail">
-        <div class="ar-detail-photo ar-video-pane">
-            <video id="archiveVideoElement" controls playsinline preload="none"></video>
-            <div class="ar-video-player-foot">
-                <p id="archiveVideoStatus" role="status" aria-live="polite" hidden></p>
-                <a id="archiveVideoOriginal" target="_blank" rel="noopener noreferrer">원본 영상 열기 ↗</a>
-            </div>
+<dialog class="ar-video-player ar-dialog-panel ar-detail-panel" id="archiveVideoPlayer" aria-labelledby="archiveVideoTitle">
+    <div class="ar-detail-photo ar-video-pane">
+        <video id="archiveVideoElement" controls playsinline preload="none"></video>
+        <div class="ar-video-player-foot">
+            <p id="archiveVideoStatus" role="status" aria-live="polite" hidden></p>
+            <a id="archiveVideoOriginal" target="_blank" rel="noopener noreferrer">원본 영상 열기 ↗</a>
         </div>
-        <div class="ar-detail-side">
-            <div class="ar-dialog-head">
-                <h2 id="archiveVideoTitle">영상 재생</h2>
-                <button type="button" class="ar-close" id="archiveVideoClose" aria-label="영상 닫기">&times;</button>
+    </div>
+    <div class="ar-detail-side">
+        <button type="button" class="ar-close ar-detail-close" id="archiveVideoClose" aria-label="영상 닫기" autofocus>&times;</button>
+        <div class="ar-detail-body">
+            <h2 class="ar-detail-desc" id="archiveVideoTitle">영상 재생</h2>
+            <div class="ar-detail-meta" id="archiveVideoMeta" hidden>
+                <p class="ar-detail-date" id="archiveVideoDate" hidden>
+                    <span class="ar-detail-kicker">{{mediaDateLabel}}</span>
+                    <time></time>
+                </p>
+                <div class="ar-source-badge" id="archiveVideoSource" hidden></div>
             </div>
-            <div class="ar-detail-body">
-                <p class="ar-detail-date" id="archiveVideoDate" hidden></p>
-                <div class="ar-detail-line"><div class="ar-source-badge" id="archiveVideoSource" hidden></div></div>
-                <section class="ar-detail-cast" aria-label="출연 멤버">
-                    <div class="ar-detail-members" id="archiveVideoMembers"></div>
-                </section>
-            </div>
-            <div class="ar-dialog-foot ar-detail-actions" data-admin-only>
-                <button type="button" class="site-btn site-btn--primary" data-archive-edit id="archiveVideoEdit">수정하기</button>
-                <button type="button" class="site-btn site-btn--danger ar-delete" data-archive-delete id="archiveVideoDelete">삭제하기</button>
-            </div>
+            <section class="ar-detail-cast" aria-label="출연 멤버" hidden>
+                <p class="ar-detail-kicker">출연 멤버</p>
+                <div class="ar-detail-members" id="archiveVideoMembers"></div>
+            </section>
+        </div>
+        <div class="ar-dialog-foot ar-detail-actions" data-admin-only>
+            <button type="button" class="site-btn site-btn--primary" data-archive-edit id="archiveVideoEdit">수정하기</button>
+            <button type="button" class="site-btn site-btn--danger ar-delete" data-archive-delete id="archiveVideoDelete">삭제하기</button>
         </div>
     </div>
 </dialog>

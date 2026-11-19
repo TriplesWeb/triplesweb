@@ -1531,6 +1531,7 @@
             });
             if (response.ok) {
                 removeCardFromGrid(id);
+                document.dispatchEvent(new CustomEvent('archive:deleted', { detail: id }));
                 softRefreshArchive();
                 return;
             }

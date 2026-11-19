@@ -15,11 +15,12 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- * 아카이브 홈의 내장 폴더 그림과 {@code uploads/미디어 폴더}의 그림을 찾는다.
+ * 아카이브 홈의 업로드 폴더 그림을 찾고, 없으면 내장 그림을 사용한다.
  */
 @Component
 public class ArchiveFolderArt {
     static final String DIR_NAME = "미디어 폴더";
+    private static final String BUNDLED_ART_PATH = "/images/archive/";
     private static final List<String> EXTENSIONS = List.of(".png", ".jpg", ".jpeg", ".webp", ".svg");
     private static final int BUNDLED_MEMBER_FOLDER_COUNT = 24;
     private static final Map<String, Integer> UNIT_IMAGES = Map.ofEntries(
@@ -48,33 +49,39 @@ public class ArchiveFolderArt {
         this.uploadRoot = Path.of(uploadDir);
     }
 
-    public static String bundledIcon(ArchiveFolderClassifier.Kind kind, String key, String label) {
+    private static String memberIcon(String key) {
+        int number = MemberPortraitOptions.memberIndex(key) + 1;
+        return number <= BUNDLED_MEMBER_FOLDER_COUNT ? BUNDLED_ART_PATH + "member-folders/" + number + ".png" : "";
+    }
+
+    private static String unitIcon(String label) {
+        if (label == null) return "";
+        Integer number = UNIT_IMAGES.get(label.strip().toLowerCase(Locale.ROOT));
+        return number == null ? "" : BUNDLED_ART_PATH + "unit-folders/" + number + ".png";
+    }
+
+    public String urlFor(ArchiveFolderClassifier.Kind kind, String key, String label) {
+        Path dir = uploadRoot.resolve(DIR_NAME);
+        if (Files.isDirectory(dir)) {
+            for (String name : names(kind, key, label)) {
+                String found = firstFile(dir, name);
+                if (!found.isBlank()) return publicUrl(found);
+            }
+        }
         return switch (kind) {
+            case GROUP -> BUNDLED_ART_PATH + "member-folders/3.png";
             case SOLO -> memberIcon(key);
             case UNIT -> unitIcon(label);
             default -> "";
         };
     }
 
-    private static String memberIcon(String key) {
-        int number = MemberPortraitOptions.memberIndex(key) + 1;
-        return number <= BUNDLED_MEMBER_FOLDER_COUNT ? "/images/archive/member-folders/" + number + ".png" : "";
+    public String dimensionUrl() {
+        return BUNDLED_ART_PATH + "member-folders/2.png";
     }
 
-    private static String unitIcon(String label) {
-        if (label == null) return "";
-        Integer number = UNIT_IMAGES.get(label.strip().toLowerCase(Locale.ROOT));
-        return number == null ? "" : "/images/archive/unit-folders/" + number + ".png";
-    }
-
-    public String urlFor(ArchiveFolderClassifier.Kind kind, String key, String label) {
-        Path dir = uploadRoot.resolve(DIR_NAME);
-        if (!Files.isDirectory(dir)) return "";
-        for (String name : names(kind, key, label)) {
-            String found = firstFile(dir, name);
-            if (!found.isBlank()) return publicUrl(found);
-        }
-        return "";
+    public boolean isBundled(String url) {
+        return url.startsWith(BUNDLED_ART_PATH);
     }
 
     static List<String> names(ArchiveFolderClassifier.Kind kind, String key, String label) {
