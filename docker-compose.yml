@@ -20,6 +20,8 @@ services:
       - triples
 
   app:
+    # Old single-app service is retained ONLY for first-cutover rollback.
+    profiles: [legacy]
     image: ${IMAGE:-ghcr.io/triplesweb/triplesweb:latest}
     restart: unless-stopped
     depends_on:
