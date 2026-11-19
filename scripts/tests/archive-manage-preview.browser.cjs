@@ -30,7 +30,7 @@ ${site}${css}${siteUi}
 <body class="site-page">
 <main class="archive-page" data-archive-kind="${kind}" data-date-label="${noun} 날짜" data-default-artists="지연">
   <section class="ar-grid" id="archiveGrid">
-    <article class="ar-panel ar-card" data-id="1" data-title="${isVideo ? '지서연' : ''}" data-description="${isVideo ? '' : '지서연'}" data-headline="지서연" data-artists="지연" data-url="${isVideo ? '/clip.mp4' : '/portrait.svg'}" data-registered="2026-10-25">
+    <article class="ar-panel ar-card" data-id="1" data-title="${isVideo ? '지서연' : ''}" data-description="${isVideo ? '' : '지서연'}" data-headline="지서연" data-artists="지연" data-url="${isVideo ? '/clip.mp4' : '/portrait.svg'}" data-images='${isVideo ? '' : '["/portrait.svg","/poster.svg"]'}' data-registered="2026-10-25">
       ${isVideo
         ? '<a class="ar-video-thumb" href="/clip.mp4"><img src="/poster.svg" alt=""><span class="ar-video-play" aria-hidden="true">▶</span></a>'
         : '<button type="button" class="ar-photo-link"><img src="/portrait.svg" alt=""></button>'}
@@ -41,7 +41,7 @@ ${site}${css}${siteUi}
           <time class="ar-card-date" datetime="2026-10-25">2026/10/25</time>
         </div>
       </div>
-      <button type="button" class="site-btn" data-archive-edit data-id="1" data-title="${isVideo ? '지서연' : ''}" data-description="${isVideo ? '' : '지서연'}" data-artists="지연" data-url="${isVideo ? '/clip.mp4' : '/portrait.svg'}" data-thumbnail-url="${isVideo ? '/poster.svg' : ''}" data-registered="2026-10-25" data-source="COSMO_ROOM">수정하기</button>
+      <button type="button" class="site-btn" data-archive-edit data-id="1" data-title="${isVideo ? '지서연' : ''}" data-description="${isVideo ? '' : '지서연'}" data-artists="지연" data-url="${isVideo ? '/clip.mp4' : '/portrait.svg'}" data-images='${isVideo ? '' : '["/portrait.svg","/poster.svg"]'}' data-thumbnail-url="${isVideo ? '/poster.svg' : ''}" data-registered="2026-10-25" data-source="COSMO_ROOM">수정하기</button>
     </article>
   </section>
 </main>
@@ -182,6 +182,8 @@ async function withPage(html, run) {
       const photoStyle = photo ? getComputedStyle(photo) : {};
       const chipImg = chip?.querySelector('img');
       const chipBox = chipImg?.getBoundingClientRect();
+      const keptTiles = Array.from(document.querySelectorAll('#archiveEditForm [data-file-name] .ar-file-tile img'))
+        .map((img) => img.getAttribute('src') || '');
       return {
         hidden: document.getElementById('editPreview').hidden,
         title: title?.textContent || '',
@@ -196,7 +198,9 @@ async function withPage(html, run) {
         photoHeight: photoStyle.height,
         chipHeight: chipBox ? chipBox.height : 0,
         stacked: card.classList.contains('is-photo-preview'),
-        bodyText: article.querySelector('.ar-body')?.innerText.replace(/\s+/g, ' ').trim() || ''
+        bodyText: article.querySelector('.ar-body')?.innerText.replace(/\s+/g, ' ').trim() || '',
+        keptTiles,
+        previewSrc: photo?.getAttribute('src') || ''
       };
     });
 
@@ -213,6 +217,8 @@ async function withPage(html, run) {
     assert.notEqual(preview.photoHeight, '9.5rem');
     assert.ok(preview.chipHeight > 0 && preview.chipHeight <= 40, '미리보기 칩이 큰 사진 규칙을 따른다: ' + preview.chipHeight);
     assert.equal(preview.stacked, true);
+    assert.deepEqual(preview.keptTiles, ['/portrait.svg', '/poster.svg'], '수정 모달에 기존 사진 타일이 없다');
+    assert.equal(preview.previewSrc, '/portrait.svg');
 
     await page.locator('#editPreview .ar-preview-photo-card').screenshot({
       path: path.join(artifactDir, 'archive-edit-preview-photo-card.png')

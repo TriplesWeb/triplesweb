@@ -3,7 +3,9 @@ package com.example.triplesweb.util;
 import com.example.triplesweb.entity.Archive;
 import com.example.triplesweb.entity.SavedMeta;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -33,5 +35,15 @@ public final class ArchiveImages {
 
     public static String primary(List<String> urls) {
         return ChemistryImages.primary(urls);
+    }
+
+    public static ChemistryImages.Result merge(
+            List<String> previous,
+            String keepImageUrlsJson,
+            List<MultipartFile> uploads,
+            ObjectMapper mapper,
+            ChemistryImages.UploadFn uploadFn
+    ) throws IOException {
+        return ChemistryImages.merge(previous, keepImageUrlsJson, uploads, false, mapper, uploadFn, MAX_IMAGES);
     }
 }
