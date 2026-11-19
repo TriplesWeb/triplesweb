@@ -205,8 +205,23 @@ jobs:
             echo "IMAGE=${IMAGE}" >> .env
           fi
           echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
-          docker compose pull app
-          docker compose up -d
+          # 개발/운영이 같은 Pi에서 pull 하면 containerd ingest rename 이 깨질 수 있다.
+          # flock 으로 직렬화하고, 실패 시 짧게 재시도한다.
+          (
+            flock -w 900 9
+            for attempt in $(seq 1 5); do
+              if docker compose pull app; then
+                docker compose up -d
+                break
+              fi
+              if [[ "${attempt}" -eq 5 ]]; then
+                echo "docker compose pull failed after ${attempt} attempts"
+                exit 1
+              fi
+              echo "docker compose pull failed (attempt ${attempt}/5); retrying..."
+              sleep $((attempt * 8))
+            done
+          ) 9>/tmp/triplesweb-docker-pull.lock
           docker image prune -f
           docker logout ghcr.io >/dev/null 2>&1 || true
           APP_PORT="$(grep -E '^APP_PORT=' .env | cut -d= -f2- || true)"
