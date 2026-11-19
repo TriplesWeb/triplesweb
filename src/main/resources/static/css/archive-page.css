@@ -1640,13 +1640,22 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
     width: 2.15rem;
     height: 2.15rem;
+    min-width: 2.15rem;
+    min-height: 2.15rem;
+    max-width: 2.15rem;
+    max-height: 2.15rem;
     padding: 0;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 0.55rem;
     background: #292a2e;
     color: #b9cac4;
+    line-height: 1;
+    overflow: hidden;
+    flex: none;
+    aspect-ratio: 1;
     cursor: pointer;
 }
 .ar-edit-tool:hover {
