@@ -37,7 +37,6 @@
                 <article class="ar-stat"><div class="ar-stat-label"><span>{{#imageArchive}}등록된 사진{{/imageArchive}}{{#videoArchive}}등록된 영상{{/videoArchive}}</span><span class="material-symbols-outlined">{{#imageArchive}}image{{/imageArchive}}{{#videoArchive}}movie{{/videoArchive}}</span></div><strong>{{archiveTotal}}<em>{{#imageArchive}}장{{/imageArchive}}{{#videoArchive}}개{{/videoArchive}}</em></strong></article>
                 <article class="ar-stat ar-stat-date"><div class="ar-stat-label"><span>날짜</span><span class="material-symbols-outlined">calendar_month</span></div><strong>{{#hasDateStat}}{{dateStatLabel}}{{/hasDateStat}}{{^hasDateStat}}전체{{/hasDateStat}}</strong></article>
                 <article class="ar-stat"><div class="ar-stat-label"><span>페이지</span><span class="material-symbols-outlined">layers</span></div><strong>{{archivePageDisplay}}<em>/ {{archiveTotalPages}}</em></strong></article>
-                {{>partials/archive-filter-stat}}
                 {{/archiveFolderHome}}
             </div>
         </div>

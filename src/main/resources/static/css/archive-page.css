@@ -457,8 +457,6 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .archive-page.is-folder-home .ar-stat strong { font-size: clamp(1.2rem, 1.65vw, 1.55rem); }
 .archive-page.is-folder-view .ar-stat strong,
 .archive-page.is-browse .ar-stat strong { font-size: clamp(1.12rem, 1.5vw, 1.42rem); }
-.archive-page.is-folder-view .ar-filter-summary strong,
-.archive-page.is-browse .ar-filter-summary strong { font-size: 1em; }
 .ar-stat em { font-style: normal; color: #00f5d4; font-size: 0.7em; }
 .ar-stat .is-violet { color: #dbb8ff; font-size: 1.35rem; overflow-wrap: anywhere; }
 .ar-stat-date strong {
@@ -469,36 +467,6 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .archive-page.is-browse .ar-stat-date strong {
     font-size: clamp(0.86rem, 1.2vw, 1.05rem);
 }
-.ar-stat-filter { gap: 0.55rem; }
-.archive-page.is-folder-view .ar-stat-filter,
-.archive-page.is-browse .ar-stat-filter { gap: 0.4rem; }
-.archive-page.is-folder-view .ar-filter-summary,
-.archive-page.is-browse .ar-filter-summary {
-    min-height: 1.35rem;
-    font-size: clamp(0.68rem, calc(0.86rem - 0.05rem * var(--filter-count, 1)), 0.8rem);
-}
-.ar-filter-summary {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.18rem 0;
-    min-height: 1.6rem;
-    color: #d7fff3;
-    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-    font-size: clamp(0.7rem, calc(0.96rem - 0.06rem * var(--filter-count, 1)), 0.88rem);
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.02em;
-    overflow-wrap: anywhere;
-}
-.ar-filter-member {
-    --member-color: #00f5d4;
-    color: color-mix(in srgb, var(--member-color) 28%, #fff);
-}
-.ar-filter-more { color: #b9cac4; font-weight: 650; margin-left: 0.28rem; }
-.ar-filter-sep { color: #b9cac4; font-weight: 650; padding: 0 0.08rem 0 0.2rem; }
-.ar-filter-summary strong { font-size: 1em; font-weight: 700; }
-
 .ar-block { display: flex; flex-direction: column; gap: 0.85rem; }
 .ar-section-title { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
 .ar-section-title h2 { display: flex; align-items: center; gap: 0.55rem; margin: 0; font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 1.3rem; font-weight: 650; }
@@ -2124,4 +2092,49 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     body.site-admin-enabled .archive-page.is-folder-view .ar-headline,
     body.site-admin-enabled .archive-page.is-browse .ar-headline { padding-bottom: 4.2rem; }
     .ar-home-upload { right: 0.85rem; bottom: 0.85rem; }
+}
+
+/* Filter controls must honor the initial server-rendered hidden state. */
+.ar-toolbar .ar-reset[hidden] { display: none; }
+.ar-stat { min-width: 0; }
+.archive-page:not(.is-folder-home) .ar-stats > .ar-stat:last-child { grid-column: 1 / -1; }
+.ar-member-toggle [data-member-toggle-label],
+.ar-date-toggle > span:last-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+@media (max-width: 720px) {
+    .archive-page .ar-sort-trigger,
+    .archive-page .ar-date-toggle,
+    .archive-page .ar-member-toggle,
+    .archive-page .ar-toolbar a.ar-reset,
+    .archive-page .ar-toolbar .ar-search-wrap .ar-search,
+    .archive-page .site-section-tab { min-height: 44px; }
+    .archive-page .ar-filter-tools > * { min-width: 0; }
+    .archive-page .ar-member-toggle { gap: 0.3rem; }
+    .archive-page .ar-member-toggle > :not([data-member-toggle-label]) { flex-shrink: 0; }
+    .archive-page .ar-date-popover { width: min(21rem, calc(100vw - 3rem)); left: 0; right: auto; }
+    .archive-page .ar-member-panel { box-sizing: border-box; min-width: 0; max-width: 100%; }
+    .archive-page .ar-source-tabs { min-width: 0; max-width: 100%; overflow-x: auto; }
+}
+
+/* Keep the archive controls within a phone viewport, including display cutouts. */
+@media (max-width: 480px) {
+    body.site-page > main.archive-page {
+        padding-inline: max(0.75rem, env(safe-area-inset-left, 0px)) max(0.75rem, env(safe-area-inset-right, 0px));
+        gap: 1.25rem;
+    }
+    .archive-page .ar-toolbar { padding: 0.85rem; }
+    .archive-page:not(.is-folder-home) .ar-stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.4rem;
+    }
+    .archive-page:not(.is-folder-home) .ar-stats > .ar-stat:last-child { grid-column: auto; }
+    .archive-page:not(.is-folder-home) .ar-stat { padding: 0.65rem 0.5rem; min-height: 5rem; }
+    .archive-page:not(.is-folder-home) .ar-stat-label { gap: 0.2rem; font-size: 0.68rem; }
+    .archive-page:not(.is-folder-home) .ar-stat strong { font-size: 1.1rem; overflow-wrap: anywhere; }
+    .archive-page .ar-search { font-size: 16px; }
+    .archive-page .ar-source-tabs { scroll-padding-inline: 0.5rem; }
 }
