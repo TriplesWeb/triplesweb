@@ -21,8 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Bash and deployment assertions
-        run: bash scripts/tests/deployment-static.test.sh
+      - name: Deployment assertions and path routing tests
+        run: |
+          bash scripts/tests/deployment-static.test.sh
+          python3 scripts/ci-path-filter.py --self-test
       - name: Docker Compose production configuration
         env:
           MYSQL_PASSWORD: ci
@@ -30,57 +32,29 @@ jobs:
         run: docker compose -f docker-compose.yml config --quiet
 
   changes:
-    name: detect changes
+    name: detect changed areas
     runs-on: ubuntu-latest
     outputs:
-      app: ${{ steps.filter.outputs.app }}
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      integration: ${{ steps.filter.outputs.integration }}
+      qodana: ${{ steps.filter.outputs.qodana }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      - id: filter
-        name: Decide whether app checks are needed
+      - name: Classify changed files (against PR merge base)
+        id: filter
         run: |
           set -euo pipefail
-          # pull_request checkout은 가상의 merge commit; 첫 부모가 main입니다.
-          mapfile -t files < <(git diff --name-only --no-renames HEAD^1 HEAD)
-          printf 'Changed files:\n'
-          printf '  %s\n' "${files[@]:-}"
-
-          app=false
-          for f in "${files[@]:-}"; do
-            # App/test code still needs the full suite.
-            if [[ "$f" == scripts/tests/* ]]; then
-              app=true
-              break
-            fi
-            # Docs, deploy/CI scripts, editor/meta files can skip heavy checks.
-            case "$f" in
-              package.json|package-lock.json|scripts/setup-css.sh|scripts/build-*-css.cjs|scripts/build-css.cjs|scripts/build-tw4.cjs|scripts/check-css-drift.cjs|scripts/tailwind*.cjs|scripts/css/*)
-                app=true
-                break
-                ;;
-              *.md|docs/*|.github/*|.githooks/*|.cursor/*|.vscode/*|.gitignore|.gitattributes|.dockerignore|.env.example|LICENSE*|scripts/*)
-                ;;
-              *)
-                app=true
-                break
-                ;;
-            esac
-          done
-
-          echo "app=$app" >> "$GITHUB_OUTPUT"
-          if [[ "$app" == "true" ]]; then
-            echo "App-related paths changed — running full checks."
-          else
-            echo "Docs/scripts/meta only — skipping test, package, and qodana."
-          fi
-
+          # PR's synthetic merge commit has the target main tip as first parent.
+          # --no-renames ensures a moved file checks both its old and new areas.
+          git diff --name-only --no-renames -z HEAD^1 HEAD | python3 scripts/ci-path-filter.py --stdin-z
 
   test:
-    name: Java tests and WAR
+    name: Backend tests and WAR
     needs: changes
-    if: needs.changes.outputs.app == 'true'
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -94,17 +68,21 @@ jobs:
       - name: Summarize failed SQL tests
         if: failure()
         run: grep -n -A 10 -B 2 -E 'BadSqlGrammarException|JdbcSQLSyntaxErrorException' build/test-results/test/*.xml || true
-      # 다수 브라우저 테스트가 Java MockMvc가 생성한 build/*.html을 읽는다.
-      # 브라우저 테스트는 Java job 안에서 실행하고, CSS/JS 검사는 별도 병렬 job으로 유지한다.
+      # Server-generated HTML fixtures are produced by the Java test above.
+      # Run cross-layer browser tests only when this PR touches BOTH areas.
       - uses: actions/setup-node@v4
+        if: needs.changes.outputs.integration == 'true'
         with:
           node-version: '20'
           cache: npm
-      - name: Browser regression suite using Java-generated HTML
+      - name: Browser integration tests (server-rendered HTML fixtures)
+        if: needs.changes.outputs.integration == 'true'
         env:
           NODE_PATH: /tmp/objekt-browser/node_modules
         run: |
+          set -euo pipefail
           test -f build/profile-missing-preview.html
+          test -f build/objekt-modal-preview.html
           npm install --prefix /tmp/objekt-browser --no-package-lock --prefer-offline playwright@1.56.1
           if [ -x /usr/bin/google-chrome ]; then
             export CHROMIUM_PATH=/usr/bin/google-chrome
@@ -113,13 +91,49 @@ jobs:
           fi
           node scripts/tests/objekt-account-ui.browser.cjs
           node scripts/tests/objekt-modal.browser.cjs
-          node scripts/tests/objekt-detail-mobile-open.browser.cjs
-          node scripts/tests/objekt-desc-leading.browser.cjs
           node scripts/tests/profile-board.browser.cjs
           node scripts/tests/chemistry-search-link.browser.cjs
           node scripts/tests/objekt-mobile.browser.cjs
           node scripts/tests/site-header.browser.cjs
           node scripts/tests/objekt-artist-gravity.browser.cjs
+          node scripts/tests/objekt-season-schedule.browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: failure() && needs.changes.outputs.integration == 'true'
+        with:
+          name: integration-browser-failure-screenshots
+          path: /tmp/objekt-ui/*.png
+          if-no-files-found: ignore
+
+
+  browser:
+    name: Frontend CSS, JS and browser tests
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: CSS reproducibility and bundle checks
+        run: ./scripts/setup-css.sh --check
+      - name: JavaScript unit tests
+        run: node scripts/tests/objekt-detail.test.cjs && node scripts/tests/objekt-transfers.test.cjs && node scripts/tests/objekt-kind-combo.test.cjs
+
+      - name: Browser tests without Java-generated fixtures
+        env:
+          NODE_PATH: /tmp/objekt-browser/node_modules
+        run: |
+          set -euo pipefail
+          npm install --prefix /tmp/objekt-browser --no-package-lock --prefer-offline playwright@1.56.1
+          if [ -x /usr/bin/google-chrome ]; then
+            export CHROMIUM_PATH=/usr/bin/google-chrome
+          else
+            /tmp/objekt-browser/node_modules/.bin/playwright install --with-deps chromium
+          fi
+          node scripts/tests/objekt-detail-mobile-open.browser.cjs
+          node scripts/tests/objekt-desc-leading.browser.cjs
           node scripts/tests/objekt-member-selection.browser.cjs
           node scripts/tests/objekt-live-filters.browser.cjs
           node scripts/tests/objekt-live.browser.cjs
@@ -136,35 +150,16 @@ jobs:
           node scripts/tests/date-calendar-scope.cjs
           node scripts/tests/objekt-grid-cols.browser.cjs
           node scripts/tests/profile-ownership-tabs.browser.cjs
-          node scripts/tests/objekt-season-schedule.browser.cjs
           node scripts/tests/scroll-top.browser.cjs
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: objekt-browser-failure-screenshots
+          name: frontend-browser-failure-screenshots
           path: /tmp/objekt-ui/*.png
           if-no-files-found: ignore
-
-
-
-  browser:
-    name: CSS and JavaScript checks
-    needs: changes
-    if: needs.changes.outputs.app == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-      - name: CSS reproducibility and bundle checks
-        run: ./scripts/setup-css.sh --check
-      - name: JavaScript unit tests
-        run: node scripts/tests/objekt-detail.test.cjs && node scripts/tests/objekt-transfers.test.cjs && node scripts/tests/objekt-kind-combo.test.cjs
   qodana:
     needs: changes
-    if: needs.changes.outputs.app == 'true'
+    if: needs.changes.outputs.qodana == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -262,22 +257,42 @@ jobs:
     needs: [changes, deployment-check, test, browser, qodana]
     runs-on: ubuntu-latest
     steps:
-      - name: Enforce merge gate
+      - name: Enforce selective CI merge gate
         env:
-          APP: ${{ needs.changes.outputs.app }}
+          BACKEND: ${{ needs.changes.outputs.backend }}
+          FRONTEND: ${{ needs.changes.outputs.frontend }}
+          INTEGRATION: ${{ needs.changes.outputs.integration }}
+          QODANA: ${{ needs.changes.outputs.qodana }}
           CHANGES_RESULT: ${{ needs.changes.result }}
           DEPLOYMENT_RESULT: ${{ needs.deployment-check.result }}
           TEST_RESULT: ${{ needs.test.result }}
-          BROWSER_RESULT: ${{ needs.browser.result }}
+          FRONTEND_RESULT: ${{ needs.browser.result }}
           QODANA_RESULT: ${{ needs.qodana.result }}
         run: |
           set -euo pipefail
-          if [[ "$CHANGES_RESULT" != "success" || "$DEPLOYMENT_RESULT" != "success" ]]; then
-            echo "Change detection or deployment configuration validation failed."
+          [[ "$CHANGES_RESULT" == "success" && "$DEPLOYMENT_RESULT" == "success" ]] || {
+            echo "::error::Routing or deployment validation failed"
             exit 1
-          fi
-          if [[ "$APP" != "true" ]]; then
-            echo "Non-app PR — Java, browser and Qodana jobs intentionally skipped."
-            exit 0
-          fi
-          [[ "$TEST_RESULT" == "success" && "$BROWSER_RESULT" == "success" && "$QODANA_RESULT" == "success" ]] || exit 1
+          }
+          for flag in "$BACKEND" "$FRONTEND" "$INTEGRATION" "$QODANA"; do
+            [[ "$flag" == "true" || "$flag" == "false" ]] || {
+              echo "::error::Missing or invalid change routing output: $flag"
+              exit 1
+            }
+          done
+          [[ "$INTEGRATION" == "false" || ( "$BACKEND" == "true" && "$FRONTEND" == "true" ) ]] || exit 1
+          [[ "$QODANA" == "$BACKEND" ]] || exit 1
+
+          require_result() {
+            local area="$1" enabled="$2" actual="$3" expected="skipped"
+            [[ "$enabled" == "true" ]] && expected="success"
+            if [[ "$actual" != "$expected" ]]; then
+              echo "::error::$area expected=$expected actual=$actual enabled=$enabled"
+              exit 1
+            fi
+            echo "$area=$actual ($enabled)"
+          }
+          require_result "Backend/Gradle" "$BACKEND" "$TEST_RESULT"
+          require_result "Frontend/JS" "$FRONTEND" "$FRONTEND_RESULT"
+          require_result "Qodana" "$QODANA" "$QODANA_RESULT"
+          echo "Selective PR checks passed"
