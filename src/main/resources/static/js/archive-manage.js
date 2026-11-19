@@ -3,6 +3,8 @@
     const noun = kind === "video" ? "영상" : "사진";
     const dateLabel = document.querySelector("[data-date-label]")?.dataset.dateLabel || (noun + " 날짜");
     const dialogTriggers = new WeakMap();
+    /** 업로드 성공 후 모달을 유지할 때, 닫을 때 이동할 Location (없으면 reload). */
+    let afterUploadLocation = null;
 
     function authHeaders() {
         const headerMap = {};
@@ -44,6 +46,9 @@
 
     function closeDialog(dialog) {
         if (!dialog) return;
+        const refreshAfterUpload = dialog.id === "uploadModal" && afterUploadLocation !== null;
+        const refreshTo = afterUploadLocation;
+        if (refreshAfterUpload) afterUploadLocation = null;
         dialog.hidden = true;
         dialog.querySelectorAll('input[type="file"]').forEach(input => {
             releaseUrl(input._archiveLastFile);
@@ -53,6 +58,7 @@
         });
         dialogTriggers.get(dialog)?.focus();
         if (!document.querySelector(".ar-dialog:not([hidden])")) document.body.style.overflow = "";
+        if (refreshAfterUpload) navigateAfterUpload(refreshTo);
     }
 
     function mediaNode(url, cropped) {
@@ -608,10 +614,47 @@
         return [...new Set(params.getAll("members").map(name => name.trim()).filter(Boolean))].join(",");
     }
 
+    function setUploadStatus(message) {
+        if (!uploadForm) return;
+        let status = uploadForm.querySelector("[data-upload-status]");
+        if (!status) {
+            status = document.createElement("p");
+            status.className = "ar-field-hint";
+            status.dataset.uploadStatus = "";
+            status.setAttribute("role", "status");
+            status.style.color = "#8decd9";
+            status.style.margin = "0";
+            uploadForm.querySelector(".ar-dialog-foot")?.prepend(status);
+        }
+        status.textContent = message || "";
+        status.hidden = !message;
+    }
+
+    function prepareUploadFormForNext() {
+        if (!uploadForm) return;
+        if (uploadFile) {
+            releaseUnusedFiles(uploadFile._archiveLastFiles, []);
+            uploadFile.value = "";
+            uploadFile._archiveLastFile = null;
+            uploadFile._archiveLastFiles = null;
+            syncFileName(uploadFile);
+        }
+        resetThumbnail(uploadForm);
+        const titleInput = uploadForm.querySelector("[name='title']");
+        if (titleInput) titleInput.value = "";
+        const descriptionInput = uploadForm.querySelector("[name='description']");
+        if (descriptionInput) descriptionInput.value = "";
+        showPreview(uploadPreview, "");
+        syncPreview(uploadForm);
+        uploadForm.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName);
+    }
+
     window.showAddModal = function () {
         if (!uploadForm || !uploadDialog) return;
+        afterUploadLocation = null;
         uploadForm.reset();
         resetThumbnail(uploadForm);
+        setUploadStatus("");
         // 멤버 폴더·필터에서 열면 해당 멤버를 기본 선택(변경 가능)
         applyArtists(uploadDialog, defaultUploadArtists());
         if (uploadFile) {
@@ -697,7 +740,9 @@
                 redirect: "manual"
             });
             if (uploadSucceeded(response)) {
-                navigateAfterUpload(response.headers.get("Location"));
+                afterUploadLocation = response.headers.get("Location") || "";
+                prepareUploadFormForNext();
+                setUploadStatus(noun + "을 추가했습니다. 이어서 더 추가하거나 닫으면 목록이 새로고침됩니다.");
                 return;
             }
             const message = (await response.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
