@@ -243,7 +243,7 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     -webkit-mask: url("/images/archive-folder.svg") center / contain no-repeat;
     mask: url("/images/archive-folder.svg") center / contain no-repeat;
 }
-.ar-folder-art.is-unit-art {
+.ar-folder-art.is-bundled-art {
     object-fit: contain;
     transform: scale(1.4);
     -webkit-mask: none;

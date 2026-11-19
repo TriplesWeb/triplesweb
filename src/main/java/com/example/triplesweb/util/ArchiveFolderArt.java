@@ -15,12 +15,13 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- * {@code uploads/미디어 폴더}에 있는 폴더 그림을 아카이브 홈 아이콘으로 쓴다.
+ * 아카이브 홈의 내장 폴더 그림과 {@code uploads/미디어 폴더}의 그림을 찾는다.
  */
 @Component
 public class ArchiveFolderArt {
     static final String DIR_NAME = "미디어 폴더";
     private static final List<String> EXTENSIONS = List.of(".png", ".jpg", ".jpeg", ".webp", ".svg");
+    private static final int BUNDLED_MEMBER_FOLDER_COUNT = 20;
     private static final Map<String, Integer> UNIT_IMAGES = Map.ofEntries(
             Map.entry("acid angel from asia", 27),
             Map.entry("acid angel of asia", 27),
@@ -47,7 +48,20 @@ public class ArchiveFolderArt {
         this.uploadRoot = Path.of(uploadDir);
     }
 
-    public static String unitIcon(String label) {
+    public static String bundledIcon(ArchiveFolderClassifier.Kind kind, String key, String label) {
+        return switch (kind) {
+            case SOLO -> memberIcon(key);
+            case UNIT -> unitIcon(label);
+            default -> "";
+        };
+    }
+
+    private static String memberIcon(String key) {
+        int number = MemberPortraitOptions.memberIndex(key) + 1;
+        return number <= BUNDLED_MEMBER_FOLDER_COUNT ? "/images/archive/member-folders/" + number + ".png" : "";
+    }
+
+    private static String unitIcon(String label) {
         if (label == null) return "";
         Integer number = UNIT_IMAGES.get(label.strip().toLowerCase(Locale.ROOT));
         return number == null ? "" : "/images/archive/unit-folders/" + number + ".png";

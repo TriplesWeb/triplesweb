@@ -17,6 +17,7 @@ import com.example.triplesweb.service.ChemistryGroupService;
 import com.example.triplesweb.service.ChemistryService;
 import com.example.triplesweb.service.UnitService;
 import com.example.triplesweb.util.ArchiveFolderArt;
+import org.jsoup.Jsoup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -106,7 +107,17 @@ class ArchiveControllerTest {
                 .andExpect(content().string(not(containsString("ar-folder-label\">5명 이상</span>"))))
                 .andExpect(content().string(containsString("ar-home-upload")))
                 .andExpect(content().string(containsString("사진 추가")))
-                .andExpect(content().string(containsString("id=\"uploadModal\"")));
+                .andExpect(content().string(containsString("id=\"uploadModal\"")))
+                .andExpect(result -> {
+                    var folders = Jsoup.parse(result.getResponse().getContentAsString()).select(".ar-folders .ar-folder.is-solo");
+                    org.assertj.core.api.Assertions.assertThat(folders).hasSize(24);
+                    for (int i = 0; i < 20; i++) {
+                        org.assertj.core.api.Assertions.assertThat(folders.get(i).select("img.is-bundled-art").attr("src"))
+                                .isEqualTo("/images/archive/member-folders/" + (i + 1) + ".png");
+                    }
+                    org.assertj.core.api.Assertions.assertThat(folders.subList(20, 24))
+                            .allSatisfy(folder -> org.assertj.core.api.Assertions.assertThat(folder.select("img.is-bundled-art")).isEmpty());
+                });
     }
 
     @Test void folderHomeGroupsNonUnitChemistryByMemberCount() throws Exception {
@@ -186,7 +197,7 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).contains(">디멘션</p>");
         org.assertj.core.api.Assertions.assertThat(html).contains("← 목록으로");
         org.assertj.core.api.Assertions.assertThat(html).contains("Aura");
-        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-art is-unit-art", "/images/archive/unit-folders/42.png");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-art is-bundled-art", "/images/archive/unit-folders/42.png");
         org.assertj.core.api.Assertions.assertThat(html).contains("/images/archive/unit-folders/27.png");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-preview");
         org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;s");

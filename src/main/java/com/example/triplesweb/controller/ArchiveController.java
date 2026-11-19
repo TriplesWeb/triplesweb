@@ -1107,8 +1107,8 @@ public class ArchiveController {
                                            int count, String preview, ArchiveFolderClassifier.Kind kind, boolean group) {
         Map<String, Object> card = new LinkedHashMap<>();
         boolean hideArt = kind == ArchiveFolderClassifier.Kind.COMBO;
-        String unitIcon = kind == ArchiveFolderClassifier.Kind.UNIT ? ArchiveFolderArt.unitIcon(label) : "";
-        String art = unitIcon;
+        String bundledIcon = ArchiveFolderArt.bundledIcon(kind, key, label);
+        String art = bundledIcon;
         if (art.isBlank() && !hideArt) art = archiveFolderArt.urlFor(kind, key, label);
         String shownPreview = hideArt || kind == ArchiveFolderClassifier.Kind.SOLO ? "" : (preview == null ? "" : preview);
         boolean customArt = !art.isBlank();
@@ -1122,7 +1122,7 @@ public class ArchiveController {
         card.put("hasPreview", !customArt && !shownPreview.isBlank());
         card.put("folderArt", art);
         card.put("hasFolderArt", customArt);
-        card.put("hasUnitFolderArt", !unitIcon.isBlank());
+        card.put("hasBundledFolderArt", !bundledIcon.isBlank());
         card.put("groupFolder", group);
         card.put("soloFolder", kind == ArchiveFolderClassifier.Kind.SOLO);
         card.put("comboFolder", kind == ArchiveFolderClassifier.Kind.COMBO);
