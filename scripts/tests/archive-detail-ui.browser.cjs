@@ -101,7 +101,7 @@ ${site}${css}${siteUi}
       <p class="ar-detail-count" id="archiveDetailCount" hidden></p>
     </div>
     <div class="ar-detail-side">
-      <div class="ar-dialog-head"><h2 id="archiveDetailTitle">사진</h2><button type="button" class="ar-close" data-ar-close>&times;</button></div>
+      <div class="ar-dialog-head ar-detail-head"><button type="button" class="ar-close" data-ar-close>&times;</button></div>
       <div class="ar-detail-body">
         <p class="ar-detail-desc" id="archiveDetailDescription" hidden></p>
         <div class="ar-detail-meta" id="archiveDetailMeta" hidden>
@@ -271,7 +271,7 @@ ${site}${css}${siteUi}
         dateText: dateValue?.textContent.trim() || '',
         metaHidden: meta.hidden,
         castHidden: cast.hidden,
-        title: document.getElementById('archiveDetailTitle').textContent.trim(),
+        hasTitle: Boolean(document.getElementById('archiveDetailTitle')),
         description: document.getElementById('archiveDetailDescription').textContent.trim(),
         descriptionHidden: document.getElementById('archiveDetailDescription').hidden,
         count: document.getElementById('archiveDetailCount').textContent.trim(),
@@ -293,7 +293,7 @@ ${site}${css}${siteUi}
     assert.equal(detail.castHidden, false);
     assert.ok(detail.radius.includes('999') || parseFloat(detail.radius) >= 12, '출처가 버튼처럼 보이지 않는다: ' + detail.radius);
     assert.equal(await page.locator('#archiveDetail .ar-detail-chem').count(), 0, '케미명이 없는 멤버에도 케미 라벨이 있다');
-    assert.equal(detail.title, '사진');
+    assert.equal(detail.hasTitle, false, '불필요한 사진 제목이 남아 있다');
     assert.equal(detail.description, '지연');
     assert.equal(detail.descriptionHidden, false);
     assert.equal(detail.count, '');
@@ -310,7 +310,6 @@ ${site}${css}${siteUi}
     await page.evaluate(() => { document.getElementById('archiveDetail').hidden = true; });
     await page.click('#album-card [data-archive-open]');
     const album = await page.evaluate(() => ({
-      title: document.getElementById('archiveDetailTitle').textContent.trim(),
       description: document.getElementById('archiveDetailDescription').textContent.trim(),
       count: document.getElementById('archiveDetailCount').textContent.trim(),
       countHidden: document.getElementById('archiveDetailCount').hidden,
@@ -319,7 +318,6 @@ ${site}${css}${siteUi}
       dots: document.querySelectorAll('#archiveDetailDots .ar-detail-dot').length,
       src: document.getElementById('archiveDetailImage').getAttribute('src') || ''
     }));
-    assert.equal(album.title, '사진');
     assert.equal(album.description, '묶음');
     assert.equal(album.count, '1 / 3');
     assert.equal(album.countHidden, false);
@@ -329,12 +327,10 @@ ${site}${css}${siteUi}
     assert.equal(album.src, '/one.svg');
     await page.click('#archiveDetailNext');
     const slid = await page.evaluate(() => ({
-      title: document.getElementById('archiveDetailTitle').textContent.trim(),
       description: document.getElementById('archiveDetailDescription').textContent.trim(),
       count: document.getElementById('archiveDetailCount').textContent.trim(),
       src: document.getElementById('archiveDetailImage').getAttribute('src') || ''
     }));
-    assert.equal(slid.title, '사진');
     assert.equal(slid.description, '묶음');
     assert.equal(slid.count, '2 / 3');
     assert.equal(slid.src, '/two.svg');

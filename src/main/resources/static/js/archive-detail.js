@@ -3,7 +3,6 @@
     if (!detail) return;
     const photo = document.getElementById('archiveDetailPhoto') || detail.querySelector('.ar-detail-photo');
     const image = document.getElementById('archiveDetailImage');
-    const title = document.getElementById('archiveDetailTitle');
     const description = document.getElementById('archiveDetailDescription');
     const meta = document.getElementById('archiveDetailMeta');
     const date = document.getElementById('archiveDetailDate');
@@ -48,7 +47,6 @@
 
     function fillMeta(card) {
         if (!card) return;
-        if (title) title.textContent = '사진';
         const desc = descriptionText(card);
         if (description) {
             description.hidden = !desc;

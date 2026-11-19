@@ -45,7 +45,7 @@ ${css}
   <div class="ar-dialog-panel ar-detail-panel">
     <div class="ar-detail-photo"><img id="archiveDetailImage" alt=""></div>
     <div class="ar-detail-side">
-      <div class="ar-dialog-head"><h2 id="archiveDetailTitle">사진</h2></div>
+      <div class="ar-dialog-head ar-detail-head"><button type="button" class="ar-close" data-ar-close aria-label="닫기">&times;</button></div>
       <div class="ar-detail-body">
         <p class="ar-detail-desc" id="archiveDetailDescription" hidden></p>
         <div class="ar-detail-meta" id="archiveDetailMeta" hidden>
@@ -113,7 +113,7 @@ ${css}
     await page.locator('#archiveGrid .ar-card').nth(1).locator('[data-archive-open]').click();
     const detail = await page.evaluate(() => ({
       open: !document.getElementById('archiveDetail').hidden,
-      title: document.getElementById('archiveDetailTitle').textContent,
+      hasTitle: Boolean(document.getElementById('archiveDetailTitle')),
       description: document.getElementById('archiveDetailDescription').textContent,
       descriptionHidden: document.getElementById('archiveDetailDescription').hidden,
       blank: document.querySelector('.ar-card [data-archive-open]')?.tagName,
@@ -125,7 +125,7 @@ ${css}
       outside: !document.getElementById('archiveDetailMembers').contains(document.getElementById('archiveDetailDate'))
     }));
     assert.equal(detail.open, true, '상세 모달이 열리지 않는다');
-    assert.equal(detail.title, '사진');
+    assert.equal(detail.hasTitle, false, '불필요한 사진 제목이 남아 있다');
     assert.equal(detail.description, '사진 2');
     assert.equal(detail.descriptionHidden, false);
     assert.equal(detail.blank, 'BUTTON');
