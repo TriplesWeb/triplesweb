@@ -7,6 +7,8 @@ public enum ArchiveSource {
     COSMO_ROOM("코스모룸"),
     COSMO_TALK("코스모톡/프롬"),
     OFFICIAL_SNS("공식 SNS"),
+    POLAROID("폴라로이드"),
+    TEASER("티저"),
     MAGAZINE("화보/매거진"),
     EXTERNAL("외부 컨텐츠/방송");
 

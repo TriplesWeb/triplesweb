@@ -275,7 +275,7 @@ class ArchiveControllerTest {
                 .andExpect(content().string(not(containsString("ar-folder-label\">tripleS</span>"))))
                 .andExpect(content().string(containsString("id=\"archive-member-picker\"")))
                 .andExpect(content().string(not(containsString("id=\"archiveChem\""))));
-        verify(archiveService).pageInFolder(eq(MediaType.IMAGE), anyInt(), anyInt(), nullable(String.class),
+        verify(archiveService).pageInFolder(eq(MediaType.IMAGE), anyInt(), org.mockito.AdditionalMatchers.lt(Integer.MAX_VALUE), nullable(String.class),
                 eq(List.of()),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
                 nullable(ArchiveSource.class), anyBoolean(), eq("s"),
@@ -400,6 +400,19 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("unit-member-chip")))
                 .andExpect(content().string(containsString("ar-source-tabs")))
                 .andExpect(content().string(containsString("ar-folder-tabs")));
+    }
+
+    @Test void sourceTabsOnlyShowSourcesWithPostsAndKeepAllUploadOptions() throws Exception {
+        Archive polaroid = photo();
+        polaroid.setSource(ArchiveSource.POLAROID);
+        stubFolder(MediaType.IMAGE, polaroid);
+        String html = mvc.perform(get("/archive").param("folder", "s"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(html)
+                .containsAnyOf("source=polaroid", "source&#x3D;polaroid")
+                .doesNotContain("source=cosmo_room", "source=magazine",
+                        "source&#x3D;cosmo_room", "source&#x3D;magazine")
+                .contains("value=\"POLAROID\"", "value=\"COSMO_ROOM\"");
     }
 
     @Test void archiveMemberPickerUsesPortraitsNotSymbolLogos() throws Exception {
@@ -588,7 +601,7 @@ class ArchiveControllerTest {
 
         mvc.perform(multipart("/archive/7").file(file).param("description", "새 설명").param("artistNames", "서연").param("registeredOn", "2026-10-01").param("source", "COSMO_ROOM"))
                 .andExpect(status().isOk());
-        verify(archiveService).update(eq(7L), eq(""), anyList(), eq("서연"), isNull(), eq(false), eq(java.time.LocalDate.of(2026, 10, 1)), eq(ArchiveSource.COSMO_ROOM), eq("새 설명"), isNull(), isNull());
+        verify(archiveService).update(eq(7L), eq(""), anyList(), eq("서연"), isNull(), eq(false), eq(java.time.LocalDate.of(2026, 10, 1)), eq(ArchiveSource.COSMO_ROOM), eq("새 설명"), isNull(), isNull(), isNull());
         verify(aboutAdminAuth).requireAdmin(any(), any());
 
         mvc.perform(delete("/archive/7")).andExpect(status().isOk());
@@ -684,7 +697,7 @@ class ArchiveControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("name=\"on\"")))
                 .andExpect(content().string(containsString("value=\"2026-03-15\"")));
-        verify(archiveService).pageInFolder(eq(MediaType.IMAGE), anyInt(), anyInt(), any(), any(),
+        verify(archiveService).pageInFolder(eq(MediaType.IMAGE), anyInt(), org.mockito.AdditionalMatchers.lt(Integer.MAX_VALUE), any(), any(),
                 eq(java.time.LocalDate.of(2026, 3, 15)), eq(java.time.LocalDate.of(2026, 3, 15)),
                 isNull(), eq(false), eq("s"), any(), any());
     }
@@ -737,7 +750,7 @@ class ArchiveControllerTest {
         mvc.perform(multipart("/archive/upload/image").file(file)
                         .param("description", "현장 컷").param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
-        verify(archiveService).uploadImages(any(), eq(""), eq("서연"), eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), eq("현장 컷"));
+        verify(archiveService).uploadImages(any(), eq(""), eq("서연"), eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), eq("현장 컷"), eq(0));
         verify(aboutAdminAuth).requireAdmin(any(), any());
     }
 
@@ -746,7 +759,7 @@ class ArchiveControllerTest {
         mvc.perform(multipart("/archive/upload/image").file(file)
                         .param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
-        verify(archiveService).uploadImages(any(), eq(""), eq("서연"), eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), isNull());
+        verify(archiveService).uploadImages(any(), eq(""), eq("서연"), eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), isNull(), eq(0));
         verify(aboutAdminAuth).requireAdmin(any(), any());
     }
 
@@ -754,10 +767,10 @@ class ArchiveControllerTest {
         MockMultipartFile first = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
         MockMultipartFile second = new MockMultipartFile("file", "b.png", "image/png", new byte[]{3, 4});
         mvc.perform(multipart("/archive/upload/image").file(first).file(second)
-                        .param("description", "묶음").param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
+                        .param("description", "묶음").param("coverIndex", "1").param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
         verify(archiveService, times(1)).uploadImages(any(), eq(""), eq("서연"),
-                eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), eq("묶음"));
+                eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), eq("묶음"), eq(1));
         verify(aboutAdminAuth).requireAdmin(any(), any());
     }
 
@@ -765,7 +778,7 @@ class ArchiveControllerTest {
         MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
         org.mockito.Mockito.doThrow(new IllegalArgumentException("같은 날짜·출처·설명의 게시글이 이미 있습니다."))
                 .when(archiveService).uploadImages(any(), eq(""), eq("서연"),
-                        eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), eq("현장 컷"));
+                        eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), eq("현장 컷"), eq(0));
         mvc.perform(multipart("/archive/upload/image").file(file)
                         .param("description", "현장 컷").param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
                 .andExpect(status().isBadRequest())
@@ -776,6 +789,7 @@ class ArchiveControllerTest {
         Archive archive = new Archive();
         archive.setId(7L);
         archive.setTitle("포토");
+        archive.setSource(ArchiveSource.COSMO_ROOM);
         archive.setArtistNames("서연");
         archive.setFile(SavedMeta.builder().url("/uploads/a.jpg").mediaType(MediaType.IMAGE).build());
         archive.setImagesJson("[\"/uploads/a.jpg\"]");
