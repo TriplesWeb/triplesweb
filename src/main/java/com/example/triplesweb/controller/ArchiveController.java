@@ -197,7 +197,7 @@ public class ArchiveController {
             if (archive.getType() == MediaType.IMAGE) photoCount++;
             else if (archive.getType() == MediaType.VIDEO) videoCount++;
         }
-        String title = "유닛별";
+        String title = "디멘션";
         String accent = "#a78bfa";
         model.addAttribute("archiveFolderHome", true);
         model.addAttribute("archiveFolderIndex", true);
@@ -317,7 +317,9 @@ public class ArchiveController {
         model.addAttribute("hasSourceFilter", sourceSlug != null && !sourceSlug.isBlank());
         model.addAttribute("chemQuery", "");
         model.addAttribute("archiveSources", sourceOptions(source));
-        addFilterSummary(model, q, selectedMembers, artists, type, sourceSlug);
+        model.addAttribute("hasActiveArchiveFilters", (q != null && !q.isBlank())
+                || !selectedMembers.isEmpty() || fromDate != null || toDate != null
+                || (sourceSlug != null && !sourceSlug.isBlank()));
         addArchivePage(model, archives, type, q, memberQuery(selectedMembers), dateQuery, browse,
                 folderQuery(folderKey, ""), sourceQuery, sourceSlug, "");
         // 출처 필터와 페이지를 제외한 같은 조건에서 탭의 표시 여부를 판단한다.
@@ -414,6 +416,7 @@ public class ArchiveController {
         Set<String> chosen = Set.copyOf(selected);
         List<Map<String, Object>> options = MemberPortraitOptions.fromArtists(artists, false);
         for (Map<String, Object> option : options) {
+            option.put("keepOption", true);
             option.put("active", chosen.contains(String.valueOf(option.get("value"))));
         }
         return options;
@@ -537,100 +540,6 @@ public class ArchiveController {
             cards.add(card);
         }
         return cards;
-    }
-
-    private void addFilterSummary(Model model, String q, List<String> selectedMembers, List<Artist> artists,
-                                  MediaType type, String sourceSlug) {
-        List<Map<String, Object>> parts = new ArrayList<>();
-        int groups = 0;
-        groups++;
-        appendFilterText(parts, type == MediaType.VIDEO ? "영상" : "사진");
-        groups++;
-        appendFilterText(parts, sourceSummary(sourceSlug));
-        String chemistryName = exactChemistryLabel(selectedMembers);
-        if (!chemistryName.isEmpty()) {
-            groups++;
-            appendFilterText(parts, chemistryName);
-        } else if (!selectedMembers.isEmpty()) {
-            groups++;
-            if (!parts.isEmpty()) parts.add(Map.of("isSep", true));
-            Map<String, Object> first = memberFilterPart(selectedMembers.get(0), artists);
-            first.put("isMember", true);
-            parts.add(first);
-            if (selectedMembers.size() > 1) {
-                Map<String, Object> more = new LinkedHashMap<>();
-                more.put("isMore", true);
-                more.put("text", "외 " + (selectedMembers.size() - 1) + "명");
-                parts.add(more);
-            }
-        }
-        String query = q == null ? "" : q.trim();
-        if (!query.isEmpty()) {
-            groups++;
-            appendFilterText(parts, query);
-        }
-        model.addAttribute("hasFilters", !parts.isEmpty());
-        model.addAttribute("filterParts", parts);
-        model.addAttribute("filterCount", Math.max(1, groups));
-    }
-
-    private String exactChemistryLabel(List<String> selected) {
-        if (selected == null || selected.size() < 2) return "";
-        Set<String> wanted = new LinkedHashSet<>(ArchiveFolderClassifier.membersOf(String.join(",", selected)));
-        if (wanted.size() < 2) return "";
-        for (ChemistryDto item : safeChemistries()) {
-            String raw = (item.getMemberA() == null ? "" : item.getMemberA())
-                    + "," + (item.getMemberB() == null ? "" : item.getMemberB());
-            String label = labelWhenSameMembers(wanted, ArchiveFolderClassifier.membersOf(raw), item.getLabel());
-            if (!label.isEmpty()) return label;
-        }
-        for (ChemistryGroupDto item : safeChemistryGroups()) {
-            List<String> members = item.getMembers() == null ? List.of() : item.getMembers();
-            String label = labelWhenSameMembers(wanted,
-                    ArchiveFolderClassifier.membersOf(String.join(",", members)), item.getLabel());
-            if (!label.isEmpty()) return label;
-        }
-        return "";
-    }
-
-    private static String labelWhenSameMembers(Set<String> wanted, List<String> members, String rawLabel) {
-        if (members == null || members.size() != wanted.size()) return "";
-        if (!wanted.containsAll(members)) return "";
-        return chemistryDisplayLabel(rawLabel);
-    }
-
-    private static void appendFilterText(List<Map<String, Object>> parts, String text) {
-        if (text == null || text.isBlank()) return;
-        if (!parts.isEmpty()) parts.add(Map.of("isSep", true));
-        parts.add(Map.of("isText", true, "text", text));
-    }
-
-    private static String sourceSummary(String sourceSlug) {
-        if (sourceSlug == null || sourceSlug.isBlank()) return "전체 출처";
-        try {
-            ArchiveSource source = ArchiveSource.parse(sourceSlug);
-            return source == null ? "전체 출처" : source.getLabel();
-        } catch (IllegalArgumentException ignored) {
-            return "전체 출처";
-        }
-    }
-
-    private static Map<String, Object> memberFilterPart(String name, List<Artist> artists) {
-        Map<String, Object> part = new LinkedHashMap<>();
-        part.put("text", name);
-        String color = "#b9cac4";
-        for (Artist artist : artists) {
-            if (artist.getName() != null && artist.getName().trim().equalsIgnoreCase(name)) {
-                color = safeColor(artist.getColor());
-                break;
-            }
-            if (artist.getEngName() != null && artist.getEngName().trim().equalsIgnoreCase(name)) {
-                color = safeColor(artist.getColor());
-                break;
-            }
-        }
-        part.put("color", color);
-        return part;
     }
 
     private static String safeColor(String color) {
@@ -846,7 +755,7 @@ public class ArchiveController {
     private String folderTitle(String folder, List<String> comboMembers, List<ArchiveFolderClassifier.UnitMembers> units) {
         if (folder == null || folder.isBlank()) return "";
         if (folder.equalsIgnoreCase("s")) return "";
-        if (isUnitIndex(folder)) return "유닛별";
+        if (isUnitIndex(folder)) return "디멘션";
         if (isComboIndex(folder)) return "케미";
         Integer comboSize = ArchiveFolderClassifier.comboSize(folder);
         if (comboSize != null) return ArchiveFolderClassifier.comboLabel(comboSize);
@@ -937,9 +846,9 @@ public class ArchiveController {
             unitPhotos += counted.counts().getOrDefault("unit-" + unit.getUnitId(), 0);
         }
         List<Map<String, Object>> folders = new ArrayList<>();
-        folders.add(folderCard("s", "전체 멤버", "#f5c518", "/archive?folder=s", counted.counts().getOrDefault("s", 0),
+        folders.add(folderCard("s", "tripleS", "#f5c518", "/archive?folder=s", counted.counts().getOrDefault("s", 0),
                 "", ArchiveFolderClassifier.Kind.GROUP, true));
-        folders.add(parentCard("units", "유닛별", "#a78bfa", "/archive?folder=units", unitPhotos));
+        folders.add(parentCard("units", "디멘션", "#a78bfa", "/archive?folder=units", unitPhotos));
         for (int i = 0; i < MemberPortraitOptions.koreanOrder().size(); i++) {
             String name = MemberPortraitOptions.koreanOrder().get(i);
             String key = "s" + (i + 1);
@@ -983,8 +892,9 @@ public class ArchiveController {
         card.put("hasCount", count > 0);
         card.put("preview", "");
         card.put("hasPreview", false);
-        card.put("folderArt", "");
-        card.put("hasFolderArt", false);
+        card.put("folderArt", archiveFolderArt.dimensionUrl());
+        card.put("hasFolderArt", true);
+        card.put("hasBundledFolderArt", true);
         card.put("groupFolder", false);
         card.put("soloFolder", false);
         card.put("comboFolder", false);
@@ -1114,18 +1024,19 @@ public class ArchiveController {
         for (ChemistryDto item : safeChemistries()) {
             String rawMembers = (item.getMemberA() == null ? "" : item.getMemberA())
                     + "," + (item.getMemberB() == null ? "" : item.getMemberB());
-            first = appendChemistryName(json, first, seen, ArchiveFolderClassifier.membersOf(rawMembers), item.getLabel());
+            first = appendChemistryName(json, first, seen, ArchiveFolderClassifier.membersOf(rawMembers), item.getLabel(),
+                    "pair", item.getId());
         }
         for (ChemistryGroupDto item : safeChemistryGroups()) {
             List<String> members = item.getMembers() == null ? List.of() : item.getMembers();
             first = appendChemistryName(json, first, seen,
-                    ArchiveFolderClassifier.membersOf(String.join(",", members)), item.getLabel());
+                    ArchiveFolderClassifier.membersOf(String.join(",", members)), item.getLabel(), "group", item.getId());
         }
         return json.append(']').toString();
     }
 
     private static boolean appendChemistryName(StringBuilder json, boolean first, Set<String> seen,
-                                               List<String> members, String rawLabel) {
+                                               List<String> members, String rawLabel, String type, Long id) {
         if (members == null || members.size() < 2) return first;
         String label = chemistryDisplayLabel(rawLabel);
         if (label.isEmpty()) return first;
@@ -1136,7 +1047,11 @@ public class ArchiveController {
             if (i > 0) json.append(',');
             json.append(jsonString(members.get(i)));
         }
-        json.append("],\"label\":").append(jsonString(label)).append('}');
+        json.append("],\"label\":").append(jsonString(label));
+        if (id != null) {
+            json.append(",\"href\":").append(jsonString("/triples/chemistry?" + type + "=" + id));
+        }
+        json.append('}');
         return false;
     }
 
@@ -1211,6 +1126,7 @@ public class ArchiveController {
         card.put("hasPreview", !customArt && !shownPreview.isBlank());
         card.put("folderArt", art);
         card.put("hasFolderArt", customArt);
+        card.put("hasBundledFolderArt", archiveFolderArt.isBundled(art));
         card.put("groupFolder", group);
         card.put("soloFolder", kind == ArchiveFolderClassifier.Kind.SOLO);
         card.put("comboFolder", kind == ArchiveFolderClassifier.Kind.COMBO);
