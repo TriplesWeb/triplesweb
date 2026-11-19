@@ -1,0 +1,222 @@
+name: Deploy PR to Pi (dev)
+
+# PR이 열리거나 동기화되면 개발 스택에 즉시 반영.
+# 동시 PR은 직렬화(cancel-in-progress: false) — 진행 중 배포를 기다린 뒤 이어서 반영.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - 'qodana.yaml'
+      - '.github/workflows/ci-tests.yml'
+      - '.github/workflows/qodana_code_quality.yml'
+      - '.github/workflows/deploy-main.yml'
+      - 'scripts/tests/**'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to deploy (branch/SHA). Empty = current default.'
+        required: false
+        default: ''
+
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+  pull-requests: write
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-deploy:
+    # Fork PR에는 secrets가 없어 배포 생략
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Resolve ref
+        id: ref
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ inputs.ref }}" ]]; then
+            echo "sha=${{ inputs.ref }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ref.outputs.sha }}
+
+      - name: Image name (lowercase)
+        id: image
+        run: echo "name=${REGISTRY}/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.image.outputs.name }}
+          tags: |
+            type=raw,value=dev-${{ steps.ref.outputs.sha }}
+            type=raw,value=dev
+            type=raw,value=pr-${{ github.event.pull_request.number || 'manual' }}-${{ steps.ref.outputs.sha }}
+
+      - name: Build and push (linux/arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+      - name: Connect Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          ping: ${{ secrets.PI_HOST }}
+
+      - name: Prepare SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.PI_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          cat >> ~/.ssh/config <<EOF
+          Host pi
+            HostName ${{ secrets.PI_HOST }}
+            User ${{ secrets.PI_USER }}
+            IdentityFile ~/.ssh/deploy_key
+            StrictHostKeyChecking accept-new
+          EOF
+
+      - name: Sync compose, uploads, and deploy to dev stack
+        env:
+          PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
+          PI_DEV_DEPLOY_PATH: ${{ secrets.PI_DEV_DEPLOY_PATH }}
+          IMAGE: ${{ steps.image.outputs.name }}:dev-${{ steps.ref.outputs.sha }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${PI_DEV_DEPLOY_PATH}" ]]; then
+            echo "ERROR: Secret PI_DEV_DEPLOY_PATH is required (e.g. /opt/stacks/triplesweb-dev)"
+            exit 1
+          fi
+          if [[ -z "${PI_DEPLOY_PATH}" ]]; then
+            echo "ERROR: Secret PI_DEPLOY_PATH is required (prod path for shared uploads)"
+            exit 1
+          fi
+
+          ssh pi "mkdir -p \"${PI_DEV_DEPLOY_PATH}\""
+          scp docker-compose.dev.yml "pi:${PI_DEV_DEPLOY_PATH}/docker-compose.yml"
+
+          # uploads는 운영 경로에 동기화 (개발·운영 공유)
+          ssh pi "set -euo pipefail
+            mkdir -p \"${PI_DEPLOY_PATH}/uploads\"
+            docker run --rm -v \"${PI_DEPLOY_PATH}/uploads:/uploads\" alpine:3.20 \
+              chown -R \"\$(id -u):\$(id -g)\" /uploads
+          "
+          rsync -az --delete --no-owner --no-group \
+            --exclude '.DS_Store' \
+            --exclude '*.orig' \
+            --exclude '**/.DS_Store' \
+            --exclude '**/*.orig' \
+            --filter 'P images/' \
+            --filter 'P images/**' \
+            --filter 'P videos/' \
+            --filter 'P videos/**' \
+            --filter 'P files/' \
+            --filter 'P files/**' \
+            -e ssh \
+            uploads/ "pi:${PI_DEPLOY_PATH}/uploads/"
+          ssh pi "chmod -R a+rwX \"${PI_DEPLOY_PATH}/uploads\""
+
+          ssh pi env \
+            PI_DEPLOY_PATH="$PI_DEPLOY_PATH" \
+            PI_DEV_DEPLOY_PATH="$PI_DEV_DEPLOY_PATH" \
+            IMAGE="$IMAGE" \
+            GHCR_USER="$GHCR_USER" \
+            GHCR_TOKEN="$GHCR_TOKEN" \
+            bash -s <<'EOF'
+          set -euo pipefail
+          cd "${PI_DEV_DEPLOY_PATH}"
+          touch .env
+          # Ensure shared paths + network defaults if missing
+          grep -q '^UPLOADS_DIR=' .env || echo "UPLOADS_DIR=${PI_DEPLOY_PATH}/uploads" >> .env
+          grep -q '^DATA_DIR=' .env || echo "DATA_DIR=${PI_DEPLOY_PATH}/data" >> .env
+          grep -q '^APP_PORT=' .env || echo "APP_PORT=8091" >> .env
+          grep -q '^MYSQL_HOST=' .env || echo "MYSQL_HOST=mariadb" >> .env
+          if ! grep -q '^COMPOSE_NETWORK=' .env; then
+            PROD_PROJECT="$(basename "${PI_DEPLOY_PATH}")"
+            NET="$(docker network ls --format '{{.Name}}' | grep -E "^${PROD_PROJECT}_triples$" || true)"
+            if [[ -z "${NET}" ]]; then
+              NET="$(docker network ls --format '{{.Name}}' | grep -E '_triples$' | head -n1 || true)"
+            fi
+            if [[ -z "${NET}" ]]; then
+              echo "ERROR: prod compose network (*_triples) not found"
+              docker network ls || true
+              exit 1
+            fi
+            echo "COMPOSE_NETWORK=${NET}" >> .env
+          fi
+          if grep -q '^IMAGE=' .env; then
+            sed -i.bak "s|^IMAGE=.*|IMAGE=${IMAGE}|" .env
+          else
+            echo "IMAGE=${IMAGE}" >> .env
+          fi
+          echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
+          docker compose pull app
+          docker compose up -d
+          docker image prune -f
+          docker logout ghcr.io >/dev/null 2>&1 || true
+          APP_PORT="$(grep -E '^APP_PORT=' .env | cut -d= -f2- || true)"
+          APP_PORT="${APP_PORT:-8091}"
+          for attempt in $(seq 1 60); do
+            if curl -fsS --max-time 8 "http://127.0.0.1:${APP_PORT}/" >/dev/null; then
+              echo "Smoke OK: / on :${APP_PORT} (attempt ${attempt})"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Smoke failed: / on :${APP_PORT} did not respond"
+          docker compose ps || true
+          docker compose logs --tail=200 app || true
+          exit 1
+          EOF
+
+      - name: Comment deploy URL on PR
+        if: github.event_name == 'pull_request' && vars.PI_DEV_PUBLIC_URL != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const base = '${{ vars.PI_DEV_PUBLIC_URL }}'.replace(/\/$/, '');
+            const sha = '${{ steps.ref.outputs.sha }}'.slice(0, 7);
+            const body = `개발 서버에 반영했습니다 (\`${sha}\`).\n\n- ${base}/main`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });

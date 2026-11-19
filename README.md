@@ -118,13 +118,15 @@ DB를 서버와 같이 쓰면 **파일도 같이** 보여야 합니다.
 
 ## Raspberry Pi 4 Docker CI/CD (Tailscale SSH)
 
-`main` 푸시 시 GitHub Actions가 **linux/arm64** 이미지를 빌드해 GHCR에 올리고, Tailscale으로 Pi에 SSH해 `docker compose pull && up`까지 자동 실행합니다.
+같은 Pi에 **운영**과 **개발** 앱을 나눕니다. DB·uploads·data는 공유하고, 앱 컨테이너·포트만 분리합니다.
 
 ```text
-push → Actions (buildx arm64) → ghcr.io → Tailscale join → SSH → compose pull/up
+PR open/push  → deploy-dev  → /opt/stacks/triplesweb-dev (:8091)  즉시
+main 머지     → (운영 재시작 없음)
+매일 04:00 KST → deploy-main → /opt/stacks/triplesweb (:8090)
 ```
 
-### 1. GitHub Secrets
+### 1. GitHub Secrets / Variables
 
 레포 **Settings → Secrets and variables → Actions**에 다음을 추가합니다.
 
@@ -135,7 +137,12 @@ push → Actions (buildx arm64) → ghcr.io → Tailscale join → SSH → compo
 | `PI_HOST` | Tailscale MagicDNS 또는 `100.x` 주소 (예: `raspberrypi.tailXXXX.ts.net`) |
 | `PI_USER` | SSH 사용자 |
 | `PI_SSH_KEY` | deploy 전용 **private** SSH 키 전체 |
-| `PI_DEPLOY_PATH` | Pi의 compose 디렉터리 (`/opt/stacks/triplesweb`) |
+| `PI_DEPLOY_PATH` | 운영 compose 디렉터리 (`/opt/stacks/triplesweb`) |
+| `PI_DEV_DEPLOY_PATH` | 개발 compose 디렉터리 (`/opt/stacks/triplesweb-dev`) |
+
+| Variable (선택) | 설명 |
+|-----------------|------|
+| `PI_DEV_PUBLIC_URL` | NPG로 붙인 개발 도메인 (예: `https://dev.example.com`). PR 코멘트에 사용 |
 
 Packages 쓰기는 워크플로의 `GITHUB_TOKEN` + `packages: write`로 처리합니다.  
 Pi pull이 `unauthorized`면 (1) GHCR 패키지 visibility를 **Public**으로 바꾸거나 (2) Secret `GHCR_TOKEN`(PAT, `read:packages`)을 추가하세요. 배포 스텝이 Pi에서 `docker login` 후 pull합니다.
@@ -172,13 +179,17 @@ curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker "$USER"
 # 재로그인 후 docker 확인
 
-# 기존 stacks 패턴과 동일 경로
+# 운영
 mkdir -p /opt/stacks/triplesweb/{uploads,data}
 cd /opt/stacks/triplesweb
-
 # 레포에서 docker-compose.yml, .env 복사 후
 # .env: IMAGE, MYSQL_*, YOUTUBE_API_KEY, APP_PORT=8090
 # (Pi에서 8080/8081은 vaultwarden 등이 사용 중)
+
+# 개발 (운영이 떠 있는 뒤)
+# docker-compose.dev.yml → /opt/stacks/triplesweb-dev/docker-compose.yml
+bash scripts/setup-pi-dev.sh /opt/stacks/triplesweb /opt/stacks/triplesweb-dev
+# .env: 운영과 같은 MYSQL_* + APP_PORT=8091 + COMPOSE_NETWORK + UPLOADS_DIR/DATA_DIR
 
 # GHCR (패키지가 private인 경우)
 echo "$GHCR_PAT" | docker login ghcr.io -u YOUR_GITHUB_USER --password-stdin
@@ -189,20 +200,19 @@ echo "$GHCR_PAT" | docker login ghcr.io -u YOUR_GITHUB_USER --password-stdin
 첫 기동(이미지 푸시 전·후):
 
 ```bash
-cd /opt/stacks/triplesweb
-docker compose pull   # 이미지가 있을 때
-docker compose up -d
+cd /opt/stacks/triplesweb && docker compose pull && docker compose up -d
+cd /opt/stacks/triplesweb-dev && docker compose pull app && docker compose up -d
 ```
 
-앱: `http://<pi-lan-or-tailscale-ip>:8090/main`
+- 운영: `http://<pi-lan-or-tailscale-ip>:8090/main`
+- 개발: `http://<pi-lan-or-tailscale-ip>:8091/main` (도메인은 NPG로 별도 연결)
 
 ### 4. 이후 자동 배포
 
-1. `main`에 푸시 (또는 Actions에서 **Build and deploy to Raspberry Pi** 수동 실행)
-2. Actions가 arm64 빌드 → GHCR 푸시 → Tailscale 조인 → `PI_HOST`로 SSH
-3. Pi에서 `IMAGE` 갱신 후 `docker compose pull app && up -d`
+1. **개발:** PR을 열거나 푸시하면 [deploy-dev.yml](.github/workflows/deploy-dev.yml)이 `:8091`에 즉시 반영 (동시 PR은 대기 후 순차)
+2. **운영:** 머지해도 바로 재시작하지 않음. 매일 **04:00 KST**에 [deploy-main.yml](.github/workflows/deploy-main.yml)이 `main` tip 반영. 이미 같은 SHA면 스킵. 긴급 시 Actions에서 **Deploy to Raspberry Pi (prod)** 수동 실행
 
-워크플로: [`.github/workflows/deploy-main.yml`](.github/workflows/deploy-main.yml)
+체크리스트: [docs/DEPLOY_PI.md](docs/DEPLOY_PI.md)
 
 PR 머지 게이트: Ruleset **`main-ci`**의 required status check **`required`**
 (`CI tests` 워크플로의 `test` + `package` + `qodana` 집계).
