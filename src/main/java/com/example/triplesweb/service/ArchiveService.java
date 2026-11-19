@@ -25,9 +25,11 @@ import org.springframework.data.jpa.domain.Specification;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * 아카이브({@link Archive}) 미디어 목록·상세·업로드·삭제를 담당한다.
@@ -397,9 +399,11 @@ public class ArchiveService {
                 .toList();
         if (archive.getType() == MediaType.IMAGE && (keepImageUrlsJson != null || imageOrderJson != null || !uploads.isEmpty())) {
             List<String> previous = ArchiveImages.resolve(archive, objectMapper);
+            Map<String, SavedMeta> uploadedByUrl = new LinkedHashMap<>();
             var merged = ArchiveImages.merge(previous, keepImageUrlsJson, imageOrderJson, uploads, objectMapper, file -> {
                 SavedMeta meta = fileStorageService.saveWithMeta(file);
                 coerceType(MediaType.IMAGE, meta);
+                uploadedByUrl.put(meta.getUrl(), meta);
                 return meta.getUrl();
             });
             if (merged.urls().isEmpty()) {
@@ -410,7 +414,10 @@ public class ArchiveService {
                     deleteStored(SavedMeta.builder().url(removed).build());
                 }
                 String cover = ArchiveImages.primary(merged.urls());
-                archive.setFile(SavedMeta.builder().url(cover).mediaType(MediaType.IMAGE).build());
+                SavedMeta current = archive.getFile();
+                if (current == null || cover == null || !cover.equals(current.getUrl())) {
+                    archive.setFile(coverFileMeta(cover, current, uploadedByUrl));
+                }
                 applyImageUrls(archive, merged.urls());
             }
         } else if (!uploads.isEmpty()) {
@@ -437,6 +444,51 @@ public class ArchiveService {
                 .map(String::trim)
                 .toList();
         archive.setImagesJson(ArchiveImages.write(safe, objectMapper));
+    }
+
+    /** 커버 URL이 바뀌어도 file_type 등 NOT NULL 메타가 비지 않게 채운다. */
+    private SavedMeta coverFileMeta(String coverUrl, SavedMeta previous, Map<String, SavedMeta> uploadedByUrl) {
+        if (coverUrl == null || coverUrl.isBlank()) {
+            throw new IllegalArgumentException("사진은 최소 1장이 필요합니다.");
+        }
+        SavedMeta uploaded = uploadedByUrl == null ? null : uploadedByUrl.get(coverUrl);
+        if (uploaded != null) {
+            return uploaded;
+        }
+        if (previous != null && coverUrl.equals(previous.getUrl())) {
+            return previous;
+        }
+        return imageMetaFromUrl(coverUrl);
+    }
+
+    private static SavedMeta imageMetaFromUrl(String url) {
+        String relative = url.startsWith("/uploads/") ? url.substring("/uploads/".length()) : url;
+        String fileName = relative;
+        int slash = relative.lastIndexOf('/');
+        if (slash >= 0 && slash < relative.length() - 1) {
+            fileName = relative.substring(slash + 1);
+        }
+        String ext = "";
+        int dot = fileName.lastIndexOf('.');
+        if (dot >= 0 && dot < fileName.length() - 1) {
+            ext = fileName.substring(dot + 1).toLowerCase(Locale.ROOT);
+        }
+        String fileType = switch (ext) {
+            case "", "jpg", "jpeg", "jfif" -> "image/jpeg";
+            case "png" -> "image/png";
+            case "webp" -> "image/webp";
+            case "gif" -> "image/gif";
+            case "bmp" -> "image/bmp";
+            default -> "image/" + ext;
+        };
+        return SavedMeta.builder()
+                .url(url)
+                .savedName(relative)
+                .originalName(fileName)
+                .fileType(fileType)
+                .size(0L)
+                .mediaType(MediaType.IMAGE)
+                .build();
     }
 
     private void deleteImageSet(Archive archive) {
