@@ -26,19 +26,30 @@ run_deploy() {
     fi
   fi
 
-  # pi/containerd 일시 오류는 재시도하되, 성공 시 즉시 진행한다.
-  for attempt in 1 2 3 4 5; do
-    if docker compose pull app; then break; fi
-    if [[ "$attempt" == 5 ]]; then
-      echo "Pull failed after five attempts" >&2
-      return 1
-    fi
-    sleep "$((attempt * 4))"
-  done
-  echo "Image pulled in $((SECONDS-start))s"
+  # 불변 SHA 이미지가 Pi에 이미 있다면 외부 네트워크 pull을 반복하지 않는다.
+  local pull_started="$SECONDS"
+  if docker image inspect "$IMAGE" >/dev/null 2>&1; then
+    echo "Immutable image already cached on Pi — pull skipped"
+  else
+    # pi/containerd 일시 오류는 재시도하되, 성공 시 즉시 진행한다.
+    for attempt in 1 2 3 4 5; do
+      if docker compose pull app; then break; fi
+      if [[ "$attempt" == 5 ]]; then
+        echo "Pull failed after five attempts" >&2
+        return 1
+      fi
+      sleep "$((attempt * 4))"
+    done
+  fi
+  echo "Image resolution took $((SECONDS-pull_started))s"
   local started="$SECONDS"
   # 이미 정상인 MariaDB를 다시 평가하거나 재생성하지 않고 앱만 갱신한다.
-  if ! docker compose up -d --no-deps app; then
+  # 동일 SHA로 실행 중이지만 readiness 실패라면 강제 재생성한다.
+  local -a up_args=(up -d --no-deps app)
+  if [[ "$previous_image" == "$IMAGE" ]]; then
+    up_args=(up -d --no-deps --force-recreate app)
+  fi
+  if ! docker compose "${up_args[@]}"; then
     echo "Compose up failed" >&2
     rollback
     return 1
