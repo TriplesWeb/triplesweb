@@ -9,7 +9,14 @@ LOCK=/tmp/triplesweb-docker-deploy.lock
 HEALTH_URL="http://127.0.0.1:${APP_PORT}/actuator/health/readiness"
 
 run_deploy() {
-  local start="$SECONDS" cid running previous_image="" ok=false
+  local start="$SECONDS" cid running previous_image=""
+  rollback() {
+    if [[ -n "$previous_image" && "$previous_image" != "$IMAGE" ]]; then
+      echo "Attempting container rollback to $previous_image" >&2
+      sed -i "s|^IMAGE=.*|IMAGE=$previous_image|" .env
+      IMAGE="$previous_image" docker compose up -d app || true
+    fi
+  }
   cid="$(docker compose ps -q app 2>/dev/null || true)"
   if [[ -n "$cid" ]]; then
     previous_image="$(docker inspect -f '{{.Config.Image}}' "$cid" 2>/dev/null || true)"
@@ -29,11 +36,23 @@ run_deploy() {
   done
   echo "Image pulled in $((SECONDS-start))s"
   local started="$SECONDS"
-  docker compose up -d
+  if ! docker compose up -d; then
+    echo "Compose up failed" >&2
+    rollback
+    return 1
+  fi
   cid="$(docker compose ps -q app)"
-  [[ -n "$cid" ]] || { echo "app container missing after up" >&2; return 1; }
+  if [[ -z "$cid" ]]; then
+    echo "app container missing after up" >&2
+    rollback
+    return 1
+  fi
   running="$(docker inspect -f '{{.Config.Image}}' "$cid")"
-  [[ "$running" == "$IMAGE" ]] || { echo "Image mismatch: $running != $IMAGE" >&2; return 1; }
+  if [[ "$running" != "$IMAGE" ]]; then
+    echo "Image mismatch: $running != $IMAGE" >&2
+    rollback
+    return 1
+  fi
 
   for attempt in $(seq 1 60); do
     if curl --silent --show-error --fail --max-time 8 "$HEALTH_URL" >/dev/null 2>&1; then
@@ -46,12 +65,8 @@ run_deploy() {
   docker compose ps >&2 || true
   docker compose logs --tail=120 app >&2 || true
 
-  # 이전 이미지로만 되돌린다. DB 스키마 롤백은 절대 자동 실행하지 않는다.
-  if [[ -n "$previous_image" && "$previous_image" != "$IMAGE" ]]; then
-    echo "Attempting container rollback to $previous_image" >&2
-    sed -i "s|^IMAGE=.*|IMAGE=$previous_image|" .env
-    docker compose up -d app || true
-  fi
+  # 이전 이미지로만 되돌린다. DB 스키마는 되돌리지 않는다.
+  rollback
   return 1
 }
 (
