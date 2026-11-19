@@ -103,10 +103,14 @@
         body.className = 'ar-body';
         const title = document.createElement('h3');
         title.dataset.previewTitle = '';
+        const source = document.createElement('div');
+        source.className = 'ar-source-badge';
+        source.dataset.previewSource = '';
+        source.hidden = true;
         const meta = document.createElement('div');
         meta.className = 'ar-meta';
         meta.dataset.previewArtists = '';
-        body.append(title, meta);
+        body.append(title, source, meta);
         return body;
     }
 
@@ -631,6 +635,17 @@
             const typedTitle = form.querySelector('[name="title"]')?.value.trim() || '';
             const typedDescription = form.querySelector('[name="description"]')?.value.trim() || '';
             title.textContent = typedTitle || typedDescription || (kind === 'video' ? '영상 제목' : '사진');
+        }
+        const sourceBadge = preview.querySelector('[data-preview-source]');
+        if (sourceBadge) {
+            const select = form.querySelector('[name="source"]');
+            const value = (select?.value || '').trim();
+            const label = value
+                ? (select.options[select.selectedIndex]?.textContent || '').trim()
+                : '';
+            sourceBadge.hidden = !label;
+            sourceBadge.dataset.source = value.toLowerCase();
+            sourceBadge.textContent = label;
         }
         const meta = preview.querySelector('[data-preview-artists]');
         if (meta) {
