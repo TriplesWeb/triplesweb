@@ -565,7 +565,7 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     margin-left: 0;
 }
 .ar-sort,
-.ar-chem { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; }
+.ar-chem { display: inline-flex; align-items: center; gap: 0.55rem; min-width: 0; }
 .ar-chem-control { min-width: 16.5rem; max-width: 28rem; }
 .ar-chem .ar-sort-trigger,
 .ar-chem .ar-sort-option {

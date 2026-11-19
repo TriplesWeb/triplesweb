@@ -355,8 +355,10 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString(">초기화</a>")))
                 .andExpect(content().string(containsString("class=\"ar-submit\"")))
                 .andExpect(content().string(not(containsString("ar-search-go"))))
-                .andExpect(content().string(containsString("첫멤버순")))
-                .andExpect(content().string(containsString("마지막멤버순")))
+                .andExpect(content().string(containsString("멤버번호 낮은순")))
+                .andExpect(content().string(containsString("멤버번호 높은순")))
+                .andExpect(content().string(not(containsString("제목순"))))
+                .andExpect(content().string(not(containsString("첫멤버순"))))
                 .andExpect(content().string(containsString("data-member-order=\"0\"")))
                 .andExpect(content().string(containsString("data-stats-toggle")))
                 .andExpect(content().string(containsString("name=\"go\"")))
@@ -440,8 +442,9 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;s1&amp;folder&#x3D;s1");
         org.assertj.core.api.Assertions.assertThat(html).contains("id=\"archive-member-picker\"");
         org.assertj.core.api.Assertions.assertThat(html).contains(">멤버 선택<");
-        org.assertj.core.api.Assertions.assertThat(html).contains("첫멤버순");
-        org.assertj.core.api.Assertions.assertThat(html).contains("마지막멤버순");
+        org.assertj.core.api.Assertions.assertThat(html).contains("멤버번호 낮은순");
+        org.assertj.core.api.Assertions.assertThat(html).contains("멤버번호 높은순");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("제목순");
     }
 
     @Test void emptyFolderShowsPageOneAndMemberTitle() throws Exception {
