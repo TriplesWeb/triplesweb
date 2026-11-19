@@ -21,6 +21,19 @@
 - 배포 시 전체 uploads `chown -R`/`chmod -R`, `rsync --delete`, 무조건적인 `docker image prune` 제거
 - Pi에서는 pull 재시도 및 배포 잠금을 사용하고 다운로드·시작 시간을 기록
 
+## 운영 배포 추가 최적화
+
+- 사전점검에서 기존 개발 앱 중지(최초 1회), 운영 SHA/readiness 확인, chemistry 소스 버전을 **한 번의 Pi SSH 접속**으로 검사
+- `uploads/chemistry` Git tree SHA를 운영 서버의 `.chemistry-tree`와 비교해 내용이 같으면 rsync를 생략. 파일이 없거나 마커가 없으면 다시 동기화
+- PNG 등의 압축된 정적 이미지는 `rsync -a`로 중복 압축을 방지. 운영 업로드 루트에 삭제 옵션을 쓰지 않음
+- GHCR에 해당 `main` 커밋 SHA 이미지가 이미 있으면, 운영 배포 실패/재시도 상황에서 **Docker 재빌드·재푸시 생략**
+- Docker Compose `up -d --no-deps app`으로 기존 MariaDB 컨테이너를 다시 평가·변경하지 않음. readiness는 2초 주기로 확인
+- Docker CSS 빌드에는 필요한 `scripts/*.cjs`, `setup-css.sh`, `scripts/css`만 복사해 배포 스크립트 수정에 따른 CSS 이미지 캐시 무효화를 방지
+- 캐시 푸시 서버 오류만으로 운영 배포가 실패하지 않도록 GHA 캐시 내보내기에 `ignore-error=true` 적용
+
+**주의:** 실제 운영 속도 향상 수치는 이 PR이 머지된 후 성공한 최초 배포와 기존 실행 로그를 비교해야 확인할 수 있습니다. Spring Boot 자체 기동 시간은 애플리케이션 초기화와 Pi 성능에 달려 있어 스크립트만으로 단축된다고 보장할 수 없습니다.
+
+
 외부 `ObjektLiveApiTest`는 네트워크의 순간적인 상태에 좌우되므로 PR 필수 검증에서 제외했다. 외부 API 가용성이 중요한 변경은 필요 시 따로 수동 검증한다.
 
 ## 개발 서버 폐지
