@@ -23,7 +23,7 @@ COPY --from=css /workspace/src/main/resources/static/css/site.css ./src/main/res
 COPY --from=css /workspace/src/main/resources/static/css/triples.css ./src/main/resources/static/css/triples.css
 COPY --from=css /workspace/src/main/resources/static/css/objekt.css ./src/main/resources/static/css/objekt.css
 COPY --from=css /workspace/src/main/resources/static/css/gravity.css ./src/main/resources/static/css/gravity.css
-# 검증은 CI verify job에서 수행. 이미지 빌드는 패키징만 (arm 빌드 시간 단축).
+# 검증은 PR CI에서 수행. 운영 이미지는 테스트 재실행 없이 패키징만 수행.
 RUN ./gradlew bootWar -x test --no-daemon
 
 FROM eclipse-temurin:17-jre-jammy
