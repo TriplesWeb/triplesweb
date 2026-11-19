@@ -21,6 +21,8 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * {@link FileStorageService} 구현체. 업로드 루트 아래 이미지·영상·기타 파일을 날짜/하위폴더로 저장한다.
@@ -33,6 +35,11 @@ public class FileStorageServiceImpl implements FileStorageService {
     private final String uploadRoot;
     private final UploadSyncService uploadSyncService;
     private final UploadContentStore uploadContentStore;
+    private final ExecutorService dbCopyExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "upload-db-copy");
+        t.setDaemon(true);
+        return t;
+    });
 
     public FileStorageServiceImpl(
             @Value("${file.upload-dir}") String uploadRoot,
@@ -150,18 +157,21 @@ public class FileStorageServiceImpl implements FileStorageService {
         }
     }
 
+    /** HTTP 응답을 막지 않도록 DB 복사는 백그라운드에서 한다. */
     private void copyToDatabase(Path localFile, String relative, String contentType) {
-        try {
-            long size = Files.size(localFile);
-            if (size <= 0 || size > uploadContentStore.maxBytes()) {
-                logSkip(relative, size);
-                return;
+        dbCopyExecutor.execute(() -> {
+            try {
+                long size = Files.size(localFile);
+                if (size <= 0 || size > uploadContentStore.maxBytes()) {
+                    logSkip(relative, size);
+                    return;
+                }
+                uploadContentStore.save(relative, Files.readAllBytes(localFile), contentType);
+            } catch (Exception e) {
+                org.slf4j.LoggerFactory.getLogger(FileStorageServiceImpl.class)
+                        .warn("업로드 DB 복사 실패 {}: {}", relative, e.toString());
             }
-            uploadContentStore.save(relative, Files.readAllBytes(localFile), contentType);
-        } catch (Exception e) {
-            org.slf4j.LoggerFactory.getLogger(FileStorageServiceImpl.class)
-                    .warn("업로드 DB 복사 실패 {}: {}", relative, e.toString());
-        }
+        });
     }
 
     private void logSkip(String relative, long size) {

@@ -3,7 +3,7 @@
     const noun = kind === "video" ? "영상" : "사진";
     const dateLabel = document.querySelector("[data-date-label]")?.dataset.dateLabel || (noun + " 날짜");
     const dialogTriggers = new WeakMap();
-    /** 업로드 성공 후 모달을 유지할 때, 닫을 때 이동할 Location (없으면 reload). */
+    /** 업로드 성공 후 모달을 유지할 때, 닫을 때 갱신할 Location (없으면 현재 URL). */
     let afterUploadLocation = null;
 
     function authHeaders() {
@@ -14,19 +14,26 @@
         return window.AboutAdminAuth ? AboutAdminAuth.applyAuthHeaders(headerMap) : headerMap;
     }
 
-    /** HTTPS 프록시 뒤에서 302 Location 이 http 로 와도 같은 경로로 안전하게 이동한다. */
-    function navigateAfterUpload(locationHeader) {
-        if (!locationHeader) {
-            location.reload();
-            return;
-        }
+    function resolveArchivePath(locationHeader) {
+        if (!locationHeader) return location.pathname + location.search;
         try {
             const url = new URL(locationHeader, window.location.href);
-            window.location.assign(url.pathname + url.search + url.hash);
+            return url.pathname + url.search + url.hash;
         } catch (_) {
-            if (locationHeader.startsWith("/")) window.location.assign(locationHeader);
-            else location.reload();
+            return locationHeader.startsWith("/") ? locationHeader : (location.pathname + location.search);
         }
+    }
+
+    /** 전체 reload 대신 목록 그리드만 다시 받아 붙인다. */
+    function softRefreshArchive(locationHeader) {
+        const target = resolveArchivePath(locationHeader);
+        if (typeof window.refreshArchiveGrid === "function") {
+            return window.refreshArchiveGrid(target).catch(() => {
+                window.location.assign(target);
+            });
+        }
+        window.location.assign(target);
+        return Promise.resolve();
     }
 
     function uploadSucceeded(response) {
@@ -58,7 +65,22 @@
         });
         dialogTriggers.get(dialog)?.focus();
         if (!document.querySelector(".ar-dialog:not([hidden])")) document.body.style.overflow = "";
-        if (refreshAfterUpload) navigateAfterUpload(refreshTo);
+        if (refreshAfterUpload) softRefreshArchive(refreshTo);
+    }
+
+    function removeCardFromGrid(id) {
+        if (!id) return;
+        document.querySelectorAll('#archiveGrid .ar-card[data-id="' + CSS.escape(String(id)) + '"]').forEach(card => {
+            card.remove();
+        });
+        const detail = document.getElementById("archiveDetail");
+        if (detail && !detail.hidden) {
+            const editId = document.getElementById("archiveDetailEdit")?.dataset.id;
+            if (String(editId || "") === String(id)) {
+                detail.hidden = true;
+                if (!document.querySelector(".ar-dialog:not([hidden])")) document.body.style.overflow = "";
+            }
+        }
     }
 
     function mediaNode(url, cropped) {
@@ -742,7 +764,8 @@
             if (uploadSucceeded(response)) {
                 afterUploadLocation = response.headers.get("Location") || "";
                 prepareUploadFormForNext();
-                setUploadStatus(noun + "을 추가했습니다. 이어서 더 추가하거나 닫으면 목록이 새로고침됩니다.");
+                setUploadStatus(noun + "을 추가했습니다. 이어서 더 추가할 수 있습니다.");
+                softRefreshArchive(afterUploadLocation);
                 return;
             }
             const message = (await response.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -849,7 +872,8 @@
                 method: "DELETE", headers: authHeaders(), credentials: "same-origin"
             });
             if (response.ok) {
-                location.reload();
+                removeCardFromGrid(id);
+                softRefreshArchive();
                 return;
             }
             alert(response.status === 403 ? "관리자만 삭제할 수 있습니다." : (response.status === 404 ? "이미 삭제된 자료입니다." : "삭제에 실패했습니다."));
@@ -917,7 +941,8 @@
                 method: "POST", body, headers: authHeaders(), credentials: "same-origin"
             });
             if (response.ok) {
-                location.reload();
+                closeDialog(editDialog);
+                softRefreshArchive();
                 return;
             }
             const text = (await response.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
