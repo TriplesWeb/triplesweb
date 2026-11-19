@@ -3,9 +3,13 @@
     if (!detail) return;
     const photo = document.getElementById('archiveDetailPhoto') || detail.querySelector('.ar-detail-photo');
     const image = document.getElementById('archiveDetailImage');
-    const title = document.getElementById('archiveDetailTitle');
+    const description = document.getElementById('archiveDetailDescription');
+    const meta = document.getElementById('archiveDetailMeta');
     const date = document.getElementById('archiveDetailDate');
+    const dateLabel = date?.querySelector('[data-detail-date-label]');
+    const dateValue = date?.querySelector('[data-detail-date-value]');
     const source = document.getElementById('archiveDetailSource');
+    const cast = detail.querySelector('.ar-detail-cast');
     const members = document.getElementById('archiveDetailMembers');
     const edit = document.getElementById('archiveDetailEdit');
     const remove = document.getElementById('archiveDetailDelete');
@@ -13,7 +17,6 @@
     const next = document.getElementById('archiveDetailNext');
     const dots = document.getElementById('archiveDetailDots');
     const count = document.getElementById('archiveDetailCount');
-    const maxDots = 12;
     let activeCard = null;
     let urls = [];
     let index = 0;
@@ -37,14 +40,27 @@
         return single ? [single] : [];
     }
 
+    function descriptionText(card) {
+        if (!card) return '';
+        return String(card.dataset.description || card.dataset.title || '').trim();
+    }
+
     function fillMeta(card) {
         if (!card) return;
-        const headline = card.dataset.headline || card.dataset.description || card.dataset.title || '사진';
-        if (title) title.textContent = headline;
+        const desc = descriptionText(card);
+        if (description) {
+            description.hidden = !desc;
+            description.textContent = desc;
+        }
+        const registered = (card.dataset.registered || '').trim();
         if (date) {
-            date.hidden = !card.dataset.registered;
+            date.hidden = !registered;
             const label = document.querySelector('.archive-page')?.dataset.dateLabel || '날짜';
-            date.textContent = card.dataset.registered ? label + ' ' + card.dataset.registered : '';
+            if (dateLabel) dateLabel.textContent = label;
+            if (dateValue) {
+                dateValue.dateTime = registered;
+                dateValue.textContent = registered;
+            }
         }
         if (source) {
             const label = (card.dataset.sourceLabel || '').trim();
@@ -52,14 +68,19 @@
             source.dataset.source = (card.dataset.source || '').toLowerCase();
             source.textContent = label;
         }
+        if (meta) meta.hidden = Boolean(date?.hidden) && Boolean(source?.hidden);
         if (members) {
             const chips = card.querySelector('.ar-card-members');
             members.replaceChildren();
             if (chips) members.innerHTML = chips.innerHTML;
-            members.dataset.memberCount = String(members.querySelectorAll('.unit-member-chip').length);
+            const countMembers = members.querySelectorAll('.unit-member-chip').length;
+            members.dataset.memberCount = String(countMembers);
+            if (cast) cast.hidden = countMembers === 0;
             window.paintArchiveChemistry?.(members);
+        } else if (cast) {
+            cast.hidden = true;
         }
-        const cover = urls[0] || card.dataset.url || '';
+        const cover = card.dataset.url || parseImages(card)[0] || '';
         [edit, remove].forEach(button => {
             if (!button) return;
             button.dataset.id = card.dataset.id || '';
@@ -76,9 +97,8 @@
     function showImage() {
         if (!image || !activeCard) return;
         const url = urls[index] || '';
-        const headline = activeCard.dataset.headline || activeCard.dataset.description || activeCard.dataset.title || '사진';
         image.src = url;
-        image.alt = headline;
+        image.alt = descriptionText(activeCard) || '사진';
     }
 
     function paintNav() {
@@ -96,10 +116,10 @@
             count.textContent = multi ? (index + 1) + ' / ' + urls.length : '';
         }
         if (dots) {
-            const showDots = multi && urls.length <= maxDots;
-            dots.hidden = !showDots;
+            dots.hidden = !multi;
+            dots.classList.toggle('is-compact', urls.length > 10);
             dots.replaceChildren();
-            if (showDots) {
+            if (multi) {
                 urls.forEach((_, i) => {
                     const dot = document.createElement('button');
                     dot.type = 'button';
@@ -132,6 +152,28 @@
         document.body.style.overflow = 'hidden';
         detail.querySelector('[data-ar-close]')?.focus();
     }
+
+    /** 그리드 soft-refresh 후 같은 게시글 카드로 상세·수정 버튼 메타를 맞춘다. */
+    window.syncArchiveDetailCard = function (card) {
+        if (!card) return;
+        const id = String(card.dataset.id || '');
+        if (!id) return;
+        const sameEdit = edit && String(edit.dataset.id || '') === id;
+        const sameView = activeCard && String(activeCard.dataset.id || '') === id;
+        if (!sameEdit && !sameView) return;
+        const prevUrl = urls[index];
+        if (sameView) {
+            activeCard = card;
+            urls = parseImages(card);
+            const found = urls.indexOf(prevUrl);
+            index = found >= 0 ? found : Math.min(index, Math.max(0, urls.length - 1));
+            fillMeta(card);
+            showImage();
+            paintNav();
+        } else {
+            fillMeta(card);
+        }
+    };
 
     edit?.addEventListener('click', () => {
         detail.hidden = true;

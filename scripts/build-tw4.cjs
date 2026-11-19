@@ -5,7 +5,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { resolveTailwindCli } = require('./tailwind-cli.cjs');
 
-function buildTailwindBundle({ name, inputCss, outPath, extras = [], iconFace = null }) {
+function buildTailwindBundle({ name, inputCss, outPath, extras = [], iconFace = null, formatOutput = null }) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), `${name}-css-`));
   try {
     const output = path.join(dir, 'output.css');
@@ -23,7 +23,8 @@ function buildTailwindBundle({ name, inputCss, outPath, extras = [], iconFace = 
     }
 
     const header = `/* Generated with scripts/build-${name}-css.cjs; do not edit directly. */\n`;
-    fs.writeFileSync(outPath, header + fs.readFileSync(output, 'utf8') + '\n'
+    const compiled = fs.readFileSync(output, 'utf8');
+    fs.writeFileSync(outPath, header + (formatOutput ? formatOutput(compiled) : compiled) + '\n'
       + (iconFace || '') + base + extrasCss);
     console.log('Wrote', outPath);
   } finally {

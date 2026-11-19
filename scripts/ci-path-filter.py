@@ -17,7 +17,7 @@ NONE = frozenset()
 
 
 def classify_one(path: str) -> frozenset[str]:
-    p = path.lstrip("./")
+    p = path.removeprefix("./")  # Preserve dotfiles such as .github and .env.example
     name = p.rsplit("/", 1)[-1]
 
     # Integration tests exercise server-rendered HTML. A template change may
@@ -111,6 +111,8 @@ def run_self_tests() -> None:
         "Dockerfile": (["Dockerfile"], ("true", "true")),
         "unknown app path": (["src/main/resources/other/config"], ("true", "true")),
         "docs only": (["README.md", "docs/DEPLOYMENT.md"], ("false", "false")),
+        "dotfile metadata only": ([".env.example", ".gitignore"], ("false", "false")),
+        "workflow infrastructure only": ([".github/workflows/deploy-main.yml"], ("false", "false")),
         "prod deployment scripts": (["scripts/deploy-pi-app.sh", ".github/workflows/deploy-main.yml"], ("false", "false")),
         "empty": ([], ("true", "true")),
         "rename backend to frontend": (["src/main/java/A.java", "src/main/resources/static/a.js"], ("true", "true")),

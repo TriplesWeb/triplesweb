@@ -2961,6 +2961,19 @@
     }
   }
 
+  async function openLinkedGroup(groupId) {
+    if (!/^[1-9]\d*$/.test(groupId || "")) return;
+    try {
+      await ensureGroupsLoaded();
+      const group = groupEntries.find((item) => String(item.id) === groupId);
+      if (!group) return;
+      await setMode("trio");
+      openChemistryGroup(group);
+    } catch (err) {
+      console.error("케미 상세 로드 실패", err);
+    }
+  }
+
   // SSR 표는 즉시 클릭 가능. 상세 API는 클릭/유휴 시 로드.
   if (hasSsrTable()) {
     fillPairFilterOptions();
@@ -2998,7 +3011,9 @@
     bindChemistryCarousel();
     bindAdminUi();
     setModeButtons("pair");
-    openLinkedPair();
+    const linkedGroup = new URLSearchParams(window.location.search).get("group");
+    if (linkedGroup) openLinkedGroup(linkedGroup);
+    else openLinkedPair();
 
     // 전역 SiteAdmin 상태를 구독. 없으면 기존 status API로 폴백.
     if (window.SiteAdmin && typeof window.SiteAdmin.subscribe === "function") {

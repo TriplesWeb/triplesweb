@@ -5,21 +5,23 @@
         {{#hasCombo}}<input type="hidden" name="combo" value="{{comboValue}}">{{/hasCombo}}
         {{#hasSourceFilter}}<input type="hidden" name="source" value="{{sourceKey}}">{{/hasSourceFilter}}
         <div class="ar-filter-tools">
-            <label class="ar-sort">
-                <span class="ar-sort-label">정렬</span>
+            <div class="ar-sort">
+                <span class="ar-sort-label" id="archiveSortLabel">정렬</span>
                 <span class="ar-sort-control">
-                    <select id="archiveSort" aria-label="정렬">
+                    <select id="archiveSort" aria-labelledby="archiveSortLabel">
                         <option value="newest">최신순</option>
                         <option value="oldest">오래된 순</option>
+                        {{#videoArchive}}
                         <option value="title">제목순</option>
+                        {{/videoArchive}}
                         {{^folderIsSolo}}
-                        <option value="first-member">첫멤버순</option>
-                        <option value="last-member">마지막멤버순</option>
+                        <option value="first-member" data-member-sort>멤버번호 낮은순</option>
+                        <option value="last-member" data-member-sort>멤버번호 높은순</option>
                         {{/folderIsSolo}}
                     </select>
                     <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
                 </span>
-            </label>
+            </div>
             {{>partials/date-range-filter}}
             {{#showChemistryFilter}}
             <select class="ar-chem-select" id="archiveChem" name="chem" aria-label="케미">
@@ -42,7 +44,7 @@
                     <span class="material-symbols-outlined" aria-hidden="true">search</span>
                     <input class="ar-search" type="search" name="q" value="{{query}}" placeholder="{{#imageArchive}}사진 설명 검색{{/imageArchive}}{{^imageArchive}}영상 제목 검색{{/imageArchive}}" aria-label="{{#imageArchive}}사진 설명 검색{{/imageArchive}}{{^imageArchive}}영상 제목 검색{{/imageArchive}}">
                 </label>
-                <a class="site-btn site-btn--reset ar-reset" href="{{archiveHomePath}}">초기화</a>
+                <a class="site-btn site-btn--reset ar-reset" href="{{archiveHomePath}}"{{^hasActiveArchiveFilters}} hidden{{/hasActiveArchiveFilters}}>초기화</a>
             </div>
         </div>
     </form>

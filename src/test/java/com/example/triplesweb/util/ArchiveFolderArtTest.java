@@ -11,9 +11,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ArchiveFolderArtTest {
     @TempDir Path uploads;
 
-    @Test void emptyDirectoryYieldsNoArt() {
+    @Test void missingUploadsUseBundledArtWhereAvailable() {
         ArchiveFolderArt art = new ArchiveFolderArt(uploads.toString());
-        assertThat(art.urlFor(ArchiveFolderClassifier.Kind.SOLO, "s1", "S1 윤서연")).isEmpty();
+        assertThat(art.urlFor(ArchiveFolderClassifier.Kind.SOLO, "s1", "S1 윤서연"))
+                .isEqualTo("/images/archive/member-folders/1.png");
+        assertThat(art.urlFor(ArchiveFolderClassifier.Kind.GROUP, "s", "tripleS"))
+                .isEqualTo("/images/archive/member-folders/3.png");
+        assertThat(art.urlFor(ArchiveFolderClassifier.Kind.UNIT, "unit-3", "Glow"))
+                .isEqualTo("/images/archive/unit-folders/33.png");
+        assertThat(art.urlFor(ArchiveFolderClassifier.Kind.UNIT, "unit-4", "Unlisted unit")).isEmpty();
     }
 
     @Test void prefersExactThenPrefixedKoreanFileName() throws Exception {

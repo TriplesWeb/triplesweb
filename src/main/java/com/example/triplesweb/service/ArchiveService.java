@@ -25,9 +25,11 @@ import org.springframework.data.jpa.domain.Specification;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * 아카이브({@link Archive}) 미디어 목록·상세·업로드·삭제를 담당한다.
@@ -174,6 +176,9 @@ public class ArchiveService {
         if (safeTitle.isEmpty() && resolved == MediaType.VIDEO) {
             throw new IllegalArgumentException("제목을 입력해주세요.");
         }
+        if (resolved == MediaType.IMAGE) {
+            ensureUniqueImagePost(registeredOn, source, description, artistNames);
+        }
         SavedMeta meta = fileStorageService.saveWithMeta(file);   // SavedMeta 채워서 반환
         coerceType(requestedType, meta);
         Archive archive = new Archive(safeTitle, meta);
@@ -188,11 +193,17 @@ public class ArchiveService {
     }
 
     /**
-     * 여러 사진을 한 게시글로 저장한다. 첫 장이 표지({@link Archive#getFile()})가 된다.
+     * 여러 사진을 한 게시글로 저장한다. 첫 장이 표지({@code Archive.getFile()})가 된다.
      */
     @Transactional
     public Archive uploadImages(List<MultipartFile> files, String title, String artistNames, LocalDate registeredOn,
                                 ArchiveSource source, String description) throws IOException {
+        return uploadImages(files, title, artistNames, registeredOn, source, description, 0);
+    }
+
+    @Transactional
+    public Archive uploadImages(List<MultipartFile> files, String title, String artistNames, LocalDate registeredOn,
+                                ArchiveSource source, String description, int coverIndex) throws IOException {
         List<MultipartFile> uploads = files == null ? List.of() : files.stream()
                 .filter(file -> file != null && !file.isEmpty())
                 .toList();
@@ -202,6 +213,8 @@ public class ArchiveService {
         if (uploads.size() > ArchiveImages.MAX_IMAGES) {
             throw new IllegalArgumentException("사진은 최대 " + ArchiveImages.MAX_IMAGES + "장까지 등록할 수 있습니다.");
         }
+        validateCoverIndex(coverIndex, uploads.size());
+        ensureUniqueImagePost(registeredOn, source, description, artistNames);
         String safeTitle = title == null ? "" : title.trim();
         List<SavedMeta> metas = new ArrayList<>(uploads.size());
         List<String> urls = new ArrayList<>(uploads.size());
@@ -211,7 +224,7 @@ public class ArchiveService {
             metas.add(meta);
             urls.add(meta.getUrl());
         }
-        Archive archive = new Archive(safeTitle, metas.get(0));
+        Archive archive = new Archive(safeTitle, metas.get(coverIndex));
         archive.setDescription(normalizeDescription(description));
         archive.setArtistNames(artistNames == null ? "" : artistNames.trim());
         if (registeredOn != null) archive.setRegisteredOn(registeredOn);
@@ -335,23 +348,52 @@ public class ArchiveService {
     public Archive update(long id, String title, MultipartFile file, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
                           LocalDate registeredOn, ArchiveSource source, String description) throws IOException {
         List<MultipartFile> files = file == null || file.isEmpty() ? List.of() : List.of(file);
-        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description);
+        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description, null, null);
     }
 
     @Transactional
     public Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
                           LocalDate registeredOn, ArchiveSource source, String description) throws IOException {
-        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description);
+        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description, null, null);
+    }
+
+    @Transactional
+    public Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
+                          LocalDate registeredOn, ArchiveSource source, String description, String keepImageUrlsJson) throws IOException {
+        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description, keepImageUrlsJson, null);
+    }
+
+    @Transactional
+    public Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
+                          LocalDate registeredOn, ArchiveSource source, String description, String keepImageUrlsJson,
+                          String imageOrderJson) throws IOException {
+        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description, keepImageUrlsJson, imageOrderJson);
     }
 
     private Archive update(long id, String title, MultipartFile file, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
                            LocalDate registeredOn, ArchiveSource source, boolean applySource) throws IOException {
         List<MultipartFile> files = file == null || file.isEmpty() ? List.of() : List.of(file);
-        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, applySource, null);
+        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, applySource, null, null, null);
     }
 
     private Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
-                           LocalDate registeredOn, ArchiveSource source, boolean applySource, String description) throws IOException {
+                           LocalDate registeredOn, ArchiveSource source, boolean applySource, String description,
+                           String keepImageUrlsJson, String imageOrderJson) throws IOException {
+        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, applySource,
+                description, keepImageUrlsJson, imageOrderJson, null);
+    }
+
+    @Transactional
+    public Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail,
+                          boolean clearThumbnail, LocalDate registeredOn, ArchiveSource source,
+                          String description, String keepImageUrlsJson, String imageOrderJson, Integer coverIndex) throws IOException {
+        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true,
+                description, keepImageUrlsJson, imageOrderJson, coverIndex);
+    }
+
+    private Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail,
+                           boolean clearThumbnail, LocalDate registeredOn, ArchiveSource source, boolean applySource,
+                           String description, String keepImageUrlsJson, String imageOrderJson, Integer coverIndex) throws IOException {
         Archive archive = show(id);
         validateThumbnail(thumbnail);
         if (thumbnail != null && !thumbnail.isEmpty() && archive.getType() != MediaType.VIDEO) {
@@ -377,29 +419,37 @@ public class ArchiveService {
         List<MultipartFile> uploads = files == null ? List.of() : files.stream()
                 .filter(part -> part != null && !part.isEmpty())
                 .toList();
-        if (!uploads.isEmpty()) {
-            if (archive.getType() == MediaType.IMAGE) {
-                if (uploads.size() > ArchiveImages.MAX_IMAGES) {
-                    throw new IllegalArgumentException("사진은 최대 " + ArchiveImages.MAX_IMAGES + "장까지 등록할 수 있습니다.");
-                }
-                List<SavedMeta> metas = new ArrayList<>(uploads.size());
-                List<String> urls = new ArrayList<>(uploads.size());
-                for (MultipartFile part : uploads) {
-                    SavedMeta meta = fileStorageService.saveWithMeta(part);
-                    coerceType(MediaType.IMAGE, meta);
-                    metas.add(meta);
-                    urls.add(meta.getUrl());
-                }
-                deleteImageSet(archive);
-                archive.setFile(metas.get(0));
-                applyImageUrls(archive, urls);
-            } else {
-                SavedMeta previous = archive.getFile();
-                SavedMeta meta = fileStorageService.saveWithMeta(uploads.get(0));
-                coerceType(archive.getType(), meta);
-                archive.setFile(meta);
-                deleteStored(previous);
+        if (archive.getType() == MediaType.IMAGE && (keepImageUrlsJson != null || imageOrderJson != null || !uploads.isEmpty() || coverIndex != null)) {
+            List<String> previous = ArchiveImages.resolve(archive, objectMapper);
+            Map<String, SavedMeta> uploadedByUrl = new LinkedHashMap<>();
+            var merged = ArchiveImages.merge(previous, keepImageUrlsJson, imageOrderJson, uploads, objectMapper, file -> {
+                SavedMeta meta = fileStorageService.saveWithMeta(file);
+                coerceType(MediaType.IMAGE, meta);
+                uploadedByUrl.put(meta.getUrl(), meta);
+                return meta.getUrl();
+            });
+            if (merged.urls().isEmpty()) {
+                throw new IllegalArgumentException("사진은 최소 1장이 필요합니다.");
             }
+            int selectedIndex = coverIndex == null ? 0 : coverIndex;
+            validateCoverIndex(selectedIndex, merged.urls().size());
+            String cover = merged.urls().get(selectedIndex);
+            SavedMeta current = archive.getFile();
+            if (current == null || !cover.equals(current.getUrl())) {
+                archive.setFile(coverFileMeta(cover, current, uploadedByUrl));
+            }
+            if (!merged.urls().equals(previous)) {
+                for (String removed : merged.removed()) {
+                    deleteStored(SavedMeta.builder().url(removed).build());
+                }
+                applyImageUrls(archive, merged.urls());
+            }
+        } else if (!uploads.isEmpty()) {
+            SavedMeta previous = archive.getFile();
+            SavedMeta meta = fileStorageService.saveWithMeta(uploads.get(0));
+            coerceType(archive.getType(), meta);
+            archive.setFile(meta);
+            deleteStored(previous);
         }
         String previousThumbnail = archive.getThumbnailUrl();
         if (thumbnail != null && !thumbnail.isEmpty()) {
@@ -412,12 +462,63 @@ public class ArchiveService {
         return archiveRepository.save(archive);
     }
 
+    private static void validateCoverIndex(int index, int count) {
+        if (index < 0 || index >= count) {
+            throw new IllegalArgumentException("파일 목록에서 대표 사진을 선택해 주세요.");
+        }
+    }
+
     private void applyImageUrls(Archive archive, List<String> urls) {
         List<String> safe = urls == null ? List.of() : urls.stream()
                 .filter(url -> url != null && !url.isBlank())
                 .map(String::trim)
                 .toList();
         archive.setImagesJson(ArchiveImages.write(safe, objectMapper));
+    }
+
+    /** 커버 URL이 바뀌어도 file_type 등 NOT NULL 메타가 비지 않게 채운다. */
+    private SavedMeta coverFileMeta(String coverUrl, SavedMeta previous, Map<String, SavedMeta> uploadedByUrl) {
+        if (coverUrl == null || coverUrl.isBlank()) {
+            throw new IllegalArgumentException("사진은 최소 1장이 필요합니다.");
+        }
+        SavedMeta uploaded = uploadedByUrl == null ? null : uploadedByUrl.get(coverUrl);
+        if (uploaded != null) {
+            return uploaded;
+        }
+        if (previous != null && coverUrl.equals(previous.getUrl())) {
+            return previous;
+        }
+        return imageMetaFromUrl(coverUrl);
+    }
+
+    private static SavedMeta imageMetaFromUrl(String url) {
+        String relative = url.startsWith("/uploads/") ? url.substring("/uploads/".length()) : url;
+        String fileName = relative;
+        int slash = relative.lastIndexOf('/');
+        if (slash >= 0 && slash < relative.length() - 1) {
+            fileName = relative.substring(slash + 1);
+        }
+        String ext = "";
+        int dot = fileName.lastIndexOf('.');
+        if (dot >= 0 && dot < fileName.length() - 1) {
+            ext = fileName.substring(dot + 1).toLowerCase(Locale.ROOT);
+        }
+        String fileType = switch (ext) {
+            case "", "jpg", "jpeg", "jfif" -> "image/jpeg";
+            case "png" -> "image/png";
+            case "webp" -> "image/webp";
+            case "gif" -> "image/gif";
+            case "bmp" -> "image/bmp";
+            default -> "image/" + ext;
+        };
+        return SavedMeta.builder()
+                .url(url)
+                .savedName(relative)
+                .originalName(fileName)
+                .fileType(fileType)
+                .size(0L)
+                .mediaType(MediaType.IMAGE)
+                .build();
     }
 
     private void deleteImageSet(Archive archive) {
@@ -442,6 +543,21 @@ public class ArchiveService {
         if (description == null) return null;
         String trimmed = description.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    /** 같은 멤버·날짜·출처·설명(미입력 포함)의 사진 게시글이 있으면 추가를 막는다. */
+    private void ensureUniqueImagePost(LocalDate registeredOn, ArchiveSource source, String description, String artistNames) {
+        if (registeredOn == null || source == null) {
+            throw new IllegalArgumentException("날짜와 출처를 선택해 주세요.");
+        }
+        String key = normalizeDescription(description);
+        String descriptionKey = key == null ? "" : key;
+        if (archiveRepository.existsImageDuplicate(MediaType.IMAGE, registeredOn, source, descriptionKey, artistNames == null ? "" : artistNames.trim())) {
+            throw new IllegalArgumentException(
+                    descriptionKey.isEmpty()
+                            ? "같은 멤버·날짜·출처의 게시글이 이미 있습니다. 설명을 비운 게시글은 멤버별로 하나만 등록할 수 있습니다."
+                            : "같은 멤버·날짜·출처·설명의 게시글이 이미 있습니다.");
+        }
     }
 
     private void validateThumbnail(MultipartFile thumbnail) {
