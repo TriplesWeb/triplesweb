@@ -1,7 +1,8 @@
 name: Deploy PR to Pi (dev)
 
 # PR이 열리거나 동기화되면 개발 스택에 즉시 반영.
-# 동시 PR은 직렬화(cancel-in-progress: false) — 진행 중 배포를 기다린 뒤 이어서 반영.
+# 진행 중 배포는 취소하지 않는다(cancel-in-progress: false).
+# 대기열이 쌓이면 GitHub이 pending 중 최신만 남긴다 → 공유 1대 개발 서버에는 최신 PR이 반영된다.
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -38,21 +39,25 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04-arm
     steps:
-      - name: Resolve ref
+      - name: Resolve checkout ref
         id: ref
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ inputs.ref }}" ]]; then
-            echo "sha=${{ inputs.ref }}" >> "$GITHUB_OUTPUT"
+            echo "ref=${{ inputs.ref }}" >> "$GITHUB_OUTPUT"
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+            echo "ref=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
           else
-            echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+            echo "ref=${{ github.sha }}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.ref.outputs.sha }}
+          ref: ${{ steps.ref.outputs.ref }}
+
+      - name: Commit SHA (always full sha — branch names are not valid image tags)
+        id: sha
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Image name (lowercase)
         id: image
@@ -74,9 +79,9 @@ jobs:
         with:
           images: ${{ steps.image.outputs.name }}
           tags: |
-            type=raw,value=dev-${{ steps.ref.outputs.sha }}
+            type=raw,value=dev-${{ steps.sha.outputs.sha }}
             type=raw,value=dev
-            type=raw,value=pr-${{ github.event.pull_request.number || 'manual' }}-${{ steps.ref.outputs.sha }}
+            type=raw,value=pr-${{ github.event.pull_request.number || 'manual' }}-${{ steps.sha.outputs.sha }}
 
       - name: Build and push (linux/arm64)
         uses: docker/build-push-action@v6
@@ -115,19 +120,18 @@ jobs:
         env:
           PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
           PI_DEV_DEPLOY_PATH: ${{ secrets.PI_DEV_DEPLOY_PATH }}
-          IMAGE: ${{ steps.image.outputs.name }}:dev-${{ steps.ref.outputs.sha }}
+          IMAGE: ${{ steps.image.outputs.name }}:dev-${{ steps.sha.outputs.sha }}
           GHCR_USER: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          if [[ -z "${PI_DEV_DEPLOY_PATH}" ]]; then
-            echo "ERROR: Secret PI_DEV_DEPLOY_PATH is required (e.g. /opt/stacks/triplesweb-dev)"
-            exit 1
-          fi
           if [[ -z "${PI_DEPLOY_PATH}" ]]; then
             echo "ERROR: Secret PI_DEPLOY_PATH is required (prod path for shared uploads)"
             exit 1
           fi
+          # Secret이 없으면 운영 경로에 -dev 접미사 (예: /opt/stacks/triplesweb-dev)
+          PI_DEV_DEPLOY_PATH="${PI_DEV_DEPLOY_PATH:-${PI_DEPLOY_PATH}-dev}"
+          echo "Dev deploy path: ${PI_DEV_DEPLOY_PATH}"
 
           ssh pi "mkdir -p \"${PI_DEV_DEPLOY_PATH}\""
           scp docker-compose.dev.yml "pi:${PI_DEV_DEPLOY_PATH}/docker-compose.yml"
@@ -163,11 +167,21 @@ jobs:
           set -euo pipefail
           cd "${PI_DEV_DEPLOY_PATH}"
           touch .env
-          # Ensure shared paths + network defaults if missing
+          # 최초 기동: 운영 .env에서 DB/API 키 보강
+          if [[ -f "${PI_DEPLOY_PATH}/.env" ]]; then
+            for key in MYSQL_DATABASE MYSQL_USER MYSQL_PASSWORD MYSQL_ROOT_PASSWORD \
+              YOUTUBE_API_KEY CHEMISTRY_ADMIN_PASSWORD COSMO_ACCESS_TOKEN \
+              COSMO_REFRESH_TOKEN COSMO_KEY SPRING_JPA_HIBERNATE_DDL_AUTO; do
+              grep -q "^${key}=" .env 2>/dev/null && continue
+              line="$(grep -E "^${key}=" "${PI_DEPLOY_PATH}/.env" || true)"
+              [[ -n "${line}" ]] && echo "${line}" >> .env
+            done
+          fi
           grep -q '^UPLOADS_DIR=' .env || echo "UPLOADS_DIR=${PI_DEPLOY_PATH}/uploads" >> .env
           grep -q '^DATA_DIR=' .env || echo "DATA_DIR=${PI_DEPLOY_PATH}/data" >> .env
           grep -q '^APP_PORT=' .env || echo "APP_PORT=8091" >> .env
           grep -q '^MYSQL_HOST=' .env || echo "MYSQL_HOST=mariadb" >> .env
+          grep -q '^MYSQL_PORT=' .env || echo "MYSQL_PORT=3306" >> .env
           if ! grep -q '^COMPOSE_NETWORK=' .env; then
             PROD_PROJECT="$(basename "${PI_DEPLOY_PATH}")"
             NET="$(docker network ls --format '{{.Name}}' | grep -E "^${PROD_PROJECT}_triples$" || true)"
@@ -180,6 +194,10 @@ jobs:
               exit 1
             fi
             echo "COMPOSE_NETWORK=${NET}" >> .env
+          fi
+          if ! grep -q '^MYSQL_PASSWORD=' .env; then
+            echo "ERROR: MYSQL_PASSWORD missing in ${PI_DEV_DEPLOY_PATH}/.env (and not found in prod .env)"
+            exit 1
           fi
           if grep -q '^IMAGE=' .env; then
             sed -i.bak "s|^IMAGE=.*|IMAGE=${IMAGE}|" .env
@@ -212,7 +230,7 @@ jobs:
         with:
           script: |
             const base = '${{ vars.PI_DEV_PUBLIC_URL }}'.replace(/\/$/, '');
-            const sha = '${{ steps.ref.outputs.sha }}'.slice(0, 7);
+            const sha = '${{ steps.sha.outputs.sha }}'.slice(0, 7);
             const body = `개발 서버에 반영했습니다 (\`${sha}\`).\n\n- ${base}/main`;
             await github.rest.issues.createComment({
               owner: context.repo.owner,

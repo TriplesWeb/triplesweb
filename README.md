@@ -209,7 +209,7 @@ cd /opt/stacks/triplesweb-dev && docker compose pull app && docker compose up -d
 
 ### 4. 이후 자동 배포
 
-1. **개발:** PR을 열거나 푸시하면 [deploy-dev.yml](.github/workflows/deploy-dev.yml)이 `:8091`에 즉시 반영 (동시 PR은 대기 후 순차)
+1. **개발:** PR을 열거나 푸시하면 [deploy-dev.yml](.github/workflows/deploy-dev.yml)이 `:8091`에 즉시 반영 (진행 중은 유지, 대기열은 최신 PR만)
 2. **운영:** 머지해도 바로 재시작하지 않음. 매일 **04:00 KST**에 [deploy-main.yml](.github/workflows/deploy-main.yml)이 `main` tip 반영. 이미 같은 SHA면 스킵. 긴급 시 Actions에서 **Deploy to Raspberry Pi (prod)** 수동 실행
 
 체크리스트: [docs/DEPLOY_PI.md](docs/DEPLOY_PI.md)

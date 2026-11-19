@@ -70,20 +70,45 @@ jobs:
             StrictHostKeyChecking accept-new
           EOF
 
-      - name: Skip if prod already on this commit
+      - name: Skip if prod container already healthy on this commit
         id: skip
         env:
           PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
           WANT_IMAGE: ${{ steps.image.outputs.name }}:${{ needs.resolve-main.outputs.sha }}
         run: |
           set -euo pipefail
-          CURRENT="$(ssh pi "grep -E '^IMAGE=' '${PI_DEPLOY_PATH}/.env' 2>/dev/null | cut -d= -f2- || true")"
-          if [[ "$CURRENT" == "$WANT_IMAGE" ]]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::Prod already on ${WANT_IMAGE}; skipping rebuild/restart"
+          # .env IMAGE만 보면 실패 후 재시도가 스킵되므로, 실행 중 컨테이너 + smoke로 판정한다.
+          DECISION="$(ssh pi env PI_DEPLOY_PATH="$PI_DEPLOY_PATH" WANT_IMAGE="$WANT_IMAGE" bash -s <<'EOF'
+          set -euo pipefail
+          cd "${PI_DEPLOY_PATH}"
+          APP_PORT="$(grep -E '^APP_PORT=' .env 2>/dev/null | cut -d= -f2- || true)"
+          APP_PORT="${APP_PORT:-8080}"
+          CID="$(docker compose ps -q app 2>/dev/null || true)"
+          if [[ -z "${CID}" ]]; then
+            echo "skip=false"
+            echo "reason=no-running-app" >&2
+            exit 0
+          fi
+          RUNNING="$(docker inspect -f '{{.Config.Image}}' "${CID}" 2>/dev/null || true)"
+          if [[ "${RUNNING}" != "${WANT_IMAGE}" ]]; then
+            echo "skip=false"
+            echo "reason=image-mismatch running=${RUNNING:-<none>} want=${WANT_IMAGE}" >&2
+            exit 0
+          fi
+          if curl -fsS --max-time 8 "http://127.0.0.1:${APP_PORT}/" >/dev/null; then
+            echo "skip=true"
           else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-            echo "Prod IMAGE now: ${CURRENT:-<empty>} → ${WANT_IMAGE}"
+            echo "skip=false"
+            echo "reason=smoke-failed" >&2
+          fi
+          EOF
+          )"
+          SKIP="$(echo "$DECISION" | grep -E '^skip=' | tail -n1 | cut -d= -f2)"
+          echo "skip=${SKIP}" >> "$GITHUB_OUTPUT"
+          if [[ "$SKIP" == "true" ]]; then
+            echo "::notice::Prod already healthy on ${WANT_IMAGE}; skipping rebuild/restart"
+          else
+            echo "Will deploy ${WANT_IMAGE}"
           fi
 
       - name: Set up Docker Buildx
