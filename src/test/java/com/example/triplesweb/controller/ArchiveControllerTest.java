@@ -111,12 +111,10 @@ class ArchiveControllerTest {
                 .andExpect(result -> {
                     var folders = Jsoup.parse(result.getResponse().getContentAsString()).select(".ar-folders .ar-folder.is-solo");
                     org.assertj.core.api.Assertions.assertThat(folders).hasSize(24);
-                    for (int i = 0; i < 20; i++) {
+                    for (int i = 0; i < folders.size(); i++) {
                         org.assertj.core.api.Assertions.assertThat(folders.get(i).select("img.is-bundled-art").attr("src"))
                                 .isEqualTo("/images/archive/member-folders/" + (i + 1) + ".png");
                     }
-                    org.assertj.core.api.Assertions.assertThat(folders.subList(20, 24))
-                            .allSatisfy(folder -> org.assertj.core.api.Assertions.assertThat(folder.select("img.is-bundled-art")).isEmpty());
                 });
     }
 

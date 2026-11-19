@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 public class ArchiveFolderArt {
     static final String DIR_NAME = "미디어 폴더";
     private static final List<String> EXTENSIONS = List.of(".png", ".jpg", ".jpeg", ".webp", ".svg");
-    private static final int BUNDLED_MEMBER_FOLDER_COUNT = 20;
+    private static final int BUNDLED_MEMBER_FOLDER_COUNT = 24;
     private static final Map<String, Integer> UNIT_IMAGES = Map.ofEntries(
             Map.entry("acid angel from asia", 27),
             Map.entry("acid angel of asia", 27),
