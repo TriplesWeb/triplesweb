@@ -213,6 +213,10 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
           MIGRATIONS_TREE: ${{ steps.assets.outputs.migrations }}
           BG_ALLOW_SCHEMA_CHANGE: ${{ vars.BG_ALLOW_SCHEMA_CHANGE || 'false' }}
+          BG_MIN_AVAILABLE_MB: ${{ vars.BG_MIN_AVAILABLE_MB || '1400' }}
+          BG_SLOT_MEMORY_LIMIT: ${{ vars.BG_SLOT_MEMORY_LIMIT || '1800m' }}
+          BG_READY_TIMEOUT_SECONDS: ${{ vars.BG_READY_TIMEOUT_SECONDS || '360' }}
+          BG_DRAIN_SECONDS: ${{ vars.BG_DRAIN_SECONDS || '30' }}
         run: |
           set -euo pipefail
           : "${PI_DEPLOY_PATH:?PI_DEPLOY_PATH secret is required}"
@@ -237,6 +241,10 @@ jobs:
             GHCR_TOKEN="$GHCR_TOKEN" \
             MIGRATIONS_TREE="$MIGRATIONS_TREE" \
             BG_ALLOW_SCHEMA_CHANGE="$BG_ALLOW_SCHEMA_CHANGE" \
+            BG_MIN_AVAILABLE_MB="$BG_MIN_AVAILABLE_MB" \
+            BG_SLOT_MEMORY_LIMIT="$BG_SLOT_MEMORY_LIMIT" \
+            BG_READY_TIMEOUT_SECONDS="$BG_READY_TIMEOUT_SECONDS" \
+            BG_DRAIN_SECONDS="$BG_DRAIN_SECONDS" \
             bash -s <<'EOF'
           set -euo pipefail
           cd "$PI_DEPLOY_PATH"
