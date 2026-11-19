@@ -1230,6 +1230,8 @@ public class ArchiveController {
                                            @RequestParam(value = "artistNames", required = false) String artistNames,
                                            @RequestParam("registeredOn") LocalDate registeredOn,
                                            @RequestParam(value = "source", required = false) String source,
+                                           @RequestParam(value = "keepImageUrlsJson", required = false) String keepImageUrlsJson,
+                                           @RequestParam(value = "imageOrderJson", required = false) String imageOrderJson,
                                            HttpServletRequest request,
                                            HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
@@ -1237,7 +1239,9 @@ public class ArchiveController {
             archiveService.update(id, title == null ? "" : title, files, artistNames, thumbnail, clearThumbnail,
                     requireDate(registeredOn),
                     source == null || source.isBlank() ? null : ArchiveSource.parse(source),
-                    description);
+                    description,
+                    keepImageUrlsJson,
+                    imageOrderJson);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

@@ -80,17 +80,33 @@
         return order === 24 ? 24 : 23 - order;
     }
 
+    function registeredTime(card) {
+        const raw = card.dataset.registered || '';
+        const parsed = Date.parse(raw);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function idDelta(a, b) {
+        return Number(b.dataset.id || 0) - Number(a.dataset.id || 0);
+    }
+
+    function dateDelta(a, b, oldestFirst) {
+        const left = registeredTime(a);
+        const right = registeredTime(b);
+        const delta = oldestFirst ? left - right : right - left;
+        return delta !== 0 ? delta : idDelta(a, b);
+    }
+
     function apply() {
         const shown = [...cards].sort((a, b) => {
-            const idDelta = Number(b.dataset.id || 0) - Number(a.dataset.id || 0);
-            if (!sort || sort.value === 'newest') return idDelta;
-            if (sort.value === 'oldest') return Number(a.dataset.id || 0) - Number(b.dataset.id || 0);
+            if (!sort || sort.value === 'newest') return dateDelta(a, b, false);
+            if (sort.value === 'oldest') return dateDelta(a, b, true);
             if (sort.value === 'first-member' || sort.value === 'last-member') {
                 const lastFirst = sort.value === 'last-member';
                 const delta = memberRank(a, lastFirst) - memberRank(b, lastFirst);
-                return delta !== 0 ? delta : idDelta;
+                return delta !== 0 ? delta : idDelta(a, b);
             }
-            return (a.dataset.title || '').localeCompare(b.dataset.title || '', 'ko') || idDelta;
+            return (a.dataset.title || '').localeCompare(b.dataset.title || '', 'ko') || idDelta(a, b);
         });
         cards.forEach(card => card.classList.add('ar-off'));
         shown.forEach((card, index) => {
@@ -103,6 +119,7 @@
     }
 
     sort?.addEventListener('change', apply);
+    let rebuildSortMenu = null;
     function enhanceSort(select) {
         const control = select && select.closest('.ar-sort-control');
         if (!control || control.classList.contains('is-enhanced')) return;
@@ -114,13 +131,14 @@
         trigger.className = 'ar-sort-trigger';
         trigger.setAttribute('aria-haspopup', 'listbox');
         trigger.setAttribute('aria-expanded', 'false');
-        trigger.setAttribute('aria-label', select.getAttribute('aria-label') || '정렬');
+        trigger.setAttribute('aria-label', '정렬');
         const menu = document.createElement('div');
         menu.className = 'ar-sort-menu';
         menu.hidden = true;
         menu.setAttribute('role', 'listbox');
         function selectedLabel() {
-            return select.options[select.selectedIndex]?.textContent.trim() || '';
+            const selected = [...select.options].find(option => option.value === select.value && !option.disabled);
+            return selected?.textContent.trim() || select.options[select.selectedIndex]?.textContent.trim() || '';
         }
         function sync() {
             trigger.textContent = selectedLabel();
@@ -132,24 +150,30 @@
             menu.hidden = !open;
             trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
         }
-        [...select.options].forEach(option => {
-            const item = document.createElement('button');
-            item.type = 'button';
-            item.className = 'ar-sort-option';
-            item.setAttribute('role', 'option');
-            item.dataset.value = option.value;
-            item.textContent = option.textContent.trim();
-            item.addEventListener('click', () => {
-                if (select.value !== option.value) {
-                    select.value = option.value;
-                    select.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-                sync();
-                setOpen(false);
-                trigger.focus();
+        function rebuildMenu() {
+            menu.replaceChildren();
+            [...select.options].forEach(option => {
+                if (option.hidden || option.disabled) return;
+                const item = document.createElement('button');
+                item.type = 'button';
+                item.className = 'ar-sort-option';
+                item.setAttribute('role', 'option');
+                item.dataset.value = option.value;
+                item.textContent = option.textContent.trim();
+                item.addEventListener('click', () => {
+                    if (select.value !== option.value) {
+                        select.value = option.value;
+                        select.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                    sync();
+                    setOpen(false);
+                    trigger.focus();
+                });
+                menu.appendChild(item);
             });
-            menu.appendChild(item);
-        });
+            sync();
+        }
+        rebuildSortMenu = rebuildMenu;
         trigger.addEventListener('click', () => {
             const willOpen = menu.hidden;
             window.closeArchiveOverlays?.(trigger);
@@ -164,9 +188,34 @@
         });
         select.after(trigger);
         control.appendChild(menu);
-        sync();
+        rebuildMenu();
     }
     enhanceSort(sort);
+
+    function selectedMemberCount() {
+        if (!(window.MemberPortraitPicker && panel)) return 0;
+        return MemberPortraitPicker.selectedValues(panel).length;
+    }
+
+    function syncMemberSortOptions() {
+        if (!sort) return;
+        const allow = selectedMemberCount() !== 1;
+        let changed = false;
+        [...sort.querySelectorAll('option[data-member-sort]')].forEach(option => {
+            const hide = !allow;
+            if (option.hidden !== hide || option.disabled !== hide) {
+                option.hidden = hide;
+                option.disabled = hide;
+                changed = true;
+            }
+        });
+        if (!allow && (sort.value === 'first-member' || sort.value === 'last-member')) {
+            sort.value = 'newest';
+            changed = true;
+            apply();
+        }
+        if (changed || rebuildSortMenu) rebuildSortMenu?.();
+    }
     const chem = document.getElementById('archiveChem');
     const form = document.getElementById('archiveFilterForm');
     const panel = document.getElementById('archiveMemberPanel');
@@ -327,6 +376,7 @@
         memberToggle?.classList.toggle('has-selection', count > 0);
         memberToggle?.classList.toggle('is-open', Boolean(panel && !panel.hidden));
         renderChemMatches(selected);
+        syncMemberSortOptions();
     }
 
     function updateResetButton() {
