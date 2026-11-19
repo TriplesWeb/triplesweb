@@ -202,6 +202,40 @@ async function withPage(html, run) {
     }));
     assert.equal(updated.title, '지서연 수정');
     assert.equal(updated.date, '2026/11/16');
+
+    await page.evaluate(() => {
+      document.getElementById('editModal').hidden = true;
+      document.getElementById('uploadModal').hidden = false;
+    });
+    const pasted = await page.evaluate(() => {
+      const png = Uint8Array.from(atob(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+      ), (c) => c.charCodeAt(0));
+      const blob = new File([png], 'image.png', { type: 'image/png' });
+      const clipboardData = {
+        items: [{
+          kind: 'file',
+          type: 'image/png',
+          getAsFile: () => blob
+        }],
+        files: [blob]
+      };
+      const event = new Event('paste', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'clipboardData', { get: () => clipboardData });
+      document.dispatchEvent(event);
+      const input = document.querySelector('#archiveUploadForm input[name="file"]');
+      const preview = document.getElementById('uploadPreview');
+      return {
+        name: input?.files?.[0]?.name || '',
+        type: input?.files?.[0]?.type || '',
+        previewHidden: preview?.hidden ?? true,
+        fullImage: Boolean(preview?.querySelector('.ar-preview-full img'))
+      };
+    });
+    assert.equal(pasted.type, 'image/png');
+    assert.match(pasted.name, /\.(png|jpe?g|webp|gif|bmp)$/i);
+    assert.equal(pasted.previewHidden, false, '붙여넣은 사진 미리보기가 열리지 않는다');
+    assert.equal(pasted.fullImage, true, '붙여넣은 사진 원본 미리보기가 없다');
   });
 
   await withPage(pageHtml('video'), async (page) => {
