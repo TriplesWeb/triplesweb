@@ -198,9 +198,10 @@ stage_candidate() {
 }
 
 bootstrap_proxy() {
-  local legacy_cid proxy_cid
+  local legacy_cid previous_image
   legacy_cid="$("${BASE_COMPOSE[@]}" ps -q app 2>/dev/null || true)"
   is_running "$legacy_cid" || fail "No active legacy app found. Manual recovery required."
+  previous_image="$(docker inspect -f '{{.Config.Image}}' "$legacy_cid")"
   log "Legacy app serves $APP_PORT. Warm the new blue slot before the first port transfer."
   stage_candidate blue
   write_proxy_config blue "$NGINX_CONF.tmp.$"
@@ -224,6 +225,7 @@ bootstrap_proxy() {
   # Proxy is now serving blue; never auto-stop it if metadata write fails.
   CANDIDATE_SLOT=""
   remember_success blue
+  cleanup_after_deploy "$previous_image"
   log "First cutover finished. Next deployments will warm the inactive slot."
 }
 
@@ -306,9 +308,14 @@ run_deploy() {
   log "Active: app_$active ($running_image); staging app_$next ($IMAGE)"
   stage_candidate "$next"
   switch_proxy "$active" "$next"
+  cleanup_after_deploy "$running_image"
 }
 
 # Keep flock and EXIT cleanup trap in the same shell (no subshell state loss).
 exec 9>"$LOCK"
 flock -w 900 9 || fail "Another production deployment holds the lock"
+# Load cleanup only after acquiring the same lock as the slot switch.
+if ! source "$(dirname -- "${BASH_SOURCE[0]}")/prune-pi-deploy-images.sh"; then
+  cleanup_after_deploy() { log "WARNING: image cleanup script unavailable"; }
+fi
 run_deploy

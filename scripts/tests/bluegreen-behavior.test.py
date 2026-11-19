@@ -18,6 +18,7 @@ is_running() { return 0; }
 container_of() { echo "$1-id"; }
 stage_candidate() { echo "stage:$1" >> calls; }
 switch_proxy() { echo "switch:$1:$2" >> calls; }
+cleanup_after_deploy() { echo "cleanup:$1" >> calls; }
 base_mock() {
   echo "base:$*" >> calls
   if [[ "$*" == 'ps -q app' ]]; then echo legacy-original-id; fi
@@ -60,6 +61,7 @@ bootstrap_proxy
                 self.assertIn("docker:start legacy-original-id", calls)
                 self.assertNotIn("base:up", calls)
                 self.assertIn("stage:blue", calls)
+                self.assertNotIn("cleanup:", calls)
 
     def test_inconsistent_live_proxy_never_stages_or_stops_a_slot(self):
         for metadata in ("blue", "green"):
@@ -85,6 +87,7 @@ run_deploy
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("stage:green", calls)
         self.assertIn("switch:blue:green", calls)
+        self.assertIn("switch:blue:green\ncleanup:ghcr.io/triplesweb/triplesweb:old\n", calls)
         self.assertNotIn("stage:blue", calls)
 
     def test_warmup_requires_complete_home_page_response(self):

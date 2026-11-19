@@ -223,6 +223,7 @@ jobs:
           scp docker-compose.yml "pi:${PI_DEPLOY_PATH}/docker-compose.yml"
           scp docker-compose.bluegreen.yml "pi:${PI_DEPLOY_PATH}/docker-compose.bluegreen.yml"
           scp scripts/deploy-pi-bluegreen.sh "pi:${PI_DEPLOY_PATH}/deploy-pi-bluegreen.sh"
+          scp scripts/prune-pi-deploy-images.sh "pi:${PI_DEPLOY_PATH}/prune-pi-deploy-images.sh"
           # chemistry Git tree SHA가 동일하면 원격 스캔·전송을 건너뛴다.
           if [[ "${{ steps.skip.outputs.chemistry_sync }}" == "true" ]]; then
             ssh pi "mkdir -p '${PI_DEPLOY_PATH}/uploads/chemistry'"
