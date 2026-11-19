@@ -19,9 +19,15 @@
             </div>
             <div class="ar-detail-body">
                 <p class="ar-detail-desc" id="archiveDetailDescription" hidden></p>
-                <p class="ar-detail-date" id="archiveDetailDate" hidden></p>
-                <div class="ar-detail-line"><div class="ar-source-badge" id="archiveDetailSource" hidden></div></div>
-                <section class="ar-detail-cast" aria-label="출연 멤버">
+                <div class="ar-detail-meta" id="archiveDetailMeta" hidden>
+                    <p class="ar-detail-date" id="archiveDetailDate" hidden>
+                        <span class="ar-detail-kicker" data-detail-date-label></span>
+                        <time data-detail-date-value></time>
+                    </p>
+                    <div class="ar-source-badge" id="archiveDetailSource" hidden></div>
+                </div>
+                <section class="ar-detail-cast" aria-label="출연 멤버" hidden>
+                    <p class="ar-detail-kicker">출연 멤버</p>
                     <div class="ar-detail-members" id="archiveDetailMembers"></div>
                 </section>
             </div>

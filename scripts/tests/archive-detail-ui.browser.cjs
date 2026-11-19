@@ -104,9 +104,17 @@ ${site}${css}${siteUi}
       <div class="ar-dialog-head"><h2 id="archiveDetailTitle">사진</h2><button type="button" class="ar-close" data-ar-close>&times;</button></div>
       <div class="ar-detail-body">
         <p class="ar-detail-desc" id="archiveDetailDescription" hidden></p>
-        <p class="ar-detail-date" id="archiveDetailDate" hidden></p>
-        <div class="ar-detail-line"><div class="ar-source-badge" id="archiveDetailSource" hidden></div></div>
-        <section class="ar-detail-cast"><div class="ar-detail-members" id="archiveDetailMembers"></div></section>
+        <div class="ar-detail-meta" id="archiveDetailMeta" hidden>
+          <p class="ar-detail-date" id="archiveDetailDate" hidden>
+            <span class="ar-detail-kicker" data-detail-date-label></span>
+            <time data-detail-date-value></time>
+          </p>
+          <div class="ar-source-badge" id="archiveDetailSource" hidden></div>
+        </div>
+        <section class="ar-detail-cast" aria-label="출연 멤버" hidden>
+          <p class="ar-detail-kicker">출연 멤버</p>
+          <div class="ar-detail-members" id="archiveDetailMembers"></div>
+        </section>
       </div>
     </div>
   </div>
@@ -245,10 +253,12 @@ ${site}${css}${siteUi}
       const badge = document.getElementById('archiveDetailSource');
       const members = document.getElementById('archiveDetailMembers');
       const date = document.getElementById('archiveDetailDate');
+      const dateValue = date.querySelector('[data-detail-date-value]');
+      const meta = document.getElementById('archiveDetailMeta');
       const cast = document.querySelector('#archiveDetail .ar-detail-cast');
       const badgeBox = badge.getBoundingClientRect();
       const membersBox = members.getBoundingClientRect();
-      const dateStyle = getComputedStyle(date);
+      const dateStyle = getComputedStyle(dateValue);
       return {
         hidden: badge.hidden,
         text: badge.textContent.trim(),
@@ -257,10 +267,10 @@ ${site}${css}${siteUi}
         radius: getComputedStyle(badge).borderRadius,
         dateSize: parseFloat(dateStyle.fontSize),
         dateWeight: Number(dateStyle.fontWeight),
-        descBorder: getComputedStyle(document.getElementById('archiveDetailDescription')).borderTopWidth,
-        dateBorder: getComputedStyle(date).borderTopWidth,
-        sourceBorder: getComputedStyle(badge.parentElement).borderTopWidth,
-        castBorder: getComputedStyle(cast).borderTopWidth,
+        dateLabel: date.querySelector('[data-detail-date-label]')?.textContent.trim() || '',
+        dateText: dateValue?.textContent.trim() || '',
+        metaHidden: meta.hidden,
+        castHidden: cast.hidden,
         title: document.getElementById('archiveDetailTitle').textContent.trim(),
         description: document.getElementById('archiveDetailDescription').textContent.trim(),
         descriptionHidden: document.getElementById('archiveDetailDescription').hidden,
@@ -277,10 +287,10 @@ ${site}${css}${siteUi}
     assert.equal(detail.aboveMembers, true, '출처 배지가 멤버 위에 없다');
     assert.ok(detail.dateSize >= 15 && detail.dateSize <= 18, '사진 날짜 글자가 커지지 않았다: ' + detail.dateSize);
     assert.ok(detail.dateWeight >= 600, '사진 날짜가 굵지 않다: ' + detail.dateWeight);
-    assert.equal(detail.descBorder, '0px', '설명 위에 구분선이 있다');
-    assert.equal(detail.dateBorder, '1px', '날짜 위에 구분선이 없다');
-    assert.equal(detail.sourceBorder, '1px', '출처 위에 구분선이 없다');
-    assert.equal(detail.castBorder, '1px', '멤버 위에 구분선이 없다');
+    assert.equal(detail.dateLabel, '사진 날짜');
+    assert.equal(detail.dateText, '2026-11-16');
+    assert.equal(detail.metaHidden, false);
+    assert.equal(detail.castHidden, false);
     assert.ok(detail.radius.includes('999') || parseFloat(detail.radius) >= 12, '출처가 버튼처럼 보이지 않는다: ' + detail.radius);
     assert.equal(await page.locator('#archiveDetail .ar-detail-chem').count(), 0, '케미명이 없는 멤버에도 케미 라벨이 있다');
     assert.equal(detail.title, '사진');
