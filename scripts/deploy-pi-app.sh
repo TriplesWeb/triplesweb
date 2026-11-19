@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Pi에서 개발/운영이 공유하는 Docker daemon을 직렬화하고 readiness 확인.
+# 운영 Pi에서 Docker pull/up을 직렬화하고 readiness 확인.
 set -euo pipefail
 : "${IMAGE:?IMAGE is required}"
 : "${APP_PORT:?APP_PORT is required}"
-MODE="${1:?dev or prod}"
-[[ "$MODE" == "dev" || "$MODE" == "prod" ]] || exit 2
+MODE="${1:-prod}"
+[[ "$MODE" == "prod" ]] || exit 2
 LOCK=/tmp/triplesweb-docker-deploy.lock
 HEALTH_URL="http://127.0.0.1:${APP_PORT}/actuator/health/readiness"
 
