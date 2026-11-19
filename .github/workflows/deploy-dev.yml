@@ -142,7 +142,8 @@ jobs:
             docker run --rm -v \"${PI_DEPLOY_PATH}/uploads:/uploads\" alpine:3.20 \
               chown -R \"\$(id -u):\$(id -g)\" /uploads
           "
-          rsync -az --delete --no-owner --no-group \
+          # 동기화되는 파일에만 권한을 적용한다. 배포 중 앱이 생성하는 업로드는 제외된다.
+          rsync -az --delete --no-owner --no-group --chmod=a+rwX \
             --exclude '.DS_Store' \
             --exclude '*.orig' \
             --exclude '**/.DS_Store' \
@@ -155,7 +156,6 @@ jobs:
             --filter 'P files/**' \
             -e ssh \
             uploads/ "pi:${PI_DEPLOY_PATH}/uploads/"
-          ssh pi "chmod -R a+rwX \"${PI_DEPLOY_PATH}/uploads\""
 
           ssh pi env \
             PI_DEPLOY_PATH="$PI_DEPLOY_PATH" \
