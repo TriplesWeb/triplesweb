@@ -18,7 +18,6 @@
     const next = document.getElementById('archiveDetailNext');
     const dots = document.getElementById('archiveDetailDots');
     const count = document.getElementById('archiveDetailCount');
-    const maxDots = 12;
     let activeCard = null;
     let urls = [];
     let index = 0;
@@ -119,10 +118,10 @@
             count.textContent = multi ? (index + 1) + ' / ' + urls.length : '';
         }
         if (dots) {
-            const showDots = multi && urls.length <= maxDots;
-            dots.hidden = !showDots;
+            dots.hidden = !multi;
+            dots.classList.toggle('is-compact', urls.length > 10);
             dots.replaceChildren();
-            if (showDots) {
+            if (multi) {
                 urls.forEach((_, i) => {
                     const dot = document.createElement('button');
                     dot.type = 'button';

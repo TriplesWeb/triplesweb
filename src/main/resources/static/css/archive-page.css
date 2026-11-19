@@ -2031,10 +2031,19 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     bottom: 0.85rem;
     z-index: 2;
     display: flex;
+    flex-wrap: wrap;
     gap: 0.35rem;
     align-items: center;
     justify-content: center;
+    max-width: min(92%, 28rem);
+    padding: 0.35rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(8, 10, 14, 0.45);
     transform: translateX(-50%);
+}
+.ar-detail-dots.is-compact {
+    gap: 0.28rem;
+    padding: 0.3rem 0.5rem;
 }
 .ar-detail-dot {
     width: 0.42rem;
@@ -2046,10 +2055,18 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     background: rgba(255, 255, 255, 0.38);
     cursor: pointer;
 }
+.ar-detail-dots.is-compact .ar-detail-dot {
+    width: 0.34rem;
+    height: 0.34rem;
+}
 .ar-detail-dot.is-active {
     width: 0.48rem;
     height: 0.48rem;
     background: #fff;
+}
+.ar-detail-dots.is-compact .ar-detail-dot.is-active {
+    width: 0.4rem;
+    height: 0.4rem;
 }
 .ar-detail-count {
     position: absolute;
