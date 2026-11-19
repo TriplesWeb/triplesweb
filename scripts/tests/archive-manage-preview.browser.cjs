@@ -87,7 +87,11 @@ ${site}${css}${siteUi}
       </div>
       <div data-artist-chips></div>
       <span data-picker-count>0</span>
-      <input type="file" name="file">
+      <span class="ar-file">
+        <input type="file" id="archiveEditFile" name="file" accept="${isVideo ? 'video/*' : 'image/*'}" ${isVideo ? '' : 'multiple'}>
+        <label for="archiveEditFile" class="ar-file-pick">파일 선택</label>
+        <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
+      </span>
       ${isVideo ? '<input type="file" name="thumbnail" accept="image/*"><input type="hidden" name="clearThumbnail" value="false"><div class="ar-thumbnail-preview" data-thumbnail-preview hidden><img alt=""><p data-thumbnail-info></p></div>' : ''}
       <div class="ar-preview" id="editPreview" hidden>
         <p class="ar-preview-info" data-preview-file></p>
