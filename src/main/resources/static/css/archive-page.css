@@ -374,6 +374,12 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     color: #fef9c3;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 0 14px rgba(250, 204, 21, 0.18);
 }
+.ar-source-badge[data-source="magazine" i] {
+    border-color: rgba(244, 114, 182, 0.5);
+    background: linear-gradient(180deg, rgba(244, 114, 182, 0.22), rgba(157, 23, 77, 0.16));
+    color: #fce7f3;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 0 14px rgba(244, 114, 182, 0.18);
+}
 .ar-source-badge[data-source="external" i] {
     border-color: rgba(251, 146, 60, 0.5);
     background: linear-gradient(180deg, rgba(251, 146, 60, 0.22), rgba(154, 52, 18, 0.16));
