@@ -1193,9 +1193,9 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     font-weight: 500;
 }
 .ar-source-field select {
-    width: calc(100% - 3.25rem);
+    width: 100%;
     max-width: 100%;
-    align-self: flex-start;
+    align-self: stretch;
     min-height: 2.35rem;
     padding-top: 0.4rem;
     padding-bottom: 0.4rem;
