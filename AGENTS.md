@@ -21,11 +21,11 @@
 
 ## 배포·미리보기
 
-- PR이 열리거나 푸시되면 Actions `Deploy PR to Pi (dev)`가 **개발 서버**(`/opt/stacks/triplesweb-dev`, 포트 8091)에 즉시 반영합니다. 진행 중 배포는 취소하지 않고, 대기 중이면 최신 PR만 남깁니다(공유 1대).
+- PR이 열리거나 푸시되면 Actions `Deploy PR to Pi (dev)`가 **개발 서버**(`/opt/stacks/triplesweb-dev`, 포트 8091)에 반영합니다. 빌드는 PR별 최신 커밋만 남기고, Pi 적용은 하나씩 수행하며 갱신·종료된 PR의 구형 커밋은 반영하지 않습니다. 개발 DB/업로드/데이터는 운영과 분리됩니다.
 - **운영 서버**는 기본적으로 머지 직후 재시작하지 않습니다. 매일 **새벽 4시(KST)**에 `main` tip을 반영합니다.
 - 긴급 운영 반영: PR에 코멘트 **`즉시 배포`**를 남긴 뒤 머지하면 운영에 바로 배포됩니다. 또는 Actions `Deploy to Raspberry Pi (prod)`를 수동 실행합니다.
 - 미리보기 URL은 Actions Variable `PI_DEV_PUBLIC_URL`(NPG 도메인)을 쓰고, 없으면 Tailscale `http://<PI_HOST>:8091/main`을 안내합니다.
-- **운영 Pi를 수동으로 재배포하거나 스키마를 복사하지 않습니다.** 검증은 개발 서버로 합니다.
+- **운영 Pi를 수동으로 재배포하거나 운영 DB 데이터를 복사하지 않습니다.** 최초 개발 DB 초기화는 스키마와 Flyway 이력만 복사합니다. 상세 절차: `docs/DEPLOYMENT.md`. 검증은 개발 서버로 합니다.
 
 ## Cursor Cloud specific instructions
 
