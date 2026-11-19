@@ -13,7 +13,7 @@ import java.util.List;
 
 /**
  * {@link ArticleService} 구현체. 게시글 CRUD와 카테고리별 최신·인기 조회를 수행한다.
- * 좋아요는 {@link Article#likesCount} 카운터만 사용한다.
+ * 좋아요는 {@code likesCount} 카운터만 사용한다.
  */
 @Service
 @RequiredArgsConstructor

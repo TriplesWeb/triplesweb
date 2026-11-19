@@ -367,6 +367,7 @@
             memberCount.textContent = String(count);
         }
         if (memberLabel) {
+            memberLabel.title = selected.join(', ') || defaultMemberLabel;
             memberLabel.textContent = count === 1
                 ? selected[0]
                 : (exact ? exact.name : (count ? count + '명' : defaultMemberLabel));
@@ -380,55 +381,16 @@
         syncMemberSortOptions();
     }
 
-    function paintFilterSummary() {
-        const summary = document.querySelector('.ar-filter-summary');
-        if (!summary) return;
-        const typeTab = document.querySelector('nav[aria-label="아카이브 종류"] [aria-current="page"]');
-        const sourceTab = document.querySelector('.ar-source-tabs [aria-current="page"]');
-        const kind = document.querySelector('[data-archive-kind]')?.dataset.archiveKind;
-        const bits = [];
-        bits.push({ text: typeTab?.textContent.trim() || (kind === 'video' ? '영상' : '사진') });
-        bits.push({ text: sourceTab?.textContent.trim() || '전체 출처' });
+    function updateResetButton() {
+        const reset = form?.querySelector('.ar-reset');
+        if (!reset) return;
         const selected = window.MemberPortraitPicker && panel
             ? MemberPortraitPicker.selectedValues(panel)
-            : [];
-        const chemName = selected.length >= 2 ? (window.archiveChemistryLabel(selected) || '') : '';
-        if (chemName) {
-            bits.push({ text: chemName });
-        } else if (selected.length) {
-            const button = panel.querySelector('.mpp-item.is-active');
-            const color = button ? getComputedStyle(button).getPropertyValue('--artist-color').trim() : '';
-            bits.push({ member: selected[0], color: color || '#b9cac4', more: selected.length - 1 });
-        }
-        const query = form?.querySelector('.ar-search')?.value.trim() || '';
-        if (query) bits.push({ text: query });
-        summary.closest('.ar-stat-filter')?.style.setProperty('--filter-count', String(Math.max(1, bits.length)));
-        summary.replaceChildren();
-        bits.forEach((bit, index) => {
-            if (index > 0) {
-                const sep = document.createElement('span');
-                sep.className = 'ar-filter-sep';
-                sep.textContent = ',';
-                summary.append(sep);
-            }
-            if (bit.member) {
-                const member = document.createElement('span');
-                member.className = 'ar-filter-member';
-                member.style.setProperty('--member-color', bit.color);
-                member.textContent = bit.member;
-                summary.append(member);
-                if (bit.more > 0) {
-                    const more = document.createElement('span');
-                    more.className = 'ar-filter-more';
-                    more.textContent = '외 ' + bit.more + '명';
-                    summary.append(more);
-                }
-                return;
-            }
-            const text = document.createElement('strong');
-            text.textContent = bit.text;
-            summary.append(text);
-        });
+            : [...(form?.querySelectorAll('input[name="members"]') || [])].map(input => input.value);
+        const query = form.querySelector('.ar-search')?.value.trim();
+        const dates = [...form.querySelectorAll('[data-date-filter] input[type="date"]')].some(input => input.value);
+        const source = form.querySelector('input[name="source"]')?.value.trim();
+        reset.hidden = !(query || selected.length || dates || source);
     }
 
     memberToggle?.addEventListener('click', () => {
@@ -439,6 +401,8 @@
         memberToggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
         updateMemberToggle();
     });
+    form?.querySelector('[data-date-filter]')?.addEventListener('input', updateResetButton);
+    form?.querySelector('[data-date-filter]')?.addEventListener('change', updateResetButton);
     let filterTimer = 0;
     let submitWhenDateCloses = false;
     function dateOverlayOpen() {
@@ -446,6 +410,7 @@
     }
     function scheduleFilterSubmit() {
         window.clearTimeout(filterTimer);
+        filterSeq++;
         if (dateOverlayOpen()) {
             submitWhenDateCloses = true;
             return;
@@ -459,7 +424,7 @@
         }, 280);
     }
     form?.querySelector('.ar-search')?.addEventListener('input', () => {
-        paintFilterSummary();
+        updateResetButton();
         scheduleFilterSubmit();
     });
     const dateSnapshot = () => ['on', 'from', 'to'].map((name) => {
@@ -481,13 +446,14 @@
             onChange: (values) => {
                 updateMemberToggle(values);
                 if (!memberFilterReady) return;
-                paintFilterSummary();
+                updateResetButton();
                 scheduleFilterSubmit();
             }
         });
     }
     memberFilterReady = true;
     updateMemberToggle();
+    updateResetButton();
     function archiveFilterUrl() {
         form.querySelectorAll('input[name="members"]').forEach(node => node.remove());
         if (window.MemberPortraitPicker && panel) {
@@ -511,64 +477,76 @@
     let filterSeq = 0;
     async function loadArchiveFilter(url, push) {
         const seq = ++filterSeq;
-        const y = window.scrollY;
-        const x = window.scrollX;
-        const response = await fetch(url, { credentials: 'same-origin', headers: { 'X-Archive-Filter': '1' } });
-        if (seq !== filterSeq) return;
-        if (!response.ok) throw new Error(String(response.status));
-        const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
-        if (seq !== filterSeq) return;
-        const nextGrid = doc.getElementById('archiveGrid');
-        if (!nextGrid) throw new Error('grid');
-        const nextOffset = nextGrid.dataset.numberOffset || '0';
-        if (grid.innerHTML !== nextGrid.innerHTML || grid.dataset.numberOffset !== nextOffset) {
-            grid.innerHTML = nextGrid.innerHTML;
-            grid.dataset.numberOffset = nextOffset;
-            numberOffset = Math.max(0, Number(nextOffset) || 0);
-            cards = [...grid.querySelectorAll('.ar-card')];
-            apply();
-        }
-        const nextEmpty = doc.querySelector('.archive-page > .ar-empty');
-        const empty = document.querySelector('.archive-page > .ar-empty');
-        if (nextEmpty) {
-            if (!empty || empty.textContent !== nextEmpty.textContent) {
-                const imported = document.importNode(nextEmpty, true);
-                if (empty) empty.replaceWith(imported);
-                else grid.after(imported);
+        try {
+            const response = await fetch(url, { credentials: 'same-origin', headers: { 'X-Archive-Filter': '1' } });
+            if (seq !== filterSeq) return;
+            if (!response.ok) throw new Error(String(response.status));
+            const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
+            if (seq !== filterSeq) return;
+            const nextGrid = doc.getElementById('archiveGrid');
+            if (!nextGrid) throw new Error('grid');
+            const y = window.scrollY;
+            const x = window.scrollX;
+            const nextOffset = nextGrid.dataset.numberOffset || '0';
+            if (grid.innerHTML !== nextGrid.innerHTML || grid.dataset.numberOffset !== nextOffset) {
+                grid.innerHTML = nextGrid.innerHTML;
+                grid.dataset.numberOffset = nextOffset;
+                numberOffset = Math.max(0, Number(nextOffset) || 0);
+                cards = [...grid.querySelectorAll('.ar-card')];
+                apply();
             }
-        } else {
-            empty?.remove();
+            const nextEmpty = doc.querySelector('.archive-page > .ar-empty');
+            const empty = document.querySelector('.archive-page > .ar-empty');
+            if (nextEmpty) {
+                if (!empty || empty.textContent !== nextEmpty.textContent) {
+                    const imported = document.importNode(nextEmpty, true);
+                    if (empty) empty.replaceWith(imported);
+                    else grid.after(imported);
+                }
+            } else {
+                empty?.remove();
+            }
+            const nextPager = doc.querySelector('.ar-pager');
+            const pager = document.querySelector('.ar-pager');
+            if (nextPager && pager && pager.innerHTML !== nextPager.innerHTML) {
+                pager.replaceWith(document.importNode(nextPager, true));
+            }
+            for (const selector of ['.ar-type-tabs', '.ar-source-tabs']) {
+                const current = document.querySelector(selector);
+                const next = doc.querySelector(selector);
+                if (current && next) current.replaceWith(document.importNode(next, true));
+            }
+            const nextStats = doc.getElementById('archiveStats');
+            if (nextStats && stats) {
+                const open = !stats.hidden;
+                const dateNode = nextStats.querySelector('.ar-stat-date strong');
+                const currentDate = stats.querySelector('.ar-stat-date strong');
+                const countNode = nextStats.querySelector('.ar-stat strong');
+                const currentCount = stats.querySelector('.ar-stat strong');
+                if (dateNode && currentDate && currentDate.textContent !== dateNode.textContent) currentDate.textContent = dateNode.textContent;
+                if (countNode && currentCount && currentCount.innerHTML !== countNode.innerHTML) currentCount.innerHTML = countNode.innerHTML;
+                const pageNode = nextStats.querySelectorAll('.ar-stat strong')[2];
+                const currentPage = stats.querySelectorAll('.ar-stat strong')[2];
+                if (pageNode && currentPage && currentPage.innerHTML !== pageNode.innerHTML) currentPage.innerHTML = pageNode.innerHTML;
+                stats.hidden = !open;
+            }
+            updateResetButton();
+            const nextUrl = new URL(url, location.href);
+            const same = nextUrl.pathname === location.pathname && nextUrl.search === location.search;
+            if (push !== false && !same) history.pushState({ archiveLive: true }, '', nextUrl.pathname + nextUrl.search);
+            window.scrollTo(x, y);
+        } catch (error) {
+            if (seq === filterSeq) window.location.assign(url);
         }
-        const nextPager = doc.querySelector('.ar-pager');
-        const pager = document.querySelector('.ar-pager');
-        if (nextPager && pager && pager.innerHTML !== nextPager.innerHTML) {
-            pager.replaceWith(document.importNode(nextPager, true));
-        }
-        const nextStats = doc.getElementById('archiveStats');
-        if (nextStats && stats) {
-            const open = !stats.hidden;
-            const dateNode = nextStats.querySelector('.ar-stat-date strong');
-            const currentDate = stats.querySelector('.ar-stat-date strong');
-            const countNode = nextStats.querySelector('.ar-stat strong');
-            const currentCount = stats.querySelector('.ar-stat strong');
-            if (dateNode && currentDate && currentDate.textContent !== dateNode.textContent) currentDate.textContent = dateNode.textContent;
-            if (countNode && currentCount && currentCount.innerHTML !== countNode.innerHTML) currentCount.innerHTML = countNode.innerHTML;
-            const pageNode = nextStats.querySelectorAll('.ar-stat strong')[2];
-            const currentPage = stats.querySelectorAll('.ar-stat strong')[2];
-            if (pageNode && currentPage && currentPage.innerHTML !== pageNode.innerHTML) currentPage.innerHTML = pageNode.innerHTML;
-            stats.hidden = !open;
-        }
-        paintFilterSummary();
-        const nextUrl = new URL(url, location.href);
-        const same = nextUrl.pathname === location.pathname && nextUrl.search === location.search;
-        if (push !== false && !same) history.pushState({ archiveLive: true }, '', nextUrl.pathname + nextUrl.search);
-        window.scrollTo(x, y);
-        requestAnimationFrame(() => window.scrollTo(x, y));
     }
     form?.addEventListener('submit', (event) => {
         event.preventDefault();
+        appliedDates = dateSnapshot();
+        submitWhenDateCloses = false;
+        window.closeArchiveOverlays?.();
+        window.clearTimeout(filterTimer);
         const url = archiveFilterUrl();
-        loadArchiveFilter(url).catch(() => { window.location.assign(url); });
+        loadArchiveFilter(url);
     });
     window.addEventListener('popstate', () => {
         if (!form) return;

@@ -123,7 +123,7 @@
     function archiveSymbolLogo(frame) {
         const n = Number(frame);
         if (!Number.isInteger(n) || n < 1 || n > 24) return '';
-        return '/uploads/images/' + encodeURIComponent('상징로고') + '/S' + n + '.png';
+        return '/images/archive/member-logos/' + n + '.png';
     }
 
     function memberColor(button) {

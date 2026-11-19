@@ -193,7 +193,7 @@ public class ArchiveService {
     }
 
     /**
-     * 여러 사진을 한 게시글로 저장한다. 첫 장이 표지({@link Archive#getFile()})가 된다.
+     * 여러 사진을 한 게시글로 저장한다. 첫 장이 표지({@code Archive.getFile()})가 된다.
      */
     @Transactional
     public Archive uploadImages(List<MultipartFile> files, String title, String artistNames, LocalDate registeredOn,
