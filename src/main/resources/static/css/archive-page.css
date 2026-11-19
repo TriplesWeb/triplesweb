@@ -2095,15 +2095,18 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-detail-side > .ar-dialog-head.ar-detail-head {
     justify-content: flex-end;
     min-height: 0;
-    padding: 0.55rem 0.75rem 0.15rem;
+    padding: 0.65rem 0.85rem 0;
     border-bottom: 0;
 }
 .ar-detail-body {
     display: flex;
     flex-direction: column;
-    gap: 1.05rem;
-    padding: 0.15rem 1.15rem 1.05rem;
+    gap: 1.15rem;
+    padding: 0.85rem 1.15rem 1.15rem;
     overflow: auto;
+}
+.ar-detail-body > .ar-detail-desc:first-child {
+    margin-top: 0.15rem;
 }
 .ar-detail-line { min-width: 0; }
 .ar-detail-line:has(> [hidden]) { display: none; }
@@ -2117,8 +2120,9 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 }
 .ar-detail-desc {
     margin: 0;
+    padding-top: 0.2rem;
     color: #f2f7f4;
-    font-size: 1.02rem;
+    font-size: 1.05rem;
     font-weight: 650;
     line-height: 1.5;
     overflow-wrap: anywhere;
