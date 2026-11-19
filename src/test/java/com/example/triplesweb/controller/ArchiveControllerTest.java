@@ -171,7 +171,10 @@ class ArchiveControllerTest {
         aura.setUnitId(17L);
         aura.setUnitName("Aura");
         aura.setVisible(true);
-        when(unitService.listVisible()).thenReturn(List.of(aura));
+        Unit acidAngel = new Unit();
+        acidAngel.setUnitId(1L);
+        acidAngel.setUnitName("ACID ANGEL OF ASIA");
+        when(unitService.listVisible()).thenReturn(List.of(aura, acidAngel));
         String home = mvc.perform(get("/archive")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         org.assertj.core.api.Assertions.assertThat(home).contains("ar-folder-label\">디멘션</span>");
@@ -184,6 +187,7 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).contains("← 목록으로");
         org.assertj.core.api.Assertions.assertThat(html).contains("Aura");
         org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-art is-unit-art", "/images/archive/unit-folders/42.png");
+        org.assertj.core.api.Assertions.assertThat(html).contains("/images/archive/unit-folders/27.png");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-preview");
         org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;s");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;unit-17");

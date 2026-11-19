@@ -23,6 +23,7 @@ public class ArchiveFolderArt {
     private static final List<String> EXTENSIONS = List.of(".png", ".jpg", ".jpeg", ".webp", ".svg");
     private static final Map<String, Integer> UNIT_IMAGES = Map.ofEntries(
             Map.entry("acid angel from asia", 27),
+            Map.entry("acid angel of asia", 27),
             Map.entry("+(kr)ystal eyes", 28),
             Map.entry("acid eyes", 29),
             Map.entry("lovelution", 30),
