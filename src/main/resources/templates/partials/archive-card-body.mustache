@@ -1,0 +1,9 @@
+<div class="ar-body">
+    {{#hasHeadline}}<h3>{{headline}}</h3>{{/hasHeadline}}
+    {{#hasSource}}<div class="ar-source-badge" data-source="{{sourceValue}}">{{sourceLabel}}</div>{{/hasSource}}
+    <div class="ar-meta" style="--member-count: {{memberCount}}" title="{{memberNames}}">
+        {{>partials/archive-member-badges}}
+        {{#hasRegisteredOn}}<time class="ar-card-date" datetime="{{registeredOn}}">{{registeredOnDisplay}}</time>{{/hasRegisteredOn}}
+    </div>
+    <div class="ar-card-members" hidden>{{>partials/archive-album-members}}</div>
+</div>

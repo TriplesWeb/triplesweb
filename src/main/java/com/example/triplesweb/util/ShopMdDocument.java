@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
  * 샵 MD 공지 DSL.
  * <pre>
  * ## 방콕
- * @2024.06.15~2025.03.01
+ * &#64;2024.06.15~2025.03.01
  * # Official MD
  * !/uploads/a.jpg
  * # MD Benefit
