@@ -23,6 +23,9 @@ public class Archive {
     @Column(nullable = false)
     private String title;
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @Column(name = "artist_names", columnDefinition = "TEXT")
     private String artistNames;
 

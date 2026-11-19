@@ -380,7 +380,6 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     color: #ffedd5;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 0 14px rgba(251, 146, 60, 0.18);
 }
-.ar-source-badge[data-source="fancam"],
 .ar-source-badge[data-source=""] {
     border-color: rgba(148, 163, 184, 0.45);
     background: linear-gradient(180deg, rgba(226, 232, 240, 0.16), rgba(71, 85, 105, 0.18));
@@ -1146,7 +1145,8 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-field { display: flex; flex-direction: column; gap: 0.35rem; color: #b9cac4; font-size: 0.85rem; font-weight: 650; }
 .ar-field select,
 .ar-field input[type="date"],
-.ar-field input[type="text"], .ar-field input[type="search"] {
+.ar-field input[type="text"], .ar-field input[type="search"],
+.ar-field textarea {
     box-sizing: border-box;
     width: 100%;
     min-height: 2.625rem;
@@ -1157,6 +1157,12 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     padding: 0.625rem 0.75rem;
     font-size: 0.875rem;
     color-scheme: dark;
+}
+.ar-field textarea {
+    min-height: 5.5rem;
+    resize: vertical;
+    line-height: 1.5;
+    font-weight: 500;
 }
 .ar-source-field select {
     width: calc(100% - 3.25rem);
@@ -1457,7 +1463,14 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.ar-field input:focus, .ar-field select:focus { outline: none; border-color: #00f5d4; }
+.ar-field input:focus, .ar-field select:focus, .ar-field textarea:focus { outline: none; border-color: #00f5d4; }
+.ar-card .ar-body h3 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
 .ar-field-hint { margin: 0; color: #93a49e; font-size: 0.75rem; font-weight: 400; line-height: 1.6; }
 .ar-artist-editor { display: flex; flex-direction: column; gap: 0.6rem; padding: 0.75rem; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.7rem; background: rgba(13,14,18,0.45); }
 .ar-artist-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; min-height: 1.7rem; align-items: center; color: #93a49e; font-size: 0.76rem; font-weight: 400; }

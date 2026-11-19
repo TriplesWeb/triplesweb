@@ -279,7 +279,7 @@ class ArchiveControllerTest {
         MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
         mvc.perform(multipart("/archive/upload/image").file(file)
                         .param("title", "사진").param("artistNames", "윤서연").param("artistNames", "정혜린")
-                        .param("registeredOn", "2026-10-03").param("source", "FANCAM"))
+                        .param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0&members=%EC%A0%95%ED%98%9C%EB%A6%B0"));
     }
 
@@ -289,7 +289,7 @@ class ArchiveControllerTest {
                         .param("title", "사진")
                         .param("artistNames", "윤서연").param("artistNames", "정혜린").param("artistNames", "이지우")
                         .param("artistNames", "김채연").param("artistNames", "김유연").param("artistNames", "김수민")
-                        .param("registeredOn", "2026-10-03").param("source", "FANCAM"))
+                        .param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0&members=%EC%A0%95%ED%98%9C%EB%A6%B0&members=%EC%9D%B4%EC%A7%80%EC%9A%B0&members=%EA%B9%80%EC%B1%84%EC%97%B0&members=%EA%B9%80%EC%9C%A0%EC%97%B0&members=%EA%B9%80%EC%88%98%EB%AF%BC"));
     }
 
@@ -298,7 +298,7 @@ class ArchiveControllerTest {
         mvc.perform(multipart("/archive/upload/image").file(file)
                         .param("title", "사진")
                         .param("artistNames", "윤서연").param("artistNames", "정혜린").param("artistNames", "이지우")
-                        .param("registeredOn", "2026-10-03").param("source", "FANCAM"))
+                        .param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0&members=%EC%A0%95%ED%98%9C%EB%A6%B0&members=%EC%9D%B4%EC%A7%80%EC%9A%B0"));
     }
 
@@ -308,7 +308,7 @@ class ArchiveControllerTest {
                         .param("title", "사진")
                         .param("artistNames", "윤서연").param("artistNames", "정혜린").param("artistNames", "이지우")
                         .param("artistNames", "김채연")
-                        .param("registeredOn", "2026-10-03").param("source", "FANCAM"))
+                        .param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0&members=%EC%A0%95%ED%98%9C%EB%A6%B0&members=%EC%9D%B4%EC%A7%80%EC%9A%B0&members=%EA%B9%80%EC%B1%84%EC%97%B0"));
     }
 
@@ -377,7 +377,9 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("코스모톡/프롬")))
                 .andExpect(content().string(containsString("공식 SNS")))
                 .andExpect(content().string(containsString("외부 컨텐츠/방송")))
-                .andExpect(content().string(containsString("기타/팬메이드")))
+                .andExpect(content().string(containsString("value=\"COSMO_ROOM\"")))
+                .andExpect(content().string(not(containsString("기타/팬메이드"))))
+                .andExpect(content().string(not(containsString("value=\"FANCAM\""))))
                 .andExpect(content().string(not(containsString("직찍"))))
                 .andExpect(content().string(not(containsString(">미분류<"))))
                 .andExpect(content().string(containsString("unit-member-chip")))
@@ -407,17 +409,18 @@ class ArchiveControllerTest {
     @Test void folderViewKeepsFolderOnTabsAndHidesSoloMemberFilter() throws Exception {
         when(artistRepository.findAll()).thenReturn(List.of());
         stubFolder(MediaType.IMAGE, photo());
-        mvc.perform(get("/archive").param("folder", "s1").param("source", "fancam").param("q", "heart"))
+        mvc.perform(get("/archive").param("folder", "s1").param("source", "cosmo_room").param("q", "heart"))
                 .andExpect(status().isFound())
-                .andExpect(redirectedUrl("/archive?folder=s&source=fancam&q=heart&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
-        String html = mvc.perform(get("/archive").param("folder", "s").param("source", "fancam"))
+                .andExpect(redirectedUrl("/archive?folder=s&source=cosmo_room&q=heart&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
+        String html = mvc.perform(get("/archive").param("folder", "s").param("source", "cosmo_room"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("ar-folder-tabs")))
                 .andExpect(content().string(containsString("ar-source-tabs")))
-                .andExpect(content().string(containsString("기타/팬메이드")))
+                .andExpect(content().string(containsString("코스모룸")))
                 .andExpect(content().string(not(containsString("직찍"))))
+                .andExpect(content().string(not(containsString("기타/팬메이드"))))
                 .andReturn().getResponse().getContentAsString();
-        org.assertj.core.api.Assertions.assertThat(html).containsAnyOf("source=fanmade", "source&#x3D;fanmade");
+        org.assertj.core.api.Assertions.assertThat(html).containsAnyOf("source=cosmo_room", "source&#x3D;cosmo_room");
         int toolbar = html.indexOf("id=\"archiveFilterForm\"");
         int typeTabs = html.indexOf("ar-folder-tabs");
         int sourceTabs = html.indexOf("ar-source-tabs");
@@ -456,8 +459,9 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("id=\"archiveNone\"");
         org.assertj.core.api.Assertions.assertThat(html).contains("페이지 1 / 1");
         org.assertj.core.api.Assertions.assertThat(html).contains("is-current");
-        org.assertj.core.api.Assertions.assertThat(html).contains("기타/팬메이드");
+        org.assertj.core.api.Assertions.assertThat(html).contains("코스모룸");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("직찍");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("기타/팬메이드");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain(">미분류<");
         org.assertj.core.api.Assertions.assertThat(html).contains("수정하기");
         org.assertj.core.api.Assertions.assertThat(html).contains("삭제하기");
@@ -550,9 +554,9 @@ class ArchiveControllerTest {
         when(archiveService.delete(7L)).thenReturn(true);
         MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
 
-        mvc.perform(multipart("/archive/7").file(file).param("title", "새 제목").param("artistNames", "서연").param("registeredOn", "2026-10-01").param("source", "FANCAM"))
+        mvc.perform(multipart("/archive/7").file(file).param("description", "새 설명").param("artistNames", "서연").param("registeredOn", "2026-10-01").param("source", "COSMO_ROOM"))
                 .andExpect(status().isOk());
-        verify(archiveService).update(eq(7L), eq("새 제목"), any(), eq("서연"), isNull(), eq(false), eq(java.time.LocalDate.of(2026, 10, 1)), eq(ArchiveSource.FANCAM));
+        verify(archiveService).update(eq(7L), eq(""), any(), eq("서연"), isNull(), eq(false), eq(java.time.LocalDate.of(2026, 10, 1)), eq(ArchiveSource.COSMO_ROOM), eq("새 설명"));
         verify(aboutAdminAuth).requireAdmin(any(), any());
 
         mvc.perform(delete("/archive/7")).andExpect(status().isOk());
@@ -745,9 +749,18 @@ class ArchiveControllerTest {
     @Test void imageUploadStaysOnTypedEndpoint() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
         mvc.perform(multipart("/archive/upload/image").file(file)
-                        .param("title", "사진").param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "FANCAM"))
+                        .param("description", "현장 컷").param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
-        verify(archiveService).uploadImageOnly(any(), eq("사진"), eq(MediaType.IMAGE), eq("서연"), eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.FANCAM));
+        verify(archiveService).uploadImageOnly(any(), eq(""), eq(MediaType.IMAGE), eq("서연"), eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), eq("현장 컷"));
+        verify(aboutAdminAuth).requireAdmin(any(), any());
+    }
+
+    @Test void imageUploadAllowsEmptyDescription() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
+        mvc.perform(multipart("/archive/upload/image").file(file)
+                        .param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
+                .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
+        verify(archiveService).uploadImageOnly(any(), eq(""), eq(MediaType.IMAGE), eq("서연"), eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), isNull());
         verify(aboutAdminAuth).requireAdmin(any(), any());
     }
 

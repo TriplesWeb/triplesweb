@@ -100,9 +100,6 @@
                 <button type="button" class="ar-close" data-ar-close aria-label="닫기">&times;</button>
             </div>
             <div class="ar-dialog-body">
-                <label class="ar-field">제목
-                    <input type="text" name="title" placeholder="사진 제목을 입력하세요" required>
-                </label>
                 {{>partials/archive-date-field}}
                 <label class="ar-field">출처
                     <select name="source" required aria-label="출처">
@@ -118,9 +115,13 @@
                     </div>
                     <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
                     <div class="ar-artist-editor" data-artist-tags>
-                        <div class="ar-artist-chips" data-artist-chips aria-label="선택한 출연자"></div>
+                        <div class="ar-artist-chips" data-artist-chips aria-label="선택한 멤버"></div>
                     </div>
                 </div>
+                <label class="ar-field">설명
+                    <textarea name="description" rows="3" placeholder="사진 설명을 입력하세요 (선택)"></textarea>
+                    <span class="ar-field-hint">선택 사항입니다.</span>
+                </label>
                 <div class="ar-field">사진 파일
                     <span class="ar-file">
                         <input type="file" id="archiveUploadFile" name="file" accept="image/*,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp" required>
@@ -153,9 +154,6 @@
                 <button type="button" class="ar-close" data-ar-close aria-label="닫기">&times;</button>
             </div>
             <div class="ar-dialog-body">
-                <label class="ar-field">제목
-                    <input type="text" name="title" required>
-                </label>
                 {{>partials/archive-date-field}}
                 {{>partials/archive-source-field}}
                 <div class="ar-field">출연 멤버
@@ -164,9 +162,13 @@
                     </div>
                     <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
                     <div class="ar-artist-editor" data-artist-tags>
-                        <div class="ar-artist-chips" data-artist-chips aria-label="선택한 출연자"></div>
+                        <div class="ar-artist-chips" data-artist-chips aria-label="선택한 멤버"></div>
                     </div>
                 </div>
+                <label class="ar-field">설명
+                    <textarea name="description" rows="3" placeholder="사진 설명을 입력하세요 (선택)"></textarea>
+                    <span class="ar-field-hint">선택 사항입니다.</span>
+                </label>
                 <div class="ar-field">파일 교체 (선택)
                     <span class="ar-file">
                         <input type="file" id="archiveEditFile" name="file" accept="image/*,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp">
@@ -221,7 +223,7 @@
                     </div>
                     <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
                     <div class="ar-artist-editor" data-artist-tags>
-                        <div class="ar-artist-chips" data-artist-chips aria-label="선택한 출연자"></div>
+                        <div class="ar-artist-chips" data-artist-chips aria-label="선택한 멤버"></div>
                     </div>
                 </div>
                 <div class="ar-field">영상 파일
@@ -277,7 +279,7 @@
                     </div>
                     <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
                     <div class="ar-artist-editor" data-artist-tags>
-                        <div class="ar-artist-chips" data-artist-chips aria-label="선택한 출연자"></div>
+                        <div class="ar-artist-chips" data-artist-chips aria-label="선택한 멤버"></div>
                     </div>
                 </div>
                 <div class="ar-field">파일 교체 (선택)

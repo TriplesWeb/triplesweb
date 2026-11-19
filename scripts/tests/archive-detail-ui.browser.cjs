@@ -67,7 +67,7 @@ ${site}${css}${siteUi}
         </div>
       </div>
     </article>
-    <article class="ar-panel ar-card" id="pair-card" data-id="2" data-title="마유 주빈" data-artists="마유,주빈" data-registered="2026-11-05" data-url="/portrait.svg" data-source="FAN_MADE" data-source-label="기타/팬메이드">
+    <article class="ar-panel ar-card" id="pair-card" data-id="2" data-title="마유 주빈" data-artists="마유,주빈" data-registered="2026-11-05" data-url="/portrait.svg" data-source="COSMO_ROOM" data-source-label="코스모룸">
       <button type="button" class="ar-photo-link" data-archive-open><img src="/portrait.svg" alt=""></button>
       <div class="ar-body"><h3>마유 주빈</h3>
         <div class="ar-card-members" hidden>

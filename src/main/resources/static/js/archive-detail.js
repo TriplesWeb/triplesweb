@@ -11,20 +11,20 @@
 
     function fill(card) {
         const url = card.dataset.url || '';
-        const name = card.dataset.title || '사진';
+        const headline = card.dataset.headline || card.dataset.description || card.dataset.title || '사진';
         if (image) {
             image.src = url;
-            image.alt = name;
+            image.alt = headline;
         }
-        if (title) title.textContent = name;
+        if (title) title.textContent = headline;
         if (date) {
             date.hidden = !card.dataset.registered;
             const label = document.querySelector('.archive-page')?.dataset.dateLabel || '날짜';
             date.textContent = card.dataset.registered ? label + ' ' + card.dataset.registered : '';
         }
         if (source) {
-            const label = card.dataset.sourceLabel || '기타/팬메이드';
-            source.hidden = false;
+            const label = (card.dataset.sourceLabel || '').trim();
+            source.hidden = !label;
             source.dataset.source = (card.dataset.source || '').toLowerCase();
             source.textContent = label;
         }
@@ -38,7 +38,8 @@
         [edit, remove].forEach(button => {
             if (!button) return;
             button.dataset.id = card.dataset.id || '';
-            button.dataset.title = name;
+            button.dataset.title = card.dataset.title || '';
+            button.dataset.description = card.dataset.description || '';
             button.dataset.artists = card.dataset.artists || '';
             button.dataset.url = url;
             button.dataset.registered = card.dataset.registered || '';
