@@ -1675,7 +1675,7 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 }
 .ar-edit-tool:disabled {
     opacity: 0.4;
-    cursor: wait;
+    cursor: not-allowed;
 }
 .ar-edit-tool .ar-edit-icon {
     display: block;
