@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Source from a deployment script that holds the Pi deployment lock.
+# Shared image retention for successful deployments under the Pi deploy lock.
+
 prune_deploy_images() {
   local previous_image="$1" repository=ghcr.io/triplesweb/triplesweb
   local history=.deploy-image-history container_ids protected_ids inventory
@@ -62,4 +63,3 @@ cleanup_after_deploy() {
     echo "Warning: TripleSWeb image cleanup did not complete" >&2
   fi
 }
-

@@ -41,6 +41,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
+          sparse-checkout: |
+            gradle
+            scripts
+            src/main
+            uploads/chemistry
 
       - name: Full commit SHA
         id: sha
@@ -222,8 +227,7 @@ jobs:
           : "${PI_DEPLOY_PATH:?PI_DEPLOY_PATH secret is required}"
           scp docker-compose.yml "pi:${PI_DEPLOY_PATH}/docker-compose.yml"
           scp docker-compose.bluegreen.yml "pi:${PI_DEPLOY_PATH}/docker-compose.bluegreen.yml"
-          scp scripts/deploy-pi-bluegreen.sh "pi:${PI_DEPLOY_PATH}/deploy-pi-bluegreen.sh"
-          scp scripts/prune-pi-deploy-images.sh "pi:${PI_DEPLOY_PATH}/prune-pi-deploy-images.sh"
+          scp scripts/deploy-pi-bluegreen.sh scripts/deploy-pi-image-retention.sh "pi:${PI_DEPLOY_PATH}/"
           # chemistry Git tree SHA가 동일하면 원격 스캔·전송을 건너뛴다.
           if [[ "${{ steps.skip.outputs.chemistry_sync }}" == "true" ]]; then
             ssh pi "mkdir -p '${PI_DEPLOY_PATH}/uploads/chemistry'"
@@ -252,8 +256,8 @@ jobs:
           # Do NOT rewrite .env IMAGE before promotion: first cutover can
           # restore the original app only if the old SHA remains untouched.
           printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin >/dev/null
+          trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
           export APP_PORT="$(sed -n 's/^APP_PORT=//p' .env | tail -n1)"
           APP_PORT="${APP_PORT:-8090}"
           bash ./deploy-pi-bluegreen.sh
-          docker logout ghcr.io >/dev/null 2>&1 || true
           EOF
