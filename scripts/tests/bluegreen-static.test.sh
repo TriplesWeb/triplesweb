@@ -6,7 +6,7 @@ bash -n scripts/deploy-pi-bluegreen.sh
 python3 scripts/tests/bluegreen-behavior.test.py
 # Verify that the deployment never stops a live slot before readiness checks.
 grep -Fq 'wait_candidate "$slot"' scripts/deploy-pi-bluegreen.sh
-grep -Fq 'switch_proxy "$active" "$next"' scripts/deploy-pi-bluegreen.sh
+grep -Fq 'switch_proxy "$active" "$next" "$running_image"' scripts/deploy-pi-bluegreen.sh
 grep -Fq 'wait_proxy_slot "$candidate"' scripts/deploy-pi-bluegreen.sh
 grep -Fq 'wait_proxy_slot "$old"' scripts/deploy-pi-bluegreen.sh
 grep -Fq 'BG_MIN_AVAILABLE_MB' scripts/deploy-pi-bluegreen.sh
