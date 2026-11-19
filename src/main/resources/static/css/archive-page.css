@@ -1479,7 +1479,7 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 }
 .ar-file-name.has-thumbs {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
     gap: 0.45rem;
     flex: 1 1 100%;
     align-self: stretch;
