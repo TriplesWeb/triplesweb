@@ -1612,7 +1612,6 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-preview-error[hidden] { display: none; }
 .ar-preview-card.is-photo-preview,
 .ar-preview-card.is-video-preview { position: relative; isolation: isolate; padding: 0.5rem 0.7rem 0.75rem; overflow: visible; border: 0; background: none; }
-.ar-preview-card.is-photo-preview::before { content: ''; position: absolute; inset: 0.75rem 0 0.5rem 1.2rem; z-index: -1; border: 1px solid rgba(0,245,212,0.18); border-radius: 0.85rem; background: #141c20; transform: rotate(3deg) scale(0.96); }
 .ar-preview-photo-card,
 .ar-preview-video-card { position: relative; width: 100%; max-width: 20rem; margin: 0 auto; min-height: 0; }
 .ar-preview-card .ar-preview-photo-card .ar-photo-link {
