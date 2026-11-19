@@ -42,7 +42,8 @@ class ArchiveDuplicateRepositoryTest {
 
         FileStorageService storage = mock(FileStorageService.class);
         when(storage.saveWithMeta(any())).thenAnswer(invocation -> meta());
-        ArchiveService service = new ArchiveService(archives, storage, new ObjectMapper());
+        ArchiveService service = new ArchiveService(archives, storage, new ObjectMapper(),
+                org.mockito.Mockito.mock(jakarta.persistence.EntityManager.class));
         MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
         String input = description == null || description.isEmpty() ? "   " : description;
 

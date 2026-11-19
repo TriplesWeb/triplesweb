@@ -2,6 +2,7 @@ package com.example.triplesweb.infra;
 
 import com.example.triplesweb.util.YoutubeIdExtractor;
 import lombok.Data;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -14,7 +15,14 @@ import java.nio.charset.StandardCharsets;
  */
 @Component
 public class YoutubeOembedClient {
-    private final RestTemplate rest = new RestTemplate();
+    private final RestTemplate rest;
+
+    public YoutubeOembedClient() {
+        var factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(2_000);
+        factory.setReadTimeout(3_000);
+        this.rest = new RestTemplate(factory);
+    }
 
     public OembedResponse fetch(String urlOrId) {
         if (urlOrId == null || urlOrId.isBlank()) {

@@ -68,15 +68,22 @@ class ArchiveControllerTest {
     @BeforeEach void stubs() {
         lenient().when(unitService.listVisible()).thenReturn(List.of());
         lenient().when(archiveService.index()).thenReturn(List.of());
+        lenient().when(archiveService.availableSources(any(), nullable(String.class), any(),
+                nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class)))
+                .thenReturn(java.util.Set.of());
         lenient().when(chemistryService.findAll()).thenReturn(List.of());
         lenient().when(chemistryGroupService.findAll()).thenReturn(List.of());
     }
 
     private void stubFolder(MediaType type, Archive... items) {
-        when(archiveService.pageInFolder(eq(type), anyInt(), anyInt(), nullable(String.class), any(),
+        java.util.Set<ArchiveSource> sources = java.util.Arrays.stream(items)
+                .map(Archive::getSource)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+        when(archiveService.browseFolder(eq(type), anyInt(), anyInt(), nullable(String.class), any(),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
                 nullable(ArchiveSource.class), anyBoolean(), any(), any(), any()))
-                .thenReturn(new PageImpl<>(List.of(items)));
+                .thenReturn(new ArchiveService.FolderBrowse(new PageImpl<>(List.of(items)), sources));
     }
 
     @Test void folderHomeListsGroupUnitAndSoloFolders() throws Exception {
@@ -286,7 +293,7 @@ class ArchiveControllerTest {
                 .andExpect(content().string(not(containsString("ar-folder-label\">tripleS</span>"))))
                 .andExpect(content().string(containsString("id=\"archive-member-picker\"")))
                 .andExpect(content().string(not(containsString("id=\"archiveChem\""))));
-        verify(archiveService).pageInFolder(eq(MediaType.IMAGE), anyInt(), org.mockito.AdditionalMatchers.lt(Integer.MAX_VALUE), nullable(String.class),
+        verify(archiveService).browseFolder(eq(MediaType.IMAGE), anyInt(), org.mockito.AdditionalMatchers.lt(Integer.MAX_VALUE), nullable(String.class),
                 eq(List.of()),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
                 nullable(ArchiveSource.class), anyBoolean(), eq("s"),
@@ -659,10 +666,11 @@ class ArchiveControllerTest {
 
     @Test void listingOmitsFrontNumbersAndKeepsPageOffset() throws Exception {
         when(artistRepository.findAll()).thenReturn(List.of());
-        when(archiveService.pageInFolder(eq(MediaType.IMAGE), anyInt(), anyInt(), nullable(String.class), any(),
+        when(archiveService.browseFolder(eq(MediaType.IMAGE), anyInt(), anyInt(), nullable(String.class), any(),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
                 nullable(ArchiveSource.class), anyBoolean(), any(), any(), any()))
-                .thenReturn(new PageImpl<>(List.of(photo()), PageRequest.of(1, 9), 20));
+                .thenReturn(new ArchiveService.FolderBrowse(
+                        new PageImpl<>(List.of(photo()), PageRequest.of(1, 9), 20), java.util.Set.of()));
         mvc.perform(get("/archive").param("page", "1").param("folder", "s"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("data-number-offset=\"9\"")))
@@ -714,7 +722,7 @@ class ArchiveControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("name=\"on\"")))
                 .andExpect(content().string(containsString("value=\"2026-03-15\"")));
-        verify(archiveService).pageInFolder(eq(MediaType.IMAGE), anyInt(), org.mockito.AdditionalMatchers.lt(Integer.MAX_VALUE), any(), any(),
+        verify(archiveService).browseFolder(eq(MediaType.IMAGE), anyInt(), org.mockito.AdditionalMatchers.lt(Integer.MAX_VALUE), any(), any(),
                 eq(java.time.LocalDate.of(2026, 3, 15)), eq(java.time.LocalDate.of(2026, 3, 15)),
                 isNull(), eq(false), eq("s"), any(), any());
     }

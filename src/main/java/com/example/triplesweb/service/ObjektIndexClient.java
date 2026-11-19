@@ -22,7 +22,7 @@ public class ObjektIndexClient {
     private record Entry(JsonNode body, long expiresAt) {}
 
     public ObjektIndexClient(@Value("${objekt.api.base-url:https://objekt.top/api/v1}") String baseUrl) {
-        client = GzipRestClients.create(baseUrl, Duration.ofSeconds(3), Duration.ofSeconds(15));
+        client = GzipRestClients.create(baseUrl, Duration.ofSeconds(2), Duration.ofSeconds(5));
     }
 
     @Autowired(required = false)

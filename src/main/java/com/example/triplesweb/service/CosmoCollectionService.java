@@ -40,7 +40,7 @@ public class CosmoCollectionService {
     private final ConcurrentHashMap<String, CachedNames> nicknameSearchCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CachedUser> userHints = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CompletableFuture<Cached>> inflight = new ConcurrentHashMap<>();
-    private final ExecutorService loadExecutor = Executors.newFixedThreadPool(4, r -> {
+    private final ExecutorService loadExecutor = Executors.newFixedThreadPool(2, r -> {
         Thread t = new Thread(r, "cosmo-collection-load");
         t.setDaemon(true);
         return t;
@@ -50,10 +50,10 @@ public class CosmoCollectionService {
             @Value("${gravity.cosmo-api-base-url:https://api.cosmo.fans}") String cosmoUrl,
             @Value("${objekt.api.base-url:https://objekt.top/api/v1}") String indexUrl) {
         var factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(3)).build());
-        factory.setReadTimeout(Duration.ofSeconds(10));
+                .connectTimeout(Duration.ofSeconds(2)).build());
+        factory.setReadTimeout(Duration.ofSeconds(3));
         cosmo = RestClient.builder().baseUrl(cosmoUrl).requestFactory(factory).build();
-        index = GzipRestClients.create(indexUrl, Duration.ofSeconds(3), Duration.ofSeconds(15));
+        index = GzipRestClients.create(indexUrl, Duration.ofSeconds(2), Duration.ofSeconds(5));
     }
 
     public Map<String, Object> search(String rawNickname, int page) {
@@ -238,16 +238,17 @@ public class CosmoCollectionService {
             }
         }
         try {
-            Cached fresh = loadProgressive(nickname);
+            // 닉네임 확인만 동기, 보유 목록은 백그라운드 — 첫 HTTP를 1초 안에 반환한다.
+            Cached shell = startLoad(nickname);
             synchronized (cache) {
                 while (cache.size() >= MAX_CACHE_ENTRIES) {
                     cache.entrySet().stream().min(Comparator.comparingLong(entry -> entry.getValue().lastAccessAt))
                             .ifPresent(entry -> cache.remove(entry.getKey(), entry.getValue()));
                 }
-                cache.put(key, fresh);
+                cache.put(key, shell);
             }
-            created.complete(fresh);
-            return fresh;
+            created.complete(shell);
+            return shell;
         } catch (RuntimeException ex) {
             created.completeExceptionally(ex);
             throw ex;
@@ -309,8 +310,64 @@ public class CosmoCollectionService {
     }
 
     /**
-     * Nickname resolve + first index page synchronously; remaining pages in background.
-     * Suggest에서 받은 주소가 있으면 COSMO 조회와 보유 목록을 겹쳐서 불러온다.
+     * 닉네임→주소만 동기 확인(힌트가 있으면 COSMO 생략). 보유 목록은 백그라운드에서 채운다.
+     */
+    private Cached startLoad(String nickname) {
+        CachedUser hint = knownUser(nickname);
+        String resolvedNick;
+        String address;
+        String image;
+        if (hint != null && isAddress(hint.address())) {
+            resolvedNick = hint.nickname();
+            address = hint.address();
+            image = hint.image();
+        } else {
+            JsonNode profile;
+            try {
+                profile = cosmo.get().uri("/bff/v3/users/by-nickname/{nickname}", nickname)
+                        .retrieve().body(JsonNode.class);
+            } catch (RestClientResponseException ex) {
+                if (ex.getStatusCode().value() != 404) throw ex;
+                return missing(nickname);
+            }
+            address = profile == null ? "" : profile.path("address").asText("");
+            if (address.isBlank()) return missing(nickname);
+            if (!isAddress(address)) throw new IllegalStateException("잘못된 계정 응답입니다.");
+            resolvedNick = profile.path("nickname").asText(nickname);
+            image = profile.path("profileImageUrl").asText("");
+            rememberUser(resolvedNick, address, image);
+        }
+        Cached shell = new Cached(resolvedNick, address, image, new CardBuffer(),
+                Instant.now().getEpochSecond() + CACHE_TTL_SEC, false);
+        String addrLower = address.toLowerCase(Locale.ROOT);
+        loadExecutor.execute(() -> fillHoldings(shell, addrLower));
+        return shell;
+    }
+
+    private void fillHoldings(Cached shell, String addrLower) {
+        try {
+            Set<String> seenTokens = ConcurrentHashMap.newKeySet();
+            Set<String> seenCursors = ConcurrentHashMap.newKeySet();
+            JsonNode first = fetchOwnedPage(addrLower, null);
+            appendObjekts(first, shell.cards, seenTokens);
+            JsonNode nextCursor = first.get("nextCursor");
+            boolean hasMore = nextCursor != null && !nextCursor.isNull()
+                    && !nextCursor.path("receivedAt").asText().isBlank()
+                    && !nextCursor.path("id").asText().isBlank();
+            if (!hasMore || !seenCursors.add(nextCursor.toString())) {
+                shell.complete = true;
+                shell.expiresAt = Instant.now().getEpochSecond() + CACHE_TTL_SEC;
+                return;
+            }
+            continueLoad(shell, addrLower, nextCursor, seenTokens, seenCursors);
+        } catch (RuntimeException ex) {
+            shell.failure = ex;
+            shell.complete = true;
+        }
+    }
+
+    /**
+     * Stale-while-revalidate용 전체 재적재. Suggest 힌트가 있으면 보유 목록을 겹쳐 불러온다.
      */
     private Cached loadProgressive(String nickname) {
         CachedUser hint = knownUser(nickname);
