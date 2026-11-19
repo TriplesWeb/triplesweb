@@ -1,22 +1,18 @@
 name: Deploy to Raspberry Pi (prod)
 
-# 기본: 매일 새벽 4시(KST) 또는 Actions 수동 실행.
-# 예외: main 머지 푸시이면서, 해당 PR 코멘트에 「즉시 배포」가 있으면 바로 운영 반영.
+# PR에서는 검사만. main 머지 후 운영으로 배포. 새벽 4시는 실패 복구용 재확인.
 on:
-  schedule:
-    # 04:00 KST = 19:00 UTC (전날)
-    - cron: '0 19 * * *'
-  workflow_dispatch:
   push:
     branches: [main]
     paths-ignore:
       - 'docs/**'
       - '**.md'
       - 'qodana.yaml'
-      - '.github/workflows/**'
       - 'scripts/tests/**'
+  schedule:
+    - cron: '0 19 * * *' # 04:00 KST, fallback/reconciliation
+  workflow_dispatch:
 
-# Serialize deployments and avoid interrupting an in-flight remote restart.
 concurrency:
   group: deploy-main
   cancel-in-progress: false
@@ -24,74 +20,22 @@ concurrency:
 permissions:
   contents: read
   packages: write
-  pull-requests: read
-  issues: read
 
 env:
   REGISTRY: ghcr.io
-  IMMEDIATE_DEPLOY_PHRASE: '즉시 배포'
 
 jobs:
-  resolve-main:
-    runs-on: ubuntu-latest
-    outputs:
-      sha: ${{ steps.head.outputs.sha }}
-      deploy: ${{ steps.head.outputs.deploy }}
-    steps:
-      - name: Resolve deploy target and gate push-to-main
-        id: head
-        env:
-          REPOSITORY: ${{ github.repository }}
-          EVENT_NAME: ${{ github.event_name }}
-          PUSH_SHA: ${{ github.sha }}
-          GH_TOKEN: ${{ github.token }}
-          PHRASE: ${{ env.IMMEDIATE_DEPLOY_PHRASE }}
-        run: |
-          set -euo pipefail
-          CURRENT_SHA="$(git ls-remote "https://github.com/${REPOSITORY}.git" refs/heads/main | awk '{print $1}')"
-
-          if [[ "$EVENT_NAME" == "schedule" || "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            echo "sha=${CURRENT_SHA}" >> "$GITHUB_OUTPUT"
-            echo "deploy=true" >> "$GITHUB_OUTPUT"
-            echo "Deploy (${EVENT_NAME}): ${CURRENT_SHA}"
-            exit 0
-          fi
-
-          # push to main: only when merged PR has the magic comment
-          echo "sha=${PUSH_SHA}" >> "$GITHUB_OUTPUT"
-          PR_NUMBER="$(gh api \
-            -H "Accept: application/vnd.github+json" \
-            "repos/${REPOSITORY}/commits/${PUSH_SHA}/pulls" \
-            --jq '.[0].number // empty' || true)"
-          if [[ -z "${PR_NUMBER}" ]]; then
-            echo "deploy=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::main push ${PUSH_SHA} has no associated PR; skip prod (wait for 04:00 KST or manual)"
-            exit 0
-          fi
-
-          # PR 본문 + 이슈 코멘트 + 리뷰 코멘트에서 「즉시 배포」 검색
-          BODY="$(gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}" --jq '.body // ""')"
-          ISSUE_COMMENTS="$(gh api --paginate "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" --jq '.[].body // empty' || true)"
-          REVIEW_COMMENTS="$(gh api --paginate "repos/${REPOSITORY}/pulls/${PR_NUMBER}/comments" --jq '.[].body // empty' || true)"
-          ALL="${BODY}"$'\n'"${ISSUE_COMMENTS}"$'\n'"${REVIEW_COMMENTS}"
-
-          if printf '%s' "$ALL" | grep -Fq "$PHRASE"; then
-            echo "deploy=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::PR #${PR_NUMBER} contains「${PHRASE}」→ immediate prod deploy of ${PUSH_SHA}"
-          else
-            echo "deploy=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::PR #${PR_NUMBER} has no「${PHRASE}」comment; skip prod (wait for 04:00 KST or manual)"
-          fi
-
   build-and-deploy:
-    needs: resolve-main
-    if: needs.resolve-main.outputs.deploy == 'true'
     runs-on: ubuntu-24.04-arm
     steps:
-      - name: Checkout main tip
+      - name: Checkout current main
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.resolve-main.outputs.sha }}
+          ref: main
+
+      - name: Full commit SHA
+        id: sha
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Image name (lowercase)
         id: image
@@ -118,14 +62,28 @@ jobs:
             StrictHostKeyChecking accept-new
           EOF
 
+      - name: Retire obsolete Pi development container (never remove data)
+        env:
+          PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
+          PI_DEV_DEPLOY_PATH: ${{ secrets.PI_DEV_DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          : "${PI_DEPLOY_PATH:?PI_DEPLOY_PATH is required}"
+          PI_DEV_DEPLOY_PATH="${PI_DEV_DEPLOY_PATH:-${PI_DEPLOY_PATH}-dev}"
+          scp scripts/retire-pi-dev.sh "pi:${PI_DEPLOY_PATH}/retire-pi-dev.sh"
+          ssh pi env PI_DEPLOY_PATH="$PI_DEPLOY_PATH" PI_DEV_DEPLOY_PATH="$PI_DEV_DEPLOY_PATH" bash -s <<'EOF'
+          set -euo pipefail
+          bash "${PI_DEPLOY_PATH}/retire-pi-dev.sh" "$PI_DEPLOY_PATH" "$PI_DEV_DEPLOY_PATH"
+          EOF
+
       - name: Skip if prod container already healthy on this commit
         id: skip
         env:
           PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
-          WANT_IMAGE: ${{ steps.image.outputs.name }}:${{ needs.resolve-main.outputs.sha }}
+          WANT_IMAGE: ${{ steps.image.outputs.name }}:${{ steps.sha.outputs.sha }}
         run: |
           set -euo pipefail
-          # .env IMAGE만 보면 실패 후 재시도가 스킵되므로, 실행 중 컨테이너 + smoke로 판정한다.
+          # .env IMAGE와 무관하게 실제 실행 중인 이미지·readiness로 재배포를 판단
           DECISION="$(ssh pi env PI_DEPLOY_PATH="$PI_DEPLOY_PATH" WANT_IMAGE="$WANT_IMAGE" bash -s <<'EOF'
           set -euo pipefail
           cd "${PI_DEPLOY_PATH}"
@@ -178,7 +136,7 @@ jobs:
         with:
           images: ${{ steps.image.outputs.name }}
           tags: |
-            type=raw,value=${{ needs.resolve-main.outputs.sha }}
+            type=raw,value=${{ steps.sha.outputs.sha }}
             type=raw,value=latest
 
       - name: Build and push (linux/arm64)
@@ -198,7 +156,7 @@ jobs:
         if: steps.skip.outputs.skip != 'true'
         env:
           PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
-          IMAGE: ${{ steps.image.outputs.name }}:${{ needs.resolve-main.outputs.sha }}
+          IMAGE: ${{ steps.image.outputs.name }}:${{ steps.sha.outputs.sha }}
           GHCR_USER: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
