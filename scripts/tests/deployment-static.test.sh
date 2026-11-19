@@ -22,6 +22,8 @@ grep -Fq '/actuator/health/readiness' scripts/deploy-pi-app.sh
 grep -Fq 'cache-from: type=gha' .github/workflows/deploy-main.yml
 grep -Fq 'docker compose up -d --no-deps app' scripts/deploy-pi-app.sh
 ! grep -Eq '^[[:space:]]*docker compose up -d[[:space:]]*$' scripts/deploy-pi-app.sh
+grep -Fq 'docker image inspect "$IMAGE"' scripts/deploy-pi-app.sh
+grep -Fq -- '--force-recreate app' scripts/deploy-pi-app.sh
 grep -Fq 'docker buildx imagetools inspect' .github/workflows/deploy-main.yml
 grep -Fq "steps.published.outputs.found != 'true'" .github/workflows/deploy-main.yml
 grep -Fq 'HEAD:uploads/chemistry' .github/workflows/deploy-main.yml
