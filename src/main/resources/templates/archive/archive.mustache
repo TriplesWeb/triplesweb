@@ -133,6 +133,21 @@
                 </div>
                 <div class="ar-preview" id="uploadPreview" hidden>
                     <p class="ar-preview-info" data-preview-file></p>
+                    <div class="ar-preview-tools" data-image-edit-tools hidden>
+                        <span class="ar-preview-tools-label">사진 편집</span>
+                        <button type="button" class="ar-edit-tool" data-image-edit="rotate-ccw" title="왼쪽으로 90°" aria-label="왼쪽으로 90° 회전">
+                            <svg class="ar-edit-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.5 3a9 9 0 1 0 8.66 11.5h-2.13A7 7 0 1 1 12.5 5V8l4-3.5L12.5 1v2Z"/></svg>
+                        </button>
+                        <button type="button" class="ar-edit-tool" data-image-edit="rotate-cw" title="오른쪽으로 90°" aria-label="오른쪽으로 90° 회전">
+                            <svg class="ar-edit-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11.5 3a9 9 0 1 1-8.66 11.5h2.13A7 7 0 1 0 11.5 5V8L7.5 4.5 11.5 1v2Z"/></svg>
+                        </button>
+                        <button type="button" class="ar-edit-tool" data-image-edit="flip-h" title="좌우 뒤집기" aria-label="좌우 뒤집기">
+                            <svg class="ar-edit-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.5a.75.75 0 0 1 .75.75v17.5a.75.75 0 0 1-1.5 0V3.25A.75.75 0 0 1 12 2.5Zm-2.2 4.05L3.6 12l6.2 5.45V6.55Zm4.4 0v10.9L20.4 12l-6.2-5.45Z"/></svg>
+                        </button>
+                        <button type="button" class="ar-edit-tool" data-image-edit="flip-v" title="상하 뒤집기" aria-label="상하 뒤집기">
+                            <svg class="ar-edit-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2.5 12a.75.75 0 0 1 .75-.75h17.5a.75.75 0 0 1 0 1.5H3.25A.75.75 0 0 1 2.5 12Zm4.05-2.2L12 3.6l5.45 6.2H6.55Zm0 4.4h10.9L12 20.4l-5.45-6.2Z"/></svg>
+                        </button>
+                    </div>
                     <div><p>원본</p><div class="ar-preview-full"></div></div>
                     <div><p>목록에서 보이는 모습 · 카드/슬라이드</p><div class="ar-preview-card"></div></div>
                     <p class="ar-preview-error" data-preview-error role="alert" hidden></p>
@@ -180,6 +195,21 @@
                 </div>
                 <div class="ar-preview" id="editPreview" hidden>
                     <p class="ar-preview-info" data-preview-file></p>
+                    <div class="ar-preview-tools" data-image-edit-tools hidden>
+                        <span class="ar-preview-tools-label">사진 편집</span>
+                        <button type="button" class="ar-edit-tool" data-image-edit="rotate-ccw" title="왼쪽으로 90°" aria-label="왼쪽으로 90° 회전">
+                            <svg class="ar-edit-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.5 3a9 9 0 1 0 8.66 11.5h-2.13A7 7 0 1 1 12.5 5V8l4-3.5L12.5 1v2Z"/></svg>
+                        </button>
+                        <button type="button" class="ar-edit-tool" data-image-edit="rotate-cw" title="오른쪽으로 90°" aria-label="오른쪽으로 90° 회전">
+                            <svg class="ar-edit-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11.5 3a9 9 0 1 1-8.66 11.5h2.13A7 7 0 1 0 11.5 5V8L7.5 4.5 11.5 1v2Z"/></svg>
+                        </button>
+                        <button type="button" class="ar-edit-tool" data-image-edit="flip-h" title="좌우 뒤집기" aria-label="좌우 뒤집기">
+                            <svg class="ar-edit-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.5a.75.75 0 0 1 .75.75v17.5a.75.75 0 0 1-1.5 0V3.25A.75.75 0 0 1 12 2.5Zm-2.2 4.05L3.6 12l6.2 5.45V6.55Zm4.4 0v10.9L20.4 12l-6.2-5.45Z"/></svg>
+                        </button>
+                        <button type="button" class="ar-edit-tool" data-image-edit="flip-v" title="상하 뒤집기" aria-label="상하 뒤집기">
+                            <svg class="ar-edit-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2.5 12a.75.75 0 0 1 .75-.75h17.5a.75.75 0 0 1 0 1.5H3.25A.75.75 0 0 1 2.5 12Zm4.05-2.2L12 3.6l5.45 6.2H6.55Zm0 4.4h10.9L12 20.4l-5.45-6.2Z"/></svg>
+                        </button>
+                    </div>
                     <div><p>현재 사진</p><div class="ar-preview-full"></div></div>
                     <div><p>목록에서 보이는 모습 · 카드/슬라이드</p><div class="ar-preview-card"></div></div>
                     <p class="ar-preview-error" data-preview-error role="alert" hidden></p>

@@ -1550,8 +1550,13 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
     width: 1.35rem;
     height: 1.35rem;
+    min-width: 1.35rem;
+    min-height: 1.35rem;
+    max-width: 1.35rem;
+    max-height: 1.35rem;
     padding: 0;
     border: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: 999px;
@@ -1560,6 +1565,9 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     font-size: 0.85rem;
     font-weight: 700;
     line-height: 1;
+    overflow: hidden;
+    flex: none;
+    aspect-ratio: 1;
     cursor: pointer;
 }
 .ar-file-remove:hover {
@@ -1612,28 +1620,105 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-tag-entry { display: flex; gap: 0.5rem; }
 .ar-tag-entry input { flex: 1; min-width: 0; }
 .ar-tag-add { flex-shrink: 0; border: 1px solid rgba(0,245,212,0.35); border-radius: 0.65rem; padding: 0.4rem 0.8rem; background: rgba(0,245,212,0.1); color: #a7f3df; cursor: pointer; }
-.ar-preview-info, .ar-preview-error { grid-column: 1 / -1; overflow-wrap: anywhere; }
+.ar-preview-info, .ar-preview-error, .ar-preview-tools { grid-column: 1 / -1; overflow-wrap: anywhere; }
 .ar-preview p.ar-preview-info { margin: 0; color: #b9cac4; font-size: 0.78rem; }
 .ar-preview p.ar-preview-error { color: #ffb4ab; }
 .ar-preview-error[hidden] { display: none; }
+.ar-preview-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid rgba(0, 245, 212, 0.18);
+    border-radius: 0.7rem;
+    background: rgba(13, 14, 18, 0.55);
+}
+.ar-preview-tools[hidden] { display: none !important; }
+.ar-preview-tools-label {
+    margin-right: 0.15rem;
+    color: #93a49e;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+.ar-edit-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 2.15rem;
+    height: 2.15rem;
+    min-width: 2.15rem;
+    min-height: 2.15rem;
+    max-width: 2.15rem;
+    max-height: 2.15rem;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.55rem;
+    background: #292a2e;
+    color: #b9cac4;
+    line-height: 1;
+    overflow: hidden;
+    flex: none;
+    aspect-ratio: 1;
+    cursor: pointer;
+}
+.ar-edit-tool:hover {
+    border-color: rgba(0, 245, 212, 0.65);
+    background: rgba(0, 245, 212, 0.14);
+    color: #8bf5dc;
+}
+.ar-edit-tool:focus-visible {
+    outline: 2px solid #8bf5dc;
+    outline-offset: 1px;
+}
+.ar-edit-tool:disabled {
+    opacity: 0.4;
+    cursor: wait;
+}
+.ar-edit-tool .ar-edit-icon {
+    display: block;
+    width: 1.15rem;
+    height: 1.15rem;
+}
+.ar-file-tile.is-active {
+    outline: 2px solid #00f5d4;
+    outline-offset: 1px;
+}
 .ar-preview-card.is-photo-preview,
 .ar-preview-card.is-video-preview { position: relative; isolation: isolate; padding: 0.5rem 0.7rem 0.75rem; overflow: visible; border: 0; background: none; }
+.ar-preview-card.is-photo-preview {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
 .ar-preview-photo-card,
 .ar-preview-video-card { position: relative; width: 100%; max-width: 20rem; margin: 0 auto; min-height: 0; }
+.ar-preview-photo-card {
+    width: fit-content;
+    max-width: min(20rem, 100%);
+}
 .ar-preview-card .ar-preview-photo-card .ar-photo-link {
     display: flex;
     align-items: center;
     justify-content: center;
+    width: fit-content;
+    max-width: 100%;
     min-height: 0;
+    margin: 0 auto;
     cursor: default;
+    background: transparent;
 }
 .ar-preview-card .ar-preview-photo-card .ar-photo-link > img {
-    width: 100%;
+    display: block;
+    width: auto;
+    max-width: 100%;
     height: auto;
     max-height: clamp(12rem, 30vw, 18rem);
     object-fit: contain;
     object-position: center;
-    background: #07080b;
+    background: transparent;
 }
 .ar-preview-card .ar-video-thumb img {
     position: absolute;
