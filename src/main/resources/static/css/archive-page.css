@@ -357,34 +357,40 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 14px rgba(0, 245, 212, 0.16);
 }
 .ar-source-badge[hidden] { display: none; }
-.ar-source-badge[data-source="cosmo_room"] {
+.ar-source-badge[data-source="cosmo_room" i] {
     border-color: rgba(0, 245, 212, 0.5);
     background: linear-gradient(180deg, rgba(0, 245, 212, 0.24), rgba(0, 245, 212, 0.08));
     color: #8bf5dc;
 }
-.ar-source-badge[data-source="cosmo_talk"] {
+.ar-source-badge[data-source="cosmo_talk" i] {
     border-color: rgba(196, 181, 253, 0.55);
     background: linear-gradient(180deg, rgba(167, 139, 250, 0.28), rgba(76, 29, 149, 0.18));
     color: #ede9fe;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 0 14px rgba(167, 139, 250, 0.2);
 }
-.ar-source-badge[data-source="official_sns"] {
+.ar-source-badge[data-source="official_sns" i] {
     border-color: rgba(250, 204, 21, 0.5);
     background: linear-gradient(180deg, rgba(250, 204, 21, 0.22), rgba(161, 98, 7, 0.16));
     color: #fef9c3;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 0 14px rgba(250, 204, 21, 0.18);
 }
-.ar-source-badge[data-source="external"] {
+.ar-source-badge[data-source="external" i] {
     border-color: rgba(251, 146, 60, 0.5);
     background: linear-gradient(180deg, rgba(251, 146, 60, 0.22), rgba(154, 52, 18, 0.16));
     color: #ffedd5;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 0 14px rgba(251, 146, 60, 0.18);
 }
-.ar-source-badge[data-source=""] {
+.ar-source-badge[data-source="" i] {
     border-color: rgba(148, 163, 184, 0.45);
     background: linear-gradient(180deg, rgba(226, 232, 240, 0.16), rgba(71, 85, 105, 0.18));
     color: #e2e8f0;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+.ar-card .ar-source-badge {
+    min-height: 1.55rem;
+    padding: 0.18rem 0.7rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
 }
 
 .ar-stats {

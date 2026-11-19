@@ -506,9 +506,13 @@ class ArchiveControllerTest {
         stubFolder(MediaType.IMAGE, shot);
         String html = mvc.perform(get("/archive").param("folder", "s")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
+        int body = html.indexOf("class=\"ar-body\"");
         int meta = html.indexOf("class=\"ar-meta\"");
         int members = html.indexOf("ar-card-members");
+        String cardBody = html.substring(body, meta);
         String row = html.substring(meta, members);
+        org.assertj.core.api.Assertions.assertThat(cardBody).contains("ar-source-badge");
+        org.assertj.core.api.Assertions.assertThat(cardBody).contains("코스모룸");
         org.assertj.core.api.Assertions.assertThat(row).contains("ar-card-date");
         org.assertj.core.api.Assertions.assertThat(row).contains("2026/11/16");
         org.assertj.core.api.Assertions.assertThat(html).contains("data-source-label=\"코스모룸\"");
