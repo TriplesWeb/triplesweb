@@ -12,6 +12,8 @@ import com.example.triplesweb.service.MemberSpotlightService;
 import com.example.triplesweb.service.UnitService;
 import com.example.triplesweb.util.MemberPortraitOptions;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Sort;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.http.MediaType;
 
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/triples")
@@ -37,6 +40,7 @@ public class TriplesController {
     private final UnitService unitService;
     private final MemberSpotlightService memberSpotlightService;
     private final ChemistryViewCache chemistryViewCache;
+    private final ObjectMapper objectMapper;
 
     /**
      * 멤버 소개(그룹 탭 포함).
@@ -153,6 +157,15 @@ public class TriplesController {
     ) {
         Album album = albumService.getDetail(albumId);
         model.addAttribute("album", album);
+        try {
+            List<Map<String, String>> members = albumService.lyricsColorMembers(album);
+            String json = objectMapper.writeValueAsString(members)
+                    .replace("<", "\\u003c")
+                    .replace("&", "\\u0026");
+            model.addAttribute("lyricsMembersJson", json);
+        } catch (Exception e) {
+            model.addAttribute("lyricsMembersJson", "[]");
+        }
 
         return "triples/album_detail";
     }

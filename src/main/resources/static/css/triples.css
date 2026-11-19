@@ -1204,6 +1204,38 @@ textarea.form-control {
     text-transform: uppercase;
 }
 
+.album-track-lyrics-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin: 0.15rem 0 0;
+    min-width: 0;
+}
+
+.album-track-lyrics-field > span {
+    color: #8a9a94;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.album-track-lyrics-field .track-lyrics {
+    appearance: none;
+    width: 100%;
+    min-width: 0;
+    min-height: 4.5rem;
+    resize: vertical;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #0d0e12;
+    color: #e3e2e8;
+    padding: 0.45rem 0.55rem;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    font-family: inherit;
+}
+
 .album-track-row input[type="number"],
 .album-track-row input[type="text"] {
     appearance: none;
@@ -1947,6 +1979,114 @@ textarea.form-control {
     min-width: 0;
     overflow-wrap: anywhere;
     word-break: break-word;
+}
+
+button.album-track-name--lyrics {
+    appearance: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+button.album-track-name--lyrics:hover,
+button.album-track-name--lyrics:focus-visible,
+button.album-track-name--lyrics.is-expanded {
+    color: #00f5d4;
+    outline: none;
+}
+
+.album-track-lyrics-panel {
+    background: rgba(16, 17, 22, 0.72);
+}
+
+.album-track-lyrics-panel[hidden] {
+    display: none !important;
+}
+
+.album-track-lyrics-cell {
+    border-top: 0;
+}
+
+.album-lyrics-slide {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.28s ease;
+}
+
+.album-track-lyrics-panel.is-open .album-lyrics-slide {
+    grid-template-rows: 1fr;
+}
+
+.album-lyrics-slide-inner {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0 0.85rem;
+    min-height: 0;
+}
+
+.album-track-lyrics-panel.is-open .album-lyrics-slide-inner {
+    padding: 0.85rem;
+}
+
+.album-lyrics-legend {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.45rem;
+    overflow-x: auto;
+    padding-bottom: 0.15rem;
+    -webkit-overflow-scrolling: touch;
+}
+
+.album-lyrics-legend-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+    border: 1px solid rgba(58, 74, 70, 0.45);
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 999px;
+    padding: 0.25rem 0.55rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.album-lyrics-legend-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 999px;
+    flex-shrink: 0;
+    background: #8b9b95;
+}
+
+.album-lyrics-legend-chip.is-all .album-lyrics-legend-name {
+    color: #b9cac4;
+}
+
+.album-lyrics-legend-chip.is-all .album-lyrics-legend-dot {
+    background: #8b9b95;
+}
+
+.album-lyrics-body {
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-break: keep-all;
+    letter-spacing: 0;
+    line-height: 1.65;
+    font-size: 0.92rem;
+    color: #e3e2e8;
+    max-height: min(50vh, 22rem);
+    overflow-y: auto;
+}
+
+.album-lyrics-body span {
+    letter-spacing: 0;
 }
 
 .album-track-links {

@@ -37,9 +37,18 @@ public class Track {
     @Column(name = "youtube_video_id", length = 20)
     private String youtubeVideoId;
 
+    /** 가사 원문. [멤버명] 파트 태그 포함 가능. 비어 있으면 상세에서 미표시 */
+    @Column(columnDefinition = "LONGTEXT")
+    private String lyrics;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "album_id")
     private Album album;
+
+    /** Mustache용: 가사가 있을 때 */
+    public boolean isHasLyrics() {
+        return lyrics != null && !lyrics.isBlank();
+    }
 
     /** Compatibility constructor for existing initializers. */
     public Track(Long trackId, int trackNum, String title, String duration, Boolean isTitle, Album album) {
@@ -51,5 +60,6 @@ public class Track {
         this.album = album;
         this.melonSongId = null;
         this.youtubeVideoId = null;
+        this.lyrics = null;
     }
 }

@@ -127,7 +127,18 @@
                 <td class="album-track-num py-3 px-3 text-center font-mono text-xs text-[#8b9b95]">{{trackNum}}</td>
                 <td class="album-track-title-col py-3 px-3 font-medium text-[#e3e2e8]">
                     <div class="album-track-title-row">
+                        {{#hasLyrics}}
+                        <button type="button"
+                                class="album-track-name album-track-name--lyrics group-hover:text-[#00f5d4] transition-colors"
+                                data-track-lyrics-toggle
+                                data-track-title="{{title}}"
+                                aria-expanded="false"
+                                aria-controls="track-lyrics-{{trackId}}">{{title}}</button>
+                        <pre class="album-track-lyrics-src" hidden>{{lyrics}}</pre>
+                        {{/hasLyrics}}
+                        {{^hasLyrics}}
                         <span class="album-track-name group-hover:text-[#00f5d4] transition-colors">{{title}}</span>
+                        {{/hasLyrics}}
                         {{#isTitle}}
                             <span class="album-track-badge text-[10px] font-extrabold bg-[#00f5d4]/20 text-[#00f5d4] border border-[#00f5d4]/40 px-1.5 py-0.5 rounded tracking-wide">TITLE</span>
                         {{/isTitle}}
@@ -143,6 +154,18 @@
                 </td>
                 <td class="album-track-dur py-3 px-3 text-center font-mono text-xs text-[#8b9b95]">{{duration}}</td>
             </tr>
+            {{#hasLyrics}}
+            <tr class="album-track-lyrics-panel" id="track-lyrics-{{trackId}}" hidden>
+                <td colspan="3" class="album-track-lyrics-cell p-0">
+                    <div class="album-lyrics-slide">
+                        <div class="album-lyrics-slide-inner">
+                            <div class="album-lyrics-legend" hidden aria-label="파트 범례"></div>
+                            <div class="album-lyrics-body"></div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {{/hasLyrics}}
         {{/tracks}}
         {{^tracks}}
             <tr>
@@ -158,6 +181,9 @@
             {{/album}}
 
 </main>
+
+<script type="application/json" id="albumLyricsMembers">{{{lyricsMembersJson}}}</script>
+
 <script>
 (function () {
   var text = document.getElementById("albumInfoText");
@@ -176,4 +202,5 @@
   });
 })();
 </script>
+<script src="{{#asset}}/js/album-detail.js{{/asset}}" defer></script>
 {{>layout/page-end}}

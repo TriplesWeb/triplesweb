@@ -1205,6 +1205,38 @@ textarea.form-control {
     text-transform: uppercase;
 }
 
+.album-track-lyrics-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin: 0.15rem 0 0;
+    min-width: 0;
+}
+
+.album-track-lyrics-field > span {
+    color: #8a9a94;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.album-track-lyrics-field .track-lyrics {
+    appearance: none;
+    width: 100%;
+    min-width: 0;
+    min-height: 4.5rem;
+    resize: vertical;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #0d0e12;
+    color: #e3e2e8;
+    padding: 0.45rem 0.55rem;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    font-family: inherit;
+}
+
 .album-track-row input[type="number"],
 .album-track-row input[type="text"] {
     appearance: none;

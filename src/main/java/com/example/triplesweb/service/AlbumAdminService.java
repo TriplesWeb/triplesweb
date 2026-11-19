@@ -368,6 +368,7 @@ public class AlbumAdminService {
             track.setIsTitle(Boolean.TRUE.equals(item.getIsTitle()));
             track.setMelonSongId(normalizeMelonSongId(item.getMelonSongId()));
             track.setYoutubeVideoId(normalizeYoutubeVideoId(item.getYoutubeVideoId()));
+            track.setLyrics(normalizeLyrics(item.getLyrics()));
             album.getTracks().add(track);
             i++;
         }
@@ -411,6 +412,7 @@ public class AlbumAdminService {
                         .isTitle(Boolean.TRUE.equals(t.getIsTitle()))
                         .melonSongId(t.getMelonSongId())
                         .youtubeVideoId(t.getYoutubeVideoId())
+                        .lyrics(t.getLyrics())
                         .build());
             }
         }
@@ -477,6 +479,15 @@ public class AlbumAdminService {
             throw new IllegalArgumentException("유튜브 영상 ID(11자) 또는 watch/youtu.be URL을 입력하세요.");
         }
         return id;
+    }
+
+    private String normalizeLyrics(String raw) {
+        if (!StringUtils.hasText(raw)) return null;
+        String trimmed = raw.trim();
+        if (trimmed.length() > 100_000) {
+            throw new IllegalArgumentException("가사는 100,000자 이하여야 합니다.");
+        }
+        return trimmed;
     }
 
     private void deleteManagedImage(String imageUrl) {

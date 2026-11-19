@@ -7,8 +7,11 @@ import com.example.triplesweb.dto.HomeAlbumHero;
 import com.example.triplesweb.entity.Album;
 import com.example.triplesweb.entity.AlbumSection;
 import com.example.triplesweb.entity.Artist;
+import com.example.triplesweb.entity.Unit;
+import com.example.triplesweb.entity.UnitMember;
 import com.example.triplesweb.repository.AlbumRepository;
 import com.example.triplesweb.repository.AlbumSectionRepository;
+import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.util.ImageUrls;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +44,7 @@ public class AlbumService {
 
     private final AlbumRepository albumRepository;
     private final AlbumSectionRepository albumSectionRepository;
+    private final ArtistRepository artistRepository;
 
     private volatile List<AlbumSectionGroupDto> listCache;
     private volatile long listCacheExpiresAt;
@@ -130,8 +134,13 @@ public class AlbumService {
     public Album getDetail(long albumId) {
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 앨범이 존재하지 않습니다. id=" + albumId));
-        if (album.getUnit() != null && album.getUnit().getSubUnits() != null) {
-            album.getUnit().getSubUnits().size();
+        if (album.getUnit() != null) {
+            touchUnitMembers(album.getUnit());
+            if (album.getUnit().getSubUnits() != null) {
+                for (Unit sub : album.getUnit().getSubUnits()) {
+                    touchUnitMembers(sub);
+                }
+            }
         }
         if (album.getTracks() != null) {
             album.getTracks().size();
@@ -143,6 +152,70 @@ public class AlbumService {
             album.getArtists().size();
         }
         return album;
+    }
+
+    /**
+     * 가사 파트 색칠용 멤버 목록 {@code [{name, color}, ...]}.
+     * 우선순위: 앨범 참여 멤버 → 완전체면 전원 → 유닛(+하위) 멤버.
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, String>> lyricsColorMembers(Album album) {
+        LinkedHashMap<String, String> byName = new LinkedHashMap<>();
+        if (album == null) return List.of();
+
+        if (album.getArtists() != null && !album.getArtists().isEmpty()) {
+            album.getArtists().stream()
+                    .filter(a -> a != null)
+                    .sorted(Comparator.comparing(a -> a.getArtistId() != null ? a.getArtistId() : 0L))
+                    .forEach(a -> putArtistColor(byName, a));
+            return toNameColorList(byName);
+        }
+
+        if (album.isFull10() || album.isFull24()) {
+            artistRepository.findAll(Sort.by(Sort.Direction.ASC, "artistId"))
+                    .forEach(a -> putArtistColor(byName, a));
+            return toNameColorList(byName);
+        }
+
+        Unit unit = album.getUnit();
+        if (unit != null) {
+            addUnitArtistColors(byName, unit);
+            if (unit.getSubUnits() != null) {
+                for (Unit sub : unit.getSubUnits()) {
+                    addUnitArtistColors(byName, sub);
+                }
+            }
+        }
+        return toNameColorList(byName);
+    }
+
+    private static void touchUnitMembers(Unit unit) {
+        if (unit == null || unit.getUnitMembers() == null) return;
+        for (UnitMember membership : unit.getUnitMembers()) {
+            if (membership != null && membership.getArtist() != null) {
+                membership.getArtist().getName();
+                membership.getArtist().getColor();
+            }
+        }
+    }
+
+    private static void addUnitArtistColors(Map<String, String> byName, Unit unit) {
+        if (unit == null || unit.getUnitMembers() == null) return;
+        for (UnitMember membership : unit.getUnitMembers()) {
+            if (membership != null) putArtistColor(byName, membership.getArtist());
+        }
+    }
+
+    private static void putArtistColor(Map<String, String> byName, Artist artist) {
+        if (artist == null || !StringUtils.hasText(artist.getName())) return;
+        String color = StringUtils.hasText(artist.getColor()) ? artist.getColor().trim() : "#e3e2e8";
+        byName.putIfAbsent(artist.getName().trim(), color);
+    }
+
+    private static List<Map<String, String>> toNameColorList(Map<String, String> byName) {
+        List<Map<String, String>> out = new ArrayList<>(byName.size());
+        byName.forEach((name, color) -> out.add(Map.of("name", name, "color", color)));
+        return out;
     }
 
     /**

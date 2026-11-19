@@ -48,6 +48,8 @@ public class AlbumAdminDto {
         private Boolean isTitle;
         private String melonSongId;
         private String youtubeVideoId;
+        /** 가사 원문. [멤버명] 파트 태그 포함 가능 */
+        private String lyrics;
     }
 
     @Getter
