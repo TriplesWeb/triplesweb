@@ -1467,7 +1467,7 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    align-self: center;
+    align-self: flex-start;
     min-height: 2.1rem;
     padding: 0.45rem 0.9rem;
     border-radius: 0.55rem;
@@ -1506,15 +1506,20 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     white-space: normal;
 }
 .ar-file-name.has-thumbs {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 0.45rem;
     flex: 1 1 100%;
     align-self: stretch;
+    align-items: flex-start;
+    justify-content: flex-start;
     width: 100%;
 }
 .ar-file-tile {
     position: relative;
+    flex: 0 0 7.5rem;
+    width: 7.5rem;
+    height: 7.5rem;
     aspect-ratio: 1;
     min-width: 0;
     border-radius: 0.55rem;
