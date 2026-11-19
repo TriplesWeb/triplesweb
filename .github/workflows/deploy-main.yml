@@ -73,7 +73,9 @@ jobs:
 
       - name: Check current production image and tracked assets
         id: assets
-        run: echo "tree=$(git rev-parse HEAD:uploads/chemistry)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "tree=$(git rev-parse HEAD:uploads/chemistry)" >> "$GITHUB_OUTPUT"
+          echo "migrations=$(git rev-parse HEAD:src/main/resources/db/migration)" >> "$GITHUB_OUTPUT"
 
       - name: Preflight — retire dev and skip unchanged production
         id: skip
@@ -104,10 +106,24 @@ jobs:
           fi
           APP_PORT="$(grep -E '^APP_PORT=' .env 2>/dev/null | cut -d= -f2- || true)"
           APP_PORT="${APP_PORT:-8080}"
-          CID="$(docker compose ps -q app 2>/dev/null || true)"
+          # When Blue-Green is installed, compare the Nginx-active slot.
+          # A legacy app is never considered already deployed: first cutover must run.
+          if [[ -f bluegreen/active.conf && -f docker-compose.bluegreen.yml ]]; then
+            SLOT="$(sed -n 's/^# ACTIVE_SLOT=//p' bluegreen/active.conf | head -n1)"
+            if [[ "$SLOT" != "blue" && "$SLOT" != "green" ]]; then
+              echo "skip=false"
+              echo "reason=invalid-active-slot" >&2
+              exit 0
+            fi
+            CID="$(COMPOSE_PROFILES=bluegreen docker compose -f docker-compose.yml -f docker-compose.bluegreen.yml ps -q "app_${SLOT}" 2>/dev/null || true)"
+          else
+            echo "skip=false"
+            echo "reason=legacy-app-must-convert-to-bluegreen" >&2
+            exit 0
+          fi
           if [[ -z "${CID}" ]]; then
             echo "skip=false"
-            echo "reason=no-running-app" >&2
+            echo "reason=no-running-bluegreen-app" >&2
             exit 0
           fi
           RUNNING="$(docker inspect -f '{{.Config.Image}}' "${CID}" 2>/dev/null || true)"
@@ -188,18 +204,25 @@ jobs:
           cache-to: type=gha,mode=max,scope=triplesweb-arm64,ignore-error=true
           provenance: false
 
-      - name: Sync only chemistry assets and deploy
+      - name: Sync chemistry assets and Blue-Green deploy
         if: steps.skip.outputs.skip != 'true'
         env:
           PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
           IMAGE: ${{ steps.image.outputs.name }}:${{ steps.sha.outputs.sha }}
           GHCR_USER: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
+          MIGRATIONS_TREE: ${{ steps.assets.outputs.migrations }}
+          BG_ALLOW_SCHEMA_CHANGE: ${{ vars.BG_ALLOW_SCHEMA_CHANGE || 'false' }}
+          BG_MIN_AVAILABLE_MB: ${{ vars.BG_MIN_AVAILABLE_MB || '1400' }}
+          BG_SLOT_MEMORY_LIMIT: ${{ vars.BG_SLOT_MEMORY_LIMIT || '1800m' }}
+          BG_READY_TIMEOUT_SECONDS: ${{ vars.BG_READY_TIMEOUT_SECONDS || '360' }}
+          BG_DRAIN_SECONDS: ${{ vars.BG_DRAIN_SECONDS || '30' }}
         run: |
           set -euo pipefail
           : "${PI_DEPLOY_PATH:?PI_DEPLOY_PATH secret is required}"
           scp docker-compose.yml "pi:${PI_DEPLOY_PATH}/docker-compose.yml"
-          scp scripts/deploy-pi-app.sh "pi:${PI_DEPLOY_PATH}/deploy-pi-app.sh"
+          scp docker-compose.bluegreen.yml "pi:${PI_DEPLOY_PATH}/docker-compose.bluegreen.yml"
+          scp scripts/deploy-pi-bluegreen.sh "pi:${PI_DEPLOY_PATH}/deploy-pi-bluegreen.sh"
           # chemistry Git tree SHA가 동일하면 원격 스캔·전송을 건너뛴다.
           if [[ "${{ steps.skip.outputs.chemistry_sync }}" == "true" ]]; then
             ssh pi "mkdir -p '${PI_DEPLOY_PATH}/uploads/chemistry'"
@@ -216,18 +239,20 @@ jobs:
             IMAGE="$IMAGE" \
             GHCR_USER="$GHCR_USER" \
             GHCR_TOKEN="$GHCR_TOKEN" \
+            MIGRATIONS_TREE="$MIGRATIONS_TREE" \
+            BG_ALLOW_SCHEMA_CHANGE="$BG_ALLOW_SCHEMA_CHANGE" \
+            BG_MIN_AVAILABLE_MB="$BG_MIN_AVAILABLE_MB" \
+            BG_SLOT_MEMORY_LIMIT="$BG_SLOT_MEMORY_LIMIT" \
+            BG_READY_TIMEOUT_SECONDS="$BG_READY_TIMEOUT_SECONDS" \
+            BG_DRAIN_SECONDS="$BG_DRAIN_SECONDS" \
             bash -s <<'EOF'
           set -euo pipefail
           cd "$PI_DEPLOY_PATH"
-          touch .env
-          if grep -q '^IMAGE=' .env; then
-            sed -i "s|^IMAGE=.*|IMAGE=$IMAGE|" .env
-          else
-            printf 'IMAGE=%s\n' "$IMAGE" >> .env
-          fi
+          # Do NOT rewrite .env IMAGE before promotion: first cutover can
+          # restore the original app only if the old SHA remains untouched.
           printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin >/dev/null
           export APP_PORT="$(sed -n 's/^APP_PORT=//p' .env | tail -n1)"
           APP_PORT="${APP_PORT:-8090}"
-          bash ./deploy-pi-app.sh prod
+          bash ./deploy-pi-bluegreen.sh
           docker logout ghcr.io >/dev/null 2>&1 || true
           EOF
