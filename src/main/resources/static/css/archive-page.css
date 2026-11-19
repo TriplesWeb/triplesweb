@@ -2183,11 +2183,10 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 }
 .ar-detail-cast {
     display: flex;
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     flex-direction: column;
     gap: 0.7rem;
     min-width: 0;
-    min-height: 0;
 }
 .ar-detail-cast[hidden] { display: none !important; }
 .ar-detail-chem {
