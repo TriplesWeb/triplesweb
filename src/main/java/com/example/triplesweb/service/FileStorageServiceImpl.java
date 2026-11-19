@@ -5,6 +5,7 @@ import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.media.FileStorageException;
 import jakarta.annotation.Nullable;
 import lombok.SneakyThrows;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +38,7 @@ public class FileStorageServiceImpl implements FileStorageService {
     private final UploadContentStore uploadContentStore;
     private final Executor dbCopyExecutor;
 
+    @Autowired
     public FileStorageServiceImpl(
             @Value("${file.upload-dir}") String uploadRoot,
             UploadSyncService uploadSyncService,
