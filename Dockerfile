@@ -3,8 +3,11 @@
 FROM node:20-bookworm-slim AS css
 WORKDIR /workspace
 COPY package.json package-lock.json ./
-RUN npm ci
-COPY scripts ./scripts
+RUN npm ci --no-audit --no-fund
+# 배포/운영 스크립트가 바뀌어도 CSS 레이어 캐시가 무효화되지 않도록
+# CSS 빌드에 필요한 파일만 포함한다.
+COPY scripts/setup-css.sh scripts/build-*css.cjs scripts/build-tw4.cjs scripts/tailwind-cli.cjs ./scripts/
+COPY scripts/css ./scripts/css
 COPY src/main/resources ./src/main/resources
 RUN chmod +x scripts/setup-css.sh \
     && ./scripts/setup-css.sh --no-run --skip-install
