@@ -335,30 +335,37 @@ public class ArchiveService {
     public Archive update(long id, String title, MultipartFile file, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
                           LocalDate registeredOn, ArchiveSource source, String description) throws IOException {
         List<MultipartFile> files = file == null || file.isEmpty() ? List.of() : List.of(file);
-        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description, null);
+        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description, null, null);
     }
 
     @Transactional
     public Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
                           LocalDate registeredOn, ArchiveSource source, String description) throws IOException {
-        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description, null);
+        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description, null, null);
     }
 
     @Transactional
     public Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
                           LocalDate registeredOn, ArchiveSource source, String description, String keepImageUrlsJson) throws IOException {
-        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description, keepImageUrlsJson);
+        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description, keepImageUrlsJson, null);
+    }
+
+    @Transactional
+    public Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
+                          LocalDate registeredOn, ArchiveSource source, String description, String keepImageUrlsJson,
+                          String imageOrderJson) throws IOException {
+        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description, keepImageUrlsJson, imageOrderJson);
     }
 
     private Archive update(long id, String title, MultipartFile file, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
                            LocalDate registeredOn, ArchiveSource source, boolean applySource) throws IOException {
         List<MultipartFile> files = file == null || file.isEmpty() ? List.of() : List.of(file);
-        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, applySource, null, null);
+        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, applySource, null, null, null);
     }
 
     private Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
                            LocalDate registeredOn, ArchiveSource source, boolean applySource, String description,
-                           String keepImageUrlsJson) throws IOException {
+                           String keepImageUrlsJson, String imageOrderJson) throws IOException {
         Archive archive = show(id);
         validateThumbnail(thumbnail);
         if (thumbnail != null && !thumbnail.isEmpty() && archive.getType() != MediaType.VIDEO) {
@@ -384,9 +391,9 @@ public class ArchiveService {
         List<MultipartFile> uploads = files == null ? List.of() : files.stream()
                 .filter(part -> part != null && !part.isEmpty())
                 .toList();
-        if (archive.getType() == MediaType.IMAGE && (keepImageUrlsJson != null || !uploads.isEmpty())) {
+        if (archive.getType() == MediaType.IMAGE && (keepImageUrlsJson != null || imageOrderJson != null || !uploads.isEmpty())) {
             List<String> previous = ArchiveImages.resolve(archive, objectMapper);
-            var merged = ArchiveImages.merge(previous, keepImageUrlsJson, uploads, objectMapper, file -> {
+            var merged = ArchiveImages.merge(previous, keepImageUrlsJson, imageOrderJson, uploads, objectMapper, file -> {
                 SavedMeta meta = fileStorageService.saveWithMeta(file);
                 coerceType(MediaType.IMAGE, meta);
                 return meta.getUrl();

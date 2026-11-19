@@ -1319,6 +1319,7 @@ public class ArchiveController {
                                            @RequestParam("registeredOn") LocalDate registeredOn,
                                            @RequestParam(value = "source", required = false) String source,
                                            @RequestParam(value = "keepImageUrlsJson", required = false) String keepImageUrlsJson,
+                                           @RequestParam(value = "imageOrderJson", required = false) String imageOrderJson,
                                            HttpServletRequest request,
                                            HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
@@ -1327,7 +1328,8 @@ public class ArchiveController {
                     requireDate(registeredOn),
                     source == null || source.isBlank() ? null : ArchiveSource.parse(source),
                     description,
-                    keepImageUrlsJson);
+                    keepImageUrlsJson,
+                    imageOrderJson);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

@@ -564,7 +564,7 @@ class ArchiveControllerTest {
 
         mvc.perform(multipart("/archive/7").file(file).param("description", "새 설명").param("artistNames", "서연").param("registeredOn", "2026-10-01").param("source", "COSMO_ROOM"))
                 .andExpect(status().isOk());
-        verify(archiveService).update(eq(7L), eq(""), anyList(), eq("서연"), isNull(), eq(false), eq(java.time.LocalDate.of(2026, 10, 1)), eq(ArchiveSource.COSMO_ROOM), eq("새 설명"), isNull());
+        verify(archiveService).update(eq(7L), eq(""), anyList(), eq("서연"), isNull(), eq(false), eq(java.time.LocalDate.of(2026, 10, 1)), eq(ArchiveSource.COSMO_ROOM), eq("새 설명"), isNull(), isNull());
         verify(aboutAdminAuth).requireAdmin(any(), any());
 
         mvc.perform(delete("/archive/7")).andExpect(status().isOk());

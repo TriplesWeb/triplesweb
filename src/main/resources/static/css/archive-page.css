@@ -1521,6 +1521,15 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     border: 1px solid rgba(58, 74, 70, 0.75);
     background: #050709;
     overflow: hidden;
+    cursor: grab;
+}
+.ar-file-tile.is-dragging {
+    opacity: 0.45;
+    cursor: grabbing;
+}
+.ar-file-tile.is-drop-target {
+    outline: 2px solid #00f5d4;
+    outline-offset: 1px;
 }
 .ar-file-thumb {
     display: block;

@@ -65,8 +65,8 @@
         });
         const edit = dialog.querySelector('#archiveEditForm');
         if (edit) {
-            setKeptUrls(edit, []);
-            edit._archiveKeptPreviewIndex = -1;
+            setSlots(edit, [], { syncInput: false });
+            edit._archiveSlotPreviewIndex = -1;
             delete edit.dataset.originalImages;
         }
         dialogTriggers.get(dialog)?.focus();
@@ -571,97 +571,174 @@
     }
 
     function keptUrlsOf(form) {
-        return Array.isArray(form?._archiveKeptUrls) ? form._archiveKeptUrls : [];
+        return slotsOf(form).filter(slot => slot.kind === 'url').map(slot => slot.url);
     }
 
     function setKeptUrls(form, urls) {
         if (!form) return;
-        form._archiveKeptUrls = Array.isArray(urls) ? urls.slice() : [];
+        setSlots(form, (urls || []).map(url => ({ kind: 'url', url })), { syncInput: false });
     }
 
-    function removeKeptUrlAt(form, index) {
-        const kept = keptUrlsOf(form);
-        if (index < 0 || index >= kept.length) return;
-        kept.splice(index, 1);
-        setKeptUrls(form, kept);
+    function slotsOf(form) {
+        return Array.isArray(form?._archiveMediaSlots) ? form._archiveMediaSlots : [];
+    }
+
+    function setSlots(form, slots, { syncInput = true } = {}) {
+        if (!form) return;
+        form._archiveMediaSlots = Array.isArray(slots) ? slots.slice() : [];
+        if (!syncInput) return;
         const input = form.querySelector('input[name="file"]');
-        const preview = form.querySelector('.ar-preview');
-        const files = Array.from(input?.files || []);
-        if (preview) {
-            if (kept.length) {
-                const next = Math.min(index, kept.length - 1);
-                form._archiveKeptPreviewIndex = next;
-                showPreview(preview, kept[next]);
-            } else if (files.length) {
-                const fileIndex = 0;
-                if (input) input._archivePreviewIndex = fileIndex;
-                showPreview(preview, rememberUrl(files[fileIndex]), { sourceFile: files[fileIndex], index: fileIndex });
-            } else {
-                showPreview(preview, form.dataset.originalUrl || '');
-            }
+        if (!input) return;
+        const files = form._archiveMediaSlots.filter(slot => slot.kind === 'file').map(slot => slot.file);
+        const transfer = new DataTransfer();
+        files.forEach(file => transfer.items.add(file));
+        input.files = transfer.files;
+        input._archiveLastFile = files[0] || null;
+        input._archiveLastFiles = files.slice();
+    }
+
+    function previewSlot(form, input, index) {
+        const slots = slotsOf(form);
+        const slot = slots[index];
+        const preview = form?.querySelector('.ar-preview');
+        if (!slot || !preview) return;
+        form._archiveSlotPreviewIndex = index;
+        if (slot.kind === 'url') {
+            if (input) input._archivePreviewIndex = -1;
+            showPreview(preview, slot.url);
+        } else {
+            const fileIndex = slots.slice(0, index + 1).filter(item => item.kind === 'file').length - 1;
+            if (input) input._archivePreviewIndex = fileIndex;
+            showPreview(preview, rememberUrl(slot.file), { sourceFile: slot.file, index: fileIndex });
         }
-        if (input) syncFileName(input);
+        syncFileName(input);
+    }
+
+    function removeSlotAt(form, index) {
+        const slots = slotsOf(form);
+        if (index < 0 || index >= slots.length) return;
+        const [removed] = slots.splice(index, 1);
+        if (removed?.kind === 'file') releaseUrl(removed.file);
+        setSlots(form, slots);
+        const input = form.querySelector('input[name="file"]');
+        const next = Math.min(index, Math.max(0, slots.length - 1));
+        if (slots.length) previewSlot(form, input, next);
+        else {
+            form._archiveSlotPreviewIndex = -1;
+            showPreview(form.querySelector('.ar-preview'), form.dataset.originalUrl || '');
+            if (input) syncFileName(input);
+        }
+    }
+
+    function moveSlot(form, from, to) {
+        const slots = slotsOf(form);
+        if (from === to || from < 0 || to < 0 || from >= slots.length || to >= slots.length) return;
+        const next = slots.slice();
+        const [item] = next.splice(from, 1);
+        next.splice(to, 0, item);
+        setSlots(form, next);
+        const input = form.querySelector('input[name="file"]');
+        previewSlot(form, input, to);
+    }
+
+    function bindTileDrag(tile, form, index) {
+        tile.draggable = true;
+        tile.addEventListener('dragstart', event => {
+            if (event.target.closest('.ar-file-remove')) {
+                event.preventDefault();
+                return;
+            }
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', String(index));
+            tile.classList.add('is-dragging');
+        });
+        tile.addEventListener('dragend', () => {
+            tile.classList.remove('is-dragging');
+            form.querySelectorAll('.ar-file-tile.is-drop-target').forEach(node => node.classList.remove('is-drop-target'));
+        });
+        tile.addEventListener('dragover', event => {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            tile.classList.add('is-drop-target');
+        });
+        tile.addEventListener('dragleave', () => tile.classList.remove('is-drop-target'));
+        tile.addEventListener('drop', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            tile.classList.remove('is-drop-target');
+            const from = Number(event.dataTransfer.getData('text/plain'));
+            if (!Number.isInteger(from)) return;
+            moveSlot(form, from, index);
+        });
     }
 
     function syncFileName(input) {
         const label = input?.closest('.ar-file')?.querySelector('[data-file-name]');
         if (!label) return;
-        const files = Array.from(input.files || []);
         const form = input.closest('form');
         const preview = form?.querySelector('.ar-preview');
-        const kept = input.name === 'file' ? keptUrlsOf(form) : [];
-        const activeIndex = Number.isInteger(input._archivePreviewIndex) ? input._archivePreviewIndex : 0;
-        const keptActive = Number.isInteger(form?._archiveKeptPreviewIndex) ? form._archiveKeptPreviewIndex : -1;
-        const previewingKept = !files.length || (preview && !preview._previewSource && keptActive >= 0);
-        const hasMedia = files.length > 0 || kept.length > 0;
+        if (kind === 'image' && input.name === 'file' && form && !Array.isArray(form._archiveMediaSlots)) {
+            const kept = [];
+            const files = Array.from(input.files || []).filter(isImageFile);
+            form._archiveMediaSlots = kept.concat(files.map(file => ({ kind: 'file', file })));
+        }
+        if (kind === 'image' && input.name === 'file' && form && Array.isArray(form._archiveMediaSlots)
+            && !form._archiveMediaSlots.length && (input.files?.length || 0) > 0) {
+            form._archiveMediaSlots = Array.from(input.files || []).filter(isImageFile).map(file => ({ kind: 'file', file }));
+        }
+        const slots = kind === 'image' && input.name === 'file' ? slotsOf(form) : [];
+        const files = Array.from(input.files || []);
+        const activeSlot = Number.isInteger(form?._archiveSlotPreviewIndex) ? form._archiveSlotPreviewIndex : -1;
+        const hasMedia = slots.length > 0 || files.length > 0;
         label.classList.toggle('has-files', hasMedia);
-        label.classList.toggle('has-thumbs', files.some(isImageFile) || (kind === 'image' && kept.length > 0));
+        label.classList.toggle('has-thumbs', slots.length > 0 || files.some(isImageFile));
         if (!hasMedia) {
             label.replaceChildren();
             label.textContent = '선택된 파일 없음';
             return;
         }
         label.replaceChildren();
-        kept.forEach((url, index) => {
-            const tile = document.createElement('div');
-            tile.className = 'ar-file-tile' + (previewingKept && index === keptActive ? ' is-active' : '');
-            tile.title = '저장된 사진 ' + (index + 1);
-            const thumb = document.createElement('button');
-            thumb.type = 'button';
-            thumb.className = 'ar-file-thumb';
-            thumb.setAttribute('aria-label', '저장된 사진 ' + (index + 1) + ' 미리보기');
-            const img = document.createElement('img');
-            img.alt = '';
-            img.decoding = 'async';
-            img.src = url;
-            thumb.appendChild(img);
-            thumb.addEventListener('click', event => {
-                event.preventDefault();
-                event.stopPropagation();
-                if (!preview) return;
-                form._archiveKeptPreviewIndex = index;
-                if (input) input._archivePreviewIndex = -1;
-                showPreview(preview, url);
-                syncFileName(input);
+        if (slots.length) {
+            slots.forEach((slot, index) => {
+                const tile = document.createElement('div');
+                tile.className = 'ar-file-tile' + (index === activeSlot ? ' is-active' : '');
+                tile.title = slot.kind === 'url' ? '저장된 사진 ' + (index + 1) : (slot.file.name || '새 사진');
+                const thumb = document.createElement('button');
+                thumb.type = 'button';
+                thumb.className = 'ar-file-thumb';
+                thumb.setAttribute('aria-label', (slot.kind === 'url' ? '저장된 사진 ' + (index + 1) : slot.file.name) + ' 미리보기');
+                const img = document.createElement('img');
+                img.alt = '';
+                img.decoding = 'async';
+                img.src = slot.kind === 'url' ? slot.url : rememberUrl(slot.file);
+                thumb.appendChild(img);
+                thumb.addEventListener('click', event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    previewSlot(form, input, index);
+                });
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'ar-file-remove';
+                remove.textContent = '×';
+                remove.title = '사진 제거';
+                remove.setAttribute('aria-label', '사진 제거');
+                remove.draggable = false;
+                remove.addEventListener('click', event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    removeSlotAt(form, index);
+                });
+                tile.append(thumb, remove);
+                bindTileDrag(tile, form, index);
+                label.appendChild(tile);
             });
-            const remove = document.createElement('button');
-            remove.type = 'button';
-            remove.className = 'ar-file-remove';
-            remove.textContent = '×';
-            remove.title = '저장된 사진 제거';
-            remove.setAttribute('aria-label', '저장된 사진 ' + (index + 1) + ' 제거');
-            remove.addEventListener('click', event => {
-                event.preventDefault();
-                event.stopPropagation();
-                removeKeptUrlAt(form, index);
-            });
-            tile.append(thumb, remove);
-            label.appendChild(tile);
-        });
+            return;
+        }
         files.forEach((file, index) => {
             if (isImageFile(file)) {
                 const tile = document.createElement('div');
-                tile.className = 'ar-file-tile' + (!previewingKept && index === activeIndex ? ' is-active' : '');
+                tile.className = 'ar-file-tile' + (index === (Number.isInteger(input._archivePreviewIndex) ? input._archivePreviewIndex : 0) ? ' is-active' : '');
                 tile.title = file.name;
                 const thumb = document.createElement('button');
                 thumb.type = 'button';
@@ -676,7 +753,6 @@
                     event.preventDefault();
                     event.stopPropagation();
                     if (preview && input.name === 'file') {
-                        if (form) form._archiveKeptPreviewIndex = -1;
                         showPreview(preview, rememberUrl(file), { sourceFile: file, index });
                         syncFileName(input);
                     }
@@ -761,19 +837,28 @@
             }
         }
         const info = preview.querySelector('[data-preview-file]');
+        const slots = slotsOf(form);
         const files = Array.from(form.querySelector('input[name="file"]')?.files || []);
         const kept = keptUrlsOf(form);
+        const newCount = slots.filter(slot => slot.kind === 'file').length || files.length;
         if (info) {
-            if (!files.length && !kept.length) {
+            if (!slots.length && !files.length) {
                 info.textContent = kind === 'video' ? '현재 저장된 영상' : '현재 저장된 사진';
-            } else if (!files.length && kept.length) {
-                info.textContent = kept.length === 1 ? '현재 저장된 사진' : `현재 저장된 사진 ${kept.length}장`;
-            } else if (files.length === 1 && !kept.length) {
+            } else if (slots.length) {
+                const saved = kept.length;
+                const added = slots.filter(slot => slot.kind === 'file').length;
+                if (saved && added) info.textContent = `저장된 ${saved}장 + 새 사진 ${added}장`;
+                else if (saved) info.textContent = saved === 1 ? '현재 저장된 사진' : `현재 저장된 사진 ${saved}장`;
+                else if (added === 1) {
+                    const file = slots.find(slot => slot.kind === 'file')?.file;
+                    info.textContent = file
+                        ? `${file.name} · ${(file.size / 1024).toLocaleString('ko', { maximumFractionDigits: 1 })} KB`
+                        : '1장 선택';
+                } else info.textContent = `${added}장 선택`;
+            } else if (files.length === 1) {
                 info.textContent = `${files[0].name} · ${(files[0].size / 1024).toLocaleString('ko', { maximumFractionDigits: 1 })} KB`;
-            } else if (files.length && kept.length) {
-                info.textContent = `저장된 ${kept.length}장 + 새 사진 ${files.length}장`;
             } else {
-                info.textContent = `${files.length}장 선택`;
+                info.textContent = `${newCount}장 선택`;
             }
         }
     }
@@ -1054,6 +1139,8 @@
             uploadFile._archiveLastFile = null;
             uploadFile._archiveLastFiles = null;
             uploadFile._archivePreviewIndex = 0;
+            setSlots(uploadForm, [], { syncInput: false });
+            uploadForm._archiveSlotPreviewIndex = -1;
             syncFileName(uploadFile);
         }
         resetThumbnail(uploadForm);
@@ -1081,6 +1168,8 @@
             uploadFile._archiveLastFiles = null;
             uploadFile._archivePreviewIndex = 0;
         }
+        setSlots(uploadForm, [], { syncInput: false });
+        uploadForm._archiveSlotPreviewIndex = -1;
         showPreview(uploadPreview, "");
         window.bindArchiveDateFields?.(uploadForm);
         uploadForm.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName);
@@ -1094,6 +1183,8 @@
         uploadFile._archiveLastFile = files[0] || null;
         uploadFile._archiveLastFiles = files;
         if (!files.length) {
+            setSlots(uploadForm, [], { syncInput: false });
+            uploadForm._archiveSlotPreviewIndex = -1;
             showPreview(uploadPreview, "");
             syncFileName(uploadFile);
             return;
@@ -1105,8 +1196,17 @@
             uploadFile.value = "";
             uploadFile._archiveLastFile = null;
             uploadFile._archiveLastFiles = null;
+            setSlots(uploadForm, [], { syncInput: false });
             syncFileName(uploadFile);
             showPreview(uploadPreview, "");
+            return;
+        }
+        const imageFiles = files.filter(isImageFile);
+        if (kind === 'image') {
+            setSlots(uploadForm, imageFiles.map(file => ({ kind: 'file', file })), { syncInput: false });
+            const index = resolvePreviewIndex(uploadFile, imageFiles);
+            imageFiles.forEach(rememberUrl);
+            previewSlot(uploadForm, uploadFile, index);
             return;
         }
         const index = resolvePreviewIndex(uploadFile, files);
@@ -1212,8 +1312,8 @@
         const coverUrl = existingUrls[0] || button.dataset.url || '';
         editForm.dataset.originalUrl = coverUrl;
         editForm.dataset.originalImages = JSON.stringify(existingUrls);
-        setKeptUrls(editForm, existingUrls);
-        editForm._archiveKeptPreviewIndex = existingUrls.length ? 0 : -1;
+        setSlots(editForm, existingUrls.map(url => ({ kind: 'url', url })), { syncInput: false });
+        editForm._archiveSlotPreviewIndex = existingUrls.length ? 0 : -1;
         const titleInput = editForm.querySelector("[name='title']");
         if (titleInput) titleInput.value = button.dataset.title || "";
         const descriptionInput = editForm.querySelector("[name='description']");
@@ -1246,53 +1346,65 @@
     editFile?.addEventListener("change", () => {
         bumpImageEditToken(editFile);
         const files = Array.from(editFile.files || []);
+        const keptSlots = slotsOf(editForm).filter(slot => slot.kind === 'url');
         releaseUnusedFiles(editFile._archiveLastFiles, files);
-        editFile._archiveLastFile = files[0] || null;
-        editFile._archiveLastFiles = files;
         if (!files.length) {
-            const kept = keptUrlsOf(editForm);
-            editForm._archiveKeptPreviewIndex = kept.length ? 0 : -1;
-            showPreview(editPreview, kept[0] || editForm.dataset.originalUrl || '');
-            syncFileName(editFile);
+            setSlots(editForm, keptSlots, { syncInput: false });
+            editFile._archiveLastFile = null;
+            editFile._archiveLastFiles = null;
+            if (keptSlots.length) previewSlot(editForm, editFile, 0);
+            else {
+                editForm._archiveSlotPreviewIndex = -1;
+                showPreview(editPreview, editForm.dataset.originalUrl || '');
+                syncFileName(editFile);
+            }
             return;
         }
         const invalid = files.find(file => !acceptedFile(file));
         if (invalid) {
             alert(kind === "video" ? "동영상 파일만 선택할 수 있습니다." : "이미지 파일만 선택할 수 있습니다.");
             files.forEach(releaseUrl);
+            setSlots(editForm, keptSlots, { syncInput: false });
             editFile.value = "";
             editFile._archiveLastFile = null;
             editFile._archiveLastFiles = null;
-            const kept = keptUrlsOf(editForm);
-            editForm._archiveKeptPreviewIndex = kept.length ? 0 : -1;
-            syncFileName(editFile);
-            showPreview(editPreview, kept[0] || editForm.dataset.originalUrl || '');
+            if (keptSlots.length) previewSlot(editForm, editFile, 0);
+            else {
+                editForm._archiveSlotPreviewIndex = -1;
+                syncFileName(editFile);
+                showPreview(editPreview, editForm.dataset.originalUrl || '');
+            }
             return;
         }
-        const room = Math.max(0, 30 - keptUrlsOf(editForm).length);
-        if (kind === 'image' && files.length > room) {
+        const room = Math.max(0, 30 - keptSlots.length);
+        let nextFiles = files.filter(isImageFile);
+        if (kind === 'image' && nextFiles.length > room) {
             alert('사진은 최대 30장까지 등록할 수 있습니다.');
-            const trimmed = files.slice(0, room);
-            files.slice(room).forEach(releaseUrl);
-            if (!trimmed.length) {
+            nextFiles.slice(room).forEach(releaseUrl);
+            nextFiles = nextFiles.slice(0, room);
+            if (!nextFiles.length) {
+                setSlots(editForm, keptSlots, { syncInput: false });
                 editFile.value = "";
                 editFile._archiveLastFile = null;
                 editFile._archiveLastFiles = null;
-                const kept = keptUrlsOf(editForm);
-                editForm._archiveKeptPreviewIndex = kept.length ? 0 : -1;
-                syncFileName(editFile);
-                showPreview(editPreview, kept[0] || editForm.dataset.originalUrl || '');
+                if (keptSlots.length) previewSlot(editForm, editFile, 0);
+                else {
+                    editForm._archiveSlotPreviewIndex = -1;
+                    syncFileName(editFile);
+                    showPreview(editPreview, editForm.dataset.originalUrl || '');
+                }
                 return;
             }
-            setInputFiles(editFile, trimmed, { previewIndex: 0 });
-            return;
         }
-        editForm._archiveKeptPreviewIndex = -1;
-        const index = resolvePreviewIndex(editFile, files);
-        editFile._archivePreviewIndex = index;
-        showPreview(editPreview, rememberUrl(files[index]), { sourceFile: files[index], index });
-        files.forEach((file, i) => { if (i !== index) rememberUrl(file); });
-        syncFileName(editFile);
+        const nextSlots = keptSlots.concat(nextFiles.map(file => ({ kind: 'file', file })));
+        setSlots(editForm, nextSlots, { syncInput: false });
+        editFile._archiveLastFile = nextFiles[0] || null;
+        editFile._archiveLastFiles = nextFiles.slice();
+        const transfer = new DataTransfer();
+        nextFiles.forEach(file => transfer.items.add(file));
+        editFile.files = transfer.files;
+        nextFiles.forEach(rememberUrl);
+        previewSlot(editForm, editFile, keptSlots.length);
     });
 
     async function removeArchive(id, title) {
@@ -1344,11 +1456,15 @@
             alert("수정할 자료를 찾지 못했습니다.");
             return;
         }
-        const replaceFiles = Array.from(editFile?.files || []);
-        const keptUrls = kind === 'image' ? keptUrlsOf(editForm) : [];
+        const slots = kind === 'image' ? slotsOf(editForm) : [];
+        const replaceFiles = slots.filter(slot => slot.kind === 'file').map(slot => slot.file);
+        const keptUrls = slots.filter(slot => slot.kind === 'url').map(slot => slot.url);
         const replacing = replaceFiles.length > 0;
-        const mediaChanged = kind === 'image' && (replacing || JSON.stringify(keptUrls) !== JSON.stringify(parseImageUrls(editForm.dataset.originalImages, editForm.dataset.originalUrl)));
-        if (kind === 'image' && !keptUrls.length && !replaceFiles.length) {
+        const originalUrls = parseImageUrls(editForm.dataset.originalImages, editForm.dataset.originalUrl);
+        const orderChanged = kind === 'image' && JSON.stringify(slots.map(slot => slot.kind === 'url' ? slot.url : ''))
+            !== JSON.stringify(originalUrls);
+        const mediaChanged = kind === 'image' && (replacing || orderChanged || JSON.stringify(keptUrls) !== JSON.stringify(originalUrls));
+        if (kind === 'image' && !slots.length) {
             alert('사진은 최소 1장이 필요합니다.');
             return;
         }
@@ -1374,7 +1490,10 @@
         body.set("artistNames", selectedArtists(editDialog).join(","));
         const source = editForm.querySelector("[name='source']")?.value || "";
         if (source) body.set("source", source);
-        if (kind === 'image') body.set('keepImageUrlsJson', JSON.stringify(keptUrls));
+        if (kind === 'image') {
+            body.set('keepImageUrlsJson', JSON.stringify(keptUrls));
+            body.set('imageOrderJson', JSON.stringify(slots.map(slot => slot.kind === 'url' ? slot.url : '')));
+        }
         if (replacing) replaceFiles.forEach(file => body.append("file", file));
         const thumbnail = editForm.querySelector('[name="thumbnail"]')?.files?.[0];
         if (thumbnail) body.set('thumbnail', thumbnail);
