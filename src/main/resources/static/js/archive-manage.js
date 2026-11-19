@@ -212,19 +212,48 @@
         return window.MemberPortraitPicker ? MemberPortraitPicker.selectedValues(root) : [];
     }
 
+    function setInputFiles(input, files) {
+        if (!input) return;
+        const transfer = new DataTransfer();
+        files.forEach(file => transfer.items.add(file));
+        input.files = transfer.files;
+        syncFileName(input);
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function removeFileAt(input, index) {
+        const files = Array.from(input?.files || []);
+        const removed = files[index];
+        if (!removed) return;
+        releaseUrl(removed);
+        setInputFiles(input, files.filter((_, i) => i !== index));
+    }
+
     function syncFileName(input) {
         const label = input?.closest('.ar-file')?.querySelector('[data-file-name]');
         if (!label) return;
         const files = Array.from(input.files || []);
+        label.classList.toggle('has-files', files.length > 0);
         if (!files.length) {
+            label.replaceChildren();
             label.textContent = '선택된 파일 없음';
             return;
         }
-        if (files.length === 1) {
-            label.textContent = files[0].name;
-            return;
-        }
-        label.textContent = files[0].name + ' 외 ' + (files.length - 1) + '개';
+        label.replaceChildren();
+        files.forEach((file, index) => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'ar-file-chip';
+            chip.textContent = file.name + ' ×';
+            chip.title = file.name + ' 제거';
+            chip.setAttribute('aria-label', file.name + ' 제거');
+            chip.addEventListener('click', event => {
+                event.preventDefault();
+                event.stopPropagation();
+                removeFileAt(input, index);
+            });
+            label.appendChild(chip);
+        });
     }
 
     function bindFileNames(form) {
@@ -273,7 +302,7 @@
             } else if (files.length === 1) {
                 info.textContent = `${files[0].name} · ${(files[0].size / 1024).toLocaleString('ko', { maximumFractionDigits: 1 })} KB`;
             } else {
-                info.textContent = `${files.length}장 선택 · ${files[0].name} 외 ${files.length - 1}개`;
+                info.textContent = `${files.length}장 선택`;
             }
         }
     }
@@ -359,40 +388,45 @@
         return new File([file], name, { type, lastModified: Date.now() });
     }
 
-    function imageFileFromClipboard(clipboardData) {
-        if (!clipboardData) return null;
+    function imageFilesFromClipboard(clipboardData) {
+        if (!clipboardData) return [];
+        const collected = [];
+        const seen = new Set();
+        const push = file => {
+            const normalized = normalizeClipboardImage(file);
+            if (!normalized) return;
+            const key = normalized.name + ':' + normalized.size + ':' + normalized.type + ':' + normalized.lastModified;
+            if (seen.has(key)) return;
+            seen.add(key);
+            collected.push(normalized);
+        };
         const items = clipboardData.items;
         if (items) {
             for (let i = 0; i < items.length; i += 1) {
                 const item = items[i];
                 if (item.kind === 'file' && item.type && item.type.startsWith('image/')) {
-                    const file = normalizeClipboardImage(item.getAsFile());
-                    if (file) return file;
+                    push(item.getAsFile());
                 }
             }
         }
-        const files = clipboardData.files;
-        if (files) {
-            for (let i = 0; i < files.length; i += 1) {
-                const candidate = files[i];
-                if (candidate && candidate.type && candidate.type.startsWith('image/')) {
-                    return normalizeClipboardImage(candidate);
+        if (!collected.length) {
+            const files = clipboardData.files;
+            if (files) {
+                for (let i = 0; i < files.length; i += 1) {
+                    const candidate = files[i];
+                    if (candidate && candidate.type && candidate.type.startsWith('image/')) push(candidate);
                 }
             }
         }
-        return null;
+        return collected;
     }
 
-    function assignFileToInput(input, file, { append = false } = {}) {
-        if (!input || !file) return false;
-        const transfer = new DataTransfer();
-        if (append && input.multiple) {
-            Array.from(input.files || []).forEach(existing => transfer.items.add(existing));
-        }
-        transfer.items.add(file);
-        input.files = transfer.files;
-        syncFileName(input);
-        input.dispatchEvent(new Event('change', { bubbles: true }));
+    function assignFilesToInput(input, files, { append = false } = {}) {
+        if (!input || !files?.length) return false;
+        const next = append && input.multiple
+            ? Array.from(input.files || []).concat(files)
+            : files.slice(0, input.multiple ? files.length : 1);
+        setInputFiles(input, next);
         return true;
     }
 
@@ -641,10 +675,10 @@
     document.addEventListener("paste", event => {
         const input = activeImageFileInput();
         if (!input) return;
-        const file = imageFileFromClipboard(event.clipboardData);
-        if (!file) return;
+        const files = imageFilesFromClipboard(event.clipboardData);
+        if (!files.length) return;
         event.preventDefault();
-        assignFileToInput(input, file, { append: Boolean(input.multiple) });
+        assignFilesToInput(input, files, { append: Boolean(input.multiple) });
     });
 
     function showEdit(button) {
