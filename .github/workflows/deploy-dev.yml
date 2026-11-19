@@ -123,6 +123,12 @@ jobs:
           fi
           echo "deploy=true" >> "$GITHUB_OUTPUT"
 
+      - name: Checkout files to deploy
+        if: steps.fresh.outputs.deploy == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.build.outputs.sha }}
+
       - name: Connect Tailscale
         if: steps.fresh.outputs.deploy == 'true'
         uses: tailscale/github-action@v4
