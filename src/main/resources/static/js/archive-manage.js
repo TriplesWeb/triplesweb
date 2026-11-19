@@ -494,11 +494,19 @@
     bindThumbnail(uploadForm);
     bindFileNames(uploadForm);
 
+    function defaultUploadArtists() {
+        const fromPage = document.querySelector("[data-archive-kind]")?.dataset.defaultArtists;
+        if (fromPage != null && fromPage.trim()) return fromPage.trim();
+        const params = new URLSearchParams(window.location.search);
+        return [...new Set(params.getAll("members").map(name => name.trim()).filter(Boolean))].join(",");
+    }
+
     window.showAddModal = function () {
         if (!uploadForm || !uploadDialog) return;
         uploadForm.reset();
         resetThumbnail(uploadForm);
-        applyArtists(uploadDialog, "");
+        // 멤버 폴더·필터에서 열면 해당 멤버를 기본 선택(변경 가능)
+        applyArtists(uploadDialog, defaultUploadArtists());
         if (uploadFile) releaseUrl(uploadFile._archiveLastFile);
         showPreview(uploadPreview, "");
         window.bindArchiveDateFields?.(uploadForm);

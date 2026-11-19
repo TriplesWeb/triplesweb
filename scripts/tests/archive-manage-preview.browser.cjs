@@ -28,7 +28,7 @@ body{margin:0;background:#0d0e12;color:#e3e2e8;font-family:"Pretendard Variable"
 ${site}${css}${siteUi}
 </style></head>
 <body class="site-page">
-<main class="archive-page" data-archive-kind="${kind}" data-date-label="${noun} 날짜">
+<main class="archive-page" data-archive-kind="${kind}" data-date-label="${noun} 날짜" data-default-artists="지연">
   <section class="ar-grid" id="archiveGrid">
     <article class="ar-panel ar-card" data-id="1" data-title="${isVideo ? '지서연' : ''}" data-description="${isVideo ? '' : '지서연'}" data-headline="지서연" data-artists="지연" data-url="${isVideo ? '/clip.mp4' : '/portrait.svg'}" data-registered="2026-10-25">
       ${isVideo
@@ -146,6 +146,23 @@ async function withPage(html, run) {
     await page.locator('#archiveGrid .ar-card').screenshot({
       path: path.join(artifactDir, 'archive-live-photo-card.png')
     });
+    await page.evaluate(() => window.showAddModal());
+    const preselected = await page.evaluate(() => {
+      const active = document.querySelectorAll('#uploadModal .mpp-item.is-active');
+      return {
+        count: active.length,
+        names: Array.from(active).map((btn) => btn.dataset.value || ''),
+        chip: document.querySelector('#uploadModal [data-artist-chips]')?.textContent.trim() || ''
+      };
+    });
+    assert.equal(preselected.count, 1, '멤버 폴더 기본 선택이 없다');
+    assert.deepEqual(preselected.names, ['지연']);
+    assert.match(preselected.chip, /지연/);
+    await page.evaluate(() => {
+      document.getElementById('uploadModal').hidden = true;
+      document.body.style.overflow = '';
+    });
+
     await page.click('[data-archive-edit]');
     await page.locator('#editPreview .ar-preview-photo-card').waitFor();
 

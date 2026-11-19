@@ -12,7 +12,7 @@
 <div class="ar-glow ar-glow-mint"></div>
 {{>layout/header}}
 
-<main class="archive-page{{#archiveBrowse}} is-browse{{/archiveBrowse}}{{#archiveFolderHome}} is-folder-home{{/archiveFolderHome}}{{#archiveFolderIndex}} is-folder-index{{/archiveFolderIndex}}{{#archiveFolderView}} is-folder-view{{/archiveFolderView}}" data-archive-kind="{{#imageArchive}}image{{/imageArchive}}{{#videoArchive}}video{{/videoArchive}}" data-date-label="{{mediaDateLabel}}">
+<main class="archive-page{{#archiveBrowse}} is-browse{{/archiveBrowse}}{{#archiveFolderHome}} is-folder-home{{/archiveFolderHome}}{{#archiveFolderIndex}} is-folder-index{{/archiveFolderIndex}}{{#archiveFolderView}} is-folder-view{{/archiveFolderView}}" data-archive-kind="{{#imageArchive}}image{{/imageArchive}}{{#videoArchive}}video{{/videoArchive}}" data-date-label="{{mediaDateLabel}}" data-default-artists="{{defaultUploadArtists}}">
     <section class="ar-hero{{#archiveBrowse}} ar-hero-browse{{/archiveBrowse}}">
         <div class="ar-panel ar-headline{{#archiveFolderView}} is-member-space{{/archiveFolderView}}{{#archiveFolderIndex}} is-member-space{{/archiveFolderIndex}}"{{#folderAccent}} style="--folder-color: {{folderAccent}}"{{/folderAccent}}>
             <button type="button" class="ar-stats-toggle" data-stats-toggle aria-expanded="true" aria-controls="archiveStats" aria-label="통계 접기">

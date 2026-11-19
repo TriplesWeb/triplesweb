@@ -257,6 +257,7 @@ public class ArchiveController {
         model.addAttribute("memberPickerOptions", memberOptions(artists, selectedMembers));
         model.addAttribute("selectedMembers", selectedMembers);
         model.addAttribute("hasSelectedMembers", !selectedMembers.isEmpty());
+        model.addAttribute("defaultUploadArtists", String.join(",", selectedMembers));
         model.addAttribute("page", archives);
         model.addAttribute("type", type);
         model.addAttribute("isAuthenticated", isAuthenticated);
