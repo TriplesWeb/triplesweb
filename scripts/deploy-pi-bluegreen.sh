@@ -214,8 +214,9 @@ bootstrap_proxy() {
     "${BASE_COMPOSE[@]}" up -d --no-deps app || true
     fail "Initial Nginx cutover failed; legacy restart attempted"
   fi
-  remember_success blue
+  # Proxy is now serving blue; never auto-stop it if metadata write fails.
   CANDIDATE_SLOT=""
+  remember_success blue
   log "First cutover finished. Next deployments will warm the inactive slot."
 }
 
