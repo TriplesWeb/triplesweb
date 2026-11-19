@@ -16,6 +16,21 @@ permissions:
   checks: write
 
 jobs:
+  deployment-check:
+    name: validate deployment scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bash and isolation assertions
+        run: bash scripts/tests/deployment-static.test.sh
+      - name: Docker Compose configuration validation
+        env:
+          MYSQL_PASSWORD: ci
+          MYSQL_ROOT_PASSWORD: ci
+        run: |
+          docker compose -f docker-compose.yml config --quiet
+          docker compose -f docker-compose.dev.yml config --quiet
+
   changes:
     name: detect changes
     runs-on: ubuntu-latest
