@@ -2,8 +2,6 @@ package com.example.triplesweb.util;
 
 import com.example.triplesweb.entity.Artist;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -45,7 +43,6 @@ public final class MemberPortraitOptions {
     /** S1 윤서연 ~ S24 지연까지 커스텀 멤버 로고. 유닛·기타는 빈 사진을 쓴다. */
     private static final int CUSTOM_OBJEKT_LOGO_COUNT = 24;
     private static final String OBJEKT_MEMBER_LOGO_PATH = "/images/objekt-member-logos/s%02d.png";
-    private static final String ARCHIVE_SYMBOL_DIR = URLEncoder.encode("상징로고", StandardCharsets.UTF_8).replace("+", "%20");
     private static final Pattern NON_MEMBER_CHARS = Pattern.compile("[^a-z0-9가-힣]");
     private static final Pattern UNIT_CHAIN = Pattern.compile("s\\d{1,2}(?:xs\\d{1,2})+");
     private static final Pattern UNIT_NUMBER = Pattern.compile("s\\d{1,2}");
@@ -159,7 +156,7 @@ public final class MemberPortraitOptions {
     public static String archiveSymbolLogo(String name) {
         int index = memberIndex(name);
         if (index >= CUSTOM_OBJEKT_LOGO_COUNT) return "";
-        return "/uploads/images/" + ARCHIVE_SYMBOL_DIR + "/S" + (index + 1) + ".png";
+        return "/images/archive/member-logos/" + (index + 1) + ".png";
     }
 
     /** 원본 멤버 문자열에서 S1~S24 솔로 한글 이름만 뽑아 정렬한다. 유닛·기타는 제외. */

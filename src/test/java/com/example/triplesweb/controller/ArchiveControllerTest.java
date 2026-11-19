@@ -17,6 +17,7 @@ import com.example.triplesweb.service.ChemistryGroupService;
 import com.example.triplesweb.service.ChemistryService;
 import com.example.triplesweb.service.UnitService;
 import com.example.triplesweb.util.ArchiveFolderArt;
+import org.jsoup.Jsoup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -87,9 +88,9 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("S1 윤서연")))
                 .andExpect(content().string(containsString("S24 지연")))
                 .andExpect(content().string(containsString("ar-folder is-group")))
-                .andExpect(content().string(containsString("ar-folder-label\">전체 멤버</span>")))
+                .andExpect(content().string(containsString("ar-folder-label\">tripleS</span>")))
                 .andExpect(content().string(containsString("ar-folder is-parent")))
-                .andExpect(content().string(containsString("ar-folder-label\">유닛별</span>")))
+                .andExpect(content().string(containsString("ar-folder-label\">디멘션</span>")))
                 .andExpect(content().string(not(containsString("ar-folder-label\">케미</span>"))))
                 .andExpect(content().string(containsString("folder&#x3D;units")))
                 .andExpect(content().string(not(containsString("folder&#x3D;combos"))))
@@ -106,7 +107,15 @@ class ArchiveControllerTest {
                 .andExpect(content().string(not(containsString("ar-folder-label\">5명 이상</span>"))))
                 .andExpect(content().string(containsString("ar-home-upload")))
                 .andExpect(content().string(containsString("사진 추가")))
-                .andExpect(content().string(containsString("id=\"uploadModal\"")));
+                .andExpect(content().string(containsString("id=\"uploadModal\"")))
+                .andExpect(result -> {
+                    var folders = Jsoup.parse(result.getResponse().getContentAsString()).select(".ar-folders .ar-folder.is-solo");
+                    org.assertj.core.api.Assertions.assertThat(folders).hasSize(24);
+                    for (int i = 0; i < folders.size(); i++) {
+                        org.assertj.core.api.Assertions.assertThat(folders.get(i).select("img.is-bundled-art").attr("src"))
+                                .isEqualTo("/images/archive/member-folders/" + (i + 1) + ".png");
+                    }
+                });
     }
 
     @Test void folderHomeGroupsNonUnitChemistryByMemberCount() throws Exception {
@@ -127,7 +136,7 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-label\">케미</span>");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;combos");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-label\">2명 케미</span>");
-        int group = html.indexOf("ar-folder-label\">전체 멤버</span>");
+        int group = html.indexOf("ar-folder-label\">tripleS</span>");
         int groupEnd = html.indexOf("</a>", group);
         org.assertj.core.api.Assertions.assertThat(html.substring(group, groupEnd)).contains("ar-folder-count\">4</span>");
         org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">S1 윤서연</span>");
@@ -166,23 +175,29 @@ class ArchiveControllerTest {
                 .andExpect(redirectedUrl("/archive?folder=s"));
     }
 
-    @Test void unitFolderWithoutImageOmitsPlaceholderPreview() throws Exception {
+    @Test void unitFolderUsesBundledArtWithoutRegisteredImage() throws Exception {
         Unit aura = new Unit();
         aura.setUnitId(17L);
         aura.setUnitName("Aura");
         aura.setVisible(true);
-        when(unitService.listVisible()).thenReturn(List.of(aura));
+        Unit acidAngel = new Unit();
+        acidAngel.setUnitId(1L);
+        acidAngel.setUnitName("ACID ANGEL OF ASIA");
+        when(unitService.listVisible()).thenReturn(List.of(aura, acidAngel));
         String home = mvc.perform(get("/archive")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        org.assertj.core.api.Assertions.assertThat(home).contains("ar-folder-label\">유닛별</span>");
+        org.assertj.core.api.Assertions.assertThat(home).contains("ar-folder-label\">디멘션</span>");
         org.assertj.core.api.Assertions.assertThat(home).doesNotContain("folder&#x3D;unit-17");
         org.assertj.core.api.Assertions.assertThat(home).doesNotContain("Aura");
 
         String html = mvc.perform(get("/archive").param("folder", "units")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        org.assertj.core.api.Assertions.assertThat(html).contains(">유닛별</p>");
+        org.assertj.core.api.Assertions.assertThat(html).contains(">디멘션</p>");
         org.assertj.core.api.Assertions.assertThat(html).contains("← 목록으로");
         org.assertj.core.api.Assertions.assertThat(html).contains("Aura");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-art is-bundled-art", "/images/archive/unit-folders/42.png");
+        org.assertj.core.api.Assertions.assertThat(html).contains("/images/archive/unit-folders/27.png");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-preview");
         org.assertj.core.api.Assertions.assertThat(html).contains("folder&#x3D;s");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;unit-17");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("image-upload-pending");
@@ -266,7 +281,7 @@ class ArchiveControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("전체 사진"))))
                 .andExpect(content().string(not(containsString("ar-folder-title"))))
-                .andExpect(content().string(not(containsString("전체 멤버"))))
+                .andExpect(content().string(not(containsString("ar-folder-label\">tripleS</span>"))))
                 .andExpect(content().string(containsString("id=\"archive-member-picker\"")))
                 .andExpect(content().string(not(containsString("id=\"archiveChem\""))));
         verify(archiveService).pageInFolder(eq(MediaType.IMAGE), anyInt(), org.mockito.AdditionalMatchers.lt(Integer.MAX_VALUE), nullable(String.class),
@@ -331,7 +346,7 @@ class ArchiveControllerTest {
                 .andExpect(content().string(not(containsString(">지우기</button>"))))
                 .andExpect(content().string(not(containsString("data-ymd-year"))))
                 .andExpect(content().string(not(containsString("aria-label=\"연도\""))))
-                .andExpect(content().string(containsString("S1.png")))
+                .andExpect(content().string(containsString("/images/archive/member-logos/1.png")))
                 .andExpect(content().string(containsString("id=\"archive-member-picker\"")))
                 .andExpect(content().string(not(containsString("archive-symbol-picker"))))
                 .andExpect(content().string(containsString("archive-symbol-chip")))
@@ -423,8 +438,8 @@ class ArchiveControllerTest {
         int end = html.indexOf("</div>", start);
         String picker = html.substring(start, end);
         org.assertj.core.api.Assertions.assertThat(picker).contains("/uploads/portraits/seoyeon.jpg");
-        org.assertj.core.api.Assertions.assertThat(picker).doesNotContain("S1.png");
-        org.assertj.core.api.Assertions.assertThat(html).contains("S1.png");
+        org.assertj.core.api.Assertions.assertThat(picker).doesNotContain("/images/archive/member-logos/1.png");
+        org.assertj.core.api.Assertions.assertThat(html).contains("/images/archive/member-logos/1.png");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("archive-symbol-picker");
     }
 
@@ -470,7 +485,7 @@ class ArchiveControllerTest {
                 .andReturn().getResponse().getContentAsString();
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("전체 사진");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-title");
-        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("전체 멤버");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-label\">tripleS</span>");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-title is-solo");
         org.assertj.core.api.Assertions.assertThat(html).contains(">날짜<");
         org.assertj.core.api.Assertions.assertThat(html).contains("calendar_month");
@@ -488,7 +503,7 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain(">미분류<");
         org.assertj.core.api.Assertions.assertThat(html).contains("수정하기");
         org.assertj.core.api.Assertions.assertThat(html).contains("삭제하기");
-        org.assertj.core.api.Assertions.assertThat(html).contains("전체 출처");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-stat-filter");
         org.assertj.core.api.Assertions.assertThat(html).contains("class=\"ar-source-badge\"");
         org.assertj.core.api.Assertions.assertThat(html).contains("ar-source-field");
         org.assertj.core.api.Assertions.assertThat(html).contains("lang=\"ko\"");
@@ -496,25 +511,37 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("is-violet");
     }
 
-    @Test void folderSearchStatFollowsTypeSourceAndDate() throws Exception {
+
+    @Test void archiveMemberOptionsSurviveProfileImageErrors() throws Exception {
+        var artist = new Artist();
+        artist.setName("윤서연");
+        artist.setProfileImage("/missing-profile.jpg");
+        when(artistRepository.findAll()).thenReturn(List.of(artist));
+        stubFolder(MediaType.IMAGE);
+        var html = mvc.perform(get("/archive").param("folder", "s"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        var option = org.jsoup.Jsoup.parse(html).selectFirst("#archiveMemberPanel .mpp-item");
+        org.assertj.core.api.Assertions.assertThat(option.attr("data-keep-option")).isEqualTo("true");
+    }
+
+    @Test void resetButtonFollowsActiveFiltersAndSearchStatIsRemoved() throws Exception {
         when(artistRepository.findAll()).thenReturn(List.of());
         stubFolder(MediaType.IMAGE);
-        String html = mvc.perform(get("/archive").param("folder", "s")
-                        .param("source", "cosmo_room").param("on", "2026-11-16"))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        int start = html.indexOf("ar-filter-summary");
-        int end = html.indexOf("</div>", start);
-        String summary = html.substring(start, end);
-        org.assertj.core.api.Assertions.assertThat(summary).contains(">사진<");
-        org.assertj.core.api.Assertions.assertThat(summary).contains("코스모룸");
-        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("2026/11/16");
-        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("2026년");
-        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("~");
-        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain(">전체<");
-        org.assertj.core.api.Assertions.assertThat(html).contains("--filter-count: 2");
-        org.assertj.core.api.Assertions.assertThat(html).contains("2026년 11월 16일");
-        org.assertj.core.api.Assertions.assertThat(html).contains("ar-stat-date");
+        var baseline = mvc.perform(get("/archive").param("folder", "s"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        var baseDoc = org.jsoup.Jsoup.parse(baseline);
+        org.assertj.core.api.Assertions.assertThat(baseDoc.selectFirst(".ar-reset").hasAttr("hidden")).isTrue();
+        org.assertj.core.api.Assertions.assertThat(baseDoc.select(".ar-stat-filter")).isEmpty();
+        org.assertj.core.api.Assertions.assertThat(baseDoc.select("#archiveStats .ar-stat")).hasSize(3);
+        for (String[] filter : new String[][] {{"q", "심장"}, {"members", "윤서연"},
+                {"from", "2026-11-17"}, {"to", "2026-11-17"}, {"on", "2026-11-17"}, {"source", "cosmo_room"}}) {
+            var html = mvc.perform(get("/archive").param("folder", "s").param(filter[0], filter[1]))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            var doc = org.jsoup.Jsoup.parse(html);
+            org.assertj.core.api.Assertions.assertThat(doc.selectFirst(".ar-reset").hasAttr("hidden"))
+                    .as(filter[0]).isFalse();
+            org.assertj.core.api.Assertions.assertThat(doc.selectFirst(".ar-reset").attr("href")).isEqualTo("/archive?folder=s");
+        }
     }
 
     @Test void photoCardShowsDateBesideMembers() throws Exception {
@@ -670,53 +697,7 @@ class ArchiveControllerTest {
                 .andExpect(redirectedUrl("/archive/all?members=%EC%9C%A4%EC%84%9C%EC%97%B0&page=2"));
     }
 
-    @Test void searchStatShowsColoredMembersAndOtherFilters() throws Exception {
-        var seoyeon = new Artist();
-        seoyeon.setName("윤서연");
-        seoyeon.setColor("#22aeff");
-        when(artistRepository.findAll()).thenReturn(List.of(seoyeon));
-        stubFolder(MediaType.IMAGE, photo());
-        String html = mvc.perform(get("/archive")
-                        .param("folder", "s")
-                        .param("members", "윤서연")
-                        .param("members", "지연")
-                        .param("q", "심장")
-                        .param("from", "2026-01-01")
-                        .param("to", "2026-12-31"))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        org.assertj.core.api.Assertions.assertThat(html).contains("ar-filter-member");
-        org.assertj.core.api.Assertions.assertThat(html).contains("--member-color: #22aeff");
-        org.assertj.core.api.Assertions.assertThat(html).contains("외 1명");
-        org.assertj.core.api.Assertions.assertThat(html).contains("심장");
-        int start = html.indexOf("ar-filter-summary");
-        int end = html.indexOf("</div>", start);
-        String summary = html.substring(start, end);
-        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("2026/01/01");
-        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("2026/12/31");
-        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("~");
-        org.assertj.core.api.Assertions.assertThat(html).contains("2026년 1월 1일 ~ 2026년 12월 31일");
-        org.assertj.core.api.Assertions.assertThat(html).contains("전체 출처");
-        org.assertj.core.api.Assertions.assertThat(html).contains("--filter-count: 4");
-        org.assertj.core.api.Assertions.assertThat(html).contains("사진 날짜 시작");
-    }
 
-    @Test void filterSummaryUsesChemistryNameInsteadOfMembers() throws Exception {
-        when(chemistryService.findAll()).thenReturn(List.of(ChemistryDto.builder()
-                .id(3L).memberA("윤서연").memberB("정혜린").label("시선강탈").build()));
-        when(artistRepository.findAll()).thenReturn(List.of());
-        stubFolder(MediaType.IMAGE, photo());
-        String html = mvc.perform(get("/archive").param("folder", "s")
-                        .param("members", "정혜린").param("members", "윤서연"))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        int start = html.indexOf("ar-filter-summary");
-        int end = html.indexOf("</div>", start);
-        String summary = html.substring(start, end);
-        org.assertj.core.api.Assertions.assertThat(summary).contains("시선강탈");
-        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("외 1명");
-        org.assertj.core.api.Assertions.assertThat(summary).doesNotContain("ar-filter-member");
-    }
 
     @Test void exactPhotoDateFilterUsesRegisteredOn() throws Exception {
         when(artistRepository.findAll()).thenReturn(List.of());

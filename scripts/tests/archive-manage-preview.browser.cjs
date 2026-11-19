@@ -12,7 +12,7 @@ const pickerJs = fs.readFileSync(path.join(staticRoot, 'js', 'member-portrait-pi
 const manageJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-manage.js'), 'utf8');
 const detailJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-detail.js'), 'utf8');
 
-const jiyeonLogo = '/uploads/images/' + encodeURIComponent('상징로고') + '/S24.png';
+const jiyeonLogo = '/images/archive/member-logos/24.png';
 
 /** 운영과 같이 카드에는 수정 버튼이 없고 상세 버튼만 있는 사진 페이지. */
 function photoReorderHtml() {

@@ -11,20 +11,60 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- * {@code uploads/미디어 폴더}에 있는 폴더 그림을 아카이브 홈 아이콘으로 쓴다.
+ * 아카이브 홈의 내장 폴더 그림과 {@code uploads/미디어 폴더}의 그림을 찾는다.
  */
 @Component
 public class ArchiveFolderArt {
     static final String DIR_NAME = "미디어 폴더";
     private static final List<String> EXTENSIONS = List.of(".png", ".jpg", ".jpeg", ".webp", ".svg");
+    private static final int BUNDLED_MEMBER_FOLDER_COUNT = 24;
+    private static final Map<String, Integer> UNIT_IMAGES = Map.ofEntries(
+            Map.entry("acid angel from asia", 27),
+            Map.entry("acid angel of asia", 27),
+            Map.entry("+(kr)ystal eyes", 28),
+            Map.entry("acid eyes", 29),
+            Map.entry("lovelution", 30),
+            Map.entry("evolution", 31),
+            Map.entry("nxt", 32),
+            Map.entry("glow", 33),
+            Map.entry("aria", 34),
+            Map.entry("visionary vision", 35),
+            Map.entry("∞!", 36),
+            Map.entry("alphie", 37),
+            Map.entry("msnz moon", 38),
+            Map.entry("msnz sun", 39),
+            Map.entry("msnz neptune", 40),
+            Map.entry("msnz zenith", 41),
+            Map.entry("aura", 42)
+    );
 
     private final Path uploadRoot;
 
     public ArchiveFolderArt(@Value("${file.upload-dir:./uploads}") String uploadDir) {
         this.uploadRoot = Path.of(uploadDir);
+    }
+
+    public static String bundledIcon(ArchiveFolderClassifier.Kind kind, String key, String label) {
+        return switch (kind) {
+            case SOLO -> memberIcon(key);
+            case UNIT -> unitIcon(label);
+            default -> "";
+        };
+    }
+
+    private static String memberIcon(String key) {
+        int number = MemberPortraitOptions.memberIndex(key) + 1;
+        return number <= BUNDLED_MEMBER_FOLDER_COUNT ? "/images/archive/member-folders/" + number + ".png" : "";
+    }
+
+    private static String unitIcon(String label) {
+        if (label == null) return "";
+        Integer number = UNIT_IMAGES.get(label.strip().toLowerCase(Locale.ROOT));
+        return number == null ? "" : "/images/archive/unit-folders/" + number + ".png";
     }
 
     public String urlFor(ArchiveFolderClassifier.Kind kind, String key, String label) {
