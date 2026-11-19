@@ -66,7 +66,7 @@ class ArchiveUpdateCoverMetaTest {
     }
 
     @Test
-    void updateFillsFileMetaWhenCoverSwitchesToKeptImage() throws Exception {
+    void updateChangesCoverWithoutReorderingImages() throws Exception {
         Archive existing = imagePost(
                 "/uploads/images/a.jpg",
                 "[\"/uploads/images/a.jpg\",\"/uploads/images/b.png\"]");
@@ -83,12 +83,14 @@ class ArchiveUpdateCoverMetaTest {
                 LocalDate.of(2023, 4, 24),
                 ArchiveSource.MAGAZINE,
                 "Vanity Teen",
-                "[\"/uploads/images/b.png\",\"/uploads/images/a.jpg\"]",
-                "[\"/uploads/images/b.png\",\"/uploads/images/a.jpg\"]");
+                existing.getImagesJson(),
+                existing.getImagesJson(),
+                1);
 
         ArgumentCaptor<Archive> saved = ArgumentCaptor.forClass(Archive.class);
         verify(archiveRepository).save(saved.capture());
         SavedMeta file = saved.getValue().getFile();
+        assertThat(saved.getValue().getImagesJson()).isEqualTo("[\"/uploads/images/a.jpg\",\"/uploads/images/b.png\"]");
         assertThat(file.getUrl()).isEqualTo("/uploads/images/b.png");
         assertThat(file.getFileType()).isEqualTo("image/png");
         assertThat(file.getSavedName()).isEqualTo("images/b.png");

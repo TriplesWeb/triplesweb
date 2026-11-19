@@ -10,8 +10,95 @@ const site = fs.readFileSync(path.join(staticRoot, 'css', 'site.css'), 'utf8');
 const siteUi = fs.readFileSync(path.join(staticRoot, 'css', 'site-ui.css'), 'utf8');
 const pickerJs = fs.readFileSync(path.join(staticRoot, 'js', 'member-portrait-picker.js'), 'utf8');
 const manageJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-manage.js'), 'utf8');
+const detailJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-detail.js'), 'utf8');
 
 const jiyeonLogo = '/uploads/images/' + encodeURIComponent('상징로고') + '/S24.png';
+
+/** 운영과 같이 카드에는 수정 버튼이 없고 상세 버튼만 있는 사진 페이지. */
+function photoReorderHtml() {
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:#0d0e12;color:#e3e2e8;font-family:"Pretendard Variable",Pretendard,sans-serif}
+${site}${css}${siteUi}
+</style></head>
+<body class="site-page">
+<main class="archive-page" data-archive-kind="image" data-date-label="사진 날짜">
+  <section class="ar-grid" id="archiveGrid">
+    <article class="ar-panel ar-card" data-id="1" data-title="" data-description="지서연" data-headline="지서연" data-artists="지연" data-url="/portrait.svg" data-images='["/portrait.svg","/poster.svg"]' data-registered="2026-10-25" data-source="COSMO_ROOM" data-source-label="코스모룸">
+      <button type="button" class="ar-photo-link" data-archive-open aria-label="자세히 보기"><img src="/portrait.svg" alt=""></button>
+      <div class="ar-body">
+        <h3>지서연</h3>
+        <div class="ar-card-members" hidden></div>
+      </div>
+    </article>
+  </section>
+</main>
+<div class="ar-dialog" id="archiveDetail" hidden>
+  <div class="ar-dialog-panel">
+    <div class="ar-detail-photo" id="archiveDetailPhoto">
+      <img id="archiveDetailImage" alt="">
+      <button type="button" class="ar-detail-nav" id="archiveDetailPrev" hidden></button>
+      <button type="button" class="ar-detail-nav" id="archiveDetailNext" hidden></button>
+      <div class="ar-detail-dots" id="archiveDetailDots" hidden></div>
+      <p class="ar-detail-count" id="archiveDetailCount" hidden></p>
+    </div>
+    <div class="ar-detail-side">
+      <p class="ar-detail-desc" id="archiveDetailDescription" hidden></p>
+      <div class="ar-detail-meta" id="archiveDetailMeta" hidden>
+        <p class="ar-detail-date" id="archiveDetailDate" hidden>
+          <span data-detail-date-label></span>
+          <time data-detail-date-value></time>
+        </p>
+        <div class="ar-source-badge" id="archiveDetailSource" hidden></div>
+      </div>
+      <section class="ar-detail-cast" hidden>
+        <div class="ar-detail-members" id="archiveDetailMembers"></div>
+      </section>
+      <div class="ar-dialog-foot">
+        <button type="button" class="site-btn" data-archive-edit id="archiveDetailEdit">수정하기</button>
+        <button type="button" class="site-btn" data-archive-delete id="archiveDetailDelete">삭제하기</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="ar-dialog" id="editModal" hidden>
+  <div class="ar-dialog-panel">
+    <form id="archiveEditForm" enctype="multipart/form-data">
+      <label class="ar-field">설명<textarea name="description" rows="3"></textarea></label>
+      <label class="ar-field">사진 날짜<input type="date" name="registeredOn"></label>
+      <label class="ar-field">출처<select name="source"><option value="COSMO_ROOM">코스모룸</option></select></label>
+      <div class="member-portrait-picker" id="archive-edit-picker">
+        <button type="button" class="mpp-item" data-value="지연" data-name="지연" data-frame="24" style="--artist-color:#7bba8d" aria-pressed="false">
+          <span class="artist-tab-avatar"><img class="artist-tab-photo" src="/portrait.svg" alt=""></span>
+          <span class="artist-tab-label">지연</span>
+        </button>
+      </div>
+      <div data-artist-chips></div>
+      <span data-picker-count>0</span>
+      <span class="ar-file">
+        <input type="file" id="archiveEditFile" name="file" accept="image/*" multiple>
+        <label for="archiveEditFile" class="ar-file-pick">파일 선택</label>
+        <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
+      </span>
+      <div class="ar-preview" id="editPreview" hidden>
+        <p class="ar-preview-info" data-preview-file></p>
+        <div class="ar-preview-tools" data-image-edit-tools hidden>
+          <span class="ar-preview-tools-label">사진 편집</span>
+          <button type="button" class="ar-edit-tool" data-image-edit="rotate-cw">cw</button>
+        </div>
+        <p class="ar-preview-error" data-preview-error hidden></p>
+      </div>
+      <button type="submit" class="ar-submit">저장</button>
+    </form>
+  </div>
+</div>
+<script>${pickerJs}</script>
+<script>${detailJs}</script>
+<script>${manageJs}</script>
+</body></html>`;
+}
 
 function pageHtml(kind) {
   const isVideo = kind === 'video';
@@ -291,6 +378,57 @@ async function withPage(html, run) {
     assert.deepEqual(multi.afterNames, ['one.png', 'three.png']);
     assert.ok(multi.afterThumbs.every((src) => src.startsWith('blob:')), '제거 후 썸네일이 깨졌다');
     assert.equal(multi.count, 2);
+  });
+
+  await withPage(photoReorderHtml(), async (page) => {
+    await page.click('[data-archive-open]');
+    await page.click('#archiveDetailEdit');
+    await page.locator('#editPreview:not([hidden])').waitFor();
+
+    const tiles = page.locator('#archiveEditForm [data-file-name] .ar-file-tile');
+    await tiles.nth(0).dragTo(tiles.nth(1));
+    assert.deepEqual(await tiles.locator('img').evaluateAll(images => images.map(img => img.getAttribute('src'))),
+      ['/poster.svg', '/portrait.svg'], '드래그로 사진 순서가 바뀌지 않았다');
+
+    await page.evaluate(() => {
+      window.confirm = () => true;
+      window.refreshArchiveGrid = async () => {
+        const card = document.querySelector('#archiveGrid .ar-card[data-id="1"]');
+        card.dataset.images = JSON.stringify(['/poster.svg', '/portrait.svg']);
+        card.dataset.url = '/poster.svg';
+        // 상세 버튼은 예전 순서를 유지한 채 남긴다(버그 재현 조건).
+        const detailEdit = document.getElementById('archiveDetailEdit');
+        detailEdit.dataset.id = '1';
+        detailEdit.dataset.images = JSON.stringify(['/portrait.svg', '/poster.svg']);
+        detailEdit.dataset.url = '/portrait.svg';
+      };
+    });
+    let savedOrder;
+    await page.route('**/archive/1', async (route) => {
+      if (route.request().method() === 'POST') {
+        savedOrder = route.request().postData();
+        return route.fulfill({ status: 200, body: 'ok' });
+      }
+      return route.fallback();
+    });
+
+    await page.click('#archiveEditForm [type="submit"]');
+    await page.waitForFunction(() => {
+      const tiles = Array.from(document.querySelectorAll('#archiveEditForm [data-file-name] .ar-file-tile img'))
+        .map((img) => img.getAttribute('src') || '');
+      return tiles.length === 2;
+    });
+
+    const after = await page.evaluate(() => ({
+      tiles: Array.from(document.querySelectorAll('#archiveEditForm [data-file-name] .ar-file-tile img'))
+        .map((img) => img.getAttribute('src') || ''),
+      originalImages: document.getElementById('archiveEditForm')?.dataset.originalImages || '',
+      detailImages: document.getElementById('archiveDetailEdit')?.dataset.images || ''
+    }));
+    assert.ok(savedOrder.indexOf('/poster.svg') < savedOrder.indexOf('/portrait.svg'), '저장 요청의 사진 순서가 다르다');
+    assert.deepEqual(after.tiles, ['/poster.svg', '/portrait.svg'], '저장 후 파일 목록 순서가 원래대로 돌아갔다');
+    assert.equal(after.originalImages, JSON.stringify(['/poster.svg', '/portrait.svg']));
+    assert.equal(after.detailImages, JSON.stringify(['/poster.svg', '/portrait.svg']), '상세 수정 버튼 이미지도 동기화되지 않았다');
   });
 
   await withPage(pageHtml('video'), async (page) => {

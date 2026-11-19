@@ -1562,6 +1562,22 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     outline: 2px solid #8bf5dc;
     outline-offset: -2px;
 }
+.ar-file-cover {
+    position: absolute;
+    left: 0.25rem;
+    bottom: 0.25rem;
+    padding: 0.2rem 0.4rem;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 0.3rem;
+    background: #101818;
+    color: #e8f5f0;
+    font-size: 0.68rem;
+    cursor: pointer;
+}
+.ar-file-cover[aria-pressed="true"] {
+    background: #8bf5dc;
+    color: #101818;
+}
 .ar-file-remove {
     position: absolute;
     top: 0.2rem;
