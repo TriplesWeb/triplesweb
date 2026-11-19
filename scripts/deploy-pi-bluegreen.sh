@@ -17,6 +17,17 @@ MIGRATION_FILE="$STATE_DIR/migration-tree"
 NGINX_CONF="$STATE_DIR/active.conf"
 LOCK=/tmp/triplesweb-docker-deploy.lock
 
+# Clean up only the unpromoted candidate on failure; never stop a live upstream.
+CANDIDATE_SLOT=""
+cleanup_failed_candidate() {
+  local result="$?"
+  if (( result != 0 )) && [[ -n "$CANDIDATE_SLOT" ]]; then
+    printf '[bluegreen] Failed candidate cleanup: app_%s\n' "$CANDIDATE_SLOT" >&2
+    "${COMPOSE[@]}" stop -t 10 "app_$CANDIDATE_SLOT" >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup_failed_candidate EXIT
+
 log() { printf '[bluegreen] %s\n' "$*" >&2; }
 fail() { log "ERROR: $*"; exit 1; }
 is_running() {
@@ -173,6 +184,7 @@ stage_candidate() {
   # A failed previous candidate is not allowed to interfere with the active slot.
   "${COMPOSE[@]}" stop "app_$slot" >/dev/null 2>&1 || true
   pull_if_needed "$slot"
+  CANDIDATE_SLOT="$slot"
   "${COMPOSE[@]}" up -d --no-deps "app_$slot"
   wait_candidate "$slot"
 }
@@ -195,6 +207,7 @@ bootstrap_proxy() {
     fail "Initial Nginx cutover failed; legacy restart attempted"
   fi
   remember_success blue
+  CANDIDATE_SLOT=""
   log "First cutover finished. Next deployments will warm the inactive slot."
 }
 
@@ -212,9 +225,13 @@ switch_proxy() {
     cp -f "$previous" "$NGINX_CONF.tmp.$$"
     mv -f "$NGINX_CONF.tmp.$$" "$NGINX_CONF"
     docker exec "$proxy_cid" nginx -s reload || true
-    wait_proxy_slot "$old" || log "CRITICAL: rollback verification failed; do not stop the previous slot!"
+    if ! wait_proxy_slot "$old"; then
+      CANDIDATE_SLOT="" # Upstream state uncertain: preserve both containers.
+      fail "CRITICAL: rollback not verified; both app slots remain running."
+    fi
     fail "Promotion rejected. Old app_$old has not been stopped."
   fi
+  CANDIDATE_SLOT=""
   remember_success "$candidate"
   log "New traffic goes to app_$candidate; draining app_$old for $BG_DRAIN_SECONDS seconds"
   sleep "$BG_DRAIN_SECONDS"
