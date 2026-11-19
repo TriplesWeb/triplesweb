@@ -1654,12 +1654,10 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     opacity: 0.4;
     cursor: wait;
 }
-.ar-edit-tool .material-symbols-outlined {
-    font-size: 1.2rem;
-    line-height: 1;
-}
-.ar-edit-tool .ar-flip-vertical {
-    transform: rotate(90deg);
+.ar-edit-tool .ar-edit-icon {
+    display: block;
+    width: 1.15rem;
+    height: 1.15rem;
 }
 .ar-file-tile.is-active {
     outline: 2px solid #00f5d4;
