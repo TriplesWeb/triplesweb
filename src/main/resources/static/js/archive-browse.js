@@ -262,14 +262,17 @@
         return data.map((entry) => ({
             value: '',
             name: String(entry?.label || '').trim(),
+            href: /^\/triples\/chemistry\?(pair|group)=[1-9]\d*$/.test(entry?.href) ? entry.href : '',
             members: (Array.isArray(entry?.members) ? entry.members : String(entry?.members || '').split(','))
                 .map((name) => String(name).trim()).filter(Boolean)
         })).filter((entry) => entry.name && entry.members.length >= 2);
     }
 
+    const chemistryCatalog = catalogEntries();
+
     function chemEntries() {
         const selected = selectEntries();
-        return selected.length ? selected : catalogEntries();
+        return selected.length ? selected : chemistryCatalog;
     }
 
     function matchingChems(selected) {
@@ -299,19 +302,18 @@
 
     window.paintArchiveChemistry = function (membersEl) {
         if (!membersEl) return;
-        const name = window.archiveChemistryLabel(memberNamesFrom(membersEl));
+        const names = memberNamesFrom(membersEl);
+        const entry = exactChem(names);
         const parent = membersEl.parentElement;
-        let label = parent ? parent.querySelector(':scope > .ar-detail-chem') : null;
-        if (!name) {
-            label?.remove();
-            return;
-        }
-        if (!label && parent) {
-            label = document.createElement('p');
-            label.className = 'ar-detail-chem';
-            membersEl.before(label);
-        }
-        if (label) label.textContent = name;
+        if (!parent) return;
+        parent.querySelector(':scope > .ar-detail-chem')?.remove();
+        if (!entry) return;
+        const href = entry.href || chemistryCatalog.find(item => sameMemberSet(item.members, names))?.href;
+        const label = document.createElement(href ? 'a' : 'span');
+        label.className = 'ar-detail-chem';
+        label.textContent = entry.name;
+        if (href) label.href = href;
+        membersEl.before(label);
     };
 
     function renderChemMatches(selected) {

@@ -19,6 +19,7 @@ import java.util.stream.Stream;
 @Component
 public class ArchiveFolderArt {
     static final String DIR_NAME = "미디어 폴더";
+    private static final String BUNDLED_ART_PATH = "/images/archive/";
     private static final List<String> EXTENSIONS = List.of(".png", ".jpg", ".jpeg", ".webp", ".svg");
 
     private final Path uploadRoot;
@@ -28,6 +29,12 @@ public class ArchiveFolderArt {
     }
 
     public String urlFor(ArchiveFolderClassifier.Kind kind, String key, String label) {
+        if (kind == ArchiveFolderClassifier.Kind.GROUP) {
+            return BUNDLED_ART_PATH + "member-folders/9.png";
+        }
+        if (kind == ArchiveFolderClassifier.Kind.SOLO && key != null && key.matches("s(?:[1-9]|1[0-9]|2[0-4])")) {
+            return BUNDLED_ART_PATH + "member-folders/" + key.substring(1) + ".png";
+        }
         Path dir = uploadRoot.resolve(DIR_NAME);
         if (!Files.isDirectory(dir)) return "";
         for (String name : names(kind, key, label)) {
@@ -35,6 +42,14 @@ public class ArchiveFolderArt {
             if (!found.isBlank()) return publicUrl(found);
         }
         return "";
+    }
+
+    public String dimensionUrl() {
+        return BUNDLED_ART_PATH + "dimension.png";
+    }
+
+    public boolean isBundled(String url) {
+        return url.startsWith(BUNDLED_ART_PATH);
     }
 
     static List<String> names(ArchiveFolderClassifier.Kind kind, String key, String label) {

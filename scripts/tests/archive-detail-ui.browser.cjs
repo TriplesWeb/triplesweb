@@ -89,7 +89,7 @@ ${site}${css}${siteUi}
     </article>
   </section>
 </main>
-<script type="application/json" id="archiveChemistryNames">[{"members":["마유","주빈"],"label":"심장마빈즈"},{"members":["마유","주빈","지연"],"label":"셋"},{"members":["윤서연","정혜린"],"label":""}]</script>
+<script type="application/json" id="archiveChemistryNames">[{"members":["마유","주빈"],"label":"심장마빈즈","href":"/triples/chemistry?pair=3"},{"members":["마유","주빈","지연"],"label":"셋","href":"/triples/chemistry?group=9"},{"members":["윤서연","정혜린"],"label":""}]</script>
 <div class="ar-dialog" id="archiveDetail" hidden>
   <button type="button" class="ar-dialog-backdrop" data-ar-close aria-label="닫기"></button>
   <div class="ar-dialog-panel ar-detail-panel" role="dialog">
@@ -354,6 +354,7 @@ ${site}${css}${siteUi}
       };
     });
     assert.equal(pair.text, '심장마빈즈');
+    assert.equal(await page.getByRole('link', { name: '심장마빈즈' }).getAttribute('href'), '/triples/chemistry?pair=3');
     assert.deepEqual(pair.chips, ['마유', '주빈']);
     assert.equal(pair.above, true, '케미명이 초상화 위에 없다');
     assert.ok(pair.fontSize > 0 && pair.fontSize <= 14, '케미명 글자가 크다: ' + pair.fontSize);

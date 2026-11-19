@@ -54,21 +54,19 @@ import static org.hamcrest.Matchers.not;
 
 @WebMvcTest(ArchiveController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import(MustacheConfig.class)
+@Import({MustacheConfig.class, ArchiveFolderArt.class})
 class ArchiveControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean ArchiveService archiveService;
     @MockitoBean AboutAdminAuth aboutAdminAuth;
     @MockitoBean ArtistRepository artistRepository;
     @MockitoBean UnitService unitService;
-    @MockitoBean ArchiveFolderArt archiveFolderArt;
     @MockitoBean ChemistryService chemistryService;
     @MockitoBean ChemistryGroupService chemistryGroupService;
 
     @BeforeEach void stubs() {
         lenient().when(unitService.listVisible()).thenReturn(List.of());
         lenient().when(archiveService.index()).thenReturn(List.of());
-        lenient().when(archiveFolderArt.urlFor(any(), any(), any())).thenReturn("");
         lenient().when(chemistryService.findAll()).thenReturn(List.of());
         lenient().when(chemistryGroupService.findAll()).thenReturn(List.of());
     }
@@ -81,15 +79,15 @@ class ArchiveControllerTest {
     }
 
     @Test void folderHomeListsGroupUnitAndSoloFolders() throws Exception {
-        mvc.perform(get("/archive")).andExpect(status().isOk())
+        String html = mvc.perform(get("/archive")).andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("폴더를 선택하세요"))))
                 .andExpect(content().string(containsString("ar-folder")))
                 .andExpect(content().string(containsString("S1 윤서연")))
                 .andExpect(content().string(containsString("S24 지연")))
                 .andExpect(content().string(containsString("ar-folder is-group")))
-                .andExpect(content().string(containsString("ar-folder-label\">전체 멤버</span>")))
+                .andExpect(content().string(containsString("ar-folder-label\">tripleS</span>")))
                 .andExpect(content().string(containsString("ar-folder is-parent")))
-                .andExpect(content().string(containsString("ar-folder-label\">유닛별</span>")))
+                .andExpect(content().string(containsString("ar-folder-label\">디멘션</span>")))
                 .andExpect(content().string(not(containsString("ar-folder-label\">케미</span>"))))
                 .andExpect(content().string(containsString("folder&#x3D;units")))
                 .andExpect(content().string(not(containsString("folder&#x3D;combos"))))
@@ -99,14 +97,22 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("/archive?folder")))
                 .andExpect(content().string(not(containsString("id=\"archiveGrid\""))))
                 .andExpect(content().string(not(containsString("site-section-tabs"))))
-                .andExpect(content().string(containsString("ar-folder-shape")))
                 .andExpect(content().string(containsString("ar-folder is-solo")))
                 .andExpect(content().string(not(containsString("ar-folder-label\">2명 케미</span>"))))
                 .andExpect(content().string(not(containsString("ar-folder-label\">3명 케미</span>"))))
                 .andExpect(content().string(not(containsString("ar-folder-label\">5명 이상</span>"))))
                 .andExpect(content().string(containsString("ar-home-upload")))
                 .andExpect(content().string(containsString("사진 추가")))
-                .andExpect(content().string(containsString("id=\"uploadModal\"")));
+                .andExpect(content().string(containsString("id=\"uploadModal\"")))
+                .andReturn().getResponse().getContentAsString();
+        var images = java.util.regex.Pattern.compile("is-bundled-art\" src=\"([^\"]+)").matcher(html)
+                .results().map(match -> match.group(1)).toList();
+        org.assertj.core.api.Assertions.assertThat(images).hasSize(26);
+        org.assertj.core.api.Assertions.assertThat(images.get(0)).endsWith("/member-folders/9.png");
+        org.assertj.core.api.Assertions.assertThat(images.get(1)).endsWith("/dimension.png");
+        for (int number = 1; number <= 24; number++) {
+            org.assertj.core.api.Assertions.assertThat(images.get(number + 1)).endsWith("/member-folders/" + number + ".png");
+        }
     }
 
     @Test void folderHomeGroupsNonUnitChemistryByMemberCount() throws Exception {
@@ -127,7 +133,7 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-label\">케미</span>");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;combos");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-label\">2명 케미</span>");
-        int group = html.indexOf("ar-folder-label\">전체 멤버</span>");
+        int group = html.indexOf("ar-folder-label\">tripleS</span>");
         int groupEnd = html.indexOf("</a>", group);
         org.assertj.core.api.Assertions.assertThat(html.substring(group, groupEnd)).contains("ar-folder-count\">4</span>");
         org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">S1 윤서연</span>");
@@ -174,7 +180,7 @@ class ArchiveControllerTest {
         when(unitService.listVisible()).thenReturn(List.of(aura));
         String home = mvc.perform(get("/archive")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        org.assertj.core.api.Assertions.assertThat(home).contains("ar-folder-label\">유닛별</span>");
+        org.assertj.core.api.Assertions.assertThat(home).contains("ar-folder-label\">디멘션</span>");
         org.assertj.core.api.Assertions.assertThat(home).doesNotContain("folder&#x3D;unit-17");
         org.assertj.core.api.Assertions.assertThat(home).doesNotContain("Aura");
 
@@ -254,6 +260,7 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).contains("id=\"archiveChemistryNames\"");
         org.assertj.core.api.Assertions.assertThat(html).contains("심장 · 마빈즈");
         org.assertj.core.api.Assertions.assertThat(html).contains("A\\u003cb>셋");
+        org.assertj.core.api.Assertions.assertThat(html).contains("/triples/chemistry?pair=3", "/triples/chemistry?group=9");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("다른이름");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("윤서연");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("id=\"archiveChem\"");
@@ -558,7 +565,7 @@ class ArchiveControllerTest {
         video.setFile(SavedMeta.builder().url("/uploads/a.mp4").mediaType(MediaType.VIDEO).build());
         stubFolder(MediaType.VIDEO, video);
 
-        mvc.perform(get("/archive").param("type", "video").param("folder", "s")).andExpect(status().isOk())
+        String html = mvc.perform(get("/archive").param("type", "video").param("folder", "s")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("data-poster=\"/uploads/poster.webp\"")))
                 .andExpect(content().string(containsString("src=\"/uploads/poster.webp\"")))
                 .andExpect(content().string(containsString("data-archive-video")))
@@ -574,7 +581,13 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("archive-upload-picker")))
                 .andExpect(content().string(containsString("id=\"editModal\" hidden")))
                 .andExpect(content().string(containsString("목록에서 보이는 모습")))
-                .andExpect(content().string(containsString("data-url=\"/uploads/a.mp4\"")));
+                .andExpect(content().string(containsString("data-url=\"/uploads/a.mp4\"")))
+                .andReturn().getResponse().getContentAsString();
+        int gridStart = html.indexOf("id=\"archiveGrid\"");
+        org.assertj.core.api.Assertions.assertThat(html.substring(gridStart, html.indexOf("</section>", gridStart)))
+                .doesNotContain("data-archive-edit", "data-archive-delete");
+        org.assertj.core.api.Assertions.assertThat(html.substring(html.indexOf("id=\"archiveVideoPlayer\"")))
+                .contains("data-archive-edit", "data-archive-delete");
     }
 
     @Test void adminCanUpdateAndDelete() throws Exception {
