@@ -12,6 +12,28 @@
         return window.AboutAdminAuth ? AboutAdminAuth.applyAuthHeaders(headerMap) : headerMap;
     }
 
+    /** HTTPS 프록시 뒤에서 302 Location 이 http 로 와도 같은 경로로 안전하게 이동한다. */
+    function navigateAfterUpload(locationHeader) {
+        if (!locationHeader) {
+            location.reload();
+            return;
+        }
+        try {
+            const url = new URL(locationHeader, window.location.href);
+            window.location.assign(url.pathname + url.search + url.hash);
+        } catch (_) {
+            if (locationHeader.startsWith("/")) window.location.assign(locationHeader);
+            else location.reload();
+        }
+    }
+
+    function uploadSucceeded(response) {
+        return response.ok
+            || response.type === "opaqueredirect"
+            || response.status === 0
+            || (response.status >= 300 && response.status < 400);
+    }
+
     function openDialog(dialog) {
         if (!dialog) return;
         dialogTriggers.set(dialog, document.activeElement);
@@ -536,10 +558,15 @@
         if (button) button.disabled = true;
         try {
             const response = await fetch(uploadForm.dataset.uploadUrl || "/archive/upload", {
-                method: "POST", body, headers: authHeaders(), credentials: "same-origin"
+                method: "POST",
+                body,
+                headers: authHeaders(),
+                credentials: "same-origin",
+                // 프록시 뒤 절대 http Location 을 fetch 가 따라가면 Mixed Content 로 실패한다.
+                redirect: "manual"
             });
-            if (response.ok) {
-                location.reload();
+            if (uploadSucceeded(response)) {
+                navigateAfterUpload(response.headers.get("Location"));
                 return;
             }
             const message = (await response.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
