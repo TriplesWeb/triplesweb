@@ -397,8 +397,8 @@ ${site}${css}${siteUi}
     assert.ok(form.edit.calWidth < form.edit.panelWidth * 0.55, '날짜 칸이 폼 너비에 붙어 있다: ' + JSON.stringify(form.edit));
     assert.equal(form.edit.openAfterDay, true, '달력 버튼이 날짜 뒤에 없다');
     assert.equal(form.edit.openInside, true, '달력 버튼이 날짜 칸 밖에 있다');
-    assert.ok(form.selectNarrower, '출처 셀렉트가 여전히 가득 차 있다');
-    assert.ok(form.selectGap >= 24, '출처 셀렉트 오른쪽 여백이 없다: ' + form.selectGap);
+    assert.equal(form.selectNarrower, false, '출처 셀렉트가 가로 전체를 쓰지 않는다');
+    assert.ok(form.selectGap < 24, '출처 셀렉트 오른쪽 여백이 남는다: ' + form.selectGap);
     assert.ok(form.selectHeight >= 34 && form.selectHeight <= 40, '출처 칸 높이가 맞지 않다: ' + form.selectHeight);
     await page.evaluate(() => { document.getElementById('uploadModal').hidden = false; document.getElementById('editModal').hidden = true; });
     const uploadDate = await page.evaluate(() => {
