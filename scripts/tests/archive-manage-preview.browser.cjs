@@ -176,70 +176,45 @@ async function withPage(html, run) {
     });
 
     await page.click('[data-archive-edit]');
-    await page.locator('#editPreview .ar-preview-photo-card').waitFor();
+    await page.locator('#editPreview:not([hidden])').waitFor();
 
     const preview = await page.evaluate(() => {
-      const card = document.querySelector('#editPreview .ar-preview-card');
-      const article = card.querySelector('.ar-preview-photo-card');
-      const photo = article.querySelector('.ar-photo-link > img');
-      const title = article.querySelector('[data-preview-title]');
-      const chip = article.querySelector('.archive-member-chip');
-      const name = chip?.querySelector('.archive-chip-name');
-      const date = article.querySelector('.ar-card-date');
-      const badge = article.querySelector('.ar-badge');
-      const photoStyle = photo ? getComputedStyle(photo) : {};
-      const chipImg = chip?.querySelector('img');
-      const chipBox = chipImg?.getBoundingClientRect();
+      const box = document.getElementById('editPreview');
       const keptTiles = Array.from(document.querySelectorAll('#archiveEditForm [data-file-name] .ar-file-tile img'))
         .map((img) => img.getAttribute('src') || '');
+      const tools = box?.querySelector('[data-image-edit-tools]');
       return {
-        hidden: document.getElementById('editPreview').hidden,
-        title: title?.textContent || '',
-        chipName: name?.textContent || '',
-        chipLabel: chip?.getAttribute('aria-label') || '',
-        symbol: chip?.classList.contains('archive-symbol-chip') || false,
-        logo: chipImg?.getAttribute('src') || '',
-        date: date?.textContent || '',
-        datetime: date?.getAttribute('datetime') || '',
-        badges: article.querySelectorAll('.ar-badge').length,
-        photoFit: photoStyle.objectFit,
-        photoHeight: photoStyle.height,
-        chipHeight: chipBox ? chipBox.height : 0,
-        stacked: card.classList.contains('is-photo-preview'),
-        bodyText: article.querySelector('.ar-body')?.innerText.replace(/\s+/g, ' ').trim() || '',
+        hidden: box?.hidden ?? true,
+        hasCardPreview: Boolean(box?.querySelector('.ar-preview-card, .ar-preview-full, .ar-preview-photo-card')),
+        toolsVisible: tools ? !tools.hidden : false,
         keptTiles,
-        previewSrc: photo?.getAttribute('src') || ''
+        description: document.querySelector('#archiveEditForm [name="description"]')?.value || '',
+        registeredOn: document.querySelector('#archiveEditForm [name="registeredOn"]')?.value || ''
       };
     });
 
     assert.equal(preview.hidden, false, '수정 미리보기가 열리지 않는다');
-    assert.equal(preview.title, '지서연');
-    assert.equal(preview.chipName, '지연');
-    assert.equal(preview.chipLabel, '지연');
-    assert.equal(preview.symbol, true, '목록 미리보기가 상징로고 칩이 아니다');
-    assert.match(preview.logo, /S24\.png/);
-    assert.equal(preview.date, '2026/10/25');
-    assert.equal(preview.datetime, '2026-10-25');
-    assert.equal(preview.badges, 0, '예전 ar-badge가 남아 있다');
-    assert.equal(preview.photoFit, 'contain');
-    assert.notEqual(preview.photoHeight, '9.5rem');
-    assert.ok(preview.chipHeight > 0 && preview.chipHeight <= 40, '미리보기 칩이 큰 사진 규칙을 따른다: ' + preview.chipHeight);
-    assert.equal(preview.stacked, true);
+    assert.equal(preview.hasCardPreview, false, '사진 수정에 목록 카드 미리보기가 남아 있다');
+    assert.equal(preview.toolsVisible, true, '기존 사진 편집 툴이 없다');
     assert.deepEqual(preview.keptTiles, ['/portrait.svg', '/poster.svg'], '수정 모달에 기존 사진 타일이 없다');
-    assert.equal(preview.previewSrc, '/portrait.svg');
+    assert.equal(preview.description, '지서연');
+    assert.equal(preview.registeredOn, '2026-10-25');
 
-    await page.locator('#editPreview .ar-preview-photo-card').screenshot({
-      path: path.join(artifactDir, 'archive-edit-preview-photo-card.png')
+    await page.locator('#editPreview').screenshot({
+      path: path.join(artifactDir, 'archive-edit-preview-photo-tools.png')
     });
 
     await page.fill('#archiveEditForm [name="description"]', '지서연 수정');
     await page.fill('#archiveEditForm [name="registeredOn"]', '2026-11-16');
     const updated = await page.evaluate(() => ({
-      title: document.querySelector('#editPreview [data-preview-title]').textContent,
-      date: document.querySelector('#editPreview .ar-card-date').textContent
+      description: document.querySelector('#archiveEditForm [name="description"]')?.value || '',
+      registeredOn: document.querySelector('#archiveEditForm [name="registeredOn"]')?.value || '',
+      keptTiles: Array.from(document.querySelectorAll('#archiveEditForm [data-file-name] .ar-file-tile img'))
+        .map((img) => img.getAttribute('src') || '')
     }));
-    assert.equal(updated.title, '지서연 수정');
-    assert.equal(updated.date, '2026/11/16');
+    assert.equal(updated.description, '지서연 수정');
+    assert.equal(updated.registeredOn, '2026-11-16');
+    assert.deepEqual(updated.keptTiles, ['/portrait.svg', '/poster.svg']);
 
     await page.evaluate(() => {
       document.getElementById('editModal').hidden = true;
