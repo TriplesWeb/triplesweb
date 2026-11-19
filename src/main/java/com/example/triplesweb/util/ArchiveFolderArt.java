@@ -14,7 +14,7 @@ import java.util.Locale;
 import java.util.stream.Stream;
 
 /**
- * {@code uploads/미디어 폴더}에 있는 폴더 그림을 아카이브 홈 아이콘으로 쓴다.
+ * 업로드한 폴더 그림을 우선 표시하고 기본 그림이 있는 폴더는 내장 이미지를 사용한다.
  */
 @Component
 public class ArchiveFolderArt {
@@ -29,17 +29,18 @@ public class ArchiveFolderArt {
     }
 
     public String urlFor(ArchiveFolderClassifier.Kind kind, String key, String label) {
+        Path dir = uploadRoot.resolve(DIR_NAME);
+        if (Files.isDirectory(dir)) {
+            for (String name : names(kind, key, label)) {
+                String found = firstFile(dir, name);
+                if (!found.isBlank()) return publicUrl(found);
+            }
+        }
         if (kind == ArchiveFolderClassifier.Kind.GROUP) {
             return BUNDLED_ART_PATH + "member-folders/9.png";
         }
         if (kind == ArchiveFolderClassifier.Kind.SOLO && key != null && key.matches("s(?:[1-9]|1[0-9]|2[0-4])")) {
             return BUNDLED_ART_PATH + "member-folders/" + key.substring(1) + ".png";
-        }
-        Path dir = uploadRoot.resolve(DIR_NAME);
-        if (!Files.isDirectory(dir)) return "";
-        for (String name : names(kind, key, label)) {
-            String found = firstFile(dir, name);
-            if (!found.isBlank()) return publicUrl(found);
         }
         return "";
     }
