@@ -21,4 +21,4 @@ alwaysApply: true
 - **미리보기는 Pi 개발 서버**다. PR open/동기화 시 Actions가 `/opt/stacks/triplesweb-dev`(8091)에 반영한다.
   1. 로컬 `bootRun` 8081·Funnel을 열지 않는다.
   2. `Deploy PR to Pi (dev)` 성공 후 개발 URL을 **PR 링크 다음에** 전달한다 (`PI_DEV_PUBLIC_URL` 또는 `http://<PI_HOST>:8091/main`).
-  3. **운영** Pi(`/opt/stacks/triplesweb`)는 재배포하지 않는다. 운영은 새벽 4시(KST) 스케줄(또는 수동)만 반영한다.
+  3. **운영** Pi(`/opt/stacks/triplesweb`)는 기본적으로 재배포하지 않는다. 새벽 4시(KST)·수동, 또는 PR 코멘트 **`즉시 배포`** 후 머지 시에만 반영한다.
