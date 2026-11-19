@@ -14,23 +14,32 @@
     const dots = document.getElementById('archiveDetailDots');
     const count = document.getElementById('archiveDetailCount');
     const maxDots = 12;
+    let activeCard = null;
+    let urls = [];
     let index = 0;
     let swipeX = null;
     let swipeY = null;
 
-    function cards() {
-        return [...document.querySelectorAll('#archiveGrid .ar-card:not(.ar-off)')]
-            .filter(card => card.querySelector('[data-archive-open]'));
+    function parseImages(card) {
+        if (!card) return [];
+        const raw = (card.dataset.images || '').trim();
+        if (raw) {
+            try {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    return parsed.map(url => String(url || '').trim()).filter(Boolean);
+                }
+            } catch (_) {
+                /* fall through */
+            }
+        }
+        const single = (card.dataset.url || '').trim();
+        return single ? [single] : [];
     }
 
-    function fill(card) {
+    function fillMeta(card) {
         if (!card) return;
-        const url = card.dataset.url || '';
         const headline = card.dataset.headline || card.dataset.description || card.dataset.title || '사진';
-        if (image) {
-            image.src = url;
-            image.alt = headline;
-        }
         if (title) title.textContent = headline;
         if (date) {
             date.hidden = !card.dataset.registered;
@@ -50,39 +59,48 @@
             members.dataset.memberCount = String(members.querySelectorAll('.unit-member-chip').length);
             window.paintArchiveChemistry?.(members);
         }
+        const cover = urls[0] || card.dataset.url || '';
         [edit, remove].forEach(button => {
             if (!button) return;
             button.dataset.id = card.dataset.id || '';
             button.dataset.title = card.dataset.title || '';
             button.dataset.description = card.dataset.description || '';
             button.dataset.artists = card.dataset.artists || '';
-            button.dataset.url = url;
+            button.dataset.url = cover;
+            button.dataset.images = card.dataset.images || '';
             button.dataset.registered = card.dataset.registered || '';
             button.dataset.source = card.dataset.source || '';
         });
     }
 
+    function showImage() {
+        if (!image || !activeCard) return;
+        const url = urls[index] || '';
+        const headline = activeCard.dataset.headline || activeCard.dataset.description || activeCard.dataset.title || '사진';
+        image.src = url;
+        image.alt = headline;
+    }
+
     function paintNav() {
-        const list = cards();
-        const multi = list.length > 1;
+        const multi = urls.length > 1;
         if (prev) {
             prev.hidden = !multi;
             prev.disabled = index <= 0;
         }
         if (next) {
             next.hidden = !multi;
-            next.disabled = index >= list.length - 1;
+            next.disabled = index >= urls.length - 1;
         }
         if (count) {
             count.hidden = !multi;
-            count.textContent = multi ? (index + 1) + ' / ' + list.length : '';
+            count.textContent = multi ? (index + 1) + ' / ' + urls.length : '';
         }
         if (dots) {
-            const showDots = multi && list.length <= maxDots;
+            const showDots = multi && urls.length <= maxDots;
             dots.hidden = !showDots;
             dots.replaceChildren();
             if (showDots) {
-                list.forEach((_, i) => {
+                urls.forEach((_, i) => {
                     const dot = document.createElement('button');
                     dot.type = 'button';
                     dot.className = 'ar-detail-dot' + (i === index ? ' is-active' : '');
@@ -97,18 +115,18 @@
     }
 
     function goTo(nextIndex) {
-        const list = cards();
-        if (!list.length) return;
-        index = Math.max(0, Math.min(list.length - 1, nextIndex));
-        fill(list[index]);
+        if (!urls.length) return;
+        index = Math.max(0, Math.min(urls.length - 1, nextIndex));
+        showImage();
         paintNav();
     }
 
     function open(card) {
-        const list = cards();
-        index = Math.max(0, list.indexOf(card));
-        if (index < 0) index = 0;
-        fill(list[index] || card);
+        activeCard = card;
+        urls = parseImages(card);
+        index = 0;
+        fillMeta(card);
+        showImage();
         paintNav();
         detail.hidden = false;
         document.body.style.overflow = 'hidden';

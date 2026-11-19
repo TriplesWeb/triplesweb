@@ -39,6 +39,10 @@ public class Archive {
     @Column(length = 32)
     private ArchiveSource source;
 
+    /** 이미지 URL JSON 배열. 표지(첫 장)는 {@link #file}과 동기화. */
+    @Column(name = "images_json", columnDefinition = "TEXT")
+    private String imagesJson;
+
     @Embedded
     private SavedMeta file;
 

@@ -677,7 +677,7 @@
             return;
         }
         const confirmMessage = kind === "image" && files.length > 1
-            ? "사진 " + files.length + "장을 추가하시겠습니까?"
+            ? "사진 " + files.length + "장을 한 게시글로 추가하시겠습니까?"
             : "이 " + noun + "을 추가하시겠습니까?";
         if (!window.confirm(confirmMessage)) return;
         if (!validThumbnail(uploadForm)) return;
@@ -754,7 +754,12 @@
         applyArtists(editDialog, button.dataset.artists || "");
         const sourceSelect = editForm.querySelector("[name='source']");
         if (sourceSelect) sourceSelect.value = button.dataset.source || "";
-        if (editFile) releaseUrl(editFile._archiveLastFile);
+        if (editFile) {
+            releaseUrl(editFile._archiveLastFile);
+            (editFile._archiveLastFiles || []).forEach(releaseUrl);
+            editFile._archiveLastFile = null;
+            editFile._archiveLastFiles = null;
+        }
         showPreview(editPreview, button.dataset.url || "");
         window.bindArchiveDateFields?.(editForm);
         editForm.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName);
@@ -762,26 +767,28 @@
     }
 
     editFile?.addEventListener("change", () => {
-        const file = editFile.files && editFile.files[0];
-        if (editFile._archiveLastFile && editFile._archiveLastFile !== file) {
-            releaseUrl(editFile._archiveLastFile);
-        }
-        editFile._archiveLastFile = file || null;
-        if (!file) {
+        const files = Array.from(editFile.files || []);
+        releaseUnusedFiles(editFile._archiveLastFiles, files);
+        editFile._archiveLastFile = files[0] || null;
+        editFile._archiveLastFiles = files;
+        if (!files.length) {
             showPreview(editPreview, editForm.dataset.originalUrl || '');
             syncFileName(editFile);
             return;
         }
-        if (!acceptedFile(file)) {
+        const invalid = files.find(file => !acceptedFile(file));
+        if (invalid) {
             alert(kind === "video" ? "동영상 파일만 선택할 수 있습니다." : "이미지 파일만 선택할 수 있습니다.");
-            releaseUrl(file);
+            files.forEach(releaseUrl);
             editFile.value = "";
             editFile._archiveLastFile = null;
+            editFile._archiveLastFiles = null;
             syncFileName(editFile);
             showPreview(editPreview, editForm.dataset.originalUrl || '');
             return;
         }
-        showPreview(editPreview, rememberUrl(file));
+        showPreview(editPreview, rememberUrl(files[0]));
+        files.slice(1).forEach(rememberUrl);
         syncFileName(editFile);
     });
 
@@ -833,13 +840,16 @@
             alert("수정할 자료를 찾지 못했습니다.");
             return;
         }
-        const replacing = Boolean(editFile?.files?.[0]);
+        const replaceFiles = Array.from(editFile?.files || []);
+        const replacing = replaceFiles.length > 0;
         if (replacing && (editPreview?.dataset.invalid || editPreview?.dataset.pending)) {
             alert('사진을 읽지 못했습니다. 다른 이미지 파일을 선택해 주세요.');
             return;
         }
         const message = replacing
-            ? "이 " + noun + "을 수정하시겠습니까? 선택한 파일로 기존 미디어가 바뀝니다."
+            ? (kind === "image" && replaceFiles.length > 1
+                ? "이 게시글 사진을 " + replaceFiles.length + "장으로 통째로 교체할까요?"
+                : "이 " + noun + "을 수정하시겠습니까? 선택한 파일로 기존 미디어가 바뀝니다.")
             : "이 " + noun + "을 수정하시겠습니까?";
         if (!window.confirm(message)) return;
         if (!validThumbnail(editForm)) return;
@@ -850,7 +860,7 @@
         body.set("artistNames", selectedArtists(editDialog).join(","));
         const source = editForm.querySelector("[name='source']")?.value || "";
         if (source) body.set("source", source);
-        if (replacing) body.set("file", editFile.files[0]);
+        if (replacing) replaceFiles.forEach(file => body.append("file", file));
         const thumbnail = editForm.querySelector('[name="thumbnail"]')?.files?.[0];
         if (thumbnail) body.set('thumbnail', thumbnail);
         const clearThumbnail = editForm.querySelector('[name="clearThumbnail"]');

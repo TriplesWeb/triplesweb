@@ -54,7 +54,7 @@ ${site}${css}${siteUi}
     </div>
   </section>
   <section class="ar-grid" id="archiveGrid">
-    <article class="ar-panel ar-card" data-id="7" data-title="지연" data-artists="지연" data-registered="2026-11-16" data-url="/portrait.svg" data-source="COSMO_ROOM" data-source-label="코스모룸">
+    <article class="ar-panel ar-card" data-id="7" data-title="지연" data-artists="지연" data-registered="2026-11-16" data-url="/portrait.svg" data-images='["/portrait.svg"]' data-source="COSMO_ROOM" data-source-label="코스모룸">
       <button type="button" class="ar-photo-link" data-archive-open><img src="/portrait.svg" alt=""></button>
       <div class="ar-body">
         <h3>지연</h3>
@@ -67,12 +67,23 @@ ${site}${css}${siteUi}
         </div>
       </div>
     </article>
-    <article class="ar-panel ar-card" id="pair-card" data-id="2" data-title="마유 주빈" data-artists="마유,주빈" data-registered="2026-11-05" data-url="/portrait.svg" data-source="COSMO_ROOM" data-source-label="코스모룸">
+    <article class="ar-panel ar-card" id="pair-card" data-id="2" data-title="마유 주빈" data-artists="마유,주빈" data-registered="2026-11-05" data-url="/portrait.svg" data-images='["/portrait.svg"]' data-source="COSMO_ROOM" data-source-label="코스모룸">
       <button type="button" class="ar-photo-link" data-archive-open><img src="/portrait.svg" alt=""></button>
       <div class="ar-body"><h3>마유 주빈</h3>
         <div class="ar-card-members" hidden>
           <a class="unit-member-chip" style="--member-color:#f0a"><img src="/portrait.svg" alt=""><span>마유</span></a>
           <a class="unit-member-chip" style="--member-color:#7bba8d"><img src="/portrait.svg" alt=""><span>주빈</span></a>
+        </div>
+      </div>
+    </article>
+    <article class="ar-panel ar-card" id="album-card" data-id="9" data-title="묶음" data-headline="묶음" data-artists="지연" data-registered="2026-11-18" data-url="/one.svg" data-images='["/one.svg","/two.svg","/three.svg"]' data-source="COSMO_ROOM" data-source-label="코스모룸">
+      <button type="button" class="ar-photo-link" data-archive-open>
+        <img src="/one.svg" alt="">
+        <span class="ar-card-count" aria-label="3장">3</span>
+      </button>
+      <div class="ar-body"><h3>묶음</h3>
+        <div class="ar-card-members" hidden>
+          <a class="unit-member-chip" style="--member-color:#7bba8d"><img src="/portrait.svg" alt=""><span>지연</span></a>
         </div>
       </div>
     </article>
@@ -268,28 +279,46 @@ ${site}${css}${siteUi}
     assert.ok(detail.radius.includes('999') || parseFloat(detail.radius) >= 12, '출처가 버튼처럼 보이지 않는다: ' + detail.radius);
     assert.equal(await page.locator('#archiveDetail .ar-detail-chem').count(), 0, '케미명이 없는 멤버에도 케미 라벨이 있다');
     assert.equal(detail.title, '지연');
-    assert.equal(detail.count, '1 / 2');
-    assert.equal(detail.countHidden, false);
-    assert.equal(detail.prevHidden, false);
-    assert.equal(detail.nextHidden, false);
-    assert.equal(detail.dots, 2);
-    await page.click('#archiveDetailNext');
-    const slid = await page.evaluate(() => ({
-      title: document.getElementById('archiveDetailTitle').textContent.trim(),
-      count: document.getElementById('archiveDetailCount').textContent.trim(),
-      chem: document.querySelector('#archiveDetail .ar-detail-chem')?.textContent.trim() || ''
-    }));
-    assert.equal(slid.title, '마유 주빈');
-    assert.equal(slid.count, '2 / 2');
-    assert.equal(slid.chem, '심장마빈즈');
-    await page.keyboard.press('ArrowLeft');
-    assert.equal(await page.locator('#archiveDetailTitle').innerText(), '지연');
+    assert.equal(detail.count, '');
+    assert.equal(detail.countHidden, true);
+    assert.equal(detail.prevHidden, true);
+    assert.equal(detail.nextHidden, true);
+    assert.equal(detail.dots, 0);
     const detailBox = await page.locator('#archiveDetail .ar-detail-side').boundingBox();
     await page.screenshot({
       path: path.join(artifactDir, 'archive-detail-source-badge.png'),
       clip: { x: Math.max(0, detailBox.x - 8), y: Math.max(0, detailBox.y - 8), width: detailBox.width + 16, height: Math.min(360, detailBox.height + 16) }
     });
 
+    await page.evaluate(() => { document.getElementById('archiveDetail').hidden = true; });
+    await page.click('#album-card [data-archive-open]');
+    const album = await page.evaluate(() => ({
+      title: document.getElementById('archiveDetailTitle').textContent.trim(),
+      count: document.getElementById('archiveDetailCount').textContent.trim(),
+      countHidden: document.getElementById('archiveDetailCount').hidden,
+      prevHidden: document.getElementById('archiveDetailPrev').hidden,
+      nextHidden: document.getElementById('archiveDetailNext').hidden,
+      dots: document.querySelectorAll('#archiveDetailDots .ar-detail-dot').length,
+      src: document.getElementById('archiveDetailImage').getAttribute('src') || ''
+    }));
+    assert.equal(album.title, '묶음');
+    assert.equal(album.count, '1 / 3');
+    assert.equal(album.countHidden, false);
+    assert.equal(album.prevHidden, false);
+    assert.equal(album.nextHidden, false);
+    assert.equal(album.dots, 3);
+    assert.equal(album.src, '/one.svg');
+    await page.click('#archiveDetailNext');
+    const slid = await page.evaluate(() => ({
+      title: document.getElementById('archiveDetailTitle').textContent.trim(),
+      count: document.getElementById('archiveDetailCount').textContent.trim(),
+      src: document.getElementById('archiveDetailImage').getAttribute('src') || ''
+    }));
+    assert.equal(slid.title, '묶음');
+    assert.equal(slid.count, '2 / 3');
+    assert.equal(slid.src, '/two.svg');
+    await page.keyboard.press('ArrowLeft');
+    assert.equal(await page.locator('#archiveDetailImage').getAttribute('src'), '/one.svg');
     await page.evaluate(() => { document.getElementById('archiveDetail').hidden = true; });
     await page.click('#pair-card [data-archive-open]');
     const pair = await page.evaluate(() => {

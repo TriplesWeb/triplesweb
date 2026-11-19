@@ -16,8 +16,10 @@ import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.util.ArchiveFolderArt;
 import com.example.triplesweb.util.ArchiveFolderClassifier;
+import com.example.triplesweb.util.ArchiveImages;
 import com.example.triplesweb.util.ImageUrls;
 import com.example.triplesweb.util.MemberPortraitOptions;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -54,6 +56,7 @@ public class ArchiveController {
     private final ArchiveFolderArt archiveFolderArt;
     private final ChemistryService chemistryService;
     private final ChemistryGroupService chemistryGroupService;
+    private final ObjectMapper objectMapper;
 
     @GetMapping
     public String showArchive(@RequestParam(defaultValue = "image") String type,
@@ -438,7 +441,7 @@ public class ArchiveController {
         return query.toString();
     }
 
-    private static List<Map<String, Object>> archiveCards(Page<Archive> archives, List<Artist> artists) {
+    private List<Map<String, Object>> archiveCards(Page<Archive> archives, List<Artist> artists) {
         Map<String, String> colors = new LinkedHashMap<>();
         for (Artist artist : artists) {
             String color = artist.getColor();
@@ -485,6 +488,17 @@ public class ArchiveController {
             card.put("artistNames", archive.getArtistNames());
             card.put("memberOrder", MemberPortraitOptions.earliestMemberIndex(archive.getArtistNames()));
             card.put("file", archive.getFile());
+            List<String> imageUrls = archive.getType() == MediaType.IMAGE
+                    ? ArchiveImages.resolve(archive, objectMapper)
+                    : List.of();
+            if (imageUrls.isEmpty() && archive.getFile() != null && archive.getFile().getUrl() != null) {
+                imageUrls = List.of(archive.getFile().getUrl());
+            }
+            String imagesJson = ArchiveImages.write(imageUrls, objectMapper);
+            card.put("imageUrls", imageUrls);
+            card.put("imageUrlsJson", imagesJson == null ? "[]" : imagesJson);
+            card.put("imageCount", imageUrls.size());
+            card.put("hasMultipleImages", imageUrls.size() > 1);
             card.put("thumbnailUrl", archive.getThumbnailUrl());
             card.put("displayNumber", offset + cards.size() + 1);
             card.put("memberBadges", badges);
@@ -1276,9 +1290,7 @@ public class ArchiveController {
         if (uploads.isEmpty()) {
             throw new IllegalArgumentException("사진 파일을 선택해 주세요.");
         }
-        for (MultipartFile file : uploads) {
-            archiveService.uploadImageOnly(file, safeTitle, MediaType.IMAGE, names, date, archiveSource, description);
-        }
+        archiveService.uploadImages(uploads, safeTitle, names, date, archiveSource, description);
         return "redirect:" + folderRedirect(MediaType.IMAGE, names);
     }
 
@@ -1300,7 +1312,7 @@ public class ArchiveController {
     public ResponseEntity<?> updateArchive(@PathVariable long id,
                                            @RequestParam(value = "title", required = false) String title,
                                            @RequestParam(value = "description", required = false) String description,
-                                           @RequestParam(value = "file", required = false) MultipartFile file,
+                                           @RequestParam(value = "file", required = false) List<MultipartFile> files,
                                            @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnail,
                                            @RequestParam(defaultValue = "false") boolean clearThumbnail,
                                            @RequestParam(value = "artistNames", required = false) String artistNames,
@@ -1310,7 +1322,7 @@ public class ArchiveController {
                                            HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
         try {
-            archiveService.update(id, title == null ? "" : title, file, artistNames, thumbnail, clearThumbnail,
+            archiveService.update(id, title == null ? "" : title, files, artistNames, thumbnail, clearThumbnail,
                     requireDate(registeredOn),
                     source == null || source.isBlank() ? null : ArchiveSource.parse(source),
                     description);
