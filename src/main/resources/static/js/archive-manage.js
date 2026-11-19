@@ -228,16 +228,19 @@
         const tools = box?.querySelector('[data-image-edit-tools]');
         if (!tools) return;
         const source = box._previewSource;
+        const sourceUrl = box._previewSourceUrl;
+        const fromFile = !!(source && isImageFile(source));
+        const fromUrl = !fromFile && !!sourceUrl && kind === 'image';
+        const hasImage = fromFile || fromUrl;
         const animated = !!(source && source._archiveAnimated === true);
         const checking = !!(source && isGifOrWebpFile(source) && source._archiveAnimated == null);
         const editable = kind === 'image'
             && !box.hidden
-            && !!source
-            && isImageFile(source)
+            && hasImage
             && !animated
             && !checking
             && !box._archiveEditBusy;
-        tools.hidden = !(kind === 'image' && !box.hidden && !!source && isImageFile(source)) || animated;
+        tools.hidden = !(kind === 'image' && !box.hidden && hasImage) || animated;
         tools.querySelectorAll('button').forEach(button => {
             button.disabled = !editable;
             if (!button.dataset.defaultTitle) button.dataset.defaultTitle = button.getAttribute('title') || '';
@@ -256,6 +259,7 @@
         delete box.dataset.invalid;
         delete box.dataset.pending;
         box._previewSource = options.sourceFile || null;
+        box._previewSourceUrl = options.sourceFile ? null : (options.sourceUrl || url || null);
         box._previewIndex = Number.isInteger(options.index) ? options.index : 0;
         const form = box.closest('form');
         const fileInput = form?.querySelector('input[name="file"]');
@@ -496,21 +500,40 @@
         });
     }
 
+    async function fileFromImageUrl(url) {
+        const response = await fetch(url, { credentials: 'same-origin' });
+        if (!response.ok) throw new Error('fetch-failed');
+        const blob = await response.blob();
+        if (!(blob.type || '').startsWith('image/') && !/\.(jpe?g|jfif|png|webp|gif|bmp)(\?|$)/i.test(url)) {
+            throw new Error('not-image');
+        }
+        const type = blob.type && blob.type.startsWith('image/') ? blob.type : 'image/jpeg';
+        const name = (String(url).split('?')[0].split('/').pop() || 'image.jpg').replace(/[^\w.\-()+]+/g, '_') || 'image.jpg';
+        return new File([blob], name, { type, lastModified: Date.now() });
+    }
+
     async function applyImageEdit(form, operation) {
         if (kind !== 'image' || !form) return;
         const input = form.querySelector('input[name="file"]');
         const preview = form.querySelector('.ar-preview');
         if (!input || !preview || preview.hidden || preview._archiveEditBusy) return;
-        const files = Array.from(input.files || []);
-        const index = Number.isInteger(preview._previewIndex) ? preview._previewIndex : 0;
-        const source = files[index];
-        if (!source || !isImageFile(source)) {
-            alert('편집할 사진을 먼저 선택해 주세요.');
-            return;
+        const slots = slotsOf(form);
+        const slotIndex = Number.isInteger(form._archiveSlotPreviewIndex) ? form._archiveSlotPreviewIndex : -1;
+        const useSlots = slots.length > 0 && slotIndex >= 0 && slotIndex < slots.length;
+        let source = null;
+        let sourceSlot = null;
+        let fileIndex = Number.isInteger(preview._previewIndex) ? preview._previewIndex : 0;
+        if (useSlots) {
+            sourceSlot = slots[slotIndex];
+            if (sourceSlot.kind === 'file') {
+                source = sourceSlot.file;
+                fileIndex = slots.slice(0, slotIndex + 1).filter(item => item.kind === 'file').length - 1;
+            }
+        } else {
+            source = Array.from(input.files || [])[fileIndex] || null;
         }
-        if (await ensureAnimationFlag(source)) {
-            syncImageEditTools(preview);
-            alert('애니메이션 이미지는 회전·뒤집기를 할 수 없습니다.');
+        if ((!source || !isImageFile(source)) && !(useSlots && sourceSlot?.kind === 'url')) {
+            alert('편집할 사진을 먼저 선택해 주세요.');
             return;
         }
         const editToken = input._archiveEditToken || 0;
@@ -520,16 +543,33 @@
         buttons.forEach(button => { button.disabled = true; });
         preview.dataset.pending = 'true';
         try {
+            if (!source && sourceSlot?.kind === 'url') {
+                source = await fileFromImageUrl(sourceSlot.url);
+                if ((input._archiveEditToken || 0) !== editToken) return;
+            }
+            if (await ensureAnimationFlag(source)) {
+                syncImageEditTools(preview);
+                alert('애니메이션 이미지는 회전·뒤집기를 할 수 없습니다.');
+                return;
+            }
             const edited = await transformImageFile(source, operation);
             if ((input._archiveEditToken || 0) !== editToken) return;
-            const current = Array.from(input.files || [])[index];
+            if (useSlots) {
+                const nextSlots = slots.slice();
+                if (sourceSlot.kind === 'file') releaseUrl(sourceSlot.file);
+                nextSlots[slotIndex] = { kind: 'file', file: edited };
+                setSlots(form, nextSlots);
+                previewSlot(form, input, slotIndex);
+                return;
+            }
+            const current = Array.from(input.files || [])[fileIndex];
             if (current !== source) return;
             releaseUrl(source);
             const next = Array.from(input.files || []);
-            if (index >= next.length) return;
-            next[index] = edited;
-            setInputFiles(input, next, { silent: true, previewIndex: index, bumpEditToken: false });
-            showPreview(preview, rememberUrl(edited), { sourceFile: edited, index });
+            if (fileIndex >= next.length) return;
+            next[fileIndex] = edited;
+            setInputFiles(input, next, { silent: true, previewIndex: fileIndex, bumpEditToken: false });
+            showPreview(preview, rememberUrl(edited), { sourceFile: edited, index: fileIndex });
         } catch (_) {
             if ((input._archiveEditToken || 0) === editToken) {
                 delete preview.dataset.pending;
@@ -605,7 +645,7 @@
         form._archiveSlotPreviewIndex = index;
         if (slot.kind === 'url') {
             if (input) input._archivePreviewIndex = -1;
-            showPreview(preview, slot.url);
+            showPreview(preview, slot.url, { sourceUrl: slot.url, index });
         } else {
             const fileIndex = slots.slice(0, index + 1).filter(item => item.kind === 'file').length - 1;
             if (input) input._archivePreviewIndex = fileIndex;
