@@ -284,10 +284,10 @@ async function withPage(html, run) {
       };
     });
     assert.equal(multi.tileCount, 3);
-    assert.deepEqual(multi.thumbs.map((item) => item.label), ['one.png 제거', 'two.png 제거', 'three.png 제거']);
+    assert.deepEqual(multi.thumbs.map((item) => item.label), ['사진 제거', '사진 제거', '사진 제거']);
     assert.ok(multi.thumbs.every((item) => item.src.startsWith('blob:')), '선택 파일 썸네일이 없다');
     assert.equal(multi.summary, '3장 선택');
-    assert.deepEqual(multi.afterLabels, ['one.png 제거', 'three.png 제거']);
+    assert.deepEqual(multi.afterLabels, ['사진 제거', '사진 제거']);
     assert.deepEqual(multi.afterNames, ['one.png', 'three.png']);
     assert.ok(multi.afterThumbs.every((src) => src.startsWith('blob:')), '제거 후 썸네일이 깨졌다');
     assert.equal(multi.count, 2);
