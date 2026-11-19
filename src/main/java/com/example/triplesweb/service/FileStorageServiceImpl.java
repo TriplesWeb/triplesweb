@@ -21,7 +21,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 /**
@@ -35,20 +35,35 @@ public class FileStorageServiceImpl implements FileStorageService {
     private final String uploadRoot;
     private final UploadSyncService uploadSyncService;
     private final UploadContentStore uploadContentStore;
-    private final ExecutorService dbCopyExecutor = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r, "upload-db-copy");
-        t.setDaemon(true);
-        return t;
-    });
+    private final Executor dbCopyExecutor;
 
     public FileStorageServiceImpl(
             @Value("${file.upload-dir}") String uploadRoot,
             UploadSyncService uploadSyncService,
             UploadContentStore uploadContentStore
     ) {
+        this(uploadRoot, uploadSyncService, uploadContentStore, defaultDbCopyExecutor());
+    }
+
+    /** 테스트에서 DB 복사를 동기화할 때 쓰는 생성자. */
+    FileStorageServiceImpl(
+            String uploadRoot,
+            UploadSyncService uploadSyncService,
+            UploadContentStore uploadContentStore,
+            Executor dbCopyExecutor
+    ) {
         this.uploadRoot = uploadRoot;
         this.uploadSyncService = uploadSyncService;
         this.uploadContentStore = uploadContentStore;
+        this.dbCopyExecutor = dbCopyExecutor;
+    }
+
+    private static Executor defaultDbCopyExecutor() {
+        return Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "upload-db-copy");
+            t.setDaemon(true);
+            return t;
+        });
     }
 
     private static final Set<String> IMAGE_EXT = Set.of("jpg","jpeg","jfif","png","gif","webp","bmp");
