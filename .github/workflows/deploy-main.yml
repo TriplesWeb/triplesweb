@@ -135,8 +135,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker metadata
+      - name: Reuse immutable SHA image when a previous rollout failed
+        id: published
         if: steps.skip.outputs.skip != 'true'
+        env:
+          SHA_IMAGE: ${{ steps.image.outputs.name }}:${{ steps.sha.outputs.sha }}
+        run: |
+          set -euo pipefail
+          if docker buildx imagetools inspect "$SHA_IMAGE" >/dev/null 2>&1; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Found previously built image $SHA_IMAGE — skip Docker rebuild"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Docker metadata
+        if: steps.skip.outputs.skip != 'true' && steps.published.outputs.found != 'true'
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -146,7 +160,7 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push (linux/arm64)
-        if: steps.skip.outputs.skip != 'true'
+        if: steps.skip.outputs.skip != 'true' && steps.published.outputs.found != 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -173,7 +187,7 @@ jobs:
           # chemistry Git tree SHA가 동일하면 원격 스캔·전송을 건너뛴다.
           if [[ "${{ steps.skip.outputs.chemistry_sync }}" == "true" ]]; then
             ssh pi "mkdir -p '${PI_DEPLOY_PATH}/uploads/chemistry'"
-            rsync -az --no-owner --no-group --exclude '.DS_Store' \
+            rsync -a --no-owner --no-group --exclude '.DS_Store' \
               uploads/chemistry/ "pi:${PI_DEPLOY_PATH}/uploads/chemistry/"
             ssh pi "printf '%s\\n' '${{ steps.assets.outputs.tree }}' > '${PI_DEPLOY_PATH}/.chemistry-tree'"
             echo "Chemistry files synchronized for ${{ steps.assets.outputs.tree }}"
