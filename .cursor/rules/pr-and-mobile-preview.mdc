@@ -1,9 +1,9 @@
 ---
-description: 메뉴별 브랜치 유지·커밋 후 푸시·PR, 브랜치당 PR 하나, 모바일 미리보기는 Cloud에서만
+description: 메뉴별 브랜치 유지·커밋 후 푸시·PR, 브랜치당 PR 하나, 미리보기는 Pi 개발 서버
 alwaysApply: true
 ---
 
-# PR과 모바일 미리보기
+# PR과 미리보기
 
 - **브랜치는 메뉴 단위로 유지**한다. 기능마다 새 브랜치를 만들지 않고, 해당 메뉴 브랜치에서 이어서 작업한다.
   - `menu/about` — About 트리플에스 (그룹 입문, 멤버, 앨범, 유닛, 케미스트리)
@@ -18,8 +18,7 @@ alwaysApply: true
 - **브랜치당 PR은 하나**다. 이미 열린 PR이 있으면 새 PR을 만들지 말고 그 브랜치에 푸시만 한다.
 - PR을 생성하거나 갱신한 뒤에는 **최우선으로 PR 링크를 전달**한다.
 - **PC(로컬 Desktop)에서 작업 중이면** 모바일 HTTPS 미리보기(Funnel·기본 인증 프록시)를 **열지 않는다.** 사용자가 요청한 경우에만 연다.
-- **Cursor Cloud**에서 PR을 푸시·갱신할 때만 협업자 서버(Pi Docker 배포)를 건드리지 말고, 로컬 앱으로 HTTPS 모바일 미리보기를 연다.
-  1. 현재 브랜치에서 미리보기 `bootRun`을 **8081**에 켠다. `UPLOAD_SYNC_ENABLED=false`, `--server.port=8081`. **8080은 로컬 `bootRun`용으로 비워 둔다.**
-  2. 기본 인증 프록시(18080)는 `127.0.0.1:8081`로 넘기고 `tailscale funnel --bg 18080`으로 연다.
-  3. Funnel 주소와 아이디/비밀번호를 **PR 링크 다음에** 바로 전달한다.
-- 미리보기는 Pi 웹앱을 재배포하지 않는다. 스키마 복사도 하지 않는다.
+- **미리보기는 Pi 개발 서버**다. PR open/동기화 시 Actions가 `/opt/stacks/triplesweb-dev`(8091)에 반영한다.
+  1. 로컬 `bootRun` 8081·Funnel을 열지 않는다.
+  2. `Deploy PR to Pi (dev)` 성공 후 개발 URL을 **PR 링크 다음에** 전달한다 (`PI_DEV_PUBLIC_URL` 또는 `http://<PI_HOST>:8091/main`).
+  3. **운영** Pi(`/opt/stacks/triplesweb`)는 재배포하지 않는다. 운영은 새벽 4시(KST) 스케줄(또는 수동)만 반영한다.
