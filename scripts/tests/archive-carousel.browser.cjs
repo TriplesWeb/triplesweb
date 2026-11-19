@@ -45,10 +45,18 @@ ${css}
   <div class="ar-dialog-panel ar-detail-panel">
     <div class="ar-detail-photo"><img id="archiveDetailImage" alt=""></div>
     <div class="ar-detail-side">
-      <div class="ar-dialog-head"><h2 id="archiveDetailTitle"></h2></div>
+      <button type="button" class="ar-close ar-detail-close" data-ar-close aria-label="닫기">&times;</button>
       <div class="ar-detail-body">
-        <p class="ar-detail-date" id="archiveDetailDate" hidden></p>
-        <section class="ar-detail-cast" aria-label="출연 멤버">
+        <p class="ar-detail-desc" id="archiveDetailDescription" hidden></p>
+        <div class="ar-detail-meta" id="archiveDetailMeta" hidden>
+          <p class="ar-detail-date" id="archiveDetailDate" hidden>
+            <span class="ar-detail-kicker" data-detail-date-label></span>
+            <time data-detail-date-value></time>
+          </p>
+          <div class="ar-source-badge" id="archiveDetailSource" hidden></div>
+        </div>
+        <section class="ar-detail-cast" aria-label="출연 멤버" hidden>
+          <p class="ar-detail-kicker">출연 멤버</p>
           <div class="ar-detail-members" id="archiveDetailMembers"></div>
         </section>
       </div>
@@ -105,7 +113,9 @@ ${css}
     await page.locator('#archiveGrid .ar-card').nth(1).locator('[data-archive-open]').click();
     const detail = await page.evaluate(() => ({
       open: !document.getElementById('archiveDetail').hidden,
-      title: document.getElementById('archiveDetailTitle').textContent,
+      hasTitle: Boolean(document.getElementById('archiveDetailTitle')),
+      description: document.getElementById('archiveDetailDescription').textContent,
+      descriptionHidden: document.getElementById('archiveDetailDescription').hidden,
       blank: document.querySelector('.ar-card [data-archive-open]')?.tagName,
       original: Boolean(document.getElementById('archiveDetailOriginal')),
       member: document.querySelector('#archiveDetailMembers .unit-member-chip span')?.textContent || '',
@@ -115,7 +125,9 @@ ${css}
       outside: !document.getElementById('archiveDetailMembers').contains(document.getElementById('archiveDetailDate'))
     }));
     assert.equal(detail.open, true, '상세 모달이 열리지 않는다');
-    assert.equal(detail.title, '사진 2');
+    assert.equal(detail.hasTitle, false, '불필요한 사진 제목이 남아 있다');
+    assert.equal(detail.description, '사진 2');
+    assert.equal(detail.descriptionHidden, false);
     assert.equal(detail.blank, 'BUTTON');
     assert.equal(detail.original, false, '원본 열기가 남아 있다');
     assert.equal(detail.member, '지연');
