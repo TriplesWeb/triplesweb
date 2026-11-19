@@ -44,4 +44,5 @@ reject_match -Fq 'COPY scripts ./scripts' Dockerfile
 grep -Fq 'COPY scripts/setup-css.sh scripts/build-*css.cjs' Dockerfile
 grep -Fq -- "- '.github/**'" .github/workflows/deploy-main.yml
 python3 scripts/ci-path-filter.py --self-test
+bash scripts/tests/bluegreen-static.test.sh
 echo 'Production-only deployment assertions passed'

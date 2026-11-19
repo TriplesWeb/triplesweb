@@ -22,10 +22,10 @@
 ## 검사·배포 규칙
 
 - **PR 열기/업데이트**: `CI tests`가 변경 경로를 감지합니다. 백엔드만 변경하면 Java·WAR·Qodana, 프론트엔드만 변경하면 CSS·JS·독립 브라우저 검증, 공통 템플릿/빌드 설정은 양쪽 검사를 수행합니다. Java 생성 HTML을 사용하는 통합 브라우저 검사는 양쪽 영역이 변경된 경우에만 실행합니다. **PR에서는 서버를 배포하거나 실행하지 않습니다.**
-- PR 머지 후 `main` push: Actions `Deploy to Raspberry Pi (prod)`가 GitHub ARM64 빌드 캐시를 활용해 이미지를 만들고 **운영 Pi에 바로 배포**합니다.
+- PR 머지 후 `main` push: Actions `Deploy to Raspberry Pi (prod)`가 ARM64 이미지를 빌드하고 **Blue-Green 비활성 슬롯 예열 → readiness 검증 → Nginx 전환 → 이전 앱 종료** 순서로 배포합니다. 메모리·DB 마이그레이션 검증 실패 시 기존 서비스를 유지하고 배포 실패로 처리합니다.
 - 매일 **새벽 4시(KST)** 실행은 누락된 운영 배포 복구 목적입니다. 같은 SHA의 운영 앱이 정상이라면 빌드·재시작을 건너뜁니다. Actions 수동 배포도 가능합니다.
 - **개발 Pi 서버는 폐지합니다.** `main` 배포 시 기존 개발 Compose 앱 컨테이너를 안전하게 종료합니다. DB·업로드는 자동 삭제하지 않습니다.
-- 운영 DB 스키마의 임의 복사·삭제나 운영 Pi의 수동 재배포는 하지 않습니다. 자세한 절차: `docs/DEPLOYMENT.md`.
+- 운영 DB 스키마의 임의 복사·삭제나 운영 Pi의 수동 재배포는 하지 않습니다. Blue-Green 전환 이후 **plain `docker compose up/down` 명령을 운영에 사용하지 않습니다.** 절차: `docs/BLUE_GREEN_DEPLOYMENT.md`.
 - 코드 검증은 PR 검사 결과로 확인합니다. 모바일 미리보기는 사용자가 명시적으로 요청한 경우에만 별도 방법을 준비합니다.
 
 ## Cursor Cloud specific instructions

@@ -8,20 +8,12 @@ MODE="${1:-prod}"
 LOCK=/tmp/triplesweb-docker-deploy.lock
 HEALTH_URL="http://127.0.0.1:${APP_PORT}/actuator/health/readiness"
 
-# Compose uses the exported IMAGE during rollout. Save it only after readiness.
-record_ready_image() {
-  if grep -q '^IMAGE=' .env; then
-    sed -i "s|^IMAGE=.*|IMAGE=$IMAGE|" .env
-  else
-    printf '\nIMAGE=%s\n' "$IMAGE" >> .env
-  fi
-}
-
 run_deploy() {
   local start="$SECONDS" cid running previous_image=""
   rollback() {
     if [[ -n "$previous_image" && "$previous_image" != "$IMAGE" ]]; then
       echo "Attempting container rollback to $previous_image" >&2
+      sed -i "s|^IMAGE=.*|IMAGE=$previous_image|" .env
       IMAGE="$previous_image" docker compose up -d --no-deps app || true
     fi
   }
@@ -29,7 +21,6 @@ run_deploy() {
   if [[ -n "$cid" ]]; then
     previous_image="$(docker inspect -f '{{.Config.Image}}' "$cid" 2>/dev/null || true)"
     if [[ "$previous_image" == "$IMAGE" ]] && curl --silent --show-error --fail --max-time 8 "$HEALTH_URL" >/dev/null; then
-      record_ready_image
       echo "Already healthy on $IMAGE; no restart needed"
       return 0
     fi
@@ -63,12 +54,14 @@ run_deploy() {
     rollback
     return 1
   fi
-  if ! cid="$(docker compose ps -q app)" || [[ -z "$cid" ]]; then
+  cid="$(docker compose ps -q app)"
+  if [[ -z "$cid" ]]; then
     echo "app container missing after up" >&2
     rollback
     return 1
   fi
-  if ! running="$(docker inspect -f '{{.Config.Image}}' "$cid")" || [[ "$running" != "$IMAGE" ]]; then
+  running="$(docker inspect -f '{{.Config.Image}}' "$cid")"
+  if [[ "$running" != "$IMAGE" ]]; then
     echo "Image mismatch: $running != $IMAGE" >&2
     rollback
     return 1
@@ -77,10 +70,6 @@ run_deploy() {
   # readiness를 2초 단위로 확인해 불필요한 폴링 대기를 줄인다.
   for attempt in $(seq 1 180); do
     if curl --silent --show-error --fail --max-time 8 "$HEALTH_URL" >/dev/null 2>&1; then
-      if ! record_ready_image; then
-        rollback
-        return 1
-      fi
       echo "Readiness OK, startup=$((SECONDS-started))s, total=$((SECONDS-start))s, mode=$MODE"
       return 0
     fi
