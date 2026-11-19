@@ -784,6 +784,17 @@ class ArchiveControllerTest {
         verify(aboutAdminAuth).requireAdmin(any(), any());
     }
 
+    @Test void imageUploadRejectsDuplicatePost() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
+        org.mockito.Mockito.doThrow(new IllegalArgumentException("같은 날짜·출처·설명의 게시글이 이미 있습니다."))
+                .when(archiveService).uploadImages(any(), eq(""), eq("서연"),
+                        eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), eq("현장 컷"));
+        mvc.perform(multipart("/archive/upload/image").file(file)
+                        .param("description", "현장 컷").param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("같은 날짜·출처·설명")));
+    }
+
     private static Archive photo() {
         Archive archive = new Archive();
         archive.setId(7L);

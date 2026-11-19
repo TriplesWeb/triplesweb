@@ -174,6 +174,9 @@ public class ArchiveService {
         if (safeTitle.isEmpty() && resolved == MediaType.VIDEO) {
             throw new IllegalArgumentException("제목을 입력해주세요.");
         }
+        if (resolved == MediaType.IMAGE) {
+            ensureUniqueImagePost(registeredOn, source, description);
+        }
         SavedMeta meta = fileStorageService.saveWithMeta(file);   // SavedMeta 채워서 반환
         coerceType(requestedType, meta);
         Archive archive = new Archive(safeTitle, meta);
@@ -202,6 +205,7 @@ public class ArchiveService {
         if (uploads.size() > ArchiveImages.MAX_IMAGES) {
             throw new IllegalArgumentException("사진은 최대 " + ArchiveImages.MAX_IMAGES + "장까지 등록할 수 있습니다.");
         }
+        ensureUniqueImagePost(registeredOn, source, description);
         String safeTitle = title == null ? "" : title.trim();
         List<SavedMeta> metas = new ArrayList<>(uploads.size());
         List<String> urls = new ArrayList<>(uploads.size());
@@ -457,6 +461,21 @@ public class ArchiveService {
         if (description == null) return null;
         String trimmed = description.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    /** 같은 날짜·출처·설명(미입력 포함)의 사진 게시글이 있으면 추가를 막는다. */
+    private void ensureUniqueImagePost(LocalDate registeredOn, ArchiveSource source, String description) {
+        if (registeredOn == null || source == null) {
+            throw new IllegalArgumentException("날짜와 출처를 선택해 주세요.");
+        }
+        String key = normalizeDescription(description);
+        String descriptionKey = key == null ? "" : key;
+        if (archiveRepository.existsImageDuplicate(MediaType.IMAGE, registeredOn, source, descriptionKey)) {
+            throw new IllegalArgumentException(
+                    descriptionKey.isEmpty()
+                            ? "같은 날짜·출처의 게시글이 이미 있습니다. 설명을 비운 게시글은 하나만 등록할 수 있습니다."
+                            : "같은 날짜·출처·설명의 게시글이 이미 있습니다.");
+        }
     }
 
     private void validateThumbnail(MultipartFile thumbnail) {
