@@ -16,6 +16,7 @@ STATE_FILE="$STATE_DIR/active-slot"
 MIGRATION_FILE="$STATE_DIR/migration-tree"
 NGINX_CONF="$STATE_DIR/active.conf"
 LOCK=/tmp/triplesweb-docker-deploy.lock
+source "$(dirname "${BASH_SOURCE[0]}")/deploy-pi-image-retention.sh"
 
 # Clean up only the unpromoted candidate on failure; never stop a live upstream.
 CANDIDATE_SLOT=""
@@ -124,24 +125,34 @@ pull_if_needed() {
 }
 
 wait_candidate() {
-  local slot="$1" cid ip attempt home_status
+  local slot="$1" cid ip home_status remaining timeout
+  local started="$SECONDS" deadline=$((SECONDS + BG_READY_TIMEOUT_SECONDS))
   cid="$(container_of "app_$slot")"
   is_running "$cid" || fail "Candidate app_$slot did not start"
   ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$cid")"
   [[ "$ip" =~ ^[0-9.]+$ ]] || fail "Cannot resolve candidate container IPv4"
   log "Warming app_$slot at $ip:8080"
-  for (( attempt=0; attempt<BG_READY_TIMEOUT_SECONDS; attempt+=2 )); do
+  while (( SECONDS < deadline )); do
     if ! is_running "$cid"; then
       docker logs --tail=100 "$cid" >&2 || true
       fail "Candidate exited during warmup"
     fi
-    if curl -fsS --connect-timeout 2 --max-time 5 "http://$ip:8080/actuator/health/readiness" >/dev/null 2>&1 &&
-       home_status="$(curl -fsS --connect-timeout 2 --max-time 5 -o /dev/null -w '%{http_code}' "http://$ip:8080/" 2>/dev/null)" &&
-       [[ "$home_status" == 200 ]]; then
-      log "Candidate app_$slot readiness and home page checks passed"
-      return 0
+    remaining=$((deadline - SECONDS))
+    (( remaining > 0 )) || break
+    timeout=$((remaining < 5 ? remaining : 5))
+    if curl -fsS --connect-timeout 2 --max-time "$timeout" "http://$ip:8080/actuator/health/readiness" >/dev/null 2>&1; then
+      remaining=$((deadline - SECONDS))
+      (( remaining > 0 )) || break
+      timeout=$((remaining < 5 ? remaining : 5))
+      if home_status="$(curl -fsS --connect-timeout 2 --max-time "$timeout" -o /dev/null -w '%{http_code}' "http://$ip:8080/" 2>/dev/null)" &&
+         [[ "$home_status" == 200 ]]; then
+        log "Candidate app_$slot readiness and home page checks passed in $((SECONDS - started))s"
+        return 0
+      fi
     fi
-    sleep 2
+    remaining=$((deadline - SECONDS))
+    (( remaining > 0 )) || break
+    sleep "$((remaining < 2 ? remaining : 2))"
   done
   docker logs --tail=100 "$cid" >&2 || true
   fail "Candidate timed out after $BG_READY_TIMEOUT_SECONDS seconds. Active site was not stopped."
@@ -191,16 +202,19 @@ stage_candidate() {
   if [[ "$slot" == blue ]]; then export BG_BLUE_IMAGE="$IMAGE"; else export BG_GREEN_IMAGE="$IMAGE"; fi
   # A failed previous candidate is not allowed to interfere with the active slot.
   "${COMPOSE[@]}" stop "app_$slot" >/dev/null 2>&1 || true
+  local pull_started="$SECONDS"
   pull_if_needed "$slot"
+  log "Candidate app_$slot image ready in $((SECONDS - pull_started))s"
   CANDIDATE_SLOT="$slot"
   "${COMPOSE[@]}" up -d --no-deps "app_$slot"
   wait_candidate "$slot"
 }
 
 bootstrap_proxy() {
-  local legacy_cid proxy_cid
+  local legacy_cid proxy_cid previous_image
   legacy_cid="$("${BASE_COMPOSE[@]}" ps -q app 2>/dev/null || true)"
   is_running "$legacy_cid" || fail "No active legacy app found. Manual recovery required."
+  previous_image="$(docker inspect -f '{{.Config.Image}}' "$legacy_cid")"
   log "Legacy app serves $APP_PORT. Warm the new blue slot before the first port transfer."
   stage_candidate blue
   write_proxy_config blue "$NGINX_CONF.tmp.$"
@@ -224,11 +238,12 @@ bootstrap_proxy() {
   # Proxy is now serving blue; never auto-stop it if metadata write fails.
   CANDIDATE_SLOT=""
   remember_success blue
+  cleanup_after_deploy "$previous_image"
   log "First cutover finished. Next deployments will warm the inactive slot."
 }
 
 switch_proxy() {
-  local old="$1" candidate="$2" proxy_cid previous="$NGINX_CONF.previous"
+  local old="$1" candidate="$2" previous_image="$3" proxy_cid previous="$NGINX_CONF.previous"
   proxy_cid="$(container_of proxy)"
   is_running "$proxy_cid" || fail "Proxy not running. Refusing switch to protect active slot."
   cp -f "$NGINX_CONF" "$previous"
@@ -268,6 +283,7 @@ switch_proxy() {
   if [[ "$candidate" != "$old" ]]; then
     "${COMPOSE[@]}" stop -t 30 "app_$old" || log "WARNING: stale slot could not be stopped"
   fi
+  cleanup_after_deploy "$previous_image"
 }
 
 run_deploy() {
@@ -305,7 +321,7 @@ run_deploy() {
   [[ "$active" == green ]] && next=blue
   log "Active: app_$active ($running_image); staging app_$next ($IMAGE)"
   stage_candidate "$next"
-  switch_proxy "$active" "$next"
+  switch_proxy "$active" "$next" "$running_image"
 }
 
 # Keep flock and EXIT cleanup trap in the same shell (no subshell state loss).

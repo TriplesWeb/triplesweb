@@ -21,7 +21,7 @@ COPY gradle ./gradle
 RUN chmod +x gradlew \
     && ./gradlew dependencies --no-daemon || true
 
-COPY src ./src
+COPY src/main ./src/main
 COPY --from=css /workspace/src/main/resources/static/css/site.css ./src/main/resources/static/css/site.css
 COPY --from=css /workspace/src/main/resources/static/css/triples.css ./src/main/resources/static/css/triples.css
 COPY --from=css /workspace/src/main/resources/static/css/objekt.css ./src/main/resources/static/css/objekt.css
