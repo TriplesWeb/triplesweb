@@ -94,9 +94,9 @@ ${site}${css}${siteUi}
   <button type="button" class="ar-dialog-backdrop" data-ar-close aria-label="닫기"></button>
   <div class="ar-dialog-panel ar-detail-panel" role="dialog">
     <div class="ar-detail-photo" id="archiveDetailPhoto">
-      <button type="button" class="ar-detail-nav ar-detail-prev" id="archiveDetailPrev" aria-label="이전 사진" hidden><span aria-hidden="true">‹</span></button>
+      <button type="button" class="ar-detail-nav ar-detail-prev" id="archiveDetailPrev" aria-label="이전 사진" hidden><svg class="ar-detail-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <img id="archiveDetailImage" alt="">
-      <button type="button" class="ar-detail-nav ar-detail-next" id="archiveDetailNext" aria-label="다음 사진" hidden><span aria-hidden="true">›</span></button>
+      <button type="button" class="ar-detail-nav ar-detail-next" id="archiveDetailNext" aria-label="다음 사진" hidden><svg class="ar-detail-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5 16 12l-6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="ar-detail-dots" id="archiveDetailDots" hidden></div>
       <p class="ar-detail-count" id="archiveDetailCount" hidden></p>
     </div>
