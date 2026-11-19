@@ -106,7 +106,10 @@ public class ArchiveService {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("file").get("mediaType"), type));
             if (!q.isEmpty()) {
-                predicates.add(cb.like(cb.lower(root.get("title")), "%" + q.toLowerCase(Locale.ROOT) + "%"));
+                String pattern = "%" + q.toLowerCase(Locale.ROOT) + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("title")), pattern),
+                        cb.like(cb.lower(cb.coalesce(root.get("description"), "")), pattern)));
             }
             if (!names.isEmpty()) {
                 Expression<String> normalized = cb.lower(cb.function(
@@ -121,9 +124,7 @@ public class ArchiveService {
             if (from != null) predicates.add(cb.greaterThanOrEqualTo(root.get("registeredOn"), from));
             if (to != null) predicates.add(cb.lessThanOrEqualTo(root.get("registeredOn"), to));
             if (unclassifiedOnly) {
-                predicates.add(cb.or(
-                        cb.isNull(root.get("source")),
-                        cb.equal(root.get("source"), ArchiveSource.FANCAM)));
+                predicates.add(cb.isNull(root.get("source")));
             } else if (source != null) {
                 predicates.add(cb.equal(root.get("source"), source));
             }
@@ -155,16 +156,24 @@ public class ArchiveService {
     @Transactional
     public Archive save(MultipartFile file, String title, MediaType requestedType, String artistNames, LocalDate registeredOn,
                         ArchiveSource source) throws IOException {
+        return save(file, title, requestedType, artistNames, registeredOn, source, null);
+    }
+
+    @Transactional
+    public Archive save(MultipartFile file, String title, MediaType requestedType, String artistNames, LocalDate registeredOn,
+                        ArchiveSource source, String description) throws IOException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("업로드 할 파일이 없습니다.");
         }
+        MediaType resolved = requestedType == null ? MediaType.OTHER : requestedType;
         String safeTitle = (title == null) ? "" : title.trim();
-        if (safeTitle.isEmpty()) {
+        if (safeTitle.isEmpty() && resolved == MediaType.VIDEO) {
             throw new IllegalArgumentException("제목을 입력해주세요.");
         }
         SavedMeta meta = fileStorageService.saveWithMeta(file);   // SavedMeta 채워서 반환
         coerceType(requestedType, meta);
-        Archive archive = new Archive(title, meta);
+        Archive archive = new Archive(safeTitle, meta);
+        archive.setDescription(normalizeDescription(description));
         archive.setArtistNames(artistNames == null ? "" : artistNames.trim());
         if (registeredOn != null) archive.setRegisteredOn(registeredOn);
         archive.setSource(source);
@@ -195,10 +204,15 @@ public class ArchiveService {
     @Transactional
     public Archive uploadImageOnly(MultipartFile file, String title, MediaType type, String artistNames, LocalDate registeredOn,
                                    ArchiveSource source) throws IOException {
+        return uploadImageOnly(file, title, type, artistNames, registeredOn, source, null);
+    }
+
+    public Archive uploadImageOnly(MultipartFile file, String title, MediaType type, String artistNames, LocalDate registeredOn,
+                                   ArchiveSource source, String description) throws IOException {
         if (type != null && type != MediaType.IMAGE) {
             throw new IllegalArgumentException("이미지 파일만 업로드 가능합니다.");
         }
-        return save(file, title, MediaType.IMAGE, artistNames, registeredOn, source);
+        return save(file, title, MediaType.IMAGE, artistNames, registeredOn, source, description);
     }
     @Transactional
     public Archive uploadVideoOnly(MultipartFile file, String title, MediaType type) throws IOException {
@@ -273,21 +287,35 @@ public class ArchiveService {
     @Transactional
     public Archive update(long id, String title, MultipartFile file, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
                           LocalDate registeredOn, ArchiveSource source) throws IOException {
-        return update(id, title, file, artistNames, thumbnail, clearThumbnail, registeredOn, source, true);
+        return update(id, title, file, artistNames, thumbnail, clearThumbnail, registeredOn, source, null);
+    }
+
+    @Transactional
+    public Archive update(long id, String title, MultipartFile file, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
+                          LocalDate registeredOn, ArchiveSource source, String description) throws IOException {
+        return update(id, title, file, artistNames, thumbnail, clearThumbnail, registeredOn, source, true, description);
     }
 
     private Archive update(long id, String title, MultipartFile file, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
                            LocalDate registeredOn, ArchiveSource source, boolean applySource) throws IOException {
+        return update(id, title, file, artistNames, thumbnail, clearThumbnail, registeredOn, source, applySource, null);
+    }
+
+    private Archive update(long id, String title, MultipartFile file, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
+                           LocalDate registeredOn, ArchiveSource source, boolean applySource, String description) throws IOException {
         Archive archive = show(id);
         validateThumbnail(thumbnail);
         if (thumbnail != null && !thumbnail.isEmpty() && archive.getType() != MediaType.VIDEO) {
             throw new IllegalArgumentException("영상 아카이브에만 썸네일을 설정할 수 있습니다.");
         }
         String safeTitle = title == null ? "" : title.trim();
-        if (safeTitle.isEmpty()) {
+        if (safeTitle.isEmpty() && archive.getType() == MediaType.VIDEO) {
             throw new IllegalArgumentException("제목을 입력해주세요.");
         }
         archive.setTitle(safeTitle);
+        if (description != null || archive.getType() == MediaType.IMAGE) {
+            archive.setDescription(normalizeDescription(description));
+        }
         if (artistNames != null) {
             archive.setArtistNames(artistNames.trim());
         }
@@ -313,6 +341,12 @@ public class ArchiveService {
             deleteThumbnail(previousThumbnail);
         }
         return archiveRepository.save(archive);
+    }
+
+    private static String normalizeDescription(String description) {
+        if (description == null) return null;
+        String trimmed = description.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private void validateThumbnail(MultipartFile thumbnail) {

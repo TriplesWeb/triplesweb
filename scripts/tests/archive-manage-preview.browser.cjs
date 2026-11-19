@@ -17,6 +17,9 @@ function pageHtml(kind) {
   const isVideo = kind === 'video';
   const noun = isVideo ? '영상' : '사진';
   const previewLabel = isVideo ? '목록에서 보이는 모습' : '목록에서 보이는 모습 · 카드/슬라이드';
+  const titleField = isVideo
+    ? '<label class="ar-field">제목<input type="text" name="title"></label>'
+    : '<label class="ar-field">설명<textarea name="description" rows="3"></textarea></label>';
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
@@ -27,7 +30,7 @@ ${site}${css}${siteUi}
 <body class="site-page">
 <main class="archive-page" data-archive-kind="${kind}" data-date-label="${noun} 날짜">
   <section class="ar-grid" id="archiveGrid">
-    <article class="ar-panel ar-card" data-id="1" data-title="지서연" data-artists="지연" data-url="${isVideo ? '/clip.mp4' : '/portrait.svg'}" data-registered="2026-10-25">
+    <article class="ar-panel ar-card" data-id="1" data-title="${isVideo ? '지서연' : ''}" data-description="${isVideo ? '' : '지서연'}" data-headline="지서연" data-artists="지연" data-url="${isVideo ? '/clip.mp4' : '/portrait.svg'}" data-registered="2026-10-25">
       ${isVideo
         ? '<a class="ar-video-thumb" href="/clip.mp4"><img src="/poster.svg" alt=""><span class="ar-video-play" aria-hidden="true">▶</span></a>'
         : '<button type="button" class="ar-photo-link"><img src="/portrait.svg" alt=""></button>'}
@@ -38,14 +41,14 @@ ${site}${css}${siteUi}
           <time class="ar-card-date" datetime="2026-10-25">2026/10/25</time>
         </div>
       </div>
-      <button type="button" class="site-btn" data-archive-edit data-id="1" data-title="지서연" data-artists="지연" data-url="${isVideo ? '/clip.mp4' : '/portrait.svg'}" data-thumbnail-url="${isVideo ? '/poster.svg' : ''}" data-registered="2026-10-25" data-source="FANCAM">수정하기</button>
+      <button type="button" class="site-btn" data-archive-edit data-id="1" data-title="${isVideo ? '지서연' : ''}" data-description="${isVideo ? '' : '지서연'}" data-artists="지연" data-url="${isVideo ? '/clip.mp4' : '/portrait.svg'}" data-thumbnail-url="${isVideo ? '/poster.svg' : ''}" data-registered="2026-10-25" data-source="COSMO_ROOM">수정하기</button>
     </article>
   </section>
 </main>
 <div class="ar-dialog" id="uploadModal" hidden>
   <div class="ar-dialog-panel">
     <form id="archiveUploadForm" enctype="multipart/form-data" data-upload-url="/archive/upload/${kind}">
-      <label class="ar-field">제목<input type="text" name="title"></label>
+      ${titleField}
       <label class="ar-field">${noun} 날짜<input type="date" name="registeredOn"></label>
       <div class="member-portrait-picker" id="archive-upload-picker">
         <button type="button" class="mpp-item" data-value="지연" data-name="지연" data-frame="24" style="--artist-color:#7bba8d" aria-pressed="false">
@@ -69,9 +72,9 @@ ${site}${css}${siteUi}
 <div class="ar-dialog" id="editModal" hidden>
   <div class="ar-dialog-panel">
     <form id="archiveEditForm" enctype="multipart/form-data">
-      <label class="ar-field">제목<input type="text" name="title"></label>
+      ${titleField}
       <label class="ar-field">${noun} 날짜<input type="date" name="registeredOn"></label>
-      <label class="ar-field">출처<select name="source"><option value="FANCAM">기타/팬메이드</option></select></label>
+      <label class="ar-field">출처<select name="source"><option value="COSMO_ROOM">코스모룸</option></select></label>
       <div class="member-portrait-picker" id="archive-edit-picker">
         <button type="button" class="mpp-item" data-value="지연" data-name="지연" data-frame="24" style="--artist-color:#7bba8d" aria-pressed="false">
           <span class="artist-tab-avatar"><img class="artist-tab-photo" src="/portrait.svg" alt=""></span>
@@ -194,7 +197,7 @@ async function withPage(html, run) {
       path: path.join(artifactDir, 'archive-edit-preview-photo-card.png')
     });
 
-    await page.fill('#archiveEditForm [name="title"]', '지서연 수정');
+    await page.fill('#archiveEditForm [name="description"]', '지서연 수정');
     await page.fill('#archiveEditForm [name="registeredOn"]', '2026-11-16');
     const updated = await page.evaluate(() => ({
       title: document.querySelector('#editPreview [data-preview-title]').textContent,

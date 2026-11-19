@@ -17,7 +17,7 @@
         dialogTriggers.set(dialog, document.activeElement);
         dialog.hidden = false;
         document.body.style.overflow = "hidden";
-        dialog.querySelector("[name='title']")?.focus();
+        dialog.querySelector("[name='title'], [name='registeredOn'], [name='description']")?.focus();
     }
 
     function closeDialog(dialog) {
@@ -208,7 +208,11 @@
         const preview = form.querySelector('.ar-preview');
         if (!preview) return;
         const title = preview.querySelector('[data-preview-title]');
-        if (title) title.textContent = form.querySelector('[name="title"]')?.value.trim() || (kind === 'video' ? '영상 제목' : '사진 제목');
+        if (title) {
+            const typedTitle = form.querySelector('[name="title"]')?.value.trim() || '';
+            const typedDescription = form.querySelector('[name="description"]')?.value.trim() || '';
+            title.textContent = typedTitle || typedDescription || (kind === 'video' ? '영상 제목' : '사진');
+        }
         const meta = preview.querySelector('[data-preview-artists]');
         if (meta) {
             const items = selectedMemberItems(form.closest('.ar-dialog'));
@@ -254,7 +258,7 @@
                 });
                 chips.appendChild(chip);
             });
-            if (!values.length) chips.textContent = '출연자를 선택하면 여기에 표시됩니다.';
+            if (!values.length) chips.textContent = '멤버를 선택하면 여기에 표시됩니다.';
         }
         syncPreview(root.querySelector('form'));
     }
@@ -502,7 +506,7 @@
         event.preventDefault();
         const title = uploadForm.querySelector("[name='title']")?.value.trim();
         const file = uploadFile?.files?.[0];
-        if (!title) {
+        if (kind === "video" && !title) {
             alert("제목을 입력해 주세요.");
             return;
         }
@@ -577,7 +581,13 @@
         resetThumbnail(editForm, button.dataset.thumbnailUrl || '');
         editForm.dataset.id = button.dataset.id || "";
         editForm.dataset.originalUrl = button.dataset.url || '';
-        editForm.querySelector("[name='title']").value = button.dataset.title || "";
+        const titleInput = editForm.querySelector("[name='title']");
+        if (titleInput) titleInput.value = button.dataset.title || "";
+        const descriptionInput = editForm.querySelector("[name='description']");
+        if (descriptionInput) {
+            descriptionInput.value = button.dataset.description
+                || (kind === "image" ? (button.dataset.title || "") : "");
+        }
         const registered = editForm.querySelector("[name='registeredOn']");
         if (registered) {
             registered.value = button.dataset.registered || "";
@@ -636,13 +646,14 @@
             return;
         }
         const remove = event.target.closest("[data-archive-delete]");
-        if (remove) removeArchive(remove.dataset.id, remove.dataset.title);
+        if (remove) removeArchive(remove.dataset.id, remove.dataset.description || remove.dataset.title);
     });
 
     editForm?.addEventListener("submit", async event => {
         event.preventDefault();
-        const title = editForm.querySelector("[name='title']")?.value.trim();
-        if (!title) {
+        const title = editForm.querySelector("[name='title']")?.value.trim() || "";
+        const description = editForm.querySelector("[name='description']")?.value.trim() || "";
+        if (kind === "video" && !title) {
             alert("제목을 입력해 주세요.");
             return;
         }
@@ -666,7 +677,8 @@
         if (!window.confirm(message)) return;
         if (!validThumbnail(editForm)) return;
         const body = new FormData();
-        body.set("title", title);
+        if (kind === "video") body.set("title", title);
+        else body.set("description", description);
         body.set("registeredOn", registeredOn);
         body.set("artistNames", selectedArtists(editDialog).join(","));
         const source = editForm.querySelector("[name='source']")?.value || "";
