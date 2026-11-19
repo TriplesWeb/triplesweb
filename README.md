@@ -106,7 +106,7 @@ DB를 서버와 같이 쓰면 **파일도 같이** 보여야 합니다.
 
 - **실시간:** 로컬 `bootRun` 업로드/삭제 시 Tailscale로 서버 `uploads/`에 push (기동 시 서버→로컬 pull). `.env`의 `UPLOAD_SYNC_*` 참고.
 - **참조만:** 로컬 `./uploads`에 없으면 `upload.fallback-base-url`(기본 `https://triples.eht3r.cloud`)로 **리다이렉트**합니다. 공유 DB를 쓰는 협업자 PC에서도 멤버·유닛 이미지가 보입니다. 서버 Docker는 폴백을 비웁니다.
-- **배포:** `uploads/`를 Actions가 서버로 rsync. `--delete`이지만 `images/`·`videos/`·`files/` 전체는 protect라서 관리자가 올린 앨범·멤버·유닛 커버 등이 배포마다 지워지지 않습니다. 배포 전후 `chown`·`chmod a+rwX`로 권한 충돌을 피합니다.
+- **운영 배포:** GitHub Actions에서 관리하는 `uploads/chemistry/`만 증분 rsync로 동기화합니다. 전체 `uploads/`에 대한 삭제·재귀 chown/chmod는 수행하지 않습니다.
 
 ```bash
 ./scripts/setup-git-hooks.sh   # pre-commit이 uploads를 자동 git add
@@ -118,13 +118,12 @@ DB를 서버와 같이 쓰면 **파일도 같이** 보여야 합니다.
 
 ## Raspberry Pi 4 Docker CI/CD (Tailscale SSH)
 
-같은 Pi에 **운영**과 **개발** 앱을 나눕니다. DB·uploads·data는 공유하고, 앱 컨테이너·포트만 분리합니다.
+Pi에는 **운영 서버 한 개만** 실행합니다. PR에서는 GitHub Actions로 코드를 검사하고, `main` 머지 후 운영만 배포합니다.
 
 ```text
-PR open/push  → deploy-dev  → /opt/stacks/triplesweb-dev (:8091)  즉시
-main 머지     → 운영 재시작 없음 (기본)
-main 머지 + PR 코멘트「즉시 배포」 → deploy-main → 운영 즉시
-매일 04:00 KST / 수동 → deploy-main → /opt/stacks/triplesweb (:8090)
+PR open/push    → CI tests (Java/WAR, CSS/브라우저, Qodana) → 통과 시 머지 가능
+main 머지       → Deploy to Raspberry Pi (prod) → /opt/stacks/triplesweb (:8090)
+매일 04:00 KST / 수동 → 동일 운영 상태라면 빌드·재시작 생략
 ```
 
 ### 1. GitHub Secrets / Variables
@@ -139,11 +138,7 @@ main 머지 + PR 코멘트「즉시 배포」 → deploy-main → 운영 즉시
 | `PI_USER` | SSH 사용자 |
 | `PI_SSH_KEY` | deploy 전용 **private** SSH 키 전체 |
 | `PI_DEPLOY_PATH` | 운영 compose 디렉터리 (`/opt/stacks/triplesweb`) |
-| `PI_DEV_DEPLOY_PATH` | 개발 compose 디렉터리 (`/opt/stacks/triplesweb-dev`) |
-
-| Variable (선택) | 설명 |
-|-----------------|------|
-| `PI_DEV_PUBLIC_URL` | NPG로 붙인 개발 도메인 (예: `https://dev.example.com`). PR 코멘트에 사용 |
+| `PI_DEV_DEPLOY_PATH` | 선택. **기존 개발 앱 종료용** 경로가 기본값과 다를 때만 지정 |
 
 Packages 쓰기는 워크플로의 `GITHUB_TOKEN` + `packages: write`로 처리합니다.  
 Pi pull이 `unauthorized`면 (1) GHCR 패키지 visibility를 **Public**으로 바꾸거나 (2) Secret `GHCR_TOKEN`(PAT, `read:packages`)을 추가하세요. 배포 스텝이 Pi에서 `docker login` 후 pull합니다.
@@ -187,11 +182,6 @@ cd /opt/stacks/triplesweb
 # .env: IMAGE, MYSQL_*, YOUTUBE_API_KEY, APP_PORT=8090
 # (Pi에서 8080/8081은 vaultwarden 등이 사용 중)
 
-# 개발 (운영이 떠 있는 뒤)
-# docker-compose.dev.yml → /opt/stacks/triplesweb-dev/docker-compose.yml
-bash scripts/setup-pi-dev.sh /opt/stacks/triplesweb /opt/stacks/triplesweb-dev
-# .env: 운영과 같은 MYSQL_* + APP_PORT=8091 + COMPOSE_NETWORK + UPLOADS_DIR/DATA_DIR
-
 # GHCR (패키지가 private인 경우)
 echo "$GHCR_PAT" | docker login ghcr.io -u YOUR_GITHUB_USER --password-stdin
 
@@ -202,21 +192,20 @@ echo "$GHCR_PAT" | docker login ghcr.io -u YOUR_GITHUB_USER --password-stdin
 
 ```bash
 cd /opt/stacks/triplesweb && docker compose pull && docker compose up -d
-cd /opt/stacks/triplesweb-dev && docker compose pull app && docker compose up -d
 ```
 
 - 운영: `http://<pi-lan-or-tailscale-ip>:8090/main`
-- 개발: `http://<pi-lan-or-tailscale-ip>:8091/main` (도메인은 NPG로 별도 연결)
 
 ### 4. 이후 자동 배포
 
-1. **개발:** PR을 열거나 푸시하면 [deploy-dev.yml](.github/workflows/deploy-dev.yml)이 `:8091`에 즉시 반영 (진행 중은 유지, 대기열은 최신 PR만)
-2. **운영:** 기본적으로 머지해도 바로 재시작하지 않음. 매일 **04:00 KST** 또는 Actions 수동. PR에 **`즉시 배포`** 코멘트를 남기고 머지하면 그때만 즉시 반영. 이미 같은 SHA·정상이면 스킵
+1. **PR 검사:** [ci-tests.yml](.github/workflows/ci-tests.yml)이 Java 테스트+WAR와 CSS/브라우저 테스트를 병렬 실행하고 Qodana를 한 번만 검사합니다.
+2. **운영:** 머지 즉시 [deploy-main.yml](.github/workflows/deploy-main.yml) 실행. 매일 **04:00 KST** 재확인 또는 Actions 수동 실행도 지원하며 이미 같은 SHA·정상이면 스킵합니다.
+3. **개발 서버 폐지:** 첫 운영 배포에서 기존 Pi 개발 앱만 종료합니다. 개발 데이터는 삭제하지 않습니다.
 
 체크리스트: [docs/DEPLOY_PI.md](docs/DEPLOY_PI.md)
 
 PR 머지 게이트: Ruleset **`main-ci`**의 required status check **`required`**
-(`CI tests` 워크플로의 `test` + `package` + `qodana` 집계).
+(`CI tests`의 배포 설정 검사 + Java/WAR + 브라우저/CSS + Qodana 집계).
 
 ### 5. 로컬에서 compose만 쓸 때
 
@@ -227,4 +216,4 @@ docker compose up -d --build   # 로컬 아키텍처용으로 Dockerfile 직접 
 # 또는 이미지만: docker compose up -d
 ```
 
-Pi(arm64) 배포 이미지는 CI가 빌드하므로, Intel/Apple Silicon Mac에서 `--platform linux/arm64` 없이 로컬 빌드하면 아키텍처가 다를 수 있습니다.
+Pi(arm64) 배포 이미지는 main 머지 후 운영 배포 Actions가 빌드하므로, Intel/Apple Silicon Mac에서 `--platform linux/arm64` 없이 로컬 빌드하면 아키텍처가 다를 수 있습니다.
