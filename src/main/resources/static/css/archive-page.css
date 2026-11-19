@@ -2080,6 +2080,15 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-detail-body > :not([hidden]) + :not([hidden]) {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
+.ar-detail-desc {
+    margin: 0;
+    color: #e8f0ed;
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
 .ar-detail-date {
     margin: 0;
     color: #d7e4df;

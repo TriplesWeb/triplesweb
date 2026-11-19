@@ -45,8 +45,9 @@ ${css}
   <div class="ar-dialog-panel ar-detail-panel">
     <div class="ar-detail-photo"><img id="archiveDetailImage" alt=""></div>
     <div class="ar-detail-side">
-      <div class="ar-dialog-head"><h2 id="archiveDetailTitle"></h2></div>
+      <div class="ar-dialog-head"><h2 id="archiveDetailTitle">사진</h2></div>
       <div class="ar-detail-body">
+        <p class="ar-detail-desc" id="archiveDetailDescription" hidden></p>
         <p class="ar-detail-date" id="archiveDetailDate" hidden></p>
         <section class="ar-detail-cast" aria-label="출연 멤버">
           <div class="ar-detail-members" id="archiveDetailMembers"></div>
@@ -106,6 +107,8 @@ ${css}
     const detail = await page.evaluate(() => ({
       open: !document.getElementById('archiveDetail').hidden,
       title: document.getElementById('archiveDetailTitle').textContent,
+      description: document.getElementById('archiveDetailDescription').textContent,
+      descriptionHidden: document.getElementById('archiveDetailDescription').hidden,
       blank: document.querySelector('.ar-card [data-archive-open]')?.tagName,
       original: Boolean(document.getElementById('archiveDetailOriginal')),
       member: document.querySelector('#archiveDetailMembers .unit-member-chip span')?.textContent || '',
@@ -115,7 +118,9 @@ ${css}
       outside: !document.getElementById('archiveDetailMembers').contains(document.getElementById('archiveDetailDate'))
     }));
     assert.equal(detail.open, true, '상세 모달이 열리지 않는다');
-    assert.equal(detail.title, '사진 2');
+    assert.equal(detail.title, '사진');
+    assert.equal(detail.description, '사진 2');
+    assert.equal(detail.descriptionHidden, false);
     assert.equal(detail.blank, 'BUTTON');
     assert.equal(detail.original, false, '원본 열기가 남아 있다');
     assert.equal(detail.member, '지연');

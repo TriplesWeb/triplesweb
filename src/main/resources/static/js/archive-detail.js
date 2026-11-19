@@ -4,6 +4,7 @@
     const photo = document.getElementById('archiveDetailPhoto') || detail.querySelector('.ar-detail-photo');
     const image = document.getElementById('archiveDetailImage');
     const title = document.getElementById('archiveDetailTitle');
+    const description = document.getElementById('archiveDetailDescription');
     const date = document.getElementById('archiveDetailDate');
     const source = document.getElementById('archiveDetailSource');
     const members = document.getElementById('archiveDetailMembers');
@@ -37,10 +38,19 @@
         return single ? [single] : [];
     }
 
+    function descriptionText(card) {
+        if (!card) return '';
+        return String(card.dataset.description || card.dataset.title || '').trim();
+    }
+
     function fillMeta(card) {
         if (!card) return;
-        const headline = card.dataset.headline || card.dataset.description || card.dataset.title || '사진';
-        if (title) title.textContent = headline;
+        if (title) title.textContent = '사진';
+        const desc = descriptionText(card);
+        if (description) {
+            description.hidden = !desc;
+            description.textContent = desc;
+        }
         if (date) {
             date.hidden = !card.dataset.registered;
             const label = document.querySelector('.archive-page')?.dataset.dateLabel || '날짜';
@@ -76,9 +86,8 @@
     function showImage() {
         if (!image || !activeCard) return;
         const url = urls[index] || '';
-        const headline = activeCard.dataset.headline || activeCard.dataset.description || activeCard.dataset.title || '사진';
         image.src = url;
-        image.alt = headline;
+        image.alt = descriptionText(activeCard) || '사진';
     }
 
     function paintNav() {
