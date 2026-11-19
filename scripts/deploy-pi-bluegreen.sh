@@ -195,8 +195,13 @@ bootstrap_proxy() {
   is_running "$legacy_cid" || fail "No active legacy app found. Manual recovery required."
   log "Legacy app serves $APP_PORT. Warm the new blue slot before the first port transfer."
   stage_candidate blue
-  write_proxy_config blue "$NGINX_CONF.tmp.$$"
-  mv -f "$NGINX_CONF.tmp.$$" "$NGINX_CONF"
+  write_proxy_config blue "$NGINX_CONF.tmp.$"
+  mv -f "$NGINX_CONF.tmp.$" "$NGINX_CONF"
+  # Download and validate Nginx while the legacy site is still serving traffic.
+  # Compose run does not publish port 8090 without --service-ports.
+  log "Pre-pulling Nginx and testing its config before first cutover"
+  "${COMPOSE[@]}" pull proxy
+  "${COMPOSE[@]}" run --rm --no-deps proxy nginx -t
   log "First cutover: stopping legacy app to release host port $APP_PORT"
   "${BASE_COMPOSE[@]}" stop app
   # Restore legacy app automatically if the Nginx proxy cannot serve traffic.
