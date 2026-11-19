@@ -1965,9 +1965,9 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 
 .ar-detail-panel {
     display: grid;
-    grid-template-columns: minmax(0, 1.45fr) minmax(16rem, 0.85fr);
-    width: min(100%, 72rem);
-    max-height: min(92vh, 54rem);
+    grid-template-columns: minmax(0, 1.75fr) minmax(15rem, 0.7fr);
+    width: min(100%, 78rem);
+    max-height: min(94vh, 58rem);
     overflow: hidden;
     background: #14151b;
     box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
@@ -1975,11 +1975,13 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-detail-photo {
     position: relative;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: stretch;
+    justify-content: stretch;
     align-self: stretch;
+    min-width: 0;
     min-height: 18rem;
-    padding: 1rem;
+    padding: 0;
+    overflow: hidden;
     background: #07080b;
     touch-action: pan-y;
     user-select: none;
@@ -1987,9 +1989,10 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-detail-photo img {
     display: block;
     width: 100%;
-    height: auto;
-    max-height: min(84vh, 48rem);
-    object-fit: contain;
+    height: 100%;
+    max-height: none;
+    object-fit: cover;
+    object-position: center;
 }
 .ar-detail-nav {
     position: absolute;
@@ -2245,8 +2248,8 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     filter: none;
 }
 @media (max-width: 860px) {
-    .ar-detail-panel { grid-template-columns: 1fr; }
-    .ar-detail-photo img { max-height: 42vh; }
+    .ar-detail-panel { grid-template-columns: 1fr; max-height: min(96vh, 58rem); }
+    .ar-detail-photo { min-height: 48vh; max-height: 58vh; }
     .ar-detail-nav { width: 2.1rem; height: 2.1rem; }
     .ar-detail-nav-icon { width: 1rem; height: 1rem; }
     .ar-detail-prev { left: 0.4rem; }
