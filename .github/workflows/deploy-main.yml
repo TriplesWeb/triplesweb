@@ -143,7 +143,7 @@ jobs:
             echo "reason=image-mismatch running=${RUNNING:-<none>} want=${WANT_IMAGE}" >&2
             exit 0
           fi
-          if curl -fsS --max-time 8 "http://127.0.0.1:${APP_PORT}/" >/dev/null; then
+          if curl -fsS --max-time 8 "http://127.0.0.1:${APP_PORT}/actuator/health/readiness" >/dev/null; then
             echo "skip=true"
           else
             echo "skip=false"
@@ -190,11 +190,11 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=triplesweb-arm64
+          cache-to: type=gha,mode=max,scope=triplesweb-arm64
           provenance: false
 
-      - name: Sync compose, chemistry assets, and deploy
+      - name: Sync only chemistry assets and deploy
         if: steps.skip.outputs.skip != 'true'
         env:
           PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
@@ -203,26 +203,14 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          : "${PI_DEPLOY_PATH:?PI_DEPLOY_PATH secret is required}"
           scp docker-compose.yml "pi:${PI_DEPLOY_PATH}/docker-compose.yml"
-          ssh pi "set -euo pipefail
-            mkdir -p \"${PI_DEPLOY_PATH}/uploads\"
-            docker run --rm -v \"${PI_DEPLOY_PATH}/uploads:/uploads\" alpine:3.20 \
-              chown -R \"\$(id -u):\$(id -g)\" /uploads
-          "
-          rsync -az --delete --no-owner --no-group \
-            --exclude '.DS_Store' \
-            --exclude '*.orig' \
-            --exclude '**/.DS_Store' \
-            --exclude '**/*.orig' \
-            --filter 'P images/' \
-            --filter 'P images/**' \
-            --filter 'P videos/' \
-            --filter 'P videos/**' \
-            --filter 'P files/' \
-            --filter 'P files/**' \
-            -e ssh \
-            uploads/ "pi:${PI_DEPLOY_PATH}/uploads/"
-          ssh pi "chmod -R a+rwX \"${PI_DEPLOY_PATH}/uploads\""
+          scp scripts/deploy-pi-app.sh "pi:${PI_DEPLOY_PATH}/deploy-pi-app.sh"
+          # 업로드 루트 삭제/재귀 chown 없이 관리 대상 chemistry만 증분 복사한다.
+          ssh pi "mkdir -p '${PI_DEPLOY_PATH}/uploads/chemistry'"
+          rsync -az --no-owner --no-group --exclude '.DS_Store' \
+            uploads/chemistry/ "pi:${PI_DEPLOY_PATH}/uploads/chemistry/"
+
           ssh pi env \
             PI_DEPLOY_PATH="$PI_DEPLOY_PATH" \
             IMAGE="$IMAGE" \
@@ -230,44 +218,16 @@ jobs:
             GHCR_TOKEN="$GHCR_TOKEN" \
             bash -s <<'EOF'
           set -euo pipefail
-          cd "${PI_DEPLOY_PATH}"
+          cd "$PI_DEPLOY_PATH"
           touch .env
           if grep -q '^IMAGE=' .env; then
-            sed -i.bak "s|^IMAGE=.*|IMAGE=${IMAGE}|" .env
+            sed -i "s|^IMAGE=.*|IMAGE=$IMAGE|" .env
           else
-            echo "IMAGE=${IMAGE}" >> .env
+            printf 'IMAGE=%s\n' "$IMAGE" >> .env
           fi
-          echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
-          # 개발/운영이 같은 Pi에서 pull 하면 containerd ingest rename 이 깨질 수 있다.
-          # flock 으로 직렬화하고, 실패 시 짧게 재시도한다.
-          (
-            flock -w 900 9
-            for attempt in $(seq 1 5); do
-              if docker compose pull app; then
-                docker compose up -d
-                break
-              fi
-              if [[ "${attempt}" -eq 5 ]]; then
-                echo "docker compose pull failed after ${attempt} attempts"
-                exit 1
-              fi
-              echo "docker compose pull failed (attempt ${attempt}/5); retrying..."
-              sleep $((attempt * 8))
-            done
-          ) 9>/tmp/triplesweb-docker-pull.lock
-          docker image prune -f
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin >/dev/null
+          export APP_PORT="$(sed -n 's/^APP_PORT=//p' .env | tail -n1)"
+          APP_PORT="${APP_PORT:-8090}"
+          bash ./deploy-pi-app.sh prod
           docker logout ghcr.io >/dev/null 2>&1 || true
-          APP_PORT="$(grep -E '^APP_PORT=' .env | cut -d= -f2- || true)"
-          APP_PORT="${APP_PORT:-8080}"
-          for attempt in $(seq 1 60); do
-            if curl -fsS --max-time 8 "http://127.0.0.1:${APP_PORT}/" >/dev/null; then
-              echo "Smoke OK: / on :${APP_PORT} (attempt ${attempt})"
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "Smoke failed: / on :${APP_PORT} did not respond"
-          docker compose ps || true
-          docker compose logs --tail=200 app || true
-          exit 1
           EOF
