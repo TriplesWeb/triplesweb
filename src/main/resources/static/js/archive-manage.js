@@ -12,6 +12,28 @@
         return window.AboutAdminAuth ? AboutAdminAuth.applyAuthHeaders(headerMap) : headerMap;
     }
 
+    /** HTTPS 프록시 뒤에서 302 Location 이 http 로 와도 같은 경로로 안전하게 이동한다. */
+    function navigateAfterUpload(locationHeader) {
+        if (!locationHeader) {
+            location.reload();
+            return;
+        }
+        try {
+            const url = new URL(locationHeader, window.location.href);
+            window.location.assign(url.pathname + url.search + url.hash);
+        } catch (_) {
+            if (locationHeader.startsWith("/")) window.location.assign(locationHeader);
+            else location.reload();
+        }
+    }
+
+    function uploadSucceeded(response) {
+        return response.ok
+            || response.type === "opaqueredirect"
+            || response.status === 0
+            || (response.status >= 300 && response.status < 400);
+    }
+
     function openDialog(dialog) {
         if (!dialog) return;
         dialogTriggers.set(dialog, document.activeElement);
@@ -25,7 +47,9 @@
         dialog.hidden = true;
         dialog.querySelectorAll('input[type="file"]').forEach(input => {
             releaseUrl(input._archiveLastFile);
+            (input._archiveLastFiles || []).forEach(releaseUrl);
             input._archiveLastFile = null;
+            input._archiveLastFiles = null;
         });
         dialogTriggers.get(dialog)?.focus();
         if (!document.querySelector(".ar-dialog:not([hidden])")) document.body.style.overflow = "";
@@ -190,7 +214,17 @@
 
     function syncFileName(input) {
         const label = input?.closest('.ar-file')?.querySelector('[data-file-name]');
-        if (label) label.textContent = input.files?.[0]?.name || '선택된 파일 없음';
+        if (!label) return;
+        const files = Array.from(input.files || []);
+        if (!files.length) {
+            label.textContent = '선택된 파일 없음';
+            return;
+        }
+        if (files.length === 1) {
+            label.textContent = files[0].name;
+            return;
+        }
+        label.textContent = files[0].name + ' 외 ' + (files.length - 1) + '개';
     }
 
     function bindFileNames(form) {
@@ -232,8 +266,16 @@
             }
         }
         const info = preview.querySelector('[data-preview-file]');
-        const file = form.querySelector('input[type="file"]')?.files?.[0];
-        if (info) info.textContent = file ? `${file.name} · ${(file.size / 1024).toLocaleString('ko', { maximumFractionDigits: 1 })} KB` : '현재 저장된 사진';
+        const files = Array.from(form.querySelector('input[name="file"]')?.files || []);
+        if (info) {
+            if (!files.length) {
+                info.textContent = kind === 'video' ? '현재 저장된 영상' : '현재 저장된 사진';
+            } else if (files.length === 1) {
+                info.textContent = `${files[0].name} · ${(files[0].size / 1024).toLocaleString('ko', { maximumFractionDigits: 1 })} KB`;
+            } else {
+                info.textContent = `${files.length}장 선택 · ${files[0].name} 외 ${files.length - 1}개`;
+            }
+        }
     }
 
     function renderArtists(root) {
@@ -341,9 +383,12 @@
         return null;
     }
 
-    function assignFileToInput(input, file) {
+    function assignFileToInput(input, file, { append = false } = {}) {
         if (!input || !file) return false;
         const transfer = new DataTransfer();
+        if (append && input.multiple) {
+            Array.from(input.files || []).forEach(existing => transfer.items.add(existing));
+        }
         transfer.items.add(file);
         input.files = transfer.files;
         syncFileName(input);
@@ -472,12 +517,25 @@
     bindThumbnail(uploadForm);
     bindFileNames(uploadForm);
 
+    function defaultUploadArtists() {
+        const fromPage = document.querySelector("[data-archive-kind]")?.dataset.defaultArtists;
+        if (fromPage != null && fromPage.trim()) return fromPage.trim();
+        const params = new URLSearchParams(window.location.search);
+        return [...new Set(params.getAll("members").map(name => name.trim()).filter(Boolean))].join(",");
+    }
+
     window.showAddModal = function () {
         if (!uploadForm || !uploadDialog) return;
         uploadForm.reset();
         resetThumbnail(uploadForm);
-        applyArtists(uploadDialog, "");
-        if (uploadFile) releaseUrl(uploadFile._archiveLastFile);
+        // 멤버 폴더·필터에서 열면 해당 멤버를 기본 선택(변경 가능)
+        applyArtists(uploadDialog, defaultUploadArtists());
+        if (uploadFile) {
+            releaseUrl(uploadFile._archiveLastFile);
+            (uploadFile._archiveLastFiles || []).forEach(releaseUrl);
+            uploadFile._archiveLastFile = null;
+            uploadFile._archiveLastFiles = null;
+        }
         showPreview(uploadPreview, "");
         window.bindArchiveDateFields?.(uploadForm);
         uploadForm.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName);
@@ -485,32 +543,38 @@
     };
 
     uploadFile?.addEventListener("change", () => {
-        const file = uploadFile.files && uploadFile.files[0];
+        const files = Array.from(uploadFile.files || []);
         releaseUrl(uploadFile._archiveLastFile);
-        uploadFile._archiveLastFile = file || null;
-        if (!file) {
+        (uploadFile._archiveLastFiles || []).forEach(releaseUrl);
+        uploadFile._archiveLastFile = files[0] || null;
+        uploadFile._archiveLastFiles = files;
+        if (!files.length) {
             showPreview(uploadPreview, "");
             return;
         }
-        if (!acceptedFile(file)) {
+        const invalid = files.find(file => !acceptedFile(file));
+        if (invalid) {
             alert(kind === "video" ? "동영상 파일만 선택할 수 있습니다." : "이미지 파일만 선택할 수 있습니다.");
             uploadFile.value = "";
+            uploadFile._archiveLastFile = null;
+            uploadFile._archiveLastFiles = null;
             syncFileName(uploadFile);
             showPreview(uploadPreview, "");
             return;
         }
-        showPreview(uploadPreview, rememberUrl(file));
+        showPreview(uploadPreview, rememberUrl(files[0]));
+        files.slice(1).forEach(rememberUrl);
     });
 
     uploadForm?.addEventListener("submit", async event => {
         event.preventDefault();
         const title = uploadForm.querySelector("[name='title']")?.value.trim();
-        const file = uploadFile?.files?.[0];
+        const files = Array.from(uploadFile?.files || []);
         if (kind === "video" && !title) {
             alert("제목을 입력해 주세요.");
             return;
         }
-        if (!file) {
+        if (!files.length) {
             alert(noun + " 파일을 선택해 주세요.");
             return;
         }
@@ -526,7 +590,10 @@
             alert("미리보기를 확인한 뒤 추가해 주세요.");
             return;
         }
-        if (!window.confirm("이 " + noun + "을 추가하시겠습니까?")) return;
+        const confirmMessage = kind === "image" && files.length > 1
+            ? "사진 " + files.length + "장을 추가하시겠습니까?"
+            : "이 " + noun + "을 추가하시겠습니까?";
+        if (!window.confirm(confirmMessage)) return;
         if (!validThumbnail(uploadForm)) return;
         const body = new FormData(uploadForm);
         body.delete("artistNames");
@@ -536,10 +603,15 @@
         if (button) button.disabled = true;
         try {
             const response = await fetch(uploadForm.dataset.uploadUrl || "/archive/upload", {
-                method: "POST", body, headers: authHeaders(), credentials: "same-origin"
+                method: "POST",
+                body,
+                headers: authHeaders(),
+                credentials: "same-origin",
+                // 프록시 뒤 절대 http Location 을 fetch 가 따라가면 Mixed Content 로 실패한다.
+                redirect: "manual"
             });
-            if (response.ok) {
-                location.reload();
+            if (uploadSucceeded(response)) {
+                navigateAfterUpload(response.headers.get("Location"));
                 return;
             }
             const message = (await response.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -572,7 +644,7 @@
         const file = imageFileFromClipboard(event.clipboardData);
         if (!file) return;
         event.preventDefault();
-        assignFileToInput(input, file);
+        assignFileToInput(input, file, { append: Boolean(input.multiple) });
     });
 
     function showEdit(button) {

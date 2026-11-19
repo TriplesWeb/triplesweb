@@ -171,6 +171,7 @@ public class ArchiveController {
         model.addAttribute("archiveTotalPages", 1);
         model.addAttribute("hasArchives", !folders.isEmpty());
         model.addAttribute("archiveSources", sourceOptions(null));
+        model.addAttribute("defaultUploadArtists", "");
         model.addAttribute("hasArchiveBack", false);
         model.addAttribute("archiveBackHref", "/archive");
         model.addAttribute("archiveFolderIndex", false);
@@ -218,6 +219,7 @@ public class ArchiveController {
         model.addAttribute("archiveTotalPages", 1);
         model.addAttribute("hasArchives", !folders.isEmpty());
         model.addAttribute("archiveSources", sourceOptions(null));
+        model.addAttribute("defaultUploadArtists", "");
         addCommonDateFlags(model);
         return "archive/archive";
     }
@@ -257,6 +259,7 @@ public class ArchiveController {
         model.addAttribute("memberPickerOptions", memberOptions(artists, selectedMembers));
         model.addAttribute("selectedMembers", selectedMembers);
         model.addAttribute("hasSelectedMembers", !selectedMembers.isEmpty());
+        model.addAttribute("defaultUploadArtists", String.join(",", selectedMembers));
         model.addAttribute("page", archives);
         model.addAttribute("type", type);
         model.addAttribute("isAuthenticated", isAuthenticated);
@@ -1255,7 +1258,7 @@ public class ArchiveController {
     }
 
     @PostMapping("/upload/image")
-    public String uploadImage(@RequestParam("file") MultipartFile file,
+    public String uploadImage(@RequestParam("file") List<MultipartFile> files,
                               @RequestParam(value = "title", required = false) String title,
                               @RequestParam(value = "description", required = false) String description,
                               @RequestParam(value="artistNames", required=false) List<String> artistNames,
@@ -1264,8 +1267,18 @@ public class ArchiveController {
                               HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
         String names = artistNames == null ? "" : String.join(",", artistNames);
-        archiveService.uploadImageOnly(file, title == null ? "" : title, MediaType.IMAGE, names,
-                requireDate(registeredOn), requireSource(source), description);
+        LocalDate date = requireDate(registeredOn);
+        ArchiveSource archiveSource = requireSource(source);
+        String safeTitle = title == null ? "" : title;
+        List<MultipartFile> uploads = files == null ? List.of() : files.stream()
+                .filter(file -> file != null && !file.isEmpty())
+                .toList();
+        if (uploads.isEmpty()) {
+            throw new IllegalArgumentException("사진 파일을 선택해 주세요.");
+        }
+        for (MultipartFile file : uploads) {
+            archiveService.uploadImageOnly(file, safeTitle, MediaType.IMAGE, names, date, archiveSource, description);
+        }
         return "redirect:" + folderRedirect(MediaType.IMAGE, names);
     }
 

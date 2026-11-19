@@ -82,7 +82,13 @@ ${site}${css}${siteUi}
 <div class="ar-dialog" id="archiveDetail" hidden>
   <button type="button" class="ar-dialog-backdrop" data-ar-close aria-label="닫기"></button>
   <div class="ar-dialog-panel ar-detail-panel" role="dialog">
-    <div class="ar-detail-photo"><img id="archiveDetailImage" alt=""></div>
+    <div class="ar-detail-photo" id="archiveDetailPhoto">
+      <button type="button" class="ar-detail-nav ar-detail-prev" id="archiveDetailPrev" aria-label="이전 사진" hidden><span aria-hidden="true">‹</span></button>
+      <img id="archiveDetailImage" alt="">
+      <button type="button" class="ar-detail-nav ar-detail-next" id="archiveDetailNext" aria-label="다음 사진" hidden><span aria-hidden="true">›</span></button>
+      <div class="ar-detail-dots" id="archiveDetailDots" hidden></div>
+      <p class="ar-detail-count" id="archiveDetailCount" hidden></p>
+    </div>
     <div class="ar-detail-side">
       <div class="ar-dialog-head"><h2 id="archiveDetailTitle">사진</h2><button type="button" class="ar-close" data-ar-close>&times;</button></div>
       <div class="ar-detail-body">
@@ -241,7 +247,13 @@ ${site}${css}${siteUi}
         dateWeight: Number(dateStyle.fontWeight),
         dateBorder: getComputedStyle(date).borderTopWidth,
         sourceBorder: getComputedStyle(badge.parentElement).borderTopWidth,
-        castBorder: getComputedStyle(cast).borderTopWidth
+        castBorder: getComputedStyle(cast).borderTopWidth,
+        title: document.getElementById('archiveDetailTitle').textContent.trim(),
+        count: document.getElementById('archiveDetailCount').textContent.trim(),
+        countHidden: document.getElementById('archiveDetailCount').hidden,
+        prevHidden: document.getElementById('archiveDetailPrev').hidden,
+        nextHidden: document.getElementById('archiveDetailNext').hidden,
+        dots: document.querySelectorAll('#archiveDetailDots .ar-detail-dot').length
       };
     });
     assert.equal(detail.hidden, false);
@@ -255,6 +267,23 @@ ${site}${css}${siteUi}
     assert.equal(detail.castBorder, '1px', '멤버 위에 구분선이 없다');
     assert.ok(detail.radius.includes('999') || parseFloat(detail.radius) >= 12, '출처가 버튼처럼 보이지 않는다: ' + detail.radius);
     assert.equal(await page.locator('#archiveDetail .ar-detail-chem').count(), 0, '케미명이 없는 멤버에도 케미 라벨이 있다');
+    assert.equal(detail.title, '지연');
+    assert.equal(detail.count, '1 / 2');
+    assert.equal(detail.countHidden, false);
+    assert.equal(detail.prevHidden, false);
+    assert.equal(detail.nextHidden, false);
+    assert.equal(detail.dots, 2);
+    await page.click('#archiveDetailNext');
+    const slid = await page.evaluate(() => ({
+      title: document.getElementById('archiveDetailTitle').textContent.trim(),
+      count: document.getElementById('archiveDetailCount').textContent.trim(),
+      chem: document.querySelector('#archiveDetail .ar-detail-chem')?.textContent.trim() || ''
+    }));
+    assert.equal(slid.title, '마유 주빈');
+    assert.equal(slid.count, '2 / 2');
+    assert.equal(slid.chem, '심장마빈즈');
+    await page.keyboard.press('ArrowLeft');
+    assert.equal(await page.locator('#archiveDetailTitle').innerText(), '지연');
     const detailBox = await page.locator('#archiveDetail .ar-detail-side').boundingBox();
     await page.screenshot({
       path: path.join(artifactDir, 'archive-detail-source-badge.png'),

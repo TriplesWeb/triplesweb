@@ -40,6 +40,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -373,6 +374,8 @@ class ArchiveControllerTest {
                 .andExpect(content().string(not(containsString("목록에 없는 출연자"))))
                 .andExpect(content().string(containsString("파일 선택")))
                 .andExpect(content().string(containsString("선택된 파일 없음")))
+                .andExpect(content().string(containsString("multiple")))
+                .andExpect(content().string(containsString("여러 장 선택 가능")))
                 .andExpect(content().string(containsString("코스모룸")))
                 .andExpect(content().string(containsString("코스모톡/프롬")))
                 .andExpect(content().string(containsString("공식 SNS")))
@@ -761,6 +764,17 @@ class ArchiveControllerTest {
                         .param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
         verify(archiveService).uploadImageOnly(any(), eq(""), eq(MediaType.IMAGE), eq("서연"), eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), isNull());
+        verify(aboutAdminAuth).requireAdmin(any(), any());
+    }
+
+    @Test void imageUploadAcceptsMultipleFiles() throws Exception {
+        MockMultipartFile first = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
+        MockMultipartFile second = new MockMultipartFile("file", "b.png", "image/png", new byte[]{3, 4});
+        mvc.perform(multipart("/archive/upload/image").file(first).file(second)
+                        .param("description", "묶음").param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
+                .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
+        verify(archiveService, times(2)).uploadImageOnly(any(), eq(""), eq(MediaType.IMAGE), eq("서연"),
+                eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), eq("묶음"));
         verify(aboutAdminAuth).requireAdmin(any(), any());
     }
 

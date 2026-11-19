@@ -12,7 +12,7 @@
 <div class="ar-glow ar-glow-mint"></div>
 {{>layout/header}}
 
-<main class="archive-page{{#archiveBrowse}} is-browse{{/archiveBrowse}}{{#archiveFolderHome}} is-folder-home{{/archiveFolderHome}}{{#archiveFolderIndex}} is-folder-index{{/archiveFolderIndex}}{{#archiveFolderView}} is-folder-view{{/archiveFolderView}}" data-archive-kind="{{#imageArchive}}image{{/imageArchive}}{{#videoArchive}}video{{/videoArchive}}" data-date-label="{{mediaDateLabel}}">
+<main class="archive-page{{#archiveBrowse}} is-browse{{/archiveBrowse}}{{#archiveFolderHome}} is-folder-home{{/archiveFolderHome}}{{#archiveFolderIndex}} is-folder-index{{/archiveFolderIndex}}{{#archiveFolderView}} is-folder-view{{/archiveFolderView}}" data-archive-kind="{{#imageArchive}}image{{/imageArchive}}{{#videoArchive}}video{{/videoArchive}}" data-date-label="{{mediaDateLabel}}" data-default-artists="{{defaultUploadArtists}}">
     <section class="ar-hero{{#archiveBrowse}} ar-hero-browse{{/archiveBrowse}}">
         <div class="ar-panel ar-headline{{#archiveFolderView}} is-member-space{{/archiveFolderView}}{{#archiveFolderIndex}} is-member-space{{/archiveFolderIndex}}"{{#folderAccent}} style="--folder-color: {{folderAccent}}"{{/folderAccent}}>
             <button type="button" class="ar-stats-toggle" data-stats-toggle aria-expanded="true" aria-controls="archiveStats" aria-label="통계 접기">
@@ -124,11 +124,11 @@
                 </label>
                 <div class="ar-field">사진 파일
                     <span class="ar-file">
-                        <input type="file" id="archiveUploadFile" name="file" accept="image/*,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp" required>
+                        <input type="file" id="archiveUploadFile" name="file" accept="image/*,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp" multiple required>
                         <label for="archiveUploadFile" class="ar-file-pick">파일 선택</label>
                         <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
                     </span>
-                    <span class="ar-field-hint">파일 선택 또는 이미지 붙여넣기(Ctrl/⌘+V) · JPG · JPEG · JFIF · PNG · WebP · GIF · BMP</span>
+                    <span class="ar-field-hint">여러 장 선택 가능 · 파일 선택 또는 이미지 붙여넣기(Ctrl/⌘+V) · JPG · JPEG · JFIF · PNG · WebP · GIF · BMP</span>
                 </div>
                 <div class="ar-preview" id="uploadPreview" hidden>
                     <p class="ar-preview-info" data-preview-file></p>
