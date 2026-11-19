@@ -13,7 +13,7 @@ function setup(fetch) {
     querySelector: s => s === 'button' ? button : status,
     addEventListener: (type, fn) => { form.submit = fn; }};
   vm.runInNewContext(code, {document: {querySelector: s => s === '[data-objekt-favorite]' ? form : null}, fetch, URLSearchParams,
-    window: {AboutAdminAuth:{applyAuthHeaders:headers=>({...headers,'X-XSRF-TOKEN':'test-csrf'})}},
+    window: {SiteFeedback:{confirm:async()=>true}, AboutAdminAuth:{applyAuthHeaders:headers=>({...headers,'X-XSRF-TOKEN':'test-csrf'})}},
     FormData: function(){ return [['favorite',input.value],['_csrf','test-form-token']]; }
   });
   return {form, button, input, status, submit: () => form.submit({preventDefault() {}})};
@@ -37,6 +37,7 @@ test('duplicate submits send one desired state, then allow explicit removal', as
   assert.equal(ui.input.value, 'false');
   assert.equal(ui.button.attrs['aria-pressed'], 'true');
   const remove = ui.submit();
+  await new Promise(setImmediate);
   assert.equal(calls[1].body.get('favorite'), 'false');
   finish({ok: true, json: async () => ({favorite: false})});
   await remove;

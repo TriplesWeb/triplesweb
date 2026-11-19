@@ -53,7 +53,7 @@ async function page(serverAdmin, options = {}) {
   runInNewContext(readFileSync(resolve(__dirname, '../../src/main/resources/static/js/unit.js'), 'utf8'), {
     document, window: {
       AboutAdminAuth: auth, location,
-      confirm: () => options.confirm !== false,
+      SiteFeedback: { confirm: async () => options.confirm !== false },
       history: { replaceState(_state, _unused, value) { current = new URL(value, current); } }
     },
     Headers, FormData, URLSearchParams, URL, CSS: { escape: value => value },

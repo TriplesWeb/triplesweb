@@ -1280,9 +1280,10 @@
             const message = memberCount > 1 || numberCount > 1
                 ? ('선택한 멤버 ' + memberCount + '명 · 번호 ' + numberCount + '개의 설명을 삭제할까요?')
                 : '이 오브젝트의 상세 설명을 삭제하시겠습니까?';
-            if (!window.confirm(message)) return;
+            if (!await window.SiteFeedback.confirm(message)) return;
         }
-        if (!clear && !descriptionForm.reportValidity()) return;
+        if (!clear && (!descriptionForm.reportValidity()
+            || !await window.SiteFeedback.confirm('이 오브젝트의 상세 설명을 저장하시겠습니까?'))) return;
         const key = activeObjektKey;
         descriptionSaving = true;
         const controls = descriptionForm.querySelectorAll('button, textarea');
@@ -1379,6 +1380,7 @@
         const key = detailFavorite.dataset.key || activeObjektKey;
         if (!key || detailFavorite.disabled) return;
         const desired = detailFavorite.dataset.favorite !== 'true';
+        if (!await window.SiteFeedback.confirm(desired ? '이 오브젝트를 찜하시겠습니까?' : '찜을 해제하시겠습니까?')) return;
         const status = document.getElementById('objektFavoriteStatus');
         status.hidden = true;
         detailFavorite.disabled = true;

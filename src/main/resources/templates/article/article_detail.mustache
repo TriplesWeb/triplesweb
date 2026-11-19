@@ -167,7 +167,7 @@
                                 <a href="{{boardBase}}/{{article.id}}/edit" class="py-2 px-4 rounded-xl bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/40 text-on-surface text-sm font-medium transition-all">
                                     수정하기
                                 </a>
-                                <form method="post" action="{{boardBase}}/{{article.id}}/delete" onsubmit="return confirm('정말 삭제하시겠습니까?')" class="inline">
+                                <form method="post" action="{{boardBase}}/{{article.id}}/delete" data-confirm="이 글을 삭제하시겠습니까? 삭제하면 되돌릴 수 없습니다." class="inline">
                                     {{#_csrf}}
                                     <input type="hidden" name="{{parameterName}}" value="{{token}}">
                                     {{/_csrf}}
@@ -200,9 +200,13 @@
         if (!likeBtn || !likeCountElem) return;
 
         let pending = false;
-        likeBtn.addEventListener('click', function () {
+        likeBtn.addEventListener('click', async function () {
             if (pending) return;
             pending = true;
+            if (!await window.SiteFeedback.confirm('이 글을 추천하시겠습니까?')) {
+                pending = false;
+                return;
+            }
             const headers = (window.SiteUi && window.SiteUi.csrfHeaders)
                 ? window.SiteUi.csrfHeaders({ 'Content-Type': 'application/json' })
                 : { 'Content-Type': 'application/json' };
@@ -225,7 +229,7 @@
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('추천 처리 중 오류가 발생했습니다');
+                    window.SiteFeedback.alert('추천 처리 중 오류가 발생했습니다');
                 })
                 .finally(() => { pending = false; });
         });

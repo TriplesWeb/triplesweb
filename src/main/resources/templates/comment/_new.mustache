@@ -48,7 +48,7 @@
         const errorMessageDiv = document.querySelector("#comment-error-message");
         if (!commentCreateBtn) return;
 
-        commentCreateBtn.addEventListener("click", function () {
+        commentCreateBtn.addEventListener("click", async function () {
             const userIdInput = document.querySelector("#new-comment-userId");
             const bodyInput = document.querySelector("#new-comment-body");
             const articleIdInput = document.querySelector("#new-comment-article-id");
@@ -78,6 +78,7 @@
                 articleId: Number(articleId)
             };
 
+            if (!await window.SiteFeedback.confirm("이 댓글을 등록하시겠습니까?")) return;
             const url = "/api/articles/" + articleId + "/comments";
             const headers = (window.SiteUi && window.SiteUi.csrfHeaders)
                 ? window.SiteUi.csrfHeaders({ "Content-Type": "application/json" })
@@ -99,8 +100,8 @@
                         }
                         return response.json();
                     })
-                    .then(function (data) {
-                        alert("댓글이 등록되었습니다.");
+                    .then(async () => {
+                        await window.SiteFeedback.alert("댓글이 등록되었습니다.");
                         window.location.reload();
                     })
                     .catch(function (error) {

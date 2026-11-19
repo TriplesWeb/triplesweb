@@ -20,7 +20,7 @@
         <div class="absolute -inset-1 rounded-3xl bg-gradient-to-b from-primary-container/20 via-transparent to-secondary-container/30 blur-xl opacity-75 pointer-events-none"></div>
         <div class="relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl overflow-hidden backdrop-blur-2xl shadow-2xl">
         <nav class="site-back site-back--bar" aria-label="목록으로">
-            <a href="{{boardBase}}">← {{categoryName}}</a>
+            <a data-confirm-action="글 수정을 취소하시겠습니까?" href="{{boardBase}}">← {{categoryName}}</a>
         </nav>
         <div class="p-6 sm:p-10">
         {{#errorMessage}}
@@ -33,7 +33,7 @@
         {{/errorMessage}}
             <p id="formInlineError" class="mb-4 text-sm text-error font-medium" hidden role="alert"></p>
 
-            <form id="editForm" action="{{boardBase}}/{{article.id}}" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit(this)" class="space-y-5" data-market-board="{{#isMarketBoard}}true{{/isMarketBoard}}{{^isMarketBoard}}false{{/isMarketBoard}}">
+            <form id="editForm" data-confirm="이 글을 수정하시겠습니까?" action="{{boardBase}}/{{article.id}}" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit(this)" class="space-y-5" data-market-board="{{#isMarketBoard}}true{{/isMarketBoard}}{{^isMarketBoard}}false{{/isMarketBoard}}">
                 <input type="hidden" name="id" value="{{article.id}}">
 
                 {{#isMarketBoard}}
@@ -90,7 +90,7 @@
                 </div>
                 <div class="flex items-center gap-3 pt-4">
                     <button type="submit" class="btn btn-primary flex-1">수정하기</button>
-                    <a href="{{boardBase}}" class="site-back-link">← 목록으로</a>
+                    <a data-confirm-action="글 수정을 취소하시겠습니까?" href="{{boardBase}}" class="site-back-link">← 목록으로</a>
                 </div>
                 {{/isMarketBoard}}
 
@@ -114,7 +114,7 @@
     function showFormError(message) {
         const el = document.getElementById('formInlineError');
         if (!el) {
-            alert(message);
+            window.SiteFeedback.alert(message);
             return;
         }
         el.textContent = message || '';
@@ -340,7 +340,7 @@
                         editForm.appendChild(hi);
                     } catch (err) {
                         console.error(err);
-                        alert('업로드 실패: ' + (err.message || err));
+                        window.SiteFeedback.alert('업로드 실패: ' + (err.message || err));
                     }
                 }
             } finally {
@@ -401,7 +401,7 @@
                 showFormError('게시글을 수정해주세요.');
                 return false;
             }
-            return window.confirm('이 글을 수정하시겠습니까?');
+            return true;
         };
 
         function attachRemoveBtn(host, saved, fileId) {

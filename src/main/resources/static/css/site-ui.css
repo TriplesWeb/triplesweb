@@ -463,3 +463,68 @@ html[data-theme="light"] .site-section-tab[aria-current="page"],
 html[data-theme="light"] .site-section-tab[aria-selected="true"] {
     border-bottom-color: var(--site-ui-accent, #0a8f7c);
 }
+
+.site-feedback-dialog {
+    position: fixed;
+    inset: 0;
+    width: min(28rem, calc(100% - 2rem));
+    max-height: calc(100dvh - 2rem);
+    margin: auto;
+    padding: 1.25rem;
+    overflow: auto;
+    border: 1px solid var(--site-ui-border);
+    border-radius: 1rem;
+    background: var(--site-ui-panel);
+    color: var(--site-ui-text);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+}
+
+.site-feedback-dialog::backdrop { background: rgba(0, 0, 0, 0.62); }
+.site-feedback-dialog h2 { font-size: 1.05rem; font-weight: 700; }
+.site-feedback-dialog p {
+    margin: 0.75rem 0 1.25rem;
+    color: var(--site-ui-muted);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.site-feedback-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
+.site-feedback-actions button {
+    min-height: 2.75rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--site-ui-border);
+    border-radius: 0.75rem;
+    cursor: pointer;
+}
+.site-feedback-actions button[value="accept"] {
+    border-color: transparent;
+    background: var(--site-ui-accent);
+    color: var(--site-ui-bg);
+    font-weight: 700;
+}
+.site-feedback-actions button:focus-visible { outline: 2px solid var(--site-ui-accent); outline-offset: 3px; }
+
+.site-feedback-progress {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 9999;
+    height: 4px;
+    overflow: hidden;
+    background: var(--site-ui-border);
+    pointer-events: none;
+}
+.site-feedback-progress[hidden] { display: none; }
+.site-feedback-progress span {
+    display: block;
+    width: 35%;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--site-ui-accent);
+    animation: site-feedback-slide 1.15s ease-in-out infinite;
+}
+@keyframes site-feedback-slide {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(286%); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .site-feedback-progress span { width: 100%; animation: none; }
+}

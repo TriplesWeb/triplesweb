@@ -313,10 +313,11 @@
           }
         }
         if (currentState.admin) {
+          if (!await window.SiteFeedback.confirm("관리자에서 로그아웃하시겠습니까?")) return;
           try {
             await logout();
           } catch (_) {
-            alert("로그아웃에 실패했습니다. 네트워크 연결을 확인해 주세요.");
+            window.SiteFeedback.alert("로그아웃에 실패했습니다. 네트워크 연결을 확인해 주세요.");
           }
           return;
         }
@@ -359,22 +360,12 @@
     });
   }
 
-  document.addEventListener("submit", (event) => {
-    const form = event.target;
-    if (!(form instanceof HTMLFormElement) || form.hasAttribute("data-admin-fetch")) return;
-    const message = form.getAttribute("data-confirm");
-    if (message && !window.confirm(message)) event.preventDefault();
-  }, true);
-
   document.addEventListener("submit", async (event) => {
     const form = event.target;
-    if (!(form instanceof HTMLFormElement) || !form.hasAttribute("data-admin-fetch")) return;
-    const confirmMessage = form.getAttribute("data-confirm");
-    if (confirmMessage && !window.confirm(confirmMessage)) {
-      event.preventDefault();
-      return;
-    }
+    if (event.defaultPrevented || !(form instanceof HTMLFormElement) || !form.hasAttribute("data-admin-fetch")) return;
     event.preventDefault();
+    const confirmMessage = form.getAttribute("data-confirm");
+    if (confirmMessage && !await window.SiteFeedback.confirm(confirmMessage)) return;
     const busy = event.submitter instanceof HTMLButtonElement ? event.submitter : form.querySelector("button[type='submit']");
     if (busy) busy.disabled = true;
     try {
@@ -391,11 +382,11 @@
       let detail = "";
       try { detail = (await response.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(); } catch (_) {}
       if (detail.length > 180) detail = detail.slice(0, 180);
-      alert(response.status === 403
+      window.SiteFeedback.alert(response.status === 403
         ? "관리자 로그인 후 다시 시도해 주세요."
         : (detail || "저장하지 못했습니다. 입력값을 확인하고 다시 시도해 주세요."));
     } catch (_) {
-      alert("요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
+      window.SiteFeedback.alert("요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
     } finally {
       if (busy) busy.disabled = false;
     }

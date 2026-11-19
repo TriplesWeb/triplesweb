@@ -1574,7 +1574,7 @@
     if (clearCb) clearCb.checked = false;
     const room = CHEM_MAX_IMAGES - editImageItems.length;
     if (room <= 0) {
-      window.alert("사진은 최대 " + CHEM_MAX_IMAGES + "장까지 등록할 수 있습니다.");
+      window.SiteFeedback.alert("사진은 최대 " + CHEM_MAX_IMAGES + "장까지 등록할 수 있습니다.");
       return;
     }
     files.slice(0, room).forEach((file, i) => {
@@ -1586,7 +1586,7 @@
       });
     });
     if (files.length > room) {
-      window.alert("사진은 최대 " + CHEM_MAX_IMAGES + "장까지 등록할 수 있습니다.");
+      window.SiteFeedback.alert("사진은 최대 " + CHEM_MAX_IMAGES + "장까지 등록할 수 있습니다.");
     }
     renderEditImageThumbs();
   }
@@ -1851,7 +1851,7 @@
         editingGroupMembers ||
         [];
       if (!members.length) return;
-      if (!confirm(formatGroupMembers(members) + " 케미를 삭제할까요?")) return;
+      if (!await window.SiteFeedback.confirm(formatGroupMembers(members) + " 케미를 삭제할까요?")) return;
       try {
         const qs = new URLSearchParams();
         members.forEach((m) => qs.append("members", m));
@@ -1859,7 +1859,7 @@
           method: "DELETE"
         });
         if (!res.ok) {
-          alert(await readChemError(res, "삭제에 실패했습니다."));
+          window.SiteFeedback.alert(await readChemError(res, "삭제에 실패했습니다."));
           if (res.status === 403) {
             isAdmin = false;
             setAdminToken("");
@@ -1873,7 +1873,7 @@
         editingGroupMembers = null;
         await refreshOverlaysAndTable();
       } catch (_) {
-        alert("삭제에 실패했습니다.");
+        window.SiteFeedback.alert("삭제에 실패했습니다.");
       }
       return;
     }
@@ -1885,12 +1885,12 @@
       || document.getElementById("chemEditMember2")?.value
       || (editingPair && editingPair.member2);
     if (!member1 || !member2) return;
-    if (!confirm(pairTitleText(member1, member2) + " 케미를 삭제할까요?")) return;
+    if (!await window.SiteFeedback.confirm(pairTitleText(member1, member2) + " 케미를 삭제할까요?")) return;
     try {
       const qs = new URLSearchParams({ member1, member2 });
       const res = await chemFetch("/api/chemistry?" + qs.toString(), { method: "DELETE" });
       if (!res.ok) {
-        alert(await readChemError(res, "삭제에 실패했습니다."));
+        window.SiteFeedback.alert(await readChemError(res, "삭제에 실패했습니다."));
         if (res.status === 403) {
           isAdmin = false;
           setAdminToken("");
@@ -1903,7 +1903,7 @@
       currentView = null;
       await refreshOverlaysAndTable();
     } catch (_) {
-      alert("삭제에 실패했습니다.");
+      window.SiteFeedback.alert("삭제에 실패했습니다.");
     }
   }
 
@@ -2214,7 +2214,7 @@
         }
 
         if (
-          !window.confirm(
+          !await window.SiteFeedback.confirm(
             clearingAll
               ? "이 케미를 저장하시겠습니까? 사진이 모두 삭제됩니다."
               : "이 케미를 저장하시겠습니까?"
@@ -2675,14 +2675,14 @@
       const ai = Number(document.getElementById("chemFilterA")?.value);
       const bi = Number(document.getElementById("chemFilterB")?.value);
       if (!Number.isFinite(ai) || !Number.isFinite(bi) || ai === bi) {
-        alert(IS_EN ? "Pick two different members." : "서로 다른 멤버 두 명을 선택해 주세요.");
+        window.SiteFeedback.alert(IS_EN ? "Pick two different members." : "서로 다른 멤버 두 명을 선택해 주세요.");
         return;
       }
       const cell =
         document.querySelector('#chemTbody td[data-m1="' + CSS.escape(MEMBERS[ai]) + '"][data-m2="' + CSS.escape(MEMBERS[bi]) + '"]') ||
         document.querySelector('#chemTbody td[data-m1="' + CSS.escape(MEMBERS[bi]) + '"][data-m2="' + CSS.escape(MEMBERS[ai]) + '"]');
       if (!cell) {
-        alert(IS_EN ? "No cell found for that pair." : "해당 교차 칸을 찾지 못했습니다.");
+        window.SiteFeedback.alert(IS_EN ? "No cell found for that pair." : "해당 교차 칸을 찾지 못했습니다.");
         return;
       }
       cell.style.setProperty("--chem-flash-color", MEMBER_COLORS[ai] || "#00f5d4");

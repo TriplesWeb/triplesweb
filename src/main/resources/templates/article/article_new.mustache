@@ -18,7 +18,7 @@
         <div class="absolute -inset-1 rounded-3xl bg-gradient-to-b from-primary-container/20 via-transparent to-secondary-container/30 blur-xl opacity-75 pointer-events-none"></div>
         <div class="relative bg-surface-container/95 border border-outline-variant/50 rounded-3xl overflow-hidden backdrop-blur-2xl shadow-2xl">
         <nav class="site-back site-back--bar" aria-label="목록으로">
-            <a href="{{boardBase}}">← {{categoryName}}</a>
+            <a data-confirm-action="글 작성을 취소하시겠습니까?" href="{{boardBase}}">← {{categoryName}}</a>
         </nav>
         <div class="p-6 sm:p-10">
         {{#errorMessage}}
@@ -31,7 +31,7 @@
         {{/errorMessage}}
             <p id="formInlineError" class="mb-4 text-sm text-error font-medium" hidden role="alert"></p>
 
-            <form id="articleForm" action="{{boardBase}}/new" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit(this)" class="space-y-5" data-market-board="{{#isMarketBoard}}true{{/isMarketBoard}}{{^isMarketBoard}}false{{/isMarketBoard}}">
+            <form id="articleForm" data-confirm="이 글을 등록하시겠습니까?" action="{{boardBase}}/new" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit(this)" class="space-y-5" data-market-board="{{#isMarketBoard}}true{{/isMarketBoard}}{{^isMarketBoard}}false{{/isMarketBoard}}">
                 {{#isMarketBoard}}
                 {{>article/objekt_picker}}
                 <div class="space-y-2">
@@ -106,7 +106,7 @@
     function showFormError(message) {
         const el = document.getElementById('formInlineError');
         if (!el) {
-            alert(message);
+            window.SiteFeedback.alert(message);
             return;
         }
         el.textContent = message || '';
