@@ -28,11 +28,12 @@ function folder(attrs) {
     label,
     count = '',
     art = false,
+    bundledArt = '',
     preview = ''
   } = attrs;
-  return `<a class="ar-folder${extraClass}${art ? ' has-art' : ''}" href="${href}" style="--folder-color: ${color};">
+  return `<a class="ar-folder${extraClass}${art || bundledArt ? ' has-art' : ''}" href="${href}" style="--folder-color: ${color};">
     <span class="ar-folder-icon" aria-hidden="true">
-      ${art ? '<img class="ar-folder-art" src="/folder-art.svg" alt="">' : '<span class="ar-folder-shape"></span>'}
+      ${bundledArt ? `<img class="ar-folder-art is-bundled-art" src="${bundledArt}" alt="">` : art ? '<img class="ar-folder-art" src="/folder-art.svg" alt="">' : '<span class="ar-folder-shape"></span>'}
       ${preview ? `<img class="ar-folder-preview" src="${preview}" alt="">` : ''}
     </span>
     ${label ? `<span class="ar-folder-label">${label}</span>` : ''}
@@ -68,10 +69,10 @@ body.site-admin-enabled button[data-admin-only] { display: inline-flex !importan
     </div>
   </section>
   <section class="ar-folders" aria-label="아카이브 폴더">
-    ${folder({ extraClass: ' is-group', href: '/archive?folder=s', color: '#f5c518', label: '전체 멤버', count: '3' })}
-    ${folder({ extraClass: ' is-parent', href: '/archive?folder=units', color: '#a78bfa', label: '유닛별' })}
-    ${folder({ extraClass: ' is-solo', href: '/archive?folder=s&members=윤서연', color: '#22aeff', label: 'S1 윤서연' })}
-    ${folder({ extraClass: ' is-solo', href: '/archive?folder=s&members=정혜린', color: '#ff8ad4', label: 'S2 정혜린' })}
+    ${folder({ extraClass: ' is-group', href: '/archive?folder=s', color: '#f5c518', label: 'tripleS', count: '3' })}
+    ${folder({ extraClass: ' is-parent', href: '/archive?folder=units', color: '#a78bfa', label: '디멘션' })}
+    ${folder({ extraClass: ' is-solo', href: '/archive?folder=s&members=윤서연', color: '#22aeff', label: 'S1 윤서연', bundledArt: '/images/archive/member-folders/1.png' })}
+    ${folder({ extraClass: ' is-solo', href: '/archive?folder=s&members=정혜린', color: '#ff8ad4', label: 'S2 정혜린', bundledArt: '/images/archive/member-folders/2.png' })}
   </section>
 </main>
 </body></html>`;
@@ -94,12 +95,12 @@ ${siteUi}
       <div class="ar-headline-copy">
         <div class="ar-kicker">Archive</div>
         <h1>아카이브</h1>
-        <p class="ar-folder-title">유닛별</p>
+        <p class="ar-folder-title">디멘션</p>
       </div>
     </div>
   </section>
   <section class="ar-folders" aria-label="아카이브 폴더">
-    ${folder({ href: '/archive?folder=s&members=윤서연&members=정혜린', color: '#22aeff', label: 'Aura' })}
+    ${folder({ href: '/archive?folder=s&members=윤서연&members=정혜린', color: '#22aeff', label: 'Aura', bundledArt: '/images/archive/unit-folders/42.png' })}
   </section>
 </main>
 </body></html>`;
@@ -278,7 +279,6 @@ ${siteUi}
         <article class="ar-stat"><div class="ar-stat-label"><span>등록된 사진</span><span class="material-symbols-outlined">image</span></div><strong>0<em>장</em></strong></article>
         <article class="ar-stat ar-stat-date"><div class="ar-stat-label"><span>날짜</span><span class="material-symbols-outlined">calendar_month</span></div><strong>전체</strong></article>
         <article class="ar-stat"><div class="ar-stat-label"><span>페이지</span><span class="material-symbols-outlined">layers</span></div><strong>1<em>/ 1</em></strong></article>
-        <article class="ar-stat ar-stat-filter" style="--filter-count: 3"><div class="ar-stat-label"><span>검색</span><span class="material-symbols-outlined">search</span></div><div class="ar-filter-summary"><strong>사진</strong><span class="ar-filter-sep">,</span><strong>전체 출처</strong><span class="ar-filter-sep">,</span><span class="ar-filter-member" style="--member-color:#22aeff">윤서연</span></div></article>
       </div>
     </div>
   </section>
@@ -353,13 +353,16 @@ ${siteUi}
       const pageStyle = getComputedStyle(pageRoot);
       return {
         labels,
-        comboArt: Boolean(document.querySelector('.ar-folder-art, .ar-folder-preview')),
+        comboArt: Boolean(document.querySelector('.ar-folder:not(.is-solo) .ar-folder-art, .ar-folder-preview')),
+        memberArt: [...document.querySelectorAll('.ar-folder.is-solo .ar-folder-art')].map((image) => ({
+          loaded: image.naturalWidth > 0,
+          mask: getComputedStyle(image).maskImage
+        })),
         placeholder: [...document.querySelectorAll('img')].some((img) => (img.getAttribute('src') || '').includes('image-upload-pending')),
         member: memberIcon.getBoundingClientRect(),
         parent: parentIcon.getBoundingClientRect(),
         overflow: getComputedStyle(groupIcon).overflow,
-        shineMask: shine.webkitMaskImage || shine.maskImage || '',
-        shineBlend: shine.mixBlendMode,
+        shine: shine.content,
         uploadText: upload?.textContent.trim() || '',
         uploadVisible: uploadBox.width > 0 && uploadBox.height > 0,
         uploadHeight: Math.round(uploadBox.height),
@@ -376,18 +379,19 @@ ${siteUi}
         statShift: ((stats.left + stats.right) / 2) - ((innerLeft + innerRight) / 2),
         countHidden: count ? getComputedStyle(count).display === 'none' : false,
         memberHref: member?.getAttribute('href') || '',
-        wholeMember: document.body.textContent.includes('전체 멤버')
+        headlineGlow: getComputedStyle(document.querySelector('.ar-headline'), '::after').content
       };
     });
-    assert.deepEqual(home.labels, ['전체 멤버', '유닛별', 'S1 윤서연', 'S2 정혜린']);
+    assert.deepEqual(home.labels, ['tripleS', '디멘션', 'S1 윤서연', 'S2 정혜린']);
     assert.equal(home.memberHref, '/archive?folder=s&members=윤서연');
-    assert.equal(home.wholeMember, true);
+    assert.deepEqual(home.memberArt, [{ loaded: true, mask: 'none' }, { loaded: true, mask: 'none' }]);
+    assert.equal(home.headlineGlow, 'none');
     assert.equal(home.comboArt, false, '초기 화면에 케미·유닛 폴더 이미지가 보인다');
     assert.equal(home.placeholder, false, '업로드 예정 플레이스홀더가 남아 있다');
     assert.ok(Math.abs(home.member.width - home.parent.width) <= 1, '상위 폴더 너비가 멤버 폴더와 다르다: ' + JSON.stringify(home));
     assert.ok(Math.abs(home.member.height - home.parent.height) <= 1, '상위 폴더 높이가 멤버 폴더와 다르다: ' + JSON.stringify(home));
-    assert.equal(home.overflow, 'hidden', '호버 효과가 폴더 밖으로 새지 않게 잘리지 않는다');
-    assert.match(home.shineMask, /archive-folder\.svg/, '호버 샤인이 폴더 실루엣으로 잘리지 않는다: ' + home.shineMask);
+    assert.equal(home.overflow, 'hidden');
+    assert.equal(home.shine, 'none', '폴더의 반짝임 효과가 남아 있다');
     assert.equal(home.uploadText, '사진 추가');
     assert.equal(home.uploadVisible, true, '폴더 홈 사진 추가 버튼이 안 보인다');
     assert.ok(home.uploadRight >= 8 && home.uploadRight <= 40, '사진 추가가 우측이 아니다: ' + JSON.stringify(home));
@@ -412,19 +416,22 @@ ${siteUi}
     await page.goto('https://archive-folders.test/units.html', { waitUntil: 'load' });
     const units = await page.evaluate(() => {
       const aura = [...document.querySelectorAll('.ar-folder')].find((el) => el.textContent.includes('Aura'));
+      const art = aura?.querySelector('.ar-folder-art');
       return {
         title: document.querySelector('.ar-folder-title')?.textContent.trim() || '',
         labels: [...document.querySelectorAll('.ar-folder-label')].map((el) => el.textContent.trim()),
         back: document.querySelector('.ar-back-folders')?.getAttribute('href') || '',
-        auraPreview: Boolean(aura?.querySelector('.ar-folder-preview, .ar-folder-art')),
+        artLoaded: (art?.naturalWidth ?? 0) > 0,
+        artMask: art && getComputedStyle(art).maskImage,
         href: aura?.getAttribute('href') || ''
       };
     });
-    assert.equal(units.title, '유닛별');
+    assert.equal(units.title, '디멘션');
     assert.deepEqual(units.labels, ['Aura']);
     assert.equal(units.back, '/archive');
     assert.equal(units.href, '/archive?folder=s&members=윤서연&members=정혜린');
-    assert.equal(units.auraPreview, false, '유닛 이미지가 없는데 미리보기가 있다');
+    assert.equal(units.artLoaded, true, '유닛 폴더 이미지를 불러오지 못했다');
+    assert.equal(units.artMask, 'none', '유닛 폴더 이미지에 별도 폴더 모양이 씌워져 있다');
     await page.screenshot({ path: path.join(artifactDir, 'archive-units-index.png'), fullPage: true });
 
     await page.goto('https://archive-folders.test/member.html', { waitUntil: 'load' });
@@ -497,8 +504,6 @@ ${siteUi}
       const backStyle = getComputedStyle(back);
       const innerLeft = headlineBox.left + parseFloat(style.paddingLeft);
       const innerRight = headlineBox.right - parseFloat(style.paddingRight);
-      const member = document.querySelector('.ar-filter-member');
-      const text = document.querySelector('.ar-filter-summary strong');
       const columns = getComputedStyle(stats).gridTemplateColumns.split(' ').filter(Boolean).length;
       return {
         statWidth: Math.round(statBox.width),
@@ -516,7 +521,6 @@ ${siteUi}
         backBorder: backStyle.borderTopWidth,
         gap: toggleBox.left - backBox.right,
         overlap: backBox.right > toggleBox.left + 1 || backBox.bottom > headlineBox.bottom,
-        filterMatch: getComputedStyle(text).fontSize === getComputedStyle(member).fontSize
       };
     });
     assert.ok(view.statWidth <= 300 && view.statWidth >= 220, '폴더 보기 통계 카드 너비: ' + JSON.stringify(view));
@@ -525,6 +529,7 @@ ${siteUi}
     assert.equal(view.pageMax, '1440px', '폴더 보기 폭이 홈과 다르다: ' + view.pageMax);
     assert.ok(view.dateSize < view.photoSize && view.dateSize >= 13 && view.dateSize <= 17, '날짜 글자 크기가 맞지 않다: ' + view.dateSize);
     assert.equal(view.columns, 2);
+    assert.equal(await page.locator('.ar-stat-filter').count(), 0);
     assert.equal(view.backText, '← 목록으로');
     assert.equal(view.backHref, '/archive');
     assert.ok(view.backRadius >= 16, '목록으로가 알약 버튼이 아니다: ' + view.backRadius);
@@ -533,7 +538,6 @@ ${siteUi}
     assert.equal(view.backBorder, '1px');
     assert.ok(view.gap >= 2, '목록으로가 통계 접기 버튼과 겹친다: ' + view.gap);
     assert.equal(view.overlap, false);
-    assert.equal(view.filterMatch, true, '검색 요약 글자 크기가 멤버 이름과 다르다');
     await page.locator('.ar-headline').screenshot({ path: path.join(artifactDir, 'archive-folder-view-stats.png') });
     await page.locator('.ar-back-folders').screenshot({ path: path.join(artifactDir, 'archive-folder-view-back.png') });
     await page.hover('.ar-back-folders');

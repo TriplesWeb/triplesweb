@@ -119,7 +119,11 @@ jobs:
       - name: CSS reproducibility and bundle checks
         run: ./scripts/setup-css.sh --check
       - name: JavaScript unit tests
-        run: node scripts/tests/objekt-detail.test.cjs && node scripts/tests/objekt-transfers.test.cjs && node scripts/tests/objekt-kind-combo.test.cjs
+        run: |
+          node scripts/tests/objekt-detail.test.cjs
+          node scripts/tests/objekt-transfers.test.cjs
+          node scripts/tests/objekt-kind-combo.test.cjs
+          node scripts/tests/gravity-admin.test.cjs
 
       - name: Browser tests without Java-generated fixtures
         env:
@@ -142,6 +146,7 @@ jobs:
           node scripts/tests/collection-dropdown-layout.browser.cjs
           node scripts/tests/archive-layout.browser.cjs
           node scripts/tests/archive-history.browser.cjs
+          node scripts/tests/archive-live-state.browser.cjs
           node scripts/tests/archive-folder-home.browser.cjs
           node scripts/tests/archive-detail-ui.browser.cjs
           node scripts/tests/archive-manage-preview.browser.cjs
@@ -157,6 +162,7 @@ jobs:
           name: frontend-browser-failure-screenshots
           path: /tmp/objekt-ui/*.png
           if-no-files-found: ignore
+
   qodana:
     needs: changes
     if: needs.changes.outputs.qodana == 'true'

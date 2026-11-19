@@ -51,7 +51,6 @@ ${siteMobile}
         <article class="ar-stat"><div class="ar-stat-label"><span>등록된 사진</span><span class="material-symbols-outlined">image</span></div><strong>2<em>장</em></strong></article>
         <article class="ar-stat ar-stat-date"><div class="ar-stat-label"><span>날짜</span><span class="material-symbols-outlined">calendar_month</span></div><strong>전체</strong></article>
         <article class="ar-stat"><div class="ar-stat-label"><span>페이지</span><span class="material-symbols-outlined">layers</span></div><strong>1<em>/ 1</em></strong></article>
-        <article class="ar-stat ar-stat-filter" style="--filter-count: 2"><div class="ar-stat-label"><span>검색</span><span class="material-symbols-outlined">search</span></div><div class="ar-filter-summary"><span class="ar-filter-member" style="--member-color:#22aeff">윤서연</span><span class="ar-filter-more">외 1명</span><span class="ar-filter-sep">,</span><strong>심장</strong></div></article>
       </div>
     </div>
   </section>
@@ -72,7 +71,7 @@ ${siteMobile}
         </div>
         <button type="button" class="ar-member-toggle" id="archiveMemberToggle" aria-expanded="false" aria-controls="archiveMemberPanel">멤버 선택</button>
         <div class="ar-search-row">
-          <label class="ar-search-wrap"><span class="material-symbols-outlined">search</span><input class="ar-search" type="search" placeholder="사진 제목 검색"></label>
+          <label class="ar-search-wrap"><span class="material-symbols-outlined">search</span><input class="ar-search" type="search" name="q" value="심장" placeholder="사진 제목 검색"></label>
           <a class="site-btn site-btn--reset ar-reset" href="/archive">초기화</a>
         </div>
       </div>
@@ -234,7 +233,7 @@ ${siteMobile}
         chipBorder: getComputedStyle(one.querySelector('.archive-symbol-chip img')).borderWidth
       };
     });
-    assert.ok(grid.oneImg > 20 && grid.oneImg <= 40, '한 명 카드 배지 크기가 깨졌다: ' + grid.oneImg);
+    assert.ok(grid.oneImg > 20 && grid.oneImg <= 26, '한 명 카드 로고 크기가 깨졌다: ' + grid.oneImg);
     assert.ok(grid.manyImg < grid.oneImg - 4, '멤버가 많을 때 배지가 작아지지 않는다: ' + JSON.stringify(grid));
     assert.equal(grid.nameHidden, true, '상징로고 칩에 이름이 드러난다: ' + JSON.stringify(grid));
     assert.equal(grid.logo, true, '상징로고 칩 클래스가 없다');
@@ -280,9 +279,6 @@ ${siteMobile}
         memberInTools: tools.contains(member),
         resetInTools: tools.contains(reset),
         searchInTools: tools.contains(search),
-        filterSize: getComputedStyle(document.querySelector('.ar-filter-summary')).fontSize,
-        filterMemberSize: getComputedStyle(document.querySelector('.ar-filter-member')).fontSize,
-        filterTextSize: getComputedStyle(document.querySelector('.ar-filter-summary strong')).fontSize,
         resetClass: reset.className,
         resetFont: resetStyle.fontSize,
         resetColor: resetStyle.color,
@@ -313,8 +309,6 @@ ${siteMobile}
     assert.equal(toolbar.memberInTools, true);
     assert.equal(toolbar.resetInTools, true);
     assert.equal(toolbar.searchInTools, true);
-    assert.ok(parseFloat(toolbar.filterSize) <= 16, '검색 요약 글자가 크다: ' + toolbar.filterSize);
-    assert.equal(toolbar.filterTextSize, toolbar.filterMemberSize, '검색 요약 글자 크기가 멤버 이름과 다르다: ' + JSON.stringify({ text: toolbar.filterTextSize, member: toolbar.filterMemberSize }));
     assert.match(toolbar.resetClass, /site-btn--reset/, '초기화가 회색 유리 버튼이 아니다: ' + toolbar.resetClass);
     assert.ok(toolbar.resetColor.includes('255') || toolbar.resetColor.includes('#fff'), '초기화 글자가 흰색이 아니다: ' + toolbar.resetColor);
     assert.equal(toolbar.resetAlign, true, '초기화가 검색창과 세로로 안 맞는다');
@@ -575,8 +569,39 @@ ${siteMobile}
     const artifactDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';
     fs.mkdirSync(artifactDir, { recursive: true });
     await page.locator('.ar-filter-tools').screenshot({ path: path.join(artifactDir, 'archive-reset-search-size.png') });
-    await page.locator('.ar-stat-filter').screenshot({ path: path.join(artifactDir, 'archive-filter-summary-size.png') });
     await page.screenshot({ path: path.join(artifactDir, 'archive-layout-stats-members.png'), fullPage: true });
+    for (const width of [320, 360, 390, 430]) {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto('https://archive-layout.test/', { waitUntil: 'load' });
+      await page.evaluate(() => {
+        const toggle = document.getElementById('archiveMemberToggle');
+        toggle.innerHTML = '<span data-member-toggle-label>아주 긴 멤버와 케미 이름을 선택한 상태</span>';
+        document.querySelectorAll('[data-date-filter] input[type="date"]').forEach(input => { input.value = ''; });
+        const input = document.querySelector('.ar-search');
+        input.value = '';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      assert.equal(await page.locator('.ar-reset').isHidden(), true, '기본 상태 초기화 버튼: ' + width);
+      const before = await page.locator('.ar-search').boundingBox();
+      await page.evaluate(() => {
+        const input = document.querySelector('.ar-search');
+        input.value = '지연';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      assert.equal(await page.locator('.ar-reset').isVisible(), true, '검색 중 초기화 버튼: ' + width);
+      const after = await page.locator('.ar-search').boundingBox();
+      assert.ok(before.width > after.width, '초기화가 숨겨지면 검색창이 넓어져야 한다: ' + width);
+      const metrics = await page.evaluate(() => ({
+        overflow: document.documentElement.scrollWidth > innerWidth + 1,
+        targets: ['.ar-date-toggle', '.ar-member-toggle', '.ar-reset', '.ar-search'].map(selector => document.querySelector(selector).getBoundingClientRect().height)
+      }));
+      assert.equal(metrics.overflow, false, '모바일 가로 넘침: ' + width);
+      assert.ok(metrics.targets.every(height => height >= 44), '모바일 터치 높이: ' + JSON.stringify(metrics));
+      await page.locator('[data-date-toggle]').click();
+      const pop = await page.locator('[data-date-popover]').boundingBox();
+      assert.ok(pop.x >= 0 && pop.x + pop.width <= width + 1, '날짜 팝업이 화면을 벗어난다: ' + width);
+      await page.screenshot({ path: path.join(artifactDir, 'archive-mobile-' + width + '.png') });
+    }
     console.log('PASS: 아카이브 통계 접기·검색 버튼·매슨리 그리드');
   } finally {
     await browser.close();

@@ -126,6 +126,10 @@ main 머지       → 새 비활성 앱 예열 → readiness 확인 → Nginx re
 매일 04:00 KST / 수동 → 동일 운영 상태라면 빌드·재시작 생략
 ```
 
+### GitHub Codespaces 모바일 테스트
+
+모바일 테스트가 필요하면 Codespace에서 현재 PR 커밋을 실행합니다. 기존 미리보기용 MariaDB와 `uploads/` 복사본을 연결하고 `APP_SCHEDULING_ENABLED=false`로 예약 작업을 끕니다. Codespaces의 포트 공개 범위를 **Private**으로 유지하고, 휴대폰에서 해당 Codespace를 만든 GitHub 계정으로 로그인해 HTTPS 링크를 엽니다.
+
 ### 1. GitHub Secrets / Variables
 
 레포 **Settings → Secrets and variables → Actions**에 다음을 추가합니다.

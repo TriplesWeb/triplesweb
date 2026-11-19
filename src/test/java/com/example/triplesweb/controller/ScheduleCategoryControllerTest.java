@@ -7,9 +7,9 @@ import com.example.triplesweb.service.*;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.*;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
 import java.nio.file.*;
@@ -26,10 +26,10 @@ import static org.assertj.core.api.Assertions.*;
 @Import(MustacheConfig.class)
 class ScheduleCategoryControllerTest {
     @Autowired MockMvc mvc;
-    @MockBean ScheduleService service;
-    @MockBean ScheduleRepository repository;
-    @MockBean ArtistRepository artists;
-    @MockBean AboutAdminAuth auth;
+    @MockitoBean ScheduleService service;
+    @MockitoBean ScheduleRepository repository;
+    @MockitoBean ArtistRepository artists;
+    @MockitoBean AboutAdminAuth auth;
     Artist artist;
     LocalDate day=LocalDate.now();
 
