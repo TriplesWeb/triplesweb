@@ -239,7 +239,7 @@ ${site}${css}${siteUi}
       }
     });
 
-    await page.click('[data-archive-open]');
+    await page.click('.ar-card[data-id="7"] [data-archive-open]');
     const detail = await page.evaluate(() => {
       const badge = document.getElementById('archiveDetailSource');
       const members = document.getElementById('archiveDetailMembers');
