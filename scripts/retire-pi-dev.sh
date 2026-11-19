@@ -6,7 +6,7 @@ PROD_DIR="${1:?production directory required}"
 DEV_DIR="${2:?development directory required}"
 PROD_REAL="$(realpath -m -- "$PROD_DIR")"
 DEV_REAL="$(realpath -m -- "$DEV_DIR")"
-if [[ "$PROD_REAL" == "$DEV_REAL" || "$DEV_REAL" == "/" || "$DEV_REAL" == "$PROD_REAL/"* ]]; then
+if [[ "$PROD_REAL" == "$DEV_REAL" || "$DEV_REAL" == "/" || "$DEV_REAL" == "$PROD_REAL/"* || "$PROD_REAL" == "$DEV_REAL/"* ]]; then
   echo "ERROR: unsafe development path; refusing cleanup" >&2
   exit 1
 fi
