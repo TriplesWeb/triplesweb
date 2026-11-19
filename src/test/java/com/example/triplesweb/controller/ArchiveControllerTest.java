@@ -376,7 +376,7 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("파일 선택")))
                 .andExpect(content().string(containsString("선택된 파일 없음")))
                 .andExpect(content().string(containsString("multiple")))
-                .andExpect(content().string(containsString("여러 장 선택 가능")))
+                .andExpect(content().string(containsString("드래그로 순서 변경")))
                 .andExpect(content().string(containsString("코스모룸")))
                 .andExpect(content().string(containsString("코스모톡/프롬")))
                 .andExpect(content().string(containsString("공식 SNS")))
