@@ -9,6 +9,26 @@
 
 기존 `즉시 배포` 코멘트 검사 방식은 폐지한다. 모든 머지가 운영 배포 대상이다. GitHub `main`에 직접 푸시하지 말고 PR을 머지한다.
 
+## PR 변경 영역별 선택적 CI
+
+PR의 synthetic merge commit과 대상 `main`을 비교해 `scripts/ci-path-filter.py`가 경로를 판정합니다. 이름을 변경한 파일은 이전 경로·새 경로 모두 검증하고, 알 수 없는 앱 경로는 안전을 위해 양쪽 검사를 수행합니다.
+
+| 변경 위치 | 실행 검사 |
+|---|---|
+| `src/main/java/**`, `src/test/java/**`, `src/main/resources/db/**`, Gradle 설정 | Backend: `test bootWar` + Qodana |
+| `src/main/resources/static/**`, `scripts/css/**`, `package*.json`, CSS 빌드 스크립트 | Frontend: CSS drift + JS 테스트 + 독립 Playwright 브라우저 검증 |
+| `src/main/resources/templates/**`, `Dockerfile`, CI 워크플로, 새 경로 분류 로직 | 양쪽 검사 + Java 생성 HTML이 필요한 브라우저 통합 검증 |
+| Markdown/문서/배포 전용 스크립트 | 필수 배포 설정 검사 + 경로 분류기 단위검사만 |
+
+백엔드 전용 PR에서 프론트 CSS·JS 검사는 스킵하며, 프론트 전용 PR에서는 Gradle·WAR·Qodana를 스킵합니다. `required` 상태 검사는 항상 실행되며 **실행해야 하는 Job이 생략되면 실패**, 생략해야 하는 Job이 예상과 다르게 실행돼도 실패로 처리합니다.
+
+```bash
+python3 scripts/ci-path-filter.py --self-test
+git diff --name-only --no-renames -z HEAD^1 HEAD | python3 scripts/ci-path-filter.py --stdin-z
+```
+
+CI 설정만 수정된 PR을 머지하면 `main` push의 즉시 운영 배포는 건너뜁니다. 다만 매일 새벽 4시 정기 작업은 별도 최신 커밋 확인을 수행하므로 운영 배포가 다시 발생할 수 있습니다.
+
 ## 빌드와 검사 최적화
 
 - 이미지: GitHub 네이티브 ARM64 러너 사용, GitHub Actions Buildx 캐시 `scope=triplesweb-arm64` 공유
