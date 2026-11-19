@@ -30,7 +30,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -39,6 +38,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -344,6 +344,7 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("archive-upload-picker")))
                 .andExpect(content().string(containsString("data-upload-url=\"/archive/upload/image\"")))
                 .andExpect(content().string(containsString("data-url=\"/uploads/a.jpg\"")))
+                .andExpect(content().string(containsString("data-images=")))
                 .andExpect(content().string(containsString("목록에서 보이는 모습 · 카드/슬라이드")))
                 .andExpect(content().string(containsString("id=\"archiveDetail\"")))
                 .andExpect(content().string(not(containsString("더보기"))))
@@ -559,7 +560,7 @@ class ArchiveControllerTest {
 
         mvc.perform(multipart("/archive/7").file(file).param("description", "새 설명").param("artistNames", "서연").param("registeredOn", "2026-10-01").param("source", "COSMO_ROOM"))
                 .andExpect(status().isOk());
-        verify(archiveService).update(eq(7L), eq(""), any(), eq("서연"), isNull(), eq(false), eq(java.time.LocalDate.of(2026, 10, 1)), eq(ArchiveSource.COSMO_ROOM), eq("새 설명"));
+        verify(archiveService).update(eq(7L), eq(""), anyList(), eq("서연"), isNull(), eq(false), eq(java.time.LocalDate.of(2026, 10, 1)), eq(ArchiveSource.COSMO_ROOM), eq("새 설명"));
         verify(aboutAdminAuth).requireAdmin(any(), any());
 
         mvc.perform(delete("/archive/7")).andExpect(status().isOk());
@@ -754,7 +755,7 @@ class ArchiveControllerTest {
         mvc.perform(multipart("/archive/upload/image").file(file)
                         .param("description", "현장 컷").param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
-        verify(archiveService).uploadImageOnly(any(), eq(""), eq(MediaType.IMAGE), eq("서연"), eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), eq("현장 컷"));
+        verify(archiveService).uploadImages(any(), eq(""), eq("서연"), eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), eq("현장 컷"));
         verify(aboutAdminAuth).requireAdmin(any(), any());
     }
 
@@ -763,7 +764,7 @@ class ArchiveControllerTest {
         mvc.perform(multipart("/archive/upload/image").file(file)
                         .param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
-        verify(archiveService).uploadImageOnly(any(), eq(""), eq(MediaType.IMAGE), eq("서연"), eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), isNull());
+        verify(archiveService).uploadImages(any(), eq(""), eq("서연"), eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), isNull());
         verify(aboutAdminAuth).requireAdmin(any(), any());
     }
 
@@ -773,7 +774,7 @@ class ArchiveControllerTest {
         mvc.perform(multipart("/archive/upload/image").file(first).file(second)
                         .param("description", "묶음").param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
-        verify(archiveService, times(2)).uploadImageOnly(any(), eq(""), eq(MediaType.IMAGE), eq("서연"),
+        verify(archiveService, times(1)).uploadImages(any(), eq(""), eq("서연"),
                 eq(java.time.LocalDate.of(2026, 10, 3)), eq(ArchiveSource.COSMO_ROOM), eq("묶음"));
         verify(aboutAdminAuth).requireAdmin(any(), any());
     }
@@ -784,6 +785,7 @@ class ArchiveControllerTest {
         archive.setTitle("포토");
         archive.setArtistNames("서연");
         archive.setFile(SavedMeta.builder().url("/uploads/a.jpg").mediaType(MediaType.IMAGE).build());
+        archive.setImagesJson("[\"/uploads/a.jpg\"]");
         return archive;
     }
 }

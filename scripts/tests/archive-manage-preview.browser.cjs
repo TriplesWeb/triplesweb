@@ -58,7 +58,11 @@ ${site}${css}${siteUi}
       </div>
       <div data-artist-chips></div>
       <span data-picker-count>0</span>
-      <input type="file" name="file" accept="${isVideo ? 'video/*' : 'image/*'}">
+      <span class="ar-file">
+        <input type="file" id="archiveUploadFile" name="file" accept="${isVideo ? 'video/*' : 'image/*'}" ${isVideo ? '' : 'multiple'}>
+        <label for="archiveUploadFile" class="ar-file-pick">파일 선택</label>
+        <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
+      </span>
       ${isVideo ? '<input type="file" name="thumbnail" accept="image/*"><div class="ar-thumbnail-preview" data-thumbnail-preview hidden><img alt=""><p data-thumbnail-info></p></div>' : ''}
       <div class="ar-preview" id="uploadPreview" hidden>
         <p class="ar-preview-info" data-preview-file></p>
@@ -256,6 +260,46 @@ async function withPage(html, run) {
     assert.match(pasted.name, /\.(png|jpe?g|webp|gif|bmp)$/i);
     assert.equal(pasted.previewHidden, false, '붙여넣은 사진 미리보기가 열리지 않는다');
     assert.equal(pasted.fullImage, true, '붙여넣은 사진 원본 미리보기가 없다');
+
+    const multi = await page.evaluate(() => {
+      const png = Uint8Array.from(atob(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+      ), (c) => c.charCodeAt(0));
+      const input = document.querySelector('#archiveUploadForm input[name="file"]');
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([png], 'one.png', { type: 'image/png' }));
+      transfer.items.add(new File([png], 'two.png', { type: 'image/png' }));
+      transfer.items.add(new File([png], 'three.png', { type: 'image/png' }));
+      input.files = transfer.files;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      const tiles = Array.from(document.querySelectorAll('#archiveUploadForm .ar-file-tile'));
+      const thumbs = tiles.map((tile) => ({
+        src: tile.querySelector('.ar-file-thumb img')?.getAttribute('src') || '',
+        label: tile.querySelector('.ar-file-remove')?.getAttribute('aria-label') || ''
+      }));
+      const summary = document.querySelector('#uploadPreview [data-preview-file]')?.textContent.trim() || '';
+      document.querySelectorAll('#archiveUploadForm .ar-file-remove')[1]?.click();
+      const afterLabels = Array.from(document.querySelectorAll('#archiveUploadForm .ar-file-remove')).map((btn) => btn.getAttribute('aria-label') || '');
+      const afterNames = Array.from(input.files || []).map((file) => file.name);
+      const afterThumbs = Array.from(document.querySelectorAll('#archiveUploadForm .ar-file-thumb img')).map((img) => img.getAttribute('src') || '');
+      return {
+        tileCount: tiles.length,
+        thumbs,
+        summary,
+        afterLabels,
+        afterNames,
+        afterThumbs,
+        count: input.files.length
+      };
+    });
+    assert.equal(multi.tileCount, 3);
+    assert.deepEqual(multi.thumbs.map((item) => item.label), ['one.png 제거', 'two.png 제거', 'three.png 제거']);
+    assert.ok(multi.thumbs.every((item) => item.src.startsWith('blob:')), '선택 파일 썸네일이 없다');
+    assert.equal(multi.summary, '3장 선택');
+    assert.deepEqual(multi.afterLabels, ['one.png 제거', 'three.png 제거']);
+    assert.deepEqual(multi.afterNames, ['one.png', 'three.png']);
+    assert.ok(multi.afterThumbs.every((src) => src.startsWith('blob:')), '제거 후 썸네일이 깨졌다');
+    assert.equal(multi.count, 2);
   });
 
   await withPage(pageHtml('video'), async (page) => {

@@ -815,6 +815,7 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .archive-page[data-archive-kind="image"] .ar-card .ar-photo-link > img,
 .archive-page[data-archive-kind="image"] .ar-highlight img { object-fit: contain; object-position: center; }
 .archive-page[data-archive-kind="image"] .ar-card .ar-photo-link {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -824,6 +825,27 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     width: 100%;
     height: auto;
     max-height: none;
+}
+.ar-card-count {
+    position: absolute;
+    top: 0.45rem;
+    right: 0.45rem;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.55rem;
+    height: 1.55rem;
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(8, 10, 12, 0.78);
+    color: #e8f5f0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    pointer-events: none;
 }
 .ar-card .ar-body { padding: 0.7rem 0.8rem 0.85rem; display: flex; flex-direction: column; gap: 0.4rem; flex: 1; }
 .ar-card h3 { margin: 0; font-size: 0.88rem; }
@@ -1414,7 +1436,8 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-file {
     position: relative;
     display: flex;
-    align-items: center;
+    flex-wrap: wrap;
+    align-items: flex-start;
     gap: 0.75rem;
     min-height: 2.625rem;
     padding: 0.4rem 0.5rem;
@@ -1438,6 +1461,7 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    align-self: center;
     min-height: 2.1rem;
     padding: 0.45rem 0.9rem;
     border-radius: 0.55rem;
@@ -1455,13 +1479,116 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     color: #b7fff2;
 }
 .ar-file-name {
+    flex: 1;
     min-width: 0;
+    align-self: center;
     color: #b9cac4;
     font-size: 0.85rem;
     font-weight: 500;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+.ar-file-name.has-files {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: center;
+    align-self: center;
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+}
+.ar-file-name.has-thumbs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+    gap: 0.45rem;
+    flex: 1 1 100%;
+    align-self: stretch;
+    width: 100%;
+}
+.ar-file-tile {
+    position: relative;
+    aspect-ratio: 1;
+    min-width: 0;
+    border-radius: 0.55rem;
+    border: 1px solid rgba(58, 74, 70, 0.75);
+    background: #050709;
+    overflow: hidden;
+}
+.ar-file-thumb {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+.ar-file-thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+.ar-file-thumb:focus-visible {
+    outline: 2px solid #8bf5dc;
+    outline-offset: -2px;
+}
+.ar-file-remove {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.35rem;
+    height: 1.35rem;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    background: rgba(8, 10, 12, 0.82);
+    color: #e8f5f0;
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+.ar-file-remove:hover {
+    border-color: rgba(0, 245, 212, 0.65);
+    background: rgba(0, 245, 212, 0.22);
+    color: #b7fff2;
+}
+.ar-file-remove:focus-visible {
+    outline: 2px solid #8bf5dc;
+    outline-offset: 1px;
+}
+.ar-file-chip {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: 0.3rem 0.55rem;
+    border: 1px solid rgba(0, 245, 212, 0.3);
+    border-radius: 999px;
+    background: rgba(0, 245, 212, 0.09);
+    color: #a7f3df;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.3;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+    text-align: left;
+}
+.ar-file-chip:hover {
+    border-color: #00f5d4;
+    background: rgba(0, 245, 212, 0.16);
+    color: #d7fff6;
+}
+.ar-file-chip:focus-visible {
+    outline: 2px solid #8bf5dc;
+    outline-offset: 2px;
 }
 .ar-field input:focus, .ar-field select:focus, .ar-field textarea:focus { outline: none; border-color: #00f5d4; }
 .ar-card .ar-body h3 {

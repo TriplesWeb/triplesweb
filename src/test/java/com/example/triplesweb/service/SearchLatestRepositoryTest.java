@@ -34,7 +34,7 @@ class SearchLatestRepositoryTest {
         archives.save(archive("wav wrong type", MediaType.VIDEO, LocalDate.of(2028, 1, 1)));
         archives.save(archive("other", MediaType.IMAGE, LocalDate.of(2029, 1, 1)));
         archives.save(archive("literal w%v", MediaType.IMAGE, LocalDate.of(2029, 1, 1)));
-        ArchiveService service = new ArchiveService(archives, mock(FileStorageService.class));
+        ArchiveService service = new ArchiveService(archives, mock(FileStorageService.class), new com.fasterxml.jackson.databind.ObjectMapper());
 
         assertThat(service.searchLatestByType(MediaType.IMAGE, "WaV", 2))
                 .extracting(Archive::getTitle).containsExactly("WAV newest", "wav middle");
