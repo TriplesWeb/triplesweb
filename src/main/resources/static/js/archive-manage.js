@@ -1349,8 +1349,24 @@
         assignFilesToInput(input, files, { append: Boolean(input.multiple) });
     });
 
-    function showEdit(button) {
-        if (!editForm || !editDialog) return;
+    function setEditStatus(message) {
+        if (!editForm) return;
+        let status = editForm.querySelector("[data-edit-status]");
+        if (!status) {
+            status = document.createElement("p");
+            status.className = "ar-field-hint";
+            status.dataset.editStatus = "";
+            status.setAttribute("role", "status");
+            status.style.color = "#8decd9";
+            status.style.margin = "0";
+            editForm.querySelector(".ar-dialog-foot")?.prepend(status);
+        }
+        status.textContent = message || "";
+        status.hidden = !message;
+    }
+
+    function populateEditForm(button) {
+        if (!editForm || !button) return;
         editForm.reset();
         resetThumbnail(editForm, button.dataset.thumbnailUrl || '');
         editForm.dataset.id = button.dataset.id || "";
@@ -1385,9 +1401,16 @@
             editFile._archivePreviewIndex = existingUrls.length ? -1 : 0;
             editFile.value = "";
         }
-        showPreview(editPreview, coverUrl);
+        if (existingUrls.length) previewSlot(editForm, editFile, 0);
+        else showPreview(editPreview, coverUrl);
         window.bindArchiveDateFields?.(editForm);
         editForm.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName);
+    }
+
+    function showEdit(button) {
+        if (!editForm || !editDialog) return;
+        setEditStatus("");
+        populateEditForm(button);
         openDialog(editDialog);
     }
 
@@ -1554,8 +1577,15 @@
                 method: "POST", body, headers: authHeaders(), credentials: "same-origin"
             });
             if (response.ok) {
-                closeDialog(editDialog);
-                softRefreshArchive();
+                const id = editForm.dataset.id;
+                setEditStatus(noun + "을 저장했습니다. 모달을 닫지 않고 이어서 수정할 수 있습니다.");
+                await softRefreshArchive();
+                const refreshed = document.querySelector(
+                    '#archiveGrid [data-archive-edit][data-id="' + CSS.escape(String(id)) + '"]'
+                ) || document.querySelector(
+                    '[data-archive-edit][data-id="' + CSS.escape(String(id)) + '"]'
+                );
+                if (refreshed) populateEditForm(refreshed);
                 return;
             }
             const text = (await response.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
