@@ -29,18 +29,13 @@ RUN ./gradlew bootWar -x test --no-daemon
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 
-RUN mkdir -p /app/uploads /app/data /opt/chemistry-bundle
+RUN mkdir -p /app/uploads /app/data
 
 COPY --from=build /workspace/build/libs/triples.war /app/app.war
-# 케미 이미지는 호스트 uploads 볼륨에 없을 수 있으므로 이미지에 번들
-COPY uploads/chemistry/ /opt/chemistry-bundle/
-COPY scripts/docker-entrypoint.sh /app/docker-entrypoint.sh
-RUN chmod +x /app/docker-entrypoint.sh \
-    && date -u +%Y%m%d%H%M%S > /opt/chemistry-bundle/.bundle-version
-
+# 케미 정적 파일은 배포 중 호스트 uploads/chemistry에 별도 동기화합니다.
+# 이미지에 수백 MB 정적 자산을 포함하지 않아 PR마다 재전송하지 않습니다.
 ENV SERVER_PORT=8080 \
     FILE_UPLOAD_DIR=/app/uploads
 
 EXPOSE 8080
-
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
+ENTRYPOINT ["java", "-jar", "/app/app.war"]
