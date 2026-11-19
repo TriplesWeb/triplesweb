@@ -290,6 +290,63 @@
         return /\.(jpe?g|jfif|png|webp|gif|bmp)$/i.test(file.name) || file.type.startsWith('image/');
     }
 
+    function extensionForImageType(type) {
+        return ({
+            'image/jpeg': 'jpg',
+            'image/jpg': 'jpg',
+            'image/pjpeg': 'jpg',
+            'image/png': 'png',
+            'image/webp': 'webp',
+            'image/gif': 'gif',
+            'image/bmp': 'bmp',
+            'image/x-ms-bmp': 'bmp'
+        })[type] || 'png';
+    }
+
+    function normalizeClipboardImage(file) {
+        if (!file) return null;
+        const type = file.type && file.type.startsWith('image/') ? file.type : 'image/png';
+        const name = (file.name && /\.(jpe?g|jfif|png|webp|gif|bmp)$/i.test(file.name))
+            ? file.name
+            : ('clipboard.' + extensionForImageType(type));
+        if (file instanceof File && file.name === name && file.type === type) return file;
+        return new File([file], name, { type, lastModified: Date.now() });
+    }
+
+    function imageFileFromClipboard(clipboardData) {
+        if (!clipboardData) return null;
+        const items = clipboardData.items;
+        if (items) {
+            for (let i = 0; i < items.length; i += 1) {
+                const item = items[i];
+                if (item.kind === 'file' && item.type && item.type.startsWith('image/')) {
+                    const file = normalizeClipboardImage(item.getAsFile());
+                    if (file) return file;
+                }
+            }
+        }
+        const files = clipboardData.files;
+        if (files) {
+            for (let i = 0; i < files.length; i += 1) {
+                const candidate = files[i];
+                if (candidate && candidate.type && candidate.type.startsWith('image/')) {
+                    return normalizeClipboardImage(candidate);
+                }
+            }
+        }
+        return null;
+    }
+
+    function assignFileToInput(input, file) {
+        if (!input || !file) return false;
+        const transfer = new DataTransfer();
+        transfer.items.add(file);
+        input.files = transfer.files;
+        syncFileName(input);
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
+    }
+
     function syncThumbnail(form) {
         if (!form) return;
         const url = form.dataset.thumbnailUrl || '';
@@ -497,6 +554,22 @@
     bindPicker(editDialog);
     bindThumbnail(editForm);
     bindFileNames(editForm);
+
+    function activeImageFileInput() {
+        if (kind !== "image") return null;
+        if (uploadDialog && !uploadDialog.hidden) return uploadFile || null;
+        if (editDialog && !editDialog.hidden) return editFile || null;
+        return null;
+    }
+
+    document.addEventListener("paste", event => {
+        const input = activeImageFileInput();
+        if (!input) return;
+        const file = imageFileFromClipboard(event.clipboardData);
+        if (!file) return;
+        event.preventDefault();
+        assignFileToInput(input, file);
+    });
 
     function showEdit(button) {
         if (!editForm || !editDialog) return;
