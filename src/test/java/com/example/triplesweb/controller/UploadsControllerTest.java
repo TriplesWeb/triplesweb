@@ -52,4 +52,31 @@ class UploadsControllerTest {
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getHeaders().getContentType().toString()).contains("image/jpeg");
     }
+    @Test void downloadsActiveContentFromDiskAndDatabase() throws Exception {
+        var store = mock(UploadContentStore.class);
+        var controller = new UploadsController(temp.toString(), "", store);
+        Files.writeString(temp.resolve("page.html"), "<script>alert(1)</script>");
+        var request = new MockHttpServletRequest("GET", "/uploads/page.html");
+        var response = controller.serve(request);
+        assertThat(response.getHeaders().getFirst("Content-Disposition")).isEqualTo("attachment");
+        assertThat(response.getHeaders().getFirst("X-Content-Type-Options")).isEqualTo("nosniff");
+        Files.delete(temp.resolve("page.html"));
+        var blob = new UploadBlob();
+        blob.setContentType("text/html");
+        blob.setData(new byte[]{1});
+        when(store.find("page.html")).thenReturn(Optional.of(blob));
+        assertThat(controller.serve(request).getHeaders().getFirst("Content-Disposition")).isEqualTo("attachment");
+    }
+
+    @Test void blocksTraversalSymlinksAndPrivateSidecars() throws Exception {
+        var store = mock(UploadContentStore.class);
+        var controller = new UploadsController(temp.resolve("uploads").toString(), "", store);
+        Files.createDirectory(temp.resolve("uploads"));
+        Files.writeString(temp.resolve("secret.txt"), "secret");
+        Files.createSymbolicLink(temp.resolve("uploads/link.txt"), temp.resolve("secret.txt"));
+        assertThat(controller.serve(new MockHttpServletRequest("GET", "/uploads/link.txt")).getStatusCode().value()).isEqualTo(403);
+        assertThat(controller.serve(new MockHttpServletRequest("GET", "/uploads/%2e%2e/secret.txt")).getStatusCode().value()).isEqualTo(403);
+        assertThat(controller.serve(new MockHttpServletRequest("GET", "/uploads/photo.jpg.orig")).getStatusCode().value()).isEqualTo(404);
+        org.mockito.Mockito.verifyNoInteractions(store);
+    }
 }

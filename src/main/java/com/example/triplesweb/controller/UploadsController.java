@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
+import java.io.IOException;
+import java.util.Set;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -53,16 +55,28 @@ public class UploadsController {
             return ResponseEntity.notFound().build();
         }
 
+        if (relative.toLowerCase(Locale.ROOT).endsWith(".orig")) {
+            return ResponseEntity.notFound().build();
+        }
         Path local = uploadRoot.resolve(relative).normalize();
         if (!local.startsWith(uploadRoot)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         if (Files.isRegularFile(local) && Files.isReadable(local)) {
+            try {
+                if (!local.toRealPath().startsWith(uploadRoot.toRealPath())) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                }
+            } catch (IOException e) {
+                return ResponseEntity.notFound().build();
+            }
             MediaType type = imageType(local.getFileName().toString(), MediaTypeFactory.getMediaType(local.getFileName().toString())
                     .orElse(MediaType.APPLICATION_OCTET_STREAM));
             return ResponseEntity.ok()
                     .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
+                    .header("X-Content-Type-Options", "nosniff")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, safeDisposition(type))
                     .contentType(type)
                     .body(new FileSystemResource(local));
         }
@@ -72,6 +86,8 @@ public class UploadsController {
             MediaType type = imageType(relative, mediaType(stored.getContentType()));
             return ResponseEntity.ok()
                     .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
+                    .header("X-Content-Type-Options", "nosniff")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, safeDisposition(type))
                     .contentType(type)
                     .body(new ByteArrayResource(stored.getData()));
         }
@@ -94,6 +110,13 @@ public class UploadsController {
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(location)
                 .build();
+    }
+
+    private static String safeDisposition(MediaType type) {
+        // 업로드한 HTML/SVG/XML 등은 사이트 권한으로 실행되지 않게 다운로드한다.
+        return Set.of("image/jpeg", "image/png", "image/gif", "image/webp", "image/bmp",
+                "video/mp4", "video/webm", "video/quicktime", "audio/mpeg", "audio/ogg")
+                .contains(type.toString().toLowerCase(Locale.ROOT)) ? "inline" : "attachment";
     }
 
     private static MediaType imageType(String filename, MediaType fallback) {
