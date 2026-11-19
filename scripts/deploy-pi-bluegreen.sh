@@ -236,10 +236,24 @@ switch_proxy() {
     fi
     fail "Promotion rejected. Old app_$old has not been stopped."
   fi
+  # Old slot continues running during drain. Recheck the new upstream
+  # BEFORE we finalize promotion or stop the rollback candidate.
   CANDIDATE_SLOT=""
-  remember_success "$candidate"
   log "New traffic goes to app_$candidate; draining app_$old for $BG_DRAIN_SECONDS seconds"
   sleep "$BG_DRAIN_SECONDS"
+  if ! proxy_points_to "$candidate"; then
+    log "New upstream failed during drain; restoring previous Nginx upstream"
+    cp -f "$previous" "$NGINX_CONF.tmp.$"
+    mv -f "$NGINX_CONF.tmp.$" "$NGINX_CONF"
+    if docker exec "$proxy_cid" nginx -t &&
+       docker exec "$proxy_cid" nginx -s reload &&
+       wait_proxy_slot "$old"; then
+      "${COMPOSE[@]}" stop -t 10 "app_$candidate" || true
+      fail "Candidate became unhealthy during drain; original slot restored"
+    fi
+    fail "CRITICAL: automatic rollback failed; both application slots retained for manual recovery"
+  fi
+  remember_success "$candidate"
   if [[ "$candidate" != "$old" ]]; then
     "${COMPOSE[@]}" stop -t 30 "app_$old" || log "WARNING: stale slot could not be stopped"
   fi
