@@ -15,6 +15,7 @@ grep -Fq 'docker exec "$proxy_cid" nginx -t' scripts/deploy-pi-bluegreen.sh
 grep -Fq 'docker exec "$proxy_cid" nginx -s reload' scripts/deploy-pi-bluegreen.sh
 ! grep -Fq -- '--remove-orphans' scripts/deploy-pi-bluegreen.sh
 ! grep -Fq 'docker compose down' scripts/deploy-pi-bluegreen.sh
+grep -Fq 'profiles: [legacy]' docker-compose.yml
 grep -Fq 'bash ./deploy-pi-bluegreen.sh' .github/workflows/deploy-main.yml
 grep -Fq 'docker-compose.bluegreen.yml' .github/workflows/deploy-main.yml
 
@@ -41,5 +42,7 @@ ports=proxy.get("ports",[])
 assert len(ports)==1 and str(ports[0]["published"])=="8090"
 assert str(ports[0]["target"])=="80"
 assert "mariadb" in services
+if "app" in services:
+    assert "legacy" in services["app"].get("profiles",[]), "legacy app must be opt-in"
 print("PASS: Blue-Green Compose safety invariants")
 PY
