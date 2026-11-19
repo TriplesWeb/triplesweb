@@ -1622,7 +1622,25 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     overflow-wrap: anywhere;
 }
 .ar-field-hint { margin: 0; color: #93a49e; font-size: 0.75rem; font-weight: 400; line-height: 1.6; }
-.ar-artist-editor { display: flex; flex-direction: column; gap: 0.6rem; padding: 0.75rem; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.7rem; background: rgba(13,14,18,0.45); }
+.ar-artist-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 0.7rem 0.75rem;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 0.7rem;
+    background: rgba(13,14,18,0.45);
+}
+.ar-artist-editor .ar-picker-meta {
+    margin: 0;
+    min-height: 1.25rem;
+    line-height: 1.25rem;
+}
+.ar-artist-editor .ar-picker-meta .ar-text-btn {
+    padding: 0;
+    line-height: inherit;
+    font-size: inherit;
+}
 .ar-artist-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; min-height: 1.7rem; align-items: center; color: #93a49e; font-size: 0.76rem; font-weight: 400; }
 .ar-artist-chip { padding: 0.35rem 0.65rem; border: 1px solid rgba(0,245,212,0.3); border-radius: 999px; background: rgba(0,245,212,0.09); color: #a7f3df; font-size: 0.78rem; cursor: pointer; overflow-wrap: anywhere; }
 .ar-artist-chip:hover { border-color: #00f5d4; background: rgba(0,245,212,0.16); }
@@ -1762,7 +1780,17 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-video-player-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.9rem 1.1rem; font-size: 0.85rem; }
 .ar-video-player-foot p { margin: 0; color: #ffcf9b; }
 .ar-video-player-foot a { margin-left: auto; color: #8bf5dc; }
-.ar-picker-meta { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; color: #b9cac4; font-size: 0.8rem; }
+.ar-picker-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    box-sizing: border-box;
+    color: #b9cac4;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
 .ar-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .ar-preview[hidden] { display: none !important; }
 .ar-preview p { margin: 0 0 0.35rem; color: #b9cac4; font-size: 0.78rem; }
