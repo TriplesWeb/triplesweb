@@ -1414,6 +1414,7 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-file {
     position: relative;
     display: flex;
+    flex-wrap: wrap;
     align-items: flex-start;
     gap: 0.75rem;
     min-height: 2.625rem;
@@ -1469,12 +1470,78 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-file-name.has-files {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.35rem;
+    gap: 0.45rem;
     align-items: center;
     align-self: center;
     overflow: visible;
     text-overflow: unset;
     white-space: normal;
+}
+.ar-file-name.has-thumbs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
+    gap: 0.45rem;
+    flex: 1 1 100%;
+    align-self: stretch;
+    width: 100%;
+}
+.ar-file-tile {
+    position: relative;
+    aspect-ratio: 1;
+    min-width: 0;
+    border-radius: 0.55rem;
+    border: 1px solid rgba(58, 74, 70, 0.75);
+    background: #050709;
+    overflow: hidden;
+}
+.ar-file-thumb {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+.ar-file-thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+.ar-file-thumb:focus-visible {
+    outline: 2px solid #8bf5dc;
+    outline-offset: -2px;
+}
+.ar-file-remove {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.35rem;
+    height: 1.35rem;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    background: rgba(8, 10, 12, 0.82);
+    color: #e8f5f0;
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+.ar-file-remove:hover {
+    border-color: rgba(0, 245, 212, 0.65);
+    background: rgba(0, 245, 212, 0.22);
+    color: #b7fff2;
+}
+.ar-file-remove:focus-visible {
+    outline: 2px solid #8bf5dc;
+    outline-offset: 1px;
 }
 .ar-file-chip {
     display: inline-flex;

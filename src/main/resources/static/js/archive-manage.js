@@ -194,6 +194,7 @@
 
     function rememberUrl(file) {
         if (!file) return "";
+        if (file._archivePreviewUrl) return file._archivePreviewUrl;
         const ext = file.name.split('.').pop().toLowerCase();
         const type = { jfif: 'image/jpeg', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp' }[ext];
         const url = URL.createObjectURL(type ? new Blob([file], { type }) : file);
@@ -206,6 +207,19 @@
             URL.revokeObjectURL(file._archivePreviewUrl);
             file._archivePreviewUrl = "";
         }
+    }
+
+    function releaseUnusedFiles(previous, next) {
+        const keep = new Set(next || []);
+        (previous || []).forEach(file => {
+            if (!keep.has(file)) releaseUrl(file);
+        });
+    }
+
+    function isImageFile(file) {
+        if (!file) return false;
+        if (file.type && file.type.startsWith('image/')) return true;
+        return /\.(jpe?g|jfif|png|webp|gif|bmp)$/i.test(file.name || '');
     }
 
     function selectedArtists(root) {
@@ -233,7 +247,10 @@
         const label = input?.closest('.ar-file')?.querySelector('[data-file-name]');
         if (!label) return;
         const files = Array.from(input.files || []);
+        const form = input.closest('form');
+        const preview = form?.querySelector('.ar-preview');
         label.classList.toggle('has-files', files.length > 0);
+        label.classList.toggle('has-thumbs', files.some(isImageFile));
         if (!files.length) {
             label.replaceChildren();
             label.textContent = '선택된 파일 없음';
@@ -241,6 +258,39 @@
         }
         label.replaceChildren();
         files.forEach((file, index) => {
+            if (isImageFile(file)) {
+                const tile = document.createElement('div');
+                tile.className = 'ar-file-tile';
+                tile.title = file.name;
+                const thumb = document.createElement('button');
+                thumb.type = 'button';
+                thumb.className = 'ar-file-thumb';
+                thumb.setAttribute('aria-label', file.name + ' 미리보기');
+                const img = document.createElement('img');
+                img.alt = '';
+                img.decoding = 'async';
+                img.src = rememberUrl(file);
+                thumb.appendChild(img);
+                thumb.addEventListener('click', event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (preview && input.name === 'file') showPreview(preview, rememberUrl(file));
+                });
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'ar-file-remove';
+                remove.textContent = '×';
+                remove.title = file.name + ' 제거';
+                remove.setAttribute('aria-label', file.name + ' 제거');
+                remove.addEventListener('click', event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    removeFileAt(input, index);
+                });
+                tile.append(thumb, remove);
+                label.appendChild(tile);
+                return;
+            }
             const chip = document.createElement('button');
             chip.type = 'button';
             chip.className = 'ar-file-chip';
@@ -578,17 +628,18 @@
 
     uploadFile?.addEventListener("change", () => {
         const files = Array.from(uploadFile.files || []);
-        releaseUrl(uploadFile._archiveLastFile);
-        (uploadFile._archiveLastFiles || []).forEach(releaseUrl);
+        releaseUnusedFiles(uploadFile._archiveLastFiles, files);
         uploadFile._archiveLastFile = files[0] || null;
         uploadFile._archiveLastFiles = files;
         if (!files.length) {
             showPreview(uploadPreview, "");
+            syncFileName(uploadFile);
             return;
         }
         const invalid = files.find(file => !acceptedFile(file));
         if (invalid) {
             alert(kind === "video" ? "동영상 파일만 선택할 수 있습니다." : "이미지 파일만 선택할 수 있습니다.");
+            (uploadFile._archiveLastFiles || []).forEach(releaseUrl);
             uploadFile.value = "";
             uploadFile._archiveLastFile = null;
             uploadFile._archiveLastFiles = null;
@@ -598,6 +649,7 @@
         }
         showPreview(uploadPreview, rememberUrl(files[0]));
         files.slice(1).forEach(rememberUrl);
+        syncFileName(uploadFile);
     });
 
     uploadForm?.addEventListener("submit", async event => {
@@ -711,17 +763,26 @@
 
     editFile?.addEventListener("change", () => {
         const file = editFile.files && editFile.files[0];
-        releaseUrl(editFile._archiveLastFile);
+        if (editFile._archiveLastFile && editFile._archiveLastFile !== file) {
+            releaseUrl(editFile._archiveLastFile);
+        }
         editFile._archiveLastFile = file || null;
-        if (!file) { showPreview(editPreview, editForm.dataset.originalUrl || ''); return; }
+        if (!file) {
+            showPreview(editPreview, editForm.dataset.originalUrl || '');
+            syncFileName(editFile);
+            return;
+        }
         if (!acceptedFile(file)) {
             alert(kind === "video" ? "동영상 파일만 선택할 수 있습니다." : "이미지 파일만 선택할 수 있습니다.");
+            releaseUrl(file);
             editFile.value = "";
+            editFile._archiveLastFile = null;
             syncFileName(editFile);
             showPreview(editPreview, editForm.dataset.originalUrl || '');
             return;
         }
         showPreview(editPreview, rememberUrl(file));
+        syncFileName(editFile);
     });
 
     async function removeArchive(id, title) {
