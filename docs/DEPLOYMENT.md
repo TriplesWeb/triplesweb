@@ -9,6 +9,12 @@
 
 기존 `즉시 배포` 코멘트 검사 방식은 폐지한다. 모든 머지가 운영 배포 대상이다. GitHub `main`에 직접 푸시하지 말고 PR을 머지한다.
 
+## Blue-Green 운영 배포 (신규)
+
+운영 배포는 동일 Pi에서 Nginx(:8090) + 활성 Blue/Green 앱 하나를 유지합니다. 새 버전을 비활성 슬롯에 미리 띄워 readiness와 /main을 검사하고 Nginx 설정을 graceful reload한 뒤에만 이전 앱을 종료합니다. **기존 `docker compose up -d --no-deps app` 경로는 legacy 복구용**이며 정상 운영에서는 `scripts/deploy-pi-bluegreen.sh`만 사용합니다. 최초 프록시 전환에서는 짧은 중단이 발생할 수 있습니다.
+
+메모리 검사, DB Flyway 변경 차단, 롤백, 포트 충돌 방지 및 수동 복구 절차: [BLUE_GREEN_DEPLOYMENT.md](BLUE_GREEN_DEPLOYMENT.md).
+
 ## PR 변경 영역별 선택적 CI
 
 PR의 synthetic merge commit과 대상 `main`을 비교해 `scripts/ci-path-filter.py`가 경로를 판정합니다. 이름을 변경한 파일은 이전 경로·새 경로 모두 검증하고, 알 수 없는 앱 경로는 안전을 위해 양쪽 검사를 수행합니다.
