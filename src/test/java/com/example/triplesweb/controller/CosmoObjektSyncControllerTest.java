@@ -13,7 +13,7 @@ import static org.mockito.Mockito.*;
 
 @WebMvcTest(value = CosmoObjektSyncController.class, properties = "chemistry.admin.password=test-password")
 @org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc(addFilters = false)
-@Import(AboutAdminAuth.class)
+@Import({AboutAdminAuth.class, com.example.triplesweb.config.PasswordConfig.class})
 class CosmoObjektSyncControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean CosmoObjektSyncService sync;
