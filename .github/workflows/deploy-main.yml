@@ -45,7 +45,6 @@ jobs:
             gradle
             scripts
             src/main
-            uploads/chemistry
 
       - name: Full commit SHA
         id: sha
@@ -76,10 +75,9 @@ jobs:
             StrictHostKeyChecking accept-new
           EOF
 
-      - name: Check current production image and tracked assets
+      - name: Check current production migrations tree
         id: assets
         run: |
-          echo "tree=$(git rev-parse HEAD:uploads/chemistry)" >> "$GITHUB_OUTPUT"
           echo "migrations=$(git rev-parse HEAD:src/main/resources/db/migration)" >> "$GITHUB_OUTPUT"
 
       - name: Preflight — retire dev and skip unchanged production
@@ -88,27 +86,19 @@ jobs:
           PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
           PI_DEV_DEPLOY_PATH: ${{ secrets.PI_DEV_DEPLOY_PATH }}
           WANT_IMAGE: ${{ steps.image.outputs.name }}:${{ steps.sha.outputs.sha }}
-          CHEMISTRY_TREE: ${{ steps.assets.outputs.tree }}
         run: |
           set -euo pipefail
           : "${PI_DEPLOY_PATH:?PI_DEPLOY_PATH is required}"
           PI_DEV_DEPLOY_PATH="${PI_DEV_DEPLOY_PATH:-${PI_DEPLOY_PATH}-dev}"
           # 첫 전환 때만 개발 앱을 종료하고 DB/파일은 보존한다.
           scp scripts/retire-pi-dev.sh "pi:${PI_DEPLOY_PATH}/retire-pi-dev.sh"
-          DECISION="$(ssh pi env PI_DEPLOY_PATH="$PI_DEPLOY_PATH" PI_DEV_DEPLOY_PATH="$PI_DEV_DEPLOY_PATH" WANT_IMAGE="$WANT_IMAGE" CHEMISTRY_TREE="$CHEMISTRY_TREE" bash -s <<'EOF'
+          DECISION="$(ssh pi env PI_DEPLOY_PATH="$PI_DEPLOY_PATH" PI_DEV_DEPLOY_PATH="$PI_DEV_DEPLOY_PATH" WANT_IMAGE="$WANT_IMAGE" bash -s <<'EOF'
           set -euo pipefail
           if [[ ! -f "${PI_DEPLOY_PATH}/.dev-retired" ]]; then
             bash "${PI_DEPLOY_PATH}/retire-pi-dev.sh" "${PI_DEPLOY_PATH}" "${PI_DEV_DEPLOY_PATH}"
             touch "${PI_DEPLOY_PATH}/.dev-retired"
           fi
           cd "${PI_DEPLOY_PATH}"
-          ASSETS_UP_TO_DATE=false
-          if [[ -f .chemistry-tree ]] && [[ "$(cat .chemistry-tree)" == "${CHEMISTRY_TREE}" ]] && [[ -d uploads/chemistry ]]; then
-            echo "chemistry_sync=false"
-            ASSETS_UP_TO_DATE=true
-          else
-            echo "chemistry_sync=true"
-          fi
           APP_PORT="$(grep -E '^APP_PORT=' .env 2>/dev/null | cut -d= -f2- || true)"
           APP_PORT="${APP_PORT:-8080}"
           # When Blue-Green is installed, compare the Nginx-active slot.
@@ -138,12 +128,7 @@ jobs:
             exit 0
           fi
           if curl -fsS --max-time 8 "http://127.0.0.1:${APP_PORT}/actuator/health/readiness" >/dev/null; then
-            if [[ "${ASSETS_UP_TO_DATE}" == "true" ]]; then
-              echo "skip=true"
-            else
-              echo "skip=false"
-              echo "reason=chemistry-out-of-date" >&2
-            fi
+            echo "skip=true"
           else
             echo "skip=false"
             echo "reason=smoke-failed" >&2
@@ -151,9 +136,7 @@ jobs:
           EOF
           )"
           SKIP="$(echo "$DECISION" | grep -E '^skip=' | tail -n1 | cut -d= -f2)"
-          CHEMISTRY_SYNC="$(echo "$DECISION" | grep -E '^chemistry_sync=' | tail -n1 | cut -d= -f2)"
           echo "skip=${SKIP}" >> "$GITHUB_OUTPUT"
-          echo "chemistry_sync=${CHEMISTRY_SYNC}" >> "$GITHUB_OUTPUT"
           if [[ "$SKIP" == "true" ]]; then
             echo "::notice::Prod already healthy on ${WANT_IMAGE}; skipping rebuild/restart"
           else
@@ -209,7 +192,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=triplesweb-arm64,ignore-error=true
           provenance: false
 
-      - name: Sync chemistry assets and Blue-Green deploy
+      - name: Blue-Green deploy
         if: steps.skip.outputs.skip != 'true'
         env:
           PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
@@ -229,17 +212,10 @@ jobs:
           : "${PI_DEPLOY_PATH:?PI_DEPLOY_PATH secret is required}"
           scp docker-compose.yml "pi:${PI_DEPLOY_PATH}/docker-compose.yml"
           scp docker-compose.bluegreen.yml "pi:${PI_DEPLOY_PATH}/docker-compose.bluegreen.yml"
-          scp scripts/deploy-pi-bluegreen.sh scripts/deploy-pi-image-retention.sh "pi:${PI_DEPLOY_PATH}/"
-          # chemistry Git tree SHA가 동일하면 원격 스캔·전송을 건너뛴다.
-          if [[ "${{ steps.skip.outputs.chemistry_sync }}" == "true" ]]; then
-            ssh pi "mkdir -p '${PI_DEPLOY_PATH}/uploads/chemistry'"
-            rsync -a --no-owner --no-group --exclude '.DS_Store' \
-              uploads/chemistry/ "pi:${PI_DEPLOY_PATH}/uploads/chemistry/"
-            ssh pi "echo '${{ steps.assets.outputs.tree }}' > '${PI_DEPLOY_PATH}/.chemistry-tree'"
-            echo "Chemistry files synchronized for ${{ steps.assets.outputs.tree }}"
-          else
-            echo "Chemistry unchanged — skipping rsync"
-          fi
+          scp scripts/deploy-pi-bluegreen.sh scripts/deploy-pi-image-retention.sh scripts/migrate-chemistry-photos-on-pi.sh "pi:${PI_DEPLOY_PATH}/"
+          # 케미 UI는 WAR static(/images/chemistry). 페어 사진은 서버 uploads만.
+          # 옛 chem/ → images/chemistry/legacy-chem 복사는 멱등 (원본 유지).
+          ssh pi "bash '${PI_DEPLOY_PATH}/migrate-chemistry-photos-on-pi.sh' '${PI_DEPLOY_PATH}'"
 
           ssh pi env \
             PI_DEPLOY_PATH="$PI_DEPLOY_PATH" \
