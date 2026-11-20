@@ -25,6 +25,7 @@ jobs:
           sparse-checkout: |
             .github
             scripts
+            src/main/resources
       - name: Validate deployment and path routing
         run: bash scripts/tests/deployment-static.test.sh
       - name: Docker Compose production configuration

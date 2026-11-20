@@ -12,7 +12,6 @@ import com.example.triplesweb.service.ArticleFileServiceImpl;
 import com.example.triplesweb.service.ArticleService;
 import com.example.triplesweb.service.ArticleObjektService;
 import com.example.triplesweb.service.ObjektService;
-import com.example.triplesweb.service.CommentService;
 import com.example.triplesweb.service.DateTimeFormatService;
 import com.example.triplesweb.util.ArticleHtmlCleaner;
 import com.example.triplesweb.util.ArticleMemberSwap;
@@ -49,7 +48,6 @@ import java.util.stream.Collectors;
 public class ArticleController {
 
     private final ArticleService articleService;
-    private final CommentService commentService;
     private final ArticleFileServiceImpl articleFileService;
     private final DateTimeFormatService dateTimeFormatService;
     private final ArticleObjektService articleObjektService;
@@ -560,7 +558,6 @@ public class ArticleController {
         String defaultMarketTitle = isTradeBoard(category) ? "교환" : (isSellBoard(category) ? "거래" : "");
         model.addAttribute("showMarketTitle", marketBoard && !title.isEmpty() && !title.equals(defaultMarketTitle));
         model.addAttribute("hasMarketDescription", marketBoard && ArticleHtmlCleaner.hasVisibleContent(article.getContent()));
-        model.addAttribute("commentDtos", commentService.show(id));
         model.addAttribute("categoryName", getCategoryName(category));
         model.addAttribute("isOwner", true); // 로그인 제거: 누구나 수정/삭제 가능
         model.addAttribute("isLoggedIn", true);

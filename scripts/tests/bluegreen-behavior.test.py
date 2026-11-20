@@ -88,7 +88,7 @@ switch_proxy blue green ghcr.io/triplesweb/triplesweb:old
 ''')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(calls.splitlines()[-3:], [
-            "promoted:green", "compose:stop -t 30 app_blue",
+            "promoted:green", "compose:stop -t 600 app_blue",
             "cleanup:ghcr.io/triplesweb/triplesweb:old"
         ])
 

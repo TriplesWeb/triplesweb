@@ -18,8 +18,8 @@
 3. 새 코드에서는 스테이징 슬롯의 Hibernate 자동 DDL을 `none`으로 강제합니다. 스키마 변경은 Flyway에 의존합니다.
 4. **Flyway:** 첫 배포 후 migration 폴더의 Git tree SHA를 `bluegreen/migration-tree`로 기록합니다. 이후 이 값이 변경되면 **기본적으로 배포를 차단**하고 운영 앱을 유지합니다. 하위 호환성 검증을 마친 경우에만 GitHub Actions Variable `BG_ALLOW_SCHEMA_CHANGE=true`를 일시적으로 설정해 진행합니다. 기존 앱과 신규 앱이 동시에 사용하는 동안 파괴적 DB 마이그레이션을 수행하면 안 됩니다.
 5. **중복 작업:** 기존 시스템에는 `@Scheduled` 주기 작업, 외부 API 수집, 앱 시작 시 캐시 초기화가 있습니다. Blue/Green 예열 중 두 앱이 같은 DB·외부 API를 잠시 이용하므로 작업의 멱등성·중복 실행에 특히 주의해야 합니다. 현재 구성은 스케줄러의 분산 락을 제공하지 않습니다.
-6. 두 앱의 로그인 세션은 기본적으로 프로세스 메모리를 공유하지 않으므로 기존 세션이 끊어질 수 있습니다. 세션까지 무중단이 필요하면 Redis/Spring Session 등 별도 세션 저장소가 필요합니다.
-7. 운영 데이터 `./uploads`, `./data`는 공유합니다. 실시간 업로드·장시간 다운로드 요청과 전환 시점은 주의가 필요합니다.
+6. 관리자 로그인 세션은 **Spring Session JDBC**(공유 MariaDB `SPRING_SESSION*`)로 슬롯 간에 이어집니다. CSRF는 쿠키 저장소(`XSRF-TOKEN`)라 전환 후에도 유지됩니다. 최초 도입·스키마 추가는 additive Flyway이므로 `BG_ALLOW_SCHEMA_CHANGE=true`를 한 번 허용한 뒤 되돌려야 합니다.
+7. 운영 데이터 `./uploads`, `./data`는 공유합니다. 전환 후 이전 슬롯은 `/internal/deploy/inflight`가 0이 될 때까지(최대 `BG_DRAIN_MAX_SECONDS`) 기다린 뒤 graceful stop 합니다.
 
 ## 2. 구성
 
@@ -108,7 +108,9 @@ bash scripts/tests/bluegreen-static.test.sh
 | `BG_MIN_AVAILABLE_MB` | 1400 | 새 앱 준비 전에 필요한 Pi의 MemAvailable |
 | `BG_SLOT_MEMORY_LIMIT` | 1800m | 앱 슬롯당 컨테이너 메모리 상한 |
 | `BG_READY_TIMEOUT_SECONDS` | 360 | 새 버전 준비 최대 대기 |
-| `BG_DRAIN_SECONDS` | 30 | 트래픽 전환 후 이전 앱 종료까지의 대기 |
+| `BG_DRAIN_SECONDS` | 5 | 전환 직후 프록시 재확인 전 최소 대기 |
+| `BG_DRAIN_MAX_SECONDS` | 600 | 이전 슬롯 in-flight(업로드 등) 대기 상한 |
+| `BG_STOP_TIMEOUT_SECONDS` | 600 | `docker compose stop -t` grace (앱 `server.shutdown=graceful`과 맞춤) |
 | `BG_ALLOW_SCHEMA_CHANGE` | false | **검토된** Flyway 변경만 예외적으로 허용 |
 
 위 변수는 모두 GitHub 저장소 **Settings → Secrets and variables → Actions → Variables**에서 조절할 수 있습니다. 기본값을 유지할 때는 별도 등록이 필요 없습니다. `BG_ALLOW_SCHEMA_CHANGE`는 안전성 검토를 마친 배포에만 true로 설정하고 완료 후 false로 되돌려야 합니다. 실제 성능 개선 폭은 최초/차기 운영 배포 로그에서 준비 시간과 전환 시간을 분리해 측정하세요.
@@ -138,6 +140,16 @@ SSH로 상태만 조회했으며 새 컨테이너 기동, 운영 재시작, DB �
 - `ObjektIngestStore`는 DB 행 잠금·버전 검사·중복 삽입 방지로 동시 수집 충돌을 방어합니다. 다만 두 프로세스의 외부 API 호출과 캐시 예열 비용은 중복됩니다.
 - `SchemaImproveRunner`는 Hibernate `ddl-auto=none`과 별개로 시작 시 DDL을 실행합니다. Flyway 폴더 SHA 검사만으로 모든 스키마 변경을 차단할 수 없습니다. 해당 Java 초기화 코드 변경도 구버전과의 호환성 검토 대상입니다.
 - `CosmoTokenProvider`의 잠금은 프로세스 내부에 한정됩니다. 공유 인증 파일의 원자적 교체는 제공하지만 두 앱의 토큰 갱신을 직렬화하지 않습니다. 겹치는 요청 중 인증 갱신 경쟁 가능성이 남습니다.
-- 세션은 공유되지 않으며 기본 drain 30초보다 긴 요청은 이전 앱 종료 시 끊길 수 있습니다.
+- 관리자 세션은 JDBC로 공유됩니다. 이전 슬롯은 in-flight가 끝날 때까지(최대 600초) drain 후 graceful stop 합니다.
+
+### 관리자 입력 연속성 (아카이브 1차 검증)
+
+배포 중에도 열린 관리자 화면에서 작업을 이어가려면 다음을 수동으로 확인합니다.
+
+1. 관리자로 로그인해 아카이브에 제목·설명을 입력한 채 둔다.
+2. 아카이브와 무관한 변경을 Blue-Green으로 배포·전환한다.
+3. 새로고침·재로그인 없이 저장하고, 사진 업로드 중에도 같은 테스트를 반복한다.
+
+합격 기준: 입력값 유지, 저장·업로드 성공, DB에 한 번만 등록(업로드 `Idempotency-Key`).
 
 최초 실제 배포 전에는 cgroup 지원을 복구하고, 운영자가 승인한 별도 검증 환경에서 같은 이미지·설정으로 후보 예열 시 최대 메모리와 CPU, 공유 DB 초기화 및 인증 동시 요청을 확인해야 합니다. 현재 읽기 전용 점검과 CI는 실제 Nginx 전환·장애 복구 실험을 대신하지 않습니다. 머지 직후 운영 배포가 자동 시작되므로 사전 조건을 해결하기 전에는 머지하지 않습니다.

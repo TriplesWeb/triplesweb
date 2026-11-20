@@ -7,7 +7,9 @@ set -euo pipefail
 APP_PORT="${APP_PORT:-8090}"
 BG_MIN_AVAILABLE_MB="${BG_MIN_AVAILABLE_MB:-1400}"
 BG_READY_TIMEOUT_SECONDS="${BG_READY_TIMEOUT_SECONDS:-360}"
-BG_DRAIN_SECONDS="${BG_DRAIN_SECONDS:-30}"
+BG_DRAIN_SECONDS="${BG_DRAIN_SECONDS:-5}"
+BG_DRAIN_MAX_SECONDS="${BG_DRAIN_MAX_SECONDS:-600}"
+BG_STOP_TIMEOUT_SECONDS="${BG_STOP_TIMEOUT_SECONDS:-600}"
 export APP_PORT COMPOSE_PROFILES=bluegreen
 COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.bluegreen.yml)
 BASE_COMPOSE=(docker compose --profile legacy -f docker-compose.yml)
@@ -265,7 +267,7 @@ switch_proxy() {
   # Old slot continues running during drain. Recheck the new upstream
   # BEFORE we finalize promotion or stop the rollback candidate.
   CANDIDATE_SLOT=""
-  log "New traffic goes to app_$candidate; draining app_$old for $BG_DRAIN_SECONDS seconds"
+  log "New traffic goes to app_$candidate; draining app_$old (min ${BG_DRAIN_SECONDS}s, max ${BG_DRAIN_MAX_SECONDS}s)"
   sleep "$BG_DRAIN_SECONDS"
   if ! proxy_points_to "$candidate"; then
     log "New upstream failed during drain; restoring previous Nginx upstream"
@@ -281,9 +283,48 @@ switch_proxy() {
   fi
   remember_success "$candidate"
   if [[ "$candidate" != "$old" ]]; then
-    "${COMPOSE[@]}" stop -t 30 "app_$old" || log "WARNING: stale slot could not be stopped"
+    drain_until_idle "$old" || log "WARNING: drain wait ended with in-flight requests still present"
+    "${COMPOSE[@]}" stop -t "$BG_STOP_TIMEOUT_SECONDS" "app_$old" || log "WARNING: stale slot could not be stopped"
   fi
   cleanup_after_deploy "$previous_image"
+}
+
+# Poll the old slot's in-flight counter until idle or BG_DRAIN_MAX_SECONDS.
+drain_until_idle() {
+  local slot="$1" cid ip deadline remaining inflight raw
+  cid="$(container_of "app_$slot")"
+  if ! is_running "$cid"; then
+    log "app_$slot already stopped; skip drain wait"
+    return 0
+  fi
+  ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$cid")"
+  if [[ ! "$ip" =~ ^[0-9.]+$ ]]; then
+    log "WARNING: cannot resolve app_$slot IP for drain; falling back to stop grace only"
+    return 1
+  fi
+  deadline=$((SECONDS + BG_DRAIN_MAX_SECONDS))
+  while (( SECONDS < deadline )); do
+    if ! is_running "$cid"; then
+      log "app_$slot exited during drain wait"
+      return 0
+    fi
+    remaining=$((deadline - SECONDS))
+    (( remaining > 0 )) || break
+    raw="$(curl -fsS --connect-timeout 2 --max-time 5 "http://$ip:8080/internal/deploy/inflight" 2>/dev/null || true)"
+    inflight="$(printf '%s' "$raw" | sed -n 's/.*"inFlight"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p')"
+    if [[ "$inflight" == "0" ]]; then
+      log "app_$slot idle (inFlight=0); ready to stop"
+      return 0
+    fi
+    if [[ -n "$inflight" ]]; then
+      log "app_$slot still busy (inFlight=$inflight); waiting…"
+    else
+      log "app_$slot drain probe unavailable; waiting…"
+    fi
+    sleep 2
+  done
+  log "WARNING: drain timed out after ${BG_DRAIN_MAX_SECONDS}s (last inFlight=${inflight:-unknown})"
+  return 1
 }
 
 run_deploy() {
