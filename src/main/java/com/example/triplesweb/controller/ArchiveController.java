@@ -11,6 +11,7 @@ import com.example.triplesweb.service.ArchiveService;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.ChemistryGroupService;
 import com.example.triplesweb.service.ChemistryService;
+import com.example.triplesweb.service.IdempotencyService;
 import com.example.triplesweb.service.UnitService;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.entity.Artist;
@@ -57,6 +58,7 @@ public class ArchiveController {
     private final ChemistryService chemistryService;
     private final ChemistryGroupService chemistryGroupService;
     private final ObjectMapper objectMapper;
+    private final IdempotencyService idempotencyService;
 
     @GetMapping
     public String showArchive(@RequestParam(defaultValue = "image") String type,
@@ -197,7 +199,7 @@ public class ArchiveController {
             if (archive.getType() == MediaType.IMAGE) photoCount++;
             else if (archive.getType() == MediaType.VIDEO) videoCount++;
         }
-        String title = "유닛별";
+        String title = "디멘션";
         String accent = "#a78bfa";
         model.addAttribute("archiveFolderHome", true);
         model.addAttribute("archiveFolderIndex", true);
@@ -248,11 +250,16 @@ public class ArchiveController {
         ArchiveSource source = parseSourceFilter(sourceSlug);
         List<Unit> visibleUnits = unitService.listVisible();
         List<ArchiveFolderClassifier.UnitMembers> units = unitSnapshots(visibleUnits);
-        Page<Archive> archives = browse
-                ? archiveService.pageByType(type, page, size, q, selectedMembers, fromDate, toDate)
-                : archiveService.pageInFolder(type, page, size, q,
+        ArchiveService.FolderBrowse folderBrowse = null;
+        Page<Archive> archives;
+        if (browse) {
+            archives = archiveService.pageByType(type, page, size, q, selectedMembers, fromDate, toDate);
+        } else {
+            folderBrowse = archiveService.browseFolder(type, page, size, q,
                     memberSuperset ? List.of() : selectedMembers, fromDate, toDate,
                     source, false, folderKey, memberSuperset ? selectedMembers : List.of(), units);
+            archives = folderBrowse.page();
+        }
 
         List<Artist> artists = artistRepository.findAll();
         List<Map<String, Object>> cards = archiveCards(archives, artists);
@@ -317,9 +324,20 @@ public class ArchiveController {
         model.addAttribute("hasSourceFilter", sourceSlug != null && !sourceSlug.isBlank());
         model.addAttribute("chemQuery", "");
         model.addAttribute("archiveSources", sourceOptions(source));
-        addFilterSummary(model, q, selectedMembers, artists, type, sourceSlug);
+        model.addAttribute("hasActiveArchiveFilters", (q != null && !q.isBlank())
+                || !selectedMembers.isEmpty() || fromDate != null || toDate != null
+                || (sourceSlug != null && !sourceSlug.isBlank()));
         addArchivePage(model, archives, type, q, memberQuery(selectedMembers), dateQuery, browse,
                 folderQuery(folderKey, ""), sourceQuery, sourceSlug, "");
+        // 출처 탭: 폴더는 한 번 스캔한 결과, 전체 보기는 source 컬럼만 distinct 조회.
+        Set<ArchiveSource> availableSources = browse
+                ? archiveService.availableSources(type, q, selectedMembers, fromDate, toDate)
+                : folderBrowse.availableSources();
+        model.addAttribute("sourceTabs", sourceTabs(browse ? "/archive/all" : "/archive",
+                (type == MediaType.VIDEO ? "&type=video" : "") + folderQuery(folderKey, "")
+                        + (q == null || q.isBlank() ? "" : "&q=" + URLEncoder.encode(q.trim(), StandardCharsets.UTF_8))
+                        + memberQuery(selectedMembers) + dateQuery,
+                sourceSlug, availableSources));
         return "archive/archive";
     }
 
@@ -399,6 +417,7 @@ public class ArchiveController {
         Set<String> chosen = Set.copyOf(selected);
         List<Map<String, Object>> options = MemberPortraitOptions.fromArtists(artists, false);
         for (Map<String, Object> option : options) {
+            option.put("keepOption", true);
             option.put("active", chosen.contains(String.valueOf(option.get("value"))));
         }
         return options;
@@ -524,100 +543,6 @@ public class ArchiveController {
         return cards;
     }
 
-    private void addFilterSummary(Model model, String q, List<String> selectedMembers, List<Artist> artists,
-                                  MediaType type, String sourceSlug) {
-        List<Map<String, Object>> parts = new ArrayList<>();
-        int groups = 0;
-        groups++;
-        appendFilterText(parts, type == MediaType.VIDEO ? "영상" : "사진");
-        groups++;
-        appendFilterText(parts, sourceSummary(sourceSlug));
-        String chemistryName = exactChemistryLabel(selectedMembers);
-        if (!chemistryName.isEmpty()) {
-            groups++;
-            appendFilterText(parts, chemistryName);
-        } else if (!selectedMembers.isEmpty()) {
-            groups++;
-            if (!parts.isEmpty()) parts.add(Map.of("isSep", true));
-            Map<String, Object> first = memberFilterPart(selectedMembers.get(0), artists);
-            first.put("isMember", true);
-            parts.add(first);
-            if (selectedMembers.size() > 1) {
-                Map<String, Object> more = new LinkedHashMap<>();
-                more.put("isMore", true);
-                more.put("text", "외 " + (selectedMembers.size() - 1) + "명");
-                parts.add(more);
-            }
-        }
-        String query = q == null ? "" : q.trim();
-        if (!query.isEmpty()) {
-            groups++;
-            appendFilterText(parts, query);
-        }
-        model.addAttribute("hasFilters", !parts.isEmpty());
-        model.addAttribute("filterParts", parts);
-        model.addAttribute("filterCount", Math.max(1, groups));
-    }
-
-    private String exactChemistryLabel(List<String> selected) {
-        if (selected == null || selected.size() < 2) return "";
-        Set<String> wanted = new LinkedHashSet<>(ArchiveFolderClassifier.membersOf(String.join(",", selected)));
-        if (wanted.size() < 2) return "";
-        for (ChemistryDto item : safeChemistries()) {
-            String raw = (item.getMemberA() == null ? "" : item.getMemberA())
-                    + "," + (item.getMemberB() == null ? "" : item.getMemberB());
-            String label = labelWhenSameMembers(wanted, ArchiveFolderClassifier.membersOf(raw), item.getLabel());
-            if (!label.isEmpty()) return label;
-        }
-        for (ChemistryGroupDto item : safeChemistryGroups()) {
-            List<String> members = item.getMembers() == null ? List.of() : item.getMembers();
-            String label = labelWhenSameMembers(wanted,
-                    ArchiveFolderClassifier.membersOf(String.join(",", members)), item.getLabel());
-            if (!label.isEmpty()) return label;
-        }
-        return "";
-    }
-
-    private static String labelWhenSameMembers(Set<String> wanted, List<String> members, String rawLabel) {
-        if (members == null || members.size() != wanted.size()) return "";
-        if (!wanted.containsAll(members)) return "";
-        return chemistryDisplayLabel(rawLabel);
-    }
-
-    private static void appendFilterText(List<Map<String, Object>> parts, String text) {
-        if (text == null || text.isBlank()) return;
-        if (!parts.isEmpty()) parts.add(Map.of("isSep", true));
-        parts.add(Map.of("isText", true, "text", text));
-    }
-
-    private static String sourceSummary(String sourceSlug) {
-        if (sourceSlug == null || sourceSlug.isBlank()) return "전체 출처";
-        try {
-            ArchiveSource source = ArchiveSource.parse(sourceSlug);
-            return source == null ? "전체 출처" : source.getLabel();
-        } catch (IllegalArgumentException ignored) {
-            return "전체 출처";
-        }
-    }
-
-    private static Map<String, Object> memberFilterPart(String name, List<Artist> artists) {
-        Map<String, Object> part = new LinkedHashMap<>();
-        part.put("text", name);
-        String color = "#b9cac4";
-        for (Artist artist : artists) {
-            if (artist.getName() != null && artist.getName().trim().equalsIgnoreCase(name)) {
-                color = safeColor(artist.getColor());
-                break;
-            }
-            if (artist.getEngName() != null && artist.getEngName().trim().equalsIgnoreCase(name)) {
-                color = safeColor(artist.getColor());
-                break;
-            }
-        }
-        part.put("color", color);
-        return part;
-    }
-
     private static String safeColor(String color) {
         return color != null && color.matches("#[0-9a-fA-F]{6}") ? color : "#b9cac4";
     }
@@ -685,8 +610,6 @@ public class ArchiveController {
         model.addAttribute("imageTabHref", joinHref("/archive", filterQuery + pageQuery));
         model.addAttribute("videoTabHref", joinHref("/archive?type=video", filterQuery + pageQuery));
         model.addAttribute("browseQuery", joinHref("", filterQuery));
-        model.addAttribute("sourceTabs", sourceTabs(folderBase, typeQuery + keptFolder
-                + qQuery + (memberQuery == null ? "" : memberQuery) + (dateQuery == null ? "" : dateQuery) + keptChem, sourceSlug));
         List<Map<String, Object>> archivePages = new ArrayList<>();
         int start = Math.max(0, current - 2);
         int end = Math.min(totalPages - 1, start + 4);
@@ -792,11 +715,12 @@ public class ArchiveController {
         return options;
     }
 
-    private static List<Map<String, Object>> sourceTabs(String path, String extraQuery, String sourceSlug) {
+    private static List<Map<String, Object>> sourceTabs(String path, String extraQuery, String sourceSlug, Set<ArchiveSource> availableSources) {
         List<Map<String, Object>> tabs = new ArrayList<>();
         String current = sourceSlug == null ? "" : sourceSlug.trim();
         tabs.add(sourceTab("전체", joinHref(path, extraQuery), current.isBlank()));
         for (ArchiveSource source : ArchiveSource.values()) {
+            if (!availableSources.contains(source)) continue;
             tabs.add(sourceTab(source.getLabel(),
                     joinHref(path, extraQuery + "&source=" + source.getSlug()),
                     current.equalsIgnoreCase(source.getSlug()) || current.equalsIgnoreCase(source.name())));
@@ -832,7 +756,7 @@ public class ArchiveController {
     private String folderTitle(String folder, List<String> comboMembers, List<ArchiveFolderClassifier.UnitMembers> units) {
         if (folder == null || folder.isBlank()) return "";
         if (folder.equalsIgnoreCase("s")) return "";
-        if (isUnitIndex(folder)) return "유닛별";
+        if (isUnitIndex(folder)) return "디멘션";
         if (isComboIndex(folder)) return "케미";
         Integer comboSize = ArchiveFolderClassifier.comboSize(folder);
         if (comboSize != null) return ArchiveFolderClassifier.comboLabel(comboSize);
@@ -923,9 +847,9 @@ public class ArchiveController {
             unitPhotos += counted.counts().getOrDefault("unit-" + unit.getUnitId(), 0);
         }
         List<Map<String, Object>> folders = new ArrayList<>();
-        folders.add(folderCard("s", "전체 멤버", "#f5c518", "/archive?folder=s", counted.counts().getOrDefault("s", 0),
+        folders.add(folderCard("s", "tripleS", "#f5c518", "/archive?folder=s", counted.counts().getOrDefault("s", 0),
                 "", ArchiveFolderClassifier.Kind.GROUP, true));
-        folders.add(parentCard("units", "유닛별", "#a78bfa", "/archive?folder=units", unitPhotos));
+        folders.add(parentCard("units", "디멘션", "#a78bfa", "/archive?folder=units", unitPhotos));
         for (int i = 0; i < MemberPortraitOptions.koreanOrder().size(); i++) {
             String name = MemberPortraitOptions.koreanOrder().get(i);
             String key = "s" + (i + 1);
@@ -969,8 +893,9 @@ public class ArchiveController {
         card.put("hasCount", count > 0);
         card.put("preview", "");
         card.put("hasPreview", false);
-        card.put("folderArt", "");
-        card.put("hasFolderArt", false);
+        card.put("folderArt", archiveFolderArt.dimensionUrl());
+        card.put("hasFolderArt", true);
+        card.put("hasBundledFolderArt", true);
         card.put("groupFolder", false);
         card.put("soloFolder", false);
         card.put("comboFolder", false);
@@ -1100,18 +1025,19 @@ public class ArchiveController {
         for (ChemistryDto item : safeChemistries()) {
             String rawMembers = (item.getMemberA() == null ? "" : item.getMemberA())
                     + "," + (item.getMemberB() == null ? "" : item.getMemberB());
-            first = appendChemistryName(json, first, seen, ArchiveFolderClassifier.membersOf(rawMembers), item.getLabel());
+            first = appendChemistryName(json, first, seen, ArchiveFolderClassifier.membersOf(rawMembers), item.getLabel(),
+                    "pair", item.getId());
         }
         for (ChemistryGroupDto item : safeChemistryGroups()) {
             List<String> members = item.getMembers() == null ? List.of() : item.getMembers();
             first = appendChemistryName(json, first, seen,
-                    ArchiveFolderClassifier.membersOf(String.join(",", members)), item.getLabel());
+                    ArchiveFolderClassifier.membersOf(String.join(",", members)), item.getLabel(), "group", item.getId());
         }
         return json.append(']').toString();
     }
 
     private static boolean appendChemistryName(StringBuilder json, boolean first, Set<String> seen,
-                                               List<String> members, String rawLabel) {
+                                               List<String> members, String rawLabel, String type, Long id) {
         if (members == null || members.size() < 2) return first;
         String label = chemistryDisplayLabel(rawLabel);
         if (label.isEmpty()) return first;
@@ -1122,7 +1048,11 @@ public class ArchiveController {
             if (i > 0) json.append(',');
             json.append(jsonString(members.get(i)));
         }
-        json.append("],\"label\":").append(jsonString(label)).append('}');
+        json.append("],\"label\":").append(jsonString(label));
+        if (id != null) {
+            json.append(",\"href\":").append(jsonString("/triples/chemistry?" + type + "=" + id));
+        }
+        json.append('}');
         return false;
     }
 
@@ -1197,6 +1127,7 @@ public class ArchiveController {
         card.put("hasPreview", !customArt && !shownPreview.isBlank());
         card.put("folderArt", art);
         card.put("hasFolderArt", customArt);
+        card.put("hasBundledFolderArt", archiveFolderArt.isBundled(art));
         card.put("groupFolder", group);
         card.put("soloFolder", kind == ArchiveFolderClassifier.Kind.SOLO);
         card.put("comboFolder", kind == ArchiveFolderClassifier.Kind.COMBO);
@@ -1264,11 +1195,23 @@ public class ArchiveController {
                                 @RequestParam("file") MultipartFile file, @RequestParam(value="artistNames", required=false) List<String> artistNames,
                                 @RequestParam("registeredOn") LocalDate registeredOn,
                                 @RequestParam("source") String source,
+                                @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                                 HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
-        String names = artistNames == null ? "" : String.join(",", artistNames);
-        archiveService.save(file, title, type, names, requireDate(registeredOn), requireSource(source));
-        return "redirect:" + folderRedirect(type, names);
+        var replay = idempotencyService.claimOrReplay(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey);
+        if (replay.isPresent()) {
+            return "redirect:" + replay.get();
+        }
+        try {
+            String names = artistNames == null ? "" : String.join(",", artistNames);
+            archiveService.save(file, title, type, names, requireDate(registeredOn), requireSource(source));
+            String location = folderRedirect(type, names);
+            idempotencyService.complete(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
+            return "redirect:" + location;
+        } catch (RuntimeException | IOException error) {
+            idempotencyService.abandon(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey);
+            throw error;
+        }
     }
 
     @PostMapping("/upload/image")
@@ -1278,20 +1221,33 @@ public class ArchiveController {
                               @RequestParam(value="artistNames", required=false) List<String> artistNames,
                               @RequestParam("registeredOn") LocalDate registeredOn,
                               @RequestParam("source") String source,
+                              @RequestParam(defaultValue = "0") int coverIndex,
+                              @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                               HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
-        String names = artistNames == null ? "" : String.join(",", artistNames);
-        LocalDate date = requireDate(registeredOn);
-        ArchiveSource archiveSource = requireSource(source);
-        String safeTitle = title == null ? "" : title;
-        List<MultipartFile> uploads = files == null ? List.of() : files.stream()
-                .filter(file -> file != null && !file.isEmpty())
-                .toList();
-        if (uploads.isEmpty()) {
-            throw new IllegalArgumentException("사진 파일을 선택해 주세요.");
+        var replay = idempotencyService.claimOrReplay(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey);
+        if (replay.isPresent()) {
+            return "redirect:" + replay.get();
         }
-        archiveService.uploadImages(uploads, safeTitle, names, date, archiveSource, description);
-        return "redirect:" + folderRedirect(MediaType.IMAGE, names);
+        try {
+            String names = artistNames == null ? "" : String.join(",", artistNames);
+            LocalDate date = requireDate(registeredOn);
+            ArchiveSource archiveSource = requireSource(source);
+            String safeTitle = title == null ? "" : title;
+            List<MultipartFile> uploads = files == null ? List.of() : files.stream()
+                    .filter(file -> file != null && !file.isEmpty())
+                    .toList();
+            if (uploads.isEmpty()) {
+                throw new IllegalArgumentException("사진 파일을 선택해 주세요.");
+            }
+            archiveService.uploadImages(uploads, safeTitle, names, date, archiveSource, description, coverIndex);
+            String location = folderRedirect(MediaType.IMAGE, names);
+            idempotencyService.complete(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
+            return "redirect:" + location;
+        } catch (RuntimeException | IOException error) {
+            idempotencyService.abandon(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey);
+            throw error;
+        }
     }
 
     @PostMapping("/upload/video")
@@ -1300,11 +1256,23 @@ public class ArchiveController {
                               @RequestParam("title") String title, @RequestParam(value="artistNames", required=false) List<String> artistNames,
                               @RequestParam("registeredOn") LocalDate registeredOn,
                               @RequestParam("source") String source,
+                              @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                               HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
-        String names = artistNames == null ? "" : String.join(",", artistNames);
-        archiveService.uploadVideoOnly(file, title, MediaType.VIDEO, names, thumbnail, requireDate(registeredOn), requireSource(source));
-        return "redirect:" + folderRedirect(MediaType.VIDEO, names);
+        var replay = idempotencyService.claimOrReplay(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey);
+        if (replay.isPresent()) {
+            return "redirect:" + replay.get();
+        }
+        try {
+            String names = artistNames == null ? "" : String.join(",", artistNames);
+            archiveService.uploadVideoOnly(file, title, MediaType.VIDEO, names, thumbnail, requireDate(registeredOn), requireSource(source));
+            String location = folderRedirect(MediaType.VIDEO, names);
+            idempotencyService.complete(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
+            return "redirect:" + location;
+        } catch (RuntimeException | IOException error) {
+            idempotencyService.abandon(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey);
+            throw error;
+        }
     }
 
     @PostMapping("/{id}")
@@ -1320,6 +1288,7 @@ public class ArchiveController {
                                            @RequestParam(value = "source", required = false) String source,
                                            @RequestParam(value = "keepImageUrlsJson", required = false) String keepImageUrlsJson,
                                            @RequestParam(value = "imageOrderJson", required = false) String imageOrderJson,
+                                           @RequestParam(required = false) Integer coverIndex,
                                            HttpServletRequest request,
                                            HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
@@ -1329,7 +1298,8 @@ public class ArchiveController {
                     source == null || source.isBlank() ? null : ArchiveSource.parse(source),
                     description,
                     keepImageUrlsJson,
-                    imageOrderJson);
+                    imageOrderJson,
+                    coverIndex);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

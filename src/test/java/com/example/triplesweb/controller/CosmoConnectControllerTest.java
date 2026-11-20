@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = {CosmoConnectController.class, ChemistryApiController.class}, properties = "chemistry.admin.password=test-password")
 @AutoConfigureMockMvc(addFilters = false)
-@Import({AboutAdminAuth.class, MustacheConfig.class})
+@Import({AboutAdminAuth.class, MustacheConfig.class, com.example.triplesweb.config.PasswordConfig.class})
 class CosmoConnectControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean CosmoLoginService login;

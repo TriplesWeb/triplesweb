@@ -5,6 +5,8 @@
     const dialogTriggers = new WeakMap();
     /** 업로드 성공 후 모달을 유지할 때, 닫을 때 갱신할 Location (없으면 현재 URL). */
     let afterUploadLocation = null;
+    /** 실패 후 재시도 시 동일 키로 중복 등록을 막는다. 성공하면 비운다. */
+    let uploadIdempotencyKey = null;
 
     function authHeaders() {
         const headerMap = {};
@@ -12,6 +14,24 @@
         const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
         if (csrf && csrfHeader && csrf.content && csrfHeader.content) headerMap[csrfHeader.content] = csrf.content;
         return window.AboutAdminAuth ? AboutAdminAuth.applyAuthHeaders(headerMap) : headerMap;
+    }
+
+    function newIdempotencyKey() {
+        if (window.crypto && typeof window.crypto.randomUUID === "function") {
+            return window.crypto.randomUUID();
+        }
+        return "idemp-" + Date.now().toString(36) + "-" + Math.random().toString(16).slice(2);
+    }
+
+    function resetUploadIdempotencyKey() {
+        uploadIdempotencyKey = null;
+    }
+
+    function saveFailureMessage(status, fallback) {
+        if (status === 403) {
+            return "관리자 세션이 필요합니다. 입력값은 그대로 두었으니 다시 로그인한 뒤 저장해 주세요.";
+        }
+        return fallback || "요청에 실패했습니다. 입력값은 유지됩니다.";
     }
 
     function resolveArchivePath(locationHeader) {
@@ -123,7 +143,7 @@
     function archiveSymbolLogo(frame) {
         const n = Number(frame);
         if (!Number.isInteger(n) || n < 1 || n > 24) return '';
-        return '/uploads/images/' + encodeURIComponent('상징로고') + '/S' + n + '.png';
+        return '/images/archive/member-logos/' + n + '.png';
     }
 
     function memberColor(button) {
@@ -634,6 +654,9 @@
     function setSlots(form, slots, { syncInput = true } = {}) {
         if (!form) return;
         form._archiveMediaSlots = Array.isArray(slots) ? slots.slice() : [];
+        if (!form._archiveMediaSlots.includes(form._archiveCoverSlot)) {
+            form._archiveCoverSlot = form._archiveMediaSlots[0];
+        }
         if (!syncInput) return;
         const input = form.querySelector('input[name="file"]');
         if (!input) return;
@@ -692,7 +715,7 @@
     function bindTileDrag(tile, form, index) {
         tile.draggable = true;
         tile.addEventListener('dragstart', event => {
-            if (event.target.closest('.ar-file-remove')) {
+            if (event.target.closest('.ar-file-remove, .ar-file-cover')) {
                 event.preventDefault();
                 return;
             }
@@ -777,7 +800,20 @@
                     event.stopPropagation();
                     removeSlotAt(form, index);
                 });
-                tile.append(thumb, remove);
+                const cover = document.createElement('button');
+                cover.type = 'button';
+                cover.className = 'ar-file-cover';
+                const isCover = slot === (form._archiveCoverSlot || slots[0]);
+                cover.textContent = isCover ? '대표 사진' : '대표로 설정';
+                cover.setAttribute('aria-pressed', String(isCover));
+                cover.addEventListener('click', event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    form._archiveCoverSlot = slot;
+                    syncFileName(input);
+                    label.querySelectorAll('.ar-file-cover')[index]?.focus();
+                });
+                tile.append(thumb, remove, cover);
                 bindTileDrag(tile, form, index);
                 label.appendChild(tile);
             });
@@ -1204,6 +1240,7 @@
     window.showAddModal = function () {
         if (!uploadForm || !uploadDialog) return;
         afterUploadLocation = null;
+        resetUploadIdempotencyKey();
         uploadForm.reset();
         resetThumbnail(uploadForm);
         setUploadStatus("");
@@ -1225,6 +1262,7 @@
     };
 
     uploadFile?.addEventListener("change", () => {
+        resetUploadIdempotencyKey();
         bumpImageEditToken(uploadFile);
         const files = Array.from(uploadFile.files || []);
         releaseUnusedFiles(uploadFile._archiveLastFiles, files);
@@ -1294,21 +1332,28 @@
         if (!window.confirm(confirmMessage)) return;
         if (!validThumbnail(uploadForm)) return;
         const body = new FormData(uploadForm);
+        if (kind === 'image') {
+            body.set('coverIndex', String(Math.max(0, slotsOf(uploadForm).indexOf(uploadForm._archiveCoverSlot))));
+        }
         body.delete("artistNames");
         body.delete("extraArtists");
         selectedArtists(uploadDialog).forEach(name => body.append("artistNames", name));
         const button = uploadForm.querySelector("[type='submit']");
         if (button) button.disabled = true;
+        if (!uploadIdempotencyKey) uploadIdempotencyKey = newIdempotencyKey();
         try {
+            const headers = authHeaders();
+            headers["Idempotency-Key"] = uploadIdempotencyKey;
             const response = await fetch(uploadForm.dataset.uploadUrl || "/archive/upload", {
                 method: "POST",
                 body,
-                headers: authHeaders(),
+                headers,
                 credentials: "same-origin",
                 // 프록시 뒤 절대 http Location 을 fetch 가 따라가면 Mixed Content 로 실패한다.
                 redirect: "manual"
             });
             if (uploadSucceeded(response)) {
+                resetUploadIdempotencyKey();
                 afterUploadLocation = response.headers.get("Location") || "";
                 prepareUploadFormForNext();
                 setUploadStatus(noun + "을 추가했습니다. 이어서 더 추가할 수 있습니다.");
@@ -1316,9 +1361,16 @@
                 return;
             }
             const message = (await response.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-            alert(response.status === 403 ? "관리자만 추가할 수 있습니다." : (message.slice(0, 180) || "추가에 실패했습니다."));
+            const detail = message.slice(0, 180) || "추가에 실패했습니다.";
+            const failMsg = response.status === 409
+                ? (detail || "같은 업로드가 아직 처리 중입니다. 잠시 후 다시 시도해 주세요.")
+                : saveFailureMessage(response.status, detail);
+            alert(failMsg);
+            setUploadStatus(failMsg);
         } catch (_) {
-            alert("추가 요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
+            const networkMsg = "추가 요청에 실패했습니다. 네트워크를 확인한 뒤 같은 내용으로 다시 시도해 주세요. 입력값은 유지됩니다.";
+            alert(networkMsg);
+            setUploadStatus(networkMsg);
         } finally {
             if (button) button.disabled = false;
         }
@@ -1373,10 +1425,11 @@
         const existingUrls = kind === 'image'
             ? parseImageUrls(button.dataset.images, button.dataset.url)
             : [];
-        const coverUrl = existingUrls[0] || button.dataset.url || '';
+        const coverUrl = button.dataset.url || existingUrls[0] || '';
         editForm.dataset.originalUrl = coverUrl;
         editForm.dataset.originalImages = JSON.stringify(existingUrls);
         setSlots(editForm, existingUrls.map(url => ({ kind: 'url', url })), { syncInput: false });
+        editForm._archiveCoverSlot = slotsOf(editForm).find(slot => slot.url === coverUrl) || slotsOf(editForm)[0];
         editForm._archiveSlotPreviewIndex = existingUrls.length ? 0 : -1;
         const titleInput = editForm.querySelector("[name='title']");
         if (titleInput) titleInput.value = button.dataset.title || "";
@@ -1405,6 +1458,26 @@
         else showPreview(editPreview, coverUrl);
         window.bindArchiveDateFields?.(editForm);
         editForm.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName);
+    }
+
+    /**
+     * soft-refresh 후 수정 폼에 넣을 소스.
+     * 사진 카드는 그리드에 data-archive-edit가 없고 상세 버튼만 있어,
+     * 상세 버튼의 낡은 data-images로 폼을 되돌리지 않도록 카드 메타를 우선한다.
+     */
+    function findRefreshedEditSource(id) {
+        if (!id) return null;
+        const key = CSS.escape(String(id));
+        const card = document.querySelector('#archiveGrid .ar-card[data-id="' + key + '"]');
+        if (card) {
+            window.syncArchiveDetailCard?.(card);
+            const gridEdit = card.querySelector('[data-archive-edit]');
+            if (gridEdit) return gridEdit;
+            const detailEdit = document.getElementById('archiveDetailEdit');
+            if (detailEdit && String(detailEdit.dataset.id || '') === String(id)) return detailEdit;
+            return card;
+        }
+        return document.querySelector('[data-archive-edit][data-id="' + key + '"]');
     }
 
     function showEdit(button) {
@@ -1491,10 +1564,13 @@
             });
             if (response.ok) {
                 removeCardFromGrid(id);
+                document.dispatchEvent(new CustomEvent('archive:deleted', { detail: id }));
                 softRefreshArchive();
                 return;
             }
-            alert(response.status === 403 ? "관리자만 삭제할 수 있습니다." : (response.status === 404 ? "이미 삭제된 자료입니다." : "삭제에 실패했습니다."));
+            alert(response.status === 403
+                ? saveFailureMessage(403)
+                : (response.status === 404 ? "이미 삭제된 자료입니다." : "삭제에 실패했습니다."));
         } catch (_) {
             alert("삭제 요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
         }
@@ -1562,6 +1638,7 @@
         const source = editForm.querySelector("[name='source']")?.value || "";
         if (source) body.set("source", source);
         if (kind === 'image') {
+            body.set('coverIndex', String(Math.max(0, slots.indexOf(editForm._archiveCoverSlot))));
             body.set('keepImageUrlsJson', JSON.stringify(keptUrls));
             body.set('imageOrderJson', JSON.stringify(slots.map(slot => slot.kind === 'url' ? slot.url : '')));
         }
@@ -1580,18 +1657,19 @@
                 const id = editForm.dataset.id;
                 setEditStatus(noun + "을 저장했습니다. 모달을 닫지 않고 이어서 수정할 수 있습니다.");
                 await softRefreshArchive();
-                const refreshed = document.querySelector(
-                    '#archiveGrid [data-archive-edit][data-id="' + CSS.escape(String(id)) + '"]'
-                ) || document.querySelector(
-                    '[data-archive-edit][data-id="' + CSS.escape(String(id)) + '"]'
-                );
+                const refreshed = findRefreshedEditSource(id);
                 if (refreshed) populateEditForm(refreshed);
                 return;
             }
             const text = (await response.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-            alert(response.status === 403 ? "관리자만 수정할 수 있습니다." : (text.slice(0, 180) || "수정에 실패했습니다."));
+            const detail = text.slice(0, 180) || "수정에 실패했습니다.";
+            const msg = saveFailureMessage(response.status, detail);
+            alert(msg);
+            setEditStatus(msg);
         } catch (_) {
-            alert("수정 요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
+            const networkMsg = "수정 요청에 실패했습니다. 네트워크를 확인한 뒤 다시 저장해 주세요. 입력값은 유지됩니다.";
+            alert(networkMsg);
+            setEditStatus(networkMsg);
         } finally {
             if (button) button.disabled = false;
         }

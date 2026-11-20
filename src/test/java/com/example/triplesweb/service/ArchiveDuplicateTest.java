@@ -4,6 +4,7 @@ import com.example.triplesweb.entity.ArchiveSource;
 import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.repository.ArchiveRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,26 +26,27 @@ class ArchiveDuplicateTest {
     @Mock ArchiveRepository archiveRepository;
     @Mock FileStorageService fileStorageService;
     @Mock ObjectMapper objectMapper;
+    @Mock EntityManager entityManager;
     @InjectMocks ArchiveService archiveService;
 
     @Test
     void uploadImagesRejectsSameDateSourceDescription() {
         LocalDate day = LocalDate.of(2023, 4, 24);
-        when(archiveRepository.existsImageDuplicate(MediaType.IMAGE, day, ArchiveSource.EXTERNAL, "Vanity Teen Magazine"))
+        when(archiveRepository.existsImageDuplicate(MediaType.IMAGE, day, ArchiveSource.EXTERNAL, "Vanity Teen Magazine", "윤서연"))
                 .thenReturn(true);
         MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
 
         IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () ->
                 archiveService.uploadImages(java.util.List.of(file), "", "윤서연", day, ArchiveSource.EXTERNAL, "Vanity Teen Magazine"));
 
-        assertTrue(error.getMessage().contains("같은 날짜·출처·설명"));
+        assertTrue(error.getMessage().contains("같은 멤버·날짜·출처·설명"));
         verifyNoInteractions(fileStorageService);
     }
 
     @Test
     void uploadImagesRejectsSameDateSourceWithEmptyDescription() {
         LocalDate day = LocalDate.of(2023, 4, 24);
-        when(archiveRepository.existsImageDuplicate(eq(MediaType.IMAGE), eq(day), eq(ArchiveSource.COSMO_ROOM), eq("")))
+        when(archiveRepository.existsImageDuplicate(eq(MediaType.IMAGE), eq(day), eq(ArchiveSource.COSMO_ROOM), eq(""), eq("윤서연")))
                 .thenReturn(true);
         MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
 

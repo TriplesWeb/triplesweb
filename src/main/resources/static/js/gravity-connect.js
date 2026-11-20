@@ -58,7 +58,11 @@
   async function api(path, body) {
     const headers = auth().applyAuthHeaders({ "X-Gravity-Connect": "1" });
     const options = { headers, credentials: "same-origin", cache: "no-store" };
-    if (body) { options.method = "POST"; headers.set("Content-Type": "application/json"); options.body = JSON.stringify(body); }
+    if (body) {
+      options.method = "POST";
+      headers.set("Content-Type", "application/json");
+      options.body = JSON.stringify(body);
+    }
     let response;
     try {
       response = await fetch("/api/gravity/connect/" + path, options);

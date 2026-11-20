@@ -8,6 +8,8 @@ MODE="${1:-prod}"
 LOCK=/tmp/triplesweb-docker-deploy.lock
 HEALTH_URL="http://127.0.0.1:${APP_PORT}/actuator/health/readiness"
 
+source "$(dirname "${BASH_SOURCE[0]}")/deploy-pi-image-retention.sh"
+
 run_deploy() {
   local start="$SECONDS" cid running previous_image=""
   rollback() {
@@ -22,6 +24,7 @@ run_deploy() {
     previous_image="$(docker inspect -f '{{.Config.Image}}' "$cid" 2>/dev/null || true)"
     if [[ "$previous_image" == "$IMAGE" ]] && curl --silent --show-error --fail --max-time 8 "$HEALTH_URL" >/dev/null; then
       echo "Already healthy on $IMAGE; no restart needed"
+      cleanup_after_deploy "$previous_image"
       return 0
     fi
   fi
@@ -71,6 +74,7 @@ run_deploy() {
   for attempt in $(seq 1 180); do
     if curl --silent --show-error --fail --max-time 8 "$HEALTH_URL" >/dev/null 2>&1; then
       echo "Readiness OK, startup=$((SECONDS-started))s, total=$((SECONDS-start))s, mode=$MODE"
+      cleanup_after_deploy "$previous_image"
       return 0
     fi
     sleep 2

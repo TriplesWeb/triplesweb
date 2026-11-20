@@ -18,8 +18,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.io.IOException;
@@ -30,6 +34,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * 아카이브({@link Archive}) 미디어 목록·상세·업로드·삭제를 담당한다.
@@ -39,13 +45,35 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ArchiveService {
 
+    private static final long INDEX_TTL_MS = 30_000L;
+
     private final ArchiveRepository archiveRepository;
     private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
+    private final EntityManager entityManager;
+
+    private volatile List<Archive> indexCache;
+    private volatile long indexCacheAt;
+
+    /** 폴더 목록 페이지와 출처 탭을 한 번의 필터 스캔으로 만든다. */
+    public record FolderBrowse(Page<Archive> page, Set<ArchiveSource> availableSources) {}
 
     @Transactional(readOnly = true)
     public List<Archive> index() {
-        return archiveRepository.findAll();
+        long now = System.currentTimeMillis();
+        List<Archive> cached = indexCache;
+        if (cached != null && now - indexCacheAt < INDEX_TTL_MS) {
+            return cached;
+        }
+        List<Archive> fresh = List.copyOf(archiveRepository.findAll());
+        indexCache = fresh;
+        indexCacheAt = now;
+        return fresh;
+    }
+
+    private void invalidateIndexCache() {
+        indexCache = null;
+        indexCacheAt = 0L;
     }
 
     /** 날짜가 확인된 검색 결과를 먼저 최신순으로 반환한다. */
@@ -81,22 +109,64 @@ public class ArchiveService {
                                       LocalDate from, LocalDate to, ArchiveSource source, boolean unclassifiedOnly,
                                       String folder, List<String> comboMembers,
                                       List<ArchiveFolderClassifier.UnitMembers> units) {
+        return browseFolder(type, page, size, keyword, members, from, to, source, unclassifiedOnly,
+                folder, comboMembers, units).page();
+    }
+
+    @Transactional(readOnly = true)
+    public FolderBrowse browseFolder(MediaType type, int page, int size, String keyword, List<String> members,
+                                     LocalDate from, LocalDate to, ArchiveSource source, boolean unclassifiedOnly,
+                                     String folder, List<String> comboMembers,
+                                     List<ArchiveFolderClassifier.UnitMembers> units) {
+        // 출처 탭은 source 필터 없이 같은 폴더 조건에서 집계한다.
         List<Archive> found = archiveRepository.findAll(
-                archiveSpec(type, keyword, members, from, to, source, unclassifiedOnly),
+                archiveSpec(type, keyword, members, from, to, null, false),
                 Sort.by(Sort.Direction.DESC, "id"));
-        List<Archive> filtered = found.stream()
-                .filter(archive -> ArchiveFolderClassifier.matches(
-                        ArchiveFolderClassifier.classify(archive.getArtistNames(), units), folder, comboMembers))
-                .toList();
+        List<Archive> inFolder = new ArrayList<>(found.size());
+        Set<ArchiveSource> sources = new LinkedHashSet<>();
+        for (Archive archive : found) {
+            if (!ArchiveFolderClassifier.matches(
+                    ArchiveFolderClassifier.classify(archive.getArtistNames(), units), folder, comboMembers)) {
+                continue;
+            }
+            inFolder.add(archive);
+            if (archive.getSource() != null) sources.add(archive.getSource());
+        }
+        List<Archive> filtered = inFolder;
+        if (unclassifiedOnly) {
+            filtered = inFolder.stream().filter(archive -> archive.getSource() == null).toList();
+        } else if (source != null) {
+            filtered = inFolder.stream().filter(archive -> source.equals(archive.getSource())).toList();
+        }
         int safeSize = Math.max(1, size);
         int safePage = Math.max(0, page);
         int fromIndex = safePage * safeSize;
         Pageable pageable = PageRequest.of(safePage, safeSize);
+        Page<Archive> pageResult;
         if (fromIndex >= filtered.size()) {
-            return new PageImpl<>(List.of(), pageable, filtered.size());
+            pageResult = new PageImpl<>(List.of(), pageable, filtered.size());
+        } else {
+            pageResult = new PageImpl<>(filtered.subList(fromIndex, Math.min(filtered.size(), fromIndex + safeSize)),
+                    pageable, filtered.size());
         }
-        return new PageImpl<>(filtered.subList(fromIndex, Math.min(filtered.size(), fromIndex + safeSize)),
-                pageable, filtered.size());
+        return new FolderBrowse(pageResult, Set.copyOf(sources));
+    }
+
+    /** 전체 보기 출처 탭용. 본문 없이 source 컬럼만 distinct 조회한다. */
+    @Transactional(readOnly = true)
+    public Set<ArchiveSource> availableSources(MediaType type, String keyword, List<String> members,
+                                               LocalDate from, LocalDate to) {
+        Specification<Archive> spec = archiveSpec(type, keyword, members, from, to, null, false);
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<ArchiveSource> query = cb.createQuery(ArchiveSource.class);
+        Root<Archive> root = query.from(Archive.class);
+        Predicate base = spec.toPredicate(root, query, cb);
+        Predicate notNull = cb.isNotNull(root.get("source"));
+        query.select(root.get("source")).distinct(true)
+                .where(base == null ? notNull : cb.and(base, notNull));
+        return new LinkedHashSet<>(entityManager.createQuery(query).getResultList().stream()
+                .filter(Objects::nonNull)
+                .toList());
     }
 
     private static Specification<Archive> archiveSpec(
@@ -177,7 +247,7 @@ public class ArchiveService {
             throw new IllegalArgumentException("제목을 입력해주세요.");
         }
         if (resolved == MediaType.IMAGE) {
-            ensureUniqueImagePost(registeredOn, source, description);
+            ensureUniqueImagePost(registeredOn, source, description, artistNames);
         }
         SavedMeta meta = fileStorageService.saveWithMeta(file);   // SavedMeta 채워서 반환
         coerceType(requestedType, meta);
@@ -189,15 +259,23 @@ public class ArchiveService {
         if (resolved == MediaType.IMAGE) {
             applyImageUrls(archive, List.of(meta.getUrl()));
         }
-        return archiveRepository.save(archive);
+        Archive saved = archiveRepository.save(archive);
+        invalidateIndexCache();
+        return saved;
     }
 
     /**
-     * 여러 사진을 한 게시글로 저장한다. 첫 장이 표지({@link Archive#getFile()})가 된다.
+     * 여러 사진을 한 게시글로 저장한다. 첫 장이 표지({@code Archive.getFile()})가 된다.
      */
     @Transactional
     public Archive uploadImages(List<MultipartFile> files, String title, String artistNames, LocalDate registeredOn,
                                 ArchiveSource source, String description) throws IOException {
+        return uploadImages(files, title, artistNames, registeredOn, source, description, 0);
+    }
+
+    @Transactional
+    public Archive uploadImages(List<MultipartFile> files, String title, String artistNames, LocalDate registeredOn,
+                                ArchiveSource source, String description, int coverIndex) throws IOException {
         List<MultipartFile> uploads = files == null ? List.of() : files.stream()
                 .filter(file -> file != null && !file.isEmpty())
                 .toList();
@@ -207,7 +285,8 @@ public class ArchiveService {
         if (uploads.size() > ArchiveImages.MAX_IMAGES) {
             throw new IllegalArgumentException("사진은 최대 " + ArchiveImages.MAX_IMAGES + "장까지 등록할 수 있습니다.");
         }
-        ensureUniqueImagePost(registeredOn, source, description);
+        validateCoverIndex(coverIndex, uploads.size());
+        ensureUniqueImagePost(registeredOn, source, description, artistNames);
         String safeTitle = title == null ? "" : title.trim();
         List<SavedMeta> metas = new ArrayList<>(uploads.size());
         List<String> urls = new ArrayList<>(uploads.size());
@@ -217,13 +296,15 @@ public class ArchiveService {
             metas.add(meta);
             urls.add(meta.getUrl());
         }
-        Archive archive = new Archive(safeTitle, metas.get(0));
+        Archive archive = new Archive(safeTitle, metas.get(coverIndex));
         archive.setDescription(normalizeDescription(description));
         archive.setArtistNames(artistNames == null ? "" : artistNames.trim());
         if (registeredOn != null) archive.setRegisteredOn(registeredOn);
         archive.setSource(source);
         applyImageUrls(archive, urls);
-        return archiveRepository.save(archive);
+        Archive saved = archiveRepository.save(archive);
+        invalidateIndexCache();
+        return saved;
     }
     @Transactional
     public Archive upload(MultipartFile file, String title) throws IOException {
@@ -300,7 +381,9 @@ public class ArchiveService {
         if (thumbnail != null && !thumbnail.isEmpty()) {
             archive.setThumbnailUrl(fileStorageService.saveWithMeta(thumbnail).getUrl());
         }
-        return archiveRepository.save(archive);
+        Archive saved = archiveRepository.save(archive);
+        invalidateIndexCache();
+        return saved;
     }
     @Transactional
     public boolean delete(long id) {
@@ -308,6 +391,7 @@ public class ArchiveService {
             deleteImageSet(archive);
             deleteThumbnail(archive.getThumbnailUrl());
             archiveRepository.delete(archive);
+            invalidateIndexCache();
             return true;
         }).orElse(false);
     }
@@ -372,6 +456,21 @@ public class ArchiveService {
     private Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail, boolean clearThumbnail,
                            LocalDate registeredOn, ArchiveSource source, boolean applySource, String description,
                            String keepImageUrlsJson, String imageOrderJson) throws IOException {
+        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, applySource,
+                description, keepImageUrlsJson, imageOrderJson, null);
+    }
+
+    @Transactional
+    public Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail,
+                          boolean clearThumbnail, LocalDate registeredOn, ArchiveSource source,
+                          String description, String keepImageUrlsJson, String imageOrderJson, Integer coverIndex) throws IOException {
+        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true,
+                description, keepImageUrlsJson, imageOrderJson, coverIndex);
+    }
+
+    private Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail,
+                           boolean clearThumbnail, LocalDate registeredOn, ArchiveSource source, boolean applySource,
+                           String description, String keepImageUrlsJson, String imageOrderJson, Integer coverIndex) throws IOException {
         Archive archive = show(id);
         validateThumbnail(thumbnail);
         if (thumbnail != null && !thumbnail.isEmpty() && archive.getType() != MediaType.VIDEO) {
@@ -397,7 +496,7 @@ public class ArchiveService {
         List<MultipartFile> uploads = files == null ? List.of() : files.stream()
                 .filter(part -> part != null && !part.isEmpty())
                 .toList();
-        if (archive.getType() == MediaType.IMAGE && (keepImageUrlsJson != null || imageOrderJson != null || !uploads.isEmpty())) {
+        if (archive.getType() == MediaType.IMAGE && (keepImageUrlsJson != null || imageOrderJson != null || !uploads.isEmpty() || coverIndex != null)) {
             List<String> previous = ArchiveImages.resolve(archive, objectMapper);
             Map<String, SavedMeta> uploadedByUrl = new LinkedHashMap<>();
             var merged = ArchiveImages.merge(previous, keepImageUrlsJson, imageOrderJson, uploads, objectMapper, file -> {
@@ -409,14 +508,16 @@ public class ArchiveService {
             if (merged.urls().isEmpty()) {
                 throw new IllegalArgumentException("사진은 최소 1장이 필요합니다.");
             }
+            int selectedIndex = coverIndex == null ? 0 : coverIndex;
+            validateCoverIndex(selectedIndex, merged.urls().size());
+            String cover = merged.urls().get(selectedIndex);
+            SavedMeta current = archive.getFile();
+            if (current == null || !cover.equals(current.getUrl())) {
+                archive.setFile(coverFileMeta(cover, current, uploadedByUrl));
+            }
             if (!merged.urls().equals(previous)) {
                 for (String removed : merged.removed()) {
                     deleteStored(SavedMeta.builder().url(removed).build());
-                }
-                String cover = ArchiveImages.primary(merged.urls());
-                SavedMeta current = archive.getFile();
-                if (current == null || cover == null || !cover.equals(current.getUrl())) {
-                    archive.setFile(coverFileMeta(cover, current, uploadedByUrl));
                 }
                 applyImageUrls(archive, merged.urls());
             }
@@ -435,7 +536,15 @@ public class ArchiveService {
             archive.setThumbnailUrl(null);
             deleteThumbnail(previousThumbnail);
         }
-        return archiveRepository.save(archive);
+        Archive saved = archiveRepository.save(archive);
+        invalidateIndexCache();
+        return saved;
+    }
+
+    private static void validateCoverIndex(int index, int count) {
+        if (index < 0 || index >= count) {
+            throw new IllegalArgumentException("파일 목록에서 대표 사진을 선택해 주세요.");
+        }
     }
 
     private void applyImageUrls(Archive archive, List<String> urls) {
@@ -515,18 +624,18 @@ public class ArchiveService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    /** 같은 날짜·출처·설명(미입력 포함)의 사진 게시글이 있으면 추가를 막는다. */
-    private void ensureUniqueImagePost(LocalDate registeredOn, ArchiveSource source, String description) {
+    /** 같은 멤버·날짜·출처·설명(미입력 포함)의 사진 게시글이 있으면 추가를 막는다. */
+    private void ensureUniqueImagePost(LocalDate registeredOn, ArchiveSource source, String description, String artistNames) {
         if (registeredOn == null || source == null) {
             throw new IllegalArgumentException("날짜와 출처를 선택해 주세요.");
         }
         String key = normalizeDescription(description);
         String descriptionKey = key == null ? "" : key;
-        if (archiveRepository.existsImageDuplicate(MediaType.IMAGE, registeredOn, source, descriptionKey)) {
+        if (archiveRepository.existsImageDuplicate(MediaType.IMAGE, registeredOn, source, descriptionKey, artistNames == null ? "" : artistNames.trim())) {
             throw new IllegalArgumentException(
                     descriptionKey.isEmpty()
-                            ? "같은 날짜·출처의 게시글이 이미 있습니다. 설명을 비운 게시글은 하나만 등록할 수 있습니다."
-                            : "같은 날짜·출처·설명의 게시글이 이미 있습니다.");
+                            ? "같은 멤버·날짜·출처의 게시글이 이미 있습니다. 설명을 비운 게시글은 멤버별로 하나만 등록할 수 있습니다."
+                            : "같은 멤버·날짜·출처·설명의 게시글이 이미 있습니다.");
         }
     }
 

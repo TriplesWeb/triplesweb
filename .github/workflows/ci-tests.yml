@@ -21,10 +21,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Deployment assertions and path routing tests
-        run: |
-          bash scripts/tests/deployment-static.test.sh
-          python3 scripts/ci-path-filter.py --self-test
+        with:
+          sparse-checkout: |
+            .github
+            scripts
+            src/main/resources
+      - name: Validate deployment and path routing
+        run: bash scripts/tests/deployment-static.test.sh
       - name: Docker Compose production configuration
         env:
           MYSQL_PASSWORD: ci
@@ -43,7 +46,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      - name: Classify changed files (against PR merge base)
+          sparse-checkout: scripts
+      - name: Classify changes introduced by the PR
         id: filter
         run: |
           set -euo pipefail
@@ -58,6 +62,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            gradle
+            scripts
+            src
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -111,6 +120,7 @@ jobs:
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     steps:
+      # Tailwind's automatic scan must see the same files as a full checkout.
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -119,7 +129,7 @@ jobs:
       - name: CSS reproducibility and bundle checks
         run: ./scripts/setup-css.sh --check
       - name: JavaScript unit tests
-        run: node scripts/tests/objekt-detail.test.cjs && node scripts/tests/objekt-transfers.test.cjs && node scripts/tests/objekt-kind-combo.test.cjs
+        run: node --test scripts/tests/*.test.cjs
 
       - name: Browser tests without Java-generated fixtures
         env:
@@ -142,6 +152,7 @@ jobs:
           node scripts/tests/collection-dropdown-layout.browser.cjs
           node scripts/tests/archive-layout.browser.cjs
           node scripts/tests/archive-history.browser.cjs
+          node scripts/tests/archive-live-state.browser.cjs
           node scripts/tests/archive-folder-home.browser.cjs
           node scripts/tests/archive-detail-ui.browser.cjs
           node scripts/tests/archive-manage-preview.browser.cjs
@@ -151,32 +162,34 @@ jobs:
           node scripts/tests/objekt-grid-cols.browser.cjs
           node scripts/tests/profile-ownership-tabs.browser.cjs
           node scripts/tests/scroll-top.browser.cjs
+          node scripts/tests/site-header-mobile.browser.cjs
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: frontend-browser-failure-screenshots
           path: /tmp/objekt-ui/*.png
           if-no-files-found: ignore
+
   qodana:
     needs: changes
     if: needs.changes.outputs.qodana == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
       - name: Install Qodana CLI
-        id: cli
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -uo pipefail
+          set -euo pipefail
           archive="/tmp/qodana.tar.gz"
           asset="https://api.github.com/repos/JetBrains/qodana-cli/releases/assets/585558698"
           ok=0
-          for i in 1 2 3 4 5; do
-            if curl -fL --connect-timeout 20 --max-time 180 \
+          for i in 1 2 3; do
+            if curl -fL --connect-timeout 15 --max-time 60 \
                  -H "Authorization: Bearer $GH_TOKEN" \
                  -H "Accept: application/octet-stream" \
                  -o "$archive" "$asset" \
@@ -185,19 +198,16 @@ jobs:
               break
             fi
             echo "Qodana CLI download failed (attempt $i), retrying..."
-            sleep $((i * 8))
+            if [[ "$i" -lt 3 ]]; then sleep $((i * 8)); fi
           done
           if [[ "$ok" -ne 1 ]]; then
-            echo "::warning::GitHub Releases 504/timeout — Qodana scan skipped so required is not blocked by infrastructure."
-            echo "skipped=true" >> "$GITHUB_OUTPUT"
-            exit 0
+            echo "::error::Could not download and verify the Qodana CLI"
+            exit 1
           fi
           sudo tar -xzf "$archive" -C /usr/local/bin
           qodana --version
-          echo "skipped=false" >> "$GITHUB_OUTPUT"
       - name: Qodana Scan
         id: scan
-        if: steps.cli.outputs.skipped != 'true'
         continue-on-error: true
         uses: JetBrains/qodana-action@v2026.2
         with:
@@ -211,7 +221,7 @@ jobs:
           results-dir: ${{ runner.temp }}/qodana/results
       - name: Retry Qodana Scan
         id: scan_retry
-        if: steps.cli.outputs.skipped != 'true' && steps.scan.outcome == 'failure'
+        if: steps.scan.outcome == 'failure'
         continue-on-error: true
         uses: JetBrains/qodana-action@v2026.2
         with:
@@ -223,9 +233,8 @@ jobs:
           upload-result: true
           artifact-name: qodana-report-retry
           push-fixes: 'none'
-          results-dir: ${{ runner.temp }}/qodana/results
+          results-dir: ${{ runner.temp }}/qodana/retry-results
       - name: Honor Qodana result
-        if: steps.cli.outputs.skipped != 'true'
         env:
           SCAN: ${{ steps.scan.outcome }}
           RETRY: ${{ steps.scan_retry.outcome }}
@@ -235,21 +244,8 @@ jobs:
             echo "Qodana scan succeeded."
             exit 0
           fi
-          sarif="${{ runner.temp }}/qodana/results/qodana.sarif.json"
-          if [[ -f "$sarif" ]]; then
-            python3 - "$sarif" <<'PY'
-          import json, sys
-          data = json.load(open(sys.argv[1], encoding="utf-8"))
-          findings = []
-          for run in data.get("runs") or []:
-              findings.extend(run.get("results") or [])
-          if findings:
-              print(f"Qodana reported {len(findings)} finding(s).", file=sys.stderr)
-              sys.exit(1)
-          print("SARIF has no findings.")
-          PY
-          fi
-          echo "::warning::Qodana scan failed without findings — skipping so required is not blocked by scanner infrastructure."
+          echo "::error::Qodana did not complete successfully after retry. See the scan steps and reports."
+          exit 1
 
   required:
     name: required

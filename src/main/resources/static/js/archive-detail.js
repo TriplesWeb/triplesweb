@@ -80,7 +80,7 @@
         } else if (cast) {
             cast.hidden = true;
         }
-        const cover = urls[0] || card.dataset.url || '';
+        const cover = card.dataset.url || parseImages(card)[0] || '';
         [edit, remove].forEach(button => {
             if (!button) return;
             button.dataset.id = card.dataset.id || '';
@@ -152,6 +152,28 @@
         document.body.style.overflow = 'hidden';
         detail.querySelector('[data-ar-close]')?.focus();
     }
+
+    /** 그리드 soft-refresh 후 같은 게시글 카드로 상세·수정 버튼 메타를 맞춘다. */
+    window.syncArchiveDetailCard = function (card) {
+        if (!card) return;
+        const id = String(card.dataset.id || '');
+        if (!id) return;
+        const sameEdit = edit && String(edit.dataset.id || '') === id;
+        const sameView = activeCard && String(activeCard.dataset.id || '') === id;
+        if (!sameEdit && !sameView) return;
+        const prevUrl = urls[index];
+        if (sameView) {
+            activeCard = card;
+            urls = parseImages(card);
+            const found = urls.indexOf(prevUrl);
+            index = found >= 0 ? found : Math.min(index, Math.max(0, urls.length - 1));
+            fillMeta(card);
+            showImage();
+            paintNav();
+        } else {
+            fillMeta(card);
+        }
+    };
 
     edit?.addEventListener('click', () => {
         detail.hidden = true;

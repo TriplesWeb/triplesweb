@@ -4,11 +4,11 @@ import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.media.FileStorageException;
 import jakarta.annotation.Nullable;
+import jakarta.annotation.PreDestroy;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,14 +23,16 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * {@link FileStorageService} 구현체. 업로드 루트 아래 이미지·영상·기타 파일을 날짜/하위폴더로 저장한다.
  * UUID 파일명, 공개 {@code /uploads/} URL, 경로 탈출 방지, 삭제 시 사이드카 정리를 수행한다.
  */
 @Service
-@Transactional
 public class FileStorageServiceImpl implements FileStorageService {
 
     private final String uploadRoot;
@@ -61,11 +63,17 @@ public class FileStorageServiceImpl implements FileStorageService {
     }
 
     private static Executor defaultDbCopyExecutor() {
-        return Executors.newSingleThreadExecutor(r -> {
+        return new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(64), r -> {
             Thread t = new Thread(r, "upload-db-copy");
             t.setDaemon(true);
             return t;
-        });
+        }, (task, executor) -> org.slf4j.LoggerFactory.getLogger(FileStorageServiceImpl.class)
+                .warn("업로드 DB 복사 대기열이 가득 찼거나 종료됨: 디스크 원본 유지"));
+    }
+
+    @PreDestroy
+    void shutdownDbCopyExecutor() {
+        if (dbCopyExecutor instanceof ExecutorService service) service.shutdown();
     }
 
     private static final Set<String> IMAGE_EXT = Set.of("jpg","jpeg","jfif","png","gif","webp","bmp");
@@ -121,6 +129,8 @@ public class FileStorageServiceImpl implements FileStorageService {
         Path dir = (subdir == null || subdir.isBlank())
                 ? root.resolve(typeDir).resolve(today)
                 : root.resolve(typeDir).resolve(subdir).resolve(today);
+        dir = dir.normalize();
+        if (!dir.startsWith(root)) throw new FileStorageException("잘못된 업로드 하위 경로");
         try {
             Files.createDirectories(dir);
         } catch (IOException e) {
@@ -176,6 +186,15 @@ public class FileStorageServiceImpl implements FileStorageService {
 
     /** HTTP 응답을 막지 않도록 DB 복사는 백그라운드에서 한다. */
     private void copyToDatabase(Path localFile, String relative, String contentType) {
+        try {
+            long size = Files.size(localFile);
+            if (size <= 0 || size > uploadContentStore.maxBytes()) {
+                logSkip(relative, size);
+                return;
+            }
+        } catch (IOException e) {
+            throw new FileStorageException("업로드 크기 확인 실패", e);
+        }
         dbCopyExecutor.execute(() -> {
             try {
                 long size = Files.size(localFile);
