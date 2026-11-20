@@ -171,9 +171,10 @@
     try {
       const response = await fetch(input, init);
       trackBody(response, inherit);
-      queueMicrotask(() => {
+      // After promise .then body readers (microtasks), release unused network pending.
+      setTimeout(() => {
         if (!inherit.claimed) inherit.finish();
-      });
+      }, 0);
       return response;
     } catch (error) {
       inherit.finish();
