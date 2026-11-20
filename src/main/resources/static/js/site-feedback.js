@@ -215,6 +215,7 @@
       try {
         if (await ask(message, true) && form.isConnected) {
           confirmed.add(form);
+          beginBusy();
           form.requestSubmit(event.submitter || undefined);
         }
       } finally {
@@ -223,7 +224,6 @@
       }
       return;
     }
-    if (message) beginBusy();
     if (!window.navigation && form.target !== "_blank" && busyPending === 0) {
       queueMicrotask(() => {
         if (!event.defaultPrevented) startNavigation();
