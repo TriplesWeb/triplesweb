@@ -6,6 +6,7 @@ import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.repository.ArchiveRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,12 +28,13 @@ class ArchiveUpdateCoverMetaTest {
 
     @Mock ArchiveRepository archiveRepository;
     @Mock FileStorageService fileStorageService;
+    @Mock EntityManager entityManager;
     ObjectMapper objectMapper = new ObjectMapper();
     ArchiveService archiveService;
 
     @BeforeEach
     void setUp() {
-        archiveService = new ArchiveService(archiveRepository, fileStorageService, objectMapper);
+        archiveService = new ArchiveService(archiveRepository, fileStorageService, objectMapper, entityManager);
     }
 
     @Test
