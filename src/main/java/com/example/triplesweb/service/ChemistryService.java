@@ -183,7 +183,8 @@ public class ChemistryService {
             return;
         }
         String relative = fileStorageService.toRelativePath(imageUrl);
-        if (relative == null || !relative.startsWith("images/chemistry/")) {
+        // 관리자 업로드(날짜 폴더)만 삭제. S1/… 등 기존 경로는 건드리지 않는다.
+        if (!ChemistryImages.isDeletableAdminUpload(relative)) {
             return;
         }
         try {

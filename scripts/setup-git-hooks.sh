@@ -4,4 +4,4 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 git config core.hooksPath .githooks
 chmod +x .githooks/pre-commit .githooks/pre-push
-echo "git hooksPath → .githooks (pre-commit/pre-push 활성: uploads/ 자동 포함)"
+echo "git hooksPath → .githooks (uploads는 gitignore — UI는 static/images)"

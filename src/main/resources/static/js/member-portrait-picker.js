@@ -4,10 +4,7 @@
  * - 클릭으로 is-active 토글 (다중선택)
  */
 (function (global) {
-  const FRAME_BASES = [
-    "/uploads/images/" + encodeURIComponent("3인이상 프로필 테두리") + "/",
-    "/uploads/images/artist-tab-frames/"
-  ];
+  const FRAME_BASE = "/images/artist/tab-frames/";
 
   const PLACEHOLDER = "/images/image-upload-pending.png";
 
@@ -31,27 +28,20 @@
       return;
     }
     frame.dataset.boundFrame = String(n);
-    let attempt = 0;
-    const tryNext = () => {
-      if (attempt >= FRAME_BASES.length) {
-        frame.hidden = true;
-        if (avatar) {
-          avatar.style.removeProperty("--frame-mask");
-          avatar.classList.remove("has-frame-mask");
-        }
-        return;
+    frame.onerror = () => {
+      frame.hidden = true;
+      if (avatar) {
+        avatar.style.removeProperty("--frame-mask");
+        avatar.classList.remove("has-frame-mask");
       }
-      const src = FRAME_BASES[attempt++] + n + ".png";
-      frame.onerror = tryNext;
-      frame.onload = () => {
-        frame.onerror = null;
-        paintFrameMask(avatar, frame);
-      };
-      frame.hidden = false;
-      frame.src = src;
-      if (frame.complete && frame.naturalWidth) paintFrameMask(avatar, frame);
     };
-    tryNext();
+    frame.onload = () => {
+      frame.onerror = null;
+      paintFrameMask(avatar, frame);
+    };
+    frame.hidden = false;
+    frame.src = FRAME_BASE + n + ".png";
+    if (frame.complete && frame.naturalWidth) paintFrameMask(avatar, frame);
   }
 
   function ensureFrame(avatar, btn, index) {
