@@ -77,7 +77,7 @@ class ArchiveControllerTest {
                 .thenReturn(java.util.Set.of());
         lenient().when(chemistryService.findAll()).thenReturn(List.of());
         lenient().when(chemistryGroupService.findAll()).thenReturn(List.of());
-        lenient().when(idempotencyService.completedLocation(anyString(), nullable(String.class)))
+        lenient().when(idempotencyService.claimOrReplay(anyString(), nullable(String.class)))
                 .thenReturn(Optional.empty());
     }
 
@@ -825,12 +825,14 @@ class ArchiveControllerTest {
                         .param("source", "COSMO_ROOM").param("coverIndex", "0")
                         .header("Idempotency-Key", "archive-upload-contract-1"))
                 .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
-        verify(idempotencyService).remember(eq(IdempotencyService.SCOPE_ARCHIVE_UPLOAD),
+        verify(idempotencyService).claimOrReplay(eq(IdempotencyService.SCOPE_ARCHIVE_UPLOAD),
+                eq("archive-upload-contract-1"));
+        verify(idempotencyService).complete(eq(IdempotencyService.SCOPE_ARCHIVE_UPLOAD),
                 eq("archive-upload-contract-1"), eq("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
     }
 
     @Test void imageUploadReplaysCompletedIdempotencyKey() throws Exception {
-        when(idempotencyService.completedLocation(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, "same-key"))
+        when(idempotencyService.claimOrReplay(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, "same-key"))
                 .thenReturn(Optional.of("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
         MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
         mvc.perform(multipart("/archive/upload/image").file(file)

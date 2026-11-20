@@ -140,5 +140,10 @@ public class CosmoConnectController {
         return ResponseEntity.status(error.getStatusCode()).body(Map.of("message", message));
     }
 
-    private record Challenge(String email, String clientId, Instant sentAt, int attempts) { }
+    /** Spring Session JDBC에 저장되므로 직렬화 가능해야 한다. */
+    private record Challenge(String email, String clientId, Instant sentAt, int attempts)
+            implements java.io.Serializable {
+        @java.io.Serial
+        private static final long serialVersionUID = 1L;
+    }
 }

@@ -23,6 +23,10 @@
         return "idemp-" + Date.now().toString(36) + "-" + Math.random().toString(16).slice(2);
     }
 
+    function resetUploadIdempotencyKey() {
+        uploadIdempotencyKey = null;
+    }
+
     function saveFailureMessage(status, fallback) {
         if (status === 403) {
             return "관리자 세션이 필요합니다. 입력값은 그대로 두었으니 다시 로그인한 뒤 저장해 주세요.";
@@ -1236,6 +1240,7 @@
     window.showAddModal = function () {
         if (!uploadForm || !uploadDialog) return;
         afterUploadLocation = null;
+        resetUploadIdempotencyKey();
         uploadForm.reset();
         resetThumbnail(uploadForm);
         setUploadStatus("");
@@ -1257,6 +1262,7 @@
     };
 
     uploadFile?.addEventListener("change", () => {
+        resetUploadIdempotencyKey();
         bumpImageEditToken(uploadFile);
         const files = Array.from(uploadFile.files || []);
         releaseUnusedFiles(uploadFile._archiveLastFiles, files);
@@ -1347,7 +1353,7 @@
                 redirect: "manual"
             });
             if (uploadSucceeded(response)) {
-                uploadIdempotencyKey = null;
+                resetUploadIdempotencyKey();
                 afterUploadLocation = response.headers.get("Location") || "";
                 prepareUploadFormForNext();
                 setUploadStatus(noun + "을 추가했습니다. 이어서 더 추가할 수 있습니다.");
@@ -1356,8 +1362,11 @@
             }
             const message = (await response.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
             const detail = message.slice(0, 180) || "추가에 실패했습니다.";
-            alert(saveFailureMessage(response.status, detail));
-            setUploadStatus(saveFailureMessage(response.status, detail));
+            const failMsg = response.status === 409
+                ? (detail || "같은 업로드가 아직 처리 중입니다. 잠시 후 다시 시도해 주세요.")
+                : saveFailureMessage(response.status, detail);
+            alert(failMsg);
+            setUploadStatus(failMsg);
         } catch (_) {
             const networkMsg = "추가 요청에 실패했습니다. 네트워크를 확인한 뒤 같은 내용으로 다시 시도해 주세요. 입력값은 유지됩니다.";
             alert(networkMsg);

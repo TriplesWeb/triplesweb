@@ -1198,15 +1198,20 @@ public class ArchiveController {
                                 @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                                 HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
-        var replay = idempotencyService.completedLocation(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey);
+        var replay = idempotencyService.claimOrReplay(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey);
         if (replay.isPresent()) {
             return "redirect:" + replay.get();
         }
-        String names = artistNames == null ? "" : String.join(",", artistNames);
-        archiveService.save(file, title, type, names, requireDate(registeredOn), requireSource(source));
-        String location = folderRedirect(type, names);
-        idempotencyService.remember(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
-        return "redirect:" + location;
+        try {
+            String names = artistNames == null ? "" : String.join(",", artistNames);
+            archiveService.save(file, title, type, names, requireDate(registeredOn), requireSource(source));
+            String location = folderRedirect(type, names);
+            idempotencyService.complete(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
+            return "redirect:" + location;
+        } catch (RuntimeException | IOException error) {
+            idempotencyService.abandon(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey);
+            throw error;
+        }
     }
 
     @PostMapping("/upload/image")
@@ -1220,24 +1225,29 @@ public class ArchiveController {
                               @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                               HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
-        var replay = idempotencyService.completedLocation(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey);
+        var replay = idempotencyService.claimOrReplay(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey);
         if (replay.isPresent()) {
             return "redirect:" + replay.get();
         }
-        String names = artistNames == null ? "" : String.join(",", artistNames);
-        LocalDate date = requireDate(registeredOn);
-        ArchiveSource archiveSource = requireSource(source);
-        String safeTitle = title == null ? "" : title;
-        List<MultipartFile> uploads = files == null ? List.of() : files.stream()
-                .filter(file -> file != null && !file.isEmpty())
-                .toList();
-        if (uploads.isEmpty()) {
-            throw new IllegalArgumentException("사진 파일을 선택해 주세요.");
+        try {
+            String names = artistNames == null ? "" : String.join(",", artistNames);
+            LocalDate date = requireDate(registeredOn);
+            ArchiveSource archiveSource = requireSource(source);
+            String safeTitle = title == null ? "" : title;
+            List<MultipartFile> uploads = files == null ? List.of() : files.stream()
+                    .filter(file -> file != null && !file.isEmpty())
+                    .toList();
+            if (uploads.isEmpty()) {
+                throw new IllegalArgumentException("사진 파일을 선택해 주세요.");
+            }
+            archiveService.uploadImages(uploads, safeTitle, names, date, archiveSource, description, coverIndex);
+            String location = folderRedirect(MediaType.IMAGE, names);
+            idempotencyService.complete(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
+            return "redirect:" + location;
+        } catch (RuntimeException | IOException error) {
+            idempotencyService.abandon(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey);
+            throw error;
         }
-        archiveService.uploadImages(uploads, safeTitle, names, date, archiveSource, description, coverIndex);
-        String location = folderRedirect(MediaType.IMAGE, names);
-        idempotencyService.remember(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
-        return "redirect:" + location;
     }
 
     @PostMapping("/upload/video")
@@ -1249,15 +1259,20 @@ public class ArchiveController {
                               @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                               HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
-        var replay = idempotencyService.completedLocation(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey);
+        var replay = idempotencyService.claimOrReplay(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey);
         if (replay.isPresent()) {
             return "redirect:" + replay.get();
         }
-        String names = artistNames == null ? "" : String.join(",", artistNames);
-        archiveService.uploadVideoOnly(file, title, MediaType.VIDEO, names, thumbnail, requireDate(registeredOn), requireSource(source));
-        String location = folderRedirect(MediaType.VIDEO, names);
-        idempotencyService.remember(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
-        return "redirect:" + location;
+        try {
+            String names = artistNames == null ? "" : String.join(",", artistNames);
+            archiveService.uploadVideoOnly(file, title, MediaType.VIDEO, names, thumbnail, requireDate(registeredOn), requireSource(source));
+            String location = folderRedirect(MediaType.VIDEO, names);
+            idempotencyService.complete(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
+            return "redirect:" + location;
+        } catch (RuntimeException | IOException error) {
+            idempotencyService.abandon(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey);
+            throw error;
+        }
     }
 
     @PostMapping("/{id}")
