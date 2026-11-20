@@ -15,6 +15,7 @@ import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.ArchiveService;
 import com.example.triplesweb.service.ChemistryGroupService;
 import com.example.triplesweb.service.ChemistryService;
+import com.example.triplesweb.service.IdempotencyService;
 import com.example.triplesweb.service.UnitService;
 import com.example.triplesweb.util.ArchiveFolderArt;
 import org.jsoup.Jsoup;
@@ -36,6 +37,7 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.nullable;
@@ -44,6 +46,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import java.util.Optional;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -64,6 +67,7 @@ class ArchiveControllerTest {
     @MockitoBean UnitService unitService;
     @MockitoBean ChemistryService chemistryService;
     @MockitoBean ChemistryGroupService chemistryGroupService;
+    @MockitoBean IdempotencyService idempotencyService;
 
     @BeforeEach void stubs() {
         lenient().when(unitService.listVisible()).thenReturn(List.of());
@@ -73,6 +77,8 @@ class ArchiveControllerTest {
                 .thenReturn(java.util.Set.of());
         lenient().when(chemistryService.findAll()).thenReturn(List.of());
         lenient().when(chemistryGroupService.findAll()).thenReturn(List.of());
+        lenient().when(idempotencyService.claimOrReplay(anyString(), nullable(String.class)))
+                .thenReturn(Optional.empty());
     }
 
     private void stubFolder(MediaType type, Archive... items) {
@@ -808,6 +814,53 @@ class ArchiveControllerTest {
                         .param("description", "현장 컷").param("artistNames", "서연").param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("같은 날짜·출처·설명")));
+    }
+
+    /** 구버전 관리자 탭이 보내는 이미지 업로드 필드 계약. */
+    @Test void imageUploadContractAcceptsCurrentFieldSet() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
+        mvc.perform(multipart("/archive/upload/image").file(file)
+                        .param("title", "").param("description", "설명")
+                        .param("artistNames", "서연").param("registeredOn", "2026-10-03")
+                        .param("source", "COSMO_ROOM").param("coverIndex", "0")
+                        .header("Idempotency-Key", "archive-upload-contract-1"))
+                .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
+        verify(idempotencyService).claimOrReplay(eq(IdempotencyService.SCOPE_ARCHIVE_UPLOAD),
+                eq("archive-upload-contract-1"));
+        verify(idempotencyService).complete(eq(IdempotencyService.SCOPE_ARCHIVE_UPLOAD),
+                eq("archive-upload-contract-1"), eq("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
+    }
+
+    @Test void imageUploadReplaysCompletedIdempotencyKey() throws Exception {
+        when(idempotencyService.claimOrReplay(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, "same-key"))
+                .thenReturn(Optional.of("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
+        MockMultipartFile file = new MockMultipartFile("file", "a.jpg", "image/jpeg", new byte[]{1, 2});
+        mvc.perform(multipart("/archive/upload/image").file(file)
+                        .param("registeredOn", "2026-10-03").param("source", "COSMO_ROOM")
+                        .header("Idempotency-Key", "same-key"))
+                .andExpect(redirectedUrl("/archive?folder=s&members=%EC%9C%A4%EC%84%9C%EC%97%B0"));
+        verify(archiveService, times(0)).uploadImages(any(), any(), any(), any(), any(), any(), anyInt());
+    }
+
+    /** 구버전 수정 폼 필드 계약 (multipart POST /archive/{id}). */
+    @Test void updateContractAcceptsCurrentFieldSet() throws Exception {
+        mvc.perform(multipart("/archive/7")
+                        .param("title", "").param("description", "새 설명")
+                        .param("artistNames", "서연").param("registeredOn", "2026-10-01")
+                        .param("source", "COSMO_ROOM")
+                        .param("keepImageUrlsJson", "[\"/uploads/a.jpg\"]")
+                        .param("imageOrderJson", "[\"/uploads/a.jpg\"]")
+                        .param("coverIndex", "0")
+                        .param("clearThumbnail", "false"))
+                .andExpect(status().isOk());
+        verify(archiveService).update(eq(7L), eq(""), nullable(List.class), eq("서연"), isNull(), eq(false),
+                eq(java.time.LocalDate.of(2026, 10, 1)), eq(ArchiveSource.COSMO_ROOM),
+                eq("새 설명"), eq("[\"/uploads/a.jpg\"]"), eq("[\"/uploads/a.jpg\"]"), eq(0));
+    }
+
+    @Test void deleteContractReturnsOk() throws Exception {
+        when(archiveService.delete(7L)).thenReturn(true);
+        mvc.perform(delete("/archive/7")).andExpect(status().isOk());
     }
 
     private static Archive photo() {
