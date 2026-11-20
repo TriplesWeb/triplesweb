@@ -1,7 +1,7 @@
 package com.example.triplesweb.util;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -52,7 +52,7 @@ public final class ChemistryImages {
                 }
             }
             return out;
-        } catch (IOException e) {
+        } catch (RuntimeException e) {
             throw new IllegalArgumentException("이미지 목록 형식이 올바르지 않습니다.");
         }
     }
@@ -63,7 +63,7 @@ public final class ChemistryImages {
         }
         try {
             return mapper.writeValueAsString(urls);
-        } catch (IOException e) {
+        } catch (RuntimeException e) {
             throw new IllegalArgumentException("이미지 목록 형식이 올바르지 않습니다.");
         }
     }

@@ -18,7 +18,7 @@ import static org.mockito.Mockito.*;
 class ArchiveThumbnailTest {
     final ArchiveRepository repository = mock(ArchiveRepository.class);
     final FileStorageService storage = mock(FileStorageService.class);
-    final ArchiveService service = new ArchiveService(repository, storage, new com.fasterxml.jackson.databind.ObjectMapper(),
+    final ArchiveService service = new ArchiveService(repository, storage, new tools.jackson.databind.ObjectMapper(),
             mock(jakarta.persistence.EntityManager.class));
     final MockMultipartFile video = new MockMultipartFile("file", "v.mp4", "video/mp4", new byte[]{1});
     final MockMultipartFile image = new MockMultipartFile("thumbnail", "poster.JFIF", "application/octet-stream", new byte[]{2});

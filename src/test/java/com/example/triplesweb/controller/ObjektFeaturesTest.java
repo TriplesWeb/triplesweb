@@ -6,8 +6,8 @@ import com.example.triplesweb.config.MustacheConfig;
 import com.example.triplesweb.util.ObjektLinks;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -239,7 +239,7 @@ class ObjektFeaturesTest {
                 "createdAt", "2024-02-01T00:00:00Z", "collectionNo", "201Z"));
         stubCatalog(items);
         when(market.withMintCounts(anyList())).thenAnswer(call -> call.getArgument(0));
-        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        var mapper = new tools.jackson.databind.ObjectMapper();
         List<String> ids = new ArrayList<>();
         for (int page = 0; page < 3; page++) {
             String json = mvc.perform(get("/cosmo/objekt/more").param("page", String.valueOf(page)).param("sort", "latest"))

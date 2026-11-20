@@ -2,7 +2,7 @@ package com.example.triplesweb.dto;
 
 import com.example.triplesweb.entity.ObjektCatalog;
 import com.example.triplesweb.util.MemberPortraitOptions;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

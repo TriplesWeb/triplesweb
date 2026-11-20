@@ -7,7 +7,7 @@ import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektFilterOrder;
 import com.example.triplesweb.util.ObjektLinks;
 import com.example.triplesweb.util.ObjektSeasonCodes;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

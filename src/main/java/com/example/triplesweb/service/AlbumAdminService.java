@@ -14,8 +14,8 @@ import com.example.triplesweb.repository.AlbumSectionRepository;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.UnitRepository;
 import com.example.triplesweb.util.YoutubeIdExtractor;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -303,7 +303,7 @@ public class AlbumAdminService {
                 SavedMeta meta = fileStorageService.saveWithMeta(image, "album");
                 album.setAlbumImage(meta.getUrl());
                 deleteManagedImage(previous);
-            } catch (IOException e) {
+            } catch (Exception e) {
                 throw new IllegalStateException("앨범 이미지 저장에 실패했습니다.", e);
             }
         } else if (clearImage) {
@@ -377,7 +377,7 @@ public class AlbumAdminService {
         if (!StringUtils.hasText(tracksJson)) return List.of();
         try {
             return objectMapper.readValue(tracksJson, new TypeReference<>() {});
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new IllegalArgumentException("트랙 목록 JSON이 올바르지 않습니다.");
         }
     }
@@ -485,7 +485,7 @@ public class AlbumAdminService {
         if (relative == null || !relative.startsWith("images/album/")) return;
         try {
             fileStorageService.deleteFile(imageUrl);
-        } catch (RuntimeException ignored) {
+        } catch (Exception ignored) {
         }
     }
 

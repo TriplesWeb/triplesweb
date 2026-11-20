@@ -1,7 +1,7 @@
 plugins {
 	id 'java'
 	id 'war'
-	id 'org.springframework.boot' version '3.5.0'
+	id 'org.springframework.boot' version '4.1.3'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -20,36 +20,40 @@ repositories {
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.flywaydb:flyway-core'
+	implementation 'org.springframework.boot:spring-boot-starter-flyway'
 	runtimeOnly 'org.flywaydb:flyway-mysql'
 	implementation 'org.springframework.boot:spring-boot-starter-mustache'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-tomcat'
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springframework.boot:spring-boot-starter-tomcat'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
-	implementation 'org.springframework.session:spring-session-jdbc'
+	implementation 'org.springframework.boot:spring-boot-starter-session-jdbc'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-restclient'
+	implementation 'org.springframework.boot:spring-boot-starter-jackson'
 	implementation 'org.jsoup:jsoup:1.23.2'
 	// 로컬 bootRun만 — Java 저장 후 컴파일되면 컨텍스트 자동 재시작 (war/Docker에는 미포함)
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	testRuntimeOnly 'com.h2database:h2'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-flyway-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-mustache-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	compileOnly 'org.projectlombok:lombok:1.18.30'
-	annotationProcessor 'org.projectlombok:lombok:1.18.30'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
 	implementation 'com.google.code.gson:gson:2.10.1'
-	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.2'
 	implementation 'net.coobird:thumbnailator:0.4.19'
-	implementation 'org.hibernate.validator:hibernate-validator:9.1.5.Final'
-	implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.11'
-	implementation 'org.springframework.boot:spring-boot-starter-mustache'
-
+	runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
 }
+
 dependencyManagement {
 	imports {
-		mavenBom "org.springframework.boot:spring-boot-dependencies:3.5.0"
+		mavenBom "org.springframework.boot:spring-boot-dependencies:4.1.3"
 	}
 }
+
 war {
 	archiveFileName = 'triples.war'
 }
@@ -59,7 +63,6 @@ tasks.named('bootWar') {
 	// Docker/CI에서 -x test 로 건너뛸 수 있음. 로컬 bootWar는 검사 후 패키징.
 	dependsOn test
 }
-
 
 tasks.named('test') {
 	useJUnitPlatform()
@@ -73,14 +76,14 @@ tasks.named('javadoc', Javadoc) {
 
 // Uses the same server-only credentials as Gravity; no tokens in command arguments.
 tasks.register('importCosmoObjekts', JavaExec) {
-    group = 'application'
-    description = 'Import the connected COSMO account into its own DB snapshot tables.'
-    classpath = sourceSets.main.runtimeClasspath
-    mainClass = 'com.example.triplesweb.service.CosmoObjektImportCommand'
-    jvmArgs '-Dspring.devtools.restart.enabled=false'
+	group = 'application'
+	description = 'Import the connected COSMO account into its own DB snapshot tables.'
+	classpath = sourceSets.main.runtimeClasspath
+	mainClass = 'com.example.triplesweb.service.CosmoObjektImportCommand'
+	jvmArgs '-Dspring.devtools.restart.enabled=false'
 }
 
 // .env는 Spring 시작 단계에서 읽으므로 IntelliJ의 메인 클래스 실행에도 적용된다.
 tasks.named('bootRun') {
-    systemProperty 'spring.profiles.default', 'local'
+	systemProperty 'spring.profiles.default', 'local'
 }

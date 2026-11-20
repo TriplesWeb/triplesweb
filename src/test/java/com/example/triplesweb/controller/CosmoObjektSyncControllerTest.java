@@ -3,7 +3,7 @@ package com.example.triplesweb.controller;
 import com.example.triplesweb.service.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -12,7 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.mockito.Mockito.*;
 
 @WebMvcTest(value = CosmoObjektSyncController.class, properties = "chemistry.admin.password=test-password")
-@org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc(addFilters = false)
+@org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc(addFilters = false)
 @Import({AboutAdminAuth.class, com.example.triplesweb.config.PasswordConfig.class})
 class CosmoObjektSyncControllerTest {
     @Autowired MockMvc mvc;

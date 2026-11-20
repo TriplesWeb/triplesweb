@@ -5,7 +5,7 @@ import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.ObjektCatalogSort;
 import com.example.triplesweb.util.ObjektSeasonCodes;
 import com.example.triplesweb.util.ObjektSeasonColors;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Service;

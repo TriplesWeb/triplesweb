@@ -1,7 +1,7 @@
 package com.example.triplesweb.util;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -192,7 +192,7 @@ public final class ObjektDescriptionKeys {
                 }
             }
             return List.copyOf(rows);
-        } catch (IOException error) {
+        } catch (Exception error) {
             throw new IllegalStateException("멤버별 오브젝트 설명을 읽지 못했습니다.", error);
         }
     }

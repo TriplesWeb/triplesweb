@@ -11,9 +11,8 @@ import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.ScheduleService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.json.JsonMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -54,9 +53,9 @@ public class ScheduleController {
                 : all.stream().filter(s -> splitNames(s.getArtistNames()).contains(artist)).toList();
         List<Artist> artists=artistRepository.findAll().stream().sorted(Comparator.comparing(Artist::getArtistId,Comparator.nullsLast(Comparator.naturalOrder()))).toList();
         List<ScheduleForm> dtos=schedules.stream().map(schedule->SchedulePresentation.form(schedule,artists)).toList();
-        ObjectMapper mapper = new ObjectMapper()
-                .registerModule(new JavaTimeModule())
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        JsonMapper mapper = JsonMapper.builder()
+                .disable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+                .build();
         model.addAttribute("schedules", dtos);
         model.addAttribute("schedulesJson", mapper.writeValueAsString(dtos).replace("<", "\\u003c").replace("&", "\\u0026"));
         model.addAttribute("isAdmin", aboutAdminAuth.isAdmin(request, session));

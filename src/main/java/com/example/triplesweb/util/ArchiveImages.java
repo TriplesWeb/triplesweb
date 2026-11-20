@@ -2,8 +2,8 @@ package com.example.triplesweb.util;
 
 import com.example.triplesweb.entity.Archive;
 import com.example.triplesweb.entity.SavedMeta;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -74,7 +74,7 @@ public final class ArchiveImages {
         List<String> tokens;
         try {
             tokens = mapper.readValue(imageOrderJson, new TypeReference<>() {});
-        } catch (IOException e) {
+        } catch (RuntimeException e) {
             throw new IllegalArgumentException("이미지 순서 형식이 올바르지 않습니다.");
         }
         if (tokens == null) tokens = List.of();

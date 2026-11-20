@@ -7,7 +7,7 @@ import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.repository.ArchiveRepository;
 import com.example.triplesweb.util.ArchiveFolderClassifier;
 import com.example.triplesweb.util.ArchiveImages;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;

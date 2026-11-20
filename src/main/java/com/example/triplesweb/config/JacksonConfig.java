@@ -1,24 +1,18 @@
 package com.example.triplesweb.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.cfg.DateTimeFeature;
 
 /**
- * JSON 직렬화용 {@link ObjectMapper} 빈({@code JavaTimeModule}, ISO-8601 날짜).
+ * Boot가 제공하는 {@code JsonMapper}를 ISO-8601 날짜로 맞춘다.
  */
 @Configuration
 public class JacksonConfig {
 
     @Bean
-    public ObjectMapper objectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        // 필요하면 타임스탬프 대신 ISO 포맷으로
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        return mapper;
+    JsonMapperBuilderCustomizer iso8601Dates() {
+        return builder -> builder.disable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 }
-
