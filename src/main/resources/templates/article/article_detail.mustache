@@ -203,10 +203,6 @@
         likeBtn.addEventListener('click', async function () {
             if (pending) return;
             pending = true;
-            if (!await window.SiteFeedback.confirm('이 글을 추천하시겠습니까?')) {
-                pending = false;
-                return;
-            }
             const headers = (window.SiteUi && window.SiteUi.csrfHeaders)
                 ? window.SiteUi.csrfHeaders({ 'Content-Type': 'application/json' })
                 : { 'Content-Type': 'application/json' };

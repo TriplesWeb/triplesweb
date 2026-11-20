@@ -444,6 +444,7 @@
         fd.append("clearSignatureImage", clearSig ? "true" : "false");
         const sigFile = document.getElementById("artistEditSignatureImage").files[0];
         if (sigFile && !clearSig) fd.append("signatureImage", sigFile);
+        const doneBusy = window.SiteFeedback.beginBusy();
         try {
           const res = await artistFetch("/api/artist/" + id, { method: "POST", body: fd });
           if (!res.ok) {
@@ -466,6 +467,8 @@
             err.textContent = "저장에 실패했습니다.";
             err.hidden = false;
           }
+        } finally {
+          doneBusy();
         }
       });
     }
@@ -492,6 +495,7 @@
         fd.append("clearImage", clearImage ? "true" : "false");
         const image = document.getElementById("artistGroupImage").files[0];
         if (image && !clearImage) fd.append("image", image);
+        const doneBusy = window.SiteFeedback.beginBusy();
         try {
           const res = await artistFetch("/api/artist/group", { method: "POST", body: fd });
           if (!res.ok) {
@@ -513,6 +517,8 @@
             err.textContent = "저장에 실패했습니다.";
             err.hidden = false;
           }
+        } finally {
+          doneBusy();
         }
       });
     }

@@ -257,6 +257,7 @@
         return;
       }
       if (!await window.SiteFeedback.confirm(clearImage ? "이 유닛을 저장하시겠습니까? 체크한 사진은 삭제됩니다." : (id ? "이 유닛을 수정하시겠습니까?" : "이 유닛을 추가하시겠습니까?"))) return;
+      const doneBusy = window.SiteFeedback.beginBusy();
       try {
         const url = id ? API + "/" + id : API;
         const res = await apiFetch(url, { method: "POST", body: fd });
@@ -273,6 +274,8 @@
         window.location.assign(destination.toString());
       } catch (ex) {
         if (err) { err.hidden = false; err.textContent = ex.message || "저장 실패"; }
+      } finally {
+        doneBusy();
       }
     });
 
@@ -281,6 +284,7 @@
       const err = document.getElementById("unitEditError");
       if (!id) return;
       if (!await window.SiteFeedback.confirm("이 유닛을 삭제하시겠습니까?\n연결된 앨범·하위 유닛은 삭제되지 않고 연결만 해제됩니다.")) return;
+      const doneBusy = window.SiteFeedback.beginBusy();
       try {
         const res = await apiFetch(API + "/" + id, { method: "DELETE" });
         if (!res.ok) throw new Error(await readError(res, "삭제 실패"));
@@ -288,6 +292,8 @@
       } catch (ex) {
         if (err) { err.hidden = false; err.textContent = ex.message || "삭제 실패"; }
         else window.SiteFeedback.alert(ex.message || "삭제 실패");
+      } finally {
+        doneBusy();
       }
     });
   }

@@ -8,7 +8,6 @@
     const status = favorite.querySelector('[data-favorite-status]');
     button.disabled = true;
     try {
-      if (!await window.SiteFeedback.confirm(input.value === 'true' ? '이 오브젝트를 찜하시겠습니까?' : '찜을 해제하시겠습니까?')) return;
       status.textContent = '저장 중…';
       const response = await fetch(favorite.action, {
         method: 'PUT', body: new URLSearchParams(new FormData(favorite)),

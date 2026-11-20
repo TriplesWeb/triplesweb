@@ -285,6 +285,7 @@
         return;
       }
       if (!await window.SiteFeedback.confirm("이 구분을 추가하시겠습니까?")) return;
+      const doneBusy = window.SiteFeedback.beginBusy();
       try {
         const res = await apiFetch(API + "/sections", {
           method: "POST",
@@ -297,6 +298,8 @@
         renderSectionList();
       } catch (ex) {
         if (err) { err.hidden = false; err.textContent = ex.message || "추가 실패"; }
+      } finally {
+        doneBusy();
       }
     });
 
@@ -310,32 +313,40 @@
           const name = row.querySelector(".section-name-input")?.value?.trim();
           if (!name) throw new Error("구분 이름을 입력해 주세요.");
           if (!await window.SiteFeedback.confirm("이 구분 이름을 수정하시겠습니까?")) return;
-          const res = await apiFetch(API + "/sections/" + id, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name })
-          });
-          if (!res.ok) throw new Error(await readError(res, "저장 실패"));
-          sectionOptions = await (await apiFetch(API + "/sections")).json();
-          renderSectionList();
+          const doneRename = window.SiteFeedback.beginBusy();
+          try {
+            const res = await apiFetch(API + "/sections/" + id, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ name })
+            });
+            if (!res.ok) throw new Error(await readError(res, "저장 실패"));
+            sectionOptions = await (await apiFetch(API + "/sections")).json();
+            renderSectionList();
+          } finally {
+            doneRename();
+          }
         } else if (e.target.closest(".section-up")) {
-          if (!await window.SiteFeedback.confirm("이 구분을 위로 이동하시겠습니까?")) return;
           const res = await apiFetch(API + "/sections/" + id + "/move?direction=-1", { method: "POST" });
           if (!res.ok) throw new Error(await readError(res, "순서 변경 실패"));
           sectionOptions = await res.json();
           renderSectionList();
         } else if (e.target.closest(".section-down")) {
-          if (!await window.SiteFeedback.confirm("이 구분을 아래로 이동하시겠습니까?")) return;
           const res = await apiFetch(API + "/sections/" + id + "/move?direction=1", { method: "POST" });
           if (!res.ok) throw new Error(await readError(res, "순서 변경 실패"));
           sectionOptions = await res.json();
           renderSectionList();
         } else if (e.target.closest(".section-delete")) {
           if (!await window.SiteFeedback.confirm("이 구분을 삭제하시겠습니까? 소속 이벤트는 「기타」로 이동합니다.")) return;
-          const res = await apiFetch(API + "/sections/" + id, { method: "DELETE" });
-          if (!res.ok) throw new Error(await readError(res, "삭제 실패"));
-          sectionOptions = await (await apiFetch(API + "/sections")).json();
-          renderSectionList();
+          const doneDelete = window.SiteFeedback.beginBusy();
+          try {
+            const res = await apiFetch(API + "/sections/" + id, { method: "DELETE" });
+            if (!res.ok) throw new Error(await readError(res, "삭제 실패"));
+            sectionOptions = await (await apiFetch(API + "/sections")).json();
+            renderSectionList();
+          } finally {
+            doneDelete();
+          }
         }
         if (err) { err.hidden = true; err.textContent = ""; }
       } catch (ex) {
@@ -370,6 +381,7 @@
       if (!await window.SiteFeedback.confirm(clearImage
         ? "이 이벤트를 저장하시겠습니까? 체크한 사진은 삭제됩니다."
         : (id ? "이 이벤트를 수정하시겠습니까?" : "이 이벤트를 추가하시겠습니까?"))) return;
+      const doneBusy = window.SiteFeedback.beginBusy();
       try {
         const url = id ? API + "/" + id : API;
         const res = await apiFetch(url, { method: "POST", body: fd });
@@ -377,12 +389,15 @@
         location.reload();
       } catch (ex) {
         if (err) { err.hidden = false; err.textContent = ex.message || "저장 실패"; }
+      } finally {
+        doneBusy();
       }
     });
 
     document.getElementById("eventEditDeleteBtn")?.addEventListener("click", async () => {
       const id = document.getElementById("eventEditId").value;
       if (!id || !await window.SiteFeedback.confirm("이 이벤트를 삭제하시겠습니까? 삭제하면 되돌릴 수 없습니다.")) return;
+      const doneBusy = window.SiteFeedback.beginBusy();
       try {
         const res = await apiFetch(API + "/" + id, { method: "DELETE" });
         if (!res.ok) {
@@ -392,6 +407,8 @@
         location.href = "/cosmo/event";
       } catch (_) {
         window.SiteFeedback.alert("삭제 요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
+      } finally {
+        doneBusy();
       }
     });
   }

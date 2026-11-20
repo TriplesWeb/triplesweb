@@ -38,7 +38,9 @@ const css = fs.readFileSync(path.join(staticRoot, 'css/site-ui.css'), 'utf8');
     await page.goto('https://feedback.test/');
     const dialog = page.getByRole('alertdialog');
     const progress = page.locator('.site-feedback-progress');
+    const busy = page.locator('.site-feedback-busy');
     await progress.waitFor({ state: 'hidden' });
+    assert.equal(await busy.isVisible(), false);
 
     await page.locator('#discard').click();
     await dialog.waitFor();
@@ -68,6 +70,35 @@ const css = fs.readFileSync(path.join(staticRoot, 'css/site-ui.css'), 'utf8');
     await page.evaluate(() => fetch('/failure').catch(() => {}));
     assert.equal(await progress.isVisible(), false);
 
+    assert.equal(await page.evaluate(async () => {
+      const pending = fetch('/silent', { siteFeedbackSilent: true });
+      const visibleWhilePending = !document.querySelector('.site-feedback-progress').hidden;
+      window['/silent'](new Response(null));
+      await pending;
+      return visibleWhilePending;
+    }), false);
+
+    await page.evaluate(() => {
+      window.finishBusyOne = window.SiteFeedback.beginBusy();
+      window.finishBusyTwo = window.SiteFeedback.beginBusy();
+    });
+    await busy.waitFor();
+    assert.equal(await progress.isVisible(), false);
+    await page.evaluate(() => {
+      window.busyFetch = fetch('/busy-fetch').then(response => response.text());
+    });
+    assert.equal(await progress.isVisible(), false);
+    await page.evaluate(() => {
+      window['/busy-fetch'](new Response('ok'));
+      return window.busyFetch;
+    });
+    assert.equal(await busy.isVisible(), true);
+    assert.equal(await progress.isVisible(), false);
+    await page.evaluate(() => window.finishBusyOne());
+    assert.equal(await busy.isVisible(), true);
+    await page.evaluate(() => window.finishBusyTwo());
+    await busy.waitFor({ state: 'hidden' });
+
     const save = page.getByRole('button', { name: '저장', exact: true });
     await save.click();
     assert.equal(await dialog.isVisible(), false);
@@ -79,6 +110,7 @@ const css = fs.readFileSync(path.join(staticRoot, 'css/site-ui.css'), 'utf8');
     const request = page.waitForRequest('https://feedback.test/save');
     await dialog.getByRole('button', { name: '확인', exact: true }).click();
     assert.deepEqual(Object.fromEntries(new URLSearchParams((await request).postData())), { title: '새 글', action: 'save' });
+    assert.equal(await busy.isVisible(), true);
   } finally {
     await browser.close();
   }

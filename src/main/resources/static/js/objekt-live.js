@@ -26,7 +26,8 @@
       const response = await fetch('/cosmo/objekt/pulse' + (query.toString() ? '?' + query : ''), {
         headers: { Accept: 'application/json' },
         credentials: 'same-origin',
-        cache: 'no-store'
+        cache: 'no-store',
+        siteFeedbackSilent: true
       });
       if (!response.ok) throw new Error();
       const data = await response.json();

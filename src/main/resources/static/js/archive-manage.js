@@ -1320,6 +1320,7 @@
         selectedArtists(uploadDialog).forEach(name => body.append("artistNames", name));
         const button = uploadForm.querySelector("[type='submit']");
         if (button) button.disabled = true;
+        const doneBusy = window.SiteFeedback.beginBusy();
         try {
             const response = await fetch(uploadForm.dataset.uploadUrl || "/archive/upload", {
                 method: "POST",
@@ -1341,6 +1342,7 @@
         } catch (_) {
             window.SiteFeedback.alert("추가 요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
         } finally {
+            doneBusy();
             if (button) button.disabled = false;
         }
     });
@@ -1527,6 +1529,7 @@
         }
         const label = title ? "‘" + title + "’ " : "이 ";
         if (!await window.SiteFeedback.confirm(label + noun + "을 삭제하시겠습니까? 삭제하면 되돌릴 수 없습니다.")) return;
+        const doneBusy = window.SiteFeedback.beginBusy();
         try {
             const response = await fetch("/archive/" + encodeURIComponent(id), {
                 method: "DELETE", headers: authHeaders(), credentials: "same-origin"
@@ -1540,6 +1543,8 @@
             window.SiteFeedback.alert(response.status === 403 ? "관리자만 삭제할 수 있습니다." : (response.status === 404 ? "이미 삭제된 자료입니다." : "삭제에 실패했습니다."));
         } catch (_) {
             window.SiteFeedback.alert("삭제 요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
+        } finally {
+            doneBusy();
         }
     }
 
@@ -1616,6 +1621,7 @@
         if (clearThumbnail) body.set('clearThumbnail', clearThumbnail.value);
         const button = editForm.querySelector("[type='submit']");
         if (button) button.disabled = true;
+        const doneBusy = window.SiteFeedback.beginBusy();
         try {
             const response = await fetch("/archive/" + encodeURIComponent(editForm.dataset.id), {
                 method: "POST", body, headers: authHeaders(), credentials: "same-origin"
@@ -1633,6 +1639,7 @@
         } catch (_) {
             window.SiteFeedback.alert("수정 요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
         } finally {
+            doneBusy();
             if (button) button.disabled = false;
         }
     });

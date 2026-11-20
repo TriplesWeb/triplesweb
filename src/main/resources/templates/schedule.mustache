@@ -145,7 +145,7 @@
                         </div>
                     </div>
                     <div class="site-modal-footer">
-                        <button data-confirm-action="이 작업을 취소하시겠습니까?" type="button" class="md-btn md-btn-text btn-custom-secondary" data-site-dismiss="modal">취소</button>
+                        <button type="button" class="md-btn md-btn-text btn-custom-secondary" data-site-dismiss="modal">취소</button>
                         <button type="submit" class="md-btn md-btn-filled btn-custom-primary">추가하기</button>
                     </div>
                 </div>
@@ -194,7 +194,7 @@
                         </div>
                     </div>
                     <div class="site-modal-footer">
-                        <button data-confirm-action="이 작업을 취소하시겠습니까?" type="button" class="md-btn md-btn-text btn-custom-secondary" data-site-dismiss="modal">취소</button>
+                        <button type="button" class="md-btn md-btn-text btn-custom-secondary" data-site-dismiss="modal">취소</button>
                         <button type="submit" class="md-btn md-btn-filled btn-custom-primary">수정 저장</button>
                     </div>
                 </div>
@@ -489,6 +489,7 @@
 
                     const body = new URLSearchParams({ title, start, end, category:document.getElementById('addScheduleCategory').value });
                     document.querySelectorAll('#addArtistNames option:checked').forEach(option => body.append('artistNames', option.value));
+                    const doneBusy = window.SiteFeedback.beginBusy();
                     try {
                         const response = await fetch('/schedule/add', {
                             method: 'POST',
@@ -511,6 +512,8 @@
                     } catch (error) {
                         console.error('스케줄 추가 오류:', error);
                         window.SiteFeedback.alert('서버 통신 중 오류가 발생했습니다.');
+                    } finally {
+                        doneBusy();
                     }
                 });
             }
@@ -537,6 +540,7 @@
 
                     const body = new URLSearchParams({ title, startDate: start, endDate: end, category:document.getElementById('editScheduleCategory').value });
                     document.querySelectorAll('#editArtistNames option:checked').forEach(option => body.append('artistNames', option.value));
+                    const doneBusy = window.SiteFeedback.beginBusy();
                     try {
                         const response = await fetch(`/edit/${encodeURIComponent(id)}`, {
                             method: 'POST',
@@ -560,6 +564,8 @@
                     } catch (error) {
                         console.error('스케줄 수정 오류:', error);
                         window.SiteFeedback.alert('서버 통신 중 오류가 발생했습니다.');
+                    } finally {
+                        doneBusy();
                     }
                 });
             }

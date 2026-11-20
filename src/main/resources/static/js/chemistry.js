@@ -1852,6 +1852,7 @@
         [];
       if (!members.length) return;
       if (!await window.SiteFeedback.confirm(formatGroupMembers(members) + " 케미를 삭제할까요?")) return;
+      const doneBusy = window.SiteFeedback.beginBusy();
       try {
         const qs = new URLSearchParams();
         members.forEach((m) => qs.append("members", m));
@@ -1874,6 +1875,8 @@
         await refreshOverlaysAndTable();
       } catch (_) {
         window.SiteFeedback.alert("삭제에 실패했습니다.");
+      } finally {
+        doneBusy();
       }
       return;
     }
@@ -1886,6 +1889,7 @@
       || (editingPair && editingPair.member2);
     if (!member1 || !member2) return;
     if (!await window.SiteFeedback.confirm(pairTitleText(member1, member2) + " 케미를 삭제할까요?")) return;
+    const doneBusy = window.SiteFeedback.beginBusy();
     try {
       const qs = new URLSearchParams({ member1, member2 });
       const res = await chemFetch("/api/chemistry?" + qs.toString(), { method: "DELETE" });
@@ -1904,6 +1908,8 @@
       await refreshOverlaysAndTable();
     } catch (_) {
       window.SiteFeedback.alert("삭제에 실패했습니다.");
+    } finally {
+      doneBusy();
     }
   }
 
@@ -2222,6 +2228,7 @@
         ) {
           return;
         }
+        const doneBusy = window.SiteFeedback.beginBusy();
         try {
           const res = await chemFetch(endpoint, { method: "POST", body: fd });
           if (!res.ok) {
@@ -2246,6 +2253,8 @@
             err.textContent = "저장에 실패했습니다.";
             err.hidden = false;
           }
+        } finally {
+          doneBusy();
         }
       });
     }

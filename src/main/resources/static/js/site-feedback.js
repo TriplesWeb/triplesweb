@@ -3,8 +3,22 @@
 
   const english = document.documentElement.lang.toLowerCase().startsWith("en");
   const labels = english
-    ? { notice: "Notice", confirm: "Confirm action", accept: "Confirm", cancel: "Cancel", loading: "Loading…" }
-    : { notice: "안내", confirm: "작업 확인", accept: "확인", cancel: "취소", loading: "불러오는 중…" };
+    ? {
+        notice: "Notice",
+        confirm: "Confirm action",
+        accept: "Confirm",
+        cancel: "Cancel",
+        loading: "Loading…",
+        busy: "Working…"
+      }
+    : {
+        notice: "안내",
+        confirm: "작업 확인",
+        accept: "확인",
+        cancel: "취소",
+        loading: "불러오는 중…",
+        busy: "처리 중…"
+      };
 
   const dialog = document.createElement("dialog");
   dialog.className = "site-feedback-dialog";
@@ -61,49 +75,109 @@
   progress.setAttribute("aria-label", labels.loading);
   progress.append(document.createElement("span"));
 
+  const busy = document.createElement("div");
+  busy.className = "site-feedback-busy";
+  busy.hidden = true;
+  busy.setAttribute("role", "progressbar");
+  busy.setAttribute("aria-label", labels.busy);
+  busy.setAttribute("aria-live", "polite");
+  busy.innerHTML = `<div class="site-feedback-busy-panel"><span class="site-feedback-busy-spinner" aria-hidden="true"></span><p></p></div>`;
+  busy.querySelector("p").textContent = labels.busy;
+
   let pending = 0;
+  let busyPending = 0;
+
+  function syncProgress() {
+    progress.hidden = pending === 0 || busyPending > 0;
+  }
+
+  function syncBusy() {
+    busy.hidden = busyPending === 0;
+    document.documentElement.toggleAttribute("data-site-feedback-busy", busyPending > 0);
+  }
+
   function begin() {
     pending++;
-    progress.hidden = false;
+    syncProgress();
     let finished = false;
     return () => {
       if (finished) return;
       finished = true;
       pending--;
-      progress.hidden = pending === 0;
+      syncProgress();
     };
   }
 
-  function mountProgress() {
-    document.body.append(progress);
+  function beginBusy() {
+    busyPending++;
+    syncBusy();
+    syncProgress();
+    let finished = false;
+    return () => {
+      if (finished) return;
+      finished = true;
+      busyPending--;
+      syncBusy();
+      syncProgress();
+    };
   }
-  if (document.body) mountProgress();
-  else document.addEventListener("DOMContentLoaded", mountProgress, { once: true });
+
+  function mountChrome() {
+    document.body.append(progress, busy);
+  }
+  if (document.body) mountChrome();
+  else document.addEventListener("DOMContentLoaded", mountChrome, { once: true });
   if (document.readyState !== "complete") {
     window.addEventListener("load", begin(), { once: true });
   }
 
+  function isSilent(input, init) {
+    if (init && init.siteFeedbackSilent === true) return true;
+    if (input && typeof input === "object" && input.siteFeedbackSilent === true) return true;
+    return false;
+  }
+
+  function trackBody(response, inherit) {
+    for (const method of ["arrayBuffer", "blob", "bytes", "formData", "json", "text"]) {
+      if (typeof response[method] !== "function") continue;
+      const read = response[method].bind(response);
+      response[method] = async (...args) => {
+        let finishRead = null;
+        if (inherit && !inherit.claimed) {
+          inherit.claimed = true;
+          finishRead = inherit.finish;
+        } else {
+          finishRead = begin();
+        }
+        try {
+          return await read(...args);
+        } finally {
+          finishRead();
+        }
+      };
+    }
+    return response;
+  }
+
   // Track requests from every page, including overlapping requests and body reads.
   const fetch = window.fetch.bind(window);
-  window.fetch = async (...args) => {
-    const finish = begin();
+  window.fetch = async (input, init) => {
+    if (isSilent(input, init)) {
+      const options = init ? { ...init } : undefined;
+      if (options) delete options.siteFeedbackSilent;
+      return fetch(input, options);
+    }
+    const inherit = { finish: begin(), claimed: false };
     try {
-      const response = await fetch(...args);
-      for (const method of ["arrayBuffer", "blob", "bytes", "formData", "json", "text"]) {
-        if (typeof response[method] !== "function") continue;
-        const read = response[method].bind(response);
-        response[method] = async (...args) => {
-          const finishRead = begin();
-          try {
-            return await read(...args);
-          } finally {
-            finishRead();
-          }
-        };
-      }
+      const response = await fetch(input, init);
+      trackBody(response, inherit);
+      queueMicrotask(() => {
+        if (!inherit.claimed) inherit.finish();
+      });
       return response;
-    } finally {
-      finish();
+    } catch (error) {
+      inherit.finish();
+      throw error;
     }
   };
 
@@ -119,7 +193,8 @@
   window.navigation?.addEventListener("navigate", (event) => {
     if (event.destination.sameDocument || event.hashChange || event.downloadRequest !== null) return;
     if (new URL(event.destination.url).origin !== location.origin) return;
-    event.signal.addEventListener("abort", startNavigation(), { once: true });
+    const finish = startNavigation();
+    event.signal.addEventListener("abort", finish, { once: true });
   });
   window.addEventListener("pageshow", () => finishNavigation?.());
 
@@ -147,7 +222,8 @@
       }
       return;
     }
-    if (!window.navigation && form.target !== "_blank") {
+    if (message) beginBusy();
+    if (!window.navigation && form.target !== "_blank" && busyPending === 0) {
       queueMicrotask(() => {
         if (!event.defaultPrevented) startNavigation();
       });
@@ -180,7 +256,7 @@
       const url = new URL(link.href);
       if (url.origin !== location.origin || (url.pathname === location.pathname && url.search === location.search && url.hash)) return;
       queueMicrotask(() => {
-        if (!event.defaultPrevented) startNavigation();
+        if (!event.defaultPrevented && busyPending === 0) startNavigation();
       });
     });
   }
@@ -188,6 +264,7 @@
   window.SiteFeedback = {
     alert: (message) => ask(message, false),
     confirm: (message) => ask(message, true),
-    beginProgress: begin
+    beginProgress: begin,
+    beginBusy
   };
 })();

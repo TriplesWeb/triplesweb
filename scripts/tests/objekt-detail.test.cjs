@@ -13,7 +13,7 @@ function setup(fetch) {
     querySelector: s => s === 'button' ? button : status,
     addEventListener: (type, fn) => { form.submit = fn; }};
   vm.runInNewContext(code, {document: {querySelector: s => s === '[data-objekt-favorite]' ? form : null}, fetch, URLSearchParams,
-    window: {SiteFeedback:{confirm:async()=>true}, AboutAdminAuth:{applyAuthHeaders:headers=>({...headers,'X-XSRF-TOKEN':'test-csrf'})}},
+    window: {SiteFeedback:{confirm:async()=>true, beginBusy:()=>()=>{}}, AboutAdminAuth:{applyAuthHeaders:headers=>({...headers,'X-XSRF-TOKEN':'test-csrf'})}},
     FormData: function(){ return [['favorite',input.value],['_csrf','test-form-token']]; }
   });
   return {form, button, input, status, submit: () => form.submit({preventDefault() {}})};

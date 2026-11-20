@@ -1289,6 +1289,7 @@
         const controls = descriptionForm.querySelectorAll('button, textarea');
         controls.forEach(control => control.disabled = true);
         descriptionStatus.textContent = clear ? '삭제 중…' : '저장 중…';
+        const doneBusy = window.SiteFeedback.beginBusy();
         try {
             const body = new URLSearchParams({description: clear ? '' : descriptionInput.value});
             members.forEach((member) => body.append('members', member));
@@ -1316,6 +1317,7 @@
         } catch {
             if (activeObjektKey === key) descriptionStatus.textContent = '저장하지 못했습니다. 관리자 로그인 상태를 확인한 뒤 다시 시도해 주세요.';
         } finally {
+            doneBusy();
             descriptionSaving = false; controls.forEach(control => control.disabled = false);
         }
     }
@@ -1380,7 +1382,6 @@
         const key = detailFavorite.dataset.key || activeObjektKey;
         if (!key || detailFavorite.disabled) return;
         const desired = detailFavorite.dataset.favorite !== 'true';
-        if (!await window.SiteFeedback.confirm(desired ? '이 오브젝트를 찜하시겠습니까?' : '찜을 해제하시겠습니까?')) return;
         const status = document.getElementById('objektFavoriteStatus');
         status.hidden = true;
         detailFavorite.disabled = true;
@@ -1390,7 +1391,7 @@
         try {
             let response = await save();
             if (response.status === 403) {
-                await fetch('/api/artist/admin/status', {credentials:'same-origin', cache:'no-store'});
+                await fetch('/api/artist/admin/status', {credentials:'same-origin', cache:'no-store', siteFeedbackSilent: true});
                 response = await save();
             }
             if (!response.ok) throw new Error(String(response.status));

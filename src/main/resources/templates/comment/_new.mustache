@@ -84,6 +84,7 @@
                 ? window.SiteUi.csrfHeaders({ "Content-Type": "application/json" })
                 : { "Content-Type": "application/json" };
 
+            const doneBusy = window.SiteFeedback.beginBusy();
             fetch(url, {
                 method: "POST",
                 credentials: "same-origin",
@@ -100,11 +101,11 @@
                         }
                         return response.json();
                     })
-                    .then(async () => {
-                        await window.SiteFeedback.alert("댓글이 등록되었습니다.");
+                    .then(function () {
                         window.location.reload();
                     })
                     .catch(function (error) {
+                        doneBusy();
                         if (errorMessageDiv.style.display !== "block") {
                             errorMessageDiv.textContent = "댓글을 등록하지 못했습니다. 네트워크 연결을 확인해 주세요.";
                             errorMessageDiv.style.display = "block";

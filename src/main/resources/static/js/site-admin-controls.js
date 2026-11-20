@@ -211,7 +211,7 @@
 
   async function refresh() {
     try {
-      const res = await fetch(STATUS_URL, { credentials: "same-origin", headers: headers(), cache: "no-store" });
+      const res = await fetch(STATUS_URL, { credentials: "same-origin", headers: headers(), cache: "no-store", siteFeedbackSilent: true });
       const state = res.ok ? await res.json() : { configured: false, admin: false };
       writeCache(state);
       return notify(state);
@@ -314,10 +314,13 @@
         }
         if (currentState.admin) {
           if (!await window.SiteFeedback.confirm("관리자에서 로그아웃하시겠습니까?")) return;
+          const doneBusy = window.SiteFeedback.beginBusy();
           try {
             await logout();
           } catch (_) {
             window.SiteFeedback.alert("로그아웃에 실패했습니다. 네트워크 연결을 확인해 주세요.");
+          } finally {
+            doneBusy();
           }
           return;
         }
@@ -366,8 +369,9 @@
     event.preventDefault();
     const confirmMessage = form.getAttribute("data-confirm");
     if (confirmMessage && !await window.SiteFeedback.confirm(confirmMessage)) return;
-    const busy = event.submitter instanceof HTMLButtonElement ? event.submitter : form.querySelector("button[type='submit']");
-    if (busy) busy.disabled = true;
+    const submitBtn = event.submitter instanceof HTMLButtonElement ? event.submitter : form.querySelector("button[type='submit']");
+    if (submitBtn) submitBtn.disabled = true;
+    const doneBusy = window.SiteFeedback.beginBusy();
     try {
       const response = await fetch(form.action, {
         method: (form.getAttribute("method") || "POST").toUpperCase(),
@@ -388,7 +392,8 @@
     } catch (_) {
       window.SiteFeedback.alert("요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
     } finally {
-      if (busy) busy.disabled = false;
+      doneBusy();
+      if (submitBtn) submitBtn.disabled = false;
     }
   });
 
