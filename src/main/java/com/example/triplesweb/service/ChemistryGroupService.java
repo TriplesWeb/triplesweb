@@ -179,7 +179,7 @@ public class ChemistryGroupService {
             return;
         }
         String relative = fileStorageService.toRelativePath(imageUrl);
-        // 시드·공유 페어 사진(S1/…)은 여러 행이 참조하므로 삭제하지 않는다.
+        // 관리자 업로드(날짜 폴더)만 삭제. S1/… 등 기존 경로는 건드리지 않는다.
         if (!ChemistryImages.isDeletableAdminUpload(relative)) {
             return;
         }

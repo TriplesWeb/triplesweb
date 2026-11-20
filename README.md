@@ -39,13 +39,11 @@ CI PR(`ci-tests.yml`)은 `--check` / `--no-run`, main 배포 이미지(`Dockerfi
 
 | 역할 | 경로 |
 |------|------|
-| 초기 시드(기존 정적 데이터) | [`src/main/resources/data/chemistry-seed.json`](src/main/resources/data/chemistry-seed.json) |
 | API | `/api/chemistry` (`ChemistryApiController`) |
 | 매트릭스 UI (logo·S 심볼) | [`src/main/resources/static/images/chemistry/`](src/main/resources/static/images/chemistry/) → `/images/chemistry/` |
 | 페어·그룹 사진 (서버) | `uploads/images/chemistry/` → `/uploads/images/chemistry/` |
 
-시드는 기본 비활성입니다. `CHEMISTRY_SEED_ENABLED=true`(또는 `chemistry.seed.enabled=true`)로 기동할 때만  
-없는 페어를 삽입하며, 이미 있는 행은 덮어쓰지 않습니다. 삭제는 DB에서 **하드 삭제**합니다.
+삭제는 DB에서 **하드 삭제**합니다.
 
 ### 추가·수정 방법 (권장)
 

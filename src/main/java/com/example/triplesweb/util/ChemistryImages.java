@@ -19,7 +19,7 @@ public final class ChemistryImages {
 
     public static final int MAX_IMAGES = 10;
 
-    /** 관리자 폼 업로드만: images/chemistry/YYYY-MM-DD/... (공유 S1/… 시드 사진은 제외) */
+    /** 관리자 폼 업로드만: images/chemistry/YYYY-MM-DD/... */
     private static final Pattern ADMIN_UPLOAD_RELATIVE =
             Pattern.compile("^images/chemistry/\\d{4}-\\d{2}-\\d{2}/.+");
 
@@ -27,7 +27,7 @@ public final class ChemistryImages {
 
     /**
      * 디스크에서 지워도 되는 관리자 업로드인지.
-     * 시드·공유 페어 사진({@code images/chemistry/S1/...})은 false.
+     * 날짜 폴더가 아닌 경로({@code images/chemistry/S1/...} 등)는 false.
      */
     public static boolean isDeletableAdminUpload(String relativePath) {
         return relativePath != null && ADMIN_UPLOAD_RELATIVE.matcher(relativePath).matches();
