@@ -4,10 +4,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -16,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * ABOUT 트리플에스(케미/아티스트/앨범/유닛) 공통 관리자 인증.
  * HttpOnly 세션 쿠키만 사용한다. JS에 노출되는 토큰은 발급하지 않는다.
+ * 비밀번호는 BCrypt 해시({@code $2a$}/{@code $2b$}/{@code $2y$})를 {@code CHEMISTRY_ADMIN_PASSWORD}에 둔다.
  */
 @Service
 public class AboutAdminAuth {
@@ -30,9 +34,14 @@ public class AboutAdminAuth {
     private static final Duration LOGIN_WINDOW = Duration.ofMinutes(15);
 
     private final ConcurrentHashMap<String, LoginWindow> loginAttempts = new ConcurrentHashMap<>();
+    private final PasswordEncoder passwordEncoder;
 
     @Value("${chemistry.admin.password:}")
     private String adminPassword;
+
+    public AboutAdminAuth(PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
+    }
 
     public boolean isConfigured() {
         return StringUtils.hasText(adminPassword);
@@ -51,7 +60,7 @@ public class AboutAdminAuth {
         String ip = clientIp(request);
         assertNotRateLimited(ip);
         String password = body != null ? body.get("password") : null;
-        if (!adminPassword.equals(password)) {
+        if (!passwordMatches(password)) {
             recordFailure(ip);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "비밀번호가 올바르지 않습니다.");
         }
@@ -88,6 +97,23 @@ public class AboutAdminAuth {
             }
         }
         return false;
+    }
+
+    boolean passwordMatches(String rawPassword) {
+        if (!StringUtils.hasText(rawPassword) || !StringUtils.hasText(adminPassword)) {
+            return false;
+        }
+        if (isBcryptHash(adminPassword)) {
+            return passwordEncoder.matches(rawPassword, adminPassword);
+        }
+        // 전환용: 평문 .env는 상수시간 비교. 운영은 BCrypt 해시로 교체한다.
+        byte[] expected = adminPassword.getBytes(StandardCharsets.UTF_8);
+        byte[] actual = rawPassword.getBytes(StandardCharsets.UTF_8);
+        return MessageDigest.isEqual(expected, actual);
+    }
+
+    static boolean isBcryptHash(String value) {
+        return value.startsWith("$2a$") || value.startsWith("$2b$") || value.startsWith("$2y$");
     }
 
     private void assertNotRateLimited(String ip) {

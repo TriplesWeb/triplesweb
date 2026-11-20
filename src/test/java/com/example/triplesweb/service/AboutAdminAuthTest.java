@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -15,12 +16,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class AboutAdminAuthTest {
 
+    private static final String SECRET_HASH =
+            "$2y$10$JQIdaj5fwrsN3/mPkhoNEuRr.1DWSSc97Jz7KuCiK9g9dD3pYeW1u";
+
     private AboutAdminAuth auth;
 
     @BeforeEach
     void setUp() {
-        auth = new AboutAdminAuth();
-        ReflectionTestUtils.setField(auth, "adminPassword", "secret");
+        auth = new AboutAdminAuth(new BCryptPasswordEncoder());
+        ReflectionTestUtils.setField(auth, "adminPassword", SECRET_HASH);
     }
 
     @Test
@@ -31,6 +35,15 @@ class AboutAdminAuthTest {
         assertThat(result.get("admin")).isEqualTo(true);
         assertThat(result.containsKey("token")).isFalse();
         assertThat(auth.isAdmin(request, session)).isTrue();
+    }
+
+    @Test
+    void loginAcceptsLegacyPlaintextPasswordDuringMigration() {
+        ReflectionTestUtils.setField(auth, "adminPassword", "plain-secret");
+        MockHttpSession session = new MockHttpSession();
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        Map<String, Object> result = auth.login(Map.of("password", "plain-secret"), request, session);
+        assertThat(result.get("admin")).isEqualTo(true);
     }
 
     @Test
