@@ -26,7 +26,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class GroupOrdersControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean ArticleService articles;
-    @MockitoBean CommentService comments;
     @MockitoBean ArticleFileServiceImpl files;
     @MockitoBean DateTimeFormatService dates;
     @MockitoBean ArticleObjektService links;
