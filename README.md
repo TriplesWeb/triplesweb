@@ -106,7 +106,7 @@ DB를 서버와 같이 쓰면 **파일도 같이** 보여야 합니다.
 
 - **실시간:** 로컬 `bootRun` 업로드/삭제 시 Tailscale로 서버 `uploads/`에 push (기동 시 서버→로컬 pull). `.env`의 `UPLOAD_SYNC_*` 참고.
 - **참조만:** 로컬 `./uploads`에 없으면 `upload.fallback-base-url`(기본 `https://triples.eht3r.cloud`)로 **리다이렉트**합니다. 공유 DB를 쓰는 협업자 PC에서도 멤버·유닛 이미지가 보입니다. 서버 Docker는 폴백을 비웁니다.
-- **운영 배포:** 케미 UI는 WAR static에 포함됩니다. 페어 사진은 서버 `uploads/images/chemistry/`만 사용하며, 배포 시 옛 `uploads/chemistry/chem` → `legacy-chem` 멱등 복사를 한 번 돌립니다. 전체 `uploads/` 삭제·재귀 chown/chmod는 하지 않습니다.
+- **운영 배포:** 케미 UI는 WAR static에 포함됩니다. 페어 사진은 서버 `uploads/images/chemistry/`만 사용하며, 배포 시 옛 `uploads/chemistry/chem` → `uploads/images/chemistry` 멱등 복사를 한 번 돌립니다. 전체 `uploads/` 삭제·재귀 chown/chmod는 하지 않습니다.
 
 ```bash
 ./scripts/setup-git-hooks.sh   # 훅 경로 설정 (uploads는 gitignore — 서버 전용)

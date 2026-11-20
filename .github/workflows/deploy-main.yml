@@ -214,7 +214,7 @@ jobs:
           scp docker-compose.bluegreen.yml "pi:${PI_DEPLOY_PATH}/docker-compose.bluegreen.yml"
           scp scripts/deploy-pi-bluegreen.sh scripts/deploy-pi-image-retention.sh scripts/migrate-chemistry-photos-on-pi.sh "pi:${PI_DEPLOY_PATH}/"
           # 케미 UI는 WAR static(/images/chemistry). 페어 사진은 서버 uploads만.
-          # 옛 chem/ → images/chemistry/legacy-chem 복사는 멱등 (원본 유지).
+          # 옛 chem/ → images/chemistry/ 복사는 멱등 (원본 유지).
           ssh pi "bash '${PI_DEPLOY_PATH}/migrate-chemistry-photos-on-pi.sh' '${PI_DEPLOY_PATH}'"
 
           ssh pi env \

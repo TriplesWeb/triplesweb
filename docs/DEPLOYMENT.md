@@ -50,7 +50,7 @@ CI 설정만 수정된 PR을 머지하면 `main` push의 즉시 운영 배포는
 ## 운영 배포 추가 최적화
 
 - 사전점검에서 기존 개발 앱 중지(최초 1회), 운영 SHA/readiness 확인을 **한 번의 Pi SSH 접속**으로 검사
-- 배포 시 `migrate-chemistry-photos-on-pi.sh`로 옛 `uploads/chemistry/chem` → `uploads/images/chemistry/legacy-chem` 멱등 복사 (원본 유지). Flyway가 DB URL을 같은 경로로 치환
+- 배포 시 `migrate-chemistry-photos-on-pi.sh`로 옛 `uploads/chemistry/chem` → `uploads/images/chemistry` 멱등 복사 (원본 유지). Flyway가 DB URL을 같은 경로로 치환
 - PNG 등의 압축된 정적 이미지는 `rsync -a`로 중복 압축을 방지. 운영 업로드 루트에 삭제 옵션을 쓰지 않음
 - GHCR에 해당 `main` 커밋 SHA 이미지가 이미 있으면, 운영 배포 실패/재시도 상황에서 **Docker 재빌드·재푸시 생략**
 - Pi에도 동일한 불변 SHA 이미지가 남아 있으면 `docker compose pull` 자체를 생략
