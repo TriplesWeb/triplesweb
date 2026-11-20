@@ -179,7 +179,8 @@ public class ChemistryGroupService {
             return;
         }
         String relative = fileStorageService.toRelativePath(imageUrl);
-        if (relative == null || !relative.startsWith("images/chemistry/")) {
+        // 시드·공유 페어 사진(S1/…)은 여러 행이 참조하므로 삭제하지 않는다.
+        if (!ChemistryImages.isDeletableAdminUpload(relative)) {
             return;
         }
         try {
