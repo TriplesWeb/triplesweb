@@ -11,6 +11,7 @@ import com.example.triplesweb.service.ArchiveService;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.ChemistryGroupService;
 import com.example.triplesweb.service.ChemistryService;
+import com.example.triplesweb.service.IdempotencyService;
 import com.example.triplesweb.service.UnitService;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.entity.Artist;
@@ -57,6 +58,7 @@ public class ArchiveController {
     private final ChemistryService chemistryService;
     private final ChemistryGroupService chemistryGroupService;
     private final ObjectMapper objectMapper;
+    private final IdempotencyService idempotencyService;
 
     @GetMapping
     public String showArchive(@RequestParam(defaultValue = "image") String type,
@@ -1193,11 +1195,18 @@ public class ArchiveController {
                                 @RequestParam("file") MultipartFile file, @RequestParam(value="artistNames", required=false) List<String> artistNames,
                                 @RequestParam("registeredOn") LocalDate registeredOn,
                                 @RequestParam("source") String source,
+                                @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                                 HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
+        var replay = idempotencyService.completedLocation(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey);
+        if (replay.isPresent()) {
+            return "redirect:" + replay.get();
+        }
         String names = artistNames == null ? "" : String.join(",", artistNames);
         archiveService.save(file, title, type, names, requireDate(registeredOn), requireSource(source));
-        return "redirect:" + folderRedirect(type, names);
+        String location = folderRedirect(type, names);
+        idempotencyService.remember(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
+        return "redirect:" + location;
     }
 
     @PostMapping("/upload/image")
@@ -1208,8 +1217,13 @@ public class ArchiveController {
                               @RequestParam("registeredOn") LocalDate registeredOn,
                               @RequestParam("source") String source,
                               @RequestParam(defaultValue = "0") int coverIndex,
+                              @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                               HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
+        var replay = idempotencyService.completedLocation(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey);
+        if (replay.isPresent()) {
+            return "redirect:" + replay.get();
+        }
         String names = artistNames == null ? "" : String.join(",", artistNames);
         LocalDate date = requireDate(registeredOn);
         ArchiveSource archiveSource = requireSource(source);
@@ -1221,7 +1235,9 @@ public class ArchiveController {
             throw new IllegalArgumentException("사진 파일을 선택해 주세요.");
         }
         archiveService.uploadImages(uploads, safeTitle, names, date, archiveSource, description, coverIndex);
-        return "redirect:" + folderRedirect(MediaType.IMAGE, names);
+        String location = folderRedirect(MediaType.IMAGE, names);
+        idempotencyService.remember(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
+        return "redirect:" + location;
     }
 
     @PostMapping("/upload/video")
@@ -1230,11 +1246,18 @@ public class ArchiveController {
                               @RequestParam("title") String title, @RequestParam(value="artistNames", required=false) List<String> artistNames,
                               @RequestParam("registeredOn") LocalDate registeredOn,
                               @RequestParam("source") String source,
+                              @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                               HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
+        var replay = idempotencyService.completedLocation(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey);
+        if (replay.isPresent()) {
+            return "redirect:" + replay.get();
+        }
         String names = artistNames == null ? "" : String.join(",", artistNames);
         archiveService.uploadVideoOnly(file, title, MediaType.VIDEO, names, thumbnail, requireDate(registeredOn), requireSource(source));
-        return "redirect:" + folderRedirect(MediaType.VIDEO, names);
+        String location = folderRedirect(MediaType.VIDEO, names);
+        idempotencyService.remember(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
+        return "redirect:" + location;
     }
 
     @PostMapping("/{id}")

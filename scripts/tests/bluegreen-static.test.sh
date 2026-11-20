@@ -11,6 +11,10 @@ grep -Fq 'wait_proxy_slot "$candidate"' scripts/deploy-pi-bluegreen.sh
 grep -Fq 'wait_proxy_slot "$old"' scripts/deploy-pi-bluegreen.sh
 grep -Fq 'BG_MIN_AVAILABLE_MB' scripts/deploy-pi-bluegreen.sh
 grep -Fq 'BG_ALLOW_SCHEMA_CHANGE' scripts/deploy-pi-bluegreen.sh
+grep -Fq 'BG_DRAIN_MAX_SECONDS' scripts/deploy-pi-bluegreen.sh
+grep -Fq 'BG_STOP_TIMEOUT_SECONDS' scripts/deploy-pi-bluegreen.sh
+grep -Fq 'drain_until_idle' scripts/deploy-pi-bluegreen.sh
+grep -Fq '/internal/deploy/inflight' scripts/deploy-pi-bluegreen.sh
 grep -Fq 'flock -w 900' scripts/deploy-pi-bluegreen.sh
 grep -Fq 'docker exec "$proxy_cid" nginx -t' scripts/deploy-pi-bluegreen.sh
 grep -Fq 'docker exec "$proxy_cid" nginx -s reload' scripts/deploy-pi-bluegreen.sh
@@ -19,6 +23,9 @@ grep -Fq 'docker exec "$proxy_cid" nginx -s reload' scripts/deploy-pi-bluegreen.
 grep -Fq 'profiles: [legacy]' docker-compose.yml
 grep -Fq 'bash ./deploy-pi-bluegreen.sh' .github/workflows/deploy-main.yml
 grep -Fq 'docker-compose.bluegreen.yml' .github/workflows/deploy-main.yml
+grep -Fq 'server.shutdown=graceful' src/main/resources/application.properties
+grep -Fq 'spring.session.store-type=jdbc' src/main/resources/application.properties
+grep -Fq 'SPRING_SESSION' src/main/resources/db/migration/V202611201000__spring_session.sql
 
 # Validate actual Docker Compose interpolation and make sure neither candidate
 # publishes a host port or mounts MariaDB's data volume.

@@ -5,6 +5,8 @@
     const dialogTriggers = new WeakMap();
     /** 업로드 성공 후 모달을 유지할 때, 닫을 때 갱신할 Location (없으면 현재 URL). */
     let afterUploadLocation = null;
+    /** 실패 후 재시도 시 동일 키로 중복 등록을 막는다. 성공하면 비운다. */
+    let uploadIdempotencyKey = null;
 
     function authHeaders() {
         const headerMap = {};
@@ -12,6 +14,20 @@
         const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
         if (csrf && csrfHeader && csrf.content && csrfHeader.content) headerMap[csrfHeader.content] = csrf.content;
         return window.AboutAdminAuth ? AboutAdminAuth.applyAuthHeaders(headerMap) : headerMap;
+    }
+
+    function newIdempotencyKey() {
+        if (window.crypto && typeof window.crypto.randomUUID === "function") {
+            return window.crypto.randomUUID();
+        }
+        return "idemp-" + Date.now().toString(36) + "-" + Math.random().toString(16).slice(2);
+    }
+
+    function saveFailureMessage(status, fallback) {
+        if (status === 403) {
+            return "관리자 세션이 필요합니다. 입력값은 그대로 두었으니 다시 로그인한 뒤 저장해 주세요.";
+        }
+        return fallback || "요청에 실패했습니다. 입력값은 유지됩니다.";
     }
 
     function resolveArchivePath(locationHeader) {
@@ -1318,16 +1334,20 @@
         selectedArtists(uploadDialog).forEach(name => body.append("artistNames", name));
         const button = uploadForm.querySelector("[type='submit']");
         if (button) button.disabled = true;
+        if (!uploadIdempotencyKey) uploadIdempotencyKey = newIdempotencyKey();
         try {
+            const headers = authHeaders();
+            headers["Idempotency-Key"] = uploadIdempotencyKey;
             const response = await fetch(uploadForm.dataset.uploadUrl || "/archive/upload", {
                 method: "POST",
                 body,
-                headers: authHeaders(),
+                headers,
                 credentials: "same-origin",
                 // 프록시 뒤 절대 http Location 을 fetch 가 따라가면 Mixed Content 로 실패한다.
                 redirect: "manual"
             });
             if (uploadSucceeded(response)) {
+                uploadIdempotencyKey = null;
                 afterUploadLocation = response.headers.get("Location") || "";
                 prepareUploadFormForNext();
                 setUploadStatus(noun + "을 추가했습니다. 이어서 더 추가할 수 있습니다.");
@@ -1335,9 +1355,13 @@
                 return;
             }
             const message = (await response.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-            alert(response.status === 403 ? "관리자만 추가할 수 있습니다." : (message.slice(0, 180) || "추가에 실패했습니다."));
+            const detail = message.slice(0, 180) || "추가에 실패했습니다.";
+            alert(saveFailureMessage(response.status, detail));
+            setUploadStatus(saveFailureMessage(response.status, detail));
         } catch (_) {
-            alert("추가 요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
+            const networkMsg = "추가 요청에 실패했습니다. 네트워크를 확인한 뒤 같은 내용으로 다시 시도해 주세요. 입력값은 유지됩니다.";
+            alert(networkMsg);
+            setUploadStatus(networkMsg);
         } finally {
             if (button) button.disabled = false;
         }
@@ -1535,7 +1559,9 @@
                 softRefreshArchive();
                 return;
             }
-            alert(response.status === 403 ? "관리자만 삭제할 수 있습니다." : (response.status === 404 ? "이미 삭제된 자료입니다." : "삭제에 실패했습니다."));
+            alert(response.status === 403
+                ? saveFailureMessage(403)
+                : (response.status === 404 ? "이미 삭제된 자료입니다." : "삭제에 실패했습니다."));
         } catch (_) {
             alert("삭제 요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
         }
@@ -1627,9 +1653,14 @@
                 return;
             }
             const text = (await response.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-            alert(response.status === 403 ? "관리자만 수정할 수 있습니다." : (text.slice(0, 180) || "수정에 실패했습니다."));
+            const detail = text.slice(0, 180) || "수정에 실패했습니다.";
+            const msg = saveFailureMessage(response.status, detail);
+            alert(msg);
+            setEditStatus(msg);
         } catch (_) {
-            alert("수정 요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
+            const networkMsg = "수정 요청에 실패했습니다. 네트워크를 확인한 뒤 다시 저장해 주세요. 입력값은 유지됩니다.";
+            alert(networkMsg);
+            setEditStatus(networkMsg);
         } finally {
             if (button) button.disabled = false;
         }
