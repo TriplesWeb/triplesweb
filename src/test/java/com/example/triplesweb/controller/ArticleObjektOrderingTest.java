@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.*;
 class ArticleObjektOrderingTest {
     @Test void composePrefillsOnlyKnownSelectedObjectsForTradeAndSell() {
         var catalog = mock(ObjektService.class);
-        var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
+        var controller = new ArticleController(mock(ArticleService.class), mock(ArticleFileServiceImpl.class),
                 mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog, mock(ArtistSnapshotService.class));
         when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("id","uuid","slug","hayeoncc367z","collectionId","Cream02 HaYeon 367Z","member","HaYeon","season","Cream02")));
         for (String category : List.of("trade","sell")) {
@@ -36,7 +36,7 @@ class ArticleObjektOrderingTest {
         var articles = mock(ArticleService.class);
         var objekts = mock(ObjektService.class);
         var links = mock(ArticleObjektService.class);
-        var controller = new ArticleController(articles, mock(CommentService.class), mock(ArticleFileServiceImpl.class),
+        var controller = new ArticleController(articles, mock(ArticleFileServiceImpl.class),
                 mock(DateTimeFormatService.class), links, objekts, mock(ArtistSnapshotService.class));
         when(objekts.findCollections("triples")).thenReturn(List.of(
                 Map.of("member", "Jiyeon", "season", "Atom01"), Map.of("member", "Alpha", "season", "Cream02"),
@@ -66,7 +66,7 @@ class ArticleObjektOrderingTest {
 
     @Test void mergedMemberOptionSearchesAllOriginalAliases() {
         var catalog = mock(ObjektService.class);
-        var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
+        var controller = new ArticleController(mock(ArticleService.class), mock(ArticleFileServiceImpl.class),
                 mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog, mock(ArtistSnapshotService.class));
         when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("member", "S21"),
                 Map.of("member", "ChaeWon"), Map.of("member", "김채원"), Map.of("member", "S22"),
@@ -83,7 +83,7 @@ class ArticleObjektOrderingTest {
 
     @Test @SuppressWarnings("unchecked") void objektOptionsFiltersKindAndSortsByNumber() {
         var catalog = mock(ObjektService.class);
-        var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
+        var controller = new ArticleController(mock(ArticleService.class), mock(ArticleFileServiceImpl.class),
                 mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog, mock(ArtistSnapshotService.class));
         when(catalog.findCollections("triples")).thenReturn(List.of(
                 Map.of("id", "a", "member", "SeoYeon", "collectionNo", "102Z", "createdAt", "2024-01-01"),
@@ -101,7 +101,7 @@ class ArticleObjektOrderingTest {
     }
 
     @Test void tradeDetailRedirectsToFeed() {
-        var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
+        var controller = new ArticleController(mock(ArticleService.class), mock(ArticleFileServiceImpl.class),
                 mock(DateTimeFormatService.class), mock(ArticleObjektService.class), mock(ObjektService.class), mock(ArtistSnapshotService.class));
         var model = new ExtendedModelMap();
         assertThat(controller.showArticle("trade", 9L, null, model)).isEqualTo("redirect:/trade");
@@ -111,7 +111,7 @@ class ArticleObjektOrderingTest {
     @Test void blankTitleOrContentAndUnchangedEditAreRejected() throws Exception {
         var articles = mock(ArticleService.class);
         var links = mock(ArticleObjektService.class);
-        var controller = new ArticleController(articles, mock(CommentService.class), mock(ArticleFileServiceImpl.class),
+        var controller = new ArticleController(articles, mock(ArticleFileServiceImpl.class),
                 mock(DateTimeFormatService.class), links, mock(ObjektService.class), mock(ArtistSnapshotService.class));
         Article existing = new Article();
         existing.setId(4L);
