@@ -2,7 +2,7 @@ package com.example.triplesweb.controller;
 
 import com.example.triplesweb.service.GravityService;
 import com.example.triplesweb.util.GravityDisplay;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;

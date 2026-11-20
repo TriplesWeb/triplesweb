@@ -10,8 +10,8 @@ import com.example.triplesweb.repository.ChemistryGroupRepository;
 import com.example.triplesweb.util.ChemistryHtmlCleaner;
 import com.example.triplesweb.util.ChemistryImages;
 import com.example.triplesweb.util.TripleSMembers;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -133,7 +133,7 @@ public class ChemistryGroupService {
             for (String removed : merged.removed()) {
                 deleteManagedImageAfterCommit(removed);
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new IllegalStateException("이미지 저장에 실패했습니다.", e);
         }
     }
@@ -184,7 +184,7 @@ public class ChemistryGroupService {
         }
         try {
             fileStorageService.deleteFile(imageUrl);
-        } catch (RuntimeException ignored) {
+        } catch (Exception ignored) {
         }
     }
 
@@ -220,7 +220,7 @@ public class ChemistryGroupService {
     private String writeMembersJson(List<String> names) {
         try {
             return objectMapper.writeValueAsString(names);
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new IllegalStateException("멤버 목록 직렬화 실패", e);
         }
     }
@@ -230,7 +230,7 @@ public class ChemistryGroupService {
         try {
             List<String> raw = objectMapper.readValue(json, new TypeReference<>() {});
             return raw == null ? List.of() : raw.stream().filter(StringUtils::hasText).map(String::trim).toList();
-        } catch (IOException e) {
+        } catch (RuntimeException e) {
             return List.of();
         }
     }
@@ -240,7 +240,7 @@ public class ChemistryGroupService {
         if (links.isEmpty()) return null;
         try {
             return objectMapper.writeValueAsString(links);
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new IllegalArgumentException("링크 형식이 올바르지 않습니다.");
         }
     }
@@ -257,7 +257,7 @@ public class ChemistryGroupService {
                 }
             });
             return out;
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new IllegalArgumentException("링크 형식이 올바르지 않습니다.");
         }
     }

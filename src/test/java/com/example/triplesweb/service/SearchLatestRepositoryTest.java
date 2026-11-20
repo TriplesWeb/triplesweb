@@ -9,7 +9,7 @@ import com.example.triplesweb.repository.ArticleRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
@@ -35,7 +35,7 @@ class SearchLatestRepositoryTest {
         archives.save(archive("other", MediaType.IMAGE, LocalDate.of(2029, 1, 1)));
         archives.save(archive("literal w%v", MediaType.IMAGE, LocalDate.of(2029, 1, 1)));
         ArchiveService service = new ArchiveService(archives, mock(FileStorageService.class),
-                new com.fasterxml.jackson.databind.ObjectMapper(), entityManager);
+                new tools.jackson.databind.ObjectMapper(), entityManager);
 
         assertThat(service.searchLatestByType(MediaType.IMAGE, "WaV", 2))
                 .extracting(Archive::getTitle).containsExactly("WAV newest", "wav middle");

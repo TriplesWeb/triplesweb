@@ -8,7 +8,7 @@ import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ChemistryGroupRepository;
 import com.example.triplesweb.repository.ChemistryRepository;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

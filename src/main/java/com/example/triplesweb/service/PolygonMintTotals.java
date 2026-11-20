@@ -1,7 +1,7 @@
 package com.example.triplesweb.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
@@ -43,7 +43,7 @@ public class PolygonMintTotals {
                     + " · tripleS " + format.format(triples)
                     + " · ARTMS " + format.format(artms);
             return new Snapshot(triples, artms, total, lastMintBlock, caption);
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             throw new IllegalStateException("Unable to read data/polygon-mints.json", ex);
         }
     }

@@ -28,8 +28,8 @@ class GzipRestClientsTest {
         ClientHttpResponse decoded = GzipRestClients.decompressGzip()
                 .intercept(null, null, (request, body) -> raw);
 
-        assertThat(decoded.getHeaders().containsKey(HttpHeaders.CONTENT_ENCODING)).isFalse();
-        assertThat(decoded.getHeaders().containsKey(HttpHeaders.CONTENT_LENGTH)).isFalse();
+        assertThat(decoded.getHeaders().containsHeader(HttpHeaders.CONTENT_ENCODING)).isFalse();
+        assertThat(decoded.getHeaders().containsHeader(HttpHeaders.CONTENT_LENGTH)).isFalse();
         assertThat(decoded.getBody().readAllBytes()).isEqualTo(plain);
         decoded.close();
     }

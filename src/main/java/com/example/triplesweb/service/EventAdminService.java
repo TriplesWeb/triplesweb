@@ -8,8 +8,8 @@ import com.example.triplesweb.entity.EventStop;
 import com.example.triplesweb.entity.SavedMeta;
 import com.example.triplesweb.repository.EventRepository;
 import com.example.triplesweb.repository.EventSectionRepository;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -229,7 +229,7 @@ public class EventAdminService {
                 SavedMeta meta = fileStorageService.saveWithMeta(image, "event");
                 event.setEventImage(meta.getUrl());
                 deleteManagedImage(previous);
-            } catch (IOException e) {
+            } catch (Exception e) {
                 throw new IllegalStateException("이벤트 이미지 저장에 실패했습니다.", e);
             }
         } else if (clearImage) {
@@ -276,7 +276,7 @@ public class EventAdminService {
         if (!StringUtils.hasText(stopsJson)) return List.of();
         try {
             return objectMapper.readValue(stopsJson, new TypeReference<>() {});
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new IllegalArgumentException("지역 회차 JSON이 올바르지 않습니다.");
         }
     }
@@ -331,7 +331,7 @@ public class EventAdminService {
         if (relative == null || !relative.startsWith("images/event/")) return;
         try {
             fileStorageService.deleteFile(imageUrl);
-        } catch (RuntimeException ignored) {
+        } catch (Exception ignored) {
         }
     }
 
