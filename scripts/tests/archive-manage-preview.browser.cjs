@@ -15,7 +15,93 @@ const videoJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-video-playe
 const videoDialog = fs.readFileSync(path.join(root, 'src/main/resources/templates/archive/archive.mustache'), 'utf8')
   .match(/<dialog [^>]*id="archiveVideoPlayer"[\s\S]*?<\/dialog>/)[0].replace('{{mediaDateLabel}}', '영상 날짜');
 
-const jiyeonLogo = '/uploads/images/' + encodeURIComponent('상징로고') + '/S24.png';
+const jiyeonLogo = '/images/archive/member-logos/24.png';
+
+/** 운영과 같이 카드에는 수정 버튼이 없고 상세 버튼만 있는 사진 페이지. */
+function photoReorderHtml() {
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:#0d0e12;color:#e3e2e8;font-family:"Pretendard Variable",Pretendard,sans-serif}
+${site}${css}${siteUi}
+</style></head>
+<body class="site-page">
+<main class="archive-page" data-archive-kind="image" data-date-label="사진 날짜">
+  <section class="ar-grid" id="archiveGrid">
+    <article class="ar-panel ar-card" data-id="1" data-title="" data-description="지서연" data-headline="지서연" data-artists="지연" data-url="/portrait.svg" data-images='["/portrait.svg","/poster.svg"]' data-registered="2026-10-25" data-source="COSMO_ROOM" data-source-label="코스모룸">
+      <button type="button" class="ar-photo-link" data-archive-open aria-label="자세히 보기"><img src="/portrait.svg" alt=""></button>
+      <div class="ar-body">
+        <h3>지서연</h3>
+        <div class="ar-card-members" hidden></div>
+      </div>
+    </article>
+  </section>
+</main>
+<div class="ar-dialog" id="archiveDetail" hidden>
+  <div class="ar-dialog-panel">
+    <div class="ar-detail-photo" id="archiveDetailPhoto">
+      <img id="archiveDetailImage" alt="">
+      <button type="button" class="ar-detail-nav" id="archiveDetailPrev" hidden></button>
+      <button type="button" class="ar-detail-nav" id="archiveDetailNext" hidden></button>
+      <div class="ar-detail-dots" id="archiveDetailDots" hidden></div>
+      <p class="ar-detail-count" id="archiveDetailCount" hidden></p>
+    </div>
+    <div class="ar-detail-side">
+      <p class="ar-detail-desc" id="archiveDetailDescription" hidden></p>
+      <div class="ar-detail-meta" id="archiveDetailMeta" hidden>
+        <p class="ar-detail-date" id="archiveDetailDate" hidden>
+          <span data-detail-date-label></span>
+          <time data-detail-date-value></time>
+        </p>
+        <div class="ar-source-badge" id="archiveDetailSource" hidden></div>
+      </div>
+      <section class="ar-detail-cast" hidden>
+        <div class="ar-detail-members" id="archiveDetailMembers"></div>
+      </section>
+      <div class="ar-dialog-foot">
+        <button type="button" class="site-btn" data-archive-edit id="archiveDetailEdit">수정하기</button>
+        <button type="button" class="site-btn" data-archive-delete id="archiveDetailDelete">삭제하기</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="ar-dialog" id="editModal" hidden>
+  <div class="ar-dialog-panel">
+    <form id="archiveEditForm" enctype="multipart/form-data">
+      <label class="ar-field">설명<textarea name="description" rows="3"></textarea></label>
+      <label class="ar-field">사진 날짜<input type="date" name="registeredOn"></label>
+      <label class="ar-field">출처<select name="source"><option value="COSMO_ROOM">코스모룸</option></select></label>
+      <div class="member-portrait-picker" id="archive-edit-picker">
+        <button type="button" class="mpp-item" data-value="지연" data-name="지연" data-frame="24" style="--artist-color:#7bba8d" aria-pressed="false">
+          <span class="artist-tab-avatar"><img class="artist-tab-photo" src="/portrait.svg" alt=""></span>
+          <span class="artist-tab-label">지연</span>
+        </button>
+      </div>
+      <div data-artist-chips></div>
+      <span data-picker-count>0</span>
+      <span class="ar-file">
+        <input type="file" id="archiveEditFile" name="file" accept="image/*" multiple>
+        <label for="archiveEditFile" class="ar-file-pick">파일 선택</label>
+        <span class="ar-file-name" data-file-name>선택된 파일 없음</span>
+      </span>
+      <div class="ar-preview" id="editPreview" hidden>
+        <p class="ar-preview-info" data-preview-file></p>
+        <div class="ar-preview-tools" data-image-edit-tools hidden>
+          <span class="ar-preview-tools-label">사진 편집</span>
+          <button type="button" class="ar-edit-tool" data-image-edit="rotate-cw">cw</button>
+        </div>
+        <p class="ar-preview-error" data-preview-error hidden></p>
+      </div>
+      <button type="submit" class="ar-submit">저장</button>
+    </form>
+  </div>
+</div>
+<script>${pickerJs}</script>
+<script>${detailJs}</script>
+<script>${manageJs}</script>
+</body></html>`;
+}
 
 /** 운영과 같이 카드에는 수정 버튼이 없고 상세 버튼만 있는 사진 페이지. */
 function photoReorderHtml() {

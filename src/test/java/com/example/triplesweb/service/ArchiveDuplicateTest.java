@@ -4,6 +4,7 @@ import com.example.triplesweb.entity.ArchiveSource;
 import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.repository.ArchiveRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,6 +26,7 @@ class ArchiveDuplicateTest {
     @Mock ArchiveRepository archiveRepository;
     @Mock FileStorageService fileStorageService;
     @Mock ObjectMapper objectMapper;
+    @Mock EntityManager entityManager;
     @InjectMocks ArchiveService archiveService;
 
     @Test

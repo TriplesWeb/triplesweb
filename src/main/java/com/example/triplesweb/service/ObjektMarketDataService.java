@@ -44,9 +44,9 @@ public class ObjektMarketDataService {
             @Value("${abstract.indexer.contract:0x99Bb83AE9bb0C0A6be865CaCF67760947f91Cb70}") String contract,
             ObjektIndexClient historyIndex, ObjektSerialSupplyService serialSupply, ObjektLiveSettings live) {
         var factory = new JdkClientHttpRequestFactory(HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(3)).build());
-        factory.setReadTimeout(Duration.ofSeconds(6));
-        this.index = GzipRestClients.create(indexUrl, Duration.ofSeconds(3), Duration.ofSeconds(15));
+                .connectTimeout(Duration.ofSeconds(2)).build());
+        factory.setReadTimeout(Duration.ofSeconds(3));
+        this.index = GzipRestClients.create(indexUrl, Duration.ofSeconds(2), Duration.ofSeconds(5));
         this.cosmo = RestClient.builder().baseUrl(cosmoUrl).requestFactory(factory).build();
         this.rpc = RestClient.builder().baseUrl(rpcUrl).requestFactory(factory).build();
         this.contract = contract;

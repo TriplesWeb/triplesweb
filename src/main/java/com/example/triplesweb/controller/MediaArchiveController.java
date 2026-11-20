@@ -129,10 +129,9 @@ public class MediaArchiveController {
         model.addAttribute("related", media.related(t, youtubeId, 8));
 
         List<String> names = splitNames(video.getArtistNames());
-        List<Schedule> relatedSchedules = scheduleRepository.findAll().stream()
-                .filter(s -> !names.isEmpty()
-                        && splitNames(s.getArtistNames()).stream().anyMatch(names::contains))
-                .toList();
+        List<Schedule> relatedSchedules = names.isEmpty()
+                ? List.of()
+                : scheduleRepository.findDistinctByArtistNames(names);
         model.addAttribute("relatedSchedules", relatedSchedules);
         model.addAttribute("taggedArtists", artistRepository.findAll().stream()
                 .filter(a -> names.contains(a.getName()))

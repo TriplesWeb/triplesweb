@@ -18,8 +18,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.io.IOException;
@@ -30,6 +34,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * 아카이브({@link Archive}) 미디어 목록·상세·업로드·삭제를 담당한다.
@@ -39,13 +45,35 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ArchiveService {
 
+    private static final long INDEX_TTL_MS = 30_000L;
+
     private final ArchiveRepository archiveRepository;
     private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
+    private final EntityManager entityManager;
+
+    private volatile List<Archive> indexCache;
+    private volatile long indexCacheAt;
+
+    /** 폴더 목록 페이지와 출처 탭을 한 번의 필터 스캔으로 만든다. */
+    public record FolderBrowse(Page<Archive> page, Set<ArchiveSource> availableSources) {}
 
     @Transactional(readOnly = true)
     public List<Archive> index() {
-        return archiveRepository.findAll();
+        long now = System.currentTimeMillis();
+        List<Archive> cached = indexCache;
+        if (cached != null && now - indexCacheAt < INDEX_TTL_MS) {
+            return cached;
+        }
+        List<Archive> fresh = List.copyOf(archiveRepository.findAll());
+        indexCache = fresh;
+        indexCacheAt = now;
+        return fresh;
+    }
+
+    private void invalidateIndexCache() {
+        indexCache = null;
+        indexCacheAt = 0L;
     }
 
     /** 날짜가 확인된 검색 결과를 먼저 최신순으로 반환한다. */
@@ -81,22 +109,64 @@ public class ArchiveService {
                                       LocalDate from, LocalDate to, ArchiveSource source, boolean unclassifiedOnly,
                                       String folder, List<String> comboMembers,
                                       List<ArchiveFolderClassifier.UnitMembers> units) {
+        return browseFolder(type, page, size, keyword, members, from, to, source, unclassifiedOnly,
+                folder, comboMembers, units).page();
+    }
+
+    @Transactional(readOnly = true)
+    public FolderBrowse browseFolder(MediaType type, int page, int size, String keyword, List<String> members,
+                                     LocalDate from, LocalDate to, ArchiveSource source, boolean unclassifiedOnly,
+                                     String folder, List<String> comboMembers,
+                                     List<ArchiveFolderClassifier.UnitMembers> units) {
+        // 출처 탭은 source 필터 없이 같은 폴더 조건에서 집계한다.
         List<Archive> found = archiveRepository.findAll(
-                archiveSpec(type, keyword, members, from, to, source, unclassifiedOnly),
+                archiveSpec(type, keyword, members, from, to, null, false),
                 Sort.by(Sort.Direction.DESC, "id"));
-        List<Archive> filtered = found.stream()
-                .filter(archive -> ArchiveFolderClassifier.matches(
-                        ArchiveFolderClassifier.classify(archive.getArtistNames(), units), folder, comboMembers))
-                .toList();
+        List<Archive> inFolder = new ArrayList<>(found.size());
+        Set<ArchiveSource> sources = new LinkedHashSet<>();
+        for (Archive archive : found) {
+            if (!ArchiveFolderClassifier.matches(
+                    ArchiveFolderClassifier.classify(archive.getArtistNames(), units), folder, comboMembers)) {
+                continue;
+            }
+            inFolder.add(archive);
+            if (archive.getSource() != null) sources.add(archive.getSource());
+        }
+        List<Archive> filtered = inFolder;
+        if (unclassifiedOnly) {
+            filtered = inFolder.stream().filter(archive -> archive.getSource() == null).toList();
+        } else if (source != null) {
+            filtered = inFolder.stream().filter(archive -> source.equals(archive.getSource())).toList();
+        }
         int safeSize = Math.max(1, size);
         int safePage = Math.max(0, page);
         int fromIndex = safePage * safeSize;
         Pageable pageable = PageRequest.of(safePage, safeSize);
+        Page<Archive> pageResult;
         if (fromIndex >= filtered.size()) {
-            return new PageImpl<>(List.of(), pageable, filtered.size());
+            pageResult = new PageImpl<>(List.of(), pageable, filtered.size());
+        } else {
+            pageResult = new PageImpl<>(filtered.subList(fromIndex, Math.min(filtered.size(), fromIndex + safeSize)),
+                    pageable, filtered.size());
         }
-        return new PageImpl<>(filtered.subList(fromIndex, Math.min(filtered.size(), fromIndex + safeSize)),
-                pageable, filtered.size());
+        return new FolderBrowse(pageResult, Set.copyOf(sources));
+    }
+
+    /** 전체 보기 출처 탭용. 본문 없이 source 컬럼만 distinct 조회한다. */
+    @Transactional(readOnly = true)
+    public Set<ArchiveSource> availableSources(MediaType type, String keyword, List<String> members,
+                                               LocalDate from, LocalDate to) {
+        Specification<Archive> spec = archiveSpec(type, keyword, members, from, to, null, false);
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<ArchiveSource> query = cb.createQuery(ArchiveSource.class);
+        Root<Archive> root = query.from(Archive.class);
+        Predicate base = spec.toPredicate(root, query, cb);
+        Predicate notNull = cb.isNotNull(root.get("source"));
+        query.select(root.get("source")).distinct(true)
+                .where(base == null ? notNull : cb.and(base, notNull));
+        return new LinkedHashSet<>(entityManager.createQuery(query).getResultList().stream()
+                .filter(Objects::nonNull)
+                .toList());
     }
 
     private static Specification<Archive> archiveSpec(
@@ -189,11 +259,13 @@ public class ArchiveService {
         if (resolved == MediaType.IMAGE) {
             applyImageUrls(archive, List.of(meta.getUrl()));
         }
-        return archiveRepository.save(archive);
+        Archive saved = archiveRepository.save(archive);
+        invalidateIndexCache();
+        return saved;
     }
 
     /**
-     * 여러 사진을 한 게시글로 저장한다. 첫 장이 표지({@link Archive#getFile()})가 된다.
+     * 여러 사진을 한 게시글로 저장한다. 첫 장이 표지({@code Archive.getFile()})가 된다.
      */
     @Transactional
     public Archive uploadImages(List<MultipartFile> files, String title, String artistNames, LocalDate registeredOn,
@@ -230,7 +302,9 @@ public class ArchiveService {
         if (registeredOn != null) archive.setRegisteredOn(registeredOn);
         archive.setSource(source);
         applyImageUrls(archive, urls);
-        return archiveRepository.save(archive);
+        Archive saved = archiveRepository.save(archive);
+        invalidateIndexCache();
+        return saved;
     }
     @Transactional
     public Archive upload(MultipartFile file, String title) throws IOException {
@@ -307,7 +381,9 @@ public class ArchiveService {
         if (thumbnail != null && !thumbnail.isEmpty()) {
             archive.setThumbnailUrl(fileStorageService.saveWithMeta(thumbnail).getUrl());
         }
-        return archiveRepository.save(archive);
+        Archive saved = archiveRepository.save(archive);
+        invalidateIndexCache();
+        return saved;
     }
     @Transactional
     public boolean delete(long id) {
@@ -315,6 +391,7 @@ public class ArchiveService {
             deleteImageSet(archive);
             deleteThumbnail(archive.getThumbnailUrl());
             archiveRepository.delete(archive);
+            invalidateIndexCache();
             return true;
         }).orElse(false);
     }
@@ -459,7 +536,9 @@ public class ArchiveService {
             archive.setThumbnailUrl(null);
             deleteThumbnail(previousThumbnail);
         }
-        return archiveRepository.save(archive);
+        Archive saved = archiveRepository.save(archive);
+        invalidateIndexCache();
+        return saved;
     }
 
     private static void validateCoverIndex(int index, int count) {

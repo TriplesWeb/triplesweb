@@ -11,21 +11,53 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- * 업로드한 폴더 그림을 우선 표시하고 기본 그림이 있는 폴더는 내장 이미지를 사용한다.
+ * 아카이브 홈의 업로드 폴더 그림을 찾고, 없으면 내장 그림을 사용한다.
  */
 @Component
 public class ArchiveFolderArt {
     static final String DIR_NAME = "미디어 폴더";
     private static final String BUNDLED_ART_PATH = "/images/archive/";
     private static final List<String> EXTENSIONS = List.of(".png", ".jpg", ".jpeg", ".webp", ".svg");
+    private static final int BUNDLED_MEMBER_FOLDER_COUNT = 24;
+    private static final Map<String, Integer> UNIT_IMAGES = Map.ofEntries(
+            Map.entry("acid angel from asia", 27),
+            Map.entry("acid angel of asia", 27),
+            Map.entry("+(kr)ystal eyes", 28),
+            Map.entry("acid eyes", 29),
+            Map.entry("lovelution", 30),
+            Map.entry("evolution", 31),
+            Map.entry("nxt", 32),
+            Map.entry("glow", 33),
+            Map.entry("aria", 34),
+            Map.entry("visionary vision", 35),
+            Map.entry("∞!", 36),
+            Map.entry("alphie", 37),
+            Map.entry("msnz moon", 38),
+            Map.entry("msnz sun", 39),
+            Map.entry("msnz neptune", 40),
+            Map.entry("msnz zenith", 41),
+            Map.entry("aura", 42)
+    );
 
     private final Path uploadRoot;
 
     public ArchiveFolderArt(@Value("${file.upload-dir:./uploads}") String uploadDir) {
         this.uploadRoot = Path.of(uploadDir);
+    }
+
+    private static String memberIcon(String key) {
+        int number = MemberPortraitOptions.memberIndex(key) + 1;
+        return number <= BUNDLED_MEMBER_FOLDER_COUNT ? BUNDLED_ART_PATH + "member-folders/" + number + ".png" : "";
+    }
+
+    private static String unitIcon(String label) {
+        if (label == null) return "";
+        Integer number = UNIT_IMAGES.get(label.strip().toLowerCase(Locale.ROOT));
+        return number == null ? "" : BUNDLED_ART_PATH + "unit-folders/" + number + ".png";
     }
 
     public String urlFor(ArchiveFolderClassifier.Kind kind, String key, String label) {
@@ -36,13 +68,12 @@ public class ArchiveFolderArt {
                 if (!found.isBlank()) return publicUrl(found);
             }
         }
-        if (kind == ArchiveFolderClassifier.Kind.GROUP) {
-            return BUNDLED_ART_PATH + "member-folders/3.png";
-        }
-        if (kind == ArchiveFolderClassifier.Kind.SOLO && key != null && key.matches("s(?:[1-9]|1[0-9]|2[0-4])")) {
-            return BUNDLED_ART_PATH + "member-folders/" + key.substring(1) + ".png";
-        }
-        return "";
+        return switch (kind) {
+            case GROUP -> BUNDLED_ART_PATH + "member-folders/3.png";
+            case SOLO -> memberIcon(key);
+            case UNIT -> unitIcon(label);
+            default -> "";
+        };
     }
 
     public String dimensionUrl() {

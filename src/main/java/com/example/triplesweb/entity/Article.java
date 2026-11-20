@@ -35,9 +35,6 @@ public class Article {
     @Column(nullable = false)
     private String category;
 
-    @OneToMany(mappedBy = "article", cascade = CascadeType.REMOVE, orphanRemoval = true)
-    private List<Comment> comments = new ArrayList<>();
-
     /** 좋아요 수(별도 like 테이블 없이 카운터만 유지) */
     @Column(nullable = false)
     private int likesCount = 0;
