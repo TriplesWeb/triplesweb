@@ -221,7 +221,9 @@ jobs:
           BG_MIN_AVAILABLE_MB: ${{ vars.BG_MIN_AVAILABLE_MB || '1400' }}
           BG_SLOT_MEMORY_LIMIT: ${{ vars.BG_SLOT_MEMORY_LIMIT || '1800m' }}
           BG_READY_TIMEOUT_SECONDS: ${{ vars.BG_READY_TIMEOUT_SECONDS || '360' }}
-          BG_DRAIN_SECONDS: ${{ vars.BG_DRAIN_SECONDS || '30' }}
+          BG_DRAIN_SECONDS: ${{ vars.BG_DRAIN_SECONDS || '5' }}
+          BG_DRAIN_MAX_SECONDS: ${{ vars.BG_DRAIN_MAX_SECONDS || '600' }}
+          BG_STOP_TIMEOUT_SECONDS: ${{ vars.BG_STOP_TIMEOUT_SECONDS || '600' }}
         run: |
           set -euo pipefail
           : "${PI_DEPLOY_PATH:?PI_DEPLOY_PATH secret is required}"
@@ -250,6 +252,8 @@ jobs:
             BG_SLOT_MEMORY_LIMIT="$BG_SLOT_MEMORY_LIMIT" \
             BG_READY_TIMEOUT_SECONDS="$BG_READY_TIMEOUT_SECONDS" \
             BG_DRAIN_SECONDS="$BG_DRAIN_SECONDS" \
+            BG_DRAIN_MAX_SECONDS="$BG_DRAIN_MAX_SECONDS" \
+            BG_STOP_TIMEOUT_SECONDS="$BG_STOP_TIMEOUT_SECONDS" \
             bash -s <<'EOF'
           set -euo pipefail
           cd "$PI_DEPLOY_PATH"
