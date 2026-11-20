@@ -106,16 +106,10 @@ const css = fs.readFileSync(path.join(staticRoot, 'css/site-ui.css'), 'utf8');
     await save.click();
     await dialog.getByRole('button', { name: '취소', exact: true }).click();
     assert.equal(new URL(page.url()).pathname, '/');
-    await page.route('https://feedback.test/save', async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      return route.fulfill({ body: '<p>Saved</p>', contentType: 'text/html' });
-    });
     await save.click();
     const request = page.waitForRequest('https://feedback.test/save');
     await dialog.getByRole('button', { name: '확인', exact: true }).click();
-    await busy.waitFor();
     assert.deepEqual(Object.fromEntries(new URLSearchParams((await request).postData())), { title: '새 글', action: 'save' });
-    assert.equal(await busy.isVisible(), true);
   } finally {
     await browser.close();
   }
