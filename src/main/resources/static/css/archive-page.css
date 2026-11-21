@@ -1970,12 +1970,12 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     border:0;
     box-shadow:none;
     background:transparent;
+    /* 멤버 상세 .artist-member-logo와 같은 밝기·발광 */
     mix-blend-mode:screen;
-    opacity:0.78;
     filter:
-        drop-shadow(0 0 1px color-mix(in srgb, var(--member-color, #00f5d4) 42%, transparent))
-        drop-shadow(0 0 3px color-mix(in srgb, var(--member-color, #00f5d4) 28%, transparent))
-        drop-shadow(0 0 7px color-mix(in srgb, var(--member-color, #00f5d4) 16%, transparent));
+        drop-shadow(0 0 1.5px color-mix(in srgb, var(--member-color, #00f5d4) 75%, transparent))
+        drop-shadow(0 0 5px color-mix(in srgb, var(--member-color, #00f5d4) 55%, transparent))
+        drop-shadow(0 0 12px color-mix(in srgb, var(--member-color, #00f5d4) 35%, transparent));
 }
 .archive-page[data-archive-kind] .ar-highlight .archive-member-chip img{width:2.15rem;height:2.15rem;max-width:2.15rem;max-height:2.15rem;object-fit:contain;flex:none}
 
