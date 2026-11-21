@@ -141,8 +141,8 @@
             else if (className === 'media-shorts') (archive || feature || filters)?.after(imported);
         }
 
-        async function applyResults() {
-            const url = filterUrl();
+        async function applyResults(nextHref, fromPager) {
+            const url = nextHref || filterUrl();
             const seq = ++filterSeq;
             const y = window.scrollY;
             try {
@@ -171,11 +171,19 @@
                 const nextUrl = new URL(url, location.href);
                 const same = nextUrl.pathname === location.pathname && nextUrl.search === location.search;
                 if (!same) history.pushState({ mediaLive: true }, '', nextUrl.pathname + nextUrl.search);
-                window.scrollTo(0, y);
+                if (fromPager) document.querySelector('.media-archive')?.scrollIntoView({ block: 'start' });
+                else window.scrollTo(0, y);
             } catch (error) {
                 if (seq === filterSeq) window.location.assign(url);
             }
         }
+
+        document.addEventListener('click', (event) => {
+            const link = event.target.closest('main.media-shell .ar-pager a[href]:not(.is-disabled)');
+            if (!link) return;
+            event.preventDefault();
+            applyResults(link.href, true);
+        });
 
         function scheduleResults() {
             window.clearTimeout(filterTimer);
