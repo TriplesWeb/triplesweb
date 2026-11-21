@@ -385,6 +385,7 @@ ${chemistryModals}
     assert.equal(pair.above, true, '케미명이 초상화 위에 없다');
     assert.ok(pair.fontSize > 0 && pair.fontSize <= 14, '케미명 글자가 크다: ' + pair.fontSize);
     assert.ok(pair.color.includes('141') || pair.color.includes('8decd9'), '케미명 색이 민트가 아니다: ' + pair.color);
+    await page.waitForURL((url) => url.searchParams.getAll('members').length > 0);
     const beforeUrl = page.url();
     await page.getByRole('link', { name: '심장마빈즈' }).click();
     await page.locator('#chemistryModal.flex').waitFor({ state: 'visible' });
