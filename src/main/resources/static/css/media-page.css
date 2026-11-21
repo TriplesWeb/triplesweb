@@ -109,29 +109,55 @@ body.media-page {
 }
 
 .media-page .media-toolbar .media-filter-tools {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    display: flex;
+    justify-content: center;
     align-items: center;
     width: 100%;
     gap: 0.75rem;
 }
 
 .media-page .media-filter-cluster,
-.media-page .media-filter-end {
+.media-page .media-filter-end,
+.media-page .media-filter-search {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    min-width: 0;
+    gap: 0.65rem;
+    flex: 0 0 auto;
 }
 
-.media-page .media-filter-cluster { justify-content: flex-start; }
-.media-page .media-filter-search { justify-self: center; }
-.media-page .media-filter-end { justify-content: flex-end; }
+.media-page .media-toolbar .ar-date-filter,
+.media-page .media-toolbar .ar-sort,
+.media-page .media-toolbar .ar-sort-control {
+    flex: 0 0 auto;
+    width: auto;
+    height: 2.1rem;
+    min-height: 2.1rem;
+    max-height: 2.1rem;
+}
 
+.media-page .media-toolbar .ar-date-toggle,
 .media-page .media-toolbar .ar-member-toggle {
     flex: 0 0 auto;
-    color: #e3e2e8;
+    width: auto;
+    height: 2.1rem;
+    min-height: 2.1rem;
+    max-height: 2.1rem;
+    padding: 0 1rem;
     white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.media-page .media-toolbar .ar-date-toggle {
+    min-width: 7.75rem;
+}
+
+.media-page .media-toolbar .ar-date-toggle > span {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.media-page .media-toolbar .ar-member-toggle {
+    color: #e3e2e8;
 }
 
 .media-page .media-toolbar .ar-member-toggle:hover,
@@ -142,6 +168,13 @@ body.media-page {
 
 .media-page .media-toolbar .ar-member-toggle [data-member-toggle-label] {
     min-width: auto;
+}
+
+.media-page .media-toolbar .ar-search-wrap,
+.media-page .media-toolbar .ar-search-wrap .ar-search {
+    height: 2.1rem;
+    min-height: 2.1rem;
+    max-height: 2.1rem;
 }
 
 .media-page .media-toolbar .ar-member-panel {
@@ -672,12 +705,7 @@ body.media-page {
 @media (max-width: 960px) {
     .media-shell { padding: 0 20px; }
     .media-intro__row { flex-wrap: wrap; }
-    .media-page .media-toolbar .media-filter-tools {
-        grid-template-columns: 1fr;
-        justify-items: center;
-    }
-    .media-page .media-filter-cluster,
-    .media-page .media-filter-end { justify-content: center; flex-wrap: wrap; }
+    .media-page .media-toolbar .media-filter-tools { flex-wrap: wrap; }
     .media-feature__layout,
     .media-grid,
     .media-shorts__grid { grid-template-columns: 1fr 1fr; }
