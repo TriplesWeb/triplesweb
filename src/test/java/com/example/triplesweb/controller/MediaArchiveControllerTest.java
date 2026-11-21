@@ -60,7 +60,8 @@ class MediaArchiveControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("@triplescosmos")))
                 .andExpect(content().string(containsString("페이지 1 / 2")))
-                .andExpect(content().string(containsString("쇼츠만 보기")))
+                .andExpect(content().string(containsString("더보기")))
+                .andExpect(content().string(containsString("Shorts &amp; 릴스")))
                 .andReturn().getResponse().getContentAsString();
         org.jsoup.nodes.Document document = Jsoup.parse(first);
         assertThat(document.select("article.media-card")).hasSize(24);
@@ -81,7 +82,8 @@ class MediaArchiveControllerTest {
     void shortsKindKeepsOnlyShortVideos() throws Exception {
         String html = mvc.perform(get("/media").param("kind", "shorts"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("전체 보기")))
+                .andExpect(content().string(not(containsString("YouTube Shorts"))))
+                .andExpect(content().string(not(containsString("짧게 만나는"))))
                 .andExpect(content().string(not(containsString("페이지 1 / 2"))))
                 .andReturn().getResponse().getContentAsString();
         org.jsoup.nodes.Document document = Jsoup.parse(html);
@@ -103,7 +105,9 @@ class MediaArchiveControllerTest {
                 .andReturn().getResponse().getContentAsString();
         org.jsoup.nodes.Document document = Jsoup.parse(html);
         assertThat(document.select(".media-playlist__item strong").eachText())
-                .containsExactly("ANDLESS Official MV", "andless live clip");
+                .containsExactly("Other Official MV");
+        assertThat(document.select(".media-feature__hero").attr("data-ytid"))
+                .isEqualTo(document.select(".media-playlist__item").attr("data-ytid"));
         assertThat(document.select(".media-archive .media-card__title").eachText())
                 .doesNotContain("ANDLESS teaser");
         assertThat(document.select(".media-short")).hasSize(1);

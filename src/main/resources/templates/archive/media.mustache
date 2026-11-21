@@ -34,6 +34,7 @@
             <a class="site-section-tab{{#isSIGNAL}} is-active{{/isSIGNAL}}" href="/media?tab=signal" {{#isSIGNAL}}aria-current="page"{{/isSIGNAL}}>SIGNAL</a>
             <a class="site-section-tab{{#isBehind}} is-active{{/isBehind}}" href="/media?tab=behind" {{#isBehind}}aria-current="page"{{/isBehind}}>비하인드</a>
             <a class="site-section-tab{{#isSecret}} is-active{{/isSecret}}" href="/media?tab=secret" {{#isSecret}}aria-current="page"{{/isSecret}}>시크릿베이스</a>
+            <a class="site-section-tab{{#isShorts}} is-active{{/isShorts}}" href="/media?tab=shorts" {{#isShorts}}aria-current="page"{{/isShorts}}>Shorts &amp; 릴스</a>
             <a class="site-section-tab{{#isContents}} is-active{{/isContents}}" href="/media?tab=contents" {{#isContents}}aria-current="page"{{/isContents}}>기타 콘텐츠</a>
         </nav>
 
@@ -102,10 +103,10 @@
                 <span class="media-feature__shade"></span>
                 <img class="media-feature__play" src="{{#asset}}/images/media/play-featured.svg{{/asset}}" width="60" height="60" alt="">
                 <span class="media-feature__caption">
-                    <strong>{{featured.title}}</strong>
+                    <strong id="mediaFeatureTitle">{{featured.title}}</strong>
                     <span class="media-feature__meta">
-                        <em>조회수 {{featured.viewCountFmt}}{{#featured.publishedLabel}} · {{featured.publishedLabel}}{{/featured.publishedLabel}}</em>
-                        {{#featured.duration}}<b>{{featured.duration}}</b>{{/featured.duration}}
+                        <em id="mediaFeatureMeta">조회수 {{featured.viewCountFmt}}{{#featured.publishedLabel}} · {{featured.publishedLabel}}{{/featured.publishedLabel}}</em>
+                        <b id="mediaFeatureDuration">{{featured.duration}}</b>
                     </span>
                 </span>
             </a>
@@ -131,9 +132,13 @@
                     {{#recommendations}}
                     <a class="media-playlist__item"
                        href="/media/{{tab}}/{{youtubeId}}"
-                       data-site-toggle="modal"
-                       data-site-target="#ytModal"
-                       data-ytid="{{youtubeId}}">
+                       data-ytid="{{youtubeId}}"
+                       data-tab="{{tab}}"
+                       data-kind="{{tabLabel}}"
+                       data-title="{{title}}"
+                       data-duration="{{duration}}"
+                       data-views="{{viewCountFmt}}"
+                       data-published="{{publishedLabel}}">
                         <span class="media-playlist__thumb">
                             <img src="https://img.youtube.com/vi/{{youtubeId}}/hqdefault.jpg" alt="">
                             {{#duration}}<em>{{duration}}</em>{{/duration}}
@@ -247,37 +252,78 @@
     {{/shortsOnly}}
 
     {{#hasShorts}}
-    <section class="media-shorts" aria-label="Shorts와 릴스">
+    <section class="media-shorts{{#shortsPreview}} is-preview{{/shortsPreview}}" aria-label="Shorts와 릴스">
         <div class="media-shorts__head">
             <h2>Shorts &amp; 릴스</h2>
-            <p>짧게 만나는 tripleS의 순간</p>
-            {{#shortsOnly}}
-            <a href="{{shortsAllHref}}">전체 보기</a>
-            {{/shortsOnly}}
-            {{^shortsOnly}}
-            <a href="{{shortsViewHref}}">쇼츠만 보기</a>
-            {{/shortsOnly}}
-            <a href="https://www.youtube.com/@triplescosmos/shorts" target="_blank" rel="noopener noreferrer">YouTube Shorts ↗</a>
+            <button type="button" class="media-short-add" data-admin-only data-short-add>쇼츠 추가</button>
         </div>
         <div class="media-shorts__grid">
             {{#shorts}}
-            <a class="media-short"
-               href="/media/{{tab}}/{{youtubeId}}"
-               data-site-toggle="modal"
-               data-site-target="#ytModal"
-               data-ytid="{{youtubeId}}">
-                <img class="media-short__still" src="https://img.youtube.com/vi/{{youtubeId}}/hqdefault.jpg" alt="">
-                <span class="media-short__badge">SHORTS</span>
-                <img class="media-short__play" src="{{#asset}}/images/media/play-short.svg{{/asset}}" width="46" height="46" alt="">
-                <span class="media-short__caption">
-                    <small>{{tabLabel}}</small>
-                    <strong>{{title}}</strong>
-                </span>
-            </a>
+            <article class="media-short">
+                <a class="media-short__open"
+                   href="/media/{{tab}}/{{youtubeId}}"
+                   data-site-toggle="modal"
+                   data-site-target="#ytModal"
+                   data-ytid="{{youtubeId}}"
+                   data-tab="{{tab}}"
+                   data-kind="{{tabLabel}}"
+                   data-title="{{title}}"
+                   data-duration="{{duration}}"
+                   data-views="{{viewCountFmt}}"
+                   data-published="{{publishedLabel}}">
+                    <img class="media-short__still" src="https://img.youtube.com/vi/{{youtubeId}}/hqdefault.jpg" alt="">
+                    <img class="media-short__play" src="{{#asset}}/images/media/play-short.svg{{/asset}}" width="46" height="46" alt="">
+                    <span class="media-short__caption">
+                        <small>{{tabLabel}}</small>
+                        <strong>{{title}}</strong>
+                    </span>
+                </a>
+                <div class="media-short__actions" data-admin-only>
+                    <button type="button" class="media-card__edit" data-media-edit
+                            data-ytid="{{youtubeId}}"
+                            data-tab="{{tab}}"
+                            data-kind="{{tabLabel}}"
+                            data-title="{{title}}"
+                            data-duration="{{duration}}"
+                            data-views="{{viewCountFmt}}"
+                            data-published="{{publishedLabel}}"
+                            aria-label="쇼츠 정보 수정">수정</button>
+                    <form method="post" action="/media_delete" data-admin-fetch data-confirm="이 쇼츠를 삭제하시겠습니까? 삭제하면 되돌릴 수 없습니다.">
+                        <input type="hidden" name="tab" value="{{tab}}">
+                        <input type="hidden" name="youtubeId" value="{{youtubeId}}">
+                        <button type="submit">삭제</button>
+                    </form>
+                </div>
+            </article>
             {{/shorts}}
         </div>
+        {{#shortsPreview}}
+        <div class="media-shorts__more">
+            <a href="{{shortsTabHref}}">더보기</a>
+        </div>
+        {{/shortsPreview}}
+        {{#shortsOnly}}
+        {{#hasMediaPager}}
+        <nav class="ar-panel ar-pager" aria-label="쇼츠 페이지">
+            <span class="ar-pager-summary">총 {{mediaTotal}}개 중 {{mediaPageCount}}개 표시 (페이지 {{mediaPageDisplay}} / {{mediaTotalPages}})</span>
+            <div class="ar-pager-controls">
+                {{#hasMediaPrev}}<a href="/media?page={{mediaPrevPage}}{{mediaQuery}}">이전</a>{{/hasMediaPrev}}
+                {{^hasMediaPrev}}<a class="is-disabled" aria-disabled="true">이전</a>{{/hasMediaPrev}}
+                <div class="ar-pages">
+                    {{#mediaPages}}<a class="{{#active}}is-current{{/active}}" href="/media?page={{num}}{{mediaQuery}}">{{num}}</a>{{/mediaPages}}
+                </div>
+                {{#hasMediaNext}}<a href="/media?page={{mediaNextPage}}{{mediaQuery}}">다음</a>{{/hasMediaNext}}
+                {{^hasMediaNext}}<a class="is-disabled" aria-disabled="true">다음</a>{{/hasMediaNext}}
+            </div>
+        </nav>
+        {{/hasMediaPager}}
+        {{/shortsOnly}}
     </section>
     {{/hasShorts}}
+    <div class="media-pickbar" id="mediaPickBar" hidden>
+        <p><span id="mediaPickCount">0</span>개 선택 중</p>
+        <button type="button" id="mediaPickConfirm">확인</button>
+    </div>
 </main>
 
 <div class="site-modal" id="ytModal" tabindex="-1" aria-hidden="true">
@@ -337,7 +383,7 @@
                 <textarea class="site-field" name="description" id="mediaEditDesc" rows="6" maxlength="60000"></textarea>
                 <div class="media-edit-members__head">
                     <p class="media-edit-label">참여 멤버</p>
-                    <button type="button" class="media-edit-all" id="mediaEditSelectAll">전체 선택</button>
+                    <button type="button" class="media-edit-all" id="mediaEditSelectAll" data-picker-all>전체 선택</button>
                 </div>
                 <div class="member-portrait-picker is-compact" id="media-edit-picker" role="group" aria-label="참여 멤버">
                     {{#editMemberOptions}}
@@ -352,6 +398,55 @@
                     {{/editMemberOptions}}
                 </div>
                 <div id="mediaEditMembers"></div>
+            </div>
+            <div class="site-modal-footer">
+                <button type="submit" class="media-player-edit">저장</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="site-modal" id="mediaAddModal" tabindex="-1" aria-hidden="true">
+    <div class="site-modal-dialog media-edit-dialog">
+        <form class="site-modal-panel" id="mediaAddForm" method="post" action="/media_new">
+            <div class="site-modal-header">
+                <h5 class="site-modal-title">쇼츠 추가</h5>
+                <button type="button" class="site-modal-close" data-site-dismiss="modal" aria-label="닫기">×</button>
+            </div>
+            <div class="site-modal-body media-edit-body">
+                <label class="media-edit-label" for="mediaAddTab">미디어 카테고리</label>
+                <select class="site-field site-select" name="tab" id="mediaAddTab">
+                    <option value="mv">MV</option>
+                    <option value="signal">SIGNAL</option>
+                    <option value="behind">비하인드</option>
+                    <option value="secret">시크릿베이스</option>
+                    <option value="contents" selected>기타 컨텐츠</option>
+                </select>
+                <label class="media-edit-label" for="mediaAddUrl">유튜브 URL 또는 ID</label>
+                <input class="site-field" name="youtubeId" id="mediaAddUrl" required placeholder="https://youtu.be/... 또는 영상 ID">
+                <label class="media-edit-label" for="mediaAddTitle">제목</label>
+                <input class="site-field" name="title" id="mediaAddTitle" placeholder="비워 두면 영상 정보로 채웁니다">
+                <label class="media-edit-label" for="mediaAddDate">영상이 올라온 날짜</label>
+                <input class="site-field" type="date" name="publishedOn" id="mediaAddDate" data-ar-cal lang="ko">
+                <label class="media-edit-label" for="mediaAddDesc">상세 설명</label>
+                <textarea class="site-field" name="description" id="mediaAddDesc" rows="4" maxlength="60000"></textarea>
+                <div class="media-edit-members__head">
+                    <p class="media-edit-label">참여 멤버</p>
+                    <button type="button" class="media-edit-all" data-picker-all>전체 선택</button>
+                </div>
+                <div class="member-portrait-picker is-compact" id="media-add-picker" role="group" aria-label="참여 멤버">
+                    {{#editMemberOptions}}
+                    <button type="button" class="mpp-item" data-value="{{value}}" data-name="{{label}}" data-frame="{{frame}}" style="--artist-color:{{color}}" aria-pressed="false" title="{{label}}">
+                        <span class="artist-tab-avatar">
+                            <img class="artist-tab-photo" src="{{image}}" referrerpolicy="no-referrer" alt="" loading="lazy">
+                            <img class="artist-tab-frame" src="" alt="" aria-hidden="true">
+                            <span class="artist-tab-shine" aria-hidden="true"></span>
+                        </span>
+                        <span class="artist-tab-label">{{label}}</span>
+                    </button>
+                    {{/editMemberOptions}}
+                </div>
+                <div id="mediaAddMembers"></div>
             </div>
             <div class="site-modal-footer">
                 <button type="submit" class="media-player-edit">저장</button>

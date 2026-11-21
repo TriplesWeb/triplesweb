@@ -284,29 +284,15 @@
         localStorage.setItem(PLAYLIST_KEY, JSON.stringify(items.slice(0, 50)));
     }
 
-    function itemFrom(button) {
-        return {
-            youtubeId: button.dataset.ytid || '',
-            tab: button.dataset.tab || 'mv',
-            tabLabel: button.dataset.kind || '',
-            title: button.dataset.title || '',
-            duration: button.dataset.duration || '',
-            viewCountFmt: button.dataset.views || '',
-            publishedLabel: button.dataset.published || ''
-        };
-    }
-
     function paintAddButtons(items) {
         const ids = new Set(items.map((item) => item.youtubeId));
         document.querySelectorAll('[data-playlist-add]').forEach((button) => {
             const added = ids.has(button.dataset.ytid || '');
             button.classList.toggle('is-added', added);
             button.setAttribute('aria-pressed', added ? 'true' : 'false');
-            const labeled = button.classList.contains('media-playlist-add--head');
-            if (labeled) {
-                button.textContent = added ? '재생목록에서 빼기' : '재생목록 추가';
+            if (!button.classList.contains('media-playlist-add--head')) {
+                button.setAttribute('aria-label', added ? '재생목록에서 빼기' : '재생목록 추가');
             }
-            button.setAttribute('aria-label', added ? '재생목록에서 빼기' : '재생목록 추가');
         });
     }
 
@@ -316,9 +302,13 @@
         const link = document.createElement('a');
         link.className = 'media-playlist__item';
         link.href = '/media/' + encodeURIComponent(item.tab || 'mv') + '/' + encodeURIComponent(item.youtubeId);
-        link.dataset.siteToggle = 'modal';
-        link.dataset.siteTarget = '#ytModal';
         link.dataset.ytid = item.youtubeId;
+        link.dataset.tab = item.tab || 'mv';
+        link.dataset.kind = item.tabLabel || '';
+        link.dataset.title = item.title || '';
+        link.dataset.duration = item.duration || '';
+        link.dataset.views = item.viewCountFmt || '';
+        link.dataset.published = item.publishedLabel || '';
         const thumb = document.createElement('span');
         thumb.className = 'media-playlist__thumb';
         const image = document.createElement('img');
@@ -361,22 +351,13 @@
             playlistList.innerHTML = originalPlaylist;
             if (playlistTitle) playlistTitle.textContent = originalTitle;
             if (playlistCount) playlistCount.textContent = originalCount;
+            focusPlaylist();
             return;
         }
         if (playlistTitle) playlistTitle.textContent = '재생목록';
         if (playlistCount) playlistCount.textContent = String(items.length).padStart(2, '0');
         playlistList.replaceChildren(...items.map(playlistRow));
-    }
-
-    function togglePlaylist(button) {
-        const item = itemFrom(button);
-        if (!item.youtubeId) return;
-        const items = readPlaylist();
-        const index = items.findIndex((row) => row.youtubeId === item.youtubeId);
-        if (index >= 0) items.splice(index, 1);
-        else items.unshift(item); // 먼저 담은 영상이 목록 아래에 남고, 이후 영상은 위에 쌓인다.
-        writePlaylist(items);
-        renderPlaylist();
+        focusPlaylist();
     }
 
     function removePlaylist(id) {
@@ -464,6 +445,24 @@
         MemberPortraitPicker.bindMultiSelect(editPicker, { multi: true, onChange: syncEditMembers });
     }
 
+    const addPicker = document.getElementById('media-add-picker');
+    function syncAddMembers() {
+        const box = document.getElementById('mediaAddMembers');
+        if (!box || !window.MemberPortraitPicker || !addPicker) return;
+        box.replaceChildren();
+        MemberPortraitPicker.selectedValues(addPicker).forEach((name) => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'artistNames';
+            input.value = name;
+            box.appendChild(input);
+        });
+    }
+    if (window.MemberPortraitPicker && addPicker) {
+        MemberPortraitPicker.bindMultiSelect(addPicker, { multi: true, onChange: syncAddMembers });
+    }
+    document.getElementById('mediaAddForm')?.addEventListener('submit', () => syncAddMembers());
+
     function videoFrom(trigger) {
         const id = trigger?.getAttribute('data-ytid') || '';
         return byId.get(id) || {
@@ -502,14 +501,70 @@
         showModal(editModal);
     }
 
-    document.getElementById('mediaEditSelectAll')?.addEventListener('click', () => {
-        if (!editPicker || !window.MemberPortraitPicker) return;
-        const names = [...editPicker.querySelectorAll('.mpp-item')]
-            .map((button) => button.dataset.value || button.dataset.name || '')
-            .filter(Boolean);
-        MemberPortraitPicker.setValues(editPicker, names);
-        syncEditMembers();
-    });
+    function applyHero(item) {
+        const hero = document.querySelector('.media-feature__hero');
+        if (!hero || !item || !item.youtubeId) return;
+        const tab = item.tab || 'mv';
+        hero.href = '/media/' + encodeURIComponent(tab) + '/' + encodeURIComponent(item.youtubeId);
+        hero.dataset.ytid = item.youtubeId;
+        const still = hero.querySelector('.media-feature__still');
+        if (still) {
+            still.dataset.ytStill = item.youtubeId;
+            still.src = 'https://i.ytimg.com/vi/' + encodeURIComponent(item.youtubeId) + '/maxresdefault.jpg';
+        }
+        const title = document.getElementById('mediaFeatureTitle');
+        if (title) title.textContent = item.title || '';
+        const meta = document.getElementById('mediaFeatureMeta');
+        if (meta) {
+            const bits = [];
+            if (item.viewCountFmt) bits.push('조회수 ' + item.viewCountFmt);
+            if (item.publishedLabel) bits.push(item.publishedLabel);
+            meta.textContent = bits.join(' · ');
+        }
+        const duration = document.getElementById('mediaFeatureDuration');
+        if (duration) duration.textContent = item.duration || '';
+    }
+
+    function focusPlaylist() {
+        const current = document.querySelector('#mediaPlaylistList .media-playlist__item.is-current')
+            || document.querySelector('#mediaPlaylistList .media-playlist__item');
+        if (!current) return;
+        document.querySelectorAll('#mediaPlaylistList .media-playlist__item').forEach((item) => {
+            item.classList.toggle('is-current', item === current);
+        });
+        applyHero(videoFrom(current));
+    }
+
+    let picking = false;
+    function pickTargets() {
+        return [...document.querySelectorAll('.media-card.is-picked, .media-short.is-picked, .media-suggest__card.is-picked, .media-feature__hero.is-picked')];
+    }
+    function paintPickBar() {
+        const bar = document.getElementById('mediaPickBar');
+        const count = document.getElementById('mediaPickCount');
+        const total = pickTargets().length;
+        if (count) count.textContent = String(total);
+        if (bar) bar.hidden = !picking || total === 0;
+        document.querySelector('.media-playlist-add--head')?.setAttribute('aria-pressed', picking ? 'true' : 'false');
+    }
+    function setPicking(on) {
+        picking = on;
+        document.body.classList.toggle('is-media-picking', on);
+        if (!on) document.querySelectorAll('.is-picked').forEach((node) => node.classList.remove('is-picked'));
+        paintPickBar();
+    }
+    function confirmPicks() {
+        const items = readPlaylist();
+        pickTargets().forEach((node) => {
+            const source = node.matches('[data-ytid]') ? node : node.querySelector('[data-ytid]');
+            const item = videoFrom(source);
+            if (!item.youtubeId || items.some((row) => row.youtubeId === item.youtubeId)) return;
+            items.unshift(item);
+        });
+        writePlaylist(items);
+        setPicking(false);
+        renderPlaylist();
+    }
 
     document.getElementById('ytModalEdit')?.addEventListener('click', () => {
         if (!currentVideo) return;
@@ -517,6 +572,16 @@
     });
 
     document.addEventListener('click', (event) => {
+        if (event.target.closest('#mediaPickConfirm')) {
+            event.preventDefault();
+            confirmPicks();
+            return;
+        }
+        if (event.target.closest('[data-short-add]')) {
+            event.preventDefault();
+            showModal(document.getElementById('mediaAddModal'));
+            return;
+        }
         const remove = event.target.closest('[data-playlist-remove]');
         if (remove) {
             event.preventDefault();
@@ -535,8 +600,22 @@
         if (add) {
             event.preventDefault();
             event.stopPropagation();
-            togglePlaylist(add);
-            openVideo(add);
+            setPicking(!picking);
+            return;
+        }
+        const playlistItem = event.target.closest('#mediaPlaylistList .media-playlist__item');
+        if (playlistItem) {
+            event.preventDefault();
+            if (!picking) focusPlaylistItem(playlistItem);
+            return;
+        }
+        if (picking) {
+            const target = event.target.closest('.media-card, .media-short, .media-suggest__card, .media-feature__hero');
+            if (!target) return;
+            event.preventDefault();
+            event.stopPropagation();
+            target.classList.toggle('is-picked');
+            paintPickBar();
             return;
         }
         const card = event.target.closest('[data-site-target="#ytModal"][data-ytid]');
@@ -544,6 +623,13 @@
         event.preventDefault();
         openVideo(card);
     });
+
+    function focusPlaylistItem(link) {
+        document.querySelectorAll('#mediaPlaylistList .media-playlist__item').forEach((item) => {
+            item.classList.toggle('is-current', item === link);
+        });
+        applyHero(videoFrom(link));
+    }
 
     ytModal?.addEventListener('site-modal:hidden', () => {
         if (ytPlayer) ytPlayer.src = '';

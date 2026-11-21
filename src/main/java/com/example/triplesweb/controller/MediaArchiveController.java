@@ -45,7 +45,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class MediaArchiveController {
     private static final int PAGE_SIZE = 24;
-    private static final int SHORTS_LIMIT = 12;
+    private static final int SHORTS_PREVIEW = 8;
 
     private final MediaService media;
     private final MediaViewCountService mediaViewCounts;
@@ -71,8 +71,9 @@ public class MediaArchiveController {
         mediaViewCounts.refreshIfDue();
         tab = normalizeTab(tab);
         boolean all = "all".equals(tab);
+        boolean shortsTab = "shorts".equals(tab);
         String sortKey = normalizeSort(sort);
-        boolean shortsOnly = "shorts".equalsIgnoreCase(kind);
+        boolean shortsOnly = shortsTab || "shorts".equalsIgnoreCase(kind);
 
         model.addAttribute("isAdmin", aboutAdminAuth.isAdmin(request, session));
         model.addAttribute("currentTab", tab);
@@ -81,6 +82,7 @@ public class MediaArchiveController {
         model.addAttribute("isSIGNAL", "signal".equals(tab));
         model.addAttribute("isBehind", "behind".equals(tab));
         model.addAttribute("isSecret", "secret".equals(tab));
+        model.addAttribute("isShorts", shortsTab);
         model.addAttribute("isContents", "contents".equals(tab));
         model.addAttribute("sort", sortKey);
         model.addAttribute("sortOptions", sortOptions(sortKey));
@@ -101,7 +103,7 @@ public class MediaArchiveController {
         String query = q == null ? "" : q.trim();
         boolean dateFiltered = rangeStart != null || rangeEnd != null;
         List<Artist> artists = artistRepository.findAll();
-        List<MediaDto> filtered = new ArrayList<>(all ? media.listAll() : media.allByTab(tab));
+        List<MediaDto> filtered = new ArrayList<>((all || shortsTab) ? media.listAll() : media.allByTab(tab));
         if (memberFiltered) {
             filtered.removeIf(v -> !matchesMembers(v.getArtistNames(), selectedMembers));
         }
@@ -123,17 +125,20 @@ public class MediaArchiveController {
         MediaOrdering.sort(latestLong, "latest");
         List<MediaDto> latestShorts = new ArrayList<>(shortForm);
         MediaOrdering.sort(latestShorts, "latest");
-        MediaDto featured = shortsOnly || latestLong.isEmpty() ? null : latestLong.get(0);
-        List<MediaDto> recommendations = shortsOnly ? List.of() : andlessMusicVideos(longForm);
-        List<MediaDto> archive = shortsOnly ? List.of() : longForm;
-        List<MediaDto> suggestions = suggestions(archive, featured, recommendations, 4);
-        List<MediaDto> shorts = latestShorts.stream().limit(SHORTS_LIMIT).toList();
+        MediaDto latestMv = latestMusicVideo(longForm);
+        boolean seedPlaylist = !shortsOnly && latestMv != null && (all || "mv".equals(tab));
+        MediaDto featured = shortsOnly ? null : (seedPlaylist ? latestMv : (latestLong.isEmpty() ? null : latestLong.get(0)));
+        List<MediaDto> recommendations = seedPlaylist ? List.of(latestMv) : List.of();
+        List<MediaDto> archive = shortsOnly ? shortForm : longForm;
+        List<MediaDto> suggestions = shortsOnly ? List.of() : suggestions(longForm, featured, recommendations, 4);
         int total = archive.size();
         int totalPages = Math.max(1, (int) Math.ceil(total / (double) PAGE_SIZE));
         int current = Math.min(totalPages, Math.max(1, page));
         int fromIdx = total == 0 ? 0 : (current - 1) * PAGE_SIZE;
         int toIdx = Math.min(fromIdx + PAGE_SIZE, total);
-        List<MediaDto> videos = total == 0 ? List.of() : archive.subList(fromIdx, toIdx);
+        List<MediaDto> pageItems = total == 0 ? List.of() : archive.subList(fromIdx, toIdx);
+        List<MediaDto> videos = shortsOnly ? List.of() : pageItems;
+        List<MediaDto> shorts = shortsOnly ? pageItems : latestShorts.stream().limit(SHORTS_PREVIEW).toList();
         model.addAttribute("featured", featured);
         model.addAttribute("hasFeatured", featured != null);
         model.addAttribute("recommendations", recommendations);
@@ -143,12 +148,12 @@ public class MediaArchiveController {
         model.addAttribute("hasSuggestions", !suggestions.isEmpty());
         model.addAttribute("shorts", shorts);
         model.addAttribute("hasShorts", !shorts.isEmpty());
+        model.addAttribute("shortsPreview", !shortsOnly && !latestShorts.isEmpty());
         model.addAttribute("mediaCatalogJson", catalogJson(visibleCatalog(featured, recommendations, suggestions, shorts, videos)));
-        bindPager(model, total, videos.size(), current, totalPages);
-        String filterQuery = mediaQuery(tab, sortKey, query, selectedMembers, rangeStart, rangeEnd, shortsOnly);
+        bindPager(model, total, shortsOnly ? shorts.size() : videos.size(), current, totalPages);
+        String filterQuery = mediaQuery(tab, sortKey, query, selectedMembers, rangeStart, rangeEnd, shortsOnly && !shortsTab);
         model.addAttribute("mediaQuery", filterQuery);
-        model.addAttribute("shortsViewHref", "/media?kind=shorts" + mediaQuery(tab, sortKey, query, selectedMembers, rangeStart, rangeEnd, false));
-        model.addAttribute("shortsAllHref", "/media?" + mediaQuery(tab, sortKey, query, selectedMembers, rangeStart, rangeEnd, false).replaceFirst("^&", ""));
+        model.addAttribute("shortsTabHref", "/media?tab=shorts" + mediaQuery("", sortKey, query, selectedMembers, rangeStart, rangeEnd, false));
 
         String fromText = rangeStart == null ? "" : rangeStart.toString();
         String toText = rangeEnd == null ? "" : rangeEnd.toString();
@@ -374,18 +379,16 @@ public class MediaArchiveController {
         return selected.size() + "명";
     }
 
-    /** 재생목록 초기 화면은 ANDLESS 뮤직비디오만 담는다. */
-    private static List<MediaDto> andlessMusicVideos(List<MediaDto> videos) {
+    /** 초기 재생목록에 넣을 최신 MV 한 편. */
+    private static MediaDto latestMusicVideo(List<MediaDto> videos) {
         List<MediaDto> found = new ArrayList<>();
         for (MediaDto video : videos) {
             if (video == null || MediaOrdering.isShort(video.getDuration())) continue;
             if (!"mv".equalsIgnoreCase(video.getTab())) continue;
-            String title = video.getTitle() == null ? "" : video.getTitle().toLowerCase(Locale.ROOT);
-            if (!title.contains("andless")) continue;
             found.add(video);
         }
         MediaOrdering.sort(found, "latest");
-        return found;
+        return found.isEmpty() ? null : found.get(0);
     }
 
     /** 대표 영상과 멤버·분류가 겹치는 영상을 우선해 아카이브 위에 네 개까지 고른다. */
@@ -607,7 +610,7 @@ public class MediaArchiveController {
 
     private String normalizeTab(String tab) {
         return switch (tab.toLowerCase()) {
-            case "all", "mv", "signal", "behind", "secret", "contents" -> tab.toLowerCase();
+            case "all", "mv", "signal", "behind", "secret", "shorts", "contents" -> tab.toLowerCase();
             default -> "mv";
         };
     }

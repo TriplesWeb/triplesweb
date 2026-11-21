@@ -466,7 +466,7 @@ body.media-page {
     font-style: normal;
 }
 
-.media-card__meta { font-size: 12px; }
+.media-card__meta { font-size: 12px; font-weight: 700; }
 
 .media-grid {
     display: grid;
@@ -633,6 +633,13 @@ body.media-page {
     border: 1px solid #29313a;
     border-radius: 12px;
     color: inherit;
+}
+
+.media-short__open {
+    position: relative;
+    display: block;
+    height: 100%;
+    color: inherit;
     text-decoration: none;
 }
 
@@ -655,19 +662,6 @@ body.media-page {
     width: 100%;
     height: 100%;
     object-fit: cover;
-}
-
-.media-short__badge {
-    position: absolute;
-    top: 15px;
-    left: 15px;
-    padding: 4px 8px;
-    border-radius: 5px;
-    background: #0d1419;
-    color: #d2e7e3;
-    font-size: 10px;
-    font-weight: 700;
-    line-height: 1.5;
 }
 
 .media-short__play {
@@ -701,6 +695,58 @@ body.media-page {
     color: #f4f5f7;
     font-size: 14px;
     font-weight: 700;
+}
+
+.media-short-add {
+    margin-left: auto;
+    padding: 0.32rem 0.75rem;
+    border: 1px solid rgba(0, 245, 212, 0.45);
+    border-radius: 999px;
+    background: rgba(0, 245, 212, 0.08);
+    color: #00f5d4;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.media-short__actions {
+    position: absolute;
+    right: 12px;
+    bottom: 14px;
+    z-index: 2;
+    display: none;
+    align-items: center;
+    gap: 6px;
+}
+
+.media-short__actions form { margin: 0; }
+
+.media-short__actions form button {
+    padding: 4px 10px;
+    border: 1px solid rgba(248, 113, 113, 0.45);
+    border-radius: 999px;
+    background: rgba(13, 16, 20, 0.72);
+    color: #fca5a5;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+body.site-admin-enabled .media-short__caption { padding-right: 7.5rem; }
+
+.media-shorts.is-preview .media-short:nth-child(n + 9) { display: none; }
+
+.media-shorts__more {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+
+.media-shorts__more a {
+    color: #00f5d4;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
 }
 
 .media-page .site-footer {
@@ -772,6 +818,7 @@ body.media-page {
     .media-feature__layout,
     .media-grid,
     .media-shorts__grid { grid-template-columns: 1fr 1fr; }
+    .media-shorts.is-preview .media-short:nth-child(n + 5) { display: none; }
     .media-shorts { margin: 0 -20px; padding: 28px 20px 40px; }
     .media-short { height: auto; aspect-ratio: 9 / 16; }
     .media-page .site-footer { flex-wrap: wrap; padding: 24px 20px; }
@@ -783,6 +830,7 @@ body.media-page {
     .media-feature__layout,
     .media-grid,
     .media-shorts__grid { grid-template-columns: 1fr; }
+    .media-shorts.is-preview .media-short:nth-child(n + 3) { display: none; }
     .media-suggest { grid-template-columns: 1fr 1fr; }
 }
 
@@ -817,7 +865,60 @@ body.media-page {
     white-space: nowrap;
 }
 
-.media-playlist.is-managing .media-playlist-add--head { display: none; }
+.media-playlist__item.is-current {
+    background: rgba(0, 245, 212, 0.1);
+    outline: 1px solid rgba(0, 245, 212, 0.45);
+}
+
+.media-pickbar {
+    position: fixed;
+    left: 50%;
+    bottom: 1.4rem;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    transform: translateX(-50%);
+    padding: 0.55rem 0.7rem 0.55rem 1rem;
+    border: 1px solid rgba(0, 245, 212, 0.4);
+    border-radius: 999px;
+    background: rgba(13, 16, 20, 0.94);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.media-pickbar[hidden] { display: none; }
+
+.media-pickbar p {
+    margin: 0;
+    color: #f4f5f7;
+    font-size: 0.86rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.media-pickbar button {
+    padding: 0.35rem 0.85rem;
+    border: 0;
+    border-radius: 999px;
+    background: #00f5d4;
+    color: #0d0e12;
+    font-size: 0.82rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.is-media-picking .media-card,
+.is-media-picking .media-short,
+.is-media-picking .media-suggest__card,
+.is-media-picking .media-feature__hero { cursor: pointer; }
+
+.media-card.is-picked,
+.media-short.is-picked,
+.media-suggest__card.is-picked,
+.media-feature__hero.is-picked {
+    outline: 2px solid #00f5d4;
+    outline-offset: 2px;
+}
 
 .media-suggest {
     display: grid;
