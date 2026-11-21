@@ -105,30 +105,9 @@ body.media-page {
     padding-bottom: 28px;
 }
 
-.media-tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.media-tabs a {
-    display: inline-flex;
-    align-items: center;
-    padding: 10px 21px;
-    border: 1px solid #2c3038;
-    border-radius: 24px;
-    background: #16191f;
-    color: #f4f5f7;
-    font-size: 14px;
-    font-weight: 700;
-    line-height: 1.5;
-    text-decoration: none;
-}
-
-.media-tabs a.is-active {
-    border-color: transparent;
-    background: #00dfc5;
-    color: #0c1014;
+.media-page .media-tabs {
+    width: 100%;
+    border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 
 .media-filterbar {
@@ -383,9 +362,29 @@ body.media-page {
     flex-direction: column;
     gap: 16px;
     min-width: 0;
+    min-height: 0;
+    max-height: 32rem;
     padding: 20px;
+    overflow: hidden;
     border-radius: 16px;
     background: #16191f;
+}
+
+.media-playlist__list {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+@media (min-width: 961px) {
+    .media-playlist {
+        height: 0;
+        min-height: 100%;
+        max-height: none;
+    }
 }
 
 .media-playlist__head {
@@ -477,16 +476,6 @@ body.media-page {
 }
 
 .media-card__meta { font-size: 12px; }
-
-.media-playlist__more {
-    margin-top: auto;
-    padding-top: 8px;
-    color: #a4acb5;
-    font-size: 12px;
-    line-height: 1.5;
-    text-align: center;
-    text-decoration: none;
-}
 
 .media-grid {
     display: grid;
@@ -589,34 +578,6 @@ body.media-page {
     padding: 80px 0;
     color: #a4acb5;
     text-align: center;
-}
-
-.media-pages {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin: 8px 0 0;
-    padding: 0;
-    list-style: none;
-}
-
-.media-pages a {
-    display: inline-flex;
-    min-width: 2.4rem;
-    justify-content: center;
-    padding: 8px 16px;
-    border: 1px solid #2c3038;
-    border-radius: 8px;
-    color: #a4acb5;
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1.5;
-    text-decoration: none;
-}
-
-.media-pages .is-active a {
-    border-color: #00dfc5;
-    color: #00dfc5;
 }
 
 .media-shorts {

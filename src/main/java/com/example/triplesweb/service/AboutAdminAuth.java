@@ -100,16 +100,26 @@ public class AboutAdminAuth {
     }
 
     boolean passwordMatches(String rawPassword) {
-        if (!StringUtils.hasText(rawPassword) || !StringUtils.hasText(adminPassword)) {
+        String stored = normalizeAdminSecret(adminPassword);
+        if (!StringUtils.hasText(rawPassword) || !StringUtils.hasText(stored)) {
             return false;
         }
-        if (isBcryptHash(adminPassword)) {
-            return passwordEncoder.matches(rawPassword, adminPassword);
+        if (isBcryptHash(stored)) {
+            return passwordEncoder.matches(rawPassword, stored);
         }
         // 전환용: 평문 .env는 상수시간 비교. 운영은 BCrypt 해시로 교체한다.
-        byte[] expected = adminPassword.getBytes(StandardCharsets.UTF_8);
+        byte[] expected = stored.getBytes(StandardCharsets.UTF_8);
         byte[] actual = rawPassword.getBytes(StandardCharsets.UTF_8);
         return MessageDigest.isEqual(expected, actual);
+    }
+
+    /** Docker Compose .env의 $$ 이스케이프를 BCrypt 해시로 되돌린다. 평문은 바꾸지 않는다. */
+    static String normalizeAdminSecret(String value) {
+        if (value == null) return "";
+        if (value.startsWith("$$2a$$") || value.startsWith("$$2b$$") || value.startsWith("$$2y$$")) {
+            return value.replace("$$", "$");
+        }
+        return value;
     }
 
     static boolean isBcryptHash(String value) {

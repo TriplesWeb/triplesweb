@@ -40,8 +40,6 @@ public class MediaArchiveController {
 
     @GetMapping("/media")
     public String mediaPage(@RequestParam(name = "tab", defaultValue = "all") String tab,
-                            @RequestParam(defaultValue = "1") int page,
-                            @RequestParam(defaultValue = "6") int size,
                             @RequestParam(name = "sort", defaultValue = "latest") String sort,
                             @RequestParam(required = false) String artist,
                             @RequestParam(required = false) String from,
@@ -50,8 +48,6 @@ public class MediaArchiveController {
                             HttpSession session,
                             Model model) {
         tab = normalizeTab(tab);
-        page = Math.max(1, page);
-        size = Math.min(Math.max(1, size), 100);
         boolean all = "all".equals(tab);
         boolean popular = "popular".equalsIgnoreCase(sort);
 
@@ -95,13 +91,11 @@ public class MediaArchiveController {
                     Comparator.nullsLast(Comparator.reverseOrder())));
         }
         int total = filtered.size();
-        int startIndex = Math.min((page - 1) * size, total);
-        int endIndex = Math.min(startIndex + size, total);
-        List<MediaDto> videos = new ArrayList<>(filtered.subList(startIndex, endIndex));
+        List<MediaDto> videos = filtered;
         MediaDto featured = filtered.isEmpty() ? null : filtered.get(0);
         List<MediaDto> recommendations = filtered.size() <= 1
                 ? List.of()
-                : new ArrayList<>(filtered.subList(1, Math.min(4, filtered.size())));
+                : filtered.subList(1, filtered.size());
         List<MediaDto> shorts = filtered.stream().filter(MediaArchiveController::isShort).limit(4).toList();
         model.addAttribute("featured", featured);
         model.addAttribute("hasFeatured", featured != null);
@@ -121,28 +115,10 @@ public class MediaArchiveController {
         String dates = dateQuery(fromText, toText);
         model.addAttribute("dateQuery", dates);
         model.addAttribute("filterQuery", filterQuery(artist, dates));
-        model.addAttribute("listQuery", filterQuery(artist, dates) + (popular ? "&sort=popular" : ""));
         model.addAttribute("selectedArtist", artist == null ? "" : artist);
-        int totalPages = (int) Math.ceil(total / (double) size);
         model.addAttribute("videos", videos);
         model.addAttribute("hasVideos", total > 0);
         model.addAttribute("total", total);
-        model.addAttribute("page", page);
-        model.addAttribute("totalPages", Math.max(totalPages, 1));
-        boolean hasPrev = page > 1;
-        boolean hasNext = page < totalPages;
-        model.addAttribute("hasPrev", hasPrev);
-        model.addAttribute("hasNext", hasNext);
-        model.addAttribute("prevPage", hasPrev ? page - 1 : 1);
-        model.addAttribute("nextPage", hasNext ? page + 1 : totalPages);
-
-        List<Map<String, Object>> pages = new ArrayList<>();
-        int start = Math.max(1, page - 3);
-        int end = Math.min(Math.max(totalPages, 1), start + 6);
-        for (int i = start; i <= end; i++) {
-            pages.add(Map.of("num", i, "active", i == page));
-        }
-        model.addAttribute("pages", pages);
         return "archive/media";
     }
 

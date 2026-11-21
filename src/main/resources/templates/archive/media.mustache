@@ -25,13 +25,13 @@
     </header>
 
     <section class="media-filters" aria-label="미디어 분류">
-        <nav class="media-tabs" aria-label="미디어 카테고리">
-            <a class="{{#isAll}}is-active{{/isAll}}" href="/media?tab=all">전체</a>
-            <a class="{{#isMV}}is-active{{/isMV}}" href="/media?tab=mv">MV</a>
-            <a class="{{#isSIGNAL}}is-active{{/isSIGNAL}}" href="/media?tab=signal">SIGNAL</a>
-            <a class="{{#isBehind}}is-active{{/isBehind}}" href="/media?tab=behind">비하인드</a>
-            <a class="{{#isSecret}}is-active{{/isSecret}}" href="/media?tab=secret">시크릿베이스</a>
-            <a class="{{#isContents}}is-active{{/isContents}}" href="/media?tab=contents">기타 콘텐츠</a>
+        <nav class="site-section-tabs media-tabs" aria-label="미디어 카테고리">
+            <a class="site-section-tab{{#isAll}} is-active{{/isAll}}" href="/media?tab=all" {{#isAll}}aria-current="page"{{/isAll}}>전체</a>
+            <a class="site-section-tab{{#isMV}} is-active{{/isMV}}" href="/media?tab=mv" {{#isMV}}aria-current="page"{{/isMV}}>MV</a>
+            <a class="site-section-tab{{#isSIGNAL}} is-active{{/isSIGNAL}}" href="/media?tab=signal" {{#isSIGNAL}}aria-current="page"{{/isSIGNAL}}>SIGNAL</a>
+            <a class="site-section-tab{{#isBehind}} is-active{{/isBehind}}" href="/media?tab=behind" {{#isBehind}}aria-current="page"{{/isBehind}}>비하인드</a>
+            <a class="site-section-tab{{#isSecret}} is-active{{/isSecret}}" href="/media?tab=secret" {{#isSecret}}aria-current="page"{{/isSecret}}>시크릿베이스</a>
+            <a class="site-section-tab{{#isContents}} is-active{{/isContents}}" href="/media?tab=contents" {{#isContents}}aria-current="page"{{/isContents}}>기타 콘텐츠</a>
         </nav>
 
         <form class="media-filterbar" method="get" action="/media">
@@ -89,24 +89,25 @@
                     <h3>추천 재생목록</h3>
                     <span>{{recommendationCount}}</span>
                 </div>
-                {{#recommendations}}
-                <a class="media-playlist__item"
-                   href="/media/{{tab}}/{{youtubeId}}"
-                   data-site-toggle="modal"
-                   data-site-target="#ytModal"
-                   data-ytid="{{youtubeId}}">
-                    <span class="media-playlist__thumb">
-                        <img src="https://img.youtube.com/vi/{{youtubeId}}/hqdefault.jpg" alt="">
-                        {{#duration}}<em>{{duration}}</em>{{/duration}}
-                    </span>
-                    <span class="media-playlist__copy">
-                        <small>{{tabLabel}}</small>
-                        <strong>{{title}}</strong>
-                        <em>조회수 {{viewCountFmt}}</em>
-                    </span>
-                </a>
-                {{/recommendations}}
-                <a class="media-playlist__more" href="https://www.youtube.com/@tripleS_official" target="_blank" rel="noopener noreferrer">YouTube에서 더 보기 ↗</a>
+                <div class="media-playlist__list">
+                    {{#recommendations}}
+                    <a class="media-playlist__item"
+                       href="/media/{{tab}}/{{youtubeId}}"
+                       data-site-toggle="modal"
+                       data-site-target="#ytModal"
+                       data-ytid="{{youtubeId}}">
+                        <span class="media-playlist__thumb">
+                            <img src="https://img.youtube.com/vi/{{youtubeId}}/hqdefault.jpg" alt="">
+                            {{#duration}}<em>{{duration}}</em>{{/duration}}
+                        </span>
+                        <span class="media-playlist__copy">
+                            <small>{{tabLabel}}</small>
+                            <strong>{{title}}</strong>
+                            <em>조회수 {{viewCountFmt}}</em>
+                        </span>
+                    </a>
+                    {{/recommendations}}
+                </div>
             </aside>
             {{/hasRecommendations}}
         </div>
@@ -151,22 +152,6 @@
             <p>등록된 영상이 없습니다.</p>
         </div>
         {{/videos}}
-
-        {{#hasVideos}}
-        <nav aria-label="미디어 페이지">
-            <ul class="media-pages">
-                {{#hasPrev}}
-                <li><a href="/media?tab={{currentTab}}&amp;page={{prevPage}}{{listQuery}}">&laquo;</a></li>
-                {{/hasPrev}}
-                {{#pages}}
-                <li class="{{#active}}is-active{{/active}}"><a href="/media?tab={{currentTab}}&amp;page={{num}}{{listQuery}}">{{num}}</a></li>
-                {{/pages}}
-                {{#hasNext}}
-                <li><a href="/media?tab={{currentTab}}&amp;page={{nextPage}}{{listQuery}}">&raquo;</a></li>
-                {{/hasNext}}
-            </ul>
-        </nav>
-        {{/hasVideos}}
     </section>
 
     {{#hasShorts}}

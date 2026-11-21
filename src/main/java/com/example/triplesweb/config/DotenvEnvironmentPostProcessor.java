@@ -98,7 +98,7 @@ public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor,
                     }
                 }
             }
-            values.put(key, value);
+            values.put(key, value.replace("$$", "$"));
         }
         return values;
     }
