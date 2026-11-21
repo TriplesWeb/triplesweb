@@ -705,7 +705,28 @@ body.media-page {
 @media (max-width: 960px) {
     .media-shell { padding: 0 20px; }
     .media-intro__row { flex-wrap: wrap; }
-    .media-page .media-toolbar .media-filter-tools { flex-wrap: wrap; }
+    .media-page .media-toolbar .media-filter-tools,
+    .media-page .media-filter-cluster,
+    .media-page .media-filter-search,
+    .media-page .media-filter-end {
+        flex-wrap: wrap;
+        justify-content: center;
+        max-width: 100%;
+        min-width: 0;
+    }
+    .media-page .media-filter-cluster,
+    .media-page .media-filter-search,
+    .media-page .media-filter-end {
+        flex: 1 1 100%;
+    }
+    .media-page .media-toolbar .ar-sort,
+    .media-page .media-toolbar .ar-sort-control,
+    .media-page .media-toolbar .ar-date-filter,
+    .media-page .media-toolbar .ar-date-toggle,
+    .media-page .media-toolbar .ar-member-toggle,
+    .media-page .media-toolbar .ar-search-wrap {
+        max-width: 100%;
+    }
     .media-feature__layout,
     .media-grid,
     .media-shorts__grid { grid-template-columns: 1fr 1fr; }
