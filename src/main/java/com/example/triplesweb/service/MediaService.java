@@ -180,7 +180,7 @@ public class MediaService {
         return MediaDto.builder().id(m.getId()).tab(m.getTab()).youtubeId(m.getYoutubeId()).title(m.getMediaTitle()).duration(m.getMediaDur()).views(views).viewCountFmt(NumberFormat.getInstance().format(views)).description(visibleDescription(m.getDescription())).artistNames(m.getArtistNames()).publishedOn(m.getPublishedOn()==null?"":m.getPublishedOn().toString()).build();
     }
 
-    public boolean updateDetails(String youtubeId, String description, String publishedOn, String artistNames) {
+    public boolean updateDetails(String youtubeId, String description, String publishedOn, String artistNames, String tab) {
         if (youtubeId == null || youtubeId.isBlank()) return false;
         Optional<Media> existing = mediaRepository.findByYoutubeIdIgnoreCase(youtubeId.trim());
         if (existing.isEmpty()) return false;
@@ -188,7 +188,18 @@ public class MediaService {
         media.setDescription(storeAdminDescription(description));
         media.setPublishedOn(parseDate(publishedOn));
         media.setArtists(resolveArtists(artistNames));
+        String nextTab = mediaTab(tab);
+        if (nextTab != null) media.setTab(nextTab);
         return true;
+    }
+
+    private static String mediaTab(String tab) {
+        if (tab == null || tab.isBlank()) return null;
+        String key = tab.trim().toLowerCase(Locale.ROOT);
+        for (MediaTab candidate : MediaTab.values()) {
+            if (candidate.getKey().equals(key)) return candidate.getKey();
+        }
+        return null;
     }
 
     @Transactional(readOnly = true)

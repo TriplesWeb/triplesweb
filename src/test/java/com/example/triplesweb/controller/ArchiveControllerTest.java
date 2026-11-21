@@ -124,10 +124,10 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("id=\"uploadModal\"")))
                 .andReturn().getResponse().getContentAsString();
         var page = Jsoup.parse(html);
-        org.assertj.core.api.Assertions.assertThat(page.select(".ar-folder.is-group img.is-bundled-art").attr("src"))
-                .isEqualTo("/images/archive/member-folders/3.png");
-        org.assertj.core.api.Assertions.assertThat(page.select(".ar-folder.is-parent img.is-bundled-art").attr("src"))
-                .isEqualTo("/images/archive/member-folders/2.png");
+        org.assertj.core.api.Assertions.assertThat(page.select(".ar-folder.is-group img.is-illustrated").attr("src"))
+                .isEqualTo("/images/archive/folder-triples.png");
+        org.assertj.core.api.Assertions.assertThat(page.select(".ar-folder.is-parent img.is-illustrated").attr("src"))
+                .isEqualTo("/images/archive/folder-dimension.png");
         var folders = page.select(".ar-folders .ar-folder.is-solo");
         org.assertj.core.api.Assertions.assertThat(folders).hasSize(24);
         for (int i = 0; i < folders.size(); i++) {
@@ -450,6 +450,24 @@ class ArchiveControllerTest {
         verify(archiveService).browseFolder(eq(MediaType.IMAGE), anyInt(), anyInt(), nullable(String.class), any(),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
                 eq(ArchiveSource.TEASER_BEHIND), anyBoolean(), any(), any(), any());
+    }
+
+    @Test void externalSourceOffersTenTwentyThirtyPhotoLayout() throws Exception {
+        Archive external = photo();
+        external.setSource(ArchiveSource.EXTERNAL);
+        stubFolder(MediaType.IMAGE, external);
+
+        String html = mvc.perform(get("/archive").param("folder", "s").param("source", "external").param("size", "20"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(html)
+                .contains("class=\"ar-density\"")
+                .contains("data-page-size=\"20\"")
+                .contains("20개")
+                .containsAnyOf("size=30", "size&#x3D;30");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("size=9");
+        verify(archiveService).browseFolder(eq(MediaType.IMAGE), eq(0), eq(20), nullable(String.class), any(),
+                nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
+                eq(ArchiveSource.EXTERNAL), anyBoolean(), any(), any(), any());
     }
 
     @Test void archiveMemberPickerUsesPortraitsNotSymbolLogos() throws Exception {

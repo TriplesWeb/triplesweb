@@ -54,6 +54,20 @@ public final class MemberPortraitOptions {
         return found != null ? found : 24;
     }
 
+    /** S1~S24가 빠짐없이 들어 있으면 24명 전원이다. */
+    public static boolean coversFullLineup(Collection<String> names) {
+        if (names == null || names.isEmpty()) return false;
+        boolean[] seen = new boolean[CUSTOM_OBJEKT_LOGO_COUNT];
+        int count = 0;
+        for (String name : names) {
+            int index = memberIndex(name);
+            if (index >= CUSTOM_OBJEKT_LOGO_COUNT || seen[index]) continue;
+            seen[index] = true;
+            count++;
+        }
+        return count == CUSTOM_OBJEKT_LOGO_COUNT;
+    }
+
     /** 솔로는 그 멤버, 유닛은 가장 앞 멤버(S1이 S24보다 앞). 기타는 24. */
     public static int earliestMemberIndex(String value) {
         int solo = memberIndex(value);

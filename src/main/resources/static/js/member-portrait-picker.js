@@ -187,6 +187,7 @@
 
     bindFrames(picker);
 
+    picker.__memberOnChange = options.onChange;
     if (picker.__memberClickHandler) picker.removeEventListener("click", picker.__memberClickHandler);
     const handleClick = (e) => {
       const btn = e.target.closest(".mpp-item");

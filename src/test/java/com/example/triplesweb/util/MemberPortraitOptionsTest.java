@@ -19,6 +19,12 @@ class MemberPortraitOptionsTest {
         assertFalse(MemberPortraitOptions.objektIncludesMember("S21", "S1"));
     }
 
+    @Test
+    void fullLineupRequiresEverySoloMember() {
+        assertThat(MemberPortraitOptions.coversFullLineup(MemberPortraitOptions.koreanOrder())).isTrue();
+        assertThat(MemberPortraitOptions.coversFullLineup(MemberPortraitOptions.koreanOrder().subList(0, 23))).isFalse();
+    }
+
     @Test void earliestMemberIndexUsesSoloThenTheFirstUnitMember() {
         assertThat(MemberPortraitOptions.earliestMemberIndex("SeoYeon")).isZero();
         assertThat(MemberPortraitOptions.earliestMemberIndex("지연")).isEqualTo(23);

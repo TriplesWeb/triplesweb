@@ -10,5 +10,8 @@
         {{>partials/archive-member-badges}}
         {{#hasRegisteredOn}}<time class="ar-card-date" datetime="{{registeredOn}}">{{registeredOnDisplay}}</time>{{/hasRegisteredOn}}
     </div>
-    <div class="ar-card-members" hidden>{{>partials/archive-album-members}}</div>
+    <div class="ar-card-members" hidden>
+        {{#imageCasts}}<div data-image-cast>{{>partials/archive-album-members}}</div>{{/imageCasts}}
+        {{^imageCasts}}{{>partials/archive-album-members}}{{/imageCasts}}
+    </div>
 </div>
