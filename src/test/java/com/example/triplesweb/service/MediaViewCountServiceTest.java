@@ -11,6 +11,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -40,7 +41,8 @@ class MediaViewCountServiceTest {
                 .viewCount(10L)
                 .build();
         when(mediaRepository.findAll()).thenReturn(List.of(media));
-        when(youtube.fetchViewCounts(any())).thenReturn(Map.of("abcdefghijk", 3456L));
+        when(youtube.fetchLive(any())).thenReturn(Map.of(
+                "abcdefghijk", new YoutubeDataApiClient.LiveVideo(3456L, "2024-05-06", "4:02")));
 
         MediaViewCountService service = new MediaViewCountService(mediaRepository, youtube, transactionManager);
         ReflectionTestUtils.setField(service, "refreshMs", 60_000L);
@@ -49,7 +51,9 @@ class MediaViewCountServiceTest {
         service.refreshIfDue();
 
         assertThat(media.getViewCount()).isEqualTo(3456L);
-        verify(youtube, times(1)).fetchViewCounts(any());
+        assertThat(media.getPublishedOn()).isEqualTo(LocalDate.of(2024, 5, 6));
+        assertThat(media.getMediaDur()).isEqualTo("3:11");
+        verify(youtube, times(1)).fetchLive(any());
     }
 
     @Test
@@ -63,7 +67,7 @@ class MediaViewCountServiceTest {
                 .viewCount(10L)
                 .build();
         when(mediaRepository.findAll()).thenReturn(List.of(media));
-        when(youtube.fetchViewCounts(any())).thenReturn(Map.of());
+        when(youtube.fetchLive(any())).thenReturn(Map.of());
 
         MediaViewCountService service = new MediaViewCountService(mediaRepository, youtube, transactionManager);
         ReflectionTestUtils.setField(service, "refreshMs", 60_000L);

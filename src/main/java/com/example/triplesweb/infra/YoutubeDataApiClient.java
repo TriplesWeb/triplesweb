@@ -1,5 +1,6 @@
 package com.example.triplesweb.infra;
 
+import com.example.triplesweb.util.ISODuration;
 import com.example.triplesweb.util.YoutubeIdExtractor;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,10 +37,11 @@ public class YoutubeDataApiClient {
         this.rest = rest;
     }
 
-    /**
-     * 영상 ID의 현재 조회수를 가져온다. 한 요청에 최대 50개이며, 키가 없거나 호출이 실패하면 빈 맵을 반환한다.
+/**
+     * 조회수와 함께, 비어 있는 공개일·길이를 채울 수 있도록 snippet·contentDetails를 같은 요청에서 읽는다.
+     * 한 요청에 최대 50개이며, 키가 없거나 호출이 실패하면 빈 맵을 반환한다.
      */
-    public Map<String, Long> fetchViewCounts(Collection<String> videoIds) {
+    public Map<String, LiveVideo> fetchLive(Collection<String> videoIds) {
         if (apiKey == null || apiKey.isBlank() || videoIds == null || videoIds.isEmpty()) {
             return Map.of();
         }
@@ -47,28 +49,54 @@ public class YoutubeDataApiClient {
         for (String raw : new LinkedHashSet<>(videoIds)) {
             if (raw != null && raw.matches("^[a-zA-Z0-9_-]{11}$")) ids.add(raw);
         }
-        Map<String, Long> counts = new LinkedHashMap<>();
+        Map<String, LiveVideo> live = new LinkedHashMap<>();
         for (int offset = 0; offset < ids.size(); offset += 50) {
             List<String> chunk = ids.subList(offset, Math.min(offset + 50, ids.size()));
-            VideosResponse response = requestStatistics(chunk);
+            VideosResponse response = requestVideos(chunk);
             if (response == null || response.getItems() == null) continue;
             for (VideosResponse.Item item : response.getItems()) {
-                Long views = parseViewCount(item);
-                if (item.getId() != null && views != null) counts.put(item.getId(), views);
+                if (item.getId() == null) continue;
+                live.put(item.getId(), new LiveVideo(parseViewCount(item), publishedDay(item), clock(item)));
             }
         }
+        return live;
+    }
+
+    /**
+     * 영상 ID의 현재 조회수를 가져온다. 한 요청에 최대 50개이며, 키가 없거나 호출이 실패하면 빈 맵을 반환한다.
+     */
+    public Map<String, Long> fetchViewCounts(Collection<String> videoIds) {
+        Map<String, Long> counts = new LinkedHashMap<>();
+        fetchLive(videoIds).forEach((id, video) -> {
+            if (video.viewCount() != null) counts.put(id, video.viewCount());
+        });
         return counts;
     }
 
-    private VideosResponse requestStatistics(List<String> ids) {
+    private VideosResponse requestVideos(List<String> ids) {
         try {
             String url = "https://www.googleapis.com/youtube/v3/videos"
-                    + "?part=statistics&id=" + String.join(",", ids) + "&key=" + apiKey;
+                    + "?part=snippet,contentDetails,statistics&id=" + String.join(",", ids) + "&key=" + apiKey;
             return rest.getForObject(URI.create(url), VideosResponse.class);
         } catch (Throwable ignored) {
             return null;
         }
     }
+
+    private static String publishedDay(VideosResponse.Item item) {
+        if (item == null || item.getSnippet() == null || item.getSnippet().getPublishedAt() == null) return null;
+        String raw = item.getSnippet().getPublishedAt().trim();
+        if (raw.length() < 10 || raw.charAt(4) != '-') return null;
+        return raw.substring(0, 10);
+    }
+
+    private static String clock(VideosResponse.Item item) {
+        if (item == null || item.getContentDetails() == null) return null;
+        String clock = ISODuration.toClock(item.getContentDetails().getDuration());
+        return clock == null || clock.isBlank() || "0:00".equals(clock) ? null : clock;
+    }
+
+    public record LiveVideo(Long viewCount, String publishedOn, String duration) {}
 
     private static Long parseViewCount(VideosResponse.Item item) {
         if (item == null || item.getStatistics() == null || item.getStatistics().getViewCount() == null) return null;

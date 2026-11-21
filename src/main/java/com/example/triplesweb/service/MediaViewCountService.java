@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
@@ -41,7 +42,7 @@ public class MediaViewCountService {
             long now = System.currentTimeMillis();
             if (refreshMs > 0 && now - lastAttemptAt < refreshMs) return;
             List<String> ids = readIds();
-            Map<String, Long> live = youtube.fetchViewCounts(ids);
+            Map<String, YoutubeDataApiClient.LiveVideo> live = youtube.fetchLive(ids);
             if (!live.isEmpty()) apply(live);
             lastAttemptAt = System.currentTimeMillis();
         } finally {
@@ -54,12 +55,26 @@ public class MediaViewCountService {
                 mediaRepository.findAll().stream().map(Media::getYoutubeId).toList());
     }
 
-    private void apply(Map<String, Long> live) {
+    private void apply(Map<String, YoutubeDataApiClient.LiveVideo> live) {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             for (Media media : mediaRepository.findAll()) {
-                Long next = live.get(media.getYoutubeId());
-                if (next != null && !next.equals(media.getViewCount())) media.setViewCount(next);
+                YoutubeDataApiClient.LiveVideo next = live.get(media.getYoutubeId());
+                if (next == null) continue;
+                if (next.viewCount() != null && !next.viewCount().equals(media.getViewCount())) {
+                    media.setViewCount(next.viewCount());
+                }
+                if (media.getPublishedOn() == null && next.publishedOn() != null) {
+                    media.setPublishedOn(LocalDate.parse(next.publishedOn()));
+                }
+                if (next.duration() != null && !next.duration().isBlank() && missingDuration(media.getMediaDur())) {
+                    media.setMediaDur(next.duration());
+                }
             }
         });
+    }
+
+    private static boolean missingDuration(String duration) {
+        if (duration == null || duration.isBlank()) return true;
+        return "03:00".equals(duration) || "3:00".equals(duration);
     }
 }

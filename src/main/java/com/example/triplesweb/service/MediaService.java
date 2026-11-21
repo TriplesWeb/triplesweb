@@ -178,7 +178,18 @@ public class MediaService {
 
     private MediaDto toDto(Media m) {
         long views=m.getViewCount()!=null?m.getViewCount():0L;
-        return MediaDto.builder().tab(m.getTab()).youtubeId(m.getYoutubeId()).title(m.getMediaTitle()).duration(m.getMediaDur()).views(views).viewCountFmt(NumberFormat.getInstance().format(views)).description(m.getDescription()).artistNames(m.getArtistNames()).publishedOn(m.getPublishedOn()==null?"":m.getPublishedOn().toString()).build();
+        return MediaDto.builder().id(m.getId()).tab(m.getTab()).youtubeId(m.getYoutubeId()).title(m.getMediaTitle()).duration(m.getMediaDur()).views(views).viewCountFmt(NumberFormat.getInstance().format(views)).description(m.getDescription()).artistNames(m.getArtistNames()).publishedOn(m.getPublishedOn()==null?"":m.getPublishedOn().toString()).build();
+    }
+
+    public boolean updateDetails(String youtubeId, String description, String publishedOn, String artistNames) {
+        if (youtubeId == null || youtubeId.isBlank()) return false;
+        Optional<Media> existing = mediaRepository.findByYoutubeIdIgnoreCase(youtubeId.trim());
+        if (existing.isEmpty()) return false;
+        Media media = existing.get();
+        media.setDescription(truncateDescription(description));
+        media.setPublishedOn(parseDate(publishedOn));
+        media.setArtists(resolveArtists(artistNames));
+        return true;
     }
 
     @Transactional(readOnly = true)

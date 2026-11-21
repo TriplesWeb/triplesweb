@@ -34,13 +34,13 @@ class YoutubeDataApiClientTest {
     void readsViewCountsInBatchesOfFifty() {
         List<String> ids = new ArrayList<>();
         for (int i = 0; i < 51; i++) ids.add(String.format("%011d", i));
-        server.expect(requestTo(containsString("part=statistics")))
+        server.expect(requestTo(containsString("part=snippet,contentDetails,statistics")))
                 .andExpect(requestTo(containsString(ids.get(0))))
                 .andExpect(requestTo(containsString(ids.get(49))))
                 .andRespond(withSuccess("""
                         {"items":[{"id":"00000000000","statistics":{"viewCount":"1200"}}]}
                         """, MediaType.APPLICATION_JSON));
-        server.expect(requestTo(containsString("part=statistics")))
+        server.expect(requestTo(containsString("part=snippet,contentDetails,statistics")))
                 .andExpect(requestTo(containsString(ids.get(50))))
                 .andRespond(withSuccess("""
                         {"items":[{"id":"00000000050","statistics":{"viewCount":"7"}}]}
@@ -58,7 +58,7 @@ class YoutubeDataApiClientTest {
         assertThat(client.fetchViewCounts(List.of("abcdefghijk"))).isEmpty();
 
         ReflectionTestUtils.setField(client, "apiKey", "test-key");
-        server.expect(requestTo(containsString("part=statistics"))).andRespond(withServerError());
+        server.expect(requestTo(containsString("part=snippet,contentDetails,statistics"))).andRespond(withServerError());
         assertThat(client.fetchViewCounts(List.of("abcdefghijk", "not-an-id"))).isEmpty();
         server.verify();
     }
