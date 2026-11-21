@@ -452,7 +452,7 @@ class ArchiveControllerTest {
                 eq(ArchiveSource.TEASER_BEHIND), anyBoolean(), any(), any(), any());
     }
 
-    @Test void externalSourceOffersTenTwentyThirtyPhotoLayout() throws Exception {
+    @Test void externalSourceOffersPhotoDensityDropdown() throws Exception {
         Archive external = photo();
         external.setSource(ArchiveSource.EXTERNAL);
         stubFolder(MediaType.IMAGE, external);
@@ -461,9 +461,12 @@ class ArchiveControllerTest {
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         org.assertj.core.api.Assertions.assertThat(html)
                 .contains("class=\"ar-density\"")
+                .contains("id=\"archivePageSize\"")
                 .contains("data-page-size=\"20\"")
-                .contains("20개")
-                .containsAnyOf("size=30", "size&#x3D;30");
+                .contains("value=\"20\" selected")
+                .contains(">20개</option>")
+                .contains(">10개</option>")
+                .contains(">50개</option>");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("size=9");
         verify(archiveService).browseFolder(eq(MediaType.IMAGE), eq(0), eq(20), nullable(String.class), any(),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
