@@ -49,10 +49,9 @@ public class MediaArchiveController {
                             Model model) {
         tab = normalizeTab(tab);
         boolean all = "all".equals(tab);
-        boolean popular = "popular".equalsIgnoreCase(sort);
+        String sortKey = normalizeSort(sort);
 
         model.addAttribute("isAdmin", aboutAdminAuth.isAdmin(request, session));
-        model.addAttribute("artistOptions", artistFilterOptions(artist));
         model.addAttribute("currentTab", tab);
         model.addAttribute("isAll", all);
         model.addAttribute("isMV", "mv".equals(tab));
@@ -60,9 +59,8 @@ public class MediaArchiveController {
         model.addAttribute("isBehind", "behind".equals(tab));
         model.addAttribute("isSecret", "secret".equals(tab));
         model.addAttribute("isContents", "contents".equals(tab));
-        model.addAttribute("isPopular", popular);
-        model.addAttribute("isLatest", !popular);
-        model.addAttribute("sort", popular ? "popular" : "latest");
+        model.addAttribute("sort", sortKey);
+        model.addAttribute("sortOptions", sortOptions(sortKey));
         model.addAttribute("dateFilterLabel", "전체 기간");
 
         LocalDate fromDate = parseDate(from);
@@ -83,13 +81,7 @@ public class MediaArchiveController {
         if (dateFiltered) {
             filtered.removeIf(v -> !matchesPublished(v.getPublishedOn(), rangeStart, rangeEnd));
         }
-        if (popular) {
-            filtered.sort(Comparator.comparingLong((MediaDto v) -> v.getViews() == null ? 0L : v.getViews()).reversed());
-        } else if (all) {
-            filtered.sort(Comparator.comparing(
-                    (MediaDto v) -> parseDate(v.getPublishedOn()),
-                    Comparator.nullsLast(Comparator.reverseOrder())));
-        }
+        sortVideos(filtered, sortKey);
         int total = filtered.size();
         List<MediaDto> videos = filtered;
         MediaDto featured = filtered.isEmpty() ? null : filtered.get(0);
@@ -105,17 +97,17 @@ public class MediaArchiveController {
         model.addAttribute("shorts", shorts);
         model.addAttribute("hasShorts", !shorts.isEmpty());
         model.addAttribute("archiveScope", all ? "전체 영상" : MediaTab.from(tab).getKor());
-        model.addAttribute("archiveSortLabel", popular ? "인기순으로 모아보기" : "최신순으로 모아보기");
+        model.addAttribute("archiveSortLabel", sortLabel(sortKey));
 
         String fromText = rangeStart == null ? "" : rangeStart.toString();
         String toText = rangeEnd == null ? "" : rangeEnd.toString();
         model.addAttribute("from", fromText);
         model.addAttribute("to", toText);
         model.addAttribute("hasDateFilter", dateFiltered);
-        String dates = dateQuery(fromText, toText);
-        model.addAttribute("dateQuery", dates);
-        model.addAttribute("filterQuery", filterQuery(artist, dates));
-        model.addAttribute("selectedArtist", artist == null ? "" : artist);
+        String selectedName = artistFiltered ? artist.trim() : "";
+        model.addAttribute("selectedArtist", selectedName);
+        model.addAttribute("memberPickerOptions", portraitOptions(selectedName.isEmpty() ? List.of() : List.of(selectedName)));
+        model.addAttribute("hasActiveFilters", artistFiltered || dateFiltered || !"latest".equals(sortKey));
         model.addAttribute("videos", videos);
         model.addAttribute("hasVideos", total > 0);
         model.addAttribute("total", total);
@@ -270,30 +262,58 @@ public class MediaArchiveController {
         return null;
     }
 
-    private static String filterQuery(String artist, String dateQuery) {
-        StringBuilder query = new StringBuilder();
-        if (artist != null && !artist.isBlank()) {
-            query.append("&artist=").append(java.net.URLEncoder.encode(artist.trim(), java.nio.charset.StandardCharsets.UTF_8));
+    private static void sortVideos(List<MediaDto> videos, String sort) {
+        switch (sort) {
+            case "oldest" -> videos.sort(Comparator.comparing(
+                    (MediaDto video) -> parseDate(video.getPublishedOn()),
+                    Comparator.nullsLast(Comparator.naturalOrder())));
+            case "views" -> videos.sort(Comparator.comparingLong(
+                    (MediaDto video) -> video.getViews() == null ? 0L : video.getViews()).reversed());
+            case "short" -> videos.sort(Comparator.comparing(
+                    (MediaDto video) -> durationSeconds(video.getDuration()),
+                    Comparator.nullsLast(Comparator.naturalOrder())));
+            case "long" -> videos.sort(Comparator.comparing(
+                    (MediaDto video) -> durationSeconds(video.getDuration()),
+                    Comparator.nullsLast(Comparator.reverseOrder())));
+            default -> videos.sort(Comparator.comparing(
+                    (MediaDto video) -> parseDate(video.getPublishedOn()),
+                    Comparator.nullsLast(Comparator.reverseOrder())));
         }
-        if (dateQuery != null) query.append(dateQuery);
-        return query.toString();
     }
 
-    private static String dateQuery(String from, String to) {
-        StringBuilder query = new StringBuilder();
-        if (from != null && !from.isBlank()) query.append("&from=").append(java.net.URLEncoder.encode(from, java.nio.charset.StandardCharsets.UTF_8));
-        if (to != null && !to.isBlank()) query.append("&to=").append(java.net.URLEncoder.encode(to, java.nio.charset.StandardCharsets.UTF_8));
-        return query.toString();
+    private static String normalizeSort(String sort) {
+        if (sort == null) return "latest";
+        return switch (sort.toLowerCase()) {
+            case "oldest", "views", "short", "long" -> sort.toLowerCase();
+            case "popular" -> "views";
+            default -> "latest";
+        };
     }
 
-    private List<Map<String, Object>> artistFilterOptions(String selectedArtist) {
+    private static String sortLabel(String sort) {
+        return switch (sort) {
+            case "oldest" -> "오래된순으로 모아보기";
+            case "views" -> "조회순으로 모아보기";
+            case "short" -> "짧은 영상부터 모아보기";
+            case "long" -> "긴 영상부터 모아보기";
+            default -> "최신순으로 모아보기";
+        };
+    }
+
+    private List<Map<String, Object>> sortOptions(String selected) {
         List<Map<String, Object>> options = new ArrayList<>();
-        String selected = selectedArtist == null ? "" : selectedArtist.trim();
-        for (Artist artist : artistRepository.findAll()) {
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("name", artist.getName());
-            row.put("selected", selected.equals(artist.getName()));
-            options.add(row);
+        for (String[] row : new String[][]{
+                {"latest", "최신순"},
+                {"oldest", "오래된순"},
+                {"views", "조회순"},
+                {"short", "영상 짧은순"},
+                {"long", "긴 영상 순"}
+        }) {
+            Map<String, Object> option = new LinkedHashMap<>();
+            option.put("value", row[0]);
+            option.put("label", row[1]);
+            option.put("selected", row[0].equals(selected));
+            options.add(option);
         }
         return options;
     }

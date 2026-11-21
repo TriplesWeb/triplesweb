@@ -8,8 +8,7 @@
   const keepers = [
     "[data-date-filter]",
     ".ar-sort-control",
-    "#archiveMemberPanel",
-    "#archiveMemberToggle",
+    ".ar-member-panel",
     ".ar-member-toggle"
   ].join(", ");
   const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -54,13 +53,15 @@
       if (keepRoot && keepRoot.contains(trigger)) return;
       trigger.setAttribute("aria-expanded", "false");
     });
-    const panel = document.getElementById("archiveMemberPanel");
-    const memberToggle = document.getElementById("archiveMemberToggle");
-    if (panel && !(keepRoot && (keepRoot === panel || keepRoot.contains(panel) || panel.contains(keepRoot) || keepRoot === memberToggle || memberToggle?.contains(keepRoot)))) {
+    document.querySelectorAll(".ar-member-panel").forEach((panel) => {
+      const memberToggle = panel.id
+        ? document.querySelector('.ar-member-toggle[aria-controls="' + panel.id + '"]')
+        : null;
+      if (keepRoot && (keepRoot === panel || keepRoot.contains(panel) || panel.contains(keepRoot) || keepRoot === memberToggle || memberToggle?.contains(keepRoot))) return;
       panel.hidden = true;
       memberToggle?.setAttribute("aria-expanded", "false");
       memberToggle?.classList.remove("is-open");
-    }
+    });
   };
   window.closeArchiveOverlays = closeArchiveOverlays;
 

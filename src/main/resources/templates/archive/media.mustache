@@ -2,6 +2,7 @@
 
 <link rel="stylesheet" href="{{#asset}}/css/bootstrap-compat.css{{/asset}}">
 <link rel="stylesheet" href="{{#asset}}/css/archive-page.css{{/asset}}">
+<link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
 <link rel="stylesheet" href="{{#asset}}/css/media-page.css{{/asset}}">
 
 <title>트리플에스 커뮤니티 - 공식 미디어</title>
@@ -34,29 +35,37 @@
             <a class="site-section-tab{{#isContents}} is-active{{/isContents}}" href="/media?tab=contents" {{#isContents}}aria-current="page"{{/isContents}}>기타 콘텐츠</a>
         </nav>
 
-        <form class="media-filterbar" method="get" action="/media">
-            <input type="hidden" name="tab" value="{{currentTab}}">
-            <input type="hidden" name="sort" value="{{sort}}">
-            <span class="media-filterbar__label">상세 필터</span>
-            <label class="media-sr" for="artist-filter">출연 멤버</label>
-            <select id="artist-filter" name="artist" class="media-select">
-                <option value="">전체 멤버</option>
-                {{#artistOptions}}<option value="{{name}}" {{#selected}}selected{{/selected}}>{{name}}</option>{{/artistOptions}}
-            </select>
-            {{>partials/date-range-filter}}
-            <div class="media-filterbar__actions">
-                <button type="submit" class="media-apply">필터 적용</button>
-                <a class="media-reset" href="/media?tab={{currentTab}}{{#isPopular}}&amp;sort=popular{{/isPopular}}">
-                    <img src="{{#asset}}/images/media/reset.svg{{/asset}}" width="16" height="16" alt="">
-                    초기화
-                </a>
+        <section class="ar-panel ar-toolbar media-toolbar">
+            <form class="ar-filters" id="mediaFilterForm" method="get" action="/media">
+                <input type="hidden" name="tab" value="{{currentTab}}">
+                <input type="hidden" name="artist" id="mediaArtist" value="{{selectedArtist}}">
+                <div class="ar-filter-tools">
+                    <div class="ar-sort">
+                        <span class="ar-sort-label" id="mediaSortLabel">정렬</span>
+                        <span class="ar-sort-control">
+                            <select id="mediaSort" name="sort" aria-labelledby="mediaSortLabel">
+                                {{#sortOptions}}
+                                <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+                                {{/sortOptions}}
+                            </select>
+                            <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
+                        </span>
+                    </div>
+                    {{>partials/date-range-filter}}
+                    <button type="button" class="ar-member-toggle{{#selectedArtist}} has-selection{{/selectedArtist}}" id="mediaMemberToggle" aria-expanded="false" aria-controls="mediaMemberPanel">
+                        <span class="material-symbols-outlined" aria-hidden="true">group</span>
+                        <span data-member-toggle-label>{{#selectedArtist}}{{selectedArtist}}{{/selectedArtist}}{{^selectedArtist}}멤버 선택{{/selectedArtist}}</span>
+                        <span class="material-symbols-outlined ar-member-chevron" aria-hidden="true">expand_more</span>
+                    </button>
+                    <a class="site-btn site-btn--reset ar-reset" href="/media?tab={{currentTab}}"{{^hasActiveFilters}} hidden{{/hasActiveFilters}}>초기화</a>
+                </div>
+            </form>
+            <div class="ar-member-panel" id="mediaMemberPanel" hidden>
+                <div class="member-portrait-picker" id="media-member-picker" role="group" aria-label="출연 멤버">
+                    {{>partials/member-portrait-picker}}
+                </div>
             </div>
-            <div class="media-sort">
-                <a class="{{#isLatest}}is-active{{/isLatest}}" href="/media?tab={{currentTab}}{{filterQuery}}">최신순</a>
-                <span aria-hidden="true">·</span>
-                <a class="{{#isPopular}}is-active{{/isPopular}}" href="/media?tab={{currentTab}}{{filterQuery}}&amp;sort=popular">인기순</a>
-            </div>
-        </form>
+        </section>
     </section>
 
     {{#hasFeatured}}
@@ -202,9 +211,114 @@
 
 <script src="{{#asset}}/js/bootstrap-compat.js{{/asset}}"></script>
 <script src="{{#asset}}/js/site-ui.js{{/asset}}"></script>
+<script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
 <script>
-    const artistFilter = document.getElementById('artist-filter');
-    if (artistFilter) artistFilter.value = '{{selectedArtist}}';
+    (function () {
+        const form = document.getElementById('mediaFilterForm');
+        const sort = document.getElementById('mediaSort');
+        const panel = document.getElementById('mediaMemberPanel');
+        const toggle = document.getElementById('mediaMemberToggle');
+        const artist = document.getElementById('mediaArtist');
+        const label = toggle?.querySelector('[data-member-toggle-label]');
+        if (!form || !sort) return;
+
+        function enhanceSort(select) {
+            const control = select.closest('.ar-sort-control');
+            if (!control || control.classList.contains('is-enhanced')) return;
+            control.classList.add('is-enhanced');
+            select.setAttribute('aria-hidden', 'true');
+            select.tabIndex = -1;
+            const trigger = document.createElement('button');
+            trigger.type = 'button';
+            trigger.className = 'ar-sort-trigger';
+            trigger.setAttribute('aria-haspopup', 'listbox');
+            trigger.setAttribute('aria-expanded', 'false');
+            trigger.setAttribute('aria-label', '정렬');
+            const menu = document.createElement('div');
+            menu.className = 'ar-sort-menu';
+            menu.hidden = true;
+            menu.setAttribute('role', 'listbox');
+            function sync() {
+                const selected = [...select.options].find((option) => option.value === select.value);
+                trigger.textContent = selected ? selected.textContent.trim() : '';
+                [...menu.querySelectorAll('.ar-sort-option')].forEach((option) => {
+                    option.setAttribute('aria-selected', option.dataset.value === select.value ? 'true' : 'false');
+                });
+            }
+            function setOpen(open) {
+                menu.hidden = !open;
+                trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+            }
+            [...select.options].forEach((option) => {
+                const item = document.createElement('button');
+                item.type = 'button';
+                item.className = 'ar-sort-option';
+                item.setAttribute('role', 'option');
+                item.dataset.value = option.value;
+                item.textContent = option.textContent.trim();
+                item.addEventListener('click', () => {
+                    if (select.value !== option.value) {
+                        select.value = option.value;
+                        select.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                    sync();
+                    setOpen(false);
+                });
+                menu.appendChild(item);
+            });
+            trigger.addEventListener('click', () => {
+                const willOpen = menu.hidden;
+                window.closeArchiveOverlays?.(trigger);
+                setOpen(willOpen);
+            });
+            select.after(trigger);
+            control.appendChild(menu);
+            sync();
+        }
+
+        function dateSnapshot() {
+            return ['from', 'to'].map((name) => {
+                const input = form.querySelector('[data-date-filter] input[name="' + name + '"]');
+                return name + '=' + (input ? input.value : '');
+            }).join('&');
+        }
+
+        let appliedDates = dateSnapshot();
+        enhanceSort(sort);
+        sort.addEventListener('change', () => form.requestSubmit());
+        toggle?.addEventListener('click', () => {
+            if (!panel) return;
+            const willOpen = panel.hidden;
+            window.closeArchiveOverlays?.(toggle);
+            panel.hidden = !willOpen;
+            toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+            toggle.classList.toggle('is-open', willOpen);
+        });
+        if (window.MemberPortraitPicker && panel) {
+            MemberPortraitPicker.bindMultiSelect(panel, {
+                multi: false,
+                onChange: (values) => {
+                    const name = values[0] || '';
+                    if (artist) artist.value = name;
+                    if (label) label.textContent = name || '멤버 선택';
+                    toggle?.classList.toggle('has-selection', Boolean(name));
+                    form.requestSubmit();
+                }
+            });
+        }
+        form.addEventListener('archive-date-close', () => {
+            const next = dateSnapshot();
+            if (next === appliedDates) return;
+            appliedDates = next;
+            form.requestSubmit();
+        });
+        form.addEventListener('submit', () => {
+            if (artist && !artist.value.trim()) artist.disabled = true;
+            form.querySelectorAll('[data-date-filter] input').forEach((input) => {
+                if (!input.value.trim()) input.disabled = true;
+            });
+        });
+    })();
 
     const ytModal = document.getElementById('ytModal');
     const ytPlayer = document.getElementById('ytPlayer');
