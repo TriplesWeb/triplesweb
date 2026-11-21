@@ -48,6 +48,7 @@ class ScheduleCategoryControllerTest {
         String html=mvc.perform(get("/schedule").requestAttr(org.springframework.security.web.csrf.CsrfToken.class.getName(),
                 new org.springframework.security.web.csrf.DefaultCsrfToken("X-XSRF-TOKEN","_csrf","fixture-csrf"))).andExpect(status().isOk()).andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
         assertThat(html).contains("addScheduleCategory","editScheduleCategory","#a78bfa","#fb923c","#22aeff","#f87171","#7dd3fc","🎂 윤서연 생일");
+        assertThat(html).contains("유닛·기념일 관리","/api/calendar-decorations/birthdays");
         Files.createDirectories(Path.of("build/filter-pages"));
         Files.writeString(Path.of("build/filter-pages/schedule.html"),html);
     }
@@ -83,5 +84,15 @@ class ScheduleCategoryControllerTest {
         String filtered=mvc.perform(get("/schedule").param("artist","윤서연")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
         assertThat(filtered).contains("윤서연만 보는 중입니다");
+        assertThat(filtered).contains("data-selected-artist=\"윤서연\"");
+    }
+
+    @Test void scheduleLinksOpenTheExistingCalendarAndManagerForms() throws Exception {
+        when(repository.existsById(42L)).thenReturn(true);
+        mvc.perform(get("/schedule/42")).andExpect(redirectedUrl("/schedule?focus=42"));
+        mvc.perform(get("/schedule/999")).andExpect(status().isNotFound());
+        mvc.perform(get("/add")).andExpect(redirectedUrl("/schedule?add=true"));
+        mvc.perform(get("/edit/42")).andExpect(redirectedUrl("/schedule?focus=42&edit=true"));
+        verify(auth, times(2)).requireAdmin(any(), any());
     }
 }
