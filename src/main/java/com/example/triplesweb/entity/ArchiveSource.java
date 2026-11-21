@@ -8,7 +8,7 @@ public enum ArchiveSource {
     COSMO_TALK("코스모톡/프롬"),
     OFFICIAL_SNS("공식 SNS"),
     POLAROID("폴라로이드"),
-    TEASER("티저"),
+    TEASER_BEHIND("티저/비하인드"),
     MAGAZINE("화보/매거진"),
     EXTERNAL("외부 컨텐츠/방송");
 
@@ -29,6 +29,7 @@ public enum ArchiveSource {
     public static ArchiveSource parse(String raw) {
         if (raw == null || raw.isBlank()) return null;
         String value = raw.trim();
+        if ("teaser".equalsIgnoreCase(value)) return TEASER_BEHIND;
         for (ArchiveSource source : values()) {
             if (source.name().equalsIgnoreCase(value) || source.getSlug().equalsIgnoreCase(value)) {
                 return source;

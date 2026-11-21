@@ -116,11 +116,11 @@ DB를 서버와 같이 쓰면 **파일도 같이** 보여야 합니다.
 
 ## Raspberry Pi 4 Docker CI/CD (Tailscale SSH)
 
-Pi에는 **MariaDB 하나와 Nginx 프록시(8090), 활성 운영 앱 하나**를 실행합니다. 배포하는 동안에만 새 Blue/Green 앱 슬롯을 함께 기동해 정상 상태를 확인한 뒤 트래픽을 전환합니다. PR에서는 CI 검사만 수행하며, `main` 머지 후 운영을 배포합니다. **처음 Nginx로 전환할 때에는 짧은 중단이 발생할 수 있습니다.** [Blue-Green 운영/롤백 가이드](docs/BLUE_GREEN_DEPLOYMENT.md)를 먼저 확인하세요.
+Pi는 **MariaDB와 단일 운영 앱(8090)**을 실행합니다. PR에서는 CI 검사만 수행하고, `main` 머지 후 이미지 준비가 끝나면 기존 앱을 종료하고 새 앱을 기동합니다. 새 앱이 준비될 때까지 사이트 이용이 잠시 중단됩니다. [운영 배포 가이드](docs/DEPLOYMENT.md)
 
 ```text
 PR open/push    → CI tests (Java/WAR, CSS/브라우저, Qodana) → 통과 시 머지 가능
-main 머지       → 새 비활성 앱 예열 → readiness 확인 → Nginx reload(:8090) → 구버전 종료
+main 머지       → 이미지 준비 → 기존 앱 종료 → 새 앱 기동·Flyway 실행 → readiness 확인
 매일 04:00 KST / 수동 → 동일 운영 상태라면 빌드·재시작 생략
 ```
 
@@ -193,9 +193,8 @@ echo "$GHCR_PAT" | docker login ghcr.io -u YOUR_GITHUB_USER --password-stdin
 첫 기동(이미지 푸시 전·후):
 
 ```bash
-# 기존 단일 앱 최초 설치(Blue-Green 이전)에만 사용
-cd /opt/stacks/triplesweb && docker compose --profile legacy pull app && docker compose --profile legacy up -d app mariadb
-# Blue-Green 전환 후에는 일반 docker compose up/down 대신 Actions 배포만 사용
+# 서버 최초 설치에만 사용. 이후 교체는 GitHub Actions에서 실행.
+cd /opt/stacks/triplesweb && docker compose pull app && docker compose up -d app mariadb
 ```
 
 - 운영: `http://<pi-lan-or-tailscale-ip>:8090/main`
@@ -203,7 +202,7 @@ cd /opt/stacks/triplesweb && docker compose --profile legacy pull app && docker 
 ### 4. 이후 자동 배포
 
 1. **PR 검사:** [ci-tests.yml](.github/workflows/ci-tests.yml)이 Java 테스트+WAR와 HTML 의존 브라우저 검사를 한 Job에서 실행하고, CSS/JavaScript 검사와 Qodana를 병렬 실행합니다.
-2. **운영:** 머지 즉시 [deploy-main.yml](.github/workflows/deploy-main.yml) 실행. 신규 앱을 준비해 Blue/Green 전환하며, 새벽 **04:00 KST** 재확인과 수동 배포도 지원합니다. 스키마 변경·메모리 부족 시 기존 앱을 유지하고 배포에 실패합니다.
+2. **운영:** 머지 즉시 [deploy-main.yml](.github/workflows/deploy-main.yml) 실행. 기존 앱을 종료한 후 새 앱을 기동하며, 새벽 **04:00 KST** 재확인과 수동 배포도 지원합니다.
 3. **개발 서버 폐지:** 첫 운영 배포에서 기존 Pi 개발 앱만 종료합니다. 개발 데이터는 삭제하지 않습니다.
 
 체크리스트: [docs/DEPLOY_PI.md](docs/DEPLOY_PI.md)
@@ -216,8 +215,7 @@ PR 머지 게이트: Ruleset **`main-ci`**의 required status check **`required`
 ```bash
 cp .env.example .env
 # IMAGE / DB / API 키 채우기
-docker compose --profile legacy up -d app mariadb  # 로컬 테스트/기존 단일 앱에서만
-# 운영 Blue-Green 전환 후에는 legacy 앱을 시작하지 마세요.
+docker compose up -d app mariadb  # 로컬 테스트
 ```
 
 Pi(arm64) 배포 이미지는 main 머지 후 운영 배포 Actions가 빌드하므로, Intel/Apple Silicon Mac에서 `--platform linux/arm64` 없이 로컬 빌드하면 아키텍처가 다를 수 있습니다.

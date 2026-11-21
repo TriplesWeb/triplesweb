@@ -18,7 +18,10 @@
                 <h1>공식 미디어</h1>
             </div>
             <div class="media-intro__actions">
-                <a class="media-channel" href="https://www.youtube.com/@tripleS_official" target="_blank" rel="noopener noreferrer">YouTube 채널 ↗</a>
+                <a class="media-channel" href="https://www.youtube.com/@triplescosmos" target="_blank" rel="noopener noreferrer">YouTube 채널 ↗</a>
+                <form class="media-sync" method="post" action="/api/media/youtube/sync" data-admin-only data-admin-fetch data-confirm="공식 채널의 모든 영상과 쇼츠를 가져옵니다. 처음에는 몇 분 걸릴 수 있습니다.">
+                    <button type="submit">채널 동기화</button>
+                </form>
                 <a class="media-add" href="/media_new?tab={{#isAll}}mv{{/isAll}}{{^isAll}}{{currentTab}}{{/isAll}}" data-admin-only>미디어 추가</a>
             </div>
         </div>
@@ -41,6 +44,7 @@
                     {{#selectedMembers}}
                     <input type="hidden" name="members" value="{{.}}">
                     {{/selectedMembers}}
+                    {{#shortsOnly}}<input type="hidden" name="kind" value="shorts">{{/shortsOnly}}
                 </div>
                 <div class="ar-filter-tools media-filter-tools">
                     <div class="media-filter-cluster">
@@ -148,6 +152,26 @@
     {{/hasFeatured}}
 
     <section class="media-archive" aria-label="유튜브 및 미디어 아카이브">
+        {{#hasSuggestions}}
+        <div class="media-suggest" aria-label="추천 동영상">
+            {{#suggestions}}
+            <a class="media-suggest__card"
+               href="/media/{{tab}}/{{youtubeId}}"
+               data-site-toggle="modal"
+               data-site-target="#ytModal"
+               data-ytid="{{youtubeId}}">
+                <span class="media-suggest__thumb">
+                    <img src="https://img.youtube.com/vi/{{youtubeId}}/hqdefault.jpg" alt="">
+                    {{#duration}}<em>{{duration}}</em>{{/duration}}
+                </span>
+                <span class="media-suggest__copy">
+                    <small>{{tabLabel}}</small>
+                    <strong>{{title}}</strong>
+                </span>
+            </a>
+            {{/suggestions}}
+        </div>
+        {{/hasSuggestions}}
         <div class="media-archive__head">
             <h2>유튜브 아카이브</h2>
         </div>
@@ -207,6 +231,20 @@
             <p>등록된 영상이 없습니다.</p>
         </div>
         {{/videos}}
+        {{#hasMediaPager}}
+        <nav class="ar-panel ar-pager" aria-label="미디어 페이지">
+            <span class="ar-pager-summary">총 {{mediaTotal}}개 중 {{mediaPageCount}}개 표시 (페이지 {{mediaPageDisplay}} / {{mediaTotalPages}})</span>
+            <div class="ar-pager-controls">
+                {{#hasMediaPrev}}<a href="/media?page={{mediaPrevPage}}{{mediaQuery}}">이전</a>{{/hasMediaPrev}}
+                {{^hasMediaPrev}}<a class="is-disabled" aria-disabled="true">이전</a>{{/hasMediaPrev}}
+                <div class="ar-pages">
+                    {{#mediaPages}}<a class="{{#active}}is-current{{/active}}" href="/media?page={{num}}{{mediaQuery}}">{{num}}</a>{{/mediaPages}}
+                </div>
+                {{#hasMediaNext}}<a href="/media?page={{mediaNextPage}}{{mediaQuery}}">다음</a>{{/hasMediaNext}}
+                {{^hasMediaNext}}<a class="is-disabled" aria-disabled="true">다음</a>{{/hasMediaNext}}
+            </div>
+        </nav>
+        {{/hasMediaPager}}
     </section>
 
     {{#hasShorts}}
@@ -214,7 +252,13 @@
         <div class="media-shorts__head">
             <h2>Shorts &amp; 릴스</h2>
             <p>짧게 만나는 tripleS의 순간</p>
-            <a href="https://www.youtube.com/@tripleS_official/shorts" target="_blank" rel="noopener noreferrer">YouTube Shorts ↗</a>
+            {{#shortsOnly}}
+            <a href="{{shortsAllHref}}">전체 보기</a>
+            {{/shortsOnly}}
+            {{^shortsOnly}}
+            <a href="{{shortsViewHref}}">쇼츠만 보기</a>
+            {{/shortsOnly}}
+            <a href="https://www.youtube.com/@triplescosmos/shorts" target="_blank" rel="noopener noreferrer">YouTube Shorts ↗</a>
         </div>
         <div class="media-shorts__grid">
             {{#shorts}}

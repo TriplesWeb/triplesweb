@@ -53,6 +53,70 @@ class YoutubeDataApiClientTest {
     }
 
     @Test
+    void resolvesUploadsPlaylistByHandleAndPagesPlaylistItems() {
+        server.expect(requestTo(containsString("/channels")))
+                .andExpect(requestTo(containsString("forHandle=triplescosmos")))
+                .andRespond(withSuccess("""
+                        {"items":[{"id":"UCJnL-TBcsYrF2SLs7tmiC8Q","contentDetails":{"relatedPlaylists":{"uploads":"UUJnL123"}}}]}
+                        """, MediaType.APPLICATION_JSON));
+        server.expect(requestTo(containsString("/playlistItems")))
+                .andExpect(requestTo(containsString("playlistId=UUJnL123")))
+                .andRespond(withSuccess("""
+                        {"nextPageToken":"CAUQAA","items":[{"contentDetails":{"videoId":"abcdefghijk"}}]}
+                        """, MediaType.APPLICATION_JSON));
+        server.expect(requestTo(containsString("/playlistItems")))
+                .andExpect(requestTo(containsString("pageToken=CAUQAA")))
+                .andRespond(withSuccess("""
+                        {"items":[{"contentDetails":{"videoId":"lmnopqrstuv"}}]}
+                        """, MediaType.APPLICATION_JSON));
+
+        assertThat(client.resolveUploadsPlaylist("@triplescosmos", "")).isEqualTo("UUJnL123");
+        assertThat(client.listUploadedVideoIds("UUJnL123", 0)).containsExactly("abcdefghijk", "lmnopqrstuv");
+        server.verify();
+    }
+
+    @Test
+    void marksLiveVideosFromChannelLookup() {
+        server.expect(requestTo(containsString("part=snippet,contentDetails,statistics")))
+                .andRespond(withSuccess("""
+                        {"items":[
+                          {"id":"abcdefghijk","snippet":{"title":"MV","publishedAt":"2024-05-06T00:00:00Z","liveBroadcastContent":"none"},"contentDetails":{"duration":"PT3M11S"},"statistics":{"viewCount":"9"}},
+                          {"id":"lmnopqrstuv","snippet":{"title":"Live","liveBroadcastContent":"live"},"contentDetails":{"duration":"PT0S"}}
+                        ]}
+                        """, MediaType.APPLICATION_JSON));
+
+        List<YoutubeDataApiClient.ChannelVideo> videos = client.fetchChannelVideos(List.of("abcdefghijk", "lmnopqrstuv"));
+        assertThat(videos).hasSize(2);
+        assertThat(videos.get(0).liveOrUpcoming()).isFalse();
+        assertThat(videos.get(0).duration()).isEqualTo("3:11");
+        assertThat(videos.get(1).liveOrUpcoming()).isTrue();
+        server.verify();
+    }
+
+    @Test
+    void returnsNullWhenPlaylistPageFailsOrKeyIsMissing() {
+        server.expect(requestTo(containsString("/playlistItems"))).andRespond(withServerError());
+        assertThat(client.listUploadedVideoIds("UUJnL123", 0)).isNull();
+
+        ReflectionTestUtils.setField(client, "apiKey", " ");
+        assertThat(client.resolveUploadsPlaylist("triplescosmos", "UCJnL-TBcsYrF2SLs7tmiC8Q")).isNull();
+        server.verify();
+    }
+
+    @Test
+    void trimsWhitespaceAroundApiKeyBeforeRequestingVideos() {
+        ReflectionTestUtils.setField(client, "apiKey", "test-key \r\n");
+        server.expect(requestTo(
+                        "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=abcdefghijk&key=test-key"))
+                .andRespond(withSuccess("""
+                        {"items":[{"id":"abcdefghijk","statistics":{"viewCount":"3"}}]}
+                        """, MediaType.APPLICATION_JSON));
+
+        assertThat(client.fetchViewCounts(List.of("abcdefghijk"))).containsEntry("abcdefghijk", 3L);
+        server.verify();
+    }
+
+    @Test
     void skipsRequestWhenKeyOrIdIsMissingAndIgnoresFailedCall() {
         ReflectionTestUtils.setField(client, "apiKey", " ");
         assertThat(client.fetchViewCounts(List.of("abcdefghijk"))).isEmpty();

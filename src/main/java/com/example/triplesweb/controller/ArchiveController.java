@@ -238,6 +238,7 @@ public class ArchiveController {
             toDate = swap;
         }
         ArchiveSource source = parseSourceFilter(sourceSlug);
+        String sourceKey = source == null ? sourceSlug : source.getSlug();
         // 전체 멤버 폴더(s)는 유닛 분류가 필요 없고, listVisible()의 앨범 병합은 아카이브에 불필요하다.
         boolean needsUnits = !browse && !folderKey.equalsIgnoreCase("s");
         List<Unit> visibleUnits = needsUnits ? unitService.listVisibleForArchive() : List.of();
@@ -310,9 +311,9 @@ public class ArchiveController {
         model.addAttribute("dateExactEnabled", false);
         String dateQuery = dateQuery(fromText, toText, onText);
         model.addAttribute("dateQuery", dateQuery);
-        String sourceQuery = sourceQuery(sourceSlug);
+        String sourceQuery = sourceQuery(sourceKey);
         model.addAttribute("sourceQuery", sourceQuery);
-        model.addAttribute("sourceKey", sourceSlug == null ? "" : sourceSlug.trim());
+        model.addAttribute("sourceKey", sourceKey == null ? "" : sourceKey.trim());
         model.addAttribute("hasSourceFilter", sourceSlug != null && !sourceSlug.isBlank());
         model.addAttribute("chemQuery", "");
         model.addAttribute("archiveSources", sourceOptions(source));
@@ -320,7 +321,7 @@ public class ArchiveController {
                 || !selectedMembers.isEmpty() || fromDate != null || toDate != null
                 || (sourceSlug != null && !sourceSlug.isBlank()));
         addArchivePage(model, archives, type, q, memberQuery(selectedMembers), dateQuery, browse,
-                folderQuery(folderKey, ""), sourceQuery, sourceSlug, "");
+                folderQuery(folderKey, ""), sourceQuery, sourceKey, "");
         // 출처 탭: 폴더는 한 번 스캔한 결과, 전체 보기는 source 컬럼만 distinct 조회.
         Set<ArchiveSource> availableSources = browse
                 ? archiveService.availableSources(type, q, selectedMembers, fromDate, toDate)
@@ -329,7 +330,7 @@ public class ArchiveController {
                 (type == MediaType.VIDEO ? "&type=video" : "") + folderQuery(folderKey, "")
                         + (q == null || q.isBlank() ? "" : "&q=" + URLEncoder.encode(q.trim(), StandardCharsets.UTF_8))
                         + memberQuery(selectedMembers) + dateQuery,
-                sourceSlug, availableSources));
+                sourceKey, availableSources));
         return "archive/archive";
     }
 
