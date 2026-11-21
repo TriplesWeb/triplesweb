@@ -75,6 +75,7 @@
             if (chips) members.innerHTML = chips.innerHTML;
             const countMembers = members.querySelectorAll('.unit-member-chip').length;
             members.dataset.memberCount = String(countMembers);
+            members.classList.toggle('is-many', countMembers >= 10);
             if (cast) cast.hidden = countMembers === 0;
             window.paintArchiveChemistry?.(members);
         } else if (cast) {

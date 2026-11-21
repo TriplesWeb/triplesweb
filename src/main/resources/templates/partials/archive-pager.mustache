@@ -1,16 +1,17 @@
 <nav class="ar-panel ar-pager" aria-label="{{#imageArchive}}사진 페이지{{/imageArchive}}{{^imageArchive}}영상 페이지{{/imageArchive}}">
     <span class="ar-pager-summary">총 {{archiveTotal}}{{#imageArchive}}장{{/imageArchive}}{{^imageArchive}}개{{/imageArchive}} 중 {{archivePageCount}}{{#imageArchive}}장{{/imageArchive}}{{^imageArchive}}개{{/imageArchive}} 표시 (페이지 {{archivePageDisplay}} / {{archiveTotalPages}})</span>
     <div class="ar-pager-controls">
-        {{#hasArchivePrev}}<a href="{{archivePath}}?page={{archivePrevPage}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">이전</a>{{/hasArchivePrev}}
+        {{#hasArchivePrev}}<a href="{{archivePath}}?page={{archivePrevPage}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{sizeQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">이전</a>{{/hasArchivePrev}}
         {{^hasArchivePrev}}<a class="is-disabled" aria-disabled="true">이전</a>{{/hasArchivePrev}}
         <div class="ar-pages">
-            {{#archivePages}}<a class="{{#active}}is-current{{/active}}" href="{{archivePath}}?page={{num}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">{{label}}</a>{{/archivePages}}
+            {{#archivePages}}<a class="{{#active}}is-current{{/active}}" href="{{archivePath}}?page={{num}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{sizeQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">{{label}}</a>{{/archivePages}}
         </div>
         <form class="ar-page-jump" method="get" action="{{archivePath}}" aria-label="페이지 이동">
             {{#videoArchive}}<input type="hidden" name="type" value="video">{{/videoArchive}}
             {{#folderKey}}<input type="hidden" name="folder" value="{{folderKey}}">{{/folderKey}}
             {{#hasCombo}}<input type="hidden" name="combo" value="{{comboValue}}">{{/hasCombo}}
             {{#hasSourceFilter}}<input type="hidden" name="source" value="{{sourceKey}}">{{/hasSourceFilter}}
+            {{#externalSource}}<input type="hidden" name="size" value="{{archivePageSize}}">{{/externalSource}}
             {{#hasChemFilter}}<input type="hidden" name="chem" value="{{chemKey}}">{{/hasChemFilter}}
             {{#hasQuery}}<input type="hidden" name="q" value="{{query}}">{{/hasQuery}}
             {{#on}}<input type="hidden" name="on" value="{{on}}">{{/on}}
@@ -23,7 +24,7 @@
             </label>
             <button type="submit">이동</button>
         </form>
-        {{#hasArchiveNext}}<a href="{{archivePath}}?page={{archiveNextPage}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">다음</a>{{/hasArchiveNext}}
+        {{#hasArchiveNext}}<a href="{{archivePath}}?page={{archiveNextPage}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{sizeQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">다음</a>{{/hasArchiveNext}}
         {{^hasArchiveNext}}<a class="is-disabled" aria-disabled="true">다음</a>{{/hasArchiveNext}}
     </div>
 </nav>

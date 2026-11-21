@@ -239,6 +239,8 @@ public class ArchiveController {
         }
         ArchiveSource source = parseSourceFilter(sourceSlug);
         String sourceKey = source == null ? sourceSlug : source.getSlug();
+        boolean externalView = source == ArchiveSource.EXTERNAL;
+        int pageSize = externalView ? externalPageSize(size) : size;
         // 전체 멤버 폴더(s)는 유닛 분류가 필요 없고, listVisible()의 앨범 병합은 아카이브에 불필요하다.
         boolean needsUnits = !browse && !folderKey.equalsIgnoreCase("s");
         List<Unit> visibleUnits = needsUnits ? unitService.listVisibleForArchive() : List.of();
@@ -246,9 +248,9 @@ public class ArchiveController {
         ArchiveService.FolderBrowse folderBrowse = null;
         Page<Archive> archives;
         if (browse) {
-            archives = archiveService.pageByType(type, page, size, q, selectedMembers, fromDate, toDate);
+            archives = archiveService.pageByType(type, page, pageSize, q, selectedMembers, fromDate, toDate);
         } else {
-            folderBrowse = archiveService.browseFolder(type, page, size, q,
+            folderBrowse = archiveService.browseFolder(type, page, pageSize, q,
                     memberSuperset ? List.of() : selectedMembers, fromDate, toDate,
                     source, false, folderKey, memberSuperset ? selectedMembers : List.of(), units);
             archives = folderBrowse.page();
@@ -326,11 +328,21 @@ public class ArchiveController {
         Set<ArchiveSource> availableSources = browse
                 ? archiveService.availableSources(type, q, selectedMembers, fromDate, toDate)
                 : folderBrowse.availableSources();
+        String keptFilters = (type == MediaType.VIDEO ? "&type=video" : "") + folderQuery(folderKey, "")
+                + (q == null || q.isBlank() ? "" : "&q=" + URLEncoder.encode(q.trim(), StandardCharsets.UTF_8))
+                + memberQuery(selectedMembers) + dateQuery;
         model.addAttribute("sourceTabs", sourceTabs(browse ? "/archive/all" : "/archive",
-                (type == MediaType.VIDEO ? "&type=video" : "") + folderQuery(folderKey, "")
-                        + (q == null || q.isBlank() ? "" : "&q=" + URLEncoder.encode(q.trim(), StandardCharsets.UTF_8))
-                        + memberQuery(selectedMembers) + dateQuery,
-                sourceKey, availableSources));
+                keptFilters, sourceKey, availableSources));
+        model.addAttribute("externalSource", externalView);
+        model.addAttribute("archivePageSize", pageSize);
+        String sizeQuery = externalView ? "&size=" + pageSize : "";
+        model.addAttribute("sizeQuery", sizeQuery);
+        int nextSize = nextExternalPageSize(pageSize);
+        model.addAttribute("densityLabel", nextSize + "개 보기");
+        model.addAttribute("densityHref", externalView
+                ? joinHref(browse ? "/archive/all" : "/archive",
+                keptFilters + "&source=" + ArchiveSource.EXTERNAL.getSlug() + "&size=" + nextSize)
+                : "");
         return "archive/archive";
     }
 
@@ -685,6 +697,18 @@ public class ArchiveController {
         return query;
     }
 
+    private static int externalPageSize(int size) {
+        return size == 20 || size == 30 ? size : 10;
+    }
+
+    private static int nextExternalPageSize(int size) {
+        return switch (externalPageSize(size)) {
+            case 10 -> 20;
+            case 20 -> 30;
+            default -> 10;
+        };
+    }
+
     private static String sourceQuery(String sourceSlug) {
         if (sourceSlug == null || sourceSlug.isBlank()) return "";
         return "&source=" + URLEncoder.encode(sourceSlug.trim(), StandardCharsets.UTF_8);
@@ -840,9 +864,9 @@ public class ArchiveController {
             unitPhotos += counted.counts().getOrDefault("unit-" + unit.getUnitId(), 0);
         }
         List<Map<String, Object>> folders = new ArrayList<>();
-        folders.add(folderCard("s", "tripleS", "#f5c518", "/archive?folder=s", counted.counts().getOrDefault("s", 0),
+        folders.add(folderCard("s", "tripleS", "#2f8eb4", "/archive?folder=s", counted.counts().getOrDefault("s", 0),
                 "", ArchiveFolderClassifier.Kind.GROUP, true));
-        folders.add(parentCard("units", "디멘션", "#a78bfa", "/archive?folder=units", unitPhotos));
+        folders.add(parentCard("units", "디멘션", "#7c4dff", "/archive?folder=units", unitPhotos));
         for (int i = 0; i < MemberPortraitOptions.koreanOrder().size(); i++) {
             String name = MemberPortraitOptions.koreanOrder().get(i);
             String key = "s" + (i + 1);
@@ -889,6 +913,7 @@ public class ArchiveController {
         card.put("folderArt", archiveFolderArt.dimensionUrl());
         card.put("hasFolderArt", true);
         card.put("hasBundledFolderArt", true);
+        card.put("illustratedFolder", ArchiveFolderArt.DIMENSION_ART.equals(card.get("folderArt")));
         card.put("groupFolder", false);
         card.put("soloFolder", false);
         card.put("comboFolder", false);
@@ -1121,6 +1146,7 @@ public class ArchiveController {
         card.put("folderArt", art);
         card.put("hasFolderArt", customArt);
         card.put("hasBundledFolderArt", archiveFolderArt.isBundled(art));
+        card.put("illustratedFolder", ArchiveFolderArt.GROUP_ART.equals(art) || ArchiveFolderArt.DIMENSION_ART.equals(art));
         card.put("groupFolder", group);
         card.put("soloFolder", kind == ArchiveFolderClassifier.Kind.SOLO);
         card.put("comboFolder", kind == ArchiveFolderClassifier.Kind.COMBO);

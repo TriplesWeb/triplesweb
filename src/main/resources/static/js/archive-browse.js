@@ -514,6 +514,8 @@
             if (grid.innerHTML !== nextGrid.innerHTML || grid.dataset.numberOffset !== nextOffset) {
                 grid.innerHTML = nextGrid.innerHTML;
                 grid.dataset.numberOffset = nextOffset;
+                if (nextGrid.dataset.pageSize) grid.dataset.pageSize = nextGrid.dataset.pageSize;
+                else delete grid.dataset.pageSize;
                 numberOffset = Math.max(0, Number(nextOffset) || 0);
                 cards = [...grid.querySelectorAll('.ar-card')];
                 apply();
