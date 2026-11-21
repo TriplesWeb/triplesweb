@@ -50,20 +50,6 @@
         {{>partials/archive-type-tabs}}
         {{>partials/archive-source-tabs}}
     </div>
-    <div class="ar-grid-bar">
-        <div class="ar-cols-control" id="archive-cols-dropdown" data-archive-cols-filter>
-            <button type="button" class="ar-cols-toggle" data-archive-cols-toggle aria-label="열 수" aria-expanded="false" aria-haspopup="listbox" aria-controls="archive-cols-menu">
-                <span class="ar-cols-icon" aria-hidden="true"><span></span><span></span><span></span></span>
-                <span class="ar-cols-sr" data-archive-cols-label>4열</span>
-            </button>
-            <div id="archive-cols-menu" class="ar-cols-menu" data-archive-cols-menu hidden role="listbox" aria-label="열 수">
-                <button type="button" class="ar-cols-option" data-archive-cols-option="2" role="option">2열</button>
-                <button type="button" class="ar-cols-option" data-archive-cols-option="3" role="option">3열</button>
-                <button type="button" class="ar-cols-option" data-archive-cols-option="4" role="option">4열</button>
-                <button type="button" class="ar-cols-option" data-archive-cols-option="5" role="option">5열</button>
-            </div>
-        </div>
-    </div>
 
     <section class="ar-grid{{#archiveBrowse}} ar-grid-browse{{/archiveBrowse}}" id="archiveGrid" aria-label="{{#imageArchive}}사진 목록{{/imageArchive}}{{#videoArchive}}영상 목록{{/videoArchive}}" data-number-offset="{{archiveOffset}}">
         {{#archiveCards}}
@@ -379,7 +365,6 @@
 <script src="{{#asset}}/js/archive-manage.js{{/asset}}"></script>
 <script src="{{#asset}}/js/date-range-filter.js{{/asset}}"></script>
 <script src="{{#asset}}/js/archive-browse.js{{/asset}}"></script>
-<script src="{{#asset}}/js/archive-grid-pack.js{{/asset}}"></script>
 {{^archiveFolderHome}}
 {{#imageArchive}}
 <script src="{{#asset}}/js/archive-detail.js{{/asset}}"></script>
