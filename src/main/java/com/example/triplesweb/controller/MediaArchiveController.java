@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -108,12 +109,15 @@ public class MediaArchiveController {
         List<MediaDto> recommendations = latest.size() <= 1
                 ? List.of()
                 : latest.subList(1, Math.min(latest.size(), 6));
+        List<MediaDto> suggestions = suggestions(filtered, featured, recommendations, 4);
         List<MediaDto> shorts = filtered.stream().filter(video -> MediaOrdering.isShort(video.getDuration())).limit(4).toList();
         model.addAttribute("featured", featured);
         model.addAttribute("hasFeatured", featured != null);
         model.addAttribute("recommendations", recommendations);
         model.addAttribute("hasRecommendations", !recommendations.isEmpty());
         model.addAttribute("recommendationCount", String.format("%02d", recommendations.size()));
+        model.addAttribute("suggestions", suggestions);
+        model.addAttribute("hasSuggestions", !suggestions.isEmpty());
         model.addAttribute("shorts", shorts);
         model.addAttribute("hasShorts", !shorts.isEmpty());
         model.addAttribute("mediaCatalogJson", catalogJson(filtered));
@@ -219,10 +223,6 @@ public class MediaArchiveController {
                         form.setViews(0L);
                     }
                 }
-            }
-            if (form.getDescription() == null || form.getDescription().isBlank()) {
-                Object description = info.get("description");
-                if (description != null) form.setDescription(description.toString());
             }
         }
 
@@ -344,6 +344,63 @@ public class MediaArchiveController {
         if (selected == null || selected.isEmpty()) return "멤버 선택";
         if (selected.size() == 1) return selected.get(0);
         return selected.size() + "명";
+    }
+
+    /** 대표 영상과 멤버·분류가 겹치는 영상을 우선해 아카이브 위에 네 개까지 고른다. */
+    private List<MediaDto> suggestions(List<MediaDto> videos, MediaDto anchor, List<MediaDto> reserved, int limit) {
+        if (anchor == null || videos == null || videos.isEmpty() || limit < 1) return List.of();
+        Set<String> skip = new LinkedHashSet<>();
+        if (anchor.getYoutubeId() != null) skip.add(anchor.getYoutubeId().toLowerCase(Locale.ROOT));
+        if (reserved != null) {
+            for (MediaDto video : reserved) {
+                if (video.getYoutubeId() != null) skip.add(video.getYoutubeId().toLowerCase(Locale.ROOT));
+            }
+        }
+        Set<String> members = memberKeySet(anchor.getArtistNames());
+        String tab = anchor.getTab() == null ? "" : anchor.getTab();
+        List<MediaDto> pool = new ArrayList<>();
+        for (MediaDto video : videos) {
+            if (video.getYoutubeId() == null || skip.contains(video.getYoutubeId().toLowerCase(Locale.ROOT))) continue;
+            pool.add(video);
+        }
+        pool.sort((left, right) -> {
+            int byScore = Integer.compare(similarity(right, members, tab), similarity(left, members, tab));
+            if (byScore != 0) return byScore;
+            LocalDate rightDay = MediaOrdering.parseDate(right.getPublishedOn());
+            LocalDate leftDay = MediaOrdering.parseDate(left.getPublishedOn());
+            if (leftDay == null && rightDay == null) return 0;
+            if (leftDay == null) return 1;
+            if (rightDay == null) return -1;
+            return rightDay.compareTo(leftDay);
+        });
+        List<MediaDto> picked = new ArrayList<>();
+        for (MediaDto video : pool) {
+            if (picked.size() >= limit) break;
+            picked.add(video);
+        }
+        if (picked.size() < limit && reserved != null) {
+            for (MediaDto video : reserved) {
+                if (picked.size() >= limit) break;
+                if (video.getYoutubeId() == null || video.getYoutubeId().equalsIgnoreCase(anchor.getYoutubeId())) continue;
+                picked.add(video);
+            }
+        }
+        return List.copyOf(picked);
+    }
+
+    private static int similarity(MediaDto video, Set<String> members, String tab) {
+        int score = 0;
+        for (String name : memberKeySet(video.getArtistNames())) {
+            if (members.contains(name)) score += 3;
+        }
+        if (tab != null && !tab.isBlank() && tab.equals(video.getTab())) score += 1;
+        return score;
+    }
+
+    private static Set<String> memberKeySet(String names) {
+        Set<String> keys = new LinkedHashSet<>();
+        for (String name : splitNames(names)) keys.add(MediaOrdering.memberKey(name));
+        return keys;
     }
 
     private static boolean matchesMembers(String artistNames, List<String> selected) {

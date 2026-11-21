@@ -103,16 +103,94 @@
         let appliedDates = dateSnapshot();
         let appliedMembers = memberKey();
         let composing = false;
-        let searchTimer = 0;
+        let filterTimer = 0;
+        let filterSeq = 0;
         enhanceSort(sort);
-        sort.addEventListener('change', () => form.requestSubmit());
+        sort.addEventListener('change', scheduleResults);
+
+        function filterUrl() {
+            paintMembers();
+            const params = new URLSearchParams();
+            new FormData(form).forEach((value, key) => {
+                if (String(value).trim() === '') return;
+                params.append(key, value);
+            });
+            const action = form.getAttribute('action') || '/media';
+            const query = params.toString();
+            return query ? action + (action.includes('?') ? '&' : '?') + query : action;
+        }
+
+        function swapSection(currentShell, nextShell, className) {
+            const current = currentShell.querySelector('section.' + className);
+            const next = nextShell.querySelector('section.' + className);
+            if (current && next) {
+                current.replaceWith(document.importNode(next, true));
+                return;
+            }
+            if (current) {
+                current.remove();
+                return;
+            }
+            if (!next) return;
+            const imported = document.importNode(next, true);
+            const filters = currentShell.querySelector('section.media-filters');
+            const feature = currentShell.querySelector('section.media-feature');
+            const archive = currentShell.querySelector('section.media-archive');
+            if (className === 'media-feature' && filters) filters.after(imported);
+            else if (className === 'media-archive') (feature || filters)?.after(imported);
+            else if (className === 'media-shorts') (archive || feature || filters)?.after(imported);
+        }
+
+        async function applyResults() {
+            const url = filterUrl();
+            const seq = ++filterSeq;
+            const y = window.scrollY;
+            try {
+                const response = await fetch(url, { credentials: 'same-origin' });
+                if (seq !== filterSeq) return;
+                if (!response.ok) throw new Error(String(response.status));
+                const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
+                const shell = document.querySelector('main.media-shell');
+                const nextShell = doc.querySelector('main.media-shell');
+                if (!shell || !nextShell) throw new Error('shell');
+                swapSection(shell, nextShell, 'media-feature');
+                swapSection(shell, nextShell, 'media-archive');
+                swapSection(shell, nextShell, 'media-shorts');
+                const catalog = document.getElementById('mediaCatalog');
+                const nextCatalog = doc.getElementById('mediaCatalog');
+                if (catalog && nextCatalog) {
+                    catalog.textContent = nextCatalog.textContent;
+                    reloadCatalog();
+                }
+                const reset = form.querySelector('.ar-reset');
+                const nextReset = nextShell.querySelector('.ar-reset');
+                if (reset && nextReset) reset.hidden = nextReset.hidden;
+                capturePlaylist();
+                renderPlaylist();
+                upgradeStills();
+                const nextUrl = new URL(url, location.href);
+                const same = nextUrl.pathname === location.pathname && nextUrl.search === location.search;
+                if (!same) history.pushState({ mediaLive: true }, '', nextUrl.pathname + nextUrl.search);
+                window.scrollTo(0, y);
+            } catch (error) {
+                if (seq === filterSeq) window.location.assign(url);
+            }
+        }
+
+        function scheduleResults() {
+            window.clearTimeout(filterTimer);
+            filterTimer = window.setTimeout(() => {
+                if (composing) return;
+                applyResults();
+            }, 180);
+        }
 
         function commitMembers() {
             paintMembers();
             const next = memberKey();
             if (next === appliedMembers) return;
             appliedMembers = next;
-            form.requestSubmit();
+            scheduleResults();
         }
 
         toggle?.addEventListener('click', () => {
@@ -132,52 +210,58 @@
         if (window.MemberPortraitPicker && panel) {
             MemberPortraitPicker.bindMultiSelect(panel, {
                 multi: true,
-                onChange: paintMembers
+                onChange: commitMembers
             });
         }
         form.addEventListener('archive-date-close', () => {
             const next = dateSnapshot();
             if (next === appliedDates) return;
             appliedDates = next;
-            form.requestSubmit();
+            scheduleResults();
         });
-        function scheduleSearch() {
-            window.clearTimeout(searchTimer);
-            searchTimer = window.setTimeout(() => {
-                if (composing) return;
-                form.requestSubmit();
-            }, 450);
-        }
+        form.querySelectorAll('[data-date-filter] input').forEach((input) => {
+            input.addEventListener('change', () => {
+                const next = dateSnapshot();
+                if (next === appliedDates) return;
+                appliedDates = next;
+                scheduleResults();
+            });
+        });
         search?.addEventListener('compositionstart', () => {
             composing = true;
-            window.clearTimeout(searchTimer);
+            window.clearTimeout(filterTimer);
         });
         search?.addEventListener('compositionend', () => {
             composing = false;
-            scheduleSearch();
+            scheduleResults();
         });
         search?.addEventListener('input', () => {
             if (composing) return;
-            scheduleSearch();
+            scheduleResults();
         });
-        form.addEventListener('submit', () => {
-            if (search && !search.value.trim()) search.disabled = true;
-            memberBox?.querySelectorAll('input').forEach((input) => {
-                if (!input.value.trim()) input.disabled = true;
-            });
-            form.querySelectorAll('[data-date-filter] input').forEach((input) => {
-                if (!input.value.trim()) input.disabled = true;
-            });
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            scheduleResults();
         });
+        window.addEventListener('popstate', () => window.location.reload());
     }
 
     const PLAYLIST_KEY = 'triples-media-playlist';
-    const playlistList = document.getElementById('mediaPlaylistList');
-    const playlistTitle = document.getElementById('mediaPlaylistTitle');
-    const playlistCount = document.getElementById('mediaPlaylistCount');
-    const originalPlaylist = playlistList ? playlistList.innerHTML : '';
-    const originalTitle = playlistTitle ? playlistTitle.textContent : '추천 재생목록';
-    const originalCount = playlistCount ? playlistCount.textContent : '00';
+    let playlistList = null;
+    let playlistTitle = null;
+    let playlistCount = null;
+    let originalPlaylist = '';
+    let originalTitle = '추천 재생목록';
+    let originalCount = '00';
+
+    function capturePlaylist() {
+        playlistList = document.getElementById('mediaPlaylistList');
+        playlistTitle = document.getElementById('mediaPlaylistTitle');
+        playlistCount = document.getElementById('mediaPlaylistCount');
+        originalPlaylist = playlistList ? playlistList.innerHTML : '';
+        originalTitle = playlistTitle ? playlistTitle.textContent : '추천 재생목록';
+        originalCount = playlistCount ? playlistCount.textContent : '00';
+    }
 
     function readPlaylist() {
         try {
@@ -264,6 +348,9 @@
     function renderPlaylist() {
         const items = readPlaylist();
         paintAddButtons(items);
+        const playlist = document.getElementById('mediaPlaylist');
+        const managing = items.length > 0;
+        playlist?.classList.toggle('is-managing', managing);
         if (!playlistList) return;
         if (!items.length) {
             playlistList.innerHTML = originalPlaylist;
@@ -292,14 +379,18 @@
         renderPlaylist();
     }
 
-    const catalogNode = document.getElementById('mediaCatalog');
-    let catalog = [];
-    try {
-        catalog = JSON.parse(catalogNode?.textContent || '[]');
-    } catch (error) {
-        catalog = [];
+    let byId = new Map();
+    function reloadCatalog() {
+        const catalogNode = document.getElementById('mediaCatalog');
+        let catalog = [];
+        try {
+            catalog = JSON.parse(catalogNode?.textContent || '[]');
+        } catch (error) {
+            catalog = [];
+        }
+        byId = new Map(catalog.map((row) => [row.youtubeId, row]));
     }
-    const byId = new Map(catalog.map((row) => [row.youtubeId, row]));
+    reloadCatalog();
     const ytModal = document.getElementById('ytModal');
     const ytPlayer = document.getElementById('ytPlayer');
     const editModal = document.getElementById('mediaEditModal');
@@ -408,6 +499,7 @@
         if (ytPlayer) ytPlayer.src = '';
     });
 
+    function upgradeStills() {
     document.querySelectorAll('img[data-yt-still]').forEach((img) => {
         const id = img.dataset.ytStill;
         const use = (name) => {
@@ -428,6 +520,9 @@
         if (img.complete && img.naturalWidth === 0) use('sddefault');
         else if (img.complete) soften();
     });
+    }
 
+    capturePlaylist();
+    upgradeStills();
     renderPlaylist();
 })();

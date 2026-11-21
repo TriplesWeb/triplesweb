@@ -769,6 +769,7 @@ body.media-page {
     .media-feature__layout,
     .media-grid,
     .media-shorts__grid { grid-template-columns: 1fr; }
+    .media-suggest { grid-template-columns: 1fr 1fr; }
 }
 
 .media-playlist-add {
@@ -792,18 +793,89 @@ body.media-page {
 
 .media-playlist-add--center {
     position: absolute;
-    top: 50%;
+    top: auto;
+    bottom: 10px;
     left: 50%;
     z-index: 3;
     width: auto;
     min-width: 8.5rem;
     padding: 0 0.95rem;
-    transform: translate(-50%, -50%);
+    transform: translateX(-50%);
     background: #12161c;
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
     font-size: 0.82rem;
     font-weight: 700;
     white-space: nowrap;
+}
+
+.media-playlist.is-managing .media-playlist-add--center { display: none; }
+
+.media-playlist:not(.is-managing) .media-playlist__list { padding-bottom: 3rem; }
+
+.media-suggest {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.media-suggest__card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+}
+
+.media-suggest__thumb {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: 10px;
+    background: #0d0e12;
+}
+
+.media-suggest__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.media-suggest__thumb em {
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #0c1014;
+    color: #f4f5f7;
+    font-size: 11px;
+    font-style: normal;
+    line-height: 1.4;
+}
+
+.media-suggest__copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding-top: 6px;
+}
+
+.media-suggest__copy small {
+    color: #8decd9;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.media-suggest__copy strong {
+    display: -webkit-box;
+    overflow: hidden;
+    color: #f4f5f7;
+    font-size: 13px;
+    font-weight: 650;
+    line-height: 1.35;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
 }
 
 .media-card__add {
