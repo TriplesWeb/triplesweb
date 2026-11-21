@@ -336,6 +336,9 @@ public class ArchiveController {
         Set<ArchiveSource> availableSources = browse
                 ? archiveService.availableSources(type, q, selectedMembers, fromDate, toDate)
                 : folderBrowse.availableSources();
+        String keptFilters = (type == MediaType.VIDEO ? "&type=video" : "") + folderQuery(folderKey, "")
+                + (q == null || q.isBlank() ? "" : "&q=" + URLEncoder.encode(q.trim(), StandardCharsets.UTF_8))
+                + memberQuery(selectedMembers) + dateQuery;
         model.addAttribute("sourceTabs", sourceTabs(browse ? "/archive/all" : "/archive",
                 keptFilters + sizeQuery, sourceKey, availableSources));
         model.addAttribute("externalSource", externalView);
