@@ -9,11 +9,13 @@
 
 기존 `즉시 배포` 코멘트 검사 방식은 폐지한다. 모든 머지가 운영 배포 대상이다. GitHub `main`에 직접 푸시하지 말고 PR을 머지한다.
 
-## Blue-Green 운영 배포 (신규)
+## 단일 앱 배포
 
-운영 배포는 동일 Pi에서 Nginx(:8090) + 활성 Blue/Green 앱 하나를 유지합니다. 새 버전을 비활성 슬롯에 미리 띄워 readiness와 /main을 검사하고 Nginx 설정을 graceful reload한 뒤에만 이전 앱을 종료합니다. **기존 `docker compose up -d --no-deps app` 경로는 legacy 복구용**이며 정상 운영에서는 `scripts/deploy-pi-bluegreen.sh`만 사용합니다. 최초 프록시 전환에서는 짧은 중단이 발생할 수 있습니다.
+운영 앱은 같은 Pi의 8090 포트에서 실행합니다. Actions가 Pi에 이미지를 준비하고 MariaDB 상태를 확인한 다음, 기존 앱을 정상 종료합니다. 새 앱은 기동 중 Flyway를 실행하고 readiness와 홈 응답을 검사합니다. 기존 앱 종료부터 새 앱 준비까지 사이트가 중단됩니다. 이전 Nginx 프록시가 있는 Pi는 첫 배포에서 프록시와 기존 앱 슬롯을 종료한 뒤 같은 포트를 새 앱에 연결합니다. MariaDB와 업로드 마운트는 유지합니다.
 
-메모리 검사, DB Flyway 변경 차단, 롤백, 포트 충돌 방지 및 수동 복구 절차: [BLUE_GREEN_DEPLOYMENT.md](BLUE_GREEN_DEPLOYMENT.md).
+Flyway 마이그레이션이 바뀐 배포도 같은 순서로 실행합니다. 이전 앱이 종료된 상태에서 DB를 변경합니다. 기동에 실패하면 마이그레이션 트리가 이전 정상 배포와 동일한 경우에만 이전 앱으로 자동 복구를 시도합니다. 트리가 달라진 실패는 Actions와 Flyway 로그를 확인해 원인을 고친 뒤 재배포합니다. DB 자체는 자동으로 되돌리지 않습니다.
+
+운영 앱 교체는 `Deploy to Raspberry Pi (prod)`의 자동 또는 수동 실행을 사용합니다. GitHub Actions 변수 `APP_MEMORY_LIMIT`, `APP_STOP_TIMEOUT_SECONDS`, `APP_READY_TIMEOUT_SECONDS`의 기본값은 각각 1800 MB, 600초, 360초입니다.
 
 ## PR 변경 영역별 선택적 CI
 
@@ -74,8 +76,7 @@ CI 설정만 수정된 PR을 머지하면 `main` push의 즉시 운영 배포는
 
 ## 실패 시
 
-- 풀 실패 시 5회 재시도, 이미지 변경 후 readiness가 실패하면 이전 앱 이미지로 되돌리기를 시도
-- DB 스키마 마이그레이션은 자동으로 롤백하지 않는다. 위험한 DB 변경을 배포할 때는 역호환성을 보장해야 한다.
+- 이미지 준비는 최대 5회 시도합니다. 준비에 실패하면 실행 중인 앱을 유지합니다.
 - 운영 Pi 배포는 앱 이미지 교체와 Compose 업데이트만 수행하며 DB 내용을 자동 복사하지 않는다.
 
 ## 검증
