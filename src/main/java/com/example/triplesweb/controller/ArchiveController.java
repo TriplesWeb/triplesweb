@@ -20,6 +20,7 @@ import com.example.triplesweb.util.ArchiveFolderClassifier;
 import com.example.triplesweb.util.ArchiveImages;
 import com.example.triplesweb.util.ImageUrls;
 import com.example.triplesweb.util.MemberPortraitOptions;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -240,7 +241,8 @@ public class ArchiveController {
         ArchiveSource source = parseSourceFilter(sourceSlug);
         String sourceKey = source == null ? sourceSlug : source.getSlug();
         boolean externalView = source == ArchiveSource.EXTERNAL;
-        int pageSize = externalView ? externalPageSize(size) : size;
+        boolean imageView = type == MediaType.IMAGE;
+        int pageSize = imageView ? imagePageSize(size) : size;
         // 전체 멤버 폴더(s)는 유닛 분류가 필요 없고, listVisible()의 앨범 병합은 아카이브에 불필요하다.
         boolean needsUnits = !browse && !folderKey.equalsIgnoreCase("s");
         List<Unit> visibleUnits = needsUnits ? unitService.listVisibleForArchive() : List.of();
@@ -257,7 +259,7 @@ public class ArchiveController {
         }
 
         List<Artist> artists = artistSnapshot.findAll();
-        List<Map<String, Object>> cards = archiveCards(archives, artists);
+        List<Map<String, Object>> cards = archiveCards(archives, artists, selectedMembers);
         model.addAttribute("archives", archives);
         model.addAttribute("archiveCards", cards);
         model.addAttribute("artistOptions", artists);
@@ -334,14 +336,14 @@ public class ArchiveController {
         model.addAttribute("sourceTabs", sourceTabs(browse ? "/archive/all" : "/archive",
                 keptFilters, sourceKey, availableSources));
         model.addAttribute("externalSource", externalView);
+        model.addAttribute("showPhotoDensity", imageView);
         model.addAttribute("archivePageSize", pageSize);
-        String sizeQuery = externalView ? "&size=" + pageSize : "";
+        String sizeQuery = imageView ? "&size=" + pageSize : "";
         model.addAttribute("sizeQuery", sizeQuery);
-        int nextSize = nextExternalPageSize(pageSize);
-        model.addAttribute("densityLabel", nextSize + "개 보기");
-        model.addAttribute("densityHref", externalView
-                ? joinHref(browse ? "/archive/all" : "/archive",
-                keptFilters + "&source=" + ArchiveSource.EXTERNAL.getSlug() + "&size=" + nextSize)
+        int nextSize = nextImagePageSize(pageSize);
+        model.addAttribute("densityLabel", nextSize + "개씩 보기");
+        model.addAttribute("densityHref", imageView
+                ? joinHref(browse ? "/archive/all" : "/archive", keptFilters + "&size=" + nextSize)
                 : "");
         return "archive/archive";
     }
@@ -465,7 +467,7 @@ public class ArchiveController {
         return query.toString();
     }
 
-    private List<Map<String, Object>> archiveCards(Page<Archive> archives, List<Artist> artists) {
+    private List<Map<String, Object>> archiveCards(Page<Archive> archives, List<Artist> artists, List<String> selectedMembers) {
         Map<String, String> colors = new LinkedHashMap<>();
         for (Artist artist : artists) {
             String color = artist.getColor();
@@ -476,29 +478,34 @@ public class ArchiveController {
         long offset = archives.getPageable().isPaged() ? archives.getPageable().getOffset() : 0;
         List<Map<String, Object>> cards = new ArrayList<>();
         for (Archive archive : archives) {
-            List<Map<String, Object>> badges = new ArrayList<>();
-            for (String name : normalizeMembers(archive.getArtistNames() == null ? List.of() : List.of(archive.getArtistNames().split(",")))) {
-                Artist matched = null;
-                String keyName = name.toLowerCase(Locale.ROOT);
-                for (Artist artist : artists) {
-                    if (artist.getName() != null && artist.getName().trim().equalsIgnoreCase(name)) { matched = artist; break; }
-                    if (artist.getEngName() != null && artist.getEngName().trim().equalsIgnoreCase(name)) { matched = artist; break; }
-                }
-                String symbol = MemberPortraitOptions.archiveSymbolLogo(name);
-                String portrait = matched == null || matched.getDisplayProfileImage() == null ? "" : matched.getDisplayProfileImage();
-                String image = !symbol.isBlank() ? symbol : portrait;
-                Map<String, Object> badge = new LinkedHashMap<>();
-                badge.put("name", name);
-                badge.put("color", colors.getOrDefault(keyName, "#b9cac4"));
-                badge.put("image", image);
-                badge.put("hasImage", !image.isBlank());
-                badge.put("hasSymbol", !symbol.isBlank());
-                badge.put("portrait", portrait);
-                badge.put("hasPortrait", !portrait.isBlank());
-                badge.put("artistId", matched == null ? "" : matched.getArtistId());
-                badge.put("hasArtist", matched != null && matched.getArtistId() != null);
-                badges.add(badge);
+            List<String> imageUrls = archive.getType() == MediaType.IMAGE
+                    ? ArchiveImages.resolve(archive, objectMapper)
+                    : List.of();
+            if (imageUrls.isEmpty() && archive.getFile() != null && archive.getFile().getUrl() != null) {
+                imageUrls = List.of(archive.getFile().getUrl());
             }
+            List<String> artistRows = imageArtistRows(archive);
+            List<Integer> visible = new ArrayList<>();
+            for (int i = 0; i < imageUrls.size(); i++) {
+                String castNames = castNamesAt(archive, artistRows, i);
+                if (selectedMembers == null || selectedMembers.isEmpty() || membersOverlap(castNames, selectedMembers)) {
+                    visible.add(i);
+                }
+            }
+            if (visible.isEmpty()) {
+                for (int i = 0; i < imageUrls.size(); i++) visible.add(i);
+            }
+            List<String> viewUrls = new ArrayList<>();
+            List<Map<String, Object>> imageCasts = new ArrayList<>();
+            for (int i : visible) {
+                viewUrls.add(imageUrls.get(i));
+                Map<String, Object> frame = new LinkedHashMap<>();
+                frame.put("memberBadges", memberBadges(castNamesAt(archive, artistRows, i), artists, colors));
+                imageCasts.add(frame);
+            }
+            List<Map<String, Object>> badges = imageCasts.isEmpty()
+                    ? memberBadges(archive.getArtistNames(), artists, colors)
+                    : castBadges(imageCasts.get(0));
             Map<String, Object> card = new LinkedHashMap<>();
             String title = archive.getTitle() == null ? "" : archive.getTitle().trim();
             String description = archive.getDescription() == null ? "" : archive.getDescription().trim();
@@ -512,17 +519,18 @@ public class ArchiveController {
             card.put("artistNames", archive.getArtistNames());
             card.put("memberOrder", MemberPortraitOptions.earliestMemberIndex(archive.getArtistNames()));
             card.put("file", archive.getFile());
-            List<String> imageUrls = archive.getType() == MediaType.IMAGE
-                    ? ArchiveImages.resolve(archive, objectMapper)
-                    : List.of();
-            if (imageUrls.isEmpty() && archive.getFile() != null && archive.getFile().getUrl() != null) {
-                imageUrls = List.of(archive.getFile().getUrl());
-            }
             String imagesJson = ArchiveImages.write(imageUrls, objectMapper);
+            String viewJson = ArchiveImages.write(viewUrls, objectMapper);
             card.put("imageUrls", imageUrls);
             card.put("imageUrlsJson", imagesJson == null ? "[]" : imagesJson);
-            card.put("imageCount", imageUrls.size());
-            card.put("hasMultipleImages", imageUrls.size() > 1);
+            card.put("viewUrlsJson", viewJson == null ? "[]" : viewJson);
+            card.put("imageArtistsJson", archive.getImageArtistsJson() == null ? "[]" : archive.getImageArtistsJson());
+            card.put("imageCasts", imageCasts);
+            card.put("previewUrl", viewUrls.isEmpty()
+                    ? (archive.getFile() == null || archive.getFile().getUrl() == null ? "" : archive.getFile().getUrl())
+                    : viewUrls.get(0));
+            card.put("imageCount", viewUrls.size());
+            card.put("hasMultipleImages", viewUrls.size() > 1);
             card.put("thumbnailUrl", archive.getThumbnailUrl());
             card.put("displayNumber", offset + cards.size() + 1);
             card.put("memberBadges", badges);
@@ -697,16 +705,100 @@ public class ArchiveController {
         return query;
     }
 
-    private static int externalPageSize(int size) {
-        return size == 20 || size == 30 ? size : 10;
-    }
-
-    private static int nextExternalPageSize(int size) {
-        return switch (externalPageSize(size)) {
-            case 10 -> 20;
-            case 20 -> 30;
+    private static int imagePageSize(int size) {
+        return switch (size) {
+            case 20, 30, 40, 50 -> size;
             default -> 10;
         };
+    }
+
+    private static int nextImagePageSize(int size) {
+        return switch (imagePageSize(size)) {
+            case 10 -> 20;
+            case 20 -> 30;
+            case 30 -> 40;
+            case 40 -> 50;
+            default -> 10;
+        };
+    }
+
+    private List<String> imageArtistRows(Archive archive) {
+        String json = archive.getImageArtistsJson();
+        if (json == null || json.isBlank()) return List.of();
+        try {
+            List<String> rows = objectMapper.readValue(json, new TypeReference<List<String>>() {});
+            return rows == null ? List.of() : rows;
+        } catch (Exception error) {
+            return List.of();
+        }
+    }
+
+    private static String castNamesAt(Archive archive, List<String> rows, int index) {
+        if (rows != null && index >= 0 && index < rows.size() && rows.get(index) != null && !rows.get(index).isBlank()) {
+            return rows.get(index);
+        }
+        return archive.getArtistNames() == null ? "" : archive.getArtistNames();
+    }
+
+    private static boolean membersOverlap(String castNames, List<String> selected) {
+        if (selected == null || selected.isEmpty()) return true;
+        for (String name : normalizeMembers(castNames == null || castNames.isBlank() ? List.of() : List.of(castNames.split(",")))) {
+            for (String picked : selected) {
+                if (name.equalsIgnoreCase(picked)) return true;
+            }
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> castBadges(Map<String, Object> frame) {
+        Object badges = frame.get("memberBadges");
+        return badges instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
+    }
+
+    private static List<Map<String, Object>> memberBadges(String names, List<Artist> artists, Map<String, String> colors) {
+        List<Map<String, Object>> badges = new ArrayList<>();
+        for (String name : normalizeMembers(names == null || names.isBlank() ? List.of() : List.of(names.split(",")))) {
+            Artist matched = null;
+            String keyName = name.toLowerCase(Locale.ROOT);
+            for (Artist artist : artists) {
+                if (artist.getName() != null && artist.getName().trim().equalsIgnoreCase(name)) { matched = artist; break; }
+                if (artist.getEngName() != null && artist.getEngName().trim().equalsIgnoreCase(name)) { matched = artist; break; }
+            }
+            String symbol = MemberPortraitOptions.archiveSymbolLogo(name);
+            String portrait = matched == null || matched.getDisplayProfileImage() == null ? "" : matched.getDisplayProfileImage();
+            String image = !symbol.isBlank() ? symbol : portrait;
+            Map<String, Object> badge = new LinkedHashMap<>();
+            badge.put("name", name);
+            badge.put("color", colors.getOrDefault(keyName, "#b9cac4"));
+            badge.put("image", image);
+            badge.put("hasImage", !image.isBlank());
+            badge.put("hasSymbol", !symbol.isBlank());
+            badge.put("portrait", portrait);
+            badge.put("hasPortrait", !portrait.isBlank());
+            badge.put("artistId", matched == null ? "" : matched.getArtistId());
+            badge.put("hasArtist", matched != null && matched.getArtistId() != null);
+            badges.add(badge);
+        }
+        return badges;
+    }
+
+    private String unionArtistNames(String fallback, String imageArtistsJson) {
+        if (imageArtistsJson == null || imageArtistsJson.isBlank()) return fallback == null ? "" : fallback;
+        List<String> rows;
+        try {
+            rows = objectMapper.readValue(imageArtistsJson, new TypeReference<List<String>>() {});
+        } catch (Exception error) {
+            return fallback == null ? "" : fallback;
+        }
+        if (rows == null || rows.isEmpty()) return fallback == null ? "" : fallback;
+        LinkedHashSet<String> names = new LinkedHashSet<>();
+        for (String row : rows) {
+            if (row == null || row.isBlank()) continue;
+            for (String name : normalizeMembers(List.of(row.split(",")))) names.add(name);
+        }
+        if (names.isEmpty()) return fallback == null ? "" : fallback;
+        return String.join(",", names);
     }
 
     private static String sourceQuery(String sourceSlug) {
@@ -1228,6 +1320,7 @@ public class ArchiveController {
                               @RequestParam(value = "title", required = false) String title,
                               @RequestParam(value = "description", required = false) String description,
                               @RequestParam(value="artistNames", required=false) List<String> artistNames,
+                              @RequestParam(value = "imageArtistsJson", required = false) String imageArtistsJson,
                               @RequestParam("registeredOn") LocalDate registeredOn,
                               @RequestParam("source") String source,
                               @RequestParam(defaultValue = "0") int coverIndex,
@@ -1249,7 +1342,12 @@ public class ArchiveController {
             if (uploads.isEmpty()) {
                 throw new IllegalArgumentException("사진 파일을 선택해 주세요.");
             }
-            archiveService.uploadImages(uploads, safeTitle, names, date, archiveSource, description, coverIndex);
+            String castNames = unionArtistNames(names, imageArtistsJson);
+            if (imageArtistsJson == null || imageArtistsJson.isBlank()) {
+                archiveService.uploadImages(uploads, safeTitle, castNames, date, archiveSource, description, coverIndex);
+            } else {
+                archiveService.uploadImages(uploads, safeTitle, castNames, date, archiveSource, description, coverIndex, imageArtistsJson);
+            }
             String location = folderRedirect(MediaType.IMAGE, names);
             idempotencyService.complete(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
             return "redirect:" + location;
@@ -1293,6 +1391,7 @@ public class ArchiveController {
                                            @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnail,
                                            @RequestParam(defaultValue = "false") boolean clearThumbnail,
                                            @RequestParam(value = "artistNames", required = false) String artistNames,
+                                           @RequestParam(value = "imageArtistsJson", required = false) String imageArtistsJson,
                                            @RequestParam("registeredOn") LocalDate registeredOn,
                                            @RequestParam(value = "source", required = false) String source,
                                            @RequestParam(value = "keepImageUrlsJson", required = false) String keepImageUrlsJson,
@@ -1302,13 +1401,25 @@ public class ArchiveController {
                                            HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
         try {
-            archiveService.update(id, title == null ? "" : title, files, artistNames, thumbnail, clearThumbnail,
-                    requireDate(registeredOn),
-                    source == null || source.isBlank() ? null : ArchiveSource.parse(source),
-                    description,
-                    keepImageUrlsJson,
-                    imageOrderJson,
-                    coverIndex);
+            String castNames = unionArtistNames(artistNames, imageArtistsJson);
+            if (imageArtistsJson == null || imageArtistsJson.isBlank()) {
+                archiveService.update(id, title == null ? "" : title, files, castNames, thumbnail, clearThumbnail,
+                        requireDate(registeredOn),
+                        source == null || source.isBlank() ? null : ArchiveSource.parse(source),
+                        description,
+                        keepImageUrlsJson,
+                        imageOrderJson,
+                        coverIndex);
+            } else {
+                archiveService.update(id, title == null ? "" : title, files, castNames, thumbnail, clearThumbnail,
+                        requireDate(registeredOn),
+                        source == null || source.isBlank() ? null : ArchiveSource.parse(source),
+                        description,
+                        keepImageUrlsJson,
+                        imageOrderJson,
+                        coverIndex,
+                        imageArtistsJson);
+            }
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
