@@ -38,6 +38,15 @@ class AboutAdminAuthTest {
     }
 
     @Test
+    void loginAcceptsDockerEscapedBcryptHash() {
+        ReflectionTestUtils.setField(auth, "adminPassword", SECRET_HASH.replace("$", "$$"));
+        MockHttpSession session = new MockHttpSession();
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        Map<String, Object> result = auth.login(Map.of("password", "secret"), request, session);
+        assertThat(result.get("admin")).isEqualTo(true);
+    }
+
+    @Test
     void loginAcceptsLegacyPlaintextPasswordDuringMigration() {
         ReflectionTestUtils.setField(auth, "adminPassword", "plain-secret");
         MockHttpSession session = new MockHttpSession();

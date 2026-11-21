@@ -46,6 +46,11 @@ public class MediaService {
     @Transactional(readOnly = true)
     public int totalByTab(String tab) { return (int) mediaRepository.countByTab(tab); }
 
+    @Transactional(readOnly = true)
+    public List<MediaDto> listAll() {
+        return mediaRepository.findAllWithArtists().stream().map(this::toDto).toList();
+    }
+
     public void addMedia(String tab, MediaDto dto, boolean addFirst) {
         addMedia(tab,dto,addFirst,dto == null ? "" : dto.getArtistNames());
     }
