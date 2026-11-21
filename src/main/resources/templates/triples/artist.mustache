@@ -1,5 +1,6 @@
 {{>layout/head-open}}
 
+<link rel="stylesheet" href="{{#asset}}/css/unit-checks.css{{/asset}}">
 <link rel="stylesheet" href="{{#asset}}/css/about-admin.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/artist.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/artist-performance.css{{/asset}}">
@@ -127,7 +128,7 @@
                             </div>
                         </div>
                         <div class="bg-[#0d0e12]/40 border border-[#3a4a46]/30 rounded-xl p-4 space-y-2.5">
-                            <span class="text-xl font-semibold text-[#b9cac4] block whitespace-nowrap">역대 소속 유닛</span>
+                            <span class="text-xl font-semibold text-[#b9cac4] block whitespace-nowrap">소속 유닛</span>
                             <div class="artist-unit-chips">
                                 {{#displayAffiliatedUnit}}
                                 <a href="/triples/unit/{{unit.unitId}}" class="artist-unit-chip" title="{{unit.unitName}}">
@@ -287,14 +288,9 @@
             <label class="artist-edit-check">
                 <input type="checkbox" id="artistEditClearSignatureImage"> 싸인 이미지 제거
             </label>
-            <div class="artist-edit-label">역대 소속 유닛
-                <div id="artistEditUnits" class="artist-unit-checks" role="group" aria-label="역대 소속 유닛">
-                    {{#allUnits}}
-                    <label class="artist-unit-chip">
-                        <input type="checkbox" value="{{unitId}}">
-                        <span>{{unitName}}</span>
-                    </label>
-                    {{/allUnits}}
+            <div class="artist-edit-label">소속 유닛
+                <div id="artistEditUnits" class="unit-checks" role="group" aria-label="소속 유닛">
+                    {{>partials/unit-checkbox-chips}}
                 </div>
             </div>
             <div class="artist-edit-label">멤버 단독 컨텐츠
@@ -331,6 +327,7 @@
   });
 })();
 </script>
+<script src="{{#asset}}/js/unit-checkbox-group.js{{/asset}}"></script>
 <script src="{{#asset}}/js/about-admin-auth.js{{/asset}}"></script>
 <script src="{{#asset}}/js/about-tabs.js{{/asset}}"></script>
 <script src="{{#asset}}/js/about-modal.js{{/asset}}"></script>

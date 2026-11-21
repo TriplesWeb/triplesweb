@@ -14,6 +14,9 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 유닛 목록·상세 조회. 부모/자식 앨범 병합 포함.
@@ -65,6 +68,46 @@ public class UnitService {
             sortMembersByArtistId(unit);
         }
         return visible;
+    }
+
+    /**
+     * 멤버/아카이브 편집용 소속 유닛 체크 목록.
+     * 숨김 유닛·상위 컨테이너(예: msnz)는 제외. Mustache {@code unitCheckboxOptions}.
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> listUnitCheckboxOptions() {
+        List<Unit> all = unitRepository.findAllForUnitPage();
+        Set<Long> parentIds = all.stream()
+                .map(Unit::getParentUnit)
+                .filter(Objects::nonNull)
+                .map(Unit::getUnitId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        return all.stream()
+                .filter(Unit::isVisible)
+                .filter(unit -> unit.getUnitId() == null || !parentIds.contains(unit.getUnitId()))
+                .sorted(Comparator.comparingLong(unit -> unit.getUnitId() != null ? unit.getUnitId() : 0L))
+                .map(unit -> {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("unitId", unit.getUnitId());
+                    row.put("unitName", unit.getUnitName());
+                    String membersCsv = checkboxMemberNames(unit);
+                    if (!membersCsv.isEmpty()) {
+                        row.put("membersCsv", membersCsv);
+                    }
+                    return row;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private static String checkboxMemberNames(Unit unit) {
+        if (unit.getUnitMembers() == null || unit.getUnitMembers().isEmpty()) return "";
+        return unit.getUnitMembers().stream()
+                .map(UnitMember::getArtist)
+                .filter(Objects::nonNull)
+                .map(artist -> artist.getName() == null ? "" : artist.getName().trim())
+                .filter(name -> !name.isEmpty())
+                .collect(Collectors.joining(","));
     }
 
     @Transactional(readOnly = true)

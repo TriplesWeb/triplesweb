@@ -7,6 +7,7 @@ buildTailwindBundle({
   inputCss: 'scripts/css/triples.input.css',
   outPath: 'src/main/resources/static/css/triples.css',
   extras: [
+    'src/main/resources/static/css/unit-checks.css',
     'src/main/resources/static/css/about-admin.css',
     'src/main/resources/static/css/album-detail.css',
     'src/main/resources/static/css/artist.css',

@@ -727,7 +727,69 @@ textarea.form-control {
     background: transparent;
     padding-right: 0.25rem;
     min-height: 2.625rem;
-}/* About 트리플에스 — 관리자 모달 (케미 편집 UI와 톤 맞춤) */
+}/* 소속 유닛(또는 멤버) 다중 선택 칩 — artist / archive / about-admin 공용 */
+.unit-checks,
+.about-unit-checks,
+.artist-unit-checks {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.45rem;
+    max-height: 10rem;
+    overflow: auto;
+    padding: 0.55rem;
+    border-radius: 0.55rem;
+    border: 1px solid rgba(58, 74, 70, 0.4);
+    background: #0d0e12;
+}
+
+.unit-checks .unit-chip,
+.about-unit-checks .about-unit-chip,
+.artist-unit-checks .artist-unit-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    max-width: 100%;
+    padding: 0.35rem 0.65rem;
+    border-radius: 999px;
+    border: 1px solid rgba(58, 74, 70, 0.55);
+    background: #16181f;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: #e3e2e8;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.unit-checks .unit-chip:has(input:checked),
+.about-unit-checks .about-unit-chip:has(input:checked),
+.artist-unit-checks .artist-unit-chip:has(input:checked) {
+    border-color: rgba(0, 245, 212, 0.65);
+    color: #00f5d4;
+    background: rgba(0, 245, 212, 0.08);
+}
+
+.unit-checks .unit-chip input,
+.about-unit-checks .about-unit-chip input,
+.artist-unit-checks .artist-unit-chip input {
+    appearance: auto;
+    -webkit-appearance: checkbox;
+    width: 0.9rem;
+    height: 0.9rem;
+    margin: 0;
+    flex: 0 0 auto;
+    accent-color: #00f5d4;
+    cursor: pointer;
+}
+
+.unit-checks .unit-chip span,
+.about-unit-checks .about-unit-chip span,
+.artist-unit-checks .artist-unit-chip span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* About 트리플에스 — 관리자 모달 (케미 편집 UI와 톤 맞춤) */
 .about-admin-btn {
     appearance: none;
     display: inline-flex;
@@ -915,57 +977,7 @@ textarea.form-control {
     }
 }
 
-.about-unit-checks {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 0.45rem;
-    max-height: 10rem;
-    overflow: auto;
-    padding: 0.55rem;
-    border-radius: 0.55rem;
-    border: 1px solid rgba(58, 74, 70, 0.4);
-    background: #0d0e12;
-}
-
-.about-unit-checks .about-unit-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    max-width: 100%;
-    padding: 0.35rem 0.65rem;
-    border-radius: 999px;
-    border: 1px solid rgba(58, 74, 70, 0.55);
-    background: #16181f;
-    font-size: 0.78rem;
-    font-weight: 600;
-    line-height: 1.2;
-    color: #e3e2e8;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-.about-unit-checks .about-unit-chip:has(input:checked) {
-    border-color: rgba(0, 245, 212, 0.65);
-    color: #00f5d4;
-    background: rgba(0, 245, 212, 0.08);
-}
-
-.about-unit-checks .about-unit-chip input {
-    appearance: auto;
-    -webkit-appearance: checkbox;
-    width: 0.9rem;
-    height: 0.9rem;
-    margin: 0;
-    flex: 0 0 auto;
-    accent-color: #00f5d4;
-    cursor: pointer;
-}
-
-.about-unit-checks .about-unit-chip span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+/* 유닛/멤버 칩 스타일 → unit-checks.css */
 
 .about-edit-actions {
     display: flex;
