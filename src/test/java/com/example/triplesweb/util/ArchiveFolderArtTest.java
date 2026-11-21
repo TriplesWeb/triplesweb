@@ -19,7 +19,7 @@ class ArchiveFolderArtTest {
                 .isEqualTo("/images/archive/member-folders/3.png");
         assertThat(art.urlFor(ArchiveFolderClassifier.Kind.UNIT, "unit-3", "Glow"))
                 .isEqualTo("/images/archive/unit-folders/33.png");
-        assertThat(art.urlFor(ArchiveFolderClassifier.Kind.UNIT, "unit-4", "Unlisted unit")).isEmpty();
+        assertThat(art.urlFor(ArchiveFolderClassifier.Kind.UNIT, "unit-x", "Unknown Unit")).isEmpty();
     }
 
     @Test void prefersExactThenPrefixedKoreanFileName() throws Exception {
