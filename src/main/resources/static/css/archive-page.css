@@ -883,9 +883,11 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     font-size: clamp(0.68rem, calc(var(--chip-size) * 0.22), 0.72rem);
 }
 .ar-card .ar-meta .archive-member-chip.archive-symbol-chip {
-    min-width: calc(var(--chip-image, 2.15rem) + 0.4rem);
-    max-width: calc(var(--chip-image, 2.15rem) + 0.55rem);
-    padding: 0.16rem;
+    --chip-image: clamp(1.08rem, calc(1.65rem - 0.045rem * var(--member-count)), 1.6rem);
+    min-width: var(--chip-image);
+    max-width: var(--chip-image);
+    padding: 0.08rem;
+    margin: 0.12rem;
 }
 .archive-member-more {
     position: relative;
