@@ -964,12 +964,13 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     object-fit: contain;
     background: transparent;
     box-shadow: none;
-    /* 멤버 상세 이름 옆 로고(.artist-member-logo)와 같은 발광 */
+    /* 카드에 여러 개 붙을 때 과하게 빛나지 않게 멤버 상세보다 살짝 어둡게 */
     mix-blend-mode: screen;
     filter:
-        drop-shadow(0 0 1.5px color-mix(in srgb, var(--member-color, #00f5d4) 75%, transparent))
-        drop-shadow(0 0 5px color-mix(in srgb, var(--member-color, #00f5d4) 55%, transparent))
-        drop-shadow(0 0 12px color-mix(in srgb, var(--member-color, #00f5d4) 35%, transparent));
+        brightness(0.86)
+        drop-shadow(0 0 1px color-mix(in srgb, var(--member-color, #00f5d4) 55%, transparent))
+        drop-shadow(0 0 4px color-mix(in srgb, var(--member-color, #00f5d4) 38%, transparent))
+        drop-shadow(0 0 9px color-mix(in srgb, var(--member-color, #00f5d4) 22%, transparent));
 }
 .archive-member-chip.archive-symbol-chip .archive-chip-name {
     position: absolute;
@@ -1970,12 +1971,13 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     border:0;
     box-shadow:none;
     background:transparent;
-    /* 멤버 상세 .artist-member-logo와 같은 밝기·발광 */
+    /* 카드 클러스터용: 멤버 상세보다 밝기·발광 약하게 */
     mix-blend-mode:screen;
     filter:
-        drop-shadow(0 0 1.5px color-mix(in srgb, var(--member-color, #00f5d4) 75%, transparent))
-        drop-shadow(0 0 5px color-mix(in srgb, var(--member-color, #00f5d4) 55%, transparent))
-        drop-shadow(0 0 12px color-mix(in srgb, var(--member-color, #00f5d4) 35%, transparent));
+        brightness(0.86)
+        drop-shadow(0 0 1px color-mix(in srgb, var(--member-color, #00f5d4) 55%, transparent))
+        drop-shadow(0 0 4px color-mix(in srgb, var(--member-color, #00f5d4) 38%, transparent))
+        drop-shadow(0 0 9px color-mix(in srgb, var(--member-color, #00f5d4) 22%, transparent));
 }
 .archive-page[data-archive-kind] .ar-highlight .archive-member-chip img{width:2.15rem;height:2.15rem;max-width:2.15rem;max-height:2.15rem;object-fit:contain;flex:none}
 
