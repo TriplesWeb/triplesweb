@@ -79,11 +79,6 @@ body.site-admin-enabled .archive-page.is-browse .ar-headline { padding-bottom: 4
 .ar-stats-toggle:hover { border-color: #00f5d4; }
 .ar-stats-toggle [data-stats-icon] { font-size: 1.35rem; font-weight: 700; line-height: 1; }
 .ar-headline.is-stats-collapsed .ar-stats { display: none; }
-.ar-headline::after {
-    content: "";
-    position: absolute; right: -2rem; bottom: -2rem; width: 12rem; height: 12rem; border-radius: 9999px;
-    background: rgba(0, 245, 212, 0.08); filter: blur(36px); pointer-events: none;
-}
 .ar-kicker { display: inline-flex; align-items: center; gap: 0.4rem; color: #00f5d4; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
 .ar-headline h1 { margin: 0.7rem 0 0; font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: clamp(2rem, 4vw, 2.8rem); line-height: 1.12; font-weight: 700; letter-spacing: -0.02em; color: #d7fff3; }
 .ar-headline h1 span { color: #00f5d4; font-weight: 500; font-size: 0.58em; }
@@ -91,9 +86,6 @@ body.site-admin-enabled .archive-page.is-browse .ar-headline { padding-bottom: 4
 .ar-headline-copy { width: 100%; }
 .ar-headline.is-member-space {
     padding: 1.7rem 3.6rem 1.3rem 1.7rem;
-}
-.ar-headline.is-member-space::after {
-    background: color-mix(in srgb, var(--folder-color) 22%, transparent);
 }
 .ar-headline p.ar-folder-title,
 .ar-folder-title {
