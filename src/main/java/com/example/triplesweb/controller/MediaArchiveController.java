@@ -8,8 +8,13 @@ import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.MediaService;
+import com.example.triplesweb.service.MediaViewCountService;
+import com.example.triplesweb.util.MediaOrdering;
+import com.example.triplesweb.util.MediaSearch;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.YoutubeIdExtractor;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -24,30 +29,36 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Controller
 @RequiredArgsConstructor
 public class MediaArchiveController {
     private final MediaService media;
+    private final MediaViewCountService mediaViewCounts;
     private final ArtistRepository artistRepository;
     private final ScheduleRepository scheduleRepository;
     private final AboutAdminAuth aboutAdminAuth;
+    private final ObjectMapper objectMapper;
 
     @GetMapping("/media")
     public String mediaPage(@RequestParam(name = "tab", defaultValue = "all") String tab,
                             @RequestParam(name = "sort", defaultValue = "latest") String sort,
                             @RequestParam(required = false) String artist,
+                            @RequestParam(required = false) List<String> members,
                             @RequestParam(required = false) String q,
                             @RequestParam(required = false) String from,
                             @RequestParam(required = false) String to,
                             HttpServletRequest request,
                             HttpSession session,
                             Model model) {
+        mediaViewCounts.refreshIfDue();
         tab = normalizeTab(tab);
         boolean all = "all".equals(tab);
         String sortKey = normalizeSort(sort);
@@ -73,50 +84,57 @@ public class MediaArchiveController {
         }
         final LocalDate rangeStart = fromDate;
         final LocalDate rangeEnd = toDate;
-        boolean artistFiltered = artist != null && !artist.isBlank();
+        List<String> selectedMembers = selectedMembers(members, artist);
+        boolean memberFiltered = !selectedMembers.isEmpty();
         String query = q == null ? "" : q.trim();
         boolean dateFiltered = rangeStart != null || rangeEnd != null;
+        List<Artist> artists = artistRepository.findAll();
         List<MediaDto> filtered = new ArrayList<>(all ? media.listAll() : media.allByTab(tab));
-        if (artistFiltered) {
-            filtered.removeIf(v -> !splitNames(v.getArtistNames()).contains(artist));
+        if (memberFiltered) {
+            filtered.removeIf(v -> !matchesMembers(v.getArtistNames(), selectedMembers));
         }
         if (!query.isEmpty()) {
-            String needle = query.toLowerCase();
-            filtered.removeIf(v -> v.getTitle() == null || !v.getTitle().toLowerCase().contains(needle));
+            filtered.removeIf(v -> !MediaSearch.matches(v.getTitle(), query));
         }
         if (dateFiltered) {
             filtered.removeIf(v -> !matchesPublished(v.getPublishedOn(), rangeStart, rangeEnd));
         }
-        sortVideos(filtered, sortKey);
+        MediaOrdering.sort(filtered, sortKey);
+        attachMemberBadges(filtered, artists);
         int total = filtered.size();
         List<MediaDto> videos = filtered;
-        MediaDto featured = filtered.isEmpty() ? null : filtered.get(0);
-        List<MediaDto> recommendations = filtered.size() <= 1
+        List<MediaDto> latest = new ArrayList<>(filtered);
+        MediaOrdering.sort(latest, "latest");
+        MediaDto featured = latest.isEmpty() ? null : latest.get(0);
+        List<MediaDto> recommendations = latest.size() <= 1
                 ? List.of()
-                : filtered.subList(1, filtered.size());
-        List<MediaDto> shorts = filtered.stream().filter(MediaArchiveController::isShort).limit(4).toList();
+                : latest.subList(1, Math.min(latest.size(), 6));
+        List<MediaDto> suggestions = suggestions(filtered, featured, recommendations, 4);
+        List<MediaDto> shorts = filtered.stream().filter(video -> MediaOrdering.isShort(video.getDuration())).limit(4).toList();
         model.addAttribute("featured", featured);
         model.addAttribute("hasFeatured", featured != null);
         model.addAttribute("recommendations", recommendations);
         model.addAttribute("hasRecommendations", !recommendations.isEmpty());
         model.addAttribute("recommendationCount", String.format("%02d", recommendations.size()));
+        model.addAttribute("suggestions", suggestions);
+        model.addAttribute("hasSuggestions", !suggestions.isEmpty());
         model.addAttribute("shorts", shorts);
         model.addAttribute("hasShorts", !shorts.isEmpty());
-        model.addAttribute("archiveScope", all ? "전체 영상" : MediaTab.from(tab).getKor());
-        model.addAttribute("archiveSortLabel", sortLabel(sortKey));
+        model.addAttribute("mediaCatalogJson", catalogJson(filtered));
 
         String fromText = rangeStart == null ? "" : rangeStart.toString();
         String toText = rangeEnd == null ? "" : rangeEnd.toString();
         model.addAttribute("from", fromText);
         model.addAttribute("to", toText);
         model.addAttribute("hasDateFilter", dateFiltered);
-        String selectedName = artistFiltered ? artist.trim() : "";
-        model.addAttribute("selectedArtist", selectedName);
-        model.addAttribute("hasSelectedArtist", artistFiltered);
-        model.addAttribute("memberToggleLabel", artistFiltered ? selectedName : "멤버 선택");
+        model.addAttribute("selectedMembers", selectedMembers);
+        model.addAttribute("hasSelectedMembers", memberFiltered);
+        model.addAttribute("selectedMemberCount", selectedMembers.size());
+        model.addAttribute("memberToggleLabel", memberToggleLabel(selectedMembers));
         model.addAttribute("query", query);
-        model.addAttribute("memberPickerOptions", portraitOptions(selectedName.isEmpty() ? List.of() : List.of(selectedName)));
-        model.addAttribute("hasActiveFilters", artistFiltered || dateFiltered || !query.isEmpty() || !"latest".equals(sortKey));
+        model.addAttribute("memberPickerOptions", portraitOptions(selectedMembers));
+        model.addAttribute("editMemberOptions", portraitOptions(List.of()));
+        model.addAttribute("hasActiveFilters", memberFiltered || dateFiltered || !query.isEmpty() || !"latest".equals(sortKey));
         model.addAttribute("videos", videos);
         model.addAttribute("hasVideos", total > 0);
         model.addAttribute("total", total);
@@ -127,6 +145,7 @@ public class MediaArchiveController {
     public String mediaDetail(@PathVariable String tab,
                               @PathVariable String youtubeId,
                               Model model) throws IOException {
+        mediaViewCounts.refreshIfDue();
         MediaTab t = MediaTab.from(tab);
         MediaDto video = media.findOne(t, youtubeId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "영상이 없습니다."));
@@ -205,10 +224,6 @@ public class MediaArchiveController {
                     }
                 }
             }
-            if (form.getDescription() == null || form.getDescription().isBlank()) {
-                Object description = info.get("description");
-                if (description != null) form.setDescription(description.toString());
-            }
         }
 
         if (form.getTitle() == null || form.getTitle().isBlank()) {
@@ -238,6 +253,20 @@ public class MediaArchiveController {
         return "redirect:/media?tab=" + t;
     }
 
+    @PostMapping("/media_update")
+    public String updateMedia(@RequestParam String youtubeId,
+                              @RequestParam(required = false) String description,
+                              @RequestParam(required = false) String publishedOn,
+                              @RequestParam(value = "artistNames", required = false) List<String> artistNames,
+                              @RequestParam(defaultValue = "all") String tab,
+                              HttpServletRequest request,
+                              HttpSession session) {
+        aboutAdminAuth.requireAdmin(request, session);
+        String names = artistNames == null ? "" : String.join(",", artistNames);
+        media.updateDetails(youtubeId, description, publishedOn, names);
+        return "redirect:/media?tab=" + normalizeTab(tab);
+    }
+
     private static LocalDate parseDate(String raw) {
         if (raw == null || raw.isBlank()) return null;
         try { return LocalDate.parse(raw.trim()); }
@@ -246,48 +275,10 @@ public class MediaArchiveController {
 
     private static boolean matchesPublished(String publishedOn, LocalDate from, LocalDate to) {
         if (from == null && to == null) return true;
-        LocalDate day = parseDate(publishedOn);
+        LocalDate day = MediaOrdering.parseDate(publishedOn);
         if (day == null) return false;
         if (from != null && day.isBefore(from)) return false;
         return to == null || !day.isAfter(to);
-    }
-
-    private static boolean isShort(MediaDto video) {
-        Integer seconds = durationSeconds(video.getDuration());
-        return seconds != null && seconds > 0 && seconds <= 60;
-    }
-
-    private static Integer durationSeconds(String raw) {
-        if (raw == null || raw.isBlank()) return null;
-        String[] parts = raw.trim().split(":");
-        try {
-            if (parts.length == 2) return Integer.parseInt(parts[0]) * 60 + Integer.parseInt(parts[1]);
-            if (parts.length == 3) {
-                return Integer.parseInt(parts[0]) * 3600 + Integer.parseInt(parts[1]) * 60 + Integer.parseInt(parts[2]);
-            }
-        } catch (NumberFormatException ex) {
-            return null;
-        }
-        return null;
-    }
-
-    private static void sortVideos(List<MediaDto> videos, String sort) {
-        switch (sort) {
-            case "oldest" -> videos.sort(Comparator.comparing(
-                    (MediaDto video) -> parseDate(video.getPublishedOn()),
-                    Comparator.nullsLast(Comparator.naturalOrder())));
-            case "views" -> videos.sort(Comparator.comparingLong(
-                    (MediaDto video) -> video.getViews() == null ? 0L : video.getViews()).reversed());
-            case "short" -> videos.sort(Comparator.comparing(
-                    (MediaDto video) -> durationSeconds(video.getDuration()),
-                    Comparator.nullsLast(Comparator.naturalOrder())));
-            case "long" -> videos.sort(Comparator.comparing(
-                    (MediaDto video) -> durationSeconds(video.getDuration()),
-                    Comparator.nullsLast(Comparator.reverseOrder())));
-            default -> videos.sort(Comparator.comparing(
-                    (MediaDto video) -> parseDate(video.getPublishedOn()),
-                    Comparator.nullsLast(Comparator.reverseOrder())));
-        }
     }
 
     private static String normalizeSort(String sort) {
@@ -296,16 +287,6 @@ public class MediaArchiveController {
             case "oldest", "views", "short", "long" -> sort.toLowerCase();
             case "popular" -> "views";
             default -> "latest";
-        };
-    }
-
-    private static String sortLabel(String sort) {
-        return switch (sort) {
-            case "oldest" -> "오래된순으로 모아보기";
-            case "views" -> "조회순으로 모아보기";
-            case "short" -> "짧은 영상부터 모아보기";
-            case "long" -> "긴 영상부터 모아보기";
-            default -> "최신순으로 모아보기";
         };
     }
 
@@ -348,7 +329,144 @@ public class MediaArchiveController {
         return options;
     }
 
-    private List<String> splitNames(String names) {
+    private static List<String> selectedMembers(List<String> members, String artist) {
+        LinkedHashSet<String> names = new LinkedHashSet<>();
+        if (members != null) {
+            for (String member : members) {
+                if (member != null && !member.isBlank()) names.add(member.trim());
+            }
+        }
+        if (names.isEmpty() && artist != null && !artist.isBlank()) names.add(artist.trim());
+        return List.copyOf(names);
+    }
+
+    private static String memberToggleLabel(List<String> selected) {
+        if (selected == null || selected.isEmpty()) return "멤버 선택";
+        if (selected.size() == 1) return selected.get(0);
+        return selected.size() + "명";
+    }
+
+    /** 대표 영상과 멤버·분류가 겹치는 영상을 우선해 아카이브 위에 네 개까지 고른다. */
+    private List<MediaDto> suggestions(List<MediaDto> videos, MediaDto anchor, List<MediaDto> reserved, int limit) {
+        if (anchor == null || videos == null || videos.isEmpty() || limit < 1) return List.of();
+        Set<String> skip = new LinkedHashSet<>();
+        if (anchor.getYoutubeId() != null) skip.add(anchor.getYoutubeId().toLowerCase(Locale.ROOT));
+        if (reserved != null) {
+            for (MediaDto video : reserved) {
+                if (video.getYoutubeId() != null) skip.add(video.getYoutubeId().toLowerCase(Locale.ROOT));
+            }
+        }
+        Set<String> members = memberKeySet(anchor.getArtistNames());
+        String tab = anchor.getTab() == null ? "" : anchor.getTab();
+        List<MediaDto> pool = new ArrayList<>();
+        for (MediaDto video : videos) {
+            if (video.getYoutubeId() == null || skip.contains(video.getYoutubeId().toLowerCase(Locale.ROOT))) continue;
+            pool.add(video);
+        }
+        pool.sort((left, right) -> {
+            int byScore = Integer.compare(similarity(right, members, tab), similarity(left, members, tab));
+            if (byScore != 0) return byScore;
+            LocalDate rightDay = MediaOrdering.parseDate(right.getPublishedOn());
+            LocalDate leftDay = MediaOrdering.parseDate(left.getPublishedOn());
+            if (leftDay == null && rightDay == null) return 0;
+            if (leftDay == null) return 1;
+            if (rightDay == null) return -1;
+            return rightDay.compareTo(leftDay);
+        });
+        List<MediaDto> picked = new ArrayList<>();
+        for (MediaDto video : pool) {
+            if (picked.size() >= limit) break;
+            picked.add(video);
+        }
+        if (picked.size() < limit && reserved != null) {
+            for (MediaDto video : reserved) {
+                if (picked.size() >= limit) break;
+                if (video.getYoutubeId() == null || video.getYoutubeId().equalsIgnoreCase(anchor.getYoutubeId())) continue;
+                picked.add(video);
+            }
+        }
+        return List.copyOf(picked);
+    }
+
+    private static int similarity(MediaDto video, Set<String> members, String tab) {
+        int score = 0;
+        for (String name : memberKeySet(video.getArtistNames())) {
+            if (members.contains(name)) score += 3;
+        }
+        if (tab != null && !tab.isBlank() && tab.equals(video.getTab())) score += 1;
+        return score;
+    }
+
+    private static Set<String> memberKeySet(String names) {
+        Set<String> keys = new LinkedHashSet<>();
+        for (String name : splitNames(names)) keys.add(MediaOrdering.memberKey(name));
+        return keys;
+    }
+
+    private static boolean matchesMembers(String artistNames, List<String> selected) {
+        if (selected == null || selected.isEmpty()) return true;
+        Set<String> names = new LinkedHashSet<>();
+        for (String name : splitNames(artistNames)) names.add(MediaOrdering.memberKey(name));
+        for (String member : selected) {
+            if (names.contains(MediaOrdering.memberKey(member))) return true;
+        }
+        return false;
+    }
+
+    private void attachMemberBadges(List<MediaDto> videos, List<Artist> artists) {
+        for (MediaDto video : videos) {
+            video.setMemberBadges(memberBadges(video.getArtistNames(), artists));
+        }
+    }
+
+    private List<Map<String, Object>> memberBadges(String artistNames, List<Artist> artists) {
+        List<Map<String, Object>> badges = new ArrayList<>();
+        for (String name : splitNames(artistNames)) {
+            Artist matched = null;
+            for (Artist artist : artists) {
+                if (artist.getName() != null && artist.getName().trim().equalsIgnoreCase(name)) { matched = artist; break; }
+                if (artist.getEngName() != null && artist.getEngName().trim().equalsIgnoreCase(name)) { matched = artist; break; }
+            }
+            String symbol = MemberPortraitOptions.archiveSymbolLogo(name);
+            String portrait = matched == null || matched.getDisplayProfileImage() == null ? "" : matched.getDisplayProfileImage();
+            String image = !symbol.isBlank() ? symbol : portrait;
+            String color = matched == null || matched.getColor() == null || !matched.getColor().matches("#[0-9a-fA-F]{6}")
+                    ? "#b9cac4" : matched.getColor();
+            Map<String, Object> badge = new LinkedHashMap<>();
+            badge.put("name", name);
+            badge.put("color", color);
+            badge.put("image", image);
+            badge.put("hasImage", !image.isBlank());
+            badge.put("hasSymbol", !symbol.isBlank());
+            badges.add(badge);
+        }
+        return badges;
+    }
+
+    private String catalogJson(List<MediaDto> videos) {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (MediaDto video : videos) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("youtubeId", video.getYoutubeId());
+            row.put("tab", video.getTab());
+            row.put("tabLabel", video.getTabLabel());
+            row.put("title", video.getTitle() == null ? "" : video.getTitle());
+            row.put("description", video.getDescription() == null ? "" : video.getDescription());
+            row.put("publishedOn", video.getPublishedOn() == null ? "" : video.getPublishedOn());
+            row.put("publishedLabel", video.getPublishedLabel());
+            row.put("duration", video.getDuration() == null ? "" : video.getDuration());
+            row.put("viewCountFmt", video.getViewCountFmt() == null ? "" : video.getViewCountFmt());
+            row.put("artistNames", video.getArtistNames() == null ? "" : video.getArtistNames());
+            rows.add(row);
+        }
+        try {
+            return objectMapper.writeValueAsString(rows).replace("<", "\\u003c");
+        } catch (JsonProcessingException ex) {
+            return "[]";
+        }
+    }
+
+    private static List<String> splitNames(String names) {
         if (names == null || names.isBlank()) return List.of();
         return Arrays.stream(names.split(","))
                 .map(String::trim)
