@@ -29,7 +29,8 @@
   }
 
   function membersKey(names) {
-    return Array.from(new Set((names || []).map(String)))
+    // Set·배열 모두 허용. syncFromMembers는 Set을 넘긴다.
+    return Array.from(new Set(Array.from(names || [], String)))
       .sort()
       .join("\0");
   }
