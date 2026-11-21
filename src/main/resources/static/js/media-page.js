@@ -210,12 +210,14 @@
             const added = ids.has(button.dataset.ytid || '');
             button.classList.toggle('is-added', added);
             button.setAttribute('aria-pressed', added ? 'true' : 'false');
+            const center = button.classList.contains('media-playlist-add--center');
             const icon = button.querySelector('.material-symbols-outlined');
-            if (icon) icon.textContent = added ? 'check' : 'add';
-            const featured = Boolean(button.closest('.media-archive__head'));
-            button.setAttribute('aria-label', added
-                ? (featured ? '주목 영상을 재생목록에서 빼기' : '재생목록에서 빼기')
-                : (featured ? '주목 영상을 재생목록에 추가' : '재생목록에 추가'));
+            if (center) {
+                button.textContent = added ? '재생목록에서 빼기' : '재생목록 추가';
+            } else if (icon) {
+                icon.textContent = added ? 'check' : 'add';
+            }
+            button.setAttribute('aria-label', added ? '재생목록에서 빼기' : (center ? '재생목록 추가' : '재생목록에 추가'));
         });
     }
 
@@ -280,7 +282,7 @@
         const items = readPlaylist();
         const index = items.findIndex((row) => row.youtubeId === item.youtubeId);
         if (index >= 0) items.splice(index, 1);
-        else items.unshift(item);
+        else items.unshift(item); // 먼저 담은 영상이 목록 아래에 남고, 이후 영상은 위에 쌓인다.
         writePlaylist(items);
         renderPlaylist();
     }
@@ -339,7 +341,14 @@
         const deleteId = document.getElementById('ytDeleteId');
         if (deleteTab) deleteTab.value = row.tab || '';
         if (deleteId) deleteId.value = id;
-        window.SiteUi?.modal(ytModal).show();
+        showModal(ytModal);
+    }
+
+    function showModal(modal) {
+        if (!modal) return;
+        if (modal.parentElement !== document.body) document.body.appendChild(modal);
+        modal.style.zIndex = '5000';
+        window.SiteUi?.modal(modal).show();
     }
 
     function syncEditMembers() {
@@ -370,7 +379,7 @@
         const names = String(currentVideo.artistNames || '').split(',').map((name) => name.trim()).filter(Boolean);
         if (window.MemberPortraitPicker && editPicker) MemberPortraitPicker.setValues(editPicker, names);
         syncEditMembers();
-        window.SiteUi?.modal(editModal).show();
+        showModal(editModal);
     });
 
     document.addEventListener('click', (event) => {
@@ -386,6 +395,7 @@
             event.preventDefault();
             event.stopPropagation();
             togglePlaylist(add);
+            openVideo(add);
             return;
         }
         const card = event.target.closest('[data-site-target="#ytModal"][data-ytid]');
@@ -396,6 +406,27 @@
 
     ytModal?.addEventListener('site-modal:hidden', () => {
         if (ytPlayer) ytPlayer.src = '';
+    });
+
+    document.querySelectorAll('img[data-yt-still]').forEach((img) => {
+        const id = img.dataset.ytStill;
+        const use = (name) => {
+            img.dataset.fallback = name;
+            img.src = 'https://i.ytimg.com/vi/' + id + '/' + name + '.jpg';
+        };
+        const soften = () => {
+            if (img.dataset.fallback === 'hqdefault') return;
+            if (img.naturalWidth > 0 && img.naturalWidth <= 120) {
+                use(img.dataset.fallback === 'sddefault' ? 'hqdefault' : 'sddefault');
+            }
+        };
+        img.addEventListener('error', () => {
+            if (img.dataset.fallback === 'sddefault') use('hqdefault');
+            else if (img.dataset.fallback !== 'hqdefault') use('sddefault');
+        });
+        img.addEventListener('load', soften);
+        if (img.complete && img.naturalWidth === 0) use('sddefault');
+        else if (img.complete) soften();
     });
 
     renderPlaylist();

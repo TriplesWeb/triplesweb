@@ -102,10 +102,12 @@ public class MediaArchiveController {
         attachMemberBadges(filtered, artists);
         int total = filtered.size();
         List<MediaDto> videos = filtered;
-        MediaDto featured = filtered.isEmpty() ? null : filtered.get(0);
-        List<MediaDto> recommendations = filtered.size() <= 1
+        List<MediaDto> latest = new ArrayList<>(filtered);
+        MediaOrdering.sort(latest, "latest");
+        MediaDto featured = latest.isEmpty() ? null : latest.get(0);
+        List<MediaDto> recommendations = latest.size() <= 1
                 ? List.of()
-                : filtered.subList(1, filtered.size());
+                : latest.subList(1, Math.min(latest.size(), 6));
         List<MediaDto> shorts = filtered.stream().filter(video -> MediaOrdering.isShort(video.getDuration())).limit(4).toList();
         model.addAttribute("featured", featured);
         model.addAttribute("hasFeatured", featured != null);

@@ -83,9 +83,9 @@
     </section>
 
     {{#hasFeatured}}
-    <section class="media-feature" aria-label="지금 주목할 영상">
+    <section class="media-feature" aria-label="최신영상">
         <div class="media-feature__head">
-            <h2>지금 주목할 영상</h2>
+            <h2>최신영상</h2>
             <span>FEATURED</span>
         </div>
         <div class="media-feature__layout">
@@ -94,7 +94,7 @@
                data-site-toggle="modal"
                data-site-target="#ytModal"
                data-ytid="{{featured.youtubeId}}">
-                <img class="media-feature__still" src="https://img.youtube.com/vi/{{featured.youtubeId}}/hqdefault.jpg" alt="">
+                <img class="media-feature__still" src="https://i.ytimg.com/vi/{{featured.youtubeId}}/maxresdefault.jpg" alt="" data-yt-still="{{featured.youtubeId}}">
                 <span class="media-feature__shade"></span>
                 <img class="media-feature__play" src="{{#asset}}/images/media/play-featured.svg{{/asset}}" width="60" height="60" alt="">
                 <span class="media-feature__caption">
@@ -112,7 +112,7 @@
                 </div>
                 <div class="media-playlist__list" id="mediaPlaylistList">
                     {{^hasRecommendations}}
-                    <p class="media-playlist__empty">오른쪽 + 버튼으로 영상을 재생목록에 추가하세요.</p>
+                    <p class="media-playlist__empty">가운데 재생목록 추가로 영상을 담을 수 있습니다.</p>
                     {{/hasRecommendations}}
                     {{#recommendations}}
                     <a class="media-playlist__item"
@@ -132,6 +132,16 @@
                     </a>
                     {{/recommendations}}
                 </div>
+                <button type="button" class="media-playlist-add media-playlist-add--center" data-playlist-add
+                        data-ytid="{{featured.youtubeId}}"
+                        data-tab="{{featured.tab}}"
+                        data-kind="{{featured.tabLabel}}"
+                        data-title="{{featured.title}}"
+                        data-duration="{{featured.duration}}"
+                        data-views="{{featured.viewCountFmt}}"
+                        data-published="{{featured.publishedLabel}}"
+                        aria-pressed="false"
+                        aria-label="재생목록 추가">재생목록 추가</button>
             </aside>
         </div>
     </section>
@@ -140,20 +150,6 @@
     <section class="media-archive" aria-label="유튜브 및 미디어 아카이브">
         <div class="media-archive__head">
             <h2>유튜브 아카이브</h2>
-            {{#hasFeatured}}
-            <button type="button" class="media-playlist-add" data-playlist-add
-                    data-ytid="{{featured.youtubeId}}"
-                    data-tab="{{featured.tab}}"
-                    data-kind="{{featured.tabLabel}}"
-                    data-title="{{featured.title}}"
-                    data-duration="{{featured.duration}}"
-                    data-views="{{featured.viewCountFmt}}"
-                    data-published="{{featured.publishedLabel}}"
-                    aria-pressed="false"
-                    aria-label="주목 영상을 재생목록에 추가">
-                <span class="material-symbols-outlined" aria-hidden="true">add</span>
-            </button>
-            {{/hasFeatured}}
         </div>
         <div class="media-grid">
             {{#videos}}
@@ -175,7 +171,7 @@
                 </a>
                 <div class="media-card__foot">
                     <span class="media-card__meta">조회수 {{viewCountFmt}}{{#publishedLabel}} · {{publishedLabel}}{{/publishedLabel}}</span>
-                    <button type="button" class="media-playlist-add" data-playlist-add
+                    <button type="button" class="media-playlist-add media-card__add" data-playlist-add
                             data-ytid="{{youtubeId}}"
                             data-tab="{{tab}}"
                             data-kind="{{tabLabel}}"
