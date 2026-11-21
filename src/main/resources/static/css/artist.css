@@ -809,11 +809,12 @@
     display: block;
     /* 로고 PNG 검정 배경을 어두운 페이지에서 덜 보이게 */
     mix-blend-mode: screen;
-    /* 실루엣 네온 */
+    /* 아카이브 심볼과 같은 밝기·타이트한 네온 (과발광 방지) */
     filter:
-        drop-shadow(0 0 1.5px color-mix(in srgb, var(--artist-color, #00f5d4) 75%, transparent))
-        drop-shadow(0 0 5px color-mix(in srgb, var(--artist-color, #00f5d4) 55%, transparent))
-        drop-shadow(0 0 12px color-mix(in srgb, var(--artist-color, #00f5d4) 35%, transparent));
+        brightness(0.86)
+        drop-shadow(0 0 1px color-mix(in srgb, var(--artist-color, #00f5d4) 55%, transparent))
+        drop-shadow(0 0 4px color-mix(in srgb, var(--artist-color, #00f5d4) 38%, transparent))
+        drop-shadow(0 0 9px color-mix(in srgb, var(--artist-color, #00f5d4) 22%, transparent));
 }
 
 .artist-color-card {
