@@ -8,6 +8,7 @@ import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.MediaService;
+import com.example.triplesweb.service.MediaViewCountService;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.example.triplesweb.util.YoutubeIdExtractor;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,6 +35,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class MediaArchiveController {
     private final MediaService media;
+    private final MediaViewCountService mediaViewCounts;
     private final ArtistRepository artistRepository;
     private final ScheduleRepository scheduleRepository;
     private final AboutAdminAuth aboutAdminAuth;
@@ -48,6 +50,7 @@ public class MediaArchiveController {
                             HttpServletRequest request,
                             HttpSession session,
                             Model model) {
+        mediaViewCounts.refreshIfDue();
         tab = normalizeTab(tab);
         boolean all = "all".equals(tab);
         String sortKey = normalizeSort(sort);
@@ -127,6 +130,7 @@ public class MediaArchiveController {
     public String mediaDetail(@PathVariable String tab,
                               @PathVariable String youtubeId,
                               Model model) throws IOException {
+        mediaViewCounts.refreshIfDue();
         MediaTab t = MediaTab.from(tab);
         MediaDto video = media.findOne(t, youtubeId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "영상이 없습니다."));
