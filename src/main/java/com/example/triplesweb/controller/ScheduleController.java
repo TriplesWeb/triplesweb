@@ -17,10 +17,12 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -68,16 +70,14 @@ public class ScheduleController {
     }
 
     @GetMapping("/schedule/{id}")
-    public String getScheduleDetail(@PathVariable Long id, Model model) {
-        Schedule s = scheduleRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("잘못된 스케줄 ID: " + id));
-        model.addAttribute("schedule", s);
-        return "schedule";
+    public String getScheduleDetail(@PathVariable Long id) {
+        return scheduleFocus(id);
     }
 
     @GetMapping("/add")
-    public String addScheduleForm() {
-        return "schedule-add";
+    public String addScheduleForm(HttpServletRequest request, HttpSession session) {
+        aboutAdminAuth.requireAdmin(request, session);
+        return "redirect:/schedule?add=true";
     }
 
     @PostMapping("/schedule/add")
@@ -94,9 +94,9 @@ public class ScheduleController {
     }
 
     @GetMapping("/edit/{id}")
-    public String editScheduleForm(@PathVariable Long id, Model model) {
-        model.addAttribute("schedule", scheduleService.findById(String.valueOf(id)));
-        return "schedule-edit";
+    public String editScheduleForm(@PathVariable Long id, HttpServletRequest request, HttpSession session) {
+        aboutAdminAuth.requireAdmin(request, session);
+        return scheduleFocus(id) + "&edit=true";
     }
 
     @PostMapping("/edit/{id}")
@@ -130,5 +130,12 @@ public class ScheduleController {
     private List<String> splitNames(String names) {
         if (names == null || names.isBlank()) return List.of();
         return Arrays.stream(names.split(",")).map(String::trim).filter(s -> !s.isBlank()).toList();
+    }
+
+    private String scheduleFocus(Long id) {
+        if (!scheduleRepository.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "해당 일정이 없습니다.");
+        }
+        return "redirect:/schedule?focus=" + id;
     }
 }
