@@ -48,7 +48,12 @@ public class YoutubeDataApiClient {
     }
 
     public boolean hasApiKey() {
-        return apiKey != null && !apiKey.isBlank();
+        return !apiKey().isEmpty();
+    }
+
+    /** 환경 변수에 붙은 공백·개행은 URI 쿼리에서 허용되지 않는다. */
+    private String apiKey() {
+        return apiKey == null ? "" : apiKey.strip();
     }
 
     /**
@@ -147,7 +152,7 @@ public class YoutubeDataApiClient {
         URI uri = UriComponentsBuilder.fromUriString(CHANNELS)
                 .queryParam("part", "contentDetails")
                 .queryParam("forHandle", trimmed)
-                .queryParam("key", apiKey)
+                .queryParam("key", apiKey())
                 .encode()
                 .build()
                 .toUri();
@@ -159,7 +164,7 @@ public class YoutubeDataApiClient {
         URI uri = UriComponentsBuilder.fromUriString(CHANNELS)
                 .queryParam("part", "contentDetails")
                 .queryParam("id", channelId.trim())
-                .queryParam("key", apiKey)
+                .queryParam("key", apiKey())
                 .encode()
                 .build()
                 .toUri();
@@ -171,16 +176,20 @@ public class YoutubeDataApiClient {
                 .queryParam("part", "contentDetails")
                 .queryParam("playlistId", playlistId)
                 .queryParam("maxResults", PAGE_SIZE)
-                .queryParam("key", apiKey);
+                .queryParam("key", apiKey());
         if (pageToken != null && !pageToken.isBlank()) builder.queryParam("pageToken", pageToken);
         return get(syncRest, builder.encode().build().toUri(), PlaylistItemsResponse.class);
     }
 
     private VideosResponse requestVideos(List<String> ids, RestTemplate template) {
-        String url = VIDEOS
-                + "?part=snippet,contentDetails,statistics&id=" + String.join(",", ids)
-                + "&key=" + apiKey;
-        return get(template, URI.create(url), VideosResponse.class);
+        try {
+            String url = VIDEOS
+                    + "?part=snippet,contentDetails,statistics&id=" + String.join(",", ids)
+                    + "&key=" + apiKey();
+            return get(template, URI.create(url), VideosResponse.class);
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     private static String uploadsPlaylist(ChannelsResponse response) {
@@ -271,7 +280,7 @@ public class YoutubeDataApiClient {
         try {
             String url = VIDEOS
                     + "?part=snippet,contentDetails,statistics&id=" + videoId
-                    + "&key=" + apiKey;
+                    + "&key=" + apiKey();
             return rest.getForObject(URI.create(url), VideosResponse.class);
 
         } catch (Throwable t) {
