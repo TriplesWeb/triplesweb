@@ -2,6 +2,7 @@ package com.example.triplesweb.controller;
 
 import com.example.triplesweb.entity.UploadBlob;
 import com.example.triplesweb.service.UploadContentStore;
+import com.example.triplesweb.service.UploadImageResizeService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -18,12 +19,13 @@ import static org.mockito.Mockito.when;
 
 class UploadsControllerTest {
     @TempDir Path temp;
+    private final UploadImageResizeService resize = new UploadImageResizeService();
 
     @ParameterizedTest
     @CsvSource({"photo.jfif, image/jpeg", "photo.WEBP, image/webp"})
     void servesImageFormatsFromLocalAndDatabaseCopies(String filename, String expectedType) throws Exception {
         var store = mock(UploadContentStore.class);
-        var controller = new UploadsController(temp.toString(), "", store);
+        var controller = new UploadsController(temp.toString(), "", store, resize);
         var request = new MockHttpServletRequest("GET", "/uploads/" + filename);
         Files.write(temp.resolve(filename), new byte[]{1, 2, 3});
         assertThat(controller.serve(request).getHeaders().getContentType().toString()).isEqualTo(expectedType);
@@ -44,7 +46,7 @@ class UploadsControllerTest {
         blob.setData(new byte[]{1, 2, 3});
         when(store.find("board/a.jpg")).thenReturn(Optional.of(blob));
 
-        UploadsController controller = new UploadsController(temp.toString(), "", store);
+        UploadsController controller = new UploadsController(temp.toString(), "", store, resize);
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/uploads/board/a.jpg");
 
         var response = controller.serve(request);
@@ -54,7 +56,7 @@ class UploadsControllerTest {
     }
     @Test void downloadsActiveContentFromDiskAndDatabase() throws Exception {
         var store = mock(UploadContentStore.class);
-        var controller = new UploadsController(temp.toString(), "", store);
+        var controller = new UploadsController(temp.toString(), "", store, resize);
         Files.writeString(temp.resolve("page.html"), "<script>alert(1)</script>");
         var request = new MockHttpServletRequest("GET", "/uploads/page.html");
         var response = controller.serve(request);
@@ -72,7 +74,7 @@ class UploadsControllerTest {
         var store = mock(UploadContentStore.class);
         Path uploads = temp.resolve("uploads");
         Files.createDirectories(uploads);
-        var controller = new UploadsController(uploads.toString(), "", store);
+        var controller = new UploadsController(uploads.toString(), "", store, resize);
         Files.writeString(temp.resolve("secret.txt"), "secret");
         Files.createSymbolicLink(uploads.resolve("link.txt"), temp.resolve("secret.txt"));
         assertThat(controller.serve(new MockHttpServletRequest("GET", "/uploads/link.txt")).getStatusCode().value()).isEqualTo(403);

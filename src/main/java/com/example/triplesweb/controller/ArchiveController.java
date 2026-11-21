@@ -17,6 +17,7 @@ import com.example.triplesweb.service.UnitService;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.util.ArchiveFolderArt;
 import com.example.triplesweb.util.ArchiveFolderClassifier;
+import com.example.triplesweb.util.ArchiveCardImages;
 import com.example.triplesweb.util.ArchiveImages;
 import com.example.triplesweb.util.ImageUrls;
 import com.example.triplesweb.util.MemberPortraitOptions;
@@ -524,8 +525,13 @@ public class ArchiveController {
                 imageUrls = List.of(archive.getFile().getUrl());
             }
             String imagesJson = ArchiveImages.write(imageUrls, objectMapper);
+            String previewSource = imageUrls.isEmpty()
+                    ? (archive.getFile() == null || archive.getFile().getUrl() == null ? "" : archive.getFile().getUrl())
+                    : imageUrls.get(0);
             card.put("imageUrls", imageUrls);
             card.put("imageUrlsJson", imagesJson == null ? "[]" : imagesJson);
+            card.put("previewUrl", ArchiveCardImages.previewUrl(previewSource));
+            card.put("eagerPreview", cards.size() < 4);
             card.put("imageCount", imageUrls.size());
             card.put("hasMultipleImages", imageUrls.size() > 1);
             card.put("thumbnailUrl", archive.getThumbnailUrl());
