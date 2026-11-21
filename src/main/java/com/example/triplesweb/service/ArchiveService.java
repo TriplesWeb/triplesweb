@@ -220,6 +220,7 @@ public class ArchiveService {
 
     private long cachedCount(String key, java.util.function.LongSupplier loader) {
         long now = System.currentTimeMillis();
+        evictExpiredCaches(now);
         CachedLong cached = countCache.get(key);
         if (cached != null && now - cached.at() < FILTER_TTL_MS) {
             return cached.value();
@@ -227,6 +228,13 @@ public class ArchiveService {
         long value = loader.getAsLong();
         countCache.put(key, new CachedLong(value, now));
         return value;
+    }
+
+    /** TTL이 지난 필터·페이지 캐시 항목을 지워 장기 기동 시 메모리가 쌓이지 않게 한다. */
+    private void evictExpiredCaches(long now) {
+        countCache.entrySet().removeIf(entry -> now - entry.getValue().at() >= FILTER_TTL_MS);
+        sourcesCache.entrySet().removeIf(entry -> now - entry.getValue().at() >= FILTER_TTL_MS);
+        browsePageCache.entrySet().removeIf(entry -> now - entry.getValue().at() >= FILTER_TTL_MS);
     }
 
     private static String filterCacheKey(String kind, MediaType type, String keyword, List<String> members,
@@ -252,22 +260,26 @@ public class ArchiveService {
                                      String folder, List<String> comboMembers,
                                      List<ArchiveFolderClassifier.UnitMembers> units) {
         String folderKey = folder == null ? "" : folder.trim();
-        // 전체 멤버 폴더(s): 분류 없이 멤버 포함(AND)만이면 되므로 DB에서 바로 페이징한다.
+        // 전체 멤버 폴더(s)에서 멤버 필터가 없을 때만 DB 페이징 고속 경로를 쓴다.
+        // 멤버가 있으면 별칭(서연/S1 등) 매칭을 위해 classify 스캔 경로를 탄다.
         if (folderKey.equalsIgnoreCase("s")) {
             List<String> wanted = (comboMembers != null && !comboMembers.isEmpty()) ? comboMembers : members;
-            String pageKey = filterCacheKey("browse", type, keyword, wanted, from, to, source, unclassifiedOnly, true)
-                    + "|p=" + page + "|z=" + size;
-            long now = System.currentTimeMillis();
-            CachedBrowse cachedBrowse = browsePageCache.get(pageKey);
-            if (cachedBrowse != null && now - cachedBrowse.at() < FILTER_TTL_MS) {
-                return cachedBrowse.value();
+            boolean hasMemberFilter = wanted != null && wanted.stream().anyMatch(name -> name != null && !name.isBlank());
+            if (!hasMemberFilter) {
+                String pageKey = filterCacheKey("browse", type, keyword, wanted, from, to, source, unclassifiedOnly, true)
+                        + "|p=" + page + "|z=" + size;
+                long now = System.currentTimeMillis();
+                evictExpiredCaches(now);
+                CachedBrowse cachedBrowse = browsePageCache.get(pageKey);
+                if (cachedBrowse != null && now - cachedBrowse.at() < FILTER_TTL_MS) {
+                    return cachedBrowse.value();
+                }
+                Set<ArchiveSource> sources = availableSources(type, keyword, wanted, from, to, true);
+                Page<Archive> pageResult = pageByType(type, page, size, keyword, wanted, from, to, source, unclassifiedOnly, true);
+                FolderBrowse browse = new FolderBrowse(pageResult, sources);
+                browsePageCache.put(pageKey, new CachedBrowse(browse, now));
+                return browse;
             }
-            // sources는 source 필터 없이, page는 필터 적용 — count/sources는 캐시된다.
-            Set<ArchiveSource> sources = availableSources(type, keyword, wanted, from, to, true);
-            Page<Archive> pageResult = pageByType(type, page, size, keyword, wanted, from, to, source, unclassifiedOnly, true);
-            FolderBrowse browse = new FolderBrowse(pageResult, sources);
-            browsePageCache.put(pageKey, new CachedBrowse(browse, now));
-            return browse;
         }
 
         // 그 외 폴더: id·artistNames·source만 스캔한 뒤 페이지 본문만 조회한다.
@@ -331,6 +343,7 @@ public class ArchiveService {
                                                LocalDate from, LocalDate to, boolean requireAllMembers) {
         String key = filterCacheKey("sources", type, keyword, members, from, to, null, false, requireAllMembers);
         long now = System.currentTimeMillis();
+        evictExpiredCaches(now);
         CachedSources cached = sourcesCache.get(key);
         if (cached != null && now - cached.at() < FILTER_TTL_MS) {
             return cached.value();

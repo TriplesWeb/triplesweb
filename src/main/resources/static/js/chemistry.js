@@ -3015,6 +3015,9 @@
         }
       }
       if (e.key !== "Escape") return;
+      if (!modalOpen) return;
+      e.preventDefault();
+      e.stopPropagation();
       closeLegendPanel();
       closeEditModal();
       closeModal();

@@ -1179,6 +1179,9 @@
     });
     document.addEventListener("keydown", event => {
         if (event.key !== "Escape") return;
+        // 케미 모달이 위에 있으면 Escape는 케미만 닫고 아카이브 상세는 유지한다.
+        const chemistry = document.getElementById("chemistryModal");
+        if (chemistry && !chemistry.classList.contains("hidden")) return;
         const open = [...document.querySelectorAll(".ar-dialog:not([hidden])")].pop();
         if (open) closeDialog(open);
     });
