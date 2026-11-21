@@ -33,19 +33,8 @@
         backLink.addEventListener('focus', warmBack, { once: true });
         if ('requestIdleCallback' in window) window.requestIdleCallback(warmBack, { timeout: 900 });
         else window.setTimeout(warmBack, 350);
-        backLink.addEventListener('click', (event) => {
-            if (event.defaultPrevented || event.button !== 0) return;
-            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-            // 필터 pushState 뒤에는 한 칸 back이 이전 필터로만 가므로 링크로 부모 폴더에 바로 간다.
-            if (history.state && history.state.archiveLive) return;
-            let referrer;
-            try { referrer = document.referrer ? new URL(document.referrer) : null; } catch (_) { return; }
-            if (!referrer || referrer.origin !== location.origin) return;
-            const target = new URL(backUrl, location.href);
-            if (referrer.pathname !== target.pathname || referrer.search !== target.search) return;
-            event.preventDefault();
-            history.back();
-        });
+        // href(예: /archive?folder=units)로만 이동한다.
+        // history.back()은 referrer와 실제 히스토리가 다를 때 /archive 홈으로 떨어질 수 있다.
     }
 
     const grid = document.getElementById('archiveGrid');
