@@ -6,7 +6,7 @@ import com.example.triplesweb.entity.ArchiveSource;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.MediaType;
 import com.example.triplesweb.entity.SavedMeta;
-import com.example.triplesweb.repository.ArtistRepository;
+import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.dto.ChemistryDto;
 import com.example.triplesweb.dto.ChemistryGroupDto;
 import com.example.triplesweb.entity.Unit;
@@ -63,15 +63,19 @@ class ArchiveControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean ArchiveService archiveService;
     @MockitoBean AboutAdminAuth aboutAdminAuth;
-    @MockitoBean ArtistRepository artistRepository;
+    @MockitoBean ArtistSnapshotService artistSnapshot;
     @MockitoBean UnitService unitService;
     @MockitoBean ChemistryService chemistryService;
     @MockitoBean ChemistryGroupService chemistryGroupService;
     @MockitoBean IdempotencyService idempotencyService;
 
     @BeforeEach void stubs() {
-        lenient().when(unitService.listVisible()).thenReturn(List.of());
+        lenient().when(unitService.listVisibleForArchive()).thenReturn(List.of());
         lenient().when(archiveService.index()).thenReturn(List.of());
+        lenient().when(archiveService.countTotals())
+                .thenReturn(new ArchiveService.TypeTotals(0L, 0L));
+        lenient().when(archiveService.countByType(MediaType.IMAGE)).thenReturn(0L);
+        lenient().when(archiveService.countByType(MediaType.VIDEO)).thenReturn(0L);
         lenient().when(archiveService.availableSources(any(), nullable(String.class), any(),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class)))
                 .thenReturn(java.util.Set.of());
@@ -133,36 +137,18 @@ class ArchiveControllerTest {
     }
 
     @Test void folderHomeGroupsNonUnitChemistryByMemberCount() throws Exception {
-        Archive duo = photo();
-        duo.setArtistNames("윤서연,정혜린");
-        Archive otherDuo = photo();
-        otherDuo.setId(8L);
-        otherDuo.setArtistNames("김채연,김유연");
-        Archive trio = photo();
-        trio.setId(9L);
-        trio.setArtistNames("윤서연,정혜린,이지우");
-        Archive six = photo();
-        six.setId(10L);
-        six.setArtistNames("윤서연,정혜린,이지우,김채연,김유연,김수민");
-        when(archiveService.index()).thenReturn(List.of(duo, otherDuo, trio, six));
         String html = mvc.perform(get("/archive")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-label\">케미</span>");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;combos");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-label\">2명 케미</span>");
-        int group = html.indexOf("ar-folder-label\">tripleS</span>");
-        int groupEnd = html.indexOf("</a>", group);
-        org.assertj.core.api.Assertions.assertThat(html.substring(group, groupEnd)).contains("ar-folder-count\">4</span>");
         org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder-label\">S1 윤서연</span>");
         int seoyeon = html.indexOf("ar-folder-label\">S1 윤서연</span>");
         int seoyeonStart = html.lastIndexOf("<a", seoyeon);
         int seoyeonEnd = html.indexOf("</a>", seoyeon);
-        org.assertj.core.api.Assertions.assertThat(html.substring(seoyeonStart, seoyeonEnd)).contains("ar-folder-count\">3</span>");
-        org.assertj.core.api.Assertions.assertThat(html.substring(seoyeonStart, seoyeonEnd)).contains("members&#x3D;%EC%9C%A4%EC%84%9C%EC%97%B0");
-        int chaeyeon = html.indexOf("ar-folder-label\">S4 김채연</span>");
-        int chaeyeonStart = html.lastIndexOf("<a", chaeyeon);
-        int chaeyeonEnd = html.indexOf("</a>", chaeyeon);
-        org.assertj.core.api.Assertions.assertThat(html.substring(chaeyeonStart, chaeyeonEnd)).contains("ar-folder-count\">2</span>");
+        org.assertj.core.api.Assertions.assertThat(html.substring(seoyeonStart, seoyeonEnd))
+                .contains("members&#x3D;%EC%9C%A4%EC%84%9C%EC%97%B0");
+        org.assertj.core.api.Assertions.assertThat(html).doesNotContain("ar-folder-count");
 
         mvc.perform(get("/archive").param("folder", "combos").param("q", "heart").param("source", "cosmo_room"))
                 .andExpect(status().isFound())
@@ -170,9 +156,6 @@ class ArchiveControllerTest {
     }
 
     @Test void memberFoldersHidePreviewImages() throws Exception {
-        Archive solo = photo();
-        solo.setArtistNames("윤서연");
-        when(archiveService.index()).thenReturn(List.of(solo));
         String html = mvc.perform(get("/archive")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         org.assertj.core.api.Assertions.assertThat(html).contains("ar-folder is-solo");
@@ -197,7 +180,7 @@ class ArchiveControllerTest {
         Unit acidAngel = new Unit();
         acidAngel.setUnitId(1L);
         acidAngel.setUnitName("ACID ANGEL OF ASIA");
-        when(unitService.listVisible()).thenReturn(List.of(aura, acidAngel));
+        when(unitService.listVisibleForArchive()).thenReturn(List.of(aura, acidAngel));
         String home = mvc.perform(get("/archive")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         org.assertj.core.api.Assertions.assertThat(home).contains("ar-folder-label\">디멘션</span>");
@@ -232,7 +215,7 @@ class ArchiveControllerTest {
         aura.setUnitName("Aura");
         aura.setVisible(true);
         aura.setUnitMembers(List.of(later, earlier));
-        when(unitService.listVisible()).thenReturn(List.of(aura));
+        when(unitService.listVisibleForArchive()).thenReturn(List.of(aura));
 
         mvc.perform(get("/archive").param("folder", "unit-17").param("type", "video"))
                 .andExpect(status().isFound())
@@ -274,7 +257,7 @@ class ArchiveControllerTest {
                 .id(9L).members(List.of("지연", "마유", "주빈")).label("A<b>셋").build();
         when(chemistryService.findAll()).thenReturn(List.of(pair, unlabeled));
         when(chemistryGroupService.findAll()).thenReturn(List.of(duplicate, trio));
-        when(artistRepository.findAll()).thenReturn(List.of());
+        when(artistSnapshot.findAll()).thenReturn(List.of());
         stubFolder(MediaType.IMAGE, photo());
 
         String html = mvc.perform(get("/archive").param("folder", "s").param("members", "주빈").param("members", "마유"))
@@ -290,7 +273,7 @@ class ArchiveControllerTest {
     }
 
     @Test void groupFolderWithMembersRequiresEverySelectedMember() throws Exception {
-        when(artistRepository.findAll()).thenReturn(List.of());
+        when(artistSnapshot.findAll()).thenReturn(List.of());
         stubFolder(MediaType.IMAGE, photo());
         mvc.perform(get("/archive").param("folder", "s").param("members", "윤서연").param("members", "정혜린"))
                 .andExpect(status().isOk())
@@ -345,7 +328,7 @@ class ArchiveControllerTest {
 
     @Test void adminImageArchiveShowsEditAndDelete() throws Exception {
         when(aboutAdminAuth.isAdmin(any(), any())).thenReturn(true);
-        when(artistRepository.findAll()).thenReturn(List.of());
+        when(artistSnapshot.findAll()).thenReturn(List.of());
         stubFolder(MediaType.IMAGE, photo());
 
         mvc.perform(get("/archive").param("folder", "s")).andExpect(status().isOk())
@@ -445,7 +428,7 @@ class ArchiveControllerTest {
         member.setEngName("SeoYeon");
         member.setColor("#22aeff");
         member.setProfileImage("/uploads/portraits/seoyeon.jpg");
-        when(artistRepository.findAll()).thenReturn(List.of(member));
+        when(artistSnapshot.findAll()).thenReturn(List.of(member));
         stubFolder(MediaType.IMAGE, photo());
         String html = mvc.perform(get("/archive").param("folder", "s")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -459,7 +442,7 @@ class ArchiveControllerTest {
     }
 
     @Test void folderViewKeepsFolderOnTabsAndHidesSoloMemberFilter() throws Exception {
-        when(artistRepository.findAll()).thenReturn(List.of());
+        when(artistSnapshot.findAll()).thenReturn(List.of());
         stubFolder(MediaType.IMAGE, photo());
         mvc.perform(get("/archive").param("folder", "s1").param("source", "cosmo_room").param("q", "heart"))
                 .andExpect(status().isFound())
@@ -491,7 +474,7 @@ class ArchiveControllerTest {
     }
 
     @Test void emptyFolderShowsPageOneAndMemberTitle() throws Exception {
-        when(artistRepository.findAll()).thenReturn(List.of());
+        when(artistSnapshot.findAll()).thenReturn(List.of());
         stubFolder(MediaType.IMAGE);
         mvc.perform(get("/archive").param("folder", "s19"))
                 .andExpect(status().isFound())
@@ -531,7 +514,7 @@ class ArchiveControllerTest {
         var artist = new Artist();
         artist.setName("윤서연");
         artist.setProfileImage("/missing-profile.jpg");
-        when(artistRepository.findAll()).thenReturn(List.of(artist));
+        when(artistSnapshot.findAll()).thenReturn(List.of(artist));
         stubFolder(MediaType.IMAGE);
         var html = mvc.perform(get("/archive").param("folder", "s"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
@@ -540,7 +523,7 @@ class ArchiveControllerTest {
     }
 
     @Test void resetButtonFollowsActiveFiltersAndSearchStatIsRemoved() throws Exception {
-        when(artistRepository.findAll()).thenReturn(List.of());
+        when(artistSnapshot.findAll()).thenReturn(List.of());
         stubFolder(MediaType.IMAGE);
         var baseline = mvc.perform(get("/archive").param("folder", "s"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
@@ -563,7 +546,7 @@ class ArchiveControllerTest {
         Archive shot = photo();
         shot.setRegisteredOn(java.time.LocalDate.of(2026, 11, 16));
         shot.setSource(ArchiveSource.COSMO_ROOM);
-        when(artistRepository.findAll()).thenReturn(List.of());
+        when(artistSnapshot.findAll()).thenReturn(List.of());
         stubFolder(MediaType.IMAGE, shot);
         String html = mvc.perform(get("/archive").param("folder", "s")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -581,7 +564,7 @@ class ArchiveControllerTest {
 
     @Test void guestImageArchiveHidesEditAndDelete() throws Exception {
         when(aboutAdminAuth.isAdmin(any(), any())).thenReturn(false);
-        when(artistRepository.findAll()).thenReturn(List.of());
+        when(artistSnapshot.findAll()).thenReturn(List.of());
         stubFolder(MediaType.IMAGE, photo());
 
         mvc.perform(get("/archive").param("folder", "s")).andExpect(status().isOk())
@@ -593,7 +576,7 @@ class ArchiveControllerTest {
 
     @Test void videoArchiveUsesSameLiveFields() throws Exception {
         when(aboutAdminAuth.isAdmin(any(), any())).thenReturn(false);
-        when(artistRepository.findAll()).thenReturn(List.of());
+        when(artistSnapshot.findAll()).thenReturn(List.of());
         Archive video = photo();
         video.setTitle("무대영상");
         video.setThumbnailUrl("/uploads/poster.webp");
@@ -655,7 +638,7 @@ class ArchiveControllerTest {
         member.setArtistId(24L);
         member.setName("지연");
         member.setColor("#ffab62");
-        when(artistRepository.findAll()).thenReturn(List.of(member));
+        when(artistSnapshot.findAll()).thenReturn(List.of(member));
         Archive first = photo(), second = photo();
         first.setId(3L);
         first.setArtistNames("지연, 게스트");
@@ -671,7 +654,7 @@ class ArchiveControllerTest {
     }
 
     @Test void listingOmitsFrontNumbersAndKeepsPageOffset() throws Exception {
-        when(artistRepository.findAll()).thenReturn(List.of());
+        when(artistSnapshot.findAll()).thenReturn(List.of());
         when(archiveService.browseFolder(eq(MediaType.IMAGE), anyInt(), anyInt(), nullable(String.class), any(),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
                 nullable(ArchiveSource.class), anyBoolean(), any(), any(), any()))
@@ -685,7 +668,7 @@ class ArchiveControllerTest {
     }
 
     @Test void photoCardsShowTitleThenAllMemberLogos() throws Exception {
-        when(artistRepository.findAll()).thenReturn(List.of());
+        when(artistSnapshot.findAll()).thenReturn(List.of());
         Archive group = photo();
         group.setArtistNames("윤서연, 윤서연, 정혜린, 이지우, <김채연>");
         Archive solo = photo();
@@ -722,7 +705,7 @@ class ArchiveControllerTest {
 
 
     @Test void exactPhotoDateFilterUsesRegisteredOn() throws Exception {
-        when(artistRepository.findAll()).thenReturn(List.of());
+        when(artistSnapshot.findAll()).thenReturn(List.of());
         stubFolder(MediaType.IMAGE, photo());
         mvc.perform(get("/archive").param("folder", "s").param("on", "2026-03-15"))
                 .andExpect(status().isOk())
@@ -734,7 +717,7 @@ class ArchiveControllerTest {
     }
 
     @Test void photoBrowsePageListsAllPhotosWithoutCarousel() throws Exception {
-        when(artistRepository.findAll()).thenReturn(List.of());
+        when(artistSnapshot.findAll()).thenReturn(List.of());
         Archive group = photo();
         group.setArtistNames("윤서연, 정혜린");
         when(archiveService.pageByType(eq(MediaType.IMAGE), anyInt(), anyInt(), isNull(), any(), isNull(), isNull()))
@@ -758,7 +741,7 @@ class ArchiveControllerTest {
         var member = new Artist();
         member.setName("서연");
         member.setColor("red;position:fixed");
-        when(artistRepository.findAll()).thenReturn(List.of(member));
+        when(artistSnapshot.findAll()).thenReturn(List.of(member));
         stubFolder(MediaType.IMAGE, photo());
         mvc.perform(get("/archive").param("folder", "s"))
                 .andExpect(status().isOk())
