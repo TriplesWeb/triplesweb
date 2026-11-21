@@ -422,6 +422,28 @@ class ArchiveControllerTest {
                 .contains("value=\"POLAROID\"", "value=\"COSMO_ROOM\"");
     }
 
+    @Test void oldTeaserLinkSelectsTheTeaserBehindSource() throws Exception {
+        Archive teaserBehind = photo();
+        teaserBehind.setSource(ArchiveSource.TEASER_BEHIND);
+        stubFolder(MediaType.IMAGE, teaserBehind);
+
+        String html = mvc.perform(get("/archive").param("folder", "s").param("source", "teaser"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+        var page = Jsoup.parse(html);
+        org.assertj.core.api.Assertions.assertThat(page.select(".ar-source-tabs a[href$=teaser_behind]"))
+                .hasSize(1).first().satisfies(tab -> {
+                    org.assertj.core.api.Assertions.assertThat(tab.text()).isEqualTo("티저/비하인드");
+                    org.assertj.core.api.Assertions.assertThat(tab.hasClass("is-active")).isTrue();
+                });
+        org.assertj.core.api.Assertions.assertThat(page.select("option[value=TEASER]")).isEmpty();
+        org.assertj.core.api.Assertions.assertThat(page.select("option[value=TEASER_BEHIND]").eachText())
+                .isNotEmpty().containsOnly("티저/비하인드");
+        verify(archiveService).browseFolder(eq(MediaType.IMAGE), anyInt(), anyInt(), nullable(String.class), any(),
+                nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
+                eq(ArchiveSource.TEASER_BEHIND), anyBoolean(), any(), any(), any());
+    }
+
     @Test void archiveMemberPickerUsesPortraitsNotSymbolLogos() throws Exception {
         var member = new Artist();
         member.setName("윤서연");
