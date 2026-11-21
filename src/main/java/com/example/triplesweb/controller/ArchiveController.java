@@ -9,11 +9,11 @@ import com.example.triplesweb.dto.ChemistryDto;
 import com.example.triplesweb.dto.ChemistryGroupDto;
 import com.example.triplesweb.service.ArchiveService;
 import com.example.triplesweb.service.AboutAdminAuth;
+import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.ChemistryGroupService;
 import com.example.triplesweb.service.ChemistryService;
 import com.example.triplesweb.service.IdempotencyService;
 import com.example.triplesweb.service.UnitService;
-import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.util.ArchiveFolderArt;
 import com.example.triplesweb.util.ArchiveFolderClassifier;
@@ -52,7 +52,7 @@ public class ArchiveController {
 
     private final ArchiveService archiveService;
     private final AboutAdminAuth aboutAdminAuth;
-    private final ArtistRepository artistRepository;
+    private final ArtistSnapshotService artistSnapshot;
     private final UnitService unitService;
     private final ArchiveFolderArt archiveFolderArt;
     private final ChemistryService chemistryService;
@@ -147,17 +147,12 @@ public class ArchiveController {
 
     private String renderFolderHome(HttpServletRequest request, HttpSession session, Model model) {
         boolean isAdmin = aboutAdminAuth.isAdmin(request, session);
-        List<Artist> artists = artistRepository.findAll();
-        List<Unit> units = unitService.listVisible();
-        List<ArchiveFolderClassifier.UnitMembers> unitMembers = unitSnapshots(units);
-        List<Archive> archives = archiveService.index();
-        List<Map<String, Object>> folders = folderCards(archives, units, unitMembers, artists);
-        long photoCount = 0;
-        long videoCount = 0;
-        for (Archive archive : archives) {
-            if (archive.getType() == MediaType.IMAGE) photoCount++;
-            else if (archive.getType() == MediaType.VIDEO) videoCount++;
-        }
+        List<Artist> artists = artistSnapshot.findAll();
+        // 홈 카드는 번들 아이콘·멤버 색만 필요. 유닛/아카이브 전체 스캔은 Tailscale RTT만 키운다.
+        List<Map<String, Object>> folders = folderCards(List.of(), List.of(), List.of(), artists);
+        ArchiveService.TypeTotals totals = archiveService.countTotals();
+        long photoCount = totals.images();
+        long videoCount = totals.videos();
         model.addAttribute("archiveFolderHome", true);
         model.addAttribute("archiveFolderView", false);
         model.addAttribute("archiveBrowse", false);
@@ -186,19 +181,14 @@ public class ArchiveController {
 
     private String renderFolderIndex(HttpServletRequest request, HttpSession session, Model model) {
         boolean isAdmin = aboutAdminAuth.isAdmin(request, session);
-        List<Artist> artists = artistRepository.findAll();
-        List<Unit> units = unitService.listVisible();
-        List<ArchiveFolderClassifier.UnitMembers> unitMembers = unitSnapshots(units);
-        List<Archive> archives = archiveService.index();
-        FolderCounts counted = folderCounts(archives, unitMembers);
+        List<Artist> artists = artistSnapshot.findAll();
+        List<Unit> units = unitService.listVisibleForArchive();
+        // 유닛 카드도 번들 아트·등록 이미지를 쓰고 배지는 숨기므로 전체 아카이브 스캔을 생략한다.
+        FolderCounts counted = new FolderCounts(Map.of(), Map.of());
         List<Map<String, Object>> folders = unitFolderCards(units, artists, counted);
-        long photoCount = 0;
-        long videoCount = 0;
-        for (Archive archive : archives) {
-            if (!matchesAnyUnit(archive.getArtistNames(), unitMembers)) continue;
-            if (archive.getType() == MediaType.IMAGE) photoCount++;
-            else if (archive.getType() == MediaType.VIDEO) videoCount++;
-        }
+        ArchiveService.TypeTotals totals = archiveService.countTotals();
+        long photoCount = totals.images();
+        long videoCount = totals.videos();
         String title = "디멘션";
         String accent = "#a78bfa";
         model.addAttribute("archiveFolderHome", true);
@@ -248,7 +238,9 @@ public class ArchiveController {
             toDate = swap;
         }
         ArchiveSource source = parseSourceFilter(sourceSlug);
-        List<Unit> visibleUnits = unitService.listVisible();
+        // 전체 멤버 폴더(s)는 유닛 분류가 필요 없고, listVisible()의 앨범 병합은 아카이브에 불필요하다.
+        boolean needsUnits = !browse && !folderKey.equalsIgnoreCase("s");
+        List<Unit> visibleUnits = needsUnits ? unitService.listVisibleForArchive() : List.of();
         List<ArchiveFolderClassifier.UnitMembers> units = unitSnapshots(visibleUnits);
         ArchiveService.FolderBrowse folderBrowse = null;
         Page<Archive> archives;
@@ -261,7 +253,7 @@ public class ArchiveController {
             archives = folderBrowse.page();
         }
 
-        List<Artist> artists = artistRepository.findAll();
+        List<Artist> artists = artistSnapshot.findAll();
         List<Map<String, Object>> cards = archiveCards(archives, artists);
         model.addAttribute("archives", archives);
         model.addAttribute("archiveCards", cards);
@@ -366,7 +358,7 @@ public class ArchiveController {
             return List.of(MemberPortraitOptions.koreanOrder().get(index));
         }
         if (folderKey.toLowerCase(Locale.ROOT).startsWith("unit-")) {
-            for (ArchiveFolderClassifier.UnitMembers unit : unitSnapshots(unitService.listVisible())) {
+            for (ArchiveFolderClassifier.UnitMembers unit : unitSnapshots(unitService.listVisibleForArchive())) {
                 if (("unit-" + unit.unitId()).equalsIgnoreCase(folderKey)) {
                     return ArchiveFolderClassifier.membersOf(String.join(",", unit.members()));
                 }
@@ -1138,7 +1130,7 @@ public class ArchiveController {
     }
 
     private String folderRedirect(MediaType type, String artistNames) {
-        ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(artistNames, unitSnapshots(unitService.listVisible()));
+        ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(artistNames, unitSnapshots(unitService.listVisibleForArchive()));
         String typeQuery = type == MediaType.VIDEO ? "type=video&" : "";
         if (match.kind() == ArchiveFolderClassifier.Kind.OTHER || match.members().isEmpty()) {
             return type == MediaType.VIDEO ? "/archive?type=video" : "/archive";
@@ -1170,16 +1162,6 @@ public class ArchiveController {
             query.append("&members=").append(URLEncoder.encode(member, StandardCharsets.UTF_8));
         }
         return query.toString();
-    }
-
-    private static boolean matchesAnyUnit(String artistNames, List<ArchiveFolderClassifier.UnitMembers> units) {
-        Set<String> present = new LinkedHashSet<>(ArchiveFolderClassifier.membersOf(artistNames));
-        if (units == null) return false;
-        for (ArchiveFolderClassifier.UnitMembers unit : units) {
-            if (unit.members() == null || unit.members().isEmpty()) continue;
-            if (present.containsAll(unit.members())) return true;
-        }
-        return false;
     }
 
     private static String joinHref(String path, String extraQuery) {

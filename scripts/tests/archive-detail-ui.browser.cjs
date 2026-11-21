@@ -8,16 +8,24 @@ const staticRoot = path.join(root, 'src/main/resources/static');
 const css = fs.readFileSync(path.join(staticRoot, 'css', 'archive-page.css'), 'utf8');
 const site = fs.readFileSync(path.join(staticRoot, 'css', 'site.css'), 'utf8');
 const siteUi = fs.readFileSync(path.join(staticRoot, 'css', 'site-ui.css'), 'utf8');
+const chemCss = fs.readFileSync(path.join(staticRoot, 'css', 'chemistry.css'), 'utf8');
 const pickerJs = fs.readFileSync(path.join(staticRoot, 'js', 'member-portrait-picker.js'), 'utf8');
 const browseJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-browse.js'), 'utf8');
 const dateJs = fs.readFileSync(path.join(staticRoot, 'js', 'date-range-filter.js'), 'utf8');
 const detailJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-detail.js'), 'utf8');
+const membersJs = fs.readFileSync(path.join(staticRoot, 'js', 'triples-members.js'), 'utf8');
+const sanitizeJs = fs.readFileSync(path.join(staticRoot, 'js', 'chemistry-sanitize.js'), 'utf8');
+const chemistryJs = fs.readFileSync(path.join(staticRoot, 'js', 'chemistry.js'), 'utf8');
+const chemistryModals = fs.readFileSync(
+  path.join(root, 'src/main/resources/templates/triples/partials/chemistry-modals.mustache'),
+  'utf8'
+);
 
 const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <style>
 *,*::before,*::after{box-sizing:border-box}
 body{margin:0;background:#0d0e12;color:#e3e2e8;font-family:"Pretendard Variable",Pretendard,sans-serif}
-${site}${css}${siteUi}
+${site}${css}${siteUi}${chemCss}
 </style></head>
 <body class="site-page">
 <main class="archive-page is-folder-view" data-archive-kind="image" data-date-label="사진 날짜">
@@ -142,9 +150,13 @@ ${site}${css}${siteUi}
     </form>
   </div>
 </div>
+${chemistryModals}
 <script>${pickerJs}</script>
 <script>${browseJs}</script>
 <script>${dateJs}</script>
+<script>${membersJs}</script>
+<script>${sanitizeJs}</script>
+<script>${chemistryJs}</script>
 <script>${detailJs}</script>
 </body></html>`;
 
@@ -160,6 +172,28 @@ ${site}${css}${siteUi}
       const url = new URL(route.request().url());
       if (url.pathname === '/' || url.pathname.endsWith('.html')) {
         return route.fulfill({ contentType: 'text/html', body: html });
+      }
+      if (url.pathname === '/api/chemistry') {
+        return route.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify([
+            {
+              id: 3,
+              memberA: '마유',
+              memberB: '주빈',
+              label: '심장마빈즈',
+              description: '아카이브 케미 설명',
+              imageUrls: [],
+              links: {}
+            }
+          ])
+        });
+      }
+      if (url.pathname === '/api/chemistry/groups') {
+        return route.fulfill({ contentType: 'application/json', body: '[]' });
+      }
+      if (url.pathname.includes('/admin/status')) {
+        return route.fulfill({ contentType: 'application/json', body: '{"configured":false,"admin":false}' });
       }
       if (url.pathname.endsWith('.svg')) {
         return route.fulfill({
@@ -351,6 +385,15 @@ ${site}${css}${siteUi}
     assert.equal(pair.above, true, '케미명이 초상화 위에 없다');
     assert.ok(pair.fontSize > 0 && pair.fontSize <= 14, '케미명 글자가 크다: ' + pair.fontSize);
     assert.ok(pair.color.includes('141') || pair.color.includes('8decd9'), '케미명 색이 민트가 아니다: ' + pair.color);
+    const beforeUrl = page.url();
+    await page.getByRole('link', { name: '심장마빈즈' }).click();
+    await page.locator('#chemistryModal.flex').waitFor({ state: 'visible' });
+    assert.equal(page.url(), beforeUrl, '케미 클릭이 페이지를 이동했다');
+    assert.equal((await page.locator('#chemistryTitle').innerText()).trim(), '심장마빈즈');
+    assert.match(await page.locator('#chemistryDescription').innerText(), /아카이브 케미 설명/);
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#chemistryModal').isVisible(), false);
+    assert.equal(await page.locator('#archiveDetail').isVisible(), true, '케미 모달을 닫은 뒤 아카이브 상세가 사라졌다');
     const castBox = await page.locator('#archiveDetail .ar-detail-cast').boundingBox();
     await page.screenshot({
       path: path.join(artifactDir, 'archive-detail-chemistry-name.png'),

@@ -312,7 +312,25 @@
         const label = document.createElement(href ? 'a' : 'span');
         label.className = 'ar-detail-chem';
         label.textContent = entry.name;
-        if (href) label.href = href;
+        if (href) {
+            label.href = href;
+            // 케미 상세는 모달로만 연다. href는 새 탭/공유용으로 유지한다.
+            label.addEventListener('click', (event) => {
+                if (event.defaultPrevented || event.button !== 0) return;
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                const match = href.match(/\/triples\/chemistry\?(pair|group)=([1-9]\d*)/);
+                if (!match) return;
+                const open = match[1] === 'group'
+                    ? window.openChemistryGroupById
+                    : window.openChemistryPairById;
+                if (typeof open !== 'function') return;
+                event.preventDefault();
+                // 영상 플레이어는 native dialog top layer라 케미 모달이 가려진다. 먼저 닫는다.
+                const videoDialog = document.getElementById('archiveVideoPlayer');
+                if (videoDialog?.open) videoDialog.close();
+                open(match[2]);
+            });
+        }
         membersEl.before(label);
     };
 
