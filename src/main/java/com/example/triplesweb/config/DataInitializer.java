@@ -17,7 +17,6 @@ import java.util.List;
 
 /**
  * DB에 앨범이 없을 때 아티스트·유닛·앨범·수록곡 시드 데이터를 한 번 적재한다.
- * {@link com.example.triplesweb.service.ChemistrySeedService}보다 먼저 실행되어야 한다.
  */
 @Component
 @Order(1)

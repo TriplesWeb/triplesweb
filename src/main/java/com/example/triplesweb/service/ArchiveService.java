@@ -36,6 +36,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 아카이브({@link Archive}) 미디어 목록·상세·업로드·삭제를 담당한다.
@@ -45,7 +46,8 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class ArchiveService {
 
-    private static final long INDEX_TTL_MS = 30_000L;
+    private static final long INDEX_TTL_MS = 60_000L;
+    private static final long FILTER_TTL_MS = 45_000L;
 
     private final ArchiveRepository archiveRepository;
     private final FileStorageService fileStorageService;
@@ -54,6 +56,13 @@ public class ArchiveService {
 
     private volatile List<Archive> indexCache;
     private volatile long indexCacheAt;
+    private final ConcurrentHashMap<String, CachedLong> countCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CachedSources> sourcesCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CachedBrowse> browsePageCache = new ConcurrentHashMap<>();
+
+    private record CachedLong(long value, long at) {}
+    private record CachedSources(Set<ArchiveSource> value, long at) {}
+    private record CachedBrowse(FolderBrowse value, long at) {}
 
     /** 폴더 목록 페이지와 출처 탭을 한 번의 필터 스캔으로 만든다. */
     public record FolderBrowse(Page<Archive> page, Set<ArchiveSource> availableSources) {}
@@ -65,15 +74,84 @@ public class ArchiveService {
         if (cached != null && now - indexCacheAt < INDEX_TTL_MS) {
             return cached;
         }
-        List<Archive> fresh = List.copyOf(archiveRepository.findAll());
+        // 폴더 홈은 artistNames·타입·미리보기 URL만 필요 — images_json 등 본문은 제외한다.
+        List<Archive> fresh = List.copyOf(loadFolderIndexRows());
         indexCache = fresh;
         indexCacheAt = now;
         return fresh;
     }
 
+    public record TypeTotals(long images, long videos) {}
+
+    private volatile TypeTotals totalsCache;
+    private volatile long totalsCacheAt;
+
+    /** 미디어 타입별 건수만 빠르게 센다. 폴더 홈 통계용. */
+    @Transactional(readOnly = true)
+    public long countByType(MediaType type) {
+        if (type == null) return 0L;
+        TypeTotals totals = countTotals();
+        if (type == MediaType.IMAGE) return totals.images();
+        if (type == MediaType.VIDEO) return totals.videos();
+        return archiveRepository.countByFile_MediaType(type);
+    }
+
+    /** 사진·영상 건수를 한 번의 GROUP BY로 읽고 짧게 캐시한다. */
+    @Transactional(readOnly = true)
+    public TypeTotals countTotals() {
+        long now = System.currentTimeMillis();
+        TypeTotals cached = totalsCache;
+        if (cached != null && now - totalsCacheAt < FILTER_TTL_MS) {
+            return cached;
+        }
+        long images = 0L;
+        long videos = 0L;
+        for (Object[] row : archiveRepository.countGroupByMediaType()) {
+            MediaType type = (MediaType) row[0];
+            long count = row[1] instanceof Number number ? number.longValue() : 0L;
+            if (type == MediaType.IMAGE) images = count;
+            else if (type == MediaType.VIDEO) videos = count;
+        }
+        TypeTotals fresh = new TypeTotals(images, videos);
+        totalsCache = fresh;
+        totalsCacheAt = now;
+        return fresh;
+    }
+
+    private List<Archive> loadFolderIndexRows() {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> query = cb.createQuery(Object[].class);
+        Root<Archive> root = query.from(Archive.class);
+        query.multiselect(
+                root.get("id"),
+                root.get("artistNames"),
+                root.get("thumbnailUrl"),
+                root.get("file").get("url"),
+                root.get("file").get("mediaType"));
+        query.orderBy(cb.desc(root.get("id")));
+        List<Archive> rows = new ArrayList<>();
+        for (Object[] row : entityManager.createQuery(query).getResultList()) {
+            Archive archive = new Archive();
+            archive.setId((Long) row[0]);
+            archive.setArtistNames((String) row[1]);
+            archive.setThumbnailUrl((String) row[2]);
+            SavedMeta file = new SavedMeta();
+            file.setUrl((String) row[3]);
+            file.setMediaType((MediaType) row[4]);
+            archive.setFile(file);
+            rows.add(archive);
+        }
+        return rows;
+    }
+
     private void invalidateIndexCache() {
         indexCache = null;
         indexCacheAt = 0L;
+        totalsCache = null;
+        totalsCacheAt = 0L;
+        countCache.clear();
+        sourcesCache.clear();
+        browsePageCache.clear();
     }
 
     /** 날짜가 확인된 검색 결과를 먼저 최신순으로 반환한다. */
@@ -100,8 +178,71 @@ public class ArchiveService {
     @Transactional(readOnly = true)
     public Page<Archive> pageByType(MediaType type, int page, int size, String keyword, List<String> members,
                                     LocalDate from, LocalDate to, ArchiveSource source, boolean unclassifiedOnly) {
+        return pageByType(type, page, size, keyword, members, from, to, source, unclassifiedOnly, false);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Archive> pageByType(MediaType type, int page, int size, String keyword, List<String> members,
+                                    LocalDate from, LocalDate to, ArchiveSource source, boolean unclassifiedOnly,
+                                    boolean requireAllMembers) {
         Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size), Sort.by(Sort.Direction.DESC, "id"));
-        return archiveRepository.findAll(archiveSpec(type, keyword, members, from, to, source, unclassifiedOnly), pageable);
+        Specification<Archive> spec = archiveSpec(type, keyword, members, from, to, source, unclassifiedOnly, requireAllMembers);
+        if (!requireAllMembers) {
+            return archiveRepository.findAll(spec, pageable);
+        }
+        // 전체 멤버 폴더: content 조회와 count를 분리해 count는 짧게 캐시한다 (원격 DB 왕복 절감).
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Archive> contentQuery = cb.createQuery(Archive.class);
+        Root<Archive> contentRoot = contentQuery.from(Archive.class);
+        Predicate contentPred = spec.toPredicate(contentRoot, contentQuery, cb);
+        contentQuery.select(contentRoot);
+        if (contentPred != null) contentQuery.where(contentPred);
+        contentQuery.orderBy(cb.desc(contentRoot.get("id")));
+        List<Archive> content = entityManager.createQuery(contentQuery)
+                .setFirstResult((int) pageable.getOffset())
+                .setMaxResults(pageable.getPageSize())
+                .getResultList();
+        long total = cachedCount(filterCacheKey("count", type, keyword, members, from, to, source, unclassifiedOnly, true),
+                () -> countArchives(spec));
+        return new PageImpl<>(content, pageable, total);
+    }
+
+    private long countArchives(Specification<Archive> spec) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+        Root<Archive> root = countQuery.from(Archive.class);
+        Predicate pred = spec.toPredicate(root, countQuery, cb);
+        countQuery.select(cb.count(root));
+        if (pred != null) countQuery.where(pred);
+        Long total = entityManager.createQuery(countQuery).getSingleResult();
+        return total == null ? 0L : total;
+    }
+
+    private long cachedCount(String key, java.util.function.LongSupplier loader) {
+        long now = System.currentTimeMillis();
+        evictExpiredCaches(now);
+        CachedLong cached = countCache.get(key);
+        if (cached != null && now - cached.at() < FILTER_TTL_MS) {
+            return cached.value();
+        }
+        long value = loader.getAsLong();
+        countCache.put(key, new CachedLong(value, now));
+        return value;
+    }
+
+    /** TTL이 지난 필터·페이지 캐시 항목을 지워 장기 기동 시 메모리가 쌓이지 않게 한다. */
+    private void evictExpiredCaches(long now) {
+        countCache.entrySet().removeIf(entry -> now - entry.getValue().at() >= FILTER_TTL_MS);
+        sourcesCache.entrySet().removeIf(entry -> now - entry.getValue().at() >= FILTER_TTL_MS);
+        browsePageCache.entrySet().removeIf(entry -> now - entry.getValue().at() >= FILTER_TTL_MS);
+    }
+
+    private static String filterCacheKey(String kind, MediaType type, String keyword, List<String> members,
+                                         LocalDate from, LocalDate to, ArchiveSource source,
+                                         boolean unclassifiedOnly, boolean requireAllMembers) {
+        return kind + '|' + type + '|' + (keyword == null ? "" : keyword.trim()) + '|'
+                + (members == null ? "" : String.join(",", members)) + '|'
+                + from + '|' + to + '|' + source + '|' + unclassifiedOnly + '|' + requireAllMembers;
     }
 
     @Transactional(readOnly = true)
@@ -118,45 +259,96 @@ public class ArchiveService {
                                      LocalDate from, LocalDate to, ArchiveSource source, boolean unclassifiedOnly,
                                      String folder, List<String> comboMembers,
                                      List<ArchiveFolderClassifier.UnitMembers> units) {
-        // 출처 탭은 source 필터 없이 같은 폴더 조건에서 집계한다.
-        List<Archive> found = archiveRepository.findAll(
-                archiveSpec(type, keyword, members, from, to, null, false),
-                Sort.by(Sort.Direction.DESC, "id"));
-        List<Archive> inFolder = new ArrayList<>(found.size());
+        String folderKey = folder == null ? "" : folder.trim();
+        // 전체 멤버 폴더(s)에서 멤버 필터가 없을 때만 DB 페이징 고속 경로를 쓴다.
+        // 멤버가 있으면 별칭(서연/S1 등) 매칭을 위해 classify 스캔 경로를 탄다.
+        if (folderKey.equalsIgnoreCase("s")) {
+            List<String> wanted = (comboMembers != null && !comboMembers.isEmpty()) ? comboMembers : members;
+            boolean hasMemberFilter = wanted != null && wanted.stream().anyMatch(name -> name != null && !name.isBlank());
+            if (!hasMemberFilter) {
+                String pageKey = filterCacheKey("browse", type, keyword, wanted, from, to, source, unclassifiedOnly, true)
+                        + "|p=" + page + "|z=" + size;
+                long now = System.currentTimeMillis();
+                evictExpiredCaches(now);
+                CachedBrowse cachedBrowse = browsePageCache.get(pageKey);
+                if (cachedBrowse != null && now - cachedBrowse.at() < FILTER_TTL_MS) {
+                    return cachedBrowse.value();
+                }
+                Set<ArchiveSource> sources = availableSources(type, keyword, wanted, from, to, true);
+                Page<Archive> pageResult = pageByType(type, page, size, keyword, wanted, from, to, source, unclassifiedOnly, true);
+                FolderBrowse browse = new FolderBrowse(pageResult, sources);
+                browsePageCache.put(pageKey, new CachedBrowse(browse, now));
+                return browse;
+            }
+        }
+
+        // 그 외 폴더: id·artistNames·source만 스캔한 뒤 페이지 본문만 조회한다.
+        Specification<Archive> scanSpec = archiveSpec(type, keyword, members, from, to, null, false, false);
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> scanQuery = cb.createQuery(Object[].class);
+        Root<Archive> root = scanQuery.from(Archive.class);
+        Predicate base = scanSpec.toPredicate(root, scanQuery, cb);
+        scanQuery.multiselect(root.get("id"), root.get("artistNames"), root.get("source"));
+        if (base != null) scanQuery.where(base);
+        scanQuery.orderBy(cb.desc(root.get("id")));
+
+        List<Long> matchedIds = new ArrayList<>();
         Set<ArchiveSource> sources = new LinkedHashSet<>();
-        for (Archive archive : found) {
+        for (Object[] row : entityManager.createQuery(scanQuery).getResultList()) {
+            Long id = (Long) row[0];
+            String artistNames = (String) row[1];
+            ArchiveSource rowSource = (ArchiveSource) row[2];
             if (!ArchiveFolderClassifier.matches(
-                    ArchiveFolderClassifier.classify(archive.getArtistNames(), units), folder, comboMembers)) {
+                    ArchiveFolderClassifier.classify(artistNames, units), folderKey, comboMembers)) {
                 continue;
             }
-            inFolder.add(archive);
-            if (archive.getSource() != null) sources.add(archive.getSource());
+            if (rowSource != null) sources.add(rowSource);
+            if (unclassifiedOnly) {
+                if (rowSource != null) continue;
+            } else if (source != null && !source.equals(rowSource)) {
+                continue;
+            }
+            matchedIds.add(id);
         }
-        List<Archive> filtered = inFolder;
-        if (unclassifiedOnly) {
-            filtered = inFolder.stream().filter(archive -> archive.getSource() == null).toList();
-        } else if (source != null) {
-            filtered = inFolder.stream().filter(archive -> source.equals(archive.getSource())).toList();
-        }
+
         int safeSize = Math.max(1, size);
         int safePage = Math.max(0, page);
         int fromIndex = safePage * safeSize;
         Pageable pageable = PageRequest.of(safePage, safeSize);
-        Page<Archive> pageResult;
-        if (fromIndex >= filtered.size()) {
-            pageResult = new PageImpl<>(List.of(), pageable, filtered.size());
-        } else {
-            pageResult = new PageImpl<>(filtered.subList(fromIndex, Math.min(filtered.size(), fromIndex + safeSize)),
-                    pageable, filtered.size());
+        if (fromIndex >= matchedIds.size()) {
+            return new FolderBrowse(new PageImpl<>(List.of(), pageable, matchedIds.size()), Set.copyOf(sources));
         }
-        return new FolderBrowse(pageResult, Set.copyOf(sources));
+        List<Long> pageIds = matchedIds.subList(fromIndex, Math.min(matchedIds.size(), fromIndex + safeSize));
+        Map<Long, Archive> byId = new LinkedHashMap<>();
+        for (Archive archive : archiveRepository.findAllById(pageIds)) {
+            byId.put(archive.getId(), archive);
+        }
+        List<Archive> pageItems = new ArrayList<>(pageIds.size());
+        for (Long id : pageIds) {
+            Archive archive = byId.get(id);
+            if (archive != null) pageItems.add(archive);
+        }
+        return new FolderBrowse(new PageImpl<>(pageItems, pageable, matchedIds.size()), Set.copyOf(sources));
     }
 
     /** 전체 보기 출처 탭용. 본문 없이 source 컬럼만 distinct 조회한다. */
     @Transactional(readOnly = true)
     public Set<ArchiveSource> availableSources(MediaType type, String keyword, List<String> members,
                                                LocalDate from, LocalDate to) {
-        Specification<Archive> spec = archiveSpec(type, keyword, members, from, to, null, false);
+        return availableSources(type, keyword, members, from, to, false);
+    }
+
+    @Transactional(readOnly = true)
+    public Set<ArchiveSource> availableSources(MediaType type, String keyword, List<String> members,
+                                               LocalDate from, LocalDate to, boolean requireAllMembers) {
+        String key = filterCacheKey("sources", type, keyword, members, from, to, null, false, requireAllMembers);
+        long now = System.currentTimeMillis();
+        evictExpiredCaches(now);
+        CachedSources cached = sourcesCache.get(key);
+        if (cached != null && now - cached.at() < FILTER_TTL_MS) {
+            return cached.value();
+        }
+        Specification<Archive> spec = archiveSpec(type, keyword, members, from, to, null, false, requireAllMembers);
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<ArchiveSource> query = cb.createQuery(ArchiveSource.class);
         Root<Archive> root = query.from(Archive.class);
@@ -164,14 +356,22 @@ public class ArchiveService {
         Predicate notNull = cb.isNotNull(root.get("source"));
         query.select(root.get("source")).distinct(true)
                 .where(base == null ? notNull : cb.and(base, notNull));
-        return new LinkedHashSet<>(entityManager.createQuery(query).getResultList().stream()
+        Set<ArchiveSource> sources = Set.copyOf(entityManager.createQuery(query).getResultList().stream()
                 .filter(Objects::nonNull)
                 .toList());
+        sourcesCache.put(key, new CachedSources(sources, now));
+        return sources;
     }
 
     private static Specification<Archive> archiveSpec(
             MediaType type, String keyword, List<String> members, LocalDate from, LocalDate to,
             ArchiveSource source, boolean unclassifiedOnly) {
+        return archiveSpec(type, keyword, members, from, to, source, unclassifiedOnly, false);
+    }
+
+    private static Specification<Archive> archiveSpec(
+            MediaType type, String keyword, List<String> members, LocalDate from, LocalDate to,
+            ArchiveSource source, boolean unclassifiedOnly, boolean requireAllMembers) {
         String q = keyword == null ? "" : keyword.trim();
         List<String> names = members == null ? List.of() : members.stream()
                 .filter(name -> name != null && !name.isBlank())
@@ -191,11 +391,13 @@ public class ArchiveService {
                 Expression<String> normalized = cb.lower(cb.function(
                         "replace", String.class, cb.coalesce(root.get("artistNames"), ""), cb.literal(" "), cb.literal("")));
                 Expression<String> wrapped = cb.concat(",", cb.concat(normalized, ","));
-                List<Predicate> anyMember = new ArrayList<>();
+                List<Predicate> memberPredicates = new ArrayList<>();
                 for (String name : names) {
-                    anyMember.add(cb.like(wrapped, "%," + name + ",%"));
+                    memberPredicates.add(cb.like(wrapped, "%," + name + ",%"));
                 }
-                predicates.add(cb.or(anyMember.toArray(Predicate[]::new)));
+                predicates.add(requireAllMembers
+                        ? cb.and(memberPredicates.toArray(Predicate[]::new))
+                        : cb.or(memberPredicates.toArray(Predicate[]::new)));
             }
             if (from != null) predicates.add(cb.greaterThanOrEqualTo(root.get("registeredOn"), from));
             if (to != null) predicates.add(cb.lessThanOrEqualTo(root.get("registeredOn"), to));

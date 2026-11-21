@@ -27,7 +27,6 @@ class CosmoConnectControllerTest {
     @MockitoBean CosmoLoginService login;
     @MockitoBean CosmoTokenProvider tokens;
     @MockitoBean com.example.triplesweb.service.ChemistryService chemistryService;
-    @MockitoBean com.example.triplesweb.service.ChemistrySeedService chemistrySeedService;
     @MockitoBean com.example.triplesweb.service.ChemistryGroupService chemistryGroupService;
 
     @Test void anonymousCannotSendCodesOrReplaceCredentials() throws Exception {

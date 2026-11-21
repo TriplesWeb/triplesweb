@@ -38,7 +38,7 @@ CI 설정만 수정된 PR을 머지하면 `main` push의 즉시 운영 배포는
 ## 빌드와 검사 최적화
 
 - 이미지: GitHub 네이티브 ARM64 러너 사용, GitHub Actions Buildx 캐시 `scope=triplesweb-arm64` 공유
-- `.dockerignore`에서 대용량 uploads를 제외. chemistry 자산은 이미지에 포함하지 않고 Pi의 `uploads/chemistry`만 rsync로 증분 업데이트
+- `.dockerignore`에서 대용량 uploads를 제외. 케미 매트릭스 UI(logo·symbols)는 WAR static(`/images/chemistry`). 페어 사진은 Pi `uploads/images/chemistry`만 사용
 - 운영 Pi 배포 전에 현재 실행 중 이미지 태그와 `/actuator/health/readiness` 확인
 - Java 단일 Gradle 호출 `./gradlew test bootWar`로 테스트와 패키징 공유
 - Java 생성 HTML이 필요한 Chrome 검사는 Gradle 테스트 Job에서 이어 실행해 파일 공유를 보장하며, 독립 CSS/JavaScript 검사는 병렬 Job으로 유지
@@ -49,8 +49,8 @@ CI 설정만 수정된 PR을 머지하면 `main` push의 즉시 운영 배포는
 
 ## 운영 배포 추가 최적화
 
-- 사전점검에서 기존 개발 앱 중지(최초 1회), 운영 SHA/readiness 확인, chemistry 소스 버전을 **한 번의 Pi SSH 접속**으로 검사
-- `uploads/chemistry` Git tree SHA를 운영 서버의 `.chemistry-tree`와 비교해 내용이 같으면 rsync를 생략. 파일이 없거나 마커가 없으면 다시 동기화
+- 사전점검에서 기존 개발 앱 중지(최초 1회), 운영 SHA/readiness 확인을 **한 번의 Pi SSH 접속**으로 검사
+- 배포 시 `migrate-chemistry-photos-on-pi.sh`로 옛 `uploads/chemistry/chem` → `uploads/images/chemistry` 멱등 복사 (원본 유지). Flyway가 DB URL을 같은 경로로 치환
 - PNG 등의 압축된 정적 이미지는 `rsync -a`로 중복 압축을 방지. 운영 업로드 루트에 삭제 옵션을 쓰지 않음
 - GHCR에 해당 `main` 커밋 SHA 이미지가 이미 있으면, 운영 배포 실패/재시도 상황에서 **Docker 재빌드·재푸시 생략**
 - Pi에도 동일한 불변 SHA 이미지가 남아 있으면 `docker compose pull` 자체를 생략

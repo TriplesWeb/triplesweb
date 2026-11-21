@@ -57,6 +57,16 @@ public class UnitService {
         return visible;
     }
 
+    /** 아카이브 폴더 분류용. 멤버만 필요하고 앨범 병합은 생략한다. */
+    @Transactional(readOnly = true)
+    public List<Unit> listVisibleForArchive() {
+        List<Unit> visible = unitRepository.findAllForUnitPage().stream().filter(Unit::isVisible).toList();
+        for (Unit unit : visible) {
+            sortMembersByArtistId(unit);
+        }
+        return visible;
+    }
+
     @Transactional(readOnly = true)
     public UnitDetail getDetail(long unitId) {
         Unit unit = unitRepository.findById(unitId)

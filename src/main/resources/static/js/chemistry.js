@@ -4,7 +4,7 @@
  * 프로필 링크는 API의 artistAId/artistBId를 우선 사용한다.
  */
 (function () {
-  const BASE = "/uploads/chemistry";
+  const BASE = "/images/chemistry";
 
   const catalog = window.TripleSMembers || {};
   const MEMBERS = catalog.NAMES_KO || [];
@@ -2939,13 +2939,12 @@
     openChemistryName(el.dataset.person, el.dataset.key);
   }
 
-  async function openLinkedPair() {
-    const pairId = new URLSearchParams(window.location.search).get("pair");
-    if (!pairId || !/^[1-9]\d*$/.test(pairId)) return;
+  async function openChemistryPairById(pairId) {
+    if (!pairId || !/^[1-9]\d*$/.test(String(pairId))) return false;
     try {
       await ensurePairsLoaded();
-      const entry = dbEntries.find((item) => String(item.id) === pairId);
-      if (!entry || !entry.memberA || !entry.memberB) return;
+      const entry = dbEntries.find((item) => String(item.id) === String(pairId));
+      if (!entry || !entry.memberA || !entry.memberB) return false;
       await openCellFromEl({
         dataset: {
           m1: entry.memberA,
@@ -2956,22 +2955,38 @@
         },
         textContent: entry.label || ""
       });
+      return true;
     } catch (err) {
       console.error("케미 상세 로드 실패", err);
+      return false;
+    }
+  }
+
+  async function openLinkedPair() {
+    const pairId = new URLSearchParams(window.location.search).get("pair");
+    await openChemistryPairById(pairId);
+  }
+
+  async function openChemistryGroupById(groupId) {
+    if (!/^[1-9]\d*$/.test(String(groupId || ""))) return false;
+    try {
+      await ensureGroupsLoaded();
+      const group = groupEntries.find((item) => String(item.id) === String(groupId));
+      if (!group) return false;
+      // 아카이브 등 매트릭스 없는 페이지에서는 모드 전환(표 DOM)을 건너뛴다.
+      if (hasSsrTable() || document.getElementById("chemTrioView")) {
+        await setMode("trio");
+      }
+      openChemistryGroup(group);
+      return true;
+    } catch (err) {
+      console.error("케미 상세 로드 실패", err);
+      return false;
     }
   }
 
   async function openLinkedGroup(groupId) {
-    if (!/^[1-9]\d*$/.test(groupId || "")) return;
-    try {
-      await ensureGroupsLoaded();
-      const group = groupEntries.find((item) => String(item.id) === groupId);
-      if (!group) return;
-      await setMode("trio");
-      openChemistryGroup(group);
-    } catch (err) {
-      console.error("케미 상세 로드 실패", err);
-    }
+    await openChemistryGroupById(groupId);
   }
 
   // SSR 표는 즉시 클릭 가능. 상세 API는 클릭/유휴 시 로드.
@@ -3000,6 +3015,9 @@
         }
       }
       if (e.key !== "Escape") return;
+      if (!modalOpen) return;
+      e.preventDefault();
+      e.stopPropagation();
       closeLegendPanel();
       closeEditModal();
       closeModal();
@@ -3041,5 +3059,7 @@
   });
 
   window.openChemistryName = openChemistryName;
+  window.openChemistryPairById = openChemistryPairById;
+  window.openChemistryGroupById = openChemistryGroupById;
   window.__chemSetMode = setMode;
 })();

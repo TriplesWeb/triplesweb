@@ -14,6 +14,16 @@ class ChemistryImagesTest {
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Test
+    void isDeletableAdminUploadOnlyDateFolderPaths() {
+        assertThat(ChemistryImages.isDeletableAdminUpload(
+                "images/chemistry/2026-11-20/abcdef0123456789abcdef0123456789.png")).isTrue();
+        assertThat(ChemistryImages.isDeletableAdminUpload("images/chemistry/S1/꼬꼬마즈.png")).isFalse();
+        assertThat(ChemistryImages.isDeletableAdminUpload("images/chemistry/chem/S1/a.png")).isFalse();
+        assertThat(ChemistryImages.isDeletableAdminUpload("chemistry/chem/S1/a.png")).isFalse();
+        assertThat(ChemistryImages.isDeletableAdminUpload(null)).isFalse();
+    }
+
+    @Test
     void resolveFallsBackToSingleImageUrl() {
         assertThat(ChemistryImages.resolve(null, "/uploads/a.jpg", mapper))
                 .containsExactly("/uploads/a.jpg");

@@ -106,10 +106,12 @@ class DotenvEnvironmentPostProcessorTest {
     void parserPreservesPasswordsWindowsPathsAndHandlesBomExportAndComments() {
         var values = DotenvEnvironmentPostProcessor.parse(List.of(
                 "\uFEFF# utf8", "export MYSQL_USER=developer # comment",
-                "PASSWORD='pass # word=2'", "EMPTY=", "PATH=C:\\work\\key", "HASH=pass#word"));
+                "PASSWORD='pass # word=2'", "EMPTY=", "PATH=C:\\work\\key", "HASH=pass#word",
+                "CHEMISTRY_ADMIN_PASSWORD=$$2y$$10$$abc"));
         assertThat(values).containsEntry("MYSQL_USER", "developer")
                 .containsEntry("PASSWORD", "pass # word=2").containsEntry("EMPTY", "")
-                .containsEntry("PATH", "C:\\work\\key").containsEntry("HASH", "pass#word");
+                .containsEntry("PATH", "C:\\work\\key").containsEntry("HASH", "pass#word")
+                .containsEntry("CHEMISTRY_ADMIN_PASSWORD", "$2y$10$abc");
         assertThatThrownBy(() -> DotenvEnvironmentPostProcessor.parse(List.of("PASSWORD='not-closed")))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("1번째")
                 .hasMessageNotContaining("not-closed");
