@@ -13,6 +13,7 @@ public final class MediaTabClassifier {
         if (title == null || title.isBlank()) return MediaTab.CONTENTS.getKey();
         String upper = title.toUpperCase(Locale.ROOT);
         if (upper.contains("SIGNAL")) return MediaTab.SIGNAL.getKey();
+        if (upper.contains("REACTION") || title.contains("리액션")) return MediaTab.BEHIND.getKey();
         if (upper.contains("BEHIND") || title.contains("비하인드")) return MediaTab.BEHIND.getKey();
         if (upper.contains("SECRET BASE") || upper.contains("SECRETBASE") || title.contains("시크릿베이스")) {
             return MediaTab.SECRET.getKey();

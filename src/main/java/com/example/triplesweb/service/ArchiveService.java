@@ -478,6 +478,12 @@ public class ArchiveService {
     @Transactional
     public Archive uploadImages(List<MultipartFile> files, String title, String artistNames, LocalDate registeredOn,
                                 ArchiveSource source, String description, int coverIndex) throws IOException {
+        return uploadImages(files, title, artistNames, registeredOn, source, description, coverIndex, null);
+    }
+
+    @Transactional
+    public Archive uploadImages(List<MultipartFile> files, String title, String artistNames, LocalDate registeredOn,
+                                ArchiveSource source, String description, int coverIndex, String imageArtistsJson) throws IOException {
         List<MultipartFile> uploads = files == null ? List.of() : files.stream()
                 .filter(file -> file != null && !file.isEmpty())
                 .toList();
@@ -504,6 +510,7 @@ public class ArchiveService {
         if (registeredOn != null) archive.setRegisteredOn(registeredOn);
         archive.setSource(source);
         applyImageUrls(archive, urls);
+        applyImageArtists(archive, imageArtistsJson, urls.size());
         Archive saved = archiveRepository.save(archive);
         invalidateIndexCache();
         return saved;
@@ -667,12 +674,29 @@ public class ArchiveService {
                           boolean clearThumbnail, LocalDate registeredOn, ArchiveSource source,
                           String description, String keepImageUrlsJson, String imageOrderJson, Integer coverIndex) throws IOException {
         return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true,
-                description, keepImageUrlsJson, imageOrderJson, coverIndex);
+                description, keepImageUrlsJson, imageOrderJson, coverIndex, null);
+    }
+
+    @Transactional
+    public Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail,
+                          boolean clearThumbnail, LocalDate registeredOn, ArchiveSource source,
+                          String description, String keepImageUrlsJson, String imageOrderJson, Integer coverIndex,
+                          String imageArtistsJson) throws IOException {
+        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, true,
+                description, keepImageUrlsJson, imageOrderJson, coverIndex, imageArtistsJson);
     }
 
     private Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail,
                            boolean clearThumbnail, LocalDate registeredOn, ArchiveSource source, boolean applySource,
                            String description, String keepImageUrlsJson, String imageOrderJson, Integer coverIndex) throws IOException {
+        return update(id, title, files, artistNames, thumbnail, clearThumbnail, registeredOn, source, applySource,
+                description, keepImageUrlsJson, imageOrderJson, coverIndex, null);
+    }
+
+    private Archive update(long id, String title, List<MultipartFile> files, String artistNames, MultipartFile thumbnail,
+                           boolean clearThumbnail, LocalDate registeredOn, ArchiveSource source, boolean applySource,
+                           String description, String keepImageUrlsJson, String imageOrderJson, Integer coverIndex,
+                           String imageArtistsJson) throws IOException {
         Archive archive = show(id);
         validateThumbnail(thumbnail);
         if (thumbnail != null && !thumbnail.isEmpty() && archive.getType() != MediaType.VIDEO) {
@@ -730,6 +754,9 @@ public class ArchiveService {
             archive.setFile(meta);
             deleteStored(previous);
         }
+        if (archive.getType() == MediaType.IMAGE && imageArtistsJson != null) {
+            applyImageArtists(archive, imageArtistsJson, ArchiveImages.resolve(archive, objectMapper).size());
+        }
         String previousThumbnail = archive.getThumbnailUrl();
         if (thumbnail != null && !thumbnail.isEmpty()) {
             archive.setThumbnailUrl(fileStorageService.saveWithMeta(thumbnail).getUrl());
@@ -746,6 +773,27 @@ public class ArchiveService {
     private static void validateCoverIndex(int index, int count) {
         if (index < 0 || index >= count) {
             throw new IllegalArgumentException("파일 목록에서 대표 사진을 선택해 주세요.");
+        }
+    }
+
+    private void applyImageArtists(Archive archive, String imageArtistsJson, int count) {
+        if (imageArtistsJson == null || count <= 0) return;
+        List<String> rows;
+        try {
+            rows = objectMapper.readValue(imageArtistsJson, new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {});
+        } catch (Exception error) {
+            throw new IllegalArgumentException("사진별 출연 멤버를 읽지 못했습니다.");
+        }
+        if (rows == null) rows = List.of();
+        List<String> aligned = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            String row = i < rows.size() && rows.get(i) != null ? rows.get(i).trim() : "";
+            aligned.add(row);
+        }
+        try {
+            archive.setImageArtistsJson(objectMapper.writeValueAsString(aligned));
+        } catch (Exception error) {
+            throw new IllegalArgumentException("사진별 출연 멤버를 저장하지 못했습니다.");
         }
     }
 

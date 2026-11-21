@@ -145,7 +145,10 @@
                             <input type="date" class="site-field font-mono" id="endInput" name="end">
                         </div>
                         <div>
-                            <label for="addArtistNames" class="site-label">출연 멤버</label>
+                            <div class="flex items-center justify-between gap-2">
+                                <label for="addArtistNames" class="site-label">출연 멤버</label>
+                                <button type="button" class="md-btn md-btn-text" data-picker-all="#addArtistNames">전체 선택</button>
+                            </div>
                             <select id="addArtistNames" class="site-field" name="artistNames" multiple size="5">
                                 {{#artistOptions}}<option value="{{name}}" data-color="{{color}}">{{name}}</option>{{/artistOptions}}
                             </select>
@@ -194,7 +197,10 @@
                             <input type="date" class="site-field font-mono" id="editEndInput" name="end">
                         </div>
                         <div>
-                            <label for="editArtistNames" class="site-label">출연 멤버</label>
+                            <div class="flex items-center justify-between gap-2">
+                                <label for="editArtistNames" class="site-label">출연 멤버</label>
+                                <button type="button" class="md-btn md-btn-text" data-picker-all="#editArtistNames">전체 선택</button>
+                            </div>
                             <select id="editArtistNames" class="site-field" name="artistNames" multiple size="5">
                                 {{#artistOptions}}<option value="{{name}}" data-color="{{color}}">{{name}}</option>{{/artistOptions}}
                             </select>

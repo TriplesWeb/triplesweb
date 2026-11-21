@@ -43,6 +43,10 @@ public class Archive {
     @Column(name = "images_json", columnDefinition = "TEXT")
     private String imagesJson;
 
+    /** 사진 순서와 맞춘 출연 멤버 JSON 배열. 각 항목은 쉼표로 구분한 이름. */
+    @Column(name = "image_artists_json", columnDefinition = "TEXT")
+    private String imageArtistsJson;
+
     @Embedded
     private SavedMeta file;
 

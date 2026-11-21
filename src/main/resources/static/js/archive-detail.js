@@ -22,10 +22,13 @@
     let index = 0;
     let swipeX = null;
     let swipeY = null;
+    let suppressSwipe = false;
+    let pan = { x: 0, y: 0, w: 0, h: 0 };
+    let drag = null;
 
     function parseImages(card) {
         if (!card) return [];
-        const raw = (card.dataset.images || '').trim();
+        const raw = (card.dataset.viewImages || card.dataset.images || '').trim();
         if (raw) {
             try {
                 const parsed = JSON.parse(raw);
@@ -69,17 +72,8 @@
             source.textContent = label;
         }
         if (meta) meta.hidden = Boolean(date?.hidden) && Boolean(source?.hidden);
-        if (members) {
-            const chips = card.querySelector('.ar-card-members');
-            members.replaceChildren();
-            if (chips) members.innerHTML = chips.innerHTML;
-            const countMembers = members.querySelectorAll('.unit-member-chip').length;
-            members.dataset.memberCount = String(countMembers);
-            if (cast) cast.hidden = countMembers === 0;
-            window.paintArchiveChemistry?.(members);
-        } else if (cast) {
-            cast.hidden = true;
-        }
+        if (members) showCast(card);
+        else if (cast) cast.hidden = true;
         const cover = card.dataset.url || parseImages(card)[0] || '';
         [edit, remove].forEach(button => {
             if (!button) return;
@@ -87,6 +81,7 @@
             button.dataset.title = card.dataset.title || '';
             button.dataset.description = card.dataset.description || '';
             button.dataset.artists = card.dataset.artists || '';
+            button.dataset.imageArtists = card.dataset.imageArtists || '';
             button.dataset.url = cover;
             button.dataset.images = card.dataset.images || '';
             button.dataset.registered = card.dataset.registered || '';
@@ -94,11 +89,96 @@
         });
     }
 
+    function showCast(card) {
+        const sourceCard = card || activeCard;
+        if (!members || !sourceCard) return;
+        const frames = [...sourceCard.querySelectorAll('[data-image-cast]')];
+        const frame = frames[index] || frames[0];
+        const source = frame || sourceCard.querySelector('.ar-card-members');
+        members.replaceChildren();
+        if (source) members.innerHTML = frame ? frame.innerHTML : source.innerHTML;
+        const countMembers = members.querySelectorAll('.unit-member-chip').length;
+        members.dataset.memberCount = String(countMembers);
+        members.classList.toggle('is-many', countMembers >= 10);
+        fitMembers();
+        if (cast) cast.hidden = countMembers === 0;
+        window.paintArchiveChemistry?.(members);
+    }
+
+    function fitMembers() {
+        if (!members) return;
+        const count = members.querySelectorAll('.unit-member-chip').length;
+        if (!count) {
+            members.style.removeProperty('--detail-chip');
+            return;
+        }
+        const width = members.clientWidth || members.parentElement?.clientWidth || 280;
+        const gap = 8;
+        const columns = count <= 4 ? count : count <= 9 ? 4 : count <= 16 ? 5 : 6;
+        let chip = Math.floor((width - gap * (columns - 1)) / columns);
+        chip = Math.round(chip * (count >= 6 ? 0.88 : 1));
+        const max = count >= 10 ? 52 : count >= 6 ? 58 : 70;
+        const min = count <= 2 ? 64 : 40;
+        chip = Math.max(min, Math.min(max, chip));
+        members.style.setProperty('--detail-chip', chip + 'px');
+    }
+
+    function clearPan() {
+        drag = null;
+        if (!image) return;
+        image.classList.remove('is-pannable', 'is-panning');
+        image.style.width = '';
+        image.style.height = '';
+        image.style.transform = '';
+    }
+
+    function applyPan() {
+        if (!image) return;
+        image.style.transform = 'translate(' + pan.x + 'px, ' + pan.y + 'px)';
+    }
+
+    function clampPan() {
+        if (!photo) return;
+        const box = photo.getBoundingClientRect();
+        const minX = Math.min(0, box.width - pan.w);
+        const minY = Math.min(0, box.height - pan.h);
+        pan.x = Math.min(0, Math.max(minX, pan.x));
+        pan.y = Math.min(0, Math.max(minY, pan.y));
+    }
+
+    function layoutPan() {
+        if (!photo || !image || urls.length < 2) {
+            clearPan();
+            return;
+        }
+        const box = photo.getBoundingClientRect();
+        const naturalWidth = image.naturalWidth;
+        const naturalHeight = image.naturalHeight;
+        if (!naturalWidth || !naturalHeight || box.width < 2 || box.height < 2) return;
+        const scale = Math.max(box.width / naturalWidth, box.height / naturalHeight, 1);
+        pan.w = naturalWidth * scale;
+        pan.h = naturalHeight * scale;
+        image.style.width = pan.w + 'px';
+        image.style.height = pan.h + 'px';
+        pan.x = (box.width - pan.w) / 2;
+        pan.y = (box.height - pan.h) / 2;
+        clampPan();
+        applyPan();
+        const overflows = pan.w > box.width + 1 || pan.h > box.height + 1;
+        image.classList.toggle('is-pannable', overflows);
+    }
+
     function showImage() {
         if (!image || !activeCard) return;
         const url = urls[index] || '';
-        image.src = url;
+        const multi = urls.length > 1;
+        photo?.classList.toggle('is-pan', multi);
+        if (!multi) clearPan();
         image.alt = descriptionText(activeCard) || '사진';
+        image.onload = () => layoutPan();
+        image.src = url;
+        if (image.complete) layoutPan();
+        showCast();
     }
 
     function paintNav() {
@@ -150,6 +230,8 @@
         paintNav();
         detail.hidden = false;
         document.body.style.overflow = 'hidden';
+        fitMembers();
+        layoutPan();
         detail.querySelector('[data-ar-close]')?.focus();
     }
 
@@ -204,6 +286,7 @@
     if (photo) {
         photo.addEventListener('touchstart', event => {
             if (event.touches.length !== 1) return;
+            if (event.target.closest('button, a, input, textarea, select')) return;
             swipeX = event.touches[0].clientX;
             swipeY = event.touches[0].clientY;
         }, { passive: true });
@@ -217,10 +300,45 @@
             const dy = event.changedTouches[0].clientY - swipeY;
             swipeX = null;
             swipeY = null;
+            if (suppressSwipe) {
+                suppressSwipe = false;
+                return;
+            }
             if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy)) return;
             goTo(index + (dx < 0 ? 1 : -1));
         }, { passive: true });
+        photo.addEventListener('pointerdown', event => {
+            if (!image?.classList.contains('is-pannable') || event.button > 0) return;
+            if (event.target.closest('button, a, input, textarea, select')) return;
+            drag = { id: event.pointerId, x: event.clientX, y: event.clientY, px: pan.x, py: pan.y, moved: false };
+            image.classList.add('is-panning');
+            photo.setPointerCapture?.(event.pointerId);
+        });
+        photo.addEventListener('pointermove', event => {
+            if (!drag || drag.id !== event.pointerId) return;
+            const dx = event.clientX - drag.x;
+            const dy = event.clientY - drag.y;
+            if (Math.abs(dx) + Math.abs(dy) > 4) drag.moved = true;
+            pan.x = drag.px + dx;
+            pan.y = drag.py + dy;
+            clampPan();
+            applyPan();
+        });
+        const endDrag = event => {
+            if (!drag || drag.id !== event.pointerId) return;
+            suppressSwipe = drag.moved;
+            drag = null;
+            image?.classList.remove('is-panning');
+        };
+        photo.addEventListener('pointerup', endDrag);
+        photo.addEventListener('pointercancel', endDrag);
     }
+
+    window.addEventListener('resize', () => {
+        if (detail.hidden) return;
+        fitMembers();
+        layoutPan();
+    });
 
     document.addEventListener('click', event => {
         const opener = event.target.closest('[data-archive-open]');

@@ -104,6 +104,19 @@ class YoutubeDataApiClientTest {
     }
 
     @Test
+    void trimsWhitespaceAroundApiKeyBeforeRequestingVideos() {
+        ReflectionTestUtils.setField(client, "apiKey", "test-key \r\n");
+        server.expect(requestTo(
+                        "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=abcdefghijk&key=test-key"))
+                .andRespond(withSuccess("""
+                        {"items":[{"id":"abcdefghijk","statistics":{"viewCount":"3"}}]}
+                        """, MediaType.APPLICATION_JSON));
+
+        assertThat(client.fetchViewCounts(List.of("abcdefghijk"))).containsEntry("abcdefghijk", 3L);
+        server.verify();
+    }
+
+    @Test
     void skipsRequestWhenKeyOrIdIsMissingAndIgnoresFailedCall() {
         ReflectionTestUtils.setField(client, "apiKey", " ");
         assertThat(client.fetchViewCounts(List.of("abcdefghijk"))).isEmpty();

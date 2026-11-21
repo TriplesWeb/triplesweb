@@ -325,6 +325,11 @@
                     : window.openChemistryPairById;
                 if (typeof open !== 'function') return;
                 event.preventDefault();
+                event.stopPropagation();
+                // 멤버 필터 반영이 대기 중이면 이 클릭이 페이지 주소를 바꾸지 않게 한다.
+                window.clearTimeout(filterTimer);
+                filterSeq += 1;
+                submitWhenDateCloses = false;
                 // 영상 플레이어는 native dialog top layer라 케미 모달이 가려진다. 먼저 닫는다.
                 const videoDialog = document.getElementById('archiveVideoPlayer');
                 if (videoDialog?.open) videoDialog.close();
@@ -509,6 +514,8 @@
             if (grid.innerHTML !== nextGrid.innerHTML || grid.dataset.numberOffset !== nextOffset) {
                 grid.innerHTML = nextGrid.innerHTML;
                 grid.dataset.numberOffset = nextOffset;
+                if (nextGrid.dataset.pageSize) grid.dataset.pageSize = nextGrid.dataset.pageSize;
+                else delete grid.dataset.pageSize;
                 numberOffset = Math.max(0, Number(nextOffset) || 0);
                 cards = [...grid.querySelectorAll('.ar-card')];
                 apply();
