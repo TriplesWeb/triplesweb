@@ -783,7 +783,7 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     .archive-page .ar-member-toggle {
         width: 100%;
         max-width: 100%;
-        min-height: 2.5rem;
+        min-height: 2.75rem;
         justify-content: center;
     }
     .archive-page .ar-search-row {
@@ -801,10 +801,13 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
         min-width: 0;
         max-width: none;
     }
+    .archive-page .ar-toolbar .ar-search-wrap .ar-search {
+        min-height: 2.75rem;
+    }
     .archive-page .ar-toolbar a.ar-reset {
         width: auto;
         flex: 0 0 auto;
-        min-height: 2.5rem;
+        min-height: 2.75rem;
         height: auto;
         padding: 0 0.85rem;
     }
