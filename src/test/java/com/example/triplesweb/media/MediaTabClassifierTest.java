@@ -16,6 +16,7 @@ class MediaTabClassifierTest {
 
     @Test
     void classifiesMusicVideosAndFallsBackToContents() {
+        assertThat(MediaTabClassifier.tabFor("괜찮겠어? tripleS ‘Andless’ MV Reaction")).isEqualTo("behind");
         assertThat(MediaTabClassifier.tabFor("tripleS(트리플에스) 'Andless' Official MV")).isEqualTo("mv");
         assertThat(MediaTabClassifier.tabFor("tripleS 'Girls Never Die' M/V")).isEqualTo("mv");
         assertThat(MediaTabClassifier.tabFor("Dance Practice")).isEqualTo("contents");

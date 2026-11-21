@@ -196,7 +196,7 @@
                 </a>
                 <div class="media-card__foot">
                     <span class="media-card__meta">조회수 {{viewCountFmt}}{{#publishedLabel}} · {{publishedLabel}}{{/publishedLabel}}</span>
-                    <button type="button" class="media-card__edit" data-media-edit
+                    <button type="button" class="media-card__edit" data-media-edit data-admin-only
                             data-ytid="{{youtubeId}}"
                             data-tab="{{tab}}"
                             data-kind="{{tabLabel}}"
@@ -209,7 +209,7 @@
                 {{#hasMembers}}
                 <div class="media-card__members">
                     {{#memberBadges}}
-                    <span class="archive-member-chip{{#hasSymbol}} archive-symbol-chip{{/hasSymbol}}" style="--member-color: {{color}};" title="{{name}}" aria-label="{{name}}">
+                    <span class="archive-member-chip{{#fullLineup}} media-full-lineup{{/fullLineup}}{{#hasSymbol}} archive-symbol-chip{{/hasSymbol}}" style="--member-color: {{color}};" title="{{#fullLineup}}{{title}}{{/fullLineup}}{{^fullLineup}}{{name}}{{/fullLineup}}" aria-label="{{name}}">
                         {{#hasImage}}<img src="{{image}}" alt="" referrerpolicy="no-referrer">{{/hasImage}}
                         <span class="archive-chip-name">{{name}}</span>
                     </span>
@@ -322,13 +322,23 @@
                 <button type="button" class="site-modal-close" data-site-dismiss="modal" aria-label="닫기">×</button>
             </div>
             <div class="site-modal-body media-edit-body">
-                <input type="hidden" name="tab" id="mediaEditTab" value="{{currentTab}}">
                 <input type="hidden" name="youtubeId" id="mediaEditId" value="">
+                <label class="media-edit-label" for="mediaEditTab">미디어 카테고리</label>
+                <select class="site-field site-select" name="tab" id="mediaEditTab">
+                    <option value="mv">MV</option>
+                    <option value="signal">SIGNAL</option>
+                    <option value="behind">비하인드</option>
+                    <option value="secret">시크릿베이스</option>
+                    <option value="contents">기타 컨텐츠</option>
+                </select>
                 <label class="media-edit-label" for="mediaEditDate">영상이 올라온 날짜</label>
-                <input class="site-field" type="date" name="publishedOn" id="mediaEditDate" data-ar-cal="0">
+                <input class="site-field" type="date" name="publishedOn" id="mediaEditDate" data-ar-cal lang="ko">
                 <label class="media-edit-label" for="mediaEditDesc">상세 설명</label>
                 <textarea class="site-field" name="description" id="mediaEditDesc" rows="6" maxlength="60000"></textarea>
-                <p class="media-edit-label">참여 멤버</p>
+                <div class="media-edit-members__head">
+                    <p class="media-edit-label">참여 멤버</p>
+                    <button type="button" class="media-edit-all" id="mediaEditSelectAll">전체 선택</button>
+                </div>
                 <div class="member-portrait-picker is-compact" id="media-edit-picker" role="group" aria-label="참여 멤버">
                     {{#editMemberOptions}}
                     <button type="button" class="mpp-item" data-value="{{value}}" data-name="{{label}}" data-frame="{{frame}}" style="--artist-color:{{color}}" aria-pressed="false" title="{{label}}">

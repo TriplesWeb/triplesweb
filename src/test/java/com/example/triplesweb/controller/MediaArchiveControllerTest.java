@@ -5,6 +5,7 @@ import com.example.triplesweb.dto.MediaDto;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
+import com.example.triplesweb.service.ArtistAdminService;
 import com.example.triplesweb.service.MediaService;
 import com.example.triplesweb.service.MediaViewCountService;
 import org.jsoup.Jsoup;
@@ -39,6 +40,7 @@ class MediaArchiveControllerTest {
     @MockitoBean ArtistRepository artistRepository;
     @MockitoBean ScheduleRepository scheduleRepository;
     @MockitoBean AboutAdminAuth aboutAdminAuth;
+    @MockitoBean ArtistAdminService artistAdmin;
 
     @BeforeEach
     void stubs() {
@@ -63,7 +65,8 @@ class MediaArchiveControllerTest {
         org.jsoup.nodes.Document document = Jsoup.parse(first);
         assertThat(document.select("article.media-card")).hasSize(24);
         assertThat(document.select(".media-playlist__head .media-playlist-add")).hasSize(1);
-        assertThat(document.select("article.media-card .media-card__edit")).hasSize(24);
+        assertThat(document.select("article.media-card .media-card__edit[data-admin-only]")).hasSize(24);
+        assertThat(document.select("#mediaEditTab option")).hasSize(5);
         assertThat(document.select(".media-archive .media-card__title").eachText())
                 .noneMatch(title -> title.equals("영상 0") || title.equals("영상 1"));
 

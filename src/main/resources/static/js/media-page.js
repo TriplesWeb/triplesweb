@@ -487,9 +487,12 @@
         const id = document.getElementById('mediaEditId');
         const date = document.getElementById('mediaEditDate');
         const desc = document.getElementById('mediaEditDesc');
-        if (tab) tab.value = video.tab || 'all';
+        if (tab) tab.value = video.tab || 'contents';
         if (id) id.value = video.youtubeId || '';
-        if (date) date.value = String(video.publishedOn || '').slice(0, 10);
+        if (date) {
+            date.value = String(video.publishedOn || '').slice(0, 10);
+            date.dispatchEvent(new Event('input'));
+        }
         if (desc) desc.value = video.description || '';
         const names = String(video.artistNames || '').split(',').map((name) => name.trim()).filter(Boolean);
         if (window.MemberPortraitPicker && editPicker) {
@@ -498,6 +501,15 @@
         }
         showModal(editModal);
     }
+
+    document.getElementById('mediaEditSelectAll')?.addEventListener('click', () => {
+        if (!editPicker || !window.MemberPortraitPicker) return;
+        const names = [...editPicker.querySelectorAll('.mpp-item')]
+            .map((button) => button.dataset.value || button.dataset.name || '')
+            .filter(Boolean);
+        MemberPortraitPicker.setValues(editPicker, names);
+        syncEditMembers();
+    });
 
     document.getElementById('ytModalEdit')?.addEventListener('click', () => {
         if (!currentVideo) return;

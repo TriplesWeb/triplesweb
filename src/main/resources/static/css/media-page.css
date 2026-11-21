@@ -1034,6 +1034,63 @@ body.media-page {
 
 .media-edit-body .member-portrait-picker { margin-top: 0.35rem; }
 
+.media-edit-members__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.media-edit-members__head .media-edit-label { margin: 0; }
+
+.media-edit-all {
+    flex: 0 0 auto;
+    min-height: 1.7rem;
+    padding: 0.15rem 0.65rem;
+    border: 1px solid rgba(0, 245, 212, 0.45);
+    border-radius: 999px;
+    background: rgba(0, 245, 212, 0.1);
+    color: #00f5d4;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.2;
+    cursor: pointer;
+}
+
+.media-edit-body .site-select {
+    width: 100%;
+    min-height: 2.6rem;
+}
+
+.media-edit-body .ar-cal {
+    display: block;
+    width: 100%;
+}
+
+.media-edit-body .ar-cal .site-field { width: 100%; }
+
+.media-page .media-full-lineup {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: none;
+    min-width: 0;
+    padding: 0.28rem 0.7rem 0.28rem 0.28rem;
+}
+
+.media-page .media-full-lineup img {
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 0.65rem;
+    object-fit: cover;
+}
+
+.media-page .media-full-lineup .archive-chip-name {
+    max-width: none;
+    margin: 0;
+    font-size: 0.78rem;
+}
+
 @media (max-width: 960px) {
     .media-page .media-player-dialog { margin-right: 0; }
     .media-player-body { grid-template-columns: 1fr; }

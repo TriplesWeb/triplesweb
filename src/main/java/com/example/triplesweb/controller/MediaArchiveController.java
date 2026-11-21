@@ -1,5 +1,6 @@
 package com.example.triplesweb.controller;
 
+import com.example.triplesweb.dto.GroupIntroDto;
 import com.example.triplesweb.dto.MediaDto;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.entity.Schedule;
@@ -7,6 +8,7 @@ import com.example.triplesweb.media.MediaTab;
 import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.repository.ScheduleRepository;
 import com.example.triplesweb.service.AboutAdminAuth;
+import com.example.triplesweb.service.ArtistAdminService;
 import com.example.triplesweb.service.MediaService;
 import com.example.triplesweb.service.MediaViewCountService;
 import com.example.triplesweb.util.MediaOrdering;
@@ -48,6 +50,7 @@ public class MediaArchiveController {
     private final MediaService media;
     private final MediaViewCountService mediaViewCounts;
     private final ArtistRepository artistRepository;
+    private final ArtistAdminService artistAdmin;
     private final ScheduleRepository scheduleRepository;
     private final AboutAdminAuth aboutAdminAuth;
     private final ObjectMapper objectMapper;
@@ -288,7 +291,7 @@ public class MediaArchiveController {
                               HttpSession session) {
         aboutAdminAuth.requireAdmin(request, session);
         String names = artistNames == null ? "" : String.join(",", artistNames);
-        media.updateDetails(youtubeId, description, publishedOn, names);
+        media.updateDetails(youtubeId, description, publishedOn, names, tab);
         return "redirect:/media?tab=" + normalizeTab(tab);
     }
 
@@ -459,8 +462,12 @@ public class MediaArchiveController {
     }
 
     private List<Map<String, Object>> memberBadges(String artistNames, List<Artist> artists) {
+        List<String> names = splitNames(artistNames);
+        if (MemberPortraitOptions.coversFullLineup(names)) {
+            return List.of(fullLineupBadge());
+        }
         List<Map<String, Object>> badges = new ArrayList<>();
-        for (String name : splitNames(artistNames)) {
+        for (String name : names) {
             Artist matched = null;
             for (Artist artist : artists) {
                 if (artist.getName() != null && artist.getName().trim().equalsIgnoreCase(name)) { matched = artist; break; }
@@ -480,6 +487,22 @@ public class MediaArchiveController {
             badges.add(badge);
         }
         return badges;
+    }
+
+    private Map<String, Object> fullLineupBadge() {
+        GroupIntroDto group = artistAdmin.getGroupIntro();
+        String image = group == null || group.getImageUrl() == null ? "" : group.getImageUrl();
+        String title = group == null || group.getTitle() == null || group.getTitle().isBlank()
+                ? "tripleS" : group.getTitle();
+        Map<String, Object> badge = new LinkedHashMap<>();
+        badge.put("name", "24명 전원");
+        badge.put("title", title);
+        badge.put("color", "#00f5d4");
+        badge.put("image", image);
+        badge.put("hasImage", !image.isBlank());
+        badge.put("hasSymbol", false);
+        badge.put("fullLineup", true);
+        return badge;
     }
 
     private void bindPager(Model model, int total, int pageCount, int current, int totalPages) {
