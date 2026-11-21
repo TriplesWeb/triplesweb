@@ -231,34 +231,8 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     filter: drop-shadow(0 3px 5px color-mix(in srgb, var(--folder-color) 22%, transparent));
     transition: filter 0.25s ease;
 }
-.ar-folder-icon::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    pointer-events: none;
-    background: linear-gradient(
-        115deg,
-        transparent 38%,
-        rgba(255, 255, 255, 0.08) 44%,
-        rgba(255, 255, 255, 0.58) 50%,
-        rgba(255, 255, 255, 0.08) 56%,
-        transparent 62%
-    );
-    transform: translateX(-100%);
-    opacity: 0;
-    mix-blend-mode: screen;
-    -webkit-mask: url("/images/archive-folder.svg") center / contain no-repeat;
-    mask: url("/images/archive-folder.svg") center / contain no-repeat;
-    transition: opacity 0.2s ease;
-}
 .ar-folder:hover .ar-folder-icon {
     filter: drop-shadow(0 3px 5px color-mix(in srgb, var(--folder-color) 22%, transparent));
-}
-.ar-folder:hover .ar-folder-icon::after {
-    opacity: 0.72;
-    transform: translateX(100%);
-    transition: transform 0.55s ease, opacity 0.2s ease;
 }
 .ar-folder:hover .ar-folder-art,
 .ar-folder:hover .ar-folder-preview {
@@ -306,10 +280,8 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 }
 @media (prefers-reduced-motion: reduce) {
     .ar-folder-icon,
-    .ar-folder-icon::after,
     .ar-folder-art,
     .ar-folder-preview { transition: none; }
-    .ar-folder:hover .ar-folder-icon::after { transform: none; opacity: 0.35; }
 }
 .ar-folder.is-solo .ar-folder-preview,
 .ar-folder.is-solo .ar-folder-body img,
