@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,9 +39,10 @@ public class MediaArchiveController {
     private final AboutAdminAuth aboutAdminAuth;
 
     @GetMapping("/media")
-    public String mediaPage(@RequestParam(name = "tab", defaultValue = "mv") String tab,
+    public String mediaPage(@RequestParam(name = "tab", defaultValue = "all") String tab,
                             @RequestParam(defaultValue = "1") int page,
-                            @RequestParam(defaultValue = "10") int size,
+                            @RequestParam(defaultValue = "6") int size,
+                            @RequestParam(name = "sort", defaultValue = "latest") String sort,
                             @RequestParam(required = false) String artist,
                             @RequestParam(required = false) String from,
                             @RequestParam(required = false) String to,
@@ -50,15 +52,22 @@ public class MediaArchiveController {
         tab = normalizeTab(tab);
         page = Math.max(1, page);
         size = Math.min(Math.max(1, size), 100);
+        boolean all = "all".equals(tab);
+        boolean popular = "popular".equalsIgnoreCase(sort);
 
         model.addAttribute("isAdmin", aboutAdminAuth.isAdmin(request, session));
         model.addAttribute("artistOptions", artistFilterOptions(artist));
         model.addAttribute("currentTab", tab);
+        model.addAttribute("isAll", all);
         model.addAttribute("isMV", "mv".equals(tab));
         model.addAttribute("isSIGNAL", "signal".equals(tab));
         model.addAttribute("isBehind", "behind".equals(tab));
         model.addAttribute("isSecret", "secret".equals(tab));
         model.addAttribute("isContents", "contents".equals(tab));
+        model.addAttribute("isPopular", popular);
+        model.addAttribute("isLatest", !popular);
+        model.addAttribute("sort", popular ? "popular" : "latest");
+        model.addAttribute("dateFilterLabel", "전체 기간");
 
         LocalDate fromDate = parseDate(from);
         LocalDate toDate = parseDate(to);
@@ -71,31 +80,52 @@ public class MediaArchiveController {
         final LocalDate rangeEnd = toDate;
         boolean artistFiltered = artist != null && !artist.isBlank();
         boolean dateFiltered = rangeStart != null || rangeEnd != null;
-        List<MediaDto> videos;
-        int total;
-        if (artistFiltered || dateFiltered) {
-            List<MediaDto> filtered = media.allByTab(tab).stream()
-                    .filter(v -> !artistFiltered || splitNames(v.getArtistNames()).contains(artist))
-                    .filter(v -> matchesPublished(v.getPublishedOn(), rangeStart, rangeEnd))
-                    .toList();
-            total = filtered.size();
-            int startIndex = Math.min((page - 1) * size, total);
-            int endIndex = Math.min(startIndex + size, total);
-            videos = filtered.subList(startIndex, endIndex);
-        } else {
-            videos = media.pageByTab(tab, page, size);
-            total = media.totalByTab(tab);
+        List<MediaDto> filtered = new ArrayList<>(all ? media.listAll() : media.allByTab(tab));
+        if (artistFiltered) {
+            filtered.removeIf(v -> !splitNames(v.getArtistNames()).contains(artist));
         }
+        if (dateFiltered) {
+            filtered.removeIf(v -> !matchesPublished(v.getPublishedOn(), rangeStart, rangeEnd));
+        }
+        if (popular) {
+            filtered.sort(Comparator.comparingLong((MediaDto v) -> v.getViews() == null ? 0L : v.getViews()).reversed());
+        } else if (all) {
+            filtered.sort(Comparator.comparing(
+                    (MediaDto v) -> parseDate(v.getPublishedOn()),
+                    Comparator.nullsLast(Comparator.reverseOrder())));
+        }
+        int total = filtered.size();
+        int startIndex = Math.min((page - 1) * size, total);
+        int endIndex = Math.min(startIndex + size, total);
+        List<MediaDto> videos = new ArrayList<>(filtered.subList(startIndex, endIndex));
+        MediaDto featured = filtered.isEmpty() ? null : filtered.get(0);
+        List<MediaDto> recommendations = filtered.size() <= 1
+                ? List.of()
+                : new ArrayList<>(filtered.subList(1, Math.min(4, filtered.size())));
+        List<MediaDto> shorts = filtered.stream().filter(MediaArchiveController::isShort).limit(4).toList();
+        model.addAttribute("featured", featured);
+        model.addAttribute("hasFeatured", featured != null);
+        model.addAttribute("recommendations", recommendations);
+        model.addAttribute("hasRecommendations", !recommendations.isEmpty());
+        model.addAttribute("recommendationCount", String.format("%02d", recommendations.size()));
+        model.addAttribute("shorts", shorts);
+        model.addAttribute("hasShorts", !shorts.isEmpty());
+        model.addAttribute("archiveScope", all ? "전체 영상" : MediaTab.from(tab).getKor());
+        model.addAttribute("archiveSortLabel", popular ? "인기순으로 모아보기" : "최신순으로 모아보기");
 
         String fromText = rangeStart == null ? "" : rangeStart.toString();
         String toText = rangeEnd == null ? "" : rangeEnd.toString();
         model.addAttribute("from", fromText);
         model.addAttribute("to", toText);
         model.addAttribute("hasDateFilter", dateFiltered);
-        model.addAttribute("dateQuery", dateQuery(fromText, toText));
+        String dates = dateQuery(fromText, toText);
+        model.addAttribute("dateQuery", dates);
+        model.addAttribute("filterQuery", filterQuery(artist, dates));
+        model.addAttribute("listQuery", filterQuery(artist, dates) + (popular ? "&sort=popular" : ""));
         model.addAttribute("selectedArtist", artist == null ? "" : artist);
         int totalPages = (int) Math.ceil(total / (double) size);
         model.addAttribute("videos", videos);
+        model.addAttribute("hasVideos", total > 0);
         model.addAttribute("total", total);
         model.addAttribute("page", page);
         model.addAttribute("totalPages", Math.max(totalPages, 1));
@@ -245,6 +275,34 @@ public class MediaArchiveController {
         return to == null || !day.isAfter(to);
     }
 
+    private static boolean isShort(MediaDto video) {
+        Integer seconds = durationSeconds(video.getDuration());
+        return seconds != null && seconds > 0 && seconds <= 60;
+    }
+
+    private static Integer durationSeconds(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        String[] parts = raw.trim().split(":");
+        try {
+            if (parts.length == 2) return Integer.parseInt(parts[0]) * 60 + Integer.parseInt(parts[1]);
+            if (parts.length == 3) {
+                return Integer.parseInt(parts[0]) * 3600 + Integer.parseInt(parts[1]) * 60 + Integer.parseInt(parts[2]);
+            }
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+        return null;
+    }
+
+    private static String filterQuery(String artist, String dateQuery) {
+        StringBuilder query = new StringBuilder();
+        if (artist != null && !artist.isBlank()) {
+            query.append("&artist=").append(java.net.URLEncoder.encode(artist.trim(), java.nio.charset.StandardCharsets.UTF_8));
+        }
+        if (dateQuery != null) query.append(dateQuery);
+        return query.toString();
+    }
+
     private static String dateQuery(String from, String to) {
         StringBuilder query = new StringBuilder();
         if (from != null && !from.isBlank()) query.append("&from=").append(java.net.URLEncoder.encode(from, java.nio.charset.StandardCharsets.UTF_8));
@@ -296,7 +354,7 @@ public class MediaArchiveController {
 
     private String normalizeTab(String tab) {
         return switch (tab.toLowerCase()) {
-            case "mv", "signal", "behind", "secret", "contents" -> tab.toLowerCase();
+            case "all", "mv", "signal", "behind", "secret", "contents" -> tab.toLowerCase();
             default -> "mv";
         };
     }

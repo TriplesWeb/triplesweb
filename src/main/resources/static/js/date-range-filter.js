@@ -10,7 +10,8 @@
     ".ar-sort-control",
     "#archiveMemberPanel",
     "#archiveMemberToggle",
-    ".ar-member-toggle"
+    ".ar-member-toggle",
+    "[data-archive-cols-filter]"
   ].join(", ");
   const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -53,6 +54,18 @@
     document.querySelectorAll(".ar-sort-trigger").forEach((trigger) => {
       if (keepRoot && keepRoot.contains(trigger)) return;
       trigger.setAttribute("aria-expanded", "false");
+    });
+    document.querySelectorAll("[data-archive-cols-menu]").forEach((menu) => {
+      if (keepRoot && keepRoot.contains(menu)) return;
+      menu.hidden = true;
+    });
+    document.querySelectorAll("[data-archive-cols-toggle]").forEach((toggle) => {
+      if (keepRoot && keepRoot.contains(toggle)) return;
+      toggle.setAttribute("aria-expanded", "false");
+    });
+    document.querySelectorAll("[data-archive-cols-filter]").forEach((host) => {
+      if (keepRoot && keepRoot.contains(host)) return;
+      host.classList.remove("is-open");
     });
     const panel = document.getElementById("archiveMemberPanel");
     const memberToggle = document.getElementById("archiveMemberToggle");

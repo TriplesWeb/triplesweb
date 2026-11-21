@@ -1,241 +1,202 @@
 {{>layout/head-open}}
 
 <link rel="stylesheet" href="{{#asset}}/css/bootstrap-compat.css{{/asset}}">
-    <link rel="stylesheet" href="{{#asset}}/css/archive-page.css{{/asset}}">
-    <link rel="stylesheet" href="{{#asset}}/css/archive-page.css{{/asset}}">
+<link rel="stylesheet" href="{{#asset}}/css/archive-page.css{{/asset}}">
+<link rel="stylesheet" href="{{#asset}}/css/media-page.css{{/asset}}">
 
-    <title>트리플에스 커뮤니티 - 트리플에스 미디어</title>
-
-    <style>
-        .site-media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 1rem; }
-        .site-media-card { min-width: 0; }
-
-        .container {
-            max-width: 80rem;
-            background: transparent;
-        }
-
-        /* 탭 스타일 */
-        .media-tab {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-        .media-tab a {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 8px 20px;
-            height: 42px;
-            border-radius: 9999px;
-            border: 1px solid rgba(58, 74, 70, 0.4);
-            background-color: rgba(26, 27, 32, 0.7);
-            color: #b9cac4;
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            backdrop-filter: blur(12px);
-            transition: all 0.2s ease;
-        }
-        .media-tab a:hover {
-            border-color: rgba(0, 245, 212, 0.5);
-            color: #00f5d4;
-            background-color: rgba(26, 27, 32, 0.9);
-        }
-        .media-tab a.active {
-            border-color: #00f5d4;
-            background-color: rgba(0, 245, 212, 0.1);
-            color: #00f5d4;
-            font-weight: 700;
-        }
-
-        /* 카드 박스 스타일 */
-        .video-card-box {
-            background-color: rgba(26, 27, 32, 0.7);
-            border: 1px solid rgba(58, 74, 70, 0.3);
-            border-radius: 1rem;
-            padding: 0.75rem;
-            backdrop-filter: blur(12px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 100%;
-            transition: transform 0.2s ease, border-color 0.2s ease;
-        }
-        .video-card-box:hover {
-            border-color: rgba(0, 245, 212, 0.4);
-            transform: translateY(-2px);
-        }
-
-        .video-thumb {
-            width: 100%;
-            padding-top: 56.25%;
-            position: relative;
-            background: #0d0e12;
-            border-radius: 0.75rem;
-            overflow: hidden;
-            border: 1px solid rgba(58, 74, 70, 0.2);
-        }
-        .video-thumb img {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .badge-duration {
-            position: absolute;
-            right: 8px;
-            bottom: 8px;
-            background: rgba(13, 14, 18, 0.8);
-            border: 1px solid rgba(58, 74, 70, 0.4);
-            color: #00f5d4;
-            font-family: 'JetBrains Mono', monospace;
-            padding: 2px 6px;
-            border-radius: 6px;
-            font-size: 0.75rem;
-        }
-
-        .video-title {
-            font-size: 0.95rem;
-            font-weight: 600;
-            margin-top: 0.75rem;
-            color: #e3e2e8;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-        }
-
-        .video-meta {
-            font-size: 0.8rem;
-            color: #b9cac4;
-            margin-top: 0.25rem;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .grid-gap {
-            row-gap: 1.5rem;
-        }
-
-        /* 페이지네이션 스타일 */
-        .pagination {
-            background: transparent;
-        }
-        .pagination .page-link {
-            background-color: rgba(26, 27, 32, 0.7);
-            border: 1px solid rgba(58, 74, 70, 0.3);
-            color: #b9cac4;
-            margin: 0 3px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-        }
-        .pagination .page-link:hover {
-            background-color: rgba(0, 245, 212, 0.1);
-            color: #00f5d4;
-            border-color: rgba(0, 245, 212, 0.3);
-        }
-        .pagination .page-item.active .page-link {
-            background-color: #00f5d4;
-            border-color: #00f5d4;
-            color: #0d0e12;
-            font-weight: bold;
-        }
-    </style>
-</head><body class="site-page">
+<title>트리플에스 커뮤니티 - 공식 미디어</title>
+</head><body class="site-page media-page">
 
 {{>layout/header}}
 
-<div class="container py-4 flex-1">
-    <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold tracking-tight text-[#e3e2e8] m-0">공식 미디어</h2>
-        <a href="/media_new?tab={{currentTab}}" class="site-btn site-btn--primary btn-glow" data-admin-only>
-            <span class="material-symbols-outlined">add_box</span>
-            <span>미디어 추가</span>
-        </a>
-    </div>
-
-    <!-- 미디어 카테고리 탭 -->
-    <div class="media-tab">
-        <a class="media-mv {{#isMV}}active{{/isMV}}" href="/media?tab=mv">MV</a>
-        <a class="media-signal {{#isSIGNAL}}active{{/isSIGNAL}}" href="/media?tab=signal">SIGNAL</a>
-        <a class="media-behind {{#isBehind}}active{{/isBehind}}" href="/media?tab=behind">비하인드</a>
-        <a class="media-secret {{#isSecret}}active{{/isSecret}}" href="/media?tab=secret">시크릿베이스</a>
-        <a class="media-contents {{#isContents}}active{{/isContents}}" href="/media?tab=contents">기타 컨텐츠</a>
-    </div>
-
-    <form class="mb-4 flex flex-wrap items-center justify-center gap-3" method="get" action="/media">
-        <input type="hidden" name="tab" value="{{currentTab}}">
-        <label class="text-sm text-[#b9cac4]" for="artist-filter">출연 멤버</label>
-        <select id="artist-filter" name="artist" class="site-field" style="width:auto;min-width:9rem;">
-            <option value="">전체 멤버</option>
-            {{#artistOptions}}<option value="{{name}}" {{#selected}}selected{{/selected}}>{{name}}</option>{{/artistOptions}}
-        </select>
-        {{>partials/date-range-filter}}
-        <button type="submit" class="ar-submit">필터 적용</button>
-        {{#selectedArtist}}<a class="text-xs text-slate-300" href="/media?tab={{currentTab}}">필터 초기화</a>{{/selectedArtist}}
-    </form>
-
-    <!-- 영상 그리드 리스트 -->
-    <div class="site-media-grid">
-        {{#videos}}
-            <div class="site-media-card">
-                <div class="video-card-box">
-                    <a class="video-card text-decoration-none"
-                       href="/media/{{currentTab}}/{{youtubeId}}"
-                       data-site-toggle="modal"
-                       data-site-target="#ytModal"
-                       data-ytid="{{youtubeId}}"
-                       title="{{title}}">
-                        <div class="video-thumb">
-                            <img src="https://img.youtube.com/vi/{{youtubeId}}/hqdefault.jpg" alt="{{title}}">
-                            {{#duration}}<span class="badge-duration">{{duration}}</span>{{/duration}}
-                        </div>
-                        <div class="video-title">{{title}}</div>
-                        <div class="video-meta">조회수 {{viewCountFmt}}</div>
-                    </a>
-
-                    <form method="post" action="/media_delete" data-admin-only data-admin-fetch data-confirm="이 영상을 삭제하시겠습니까? 삭제하면 되돌릴 수 없습니다." class="mt-3">
-                        <input type="hidden" name="tab" value="{{currentTab}}">
-                        <input type="hidden" name="youtubeId" value="{{youtubeId}}">
-                        <button type="submit" class="w-full py-1.5 px-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-xs font-semibold transition-all">삭제</button>
-                    </form>
-                </div>
+<main class="media-shell">
+    <header class="media-intro">
+        <p class="media-crumb">미디어  /  공식 미디어</p>
+        <div class="media-intro__row">
+            <div class="media-intro__copy">
+                <h1>공식 미디어</h1>
+                <p>tripleS의 모든 순간을 한곳에서. 뮤직비디오부터 매일의 SIGNAL까지 만나보세요.</p>
             </div>
-        {{/videos}}
-    </div>
-
-    {{^videos}}
-        <div class="text-center text-[#b9cac4] py-20">
-            <span class="material-symbols-outlined text-5xl mb-3 text-[#3a4a46]">videocam_off</span>
-            <p class="font-medium">등록된 영상이 없습니다.</p>
+            <div class="media-intro__actions">
+                <a class="media-channel" href="https://www.youtube.com/@tripleS_official" target="_blank" rel="noopener noreferrer">YouTube 채널 ↗</a>
+                <a class="media-add" href="/media_new?tab={{#isAll}}mv{{/isAll}}{{^isAll}}{{currentTab}}{{/isAll}}" data-admin-only>미디어 추가</a>
+            </div>
         </div>
-    {{/videos}}
+    </header>
 
-    <!-- 페이지네이션 -->
-    {{#totalPages}}
-        <nav class="mt-5" aria-label="미디어 페이지">
-            <ul class="site-pagination">
+    <section class="media-filters" aria-label="미디어 분류">
+        <nav class="media-tabs" aria-label="미디어 카테고리">
+            <a class="{{#isAll}}is-active{{/isAll}}" href="/media?tab=all">전체</a>
+            <a class="{{#isMV}}is-active{{/isMV}}" href="/media?tab=mv">MV</a>
+            <a class="{{#isSIGNAL}}is-active{{/isSIGNAL}}" href="/media?tab=signal">SIGNAL</a>
+            <a class="{{#isBehind}}is-active{{/isBehind}}" href="/media?tab=behind">비하인드</a>
+            <a class="{{#isSecret}}is-active{{/isSecret}}" href="/media?tab=secret">시크릿베이스</a>
+            <a class="{{#isContents}}is-active{{/isContents}}" href="/media?tab=contents">기타 콘텐츠</a>
+        </nav>
+
+        <form class="media-filterbar" method="get" action="/media">
+            <input type="hidden" name="tab" value="{{currentTab}}">
+            <input type="hidden" name="sort" value="{{sort}}">
+            <span class="media-filterbar__label">상세 필터</span>
+            <label class="media-sr" for="artist-filter">출연 멤버</label>
+            <select id="artist-filter" name="artist" class="media-select">
+                <option value="">전체 멤버</option>
+                {{#artistOptions}}<option value="{{name}}" {{#selected}}selected{{/selected}}>{{name}}</option>{{/artistOptions}}
+            </select>
+            {{>partials/date-range-filter}}
+            <div class="media-filterbar__actions">
+                <button type="submit" class="media-apply">필터 적용</button>
+                <a class="media-reset" href="/media?tab={{currentTab}}{{#isPopular}}&amp;sort=popular{{/isPopular}}">
+                    <img src="{{#asset}}/images/media/reset.svg{{/asset}}" width="16" height="16" alt="">
+                    초기화
+                </a>
+            </div>
+            <div class="media-sort">
+                <a class="{{#isLatest}}is-active{{/isLatest}}" href="/media?tab={{currentTab}}{{filterQuery}}">최신순</a>
+                <span aria-hidden="true">·</span>
+                <a class="{{#isPopular}}is-active{{/isPopular}}" href="/media?tab={{currentTab}}{{filterQuery}}&amp;sort=popular">인기순</a>
+            </div>
+        </form>
+    </section>
+
+    {{#hasFeatured}}
+    <section class="media-feature" aria-label="지금 주목할 영상">
+        <div class="media-feature__head">
+            <h2>지금 주목할 영상</h2>
+            <span>FEATURED</span>
+        </div>
+        <div class="media-feature__layout {{^hasRecommendations}}is-solo{{/hasRecommendations}}">
+            <a class="media-feature__hero"
+               href="/media/{{featured.tab}}/{{featured.youtubeId}}"
+               data-site-toggle="modal"
+               data-site-target="#ytModal"
+               data-ytid="{{featured.youtubeId}}">
+                <img class="media-feature__still" src="https://img.youtube.com/vi/{{featured.youtubeId}}/hqdefault.jpg" alt="">
+                <span class="media-feature__shade"></span>
+                <span class="media-feature__badge">{{featured.tabLabel}}</span>
+                <img class="media-feature__play" src="{{#asset}}/images/media/play-featured.svg{{/asset}}" width="60" height="60" alt="">
+                <span class="media-feature__caption">
+                    <strong>{{featured.title}}</strong>
+                    <span class="media-feature__meta">
+                        <em>조회수 {{featured.viewCountFmt}}{{#featured.publishedLabel}} · {{featured.publishedLabel}}{{/featured.publishedLabel}}</em>
+                        {{#featured.duration}}<b>{{featured.duration}}</b>{{/featured.duration}}
+                    </span>
+                </span>
+            </a>
+            {{#hasRecommendations}}
+            <aside class="media-playlist">
+                <div class="media-playlist__head">
+                    <h3>추천 재생목록</h3>
+                    <span>{{recommendationCount}}</span>
+                </div>
+                {{#recommendations}}
+                <a class="media-playlist__item"
+                   href="/media/{{tab}}/{{youtubeId}}"
+                   data-site-toggle="modal"
+                   data-site-target="#ytModal"
+                   data-ytid="{{youtubeId}}">
+                    <span class="media-playlist__thumb">
+                        <img src="https://img.youtube.com/vi/{{youtubeId}}/hqdefault.jpg" alt="">
+                        {{#duration}}<em>{{duration}}</em>{{/duration}}
+                    </span>
+                    <span class="media-playlist__copy">
+                        <small>{{tabLabel}}</small>
+                        <strong>{{title}}</strong>
+                        <em>조회수 {{viewCountFmt}}</em>
+                    </span>
+                </a>
+                {{/recommendations}}
+                <a class="media-playlist__more" href="https://www.youtube.com/@tripleS_official" target="_blank" rel="noopener noreferrer">YouTube에서 더 보기 ↗</a>
+            </aside>
+            {{/hasRecommendations}}
+        </div>
+    </section>
+    {{/hasFeatured}}
+
+    <section class="media-archive" aria-label="영상 아카이브">
+        <div class="media-archive__head">
+            <h2>영상 아카이브</h2>
+            <p>{{archiveScope}}</p>
+            <span>{{archiveSortLabel}}</span>
+        </div>
+        <div class="media-grid">
+            {{#videos}}
+            <article class="media-card">
+                <a class="media-card__link"
+                   href="/media/{{tab}}/{{youtubeId}}"
+                   data-site-toggle="modal"
+                   data-site-target="#ytModal"
+                   data-ytid="{{youtubeId}}">
+                    <span class="media-card__thumb">
+                        <img src="https://img.youtube.com/vi/{{youtubeId}}/hqdefault.jpg" alt="">
+                        <img class="media-card__play" src="{{#asset}}/images/media/play-card.svg{{/asset}}" width="44" height="44" alt="">
+                        {{#duration}}<span class="media-card__time">{{duration}}</span>{{/duration}}
+                    </span>
+                    <span class="media-card__body">
+                        <small class="media-card__kind">{{tabLabel}}</small>
+                        <span class="media-card__title">{{title}}</span>
+                        <span class="media-card__meta">조회수 {{viewCountFmt}}{{#publishedLabel}} · {{publishedLabel}}{{/publishedLabel}}</span>
+                    </span>
+                </a>
+                <form class="media-card__delete" method="post" action="/media_delete" data-admin-only data-admin-fetch data-confirm="이 영상을 삭제하시겠습니까? 삭제하면 되돌릴 수 없습니다.">
+                    <input type="hidden" name="tab" value="{{tab}}">
+                    <input type="hidden" name="youtubeId" value="{{youtubeId}}">
+                    <button type="submit">삭제</button>
+                </form>
+            </article>
+            {{/videos}}
+        </div>
+        {{^videos}}
+        <div class="media-empty">
+            <p>등록된 영상이 없습니다.</p>
+        </div>
+        {{/videos}}
+
+        {{#hasVideos}}
+        <nav aria-label="미디어 페이지">
+            <ul class="media-pages">
                 {{#hasPrev}}
-                    <li><a href="/media?tab={{currentTab}}&page={{prevPage}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}{{dateQuery}}">&laquo;</a></li>
+                <li><a href="/media?tab={{currentTab}}&amp;page={{prevPage}}{{listQuery}}">&laquo;</a></li>
                 {{/hasPrev}}
                 {{#pages}}
-                    <li class="{{#active}}is-active{{/active}}"><a href="/media?tab={{currentTab}}&page={{num}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}{{dateQuery}}">{{num}}</a></li>
+                <li class="{{#active}}is-active{{/active}}"><a href="/media?tab={{currentTab}}&amp;page={{num}}{{listQuery}}">{{num}}</a></li>
                 {{/pages}}
                 {{#hasNext}}
-                    <li><a href="/media?tab={{currentTab}}&page={{nextPage}}{{#selectedArtist}}&artist={{selectedArtist}}{{/selectedArtist}}{{dateQuery}}">&raquo;</a></li>
+                <li><a href="/media?tab={{currentTab}}&amp;page={{nextPage}}{{listQuery}}">&raquo;</a></li>
                 {{/hasNext}}
             </ul>
         </nav>
-    {{/totalPages}}
-</div>
+        {{/hasVideos}}
+    </section>
 
-<!-- 유튜브 재생 모달 창 -->
+    {{#hasShorts}}
+    <section class="media-shorts" aria-label="Shorts와 릴스">
+        <div class="media-shorts__head">
+            <h2>Shorts &amp; 릴스</h2>
+            <p>짧게 만나는 tripleS의 순간</p>
+            <a href="https://www.youtube.com/@tripleS_official/shorts" target="_blank" rel="noopener noreferrer">YouTube Shorts ↗</a>
+        </div>
+        <div class="media-shorts__grid">
+            {{#shorts}}
+            <a class="media-short"
+               href="/media/{{tab}}/{{youtubeId}}"
+               data-site-toggle="modal"
+               data-site-target="#ytModal"
+               data-ytid="{{youtubeId}}">
+                <img class="media-short__still" src="https://img.youtube.com/vi/{{youtubeId}}/hqdefault.jpg" alt="">
+                <span class="media-short__badge">SHORTS</span>
+                <img class="media-short__play" src="{{#asset}}/images/media/play-short.svg{{/asset}}" width="46" height="46" alt="">
+                <span class="media-short__caption">
+                    <small>{{tabLabel}}</small>
+                    <strong>{{title}}</strong>
+                </span>
+            </a>
+            {{/shorts}}
+        </div>
+    </section>
+    {{/hasShorts}}
+</main>
+
 <div class="site-modal" id="ytModal" tabindex="-1" aria-hidden="true">
     <div class="site-modal-dialog site-modal-lg">
         <div class="site-modal-panel">
@@ -254,7 +215,6 @@
     </div>
 </div>
 
-<script src="{{#asset}}/js/date-range-filter.js{{/asset}}"></script>
 <script src="{{#asset}}/js/bootstrap-compat.js{{/asset}}"></script>
 <script src="{{#asset}}/js/site-ui.js{{/asset}}"></script>
 <script>
