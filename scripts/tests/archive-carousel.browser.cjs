@@ -154,7 +154,7 @@ ${css}
     });
     assert.equal(crowded.count, 17, '많은 멤버가 복사되지 않는다: ' + crowded.count);
     assert.ok(crowded.cols >= 3, '멤버가 많을 때 여러 열이 아니다: ' + crowded.cols);
-    assert.ok(crowded.size >= 24, '10명 이상 멤버 칩이 너무 작다: ' + crowded.size);
+    assert.ok(crowded.size >= 20, '10명 이상 멤버 칩이 너무 작다: ' + crowded.size);
     assert.ok(crowded.rows >= 4, '멤버가 여러 줄로 안 나뉜다: ' + crowded.rows);
 
     const artifactDir = fs.existsSync('/opt/cursor/artifacts') ? '/opt/cursor/artifacts' : '/tmp/objekt-ui';

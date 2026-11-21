@@ -286,6 +286,7 @@
     if (photo) {
         photo.addEventListener('touchstart', event => {
             if (event.touches.length !== 1) return;
+            if (event.target.closest('button, a, input, textarea, select')) return;
             swipeX = event.touches[0].clientX;
             swipeY = event.touches[0].clientY;
         }, { passive: true });
@@ -308,6 +309,7 @@
         }, { passive: true });
         photo.addEventListener('pointerdown', event => {
             if (!image?.classList.contains('is-pannable') || event.button > 0) return;
+            if (event.target.closest('button, a, input, textarea, select')) return;
             drag = { id: event.pointerId, x: event.clientX, y: event.clientY, px: pan.x, py: pan.y, moved: false };
             image.classList.add('is-panning');
             photo.setPointerCapture?.(event.pointerId);
