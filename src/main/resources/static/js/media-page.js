@@ -302,14 +302,11 @@
             const added = ids.has(button.dataset.ytid || '');
             button.classList.toggle('is-added', added);
             button.setAttribute('aria-pressed', added ? 'true' : 'false');
-            const center = button.classList.contains('media-playlist-add--center');
-            const icon = button.querySelector('.material-symbols-outlined');
-            if (center) {
+            const labeled = button.classList.contains('media-playlist-add--head');
+            if (labeled) {
                 button.textContent = added ? '재생목록에서 빼기' : '재생목록 추가';
-            } else if (icon) {
-                icon.textContent = added ? 'check' : 'add';
             }
-            button.setAttribute('aria-label', added ? '재생목록에서 빼기' : (center ? '재생목록 추가' : '재생목록에 추가'));
+            button.setAttribute('aria-label', added ? '재생목록에서 빼기' : '재생목록 추가');
         });
     }
 
@@ -467,18 +464,44 @@
         MemberPortraitPicker.bindMultiSelect(editPicker, { multi: true, onChange: syncEditMembers });
     }
 
-    document.getElementById('ytModalEdit')?.addEventListener('click', () => {
-        if (!currentVideo || !editModal) return;
+    function videoFrom(trigger) {
+        const id = trigger?.getAttribute('data-ytid') || '';
+        return byId.get(id) || {
+            youtubeId: id,
+            tab: trigger?.dataset.tab || '',
+            tabLabel: trigger?.dataset.kind || '',
+            title: trigger?.dataset.title || '',
+            description: '',
+            publishedOn: '',
+            publishedLabel: trigger?.dataset.published || '',
+            duration: trigger?.dataset.duration || '',
+            viewCountFmt: trigger?.dataset.views || '',
+            artistNames: ''
+        };
+    }
+
+    function openEdit(video) {
+        if (!editModal || !video || !video.youtubeId) return;
+        currentVideo = video;
+        const tab = document.getElementById('mediaEditTab');
         const id = document.getElementById('mediaEditId');
         const date = document.getElementById('mediaEditDate');
         const desc = document.getElementById('mediaEditDesc');
-        if (id) id.value = currentVideo.youtubeId || '';
-        if (date) date.value = String(currentVideo.publishedOn || '').slice(0, 10);
-        if (desc) desc.value = currentVideo.description || '';
-        const names = String(currentVideo.artistNames || '').split(',').map((name) => name.trim()).filter(Boolean);
-        if (window.MemberPortraitPicker && editPicker) MemberPortraitPicker.setValues(editPicker, names);
-        syncEditMembers();
+        if (tab) tab.value = video.tab || 'all';
+        if (id) id.value = video.youtubeId || '';
+        if (date) date.value = String(video.publishedOn || '').slice(0, 10);
+        if (desc) desc.value = video.description || '';
+        const names = String(video.artistNames || '').split(',').map((name) => name.trim()).filter(Boolean);
+        if (window.MemberPortraitPicker && editPicker) {
+            MemberPortraitPicker.setValues(editPicker, names);
+            syncEditMembers();
+        }
         showModal(editModal);
+    }
+
+    document.getElementById('ytModalEdit')?.addEventListener('click', () => {
+        if (!currentVideo) return;
+        openEdit(currentVideo);
     });
 
     document.addEventListener('click', (event) => {
@@ -487,6 +510,13 @@
             event.preventDefault();
             event.stopPropagation();
             removePlaylist(remove.dataset.playlistRemove || '');
+            return;
+        }
+        const edit = event.target.closest('[data-media-edit]');
+        if (edit) {
+            event.preventDefault();
+            event.stopPropagation();
+            openEdit(videoFrom(edit));
             return;
         }
         const add = event.target.closest('[data-playlist-add]');

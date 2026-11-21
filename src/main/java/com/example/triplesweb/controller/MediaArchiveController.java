@@ -108,28 +108,29 @@ public class MediaArchiveController {
         if (dateFiltered) {
             filtered.removeIf(v -> !matchesPublished(v.getPublishedOn(), rangeStart, rangeEnd));
         }
-        if (shortsOnly) {
-            filtered.removeIf(v -> !MediaOrdering.isShort(v.getDuration()));
-        }
         MediaOrdering.sort(filtered, sortKey);
         attachMemberBadges(filtered, artists);
-        int total = filtered.size();
-        List<MediaDto> latest = new ArrayList<>(filtered);
-        MediaOrdering.sort(latest, "latest");
-        MediaDto featured = latest.isEmpty() ? null : latest.get(0);
-        List<MediaDto> recommendations = latest.size() <= 1
-                ? List.of()
-                : latest.subList(1, Math.min(latest.size(), 6));
-        List<MediaDto> suggestions = suggestions(filtered, featured, recommendations, 4);
-        List<MediaDto> shorts = latest.stream()
-                .filter(video -> MediaOrdering.isShort(video.getDuration()))
-                .limit(SHORTS_LIMIT)
-                .toList();
+        List<MediaDto> longForm = new ArrayList<>();
+        List<MediaDto> shortForm = new ArrayList<>();
+        for (MediaDto video : filtered) {
+            if (MediaOrdering.isShort(video.getDuration())) shortForm.add(video);
+            else longForm.add(video);
+        }
+        List<MediaDto> latestLong = new ArrayList<>(longForm);
+        MediaOrdering.sort(latestLong, "latest");
+        List<MediaDto> latestShorts = new ArrayList<>(shortForm);
+        MediaOrdering.sort(latestShorts, "latest");
+        MediaDto featured = shortsOnly || latestLong.isEmpty() ? null : latestLong.get(0);
+        List<MediaDto> recommendations = shortsOnly ? List.of() : andlessMusicVideos(longForm);
+        List<MediaDto> archive = shortsOnly ? List.of() : longForm;
+        List<MediaDto> suggestions = suggestions(archive, featured, recommendations, 4);
+        List<MediaDto> shorts = latestShorts.stream().limit(SHORTS_LIMIT).toList();
+        int total = archive.size();
         int totalPages = Math.max(1, (int) Math.ceil(total / (double) PAGE_SIZE));
         int current = Math.min(totalPages, Math.max(1, page));
         int fromIdx = total == 0 ? 0 : (current - 1) * PAGE_SIZE;
         int toIdx = Math.min(fromIdx + PAGE_SIZE, total);
-        List<MediaDto> videos = total == 0 ? List.of() : filtered.subList(fromIdx, toIdx);
+        List<MediaDto> videos = total == 0 ? List.of() : archive.subList(fromIdx, toIdx);
         model.addAttribute("featured", featured);
         model.addAttribute("hasFeatured", featured != null);
         model.addAttribute("recommendations", recommendations);
@@ -368,6 +369,20 @@ public class MediaArchiveController {
         if (selected == null || selected.isEmpty()) return "멤버 선택";
         if (selected.size() == 1) return selected.get(0);
         return selected.size() + "명";
+    }
+
+    /** 재생목록 초기 화면은 ANDLESS 뮤직비디오만 담는다. */
+    private static List<MediaDto> andlessMusicVideos(List<MediaDto> videos) {
+        List<MediaDto> found = new ArrayList<>();
+        for (MediaDto video : videos) {
+            if (video == null || MediaOrdering.isShort(video.getDuration())) continue;
+            if (!"mv".equalsIgnoreCase(video.getTab())) continue;
+            String title = video.getTitle() == null ? "" : video.getTitle().toLowerCase(Locale.ROOT);
+            if (!title.contains("andless")) continue;
+            found.add(video);
+        }
+        MediaOrdering.sort(found, "latest");
+        return found;
     }
 
     /** 대표 영상과 멤버·분류가 겹치는 영상을 우선해 아카이브 위에 네 개까지 고른다. */
