@@ -41,7 +41,7 @@ public class MediaService {
     }
     @Transactional(readOnly = true)
     public List<MediaDto> allByTab(String tab) {
-        return mediaRepository.findByTabOrderBySortOrderAscIdAsc(tab).stream().map(this::toDto).toList();
+        return mediaRepository.findAllWithArtistsByTab(tab).stream().map(this::toDto).toList();
     }
     @Transactional(readOnly = true)
     public int totalByTab(String tab) { return (int) mediaRepository.countByTab(tab); }

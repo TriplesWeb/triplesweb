@@ -26,6 +26,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -40,6 +42,9 @@ import java.util.Set;
 @Controller
 @RequiredArgsConstructor
 public class MediaArchiveController {
+    private static final int PAGE_SIZE = 24;
+    private static final int SHORTS_LIMIT = 12;
+
     private final MediaService media;
     private final MediaViewCountService mediaViewCounts;
     private final ArtistRepository artistRepository;
@@ -55,6 +60,8 @@ public class MediaArchiveController {
                             @RequestParam(required = false) String q,
                             @RequestParam(required = false) String from,
                             @RequestParam(required = false) String to,
+                            @RequestParam(required = false) String kind,
+                            @RequestParam(name = "page", defaultValue = "1") int page,
                             HttpServletRequest request,
                             HttpSession session,
                             Model model) {
@@ -62,6 +69,7 @@ public class MediaArchiveController {
         tab = normalizeTab(tab);
         boolean all = "all".equals(tab);
         String sortKey = normalizeSort(sort);
+        boolean shortsOnly = "shorts".equalsIgnoreCase(kind);
 
         model.addAttribute("isAdmin", aboutAdminAuth.isAdmin(request, session));
         model.addAttribute("currentTab", tab);
@@ -74,6 +82,7 @@ public class MediaArchiveController {
         model.addAttribute("sort", sortKey);
         model.addAttribute("sortOptions", sortOptions(sortKey));
         model.addAttribute("dateFilterLabel", "전체 기간");
+        model.addAttribute("shortsOnly", shortsOnly);
 
         LocalDate fromDate = parseDate(from);
         LocalDate toDate = parseDate(to);
@@ -99,10 +108,12 @@ public class MediaArchiveController {
         if (dateFiltered) {
             filtered.removeIf(v -> !matchesPublished(v.getPublishedOn(), rangeStart, rangeEnd));
         }
+        if (shortsOnly) {
+            filtered.removeIf(v -> !MediaOrdering.isShort(v.getDuration()));
+        }
         MediaOrdering.sort(filtered, sortKey);
         attachMemberBadges(filtered, artists);
         int total = filtered.size();
-        List<MediaDto> videos = filtered;
         List<MediaDto> latest = new ArrayList<>(filtered);
         MediaOrdering.sort(latest, "latest");
         MediaDto featured = latest.isEmpty() ? null : latest.get(0);
@@ -110,7 +121,15 @@ public class MediaArchiveController {
                 ? List.of()
                 : latest.subList(1, Math.min(latest.size(), 6));
         List<MediaDto> suggestions = suggestions(filtered, featured, recommendations, 4);
-        List<MediaDto> shorts = filtered.stream().filter(video -> MediaOrdering.isShort(video.getDuration())).limit(4).toList();
+        List<MediaDto> shorts = latest.stream()
+                .filter(video -> MediaOrdering.isShort(video.getDuration()))
+                .limit(SHORTS_LIMIT)
+                .toList();
+        int totalPages = Math.max(1, (int) Math.ceil(total / (double) PAGE_SIZE));
+        int current = Math.min(totalPages, Math.max(1, page));
+        int fromIdx = total == 0 ? 0 : (current - 1) * PAGE_SIZE;
+        int toIdx = Math.min(fromIdx + PAGE_SIZE, total);
+        List<MediaDto> videos = total == 0 ? List.of() : filtered.subList(fromIdx, toIdx);
         model.addAttribute("featured", featured);
         model.addAttribute("hasFeatured", featured != null);
         model.addAttribute("recommendations", recommendations);
@@ -120,7 +139,12 @@ public class MediaArchiveController {
         model.addAttribute("hasSuggestions", !suggestions.isEmpty());
         model.addAttribute("shorts", shorts);
         model.addAttribute("hasShorts", !shorts.isEmpty());
-        model.addAttribute("mediaCatalogJson", catalogJson(filtered));
+        model.addAttribute("mediaCatalogJson", catalogJson(visibleCatalog(featured, recommendations, suggestions, shorts, videos)));
+        bindPager(model, total, videos.size(), current, totalPages);
+        String filterQuery = mediaQuery(tab, sortKey, query, selectedMembers, rangeStart, rangeEnd, shortsOnly);
+        model.addAttribute("mediaQuery", filterQuery);
+        model.addAttribute("shortsViewHref", "/media?kind=shorts" + mediaQuery(tab, sortKey, query, selectedMembers, rangeStart, rangeEnd, false));
+        model.addAttribute("shortsAllHref", "/media?" + mediaQuery(tab, sortKey, query, selectedMembers, rangeStart, rangeEnd, false).replaceFirst("^&", ""));
 
         String fromText = rangeStart == null ? "" : rangeStart.toString();
         String toText = rangeEnd == null ? "" : rangeEnd.toString();
@@ -134,7 +158,7 @@ public class MediaArchiveController {
         model.addAttribute("query", query);
         model.addAttribute("memberPickerOptions", portraitOptions(selectedMembers));
         model.addAttribute("editMemberOptions", portraitOptions(List.of()));
-        model.addAttribute("hasActiveFilters", memberFiltered || dateFiltered || !query.isEmpty() || !"latest".equals(sortKey));
+        model.addAttribute("hasActiveFilters", memberFiltered || dateFiltered || !query.isEmpty() || !"latest".equals(sortKey) || shortsOnly);
         model.addAttribute("videos", videos);
         model.addAttribute("hasVideos", total > 0);
         model.addAttribute("total", total);
@@ -441,6 +465,74 @@ public class MediaArchiveController {
             badges.add(badge);
         }
         return badges;
+    }
+
+    private void bindPager(Model model, int total, int pageCount, int current, int totalPages) {
+        model.addAttribute("hasMediaPager", total > PAGE_SIZE);
+        model.addAttribute("mediaTotal", total);
+        model.addAttribute("mediaPageCount", pageCount);
+        model.addAttribute("mediaPageDisplay", current);
+        model.addAttribute("mediaTotalPages", totalPages);
+        model.addAttribute("hasMediaPrev", current > 1);
+        model.addAttribute("hasMediaNext", current < totalPages);
+        model.addAttribute("mediaPrevPage", Math.max(1, current - 1));
+        model.addAttribute("mediaNextPage", current + 1);
+        List<Map<String, Object>> pages = new ArrayList<>();
+        int start = Math.max(1, current - 2);
+        int end = Math.min(totalPages, start + 4);
+        start = Math.max(1, end - 4);
+        for (int i = start; i <= end; i++) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("num", i);
+            row.put("active", i == current);
+            pages.add(row);
+        }
+        model.addAttribute("mediaPages", pages);
+    }
+
+    private static String mediaQuery(String tab, String sort, String query, List<String> members,
+                                     LocalDate from, LocalDate to, boolean shortsOnly) {
+        StringBuilder queryString = new StringBuilder();
+        if (tab != null && !tab.isBlank()) queryString.append("&tab=").append(encode(tab));
+        if (sort != null && !sort.isBlank() && !"latest".equals(sort)) queryString.append("&sort=").append(encode(sort));
+        if (query != null && !query.isBlank()) queryString.append("&q=").append(encode(query));
+        if (members != null) {
+            for (String member : members) {
+                if (member != null && !member.isBlank()) queryString.append("&members=").append(encode(member));
+            }
+        }
+        if (from != null) queryString.append("&from=").append(from);
+        if (to != null) queryString.append("&to=").append(to);
+        if (shortsOnly) queryString.append("&kind=shorts");
+        return queryString.toString();
+    }
+
+    private static String encode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
+    }
+
+    private static List<MediaDto> visibleCatalog(MediaDto featured, List<MediaDto> recommendations,
+                                                 List<MediaDto> suggestions, List<MediaDto> shorts,
+                                                 List<MediaDto> videos) {
+        List<MediaDto> catalog = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
+        addCatalog(catalog, seen, featured);
+        addCatalog(catalog, seen, recommendations);
+        addCatalog(catalog, seen, suggestions);
+        addCatalog(catalog, seen, shorts);
+        addCatalog(catalog, seen, videos);
+        return catalog;
+    }
+
+    private static void addCatalog(List<MediaDto> catalog, Set<String> seen, List<MediaDto> videos) {
+        if (videos == null) return;
+        for (MediaDto video : videos) addCatalog(catalog, seen, video);
+    }
+
+    private static void addCatalog(List<MediaDto> catalog, Set<String> seen, MediaDto video) {
+        if (video == null || video.getYoutubeId() == null || video.getYoutubeId().isBlank()) return;
+        if (!seen.add(video.getYoutubeId().toLowerCase(Locale.ROOT))) return;
+        catalog.add(video);
     }
 
     private String catalogJson(List<MediaDto> videos) {

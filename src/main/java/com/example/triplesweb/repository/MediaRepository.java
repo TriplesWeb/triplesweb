@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +24,15 @@ public interface MediaRepository extends JpaRepository<Media, Long> {
     @EntityGraph(attributePaths = "artists")
     @Query("select distinct m from Media m order by m.sortOrder asc, m.id asc")
     List<Media> findAllWithArtists();
+
+    @EntityGraph(attributePaths = "artists")
+    @Query("select distinct m from Media m where m.tab = :tab order by m.sortOrder asc, m.id asc")
+    List<Media> findAllWithArtistsByTab(@Param("tab") String tab);
+
+    @Query("select m.youtubeId from Media m order by m.id asc")
+    List<String> findAllYoutubeIds();
+
+    List<Media> findByYoutubeIdIn(Collection<String> youtubeIds);
 
     long countByTab(String tab);
 
