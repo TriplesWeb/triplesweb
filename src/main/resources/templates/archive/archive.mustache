@@ -3,6 +3,9 @@
 
     <link rel="stylesheet" href="{{#asset}}/css/archive-page.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
+    {{^archiveFolderHome}}
+    <link rel="stylesheet" href="{{#asset}}/css/chemistry.css{{/asset}}">
+    {{/archiveFolderHome}}
     {{#_csrf}}
     <meta name="_csrf" content="{{token}}">
     <meta name="_csrf_header" content="{{headerName}}">
@@ -361,11 +364,17 @@
 {{#chemistryNamesJson}}
 <script type="application/json" id="archiveChemistryNames">{{{chemistryNamesJson}}}</script>
 {{/chemistryNamesJson}}
+{{^archiveFolderHome}}
+{{>triples/partials/chemistry-modals}}
+{{/archiveFolderHome}}
 <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
 <script src="{{#asset}}/js/archive-manage.js{{/asset}}"></script>
 <script src="{{#asset}}/js/date-range-filter.js{{/asset}}"></script>
 <script src="{{#asset}}/js/archive-browse.js{{/asset}}"></script>
 {{^archiveFolderHome}}
+<script src="{{#asset}}/js/triples-members.js{{/asset}}"></script>
+<script src="{{#asset}}/js/chemistry-sanitize.js{{/asset}}"></script>
+<script src="{{#asset}}/js/chemistry.js{{/asset}}"></script>
 {{#imageArchive}}
 <script src="{{#asset}}/js/archive-detail.js{{/asset}}"></script>
 {{/imageArchive}}
