@@ -16,6 +16,38 @@
         setStatsOpen(statsToggle.getAttribute('aria-expanded') !== 'true');
     });
 
+    const backLink = document.querySelector('a.ar-back-folders');
+    if (backLink?.href) {
+        const backUrl = backLink.href;
+        let warming = false;
+        const warmBack = () => {
+            if (warming) return;
+            warming = true;
+            // no-store 응답이어도 서버 쪽 짧은 캐시(건수·유닛 목록)를 데운다.
+            fetch(backUrl, {
+                credentials: 'same-origin',
+                headers: { Purpose: 'prefetch', 'X-Archive-Back-Warm': '1' }
+            }).catch(() => {});
+        };
+        backLink.addEventListener('pointerenter', warmBack, { once: true });
+        backLink.addEventListener('focus', warmBack, { once: true });
+        if ('requestIdleCallback' in window) window.requestIdleCallback(warmBack, { timeout: 900 });
+        else window.setTimeout(warmBack, 350);
+        backLink.addEventListener('click', (event) => {
+            if (event.defaultPrevented || event.button !== 0) return;
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            // 필터 pushState 뒤에는 한 칸 back이 이전 필터로만 가므로 링크로 부모 폴더에 바로 간다.
+            if (history.state && history.state.archiveLive) return;
+            let referrer;
+            try { referrer = document.referrer ? new URL(document.referrer) : null; } catch (_) { return; }
+            if (!referrer || referrer.origin !== location.origin) return;
+            const target = new URL(backUrl, location.href);
+            if (referrer.pathname !== target.pathname || referrer.search !== target.search) return;
+            event.preventDefault();
+            history.back();
+        });
+    }
+
     const grid = document.getElementById('archiveGrid');
     if (!grid) return;
     let cards = [...grid.querySelectorAll('.ar-card')];
@@ -486,12 +518,29 @@
         const params = new URLSearchParams();
         new FormData(form).forEach((value, key) => {
             if (String(value).trim() === '') return;
+            if (key === 'size' && String(value) === '15') return;
             params.append(key, value);
         });
         const action = form.getAttribute('action') || location.pathname;
         const query = params.toString();
         return query ? action + (action.includes('?') ? '&' : '?') + query : action;
     }
+    const sizeSelect = document.getElementById('archivePageSize');
+    const filterSize = form?.querySelector('[data-archive-filter-size]');
+    function syncArchiveSize(value) {
+        if (filterSize) filterSize.value = value;
+        if (sizeSelect && sizeSelect.value !== value) sizeSelect.value = value;
+    }
+    sizeSelect?.addEventListener('change', () => {
+        const value = sizeSelect.value || '15';
+        syncArchiveSize(value);
+        const url = new URL(location.href);
+        if (value === '15') url.searchParams.delete('size');
+        else url.searchParams.set('size', value);
+        url.searchParams.delete('page');
+        url.searchParams.delete('go');
+        loadArchiveFilter(url.pathname + url.search);
+    });
     let filterSeq = 0;
     async function loadArchiveFilter(url, push) {
         const seq = ++filterSeq;
@@ -529,6 +578,8 @@
             if (nextPager && pager && pager.innerHTML !== nextPager.innerHTML) {
                 pager.replaceWith(document.importNode(nextPager, true));
             }
+            const nextSize = doc.getElementById('archivePageSize');
+            if (nextSize) syncArchiveSize(nextSize.value || '15');
             for (const selector of ['.ar-type-tabs', '.ar-source-tabs']) {
                 const current = document.querySelector(selector);
                 const next = doc.querySelector(selector);

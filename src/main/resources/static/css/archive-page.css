@@ -368,6 +368,49 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     font-size: 0.72rem;
     letter-spacing: 0.03em;
 }
+.ar-card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+}
+.ar-unit-badge {
+    --unit-color: #a78bfa;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    max-width: 100%;
+    min-height: 1.9rem;
+    margin: 0;
+    padding: 0.28rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--unit-color) 52%, transparent);
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--unit-color) 26%, transparent),
+        color-mix(in srgb, var(--unit-color) 10%, rgba(13, 14, 18, 0.35))
+    );
+    color: color-mix(in srgb, var(--unit-color) 28%, #f7fffc);
+    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    line-height: 1.2;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.16),
+        0 0 14px color-mix(in srgb, var(--unit-color) 20%, transparent);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ar-unit-badge[hidden] { display: none; }
+.ar-card .ar-unit-badge {
+    min-height: 1.55rem;
+    padding: 0.18rem 0.7rem;
+    font-size: 0.72rem;
+}
 
 .ar-stats {
     display: grid;
@@ -781,6 +824,66 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-card:hover { border-color: rgba(0, 245, 212, 0.45); transform: translateY(-2px); box-shadow: 0 12px 30px -12px rgba(0, 245, 212, 0.18); }
 .ar-card.ar-off { display: none; }
 .ar-card img, .ar-card video { width: 100%; height: 9.5rem; object-fit: cover; background: #07080b; }
+.ar-grid-head {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin: 0 0 0.55rem;
+}
+.ar-page-size {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+}
+.ar-page-size-label {
+    color: #8b93a7;
+    font-size: 0.72rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+}
+.ar-page-size-control {
+    --ar-sort-fg: #e8ebf2;
+    --ar-sort-bg: #1c1d24;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-width: 6.5rem;
+    height: 2rem;
+    padding: 0 0.3rem 0 0.7rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.ar-page-size-control:hover { background: rgba(255, 255, 255, 0.07); }
+.ar-page-size-control select {
+    appearance: none;
+    width: 100%;
+    min-width: 0;
+    height: 2rem;
+    margin: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    padding: 0 1.25rem 0 0;
+    color: var(--ar-sort-fg);
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 650;
+    cursor: pointer;
+    color-scheme: dark;
+}
+.ar-page-size-control select option {
+    background: var(--ar-sort-bg);
+    color: var(--ar-sort-fg);
+}
+.ar-page-size-control .material-symbols-outlined {
+    position: absolute;
+    right: 0.2rem;
+    pointer-events: none;
+    color: #8b93a7;
+    font-size: 1.15rem;
+}
 .archive-page .ar-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
@@ -1787,7 +1890,7 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-video-player.ar-detail-panel {
     position: fixed;
     inset: 0;
-    width: min(96vw, 78rem);
+    width: min(96vw, 56rem);
     max-height: 94dvh;
     margin: auto;
     padding: 0;
@@ -1826,73 +1929,183 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-close { border: 0; background: transparent; color: #b9cac4; font-size: 1.4rem; line-height: 1; cursor: pointer; }
 .ar-empty { padding: 2.5rem 1rem; text-align: center; color: #b9cac4; }
 .ar-pager {
-    padding: 0.9rem 1rem;
+    padding: 0.72rem 1rem;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.7rem 1rem;
     color: #b9cac4;
     font-size: 0.9rem;
 }
-.ar-pager-summary { justify-self: start; min-width: 0; }
-.ar-pager-controls { justify-self: center; grid-column: 2; }
-.ar-pager-controls, .ar-pages { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; }
-.ar-page-jump {
+.ar-pager-summary {
+    margin: 0;
+    justify-self: start;
+    min-width: 0;
     display: inline-flex;
-    align-items: center;
-    gap: 0.7rem;
-    margin-inline: 0.15rem;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.3rem 0.4rem;
+    color: #8d9c96;
+    font-size: 0.76rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.35;
 }
-.ar-page-jump label {
+.ar-pager-count { color: #d2ddd9; font-weight: 750; }
+.ar-pager-sep { opacity: 0.4; }
+.ar-pager-nav {
+    justify-self: center;
+    grid-column: 2;
     display: inline-flex;
     align-items: center;
-    gap: 0.55rem;
-    color: #c6d3d0;
+    gap: 0.22rem;
+    padding: 0.22rem;
+    border-radius: 999px;
+    background: rgba(8, 10, 14, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+.ar-pages {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.12rem;
+}
+.ar-pager-step,
+.ar-pager-num,
+.ar-pager span.ar-num {
+    appearance: none;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1.95rem;
+    margin: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #aebdb7;
+    font: inherit;
     font-size: 0.78rem;
     font-weight: 650;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.ar-pager-step {
+    min-width: 2.85rem;
+    padding: 0 0.65rem;
+}
+.ar-pager-num,
+.ar-pager span.ar-num {
+    min-width: 1.95rem;
+    padding: 0 0.4rem;
+    font-variant-numeric: tabular-nums;
+}
+.ar-pager-step:hover,
+.ar-pager-num:hover {
+    color: #f0faf6;
+    background: rgba(255, 255, 255, 0.06);
+}
+.ar-pager-num.is-current,
+.ar-pager span.is-current {
+    color: #0d0e12;
+    background: #00f5d4;
+    font-weight: 800;
+    box-shadow: 0 0 0 1px rgba(0, 245, 212, 0.35);
+}
+.ar-pager-num.is-current:hover {
+    color: #0d0e12;
+    background: #5ff7e0;
+}
+.ar-pager a.is-disabled {
+    opacity: 0.32;
+    pointer-events: none;
+}
+.ar-page-jump {
+    justify-self: end;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 0;
+    padding: 0.18rem 0.18rem 0.18rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(8, 10, 14, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.ar-page-jump-meta {
+    color: #8b9b95;
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+.ar-page-jump-meta span { margin: 0 0.18em; opacity: 0.5; }
+.ar-page-jump-field {
+    display: inline-flex;
+    margin: 0;
 }
 .ar-page-jump input[type="number"] {
-    width: 4.2rem;
-    min-height: 2rem;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 0.55rem;
-    background: #292a2e;
+    width: 2.9rem;
+    min-height: 1.85rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    background: rgba(18, 20, 26, 0.9);
     color: #e3e2e8;
-    padding: 0 0.45rem;
+    padding: 0 0.35rem;
     font: inherit;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+.ar-page-jump input[type="number"]:focus {
+    outline: none;
+    border-color: rgba(0, 245, 212, 0.5);
+    box-shadow: 0 0 0 2px rgba(0, 245, 212, 0.12);
 }
 .ar-page-jump button {
-    min-height: 2rem;
-    padding: 0 0.7rem;
-    border: 1px solid rgba(0, 245, 212, 0.45);
-    border-radius: 0.55rem;
-    background: rgba(0, 245, 212, 0.1);
-    color: #00f5d4;
+    min-height: 1.85rem;
+    padding: 0 0.78rem;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(0, 245, 212, 0.14);
+    color: #7eeddc;
     font: inherit;
-    font-size: 0.78rem;
-    font-weight: 700;
+    font-size: 0.76rem;
+    font-weight: 750;
     cursor: pointer;
 }
-@media (max-width: 720px) {
-    .ar-pager { grid-template-columns: 1fr; justify-items: center; text-align: center; }
-    .ar-pager-summary, .ar-pager-controls {
+.ar-page-jump button:hover {
+    background: rgba(0, 245, 212, 0.22);
+    color: #b7f7eb;
+}
+.ar-pager .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+@media (max-width: 860px) {
+    .ar-pager {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        text-align: center;
+        gap: 0.65rem;
+    }
+    .ar-pager-summary,
+    .ar-pager-nav,
+    .ar-page-jump {
         justify-self: center;
         grid-column: 1;
-        width: auto;
-        max-width: 100%;
     }
-    .ar-page-jump { margin-inline-start: 0; }
-    .ar-pager-summary { white-space: normal; }
+    .ar-pager-summary { justify-content: center; }
 }
-.ar-pager a, .ar-pager span.ar-num {
-    min-width: 2rem; height: 2rem; padding: 0 0.7rem; border-radius: 0.55rem; display: inline-flex; align-items: center; justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.12); background: #292a2e; color: #e3e2e8; font-size: 0.78rem;
-}
-.ar-pager a.is-current, .ar-pager span.is-current { background: #00f5d4; color: #0d0e12; border-color: #00f5d4; font-weight: 700; }
-.ar-pager a.is-disabled { opacity: 0.4; pointer-events: none; }
-.ar-pager a:hover { border-color: #00f5d4; color: #00f5d4; }
-.ar-pager a.is-current:hover { color: #0d0e12; }
 
 .ar-icon-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .ar-icon-btn:focus-visible, .ar-photo-link:focus-visible, .is-photo-carousel:focus-visible {
@@ -1991,21 +2204,25 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 
 .ar-detail-panel {
     display: grid;
-    grid-template-columns: minmax(0, 1.75fr) minmax(15rem, 0.7fr);
-    width: min(100%, 78rem);
-    max-height: min(94vh, 58rem);
+    /* 사진은 가변, 사이드는 고정 폭 — 가로로 화면을 채우지 않음 */
+    grid-template-columns: minmax(0, 1fr) 17rem;
+    grid-template-rows: minmax(0, 1fr);
+    width: min(calc(100% - 2rem), 56rem);
+    /* 높이 기준을 줘야 사진 height:100% / contain 이 동작한다 */
+    height: min(94vh, 52rem);
+    max-height: min(94vh, 52rem);
     overflow: hidden;
     background: #14151b;
     box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
 }
 .ar-detail-photo {
     position: relative;
-    display: flex;
-    align-items: stretch;
-    justify-content: stretch;
+    display: grid;
+    place-items: center;
     align-self: stretch;
     min-width: 0;
-    min-height: 18rem;
+    min-height: 0;
+    height: 100%;
     padding: 0;
     overflow: hidden;
     background: #07080b;
@@ -2013,11 +2230,14 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     user-select: none;
 }
 .ar-detail-photo img {
+    position: absolute;
+    inset: 0;
     display: block;
+    box-sizing: border-box;
     width: 100%;
     height: 100%;
-    max-height: none;
-    object-fit: cover;
+    margin: auto;
+    object-fit: contain;
     object-position: center;
 }
 .ar-detail-nav {
@@ -2117,40 +2337,55 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     display: flex;
     flex-direction: column;
     min-width: 0;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
     background:
         radial-gradient(120% 60% at 100% 0%, rgba(0, 245, 212, 0.06), transparent 55%),
         #17181e;
 }
 .ar-detail-close {
     position: absolute;
-    top: 0.7rem;
-    right: 0.7rem;
+    top: 0.55rem;
+    right: 0.55rem;
     z-index: 3;
-    display: grid;
-    place-items: center;
-    width: 2rem;
-    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
     padding: 0;
+    border: 0;
     border-radius: 999px;
     background: rgba(8, 10, 14, 0.45);
-    /* 본문 ×는 숨기고 ::before로 광학 중앙 정렬 */
+    /* 본문 × 숨김 — 교차선으로 기하 중앙 정렬 */
     color: transparent;
     font-size: 0;
     line-height: 0;
 }
+.ar-detail-close::before,
+.ar-detail-close::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0.62rem;
+    height: 1.5px;
+    border-radius: 1px;
+    background: #c9d6d0;
+}
 .ar-detail-close::before {
-    content: "×";
-    color: #c9d6d0;
-    font-size: 1.15rem;
-    font-weight: 500;
-    line-height: 1;
-    transform: translateY(-0.05em);
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+.ar-detail-close::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
 }
 .ar-detail-close:hover {
     background: rgba(0, 245, 212, 0.12);
 }
-.ar-detail-close:hover::before {
-    color: #e8f5f0;
+.ar-detail-close:hover::before,
+.ar-detail-close:hover::after {
+    background: #e8f5f0;
 }
 .ar-detail-body {
     display: flex;
@@ -2158,8 +2393,8 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     flex-direction: column;
     gap: 0.85rem;
     min-height: 0;
-    /* 닫기 버튼(2rem) + 여백 — 날짜/출처 박스와 겹치지 않게 */
-    padding: 2.85rem 1.15rem 1.15rem;
+    /* 닫기 버튼(1.5rem) + 여백 — 날짜/출처 박스와 겹치지 않게 */
+    padding: 2.35rem 1.15rem 1.15rem;
     overflow: auto;
 }
 .ar-detail-kicker {
@@ -2174,13 +2409,23 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-detail-desc {
     margin: 0;
     max-width: 38ch;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    line-height: 1.55;
+}
+/* 사진 상세 설명 — 제목이 아니라 본문 */
+p.ar-detail-desc {
+    color: #b9cac4;
+    font-size: 0.86rem;
+    font-weight: 450;
+    letter-spacing: -0.01em;
+}
+/* 영상 상세 제목 */
+h2.ar-detail-desc {
     color: #e8f0ed;
     font-size: 0.98rem;
     font-weight: 600;
     letter-spacing: -0.015em;
-    line-height: 1.55;
-    overflow-wrap: anywhere;
-    white-space: pre-wrap;
 }
 .ar-detail-desc[hidden] { display: none !important; }
 .ar-detail-meta {
@@ -2211,8 +2456,15 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.01em;
 }
-.ar-detail-meta .ar-source-badge {
+.ar-detail-meta .ar-detail-badges {
     margin-left: auto;
+    justify-content: flex-end;
+}
+.ar-detail-meta .ar-source-badge,
+.ar-detail-meta .ar-unit-badge {
+    min-height: 1.55rem;
+    padding: 0.18rem 0.7rem;
+    font-size: 0.72rem;
 }
 .ar-detail-cast {
     display: grid;
@@ -2221,7 +2473,7 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     flex: 0 0 auto;
     align-content: start;
     min-width: 0;
-    margin-top: auto;
+    /* 설명/출처 바로 아래 — margin-top:auto 로 바닥 고정하지 않음 */
     padding-top: 0.35rem;
 }
 .ar-detail-cast[hidden] { display: none !important; }
@@ -2264,7 +2516,7 @@ a.ar-detail-chem:focus-visible {
 .ar-detail-members {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.55rem;
+    gap: 0.3rem;
     align-content: flex-start;
     align-items: stretch;
 }
@@ -2299,12 +2551,12 @@ a.ar-detail-chem:focus-visible {
     border: 1.5px solid var(--member-color);
 }
 .ar-detail-members .unit-member-chip span {
-    margin-top: 0.35rem;
+    margin-top: 0.28rem;
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 700;
     line-height: 1.2;
     text-align: center;
@@ -2346,8 +2598,14 @@ a.ar-detail-chem:focus-visible {
     filter: none;
 }
 @media (max-width: 860px) {
-    .ar-detail-panel { grid-template-columns: 1fr; max-height: min(96vh, 58rem); }
-    .ar-detail-photo { min-height: 48vh; max-height: 58vh; }
+    .ar-detail-panel {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(42vh, 1fr) auto;
+        width: min(calc(100% - 1.5rem), 36rem);
+        height: min(96vh, 58rem);
+        max-height: min(96vh, 58rem);
+    }
+    .ar-detail-photo { min-height: 42vh; max-height: none; }
     .ar-detail-nav { width: 2.1rem; height: 2.1rem; }
     .ar-detail-nav-icon { width: 1rem; height: 1rem; }
     .ar-detail-prev { left: 0.4rem; }
