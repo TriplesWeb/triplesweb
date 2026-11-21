@@ -16,7 +16,6 @@
         <div class="media-intro__row">
             <div class="media-intro__copy">
                 <h1>공식 미디어</h1>
-                <p>tripleS의 모든 순간을 한곳에서. 뮤직비디오부터 매일의 SIGNAL까지 만나보세요.</p>
             </div>
             <div class="media-intro__actions">
                 <a class="media-channel" href="https://www.youtube.com/@tripleS_official" target="_blank" rel="noopener noreferrer">YouTube 채널 ↗</a>
@@ -39,25 +38,35 @@
             <form class="ar-filters" id="mediaFilterForm" method="get" action="/media">
                 <input type="hidden" name="tab" value="{{currentTab}}">
                 <input type="hidden" name="artist" id="mediaArtist" value="{{selectedArtist}}">
-                <div class="ar-filter-tools">
-                    <div class="ar-sort">
-                        <span class="ar-sort-label" id="mediaSortLabel">정렬</span>
-                        <span class="ar-sort-control">
-                            <select id="mediaSort" name="sort" aria-labelledby="mediaSortLabel">
-                                {{#sortOptions}}
-                                <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
-                                {{/sortOptions}}
-                            </select>
-                            <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
-                        </span>
+                <div class="ar-filter-tools media-filter-tools">
+                    <div class="media-filter-cluster">
+                        <div class="ar-sort">
+                            <span class="ar-sort-label" id="mediaSortLabel">정렬</span>
+                            <span class="ar-sort-control">
+                                <select id="mediaSort" name="sort" aria-labelledby="mediaSortLabel">
+                                    {{#sortOptions}}
+                                    <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+                                    {{/sortOptions}}
+                                </select>
+                                <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
+                            </span>
+                        </div>
+                        {{>partials/date-range-filter}}
+                        <button type="button" class="ar-member-toggle{{#hasSelectedArtist}} has-selection{{/hasSelectedArtist}}" id="mediaMemberToggle" aria-expanded="false" aria-controls="mediaMemberPanel">
+                            <span class="material-symbols-outlined" aria-hidden="true">group</span>
+                            <span data-member-toggle-label>{{memberToggleLabel}}</span>
+                            <span class="material-symbols-outlined ar-member-chevron" aria-hidden="true">expand_more</span>
+                        </button>
                     </div>
-                    {{>partials/date-range-filter}}
-                    <button type="button" class="ar-member-toggle{{#selectedArtist}} has-selection{{/selectedArtist}}" id="mediaMemberToggle" aria-expanded="false" aria-controls="mediaMemberPanel">
-                        <span class="material-symbols-outlined" aria-hidden="true">group</span>
-                        <span data-member-toggle-label>{{#selectedArtist}}{{selectedArtist}}{{/selectedArtist}}{{^selectedArtist}}멤버 선택{{/selectedArtist}}</span>
-                        <span class="material-symbols-outlined ar-member-chevron" aria-hidden="true">expand_more</span>
-                    </button>
-                    <a class="site-btn site-btn--reset ar-reset" href="/media?tab={{currentTab}}"{{^hasActiveFilters}} hidden{{/hasActiveFilters}}>초기화</a>
+                    <div class="ar-search-row media-filter-search">
+                        <label class="ar-search-wrap">
+                            <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                            <input class="ar-search" type="search" name="q" value="{{query}}" placeholder="영상 제목 검색" aria-label="영상 제목 검색">
+                        </label>
+                    </div>
+                    <div class="media-filter-end">
+                        <a class="site-btn site-btn--reset ar-reset" href="/media?tab={{currentTab}}"{{^hasActiveFilters}} hidden{{/hasActiveFilters}}>초기화</a>
+                    </div>
                 </div>
             </form>
             <div class="ar-member-panel" id="mediaMemberPanel" hidden>
@@ -312,8 +321,15 @@
             appliedDates = next;
             form.requestSubmit();
         });
+        const search = form.querySelector('.ar-search');
+        let searchTimer = 0;
+        search?.addEventListener('input', () => {
+            window.clearTimeout(searchTimer);
+            searchTimer = window.setTimeout(() => form.requestSubmit(), 280);
+        });
         form.addEventListener('submit', () => {
             if (artist && !artist.value.trim()) artist.disabled = true;
+            if (search && !search.value.trim()) search.disabled = true;
             form.querySelectorAll('[data-date-filter] input').forEach((input) => {
                 if (!input.value.trim()) input.disabled = true;
             });

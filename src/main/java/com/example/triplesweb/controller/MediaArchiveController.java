@@ -42,6 +42,7 @@ public class MediaArchiveController {
     public String mediaPage(@RequestParam(name = "tab", defaultValue = "all") String tab,
                             @RequestParam(name = "sort", defaultValue = "latest") String sort,
                             @RequestParam(required = false) String artist,
+                            @RequestParam(required = false) String q,
                             @RequestParam(required = false) String from,
                             @RequestParam(required = false) String to,
                             HttpServletRequest request,
@@ -73,10 +74,15 @@ public class MediaArchiveController {
         final LocalDate rangeStart = fromDate;
         final LocalDate rangeEnd = toDate;
         boolean artistFiltered = artist != null && !artist.isBlank();
+        String query = q == null ? "" : q.trim();
         boolean dateFiltered = rangeStart != null || rangeEnd != null;
         List<MediaDto> filtered = new ArrayList<>(all ? media.listAll() : media.allByTab(tab));
         if (artistFiltered) {
             filtered.removeIf(v -> !splitNames(v.getArtistNames()).contains(artist));
+        }
+        if (!query.isEmpty()) {
+            String needle = query.toLowerCase();
+            filtered.removeIf(v -> v.getTitle() == null || !v.getTitle().toLowerCase().contains(needle));
         }
         if (dateFiltered) {
             filtered.removeIf(v -> !matchesPublished(v.getPublishedOn(), rangeStart, rangeEnd));
@@ -106,8 +112,11 @@ public class MediaArchiveController {
         model.addAttribute("hasDateFilter", dateFiltered);
         String selectedName = artistFiltered ? artist.trim() : "";
         model.addAttribute("selectedArtist", selectedName);
+        model.addAttribute("hasSelectedArtist", artistFiltered);
+        model.addAttribute("memberToggleLabel", artistFiltered ? selectedName : "멤버 선택");
+        model.addAttribute("query", query);
         model.addAttribute("memberPickerOptions", portraitOptions(selectedName.isEmpty() ? List.of() : List.of(selectedName)));
-        model.addAttribute("hasActiveFilters", artistFiltered || dateFiltered || !"latest".equals(sortKey));
+        model.addAttribute("hasActiveFilters", artistFiltered || dateFiltered || !query.isEmpty() || !"latest".equals(sortKey));
         model.addAttribute("videos", videos);
         model.addAttribute("hasVideos", total > 0);
         model.addAttribute("total", total);
