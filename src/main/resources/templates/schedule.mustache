@@ -478,17 +478,18 @@
                     const end = document.getElementById('endInput').value;
 
                     if (!title || !start) {
-                        alert('제목과 시작 날짜를 입력해 주세요.');
+                        window.SiteFeedback.alert('제목과 시작 날짜를 입력해 주세요.');
                         return;
                     }
                     if (end && end < start) {
-                        alert('종료 날짜는 시작 날짜보다 빠를 수 없습니다.');
+                        window.SiteFeedback.alert('종료 날짜는 시작 날짜보다 빠를 수 없습니다.');
                         return;
                     }
-                    if (!window.confirm('이 일정을 추가하시겠습니까?')) return;
+                    if (!await window.SiteFeedback.confirm('이 일정을 추가하시겠습니까?')) return;
 
                     const body = new URLSearchParams({ title, start, end, category:document.getElementById('addScheduleCategory').value });
                     document.querySelectorAll('#addArtistNames option:checked').forEach(option => body.append('artistNames', option.value));
+                    const doneBusy = window.SiteFeedback.beginBusy();
                     try {
                         const response = await fetch('/schedule/add', {
                             method: 'POST',
@@ -498,7 +499,7 @@
                         });
 
                         if (!response.ok) {
-                            alert('스케줄 추가에 실패했습니다.');
+                            window.SiteFeedback.alert('스케줄 추가에 실패했습니다.');
                             return;
                         }
 
@@ -510,7 +511,9 @@
                         renderSelectedDate(start, new Date(`${start}T00:00:00`));
                     } catch (error) {
                         console.error('스케줄 추가 오류:', error);
-                        alert('서버 통신 중 오류가 발생했습니다.');
+                        window.SiteFeedback.alert('서버 통신 중 오류가 발생했습니다.');
+                    } finally {
+                        doneBusy();
                     }
                 });
             }
@@ -526,17 +529,18 @@
                     const end = document.getElementById('editEndInput').value;
 
                     if (!id || !title || !start) {
-                        alert('제목과 시작 날짜를 입력해 주세요.');
+                        window.SiteFeedback.alert('제목과 시작 날짜를 입력해 주세요.');
                         return;
                     }
                     if (end && end < start) {
-                        alert('종료 날짜는 시작 날짜보다 빠를 수 없습니다.');
+                        window.SiteFeedback.alert('종료 날짜는 시작 날짜보다 빠를 수 없습니다.');
                         return;
                     }
-                    if (!window.confirm('이 일정을 수정하시겠습니까?')) return;
+                    if (!await window.SiteFeedback.confirm('이 일정을 수정하시겠습니까?')) return;
 
                     const body = new URLSearchParams({ title, startDate: start, endDate: end, category:document.getElementById('editScheduleCategory').value });
                     document.querySelectorAll('#editArtistNames option:checked').forEach(option => body.append('artistNames', option.value));
+                    const doneBusy = window.SiteFeedback.beginBusy();
                     try {
                         const response = await fetch(`/edit/${encodeURIComponent(id)}`, {
                             method: 'POST',
@@ -546,7 +550,7 @@
                         });
 
                         if (!response.ok) {
-                            alert('스케줄 수정에 실패했습니다.');
+                            window.SiteFeedback.alert('스케줄 수정에 실패했습니다.');
                             return;
                         }
 
@@ -559,7 +563,9 @@
                         renderSelectedDate(start, new Date(`${start}T00:00:00`));
                     } catch (error) {
                         console.error('스케줄 수정 오류:', error);
-                        alert('서버 통신 중 오류가 발생했습니다.');
+                        window.SiteFeedback.alert('서버 통신 중 오류가 발생했습니다.');
+                    } finally {
+                        doneBusy();
                     }
                 });
             }

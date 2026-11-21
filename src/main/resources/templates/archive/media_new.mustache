@@ -69,7 +69,7 @@
             <span class="material-symbols-outlined text-[#00f5d4]">add_box</span> 새 유튜브 영상 등록
         </h2>
 
-        <form method="post" action="/media_new" class="site-row" id="mediaNewForm">
+        <form method="post" action="/media_new" class="site-row" id="mediaNewForm" data-confirm="이 영상을 등록하시겠습니까?">
             <div class="col-md-4">
                 <label class="site-label">탭 분류</label>
                 <select class="site-select" name="tab">
@@ -159,7 +159,7 @@
   async function fetchYoutubeInfo() {
     const url = document.getElementById('ytUrl').value.trim();
     if (!url) {
-      alert('URL 또는 ID를 입력해주세요.');
+      window.SiteFeedback.alert('URL 또는 ID를 입력해주세요.');
       return false;
     }
     if (statusEl) statusEl.textContent = '영상 정보를 불러오는 중...';
@@ -184,7 +184,7 @@
       return true;
     } catch (e) {
       if (statusEl) statusEl.textContent = '영상 정보를 가져오지 못했습니다. URL을 확인하세요.';
-      alert('영상 정보를 가져오지 못했습니다.');
+      window.SiteFeedback.alert('영상 정보를 가져오지 못했습니다.');
       return false;
     }
   }
@@ -204,19 +204,14 @@
         form.appendChild(input);
       });
     }
-    const title = document.getElementById('titleInput').value.trim();
-    if (!title) {
-      event.preventDefault();
-      const ok = await fetchYoutubeInfo();
-      if (!ok || !document.getElementById('titleInput').value.trim()) {
-        alert('영상 정보를 먼저 가져와 주세요.');
-        return;
-      }
-      if (!window.confirm('이 영상을 등록하시겠습니까?')) return;
-      event.target.submit();
+    if (document.getElementById('titleInput').value.trim()) return;
+    event.preventDefault();
+    const ok = await fetchYoutubeInfo();
+    if (!ok || !document.getElementById('titleInput').value.trim()) {
+      window.SiteFeedback.alert('영상 정보를 먼저 가져와 주세요.');
       return;
     }
-    if (!window.confirm('이 영상을 등록하시겠습니까?')) event.preventDefault();
+    form.requestSubmit(event.submitter || undefined);
   });
 })();
 </script>

@@ -341,7 +341,7 @@
       document.getElementById("artistEditTitle").textContent = "멤버 수정 — " + (data.name || "");
       openModal("artistEditModal");
     } catch (e) {
-      alert(e.message || "멤버 정보를 불러오지 못했습니다.");
+      window.SiteFeedback.alert(e.message || "멤버 정보를 불러오지 못했습니다.");
     }
   }
 
@@ -420,7 +420,7 @@
         const saveMessage = (clearChecked || clearSig)
           ? "이 멤버 정보를 저장하시겠습니까? 체크한 사진은 삭제됩니다."
           : "이 멤버 정보를 저장하시겠습니까?";
-        if (!window.confirm(saveMessage)) return;
+        if (!await window.SiteFeedback.confirm(saveMessage)) return;
         const fd = new FormData();
         fd.append("name", document.getElementById("artistEditName").value);
         fd.append("engName", document.getElementById("artistEditEngName").value);
@@ -444,6 +444,7 @@
         fd.append("clearSignatureImage", clearSig ? "true" : "false");
         const sigFile = document.getElementById("artistEditSignatureImage").files[0];
         if (sigFile && !clearSig) fd.append("signatureImage", sigFile);
+        const doneBusy = window.SiteFeedback.beginBusy();
         try {
           const res = await artistFetch("/api/artist/" + id, { method: "POST", body: fd });
           if (!res.ok) {
@@ -466,6 +467,8 @@
             err.textContent = "저장에 실패했습니다.";
             err.hidden = false;
           }
+        } finally {
+          doneBusy();
         }
       });
     }
@@ -485,13 +488,14 @@
         const groupMessage = clearImage
           ? "그룹 소개를 저장하시겠습니까? 체크한 사진은 삭제됩니다."
           : "그룹 소개를 저장하시겠습니까?";
-        if (!window.confirm(groupMessage)) return;
+        if (!await window.SiteFeedback.confirm(groupMessage)) return;
         const fd = new FormData();
         fd.append("title", document.getElementById("artistGroupTitle").value);
         fd.append("body", document.getElementById("artistGroupBody").value);
         fd.append("clearImage", clearImage ? "true" : "false");
         const image = document.getElementById("artistGroupImage").files[0];
         if (image && !clearImage) fd.append("image", image);
+        const doneBusy = window.SiteFeedback.beginBusy();
         try {
           const res = await artistFetch("/api/artist/group", { method: "POST", body: fd });
           if (!res.ok) {
@@ -513,6 +517,8 @@
             err.textContent = "저장에 실패했습니다.";
             err.hidden = false;
           }
+        } finally {
+          doneBusy();
         }
       });
     }

@@ -8,7 +8,7 @@ function page(fetcher) {
   const status = {textContent:''};
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,'../../src/main/resources/static/js/cosmo-objekt-sync.js'),'utf8'), {
     document:{getElementById:id=>id==='cosmoObjektSync'?button:status},
-    window:{AboutAdminAuth:{applyAuthHeaders:()=>new Headers({'X-XSRF-TOKEN':'csrf-test'})}}, fetch:fetcher
+    window:{SiteFeedback:{confirm:async()=>true, beginBusy:()=>()=>{}}, AboutAdminAuth:{applyAuthHeaders:()=>new Headers({'X-XSRF-TOKEN':'csrf-test'})}}, fetch:fetcher
   });
   return {button,status};
 }
