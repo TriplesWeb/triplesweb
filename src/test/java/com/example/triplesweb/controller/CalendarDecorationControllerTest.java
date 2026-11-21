@@ -13,7 +13,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -63,12 +62,10 @@ class CalendarDecorationControllerTest {
 
     @Test
     void rejectsABirthdayRangeLongerThan400Days() throws Exception {
-        assertThatThrownBy(() -> mvc.perform(get("/api/calendar-decorations/birthdays")
+        mvc.perform(get("/api/calendar-decorations/birthdays")
                         .param("start", "2026-01-01")
                         .param("end", "2027-03-01"))
-                .andReturn())
-                .hasCauseInstanceOf(IllegalArgumentException.class)
-                .cause()
-                .hasMessageContaining("400일");
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("생일 조회 기간은 400일 이내여야 합니다."));
     }
 }

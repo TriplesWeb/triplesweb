@@ -1,0 +1,14 @@
+{{#memberBadges}}
+{{#hasArtist}}
+<a href="/triples/artist/{{artistId}}" class="unit-member-chip" style="--member-color: {{color}};" title="{{name}}">
+    {{#hasPortrait}}<img src="{{portrait}}" alt="{{name}}" referrerpolicy="no-referrer">{{/hasPortrait}}
+    <span>{{name}}</span>
+</a>
+{{/hasArtist}}
+{{^hasArtist}}
+<span class="unit-member-chip" style="--member-color: {{color}};" title="{{name}}">
+    {{#hasPortrait}}<img src="{{portrait}}" alt="{{name}}" referrerpolicy="no-referrer">{{/hasPortrait}}
+    <span>{{name}}</span>
+</span>
+{{/hasArtist}}
+{{/memberBadges}}

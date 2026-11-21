@@ -8,7 +8,9 @@
     button.setAttribute('aria-haspopup', 'listbox'); button.setAttribute('aria-expanded', 'false');
     const label = document.createElement('span'), caret = document.createElement('span');
     label.id = `objekt-select-value-${index}`; button.setAttribute('aria-describedby',label.id);
-    caret.className = 'objekt-dropdown-caret'; caret.setAttribute('aria-hidden','true'); button.append(label, caret);
+    label.className = 'truncate';
+    caret.className = 'material-symbols-outlined objekt-filter-caret'; caret.setAttribute('aria-hidden','true'); caret.textContent = 'arrow_drop_down';
+    button.append(label, caret);
     const menu = document.createElement('div'); menu.className = 'objekt-dropdown-menu'; menu.hidden = true;
     menu.id = `objekt-select-menu-${index}`; menu.setAttribute('role','listbox'); menu.setAttribute('aria-label',select.getAttribute('aria-label') || '필터');
     button.setAttribute('aria-controls',menu.id);

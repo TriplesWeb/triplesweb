@@ -9,11 +9,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.DateTimeException;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -39,12 +41,12 @@ public class CalendarDecorationController {
     public List<Map<String, Object>> birthdays(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
-        if (end.isBefore(start) || java.time.temporal.ChronoUnit.DAYS.between(start, end) > 400) {
+        if (end.isBefore(start) || ChronoUnit.DAYS.between(start, end) > 400) {
             throw new IllegalArgumentException("생일 조회 기간은 400일 이내여야 합니다.");
         }
         List<Map<String, Object>> result = new ArrayList<>();
         for (Artist artist : artistRepository.findAll()) {
-            if (artist.getBirthDate() == null) continue;
+            if (artist.getBirthDate() == null || artist.getName() == null || artist.getName().isBlank()) continue;
             Matcher matcher = BIRTH_DATE.matcher(artist.getBirthDate());
             if (!matcher.find()) continue;
             int month = Integer.parseInt(matcher.group(1));
@@ -105,5 +107,10 @@ public class CalendarDecorationController {
     public void delete(@PathVariable long id, HttpServletRequest request, HttpSession session) {
         adminAuth.requireAdmin(request, session);
         service.delete(id);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> invalidInput(IllegalArgumentException error) {
+        return ResponseEntity.badRequest().body(Map.of("message", error.getMessage()));
     }
 }

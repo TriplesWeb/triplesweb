@@ -60,7 +60,7 @@ class DotenvEnvironmentPostProcessorTest {
     @Test
     void nativeMainLoadsComposeDatabaseSettingsAndQuotedValues() throws Exception {
         var env = environment("""
-                MYSQL_HOST=100.89.171.59
+                MYSQL_HOST=100.64.0.1
                 MYSQL_PORT=3306
                 MYSQL_DATABASE=triples
                 MYSQL_USER='developer'
@@ -69,7 +69,7 @@ class DotenvEnvironmentPostProcessorTest {
                 """, Map.of());
         new DotenvEnvironmentPostProcessor().postProcessEnvironment(env, new SpringApplication());
         assertThat(env.getProperty("spring.datasource.url"))
-                .isEqualTo("jdbc:mariadb://100.89.171.59:3306/triples?useSSL=false");
+                .isEqualTo("jdbc:mariadb://100.64.0.1:3306/triples?useSSL=false");
         assertThat(env.getProperty("spring.datasource.username")).isEqualTo("developer");
         assertThat(env.getProperty("spring.datasource.password")).isEqualTo("sample # password=1");
         assertThat(env.getProperty("cosmo.credentials.file")).isEqualTo("C:\\project\\credentials.json");
@@ -106,10 +106,12 @@ class DotenvEnvironmentPostProcessorTest {
     void parserPreservesPasswordsWindowsPathsAndHandlesBomExportAndComments() {
         var values = DotenvEnvironmentPostProcessor.parse(List.of(
                 "\uFEFF# utf8", "export MYSQL_USER=developer # comment",
-                "PASSWORD='pass # word=2'", "EMPTY=", "PATH=C:\\work\\key", "HASH=pass#word"));
+                "PASSWORD='pass # word=2'", "EMPTY=", "PATH=C:\\work\\key", "HASH=pass#word",
+                "CHEMISTRY_ADMIN_PASSWORD=$$2y$$10$$abc"));
         assertThat(values).containsEntry("MYSQL_USER", "developer")
                 .containsEntry("PASSWORD", "pass # word=2").containsEntry("EMPTY", "")
-                .containsEntry("PATH", "C:\\work\\key").containsEntry("HASH", "pass#word");
+                .containsEntry("PATH", "C:\\work\\key").containsEntry("HASH", "pass#word")
+                .containsEntry("CHEMISTRY_ADMIN_PASSWORD", "$2y$10$abc");
         assertThatThrownBy(() -> DotenvEnvironmentPostProcessor.parse(List.of("PASSWORD='not-closed")))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("1번째")
                 .hasMessageNotContaining("not-closed");

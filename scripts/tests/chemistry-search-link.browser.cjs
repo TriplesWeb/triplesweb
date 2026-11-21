@@ -23,6 +23,10 @@ const chemistryPage = fs.readFileSync(path.join(root, 'build/mobile-pages/triple
         { id: 42, memberA: '윤서연', memberB: '김유연', label: '뽀토즈', description: '케미 설명', imageUrls: [], links: {} },
         { id: 43, memberA: '윤서연', memberB: '정혜린', label: '다른 케미', description: '', imageUrls: [], links: {} }
       ]) });
+      if (url.pathname === '/api/chemistry/groups') return route.fulfill({ json: [
+        { id: 51, members: ['윤서연', '정혜린', '김유연'], label: '세 멤버 케미', description: '그룹 케미 설명' }
+      ] });
+      if (url.pathname === '/triples/chemistry/picker') return route.fulfill({ contentType: 'text/html', body: '' });
       if (url.pathname.includes('/admin/status')) return route.fulfill({ contentType: 'application/json', body: '{"configured":false,"admin":false}' });
       const file = path.resolve(staticRoot, '.' + url.pathname);
       if (file.startsWith(staticRoot + path.sep) && fs.existsSync(file) && fs.statSync(file).isFile()) {
@@ -41,7 +45,11 @@ const chemistryPage = fs.readFileSync(path.join(root, 'build/mobile-pages/triple
     await page.goto('https://chemistry.test/triples/chemistry?pair=999');
     await loaded;
     assert.equal(await page.locator('#chemistryModal').isVisible(), false);
-    console.log('PASS: 검색 케미 링크로 정확한 상세 모달 열기 및 없는 ID 처리');
+    await page.goto('https://chemistry.test/triples/chemistry?group=51');
+    await page.locator('#chemistryModal').waitFor({ state: 'visible' });
+    assert.equal((await page.locator('#chemistryTitle').innerText()).trim(), '세 멤버 케미');
+    assert.match(await page.locator('#chemistryDescription').innerText(), /그룹 케미 설명/);
+    console.log('PASS: 2인과 3인 이상 케미 링크로 상세 모달 열기 및 없는 ID 처리');
   } finally {
     await browser.close();
   }

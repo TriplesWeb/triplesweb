@@ -1,9 +1,11 @@
 package com.example.triplesweb.repository;
 
 import com.example.triplesweb.entity.Archive;
+import com.example.triplesweb.entity.ArchiveSource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -18,7 +20,31 @@ import com.example.triplesweb.entity.MediaType;
 public interface ArchiveRepository extends JpaRepository<Archive, Long>, JpaSpecificationExecutor<Archive> {
     Page<Archive> findByFile_MediaTypeAndTitleContainingIgnoreCase(MediaType type, String q, Pageable pageable);
     Page<Archive> findByFile_MediaType(MediaType type, Pageable pageable);
+    long countByFile_MediaType(MediaType type);
+
+    @Query("""
+            select a.file.mediaType, count(a)
+            from Archive a
+            group by a.file.mediaType
+            """)
+    List<Object[]> countGroupByMediaType();
+
     List<Archive> findTop2000ByFile_MediaTypeOrderByIdDesc(MediaType type);
+
+    /** 사진 게시글 중복: 같은 멤버·날짜·출처·설명(빈 설명 포함). */
+    @Query("""
+            select (count(a) > 0) from Archive a
+            where a.file.mediaType = :type
+              and a.registeredOn = :registeredOn
+              and a.source = :source
+              and coalesce(a.artistNames, '') = :artistNames
+              and coalesce(a.description, '') = :description
+            """)
+    boolean existsImageDuplicate(@Param("type") MediaType type,
+                                 @Param("registeredOn") LocalDate registeredOn,
+                                 @Param("source") ArchiveSource source,
+                                 @Param("description") String description,
+                                 @Param("artistNames") String artistNames);
 
     @Query("""
             select a from Archive a

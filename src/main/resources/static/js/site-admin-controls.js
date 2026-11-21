@@ -16,7 +16,8 @@
   style.textContent = `
     ${protectedSelector} { display: none !important; }
     body.site-admin-enabled [data-admin-only], body.site-admin-enabled .admin-only { display: revert !important; }
-    body.site-admin-enabled .ar-actions[data-admin-only] { display: flex !important; }
+    body.site-admin-enabled .ar-actions[data-admin-only],
+    body.site-admin-enabled .ar-detail-actions[data-admin-only] { display: flex !important; }
     body.site-admin-enabled a[data-admin-only], body.site-admin-enabled button[data-admin-only] { display: inline-flex !important; }
     body.site-admin-enabled form[data-admin-only] { display: block !important; }
     #siteAdminBtn {
@@ -170,8 +171,6 @@
       btn.setAttribute("title", label);
       btn.setAttribute("aria-pressed", admin ? "true" : "false");
       btn.classList.toggle("is-active", admin);
-      const text = btn.querySelector("[data-site-admin-mobile-label]");
-      if (text) text.textContent = label;
     });
   }
 
@@ -352,10 +351,6 @@
 
     document.querySelectorAll("[data-site-admin-close]").forEach((el) => {
       el.addEventListener("click", closeLogin);
-    });
-
-    modal?.addEventListener("click", (event) => {
-      if (event.target === modal) closeLogin();
     });
 
     document.addEventListener("keydown", (event) => {

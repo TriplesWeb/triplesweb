@@ -30,10 +30,10 @@ public final class SiteNavigation {
         ), List.of()),
         new Section("cosmo", "코스모", List.of(
             link("오브젝트", "/cosmo/objekt"), link("코스모 아이디 검색", "/cosmo/collection"),
-            link("교환/거래", "/article/trade"), link("그래비티", "/cosmo/gravity")
+            link("교환/거래", "/trade"), link("그래비티", "/cosmo/gravity")
         ), List.of()),
         new Section("media", "미디어", List.of(
-            link("사진", "/archive/image_archive"), link("영상", "/archive/video_archive"),
+            link("아카이브", "/archive"),
             link("공식 미디어", "/media")
         ), List.of()),
         new Section("info", "정보", List.of(

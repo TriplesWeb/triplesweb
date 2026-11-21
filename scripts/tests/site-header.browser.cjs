@@ -1,7 +1,19 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'../..');
+const alertsWithDrops={
+ catalogSig:'sig-1',catalogCount:2,dropWindow:true,
+ notices:[{id:9,title:'공지 테스트',href:'/article/notice/9',at:'2026-11-10'}],
+ objekts:[
+  {label:'Cream02 334Z 새 오브젝트 출시',href:'/cosmo/objekt?kind=334z',collectionId:'cc334',createdAt:'2026-11-15'},
+  {label:'Cream02 336Z 새 오브젝트 출시',href:'/cosmo/objekt?kind=336z',collectionId:'cc336',createdAt:'2026-11-15'},
+  {label:'Cream02 337Z 새 오브젝트 출시',href:'/cosmo/objekt?kind=337z',collectionId:'cc337',createdAt:'2026-11-15'},
+  {label:'Cream02 335Z 새 오브젝트 출시',href:'/cosmo/objekt?kind=335z',collectionId:'cc335',createdAt:'2026-11-15'}
+ ]
+};
+const emptyAlerts={catalogSig:'sig-empty',catalogCount:2,dropWindow:false,notices:[],objekts:[]};
 (async()=>{
+ let alertsPayload=alertsWithDrops;
  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||(fs.existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined),args:['--no-sandbox']});
  try{
   const page=await browser.newPage(); const errors=[]; const suggestionQueries=[]; page.on('pageerror',e=>errors.push(e.message));
@@ -13,11 +25,7 @@ const root=path.resolve(__dirname,'../..');
     return route.fulfill({contentType:'application/json',body:JSON.stringify({items:q.startsWith('new')?['newwave','newday']:['oldname']})}).catch(()=>{});
    }
    if(url.pathname==='/api/site/alerts'){
-    return route.fulfill({contentType:'application/json',body:JSON.stringify({
-      catalogSig:'sig-1',catalogCount:2,dropWindow:true,
-      notices:[{id:9,title:'공지 테스트',href:'/article/notice/9',at:'2026-11-10'}],
-      objekts:[{label:'Cream02 323 드롭',href:'/cosmo/objekt?search=323',collectionId:'cc323',createdAt:'2026-11-10'}]
-    })});
+    return route.fulfill({contentType:'application/json',body:JSON.stringify(alertsPayload)});
    }
    if(url.pathname==='/api/artist/admin/status'){
     return route.fulfill({contentType:'application/json',body:JSON.stringify({configured:true,admin:false})});
@@ -82,10 +90,15 @@ const root=path.resolve(__dirname,'../..');
     assert.equal(await page.locator('#mobile-menu-btn').isVisible(),true,`모바일 햄버거 ${width}`);
     assert.equal(await page.locator('#mobile-menu .mobile-shortcut').count(),0,`전체 메뉴에 원형 바로가기 없음 ${width}`);
     await barAlerts.click();
-    await page.getByText('공지 테스트').waitFor();
-    assert.equal(await page.getByText('드롭 시간입니다').isVisible(),true);
+    await page.getByText('오브젝트 드롭시간입니다').waitFor();
+    assert.equal(await page.getByText('오브젝트 드롭시간입니다').isVisible(),true);
     assert.equal(await page.getByText('공지 테스트').isVisible(),true);
-    assert.equal(await page.getByText('Cream02 323 드롭').isVisible(),true);
+    assert.equal(await page.getByText('Cream02 334Z 새 오브젝트 출시').isVisible(),true);
+    assert.equal(await page.getByText('Cream02 336Z 새 오브젝트 출시').isVisible(),true);
+    assert.equal(await page.getByText('Cream02 337Z 새 오브젝트 출시').isVisible(),true);
+    assert.equal(await page.getByText('Cream02 335Z 새 오브젝트 출시').count(),0);
+    assert.equal(await page.locator('.site-header-popover__title').filter({hasText:'알림'}).count(),0);
+    assert.equal(await page.getByText('새 공지가 없습니다.').count(),0);
     await page.keyboard.press('Escape');
     await page.waitForFunction(()=>document.querySelector('[data-alerts-panel]').hidden);
     await page.locator('#mobile-menu-btn').click();
@@ -94,26 +107,17 @@ const root=path.resolve(__dirname,'../..');
     assert.equal(await page.locator('#mobile-menu form[action="/search"] input').isVisible(),true,`전체 메뉴 검색 ${width}`);
     assert.equal(await page.locator('#mobile-menu .mobile-menu-brand').count(),0,`전체 메뉴에 로고 없음 ${width}`);
     assert.equal(await page.locator('#mobile-menu img[alt="tripleS"]').count(),0,`전체 메뉴에 워드마크 없음 ${width}`);
-    const mobileAdmin=page.locator('#siteAdminMobileBtn');
-    assert.equal(await mobileAdmin.isVisible(),true,`전체 메뉴 관리자 로그인 ${width}`);
-    assert.equal(await mobileAdmin.locator('[data-site-admin-mobile-label]').innerText(),'관리자 로그인');
-    await mobileAdmin.click();
-    await page.waitForFunction(()=>document.getElementById('siteAdminLoginModal')?.classList.contains('is-open'));
-    assert.equal(await page.locator('#siteAdminLoginTitle').isVisible(),true,`모바일 관리자 로그인 모달 ${width}`);
-    await page.keyboard.press('Escape');
-    await page.waitForFunction(()=>!document.getElementById('siteAdminLoginModal')?.classList.contains('is-open'));
-    await page.locator('#mobile-menu-btn').click();
-    await page.waitForFunction(()=>!document.getElementById('mobile-menu').classList.contains('hidden'));
+    assert.equal(await page.locator('#siteAdminMobileBtn').count(),0,`전체 메뉴에 관리자 버튼 없음 ${width}`);
     const cosmoToggle=page.locator('.mobile-nav-toggle').filter({hasText:'코스모'});
     await cosmoToggle.click();
-    assert.equal(await page.locator('.mobile-nav-panel a[href="/article/trade"]').first().isVisible(),true);
+    assert.equal(await page.locator('.mobile-nav-panel a[href="/trade"]').first().isVisible(),true);
     assert.equal(await page.locator('.mobile-nav-panel summary').count(),0);
     assert.equal(await page.locator('a[href="/community"]').count(),0);
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/flat-menu-chromium-${width}.png`}).catch(error=>console.warn(`[preview] chromium ${width}px screenshot skipped: ${error.message}`));
     assert.equal(await page.locator('.mobile-account a[href="/mypage"]').isVisible(),true);
-    await page.locator('[data-mobile-menu-close]').click();
+    assert.equal(await page.locator('[data-mobile-menu-close]').count(),0,`전체 메뉴에 닫기 버튼 없음 ${width}`);
+    await page.locator('#mobile-menu-btn').click();
     await page.waitForFunction(()=>document.getElementById('mobile-menu').classList.contains('hidden'));
-    assert.equal(await page.locator('#mobile-menu-btn').evaluate(n=>n===document.activeElement),true);
     await page.screenshot({timeout:10000,animations:'disabled',path:`/tmp/objekt-ui/header-chromium-${width}.png`,fullPage:false}).catch(error=>console.warn(`[preview] chromium ${width}px screenshot skipped: ${error.message}`));
    }else{
     const labels=await page.locator('#navbar > a.nav-item-link, #navbar > .relative > button.nav-item-link').evaluateAll(nodes=>
@@ -165,14 +169,18 @@ const root=path.resolve(__dirname,'../..');
     const cosmo=page.locator('#navbar .relative').filter({has:page.locator('button',{hasText:'코스모'})});
     // 1024~1040px에서는 우측 계정/검색이 네비를 가려 :hover가 안 붙을 수 있음 — 넓은 폭에서 hover, 그 외는 패널만 연다.
     await cosmo.hover();
-    await cosmo.locator('a[href="/article/trade"]').first().waitFor({state:'visible',timeout:2000});
-    assert.equal(await cosmo.locator('a[href="/article/trade"]').first().isVisible(),true);
+    await cosmo.locator('a[href="/trade"]').first().waitFor({state:'visible',timeout:2000});
+    assert.equal(await cosmo.locator('a[href="/trade"]').first().isVisible(),true);
     assert.equal(await cosmo.locator('a[href="/cosmo/collection"]').isVisible(),true);
     assert.equal(await cosmo.locator('a[href="/cosmo/transfers"]').count(),0);
     assert.equal(await barCosmo.isVisible(),true,`데스크톱 코스모 아이디 ${width}`);
     assert.equal(await barAlerts.isVisible(),true,`데스크톱 종 ${width}`);
     if(width===1280){
+      await page.evaluate(()=>localStorage.setItem('cosmo-nickname-recents',JSON.stringify(['ottomagic','newwave'])));
       await barCosmo.click();
+      assert.equal(await page.getByText('내 아이디로 보기').count(),0);
+      assert.equal(await page.getByText('ottomagic').count(),0);
+      assert.equal(await page.getByText('최근 검색 삭제').count(),0);
       const nickname=page.locator('[data-cosmo-id-input]');
       const suggestions=page.locator('#site-cosmo-id-suggest');
       await nickname.fill('ne');
@@ -236,6 +244,16 @@ const root=path.resolve(__dirname,'../..');
     assert.equal(await homeJump.isVisible(),true,`홈 오브젝트 바로가기 ${width}`);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`home header overflow ${width}`);
   }
+  alertsPayload=emptyAlerts;
+  await page.setViewportSize({width:390,height:900});
+  await page.goto('https://header.test/',{waitUntil:'load'});
+  await page.evaluate(()=>localStorage.removeItem('site-alerts-catalog-sig'));
+  await page.locator('.header-alerts-wrap [data-alerts-open]').click();
+  await page.locator('[data-alerts-panel] [data-alerts-body]').waitFor();
+  assert.equal(await page.getByText('오브젝트 드롭시간입니다').count(),0);
+  assert.equal(await page.getByText('새로 출시된 오브젝트가 없습니다.').isVisible(),true);
+  assert.equal(await page.locator('.site-header-popover__title').filter({hasText:'알림'}).count(),0);
+  assert.equal(await page.getByText('새 공지가 없습니다.').count(),0);
   assert.deepEqual(errors,[]);console.log('PASS: chromium header 320/360/390/1024/1040/1280/1440px, keyboard, navigation, community removed, outside click, search, alerts, cosmo id');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1)});

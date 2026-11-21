@@ -125,22 +125,10 @@
         }
         const holdMs = 450;
         const moveMs = (MASCOT_FRAME_COUNT / MASCOT_FRAME_FPS) * 1000; // 54프레임 1회
-        // 본체 진행도 e보다 뒤처진 지점에 잔상 → 초반에 앞서 나가지 않음
-        const trailLags = [0.05, 0.1, 0.16, 0.22, 0.28];
-        const trails = [];
-        for (const lag of trailLags) {
-          const ghost = mascot.cloneNode(true);
-          ghost.removeAttribute("id");
-          ghost.removeAttribute("data-motion-running");
-          ghost.className = "sss-mascot-trail";
-          ghost.src = mascotFrameSrc(1);
-          ghost.style.opacity = "0";
-          wrap.insertBefore(ghost, mascot);
-          trails.push({ el: ghost, lag: lag, lastFrame: 1 });
-        }
 
         wrap.classList.add("is-intro");
         wrap.classList.remove("is-ready");
+        wrap.querySelectorAll(".sss-mascot-trail").forEach((el) => el.remove());
         mascot.src = mascotFrameSrc(1);
         mascot.style.opacity = "1";
         mascot.style.transform = "translate(" + fly.x.toFixed(2) + "px, " + fly.y.toFixed(2) + "px) scale(0.85)";
@@ -155,28 +143,6 @@
             const scale = 0.85 + 0.15 * e;
             mascot.style.opacity = "1";
             mascot.style.transform = "translate(" + x.toFixed(2) + "px, " + y.toFixed(2) + "px) scale(" + scale.toFixed(3) + ")";
-
-            for (const trail of trails) {
-              if (e <= 0) {
-                trail.el.style.opacity = "0";
-                continue;
-              }
-              const te = Math.max(0, e - trail.lag);
-              const tx = fly.x * (1 - te);
-              const ty = fly.y * (1 - te) + Math.sin(te * Math.PI) * 18;
-              const tScale = 0.85 + 0.15 * te;
-              const fadeIn = Math.min(1, e / Math.max(0.04, trail.lag));
-              const strength = 0.4 * (1 - trail.lag / 0.34);
-              trail.el.style.opacity = String(Math.max(0, strength * fadeIn));
-              trail.el.style.transform = "translate(" + tx.toFixed(2) + "px, " + ty.toFixed(2) + "px) scale(" + tScale.toFixed(3) + ")";
-              const trailFrame = te >= 1
-                ? MASCOT_FRAME_COUNT
-                : Math.min(MASCOT_FRAME_COUNT, 1 + Math.floor(te * (MASCOT_FRAME_COUNT - 1)));
-              if (trailFrame !== trail.lastFrame) {
-                trail.lastFrame = trailFrame;
-                trail.el.src = mascotFrameSrc(trailFrame);
-              }
-            }
           },
           onDone: () => {
             wrap.classList.remove("is-intro");
@@ -218,15 +184,6 @@
     mobileMenuBtn.addEventListener("click", function () {
       const willOpen = mobileMenu.classList.contains("hidden");
       setMobileMenuOpen(willOpen);
-    });
-
-    mobileMenu.querySelectorAll("[data-mobile-menu-close]").forEach(function (btn) {
-      btn.addEventListener("click", function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        setMobileMenuOpen(false);
-        mobileMenuBtn.focus();
-      });
     });
 
     mobileMenu.querySelectorAll(".mobile-nav-toggle").forEach(function (btn) {
@@ -358,9 +315,7 @@
     setHeaderSearchOpen(false);
   });
 
-  const COSMO_RECENTS_KEY = "cosmo-nickname-recents";
   const ALERTS_CATALOG_KEY = "site-alerts-catalog-sig";
-  const ALERTS_NOTICE_KEY = "site-alerts-notice-id";
   const cosmoOpens = document.querySelectorAll("[data-cosmo-id-open]");
   const cosmoPanel = document.querySelector("[data-cosmo-id-panel]");
   const alertsOpens = document.querySelectorAll("[data-alerts-open]");
@@ -376,48 +331,12 @@
     nodes.forEach((node) => node.setAttribute("aria-expanded", open ? "true" : "false"));
   }
 
-  function loadNicknameRecents() {
-    try {
-      const raw = JSON.parse(localStorage.getItem(COSMO_RECENTS_KEY) || "[]");
-      return Array.isArray(raw) ? raw.map(String).filter(Boolean) : [];
-    } catch (_) {
-      return [];
-    }
-  }
-
-  function renderCosmoIdPanel() {
-    if (!cosmoPanel) return;
-    const recents = loadNicknameRecents();
-    const mine = cosmoPanel.querySelector("[data-cosmo-id-mine]");
-    const list = cosmoPanel.querySelector("[data-cosmo-id-recents]");
-    if (mine) {
-      if (recents[0]) {
-        mine.hidden = false;
-        mine.href = "/cosmo/collection?nickname=" + encodeURIComponent(recents[0]);
-        mine.textContent = "내 아이디로 보기 · " + recents[0];
-      } else {
-        mine.hidden = true;
-      }
-    }
-    if (!list) return;
-    list.replaceChildren();
-    recents.slice(0, 8).forEach((name) => {
-      const item = document.createElement("li");
-      const link = document.createElement("a");
-      link.href = "/cosmo/collection?nickname=" + encodeURIComponent(name);
-      link.textContent = name;
-      item.appendChild(link);
-      list.appendChild(item);
-    });
-  }
-
   function setCosmoIdOpen(open) {
     if (!cosmoPanel) return;
     if (open) {
       setMobileMenuOpen(false);
       setHeaderSearchOpen(false);
       setAlertsOpen(false);
-      renderCosmoIdPanel();
     }
     cosmoPanel.hidden = !open;
     setExpanded(cosmoOpens, open);
@@ -443,25 +362,22 @@
     if (!data) return;
     try {
       if (data.catalogSig) localStorage.setItem(ALERTS_CATALOG_KEY, String(data.catalogSig));
-      const noticeId = data.notices && data.notices[0] && data.notices[0].id;
-      if (noticeId != null) localStorage.setItem(ALERTS_NOTICE_KEY, String(noticeId));
     } catch (_) {}
     alertsBadges.forEach((badge) => { badge.hidden = true; });
   }
 
+  function releasedObjekts(data) {
+    return data && Array.isArray(data.objekts) ? data.objekts.slice(0, 3) : [];
+  }
+
   function hasUnreadAlerts(data) {
     if (!data) return false;
+    if (!releasedObjekts(data).length) return false;
     let seenSig = "";
-    let seenNotice = "";
     try {
       seenSig = localStorage.getItem(ALERTS_CATALOG_KEY) || "";
-      seenNotice = localStorage.getItem(ALERTS_NOTICE_KEY) || "";
     } catch (_) {}
-    const latestNotice = data.notices && data.notices[0] && data.notices[0].id != null
-      ? String(data.notices[0].id) : "";
-    const catalogNew = !!(data.catalogSig && String(data.catalogSig) !== seenSig);
-    const noticeNew = !!(latestNotice && latestNotice !== seenNotice);
-    return catalogNew || noticeNew;
+    return !!(data.catalogSig && String(data.catalogSig) !== seenSig);
   }
 
   function renderAlerts(data) {
@@ -471,28 +387,34 @@
     if (!body) return;
     body.replaceChildren();
     if (!data) {
-      if (status) status.textContent = "알림을 불러오지 못했습니다.";
+      if (status) {
+        status.hidden = false;
+        status.textContent = "알림을 불러오지 못했습니다.";
+      }
       return;
     }
     if (status) status.hidden = true;
-    if (data.dropWindow) {
+    const objekts = releasedObjekts(data);
+    if (objekts.length) {
       const drop = document.createElement("a");
       drop.className = "site-header-popover__drop";
       drop.href = "/cosmo/objekt";
-      drop.textContent = "드롭 시간입니다. 새 오브젝트를 확인하세요.";
+      drop.textContent = "오브젝트 드롭시간입니다";
       body.appendChild(drop);
+      const list = document.createElement("ul");
+      list.className = "site-header-popover__list";
+      objekts.forEach((item) => {
+        const li = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = item && item.href ? String(item.href) : "/cosmo/objekt";
+        link.textContent = item && item.label ? String(item.label) : "오브젝트";
+        li.appendChild(link);
+        list.appendChild(li);
+      });
+      body.appendChild(list);
     }
-    const noticeTitle = document.createElement("p");
-    noticeTitle.className = "site-header-popover__heading";
-    noticeTitle.textContent = "공지";
-    body.appendChild(noticeTitle);
     const notices = Array.isArray(data.notices) ? data.notices : [];
-    if (!notices.length) {
-      const empty = document.createElement("p");
-      empty.className = "site-header-popover__empty";
-      empty.textContent = "새 공지가 없습니다.";
-      body.appendChild(empty);
-    } else {
+    if (notices.length) {
       const list = document.createElement("ul");
       list.className = "site-header-popover__list";
       notices.forEach((item) => {
@@ -505,28 +427,11 @@
       });
       body.appendChild(list);
     }
-    const objektTitle = document.createElement("p");
-    objektTitle.className = "site-header-popover__heading";
-    objektTitle.textContent = "새 오브젝트";
-    body.appendChild(objektTitle);
-    const objekts = Array.isArray(data.objekts) ? data.objekts : [];
-    if (!objekts.length) {
+    if (!objekts.length && !notices.length) {
       const empty = document.createElement("p");
       empty.className = "site-header-popover__empty";
-      empty.textContent = "새로 올라온 오브젝트가 없습니다.";
+      empty.textContent = "새로 출시된 오브젝트가 없습니다.";
       body.appendChild(empty);
-    } else {
-      const list = document.createElement("ul");
-      list.className = "site-header-popover__list";
-      objekts.forEach((item) => {
-        const li = document.createElement("li");
-        const link = document.createElement("a");
-        link.href = item && item.href ? String(item.href) : "/cosmo/objekt";
-        link.textContent = item && item.label ? String(item.label) : "오브젝트";
-        li.appendChild(link);
-        list.appendChild(li);
-      });
-      body.appendChild(list);
     }
   }
 

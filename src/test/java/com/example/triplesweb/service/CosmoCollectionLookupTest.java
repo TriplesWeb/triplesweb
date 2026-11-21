@@ -145,8 +145,11 @@ class CosmoCollectionLookupTest {
         failure.setAccessible(true);
         await().atMost(Duration.ofSeconds(5)).until(() -> failure.get(cached) != null);
         laterPageFailure = false;
+        int holdingsBeforeRetry = holdings.get();
         assertThat(completed()).containsEntry("ownedCount", 26);
-        assertThat(profiles.get()).isEqualTo(2);
+        // 재시도는 주소 힌트를 재사용하고 보유 목록만 다시 받는다.
+        assertThat(profiles.get()).isEqualTo(1);
+        assertThat(holdings.get()).isGreaterThan(holdingsBeforeRetry);
     }
 
     @Test void inactiveEntriesExpireAndNicknameCacheHasAHardLimit() throws Exception {
@@ -183,13 +186,24 @@ class CosmoCollectionLookupTest {
 
     @Test @SuppressWarnings("unchecked") void missingSerialNeverFallsBackToTokenId() {
         missingSerial = true;
-        var cards = (List<Map<String, Object>>) service.search("테스트", 0).get("cards");
+        var cards = (List<Map<String, Object>>) completed().get("cards");
         assertThat(cards.get(0)).containsEntry("hasSerial", false).containsEntry("serial", "").doesNotContainKey("tokenId");
     }
 
-    @Test void failedHoldingsAreNotCachedAsEmptyOrPartialResults() {
+    @Test void failedHoldingsAreNotCachedAsEmptyOrPartialResults() throws Exception {
         indexFailure = true;
-        assertThatThrownBy(() -> service.search("테스트", 0)).isInstanceOf(RuntimeException.class);
+        assertThat(service.search("테스트", 0)).containsEntry("loading", true);
+        var field = CosmoCollectionService.class.getDeclaredField("cache");
+        field.setAccessible(true);
+        await().atMost(Duration.ofSeconds(5)).until(() -> {
+            var entries = (Map<?, ?>) field.get(service);
+            if (entries.isEmpty()) return false;
+            var cached = entries.values().iterator().next();
+            var failure = cached.getClass().getDeclaredField("failure");
+            failure.setAccessible(true);
+            return failure.get(cached) != null;
+        });
+        // 실패는 빈 성공으로 캐시되지 않고, 원인 해소 후 다시 적재된다.
         indexFailure = false;
         assertThat(completed()).containsEntry("ownedCount", 26);
     }
@@ -213,6 +227,8 @@ class CosmoCollectionLookupTest {
                 .doesNotContainKeys("allCards", "kindOptions", "filterMembers", "kindByClass")
                 .containsEntry("ownedCount", 26)
                 .containsEntry("hasCards", true);
-        assertThat(profiles.get()).isEqualTo(1);
+        // suggest 힌트로 주소가 있으면 COSMO 프로필 조회를 건너뛴다.
+        assertThat(profiles.get()).isZero();
+        assertThat(holdings.get()).isGreaterThanOrEqualTo(1);
     }
 }

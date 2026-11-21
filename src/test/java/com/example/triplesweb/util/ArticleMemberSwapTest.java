@@ -59,10 +59,75 @@ class ArticleMemberSwapTest {
         assertThat(sellWant.get("isTradeSwap")).isEqualTo(false);
     }
 
+    @Test void matchesListingRequiresSeasonClassAndMemberTogether() {
+        ArticleObjekt have = link("HAVE", "코토네", "Cream02", "Z");
+        ArticleObjekt want = link("WANT", "카에데", "Ever01", "A");
+        assertThat(ArticleMemberSwap.matchesListing(List.of(have, want), "", "have", "Cream02", "")).isTrue();
+        assertThat(ArticleMemberSwap.matchesListing(List.of(have, want), "", "have", "Ever01", "")).isFalse();
+        assertThat(ArticleMemberSwap.matchesListing(List.of(have, want), "코토네", "have", "Cream02", "Z")).isTrue();
+        assertThat(ArticleMemberSwap.matchesListing(List.of(have, want), "코토네", "have", "Cream02", "A")).isFalse();
+        assertThat(ArticleMemberSwap.matchesListing(List.of(have, want), "카에데", "want", "Ever01", "A")).isTrue();
+        assertThat(ArticleMemberSwap.matchesListing(List.of(have, want), "", "all", "Ever01", "A")).isTrue();
+    }
+
+    @Test void matchesListingAcceptsCommaSeparatedMembers() {
+        ArticleObjekt have = link("HAVE", "코토네", "Cream02", "Z");
+        ArticleObjekt want = link("WANT", "카에데", "Ever01", "A");
+        assertThat(ArticleMemberSwap.matchesListing(List.of(have, want), "이지우,코토네", "have", "", "")).isTrue();
+        assertThat(ArticleMemberSwap.matchesListing(List.of(have, want), "이지우,김수민", "have", "", "")).isFalse();
+        assertThat(ArticleMemberSwap.matchesListing(List.of(have, want), "카에데,코토네", "want", "", "")).isTrue();
+        assertThat(ArticleMemberSwap.matchesMember(List.of(have, want), "카에데,코토네", "all")).isTrue();
+        assertThat(ArticleMemberSwap.memberTokens(" 코토네 , ,카에데 ")).containsExactly("코토네", "카에데");
+    }
+
+    @Test void previewThumbsCapsAndCountsOverflow() {
+        ArticleObjekt a = link("HAVE", "코토네", "Cream02", "Z");
+        a.setThumbnailImage("https://example/a.jpg");
+        a.setCollectionNo("369Z");
+        ArticleObjekt b = link("HAVE", "카에데", "Cream02", "Z");
+        b.setFrontImage("https://example/b.jpg");
+        b.setCollectionNo("370Z");
+        ArticleObjekt c = link("HAVE", "마유", "Cream02", "Z");
+        c.setCollectionNo("371Z");
+        assertThat(ArticleMemberSwap.previewThumbs(List.of(a, b, c), 2)).hasSize(2);
+        assertThat(ArticleMemberSwap.previewMoreCount(List.of(a, b, c), 2)).isEqualTo(1);
+        assertThat(ArticleMemberSwap.previewThumbs(List.of(a, b, c), 2).get(0).get("hasImage")).isEqualTo(true);
+        assertThat(ArticleMemberSwap.previewThumbs(List.of(a, b, c), 2).get(0).get("previewTip"))
+                .isEqualTo("Cream02 · 코토네 · 369Z");
+        assertThat(ArticleMemberSwap.previewThumbs(List.of(c), 2).get(0).get("hasImage")).isEqualTo(false);
+        assertThat(ArticleMemberSwap.previewTip("Cream02", "코토네", "369Z")).isEqualTo("Cream02 · 코토네 · 369Z");
+        assertThat(ArticleMemberSwap.previewTip("", "", "369Z")).isEqualTo("369Z");
+    }
+
+    @Test void previewCapsMovesSpareSlotsToTheCrowdedSide() {
+        List<ArticleObjekt> have = new java.util.ArrayList<>();
+        for (int i = 0; i < 10; i++) have.add(link("HAVE", "코토네", "Cream02", "Z"));
+        List<ArticleObjekt> want = List.of(link("WANT", "카에데", "Cream02", "Z"), link("WANT", "마유", "Cream02", "Z"));
+        int[] caps = ArticleMemberSwap.previewCaps(have, want, 6);
+        assertThat(caps[0]).isEqualTo(10); // WANT가 4칸 남김 → HAVE가 전부 표시
+        assertThat(caps[1]).isEqualTo(2);
+        assertThat(ArticleMemberSwap.previewMoreCount(have, caps[0])).isZero();
+
+        List<ArticleObjekt> bothHeavyHave = new java.util.ArrayList<>();
+        List<ArticleObjekt> bothHeavyWant = new java.util.ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            bothHeavyHave.add(link("HAVE", "코토네"));
+            bothHeavyWant.add(link("WANT", "카에데"));
+        }
+        int[] even = ArticleMemberSwap.previewCaps(bothHeavyHave, bothHeavyWant, 6);
+        assertThat(even).containsExactly(6, 6);
+    }
+
     private static ArticleObjekt link(String side, String member) {
+        return link(side, member, "", "");
+    }
+
+    private static ArticleObjekt link(String side, String member, String season, String objektClass) {
         ArticleObjekt row = new ArticleObjekt();
         row.setSide(side);
         row.setMemberName(member);
+        row.setSeason(season);
+        row.setObjektClass(objektClass);
         return row;
     }
 

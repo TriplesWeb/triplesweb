@@ -72,7 +72,7 @@
     });
     scope.querySelectorAll('.site-modal').forEach((element) => {
       element.addEventListener('click', (event) => {
-        if (event.target === element || event.target.closest('[data-site-dismiss="modal"]')) {
+        if (event.target.closest('[data-site-dismiss="modal"]')) {
           event.preventDefault();
           modalApi(element).hide();
         }

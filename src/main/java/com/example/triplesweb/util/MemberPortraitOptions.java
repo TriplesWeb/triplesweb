@@ -32,6 +32,10 @@ public final class MemberPortraitOptions {
             "니엔", "박소현", "신위", "마유", "린", "주빈",
             "정하연", "박시온", "김채원", "설린", "서아", "지연"
     );
+
+    public static List<String> koreanOrder() {
+        return KOREAN_ORDER;
+    }
     private static final List<String> SHORT_KOREAN_ORDER = List.of(
             "서연", "혜린", "지우", "채연", "유연", "수민", "나경", "유빈",
             "카에데", "다현", "코토네", "연지", "니엔", "소현", "신위", "마유",
@@ -143,6 +147,16 @@ public final class MemberPortraitOptions {
             frame++;
         }
         return out;
+    }
+
+    /**
+     * 아카이브 멤버 칩용 상징로고. S1=윤서연 … S24=지연.
+     * 유닛·미매칭은 빈 문자열이라 초상화나 이니셜을 쓴다.
+     */
+    public static String archiveSymbolLogo(String name) {
+        int index = memberIndex(name);
+        if (index >= CUSTOM_OBJEKT_LOGO_COUNT) return "";
+        return "/images/archive/member-logos/" + (index + 1) + ".png";
     }
 
     /** 원본 멤버 문자열에서 S1~S24 솔로 한글 이름만 뽑아 정렬한다. 유닛·기타는 제외. */
@@ -274,7 +288,7 @@ public final class MemberPortraitOptions {
         int selectedIndex = memberIndex(selectedMember);
         Set<String> aliases = new LinkedHashSet<>();
         for (String token : selectedTokens) {
-            if (token.length() >= 2 && !"x".equals(token)) aliases.add(token);
+            if (token.length() >= 2) aliases.add(token);
         }
         for (int i = 0; i < ENGLISH_ORDER.size(); i++) {
             String english = ENGLISH_ORDER.get(i);

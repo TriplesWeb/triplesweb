@@ -456,17 +456,19 @@
     align-items: center;
     min-height: 2.625rem;
     padding: 0 1rem;
-    border: 1px solid rgba(58, 74, 70, .55);
+    border: 1px solid rgba(226, 232, 240, 0.28);
     border-radius: 9999px;
-    background: transparent;
-    color: #b9cac4;
+    background: linear-gradient(180deg, rgba(226, 232, 240, 0.22), rgba(148, 163, 184, 0.1));
+    color: #ffffff;
     font-size: .82rem;
     font-weight: 650;
     text-decoration: none;
+    backdrop-filter: blur(14px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 .collection-reset:hover {
-    border-color: rgba(0, 245, 212, .45);
-    color: #00f5d4;
+    border-color: rgba(226, 232, 240, 0.45);
+    color: #ffffff;
 }
 .collection-scroll-footer {
     display: grid;
@@ -551,15 +553,25 @@
         min-width: 0;
     }
 }
+.collection-page .collection-search-hero {
+    position: relative;
+    z-index: 40;
+    overflow: visible;
+}
+.collection-page .collection-search-hero:has(#collection-nickname-suggest:not([hidden])) {
+    z-index: 80;
+    backdrop-filter: none;
+}
 .collection-page .collection-nickname-form {
     position: relative;
-    z-index: 8;
+    z-index: 2;
     overflow: visible;
     align-items: center;
 }
 .collection-page .collection-nickname-form .ar-search-wrap {
     position: relative;
-    z-index: 6;
+    z-index: 2;
+    overflow: visible;
     flex: 0 1 20rem;
     width: min(20rem, 100%);
     max-width: 20rem;
@@ -584,7 +596,7 @@
     top: calc(100% + .4rem);
     left: 0;
     right: 0;
-    z-index: 80;
+    z-index: 120;
     max-height: 15rem;
     overflow: auto;
     padding: .45rem;

@@ -1,6 +1,6 @@
-name: Deploy to Raspberry Pi
+name: Deploy to Raspberry Pi (prod)
 
-# main is protected by required PR checks. Do not repeat tests after merge.
+# PR에서는 검사만. main 머지 후 운영으로 배포. 새벽 4시는 실패 복구용 재확인.
 on:
   push:
     branches: [main]
@@ -8,11 +8,20 @@ on:
       - 'docs/**'
       - '**.md'
       - 'qodana.yaml'
-      - '.github/workflows/**'
       - 'scripts/tests/**'
+      # CI/tooling-only changes do not change the running application.
+      - '.github/**'
+      - 'scripts/ci-path-filter.py'
+      - '.cursor/**'
+      - '.githooks/**'
+      - '.vscode/**'
+      - '.env.example'
+      - '.gitignore'
+      - '.gitattributes'
+  schedule:
+    - cron: '0 19 * * *' # 04:00 KST, fallback/reconciliation
   workflow_dispatch:
 
-# Serialize deployments and avoid interrupting an in-flight remote restart.
 concurrency:
   group: deploy-main
   cancel-in-progress: false
@@ -25,73 +34,27 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  check-current-head:
-    # Skip obsolete queued pushes; only the latest main commit is deployed.
-    runs-on: ubuntu-latest
-    outputs:
-      current: ${{ steps.head.outputs.current }}
-    steps:
-      - name: Skip stale commits after a newer main push
-        id: head
-        env:
-          EXPECTED_SHA: ${{ github.sha }}
-          REPOSITORY: ${{ github.repository }}
-        run: |
-          CURRENT_SHA="$(git ls-remote "https://github.com/${REPOSITORY}.git" refs/heads/main | awk '{print $1}')"
-          if [[ "$CURRENT_SHA" == "$EXPECTED_SHA" ]]; then
-            echo "current=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "current=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Skipping outdated commit $EXPECTED_SHA; main is at $CURRENT_SHA"
-          fi
-
   build-and-deploy:
-    needs: check-current-head
-    if: needs.check-current-head.outputs.current == 'true'
-    # Native arm64 — avoids QEMU emulation (largest speedup)
     runs-on: ubuntu-24.04-arm
     steps:
-      - name: Checkout main commit
+      - name: Checkout current main
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: main
+          sparse-checkout: |
+            gradle
+            scripts
+            src/main
+
+      - name: Full commit SHA
+        id: sha
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Image name (lowercase)
         id: image
         run: echo "name=${REGISTRY}/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ steps.image.outputs.name }}
-          tags: |
-            type=raw,value=${{ github.sha }}
-            type=raw,value=latest
-
-      - name: Build and push (linux/arm64)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          platforms: linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          provenance: false
-
-      - name: Connect Tailscale
+      - name: Connect Tailscale (early — skip if already on this SHA)
         uses: tailscale/github-action@v4
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
@@ -112,75 +75,169 @@ jobs:
             StrictHostKeyChecking accept-new
           EOF
 
-      - name: Sync compose, chemistry assets, and deploy
+      - name: Check current production migrations tree
+        id: assets
+        run: |
+          echo "migrations=$(git rev-parse HEAD:src/main/resources/db/migration)" >> "$GITHUB_OUTPUT"
+
+      - name: Preflight — retire dev and skip unchanged production
+        id: skip
         env:
           PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
-          IMAGE: ${{ steps.image.outputs.name }}:${{ github.sha }}
-          GHCR_USER: ${{ github.actor }}
-          # Prefer a PAT with read:packages (GHCR_TOKEN); fall back to job token
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
+          PI_DEV_DEPLOY_PATH: ${{ secrets.PI_DEV_DEPLOY_PATH }}
+          WANT_IMAGE: ${{ steps.image.outputs.name }}:${{ steps.sha.outputs.sha }}
         run: |
           set -euo pipefail
+          : "${PI_DEPLOY_PATH:?PI_DEPLOY_PATH is required}"
+          PI_DEV_DEPLOY_PATH="${PI_DEV_DEPLOY_PATH:-${PI_DEPLOY_PATH}-dev}"
+          # 첫 전환 때만 개발 앱을 종료하고 DB/파일은 보존한다.
+          scp scripts/retire-pi-dev.sh "pi:${PI_DEPLOY_PATH}/retire-pi-dev.sh"
+          DECISION="$(ssh pi env PI_DEPLOY_PATH="$PI_DEPLOY_PATH" PI_DEV_DEPLOY_PATH="$PI_DEV_DEPLOY_PATH" WANT_IMAGE="$WANT_IMAGE" bash -s <<'EOF'
+          set -euo pipefail
+          if [[ ! -f "${PI_DEPLOY_PATH}/.dev-retired" ]]; then
+            bash "${PI_DEPLOY_PATH}/retire-pi-dev.sh" "${PI_DEPLOY_PATH}" "${PI_DEV_DEPLOY_PATH}"
+            touch "${PI_DEPLOY_PATH}/.dev-retired"
+          fi
+          cd "${PI_DEPLOY_PATH}"
+          APP_PORT="$(grep -E '^APP_PORT=' .env 2>/dev/null | cut -d= -f2- || true)"
+          APP_PORT="${APP_PORT:-8080}"
+          # When Blue-Green is installed, compare the Nginx-active slot.
+          # A legacy app is never considered already deployed: first cutover must run.
+          if [[ -f bluegreen/active.conf && -f docker-compose.bluegreen.yml ]]; then
+            SLOT="$(sed -n 's/^# ACTIVE_SLOT=//p' bluegreen/active.conf | head -n1)"
+            if [[ "$SLOT" != "blue" && "$SLOT" != "green" ]]; then
+              echo "skip=false"
+              echo "reason=invalid-active-slot" >&2
+              exit 0
+            fi
+            CID="$(COMPOSE_PROFILES=bluegreen docker compose -f docker-compose.yml -f docker-compose.bluegreen.yml ps -q "app_${SLOT}" 2>/dev/null || true)"
+          else
+            echo "skip=false"
+            echo "reason=legacy-app-must-convert-to-bluegreen" >&2
+            exit 0
+          fi
+          if [[ -z "${CID}" ]]; then
+            echo "skip=false"
+            echo "reason=no-running-bluegreen-app" >&2
+            exit 0
+          fi
+          RUNNING="$(docker inspect -f '{{.Config.Image}}' "${CID}" 2>/dev/null || true)"
+          if [[ "${RUNNING}" != "${WANT_IMAGE}" ]]; then
+            echo "skip=false"
+            echo "reason=image-mismatch running=${RUNNING:-<none>} want=${WANT_IMAGE}" >&2
+            exit 0
+          fi
+          if curl -fsS --max-time 8 "http://127.0.0.1:${APP_PORT}/actuator/health/readiness" >/dev/null; then
+            echo "skip=true"
+          else
+            echo "skip=false"
+            echo "reason=smoke-failed" >&2
+          fi
+          EOF
+          )"
+          SKIP="$(echo "$DECISION" | grep -E '^skip=' | tail -n1 | cut -d= -f2)"
+          echo "skip=${SKIP}" >> "$GITHUB_OUTPUT"
+          if [[ "$SKIP" == "true" ]]; then
+            echo "::notice::Prod already healthy on ${WANT_IMAGE}; skipping rebuild/restart"
+          else
+            echo "Will deploy ${WANT_IMAGE}"
+          fi
+
+      - name: Set up Docker Buildx
+        if: steps.skip.outputs.skip != 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: steps.skip.outputs.skip != 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Reuse immutable SHA image when a previous rollout failed
+        id: published
+        if: steps.skip.outputs.skip != 'true'
+        env:
+          SHA_IMAGE: ${{ steps.image.outputs.name }}:${{ steps.sha.outputs.sha }}
+        run: |
+          set -euo pipefail
+          if docker buildx imagetools inspect "$SHA_IMAGE" >/dev/null 2>&1; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Found previously built image $SHA_IMAGE — skip Docker rebuild"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Docker metadata
+        if: steps.skip.outputs.skip != 'true' && steps.published.outputs.found != 'true'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.image.outputs.name }}
+          tags: |
+            type=raw,value=${{ steps.sha.outputs.sha }}
+            type=raw,value=latest
+
+      - name: Build and push (linux/arm64)
+        if: steps.skip.outputs.skip != 'true' && steps.published.outputs.found != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=triplesweb-arm64
+          cache-to: type=gha,mode=max,scope=triplesweb-arm64,ignore-error=true
+          provenance: false
+
+      - name: Blue-Green deploy
+        if: steps.skip.outputs.skip != 'true'
+        env:
+          PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
+          IMAGE: ${{ steps.image.outputs.name }}:${{ steps.sha.outputs.sha }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
+          MIGRATIONS_TREE: ${{ steps.assets.outputs.migrations }}
+          BG_ALLOW_SCHEMA_CHANGE: ${{ vars.BG_ALLOW_SCHEMA_CHANGE || 'false' }}
+          BG_MIN_AVAILABLE_MB: ${{ vars.BG_MIN_AVAILABLE_MB || '1400' }}
+          BG_SLOT_MEMORY_LIMIT: ${{ vars.BG_SLOT_MEMORY_LIMIT || '1800m' }}
+          BG_READY_TIMEOUT_SECONDS: ${{ vars.BG_READY_TIMEOUT_SECONDS || '360' }}
+          BG_DRAIN_SECONDS: ${{ vars.BG_DRAIN_SECONDS || '5' }}
+          BG_DRAIN_MAX_SECONDS: ${{ vars.BG_DRAIN_MAX_SECONDS || '600' }}
+          BG_STOP_TIMEOUT_SECONDS: ${{ vars.BG_STOP_TIMEOUT_SECONDS || '600' }}
+        run: |
+          set -euo pipefail
+          : "${PI_DEPLOY_PATH:?PI_DEPLOY_PATH secret is required}"
           scp docker-compose.yml "pi:${PI_DEPLOY_PATH}/docker-compose.yml"
-          # uploads/ 전체 동기화
-          # 1) 컨테이너(root)가 만든 파일은 배포 유저가 못 지우므로 rsync 전 chown
-          # 2) rsync는 소유자/그룹을 보내지 않음 (--no-owner --no-group) → 권한 충돌 방지
-          # 3) rsync 후 a+rwX 로 열어 컨테이너·다음 배포가 모두 쓸 수 있게 함
-          ssh pi "set -euo pipefail
-            mkdir -p \"${PI_DEPLOY_PATH}/uploads\"
-            docker run --rm -v \"${PI_DEPLOY_PATH}/uploads:/uploads\" alpine:3.20 \
-              chown -R \"\$(id -u):\$(id -g)\" /uploads
-          "
-          # --delete 사용 시: 레포에 없는 런타임 업로드를 지우지 않도록 보호한다.
-          # 예전에는 chemistry/free/…만 protect 해서 album/artist/unit 커버가
-          # 배포마다 삭제되고(.orig만 exclude로 남음) DB 경로만 고아로 남았다.
-          # images·videos·files 전체(관리자 업로드 트리)를 protect한다.
-          # 레포에 있는 파일은 계속 덮어쓰고, 서버에만 있는 업로드는 유지된다.
-          rsync -az --delete --no-owner --no-group \
-            --exclude '.DS_Store' \
-            --exclude '*.orig' \
-            --exclude '**/.DS_Store' \
-            --exclude '**/*.orig' \
-            --filter 'P images/' \
-            --filter 'P images/**' \
-            --filter 'P videos/' \
-            --filter 'P videos/**' \
-            --filter 'P files/' \
-            --filter 'P files/**' \
-            -e ssh \
-            uploads/ "pi:${PI_DEPLOY_PATH}/uploads/"
-          ssh pi "chmod -R a+rwX \"${PI_DEPLOY_PATH}/uploads\""
+          scp docker-compose.bluegreen.yml "pi:${PI_DEPLOY_PATH}/docker-compose.bluegreen.yml"
+          scp scripts/deploy-pi-bluegreen.sh scripts/deploy-pi-image-retention.sh scripts/migrate-chemistry-photos-on-pi.sh "pi:${PI_DEPLOY_PATH}/"
+          # 케미 UI는 WAR static(/images/chemistry). 페어 사진은 서버 uploads만.
+          # 옛 chem/ → images/chemistry/ 복사는 멱등 (원본 유지).
+          ssh pi "bash '${PI_DEPLOY_PATH}/migrate-chemistry-photos-on-pi.sh' '${PI_DEPLOY_PATH}'"
+
           ssh pi env \
             PI_DEPLOY_PATH="$PI_DEPLOY_PATH" \
             IMAGE="$IMAGE" \
             GHCR_USER="$GHCR_USER" \
             GHCR_TOKEN="$GHCR_TOKEN" \
+            MIGRATIONS_TREE="$MIGRATIONS_TREE" \
+            BG_ALLOW_SCHEMA_CHANGE="$BG_ALLOW_SCHEMA_CHANGE" \
+            BG_MIN_AVAILABLE_MB="$BG_MIN_AVAILABLE_MB" \
+            BG_SLOT_MEMORY_LIMIT="$BG_SLOT_MEMORY_LIMIT" \
+            BG_READY_TIMEOUT_SECONDS="$BG_READY_TIMEOUT_SECONDS" \
+            BG_DRAIN_SECONDS="$BG_DRAIN_SECONDS" \
+            BG_DRAIN_MAX_SECONDS="$BG_DRAIN_MAX_SECONDS" \
+            BG_STOP_TIMEOUT_SECONDS="$BG_STOP_TIMEOUT_SECONDS" \
             bash -s <<'EOF'
           set -euo pipefail
-          cd "${PI_DEPLOY_PATH}"
-          touch .env
-          if grep -q '^IMAGE=' .env; then
-            sed -i.bak "s|^IMAGE=.*|IMAGE=${IMAGE}|" .env
-          else
-            echo "IMAGE=${IMAGE}" >> .env
-          fi
-          echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
-          docker compose pull app
-          docker compose up -d
-          docker image prune -f
-          docker logout ghcr.io >/dev/null 2>&1 || true
-          APP_PORT="$(grep -E '^APP_PORT=' .env | cut -d= -f2- || true)"
-          APP_PORT="${APP_PORT:-8080}"
-          # Pi에서 새 이미지 콜드 스타트가 2분 넘는 경우가 있어 5분까지 기다린다.
-          for attempt in $(seq 1 60); do
-            if curl -fsS --max-time 8 "http://127.0.0.1:${APP_PORT}/" >/dev/null; then
-              echo "Smoke OK: / on :${APP_PORT} (attempt ${attempt})"
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "Smoke failed: / on :${APP_PORT} did not respond"
-          docker compose ps || true
-          docker compose logs --tail=200 app || true
-          exit 1
+          cd "$PI_DEPLOY_PATH"
+          # Do NOT rewrite .env IMAGE before promotion: first cutover can
+          # restore the original app only if the old SHA remains untouched.
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin >/dev/null
+          trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
+          export APP_PORT="$(sed -n 's/^APP_PORT=//p' .env | tail -n1)"
+          APP_PORT="${APP_PORT:-8090}"
+          bash ./deploy-pi-bluegreen.sh
           EOF

@@ -1,0 +1,282 @@
+.ar-cal {
+    position: relative;
+    display: block;
+    width: 100%;
+}
+.ar-date-field .ar-cal {
+    width: 10.75rem;
+    max-width: 100%;
+}
+.ar-cal-native {
+    color: transparent !important;
+    caret-color: transparent;
+}
+.ar-cal-native::-webkit-datetime-edit,
+.ar-cal-native::-webkit-datetime-edit-fields-wrapper,
+.ar-cal-native::-webkit-datetime-edit-text,
+.ar-cal-native::-webkit-datetime-edit-month-field,
+.ar-cal-native::-webkit-datetime-edit-day-field,
+.ar-cal-native::-webkit-datetime-edit-year-field {
+    color: transparent;
+}
+.ar-cal-native::-webkit-calendar-picker-indicator {
+    position: absolute;
+    right: 0.45rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    opacity: 0;
+    pointer-events: none;
+}
+.ar-cal-parts {
+    position: absolute;
+    left: 0.75rem;
+    right: 2.45rem;
+    top: 0;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.08rem;
+}
+.ar-date-field .ar-cal-parts {
+    left: 0.6rem;
+    right: 1.9rem;
+    justify-content: flex-start;
+    gap: 0.12rem;
+}
+.ar-field.ar-date-field input.ar-cal-part[type="text"] {
+    flex: 0 0 auto;
+    width: 2.15ch;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+.ar-field.ar-date-field input.ar-cal-part[data-part="year"] {
+    width: 4.5ch;
+    text-align: center;
+}
+.ar-cal-part {
+    width: 2.35ch;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #e8ebf2;
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    outline: none;
+    color-scheme: dark;
+}
+.ar-cal-part[data-part="year"] {
+    width: 4.4ch;
+    text-align: left;
+}
+.ar-cal-part::placeholder { color: #8b93a7; }
+.ar-cal.is-empty .ar-cal-part { color: #8b93a7; }
+.ar-cal-sep {
+    color: #8b93a7;
+    font-size: 0.875rem;
+    font-weight: 650;
+    pointer-events: none;
+    user-select: none;
+}
+.ar-cal-open {
+    position: absolute;
+    right: 0.45rem;
+    top: 50%;
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.7rem;
+    height: 1.7rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0.4rem;
+    background: transparent;
+    color: #00f5d4;
+    transform: translateY(-50%);
+    cursor: pointer;
+}
+.ar-cal-open .material-symbols-outlined { font-size: 1.2rem; line-height: 1; }
+.ar-cal-board {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    left: 0;
+    z-index: 60;
+    width: min(18.75rem, calc(100vw - 2.4rem));
+    padding: 0.7rem 0.7rem 0.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.85rem;
+    background: #16181f;
+    box-shadow: 0 18px 36px -18px rgba(0, 0, 0, 0.85);
+    color: #e8ebf2;
+}
+.ar-cal-board[hidden] { display: none; }
+.ar-cal-board-head {
+    display: grid;
+    grid-template-columns: 2rem 1fr 2rem;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.55rem;
+}
+.ar-cal-board-title {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    text-align: center;
+    font-size: 0.88rem;
+    font-weight: 750;
+    letter-spacing: -0.02em;
+}
+.ar-cal-pick {
+    margin: 0;
+    padding: 0.12rem 0.38rem;
+    border: 0;
+    border-radius: 0.4rem;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: 750;
+    letter-spacing: -0.02em;
+    cursor: pointer;
+}
+.ar-cal-pick:hover,
+.ar-cal-pick.is-open {
+    background: rgba(0, 245, 212, 0.14);
+    color: #00f5d4;
+}
+.ar-cal-menu {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    left: 50%;
+    z-index: 3;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(4.1rem, 1fr));
+    gap: 0.2rem;
+    width: min(16.5rem, calc(100vw - 3rem));
+    max-height: 11rem;
+    overflow: auto;
+    margin: 0;
+    padding: 0.4rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.7rem;
+    background: #1c1e27;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.45);
+    transform: translateX(-50%);
+}
+.ar-cal-menu[hidden] { display: none; }
+.ar-cal-menu button {
+    min-height: 1.85rem;
+    border: 0;
+    border-radius: 0.4rem;
+    background: transparent;
+    color: #e8ebf2;
+    font: inherit;
+    font-size: 0.78rem;
+    cursor: pointer;
+}
+.ar-cal-menu button:hover { background: rgba(0, 245, 212, 0.12); color: #00f5d4; }
+.ar-cal-menu button.is-current { background: #00f5d4; color: #0d0e12; font-weight: 800; }
+.ar-cal-nav {
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.5rem;
+    background: #292a2e;
+    color: #e8ebf2;
+    font-size: 1.15rem;
+    line-height: 1;
+    cursor: pointer;
+}
+.ar-cal-nav:hover { border-color: #00f5d4; color: #00f5d4; }
+.ar-cal-board-week,
+.ar-cal-board-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.15rem;
+    text-align: center;
+}
+.ar-cal-board-week {
+    margin-bottom: 0.25rem;
+    color: #8b93a7;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+.ar-cal-board-week .is-sun { color: #f87171; }
+.ar-cal-board-week .is-sat { color: #60a5fa; }
+.ar-cal-day {
+    min-height: 1.85rem;
+    border: 0;
+    border-radius: 0.45rem;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+}
+.ar-cal-day.is-sun { color: #f87171; }
+.ar-cal-day.is-sat { color: #60a5fa; }
+.ar-cal-day:hover { background: rgba(0, 245, 212, 0.12); color: #00f5d4; }
+.ar-cal-day.is-today { box-shadow: inset 0 0 0 1px rgba(0, 245, 212, 0.45); }
+.ar-cal-day.is-selected { background: #00f5d4; color: #0d0e12; font-weight: 800; }
+
+/* 관리 모달 등에서 input[type=text] 스타일이 연·월·일 칸까지 먹지 않게 한다. */
+.about-edit-panel .ar-cal-part,
+.event-stop-row-top .ar-cal-part,
+.shop-md-builder .ar-cal-part,
+.shop-sales-period .ar-cal-part {
+    flex: 0 0 auto;
+    width: 2.35ch;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+.about-edit-panel .ar-cal-part[data-part="year"],
+.event-stop-row-top .ar-cal-part[data-part="year"],
+.shop-md-builder .ar-cal-part[data-part="year"],
+.shop-sales-period .ar-cal-part[data-part="year"] {
+    width: 4.4ch;
+}
+
+.stop-date-range > .ar-cal {
+    width: 9.75rem;
+    min-width: 9.75rem;
+    max-width: 9.75rem;
+    flex: 0 0 auto;
+}
+.shop-sales-period > .ar-cal,
+.shop-md-region-sales > .ar-cal {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+}
+
+@media (max-width: 720px) {
+    .event-stop-row-top .stop-date-range > .ar-cal {
+        flex: 1 1 0;
+        width: auto;
+        min-width: 0;
+        max-width: none;
+    }
+}

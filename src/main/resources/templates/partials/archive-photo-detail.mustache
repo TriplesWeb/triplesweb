@@ -1,0 +1,37 @@
+<div class="ar-dialog" id="archiveDetail" hidden>
+    <div class="ar-dialog-backdrop" aria-hidden="true"></div>
+    <div class="ar-dialog-panel ar-detail-panel" role="dialog" aria-modal="true" aria-label="사진 상세">
+        <div class="ar-detail-photo" id="archiveDetailPhoto">
+            <button type="button" class="ar-detail-nav ar-detail-prev" id="archiveDetailPrev" aria-label="이전 사진" hidden>
+                <svg class="ar-detail-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <img id="archiveDetailImage" alt="">
+            <button type="button" class="ar-detail-nav ar-detail-next" id="archiveDetailNext" aria-label="다음 사진" hidden>
+                <svg class="ar-detail-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5 16 12l-6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="ar-detail-dots" id="archiveDetailDots" hidden></div>
+            <p class="ar-detail-count" id="archiveDetailCount" hidden></p>
+        </div>
+        <div class="ar-detail-side">
+            <button type="button" class="ar-close ar-detail-close" data-ar-close aria-label="닫기">&times;</button>
+            <div class="ar-detail-body">
+                <p class="ar-detail-desc" id="archiveDetailDescription" hidden></p>
+                <div class="ar-detail-meta" id="archiveDetailMeta" hidden>
+                    <p class="ar-detail-date" id="archiveDetailDate" hidden>
+                        <span class="ar-detail-kicker" data-detail-date-label></span>
+                        <time data-detail-date-value></time>
+                    </p>
+                    <div class="ar-source-badge" id="archiveDetailSource" hidden></div>
+                </div>
+                <section class="ar-detail-cast" aria-label="출연 멤버" hidden>
+                    <p class="ar-detail-kicker">출연 멤버</p>
+                    <div class="ar-detail-members" id="archiveDetailMembers"></div>
+                </section>
+            </div>
+            <div class="ar-dialog-foot ar-detail-actions" data-admin-only>
+                <button type="button" class="site-btn site-btn--primary" data-archive-edit id="archiveDetailEdit">수정하기</button>
+                <button type="button" class="site-btn site-btn--danger ar-delete" data-archive-delete id="archiveDetailDelete">삭제하기</button>
+            </div>
+        </div>
+    </div>
+</div>

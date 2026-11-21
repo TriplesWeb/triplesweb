@@ -1138,8 +1138,8 @@
         if (detailMemberLink) detailMemberLink.href = data.memberUrl || '/cosmo/objekt';
         if (detailFullLink) detailFullLink.href = data.detailUrl || ('/cosmo/objekt/detail/' + encodeURIComponent(key));
         if (detailFavorite) detailFavorite.dataset.key = key;
-        if (detailTradeLink) detailTradeLink.href = data.tradeUrl || '/article/trade/new';
-        if (detailSellLink) detailSellLink.href = data.sellUrl || '/article/sell/new';
+        if (detailTradeLink) detailTradeLink.href = data.tradeUrl || '/trade/new';
+        if (detailSellLink) detailSellLink.href = data.sellUrl || '/sell/new';
         window.ObjektSerialLookup?.setCollection(
             data.lookupUrl || ('/cosmo/objekt/detail/' + encodeURIComponent(key) + '/lookup')
         );
@@ -1151,7 +1151,7 @@
         );
         const address = new URL(location.href);
         address.searchParams.set('objekt', key);
-        history.replaceState(null, '', address.pathname + address.search);
+        history.replaceState(history.state, '', address.pathname + address.search);
         isAdmin = Boolean(data.isAdmin);
         descriptionUrl = data.descriptionUrl || '';
         rememberDescriptionMeta(data);
@@ -1184,12 +1184,11 @@
         if (detailFavorite) detailFavorite.dataset.key = '';
         const address = new URL(location.href);
         address.searchParams.delete('objekt');
-        history.replaceState(null, '', address.pathname + address.search);
+        history.replaceState(history.state, '', address.pathname + address.search);
     }
 
-    function closeDetailModal(fromBackdrop) {
+    function closeDetailModal() {
         if (!detailModal) return;
-        if (fromBackdrop && (detailModal.classList.contains('is-opening') || Date.now() - detailOpenedAt < 500)) return;
         if (window.AboutModal) {
             window.AboutModal.closeModal(detailModal, { onClose: finishDetailClose });
         } else {
@@ -1374,10 +1373,7 @@
         openObjektDetail(card.dataset.objektKey);
     });
 
-    detailClose?.addEventListener('click', () => closeDetailModal(false));
-    detailModal?.addEventListener('click', (event) => {
-        if (event.target === detailModal) closeDetailModal(true);
-    });
+    detailClose?.addEventListener('click', closeDetailModal);
     detailFlip?.addEventListener('click', flipModalImage);
     detailFavorite?.addEventListener('click', async () => {
         const key = detailFavorite.dataset.key || activeObjektKey;
@@ -1490,7 +1486,7 @@
         const objekt = address.searchParams.get('objekt');
         address.search = params.toString();
         if (objekt) address.searchParams.set('objekt', objekt);
-        history.replaceState(null, '', address.pathname + address.search);
+        history.replaceState(history.state, '', address.pathname + address.search);
     }
 
     function renderLoadedCards(items) {

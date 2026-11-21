@@ -12,7 +12,6 @@ import com.example.triplesweb.service.ArticleFileServiceImpl;
 import com.example.triplesweb.service.ArticleService;
 import com.example.triplesweb.service.ArticleObjektService;
 import com.example.triplesweb.service.ObjektService;
-import com.example.triplesweb.service.CommentService;
 import com.example.triplesweb.service.DateTimeFormatService;
 import com.example.triplesweb.util.ArticleHtmlCleaner;
 import com.example.triplesweb.util.ArticleMemberSwap;
@@ -42,11 +41,13 @@ import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/article/{category}")
+@RequestMapping({
+        "/article/{category}",
+        "/{category:trade|sell}"
+})
 public class ArticleController {
 
     private final ArticleService articleService;
-    private final CommentService commentService;
     private final ArticleFileServiceImpl articleFileService;
     private final DateTimeFormatService dateTimeFormatService;
     private final ArticleObjektService articleObjektService;
@@ -97,7 +98,7 @@ public class ArticleController {
                                   @RequestParam(value = "sellListingSide", required = false) String sellListingSide,
                                   @RequestParam(value = "objektSide", required = false) String objektSide,
                                   Model model) {
-        if (isInvalidCategory(category)) return "redirect:/article/trade";
+        if (isInvalidCategory(category)) return "redirect:/trade";
 
         // 로그인 체크 및 관리자 체크 제거 (누구나 작성 가능)
         model.addAttribute("category", category);
@@ -125,7 +126,7 @@ public class ArticleController {
                                 @RequestParam(value = "selectedHaveObjektIds", required = false) List<String> selectedHaveObjektIds,
                                 @RequestParam(value = "selectedWantObjektIds", required = false) List<String> selectedWantObjektIds,
                                 @RequestParam(value = "sellListingSide", required = false) String sellListingSide) throws IOException {
-        if (isInvalidCategory(category)) return "redirect:/article/trade";
+        if (isInvalidCategory(category)) return "redirect:/trade";
 
         String cleanedContent = ArticleHtmlCleaner.clean(form.getContent());
         form.setContent(cleanedContent);
@@ -133,9 +134,10 @@ public class ArticleController {
                 category, selectedObjektIds, selectedHaveObjektIds, selectedWantObjektIds, sellListingSide);
         List<String> haveKeys = sides.have();
         List<String> wantKeys = sides.want();
-        String validationError = validateTitleAndContent(form.getTitle(), cleanedContent);
+        boolean marketBoard = isObjektBoard(category);
+        String validationError = validateObjektSelection(category, haveKeys, wantKeys);
         if (validationError == null) {
-            validationError = validateObjektSelection(category, haveKeys, wantKeys);
+            validationError = validateTitleAndContent(form.getTitle(), cleanedContent, marketBoard);
         }
         if (bindingResult.hasErrors() || validationError != null) {
             model.addAttribute("category", category);
@@ -148,8 +150,12 @@ public class ArticleController {
         }
 
         Article article = new Article();
-        article.setTitle(form.getTitle().trim());
-        article.setContent(cleanedContent);
+        String title = form.getTitle() == null ? "" : form.getTitle().trim();
+        if (title.isEmpty() && marketBoard) {
+            title = isTradeBoard(category) ? "교환" : "거래";
+        }
+        article.setTitle(title);
+        article.setContent(cleanedContent == null || cleanedContent.isBlank() ? "" : cleanedContent);
         article.setCategory(category);
         article.setUserId("익명"); // 로그인 기능 삭제로 기본 작성자 지정
 
@@ -169,7 +175,8 @@ public class ArticleController {
                 articleFileService.attachUploadedFiles(uploadedFiles, savedArticle);
             }
             articleFileService.extractAndSaveFilesFromContent(savedArticle);
-            return "redirect:/article/" + category + "/" + savedArticle.getId();
+            if (isObjektBoard(category)) return "redirect:" + boardPath(category);
+            return "redirect:" + boardPath(category) + "/" + savedArticle.getId();
         } catch (RuntimeException | IOException ex) {
             model.addAttribute("category", category);
             model.addAttribute("categoryName", getCategoryName(category));
@@ -226,7 +233,6 @@ public class ArticleController {
             boolean inHave = matchesKey(haveSelected, id, collectionId, slug);
             boolean inWant = matchesKey(wantSelected, id, collectionId, slug);
             if (!inHave && !inWant) continue;
-            if (selectedItems.size() >= ArticleObjektService.MAX_LINKED) continue;
             Map<String, Object> row = pickerItem(item);
             selectedItems.add(row);
             if (inHave) haveItems.add(row);
@@ -234,7 +240,11 @@ public class ArticleController {
         }
 
         List<String> soloMembers = MemberPortraitOptions.soloMemberNames(members);
-        boolean hasOther = members.stream().anyMatch(MemberPortraitOptions::isOtherMember);
+        List<Artist> artists = artistSnapshot.findAll();
+        List<Map<String, Object>> memberPicker = MemberPortraitOptions.forObjektFilter(soloMembers, artists);
+        for (Map<String, Object> option : memberPicker) {
+            option.put("active", false);
+        }
         model.addAttribute("showObjektPicker", true);
         model.addAttribute("isTradeObjektSplit", tradeSplit);
         model.addAttribute("isSellListingHave", isSellBoard(category) && !sellWant);
@@ -243,13 +253,22 @@ public class ArticleController {
         model.addAttribute("objektHaveSelected", haveItems);
         model.addAttribute("objektWantSelected", wantItems);
         model.addAttribute("objektInitialSearch", selectedItems.size() == 1 ? selectedItems.get(0).getOrDefault("collectionId", "") : "");
-        model.addAttribute("objektMemberOptions", soloMembers);
-        model.addAttribute("hasOtherObjektOption", hasOther);
-        model.addAttribute("objektSeasonOptions", ObjektFilterOrder.sortedSeasons(seasons));
-        model.addAttribute("objektClassOptions", classes.stream()
-                .sorted(String.CASE_INSENSITIVE_ORDER).toList());
-        model.addAttribute("objektKindOptions", kinds.stream()
-                .sorted(String.CASE_INSENSITIVE_ORDER).toList());
+        List<String> seasonOptions = ObjektFilterOrder.sortedSeasons(seasons);
+        List<String> classOptions = classes.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList();
+        List<String> kindOptions = kinds.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList();
+        model.addAttribute("memberPickerOptions", memberPicker);
+        model.addAttribute("selectedGroup", "all");
+        model.addAttribute("isOtherGroup", false);
+        model.addAttribute("seasonOptions", seasonOptions);
+        model.addAttribute("classOptions", classOptions);
+        model.addAttribute("objektNumbers", kindOptions);
+        model.addAttribute("selectedKindLabel", "전체");
+        model.addAttribute("searchQuery", "");
+        model.addAttribute("objektWorkspaceNamedFields", false);
+        // 하위 호환·테스트용 별칭
+        model.addAttribute("objektSeasonOptions", seasonOptions);
+        model.addAttribute("objektClassOptions", classOptions);
+        model.addAttribute("objektKindOptions", kindOptions);
     }
 
     private static Set<String> keySet(List<String> keys) {
@@ -258,7 +277,6 @@ public class ArticleController {
                 .filter(Objects::nonNull)
                 .map(String::trim)
                 .filter(v -> !v.isEmpty())
-                .limit(ArticleObjektService.MAX_LINKED)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
@@ -282,9 +300,14 @@ public class ArticleController {
         String seasonKey = season.trim().toLowerCase(Locale.ROOT);
         String classKey = objektClass.trim().toLowerCase(Locale.ROOT);
         String query = q.trim().toLowerCase(Locale.ROOT);
+        List<String> selectedMembers = member.isBlank() ? List.of()
+                : java.util.Arrays.stream(member.split(","))
+                .map(String::trim)
+                .filter(v -> !v.isEmpty())
+                .distinct()
+                .toList();
         String selectedGroup = "other".equalsIgnoreCase(group) ? "other"
-                : ("members".equalsIgnoreCase(group) || !member.isBlank() ? "members" : "all");
-        List<String> selectedMembers = member.isBlank() ? List.of() : List.of(member.trim());
+                : ("members".equalsIgnoreCase(group) || !selectedMembers.isEmpty() ? "members" : "all");
         List<Map<String, Object>> matched = new ArrayList<>();
         for (Map<String, Object> item : objektService.findCollections("triples")) {
             if (!MemberPortraitOptions.matchesMemberGroup(selectedGroup, selectedMembers, stringValue(item.get("member")))) continue;
@@ -349,30 +372,38 @@ public class ArticleController {
             @PathVariable("category") String category,
             Model model,
             @RequestParam(name = "limit", required = false, defaultValue = "10") Integer limit,
-            @RequestParam(name = "type", required = false, defaultValue = "title") String type,
+            @RequestParam(name = "type", required = false) String type,
             @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword,
             @RequestParam(name = "member", required = false, defaultValue = "") String member,
-            @RequestParam(name = "objektSide", required = false, defaultValue = "have") String objektSide) {
+            @RequestParam(name = "objektSide", required = false, defaultValue = "have") String objektSide,
+            @RequestParam(name = "season", required = false, defaultValue = "") String season,
+            @RequestParam(name = "class", required = false, defaultValue = "") String objektClass) {
 
         if (isInvalidCategory(category)) {
-            return "redirect:/article/trade";
+            return "redirect:/trade";
         }
 
-        // 검색 조건 정리
-        String searchType = type;
+        boolean marketBoard = isObjektBoard(category);
+
+        // 검색 조건 정리 (마켓 피드는 작성자 검색을 기본값으로)
+        String searchType = type == null ? "" : type.trim();
         if (!Set.of("title", "content", "writer").contains(searchType)) {
-            searchType = "title";
+            searchType = marketBoard ? "writer" : "title";
         }
 
         String searchKeyword = keyword == null ? "" : keyword.trim();
         String selectedMember = member == null ? "" : member.trim();
         String selectedSide = normalizeObjektSide(category, objektSide);
-        boolean marketBoard = isObjektBoard(category);
+        String selectedSeason = season == null ? "" : season.trim();
+        String selectedClass = objektClass == null ? "" : objektClass.trim();
         int safeLimit = Math.min(100, Math.max(1, limit));
         List<Article> articles;
         Map<Long, List<ArticleObjekt>> linkedByArticle;
-        boolean filterBySide = marketBoard && (!selectedMember.isEmpty() || isSellBoard(category));
-        if (filterBySide) {
+        boolean filterByAttrs = marketBoard && (!selectedMember.isEmpty()
+                || !selectedSeason.isEmpty()
+                || !selectedClass.isEmpty()
+                || isSellBoard(category));
+        if (filterByAttrs) {
             // Keyset batches preserve exact member/unit matching while searching beyond the newest page.
             articles = new ArrayList<>();
             linkedByArticle = new LinkedHashMap<>();
@@ -386,7 +417,7 @@ public class ArticleController {
                 if (batchLinks == null) batchLinks = Map.of();
                 for (Article art : batch) {
                     List<ArticleObjekt> links = batchLinks.getOrDefault(art.getId(), List.of());
-                    if (matchesMarketListing(category, links, selectedMember, selectedSide)) {
+                    if (matchesMarketListing(category, links, selectedMember, selectedSide, selectedSeason, selectedClass)) {
                         articles.add(art);
                         linkedByArticle.put(art.getId(), links);
                         if (articles.size() == safeLimit) break;
@@ -422,6 +453,11 @@ public class ArticleController {
                     .likesCount(art.getLikesCount())
                     .build();
             if (marketBoard) {
+                String cleaned = ArticleHtmlCleaner.clean(
+                        art.getContent() == null ? "" : art.getContent());
+                boolean hasDesc = ArticleHtmlCleaner.hasVisibleContent(cleaned);
+                dto.setContent(hasDesc ? cleaned : "");
+                dto.setHasMarketDescription(hasDesc);
                 List<ArticleObjekt> links = linkedByArticle.getOrDefault(art.getId(), List.of());
                 List<ArticleObjekt> have = links.stream()
                         .filter(row -> ArticleObjektService.SIDE_HAVE.equalsIgnoreCase(
@@ -432,6 +468,7 @@ public class ArticleController {
                         .toList();
                 ArticleMemberSwap.copyOnto(
                         ArticleMemberSwap.summarize(have, want, artists, isTradeBoard(category)), dto);
+                ArticleMemberSwap.copyPreviewsOnto(dto, have, want, 6);
             }
 
             articleViewList.add(dto);
@@ -443,6 +480,7 @@ public class ArticleController {
         model.addAttribute("isGroupOrders", "group-orders".equals(category));
         if (marketBoard) {
             addMarketMemberFilter(model, selectedMember, selectedSide, artists);
+            addMarketSeasonClassFilter(model, selectedSeason, selectedClass);
         }
         model.addAttribute("articleList", articleViewList);
         // 교환/거래/분철: 추천 컬럼·인기글 조회 제거. popularList는 템플릿 미사용.
@@ -456,6 +494,12 @@ public class ArticleController {
         model.addAttribute("isSearchWriter", "writer".equals(searchType));
         model.addAttribute("selectedMember", selectedMember);
         model.addAttribute("selectedObjektSide", selectedSide);
+        model.addAttribute("selectedSeason", selectedSeason);
+        model.addAttribute("selectedClass", selectedClass);
+        model.addAttribute("hasSelectedMember", !selectedMember.isEmpty());
+        model.addAttribute("hasSearchKeyword", !searchKeyword.isEmpty());
+        model.addAttribute("hasMarketAttrFilter",
+                !selectedMember.isEmpty() || !selectedSeason.isEmpty() || !selectedClass.isEmpty());
 
         model.addAttribute("limit", limit);
 
@@ -474,10 +518,12 @@ public class ArticleController {
                               @RequestParam(required = false) String notice,
                               Model model) {
 
-        if (isInvalidCategory(category)) return "redirect:/article/trade";
+        if (isInvalidCategory(category)) return "redirect:/trade";
+        // 교환/거래는 피드에서 바로 보고, 글 상세 페이지는 쓰지 않는다.
+        if (isObjektBoard(category)) return "redirect:" + boardPath(category);
         Article article = articleService.showWithFiles(id);
 
-        if (article == null) return "redirect:/article/" + category;
+        if (article == null) return "redirect:" + boardPath(category);
 
         model.addAttribute("article", article);
         List<ArticleObjekt> linkedObjekts = articleObjektService.findForArticle(id);
@@ -507,7 +553,11 @@ public class ArticleController {
         }
         model.addAttribute("category", category);
         addCategoryFlags(model, category);
-        model.addAttribute("commentDtos", commentService.show(id));
+        boolean marketBoard = isObjektBoard(category);
+        String title = article.getTitle() == null ? "" : article.getTitle().trim();
+        String defaultMarketTitle = isTradeBoard(category) ? "교환" : (isSellBoard(category) ? "거래" : "");
+        model.addAttribute("showMarketTitle", marketBoard && !title.isEmpty() && !title.equals(defaultMarketTitle));
+        model.addAttribute("hasMarketDescription", marketBoard && ArticleHtmlCleaner.hasVisibleContent(article.getContent()));
         model.addAttribute("categoryName", getCategoryName(category));
         model.addAttribute("isOwner", true); // 로그인 제거: 누구나 수정/삭제 가능
         model.addAttribute("isLoggedIn", true);
@@ -543,9 +593,9 @@ public class ArticleController {
     public String editArticle(@PathVariable("category") String category,
                               @PathVariable("id") Long id,
                               Model model) {
-        if (isInvalidCategory(category)) return "redirect:/article/trade";
+        if (isInvalidCategory(category)) return "redirect:/trade";
         Article article = articleService.showWithFiles(id);
-        if (article == null) return "redirect:/article/" + category;
+        if (article == null) return "redirect:" + boardPath(category);
 
         model.addAttribute("article", article);
         model.addAttribute("category", category);
@@ -575,10 +625,10 @@ public class ArticleController {
                                 @RequestParam(value = "selectedWantObjektIds", required = false) List<String> selectedWantObjektIds,
                                 @RequestParam(value = "sellListingSide", required = false) String sellListingSide,
                                 Model model) throws IOException {
-        if (isInvalidCategory(category)) return "redirect:/article/trade";
+        if (isInvalidCategory(category)) return "redirect:/trade";
 
         Article article = articleService.showWithFiles(id);
-        if (article == null) return "redirect:/article/" + category;
+        if (article == null) return "redirect:" + boardPath(category);
 
         newarticle.setContent(ArticleHtmlCleaner.clean(newarticle.getContent()));
         LinkedSides sides = resolveLinkedSides(
@@ -599,18 +649,26 @@ public class ArticleController {
         }
 
         try {
+            boolean marketBoard = isObjektBoard(category);
+            String title = newarticle.getTitle() == null ? "" : newarticle.getTitle().trim();
+            if (title.isEmpty() && marketBoard) {
+                title = isTradeBoard(category) ? "교환" : "거래";
+            }
             Article saved = articleService.updateWithFiles(
                     id,
-                    newarticle.getTitle().trim(),
-                    newarticle.getContent(),
+                    title,
+                    newarticle.getContent() == null || newarticle.getContent().isBlank()
+                            ? ""
+                            : newarticle.getContent(),
                     files,
                     uploadedFiles,
                     deletedFiles);
 
-            if (isObjektBoard(category)) {
+            if (marketBoard) {
                 articleObjektService.replaceSelected(saved, haveKeys, wantKeys);
+                return "redirect:" + boardPath(category);
             }
-            return "redirect:/article/" + category + "/" + id;
+            return "redirect:" + boardPath(category) + "/" + id;
         } catch (RuntimeException | IOException ex) {
             article.setTitle(newarticle.getTitle());
             article.setContent(newarticle.getContent());
@@ -660,17 +718,17 @@ public class ArticleController {
     @PostMapping("/{id}/delete")
     public String deleteArticle(@PathVariable("id") Long id,
                                 @PathVariable("category") String category) {
-        if (isInvalidCategory(category)) return "redirect:/article/trade";
+        if (isInvalidCategory(category)) return "redirect:/trade";
         Article article = articleService.showWithFiles(id);
-        if (article == null) return "redirect:/article/" + category;
+        if (article == null) return "redirect:" + boardPath(category);
 
         try {
             List<Long> fileIds = articleFileService.findFileIdsByArticleId(id);
             fileIds.forEach(articleFileService::deleteFileById);
             articleService.delete(id);
-            return "redirect:/article/" + category;
+            return "redirect:" + boardPath(category);
         } catch (RuntimeException ex) {
-            return "redirect:/article/" + category + "/" + id + "?notice=delete-failed";
+            return "redirect:" + boardPath(category) + "/" + id + "?notice=delete-failed";
         }
     }
 
@@ -707,7 +765,7 @@ public class ArticleController {
     }
 
     private String validateArticle(Article newArt) {
-        return validateTitleAndContent(newArt.getTitle(), newArt.getContent());
+        return validateTitleAndContent(newArt.getTitle(), newArt.getContent(), false);
     }
 
     private String validateArticleUpdate(Article existing,
@@ -718,7 +776,8 @@ public class ArticleController {
                                          List<Long> deletedFiles,
                                          List<String> haveKeys,
                                          List<String> wantKeys) {
-        String invalid = validateArticle(incoming);
+        String invalid = validateTitleAndContent(
+                incoming.getTitle(), incoming.getContent(), isObjektBoard(category));
         if (invalid != null) return invalid;
         String objektError = validateObjektSelection(category, haveKeys, wantKeys);
         if (objektError != null) return objektError;
@@ -773,6 +832,11 @@ public class ArticleController {
     }
 
     private static String validateTitleAndContent(String title, String content) {
+        return validateTitleAndContent(title, content, false);
+    }
+
+    private static String validateTitleAndContent(String title, String content, boolean marketBoard) {
+        if (marketBoard) return null;
         if (title == null || title.trim().isEmpty()) return "제목을 입력해주세요.";
         if (!ArticleHtmlCleaner.hasVisibleContent(content)) return "내용을 입력해주세요.";
         return null;
@@ -780,15 +844,25 @@ public class ArticleController {
 
     private static Map<String, Object> linkedObjektView(ArticleObjekt link, List<Artist> artists) {
         Map<String, Object> row = new LinkedHashMap<>();
+        String memberName = MemberPortraitOptions.displayMember(link.getMemberName());
+        String cardTitle = ObjektSeasonCodes.cardTitle(link.getCollectionId(), link.getSeason());
         row.put("objektKey", link.getObjektKey());
         row.put("collectionId", link.getCollectionId());
-        row.put("cardTitle", ObjektSeasonCodes.cardTitle(link.getCollectionId(), link.getSeason()));
+        row.put("cardTitle", cardTitle);
         row.put("season", link.getSeason());
-        row.put("memberName", MemberPortraitOptions.displayMember(link.getMemberName()));
+        row.put("memberName", memberName);
         row.put("memberColor", MemberPortraitOptions.artistColor(link.getMemberName(), artists));
         row.put("thumbnailImage", link.getThumbnailImage());
         row.put("frontImage", link.getFrontImage());
         row.put("collectionNo", link.getCollectionNo());
+        boolean hasImage = link.getThumbnailImage() != null && !link.getThumbnailImage().isBlank()
+                || link.getFrontImage() != null && !link.getFrontImage().isBlank();
+        row.put("hasImage", hasImage);
+        String tip = java.util.stream.Stream.of(link.getSeason(), memberName, link.getCollectionNo())
+                .filter(v -> v != null && !v.isBlank())
+                .collect(Collectors.joining(" · "));
+        if (tip.isBlank() && cardTitle != null) tip = cardTitle;
+        row.put("previewTip", tip);
         return row;
     }
 
@@ -799,14 +873,52 @@ public class ArticleController {
                 .toList();
         List<Map<String, Object>> picker = MemberPortraitOptions.forObjektFilter(
                 MemberPortraitOptions.soloMemberNames(names), artists);
+        List<String> selectedMembers = ArticleMemberSwap.memberTokens(selectedMember);
         for (Map<String, Object> option : picker) {
-            option.put("active", !selectedMember.isBlank()
-                    && MemberPortraitOptions.sameMember(selectedMember, String.valueOf(option.get("value"))));
+            String value = String.valueOf(option.get("value"));
+            boolean active = selectedMembers.stream()
+                    .anyMatch(token -> MemberPortraitOptions.sameMember(token, value));
+            option.put("active", active);
         }
         model.addAttribute("memberPickerOptions", picker);
         model.addAttribute("isObjektSideAll", "all".equals(selectedSide));
         model.addAttribute("isObjektSideHave", "have".equals(selectedSide));
         model.addAttribute("isObjektSideWant", "want".equals(selectedSide));
+    }
+
+    private void addMarketSeasonClassFilter(Model model, String selectedSeason, String selectedClass) {
+        Set<String> seasons = new LinkedHashSet<>();
+        Set<String> classes = new LinkedHashSet<>();
+        List<Map<String, Object>> catalog = objektService.findCollections("triples");
+        if (catalog == null) catalog = List.of();
+        for (Map<String, Object> item : catalog) {
+            if (item == null) continue;
+            String season = stringValue(item.get("season"));
+            String klass = stringValue(item.get("class"));
+            if (!season.isBlank()) seasons.add(season);
+            if (!klass.isBlank()) classes.add(klass);
+        }
+        // 전체는 드롭다운의 all 체크박스가 담당 — 옵션 목록에는 실제 값만 둔다.
+        List<Map<String, Object>> seasonOptions = new ArrayList<>();
+        for (String value : ObjektFilterOrder.sortedSeasons(seasons)) {
+            seasonOptions.add(marketFilterOption(value, value, selectedSeason.equalsIgnoreCase(value)));
+        }
+        List<Map<String, Object>> classOptions = new ArrayList<>();
+        for (String value : classes.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList()) {
+            classOptions.add(marketFilterOption(value, value, selectedClass.equalsIgnoreCase(value)));
+        }
+        model.addAttribute("marketSeasonOptions", seasonOptions);
+        model.addAttribute("marketClassOptions", classOptions);
+        model.addAttribute("hasSelectedSeason", !selectedSeason.isBlank());
+        model.addAttribute("hasSelectedClass", !selectedClass.isBlank());
+    }
+
+    private static Map<String, Object> marketFilterOption(String value, String label, boolean selected) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("value", value);
+        row.put("label", label);
+        row.put("selected", selected);
+        return row;
     }
 
     private static String normalizeObjektSide(String category, String objektSide) {
@@ -835,10 +947,17 @@ public class ArticleController {
         return (want && !have) ? "want" : "have";
     }
 
-    private static boolean matchesMarketListing(String category, List<ArticleObjekt> links, String member, String side) {
-        if (member != null && !member.isBlank()) {
-            // 판매/구매(또는 Have/Want) 오브젝트 중 해당 멤버가 하나라도 있으면 찾는다.
-            return ArticleMemberSwap.matchesMember(links, member, side);
+    private static boolean matchesMarketListing(String category,
+                                                List<ArticleObjekt> links,
+                                                String member,
+                                                String side,
+                                                String season,
+                                                String objektClass) {
+        boolean hasAttr = (member != null && !member.isBlank())
+                || (season != null && !season.isBlank())
+                || (objektClass != null && !objektClass.isBlank());
+        if (hasAttr) {
+            return ArticleMemberSwap.matchesListing(links, member, side, season, objektClass);
         }
         if (isSellBoard(category)) {
             return ArticleMemberSwap.hasSide(links, side);
@@ -850,6 +969,12 @@ public class ArticleController {
         model.addAttribute("isMarketBoard", isObjektBoard(category));
         model.addAttribute("isTrade", isTradeBoard(category));
         model.addAttribute("isSell", isSellBoard(category));
+        // 교환/거래 링크·폼은 /trade·/sell, 그 외 게시판은 /article/{category}
+        model.addAttribute("boardBase", boardPath(category));
+    }
+
+    private static String boardPath(String category) {
+        return isObjektBoard(category) ? "/" + category : "/article/" + category;
     }
 
     private static LinkedSides resolveLinkedSides(String category,
@@ -869,6 +994,9 @@ public class ArticleController {
     private static String validateObjektSelection(String category, List<String> haveKeys, List<String> wantKeys) {
         if (isTradeBoard(category)) {
             return ArticleObjektService.validateTradeSides(haveKeys, wantKeys);
+        }
+        if (isSellBoard(category)) {
+            return ArticleObjektService.validateSellSelection(haveKeys, wantKeys);
         }
         return null;
     }

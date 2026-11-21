@@ -56,4 +56,16 @@ class CalendarDecorationServiceTest {
         verify(storage).saveWithMeta(file, "calendar");
         verify(repository).save(any(CalendarDecoration.class));
     }
+
+    @Test
+    void rejectsTextLongerThanTheDatabaseColumns() {
+        LocalDate date = LocalDate.of(2026, 11, 14);
+        assertThatThrownBy(() -> service.create("유닛 데뷔", "UNIT", date, "가".repeat(81), "", null, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("80자");
+        assertThatThrownBy(() -> service.create("유닛 데뷔", "UNIT", date, "", "가".repeat(501), null, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("500자");
+        verify(repository, never()).save(any());
+    }
 }

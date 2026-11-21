@@ -180,6 +180,7 @@ public class AlbumAdminService {
             String albumInfo,
             String albumType,
             String albumFormat,
+            String musicVideoYoutubeId,
             Long unitId,
             Long sectionId,
             List<Long> artistIds,
@@ -188,8 +189,8 @@ public class AlbumAdminService {
             String imageUrl
     ) {
         Album album = new Album();
-        applyFields(album, null, albumName, releaseDate, albumInfo, albumType, albumFormat, unitId, sectionId,
-                artistIds, tracksJson, image, imageUrl, false);
+        applyFields(album, null, albumName, releaseDate, albumInfo, albumType, albumFormat, musicVideoYoutubeId,
+                unitId, sectionId, artistIds, tracksJson, image, imageUrl, false);
         AlbumAdminDto dto = toDto(albumRepository.save(album));
         albumService.invalidateListCache();
         return dto;
@@ -203,6 +204,7 @@ public class AlbumAdminService {
             String albumInfo,
             String albumType,
             String albumFormat,
+            String musicVideoYoutubeId,
             Long unitId,
             Long sectionId,
             List<Long> artistIds,
@@ -213,8 +215,8 @@ public class AlbumAdminService {
     ) {
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 앨범이 존재하지 않습니다. id=" + albumId));
-        applyFields(album, albumId, albumName, releaseDate, albumInfo, albumType, albumFormat, unitId, sectionId,
-                artistIds, tracksJson, image, imageUrl, clearImage);
+        applyFields(album, albumId, albumName, releaseDate, albumInfo, albumType, albumFormat, musicVideoYoutubeId,
+                unitId, sectionId, artistIds, tracksJson, image, imageUrl, clearImage);
         AlbumAdminDto dto = toDto(albumRepository.save(album));
         albumService.invalidateListCache();
         return dto;
@@ -237,6 +239,7 @@ public class AlbumAdminService {
             String albumInfo,
             String albumType,
             String albumFormat,
+            String musicVideoYoutubeId,
             Long unitId,
             Long sectionId,
             List<Long> artistIds,
@@ -271,6 +274,7 @@ public class AlbumAdminService {
         album.setAlbumInfo(info);
         album.setAlbumType(parsedType);
         album.setAlbumFormat(normalizeAlbumFormat(albumFormat));
+        album.setMusicVideoYoutubeId(normalizeYoutubeVideoId(musicVideoYoutubeId));
 
         // 멤버 선택 시 유닛은 반드시 비움. 유닛 select의 「완전체」와는 별개 상태.
         if (hasArtists) {
@@ -434,6 +438,7 @@ public class AlbumAdminService {
                 .albumInfo(album.getAlbumInfo())
                 .albumType(album.getAlbumType() != null ? album.getAlbumType().name() : AlbumType.SUBUNIT.name())
                 .albumFormat(album.getAlbumFormat())
+                .musicVideoYoutubeId(album.getMusicVideoYoutubeId())
                 .unitId(unit != null ? unit.getUnitId() : null)
                 .unitName(unit != null ? unit.getUnitName() : null)
                 .sectionId(section != null ? section.getSectionId() : null)

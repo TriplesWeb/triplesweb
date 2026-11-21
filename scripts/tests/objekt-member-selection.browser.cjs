@@ -23,7 +23,7 @@ const base = path.resolve(__dirname, '../..');
         : mode === 'about'
           ? '<link rel="stylesheet" href="/css/artist.css"><link rel="stylesheet" href="/css/member-portrait-picker.css"><link rel="stylesheet" href="/css/artist-performance.css">'
           : '<link rel="stylesheet" href="/css/triples.css">'+(artist?'<link rel="stylesheet" href="/css/artist-performance.css">':'');
-      const markup = Array.from({length:8}, (_, i) => '<button type="button" class="'+(artist?'nav-tab-btn':'mpp-item')+'" data-member-tab data-value="'+i+'" data-frame="'+(i+1)+'" style="--artist-color:#22aeff" aria-pressed="false"><span class="artist-tab-avatar"><img class="artist-tab-photo" src="https://motion.test/portrait.svg" alt="멤버 '+i+'"><img class="artist-tab-frame" src="https://motion.test/uploads/images/artist-tab-frames/'+(i+1)+'.png" alt=""><span class="artist-tab-shine"></span></span><span class="artist-tab-label">멤버 '+i+'</span></button>').join('');
+      const markup = Array.from({length:8}, (_, i) => '<button type="button" class="'+(artist?'nav-tab-btn':'mpp-item')+'" data-member-tab data-value="'+i+'" data-frame="'+(i+1)+'" style="--artist-color:#22aeff" aria-pressed="false"><span class="artist-tab-avatar"><img class="artist-tab-photo" src="https://motion.test/portrait.svg" alt="멤버 '+i+'"><img class="artist-tab-frame" src="https://motion.test/images/artist/tab-frames/'+(i+1)+'.png" alt=""><span class="artist-tab-shine"></span></span><span class="artist-tab-label">멤버 '+i+'</span></button>').join('');
       await page.setViewportSize({width:390,height:844});
       await page.setContent('<html><head><base href="https://motion.test/">'+cssLinks+'</head><body style="margin:20px;background:#101216" class="'+(artist?'artist-page':'')+'"><div class="'+(artist?'artist-member-tabs':'member-portrait-picker')+'">'+markup+'</div><script src="/js/member-portrait-picker.js"></script></body></html>');
       await page.waitForFunction(()=>!!window.MemberPortraitPicker);
@@ -190,11 +190,13 @@ const base = path.resolve(__dirname, '../..');
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth), true);
       await page.emulateMedia({reducedMotion:'no-preference'});
     }
-    await page.setContent('<html><head><base href="https://motion.test/"><link rel="stylesheet" href="/css/archive-page.css"></head><body><main class="archive-page" data-archive-kind="image"><article class="ar-card"><a class="ar-photo-link"><img src="/portrait.svg" alt="큰 사진"></a><div class="ar-body"><span class="archive-member-chip"><img src="/portrait.svg" alt="멤버"><span>멤버 이름</span></span></div></article></main></body></html>');
+    await page.setViewportSize({width:1280,height:800});
+    await page.setContent('<html><head><base href="https://motion.test/"><link rel="stylesheet" href="/css/archive-page.css"></head><body><main class="archive-page" data-archive-kind="image"><section class="ar-grid" id="archiveGrid"><article class="ar-card"><a class="ar-photo-link"><img src="/portrait.svg" alt="큰 사진"></a><div class="ar-body"><span class="archive-member-chip"><img src="/portrait.svg" alt="멤버"><span>멤버 이름</span></span></div></article></section></main></body></html>');
     await page.locator('.archive-member-chip img').waitFor();
     const sizes=await page.evaluate(()=>({badge:document.querySelector('.archive-member-chip img').getBoundingClientRect().height,photo:document.querySelector('.ar-photo-link img').getBoundingClientRect().height}));
     assert.ok(sizes.badge<=40 && sizes.badge>20,'사진 아카이브 멤버 배지 높이 고정');
-    assert.ok(sizes.photo>=250,'원본 사진 크기 유지');
+    assert.ok(sizes.photo>=160,'목록 사진이 너무 작다: '+sizes.photo);
+    assert.ok(sizes.photo>sizes.badge*4,'멤버 배지가 원본 사진 크기를 따라가면 안 된다: '+JSON.stringify(sizes));
     console.log('통과: 단독/번들/그룹 소개/About CSS 선택 효과 · 프레임 보존 · 윤곽 drop-shadow · 상징색 광택 · 6.85초 반복 · 좌상단→우하단 광택 · transform/opacity만 이동 · 다중선택·키보드 · 모션 감소 · 모바일');
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exit(1);});

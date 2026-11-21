@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.*;
 class ArticleObjektOrderingTest {
     @Test void composePrefillsOnlyKnownSelectedObjectsForTradeAndSell() {
         var catalog = mock(ObjektService.class);
-        var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
+        var controller = new ArticleController(mock(ArticleService.class), mock(ArticleFileServiceImpl.class),
                 mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog, mock(ArtistSnapshotService.class));
         when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("id","uuid","slug","hayeoncc367z","collectionId","Cream02 HaYeon 367Z","member","HaYeon","season","Cream02")));
         for (String category : List.of("trade","sell")) {
@@ -36,7 +36,7 @@ class ArticleObjektOrderingTest {
         var articles = mock(ArticleService.class);
         var objekts = mock(ObjektService.class);
         var links = mock(ArticleObjektService.class);
-        var controller = new ArticleController(articles, mock(CommentService.class), mock(ArticleFileServiceImpl.class),
+        var controller = new ArticleController(articles, mock(ArticleFileServiceImpl.class),
                 mock(DateTimeFormatService.class), links, objekts, mock(ArtistSnapshotService.class));
         when(objekts.findCollections("triples")).thenReturn(List.of(
                 Map.of("member", "Jiyeon", "season", "Atom01"), Map.of("member", "Alpha", "season", "Cream02"),
@@ -55,8 +55,10 @@ class ArticleObjektOrderingTest {
                 .extracting(item -> item.get("member"))
                 .contains("지연", "윤서연", "김유연 × 박시온");
         for (var model : List.of(fresh, edited)) {
-                assertThat(model.get("objektMemberOptions")).isEqualTo(List.of("윤서연", "정혜린", "김유연", "박시온", "지연"));
-                assertThat(model.get("hasOtherObjektOption")).isEqualTo(true);
+                assertThat((List<Map<String, Object>>) model.get("memberPickerOptions"))
+                        .extracting(row -> row.get("value"))
+                        .containsExactly("윤서연", "정혜린", "김유연", "박시온", "지연");
+                assertThat(model.get("selectedGroup")).isEqualTo("all");
                 assertThat(model.get("objektSeasonOptions")).isEqualTo(List.of("Cream02", "Binary02", "Ever01", "Atom01"));
             }
         }
@@ -64,7 +66,7 @@ class ArticleObjektOrderingTest {
 
     @Test void mergedMemberOptionSearchesAllOriginalAliases() {
         var catalog = mock(ObjektService.class);
-        var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
+        var controller = new ArticleController(mock(ArticleService.class), mock(ArticleFileServiceImpl.class),
                 mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog, mock(ArtistSnapshotService.class));
         when(catalog.findCollections("triples")).thenReturn(List.of(Map.of("member", "S21"),
                 Map.of("member", "ChaeWon"), Map.of("member", "김채원"), Map.of("member", "S22"),
@@ -73,13 +75,15 @@ class ArticleObjektOrderingTest {
         assertThat(controller.objektOptions("S21", "", "", "", "members", 0, 24, "", "latest")).containsEntry("total", 3);
         assertThat(controller.objektOptions("", "", "", "", "other", 0, 24, "", "latest")).containsEntry("total", 1);
         var model = new ExtendedModelMap(); controller.showArticleForm("trade", model);
-        assertThat(model.get("objektMemberOptions")).isEqualTo(List.of("김채원", "설린"));
-        assertThat(model.get("hasOtherObjektOption")).isEqualTo(true);
+        assertThat((List<Map<String, Object>>) model.get("memberPickerOptions"))
+                .extracting(row -> row.get("value"))
+                .containsExactly("김채원", "설린");
+        assertThat(model.get("selectedGroup")).isEqualTo("all");
     }
 
     @Test @SuppressWarnings("unchecked") void objektOptionsFiltersKindAndSortsByNumber() {
         var catalog = mock(ObjektService.class);
-        var controller = new ArticleController(mock(ArticleService.class), mock(CommentService.class), mock(ArticleFileServiceImpl.class),
+        var controller = new ArticleController(mock(ArticleService.class), mock(ArticleFileServiceImpl.class),
                 mock(DateTimeFormatService.class), mock(ArticleObjektService.class), catalog, mock(ArtistSnapshotService.class));
         when(catalog.findCollections("triples")).thenReturn(List.of(
                 Map.of("id", "a", "member", "SeoYeon", "collectionNo", "102Z", "createdAt", "2024-01-01"),
@@ -96,38 +100,18 @@ class ArticleObjektOrderingTest {
         assertThat((List<String>) form.get("objektKindOptions")).containsExactly("101Z", "102Z");
     }
 
-    @Test @SuppressWarnings("unchecked") void detailShowsKoreanObjektMembers() {
-        var articles = mock(ArticleService.class);
-        var links = mock(ArticleObjektService.class);
-        var controller = new ArticleController(articles, mock(CommentService.class), mock(ArticleFileServiceImpl.class),
-                mock(DateTimeFormatService.class), links, mock(ObjektService.class), mock(ArtistSnapshotService.class));
-        ArticleObjekt duo = new ArticleObjekt();
-        duo.setObjektKey("duo");
-        duo.setCollectionId("Cream02");
-        duo.setMemberName("S5 X S20");
-        duo.setCollectionNo("100");
-        ArticleObjekt solo = new ArticleObjekt();
-        solo.setObjektKey("solo");
-        solo.setMemberName("JiYeon");
-        when(links.findForArticle(9L)).thenReturn(List.of(duo, solo));
-        Article article = new Article();
-        article.setId(9L);
-        article.setTitle("교환");
-        article.setContent("<p>내용</p>");
-        article.setCategory("trade");
-        when(articles.showWithFiles(9L)).thenReturn(article);
-        when(articles.getLikesCount(9L)).thenReturn(0L);
+    @Test void tradeDetailRedirectsToFeed() {
+        var controller = new ArticleController(mock(ArticleService.class), mock(ArticleFileServiceImpl.class),
+                mock(DateTimeFormatService.class), mock(ArticleObjektService.class), mock(ObjektService.class), mock(ArtistSnapshotService.class));
         var model = new ExtendedModelMap();
-        controller.showArticle("trade", 9L, null, model);
-        assertThat((List<Map<String, Object>>) model.get("linkedObjekts"))
-                .extracting(row -> row.get("memberName"))
-                .containsExactly("김유연 × 박시온", "지연");
+        assertThat(controller.showArticle("trade", 9L, null, model)).isEqualTo("redirect:/trade");
+        assertThat(controller.showArticle("sell", 11L, null, model)).isEqualTo("redirect:/sell");
     }
 
     @Test void blankTitleOrContentAndUnchangedEditAreRejected() throws Exception {
         var articles = mock(ArticleService.class);
         var links = mock(ArticleObjektService.class);
-        var controller = new ArticleController(articles, mock(CommentService.class), mock(ArticleFileServiceImpl.class),
+        var controller = new ArticleController(articles, mock(ArticleFileServiceImpl.class),
                 mock(DateTimeFormatService.class), links, mock(ObjektService.class), mock(ArtistSnapshotService.class));
         Article existing = new Article();
         existing.setId(4L);
@@ -164,38 +148,4 @@ class ArticleObjektOrderingTest {
         assertThat(unchanged.get("errorMessage")).isEqualTo("게시글을 수정해주세요.");
     }
 
-    @Test @SuppressWarnings("unchecked") void tradeDetailSplitsHaveAndWantZones() {
-        var articles = mock(ArticleService.class);
-        var links = mock(ArticleObjektService.class);
-        var controller = new ArticleController(articles, mock(CommentService.class), mock(ArticleFileServiceImpl.class),
-                mock(DateTimeFormatService.class), links, mock(ObjektService.class), mock(ArtistSnapshotService.class));
-        ArticleObjekt have = new ArticleObjekt();
-        have.setObjektKey("have-key");
-        have.setSide(ArticleObjektService.SIDE_HAVE);
-        have.setCollectionId("Cream02 HaYeon 367Z");
-        have.setSeason("Cream02");
-        have.setMemberName("JiYeon");
-        ArticleObjekt want = new ArticleObjekt();
-        want.setObjektKey("want-key");
-        want.setSide(ArticleObjektService.SIDE_WANT);
-        want.setCollectionId("Want Card");
-        want.setMemberName("HaYeon");
-        when(links.findForArticle(11L)).thenReturn(List.of(have, want));
-        when(links.findHaveForArticle(11L)).thenReturn(List.of(have));
-        when(links.findWantForArticle(11L)).thenReturn(List.of(want));
-        Article article = new Article();
-        article.setId(11L);
-        article.setTitle("교환");
-        article.setContent("<p>내용</p>");
-        article.setCategory("trade");
-        when(articles.showWithFiles(11L)).thenReturn(article);
-        when(articles.getLikesCount(11L)).thenReturn(0L);
-        var model = new ExtendedModelMap();
-        controller.showArticle("trade", 11L, null, model);
-        assertThat(model.get("isTradeObjektSplit")).isEqualTo(true);
-        assertThat((List<Map<String, Object>>) model.get("linkedHaveObjekts"))
-                .extracting(row -> row.get("cardTitle")).containsExactly("HaYeon 367Z");
-        assertThat((List<Map<String, Object>>) model.get("linkedWantObjekts"))
-                .extracting(row -> row.get("collectionId")).containsExactly("Want Card");
-    }
 }

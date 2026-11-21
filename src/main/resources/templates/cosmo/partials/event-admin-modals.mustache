@@ -17,16 +17,15 @@
             </label>
             <div class="event-stops-field">
                 <div class="event-stops-field-head">지역 회차</div>
-                <p class="about-edit-field-hint">개최일은 시작·종료(선택)로 고르거나 직접 입력합니다. 회차마다 셋리스트를 넣을 수 있습니다. 셋리스트는 <code># 섹션</code>·<code>곡|앨범|비고</code>·같은 순번 갈림은 <code>곡A|앨범A || 곡B|앨범B</code>. MD 공지는 굿즈리스트(샵)에서 관리합니다.</p>
+                <p class="about-edit-field-hint">개최일은 시작·종료(선택)로 고르거나 직접 입력합니다.<br>
+                    셋리스트 예: <code># 섹션</code>, <code>곡|앨범|비고</code><br>
+                    갈림은 <code>곡A|앨범A || 곡B|앨범B</code><br>
+                    MD 공지는 굿즈리스트(샵)에서 관리합니다.</p>
                 <div id="eventEditStops" class="event-stop-rows"></div>
                 <button type="button" id="eventAddStopBtn" class="about-mode-btn album-add-track-btn btn btn-sm btn-outline btn-primary">회차 추가</button>
             </div>
             <label class="about-edit-label">포스터 이미지
                 <input type="file" id="eventEditImage" accept="image/*">
-            </label>
-            <label class="about-edit-label">외부 이미지 URL
-                <input type="url" id="eventEditImageUrl" placeholder="https://example.com/poster.jpg" maxlength="1000" pattern="https?://.+">
-                <span class="text-xs text-gray-400">이미지 파일 대신 사용할 링크를 입력하세요. 파일을 선택하면 파일이 우선 적용됩니다.</span>
             </label>
             <img id="eventEditImagePreview" class="about-preview hidden" alt="포스터 미리보기">
             <label class="about-edit-check">

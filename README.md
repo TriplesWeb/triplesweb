@@ -39,20 +39,18 @@ CI PR(`ci-tests.yml`)은 `--check` / `--no-run`, main 배포 이미지(`Dockerfi
 
 | 역할 | 경로 |
 |------|------|
-| 초기 시드(기존 정적 데이터) | [`src/main/resources/data/chemistry-seed.json`](src/main/resources/data/chemistry-seed.json) |
 | API | `/api/chemistry` (`ChemistryApiController`) |
-| 정적 케미 이미지 | [`uploads/chemistry/chem/`](uploads/chemistry/chem/) |
-| 관리자 업로드 이미지 | `uploads/images/chemistry/` |
+| 매트릭스 UI (logo·S 심볼) | [`src/main/resources/static/images/chemistry/`](src/main/resources/static/images/chemistry/) → `/images/chemistry/` |
+| 페어·그룹 사진 (서버) | `uploads/images/chemistry/` → `/uploads/images/chemistry/` |
 
-시드는 기본 비활성입니다. `CHEMISTRY_SEED_ENABLED=true`(또는 `chemistry.seed.enabled=true`)로 기동할 때만  
-없는 페어를 삽입하며, 이미 있는 행은 덮어쓰지 않습니다. 삭제는 DB에서 **하드 삭제**합니다.
+삭제는 DB에서 **하드 삭제**합니다.
 
 ### 추가·수정 방법 (권장)
 
 1. `.env`에 `CHEMISTRY_ADMIN_PASSWORD`를 설정합니다.
 2. `/triples/chemistry`에서 **관리자** 로그인합니다.
 3. 빈 칸(+)으로 추가하거나, 기존 셀을 열어 수정·삭제합니다.
-4. 이미지는 편집 폼에서 업로드하거나, 기존처럼 `uploads/chemistry/chem/...` 경로를 쓸 수 있습니다.
+4. 이미지는 편집 폼에서 업로드합니다 (`/uploads/images/chemistry/...`). 매트릭스 logo·심볼은 `/images/chemistry/` static입니다.
 
 DB에 활성 케미가 하나도 없으면 표 위에 **「등록된 케미명이 없어요」** 안내가 표시됩니다. (멤버 격자·대각선 S 심볼은 그대로 보입니다.)
 
@@ -65,7 +63,7 @@ cp .env.example .env   # 최초 1회 — DB/API 값 채우기 (.gitignore)
 
 브라우저: http://localhost:8080/main
 
-`bootRun`과 IntelliJ의 메인 클래스 실행 모두 Spring 시작 단계에서 프로젝트 루트 `.env`를 로드하고, `MYSQL_*`를 `SPRING_DATASOURCE_*`로 매핑합니다. 별도 dotenv 플러그인은 필요 없습니다. 명령행·JVM 옵션·실제 환경변수의 같은 설정이 `.env`보다 우선합니다. Docker Compose도 같은 `.env`를 씁니다.
+`bootRun`과 IntelliJ의 메인 클래스 실행 모두 Spring 시작 단계에서 프로젝트 루트 `.env`를 로드하고, `MYSQL_*`를 `SPRING_DATASOURCE_*`로 매핑합니다. 별도 dotenv 플러그인은 필요 없습니다. 명령행·JVM 옵션·실제 환경변수의 같은 설정이 `.env`보다 우선합니다. Docker Compose도 같은 `.env`를 씁니다. `application.properties`에는 DB 비밀번호·운영 호스트 같은 실값을 두지 않습니다.
 
 ### IntelliJ에서 운영과 같은 DB로 실행
 
@@ -106,10 +104,10 @@ DB를 서버와 같이 쓰면 **파일도 같이** 보여야 합니다.
 
 - **실시간:** 로컬 `bootRun` 업로드/삭제 시 Tailscale로 서버 `uploads/`에 push (기동 시 서버→로컬 pull). `.env`의 `UPLOAD_SYNC_*` 참고.
 - **참조만:** 로컬 `./uploads`에 없으면 `upload.fallback-base-url`(기본 `https://triples.eht3r.cloud`)로 **리다이렉트**합니다. 공유 DB를 쓰는 협업자 PC에서도 멤버·유닛 이미지가 보입니다. 서버 Docker는 폴백을 비웁니다.
-- **배포:** `uploads/`를 Actions가 서버로 rsync. `--delete`이지만 `images/`·`videos/`·`files/` 전체는 protect라서 관리자가 올린 앨범·멤버·유닛 커버 등이 배포마다 지워지지 않습니다. 배포 전후 `chown`·`chmod a+rwX`로 권한 충돌을 피합니다.
+- **운영 배포:** 케미 UI는 WAR static에 포함됩니다. 페어 사진은 서버 `uploads/images/chemistry/`만 사용하며, 배포 시 옛 `uploads/chemistry/chem` → `uploads/images/chemistry` 멱등 복사를 한 번 돌립니다. 전체 `uploads/` 삭제·재귀 chown/chmod는 하지 않습니다.
 
 ```bash
-./scripts/setup-git-hooks.sh   # pre-commit이 uploads를 자동 git add
+./scripts/setup-git-hooks.sh   # 훅 경로 설정 (uploads는 gitignore — 서버 전용)
 ```
 
 자세한 실행·권한·체크리스트는 [프로젝트 구조 문서](docs/PROJECT_STRUCTURE.md)의 **§11 로컬 개발 빠른 시작**을 참고하세요.
@@ -118,13 +116,19 @@ DB를 서버와 같이 쓰면 **파일도 같이** 보여야 합니다.
 
 ## Raspberry Pi 4 Docker CI/CD (Tailscale SSH)
 
-`main` 푸시 시 GitHub Actions가 **linux/arm64** 이미지를 빌드해 GHCR에 올리고, Tailscale으로 Pi에 SSH해 `docker compose pull && up`까지 자동 실행합니다.
+Pi에는 **MariaDB 하나와 Nginx 프록시(8090), 활성 운영 앱 하나**를 실행합니다. 배포하는 동안에만 새 Blue/Green 앱 슬롯을 함께 기동해 정상 상태를 확인한 뒤 트래픽을 전환합니다. PR에서는 CI 검사만 수행하며, `main` 머지 후 운영을 배포합니다. **처음 Nginx로 전환할 때에는 짧은 중단이 발생할 수 있습니다.** [Blue-Green 운영/롤백 가이드](docs/BLUE_GREEN_DEPLOYMENT.md)를 먼저 확인하세요.
 
 ```text
-push → Actions (buildx arm64) → ghcr.io → Tailscale join → SSH → compose pull/up
+PR open/push    → CI tests (Java/WAR, CSS/브라우저, Qodana) → 통과 시 머지 가능
+main 머지       → 새 비활성 앱 예열 → readiness 확인 → Nginx reload(:8090) → 구버전 종료
+매일 04:00 KST / 수동 → 동일 운영 상태라면 빌드·재시작 생략
 ```
 
-### 1. GitHub Secrets
+### GitHub Codespaces 모바일 테스트
+
+모바일 테스트가 필요하면 Codespace에서 현재 PR 커밋을 실행합니다. 기존 미리보기용 MariaDB와 `uploads/` 복사본을 연결하고 `APP_SCHEDULING_ENABLED=false`로 예약 작업을 끕니다. Codespaces의 포트 공개 범위를 **Private**으로 유지하고, 휴대폰에서 해당 Codespace를 만든 GitHub 계정으로 로그인해 HTTPS 링크를 엽니다.
+
+### 1. GitHub Secrets / Variables
 
 레포 **Settings → Secrets and variables → Actions**에 다음을 추가합니다.
 
@@ -135,7 +139,8 @@ push → Actions (buildx arm64) → ghcr.io → Tailscale join → SSH → compo
 | `PI_HOST` | Tailscale MagicDNS 또는 `100.x` 주소 (예: `raspberrypi.tailXXXX.ts.net`) |
 | `PI_USER` | SSH 사용자 |
 | `PI_SSH_KEY` | deploy 전용 **private** SSH 키 전체 |
-| `PI_DEPLOY_PATH` | Pi의 compose 디렉터리 (`/opt/stacks/triplesweb`) |
+| `PI_DEPLOY_PATH` | 운영 compose 디렉터리 (`/opt/stacks/triplesweb`) |
+| `PI_DEV_DEPLOY_PATH` | 선택. **기존 개발 앱 종료용** 경로가 기본값과 다를 때만 지정 |
 
 Packages 쓰기는 워크플로의 `GITHUB_TOKEN` + `packages: write`로 처리합니다.  
 Pi pull이 `unauthorized`면 (1) GHCR 패키지 visibility를 **Public**으로 바꾸거나 (2) Secret `GHCR_TOKEN`(PAT, `read:packages`)을 추가하세요. 배포 스텝이 Pi에서 `docker login` 후 pull합니다.
@@ -172,10 +177,9 @@ curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker "$USER"
 # 재로그인 후 docker 확인
 
-# 기존 stacks 패턴과 동일 경로
+# 운영
 mkdir -p /opt/stacks/triplesweb/{uploads,data}
 cd /opt/stacks/triplesweb
-
 # 레포에서 docker-compose.yml, .env 복사 후
 # .env: IMAGE, MYSQL_*, YOUTUBE_API_KEY, APP_PORT=8090
 # (Pi에서 8080/8081은 vaultwarden 등이 사용 중)
@@ -189,31 +193,31 @@ echo "$GHCR_PAT" | docker login ghcr.io -u YOUR_GITHUB_USER --password-stdin
 첫 기동(이미지 푸시 전·후):
 
 ```bash
-cd /opt/stacks/triplesweb
-docker compose pull   # 이미지가 있을 때
-docker compose up -d
+# 기존 단일 앱 최초 설치(Blue-Green 이전)에만 사용
+cd /opt/stacks/triplesweb && docker compose --profile legacy pull app && docker compose --profile legacy up -d app mariadb
+# Blue-Green 전환 후에는 일반 docker compose up/down 대신 Actions 배포만 사용
 ```
 
-앱: `http://<pi-lan-or-tailscale-ip>:8090/main`
+- 운영: `http://<pi-lan-or-tailscale-ip>:8090/main`
 
 ### 4. 이후 자동 배포
 
-1. `main`에 푸시 (또는 Actions에서 **Build and deploy to Raspberry Pi** 수동 실행)
-2. Actions가 arm64 빌드 → GHCR 푸시 → Tailscale 조인 → `PI_HOST`로 SSH
-3. Pi에서 `IMAGE` 갱신 후 `docker compose pull app && up -d`
+1. **PR 검사:** [ci-tests.yml](.github/workflows/ci-tests.yml)이 Java 테스트+WAR와 HTML 의존 브라우저 검사를 한 Job에서 실행하고, CSS/JavaScript 검사와 Qodana를 병렬 실행합니다.
+2. **운영:** 머지 즉시 [deploy-main.yml](.github/workflows/deploy-main.yml) 실행. 신규 앱을 준비해 Blue/Green 전환하며, 새벽 **04:00 KST** 재확인과 수동 배포도 지원합니다. 스키마 변경·메모리 부족 시 기존 앱을 유지하고 배포에 실패합니다.
+3. **개발 서버 폐지:** 첫 운영 배포에서 기존 Pi 개발 앱만 종료합니다. 개발 데이터는 삭제하지 않습니다.
 
-워크플로: [`.github/workflows/deploy-main.yml`](.github/workflows/deploy-main.yml)
+체크리스트: [docs/DEPLOY_PI.md](docs/DEPLOY_PI.md)
 
 PR 머지 게이트: Ruleset **`main-ci`**의 required status check **`required`**
-(`CI tests` 워크플로의 `test` + `package` + `qodana` 집계).
+(`CI tests`의 배포 설정 검사 + Java/WAR + 브라우저/CSS + Qodana 집계).
 
 ### 5. 로컬에서 compose만 쓸 때
 
 ```bash
 cp .env.example .env
 # IMAGE / DB / API 키 채우기
-docker compose up -d --build   # 로컬 아키텍처용으로 Dockerfile 직접 빌드할 때는
-# 또는 이미지만: docker compose up -d
+docker compose --profile legacy up -d app mariadb  # 로컬 테스트/기존 단일 앱에서만
+# 운영 Blue-Green 전환 후에는 legacy 앱을 시작하지 마세요.
 ```
 
-Pi(arm64) 배포 이미지는 CI가 빌드하므로, Intel/Apple Silicon Mac에서 `--platform linux/arm64` 없이 로컬 빌드하면 아키텍처가 다를 수 있습니다.
+Pi(arm64) 배포 이미지는 main 머지 후 운영 배포 Actions가 빌드하므로, Intel/Apple Silicon Mac에서 `--platform linux/arm64` 없이 로컬 빌드하면 아키텍처가 다를 수 있습니다.

@@ -1,26 +1,26 @@
 (function () {
     const grid = document.getElementById('archiveGrid');
     const controls = document.getElementById('archiveGalleryControls');
-    if (!grid || !controls || !grid.closest('[data-archive-kind="image"]')) return;
+    if (!grid || !controls || !grid.closest('[data-archive-kind="image"]') || grid.closest('.is-browse')) return;
 
     const previous = document.getElementById('archiveGalleryPrev');
     const next = document.getElementById('archiveGalleryNext');
     const position = document.getElementById('archiveGalleryPosition');
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const threshold = 4;
+    const threshold = 2;
     let slides = [];
     let active = 0;
     let frame = 0;
+    let moving = false;
+    let moveTimer = 0;
 
-    function render() {
-        frame = 0;
-        if (controls.hidden || !slides.length) return;
-        const center = grid.scrollLeft + grid.clientWidth / 2;
-        let closest = Infinity;
-        slides.forEach((slide, index) => {
-            const distance = Math.abs(slide.offsetLeft + slide.offsetWidth / 2 - center);
-            if (distance < closest) { closest = distance; active = index; }
-        });
+    function slideScrollLeft(slide) {
+        const gridBox = grid.getBoundingClientRect();
+        const slideBox = slide.getBoundingClientRect();
+        return grid.scrollLeft + (slideBox.left + slideBox.width / 2) - (gridBox.left + gridBox.width / 2);
+    }
+
+    function paint() {
         slides.forEach((slide, index) => {
             slide.classList.toggle('is-current-photo', index === active);
             slide.classList.toggle('is-photo-before', index < active);
@@ -34,18 +34,44 @@
         next.disabled = active === slides.length - 1;
     }
 
+    function render() {
+        frame = 0;
+        if (moving || controls.hidden || !slides.length) return;
+        const gridBox = grid.getBoundingClientRect();
+        const center = gridBox.left + gridBox.width / 2;
+        let closest = Infinity;
+        slides.forEach((slide, index) => {
+            const box = slide.getBoundingClientRect();
+            const distance = Math.abs(box.left + box.width / 2 - center);
+            if (distance < closest) { closest = distance; active = index; }
+        });
+        paint();
+    }
+
     function goTo(index, smooth = true) {
         if (controls.hidden || !slides.length) return;
         active = Math.max(0, Math.min(slides.length - 1, index));
+        paint();
         const slide = slides[active];
+        const useSmooth = smooth && !reducedMotion.matches;
+        moving = useSmooth;
+        window.clearTimeout(moveTimer);
         grid.scrollTo({
-            left: slide.offsetLeft - (grid.clientWidth - slide.offsetWidth) / 2,
-            behavior: smooth && !reducedMotion.matches ? 'smooth' : 'instant'
+            left: slideScrollLeft(slide),
+            behavior: useSmooth ? 'smooth' : 'auto'
         });
-        if (!smooth || reducedMotion.matches) render();
+        if (!useSmooth) {
+            moving = false;
+            return;
+        }
+        moveTimer = window.setTimeout(() => {
+            moving = false;
+            render();
+        }, 280);
     }
 
     function sync() {
+        const previousActive = slides[active]?.dataset.id;
         slides = [...grid.querySelectorAll('.ar-card:not(.ar-off)')];
         const enabled = slides.length >= threshold;
         controls.hidden = !enabled;
@@ -73,7 +99,8 @@
             slide.setAttribute('aria-roledescription', '슬라이드');
             slide.setAttribute('aria-label', `${index + 1} / ${slides.length}: ${slide.dataset.title || '사진'}`);
         });
-        goTo(0, false);
+        const keep = slides.findIndex(slide => slide.dataset.id === previousActive);
+        goTo(keep >= 0 ? keep : 0, false);
     }
 
     previous.addEventListener('click', () => goTo(active - 1));
@@ -95,7 +122,9 @@
     });
     grid.addEventListener('archive:updated', sync);
     if (window.ResizeObserver) {
-        new ResizeObserver(() => goTo(active, false)).observe(grid);
+        new ResizeObserver(() => {
+            if (!controls.hidden) goTo(active, false);
+        }).observe(grid);
     } else {
         window.addEventListener('resize', () => goTo(active, false));
     }

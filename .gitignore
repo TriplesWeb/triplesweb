@@ -44,8 +44,14 @@ out/
 .env.local
 !.env.example
 
+### Uploads: 서버(및 로컬 bootRun) 디스크 전용 — UI 그래픽은 static/images ###
+uploads/
+
 ### Upload sidecars (원본 파일명만 기록, 배포 불필요) ###
 uploads/**/*.orig
+
+### Multipart / transfer temps (e.g. .uuid.png.XXXX) ###
+uploads/**/.*
 
 ### Docker entrypoint chemistry bundle marker ###
 uploads/**/.bundle-version

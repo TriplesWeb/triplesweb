@@ -136,6 +136,10 @@
             position: relative;
             z-index: 2;
         }
+        .objekt-filter-bar:has(.is-open),
+        .objekt-filter-bar:has(:focus-within) {
+            z-index: 80;
+        }
         .objekt-filter {
             position: relative;
             z-index: 1;
@@ -436,16 +440,19 @@
             padding-top: .85rem;
             border-top: 1px solid rgba(255,255,255,.06);
         }
-        #objekt-search-form .objekt-search-row {
+        #objekt-search-form .objekt-search-row,
+        .objekt-workspace .objekt-search-row {
             flex-wrap: nowrap;
         }
-        #objekt-search-form .objekt-search {
+        #objekt-search-form .objekt-search,
+        .objekt-workspace .objekt-search {
             flex: 1 1 auto;
             width: auto;
             max-width: none;
             min-width: 0;
         }
-        #objekt-search-form .objekt-search-glyph {
+        #objekt-search-form .objekt-search-glyph,
+        .objekt-workspace .objekt-search-glyph {
             position: absolute;
             left: .7rem;
             top: 50%;
@@ -459,7 +466,8 @@
             line-height: 1;
             pointer-events: none;
         }
-        #objekt-search-form .objekt-search-glyph svg {
+        #objekt-search-form .objekt-search-glyph svg,
+        .objekt-workspace .objekt-search-glyph svg {
             width: 1rem;
             height: 1rem;
             fill: none;
@@ -467,15 +475,19 @@
             stroke-width: 1.8;
         }
         #objekt-search-form .objekt-search .objekt-search-input,
-        #objekt-search-form .objekt-search .site-search__input {
+        #objekt-search-form .objekt-search .site-search__input,
+        .objekt-workspace .objekt-search .objekt-search-input,
+        .objekt-workspace .objekt-search .site-search__input {
             padding-left: 2.15rem;
             padding-right: .85rem;
         }
-        #objekt-search-form .objekt-reset-button {
+        #objekt-search-form .objekt-reset-button,
+        .objekt-workspace .objekt-reset-button {
             flex: 0 0 auto;
             width: auto;
         }
-        #objekt-search-form .objekt-reset-button[hidden] {
+        #objekt-search-form .objekt-reset-button[hidden],
+        .objekt-workspace .objekt-reset-button[hidden] {
             display: none !important;
         }
         .objekt-search { flex: 1 1 16rem; }
@@ -1225,7 +1237,7 @@
             .objekt-filter { height: auto; min-height: 2.25rem; justify-content: space-between; border-radius: 0.75rem; }
             .objekt-head { margin-bottom: .75rem; padding-bottom: .65rem; }
             .objekt-head-title { font-size: 1.35rem; }
-            .objekt-dropdown-menu:not(.season-choice-panel) { left: 0; right: 0; min-width: 0; width: 100%; }
+            /* 드롭다운 너비는 objekt-filter.css 공통 규칙을 쓴다 */
             .objekt-filter-control { max-width: none; }
             .objekt-filter-select-wrap,
             .objekt-kind-combo { max-width: none; }

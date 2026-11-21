@@ -137,6 +137,8 @@
   }
 
   function isValidDateRange(startIso, endIso) {
+    // 둘 다 비었거나, 시작만 있으면(종료 생략 = 당일) 유효하다.
+    if (!startIso && !endIso) return true;
     if (!startIso) return false;
     if (!endIso) return true;
     return endIso >= startIso;
@@ -149,7 +151,9 @@
     const start = startEl?.value || "";
     const end = endEl?.value || "";
     if (endEl) {
-      if (start) endEl.min = start;
+      // 종료가 비어 있으면 당일로 보므로 min을 걸지 않는다.
+      // (빈 date + min 조합이 브라우저에서 잘못 invalid 처리되는 경우 방지)
+      if (start && end) endEl.min = start;
       else endEl.removeAttribute("min");
       endEl.classList.toggle("is-invalid", Boolean(end && start && end < start));
     }
@@ -160,10 +164,15 @@
   }
 
   function syncAllShopDateRanges() {
-    let ok = syncDateRangePair(
-      document.getElementById("shopEditSalesStart"),
-      document.getElementById("shopEditSalesEnd")
-    );
+    let ok = true;
+    const globalSales = document.getElementById("shopEditGlobalSales");
+    // 공연 연결 시 전역 판매기간은 숨기므로 검증에서 제외한다.
+    if (!globalSales || !globalSales.hidden) {
+      ok = syncDateRangePair(
+        document.getElementById("shopEditSalesStart"),
+        document.getElementById("shopEditSalesEnd")
+      );
+    }
     document.querySelectorAll("#shopEditMdBuilder [data-md-region]").forEach((regionEl) => {
       const startEl = regionEl.querySelector("[data-md-sales-start]");
       const endEl = regionEl.querySelector("[data-md-sales-end]");
@@ -195,6 +204,56 @@
       fillEventSelect(preferredEventId ?? sel?.value ?? null);
     }
     setMdEditorMode();
+    syncCoverUiFromEvent();
+  }
+
+  /** 공연 구분·공연 선택 시 커버는 공연 포스터를 미리보기로 쓴다. */
+  function syncCoverUiFromEvent() {
+    const linked = hasLinkedEvent();
+    const fromEvent = document.getElementById("shopEditCoverFromEvent");
+    const fileLabel = document.getElementById("shopEditCoverFileLabel");
+    const urlLabel = document.getElementById("shopEditCoverUrlLabel");
+    const clearLabel = document.getElementById("shopEditClearImageLabel");
+    const filePreview = document.getElementById("shopEditImagePreview");
+    const eventPreview = document.getElementById("shopEditEventCoverPreview");
+    const fileInput = document.getElementById("shopEditImage");
+    const urlInput = document.getElementById("shopEditImageUrl");
+    const clearInput = document.getElementById("shopEditClearImage");
+
+    if (fromEvent) fromEvent.hidden = !linked;
+    if (fileLabel) fileLabel.hidden = linked;
+    if (urlLabel) urlLabel.hidden = linked;
+    if (clearLabel) clearLabel.hidden = linked;
+    if (filePreview) filePreview.classList.toggle("hidden", linked || !filePreview.src);
+
+    if (!linked) {
+      if (eventPreview) {
+        eventPreview.src = "";
+        eventPreview.classList.add("hidden");
+      }
+      return;
+    }
+
+    if (fileInput) fileInput.value = "";
+    if (urlInput) urlInput.value = "";
+    if (clearInput) clearInput.checked = true;
+    if (filePreview) {
+      filePreview.src = "";
+      filePreview.classList.add("hidden");
+    }
+
+    const eventId = document.getElementById("shopEditEventId")?.value;
+    const match = eventOptions.find((ev) => String(ev.eventId) === String(eventId || ""));
+    const src = match?.eventImage || "";
+    if (eventPreview) {
+      if (src) {
+        eventPreview.src = src;
+        eventPreview.classList.remove("hidden");
+      } else {
+        eventPreview.src = "";
+        eventPreview.classList.add("hidden");
+      }
+    }
   }
 
   function emptyCategory() {
@@ -203,6 +262,51 @@
 
   function emptyRegion() {
     return { name: "", salesStart: "", salesEnd: "", categories: [emptyCategory()] };
+  }
+
+  function isMdBlank(regions) {
+    if (!regions || !regions.length) return true;
+    return regions.every((region) => {
+      const noName = !String(region.name || "").trim();
+      const noDates = !region.salesStart && !region.salesEnd;
+      const cats = region.categories || [];
+      const noCats = !cats.length || cats.every((cat) =>
+        !String(cat.title || "").trim() && !(cat.photos || []).length
+      );
+      return noName && noDates && noCats;
+    });
+  }
+
+  function hasMdPhotos(regions) {
+    return (regions || []).some((region) =>
+      (region.categories || []).some((cat) => (cat.photos || []).length > 0)
+    );
+  }
+
+  /** 공연 회차 지역·날짜로 MD 시드를 만든다. 날짜는 input[type=date]용 ISO. */
+  function seedMdRegionsFromEvent(eventOpt) {
+    const seeded = (eventOpt?.regions || []).map((region) => ({
+      name: String(region.name || "").trim(),
+      salesStart: toIsoDate(region.salesStart) || String(region.salesStart || "").trim(),
+      salesEnd: toIsoDate(region.salesEnd) || String(region.salesEnd || "").trim(),
+      categories: [emptyCategory()]
+    }));
+    return seeded.length ? seeded : [emptyRegion()];
+  }
+
+  /**
+   * 공연 선택 시 지역·판매일을 회차에서 채운다.
+   * 사진이 이미 있으면 덮어쓰지 않고, 빈 폼·지역/날짜만 있는 시드 상태는 교체한다.
+   */
+  function maybeSeedMdFromSelectedEvent() {
+    const selectedId = document.getElementById("shopEditEventId")?.value;
+    if (!selectedId) return false;
+    const match = eventOptions.find((ev) => String(ev.eventId) === String(selectedId));
+    if (!match?.regions?.length) return false;
+    // 사진이 있으면 사용자 입력을 보존하고, 빈 폼·지역/날짜 시드만 있으면 교체한다.
+    if (hasMdPhotos(mdRegions)) return false;
+    mdRegions = seedMdRegionsFromEvent(match);
+    return true;
   }
 
   function parseImageLine(line) {
@@ -448,8 +552,10 @@
               <div class="shop-md-category-head">
                 <input type="text" class="shop-md-input" data-md-cat-title maxlength="120"
                        placeholder="구분 이름 (예: Official MD)" value="${escapeAttr(cat.title || "")}" aria-label="구분 이름">
-                <button type="button" class="about-mode-btn shop-md-file-btn shop-md-file-btn--sm" data-md-add-photos>사진 추가</button>
-                <button type="button" class="about-mode-btn btn btn-xs btn-error" data-md-remove-category title="구분 삭제">삭제</button>
+                <div class="shop-md-category-actions">
+                  <button type="button" class="about-mode-btn shop-md-file-btn shop-md-file-btn--sm" data-md-add-photos>사진 추가</button>
+                  <button type="button" class="about-mode-btn btn btn-xs btn-error" data-md-remove-category title="구분 삭제">삭제</button>
+                </div>
               </div>
               <div class="shop-md-photo-list">
                 ${(cat.photos || []).map((url, pi) => `
@@ -616,6 +722,10 @@
       }
     }
     syncEventFieldVisibility(loadedEventId);
+    if (!id || isMdBlank(mdRegions)) {
+      maybeSeedMdFromSelectedEvent();
+      setMdEditorMode();
+    }
     openModal("shopEditModal");
   }
 
@@ -666,7 +776,9 @@
         if (match?.eventName) cardNameEl.value = match.eventName;
       }
       syncMdBuilderFromDom();
+      maybeSeedMdFromSelectedEvent();
       setMdEditorMode();
+      syncCoverUiFromEvent();
     });
 
     document.getElementById("shopEditMdBuilder")?.addEventListener("click", (e) => {
@@ -858,8 +970,15 @@
         : "";
       syncMdBuilderFromDom();
       const linked = Boolean(eventId);
+      // 종료일 생략 = 시작일 당일. 검증 전에 빈 종료를 채운다.
+      mdRegions.forEach((r) => {
+        if (r.salesStart && !r.salesEnd) r.salesEnd = r.salesStart;
+      });
       if (!syncAllShopDateRanges()) {
-        if (err) { err.hidden = false; err.textContent = "판매 종료일은 시작일 이후여야 합니다."; }
+        if (err) {
+          err.hidden = false;
+          err.textContent = "판매 종료일이 시작일보다 이전이면 안 됩니다. 하루만이면 종료일을 비워 두세요.";
+        }
         return;
       }
       let salesPeriod = linked ? summarizeRegionSalesPeriods() : readSalesPeriod();
@@ -888,7 +1007,10 @@
         }
         const invalid = mdRegions.some((r) => !isValidDateRange(r.salesStart, r.salesEnd));
         if (invalid) {
-          if (err) { err.hidden = false; err.textContent = "판매 종료일은 시작일 이후여야 합니다."; }
+          if (err) {
+            err.hidden = false;
+            err.textContent = "판매 종료일이 시작일보다 이전이면 안 됩니다. 하루만이면 종료일을 비워 두세요.";
+          }
           return;
         }
       }
@@ -900,15 +1022,23 @@
       fd.append("mdList", mdList);
       const sectionId = document.getElementById("shopEditSectionId")?.value;
       if (sectionId) fd.append("sectionId", sectionId);
-      const file = document.getElementById("shopEditImage").files?.[0];
-      if (file) fd.append("image", file);
-      const imageUrl = document.getElementById("shopEditImageUrl").value.trim();
-      if (imageUrl) fd.append("imageUrl", imageUrl);
-      const clearImage = document.getElementById("shopEditClearImage").checked;
-      if (clearImage) fd.append("clearImage", "true");
-      if (!window.confirm(clearImage
-        ? "이 굿즈리스트를 저장하시겠습니까? 체크한 커버는 삭제됩니다."
-        : (id ? "이 굿즈리스트를 수정하시겠습니까?" : "이 굿즈리스트를 추가하시겠습니까?"))) return;
+      if (linked) {
+        // 공연 연결 시 샵 고유 커버를 비우고 공연 포스터를 쓴다.
+        fd.append("clearImage", "true");
+      } else {
+        const file = document.getElementById("shopEditImage").files?.[0];
+        if (file) fd.append("image", file);
+        const imageUrl = document.getElementById("shopEditImageUrl").value.trim();
+        if (imageUrl) fd.append("imageUrl", imageUrl);
+        const clearImage = document.getElementById("shopEditClearImage").checked;
+        if (clearImage) fd.append("clearImage", "true");
+      }
+      const confirmMsg = linked
+        ? (id ? "이 굿즈리스트를 수정하시겠습니까? 커버는 연결 공연 포스터를 씁니다." : "이 굿즈리스트를 추가하시겠습니까? 커버는 연결 공연 포스터를 씁니다.")
+        : (document.getElementById("shopEditClearImage")?.checked
+          ? "이 굿즈리스트를 저장하시겠습니까? 체크한 커버는 삭제됩니다."
+          : (id ? "이 굿즈리스트를 수정하시겠습니까?" : "이 굿즈리스트를 추가하시겠습니까?"));
+      if (!window.confirm(confirmMsg)) return;
       try {
         const url = id ? API + "/" + id : API;
         const res = await apiFetch(url, { method: "POST", body: fd });

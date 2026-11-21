@@ -77,25 +77,22 @@ public class MemberSpotlightService {
             String objektQuery = URLEncoder.encode(objektMember, StandardCharsets.UTF_8);
             Map<String, Object> objektFeed = feed(
                     "오브젝트",
-                    "이 멤버만 고른 오브젝트 최신 5개입니다.",
+                    "이 멤버의 최신 오브젝트예요.",
                     "이 멤버의 오브젝트가 없습니다.",
                     "/cosmo/objekt?member=" + objektQuery,
                     objektCards(newestObjekts, name, objektQuery));
             objektFeed.put("objektFeed", true);
             feeds.add(objektFeed);
-            feeds.add(archiveFeed("사진 아카이브", "등록된 사진 최신 5개입니다.", "이 멤버의 사진이 없습니다.",
-                    imageIndex, MediaType.IMAGE, name, "/archive/image_archive?members=" + encoded, !single));
-            feeds.add(archiveFeed("영상 아카이브", "등록된 영상 최신 5개입니다.", "이 멤버의 영상이 없습니다.",
-                    videoIndex, MediaType.VIDEO, name, "/archive/video_archive?members=" + encoded, !single));
+            feeds.add(combinedArchiveFeed(imageIndex, videoIndex, name, "/archive?members=" + encoded, !single));
             feeds.add(feed(
                     "공식 미디어",
-                    "공식 미디어에서 이 멤버가 선택된 최신 5개입니다.",
-                    "연결된 공식 미디어가 없습니다.",
+                    "이 멤버가 포함된 공식 미디어예요.",
+                    "이 멤버의 공식 미디어가 없습니다.",
                     "/media?artist=" + encoded,
                     mediaCards(media.getOrDefault(artist.getArtistId(), List.of()))));
             feeds.add(feed(
                     "일정",
-                    "이 멤버만 고른 일정 5개입니다.",
+                    "이 멤버가 포함된 일정이에요.",
                     "이 멤버의 일정이 없습니다.",
                     "/schedule?artist=" + encoded,
                     scheduleCards(scheduleIndex.getOrDefault(normalizeMemberKey(name), List.of()), encoded)));
@@ -104,40 +101,76 @@ public class MemberSpotlightService {
         }
     }
 
-    private Map<String, Object> archiveFeed(String title, String description, String emptyText,
-                                            Map<String, List<Archive>> index, MediaType type,
-                                            String name, String moreUrl, boolean allowFallback) {
-        List<Archive> matched = takeFromIndex(index, name);
-        if (allowFallback && matched.size() < LIMIT) {
-            // 전역 최신 2000 밖에만 있는 멤버 자료를 보완 조회
-            List<Archive> fallback = archiveRepository
-                    .findTop40ByFile_MediaTypeAndArtistNamesContainingIgnoreCaseOrderByIdDesc(type, name);
-            for (Archive archive : fallback) {
-                if (matched.size() >= LIMIT) break;
-                if (!archiveHasMember(archive.getArtistNames(), name)) continue;
-                if (matched.stream().anyMatch(a -> a.getId() != null && a.getId().equals(archive.getId()))) {
-                    continue;
-                }
-                matched.add(archive);
-            }
+    /** 사진·영상을 한데 모아 최신순 아카이브 피드로 만든다. */
+    private Map<String, Object> combinedArchiveFeed(Map<String, List<Archive>> imageIndex,
+                                                    Map<String, List<Archive>> videoIndex,
+                                                    String name, String moreUrl, boolean allowFallback) {
+        List<Archive> matched = new ArrayList<>();
+        matched.addAll(takeFromIndex(imageIndex, name, LIMIT));
+        matched.addAll(takeFromIndex(videoIndex, name, LIMIT));
+        if (allowFallback && matched.size() < LIMIT * 2) {
+            fillArchiveFallback(matched, MediaType.IMAGE, name);
+            fillArchiveFallback(matched, MediaType.VIDEO, name);
         }
-        List<Map<String, Object>> cards = new ArrayList<>();
+        matched.sort(Comparator.comparing(Archive::getId, Comparator.nullsLast(Comparator.reverseOrder())));
+        if (matched.size() > LIMIT) {
+            matched = new ArrayList<>(matched.subList(0, LIMIT));
+        }
+        List<Map<String, Object>> cards = new ArrayList<>(matched.size());
         for (Archive archive : matched) {
-            if (cards.size() >= LIMIT) break;
-            SavedMeta file = archive.getFile();
-            String url = file == null || file.getUrl() == null ? "" : file.getUrl();
-            boolean image = type == MediaType.IMAGE && !url.isBlank();
-            String href = url.isBlank() ? moreUrl : url;
-            cards.add(card(archive.getTitle(), href, !url.isBlank(), image ? url : "", archive.getArtistNames(), image));
+            cards.add(archiveCard(archive, moreUrl));
         }
-        return feed(title, description, emptyText, moreUrl, cards);
+        return feed(
+                "아카이브",
+                "이 멤버의 최신 아카이브예요.",
+                "이 멤버의 아카이브가 없습니다.",
+                moreUrl,
+                cards);
     }
 
-    private static List<Archive> takeFromIndex(Map<String, List<Archive>> index, String name) {
+    private void fillArchiveFallback(List<Archive> matched, MediaType type, String name) {
+        if (matched.size() >= LIMIT * 2) {
+            return;
+        }
+        List<Archive> fallback = archiveRepository
+                .findTop40ByFile_MediaTypeAndArtistNamesContainingIgnoreCaseOrderByIdDesc(type, name);
+        for (Archive archive : fallback) {
+            if (matched.size() >= LIMIT * 2) {
+                break;
+            }
+            if (!archiveHasMember(archive.getArtistNames(), name)) {
+                continue;
+            }
+            if (matched.stream().anyMatch(a -> a.getId() != null && a.getId().equals(archive.getId()))) {
+                continue;
+            }
+            matched.add(archive);
+        }
+    }
+
+    private static Map<String, Object> archiveCard(Archive archive, String moreUrl) {
+        SavedMeta file = archive.getFile();
+        String url = file == null || file.getUrl() == null ? "" : file.getUrl();
+        boolean image = archive.getType() == MediaType.IMAGE;
+        String thumb = image
+                ? url
+                : firstNonBlank(text(archive.getThumbnailUrl()), "");
+        String href = url.isBlank() ? moreUrl : url;
+        String meta = image ? "사진" : "영상";
+        Map<String, Object> item = card(archive.getTitle(), href, !url.isBlank(), thumb, meta, !thumb.isBlank());
+        if (!image) {
+            item.put("icon", "movie");
+        }
+        return item;
+    }
+
+    private static List<Archive> takeFromIndex(Map<String, List<Archive>> index, String name, int limit) {
         List<Archive> fromIndex = index.getOrDefault(normalizeMemberKey(name), List.of());
         List<Archive> matched = new ArrayList<>();
         for (Archive archive : fromIndex) {
-            if (matched.size() >= LIMIT) break;
+            if (matched.size() >= limit) {
+                break;
+            }
             matched.add(archive);
         }
         return matched;
@@ -174,8 +207,11 @@ public class MemberSpotlightService {
                     ? "/cosmo/objekt?member=" + objektQuery
                     : "/cosmo/objekt/detail/" + URLEncoder.encode(id, StandardCharsets.UTF_8);
             String image = firstNonBlank(text(objekt.get("thumbnailImage")), text(objekt.get("frontImage")));
+            // 멤버 탭에서는 시즌·번호만 보여 컬렉션ID(시즌+멤버+번호) 중복을 피한다.
+            String number = firstNonBlank(text(objekt.get("collectionNo")), text(objekt.get("collectionNumber")));
+            String title = !number.isBlank() ? number : text(objekt.get("collectionId"));
             String meta = joinMeta(text(objekt.get("season")), text(objekt.get("class")));
-            cards.add(card(text(objekt.get("collectionId")), href, !image.isBlank(), image, meta, !image.isBlank()));
+            cards.add(card(title, href, !image.isBlank(), image, meta, !image.isBlank()));
             if (cards.size() == LIMIT) break;
         }
         return cards;

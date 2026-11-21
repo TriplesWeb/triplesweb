@@ -45,4 +45,17 @@ public interface AlbumRepository extends JpaRepository<Album, Long> {
             order by a.releaseDate desc, a.albumId desc
             """)
     List<Album> findForHomeHero(@Param("sectionNames") Collection<String> sectionNames);
+
+    /**
+     * 멤버 프로필 OST용: 섹션명이 OST인 앨범과 참여 멤버를 한 번에 로드한다.
+     * 24인 완전체({@code FULL_24})는 제외한다.
+     */
+    @Query("""
+            select distinct a from Album a
+            left join fetch a.artists
+            join a.section s
+            where lower(s.name) = lower(:sectionName)
+              and a.albumType <> com.example.triplesweb.entity.AlbumType.FULL_24
+            """)
+    List<Album> findOstAlbumsWithArtists(@Param("sectionName") String sectionName);
 }

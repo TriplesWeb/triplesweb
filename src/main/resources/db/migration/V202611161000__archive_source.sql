@@ -1,0 +1,1 @@
+ALTER TABLE archive ADD COLUMN source VARCHAR(32) NULL;

@@ -175,7 +175,7 @@ class SiteSearchServiceTest {
 
         SiteSearchService.Page mediaPage = search.search("서연", "media");
         assertThat(tab(mediaPage, "media").getHits()).extracting(SiteSearchService.Hit::getHref)
-                .contains("/archive/image_archive?q=%EC%84%9C%EC%97%B0%20%EC%A7%81%EC%BA%A0",
+                .contains("/archive?q=%EC%84%9C%EC%97%B0%20%EC%A7%81%EC%BA%A0",
                         "/media/mv/abcdefghijk");
         assertThat(tab(mediaPage, "info").getHits()).extracting(SiteSearchService.Hit::getHref)
                 .contains("/shop/5", "/article/info/11");

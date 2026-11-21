@@ -25,4 +25,12 @@ public class MediaDto {
     public String getTabLabel() {
         return MediaTab.from(tab == null ? "mv" : tab).getKor();
     }
+
+    /** 화면 표시용 공개일. yyyy.MM.dd */
+    public String getPublishedLabel() {
+        if (publishedOn == null || publishedOn.isBlank()) return "";
+        String value = publishedOn.trim();
+        if (value.length() >= 10) return value.substring(0, 10).replace('-', '.');
+        return value;
+    }
 }

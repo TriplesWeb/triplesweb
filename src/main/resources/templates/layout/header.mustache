@@ -1,3 +1,4 @@
+<script src="{{#asset}}/js/modal-navigation.js{{/asset}}" defer></script>
 <script src="{{#asset}}/js/image-fallback.js{{/asset}}" defer></script>
 <script src="{{#asset}}/js/about-admin-auth.js{{/asset}}" defer></script>
 <script src="{{#asset}}/js/site-admin-controls.js{{/asset}}" defer></script>
@@ -19,7 +20,6 @@
     margin-right: 4px;
 }
 #top-header a[aria-label="tripleS 홈"] .sss-mascot-wave,
-#top-header a[aria-label="tripleS 홈"] .sss-mascot-trail,
 .sss-mascot-wave {
     height: 28px !important;
     max-height: 28px !important;
@@ -31,15 +31,6 @@
 }
 .sss-mascot-wrap:not(.is-ready):not(.is-intro) .sss-mascot-wave {
     opacity: 0;
-}
-.sss-mascot-trail {
-    position: absolute;
-    left: 0;
-    top: 0;
-    pointer-events: none;
-    opacity: 0;
-    z-index: 2;
-    will-change: transform, opacity;
 }
 .sss-mascot-wrap .sss-mascot-wave { position: relative; z-index: 3; }
 #top-header a[aria-label="tripleS 홈"] #sss-wordmark {
@@ -80,16 +71,18 @@
                 {{label}}
                 <span class="nav-caret" aria-hidden="true"></span>
             </button>
-            <div class="absolute left-0 top-full pt-1 hidden group-hover:block w-48 z-50">
+            <div class="absolute left-0 top-full pt-1 hidden group-hover:block w-56 z-50">
                 <div class="bg-[#191b22]/95 border border-[#3a4a46]/50 rounded-xl shadow-2xl backdrop-blur-lg p-1.5 flex flex-col gap-0.5">
                     {{#items}}
                     {{^nested}}
                     <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="{{href}}">{{label}}</a>
                     {{/nested}}
                     {{#nested}}
-                    {{#children}}
-                    <a class="px-3 py-1.5 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors text-decoration-none" href="{{href}}">{{label}}</a>
-                    {{/children}}
+                    <div class="header-link-group">
+                        {{#linked}}<a class="header-group-heading" href="{{href}}">{{label}}</a>{{/linked}}
+                        {{^linked}}<span class="header-group-heading">{{label}}</span>{{/linked}}
+                        <div class="header-related-links">{{#children}}<a href="{{href}}">{{label}}</a>{{/children}}</div>
+                    </div>
                     {{/nested}}
                     {{/items}}
                 </div>
@@ -127,8 +120,6 @@
                 <button type="submit">검색</button>
             </form>
             <div id="site-cosmo-id-suggest" class="site-header-nickname-suggest" role="listbox" aria-label="연관 닉네임" hidden></div>
-            <a class="site-header-popover__mine" href="/cosmo/collection" data-cosmo-id-mine hidden>내 아이디로 보기</a>
-            <ul class="site-header-popover__list" data-cosmo-id-recents></ul>
         </div>
     </div>
 
@@ -146,7 +137,6 @@
             <span class="site-header-badge" data-alerts-badge hidden></span>
         </button>
         <div id="site-alerts-panel" class="site-header-popover" hidden data-alerts-panel>
-            <p class="site-header-popover__title">알림</p>
             <p class="site-header-popover__status" data-alerts-status>불러오는 중</p>
             <div data-alerts-body></div>
         </div>
@@ -175,9 +165,6 @@
                     <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2 text-decoration-none" href="/myposts">
                         <span class="material-symbols-outlined text-[16px]">edit_note</span> 작성한 글
                     </a>
-                    <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2 text-decoration-none" href="/mycomments">
-                        <span class="material-symbols-outlined text-[16px]">chat_bubble_outline</span> 작성한 댓글
-                    </a>
                     <div class="h-px bg-[#3a4a46]/30 my-1"></div>
                     <a href="/logout" class="px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex items-center gap-2 text-decoration-none">
                         <span class="material-symbols-outlined text-sm">logout</span> 로그아웃
@@ -201,8 +188,8 @@
     <!-- 모바일 메뉴 패널 -->
     <div id="mobile-menu" class="lg:hidden hidden">
         <div class="mobile-menu-sheet">
+            {{#member}}
             <div class="mobile-menu-head">
-                {{#member}}
                 <div class="mobile-menu-user">
                     <span class="mobile-menu-user__avatar" aria-hidden="true">
                         <svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3.2"/><path d="M6.2 18.2c.9-2.6 3-4.2 5.8-4.2s4.9 1.6 5.8 4.2"/></svg>
@@ -212,11 +199,8 @@
                         <span>Lv.{{level}} {{points}}P</span>
                     </span>
                 </div>
-                {{/member}}
-                <button type="button" class="mobile-menu-close" data-mobile-menu-close aria-label="메뉴 닫기">
-                    <span class="mobile-menu-close__icon" aria-hidden="true"></span>
-                </button>
             </div>
+            {{/member}}
 
             <form action="/search" method="get" role="search" class="site-search w-full mobile-menu-search">
                 <button type="submit" class="site-search__submit" title="검색" aria-label="검색">
@@ -227,13 +211,11 @@
 
             <nav class="mobile-menu-nav" aria-label="전체 메뉴">
                 <a class="mobile-direct-link" href="/" data-nav="home">
-                    <span class="mobile-nav-icon" aria-hidden="true"></span>
                     홈
                 </a>
                 {{#siteNavigation}}
                 {{#direct}}
                 <a class="mobile-direct-link" href="{{href}}" data-nav="{{id}}">
-                    <span class="mobile-nav-icon" aria-hidden="true"></span>
                     {{label}}
                 </a>
                 {{/direct}}
@@ -241,7 +223,6 @@
                 <div class="mobile-nav-group" data-nav="{{id}}">
                     <button type="button" class="mobile-nav-toggle w-full flex items-center justify-between px-3 py-2.5 text-[#b9cac4] hover:text-[#00f5d4] bg-transparent border-0 cursor-pointer rounded-lg hover:bg-white/5">
                         <span class="mobile-nav-label">
-                            <span class="mobile-nav-icon" aria-hidden="true"></span>
                             {{label}}
                         </span>
                         <span class="material-symbols-outlined text-sm transition-transform">expand_more</span>
@@ -252,9 +233,11 @@
                         <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="{{href}}">{{label}}</a>
                         {{/nested}}
                         {{#nested}}
-                        {{#children}}
-                        <a class="px-3 py-2 text-xs text-[#b9cac4] hover:text-[#00f5d4] hover:bg-white/5 rounded-lg text-decoration-none" href="{{href}}">{{label}}</a>
-                        {{/children}}
+                        <div class="header-link-group">
+                            {{#linked}}<a class="header-group-heading" href="{{href}}">{{label}}</a>{{/linked}}
+                            {{^linked}}<span class="header-group-heading">{{label}}</span>{{/linked}}
+                            <div class="header-related-links">{{#children}}<a href="{{href}}">{{label}}</a>{{/children}}</div>
+                        </div>
                         {{/nested}}
                         {{/items}}
                     </div>
@@ -262,16 +245,10 @@
                 {{/direct}}
                 {{/siteNavigation}}
 
-                <button type="button" class="mobile-direct-link" id="siteAdminMobileBtn" data-site-admin-open data-nav="admin" hidden>
-                    <span class="mobile-nav-icon" aria-hidden="true"></span>
-                    <span data-site-admin-mobile-label>관리자 로그인</span>
-                </button>
-
                 {{#member}}
                 <div class="mobile-account">
                     <a href="/mypage">마이페이지</a>
                     <a href="/myposts">작성한 글</a>
-                    <a href="/mycomments">작성한 댓글</a>
                     <a href="/logout">로그아웃</a>
                 </div>
                 {{/member}}

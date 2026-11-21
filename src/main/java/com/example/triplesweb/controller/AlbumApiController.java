@@ -142,6 +142,7 @@ public class AlbumApiController {
             @RequestParam(required = false, defaultValue = "") String albumInfo,
             @RequestParam(required = false, defaultValue = "SUBUNIT") String albumType,
             @RequestParam(required = false) String albumFormat,
+            @RequestParam(required = false) String musicVideoYoutubeId,
             @RequestParam(required = false) Long unitId,
             @RequestParam(required = false) Long sectionId,
             @RequestParam(required = false) List<Long> artistIds,
@@ -154,8 +155,8 @@ public class AlbumApiController {
         aboutAdminAuth.requireAdmin(request, session);
         try {
             return albumAdminService.create(
-                    albumName, releaseDate, albumInfo, albumType, albumFormat, unitId, sectionId,
-                    artistIds, tracksJson, image, imageUrl);
+                    albumName, releaseDate, albumInfo, albumType, albumFormat, musicVideoYoutubeId,
+                    unitId, sectionId, artistIds, tracksJson, image, imageUrl);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
@@ -169,6 +170,7 @@ public class AlbumApiController {
             @RequestParam(required = false, defaultValue = "") String albumInfo,
             @RequestParam(required = false, defaultValue = "SUBUNIT") String albumType,
             @RequestParam(required = false) String albumFormat,
+            @RequestParam(required = false) String musicVideoYoutubeId,
             @RequestParam(required = false) Long unitId,
             @RequestParam(required = false) Long sectionId,
             @RequestParam(required = false) List<Long> artistIds,
@@ -182,8 +184,8 @@ public class AlbumApiController {
         aboutAdminAuth.requireAdmin(request, session);
         try {
             return albumAdminService.update(
-                    id, albumName, releaseDate, albumInfo, albumType, albumFormat, unitId, sectionId,
-                    artistIds, tracksJson, image, imageUrl, clearImage);
+                    id, albumName, releaseDate, albumInfo, albumType, albumFormat, musicVideoYoutubeId,
+                    unitId, sectionId, artistIds, tracksJson, image, imageUrl, clearImage);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }

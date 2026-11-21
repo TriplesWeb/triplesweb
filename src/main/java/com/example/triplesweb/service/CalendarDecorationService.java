@@ -6,12 +6,16 @@ import com.example.triplesweb.repository.CalendarDecorationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -27,46 +31,63 @@ public class CalendarDecorationService {
         return repository.findAllByOrderByEventDateAscIdAsc().stream().map(this::toDto).toList();
     }
 
-    public CalendarDecorationDto create(String title, String kind, java.time.LocalDate date,
+    public CalendarDecorationDto create(String title, String kind, LocalDate date,
                                         String unitName, String description, String color, MultipartFile image) {
         CalendarDecoration item = new CalendarDecoration();
         apply(item, title, kind, date, unitName, description, color, image, false);
         return toDto(repository.save(item));
     }
 
-    public CalendarDecorationDto update(long id, String title, String kind, java.time.LocalDate date,
+    public CalendarDecorationDto update(long id, String title, String kind, LocalDate date,
                                         String unitName, String description, String color, MultipartFile image,
                                         boolean clearImage) {
         CalendarDecoration item = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 달력 장식이 없습니다."));
         String previous = item.getImageUrl();
         apply(item, title, kind, date, unitName, description, color, image, clearImage);
-        if (image != null && !image.isEmpty() || clearImage) deleteManagedImage(previous);
+        if (!Objects.equals(previous, item.getImageUrl())) deleteManagedImageAfterCommit(previous);
         return toDto(repository.save(item));
     }
 
     public void delete(long id) {
         CalendarDecoration item = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 달력 장식이 없습니다."));
-        deleteManagedImage(item.getImageUrl());
         repository.delete(item);
+        deleteManagedImageAfterCommit(item.getImageUrl());
     }
 
-    private void apply(CalendarDecoration item, String title, String kind, java.time.LocalDate date,
+    private void apply(CalendarDecoration item, String title, String kind, LocalDate date,
                        String unitName, String description, String color, MultipartFile image, boolean clearImage) {
         if (!StringUtils.hasText(title) || title.trim().length() > 120) throw new IllegalArgumentException("제목은 1~120자로 입력해 주세요.");
         if (!StringUtils.hasText(kind) || !(kind.equals("UNIT") || kind.equals("ANNIVERSARY"))) throw new IllegalArgumentException("구분을 선택해 주세요.");
         if (date == null) throw new IllegalArgumentException("날짜를 입력해 주세요.");
+        String trimmedUnit = StringUtils.hasText(unitName) ? unitName.trim() : null;
+        String trimmedDescription = description == null ? "" : description.trim();
+        if (trimmedUnit != null && trimmedUnit.length() > 80) {
+            throw new IllegalArgumentException("유닛명은 80자 이하로 입력해 주세요.");
+        }
+        if (trimmedDescription.length() > 500) {
+            throw new IllegalArgumentException("설명은 500자 이하로 입력해 주세요.");
+        }
         item.setTitle(title.trim());
         item.setKind(kind);
         item.setEventDate(date);
-        item.setUnitName(unitName == null || unitName.isBlank() ? null : unitName.trim());
-        item.setDescription(description == null ? "" : description.trim());
+        item.setUnitName(trimmedUnit);
+        item.setDescription(trimmedDescription);
         item.setColor(normalizeColor(color));
         if (image != null && !image.isEmpty()) {
             validateImage(image);
             try {
-                item.setImageUrl(fileStorageService.saveWithMeta(image, "calendar").getUrl());
+                String uploaded = fileStorageService.saveWithMeta(image, "calendar").getUrl();
+                item.setImageUrl(uploaded);
+                if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                        @Override
+                        public void afterCompletion(int status) {
+                            if (status == STATUS_ROLLED_BACK) deleteManagedImage(uploaded);
+                        }
+                    });
+                }
             } catch (IOException e) {
                 throw new IllegalStateException("달력 이미지를 저장하지 못했습니다.", e);
             }
@@ -102,6 +123,20 @@ public class CalendarDecorationService {
         String color = value.trim();
         if (!color.matches("#[0-9a-fA-F]{6}")) throw new IllegalArgumentException("색상 형식이 올바르지 않습니다.");
         return color;
+    }
+
+    private void deleteManagedImageAfterCommit(String url) {
+        if (url == null) return;
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    deleteManagedImage(url);
+                }
+            });
+        } else {
+            deleteManagedImage(url);
+        }
     }
 
     private void deleteManagedImage(String url) {

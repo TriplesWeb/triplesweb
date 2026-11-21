@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * 케미(페어·그룹) 다중 이미지 URL 목록 직렬화·정규화.
@@ -18,7 +19,19 @@ public final class ChemistryImages {
 
     public static final int MAX_IMAGES = 10;
 
+    /** 관리자 폼 업로드만: images/chemistry/YYYY-MM-DD/... */
+    private static final Pattern ADMIN_UPLOAD_RELATIVE =
+            Pattern.compile("^images/chemistry/\\d{4}-\\d{2}-\\d{2}/.+");
+
     private ChemistryImages() {}
+
+    /**
+     * 디스크에서 지워도 되는 관리자 업로드인지.
+     * 날짜 폴더가 아닌 경로({@code images/chemistry/S1/...} 등)는 false.
+     */
+    public static boolean isDeletableAdminUpload(String relativePath) {
+        return relativePath != null && ADMIN_UPLOAD_RELATIVE.matcher(relativePath).matches();
+    }
 
     public static List<String> resolve(String imagesJson, String imageUrl, ObjectMapper mapper) {
         List<String> fromJson = parse(imagesJson, mapper);
@@ -99,6 +112,18 @@ public final class ChemistryImages {
             ObjectMapper mapper,
             UploadFn uploadFn
     ) throws IOException {
+        return merge(previous, keepImageUrlsJson, uploads, clearAll, mapper, uploadFn, MAX_IMAGES);
+    }
+
+    public static Result merge(
+            List<String> previous,
+            String keepImageUrlsJson,
+            List<MultipartFile> uploads,
+            boolean clearAll,
+            ObjectMapper mapper,
+            UploadFn uploadFn,
+            int maxImages
+    ) throws IOException {
         List<String> prev = previous != null ? previous : List.of();
         if (clearAll && uploads.isEmpty()) {
             return new Result(List.of(), prev);
@@ -121,8 +146,9 @@ public final class ChemistryImages {
         for (MultipartFile file : uploads) {
             next.add(uploadFn.save(file));
         }
-        if (next.size() > MAX_IMAGES) {
-            throw new IllegalArgumentException("사진은 최대 " + MAX_IMAGES + "장까지 등록할 수 있습니다.");
+        int limit = maxImages > 0 ? maxImages : MAX_IMAGES;
+        if (next.size() > limit) {
+            throw new IllegalArgumentException("사진은 최대 " + limit + "장까지 등록할 수 있습니다.");
         }
 
         LinkedHashSet<String> nextSet = new LinkedHashSet<>(next);

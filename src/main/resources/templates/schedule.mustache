@@ -27,7 +27,7 @@
 
             {{#isAdmin}}
             <div class="schedule-page-actions">
-                <button type="button" class="md-btn md-btn-tonal btn-custom-secondary" onclick="showDecorationModal()">
+                <button type="button" class="md-btn md-btn-tonal btn-custom-secondary" id="openDecorationManager">
                     <span class="material-symbols-outlined">image</span>
                     유닛·기념일 관리
                 </button>
@@ -41,7 +41,8 @@
 
         <section class="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
             <div class="lg:col-span-8">
-                <div class="schedule-legend" aria-label="일정 분류 색상"><span style="--schedule-color:#a78bfa">팬사인회</span><span style="--schedule-color:#fb923c">방송</span><span style="--schedule-color:#00f5d4">🎂 기념일 · 멤버색</span><span style="--schedule-color:#f87171">발매</span><span style="--schedule-color:#7dd3fc">행사</span></div><div id="calendar" aria-label="공식 스케줄 캘린더"></div>
+                <div class="schedule-legend" aria-label="일정 분류 색상"><span style="--schedule-color:#a78bfa">팬사인회</span><span style="--schedule-color:#fb923c">방송</span><span style="--schedule-color:#00f5d4">🎂 기념일 · 멤버색</span><span style="--schedule-color:#f87171">발매</span><span style="--schedule-color:#7dd3fc">행사</span></div>
+                <div id="calendar" aria-label="공식 스케줄 캘린더"{{#selectedArtist}} data-selected-artist="{{selectedArtist}}"{{/selectedArtist}}></div>
             </div>
 
             <aside class="space-y-5 lg:col-span-4">
@@ -256,85 +257,121 @@
 
     <script>
         {{#isAdmin}}
-        let decorationItems = [];
-        function decorationHeaders() {
-            const headers = {};
-            return window.AboutAdminAuth?.applyAuthHeaders(headers) || headers;
-        }
-        function showDecorationModal() {
+        function bindDecorationManager(refreshDecorations) {
             const modal = document.getElementById('decorationModal');
-            scheduleModal(modal).show();
-            loadDecorations();
-        }
-        function resetDecorationForm() {
-            document.getElementById('decorationForm').reset();
-            document.getElementById('decorationId').value = '';
-            document.getElementById('decorationColor').value = '#00f5d4';
-            document.getElementById('decorationClearImage').checked = false;
+            const form = document.getElementById('decorationForm');
+            const imageInput = document.getElementById('decorationImage');
             const preview = document.getElementById('decorationPreview');
-            preview.classList.add('hidden'); preview.removeAttribute('src');
-        }
-        async function loadDecorations() {
             const list = document.getElementById('decorationList');
-            try {
-                const response = await fetch('/api/calendar-decorations', {credentials:'same-origin'});
-                if (!response.ok) throw new Error('목록을 불러오지 못했습니다.');
-                decorationItems = await response.json();
-                list.replaceChildren();
-                if (!decorationItems.length) {
-                    const empty = document.createElement('p'); empty.className='text-sm text-[#b9cac4]'; empty.textContent='등록된 유닛·기념일이 없습니다.'; list.appendChild(empty); return;
+            let previewUrl;
+
+            function showPreview(url) {
+                if (previewUrl) URL.revokeObjectURL(previewUrl);
+                previewUrl = url?.startsWith('blob:') ? url : undefined;
+                preview.classList.toggle('hidden', !url);
+                if (url) preview.src = url;
+                else preview.removeAttribute('src');
+            }
+
+            document.getElementById('openDecorationManager').addEventListener('click', () => {
+                scheduleModal(modal).show();
+                loadDecorations();
+            });
+
+            function decorationHeaders() {
+                const headers = {};
+                return window.AboutAdminAuth?.applyAuthHeaders(headers) || headers;
+            }
+            function resetDecorationForm() {
+                form.reset();
+                document.getElementById('decorationId').value = '';
+                showPreview();
+            }
+            async function loadDecorations() {
+                try {
+                    const response = await fetch('/api/calendar-decorations', {credentials:'same-origin'});
+                    if (!response.ok) throw new Error('목록을 불러오지 못했습니다.');
+                    const decorationItems = await response.json();
+                    list.replaceChildren();
+                    if (!decorationItems.length) {
+                        const empty = document.createElement('p'); empty.className='text-sm text-[#b9cac4]'; empty.textContent='등록된 유닛·기념일이 없습니다.'; list.appendChild(empty); return;
+                    }
+                    decorationItems.forEach(item => {
+                        const row = document.createElement('div'); row.className='flex items-center gap-3 rounded-lg border border-white/10 p-2';
+                        if (item.imageUrl) { const img=document.createElement('img'); img.src=item.imageUrl; img.className='h-12 w-12 rounded object-contain'; img.alt=''; row.appendChild(img); }
+                        const label=document.createElement('div'); label.className='min-w-0 flex-1';
+                        const name=document.createElement('p'); name.className='truncate text-sm font-semibold text-white'; name.textContent=item.title;
+                        const date=document.createElement('p'); date.className='text-xs text-[#b9cac4]'; date.textContent=item.eventDate + (item.unitName ? ' · '+item.unitName : '');
+                        label.append(name,date); row.appendChild(label);
+                        const edit=document.createElement('button'); edit.type='button'; edit.className='btn-custom-secondary text-xs'; edit.textContent='수정'; edit.addEventListener('click',()=>editDecoration(item));
+                        const remove=document.createElement('button'); remove.type='button'; remove.className='btn-custom-danger text-xs'; remove.textContent='삭제'; remove.addEventListener('click',()=>deleteDecoration(item.id));
+                        row.append(edit,remove); list.appendChild(row);
+                    });
+                } catch(error) { list.textContent=error.message; }
+            }
+            function editDecoration(item) {
+                resetDecorationForm();
+                document.getElementById('decorationId').value=item.id;
+                document.getElementById('decorationTitle').value=item.title;
+                document.getElementById('decorationKind').value=item.kind;
+                document.getElementById('decorationDate').value=item.eventDate;
+                document.getElementById('decorationUnit').value=item.unitName||'';
+                document.getElementById('decorationDescription').value=item.description||'';
+                document.getElementById('decorationColor').value=item.color||'#00f5d4';
+                showPreview(item.imageUrl);
+            }
+            async function deleteDecoration(id) {
+                if(!confirm('이 항목을 삭제할까요?')) return;
+                try {
+                    const response = await fetch('/api/calendar-decorations/' + id, {
+                        method:'DELETE', headers:decorationHeaders(), credentials:'same-origin'
+                    });
+                    if (!response.ok) throw new Error('삭제하지 못했습니다.');
+                    if (document.getElementById('decorationId').value === String(id)) resetDecorationForm();
+                    refreshDecorations();
+                    await loadDecorations();
+                } catch (error) {
+                    alert('삭제하지 못했습니다.');
+                    console.error(error);
                 }
-                decorationItems.forEach(item => {
-                    const row = document.createElement('div'); row.className='flex items-center gap-3 rounded-lg border border-white/10 p-2';
-                    if (item.imageUrl) { const img=document.createElement('img'); img.src=item.imageUrl; img.className='h-12 w-12 rounded object-contain'; img.alt=''; row.appendChild(img); }
-                    const label=document.createElement('div'); label.className='min-w-0 flex-1';
-                    const name=document.createElement('p'); name.className='truncate text-sm font-semibold text-white'; name.textContent=item.title;
-                    const date=document.createElement('p'); date.className='text-xs text-[#b9cac4]'; date.textContent=item.eventDate + (item.unitName ? ' · '+item.unitName : '');
-                    label.append(name,date); row.appendChild(label);
-                    const edit=document.createElement('button'); edit.type='button'; edit.className='btn-custom-secondary text-xs'; edit.textContent='수정'; edit.addEventListener('click',()=>editDecoration(item));
-                    const remove=document.createElement('button'); remove.type='button'; remove.className='btn-custom-danger text-xs'; remove.textContent='삭제'; remove.addEventListener('click',()=>deleteDecoration(item.id));
-                    row.append(edit,remove); list.appendChild(row);
-                });
-            } catch(error) { list.textContent=error.message; }
+            }
+            document.getElementById('decorationReset').addEventListener('click',resetDecorationForm);
+            imageInput.addEventListener('change', () => {
+                const file = imageInput.files[0];
+                if (file && file.size > 10 * 1024 * 1024) {
+                    alert('이미지는 10MB 이하만 가능합니다.');
+                    imageInput.value = '';
+                }
+                showPreview(imageInput.files[0] ? URL.createObjectURL(file) : undefined);
+            });
+            form.addEventListener('submit', async event => {
+                event.preventDefault();
+                const id = document.getElementById('decorationId').value;
+                const data = new FormData(form);
+                if (!imageInput.files[0]) data.delete('image');
+                data.set('clearImage', String(document.getElementById('decorationClearImage').checked));
+                const submit = form.querySelector('button[type="submit"]');
+                submit.disabled = true;
+                try {
+                    const response = await fetch('/api/calendar-decorations' + (id ? '/' + id : ''), {
+                        method:'POST', headers:decorationHeaders(), credentials:'same-origin', body:data
+                    });
+                    if (!response.ok) {
+                        const problem = await response.json().catch(() => ({}));
+                        alert(problem.message || '저장하지 못했습니다.');
+                        return;
+                    }
+                    resetDecorationForm();
+                    refreshDecorations();
+                    await loadDecorations();
+                } catch (error) {
+                    alert('저장하지 못했습니다.');
+                    console.error(error);
+                } finally {
+                    submit.disabled = false;
+                }
+            });
         }
-        function editDecoration(item) {
-            document.getElementById('decorationId').value=item.id;
-            document.getElementById('decorationTitle').value=item.title;
-            document.getElementById('decorationKind').value=item.kind;
-            document.getElementById('decorationDate').value=item.eventDate;
-            document.getElementById('decorationUnit').value=item.unitName||'';
-            document.getElementById('decorationDescription').value=item.description||'';
-            document.getElementById('decorationColor').value=item.color||'#00f5d4';
-            document.getElementById('decorationClearImage').checked=false;
-            const preview=document.getElementById('decorationPreview');
-            if(item.imageUrl){preview.src=item.imageUrl;preview.classList.remove('hidden');}else{preview.removeAttribute('src');preview.classList.add('hidden');}
-        }
-        async function deleteDecoration(id) {
-            if(!confirm('이 항목을 삭제할까요?')) return;
-            const response=await fetch('/api/calendar-decorations/'+id,{method:'DELETE',headers:decorationHeaders(),credentials:'same-origin'});
-            if(!response.ok){alert('삭제하지 못했습니다.');return;}
-            await loadDecorations(); document.getElementById('calendar') && window.location.reload();
-        }
-        document.getElementById('decorationReset').addEventListener('click',resetDecorationForm);
-        document.getElementById('decorationImage').addEventListener('change',event=>{
-            const file=event.target.files?.[0], preview=document.getElementById('decorationPreview');
-            if(!file){preview.classList.add('hidden');return;}
-            if(file.size>10*1024*1024){alert('이미지는 10MB 이하만 가능합니다.');event.target.value='';return;}
-            preview.src=URL.createObjectURL(file);preview.classList.remove('hidden');
-        });
-        document.getElementById('decorationForm').addEventListener('submit',async event=>{
-            event.preventDefault();
-            const id=document.getElementById('decorationId').value;
-            const data=new FormData(event.currentTarget);
-            data.delete('image');
-            const image=document.getElementById('decorationImage').files[0]; if(image)data.append('image',image);
-            data.set('clearImage',document.getElementById('decorationClearImage').checked?'true':'false');
-            const response=await fetch('/api/calendar-decorations'+(id?'/'+id:''),{method:'POST',headers:decorationHeaders(),credentials:'same-origin',body:data});
-            if(!response.ok){const message=await response.text();alert('저장 실패: '+message);return;}
-            resetDecorationForm();await loadDecorations();
-            const calendarEl=document.getElementById('calendar');
-            if(calendarEl) window.location.reload();
-        });
         {{/isAdmin}}
 
         function scheduleModal(element) {
@@ -355,17 +392,10 @@
             return parts.length === 3 ? `${parts[0]}.${parts[1]}.${parts[2]}` : value;
         }
 
-        function addOneDay(dateValue) {
-            if (!dateValue) return null;
-            const parts = String(dateValue).substring(0, 10).split('-').map(Number);
-            if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
-
-            const date = new Date(parts[0], parts[1] - 1, parts[2]);
-            date.setDate(date.getDate() + 1);
-            const year = date.getFullYear();
+        function calendarDate(date) {
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
+            return `${date.getFullYear()}-${month}-${day}`;
         }
 
         function getRawEnd(event) {
@@ -412,6 +442,14 @@
             }
         }
 
+        async function fetchCalendarItems(url) {
+            const response = await fetch(url, { credentials: 'same-origin' });
+            if (!response.ok) throw new Error('추가 일정을 불러오지 못했습니다.');
+            const items = await response.json();
+            if (!Array.isArray(items)) throw new Error('일정 목록 형식이 올바르지 않습니다.');
+            return items;
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             const calendarElement = document.getElementById('calendar');
             const selectedDateElement = document.getElementById('sideSelectedDate');
@@ -426,12 +464,16 @@
                 return;
             }
 
+            const selectedArtist = calendarElement.dataset.selectedArtist;
+            const matchesSelectedArtist = names => !selectedArtist
+                || String(names || '').split(',').some(name => name.trim() === selectedArtist);
+
             bindCategoryPreview('add','titleInput','addArtistNames');
             bindCategoryPreview('edit','editTitleInput','editArtistNames');
-            // Bootstrap의 열림 전환 중에도 닫기·바깥 영역·Escape 요청을 잃지 않는다.
+            // 모달 닫기 버튼과 Escape 처리 (배경 클릭은 닫지 않음).
             document.querySelectorAll('.site-modal').forEach(element => {
                 element.addEventListener('click', event => {
-                    if (event.target === element || event.target.closest('[data-site-dismiss="modal"]')) {
+                    if (event.target.closest('[data-site-dismiss="modal"]')) {
                         event.preventDefault();
                         event.stopPropagation();
                         hideScheduleModalThen(element);
@@ -445,25 +487,19 @@
                     }
                 }, true);
             });
-            let selectedEvent = null;
+            let selectedDay = new Date();
 
-            function renderSelectedDate(dateString, dateObject) {
-                if (dateObject) {
-                    selectedDateElement.textContent = dateObject.toLocaleDateString('ko-KR', {
-                        year: 'numeric', month: 'long', day: 'numeric', weekday: 'short'
-                    });
-                } else {
-                    selectedDateElement.textContent = dateString || '날짜를 선택하세요';
-                }
+            function renderSelectedDate(dateObject) {
+                selectedDay = dateObject;
+                selectedDateElement.textContent = selectedDay.toLocaleDateString('ko-KR', {
+                    year: 'numeric', month: 'long', day: 'numeric', weekday: 'short'
+                });
+                const selected = calendarDate(selectedDay);
 
                 const dayEvents = calendar.getEvents().filter(event => {
                     if (!event.start) return false;
-                    const start = new Date(event.start.getFullYear(), event.start.getMonth(), event.start.getDate());
-                    const selected = dateObject
-                        ? new Date(dateObject.getFullYear(), dateObject.getMonth(), dateObject.getDate())
-                        : new Date(`${dateString}T00:00:00`);
-                    const endString = getRawEnd(event);
-                    const end = endString ? new Date(`${String(endString).substring(0, 10)}T00:00:00`) : start;
+                    const start = calendarDate(event.start);
+                    const end = getRawEnd(event).slice(0,10) || start;
                     return selected >= start && selected <= end;
                 });
 
@@ -522,8 +558,18 @@
                 });
             }
 
+            function fillEditForm(event) {
+                document.getElementById('editScheduleId').value = event.id;
+                document.getElementById('editTitleInput').value = event.extendedProps.rawTitle || event.title || '';
+                document.getElementById('editScheduleCategory').value = event.extendedProps.category || 'AUTO';
+                document.getElementById('editStartInput').value = event.startStr.slice(0, 10);
+                document.getElementById('editEndInput').value = getRawEnd(event).slice(0, 10);
+                const artists = String(event.extendedProps.artistNames || '').split(',').map(name => name.trim());
+                document.querySelectorAll('#editArtistNames option').forEach(option => option.selected = artists.includes(option.value));
+                document.getElementById('editScheduleCategory').dispatchEvent(new Event('change'));
+            }
+
             function openEventDetails(event) {
-                selectedEvent = event;
                 viewModalElement.style.setProperty('--schedule-color',event.extendedProps.color||'#00f5d4');
                 document.getElementById('modalScheduleCategory').textContent=event.extendedProps.categoryLabel||'일정';
                 document.getElementById('modalScheduleTitle').textContent = event.title || '';
@@ -543,7 +589,7 @@
                 const endValue = formatDate(getRawEnd(event));
                 document.getElementById('modalScheduleEnd').textContent = endValue === '-' ? '하루 일정' : endValue;
 
-                const isCalendarDecoration = ['BIRTHDAY','UNIT','ANNIVERSARY'].includes(event.extendedProps.kind);
+                const isCalendarDecoration = Boolean(event.extendedProps.kind);
                 const deleteForm = document.getElementById('deleteForm');
                 if (deleteForm) {
                     deleteForm.action = `/delete/${encodeURIComponent(event.id)}`;
@@ -553,23 +599,43 @@
                 const editButton = document.getElementById('editBtn');
                 if (editButton) {
                     editButton.classList.toggle('hidden', isCalendarDecoration);
-                    editButton.onclick = function () {
-                        if (!selectedEvent) return;
-                        document.getElementById('editScheduleId').value = selectedEvent.id;
-                        document.getElementById('editTitleInput').value = selectedEvent.extendedProps.rawTitle || selectedEvent.title || '';
-                        document.getElementById('editScheduleCategory').value=selectedEvent.extendedProps.category||'AUTO';
-                        document.getElementById('editStartInput').value = String(selectedEvent.startStr || '').substring(0, 10);
-                        document.getElementById('editEndInput').value = String(getRawEnd(selectedEvent)).substring(0, 10);
-                        const selectedArtists = String(selectedEvent.extendedProps.artistNames || '').split(',').map(v => v.trim()).filter(Boolean);
-                        document.querySelectorAll('#editArtistNames option').forEach(option => option.selected = selectedArtists.includes(option.value));
-
-                        document.getElementById('editScheduleCategory').dispatchEvent(new Event('change'));
+                    editButton.onclick = isCalendarDecoration ? null : () => {
+                        fillEditForm(event);
                         hideScheduleModalThen(viewModalElement, () => scheduleModal(editModalElement).show());
                     };
                 }
 
                 scheduleModal(viewModalElement).show();
             }
+
+            const decorationSource = {
+                id: 'decorations',
+                async events() {
+                    const items = await fetchCalendarItems('/api/calendar-decorations');
+                    return items.map(item => toCalendarEvent({
+                        ...item,
+                        id: 'decoration-' + item.id,
+                        title: (item.kind === 'UNIT' ? '★ ' : '🎉 ') + item.title,
+                        start: item.eventDate,
+                        categoryLabel: item.kind === 'UNIT' ? '유닛' : '기념일'
+                    }));
+                }
+            };
+            const eventSources = [
+                getCalendarEvents().map(toCalendarEvent),
+                {
+                    async events(fetchInfo) {
+                        // FullCalendar의 종료일은 제외되지만 생일 API는 종료일까지 조회한다.
+                        const end = new Date(fetchInfo.end);
+                        end.setDate(end.getDate() - 1);
+                        const params = new URLSearchParams({ start: calendarDate(fetchInfo.start), end: calendarDate(end) });
+                        const birthdays = await fetchCalendarItems('/api/calendar-decorations/birthdays?' + params);
+                        return birthdays.filter(item => !selectedArtist || item.artistName === selectedArtist)
+                            .map(item => toCalendarEvent({ ...item, displayTitle: '🎂 ' + item.title }));
+                    }
+                }
+            ];
+            if (!selectedArtist) eventSources.push(decorationSource);
 
             const calendar = new FullCalendar.Calendar(calendarElement, {
                 initialView: 'dayGridMonth',
@@ -586,22 +652,9 @@
                     today: '오늘',
                     month: '월간'
                 },
-                events: function(fetchInfo, successCallback, failureCallback) {
-                    const params = new URLSearchParams({start: fetchInfo.startStr.slice(0,10), end: fetchInfo.endStr.slice(0,10)});
-                    Promise.all([
-                        fetch('/api/calendar-decorations?' + params).then(r => { if(!r.ok) throw new Error('장식 일정 조회 실패'); return r.json(); }),
-                        fetch('/api/calendar-decorations/birthdays?' + params).then(r => { if(!r.ok) throw new Error('생일 조회 실패'); return r.json(); })
-                    ]).then(([decorations, birthdays]) => {
-                        const custom = [...decorations.map(item => ({
-                            id: 'decoration-' + item.id,
-                            title: (item.kind === 'UNIT' ? '★ ' : '🎉 ') + item.title,
-                            start: item.eventDate, color: item.color, categoryLabel: item.kind === 'UNIT' ? '유닛' : '기념일',
-                            kind: item.kind, imageUrl: item.imageUrl, description: item.description,
-                            unitName: item.unitName, rawEnd: null
-                        })), ...birthdays];
-                        successCallback([...getCalendarEvents(), ...custom].map(toCalendarEvent));
-                    }).catch(error => { console.error(error); failureCallback(error); });
-                },
+                eventSources,
+                progressiveEventRendering: true,
+                eventSourceFailure: error => console.error('추가 일정 조회 실패:', error),
                 windowResize: function() {
                     const maximum=window.matchMedia('(max-width: 600px)').matches ? 2 : 3;
                     if(calendar.getOption('dayMaxEvents')!==maximum)calendar.setOption('dayMaxEvents',maximum);
@@ -610,53 +663,56 @@
                     info.el.style.setProperty('--schedule-color',info.event.extendedProps.color||'#00f5d4');
                 },
                 eventContent: function(arg) {
+                    const imageUrl = arg.event.extendedProps.imageUrl;
+                    if (!imageUrl) return true;
                     const wrap = document.createElement('span');
                     wrap.className = 'inline-flex min-w-0 items-center gap-1';
-                    const imageUrl = arg.event.extendedProps.imageUrl;
-                    if (imageUrl) {
-                        const image = document.createElement('img');
-                        image.src = imageUrl; image.alt = '';
-                        image.className = 'h-4 w-4 shrink-0 rounded object-contain';
-                        wrap.appendChild(image);
-                    }
+                    const image = document.createElement('img');
+                    image.src = imageUrl;
+                    image.alt = '';
+                    image.loading = 'lazy';
+                    image.className = 'h-4 w-4 shrink-0 rounded object-contain';
                     const label = document.createElement('span');
-                    label.className = 'min-w-0 break-words';
+                    label.className = 'fc-event-title min-w-0';
                     label.textContent = arg.event.title || '';
-                    wrap.appendChild(label);
+                    wrap.append(image, label);
                     return { domNodes: [wrap] };
                 },
                 dateClick: function (info) {
-                    renderSelectedDate(info.dateStr, info.date);
+                    renderSelectedDate(info.date);
                 },
                 eventClick: function (info) {
                     info.jsEvent.preventDefault();
-                    renderSelectedDate(info.event.startStr, info.event.start);
+                    renderSelectedDate(info.event.start);
                     openEventDetails(info.event);
                 },
-                datesSet: function () {
-                    if (!selectedDateElement.dataset.initialized) {
-                        selectedDateElement.dataset.initialized = 'true';
-                        const today = new Date();
-                        renderSelectedDate('', today);
-                    }
-                }
+                eventsSet: () => renderSelectedDate(selectedDay)
             });
 
             calendar.render();
-            const focusId = new URLSearchParams(window.location.search).get('focus');
-            if (focusId) {
-                const focused = calendar.getEventById(focusId);
-                if (focused) {
-                    renderSelectedDate(focused.startStr, focused.start);
+            renderSelectedDate(selectedDay);
+            const query = new URLSearchParams(window.location.search);
+            const focused = query.has('focus') ? calendar.getEventById(query.get('focus')) : null;
+            if (focused) {
+                calendar.gotoDate(focused.start);
+                renderSelectedDate(focused.start);
+                if (query.get('edit') === 'true' && document.getElementById('editBtn')) {
+                    fillEditForm(focused);
+                    scheduleModal(editModalElement).show();
+                } else {
                     openEventDetails(focused);
                 }
             }
+            {{#isAdmin}}
+            if (query.get('add') === 'true') showAddModal();
+            bindDecorationManager(() => calendar.getEventSourceById('decorations')?.refetch());
+            {{/isAdmin}}
 
             if (todayButton) {
                 todayButton.addEventListener('click', function () {
                     calendar.today();
                     const today = new Date();
-                    renderSelectedDate('', today);
+                    renderSelectedDate(today);
                 });
             }
 
@@ -695,11 +751,11 @@
                         }
 
                         const saved=await response.json();
-                        calendar.addEvent(toCalendarEvent(saved));
+                        if (matchesSelectedArtist(saved.artistNames)) calendar.addEvent(toCalendarEvent(saved));
 
                         hideScheduleModalThen(addModalElement);
                         addForm.reset();
-                        renderSelectedDate(start, new Date(`${start}T00:00:00`));
+                        renderSelectedDate(new Date(`${start}T00:00:00`));
                     } catch (error) {
                         console.error('스케줄 추가 오류:', error);
                         alert('서버 통신 중 오류가 발생했습니다.');
@@ -742,13 +798,13 @@
                             return;
                         }
 
-                        const saved=toCalendarEvent(await response.json());
+                        const saved = await response.json();
                         const eventToUpdate=calendar.getEventById(id);
                         if(eventToUpdate)eventToUpdate.remove();
-                        calendar.addEvent(saved);
+                        if (matchesSelectedArtist(saved.artistNames)) calendar.addEvent(toCalendarEvent(saved));
 
                         hideScheduleModalThen(editModalElement);
-                        renderSelectedDate(start, new Date(`${start}T00:00:00`));
+                        renderSelectedDate(new Date(`${start}T00:00:00`));
                     } catch (error) {
                         console.error('스케줄 수정 오류:', error);
                         alert('서버 통신 중 오류가 발생했습니다.');

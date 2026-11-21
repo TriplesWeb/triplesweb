@@ -9,7 +9,7 @@ const ICONS = [
   'account_circle','add','add_box','add_circle','admin_panel_settings','album','arrow_back','arrow_drop_down',
   'arrow_forward','article','calendar_month','calendar_today','campaign','chat_bubble_outline',
   'chevron_left','chevron_right','close','delete','edit','edit_calendar','edit_note','error',
-  'event','expand_more','favorite','format_list_bulleted','forum','graphic_eq','grid_view',
+  'event','expand_more','favorite','folder','format_list_bulleted','forum','graphic_eq','grid_view',
   'group','groups','home','image','inbox','layers','link','live_tv','local_fire_department','location_on','logout',
   'menu','movie','notes','person','person_off','person_search','photo_library','play_arrow',
   'play_circle','refresh','restart_alt','search','search_off','send','shopping_bag','sort','videocam_off',

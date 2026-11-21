@@ -55,13 +55,18 @@ const base=path.resolve(__dirname,'../..');
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,category+' width '+width);
     assert.equal(await page.locator('a[href="/article/group-orders"]').count(),0);
     assert.equal(await page.getByText('분철',{exact:true}).count(),0);
+    assert.ok(await page.locator('.market-feed-card').count()>=1);
+    assert.equal(await page.locator('.article-board-heading').count(),0);
+    assert.equal(await page.locator('.article-board-row').count(),0);
     if(width<768){
-     assert.equal(await page.locator('.article-board-heading').isVisible(),false);
-     // 헤더 '제목'과 행 제목이 같은 클래스를 쓰므로 행만 본다.
-     assert.equal(await page.locator('.article-board-row > .article-board-subject').first().evaluate(n=>getComputedStyle(n).whiteSpace),'normal');
-     const author=await page.locator('.article-board-row > .article-board-author').first().boundingBox();
-     const date=await page.locator('.article-board-row > .article-board-date').first().boundingBox();
-     assert.ok(author.x+author.width<=date.x+1,'writer/date separate');
+     const note=page.locator('.market-feed-note').first();
+     if(await note.count())assert.equal(await note.evaluate(n=>getComputedStyle(n).whiteSpace),'normal');
+     const author=await page.locator('.market-feed-author').first().boundingBox();
+     const date=await page.locator('.market-feed-time').first().boundingBox();
+     assert.ok(author&&date,'writer/date present');
+     // 같은 줄이면 작성자→날짜 순서, 긴 닉네임으로 줄바꿈되면 아래로 쌓여도 된다.
+     const sideBySide=Math.abs(author.y-date.y)<8;
+     assert.ok(sideBySide?author.x+author.width<=date.x+1:author.y+author.height<=date.y+4,'writer/date separate');
     }
     assert.equal(await page.locator('.article-board-likes').count(),0);
     if(width===390||width===1280)await page.screenshot({path:`/tmp/objekt-ui/board-${category}-${width}.png`,fullPage:true});

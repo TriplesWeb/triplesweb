@@ -7,9 +7,9 @@ import com.example.triplesweb.service.*;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.*;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
 import java.nio.file.*;
@@ -26,10 +26,10 @@ import static org.assertj.core.api.Assertions.*;
 @Import(MustacheConfig.class)
 class ScheduleCategoryControllerTest {
     @Autowired MockMvc mvc;
-    @MockBean ScheduleService service;
-    @MockBean ScheduleRepository repository;
-    @MockBean ArtistRepository artists;
-    @MockBean AboutAdminAuth auth;
+    @MockitoBean ScheduleService service;
+    @MockitoBean ScheduleRepository repository;
+    @MockitoBean ArtistRepository artists;
+    @MockitoBean AboutAdminAuth auth;
     Artist artist;
     LocalDate day=LocalDate.now();
 
@@ -84,5 +84,15 @@ class ScheduleCategoryControllerTest {
         String filtered=mvc.perform(get("/schedule").param("artist","윤서연")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
         assertThat(filtered).contains("윤서연만 보는 중입니다");
+        assertThat(filtered).contains("data-selected-artist=\"윤서연\"");
+    }
+
+    @Test void scheduleLinksOpenTheExistingCalendarAndManagerForms() throws Exception {
+        when(repository.existsById(42L)).thenReturn(true);
+        mvc.perform(get("/schedule/42")).andExpect(redirectedUrl("/schedule?focus=42"));
+        mvc.perform(get("/schedule/999")).andExpect(status().isNotFound());
+        mvc.perform(get("/add")).andExpect(redirectedUrl("/schedule?add=true"));
+        mvc.perform(get("/edit/42")).andExpect(redirectedUrl("/schedule?focus=42&edit=true"));
+        verify(auth, times(2)).requireAdmin(any(), any());
     }
 }

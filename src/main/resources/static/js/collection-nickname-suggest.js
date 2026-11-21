@@ -4,61 +4,7 @@
   const menu = document.getElementById('collection-nickname-suggest');
   if (!form || !input || !menu) return;
 
-  const STORAGE_KEY = 'cosmo-nickname-recents';
   const MIN_QUERY = 3;
-  const saved = (form.dataset.savedNickname || '').trim();
-
-  function loadRecents() {
-    try {
-      const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      return Array.isArray(raw) ? raw.map(String).filter(Boolean) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function saveRecent(nickname) {
-    const value = (nickname || '').trim();
-    if (!value) return;
-    const next = [value, ...loadRecents().filter((item) => item.toLowerCase() !== value.toLowerCase())].slice(0, 8);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
-  }
-
-  if (saved) saveRecent(saved);
-
-  function uniqueNames(lists, prefixOnly) {
-    const needle = (prefixOnly || '').trim().toLowerCase();
-    const seen = new Set();
-    const out = [];
-    for (const list of lists) {
-      for (const item of list) {
-        const name = String(item || '').trim();
-        if (!name) continue;
-        const key = name.toLowerCase();
-        if (seen.has(key)) continue;
-        if (needle && !key.startsWith(needle)) continue;
-        seen.add(key);
-        out.push(name);
-        if (out.length >= 8) return out;
-      }
-    }
-    return out;
-  }
-
-  function mergeNames(preferred, extra) {
-    const seen = new Set();
-    const out = [];
-    for (const item of [...preferred, ...extra]) {
-      const name = String(item || '').trim();
-      if (!name) continue;
-      const key = name.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push(name);
-      if (out.length >= 8) return out;
-    }
-    return out;
-  }
 
   function closeMenu() {
     menu.hidden = true;
@@ -103,23 +49,15 @@
   let timer = 0;
   let abort = null;
   let seq = 0;
-  function recentsFor(query) {
-    const needle = (query || '').trim();
-    if (!needle) return loadRecents().slice(0, 8);
-    return uniqueNames([loadRecents()], needle);
-  }
 
   async function refresh() {
     const query = input.value.trim();
     const requestId = ++seq;
-    const recents = recentsFor(query);
     if (query.length < MIN_QUERY) {
       abort?.abort();
-      if (recents.length && document.activeElement === input) render(recents);
-      else closeMenu();
+      closeMenu();
       return;
     }
-    if (recents.length) render(recents);
     abort?.abort();
     abort = new AbortController();
     let remote = [];
@@ -136,7 +74,7 @@
       if (error && error.name === 'AbortError') return;
     }
     if (requestId !== seq || input.value.trim() !== query) return;
-    render(mergeNames(remote, recents));
+    render(remote.map((item) => String(item || '').trim()).filter(Boolean).slice(0, 8));
   }
 
   input.addEventListener('input', () => {

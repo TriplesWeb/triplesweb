@@ -5,10 +5,8 @@ build
 .idea
 .vscode
 *.iml
-# 업로드 전체는 제외하되, 앱에 번들할 chemistry 정적 자산만 포함
+# uploads는 런타임 호스트 볼륨에서 제공한다. 이미지 빌드 컨텍스트에 포함하지 않는다.
 uploads/**
-!uploads/chemistry/
-!uploads/chemistry/**
 data
 docs
 **/bin

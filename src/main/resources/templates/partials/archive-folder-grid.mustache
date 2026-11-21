@@ -1,0 +1,7 @@
+<section class="ar-folders" aria-label="아카이브 폴더">
+    {{#archiveFolders}}
+    <a class="ar-folder{{#groupFolder}} is-group{{/groupFolder}}{{#soloFolder}} is-solo{{/soloFolder}}{{#comboFolder}} is-combo{{/comboFolder}}{{#parentFolder}} is-parent{{/parentFolder}}{{#hasFolderArt}} has-art{{/hasFolderArt}}" href="{{href}}" style="--folder-color: {{color}};">
+        {{>partials/archive-folder-face}}
+    </a>
+    {{/archiveFolders}}
+</section>

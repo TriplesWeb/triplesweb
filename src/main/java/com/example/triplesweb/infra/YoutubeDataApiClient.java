@@ -3,6 +3,7 @@ package com.example.triplesweb.infra;
 import com.example.triplesweb.util.YoutubeIdExtractor;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -13,10 +14,17 @@ import java.net.URI;
  */
 @Component
 public class YoutubeDataApiClient {
-    private final RestTemplate rest = new RestTemplate();
+    private final RestTemplate rest;
 
     @Value("${youtube.api.key:}")
     private String apiKey;
+
+    public YoutubeDataApiClient() {
+        var factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(2_000);
+        factory.setReadTimeout(3_000);
+        this.rest = new RestTemplate(factory);
+    }
 
     public VideosResponse fetchVideo(String urlOrId) {
 

@@ -109,6 +109,14 @@ class MobilePageTemplatesTest {
             row.put("haveLeadColor", "#8decd9"); row.put("showTradeSwap", "trade".equals(category));
             row.put("hasWantLead", "trade".equals(category)); row.put("wantLeadName", "코토네");
             row.put("wantLeadColor", "#ff8389");
+            row.put("boardBase", "/"+category);
+            Map<String,Object> thumb=Map.of("hasImage",true,"thumbnailImage","/images/no-image.png","collectionNo","367Z");
+            row.put("hasObjektPreview", true);
+            row.put("hasHavePreview", true); row.put("havePreview", List.of(thumb));
+            if ("trade".equals(category)) {
+                row.put("hasWantPreview", true); row.put("wantPreview", List.of(thumb));
+            }
+            board.put("boardBase", "/"+category);
             board.put("articleList", List.of(row));
             Files.writeString(output.resolve("board-" + category + ".html"),
                 compiler.compile(Files.readString(root.resolve("article/article.mustache"))).execute(board));
@@ -130,7 +138,7 @@ class MobilePageTemplatesTest {
         assertThat(header).contains("data-cosmo-id-open", "data-alerts-open", "사이트 전체 검색");
         assertThat(header).contains("header-objekt-jump__label").contains(">Objekt<");
         assertThat(header).contains("id=\"siteAdminBtn\"").contains("data-site-admin-open").contains("관리자 로그인");
-        assertThat(header).contains("id=\"siteAdminMobileBtn\"").contains("data-nav=\"admin\"");
+        assertThat(header).doesNotContain("id=\"siteAdminMobileBtn\"").doesNotContain("data-site-admin-mobile-label");
         assertThat(header).doesNotContain("mobile-shortcuts").doesNotContain("mobile-menu-brand").contains("data-nav=\"home\"");
         assertThat(header).contains("site-user-menu__name").doesNotContain("site-user-menu__meta");
     }
