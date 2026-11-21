@@ -840,8 +840,8 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     --member-count: 1;
     --chip-size: clamp(3.05rem, calc(3.85rem - 0.04rem * var(--member-count)), 3.4rem);
     --chip-image: clamp(1.35rem, calc(2.35rem - 0.045rem * var(--member-count)), 2.15rem);
-    gap: clamp(0.04rem, calc(0.14rem - 0.004rem * var(--member-count)), 0.12rem);
-    row-gap: clamp(0.06rem, calc(0.16rem - 0.004rem * var(--member-count)), 0.14rem);
+    gap: clamp(0.02rem, calc(0.08rem - 0.004rem * var(--member-count)), 0.06rem);
+    row-gap: clamp(0.04rem, calc(0.1rem - 0.004rem * var(--member-count)), 0.08rem);
     align-items: center;
     overflow: visible;
 }
@@ -859,8 +859,8 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     --chip-image: clamp(1.08rem, calc(1.65rem - 0.045rem * var(--member-count)), 1.6rem);
     min-width: var(--chip-image);
     max-width: var(--chip-image);
-    padding: 0.08rem;
-    margin: 0.12rem;
+    padding: 0.02rem;
+    margin: 0;
 }
 .archive-member-more {
     position: relative;
@@ -1971,10 +1971,11 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     box-shadow:none;
     background:transparent;
     mix-blend-mode:screen;
+    opacity:0.78;
     filter:
-        drop-shadow(0 0 1.5px color-mix(in srgb, var(--member-color, #00f5d4) 75%, transparent))
-        drop-shadow(0 0 5px color-mix(in srgb, var(--member-color, #00f5d4) 55%, transparent))
-        drop-shadow(0 0 12px color-mix(in srgb, var(--member-color, #00f5d4) 35%, transparent));
+        drop-shadow(0 0 1px color-mix(in srgb, var(--member-color, #00f5d4) 42%, transparent))
+        drop-shadow(0 0 3px color-mix(in srgb, var(--member-color, #00f5d4) 28%, transparent))
+        drop-shadow(0 0 7px color-mix(in srgb, var(--member-color, #00f5d4) 16%, transparent));
 }
 .archive-page[data-archive-kind] .ar-highlight .archive-member-chip img{width:2.15rem;height:2.15rem;max-width:2.15rem;max-height:2.15rem;object-fit:contain;flex:none}
 
