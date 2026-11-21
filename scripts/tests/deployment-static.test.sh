@@ -37,8 +37,10 @@ grep -Fq 'docker image inspect "$IMAGE"' scripts/deploy-pi-app.sh
 grep -Fq -- '--force-recreate app' scripts/deploy-pi-app.sh
 grep -Fq 'docker buildx imagetools inspect' .github/workflows/deploy-main.yml
 grep -Fq "steps.published.outputs.found != 'true'" .github/workflows/deploy-main.yml
-grep -Fq 'HEAD:uploads/chemistry' .github/workflows/deploy-main.yml
-grep -Fq 'chemistry_sync' .github/workflows/deploy-main.yml
+reject_match -Fq 'HEAD:uploads/chemistry' .github/workflows/deploy-main.yml
+reject_match -Fq 'chemistry_sync' .github/workflows/deploy-main.yml
+reject_match -Fq 'uploads/chemistry/' .github/workflows/deploy-main.yml
+grep -Fq 'migrate-chemistry-photos-on-pi.sh' .github/workflows/deploy-main.yml
 reject_match -Fq 'rsync -az' .github/workflows/deploy-main.yml
 reject_match -Fq 'COPY scripts ./scripts' Dockerfile
 grep -Fq 'COPY scripts/setup-css.sh scripts/build-*css.cjs' Dockerfile

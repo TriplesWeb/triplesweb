@@ -39,20 +39,18 @@ CI PR(`ci-tests.yml`)은 `--check` / `--no-run`, main 배포 이미지(`Dockerfi
 
 | 역할 | 경로 |
 |------|------|
-| 초기 시드(기존 정적 데이터) | [`src/main/resources/data/chemistry-seed.json`](src/main/resources/data/chemistry-seed.json) |
 | API | `/api/chemistry` (`ChemistryApiController`) |
-| 정적 케미 이미지 | [`uploads/chemistry/chem/`](uploads/chemistry/chem/) |
-| 관리자 업로드 이미지 | `uploads/images/chemistry/` |
+| 매트릭스 UI (logo·S 심볼) | [`src/main/resources/static/images/chemistry/`](src/main/resources/static/images/chemistry/) → `/images/chemistry/` |
+| 페어·그룹 사진 (서버) | `uploads/images/chemistry/` → `/uploads/images/chemistry/` |
 
-시드는 기본 비활성입니다. `CHEMISTRY_SEED_ENABLED=true`(또는 `chemistry.seed.enabled=true`)로 기동할 때만  
-없는 페어를 삽입하며, 이미 있는 행은 덮어쓰지 않습니다. 삭제는 DB에서 **하드 삭제**합니다.
+삭제는 DB에서 **하드 삭제**합니다.
 
 ### 추가·수정 방법 (권장)
 
 1. `.env`에 `CHEMISTRY_ADMIN_PASSWORD`를 설정합니다.
 2. `/triples/chemistry`에서 **관리자** 로그인합니다.
 3. 빈 칸(+)으로 추가하거나, 기존 셀을 열어 수정·삭제합니다.
-4. 이미지는 편집 폼에서 업로드하거나, 기존처럼 `uploads/chemistry/chem/...` 경로를 쓸 수 있습니다.
+4. 이미지는 편집 폼에서 업로드합니다 (`/uploads/images/chemistry/...`). 매트릭스 logo·심볼은 `/images/chemistry/` static입니다.
 
 DB에 활성 케미가 하나도 없으면 표 위에 **「등록된 케미명이 없어요」** 안내가 표시됩니다. (멤버 격자·대각선 S 심볼은 그대로 보입니다.)
 
@@ -106,10 +104,10 @@ DB를 서버와 같이 쓰면 **파일도 같이** 보여야 합니다.
 
 - **실시간:** 로컬 `bootRun` 업로드/삭제 시 Tailscale로 서버 `uploads/`에 push (기동 시 서버→로컬 pull). `.env`의 `UPLOAD_SYNC_*` 참고.
 - **참조만:** 로컬 `./uploads`에 없으면 `upload.fallback-base-url`(기본 `https://triples.eht3r.cloud`)로 **리다이렉트**합니다. 공유 DB를 쓰는 협업자 PC에서도 멤버·유닛 이미지가 보입니다. 서버 Docker는 폴백을 비웁니다.
-- **운영 배포:** GitHub Actions에서 관리하는 `uploads/chemistry/`만 증분 rsync로 동기화합니다. 전체 `uploads/`에 대한 삭제·재귀 chown/chmod는 수행하지 않습니다.
+- **운영 배포:** 케미 UI는 WAR static에 포함됩니다. 페어 사진은 서버 `uploads/images/chemistry/`만 사용하며, 배포 시 옛 `uploads/chemistry/chem` → `uploads/images/chemistry` 멱등 복사를 한 번 돌립니다. 전체 `uploads/` 삭제·재귀 chown/chmod는 하지 않습니다.
 
 ```bash
-./scripts/setup-git-hooks.sh   # pre-commit이 uploads를 자동 git add
+./scripts/setup-git-hooks.sh   # 훅 경로 설정 (uploads는 gitignore — 서버 전용)
 ```
 
 자세한 실행·권한·체크리스트는 [프로젝트 구조 문서](docs/PROJECT_STRUCTURE.md)의 **§11 로컬 개발 빠른 시작**을 참고하세요.

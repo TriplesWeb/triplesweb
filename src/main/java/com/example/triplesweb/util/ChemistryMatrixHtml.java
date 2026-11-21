@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public final class ChemistryMatrixHtml {
 
-    private static final String BASE = "/uploads/chemistry";
+    private static final String BASE = "/images/chemistry";
 
     private ChemistryMatrixHtml() {}
 

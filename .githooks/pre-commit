@@ -1,7 +1,3 @@
 #!/bin/sh
-# 로컬 uploads 변경분을 커밋에 자동 포함 → push 시 Actions가 서버 uploads/ 전체 rsync
-set -e
-UPLOADS_DIR="uploads"
-if [ -d "$UPLOADS_DIR" ]; then
-  git add -A -- "$UPLOADS_DIR"
-fi
+# uploads/ 는 .gitignore (서버 전용). UI 그래픽은 src/main/resources/static/images/
+exit 0

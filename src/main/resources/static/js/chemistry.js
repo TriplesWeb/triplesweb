@@ -4,7 +4,7 @@
  * 프로필 링크는 API의 artistAId/artistBId를 우선 사용한다.
  */
 (function () {
-  const BASE = "/uploads/chemistry";
+  const BASE = "/images/chemistry";
 
   const catalog = window.TripleSMembers || {};
   const MEMBERS = catalog.NAMES_KO || [];

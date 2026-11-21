@@ -99,7 +99,7 @@
         return;
       }
       frame.onload = () => paintFrameMask(avatar, frame);
-      frame.src = "/uploads/images/artist-tab-frames/" + n + ".png";
+      frame.src = "/images/artist/tab-frames/" + n + ".png";
       frame.hidden = false;
       if (frame.complete && frame.naturalWidth) paintFrameMask(avatar, frame);
     });

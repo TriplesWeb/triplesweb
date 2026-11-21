@@ -240,7 +240,7 @@ erDiagram
 |------|------|
 | Entity | `Artist`, `Unit`, `UnitMember`, `Album`, `AlbumType`, `Track`, `Chemistry` |
 | Repository | `ArtistRepository`, `UnitRepository`, `AlbumRepository`, `ChemistryRepository` |
-| Service | `UnitService`, `AlbumService`, `ArtistAdminService`, `ChemistryService`, `ChemistrySeedService` |
+| Service | `UnitService`, `AlbumService`, `ArtistAdminService`, `ChemistryService` |
 | Controller | `TriplesController` (`/triples/artist\|album\|unit\|chemistry`), `ChemistryApiController`, `ArtistApiController` |
 | Config | `DataInitializer` |
 | 뷰 | `templates/triples/*` (+ `partials/chemistry-modals`) |
