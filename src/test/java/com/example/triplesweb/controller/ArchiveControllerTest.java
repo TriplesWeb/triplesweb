@@ -523,7 +523,8 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain(">폴더 목록<");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("이 페이지에서 조건에 맞는");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("id=\"archiveNone\"");
-        org.assertj.core.api.Assertions.assertThat(html).contains("페이지 1 / 1");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-page-jump-meta");
+        org.assertj.core.api.Assertions.assertThat(html).contains(">1</span>");
         org.assertj.core.api.Assertions.assertThat(html).contains("is-current");
         org.assertj.core.api.Assertions.assertThat(html).contains("코스모룸");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("직찍");

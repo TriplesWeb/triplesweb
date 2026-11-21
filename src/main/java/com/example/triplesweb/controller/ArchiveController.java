@@ -50,8 +50,8 @@ import java.time.format.DateTimeParseException;
 @RequestMapping("/archive")
 public class ArchiveController {
 
-    private static final int DEFAULT_ARCHIVE_SIZE = 15;
-    private static final List<Integer> ARCHIVE_SIZE_OPTIONS = List.of(15, 30, 50, 100);
+    private static final int DEFAULT_ARCHIVE_SIZE = 10;
+    private static final List<Integer> ARCHIVE_SIZE_OPTIONS = List.of(10, 20, 30, 40, 50);
 
     private final ArchiveService archiveService;
     private final AboutAdminAuth aboutAdminAuth;
@@ -66,7 +66,7 @@ public class ArchiveController {
     @GetMapping
     public String showArchive(@RequestParam(defaultValue = "image") String type,
                               @RequestParam(defaultValue = "0") int page,
-                              @RequestParam(defaultValue = "15") int size,
+                              @RequestParam(defaultValue = "10") int size,
                               @RequestParam(required = false) String q,
                               @RequestParam(required = false) String from,
                               @RequestParam(required = false) String to,
@@ -97,7 +97,7 @@ public class ArchiveController {
 
     @GetMapping("/all")
     public String showAllImages(@RequestParam(defaultValue = "0") int page,
-                                @RequestParam(defaultValue = "15") int size,
+                                @RequestParam(defaultValue = "10") int size,
                                 @RequestParam(required = false) String q,
                                 @RequestParam(required = false) String from,
                                 @RequestParam(required = false) String to,

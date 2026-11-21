@@ -518,7 +518,7 @@
         const params = new URLSearchParams();
         new FormData(form).forEach((value, key) => {
             if (String(value).trim() === '') return;
-            if (key === 'size' && String(value) === '15') return;
+            if (key === 'size' && String(value) === '10') return;
             params.append(key, value);
         });
         const action = form.getAttribute('action') || location.pathname;
@@ -532,10 +532,10 @@
         if (sizeSelect && sizeSelect.value !== value) sizeSelect.value = value;
     }
     sizeSelect?.addEventListener('change', () => {
-        const value = sizeSelect.value || '15';
+        const value = sizeSelect.value || '10';
         syncArchiveSize(value);
         const url = new URL(location.href);
-        if (value === '15') url.searchParams.delete('size');
+        if (value === '10') url.searchParams.delete('size');
         else url.searchParams.set('size', value);
         url.searchParams.delete('page');
         url.searchParams.delete('go');
@@ -579,7 +579,7 @@
                 pager.replaceWith(document.importNode(nextPager, true));
             }
             const nextSize = doc.getElementById('archivePageSize');
-            if (nextSize) syncArchiveSize(nextSize.value || '15');
+            if (nextSize) syncArchiveSize(nextSize.value || '10');
             for (const selector of ['.ar-type-tabs', '.ar-source-tabs']) {
                 const current = document.querySelector(selector);
                 const next = doc.querySelector(selector);

@@ -54,23 +54,17 @@
         {{>partials/archive-type-tabs}}
         <div class="ar-source-bar">
             {{>partials/archive-source-tabs}}
-        </div>
-    </div>
-
-    <div class="ar-grid-head">
-        <label class="ar-page-size">
-            <span class="ar-page-size-label">보기</span>
-            <span class="ar-page-size-control">
+            <label class="ar-density">
                 <select id="archivePageSize" name="size" aria-label="페이지당 개수">
                     {{#archiveSizeOptions}}
                     <option value="{{value}}"{{#selected}} selected{{/selected}}>{{label}}</option>
                     {{/archiveSizeOptions}}
                 </select>
-                <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
-            </span>
-        </label>
+            </label>
+        </div>
     </div>
-    <section class="ar-grid{{#archiveBrowse}} ar-grid-browse{{/archiveBrowse}}" id="archiveGrid" aria-label="{{#imageArchive}}사진 목록{{/imageArchive}}{{#videoArchive}}영상 목록{{/videoArchive}}" data-number-offset="{{archiveOffset}}">
+
+    <section class="ar-grid{{#archiveBrowse}} ar-grid-browse{{/archiveBrowse}}" id="archiveGrid" aria-label="{{#imageArchive}}사진 목록{{/imageArchive}}{{#videoArchive}}영상 목록{{/videoArchive}}" data-number-offset="{{archiveOffset}}" data-page-size="{{archiveSize}}">
         {{#archiveCards}}
         {{#imageArchive}}
         {{>partials/archive-photo-card}}
