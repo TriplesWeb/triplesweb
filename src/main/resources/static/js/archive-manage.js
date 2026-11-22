@@ -1620,13 +1620,22 @@
             slider.value = '0';
             updateCoverWindow(form, 0);
             if (token !== form._archiveCover.token) return;
-            // 프레임 준비 중 갤러리/저장 커버를 고르면 첫 장면 자동 커밋으로 덮지 않는다.
+            // 프레임 준비 중 갤러리/저장 커버를 고르면 첫 장면 자동 커밋·스크럽 미리보기로 덮지 않는다.
             if (autoSelect && !coverChosenByUser(form)) {
                 await scrubCoverTo(form, 0, { commit: true, auto: true });
+            } else if (coverChosenByUser(form)) {
+                updateCoverWindow(form, 0);
+                const timeLabel = form.querySelector('[data-cover-time]');
+                if (timeLabel) {
+                    timeLabel.hidden = false;
+                    timeLabel.textContent = formatCoverSeconds(0);
+                }
+                const keptUrl = form.dataset.thumbnailUrl || '';
+                if (keptUrl) showThumbnail(form, keptUrl);
+                setCoverUiState(form, 'is-success');
             } else {
                 await scrubCoverTo(form, 0, { commit: false });
-                if (coverChosenByUser(form)) setCoverUiState(form, 'is-success');
-                else setCoverUiState(form, '');
+                setCoverUiState(form, '');
             }
         } catch (_) {
             if (token !== form._archiveCover.token) return;
