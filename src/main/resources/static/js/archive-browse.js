@@ -637,7 +637,8 @@
         event.preventDefault();
         appliedDates = dateSnapshot();
         submitWhenDateCloses = false;
-        window.closeArchiveOverlays?.();
+        // 멤버 다중선택은 패널을 연 채로 필터를 갱신해야 하므로, 열려 있으면 유지한다.
+        window.closeArchiveOverlays?.(panel && !panel.hidden ? panel : undefined);
         window.clearTimeout(filterTimer);
         const url = archiveFilterUrl();
         loadArchiveFilter(url);
