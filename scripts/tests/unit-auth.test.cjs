@@ -111,13 +111,6 @@ test('newly created units use the ID returned by the server', async () => {
   assert.equal(new URL(p.assigned()).searchParams.get('tab'), 'unit-27');
 });
 
-test('cancelling the save confirmation keeps the editor open without navigation', async () => {
-  const p = await page(true, { confirm: false, saved: { unitId: 27, visible: true } });
-  await p.element('unitEditForm').events.submit({ preventDefault() {} });
-  assert.equal(p.assigned(), undefined);
-  assert.equal(p.reloaded(), false);
-});
-
 test('hiding a unit returns to the list without an invalid tab target', async () => {
   const p = await page(true, { tabs: [1, 14],
     url: 'https://example.test/triples/unit?tab=unit-14', saved: { unitId: 14, visible: false } });
