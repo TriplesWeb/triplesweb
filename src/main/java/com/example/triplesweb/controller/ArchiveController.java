@@ -642,9 +642,9 @@ public class ArchiveController {
         model.addAttribute("hasTypeQuery", video);
         model.addAttribute("mediaDateLabel", video ? "영상 날짜" : "사진 날짜");
         model.addAttribute("dateFilterLabel", video ? "영상 날짜" : "사진 날짜");
-        model.addAttribute("dateFromLabel", video ? "영상 날짜 시작" : "사진 날짜 시작");
-        model.addAttribute("dateToLabel", video ? "영상 날짜 끝" : "사진 날짜 끝");
-        model.addAttribute("dateExactLabel", video ? "이 영상 날짜" : "이 사진 날짜");
+        model.addAttribute("dateFromLabel", "시작");
+        model.addAttribute("dateToLabel", "끝");
+        model.addAttribute("dateExactLabel", "이날");
         model.addAttribute("imageTabHref", joinHref("/archive", filterQuery + pageQuery));
         model.addAttribute("videoTabHref", joinHref("/archive?type=video", filterQuery + pageQuery));
         model.addAttribute("browseQuery", joinHref("", filterQuery));
@@ -698,9 +698,9 @@ public class ArchiveController {
         model.addAttribute("hasQuery", false);
         model.addAttribute("mediaDateLabel", "사진 날짜");
         model.addAttribute("dateFilterLabel", "사진 날짜");
-        model.addAttribute("dateFromLabel", "사진 날짜 시작");
-        model.addAttribute("dateToLabel", "사진 날짜 끝");
-        model.addAttribute("dateExactLabel", "이 사진 날짜");
+        model.addAttribute("dateFromLabel", "시작");
+        model.addAttribute("dateToLabel", "끝");
+        model.addAttribute("dateExactLabel", "이날");
     }
 
     private static ArchiveSource parseSourceFilter(String sourceSlug) {

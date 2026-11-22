@@ -422,16 +422,26 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 }
 .ar-card .ar-source-badge {
     min-height: 1.55rem;
-    padding: 0.18rem 0.7rem;
-    font-size: 0.72rem;
-    letter-spacing: 0.03em;
+    padding: 0.18rem 0.55rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.02em;
 }
 .ar-card-badges {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.28rem;
     min-width: 0;
+    max-width: 100%;
+}
+.ar-card .ar-card-badges > .ar-source-badge,
+.ar-card .ar-card-badges > .ar-unit-badge {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .ar-unit-badge {
     --unit-color: #a78bfa;
@@ -466,8 +476,8 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-unit-badge[hidden] { display: none; }
 .ar-card .ar-unit-badge {
     min-height: 1.55rem;
-    padding: 0.18rem 0.7rem;
-    font-size: 0.72rem;
+    padding: 0.18rem 0.55rem;
+    font-size: 0.68rem;
 }
 
 .ar-stats {
@@ -900,9 +910,7 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .archive-page[data-archive-kind="image"] .ar-highlight img { object-fit: contain; object-position: center; }
 .archive-page[data-archive-kind="image"] .ar-card .ar-photo-link {
     position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
     aspect-ratio: 1 / 1;
     min-height: 0;
     overflow: hidden;
@@ -910,20 +918,21 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     background: #07080b;
 }
 .archive-page[data-archive-kind="image"] .ar-card .ar-photo-link > img {
+    display: block;
     width: 100%;
     height: 100%;
     max-height: none;
     object-fit: contain;
     object-position: center;
 }
-.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="20"] .ar-card .ar-photo-link > img {
-    max-height: 8.2rem;
-}
-.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="30"] .ar-card .ar-photo-link > img,
-.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="40"] .ar-card .ar-photo-link > img,
-.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="50"] .ar-card .ar-photo-link > img {
-    max-height: 6rem;
-}
+.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="20"] .ar-card .ar-photo-link { aspect-ratio: 1 / 0.94; }
+.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="30"] .ar-card .ar-photo-link { aspect-ratio: 1 / 0.9; }
+.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="40"] .ar-card .ar-photo-link { aspect-ratio: 1 / 0.86; }
+.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="50"] .ar-card .ar-photo-link { aspect-ratio: 1 / 0.82; }
+.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="20"] .ar-card .ar-body { zoom: 0.88; }
+.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="30"] .ar-card .ar-body { zoom: 0.8; }
+.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="40"] .ar-card .ar-body { zoom: 0.74; }
+.archive-page[data-archive-kind="image"] .ar-grid[data-page-size="50"] .ar-card .ar-body { zoom: 0.68; }
 .ar-card-count {
     position: absolute;
     top: 0.45rem;
@@ -1134,45 +1143,84 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-date-toggle .material-symbols-outlined { font-size: 1.05rem; color: #00f5d4; }
 .ar-date-popover {
     position: absolute;
-    top: calc(100% + 0.4rem);
+    top: calc(100% + 0.35rem);
     left: 0;
     z-index: 30;
     display: grid;
     gap: 0.55rem;
-    width: min(22rem, calc(100vw - 2rem));
-    padding: 0.75rem;
+    width: min(17.5rem, calc(100vw - 2rem));
+    padding: 0.65rem 0.7rem 0.6rem;
     overflow: visible;
-    border: 1px solid rgba(58, 74, 70, 0.55);
-    border-radius: 0.75rem;
-    background: #14161c;
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(0, 245, 212, 0.16);
+    border-radius: 0.85rem;
+    background:
+        radial-gradient(120% 80% at 100% 0%, rgba(0, 245, 212, 0.06), transparent 55%),
+        #14161c;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
 }
 .ar-date-popover[hidden] { display: none; }
-.ar-date-popover label {
+.ar-date-fields {
     display: grid;
-    gap: 0.25rem;
-    color: #b9cac4;
-    font-size: 0.75rem;
+    gap: 0.4rem;
+}
+.ar-date-row {
+    display: grid;
+    grid-template-columns: 2.4rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    color: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+}
+.ar-date-kicker {
+    color: #8d9c96;
+    font-size: 0.72rem;
     font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+.ar-date-control {
+    display: block;
+    min-width: 0;
 }
 .ar-date-popover input[type="date"] {
     box-sizing: border-box;
     width: 100%;
-    min-height: 2.625rem;
-    border: 1px solid rgba(58, 74, 70, 0.6);
-    border-radius: 0.75rem;
-    background: rgba(13, 14, 18, 0.7);
+    min-height: 2.25rem;
+    border: 1px solid rgba(58, 74, 70, 0.65);
+    border-radius: 0.6rem;
+    background: rgba(10, 12, 16, 0.88);
     color: #e3e2e8;
     font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-    font-size: 0.875rem;
-    padding: 0.5rem 0.75rem;
+    font-size: 0.84rem;
+    padding: 0.35rem 0.65rem;
 }
 .ar-date-popover input[type="date"]:focus {
     outline: none;
     border-color: #00f5d4;
+    box-shadow: 0 0 0 1px rgba(0, 245, 212, 0.2);
 }
 .ar-date-popover .ar-cal {
     width: 100%;
+    min-height: 2.25rem;
+}
+.ar-date-popover .ar-cal-parts {
+    left: 0.65rem;
+    right: 2.2rem;
+}
+.ar-date-popover .ar-cal-open {
+    right: 0.35rem;
+    width: 1.55rem;
+    height: 1.55rem;
+}
+.ar-date-popover .ar-cal-open .material-symbols-outlined {
+    font-size: 1.1rem;
+}
+.ar-date-hint {
+    margin: 0;
+    font-size: 0.72rem;
 }
 .ar-ymd {
     display: grid;
@@ -1213,7 +1261,25 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-field .ar-ymd select {
     min-height: 2.625rem;
 }
-.ar-date-actions { display: flex; justify-content: flex-end; gap: 0.4rem; }
+.ar-date-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.35rem;
+    padding-top: 0.45rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.ar-date-popover .ar-date-actions .site-btn,
+.ar-date-popover .ar-date-actions .ar-submit {
+    width: auto;
+    flex: 0 0 auto;
+}
+.ar-date-popover .ar-date-apply {
+    min-height: 1.9rem;
+    padding: 0.28rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+}
 .ar-member-chevron { margin-left: 0.1rem; transition: transform 0.15s ease; }
 .ar-member-toggle.is-open .ar-member-chevron { transform: rotate(180deg); }
 .ar-member-panel { width: min(100%, 48rem); padding: 0.7rem; border: 1px solid rgba(0, 245, 212, 0.24); border-radius: 0.75rem; background: rgba(13, 14, 18, 0.97); box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28); }
@@ -1655,6 +1721,23 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     object-fit: cover;
     object-position: center;
 }
+.ar-file-thumb:not(:has(img)) {
+    display: grid;
+    place-items: center;
+    color: #8decd9;
+    font-size: 1.35rem;
+    line-height: 1;
+}
+.ar-file-current-name {
+    flex: 1 1 8rem;
+    min-width: 0;
+    color: #b9cac4;
+    font-size: 0.82rem;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .ar-file-thumb:focus-visible {
     outline: 2px solid #8bf5dc;
     outline-offset: -2px;
@@ -1834,24 +1917,50 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     height: 1.15rem;
 }
 .ar-file-tile.is-set {
+    cursor: default;
     box-shadow: inset 0 0 0 2px rgba(0, 245, 212, 0.7);
 }
 .ar-file-tile.is-active {
     outline: 2px solid #00f5d4;
     outline-offset: 1px;
 }
+.ar-preview > div {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
+}
+.ar-preview > div > p {
+    margin: 0 0 0.35rem;
+}
 .ar-preview-card.is-photo-preview,
-.ar-preview-card.is-video-preview { position: relative; isolation: isolate; padding: 0.5rem 0.7rem 0.75rem; overflow: visible; border: 0; background: none; }
+.ar-preview-card.is-video-preview {
+    position: relative;
+    isolation: isolate;
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    background: none;
+}
 .ar-preview-card.is-photo-preview {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: flex-start;
 }
 .ar-preview-photo-card,
-.ar-preview-video-card { position: relative; width: 100%; max-width: 20rem; margin: 0 auto; min-height: 0; }
+.ar-preview-video-card {
+    position: relative;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    min-height: 0;
+}
 .ar-preview-photo-card {
     width: fit-content;
-    max-width: min(20rem, 100%);
+    max-width: 100%;
 }
 .ar-preview-card .ar-preview-photo-card .ar-photo-link {
     display: flex;
@@ -1902,20 +2011,58 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-video-player.ar-detail-panel {
     position: fixed;
     inset: 0;
-    width: min(96vw, 56rem);
-    max-height: 94dvh;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 17rem;
+    grid-template-rows: minmax(0, 1fr);
+    width: min(calc(100% - 2rem), 56rem);
+    height: min(94vh, 52rem);
+    max-height: min(94vh, 52rem);
     margin: auto;
     padding: 0;
-    overflow: auto;
+    border: 0;
+    overflow: hidden;
+    background: #14151b;
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
 }
 .ar-video-player:not([open]) { display: none; }
-.ar-video-player::backdrop { background: rgba(0,0,0,0.82); backdrop-filter: blur(4px); }
-.ar-video-player .ar-video-pane { flex-direction: column; justify-content: center; min-height: 0; max-height: none; }
-.ar-video-player .ar-detail-side { min-height: 0; }
-.ar-video-player video { display: block; width: 100%; max-height: 68dvh; aspect-ratio: 16 / 9; object-fit: contain; background: #000; }
-.ar-video-player-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.9rem 1.1rem; font-size: 0.85rem; }
-.ar-video-player-foot p { margin: 0; color: #ffcf9b; }
-.ar-video-player-foot a { margin-left: auto; color: #8bf5dc; }
+.ar-video-player::backdrop { background: rgba(0, 0, 0, 0.82); backdrop-filter: blur(4px); }
+.ar-video-player .ar-detail-side { min-height: 0; min-width: 0; }
+.ar-video-player .ar-detail-photo video {
+    position: absolute;
+    inset: 0;
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    margin: auto;
+    object-fit: contain;
+    object-position: center;
+    background: #07080b;
+}
+.ar-video-status {
+    position: absolute;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    z-index: 2;
+    margin: 0;
+    padding: 0.45rem 0.65rem;
+    border-radius: 0.5rem;
+    background: rgba(7, 8, 11, 0.82);
+    color: #ffcf9b;
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+.ar-video-status[hidden] { display: none; }
+@media (max-width: 860px) {
+    .ar-video-player.ar-detail-panel {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(42vh, 1fr) auto;
+        width: min(calc(100% - 1.5rem), 36rem);
+        height: min(96vh, 58rem);
+        max-height: min(96vh, 58rem);
+    }
+}
 .ar-picker-meta {
     display: flex;
     align-items: center;
@@ -1927,14 +2074,31 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     font-size: 0.8rem;
     font-weight: 500;
 }
-.ar-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.ar-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; align-items: start; }
 .ar-preview:not(:has(.ar-preview-full)):not(:has(.ar-preview-card)) {
     grid-template-columns: 1fr;
 }
 .ar-preview[hidden] { display: none !important; }
 .ar-preview p { margin: 0 0 0.35rem; color: #b9cac4; font-size: 0.78rem; }
-.ar-preview-full, .ar-preview-card { background: #07080b; border-radius: 0.65rem; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); }
-.ar-preview-full img, .ar-preview-full video { display: block; width: 100%; max-height: 16rem; object-fit: contain; background: #07080b; }
+.ar-preview-full,
+.ar-preview-card:not(.is-photo-preview):not(.is-video-preview) {
+    background: #07080b;
+    border-radius: 0.65rem;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.ar-preview-full {
+    width: 100%;
+}
+.ar-preview-full img,
+.ar-preview-full video {
+    display: block;
+    width: 100%;
+    max-height: 16rem;
+    aspect-ratio: 16 / 9;
+    object-fit: contain;
+    background: #07080b;
+}
 .ar-preview-card > img,
 .ar-preview-card > video { display: block; width: 100%; height: 9.5rem; object-fit: cover; object-position: center; background: #07080b; }
 @media (max-width: 700px) { .ar-preview { grid-template-columns: 1fr; } }
@@ -2226,6 +2390,10 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     background: #14151b;
     box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
 }
+/* ar-dialog-panel 의 overflow:auto 보다 우선 — 팬 이미지가 모달 밖으로 새지 않게 */
+.ar-dialog-panel.ar-detail-panel {
+    overflow: hidden;
+}
 .ar-detail-photo {
     position: relative;
     display: grid;
@@ -2236,6 +2404,7 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     height: 100%;
     padding: 0;
     overflow: hidden;
+    isolation: isolate;
     background: #07080b;
     touch-action: pan-y;
     user-select: none;
@@ -2247,33 +2416,11 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     box-sizing: border-box;
     width: 100%;
     height: 100%;
+    max-width: 100%;
+    max-height: 100%;
     margin: auto;
     object-fit: contain;
     object-position: center;
-}
-.ar-detail-panel:has(.ar-detail-photo.is-pan) {
-    height: min(94vh, 58rem);
-}
-.ar-detail-photo.is-pan {
-    height: 100%;
-    min-height: 0;
-    touch-action: none;
-    cursor: grab;
-}
-.ar-detail-photo.is-pan img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: auto;
-    height: auto;
-    max-width: none;
-    object-fit: fill;
-}
-.ar-detail-photo.is-pan img.is-pannable {
-    cursor: grab;
-}
-.ar-detail-photo.is-pan img.is-panning {
-    cursor: grabbing;
 }
 .ar-detail-nav {
     position: absolute;
@@ -2524,6 +2671,56 @@ h2.ar-detail-desc {
 .ar-detail-cast > .ar-detail-members {
     grid-column: 1 / -1;
 }
+.ar-detail-lineup {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    width: 5.4rem;
+    margin: 0.15rem auto 0;
+    color: #e3e2e8;
+    text-decoration: none;
+}
+.ar-detail-lineup-photo {
+    display: block;
+    width: 4.15rem;
+    height: 4.15rem;
+}
+.ar-detail-lineup-photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 0.4rem;
+    border: 1px solid rgba(0, 245, 212, 0.35);
+    background: #0d0e12;
+}
+.ar-detail-lineup-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.84rem;
+    font-weight: 650;
+    line-height: 1.25;
+    text-align: center;
+}
+.ar-detail-lineup:hover .ar-detail-lineup-photo img,
+.ar-detail-lineup:focus-visible .ar-detail-lineup-photo img {
+    border-color: #00f5d4;
+    box-shadow:
+        0 0 0 1px #00f5d4,
+        0 0 6px color-mix(in srgb, #00f5d4 45%, transparent);
+}
+.ar-detail-lineup:focus-visible {
+    outline: 2px solid #a8e6dc;
+    outline-offset: 3px;
+}
+.ar-detail-members:has(.ar-detail-lineup) {
+    display: flex;
+    justify-content: center;
+}
 .ar-detail-chem {
     display: inline-flex;
     align-items: center;
@@ -2554,6 +2751,10 @@ a.ar-detail-chem:focus-visible {
     gap: 0.3rem;
     align-content: flex-start;
     align-items: stretch;
+}
+/* 카드에서 복사된 data-image-cast 래퍼가 남아도 칩이 가로로 이어지게 */
+.ar-detail-members [data-image-cast] {
+    display: contents;
 }
 .ar-detail-members .unit-member-chip {
     --member-color: #00f5d4;

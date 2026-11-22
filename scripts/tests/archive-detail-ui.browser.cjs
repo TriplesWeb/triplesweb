@@ -192,6 +192,12 @@ ${chemistryModals}
       if (url.pathname === '/api/chemistry/groups') {
         return route.fulfill({ contentType: 'application/json', body: '[]' });
       }
+      if (url.pathname === '/api/artist/group') {
+        return route.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify({ imageUrl: '/group.svg', tabImageUrl: '/group.svg' })
+        });
+      }
       if (url.pathname.includes('/admin/status')) {
         return route.fulfill({ contentType: 'application/json', body: '{"configured":false,"admin":false}' });
       }
@@ -495,6 +501,33 @@ ${chemistryModals}
       const card = document.querySelector('.ar-card');
       if (card) card.style.display = 'none';
     });
+    await page.evaluate(() => {
+      const names = ['윤서연', '정혜린', '이지우', '김채연', '김유연', '김수민', '김나경', '공유빈', '카에데', '서다현', '코토네', '곽연지', '니엔', '박소현', '신위', '마유', '린', '주빈', '정하연', '박시온', '김채원', '설린', '서아', '지연'];
+      const card = document.createElement('article');
+      card.className = 'ar-panel ar-card';
+      card.dataset.id = '24';
+      card.dataset.title = '전원';
+      card.dataset.url = '/portrait.svg';
+      card.innerHTML = '<button type="button" class="ar-photo-link" data-archive-open></button><div class="ar-card-members" hidden>'
+        + names.map((name) => '<span class="unit-member-chip" title="' + name + '"><span>' + name + '</span></span>').join('')
+        + '</div>';
+      document.getElementById('archiveGrid').append(card);
+    });
+    await page.click('.ar-card[data-id="24"] [data-archive-open]');
+    await page.waitForFunction(() => document.querySelector('#archiveDetailMembers .ar-detail-lineup img')?.getAttribute('src') === '/group.svg');
+    const lineup = await page.evaluate(() => {
+      const link = document.querySelector('#archiveDetailMembers .ar-detail-lineup');
+      return {
+        label: link?.querySelector('.ar-detail-lineup-label')?.textContent.trim() || '',
+        href: link?.getAttribute('href') || '',
+        src: link?.querySelector('img')?.getAttribute('src') || '',
+        chips: document.querySelectorAll('#archiveDetailMembers .unit-member-chip').length
+      };
+    });
+    assert.equal(lineup.label, 'tripleS');
+    assert.equal(lineup.href, '/triples');
+    assert.equal(lineup.src, '/group.svg');
+    assert.equal(lineup.chips, 0, '24명 전원인데 개별 칩이 남아 있다');
     console.log('PASS: 아카이브 출처 배지·달력 표시·카드 날짜');
   } finally {
     await browser.close();
