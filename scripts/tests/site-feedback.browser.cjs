@@ -22,6 +22,9 @@ const css = fs.readFileSync(path.join(staticRoot, 'css/site-ui.css'), 'utf8');
         <form action="/save" method="post" data-confirm="저장하시겠습니까?">
           <input name="title" required><button name="action" value="save">저장</button>
         </form>
+        <form id="directSave" action="/direct-save" method="post">
+          <input name="title" value="바로 저장" required><button type="submit">바로 저장</button>
+        </form>
         <script>
           let discarded = 0, escaped = 0;
           document.querySelector('#discard').addEventListener('click', () => discarded++);
@@ -110,6 +113,16 @@ const css = fs.readFileSync(path.join(staticRoot, 'css/site-ui.css'), 'utf8');
     const request = page.waitForRequest('https://feedback.test/save');
     await dialog.getByRole('button', { name: '확인', exact: true }).click();
     assert.deepEqual(Object.fromEntries(new URLSearchParams((await request).postData())), { title: '새 글', action: 'save' });
+    await busy.waitFor();
+
+    await page.goto('https://feedback.test/');
+    await progress.waitFor({ state: 'hidden' });
+    assert.equal(await busy.isVisible(), false);
+    const directRequest = page.waitForRequest('https://feedback.test/direct-save');
+    await page.getByRole('button', { name: '바로 저장', exact: true }).click();
+    assert.deepEqual(Object.fromEntries(new URLSearchParams((await directRequest).postData())), { title: '바로 저장' });
+    await busy.waitFor();
+    assert.equal(await dialog.isVisible(), false);
   } finally {
     await browser.close();
   }

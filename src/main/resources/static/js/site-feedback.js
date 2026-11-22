@@ -203,6 +203,8 @@
   const awaiting = new WeakSet();
 
   // Wait until form-level validation has run, then resubmit with the same button.
+  // Blocking busy runs for every proceeding submit (with or without data-confirm)
+  // so slow POSTs keep the overlay up and block double clicks.
   document.addEventListener("submit", async (event) => {
     const form = event.target;
     if (!(form instanceof HTMLFormElement) || event.defaultPrevented || form.method === "dialog"
@@ -215,7 +217,6 @@
       try {
         if (await ask(message, true) && form.isConnected) {
           confirmed.add(form);
-          beginBusy();
           form.requestSubmit(event.submitter || undefined);
         }
       } finally {
@@ -224,9 +225,9 @@
       }
       return;
     }
-    if (!window.navigation && form.target !== "_blank" && busyPending === 0) {
+    if (form.target !== "_blank" && busyPending === 0) {
       queueMicrotask(() => {
-        if (!event.defaultPrevented) startNavigation();
+        if (!event.defaultPrevented) beginBusy();
       });
     }
   });
