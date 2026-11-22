@@ -902,7 +902,6 @@
         if (err) { err.hidden = false; err.textContent = "구분 이름을 입력해 주세요."; }
         return;
       }
-      if (!await window.SiteFeedback.confirm("이 구분을 추가하시겠습니까?")) return;
       const doneBusy = window.SiteFeedback.beginBusy();
       try {
         const res = await apiFetch(API + "/sections", {
@@ -930,7 +929,6 @@
         if (e.target.closest(".section-rename")) {
           const name = row.querySelector(".section-name-input")?.value?.trim();
           if (!name) throw new Error("구분 이름을 입력해 주세요.");
-          if (!await window.SiteFeedback.confirm("이 구분 이름을 수정하시겠습니까?")) return;
           const doneRename = window.SiteFeedback.beginBusy();
           try {
             const res = await apiFetch(API + "/sections/" + id, {
@@ -1046,12 +1044,6 @@
         const clearImage = document.getElementById("shopEditClearImage").checked;
         if (clearImage) fd.append("clearImage", "true");
       }
-      const confirmMsg = linked
-        ? (id ? "이 굿즈리스트를 수정하시겠습니까? 커버는 연결 공연 포스터를 씁니다." : "이 굿즈리스트를 추가하시겠습니까? 커버는 연결 공연 포스터를 씁니다.")
-        : (document.getElementById("shopEditClearImage")?.checked
-          ? "이 굿즈리스트를 저장하시겠습니까? 체크한 커버는 삭제됩니다."
-          : (id ? "이 굿즈리스트를 수정하시겠습니까?" : "이 굿즈리스트를 추가하시겠습니까?"));
-      if (!await window.SiteFeedback.confirm(confirmMsg)) return;
       const doneBusy = window.SiteFeedback.beginBusy();
       try {
         const url = id ? API + "/" + id : API;

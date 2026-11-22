@@ -739,8 +739,6 @@
                         window.SiteFeedback.alert('종료 날짜는 시작 날짜보다 빠를 수 없습니다.');
                         return;
                     }
-                    if (!await window.SiteFeedback.confirm('이 일정을 추가하시겠습니까?')) return;
-
                     const body = new URLSearchParams({ title, start, end, category:document.getElementById('addScheduleCategory').value });
                     document.querySelectorAll('#addArtistNames option:checked').forEach(option => body.append('artistNames', option.value));
                     const doneBusy = window.SiteFeedback.beginBusy();
@@ -790,8 +788,6 @@
                         window.SiteFeedback.alert('종료 날짜는 시작 날짜보다 빠를 수 없습니다.');
                         return;
                     }
-                    if (!await window.SiteFeedback.confirm('이 일정을 수정하시겠습니까?')) return;
-
                     const body = new URLSearchParams({ title, startDate: start, endDate: end, category:document.getElementById('editScheduleCategory').value });
                     document.querySelectorAll('#editArtistNames option:checked').forEach(option => body.append('artistNames', option.value));
                     const doneBusy = window.SiteFeedback.beginBusy();

@@ -1282,8 +1282,7 @@
                 : '이 오브젝트의 상세 설명을 삭제하시겠습니까?';
             if (!await window.SiteFeedback.confirm(message)) return;
         }
-        if (!clear && (!descriptionForm.reportValidity()
-            || !await window.SiteFeedback.confirm('이 오브젝트의 상세 설명을 저장하시겠습니까?'))) return;
+        if (!clear && !descriptionForm.reportValidity()) return;
         const key = activeObjektKey;
         descriptionSaving = true;
         const controls = descriptionForm.querySelectorAll('button, textarea');

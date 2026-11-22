@@ -421,10 +421,6 @@
         }
         const clearChecked = Boolean(document.getElementById("artistEditClearImage")?.checked);
         const clearSig = Boolean(document.getElementById("artistEditClearSignatureImage")?.checked);
-        const saveMessage = (clearChecked || clearSig)
-          ? "이 멤버 정보를 저장하시겠습니까? 체크한 사진은 삭제됩니다."
-          : "이 멤버 정보를 저장하시겠습니까?";
-        if (!await window.SiteFeedback.confirm(saveMessage)) return;
         const fd = new FormData();
         fd.append("name", document.getElementById("artistEditName").value);
         fd.append("engName", document.getElementById("artistEditEngName").value);
@@ -489,10 +485,6 @@
           return;
         }
         const clearImage = document.getElementById("artistGroupClearImage").checked;
-        const groupMessage = clearImage
-          ? "그룹 소개를 저장하시겠습니까? 체크한 사진은 삭제됩니다."
-          : "그룹 소개를 저장하시겠습니까?";
-        if (!await window.SiteFeedback.confirm(groupMessage)) return;
         const fd = new FormData();
         fd.append("title", document.getElementById("artistGroupTitle").value);
         fd.append("body", document.getElementById("artistGroupBody").value);

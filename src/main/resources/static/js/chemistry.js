@@ -2219,15 +2219,6 @@
           fd.append("member2", document.getElementById("chemEditMember2").value);
         }
 
-        if (
-          !await window.SiteFeedback.confirm(
-            clearingAll
-              ? "이 케미를 저장하시겠습니까? 사진이 모두 삭제됩니다."
-              : "이 케미를 저장하시겠습니까?"
-          )
-        ) {
-          return;
-        }
         const doneBusy = window.SiteFeedback.beginBusy();
         try {
           const res = await chemFetch(endpoint, { method: "POST", body: fd });

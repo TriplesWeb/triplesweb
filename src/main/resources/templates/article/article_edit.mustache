@@ -33,7 +33,7 @@
         {{/errorMessage}}
             <p id="formInlineError" class="mb-4 text-sm text-error font-medium" hidden role="alert"></p>
 
-            <form id="editForm" data-confirm="이 글을 수정하시겠습니까?" action="{{boardBase}}/{{article.id}}" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit(this)" class="space-y-5" data-market-board="{{#isMarketBoard}}true{{/isMarketBoard}}{{^isMarketBoard}}false{{/isMarketBoard}}">
+            <form id="editForm" action="{{boardBase}}/{{article.id}}" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit(this)" class="space-y-5" data-market-board="{{#isMarketBoard}}true{{/isMarketBoard}}{{^isMarketBoard}}false{{/isMarketBoard}}">
                 <input type="hidden" name="id" value="{{article.id}}">
 
                 {{#isMarketBoard}}

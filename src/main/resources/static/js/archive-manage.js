@@ -2076,10 +2076,6 @@
             return;
         }
         if (advancePhotoSetup(uploadForm, setUploadStatus)) return;
-        const confirmMessage = kind === "image" && files.length > 1
-            ? "사진 " + files.length + "장을 한 게시글로 추가하시겠습니까?"
-            : "이 " + noun + "을 추가하시겠습니까?";
-        if (!await window.SiteFeedback.confirm(confirmMessage)) return;
         if (kind === 'video') await ensureAutoCover(uploadForm);
         if (!validThumbnail(uploadForm)) return;
         const body = new FormData(uploadForm);
@@ -2408,16 +2404,6 @@
             window.SiteFeedback.alert('사진을 읽지 못했습니다. 다른 이미지 파일을 선택해 주세요.');
             return;
         }
-        const message = kind === 'image' && mediaChanged
-            ? (replacing
-                ? (keptUrls.length
-                    ? "기존 사진 " + keptUrls.length + "장을 유지하고 새 사진 " + replaceFiles.length + "장을 추가할까요?"
-                    : "이 게시글 사진을 " + replaceFiles.length + "장으로 바꿀까요?")
-                : "기존 사진 구성을 수정할까요?")
-            : replacing
-                ? "이 " + noun + "을 수정하시겠습니까? 선택한 파일로 기존 미디어가 바뀝니다."
-                : "이 " + noun + "을 수정하시겠습니까?";
-        if (!await window.SiteFeedback.confirm(message)) return;
         if (kind === 'video') await ensureAutoCover(editForm);
         if (!validThumbnail(editForm)) return;
         const body = new FormData();
