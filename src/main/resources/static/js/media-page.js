@@ -445,24 +445,6 @@
         MemberPortraitPicker.bindMultiSelect(editPicker, { multi: true, onChange: syncEditMembers });
     }
 
-    const addPicker = document.getElementById('media-add-picker');
-    function syncAddMembers() {
-        const box = document.getElementById('mediaAddMembers');
-        if (!box || !window.MemberPortraitPicker || !addPicker) return;
-        box.replaceChildren();
-        MemberPortraitPicker.selectedValues(addPicker).forEach((name) => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'artistNames';
-            input.value = name;
-            box.appendChild(input);
-        });
-    }
-    if (window.MemberPortraitPicker && addPicker) {
-        MemberPortraitPicker.bindMultiSelect(addPicker, { multi: true, onChange: syncAddMembers });
-    }
-    document.getElementById('mediaAddForm')?.addEventListener('submit', () => syncAddMembers());
-
     function videoFrom(trigger) {
         const id = trigger?.getAttribute('data-ytid') || '';
         return byId.get(id) || {
@@ -535,34 +517,71 @@
         applyHero(videoFrom(current));
     }
 
-    let picking = false;
-    function pickTargets() {
-        return [...document.querySelectorAll('.media-card.is-picked, .media-short.is-picked, .media-suggest__card.is-picked, .media-feature__hero.is-picked')];
+    function shortDuration(raw) {
+        const parts = String(raw || '').trim().split(':');
+        if (parts.length < 2 || parts.length > 3) return false;
+        const nums = parts.map((part) => Number(part));
+        if (nums.some((num) => Number.isNaN(num))) return false;
+        const seconds = nums.length === 2 ? nums[0] * 60 + nums[1] : nums[0] * 3600 + nums[1] * 60 + nums[2];
+        return seconds > 0 && seconds <= 60;
     }
-    function paintPickBar() {
-        const bar = document.getElementById('mediaPickBar');
-        const count = document.getElementById('mediaPickCount');
-        const total = pickTargets().length;
-        if (count) count.textContent = String(total);
-        if (bar) bar.hidden = !picking || total === 0;
-        document.querySelector('.media-playlist-add--head')?.setAttribute('aria-pressed', picking ? 'true' : 'false');
+
+    function archiveVideos() {
+        return [...byId.values()].filter((row) => row && row.youtubeId && !shortDuration(row.duration));
     }
-    function setPicking(on) {
-        picking = on;
-        document.body.classList.toggle('is-media-picking', on);
-        if (!on) document.querySelectorAll('.is-picked').forEach((node) => node.classList.remove('is-picked'));
-        paintPickBar();
-    }
-    function confirmPicks() {
-        const items = readPlaylist();
-        pickTargets().forEach((node) => {
-            const source = node.matches('[data-ytid]') ? node : node.querySelector('[data-ytid]');
-            const item = videoFrom(source);
-            if (!item.youtubeId || items.some((row) => row.youtubeId === item.youtubeId)) return;
-            items.unshift(item);
+
+    function openPickModal() {
+        const grid = document.getElementById('mediaPickGrid');
+        const modal = document.getElementById('mediaPickModal');
+        if (!grid || !modal) return;
+        grid.replaceChildren();
+        const videos = archiveVideos();
+        if (!videos.length) {
+            const empty = document.createElement('p');
+            empty.className = 'media-pick-empty';
+            empty.textContent = '담을 수 있는 영상이 없습니다.';
+            grid.appendChild(empty);
+        }
+        videos.forEach((item) => {
+            const card = document.createElement('label');
+            card.className = 'media-pick-card';
+            const check = document.createElement('input');
+            check.type = 'checkbox';
+            check.className = 'media-pick-check';
+            check.value = item.youtubeId;
+            check.setAttribute('aria-label', (item.title || '영상') + ' 선택');
+            const thumb = document.createElement('span');
+            thumb.className = 'media-pick-thumb';
+            const image = document.createElement('img');
+            image.src = 'https://img.youtube.com/vi/' + encodeURIComponent(item.youtubeId) + '/hqdefault.jpg';
+            image.alt = '';
+            thumb.appendChild(image);
+            const copy = document.createElement('span');
+            copy.className = 'media-pick-copy';
+            const kind = document.createElement('small');
+            kind.textContent = item.tabLabel || '';
+            const title = document.createElement('strong');
+            title.textContent = item.title || '';
+            copy.append(kind, title);
+            card.append(check, thumb, copy);
+            grid.appendChild(card);
         });
-        writePlaylist(items);
-        setPicking(false);
+        showModal(modal);
+    }
+
+    function confirmPicks() {
+        const existing = readPlaylist();
+        const seen = new Set(existing.map((item) => item.youtubeId));
+        const incoming = [];
+        document.querySelectorAll('#mediaPickGrid .media-pick-check:checked').forEach((input) => {
+            const item = byId.get(input.value);
+            if (!item || seen.has(item.youtubeId)) return;
+            seen.add(item.youtubeId);
+            incoming.push(item);
+        });
+        writePlaylist([...incoming, ...existing]);
+        const modal = document.getElementById('mediaPickModal');
+        if (modal && window.SiteUi) window.SiteUi.modal(modal).hide();
         renderPlaylist();
     }
 
@@ -575,11 +594,6 @@
         if (event.target.closest('#mediaPickConfirm')) {
             event.preventDefault();
             confirmPicks();
-            return;
-        }
-        if (event.target.closest('[data-short-add]')) {
-            event.preventDefault();
-            showModal(document.getElementById('mediaAddModal'));
             return;
         }
         const remove = event.target.closest('[data-playlist-remove]');
@@ -600,22 +614,13 @@
         if (add) {
             event.preventDefault();
             event.stopPropagation();
-            setPicking(!picking);
+            openPickModal();
             return;
         }
         const playlistItem = event.target.closest('#mediaPlaylistList .media-playlist__item');
         if (playlistItem) {
             event.preventDefault();
-            if (!picking) focusPlaylistItem(playlistItem);
-            return;
-        }
-        if (picking) {
-            const target = event.target.closest('.media-card, .media-short, .media-suggest__card, .media-feature__hero');
-            if (!target) return;
-            event.preventDefault();
-            event.stopPropagation();
-            target.classList.toggle('is-picked');
-            paintPickBar();
+            focusPlaylistItem(playlistItem);
             return;
         }
         const card = event.target.closest('[data-site-target="#ytModal"][data-ytid]');

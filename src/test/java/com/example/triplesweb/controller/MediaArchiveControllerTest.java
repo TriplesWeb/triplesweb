@@ -61,12 +61,17 @@ class MediaArchiveControllerTest {
                 .andExpect(content().string(containsString("@triplescosmos")))
                 .andExpect(content().string(containsString("페이지 1 / 2")))
                 .andExpect(content().string(containsString("더보기")))
+                .andExpect(content().string(containsString("추천 동영상")))
+                .andExpect(content().string(not(containsString("쇼츠 추가"))))
                 .andExpect(content().string(containsString("Shorts &amp; 릴스")))
                 .andReturn().getResponse().getContentAsString();
         org.jsoup.nodes.Document document = Jsoup.parse(first);
         assertThat(document.select("article.media-card")).hasSize(24);
         assertThat(document.select(".media-playlist__head .media-playlist-add")).hasSize(1);
-        assertThat(document.select("article.media-card .media-card__edit[data-admin-only]")).hasSize(24);
+        assertThat(document.select("article.media-card .media-card__edit.site-btn--primary[data-admin-only]")).hasSize(24);
+        assertThat(document.select("article.media-card .media-card__delete")).isEmpty();
+        assertThat(document.select(".media-short__actions, [data-short-add], #mediaAddModal")).isEmpty();
+        assertThat(document.select("#mediaPickModal #mediaPickConfirm").text()).isEqualTo("선택 완료");
         assertThat(document.select("#mediaEditTab option")).hasSize(5);
         assertThat(document.select(".media-archive .media-card__title").eachText())
                 .noneMatch(title -> title.equals("영상 0") || title.equals("영상 1"));
