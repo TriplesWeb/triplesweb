@@ -755,34 +755,6 @@
         return slotsOf(form).map(slot => (Array.isArray(slot.artists) ? slot.artists : selectedArtists(slotRoot(form))).join(','));
     }
 
-    function updatePhotoStep(form) {
-        const button = form?.querySelector('[type="submit"]');
-        if (!button) return;
-        if (!button.dataset.defaultLabel) button.dataset.defaultLabel = button.textContent.trim();
-        const slots = slotsOf(form);
-        const index = Number.isInteger(form._archiveSlotPreviewIndex) ? form._archiveSlotPreviewIndex : 0;
-        const pending = kind === 'image' && slots.length > 1 && slots.some((slot, i) => i !== index && !slot.configured);
-        button.textContent = pending ? '다음 사진' : button.dataset.defaultLabel;
-    }
-
-    function advancePhotoSetup(form, status) {
-        if (kind !== 'image') return false;
-        const slots = slotsOf(form);
-        if (slots.length < 2) return false;
-        const index = Number.isInteger(form._archiveSlotPreviewIndex) ? form._archiveSlotPreviewIndex : 0;
-        if (slots[index]) {
-            slots[index].artists = selectedArtists(slotRoot(form));
-            slots[index].configured = true;
-        }
-        const next = slots.findIndex(slot => !slot.configured);
-        if (next < 0) return false;
-        if (!Array.isArray(slots[next].artists)) slots[next].artists = [];
-        const input = form.querySelector('input[name="file"]');
-        previewSlot(form, input, next);
-        status?.((next + 1) + '번째 사진 설정입니다. 앞 사진은 미리보기로 남아 있습니다.');
-        return true;
-    }
-
     function previewSlot(form, input, index) {
         const slots = slotsOf(form);
         const slot = slots[index];
@@ -800,7 +772,6 @@
         }
         applySlot(form, slot);
         syncFileName(input);
-        updatePhotoStep(form);
     }
 
     function removeSlotAt(form, index) {
@@ -938,7 +909,7 @@
         if (slots.length) {
             slots.forEach((slot, index) => {
                 const tile = document.createElement('div');
-                tile.className = 'ar-file-tile' + (index === activeSlot ? ' is-active' : '') + (slot.configured ? ' is-set' : '');
+                tile.className = 'ar-file-tile' + (index === activeSlot ? ' is-active' : '');
                 tile.title = slot.kind === 'url' ? '저장된 사진 ' + (index + 1) : (slot.file.name || '새 사진');
                 const thumb = document.createElement('button');
                 thumb.type = 'button';
@@ -2075,7 +2046,6 @@
             window.SiteFeedback.alert("미리보기를 확인한 뒤 추가해 주세요.");
             return;
         }
-        if (advancePhotoSetup(uploadForm, setUploadStatus)) return;
         const confirmMessage = kind === "image" && files.length > 1
             ? "사진 " + files.length + "장을 한 게시글로 추가하시겠습니까?"
             : "이 " + noun + "을 추가하시겠습니까?";
@@ -2205,7 +2175,6 @@
         setSlots(editForm, existingUrls.map((url, imageIndex) => ({
             kind: 'url',
             url,
-            configured: true,
             artists: (perImage[imageIndex] || button.dataset.artists || '').split(',').map(name => name.trim()).filter(Boolean).length
                 ? (perImage[imageIndex] || button.dataset.artists || '').split(',').map(name => name.trim()).filter(Boolean)
                 : shared.slice()
@@ -2403,7 +2372,6 @@
             window.SiteFeedback.alert('사진은 최소 1장이 필요합니다.');
             return;
         }
-        if (advancePhotoSetup(editForm, setEditStatus)) return;
         if (replacing && (editPreview?.dataset.invalid || editPreview?.dataset.pending)) {
             window.SiteFeedback.alert('사진을 읽지 못했습니다. 다른 이미지 파일을 선택해 주세요.');
             return;
