@@ -95,6 +95,7 @@
             button.dataset.images = card.dataset.images || '';
             button.dataset.registered = card.dataset.registered || '';
             button.dataset.source = card.dataset.source || '';
+            button.dataset.unitId = card.dataset.unitId || '';
         });
     }
 

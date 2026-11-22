@@ -19,6 +19,7 @@ import com.example.triplesweb.util.ArchiveFolderArt;
 import com.example.triplesweb.util.ArchiveFolderClassifier;
 import com.example.triplesweb.util.ArchiveCardImages;
 import com.example.triplesweb.util.ArchiveImages;
+import com.example.triplesweb.util.ArchiveSort;
 import com.example.triplesweb.util.ImageUrls;
 import com.example.triplesweb.util.MemberPortraitOptions;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -79,6 +80,7 @@ public class ArchiveController {
                               @RequestParam(required = false) String combo,
                               @RequestParam(required = false) String source,
                               @RequestParam(required = false) String chem,
+                              @RequestParam(required = false) String sort,
                               HttpServletRequest request, HttpSession session, Model model) {
         String jump = pageJumpRedirect(go, request);
         if (jump != null) return jump;
@@ -93,7 +95,7 @@ public class ArchiveController {
         if (legacyMembers != null) {
             return redirectToGroupFolder(request, legacyMembers);
         }
-        return renderArchive(type, page, size, q, from, to, on, members, folder, combo, source, chem,
+        return renderArchive(type, page, size, q, from, to, on, members, folder, combo, source, chem, sort,
                 false, request, session, model);
     }
 
@@ -106,10 +108,11 @@ public class ArchiveController {
                                 @RequestParam(required = false) String on,
                                 @RequestParam(required = false) Integer go,
                                 @RequestParam(required = false) List<String> members,
+                                @RequestParam(required = false) String sort,
                                 HttpServletRequest request, HttpSession session, Model model) {
         String jump = pageJumpRedirect(go, request);
         if (jump != null) return jump;
-        return renderArchive("image", page, size, q, from, to, on, members, null, null, null, null,
+        return renderArchive("image", page, size, q, from, to, on, members, null, null, null, null, sort,
                 true, request, session, model);
     }
 
@@ -228,7 +231,7 @@ public class ArchiveController {
 
     private String renderArchive(String typeSlug, int page, int size, String q, String from, String to, String on,
                                  List<String> members, String folder, String combo, String sourceSlug, String chem,
-                                 boolean browse, HttpServletRequest request, HttpSession session, Model model) {
+                                 String sortRaw, boolean browse, HttpServletRequest request, HttpSession session, Model model) {
         boolean isAdmin = aboutAdminAuth.isAdmin(request, session);
         boolean isAuthenticated = isAdmin;
 
@@ -248,6 +251,9 @@ public class ArchiveController {
         String sourceKey = source == null ? sourceSlug : source.getSlug();
         boolean externalView = source == ArchiveSource.EXTERNAL;
         int safeSize = normalizeArchiveSize(size);
+        ArchiveSort sort = ArchiveSort.from(sortRaw);
+        if (sort == ArchiveSort.TITLE && type != MediaType.VIDEO) sort = ArchiveSort.NEWEST;
+        if (sort.isMemberSort() && isSoloFolder(folderKey)) sort = ArchiveSort.NEWEST;
         // 카드 배지·유닛 폴더 완전일치 판별용. 멤버 없는 s 전체 목록 스캔에는 비워 둔다.
         List<Unit> allVisibleUnits = unitService.listVisibleForArchive();
         boolean needsBrowseUnits = !browse && (!folderKey.equalsIgnoreCase("s") || !selectedMembers.isEmpty());
@@ -256,11 +262,12 @@ public class ArchiveController {
         ArchiveService.FolderBrowse folderBrowse = null;
         Page<Archive> archives;
         if (browse) {
-            archives = archiveService.pageByType(type, page, safeSize, q, selectedMembers, fromDate, toDate);
+            archives = archiveService.pageByType(type, page, safeSize, q, selectedMembers, fromDate, toDate,
+                    null, false, false, sort);
         } else {
             folderBrowse = archiveService.browseFolder(type, page, safeSize, q,
                     memberSuperset ? List.of() : selectedMembers, fromDate, toDate,
-                    source, false, folderKey, memberSuperset ? selectedMembers : List.of(), units);
+                    source, false, folderKey, memberSuperset ? selectedMembers : List.of(), units, sort);
             archives = folderBrowse.page();
         }
 
@@ -332,8 +339,16 @@ public class ArchiveController {
                 || !selectedMembers.isEmpty() || fromDate != null || toDate != null
                 || (sourceSlug != null && !sourceSlug.isBlank()));
         String sizeQuery = archiveSizeQuery(safeSize);
+        String sortQuery = archiveSortQuery(sort);
+        model.addAttribute("sortKey", sort.key());
+        model.addAttribute("sortQuery", sortQuery);
+        model.addAttribute("sortNewest", sort == ArchiveSort.NEWEST);
+        model.addAttribute("sortOldest", sort == ArchiveSort.OLDEST);
+        model.addAttribute("sortTitle", sort == ArchiveSort.TITLE);
+        model.addAttribute("sortFirstMember", sort == ArchiveSort.FIRST_MEMBER);
+        model.addAttribute("sortLastMember", sort == ArchiveSort.LAST_MEMBER);
         addArchivePage(model, archives, type, q, memberQuery(selectedMembers), dateQuery, browse,
-                folderQuery(folderKey, ""), sourceQuery, sourceKey, "", safeSize, sizeQuery);
+                folderQuery(folderKey, ""), sourceQuery, sourceKey, "", safeSize, sizeQuery, sortQuery);
         // 출처 탭: 폴더는 한 번 스캔한 결과, 전체 보기는 source 컬럼만 distinct 조회.
         Set<ArchiveSource> availableSources = browse
                 ? archiveService.availableSources(type, q, selectedMembers, fromDate, toDate)
@@ -342,7 +357,7 @@ public class ArchiveController {
                 + (q == null || q.isBlank() ? "" : "&q=" + URLEncoder.encode(q.trim(), StandardCharsets.UTF_8))
                 + memberQuery(selectedMembers) + dateQuery;
         model.addAttribute("sourceTabs", sourceTabs(browse ? "/archive/all" : "/archive",
-                keptFilters + sizeQuery, sourceKey, availableSources));
+                keptFilters + sizeQuery + sortQuery, sourceKey, availableSources));
         model.addAttribute("externalSource", externalView);
         return "archive/archive";
     }
@@ -558,10 +573,23 @@ public class ArchiveController {
             card.put("sourceValue", source == null ? "" : source.name());
             card.put("sourceLabel", source == null ? "" : source.getLabel());
             card.put("hasSource", source != null);
+            Long storedUnitId = archive.getUnitId();
+            card.put("unitId", storedUnitId == null ? "" : String.valueOf(storedUnitId));
+            ArchiveFolderClassifier.UnitMembers storedUnit = storedUnitId == null ? null : unitMembers.stream()
+                    .filter(unit -> unit != null && storedUnitId.equals(unit.unitId()))
+                    .findFirst()
+                    .orElse(null);
             ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(archive.getArtistNames(), unitMembers);
-            boolean unitBadge = match != null && match.kind() == ArchiveFolderClassifier.Kind.UNIT && match.unitId() != null;
+            boolean unitBadge = storedUnit != null
+                    || (match != null && match.kind() == ArchiveFolderClassifier.Kind.UNIT && match.unitId() != null);
             card.put("hasUnitBadge", unitBadge);
-            if (unitBadge) {
+            if (storedUnit != null) {
+                String label = storedUnit.unitName() == null || storedUnit.unitName().isBlank()
+                        ? "유닛" : storedUnit.unitName();
+                card.put("unitBadgeLabel", label);
+                card.put("unitBadgeColor", unitColors.getOrDefault(storedUnit.unitId(), "#a78bfa"));
+                card.put("unitBadgeKey", "unit-" + storedUnit.unitId());
+            } else if (unitBadge) {
                 card.put("unitBadgeLabel", match.label());
                 card.put("unitBadgeColor", unitColors.getOrDefault(match.unitId(), "#a78bfa"));
                 card.put("unitBadgeKey", match.key());
@@ -599,10 +627,18 @@ public class ArchiveController {
     private void addArchivePage(Model model, Page<Archive> archives, MediaType type, String q, String memberQuery,
                                 String dateQuery, boolean browse, String folderQuery, String sourceQuery, String sourceSlug,
                                 String chemQuery, int size, String sizeQuery) {
+        addArchivePage(model, archives, type, q, memberQuery, dateQuery, browse, folderQuery, sourceQuery, sourceSlug,
+                chemQuery, size, sizeQuery, "");
+    }
+
+    private void addArchivePage(Model model, Page<Archive> archives, MediaType type, String q, String memberQuery,
+                                String dateQuery, boolean browse, String folderQuery, String sourceQuery, String sourceSlug,
+                                String chemQuery, int size, String sizeQuery, String sortQuery) {
         int totalPages = Math.max(1, archives.getTotalPages());
         int current = archives.getNumber();
         String query = q == null ? "" : q.trim();
         String keptSizeQuery = sizeQuery == null ? "" : sizeQuery;
+        String keptSortQuery = sortQuery == null ? "" : sortQuery;
         model.addAttribute("archiveTotal", archives.getTotalElements());
         model.addAttribute("archivePageCount", archives.getNumberOfElements());
         model.addAttribute("archiveOffset", archives.getPageable().isPaged() ? archives.getPageable().getOffset() : 0);
@@ -618,6 +654,7 @@ public class ArchiveController {
         model.addAttribute("hasQuery", !query.isEmpty());
         model.addAttribute("archiveSize", size);
         model.addAttribute("sizeQuery", keptSizeQuery);
+        model.addAttribute("sortQuery", keptSortQuery);
         model.addAttribute("hasCustomArchiveSize", size != DEFAULT_ARCHIVE_SIZE);
         model.addAttribute("archiveSizeOptions", archiveSizeOptions(size));
         boolean video = type == MediaType.VIDEO;
@@ -628,7 +665,7 @@ public class ArchiveController {
         String keptSource = sourceQuery == null ? "" : sourceQuery;
         String keptChem = chemQuery == null ? "" : chemQuery;
         String filterQuery = qQuery + (memberQuery == null ? "" : memberQuery) + (dateQuery == null ? "" : dateQuery)
-                + keptFolder + keptSource + keptChem + keptSizeQuery;
+                + keptFolder + keptSource + keptChem + keptSizeQuery + keptSortQuery;
         String folderBase = browse ? "/archive/all" : "/archive";
         model.addAttribute("archiveHomePath", browse ? folderBase : joinHref("/archive", keptFolder + typeQuery));
         model.addAttribute("archiveFoldersPath", "/archive");
@@ -656,6 +693,11 @@ public class ArchiveController {
             archivePages.add(Map.of("num", i, "label", i + 1, "active", i == current));
         }
         model.addAttribute("archivePages", archivePages);
+    }
+
+    private static String archiveSortQuery(ArchiveSort sort) {
+        if (sort == null || sort == ArchiveSort.NEWEST) return "";
+        return "&sort=" + sort.key();
     }
 
     private static int normalizeArchiveSize(int size) {
@@ -1326,6 +1368,21 @@ public class ArchiveController {
         return card;
     }
 
+    private static Long parseUnitId(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            long id = Long.parseLong(raw.trim());
+            return id > 0 ? id : null;
+        } catch (NumberFormatException error) {
+            return null;
+        }
+    }
+
+    private void applyUploadedUnitId(Archive saved, String unitId) {
+        if (saved == null || saved.getId() == null) return;
+        archiveService.assignUnitId(saved.getId(), parseUnitId(unitId));
+    }
+
     private String folderRedirect(MediaType type, String artistNames) {
         ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(artistNames, unitSnapshots(unitService.listVisibleForArchive()));
         String typeQuery = type == MediaType.VIDEO ? "type=video&" : "";
@@ -1374,6 +1431,7 @@ public class ArchiveController {
                                 @RequestParam("file") MultipartFile file, @RequestParam(value="artistNames", required=false) List<String> artistNames,
                                 @RequestParam("registeredOn") LocalDate registeredOn,
                                 @RequestParam("source") String source,
+                                @RequestParam(value = "unitId", required = false) String unitId,
                                 @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                                 HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
@@ -1383,7 +1441,8 @@ public class ArchiveController {
         }
         try {
             String names = artistNames == null ? "" : String.join(",", artistNames);
-            archiveService.save(file, title, type, names, requireDate(registeredOn), requireSource(source));
+            Archive saved = archiveService.save(file, title, type, names, requireDate(registeredOn), requireSource(source));
+            applyUploadedUnitId(saved, unitId);
             String location = folderRedirect(type, names);
             idempotencyService.complete(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
             return "redirect:" + location;
@@ -1401,6 +1460,7 @@ public class ArchiveController {
                               @RequestParam(value = "imageArtistsJson", required = false) String imageArtistsJson,
                               @RequestParam("registeredOn") LocalDate registeredOn,
                               @RequestParam("source") String source,
+                              @RequestParam(value = "unitId", required = false) String unitId,
                               @RequestParam(defaultValue = "0") int coverIndex,
                               @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                               HttpServletRequest request, HttpSession session) throws IOException {
@@ -1421,11 +1481,13 @@ public class ArchiveController {
                 throw new IllegalArgumentException("사진 파일을 선택해 주세요.");
             }
             String castNames = unionArtistNames(names, imageArtistsJson);
+            Archive saved;
             if (imageArtistsJson == null || imageArtistsJson.isBlank()) {
-                archiveService.uploadImages(uploads, safeTitle, castNames, date, archiveSource, description, coverIndex);
+                saved = archiveService.uploadImages(uploads, safeTitle, castNames, date, archiveSource, description, coverIndex);
             } else {
-                archiveService.uploadImages(uploads, safeTitle, castNames, date, archiveSource, description, coverIndex, imageArtistsJson);
+                saved = archiveService.uploadImages(uploads, safeTitle, castNames, date, archiveSource, description, coverIndex, imageArtistsJson);
             }
+            applyUploadedUnitId(saved, unitId);
             String location = folderRedirect(MediaType.IMAGE, names);
             idempotencyService.complete(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
             return "redirect:" + location;
@@ -1441,6 +1503,7 @@ public class ArchiveController {
                               @RequestParam("title") String title, @RequestParam(value="artistNames", required=false) List<String> artistNames,
                               @RequestParam("registeredOn") LocalDate registeredOn,
                               @RequestParam("source") String source,
+                              @RequestParam(value = "unitId", required = false) String unitId,
                               @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                               HttpServletRequest request, HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
@@ -1450,7 +1513,8 @@ public class ArchiveController {
         }
         try {
             String names = artistNames == null ? "" : String.join(",", artistNames);
-            archiveService.uploadVideoOnly(file, title, MediaType.VIDEO, names, thumbnail, requireDate(registeredOn), requireSource(source));
+            Archive saved = archiveService.uploadVideoOnly(file, title, MediaType.VIDEO, names, thumbnail, requireDate(registeredOn), requireSource(source));
+            applyUploadedUnitId(saved, unitId);
             String location = folderRedirect(MediaType.VIDEO, names);
             idempotencyService.complete(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
             return "redirect:" + location;
@@ -1475,6 +1539,7 @@ public class ArchiveController {
                                            @RequestParam(value = "keepImageUrlsJson", required = false) String keepImageUrlsJson,
                                            @RequestParam(value = "imageOrderJson", required = false) String imageOrderJson,
                                            @RequestParam(required = false) Integer coverIndex,
+                                           @RequestParam(value = "unitId", required = false) String unitId,
                                            HttpServletRequest request,
                                            HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
@@ -1498,6 +1563,7 @@ public class ArchiveController {
                         coverIndex,
                         imageArtistsJson);
             }
+            archiveService.assignUnitId(id, parseUnitId(unitId));
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

@@ -118,6 +118,10 @@
         return delta !== 0 ? delta : idDelta(a, b);
     }
 
+    /**
+     * 보이는 카드는 즉시 재배치하고, name=sort 가 있으면 서버 전체 정렬도 다시 받는다.
+     * (브라우저 픽스처는 name 없이 클라이언트 정렬만 검증한다.)
+     */
     function apply() {
         const shown = [...cards].sort((a, b) => {
             if (!sort || sort.value === 'newest') return dateDelta(a, b, false);
@@ -136,10 +140,15 @@
             if (badge) badge.textContent = String(numberOffset + index + 1);
             grid.appendChild(card);
         });
+        cards = shown;
         grid.dispatchEvent(new CustomEvent('archive:updated'));
     }
 
-    sort?.addEventListener('change', apply);
+    sort?.addEventListener('change', () => {
+        rebuildSortMenu?.();
+        apply();
+        if (form && sort.getAttribute('name') === 'sort') form.requestSubmit();
+    });
     let rebuildSortMenu = null;
     function enhanceSort(select) {
         const control = select && select.closest('.ar-sort-control');
@@ -230,12 +239,14 @@
                 changed = true;
             }
         });
+        let reload = false;
         if (!allow && (sort.value === 'first-member' || sort.value === 'last-member')) {
             sort.value = 'newest';
             changed = true;
-            apply();
+            reload = true;
         }
         if (changed || rebuildSortMenu) rebuildSortMenu?.();
+        if (reload) form?.requestSubmit();
     }
     const chem = document.getElementById('archiveChem');
     const form = document.getElementById('archiveFilterForm');
@@ -534,6 +545,7 @@
         new FormData(form).forEach((value, key) => {
             if (String(value).trim() === '') return;
             if (key === 'size' && String(value) === '10') return;
+            if (key === 'sort' && String(value) === 'newest') return;
             params.append(key, value);
         });
         const action = form.getAttribute('action') || location.pathname;
@@ -597,6 +609,11 @@
             }
             const nextSize = doc.getElementById('archivePageSize');
             if (nextSize) syncArchiveSize(nextSize.value || '10');
+            const nextSort = doc.getElementById('archiveSort');
+            if (nextSort && sort && sort.value !== nextSort.value) {
+                sort.value = nextSort.value;
+                rebuildSortMenu?.();
+            }
             syncFolderTitleFrom(doc);
             const nextHeadline = doc.querySelector('.ar-headline');
             const headline = document.querySelector('.ar-headline');
@@ -637,7 +654,8 @@
         event.preventDefault();
         appliedDates = dateSnapshot();
         submitWhenDateCloses = false;
-        window.closeArchiveOverlays?.();
+        // 멤버 다중선택은 패널을 연 채로 필터를 갱신해야 하므로, 열려 있으면 유지한다.
+        window.closeArchiveOverlays?.(panel && !panel.hidden ? panel : undefined);
         window.clearTimeout(filterTimer);
         const url = archiveFilterUrl();
         loadArchiveFilter(url);

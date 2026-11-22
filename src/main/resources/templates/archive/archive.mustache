@@ -71,7 +71,7 @@
         {{>partials/archive-photo-card}}
         {{/imageArchive}}
         {{#videoArchive}}
-        <article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-member-order="{{memberOrder}}" data-registered="{{registeredOn}}" data-url="{{file.url}}" data-source="{{sourceValue}}" data-source-label="{{sourceLabel}}" data-unit-label="{{unitBadgeLabel}}" data-unit-color="{{unitBadgeColor}}" data-thumbnail-url="{{thumbnailUrl}}">
+        <article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-member-order="{{memberOrder}}" data-registered="{{registeredOn}}" data-url="{{file.url}}" data-source="{{sourceValue}}" data-source-label="{{sourceLabel}}" data-unit-id="{{unitId}}" data-unit-label="{{unitBadgeLabel}}" data-unit-color="{{unitBadgeColor}}" data-thumbnail-url="{{thumbnailUrl}}">
             <a class="ar-photo-link ar-video-thumb" href="{{file.url}}" data-archive-video data-poster="{{thumbnailUrl}}" aria-label="{{#title}}{{title}}{{/title}}{{^title}}영상{{/title}} 자세히 보기">
                 <span class="ar-video-placeholder" aria-hidden="true"></span>
                 {{#thumbnailUrl}}<img src="{{thumbnailUrl}}" alt="" loading="lazy" decoding="async">{{/thumbnailUrl}}
@@ -115,7 +115,7 @@
                         {{>partials/member-portrait-picker}}
                     </div>
                     <div class="ar-artist-editor" data-artist-tags>
-                        <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-all>전체 선택</button><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
+                        <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><span class="ar-picker-meta-actions"><button type="button" class="ar-text-btn" data-picker-all>전체 선택</button><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></span></div>
                         <div class="ar-artist-chips" data-artist-chips aria-label="선택한 멤버"></div>
                     </div>
                 </div>
@@ -175,7 +175,7 @@
                         {{>partials/member-portrait-picker}}
                     </div>
                     <div class="ar-artist-editor" data-artist-tags>
-                        <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-all>전체 선택</button><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
+                        <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><span class="ar-picker-meta-actions"><button type="button" class="ar-text-btn" data-picker-all>전체 선택</button><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></span></div>
                         <div class="ar-artist-chips" data-artist-chips aria-label="선택한 멤버"></div>
                     </div>
                 </div>
@@ -249,7 +249,7 @@
                         {{>partials/member-portrait-picker}}
                     </div>
                     <div class="ar-artist-editor" data-artist-tags>
-                        <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-all>전체 선택</button><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
+                        <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><span class="ar-picker-meta-actions"><button type="button" class="ar-text-btn" data-picker-all>전체 선택</button><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></span></div>
                         <div class="ar-artist-chips" data-artist-chips aria-label="선택한 멤버"></div>
                     </div>
                 </div>
@@ -294,7 +294,7 @@
                         {{>partials/member-portrait-picker}}
                     </div>
                     <div class="ar-artist-editor" data-artist-tags>
-                        <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><button type="button" class="ar-text-btn" data-picker-all>전체 선택</button><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></div>
+                        <div class="ar-picker-meta"><span><span data-picker-count>0</span>명 선택</span><span class="ar-picker-meta-actions"><button type="button" class="ar-text-btn" data-picker-all>전체 선택</button><button type="button" class="ar-text-btn" data-picker-clear>전체 해제</button></span></div>
                         <div class="ar-artist-chips" data-artist-chips aria-label="선택한 멤버"></div>
                     </div>
                 </div>

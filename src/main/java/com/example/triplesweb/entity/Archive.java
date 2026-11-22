@@ -29,6 +29,10 @@ public class Archive {
     @Column(name = "artist_names", columnDefinition = "TEXT")
     private String artistNames;
 
+    /** 수동 선택한 소속 유닛. 출연진이 유닛 구성과 달라도 배지에 쓴다. */
+    @Column(name = "unit_id")
+    private Long unitId;
+
     @Column(name = "thumbnail_url", length = 500)
     private String thumbnailUrl;
 

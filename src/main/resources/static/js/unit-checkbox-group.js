@@ -60,6 +60,17 @@
     });
   }
 
+  /** 출연진과 달라도 유지되는 수동 유닛 선택. */
+  function selectManual(root, unitId) {
+    const el = rootEl(root);
+    const id = unitId == null || String(unitId).trim() === "" ? "" : String(unitId).trim();
+    clearManual(el);
+    checkboxes(root).forEach((cb) => {
+      cb.checked = Boolean(id) && String(cb.value) === id;
+    });
+    if (id) setManual(el, id);
+  }
+
   function selectedIds(root) {
     return checkboxes(root)
       .filter((cb) => cb.checked)
@@ -143,6 +154,7 @@
 
   window.UnitCheckboxGroup = {
     setChecks,
+    selectManual,
     selectedIds,
     syncFromMembers,
     bindMemberHelper,

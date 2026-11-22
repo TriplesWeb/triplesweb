@@ -9,15 +9,15 @@
             <div class="ar-sort">
                 <span class="ar-sort-label" id="archiveSortLabel">정렬</span>
                 <span class="ar-sort-control">
-                    <select id="archiveSort" aria-labelledby="archiveSortLabel">
-                        <option value="newest">최신순</option>
-                        <option value="oldest">오래된 순</option>
+                    <select id="archiveSort" name="sort" aria-labelledby="archiveSortLabel">
+                        <option value="newest"{{#sortNewest}} selected{{/sortNewest}}>최신순</option>
+                        <option value="oldest"{{#sortOldest}} selected{{/sortOldest}}>오래된 순</option>
                         {{#videoArchive}}
-                        <option value="title">제목순</option>
+                        <option value="title"{{#sortTitle}} selected{{/sortTitle}}>제목순</option>
                         {{/videoArchive}}
                         {{^folderIsSolo}}
-                        <option value="first-member" data-member-sort>멤버번호 낮은순</option>
-                        <option value="last-member" data-member-sort>멤버번호 높은순</option>
+                        <option value="first-member" data-member-sort{{#sortFirstMember}} selected{{/sortFirstMember}}>멤버번호 낮은순</option>
+                        <option value="last-member" data-member-sort{{#sortLastMember}} selected{{/sortLastMember}}>멤버번호 높은순</option>
                         {{/folderIsSolo}}
                     </select>
                     <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
