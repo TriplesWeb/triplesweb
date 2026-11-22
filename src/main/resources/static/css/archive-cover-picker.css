@@ -1,0 +1,294 @@
+/* Hallmark · component: cover-picker · genre: modern-minimal · theme: site-archive · states: 8 · contrast: pass · v2.0.0
+ * critique: util admin strip; mint ring on dark frames; gallery as secondary pick
+ * answered: archive dialog chrome stays project-owned
+ */
+:root {
+    --ar-cover-bg: var(--site-ui-bg);
+    --ar-cover-ink: var(--site-ui-text);
+    --ar-cover-muted: var(--site-ui-muted);
+    --ar-cover-accent: var(--site-ui-accent);
+    --ar-cover-border: var(--site-ui-border);
+    --ar-cover-stage: var(--site-ui-page);
+    --ar-cover-focus: var(--site-ui-accent);
+    --ar-cover-error: #e8a39a;
+    --ar-cover-success: var(--site-ui-accent);
+    --ar-cover-dur: 160ms;
+    --ar-cover-ease: ease;
+}
+
+.ar-cover-picker {
+    box-sizing: border-box;
+    display: grid;
+    gap: 0.75rem;
+    min-width: 0;
+    color: var(--ar-cover-ink);
+}
+
+.ar-cover-picker[hidden] {
+    display: none !important;
+}
+
+.ar-cover-picker.is-loading .ar-cover-stage::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--ar-cover-stage) 55%, transparent);
+    pointer-events: none;
+}
+
+.ar-cover-picker.is-loading .ar-cover-status {
+    color: var(--ar-cover-muted);
+}
+
+.ar-cover-picker.is-error .ar-cover-stage {
+    outline: 2px solid var(--ar-cover-error);
+    outline-offset: -2px;
+}
+
+.ar-cover-picker.is-success .ar-cover-status {
+    color: var(--ar-cover-success);
+}
+
+.ar-cover-stage {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: 12rem;
+    min-width: 0;
+    overflow: clip;
+    border: 1px solid var(--ar-cover-border);
+    border-radius: 0.75rem;
+    background: var(--ar-cover-stage);
+}
+
+.ar-cover-stage img {
+    display: block;
+    width: 100%;
+    max-height: 18rem;
+    min-width: 0;
+    object-fit: contain;
+    background: var(--ar-cover-stage);
+}
+
+.ar-cover-stage img[hidden] {
+    display: none;
+}
+
+.ar-cover-empty {
+    margin: 0;
+    padding: 1.25rem;
+    color: var(--ar-cover-muted);
+    font-size: 0.84rem;
+    line-height: 1.45;
+    text-align: center;
+    overflow-wrap: break-word;
+    min-width: 0;
+}
+
+.ar-cover-empty[hidden] {
+    display: none;
+}
+
+.ar-cover-rail {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.55rem;
+    align-items: stretch;
+    min-width: 0;
+}
+
+.ar-cover-frames {
+    display: flex;
+    gap: 0.35rem;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.2rem 0.1rem;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+}
+
+.ar-cover-frame {
+    position: relative;
+    flex: 0 0 auto;
+    width: 3.35rem;
+    height: 4.6rem;
+    padding: 0;
+    border: 1px solid var(--ar-cover-border);
+    border-radius: 0.45rem;
+    background: var(--ar-cover-stage);
+    overflow: clip;
+    cursor: pointer;
+    scroll-snap-align: start;
+    outline: 2px solid transparent;
+    outline-offset: 1px;
+    transition: border-color var(--ar-cover-dur) var(--ar-cover-ease),
+        opacity var(--ar-cover-dur) var(--ar-cover-ease),
+        transform var(--ar-cover-dur) var(--ar-cover-ease);
+}
+
+.ar-cover-frame img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ar-cover-frame-time {
+    position: absolute;
+    left: 0.2rem;
+    bottom: 0.2rem;
+    max-width: calc(100% - 0.4rem);
+    padding: 0.08rem 0.25rem;
+    border-radius: 0.25rem;
+    background: color-mix(in srgb, var(--ar-cover-stage) 78%, transparent);
+    color: var(--ar-cover-ink);
+    font-size: 0.62rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+}
+
+.ar-cover-frame:hover,
+.ar-cover-frame.is-hover {
+    border-color: color-mix(in srgb, var(--ar-cover-accent) 55%, var(--ar-cover-border));
+}
+
+.ar-cover-frame:focus-visible,
+.ar-cover-frame.is-focus {
+    outline-color: var(--ar-cover-focus);
+}
+
+.ar-cover-frame:active,
+.ar-cover-frame.is-active {
+    transform: translateY(1px);
+}
+
+.ar-cover-frame[aria-selected="true"],
+.ar-cover-frame.is-success {
+    border-color: var(--ar-cover-accent);
+    box-shadow: 0 0 0 1px var(--ar-cover-accent);
+}
+
+.ar-cover-frame:disabled,
+.ar-cover-frame.is-disabled,
+.ar-cover-frame[aria-disabled="true"] {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.ar-cover-gallery {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    gap: 0.2rem;
+    width: 3.35rem;
+    min-height: 4.6rem;
+    padding: 0.35rem;
+    border: 1px dashed var(--ar-cover-border);
+    border-radius: 0.45rem;
+    background: transparent;
+    color: var(--ar-cover-muted);
+    font-size: 0.68rem;
+    line-height: 1.2;
+    cursor: pointer;
+    outline: 2px solid transparent;
+    outline-offset: 1px;
+    transition: border-color var(--ar-cover-dur) var(--ar-cover-ease),
+        color var(--ar-cover-dur) var(--ar-cover-ease),
+        transform var(--ar-cover-dur) var(--ar-cover-ease);
+}
+
+.ar-cover-gallery::before {
+    content: "";
+    position: absolute;
+    inset: -0.35rem;
+}
+
+.ar-cover-gallery svg {
+    width: 1.15rem;
+    height: 1.15rem;
+    fill: currentColor;
+}
+
+.ar-cover-gallery:hover,
+.ar-cover-gallery.is-hover {
+    border-color: var(--ar-cover-accent);
+    color: var(--ar-cover-accent);
+}
+
+.ar-cover-gallery:focus-visible,
+.ar-cover-gallery.is-focus {
+    outline-color: var(--ar-cover-focus);
+}
+
+.ar-cover-gallery:active,
+.ar-cover-gallery.is-active {
+    transform: translateY(1px);
+}
+
+.ar-cover-gallery:disabled,
+.ar-cover-gallery.is-disabled,
+.ar-cover-gallery[aria-disabled="true"] {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.ar-cover-gallery.is-loading {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+.ar-cover-gallery.is-error {
+    border-color: var(--ar-cover-error);
+    color: var(--ar-cover-error);
+}
+
+.ar-cover-gallery.is-success {
+    border-color: var(--ar-cover-success);
+    color: var(--ar-cover-success);
+}
+
+.ar-cover-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 0.75rem;
+    min-width: 0;
+}
+
+.ar-cover-status,
+.ar-cover-meta [data-thumbnail-info] {
+    margin: 0;
+    min-width: 0;
+    color: var(--ar-cover-muted);
+    font-size: 0.78rem;
+    line-height: 1.4;
+    overflow-wrap: break-word;
+}
+
+.ar-cover-field > .ar-file {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.ar-cover-field .ar-field-hint {
+    margin-top: 0.35rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ar-cover-frame,
+    .ar-cover-gallery {
+        transition: none;
+    }
+}
