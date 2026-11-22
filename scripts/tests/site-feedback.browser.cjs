@@ -19,7 +19,7 @@ const css = fs.readFileSync(path.join(staticRoot, 'css/site-ui.css'), 'utf8');
       contentType: 'text/html',
       body: `<!doctype html><html lang="ko"><meta charset="utf-8"><style>${css}</style>
         <button id="discard" data-confirm-action="편집을 취소하시겠습니까?">편집 취소</button>
-        <form action="/save" method="post" data-confirm="저장하시겠습니까?">
+        <form id="confirmSave" action="/save" method="post" data-confirm="저장하시겠습니까?">
           <input name="title" required><button name="action" value="save">저장</button>
         </form>
         <form id="directSave" action="/direct-save" method="post">
@@ -105,7 +105,7 @@ const css = fs.readFileSync(path.join(staticRoot, 'css/site-ui.css'), 'utf8');
     const save = page.getByRole('button', { name: '저장', exact: true });
     await save.click();
     assert.equal(await dialog.isVisible(), false);
-    await page.locator('[name=title]').fill('새 글');
+    await page.locator('#confirmSave [name=title]').fill('새 글');
     await save.click();
     await dialog.getByRole('button', { name: '취소', exact: true }).click();
     assert.equal(new URL(page.url()).pathname, '/');
