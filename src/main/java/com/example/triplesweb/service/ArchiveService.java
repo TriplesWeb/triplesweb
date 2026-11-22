@@ -299,7 +299,7 @@ public class ArchiveService {
             String artistNames = (String) row[1];
             ArchiveSource rowSource = (ArchiveSource) row[2];
             if (!ArchiveFolderClassifier.matches(
-                    ArchiveFolderClassifier.classify(artistNames, units), folderKey, comboMembers)) {
+                    ArchiveFolderClassifier.classify(artistNames, units), folderKey, comboMembers, units)) {
                 continue;
             }
             if (rowSource != null) sources.add(rowSource);

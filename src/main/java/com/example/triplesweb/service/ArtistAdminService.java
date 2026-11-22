@@ -45,6 +45,7 @@ public class ArtistAdminService {
 
     private final ArtistRepository artistRepository;
     private final UnitRepository unitRepository;
+    private final UnitService unitService;
     private final SiteContentRepository siteContentRepository;
     private final FileStorageService fileStorageService;
 
@@ -212,10 +213,16 @@ public class ArtistAdminService {
         if (artist.getAffiliatedUnit() == null) {
             artist.setAffiliatedUnit(new ArrayList<>());
         }
+        // 체크 UI에 없는 숨김·상위 컨테이너 소속은 제출값에 없어도 유지한다.
+        Set<Long> editable = unitService.checkboxEditableUnitIds();
         // Keep persisted links for retained units: recreating them can INSERT before
         // orphan removal DELETEs and violate uk_unit_member (artist_id, unit_id).
-        artist.getAffiliatedUnit().removeIf(link -> link.getUnit() == null
-                || !wanted.contains(link.getUnit().getUnitId()));
+        artist.getAffiliatedUnit().removeIf(link -> {
+            if (link.getUnit() == null || link.getUnit().getUnitId() == null) return true;
+            Long id = link.getUnit().getUnitId();
+            if (!editable.contains(id)) return false;
+            return !wanted.contains(id);
+        });
         Set<Long> existing = artist.getAffiliatedUnit().stream()
                 .map(link -> link.getUnit().getUnitId())
                 .collect(Collectors.toSet());

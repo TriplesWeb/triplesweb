@@ -9,6 +9,7 @@
     const dateLabel = date?.querySelector('[data-detail-date-label]');
     const dateValue = date?.querySelector('[data-detail-date-value]');
     const source = document.getElementById('archiveDetailSource');
+    const unit = document.getElementById('archiveDetailUnit');
     const cast = detail.querySelector('.ar-detail-cast');
     const members = document.getElementById('archiveDetailMembers');
     const edit = document.getElementById('archiveDetailEdit');
@@ -71,7 +72,18 @@
             source.dataset.source = (card.dataset.source || '').toLowerCase();
             source.textContent = label;
         }
-        if (meta) meta.hidden = Boolean(date?.hidden) && Boolean(source?.hidden);
+        if (unit) {
+            const label = (card.dataset.unitLabel || '').trim();
+            const color = (card.dataset.unitColor || '').trim() || '#a78bfa';
+            unit.hidden = !label;
+            unit.textContent = label;
+            unit.title = label;
+            unit.style.setProperty('--unit-color', color);
+        }
+        if (meta) {
+            const unitHidden = !unit || unit.hidden;
+            meta.hidden = Boolean(date?.hidden) && Boolean(source?.hidden) && unitHidden;
+        }
         if (members) showCast(card);
         else if (cast) cast.hidden = true;
         const cover = card.dataset.url || parseImages(card)[0] || '';

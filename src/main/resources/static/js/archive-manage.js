@@ -129,15 +129,41 @@
         body.className = 'ar-body';
         const title = document.createElement('h3');
         title.dataset.previewTitle = '';
+        const badges = document.createElement('div');
+        badges.className = 'ar-card-badges';
+        badges.dataset.previewBadges = '';
         const source = document.createElement('div');
         source.className = 'ar-source-badge';
         source.dataset.previewSource = '';
         source.hidden = true;
+        const unit = document.createElement('div');
+        unit.className = 'ar-unit-badge';
+        unit.dataset.previewUnit = '';
+        unit.hidden = true;
+        badges.append(source, unit);
         const meta = document.createElement('div');
         meta.className = 'ar-meta';
         meta.dataset.previewArtists = '';
-        body.append(title, source, meta);
+        body.append(title, badges, meta);
         return body;
+    }
+
+    function matchUnitBadge(memberNames) {
+        const selected = new Set((memberNames || []).map(name => String(name || '').trim()).filter(Boolean));
+        if (selected.size < 2) return null;
+        const checks = document.querySelectorAll('[data-unit-checks] input[type="checkbox"][data-members]');
+        for (const cb of checks) {
+            const members = window.UnitCheckboxGroup
+                ? UnitCheckboxGroup.parseMembers(cb)
+                : String(cb.dataset.members || '').split(',').map(part => part.trim()).filter(Boolean);
+            if (!members.length || members.length !== selected.size) continue;
+            if (!members.every(name => selected.has(name))) continue;
+            const label = (cb.closest('label')?.querySelector('span')?.textContent || '').trim();
+            if (!label) continue;
+            const first = document.querySelector(`.mpp-item[data-value="${CSS.escape(members[0])}"]`);
+            return { label, color: memberColor(first) };
+        }
+        return null;
     }
 
     function archiveSymbolLogo(frame) {
@@ -959,13 +985,19 @@
             sourceBadge.textContent = label;
         }
         const meta = preview.querySelector('[data-preview-artists]');
+        const unitBadge = preview.querySelector('[data-preview-unit]');
+        const badgeRow = preview.querySelector('[data-preview-badges]');
+        let memberNames = [];
         if (meta) {
             const items = selectedMemberItems(form.closest('.ar-dialog'));
             meta.style.setProperty('--member-count', String(items.length || 1));
             meta.replaceChildren();
             items.forEach(button => {
                 const name = (button.dataset.value || button.dataset.name || '').trim();
-                if (name) meta.appendChild(memberChip(button, name));
+                if (name) {
+                    memberNames.push(name);
+                    meta.appendChild(memberChip(button, name));
+                }
             });
             const registered = form.querySelector('[name="registeredOn"]')?.value || '';
             if (registered) {
@@ -975,6 +1007,23 @@
                 time.textContent = registered.replaceAll('-', '/');
                 meta.appendChild(time);
             }
+        }
+        if (unitBadge) {
+            const matched = matchUnitBadge(memberNames);
+            unitBadge.hidden = !matched;
+            if (matched) {
+                unitBadge.textContent = matched.label;
+                unitBadge.title = matched.label;
+                unitBadge.style.setProperty('--unit-color', matched.color || '#a78bfa');
+            } else {
+                unitBadge.textContent = '';
+                unitBadge.removeAttribute('title');
+            }
+        }
+        if (badgeRow) {
+            const showSource = sourceBadge && !sourceBadge.hidden;
+            const showUnit = unitBadge && !unitBadge.hidden;
+            badgeRow.hidden = !showSource && !showUnit;
         }
         const info = preview.querySelector('[data-preview-file]');
         const slots = slotsOf(form);
@@ -1003,6 +1052,10 @@
         }
     }
 
+    function unitChecksRoot(root) {
+        return root?.querySelector?.('[data-unit-checks]') || null;
+    }
+
     function renderArtists(root) {
         if (!root) return;
         const values = selectedArtists(root);
@@ -1027,6 +1080,7 @@
             });
             if (!values.length) chips.textContent = '멤버를 선택하면 여기에 표시됩니다.';
         }
+        window.UnitCheckboxGroup?.syncFromMembers(unitChecksRoot(root), values);
         syncPreview(root.querySelector('form'));
     }
 
@@ -1049,7 +1103,12 @@
         });
         root.querySelector("[data-picker-clear]")?.addEventListener("click", () => {
             window.MemberPortraitPicker?.clear(root);
+            window.UnitCheckboxGroup?.setChecks(unitChecksRoot(root), []);
             renderArtists(root);
+        });
+        window.UnitCheckboxGroup?.bindMemberHelper(unitChecksRoot(root), {
+            getMembers: () => selectedArtists(root),
+            applyMembers: (names) => applyArtists(root, names.join(','))
         });
         root.querySelector('form')?.addEventListener('input', () => syncPreview(root.querySelector('form')));
         window.MemberPortraitPicker?.clear(root);
@@ -1251,6 +1310,17 @@
     bindFileNames(uploadForm);
     bindImageEditTools(uploadForm);
 
+    function warmArchiveMemberPickers() {
+        window.MemberPortraitPicker?.preloadFrames?.();
+        document.querySelectorAll(".ar-dialog .member-portrait-picker").forEach((picker) => {
+            window.MemberPortraitPicker?.warmPicker?.(picker);
+        });
+    }
+    const scheduleIdle = window.requestIdleCallback
+        ? (cb) => window.requestIdleCallback(cb, { timeout: 1200 })
+        : (cb) => setTimeout(cb, 180);
+    scheduleIdle(warmArchiveMemberPickers);
+
     function defaultUploadArtists() {
         const fromPage = document.querySelector("[data-archive-kind]")?.dataset.defaultArtists;
         if (fromPage != null && fromPage.trim()) return fromPage.trim();
@@ -1303,8 +1373,6 @@
         uploadForm.reset();
         resetThumbnail(uploadForm);
         setUploadStatus("");
-        // 멤버 폴더·필터에서 열면 해당 멤버를 기본 선택(변경 가능)
-        applyArtists(uploadDialog, defaultUploadArtists());
         if (uploadFile) {
             releaseUrl(uploadFile._archiveLastFile);
             (uploadFile._archiveLastFiles || []).forEach(releaseUrl);
@@ -1315,9 +1383,13 @@
         setSlots(uploadForm, [], { syncInput: false });
         uploadForm._archiveSlotPreviewIndex = -1;
         showPreview(uploadPreview, "");
-        window.bindArchiveDateFields?.(uploadForm);
-        uploadForm.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName);
+        // 모달을 먼저 연 뒤 멤버/날짜를 채워 첫 페인트가 막히지 않게 한다.
         openDialog(uploadDialog);
+        requestAnimationFrame(() => {
+            applyArtists(uploadDialog, defaultUploadArtists());
+            window.bindArchiveDateFields?.(uploadForm);
+            uploadForm.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName);
+        });
     };
 
     uploadFile?.addEventListener("change", () => {
@@ -1566,8 +1638,9 @@
     function showEdit(button) {
         if (!editForm || !editDialog) return;
         setEditStatus("");
-        populateEditForm(button);
+        // 멤버 초상·프레임 디코드보다 모달 표시를 우선한다.
         openDialog(editDialog);
+        requestAnimationFrame(() => populateEditForm(button));
     }
 
     editFile?.addEventListener("change", () => {

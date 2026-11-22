@@ -226,6 +226,14 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).contains("members&#x3D;%EC%9C%A4%EC%84%9C%EC%97%B0");
         org.assertj.core.api.Assertions.assertThat(html).contains("members&#x3D;%EC%A0%95%ED%98%9C%EB%A6%B0");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("folder&#x3D;unit-17");
+
+        stubFolder(MediaType.IMAGE);
+        String view = mvc.perform(get("/archive").param("folder", "s")
+                        .param("members", "윤서연").param("members", "정혜린"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(view)
+                .contains("ar-back-folders\" href=\"/archive?folder&#x3D;units\"");
     }
 
     @Test void comboFolderFiltersPhotosByChemistryTreePair() throws Exception {
@@ -444,7 +452,7 @@ class ArchiveControllerTest {
                 eq(ArchiveSource.TEASER_BEHIND), anyBoolean(), any(), any(), any());
     }
 
-    @Test void externalSourceOffersTenTwentyThirtyPhotoLayout() throws Exception {
+    @Test void externalSourceOffersPhotoDensityDropdown() throws Exception {
         Archive external = photo();
         external.setSource(ArchiveSource.EXTERNAL);
         stubFolder(MediaType.IMAGE, external);
@@ -453,9 +461,12 @@ class ArchiveControllerTest {
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         org.assertj.core.api.Assertions.assertThat(html)
                 .contains("class=\"ar-density\"")
+                .contains("id=\"archivePageSize\"")
                 .contains("data-page-size=\"20\"")
-                .contains("20개")
-                .containsAnyOf("size=30", "size&#x3D;30");
+                .contains("value=\"20\" selected")
+                .contains(">20개</option>")
+                .contains(">10개</option>")
+                .contains(">50개</option>");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("size=9");
         verify(archiveService).browseFolder(eq(MediaType.IMAGE), eq(0), eq(20), nullable(String.class), any(),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
@@ -533,7 +544,8 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain(">폴더 목록<");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("이 페이지에서 조건에 맞는");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("id=\"archiveNone\"");
-        org.assertj.core.api.Assertions.assertThat(html).contains("페이지 1 / 1");
+        org.assertj.core.api.Assertions.assertThat(html).contains("ar-page-jump-meta");
+        org.assertj.core.api.Assertions.assertThat(html).contains(">1</span>");
         org.assertj.core.api.Assertions.assertThat(html).contains("is-current");
         org.assertj.core.api.Assertions.assertThat(html).contains("코스모룸");
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("직찍");

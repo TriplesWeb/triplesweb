@@ -17,6 +17,7 @@ import com.example.triplesweb.service.UnitService;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.util.ArchiveFolderArt;
 import com.example.triplesweb.util.ArchiveFolderClassifier;
+import com.example.triplesweb.util.ArchiveCardImages;
 import com.example.triplesweb.util.ArchiveImages;
 import com.example.triplesweb.util.ImageUrls;
 import com.example.triplesweb.util.MemberPortraitOptions;
@@ -51,6 +52,9 @@ import java.time.format.DateTimeParseException;
 @RequestMapping("/archive")
 public class ArchiveController {
 
+    private static final int DEFAULT_ARCHIVE_SIZE = 10;
+    private static final List<Integer> ARCHIVE_SIZE_OPTIONS = List.of(10, 20, 30, 40, 50);
+
     private final ArchiveService archiveService;
     private final AboutAdminAuth aboutAdminAuth;
     private final ArtistSnapshotService artistSnapshot;
@@ -64,7 +68,7 @@ public class ArchiveController {
     @GetMapping
     public String showArchive(@RequestParam(defaultValue = "image") String type,
                               @RequestParam(defaultValue = "0") int page,
-                              @RequestParam(defaultValue = "9") int size,
+                              @RequestParam(defaultValue = "10") int size,
                               @RequestParam(required = false) String q,
                               @RequestParam(required = false) String from,
                               @RequestParam(required = false) String to,
@@ -95,7 +99,7 @@ public class ArchiveController {
 
     @GetMapping("/all")
     public String showAllImages(@RequestParam(defaultValue = "0") int page,
-                                @RequestParam(defaultValue = "24") int size,
+                                @RequestParam(defaultValue = "10") int size,
                                 @RequestParam(required = false) String q,
                                 @RequestParam(required = false) String from,
                                 @RequestParam(required = false) String to,
@@ -176,6 +180,7 @@ public class ArchiveController {
         model.addAttribute("hasArchiveBack", false);
         model.addAttribute("archiveBackHref", "/archive");
         model.addAttribute("archiveFolderIndex", false);
+        addUnitCheckboxOptions(model);
         addCommonDateFlags(model);
         return "archive/archive";
     }
@@ -216,6 +221,7 @@ public class ArchiveController {
         model.addAttribute("hasArchives", !folders.isEmpty());
         model.addAttribute("archiveSources", sourceOptions(null));
         model.addAttribute("defaultUploadArtists", "");
+        addUnitCheckboxOptions(model);
         addCommonDateFlags(model);
         return "archive/archive";
     }
@@ -241,29 +247,30 @@ public class ArchiveController {
         ArchiveSource source = parseSourceFilter(sourceSlug);
         String sourceKey = source == null ? sourceSlug : source.getSlug();
         boolean externalView = source == ArchiveSource.EXTERNAL;
-        boolean imageView = type == MediaType.IMAGE;
-        int pageSize = imageView ? imagePageSize(size) : size;
-        // 전체 멤버 폴더(s)는 유닛 분류가 필요 없고, listVisible()의 앨범 병합은 아카이브에 불필요하다.
-        boolean needsUnits = !browse && !folderKey.equalsIgnoreCase("s");
-        List<Unit> visibleUnits = needsUnits ? unitService.listVisibleForArchive() : List.of();
-        List<ArchiveFolderClassifier.UnitMembers> units = unitSnapshots(visibleUnits);
+        int safeSize = normalizeArchiveSize(size);
+        // 카드 배지·유닛 폴더 완전일치 판별용. 멤버 없는 s 전체 목록 스캔에는 비워 둔다.
+        List<Unit> allVisibleUnits = unitService.listVisibleForArchive();
+        boolean needsBrowseUnits = !browse && (!folderKey.equalsIgnoreCase("s") || !selectedMembers.isEmpty());
+        List<ArchiveFolderClassifier.UnitMembers> units = needsBrowseUnits
+                ? unitSnapshots(allVisibleUnits) : List.of();
         ArchiveService.FolderBrowse folderBrowse = null;
         Page<Archive> archives;
         if (browse) {
-            archives = archiveService.pageByType(type, page, pageSize, q, selectedMembers, fromDate, toDate);
+            archives = archiveService.pageByType(type, page, safeSize, q, selectedMembers, fromDate, toDate);
         } else {
-            folderBrowse = archiveService.browseFolder(type, page, pageSize, q,
+            folderBrowse = archiveService.browseFolder(type, page, safeSize, q,
                     memberSuperset ? List.of() : selectedMembers, fromDate, toDate,
                     source, false, folderKey, memberSuperset ? selectedMembers : List.of(), units);
             archives = folderBrowse.page();
         }
 
         List<Artist> artists = artistSnapshot.findAll();
-        List<Map<String, Object>> cards = archiveCards(archives, artists, selectedMembers);
+        List<Map<String, Object>> cards = archiveCards(archives, artists, allVisibleUnits, selectedMembers);
         model.addAttribute("archives", archives);
         model.addAttribute("archiveCards", cards);
         model.addAttribute("artistOptions", artists);
         model.addAttribute("memberPickerOptions", memberOptions(artists, selectedMembers));
+        addUnitCheckboxOptions(model);
         model.addAttribute("selectedMembers", selectedMembers);
         model.addAttribute("hasSelectedMembers", !selectedMembers.isEmpty());
         model.addAttribute("defaultUploadArtists", String.join(",", selectedMembers));
@@ -276,7 +283,7 @@ public class ArchiveController {
         model.addAttribute("archiveFolderIndex", false);
         model.addAttribute("archiveFolderView", !browse);
         model.addAttribute("hasArchiveBack", !browse);
-        model.addAttribute("archiveBackHref", folderBackHref(folderKey));
+        model.addAttribute("archiveBackHref", folderBackHref(folderKey, selectedMembers, allVisibleUnits));
         model.addAttribute("showMemberFilter", browse || !isSoloFolder(folderKey));
         model.addAttribute("showChemistryFilter", false);
         model.addAttribute("chemistryOptions", List.of());
@@ -287,11 +294,11 @@ public class ArchiveController {
         model.addAttribute("hasCombo", false);
         model.addAttribute("chemKey", "");
         model.addAttribute("hasChemFilter", false);
-        String baseTitle = folderTitle(folderKey, List.of(), units);
+        String baseTitle = folderTitle(folderKey, selectedMembers, units);
         model.addAttribute("folderBaseTitle", baseTitle);
         model.addAttribute("folderTitle", baseTitle);
         model.addAttribute("hasFolderTitle", baseTitle != null && !baseTitle.isBlank());
-        model.addAttribute("folderAccent", folderAccent(folderKey, visibleUnits, artists));
+        model.addAttribute("folderAccent", folderAccent(folderKey, selectedMembers, allVisibleUnits, artists));
         boolean soloFolder = isSoloFolder(folderKey);
         model.addAttribute("folderIsSolo", soloFolder);
         if (soloFolder) {
@@ -324,8 +331,9 @@ public class ArchiveController {
         model.addAttribute("hasActiveArchiveFilters", (q != null && !q.isBlank())
                 || !selectedMembers.isEmpty() || fromDate != null || toDate != null
                 || (sourceSlug != null && !sourceSlug.isBlank()));
+        String sizeQuery = archiveSizeQuery(safeSize);
         addArchivePage(model, archives, type, q, memberQuery(selectedMembers), dateQuery, browse,
-                folderQuery(folderKey, ""), sourceQuery, sourceKey, "");
+                folderQuery(folderKey, ""), sourceQuery, sourceKey, "", safeSize, sizeQuery);
         // 출처 탭: 폴더는 한 번 스캔한 결과, 전체 보기는 source 컬럼만 distinct 조회.
         Set<ArchiveSource> availableSources = browse
                 ? archiveService.availableSources(type, q, selectedMembers, fromDate, toDate)
@@ -334,17 +342,8 @@ public class ArchiveController {
                 + (q == null || q.isBlank() ? "" : "&q=" + URLEncoder.encode(q.trim(), StandardCharsets.UTF_8))
                 + memberQuery(selectedMembers) + dateQuery;
         model.addAttribute("sourceTabs", sourceTabs(browse ? "/archive/all" : "/archive",
-                keptFilters, sourceKey, availableSources));
+                keptFilters + sizeQuery, sourceKey, availableSources));
         model.addAttribute("externalSource", externalView);
-        model.addAttribute("showPhotoDensity", imageView);
-        model.addAttribute("archivePageSize", pageSize);
-        String sizeQuery = imageView ? "&size=" + pageSize : "";
-        model.addAttribute("sizeQuery", sizeQuery);
-        int nextSize = nextImagePageSize(pageSize);
-        model.addAttribute("densityLabel", nextSize + "개씩 보기");
-        model.addAttribute("densityHref", imageView
-                ? joinHref(browse ? "/archive/all" : "/archive", keptFilters + "&size=" + nextSize)
-                : "");
         return "archive/archive";
     }
 
@@ -467,13 +466,19 @@ public class ArchiveController {
         return query.toString();
     }
 
-    private List<Map<String, Object>> archiveCards(Page<Archive> archives, List<Artist> artists, List<String> selectedMembers) {
+    private List<Map<String, Object>> archiveCards(Page<Archive> archives, List<Artist> artists, List<Unit> units, List<String> selectedMembers) {
         Map<String, String> colors = new LinkedHashMap<>();
         for (Artist artist : artists) {
             String color = artist.getColor();
             if (color == null || !color.matches("#[0-9a-fA-F]{6}")) color = "#b9cac4";
             if (artist.getName() != null) colors.put(artist.getName().trim().toLowerCase(Locale.ROOT), color);
             if (artist.getEngName() != null) colors.put(artist.getEngName().trim().toLowerCase(Locale.ROOT), color);
+        }
+        List<ArchiveFolderClassifier.UnitMembers> unitMembers = unitSnapshots(units);
+        Map<Long, String> unitColors = new LinkedHashMap<>();
+        for (Unit unit : units == null ? List.<Unit>of() : units) {
+            if (unit.getUnitId() == null) continue;
+            unitColors.put(unit.getUnitId(), unitColor(unit, artists));
         }
         long offset = archives.getPageable().isPaged() ? archives.getPageable().getOffset() : 0;
         List<Map<String, Object>> cards = new ArrayList<>();
@@ -521,14 +526,16 @@ public class ArchiveController {
             card.put("file", archive.getFile());
             String imagesJson = ArchiveImages.write(imageUrls, objectMapper);
             String viewJson = ArchiveImages.write(viewUrls, objectMapper);
+            String previewSource = viewUrls.isEmpty()
+                    ? (archive.getFile() == null || archive.getFile().getUrl() == null ? "" : archive.getFile().getUrl())
+                    : viewUrls.get(0);
             card.put("imageUrls", imageUrls);
             card.put("imageUrlsJson", imagesJson == null ? "[]" : imagesJson);
             card.put("viewUrlsJson", viewJson == null ? "[]" : viewJson);
             card.put("imageArtistsJson", archive.getImageArtistsJson() == null ? "[]" : archive.getImageArtistsJson());
             card.put("imageCasts", imageCasts);
-            card.put("previewUrl", viewUrls.isEmpty()
-                    ? (archive.getFile() == null || archive.getFile().getUrl() == null ? "" : archive.getFile().getUrl())
-                    : viewUrls.get(0));
+            card.put("previewUrl", ArchiveCardImages.previewUrl(previewSource));
+            card.put("eagerPreview", cards.size() < 4);
             card.put("imageCount", viewUrls.size());
             card.put("hasMultipleImages", viewUrls.size() > 1);
             card.put("thumbnailUrl", archive.getThumbnailUrl());
@@ -551,6 +558,19 @@ public class ArchiveController {
             card.put("sourceValue", source == null ? "" : source.name());
             card.put("sourceLabel", source == null ? "" : source.getLabel());
             card.put("hasSource", source != null);
+            ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(archive.getArtistNames(), unitMembers);
+            boolean unitBadge = match != null && match.kind() == ArchiveFolderClassifier.Kind.UNIT && match.unitId() != null;
+            card.put("hasUnitBadge", unitBadge);
+            if (unitBadge) {
+                card.put("unitBadgeLabel", match.label());
+                card.put("unitBadgeColor", unitColors.getOrDefault(match.unitId(), "#a78bfa"));
+                card.put("unitBadgeKey", match.key());
+            } else {
+                card.put("unitBadgeLabel", "");
+                card.put("unitBadgeColor", "");
+                card.put("unitBadgeKey", "");
+            }
+            card.put("hasBadgeRow", source != null || unitBadge);
             cards.add(card);
         }
         return cards;
@@ -578,10 +598,11 @@ public class ArchiveController {
 
     private void addArchivePage(Model model, Page<Archive> archives, MediaType type, String q, String memberQuery,
                                 String dateQuery, boolean browse, String folderQuery, String sourceQuery, String sourceSlug,
-                                String chemQuery) {
+                                String chemQuery, int size, String sizeQuery) {
         int totalPages = Math.max(1, archives.getTotalPages());
         int current = archives.getNumber();
         String query = q == null ? "" : q.trim();
+        String keptSizeQuery = sizeQuery == null ? "" : sizeQuery;
         model.addAttribute("archiveTotal", archives.getTotalElements());
         model.addAttribute("archivePageCount", archives.getNumberOfElements());
         model.addAttribute("archiveOffset", archives.getPageable().isPaged() ? archives.getPageable().getOffset() : 0);
@@ -595,6 +616,10 @@ public class ArchiveController {
         model.addAttribute("memberQuery", memberQuery == null ? "" : memberQuery);
         model.addAttribute("query", query);
         model.addAttribute("hasQuery", !query.isEmpty());
+        model.addAttribute("archiveSize", size);
+        model.addAttribute("sizeQuery", keptSizeQuery);
+        model.addAttribute("hasCustomArchiveSize", size != DEFAULT_ARCHIVE_SIZE);
+        model.addAttribute("archiveSizeOptions", archiveSizeOptions(size));
         boolean video = type == MediaType.VIDEO;
         String typeQuery = video ? "&type=video" : "";
         String pageQuery = current > 0 ? "&page=" + current : "";
@@ -603,7 +628,7 @@ public class ArchiveController {
         String keptSource = sourceQuery == null ? "" : sourceQuery;
         String keptChem = chemQuery == null ? "" : chemQuery;
         String filterQuery = qQuery + (memberQuery == null ? "" : memberQuery) + (dateQuery == null ? "" : dateQuery)
-                + keptFolder + keptSource + keptChem;
+                + keptFolder + keptSource + keptChem + keptSizeQuery;
         String folderBase = browse ? "/archive/all" : "/archive";
         model.addAttribute("archiveHomePath", browse ? folderBase : joinHref("/archive", keptFolder + typeQuery));
         model.addAttribute("archiveFoldersPath", "/archive");
@@ -631,6 +656,30 @@ public class ArchiveController {
             archivePages.add(Map.of("num", i, "label", i + 1, "active", i == current));
         }
         model.addAttribute("archivePages", archivePages);
+    }
+
+    private static int normalizeArchiveSize(int size) {
+        return ARCHIVE_SIZE_OPTIONS.contains(size) ? size : DEFAULT_ARCHIVE_SIZE;
+    }
+
+    private static String archiveSizeQuery(int size) {
+        return size == DEFAULT_ARCHIVE_SIZE ? "" : "&size=" + size;
+    }
+
+    private static List<Map<String, Object>> archiveSizeOptions(int selected) {
+        List<Map<String, Object>> options = new ArrayList<>(ARCHIVE_SIZE_OPTIONS.size());
+        for (int value : ARCHIVE_SIZE_OPTIONS) {
+            Map<String, Object> option = new LinkedHashMap<>();
+            option.put("value", value);
+            option.put("label", value + "개");
+            option.put("selected", value == selected);
+            options.add(option);
+        }
+        return options;
+    }
+
+    private void addUnitCheckboxOptions(Model model) {
+        model.addAttribute("unitCheckboxOptions", unitService.listUnitCheckboxOptions());
     }
 
     private static void addCommonDateFlags(Model model) {
@@ -685,9 +734,20 @@ public class ArchiveController {
         return isUnitIndex(folder) || isComboIndex(folder);
     }
 
-    private static String folderBackHref(String folder) {
-        if (folder != null && folder.toLowerCase(Locale.ROOT).startsWith("unit-")) return "/archive?folder=units";
+    private String folderBackHref(String folder, List<String> selectedMembers, List<Unit> units) {
+        if (folder != null && folder.toLowerCase(Locale.ROOT).startsWith("unit-")) {
+            return "/archive?folder=units";
+        }
         if (isComboFolder(folder)) return "/archive?folder=combos";
+        if (folder != null && folder.equalsIgnoreCase("s")
+                && selectedMembers != null && !selectedMembers.isEmpty()) {
+            ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(
+                    String.join(",", selectedMembers), unitSnapshots(units));
+            // 디멘션에서 연 유닛 그룹은 유닛 목록으로, 솔로는 홈 카드로, 그 외 멤버 선택은 전체 폴더로.
+            if (match.kind() == ArchiveFolderClassifier.Kind.UNIT) return "/archive?folder=units";
+            if (match.kind() == ArchiveFolderClassifier.Kind.SOLO) return "/archive";
+            return "/archive?folder=s";
+        }
         return "/archive";
     }
 
@@ -705,22 +765,6 @@ public class ArchiveController {
         return query;
     }
 
-    private static int imagePageSize(int size) {
-        return switch (size) {
-            case 20, 30, 40, 50 -> size;
-            default -> 10;
-        };
-    }
-
-    private static int nextImagePageSize(int size) {
-        return switch (imagePageSize(size)) {
-            case 10 -> 20;
-            case 20 -> 30;
-            case 30 -> 40;
-            case 40 -> 50;
-            default -> 10;
-        };
-    }
 
     private List<String> imageArtistRows(Archive archive) {
         String json = archive.getImageArtistsJson();
@@ -864,7 +908,16 @@ public class ArchiveController {
 
     private String folderTitle(String folder, List<String> comboMembers, List<ArchiveFolderClassifier.UnitMembers> units) {
         if (folder == null || folder.isBlank()) return "";
-        if (folder.equalsIgnoreCase("s")) return "";
+        if (folder.equalsIgnoreCase("s")) {
+            if (comboMembers == null || comboMembers.isEmpty()) return "";
+            ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(
+                    String.join(",", comboMembers), units);
+            if (match.kind() == ArchiveFolderClassifier.Kind.UNIT
+                    || match.kind() == ArchiveFolderClassifier.Kind.SOLO) {
+                return match.label();
+            }
+            return "";
+        }
         if (isUnitIndex(folder)) return "디멘션";
         if (isComboIndex(folder)) return "케미";
         Integer comboSize = ArchiveFolderClassifier.comboSize(folder);
@@ -885,9 +938,34 @@ public class ArchiveController {
         return folder;
     }
 
-    private String folderAccent(String folder, List<Unit> units, List<Artist> artists) {
+    private String folderAccent(String folder, List<String> selectedMembers, List<Unit> units, List<Artist> artists) {
         if (folder == null || folder.isBlank()) return "#00f5d4";
-        if (folder.equalsIgnoreCase("s")) return "#f5c518";
+        if (folder.equalsIgnoreCase("s")) {
+            if (selectedMembers != null && !selectedMembers.isEmpty()) {
+                ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(
+                        String.join(",", selectedMembers), unitSnapshots(units));
+                if (match.kind() == ArchiveFolderClassifier.Kind.UNIT && match.unitId() != null) {
+                    for (Unit unit : units == null ? List.<Unit>of() : units) {
+                        if (match.unitId().equals(unit.getUnitId())) {
+                            return unitColor(unit, artists);
+                        }
+                    }
+                    return "#a78bfa";
+                }
+                if (match.kind() == ArchiveFolderClassifier.Kind.SOLO && !match.members().isEmpty()) {
+                    int index = MemberPortraitOptions.memberIndex(match.members().get(0));
+                    if (index < 24) {
+                        for (Artist artist : artists) {
+                            if (MemberPortraitOptions.memberIndex(artist.getName()) == index
+                                    || MemberPortraitOptions.memberIndex(artist.getEngName()) == index) {
+                                return safeColor(artist.getColor());
+                            }
+                        }
+                    }
+                }
+            }
+            return "#f5c518";
+        }
         if (isUnitIndex(folder)) return "#a78bfa";
         if (isComboIndex(folder)) return "#7dd3fc";
         Integer comboSize = ArchiveFolderClassifier.comboSize(folder);

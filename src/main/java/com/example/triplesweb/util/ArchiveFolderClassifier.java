@@ -9,7 +9,8 @@ import java.util.regex.Pattern;
 
 /**
  * 아카이브 출연자 문자열을 전체 멤버 / 유닛 / 2·3·4명 케미 / 5명 이상 / 솔로로 나눈다.
- * 전체 멤버 폴더는 멤버를 고르지 않으면 등록된 자료를 모두 포함하고, 멤버를 고르면 그 멤버가 모두 나온 자료만 포함한다.
+ * 전체 멤버 폴더({@code s})는 멤버를 고르지 않으면 등록된 자료를 모두 포함한다.
+ * 고른 멤버가 어떤 유닛 구성과 같으면 출연진이 완전히 같은 자료만, 아니면 그 멤버가 모두 나온 자료를 포함한다.
  */
 public final class ArchiveFolderClassifier {
     public enum Kind { GROUP, UNIT, COMBO, SOLO, OTHER }
@@ -93,14 +94,22 @@ public final class ArchiveFolderClassifier {
     }
 
     public static boolean matches(Match actual, String folder, List<String> comboMembers) {
+        return matches(actual, folder, comboMembers, List.of());
+    }
+
+    public static boolean matches(Match actual, String folder, List<String> comboMembers, List<UnitMembers> units) {
         if (actual == null || folder == null || folder.isBlank()) return false;
         String key = folder.trim().toLowerCase(Locale.ROOT);
         if (key.equals("s")) {
             List<String> wanted = membersOf(String.join(",", comboMembers == null ? List.of() : comboMembers));
-            if (!wanted.isEmpty()) {
-                return new LinkedHashSet<>(actual.members()).containsAll(wanted);
+            if (wanted.isEmpty()) return true;
+            Set<String> wantedSet = new LinkedHashSet<>(wanted);
+            Set<String> actualSet = new LinkedHashSet<>(actual.members());
+            // 유닛 폴더(선택 멤버 = 유닛 구성): 슈퍼셋이 아니라 완전 일치만
+            if (isExactUnitMemberSet(wantedSet, units)) {
+                return actualSet.equals(wantedSet);
             }
-            return true;
+            return actualSet.containsAll(wantedSet);
         }
         return switch (actual.kind()) {
             case GROUP -> key.equals("s");
@@ -108,6 +117,16 @@ public final class ArchiveFolderClassifier {
             case COMBO -> matchesCombo(actual, key, comboMembers);
             case OTHER -> false;
         };
+    }
+
+    /** 선택 멤버 집합이 등록된 유닛 구성과 완전히 같은지. */
+    public static boolean isExactUnitMemberSet(Set<String> members, List<UnitMembers> units) {
+        if (members == null || members.size() < 2 || units == null || units.isEmpty()) return false;
+        for (UnitMembers unit : units) {
+            if (unit == null || unit.members() == null || unit.members().isEmpty()) continue;
+            if (unit.members().equals(members)) return true;
+        }
+        return false;
     }
 
     private static boolean matchesCombo(Match actual, String key, List<String> comboMembers) {

@@ -2,6 +2,7 @@
     <title>트리플에스 커뮤니티 - 아카이브</title>
 
     <link rel="stylesheet" href="{{#asset}}/css/archive-page.css{{/asset}}">
+    <link rel="stylesheet" href="{{#asset}}/css/unit-checks.css{{/asset}}">
     <link rel="stylesheet" href="{{#asset}}/css/member-portrait-picker.css{{/asset}}">
     {{^archiveFolderHome}}
     <link rel="stylesheet" href="{{#asset}}/css/chemistry.css{{/asset}}">
@@ -53,24 +54,23 @@
         {{>partials/archive-type-tabs}}
         <div class="ar-source-bar">
             {{>partials/archive-source-tabs}}
-            {{#showPhotoDensity}}
-            <a class="ar-density" href="{{densityHref}}" title="{{densityLabel}}" aria-label="{{densityLabel}}">
-                <svg viewBox="0 0 18 14" width="18" height="14" aria-hidden="true">
-                    <path d="M1 1.5h16M1 7h16M1 12.5h16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-                </svg>
-                <span>{{archivePageSize}}개</span>
-            </a>
-            {{/showPhotoDensity}}
+            <label class="ar-density">
+                <select id="archivePageSize" name="size" aria-label="페이지당 개수">
+                    {{#archiveSizeOptions}}
+                    <option value="{{value}}"{{#selected}} selected{{/selected}}>{{label}}</option>
+                    {{/archiveSizeOptions}}
+                </select>
+            </label>
         </div>
     </div>
 
-    <section class="ar-grid{{#archiveBrowse}} ar-grid-browse{{/archiveBrowse}}" id="archiveGrid" aria-label="{{#imageArchive}}사진 목록{{/imageArchive}}{{#videoArchive}}영상 목록{{/videoArchive}}" data-number-offset="{{archiveOffset}}"{{#showPhotoDensity}} data-page-size="{{archivePageSize}}"{{/showPhotoDensity}}>
+    <section class="ar-grid{{#archiveBrowse}} ar-grid-browse{{/archiveBrowse}}" id="archiveGrid" aria-label="{{#imageArchive}}사진 목록{{/imageArchive}}{{#videoArchive}}영상 목록{{/videoArchive}}" data-number-offset="{{archiveOffset}}" data-page-size="{{archiveSize}}">
         {{#archiveCards}}
         {{#imageArchive}}
         {{>partials/archive-photo-card}}
         {{/imageArchive}}
         {{#videoArchive}}
-        <article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-member-order="{{memberOrder}}" data-registered="{{registeredOn}}" data-url="{{file.url}}" data-source="{{sourceValue}}" data-source-label="{{sourceLabel}}" data-thumbnail-url="{{thumbnailUrl}}">
+        <article class="ar-panel ar-card" data-id="{{id}}" data-title="{{title}}" data-artists="{{artistNames}}" data-member-order="{{memberOrder}}" data-registered="{{registeredOn}}" data-url="{{file.url}}" data-source="{{sourceValue}}" data-source-label="{{sourceLabel}}" data-unit-label="{{unitBadgeLabel}}" data-unit-color="{{unitBadgeColor}}" data-thumbnail-url="{{thumbnailUrl}}">
             <a class="ar-photo-link ar-video-thumb" href="{{file.url}}" data-archive-video data-poster="{{thumbnailUrl}}" aria-label="{{#title}}{{title}}{{/title}}{{^title}}영상{{/title}} 자세히 보기">
                 <span class="ar-video-placeholder" aria-hidden="true"></span>
                 {{#thumbnailUrl}}<img src="{{thumbnailUrl}}" alt="" loading="lazy" decoding="async">{{/thumbnailUrl}}
@@ -108,6 +108,7 @@
                         {{/archiveSources}}
                     </select>
                 </label>
+                {{>partials/archive-unit-field}}
                 <div class="ar-field">출연 멤버
                     <div class="member-portrait-picker" id="archive-upload-picker" role="group" aria-label="출연 멤버">
                         {{>partials/member-portrait-picker}}
@@ -167,6 +168,7 @@
             <div class="ar-dialog-body">
                 {{>partials/archive-date-field}}
                 {{>partials/archive-source-field}}
+                {{>partials/archive-unit-field}}
                 <div class="ar-field">출연 멤버
                     <div class="member-portrait-picker" id="archive-edit-picker" role="group" aria-label="출연 멤버">
                         {{>partials/member-portrait-picker}}
@@ -240,6 +242,7 @@
                         {{/archiveSources}}
                     </select>
                 </label>
+                {{>partials/archive-unit-field}}
                 <div class="ar-field">출연 멤버
                     <div class="member-portrait-picker" id="archive-upload-picker" role="group" aria-label="출연 멤버">
                         {{>partials/member-portrait-picker}}
@@ -296,6 +299,7 @@
                 </label>
                 {{>partials/archive-date-field}}
                 {{>partials/archive-source-field}}
+                {{>partials/archive-unit-field}}
                 <div class="ar-field">출연 멤버
                     <div class="member-portrait-picker" id="archive-edit-picker" role="group" aria-label="출연 멤버">
                         {{>partials/member-portrait-picker}}
@@ -356,7 +360,10 @@
                     <span class="ar-detail-kicker">{{mediaDateLabel}}</span>
                     <time></time>
                 </p>
-                <div class="ar-source-badge" id="archiveVideoSource" hidden></div>
+                <div class="ar-card-badges ar-detail-badges">
+                    <div class="ar-source-badge" id="archiveVideoSource" hidden></div>
+                    <div class="ar-unit-badge" id="archiveVideoUnit" hidden></div>
+                </div>
             </div>
             <section class="ar-detail-cast" aria-label="출연 멤버" hidden>
                 <p class="ar-detail-kicker">출연 멤버</p>
@@ -378,6 +385,7 @@
 {{>triples/partials/chemistry-modals}}
 {{/archiveFolderHome}}
 <script src="{{#asset}}/js/member-portrait-picker.js{{/asset}}"></script>
+<script src="{{#asset}}/js/unit-checkbox-group.js{{/asset}}"></script>
 <script src="{{#asset}}/js/archive-manage.js{{/asset}}"></script>
 <script src="{{#asset}}/js/date-range-filter.js{{/asset}}"></script>
 <script src="{{#asset}}/js/archive-browse.js{{/asset}}"></script>

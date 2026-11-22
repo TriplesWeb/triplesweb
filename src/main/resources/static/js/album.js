@@ -168,7 +168,7 @@
     if (!wrap) return;
     const selected = new Set((selectedIds || []).map(String));
     wrap.innerHTML = artistOptions.map((a) => `
-      <label class="about-unit-chip">
+      <label class="unit-chip">
         <input type="checkbox" value="${a.artistId}" ${selected.has(String(a.artistId)) ? "checked" : ""}>
         <span>${escapeAttr(a.name)}</span>
       </label>`).join("");

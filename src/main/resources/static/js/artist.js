@@ -210,6 +210,10 @@
   }
 
   function setUnitChecks(selectedIds) {
+    if (window.UnitCheckboxGroup) {
+      UnitCheckboxGroup.setChecks("#artistEditUnits", selectedIds);
+      return;
+    }
     const selected = new Set((selectedIds || []).map(String));
     document.querySelectorAll('#artistEditUnits input[type="checkbox"]').forEach((cb) => {
       cb.checked = selected.has(String(cb.value));

@@ -105,13 +105,24 @@ ${siteMobile}
     </article>
   </section>
   <nav class="ar-panel ar-pager">
-    <span class="ar-pager-summary">총 2장 중 2장 표시</span>
-    <div class="ar-pager-controls">
-      <a>이전</a>
-      <div class="ar-pages"><a class="is-current">1</a></div>
-      <form class="ar-page-jump"><label>페이지 <input type="number" name="go" min="1" max="1" value="1"></label><button type="submit">이동</button></form>
-      <a>다음</a>
+    <p class="ar-pager-summary">
+      <span class="ar-pager-count">총 2장</span>
+      <span class="ar-pager-sep" aria-hidden="true">·</span>
+      <span>2장 표시</span>
+    </p>
+    <div class="ar-pager-nav" role="group" aria-label="페이지 번호">
+      <a class="ar-pager-step is-disabled" aria-disabled="true">이전</a>
+      <div class="ar-pages"><a class="ar-pager-num is-current" aria-current="page">1</a></div>
+      <a class="ar-pager-step is-disabled" aria-disabled="true">다음</a>
     </div>
+    <form class="ar-page-jump" method="get" action="/archive" aria-label="페이지 이동">
+      <span class="ar-page-jump-meta">1<span aria-hidden="true">/</span>1</span>
+      <label class="ar-page-jump-field">
+        <span class="visually-hidden">이동할 페이지</span>
+        <input type="number" name="go" min="1" max="1" value="1" aria-label="이동할 페이지">
+      </label>
+      <button type="submit">이동</button>
+    </form>
   </nav>
 </main>
 <script>${browseJs}</script>
@@ -447,39 +458,56 @@ ${siteMobile}
     await page.evaluate(() => document.querySelectorAll('.ar-cal-board').forEach((board) => { board.hidden = true; }));
 
     const pager = await page.evaluate(() => {
-      const controls = document.querySelector('.ar-pager-controls');
+      const root = document.querySelector('.ar-pager');
+      const summary = document.querySelector('.ar-pager-summary');
+      const nav = document.querySelector('.ar-pager-nav');
       const jump = document.querySelector('.ar-page-jump');
-      const next = [...(controls?.querySelectorAll(':scope > a') || [])].find((el) => el.textContent.trim() === '다음');
-      const pageLink = controls?.querySelector('.ar-pages a:last-child');
+      const meta = jump?.querySelector('.ar-page-jump-meta');
+      const next = [...(nav?.querySelectorAll('a') || [])].find((el) => el.textContent.trim() === '다음');
+      const pageLink = nav?.querySelector('.ar-pages a:last-child');
+      const rootBox = root?.getBoundingClientRect();
+      const summaryBox = summary?.getBoundingClientRect();
+      const navBox = nav?.getBoundingClientRect();
       const jumpBox = jump?.getBoundingClientRect();
       const nextBox = next?.getBoundingClientRect();
       const pageBox = pageLink?.getBoundingClientRect();
       const goBox = jump?.querySelector('input[name="go"]')?.getBoundingClientRect();
       const moveBox = jump?.querySelector('button')?.getBoundingClientRect();
+      const mid = rootBox ? rootBox.left + rootBox.width / 2 : 0;
       return {
         hasJump: Boolean(jump),
-        insideControls: Boolean(controls?.contains(jump)),
+        hasNav: Boolean(nav),
+        hasSummary: Boolean(summary),
+        hasMeta: Boolean(meta && /1\s*\/\s*1/.test(meta.textContent || '')),
+        noControls: !document.querySelector('.ar-pager-controls'),
         goName: jump?.querySelector('input[name="go"]')?.name || '',
         label: jump?.querySelector('button')?.textContent.trim() || '',
-        beforeNext: Boolean(next && jump && (jump.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING)),
+        afterNext: Boolean(next && jump && (next.compareDocumentPosition(jump) & Node.DOCUMENT_POSITION_FOLLOWING)),
         afterPage: Boolean(pageLink && jump && (pageLink.compareDocumentPosition(jump) & Node.DOCUMENT_POSITION_FOLLOWING)),
-        gap: nextBox && jumpBox ? nextBox.left - jumpBox.right : 999,
-        pageGap: pageBox && jumpBox ? jumpBox.left - pageBox.right : 999,
-        aligned: nextBox && jumpBox ? Math.abs(nextBox.top - jumpBox.top) <= 6 : false,
+        summaryLeft: Boolean(summaryBox && rootBox && summaryBox.left <= rootBox.left + 24),
+        navCentered: Boolean(navBox && rootBox && Math.abs((navBox.left + navBox.width / 2) - mid) <= 48),
+        jumpRight: Boolean(jumpBox && rootBox && jumpBox.right >= rootBox.right - 24),
+        aligned: nextBox && jumpBox ? Math.abs(nextBox.top - jumpBox.top) <= 8 : false,
         goWidth: goBox ? Math.round(goBox.width) : 0,
-        moveHeight: moveBox ? Math.round(moveBox.height) : 0
+        moveHeight: moveBox ? Math.round(moveBox.height) : 0,
+        pageGap: pageBox && jumpBox ? jumpBox.left - pageBox.right : 999
       };
     });
     assert.equal(pager.hasJump, true, '페이지 이동 UI가 없다');
-    assert.equal(pager.insideControls, true, '페이지 이동이 다음 버튼 옆에 없다');
-    assert.equal(pager.beforeNext, true, '페이지 이동이 다음 버튼 앞에 없다');
-    assert.equal(pager.afterPage, true, '페이지 이동이 마지막 페이지 번호 뒤에 없다');
+    assert.equal(pager.hasNav, true, '이전/번호/다음 묶음이 없다');
+    assert.equal(pager.hasSummary, true, '요약 문구가 없다');
+    assert.equal(pager.hasMeta, true, '현재/전체 페이지 표시가 없다');
+    assert.equal(pager.noControls, true, '구 controls 래퍼가 남아 있다');
+    assert.equal(pager.afterNext, true, '바로가기가 다음 버튼 뒤에 없다');
+    assert.equal(pager.afterPage, true, '바로가기가 페이지 번호 뒤에 없다');
     assert.equal(pager.goName, 'go');
     assert.equal(pager.label, '이동');
-    assert.ok(pager.gap >= 0 && pager.gap <= 48, '페이지 이동이 다음에서 너무 떨어져 있다: ' + pager.gap);
-    assert.ok(pager.pageGap >= 0 && pager.pageGap <= 48, '페이지 이동이 번호에서 너무 떨어져 있다: ' + pager.pageGap);
-    assert.equal(pager.aligned, true, '페이지 이동이 다음과 세로로 안 맞는다');
-    assert.ok(pager.goWidth >= 50 && pager.goWidth <= 90, '페이지 숫자 칸 크기가 달라졌다: ' + pager.goWidth);
+    assert.equal(pager.summaryLeft, true, '요약이 왼쪽에 없다');
+    assert.equal(pager.navCentered, true, '페이지 번호가 가운데에 없다');
+    assert.equal(pager.jumpRight, true, '바로가기가 오른쪽에 없다');
+    assert.equal(pager.aligned, true, '바로가기가 다음과 세로로 안 맞는다');
+    assert.ok(pager.pageGap >= 8, '바로가기가 번호에 너무 붙어 있다: ' + pager.pageGap);
+    assert.ok(pager.goWidth >= 40 && pager.goWidth <= 90, '페이지 숫자 칸 크기가 달라졌다: ' + pager.goWidth);
     assert.ok(pager.moveHeight >= 28 && pager.moveHeight <= 40, '이동 버튼 크기가 달라졌다: ' + pager.moveHeight);
     await page.locator('.ar-pager').screenshot({ path: path.join(dateShotDir, 'archive-pager-jump.png') });
 

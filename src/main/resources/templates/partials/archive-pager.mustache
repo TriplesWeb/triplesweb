@@ -1,30 +1,35 @@
 <nav class="ar-panel ar-pager" aria-label="{{#imageArchive}}사진 페이지{{/imageArchive}}{{^imageArchive}}영상 페이지{{/imageArchive}}">
-    <span class="ar-pager-summary">총 {{archiveTotal}}{{#imageArchive}}장{{/imageArchive}}{{^imageArchive}}개{{/imageArchive}} 중 {{archivePageCount}}{{#imageArchive}}장{{/imageArchive}}{{^imageArchive}}개{{/imageArchive}} 표시 (페이지 {{archivePageDisplay}} / {{archiveTotalPages}})</span>
-    <div class="ar-pager-controls">
-        {{#hasArchivePrev}}<a href="{{archivePath}}?page={{archivePrevPage}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{sizeQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">이전</a>{{/hasArchivePrev}}
-        {{^hasArchivePrev}}<a class="is-disabled" aria-disabled="true">이전</a>{{/hasArchivePrev}}
+    <p class="ar-pager-summary">
+        <span class="ar-pager-count">총 {{archiveTotal}}{{#imageArchive}}장{{/imageArchive}}{{^imageArchive}}개{{/imageArchive}}</span>
+        <span class="ar-pager-sep" aria-hidden="true">·</span>
+        <span>{{archivePageCount}}{{#imageArchive}}장{{/imageArchive}}{{^imageArchive}}개{{/imageArchive}} 표시</span>
+    </p>
+    <div class="ar-pager-nav" role="group" aria-label="페이지 번호">
+        {{#hasArchivePrev}}<a class="ar-pager-step" href="{{archivePath}}?page={{archivePrevPage}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{sizeQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">이전</a>{{/hasArchivePrev}}
+        {{^hasArchivePrev}}<a class="ar-pager-step is-disabled" aria-disabled="true">이전</a>{{/hasArchivePrev}}
         <div class="ar-pages">
-            {{#archivePages}}<a class="{{#active}}is-current{{/active}}" href="{{archivePath}}?page={{num}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{sizeQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">{{label}}</a>{{/archivePages}}
+            {{#archivePages}}<a class="ar-pager-num{{#active}} is-current{{/active}}" href="{{archivePath}}?page={{num}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{sizeQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}"{{#active}} aria-current="page"{{/active}}>{{label}}</a>{{/archivePages}}
         </div>
-        <form class="ar-page-jump" method="get" action="{{archivePath}}" aria-label="페이지 이동">
-            {{#videoArchive}}<input type="hidden" name="type" value="video">{{/videoArchive}}
-            {{#folderKey}}<input type="hidden" name="folder" value="{{folderKey}}">{{/folderKey}}
-            {{#hasCombo}}<input type="hidden" name="combo" value="{{comboValue}}">{{/hasCombo}}
-            {{#hasSourceFilter}}<input type="hidden" name="source" value="{{sourceKey}}">{{/hasSourceFilter}}
-            {{#showPhotoDensity}}<input type="hidden" name="size" value="{{archivePageSize}}">{{/showPhotoDensity}}
-            {{#hasChemFilter}}<input type="hidden" name="chem" value="{{chemKey}}">{{/hasChemFilter}}
-            {{#hasQuery}}<input type="hidden" name="q" value="{{query}}">{{/hasQuery}}
-            {{#on}}<input type="hidden" name="on" value="{{on}}">{{/on}}
-            {{#from}}<input type="hidden" name="from" value="{{from}}">{{/from}}
-            {{#to}}<input type="hidden" name="to" value="{{to}}">{{/to}}
-            {{#selectedMembers}}<input type="hidden" name="members" value="{{.}}">{{/selectedMembers}}
-            <label>
-                <span>페이지</span>
-                <input type="number" name="go" min="1"{{#archiveTotalPages}} max="{{archiveTotalPages}}"{{/archiveTotalPages}} value="{{archivePageDisplay}}" aria-label="이동할 페이지">
-            </label>
-            <button type="submit">이동</button>
-        </form>
-        {{#hasArchiveNext}}<a href="{{archivePath}}?page={{archiveNextPage}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{sizeQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">다음</a>{{/hasArchiveNext}}
-        {{^hasArchiveNext}}<a class="is-disabled" aria-disabled="true">다음</a>{{/hasArchiveNext}}
+        {{#hasArchiveNext}}<a class="ar-pager-step" href="{{archivePath}}?page={{archiveNextPage}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{sizeQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">다음</a>{{/hasArchiveNext}}
+        {{^hasArchiveNext}}<a class="ar-pager-step is-disabled" aria-disabled="true">다음</a>{{/hasArchiveNext}}
     </div>
+    <form class="ar-page-jump" method="get" action="{{archivePath}}" aria-label="페이지 이동">
+        {{#videoArchive}}<input type="hidden" name="type" value="video">{{/videoArchive}}
+        {{#folderKey}}<input type="hidden" name="folder" value="{{folderKey}}">{{/folderKey}}
+        {{#hasCombo}}<input type="hidden" name="combo" value="{{comboValue}}">{{/hasCombo}}
+        {{#hasSourceFilter}}<input type="hidden" name="source" value="{{sourceKey}}">{{/hasSourceFilter}}
+        {{#hasChemFilter}}<input type="hidden" name="chem" value="{{chemKey}}">{{/hasChemFilter}}
+        {{#hasCustomArchiveSize}}<input type="hidden" name="size" value="{{archiveSize}}">{{/hasCustomArchiveSize}}
+        {{#hasQuery}}<input type="hidden" name="q" value="{{query}}">{{/hasQuery}}
+        {{#on}}<input type="hidden" name="on" value="{{on}}">{{/on}}
+        {{#from}}<input type="hidden" name="from" value="{{from}}">{{/from}}
+        {{#to}}<input type="hidden" name="to" value="{{to}}">{{/to}}
+        {{#selectedMembers}}<input type="hidden" name="members" value="{{.}}">{{/selectedMembers}}
+        <span class="ar-page-jump-meta">{{archivePageDisplay}}<span aria-hidden="true">/</span>{{archiveTotalPages}}</span>
+        <label class="ar-page-jump-field">
+            <span class="visually-hidden">이동할 페이지</span>
+            <input type="number" name="go" min="1"{{#archiveTotalPages}} max="{{archiveTotalPages}}"{{/archiveTotalPages}} value="{{archivePageDisplay}}" aria-label="이동할 페이지">
+        </label>
+        <button type="submit">이동</button>
+    </form>
 </nav>

@@ -2,6 +2,7 @@ package com.example.triplesweb.controller;
 
 import com.example.triplesweb.entity.UploadBlob;
 import com.example.triplesweb.service.UploadContentStore;
+import com.example.triplesweb.service.UploadImageResizeService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -36,11 +37,13 @@ public class UploadsController {
     private final Path uploadRootReal;
     private final String fallbackBaseUrl;
     private final UploadContentStore uploadContentStore;
+    private final UploadImageResizeService imageResizeService;
 
     public UploadsController(
             @Value("${file.upload-dir}") String uploadDir,
             @Value("${upload.fallback-base-url:}") String fallbackBaseUrl,
-            UploadContentStore uploadContentStore
+            UploadContentStore uploadContentStore,
+            UploadImageResizeService imageResizeService
     ) {
         this.uploadRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
         Path real = this.uploadRoot;
@@ -55,6 +58,7 @@ public class UploadsController {
                 ? fallbackBaseUrl.trim().replaceAll("/+$", "")
                 : "";
         this.uploadContentStore = uploadContentStore;
+        this.imageResizeService = imageResizeService;
     }
 
     @RequestMapping(value = "/uploads/**", method = {RequestMethod.GET, RequestMethod.HEAD})
@@ -80,7 +84,7 @@ public class UploadsController {
             } catch (IOException e) {
                 return ResponseEntity.notFound().build();
             }
-            return fileResponse(local);
+            return fileResponse(maybeCardVariant(local, request), local);
         }
 
         UploadBlob stored = uploadContentStore.find(relative).orElse(null);
@@ -94,7 +98,7 @@ public class UploadsController {
                 }
                 if (Files.isRegularFile(local) && Files.isReadable(local)
                         && local.toRealPath().startsWith(uploadRootReal)) {
-                    return fileResponse(local);
+                    return fileResponse(maybeCardVariant(local, request), local);
                 }
             } catch (IOException ignored) {
                 // 디스크 캐시 실패 시 메모리 응답으로 이어간다.
@@ -128,7 +132,8 @@ public class UploadsController {
                 .build();
     }
 
-    private ResponseEntity<Resource> fileResponse(Path local) {
+    private ResponseEntity<Resource> fileResponse(Path preferred, Path fallback) {
+        Path local = preferred != null ? preferred : fallback;
         MediaType type = imageType(local.getFileName().toString(), MediaTypeFactory.getMediaType(local.getFileName().toString())
                 .orElse(MediaType.APPLICATION_OCTET_STREAM));
         return ResponseEntity.ok()
@@ -137,6 +142,29 @@ public class UploadsController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, safeDisposition(type))
                 .contentType(type)
                 .body(new FileSystemResource(local));
+    }
+
+    private Path maybeCardVariant(Path local, HttpServletRequest request) {
+        Integer width = parseCardWidth(request.getParameter("w"));
+        if (width == null || imageResizeService == null) return null;
+        try {
+            Path variant = imageResizeService.ensureJpegVariant(local, width);
+            if (variant == null) return null;
+            if (!variant.toRealPath().startsWith(uploadRootReal)) return null;
+            return variant;
+        } catch (IOException ignored) {
+            return null;
+        }
+    }
+
+    private static Integer parseCardWidth(String raw) {
+        if (!StringUtils.hasText(raw)) return null;
+        try {
+            int width = Integer.parseInt(raw.trim());
+            return UploadImageResizeService.isAllowedWidth(width) ? width : null;
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 
     private static String safeDisposition(MediaType type) {
