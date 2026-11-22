@@ -23,9 +23,6 @@
     let index = 0;
     let swipeX = null;
     let swipeY = null;
-    let suppressSwipe = false;
-    let pan = { x: 0, y: 0, w: 0, h: 0 };
-    let drag = null;
 
     function parseImages(card) {
         if (!card) return [];
@@ -135,61 +132,22 @@
         members.style.setProperty('--detail-chip', chip + 'px');
     }
 
-    function clearPan() {
-        drag = null;
+    function resetImageFrame() {
         if (!image) return;
         image.classList.remove('is-pannable', 'is-panning');
         image.style.width = '';
         image.style.height = '';
         image.style.transform = '';
-    }
-
-    function applyPan() {
-        if (!image) return;
-        image.style.transform = 'translate(' + pan.x + 'px, ' + pan.y + 'px)';
-    }
-
-    function clampPan() {
-        if (!photo) return;
-        const box = photo.getBoundingClientRect();
-        const minX = Math.min(0, box.width - pan.w);
-        const minY = Math.min(0, box.height - pan.h);
-        pan.x = Math.min(0, Math.max(minX, pan.x));
-        pan.y = Math.min(0, Math.max(minY, pan.y));
-    }
-
-    function layoutPan() {
-        if (!photo || !image || urls.length < 2) {
-            clearPan();
-            return;
-        }
-        const box = photo.getBoundingClientRect();
-        const naturalWidth = image.naturalWidth;
-        const naturalHeight = image.naturalHeight;
-        if (!naturalWidth || !naturalHeight || box.width < 2 || box.height < 2) return;
-        const scale = Math.max(box.width / naturalWidth, box.height / naturalHeight, 1);
-        pan.w = naturalWidth * scale;
-        pan.h = naturalHeight * scale;
-        image.style.width = pan.w + 'px';
-        image.style.height = pan.h + 'px';
-        pan.x = (box.width - pan.w) / 2;
-        pan.y = (box.height - pan.h) / 2;
-        clampPan();
-        applyPan();
-        const overflows = pan.w > box.width + 1 || pan.h > box.height + 1;
-        image.classList.toggle('is-pannable', overflows);
+        photo?.classList.remove('is-pan');
     }
 
     function showImage() {
         if (!image || !activeCard) return;
         const url = urls[index] || '';
-        const multi = urls.length > 1;
-        photo?.classList.toggle('is-pan', multi);
-        if (!multi) clearPan();
+        // 큰 틀(object-fit: contain) 안에 맞춰 넣고, cover/팬으로 잘리지 않게 한다.
+        resetImageFrame();
         image.alt = descriptionText(activeCard) || '사진';
-        image.onload = () => layoutPan();
         image.src = url;
-        if (image.complete) layoutPan();
         showCast();
     }
 
@@ -243,7 +201,6 @@
         detail.hidden = false;
         document.body.style.overflow = 'hidden';
         fitMembers();
-        layoutPan();
         detail.querySelector('[data-ar-close]')?.focus();
     }
 
@@ -312,44 +269,14 @@
             const dy = event.changedTouches[0].clientY - swipeY;
             swipeX = null;
             swipeY = null;
-            if (suppressSwipe) {
-                suppressSwipe = false;
-                return;
-            }
             if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy)) return;
             goTo(index + (dx < 0 ? 1 : -1));
         }, { passive: true });
-        photo.addEventListener('pointerdown', event => {
-            if (!image?.classList.contains('is-pannable') || event.button > 0) return;
-            if (event.target.closest('button, a, input, textarea, select')) return;
-            drag = { id: event.pointerId, x: event.clientX, y: event.clientY, px: pan.x, py: pan.y, moved: false };
-            image.classList.add('is-panning');
-            photo.setPointerCapture?.(event.pointerId);
-        });
-        photo.addEventListener('pointermove', event => {
-            if (!drag || drag.id !== event.pointerId) return;
-            const dx = event.clientX - drag.x;
-            const dy = event.clientY - drag.y;
-            if (Math.abs(dx) + Math.abs(dy) > 4) drag.moved = true;
-            pan.x = drag.px + dx;
-            pan.y = drag.py + dy;
-            clampPan();
-            applyPan();
-        });
-        const endDrag = event => {
-            if (!drag || drag.id !== event.pointerId) return;
-            suppressSwipe = drag.moved;
-            drag = null;
-            image?.classList.remove('is-panning');
-        };
-        photo.addEventListener('pointerup', endDrag);
-        photo.addEventListener('pointercancel', endDrag);
     }
 
     window.addEventListener('resize', () => {
         if (detail.hidden) return;
         fitMembers();
-        layoutPan();
     });
 
     document.addEventListener('click', event => {
