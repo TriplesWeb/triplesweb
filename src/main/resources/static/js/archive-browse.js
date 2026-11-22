@@ -244,9 +244,26 @@
     const memberCount = document.getElementById('archiveMemberCount');
     const memberLabel = memberToggle?.querySelector('[data-member-toggle-label]');
     const defaultMemberLabel = memberLabel?.textContent.trim() || '멤버 선택';
-    const folderTitle = document.querySelector('.ar-folder-title');
-    const baseFolderTitle = folderTitle?.dataset.baseTitle || folderTitle?.textContent.trim() || '';
     const chemMatches = panel?.querySelector('[data-chem-matches]');
+
+    function folderTitleEl() {
+        return document.querySelector('.ar-folder-title');
+    }
+
+    function baseFolderTitleText() {
+        const title = folderTitleEl();
+        return title?.dataset.baseTitle || title?.textContent.trim() || '';
+    }
+
+    function syncFolderTitleFrom(doc) {
+        const current = folderTitleEl();
+        const next = doc.querySelector('.ar-folder-title');
+        if (!current || !next) return;
+        current.className = next.className;
+        if (next.dataset.baseTitle != null) current.dataset.baseTitle = next.dataset.baseTitle;
+        else delete current.dataset.baseTitle;
+        current.innerHTML = next.innerHTML;
+    }
 
     function memberKey(name) {
         return String(name || '').trim().toLowerCase().replace(/\s+/g, '');
@@ -416,8 +433,9 @@
                 ? selected[0]
                 : (exact ? exact.name : (count ? count + '명' : defaultMemberLabel));
         }
+        const folderTitle = folderTitleEl();
         if (chem && folderTitle && !folderTitle.classList.contains('is-solo') && (exact || Array.isArray(values) || !chem.value)) {
-            folderTitle.textContent = exact ? exact.name : baseFolderTitle;
+            folderTitle.textContent = exact ? exact.name : baseFolderTitleText();
         }
         memberToggle?.classList.toggle('has-selection', count > 0);
         memberToggle?.classList.toggle('is-open', Boolean(panel && !panel.hidden));
@@ -576,6 +594,14 @@
             }
             const nextSize = doc.getElementById('archivePageSize');
             if (nextSize) syncArchiveSize(nextSize.value || '10');
+            syncFolderTitleFrom(doc);
+            const nextHeadline = doc.querySelector('.ar-headline');
+            const headline = document.querySelector('.ar-headline');
+            if (nextHeadline && headline) {
+                const nextColor = nextHeadline.style.getPropertyValue('--folder-color');
+                if (nextColor) headline.style.setProperty('--folder-color', nextColor);
+                else headline.style.removeProperty('--folder-color');
+            }
             for (const selector of ['.ar-type-tabs', '.ar-source-tabs']) {
                 const current = document.querySelector(selector);
                 const next = doc.querySelector(selector);
