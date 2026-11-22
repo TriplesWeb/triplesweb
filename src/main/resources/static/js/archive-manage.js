@@ -827,6 +827,16 @@
         });
     }
 
+    function fileNameFromUrl(url) {
+        if (!url) return '';
+        try {
+            const path = new URL(url, window.location.origin).pathname;
+            return decodeURIComponent(path.split('/').filter(Boolean).pop() || '');
+        } catch (_) {
+            return String(url).split('?')[0].split('/').filter(Boolean).pop() || '';
+        }
+    }
+
     function syncFileName(input) {
         const label = input?.closest('.ar-file')?.querySelector('[data-file-name]');
         if (!label) return;
@@ -844,12 +854,50 @@
         const slots = kind === 'image' && input.name === 'file' ? slotsOf(form) : [];
         const files = Array.from(input.files || []);
         const activeSlot = Number.isInteger(form?._archiveSlotPreviewIndex) ? form._archiveSlotPreviewIndex : -1;
-        const hasMedia = slots.length > 0 || files.length > 0;
+        const originalVideo = kind === 'video' && input.name === 'file' ? (form?.dataset.originalUrl || '') : '';
+        const hasMedia = slots.length > 0 || files.length > 0 || !!originalVideo;
         label.classList.toggle('has-files', hasMedia);
-        label.classList.toggle('has-thumbs', slots.length > 0 || files.some(isImageFile));
+        label.classList.toggle('has-thumbs', slots.length > 0 || files.some(isImageFile) || !!originalVideo);
         if (!hasMedia) {
             label.replaceChildren();
             label.textContent = '선택된 파일 없음';
+            return;
+        }
+        if (kind === 'video' && input.name === 'file' && !files.length && originalVideo) {
+            const name = fileNameFromUrl(originalVideo) || '현재 영상';
+            const poster = form.dataset.thumbnailUrl || form.dataset.originalThumbnail || '';
+            label.replaceChildren();
+            const tile = document.createElement('div');
+            tile.className = 'ar-file-tile is-active is-set';
+            tile.title = name;
+            const thumb = document.createElement('button');
+            thumb.type = 'button';
+            thumb.className = 'ar-file-thumb';
+            thumb.setAttribute('aria-label', name + ' 미리보기');
+            if (poster) {
+                const img = document.createElement('img');
+                img.alt = '';
+                img.decoding = 'async';
+                img.src = poster;
+                thumb.appendChild(img);
+            } else {
+                thumb.textContent = '▶';
+            }
+            thumb.addEventListener('click', event => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (preview) showPreview(preview, originalVideo);
+            });
+            const mark = document.createElement('span');
+            mark.className = 'ar-file-cover';
+            mark.setAttribute('aria-pressed', 'true');
+            mark.textContent = '현재 영상';
+            tile.append(thumb, mark);
+            label.appendChild(tile);
+            const caption = document.createElement('span');
+            caption.className = 'ar-file-current-name';
+            caption.textContent = name;
+            label.appendChild(caption);
             return;
         }
         label.replaceChildren();
@@ -1187,17 +1235,20 @@
         return true;
     }
 
-    const COVER_FRAME_COUNT = 10;
+    const COVER_FILM_COUNT = 12;
+    const COVER_SLIDER_MAX = 1000;
 
     function coverPicker(form) {
         return form?.querySelector('[data-cover-picker]') || null;
     }
 
+    function formatCoverSeconds(seconds) {
+        const value = Math.max(0, Number(seconds) || 0);
+        return (Math.round(value * 10) / 10).toFixed(1).replace(/\.0$/, '') + '초';
+    }
+
     function formatCoverTime(seconds, duration) {
-        const now = Math.max(0, Number(seconds) || 0);
-        const total = Math.max(0, Number(duration) || 0);
-        const one = (value) => (Math.round(value * 10) / 10).toFixed(1).replace(/\.0$/, '');
-        return one(now) + '초/' + one(total) + '초';
+        return formatCoverSeconds(seconds) + ' / ' + formatCoverSeconds(duration);
     }
 
     function waitMediaEvent(element, eventName) {
@@ -1217,6 +1268,15 @@
 
     function seekVideo(video, time) {
         return new Promise((resolve, reject) => {
+            if (!video) {
+                reject(new Error('no-video'));
+                return;
+            }
+            const target = Math.max(0, time);
+            if (Math.abs((video.currentTime || 0) - target) < 0.001) {
+                resolve();
+                return;
+            }
             const onSeeked = () => {
                 video.removeEventListener('error', onErr);
                 resolve();
@@ -1228,7 +1288,7 @@
             video.addEventListener('seeked', onSeeked, { once: true });
             video.addEventListener('error', onErr, { once: true });
             try {
-                video.currentTime = Math.max(0, time);
+                video.currentTime = target;
             } catch (error) {
                 video.removeEventListener('seeked', onSeeked);
                 video.removeEventListener('error', onErr);
@@ -1237,8 +1297,8 @@
         });
     }
 
-    function captureVideoFrame(video, time, quality = 0.86) {
-        return seekVideo(video, time).then(() => new Promise((resolve, reject) => {
+    function blobFromVideo(video, quality = 0.86) {
+        return new Promise((resolve, reject) => {
             const width = video.videoWidth || 0;
             const height = video.videoHeight || 0;
             if (!width || !height) {
@@ -1261,19 +1321,54 @@
                 }
                 resolve(blob);
             }, 'image/jpeg', quality);
-        }));
+        });
+    }
+
+    function captureVideoFrame(video, time, quality = 0.86) {
+        return seekVideo(video, time).then(() => blobFromVideo(video, quality));
+    }
+
+    function coverTimeFromSlider(form, sliderValue) {
+        const duration = form._archiveCover?.duration || 0;
+        if (duration <= 0) return 0;
+        const ratio = Math.min(1, Math.max(0, Number(sliderValue) / COVER_SLIDER_MAX));
+        return ratio * Math.max(0, duration - 0.05);
     }
 
     function releaseCoverFrames(form) {
         const state = form?._archiveCover;
-        if (!state?.frames) return;
-        state.frames.forEach((frame) => {
-            if (frame.url) URL.revokeObjectURL(frame.url);
-        });
-        state.frames = [];
+        if (!state) return;
+        (state.filmUrls || []).forEach((url) => URL.revokeObjectURL(url));
+        state.filmUrls = [];
         state.duration = 0;
-        state.sourceUrl = '';
+        state.ready = false;
+        state.time = 0;
+        if (state.objectUrl) {
+            URL.revokeObjectURL(state.objectUrl);
+            state.objectUrl = '';
+        }
         state.token = (state.token || 0) + 1;
+        const scrub = form.querySelector('[data-cover-scrub]');
+        const slider = form.querySelector('[data-cover-slider]');
+        const film = form.querySelector('[data-cover-frames]');
+        const timeLabel = form.querySelector('[data-cover-time]');
+        const stageVideo = form.querySelector('[data-cover-stage-video]');
+        if (film) film.replaceChildren();
+        if (scrub) scrub.hidden = true;
+        if (slider) {
+            slider.value = '0';
+            slider.disabled = true;
+        }
+        if (timeLabel) {
+            timeLabel.hidden = true;
+            timeLabel.textContent = '';
+        }
+        if (stageVideo) {
+            stageVideo.pause?.();
+            stageVideo.removeAttribute('src');
+            stageVideo.load?.();
+            stageVideo.hidden = true;
+        }
     }
 
     function setCoverUiState(form, stateName) {
@@ -1283,66 +1378,104 @@
         if (stateName) picker.classList.add(stateName);
     }
 
-    function markSelectedFrame(form, index) {
-        const frames = form.querySelectorAll('[data-cover-frames] .ar-cover-frame');
-        frames.forEach((button, i) => {
-            const selected = i === index;
-            button.setAttribute('aria-selected', String(selected));
-            if (selected) button.classList.add('is-success');
-            else button.classList.remove('is-success');
-        });
+    function updateCoverWindow(form, sliderValue) {
+        const windowEl = form.querySelector('[data-cover-window]');
+        const scrub = form.querySelector('[data-cover-scrub]');
+        if (!windowEl || !scrub) return;
+        const max = COVER_SLIDER_MAX;
+        const ratio = Math.min(1, Math.max(0, Number(sliderValue) / max));
+        const scrubWidth = scrub.clientWidth || 1;
+        const windowWidth = windowEl.offsetWidth || scrubWidth * 0.18;
+        const travel = Math.max(0, scrubWidth - windowWidth);
+        windowEl.style.transform = 'translateX(' + (ratio * travel) + 'px)';
     }
 
-    function renderCoverFrames(form) {
-        const rail = form?.querySelector('[data-cover-frames]');
-        if (!rail) return;
-        const state = form._archiveCover || { frames: [], duration: 0 };
-        rail.replaceChildren();
-        state.frames.forEach((frame, index) => {
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'ar-cover-frame';
-            button.setAttribute('role', 'option');
-            button.setAttribute('aria-selected', 'false');
-            button.dataset.coverFrameIndex = String(index);
+    function showCoverScrubPreview(form) {
+        const stageVideo = form.querySelector('[data-cover-stage-video]');
+        const stageImage = form.querySelector('[data-cover-stage-image]');
+        const empty = form.querySelector('[data-cover-empty]');
+        if (stageImage) {
+            stageImage.hidden = true;
+            stageImage.removeAttribute('src');
+        }
+        if (stageVideo) stageVideo.hidden = false;
+        if (empty) empty.hidden = true;
+    }
+
+    function renderCoverFilm(form, urls) {
+        const film = form.querySelector('[data-cover-frames]');
+        if (!film) return;
+        film.replaceChildren();
+        urls.forEach((url) => {
             const img = document.createElement('img');
-            img.src = frame.url;
+            img.src = url;
             img.alt = '';
             img.draggable = false;
-            button.append(img);
-            if (index === 0) {
-                const stamp = document.createElement('span');
-                stamp.className = 'ar-cover-frame-time';
-                stamp.textContent = formatCoverTime(frame.time, state.duration);
-                button.append(stamp);
-            }
-            button.addEventListener('click', () => {
-                void selectCoverFrame(form, index);
-            });
-            rail.append(button);
+            film.append(img);
         });
     }
 
-    async function selectCoverFrame(form, index, { auto = false } = {}) {
+    async function commitCoverAtTime(form, time, { auto = false } = {}) {
         const state = form._archiveCover;
-        const frame = state?.frames?.[index];
-        if (!frame) return false;
+        const video = form.querySelector('[data-cover-stage-video]');
         const input = form.querySelector('[name="thumbnail"]');
-        if (!input) return false;
+        if (!state?.ready || !video || !input) return false;
         const clear = form.querySelector('[name="clearThumbnail"]');
         if (clear) clear.value = 'false';
-        const file = new File([frame.blob], 'cover-frame-' + index + '.jpg', { type: 'image/jpeg' });
-        releaseUrl(input._archiveLastFile);
-        setInputFiles(input, [file], { silent: true });
-        input._archiveLastFile = file;
-        form._archiveCoverSource = 'frame';
-        form._archiveCoverIndex = index;
-        showThumbnail(form, rememberUrl(file), {
-            info: auto ? '첫 장면 자동 커버' : formatCoverTime(frame.time, state.duration) + ' 프레임'
-        });
-        markSelectedFrame(form, index);
-        setCoverUiState(form, 'is-success');
-        return true;
+        form.dataset.thumbnailPending = 'true';
+        try {
+            const blob = await captureVideoFrame(video, time);
+            if (!form._archiveCover || form._archiveCover.token !== state.token) return false;
+            const file = new File([blob], 'cover-' + Math.round(time * 10) + '.jpg', { type: 'image/jpeg' });
+            releaseUrl(input._archiveLastFile);
+            setInputFiles(input, [file], { silent: true });
+            input._archiveLastFile = file;
+            form._archiveCoverSource = 'scrub';
+            form._archiveCover.time = time;
+            const url = rememberUrl(file);
+            form.dataset.thumbnailUrl = url;
+            delete form.dataset.thumbnailPending;
+            delete form.dataset.thumbnailInvalid;
+            const infoNode = form.querySelector('[data-thumbnail-info]');
+            if (infoNode) {
+                infoNode.textContent = auto
+                    ? '첫 장면 자동 커버'
+                    : formatCoverTime(time, state.duration);
+            }
+            showCoverScrubPreview(form);
+            syncThumbnail(form);
+            setCoverUiState(form, 'is-success');
+            return true;
+        } catch (_) {
+            delete form.dataset.thumbnailPending;
+            form.dataset.thumbnailInvalid = 'true';
+            setCoverUiState(form, 'is-error');
+            return false;
+        }
+    }
+
+    async function scrubCoverTo(form, sliderValue, { commit = false, auto = false } = {}) {
+        const state = form._archiveCover;
+        const video = form.querySelector('[data-cover-stage-video]');
+        const timeLabel = form.querySelector('[data-cover-time]');
+        if (!state?.ready || !video) return;
+        const time = coverTimeFromSlider(form, sliderValue);
+        state.time = time;
+        updateCoverWindow(form, sliderValue);
+        if (timeLabel) {
+            timeLabel.hidden = false;
+            // 좁은 선택 창에는 현재 시각만 — 전체 길이는 아래 상태에 둔다.
+            timeLabel.textContent = formatCoverSeconds(time);
+        }
+        showCoverScrubPreview(form);
+        const infoNode = form.querySelector('[data-thumbnail-info]');
+        if (infoNode && !commit) infoNode.textContent = formatCoverTime(time, state.duration);
+        try {
+            await seekVideo(video, time);
+        } catch (_) {
+            return;
+        }
+        if (commit) await commitCoverAtTime(form, time, { auto });
     }
 
     async function ensureAutoCover(form) {
@@ -1351,9 +1484,11 @@
         if (!input) return true;
         if (input.files?.[0]) return true;
         const clear = form.querySelector('[name="clearThumbnail"]');
-        if (clear?.value === 'true' && !form._archiveCover?.frames?.length) return true;
-        if (form._archiveCover?.frames?.length) {
-            return selectCoverFrame(form, 0, { auto: true });
+        if (clear?.value === 'true' && !form._archiveCover?.ready) return true;
+        if (form._archiveCover?.ready) {
+            const slider = form.querySelector('[data-cover-slider]');
+            if (slider) slider.value = '0';
+            return scrubCoverTo(form, 0, { commit: true, auto: true });
         }
         return true;
     }
@@ -1361,56 +1496,66 @@
     async function loadCoverFromVideo(form, source, { autoSelect = true } = {}) {
         if (kind !== 'video' || !form || !source) return;
         const picker = coverPicker(form);
-        const rail = form.querySelector('[data-cover-frames]');
-        if (!picker || !rail) return;
-        if (!form._archiveCover) form._archiveCover = { frames: [], duration: 0, token: 0 };
+        const scrub = form.querySelector('[data-cover-scrub]');
+        const slider = form.querySelector('[data-cover-slider]');
+        const stageVideo = form.querySelector('[data-cover-stage-video]');
+        if (!picker || !scrub || !slider || !stageVideo) return;
+        if (!form._archiveCover) form._archiveCover = { filmUrls: [], duration: 0, token: 0 };
         releaseCoverFrames(form);
         const token = form._archiveCover.token;
-        rail.setAttribute('aria-busy', 'true');
+        scrub.hidden = false;
+        slider.disabled = true;
+        slider.classList.add('is-loading');
         setCoverUiState(form, 'is-loading');
         const info = form.querySelector('[data-thumbnail-info]');
-        if (info) info.textContent = '프레임을 읽는 중…';
-        const video = document.createElement('video');
-        video.muted = true;
-        video.playsInline = true;
-        video.preload = 'auto';
+        if (info) info.textContent = '장면을 준비하는 중…';
         const objectUrl = typeof source === 'string' ? '' : URL.createObjectURL(source);
-        if (typeof source === 'string') video.crossOrigin = 'anonymous';
-        video.src = typeof source === 'string' ? source : objectUrl;
+        if (objectUrl) form._archiveCover.objectUrl = objectUrl;
+        if (typeof source === 'string') stageVideo.crossOrigin = 'anonymous';
+        else stageVideo.removeAttribute('crossorigin');
+        stageVideo.muted = true;
+        stageVideo.playsInline = true;
+        stageVideo.preload = 'auto';
+        stageVideo.src = typeof source === 'string' ? source : objectUrl;
         try {
-            await waitMediaEvent(video, 'loadedmetadata');
+            await waitMediaEvent(stageVideo, 'loadedmetadata');
             if (token !== form._archiveCover.token) return;
-            const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
-            const count = duration > 0 ? COVER_FRAME_COUNT : 1;
-            const frames = [];
+            const duration = Number.isFinite(stageVideo.duration) && stageVideo.duration > 0 ? stageVideo.duration : 0;
+            form._archiveCover.duration = duration;
+            const count = duration > 0 ? COVER_FILM_COUNT : 1;
+            const filmUrls = [];
             for (let i = 0; i < count; i += 1) {
                 const time = count === 1 || duration <= 0
                     ? 0
                     : (i / (count - 1)) * Math.max(0, duration - 0.05);
-                const blob = await captureVideoFrame(video, time);
+                const blob = await captureVideoFrame(stageVideo, time);
                 if (token !== form._archiveCover.token) return;
-                frames.push({ time, blob, url: URL.createObjectURL(blob) });
+                filmUrls.push(URL.createObjectURL(blob));
             }
-            form._archiveCover.frames = frames;
-            form._archiveCover.duration = duration;
-            form._archiveCover.sourceUrl = video.src;
-            renderCoverFrames(form);
-            if (autoSelect) await selectCoverFrame(form, 0, { auto: true });
-            else setCoverUiState(form, '');
+            form._archiveCover.filmUrls = filmUrls;
+            form._archiveCover.ready = true;
+            renderCoverFilm(form, filmUrls);
+            slider.disabled = false;
+            slider.classList.remove('is-loading');
+            slider.value = '0';
+            updateCoverWindow(form, 0);
+            if (autoSelect) await scrubCoverTo(form, 0, { commit: true, auto: true });
+            else {
+                await scrubCoverTo(form, 0, { commit: false });
+                setCoverUiState(form, '');
+            }
         } catch (_) {
             if (token !== form._archiveCover.token) return;
             setCoverUiState(form, 'is-error');
-            if (info) info.textContent = '프레임을 읽지 못했습니다. 갤러리에서 커버를 선택해 주세요.';
+            slider.classList.add('is-error');
+            if (info) info.textContent = '장면을 읽지 못했습니다. 갤러리에서 커버를 선택해 주세요.';
             const error = form.querySelector('[data-thumbnail-error]');
             if (error) {
-                error.textContent = '영상 프레임을 추출하지 못했습니다. 갤러리 이미지로 커버를 넣을 수 있습니다.';
+                error.textContent = '영상 장면을 준비하지 못했습니다. 갤러리 이미지로 커버를 넣을 수 있습니다.';
                 error.hidden = false;
             }
         } finally {
-            rail.setAttribute('aria-busy', 'false');
-            if (objectUrl) URL.revokeObjectURL(objectUrl);
-            video.removeAttribute('src');
-            video.load();
+            slider.classList.remove('is-loading');
         }
     }
 
@@ -1439,10 +1584,10 @@
     function showThumbnail(form, url, { info } = {}) {
         if (!form) return;
         const box = form.querySelector('[data-thumbnail-preview]');
-        const picker = coverPicker(form);
         const input = form.querySelector('[name="thumbnail"]');
         const error = form.querySelector('[data-thumbnail-error]');
         const stage = form.querySelector('[data-cover-stage-image]');
+        const stageVideo = form.querySelector('[data-cover-stage-video]');
         const empty = form.querySelector('[data-cover-empty]');
         const infoNode = form.querySelector('[data-thumbnail-info]');
         const legacyImage = box?.querySelector('img');
@@ -1456,41 +1601,53 @@
             if (infoNode) {
                 infoNode.textContent = info
                     || (form._archiveCoverSource === 'gallery' && file ? file.name
-                        : (file ? (form._archiveCoverSource === 'frame' ? '선택한 프레임' : file.name) : '현재 저장된 썸네일'));
+                        : (form._archiveCoverSource === 'scrub'
+                            ? formatCoverTime(form._archiveCover?.time || 0, form._archiveCover?.duration || 0)
+                            : (file ? file.name : '현재 저장된 썸네일')));
             }
-            if (file) form.dataset.thumbnailPending = 'true';
-            const onLoad = () => { delete form.dataset.thumbnailPending; };
-            const onError = () => {
-                delete form.dataset.thumbnailPending;
-                if (input?.files?.[0]) form.dataset.thumbnailInvalid = 'true';
-                if (error) {
-                    error.textContent = '커버 이미지를 읽지 못했습니다. 다른 사진을 선택하거나 커버를 초기화해 주세요.';
-                    error.hidden = false;
+            if (form._archiveCoverSource === 'scrub' && stageVideo?.src) {
+                if (stage) {
+                    stage.hidden = true;
+                    stage.removeAttribute('src');
                 }
-                setCoverUiState(form, 'is-error');
-            };
-            if (stage) {
-                stage.hidden = false;
-                stage.onload = onLoad;
-                stage.onerror = onError;
-                stage.src = url;
+                stageVideo.hidden = false;
+                if (empty) empty.hidden = true;
+                delete form.dataset.thumbnailPending;
+            } else {
+                if (stageVideo) stageVideo.hidden = true;
+                if (file) form.dataset.thumbnailPending = 'true';
+                const onLoad = () => { delete form.dataset.thumbnailPending; };
+                const onError = () => {
+                    delete form.dataset.thumbnailPending;
+                    if (input?.files?.[0]) form.dataset.thumbnailInvalid = 'true';
+                    if (error) {
+                        error.textContent = '커버 이미지를 읽지 못했습니다. 다른 사진을 선택하거나 커버를 초기화해 주세요.';
+                        error.hidden = false;
+                    }
+                    setCoverUiState(form, 'is-error');
+                };
+                if (stage) {
+                    stage.hidden = false;
+                    stage.onload = onLoad;
+                    stage.onerror = onError;
+                    stage.src = url;
+                }
+                if (legacyImage) {
+                    legacyImage.onload = onLoad;
+                    legacyImage.onerror = onError;
+                    legacyImage.src = url;
+                }
+                if (empty) empty.hidden = true;
             }
-            if (legacyImage) {
-                legacyImage.onload = onLoad;
-                legacyImage.onerror = onError;
-                legacyImage.src = url;
-            }
-            if (empty) empty.hidden = true;
-            if (picker && form._archiveCoverSource !== 'frame') markSelectedFrame(form, -1);
         } else {
             if (stage) {
                 stage.removeAttribute('src');
                 stage.hidden = true;
             }
+            if (stageVideo) stageVideo.hidden = true;
             if (legacyImage) legacyImage.removeAttribute('src');
             if (empty) empty.hidden = false;
             if (infoNode) infoNode.textContent = '';
-            markSelectedFrame(form, -1);
         }
         syncThumbnail(form);
     }
@@ -1504,7 +1661,6 @@
         syncFileName(input);
         form.dataset.originalThumbnail = original;
         form._archiveCoverSource = original ? 'saved' : '';
-        form._archiveCoverIndex = -1;
         const clear = form.querySelector('[name="clearThumbnail"]');
         if (clear) clear.value = 'false';
         showThumbnail(form, original, { info: original ? '현재 저장된 썸네일' : '' });
@@ -1516,10 +1672,59 @@
         const input = form?.querySelector('[name="thumbnail"]');
         if (!input) return;
         const clear = form.querySelector('[name="clearThumbnail"]');
+        const slider = form.querySelector('[data-cover-slider]');
         form.querySelector('[data-cover-gallery]')?.addEventListener('click', () => {
             if (input.disabled) return;
             input.click();
         });
+        if (slider && !slider.dataset.coverBound) {
+            slider.dataset.coverBound = 'true';
+            const scrub = form.querySelector('[data-cover-scrub]');
+            const valueFromClientX = (clientX) => {
+                const rect = scrub?.getBoundingClientRect();
+                if (!rect || rect.width <= 0) return Number(slider.value) || 0;
+                const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+                return Math.round(ratio * COVER_SLIDER_MAX);
+            };
+            const onScrub = () => {
+                void scrubCoverTo(form, slider.value, { commit: false });
+            };
+            const onCommit = () => {
+                void scrubCoverTo(form, slider.value, { commit: true });
+            };
+            slider.addEventListener('input', onScrub);
+            slider.addEventListener('change', onCommit);
+            slider.addEventListener('pointerup', onCommit);
+            slider.addEventListener('touchend', onCommit);
+            if (scrub && !scrub.dataset.coverDragBound) {
+                scrub.dataset.coverDragBound = 'true';
+                let dragging = false;
+                const move = (event) => {
+                    if (!dragging || slider.disabled) return;
+                    slider.value = String(valueFromClientX(event.clientX));
+                    onScrub();
+                };
+                const end = () => {
+                    if (!dragging) return;
+                    dragging = false;
+                    window.removeEventListener('pointermove', move);
+                    window.removeEventListener('pointerup', end);
+                    onCommit();
+                };
+                scrub.addEventListener('pointerdown', (event) => {
+                    if (slider.disabled || event.target === slider) return;
+                    event.preventDefault();
+                    dragging = true;
+                    slider.value = String(valueFromClientX(event.clientX));
+                    onScrub();
+                    window.addEventListener('pointermove', move);
+                    window.addEventListener('pointerup', end);
+                });
+            }
+            window.addEventListener('resize', () => {
+                if (form._archiveCover?.ready) updateCoverWindow(form, slider.value);
+            });
+        }
         input.addEventListener('change', () => {
             releaseUrl(input._archiveLastFile);
             input._archiveLastFile = null;
@@ -1538,8 +1743,6 @@
             if (clear) clear.value = 'false';
             input._archiveLastFile = file;
             form._archiveCoverSource = 'gallery';
-            form._archiveCoverIndex = -1;
-            markSelectedFrame(form, -1);
             showThumbnail(form, rememberUrl(file), { info: file.name });
             setCoverUiState(form, 'is-success');
         });
@@ -1549,10 +1752,10 @@
             input.value = '';
             syncFileName(input);
             form._archiveCoverSource = '';
-            form._archiveCoverIndex = -1;
-            if (form._archiveCover?.frames?.length) {
+            if (form._archiveCover?.ready) {
                 if (clear) clear.value = 'false';
-                void selectCoverFrame(form, 0, { auto: true });
+                if (slider) slider.value = '0';
+                void scrubCoverTo(form, 0, { commit: true, auto: true });
                 return;
             }
             if (clear) clear.value = 'true';
@@ -1639,7 +1842,6 @@
             syncFileName(uploadFile);
         }
         releaseCoverFrames(uploadForm);
-        renderCoverFrames(uploadForm);
         resetThumbnail(uploadForm);
         const titleInput = uploadForm.querySelector("[name='title']");
         if (titleInput) titleInput.value = "";
@@ -1656,7 +1858,6 @@
         resetUploadIdempotencyKey();
         uploadForm.reset();
         releaseCoverFrames(uploadForm);
-        renderCoverFrames(uploadForm);
         resetThumbnail(uploadForm);
         setUploadStatus("");
         if (uploadFile) {
@@ -1692,7 +1893,6 @@
             syncFileName(uploadFile);
             if (kind === 'video') {
                 releaseCoverFrames(uploadForm);
-                renderCoverFrames(uploadForm);
                 resetThumbnail(uploadForm, '');
             }
             return;
@@ -1709,7 +1909,6 @@
             showPreview(uploadPreview, "");
             if (kind === 'video') {
                 releaseCoverFrames(uploadForm);
-                renderCoverFrames(uploadForm);
                 resetThumbnail(uploadForm, '');
             }
             return;
@@ -1863,7 +2062,6 @@
         if (!editForm || !button) return;
         editForm.reset();
         releaseCoverFrames(editForm);
-        renderCoverFrames(editForm);
         resetThumbnail(editForm, button.dataset.thumbnailUrl || '');
         editForm.dataset.id = button.dataset.id || "";
         const existingUrls = kind === 'image'
@@ -1995,26 +2193,7 @@
             void loadCoverFromVideo(editForm, videoFile, { autoSelect: true });
             return;
         }
-        const room = Math.max(0, 30 - keptSlots.length);
-        let nextFiles = files.filter(isImageFile);
-        if (nextFiles.length > room) {
-            window.SiteFeedback.alert('사진은 최대 30장까지 등록할 수 있습니다.');
-            nextFiles.slice(room).forEach(releaseUrl);
-            nextFiles = nextFiles.slice(0, room);
-            if (!nextFiles.length) {
-                setSlots(editForm, keptSlots, { syncInput: false });
-                editFile.value = "";
-                editFile._archiveLastFile = null;
-                editFile._archiveLastFiles = null;
-                if (keptSlots.length) previewSlot(editForm, editFile, 0);
-                else {
-                    editForm._archiveSlotPreviewIndex = -1;
-                    syncFileName(editFile);
-                    showPreview(editPreview, editForm.dataset.originalUrl || '');
-                }
-                return;
-            }
-        }
+        const nextFiles = files.filter(isImageFile);
         const nextSlots = keptSlots.concat(nextFiles.map(file => ({ kind: 'file', file })));
         setSlots(editForm, nextSlots, { syncInput: false });
         editFile._archiveLastFile = nextFiles[0] || null;

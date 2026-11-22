@@ -1,5 +1,5 @@
 /* Hallmark · component: cover-picker · genre: modern-minimal · theme: site-archive · states: 8 · contrast: pass · v2.0.0
- * critique: util admin strip; mint ring on dark frames; gallery as secondary pick
+ * critique: scrub window over film; mint handle; gallery secondary
  * answered: archive dialog chrome stays project-owned
  */
 :root {
@@ -12,6 +12,7 @@
     --ar-cover-focus: var(--site-ui-accent);
     --ar-cover-error: #e8a39a;
     --ar-cover-success: var(--site-ui-accent);
+    --ar-cover-window: color-mix(in srgb, var(--site-ui-text) 92%, transparent);
     --ar-cover-dur: 160ms;
     --ar-cover-ease: ease;
 }
@@ -53,7 +54,7 @@
     position: relative;
     display: grid;
     place-items: center;
-    min-height: 12rem;
+    min-height: 14rem;
     min-width: 0;
     overflow: clip;
     border: 1px solid var(--ar-cover-border);
@@ -61,16 +62,18 @@
     background: var(--ar-cover-stage);
 }
 
-.ar-cover-stage img {
+.ar-cover-stage img,
+.ar-cover-stage video {
     display: block;
     width: 100%;
-    max-height: 18rem;
+    max-height: 20rem;
     min-width: 0;
     object-fit: contain;
     background: var(--ar-cover-stage);
 }
 
-.ar-cover-stage img[hidden] {
+.ar-cover-stage img[hidden],
+.ar-cover-stage video[hidden] {
     display: none;
 }
 
@@ -97,86 +100,174 @@
     min-width: 0;
 }
 
-.ar-cover-frames {
-    display: flex;
-    gap: 0.35rem;
-    min-width: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 0.2rem 0.1rem;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
-}
-
-.ar-cover-frame {
+.ar-cover-scrub {
+    --ar-cover-film-h: 3.55rem;
+    --ar-cover-slider-h: 1.7rem;
+    --ar-cover-track-h: 0.25rem;
+    --ar-cover-thumb: 0.95rem;
     position: relative;
-    flex: 0 0 auto;
-    width: 3.35rem;
-    height: 4.6rem;
-    padding: 0;
+    display: grid;
+    grid-template-rows: var(--ar-cover-film-h) var(--ar-cover-slider-h);
+    min-width: 0;
+    height: calc(var(--ar-cover-film-h) + var(--ar-cover-slider-h));
     border: 1px solid var(--ar-cover-border);
-    border-radius: 0.45rem;
+    border-radius: 0.55rem;
     background: var(--ar-cover-stage);
     overflow: clip;
-    cursor: pointer;
-    scroll-snap-align: start;
-    outline: 2px solid transparent;
-    outline-offset: 1px;
-    transition: border-color var(--ar-cover-dur) var(--ar-cover-ease),
-        opacity var(--ar-cover-dur) var(--ar-cover-ease),
-        transform var(--ar-cover-dur) var(--ar-cover-ease);
 }
 
-.ar-cover-frame img {
-    display: block;
-    width: 100%;
+.ar-cover-scrub[hidden] {
+    display: none;
+}
+
+.ar-cover-film {
+    position: relative;
+    display: flex;
+    height: var(--ar-cover-film-h);
+    min-width: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.ar-cover-film img {
+    flex: 1 1 0;
+    width: 0;
+    min-width: 0;
     height: 100%;
     object-fit: cover;
 }
 
-.ar-cover-frame-time {
+.ar-cover-window {
     position: absolute;
-    left: 0.2rem;
-    bottom: 0.2rem;
-    max-width: calc(100% - 0.4rem);
-    padding: 0.08rem 0.25rem;
-    border-radius: 0.25rem;
-    background: color-mix(in srgb, var(--ar-cover-stage) 78%, transparent);
-    color: var(--ar-cover-ink);
-    font-size: 0.62rem;
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    top: 0.12rem;
+    height: calc(var(--ar-cover-film-h) - 0.24rem);
+    left: 0;
+    width: 18%;
+    min-width: 2.6rem;
+    max-width: 4.2rem;
+    border: 2px solid var(--ar-cover-window);
+    border-radius: 0.4rem;
+    box-shadow: 0 0 0 999px color-mix(in srgb, var(--ar-cover-stage) 45%, transparent);
     pointer-events: none;
+    transform: translateX(0);
+    overflow: visible;
 }
 
-.ar-cover-frame:hover,
-.ar-cover-frame.is-hover {
-    border-color: color-mix(in srgb, var(--ar-cover-accent) 55%, var(--ar-cover-border));
+.ar-cover-slider {
+    position: relative;
+    z-index: 2;
+    box-sizing: border-box;
+    /* padding/border는 WebKit range 썸 세로 정렬을 깨뜨린다 */
+    width: calc(100% - 1.1rem);
+    height: var(--ar-cover-slider-h);
+    margin: 0 auto;
+    padding: 0;
+    border: 0;
+    cursor: ew-resize;
+    appearance: none;
+    background:
+        linear-gradient(
+            to bottom,
+            color-mix(in srgb, var(--ar-cover-border) 70%, transparent) 0 1px,
+            color-mix(in srgb, var(--ar-cover-stage) 92%, #000) 1px 100%
+        );
+    outline: 2px solid transparent;
+    outline-offset: -2px;
 }
 
-.ar-cover-frame:focus-visible,
-.ar-cover-frame.is-focus {
+.ar-cover-slider::-webkit-slider-runnable-track {
+    height: var(--ar-cover-track-h);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ar-cover-border) 80%, var(--ar-cover-accent));
+}
+
+.ar-cover-slider::-moz-range-track {
+    height: var(--ar-cover-track-h);
+    border: 0;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ar-cover-border) 80%, var(--ar-cover-accent));
+}
+
+.ar-cover-slider::-webkit-slider-thumb {
+    appearance: none;
+    box-sizing: border-box;
+    width: var(--ar-cover-thumb);
+    height: var(--ar-cover-thumb);
+    /* 트랙 높이에 썸을 수직 중앙 정렬 */
+    margin-top: calc((var(--ar-cover-track-h) - var(--ar-cover-thumb)) / 2);
+    border: 2px solid var(--ar-cover-stage);
+    border-radius: 50%;
+    background: var(--ar-cover-accent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--ar-cover-accent) 35%, transparent);
+}
+
+.ar-cover-slider::-moz-range-thumb {
+    box-sizing: border-box;
+    width: var(--ar-cover-thumb);
+    height: var(--ar-cover-thumb);
+    border: 2px solid var(--ar-cover-stage);
+    border-radius: 50%;
+    background: var(--ar-cover-accent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--ar-cover-accent) 35%, transparent);
+}
+
+.ar-cover-slider:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.ar-cover-slider:focus-visible,
+.ar-cover-slider.is-focus {
     outline-color: var(--ar-cover-focus);
 }
 
-.ar-cover-frame:active,
-.ar-cover-frame.is-active {
-    transform: translateY(1px);
+.ar-cover-slider.is-hover {
+    cursor: grab;
 }
 
-.ar-cover-frame[aria-selected="true"],
-.ar-cover-frame.is-success {
-    border-color: var(--ar-cover-accent);
-    box-shadow: 0 0 0 1px var(--ar-cover-accent);
+.ar-cover-slider.is-active {
+    cursor: grabbing;
 }
 
-.ar-cover-frame:disabled,
-.ar-cover-frame.is-disabled,
-.ar-cover-frame[aria-disabled="true"] {
+.ar-cover-slider.is-disabled {
     opacity: 0.55;
     cursor: not-allowed;
+}
+
+.ar-cover-slider.is-loading {
+    cursor: wait;
+}
+
+.ar-cover-slider.is-error {
+    outline-color: var(--ar-cover-error);
+}
+
+.ar-cover-picker.is-success .ar-cover-window {
+    border-color: var(--ar-cover-accent);
+}
+
+.ar-cover-time {
+    position: absolute;
+    left: 50%;
+    bottom: 0.18rem;
+    z-index: 1;
+    width: max-content;
+    max-width: none;
+    padding: 0.1rem 0.35rem;
+    border-radius: 0.25rem;
+    background: color-mix(in srgb, var(--ar-cover-stage) 82%, transparent);
+    color: var(--ar-cover-ink);
+    font-size: 0.62rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    text-align: center;
+    pointer-events: none;
+    white-space: nowrap;
+    transform: translateX(-50%);
+}
+
+.ar-cover-time[hidden] {
+    display: none;
 }
 
 .ar-cover-gallery {
@@ -287,7 +378,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .ar-cover-frame,
     .ar-cover-gallery {
         transition: none;
     }

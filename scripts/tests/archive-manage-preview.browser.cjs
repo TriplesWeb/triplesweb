@@ -13,7 +13,10 @@ const manageJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-manage.js'
 const detailJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-detail.js'), 'utf8');
 const videoJs = fs.readFileSync(path.join(staticRoot, 'js', 'archive-video-player.js'), 'utf8');
 const videoDialog = fs.readFileSync(path.join(root, 'src/main/resources/templates/archive/archive.mustache'), 'utf8')
-  .match(/<dialog [^>]*id="archiveVideoPlayer"[\s\S]*?<\/dialog>/)[0].replace('{{mediaDateLabel}}', '영상 날짜');
+  .match(/<dialog [^>]*id="archiveVideoPlayer"[\s\S]*?<\/dialog>/)[0]
+  .replace('{{mediaDateLabel}}', '영상 날짜');
+assert.ok(videoDialog.includes('archiveVideoElement'), '영상 상세 모달 마크업을 찾지 못했다');
+assert.ok(!videoDialog.includes('원본 영상 열기'), '원본 영상 열기 링크가 남아 있다');
 
 const jiyeonLogo = '/images/archive/member-logos/24.png';
 
@@ -530,7 +533,9 @@ async function withPage(html, run) {
     await page.setViewportSize({ width: 390, height: 700 });
     await card.locator('[data-archive-video]').click();
     await dialog.waitFor({ state: 'visible' });
-    assert.equal(await dialog.locator('h2').innerText(), '지서연');
+    assert.equal(await dialog.locator('#archiveVideoTitle').innerText(), '지서연');
+    assert.equal(await dialog.locator('#archiveVideoOriginal').count(), 0);
+    assert.equal(await dialog.locator('a', { hasText: '원본 영상' }).count(), 0);
     assert.equal(await dialog.locator('time').getAttribute('datetime'), '2026-10-25');
     assert.equal(await dialog.locator('#archiveVideoSource').innerText(), '코스모룸');
     assert.equal(await dialog.locator('#archiveVideoMembers').innerText(), '지연');
