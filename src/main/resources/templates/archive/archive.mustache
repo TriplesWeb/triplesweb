@@ -320,16 +320,13 @@
     </div>
 </div>
 
-<dialog class="ar-video-player ar-dialog-panel ar-detail-panel" id="archiveVideoPlayer" aria-labelledby="archiveVideoTitle">
-    <div class="ar-detail-photo ar-video-pane">
+<dialog class="ar-video-player ar-detail-panel" id="archiveVideoPlayer" aria-labelledby="archiveVideoTitle">
+    <div class="ar-detail-photo" id="archiveVideoPane">
         <video id="archiveVideoElement" controls playsinline preload="none"></video>
-        <div class="ar-video-player-foot">
-            <p id="archiveVideoStatus" role="status" aria-live="polite" hidden></p>
-            <a id="archiveVideoOriginal" target="_blank" rel="noopener noreferrer">원본 영상 열기 ↗</a>
-        </div>
+        <p class="ar-video-status" id="archiveVideoStatus" role="status" aria-live="polite" hidden></p>
     </div>
     <div class="ar-detail-side">
-        <button type="button" class="ar-close ar-detail-close" id="archiveVideoClose" aria-label="영상 닫기" autofocus>&times;</button>
+        <button type="button" class="ar-close ar-detail-close" id="archiveVideoClose" aria-label="닫기">&times;</button>
         <div class="ar-detail-body">
             <h2 class="ar-detail-desc" id="archiveVideoTitle">영상 재생</h2>
             <div class="ar-detail-meta" id="archiveVideoMeta" hidden>
