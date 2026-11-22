@@ -320,8 +320,13 @@ ${siteMobile}
     assert.equal(toolbar.memberInTools, true);
     assert.equal(toolbar.resetInTools, true);
     assert.equal(toolbar.searchInTools, true);
-    assert.match(toolbar.resetClass, /site-btn--reset/, '초기화가 회색 유리 버튼이 아니다: ' + toolbar.resetClass);
-    assert.ok(toolbar.resetColor.includes('255') || toolbar.resetColor.includes('#fff'), '초기화 글자가 흰색이 아니다: ' + toolbar.resetColor);
+    assert.match(toolbar.resetClass, /site-btn--reset/, '초기화가 공통 reset 버튼이 아니다: ' + toolbar.resetClass);
+    assert.ok(
+      /b9cac4|141,\s*236,\s*217|0,\s*245,\s*212|185,\s*202,\s*196/i.test(toolbar.resetColor)
+        || toolbar.resetColor.includes('185')
+        || toolbar.resetColor.includes('#b9'),
+      '초기화 글자색이 outline 톤이 아니다: ' + toolbar.resetColor
+    );
     assert.equal(toolbar.resetAlign, true, '초기화가 검색창과 세로로 안 맞는다');
     assert.equal(toolbar.resetWrap, 'nowrap', '초기화 글자가 한 줄이 아니다');
     assert.equal(toolbar.resetOneLine, true, '초기화 글자가 버튼 안에서 잘린다');

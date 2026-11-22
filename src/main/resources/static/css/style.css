@@ -606,16 +606,17 @@ textarea.form-control {
     filter: none;
 }
 
+/* 초기화·리셋 — 유리 버튼 대신 사이트 outline 톤 */
 .site-btn--reset,
 .ar-reset,
 .objekt-reset-button,
 .objekt-picker-reset,
 .collection-reset {
-    background: linear-gradient(180deg, rgba(226, 232, 240, 0.22), rgba(148, 163, 184, 0.1));
-    border: 1px solid rgba(226, 232, 240, 0.28);
-    color: #ffffff;
-    backdrop-filter: blur(14px);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    background: rgba(13, 14, 18, 0.55);
+    border: 1px solid rgba(58, 74, 70, 0.75);
+    color: #b9cac4;
+    backdrop-filter: none;
+    box-shadow: none;
 }
 
 .site-btn--reset:hover,
@@ -623,11 +624,20 @@ textarea.form-control {
 .objekt-reset-button:hover,
 .objekt-picker-reset:hover,
 .collection-reset:hover {
-    background: linear-gradient(180deg, rgba(226, 232, 240, 0.32), rgba(148, 163, 184, 0.16));
-    border-color: rgba(226, 232, 240, 0.45);
-    color: #ffffff;
+    background: rgba(0, 245, 212, 0.08);
+    border-color: rgba(0, 245, 212, 0.45);
+    color: #8decd9;
     filter: none;
     outline: none;
+}
+
+.site-btn--reset:focus-visible,
+.ar-reset:focus-visible,
+.objekt-reset-button:focus-visible,
+.objekt-picker-reset:focus-visible,
+.collection-reset:focus-visible {
+    outline: 2px solid #00f5d4;
+    outline-offset: 2px;
 }
 
 .site-btn--danger,

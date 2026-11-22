@@ -369,8 +369,11 @@
                 filterSeq += 1;
                 submitWhenDateCloses = false;
                 // 영상 플레이어는 native dialog top layer라 케미 모달이 가려진다. 먼저 닫는다.
-                const videoDialog = document.getElementById('archiveVideoPlayer');
-                if (videoDialog?.open) videoDialog.close();
+                if (typeof window.closeArchiveVideoPlayer === 'function') window.closeArchiveVideoPlayer();
+                else {
+                    const videoDialog = document.getElementById('archiveVideoPlayer');
+                    if (videoDialog?.open) videoDialog.close();
+                }
                 open(match[2]);
             });
         }

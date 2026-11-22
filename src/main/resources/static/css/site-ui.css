@@ -101,25 +101,65 @@ body.site-modal-open { overflow: hidden; }
     min-height: 2.4rem;
     padding: 0.45rem 0.95rem;
     border-radius: 9999px;
-    border: 1px solid rgba(226, 232, 240, 0.28);
-    background: linear-gradient(180deg, rgba(226, 232, 240, 0.22), rgba(148, 163, 184, 0.1));
-    color: #ffffff;
+    border: 1px solid rgba(58, 74, 70, 0.75);
+    background: rgba(13, 14, 18, 0.55);
+    color: var(--site-ui-muted);
     font: inherit;
     font-weight: 700;
     cursor: pointer;
     text-decoration: none;
-    backdrop-filter: blur(14px);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    box-shadow: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
-.site-btn:hover { border-color: rgba(226, 232, 240, 0.45); color: #ffffff; }
+.site-btn:hover {
+    background: rgba(0, 245, 212, 0.08);
+    border-color: rgba(0, 245, 212, 0.45);
+    color: var(--site-ui-accent);
+}
+.site-btn:focus-visible {
+    outline: 2px solid #00f5d4;
+    outline-offset: 2px;
+}
 .site-btn-primary,
-.site-btn--primary { background: #00f5d4; border-color: #00f5d4; color: #0d0e12; box-shadow: none; }
+.site-btn--primary {
+    background: #00f5d4;
+    border-color: #00f5d4;
+    color: #0d0e12;
+    box-shadow: none;
+}
 .site-btn-primary:hover,
-.site-btn--primary:hover { filter: brightness(1.05); color: #0d0e12; }
-.site-btn--reset { background: linear-gradient(180deg, rgba(226, 232, 240, 0.22), rgba(148, 163, 184, 0.1)); border-color: rgba(226, 232, 240, 0.28); color: #ffffff; }
+.site-btn--primary:hover {
+    filter: brightness(1.05);
+    color: #0d0e12;
+}
+/* 공통 초기화 — primary 옆 ghost/outline */
+.site-btn--reset,
+.ar-reset,
+.objekt-reset-button,
+.objekt-picker-reset,
+.collection-reset {
+    background: rgba(13, 14, 18, 0.55);
+    border-color: rgba(58, 74, 70, 0.75);
+    color: var(--site-ui-muted);
+    box-shadow: none;
+}
+.site-btn--reset:hover,
+.ar-reset:hover,
+.objekt-reset-button:hover,
+.objekt-picker-reset:hover,
+.collection-reset:hover {
+    background: rgba(0, 245, 212, 0.08);
+    border-color: rgba(0, 245, 212, 0.45);
+    color: var(--site-ui-accent);
+}
 .site-btn--danger { background: #dc3d3d; border-color: #dc3d3d; color: #ffffff; box-shadow: none; }
 .site-btn--danger:hover { background: #c43333; color: #ffffff; }
 .site-btn-dark { background: #111; border-color: #333; color: #fff; }
+.site-btn--sm {
+    min-height: 2rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+}
 
 /* 전역 파일 선택: 버튼과 파일명이 구분되게 */
 input[type="file"] {

@@ -1,0 +1,35 @@
+<div class="ar-field ar-cover-field">커버
+    <span class="ar-file">
+        <input type="file" name="thumbnail" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp" tabindex="-1" aria-hidden="true">
+        <span class="ar-file-name" data-file-name hidden>선택된 파일 없음</span>
+    </span>
+    <div class="ar-cover-picker" data-cover-picker>
+        <div class="ar-cover-stage">
+            <video data-cover-stage-video muted playsinline preload="metadata" hidden></video>
+            <img data-cover-stage-image alt="선택한 커버" hidden>
+            <p class="ar-cover-empty" data-cover-empty>영상을 선택하면 슬라이드로 원하는 장면을 고르거나 갤러리 사진을 넣을 수 있습니다.</p>
+        </div>
+        <div class="ar-cover-rail">
+            <div class="ar-cover-scrub" data-cover-scrub hidden>
+                <div class="ar-cover-film" data-cover-frames aria-hidden="true"></div>
+                <div class="ar-cover-window" data-cover-window aria-hidden="true">
+                    <span class="ar-cover-time" data-cover-time hidden>0초</span>
+                </div>
+                <input type="range" class="ar-cover-slider" data-cover-slider min="0" max="1000" value="0" step="1" aria-label="커버 장면 위치" disabled>
+            </div>
+            <button type="button" class="ar-cover-gallery" data-cover-gallery aria-label="갤러리에서 커버 선택">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.75A1.75 1.75 0 0 1 6.75 4h10.5A1.75 1.75 0 0 1 19 5.75v10.5A1.75 1.75 0 0 1 17.25 18H6.75A1.75 1.75 0 0 1 5 16.25V5.75Zm1.75-.25a.25.25 0 0 0-.25.25v7.19l2.22-2.22a.75.75 0 0 1 1.06 0L13 14.19l1.72-1.72a.75.75 0 0 1 1.06 0L17.5 14.19V5.75a.25.25 0 0 0-.25-.25H6.75ZM9 9.25a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5Z"/><path d="M12 19.25a.75.75 0 0 1 .75.75v1.25h1.25a.75.75 0 0 1 0 1.5H12.75V24a.75.75 0 0 1-1.5 0v-1.25H10a.75.75 0 0 1 0-1.5h1.25V20a.75.75 0 0 1 .75-.75Z"/></svg>
+                <span>갤러리</span>
+            </button>
+        </div>
+        <div class="ar-cover-meta">
+            <p class="ar-cover-status" data-thumbnail-info></p>
+            <button type="button" class="ar-text-btn" data-thumbnail-clear>커버 초기화</button>
+        </div>
+    </div>
+    <span class="ar-field-hint">슬라이드로 장면을 고르지 않으면 첫 장면이 커버가 됩니다. 세로·가로 모두 잘리지 않게 표시됩니다.</span>
+</div>
+<div class="ar-thumbnail-preview" data-thumbnail-preview hidden>
+    <img alt="">
+</div>
+<p class="ar-preview-error" data-thumbnail-error role="alert" hidden></p>

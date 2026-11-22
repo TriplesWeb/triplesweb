@@ -146,9 +146,9 @@ public final class ChemistryImages {
         for (MultipartFile file : uploads) {
             next.add(uploadFn.save(file));
         }
-        int limit = maxImages > 0 ? maxImages : MAX_IMAGES;
-        if (next.size() > limit) {
-            throw new IllegalArgumentException("사진은 최대 " + limit + "장까지 등록할 수 있습니다.");
+        // maxImages > 0 일 때만 제한. 0 이하는 무제한(아카이브).
+        if (maxImages > 0 && next.size() > maxImages) {
+            throw new IllegalArgumentException("사진은 최대 " + maxImages + "장까지 등록할 수 있습니다.");
         }
 
         LinkedHashSet<String> nextSet = new LinkedHashSet<>(next);
