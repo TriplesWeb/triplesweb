@@ -4,7 +4,6 @@ import com.example.triplesweb.dto.ChemistryDto;
 import com.example.triplesweb.dto.ChemistryGroupDto;
 import com.example.triplesweb.service.AboutAdminAuth;
 import com.example.triplesweb.service.ChemistryGroupService;
-import com.example.triplesweb.service.ChemistrySeedService;
 import com.example.triplesweb.service.ChemistryService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -25,7 +24,6 @@ public class ChemistryApiController {
 
     private final ChemistryService chemistryService;
     private final ChemistryGroupService chemistryGroupService;
-    private final ChemistrySeedService chemistrySeedService;
     private final AboutAdminAuth aboutAdminAuth;
 
     @GetMapping
@@ -97,21 +95,6 @@ public class ChemistryApiController {
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
-    }
-
-    /** 시드 JSON의 누락 페어를 Artist FK로 재적재 (기존 행은 유지). */
-    @PostMapping("/admin/reseed")
-    public Map<String, Object> reseed(HttpServletRequest request, HttpSession session) {
-        aboutAdminAuth.requireAdmin(request, session);
-        int inserted = chemistrySeedService.reseedMissingPairs();
-        int enFilled = chemistrySeedService.applyEnglishDescriptionsIfBlank();
-        int groupEnFilled = chemistrySeedService.applyGroupEnglishDescriptionsIfBlank();
-        return Map.of(
-                "inserted", inserted,
-                "enFilled", enFilled,
-                "groupEnFilled", groupEnFilled,
-                "total", chemistryService.findAll().size()
-        );
     }
 
     @GetMapping("/groups")

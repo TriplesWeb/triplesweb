@@ -9,11 +9,13 @@
 
 기존 `즉시 배포` 코멘트 검사 방식은 폐지한다. 모든 머지가 운영 배포 대상이다. GitHub `main`에 직접 푸시하지 말고 PR을 머지한다.
 
-## Blue-Green 운영 배포 (신규)
+## 단일 앱 배포
 
-운영 배포는 동일 Pi에서 Nginx(:8090) + 활성 Blue/Green 앱 하나를 유지합니다. 새 버전을 비활성 슬롯에 미리 띄워 readiness와 /main을 검사하고 Nginx 설정을 graceful reload한 뒤에만 이전 앱을 종료합니다. **기존 `docker compose up -d --no-deps app` 경로는 legacy 복구용**이며 정상 운영에서는 `scripts/deploy-pi-bluegreen.sh`만 사용합니다. 최초 프록시 전환에서는 짧은 중단이 발생할 수 있습니다.
+운영 앱은 같은 Pi의 8090 포트에서 실행합니다. Actions가 Pi에 이미지를 준비하고 MariaDB 상태를 확인한 다음, 기존 앱을 정상 종료합니다. 새 앱은 기동 중 Flyway를 실행하고 readiness와 홈 응답을 검사합니다. 기존 앱 종료부터 새 앱 준비까지 사이트가 중단됩니다. 이전 Nginx 프록시가 있는 Pi는 첫 배포에서 프록시와 기존 앱 슬롯을 종료한 뒤 같은 포트를 새 앱에 연결합니다. MariaDB와 업로드 마운트는 유지합니다.
 
-메모리 검사, DB Flyway 변경 차단, 롤백, 포트 충돌 방지 및 수동 복구 절차: [BLUE_GREEN_DEPLOYMENT.md](BLUE_GREEN_DEPLOYMENT.md).
+Flyway 마이그레이션이 바뀐 배포도 같은 순서로 실행합니다. 이전 앱이 종료된 상태에서 DB를 변경합니다. 기동에 실패하면 마이그레이션 트리가 이전 정상 배포와 동일한 경우에만 이전 앱으로 자동 복구를 시도합니다. 트리가 달라진 실패는 Actions와 Flyway 로그를 확인해 원인을 고친 뒤 재배포합니다. DB 자체는 자동으로 되돌리지 않습니다.
+
+운영 앱 교체는 `Deploy to Raspberry Pi (prod)`의 자동 또는 수동 실행을 사용합니다. GitHub Actions 변수 `APP_MEMORY_LIMIT`, `APP_STOP_TIMEOUT_SECONDS`, `APP_READY_TIMEOUT_SECONDS`의 기본값은 각각 1800 MB, 600초, 360초입니다.
 
 ## PR 변경 영역별 선택적 CI
 
@@ -38,7 +40,7 @@ CI 설정만 수정된 PR을 머지하면 `main` push의 즉시 운영 배포는
 ## 빌드와 검사 최적화
 
 - 이미지: GitHub 네이티브 ARM64 러너 사용, GitHub Actions Buildx 캐시 `scope=triplesweb-arm64` 공유
-- `.dockerignore`에서 대용량 uploads를 제외. chemistry 자산은 이미지에 포함하지 않고 Pi의 `uploads/chemistry`만 rsync로 증분 업데이트
+- `.dockerignore`에서 대용량 uploads를 제외. 케미 매트릭스 UI(logo·symbols)는 WAR static(`/images/chemistry`). 페어 사진은 Pi `uploads/images/chemistry`만 사용
 - 운영 Pi 배포 전에 현재 실행 중 이미지 태그와 `/actuator/health/readiness` 확인
 - Java 단일 Gradle 호출 `./gradlew test bootWar`로 테스트와 패키징 공유
 - Java 생성 HTML이 필요한 Chrome 검사는 Gradle 테스트 Job에서 이어 실행해 파일 공유를 보장하며, 독립 CSS/JavaScript 검사는 병렬 Job으로 유지
@@ -49,8 +51,8 @@ CI 설정만 수정된 PR을 머지하면 `main` push의 즉시 운영 배포는
 
 ## 운영 배포 추가 최적화
 
-- 사전점검에서 기존 개발 앱 중지(최초 1회), 운영 SHA/readiness 확인, chemistry 소스 버전을 **한 번의 Pi SSH 접속**으로 검사
-- `uploads/chemistry` Git tree SHA를 운영 서버의 `.chemistry-tree`와 비교해 내용이 같으면 rsync를 생략. 파일이 없거나 마커가 없으면 다시 동기화
+- 사전점검에서 기존 개발 앱 중지(최초 1회), 운영 SHA/readiness 확인을 **한 번의 Pi SSH 접속**으로 검사
+- 배포 시 `migrate-chemistry-photos-on-pi.sh`로 옛 `uploads/chemistry/chem` → `uploads/images/chemistry` 멱등 복사 (원본 유지). Flyway가 DB URL을 같은 경로로 치환
 - PNG 등의 압축된 정적 이미지는 `rsync -a`로 중복 압축을 방지. 운영 업로드 루트에 삭제 옵션을 쓰지 않음
 - GHCR에 해당 `main` 커밋 SHA 이미지가 이미 있으면, 운영 배포 실패/재시도 상황에서 **Docker 재빌드·재푸시 생략**
 - Pi에도 동일한 불변 SHA 이미지가 남아 있으면 `docker compose pull` 자체를 생략
@@ -74,8 +76,7 @@ CI 설정만 수정된 PR을 머지하면 `main` push의 즉시 운영 배포는
 
 ## 실패 시
 
-- 풀 실패 시 5회 재시도, 이미지 변경 후 readiness가 실패하면 이전 앱 이미지로 되돌리기를 시도
-- DB 스키마 마이그레이션은 자동으로 롤백하지 않는다. 위험한 DB 변경을 배포할 때는 역호환성을 보장해야 한다.
+- 이미지 준비는 최대 5회 시도합니다. 준비에 실패하면 실행 중인 앱을 유지합니다.
 - 운영 Pi 배포는 앱 이미지 교체와 Compose 업데이트만 수행하며 DB 내용을 자동 복사하지 않는다.
 
 ## 검증

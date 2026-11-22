@@ -45,7 +45,6 @@ jobs:
             gradle
             scripts
             src/main
-            uploads/chemistry
 
       - name: Full commit SHA
         id: sha
@@ -76,10 +75,9 @@ jobs:
             StrictHostKeyChecking accept-new
           EOF
 
-      - name: Check current production image and tracked assets
+      - name: Resolve Flyway migrations tree
         id: assets
         run: |
-          echo "tree=$(git rev-parse HEAD:uploads/chemistry)" >> "$GITHUB_OUTPUT"
           echo "migrations=$(git rev-parse HEAD:src/main/resources/db/migration)" >> "$GITHUB_OUTPUT"
 
       - name: Preflight — retire dev and skip unchanged production
@@ -88,72 +86,39 @@ jobs:
           PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
           PI_DEV_DEPLOY_PATH: ${{ secrets.PI_DEV_DEPLOY_PATH }}
           WANT_IMAGE: ${{ steps.image.outputs.name }}:${{ steps.sha.outputs.sha }}
-          CHEMISTRY_TREE: ${{ steps.assets.outputs.tree }}
+          MIGRATIONS_TREE: ${{ steps.assets.outputs.migrations }}
         run: |
           set -euo pipefail
           : "${PI_DEPLOY_PATH:?PI_DEPLOY_PATH is required}"
           PI_DEV_DEPLOY_PATH="${PI_DEV_DEPLOY_PATH:-${PI_DEPLOY_PATH}-dev}"
           # 첫 전환 때만 개발 앱을 종료하고 DB/파일은 보존한다.
           scp scripts/retire-pi-dev.sh "pi:${PI_DEPLOY_PATH}/retire-pi-dev.sh"
-          DECISION="$(ssh pi env PI_DEPLOY_PATH="$PI_DEPLOY_PATH" PI_DEV_DEPLOY_PATH="$PI_DEV_DEPLOY_PATH" WANT_IMAGE="$WANT_IMAGE" CHEMISTRY_TREE="$CHEMISTRY_TREE" bash -s <<'EOF'
+          DECISION="$(ssh pi env PI_DEPLOY_PATH="$PI_DEPLOY_PATH" PI_DEV_DEPLOY_PATH="$PI_DEV_DEPLOY_PATH" WANT_IMAGE="$WANT_IMAGE" MIGRATIONS_TREE="$MIGRATIONS_TREE" bash -s <<'EOF'
           set -euo pipefail
           if [[ ! -f "${PI_DEPLOY_PATH}/.dev-retired" ]]; then
             bash "${PI_DEPLOY_PATH}/retire-pi-dev.sh" "${PI_DEPLOY_PATH}" "${PI_DEV_DEPLOY_PATH}"
             touch "${PI_DEPLOY_PATH}/.dev-retired"
           fi
           cd "${PI_DEPLOY_PATH}"
-          ASSETS_UP_TO_DATE=false
-          if [[ -f .chemistry-tree ]] && [[ "$(cat .chemistry-tree)" == "${CHEMISTRY_TREE}" ]] && [[ -d uploads/chemistry ]]; then
-            echo "chemistry_sync=false"
-            ASSETS_UP_TO_DATE=true
-          else
-            echo "chemistry_sync=true"
+          APP_PORT="$(sed -n 's/^APP_PORT=//p' .env | tail -n1)"
+          APP_PORT="${APP_PORT:-8090}"
+          CID="$(docker compose -f docker-compose.yml ps -q app 2>/dev/null || true)"
+          RUNNING=""
+          if [[ -n "$CID" ]]; then
+            RUNNING="$(docker inspect -f '{{.Config.Image}}' "$CID")"
           fi
-          APP_PORT="$(grep -E '^APP_PORT=' .env 2>/dev/null | cut -d= -f2- || true)"
-          APP_PORT="${APP_PORT:-8080}"
-          # When Blue-Green is installed, compare the Nginx-active slot.
-          # A legacy app is never considered already deployed: first cutover must run.
-          if [[ -f bluegreen/active.conf && -f docker-compose.bluegreen.yml ]]; then
-            SLOT="$(sed -n 's/^# ACTIVE_SLOT=//p' bluegreen/active.conf | head -n1)"
-            if [[ "$SLOT" != "blue" && "$SLOT" != "green" ]]; then
-              echo "skip=false"
-              echo "reason=invalid-active-slot" >&2
-              exit 0
-            fi
-            CID="$(COMPOSE_PROFILES=bluegreen docker compose -f docker-compose.yml -f docker-compose.bluegreen.yml ps -q "app_${SLOT}" 2>/dev/null || true)"
+          BASE_URL="http://127.0.0.1:$APP_PORT"
+          if [[ "$RUNNING" == "$WANT_IMAGE" && "$(cat .deploy-migration-tree 2>/dev/null || true)" == "$MIGRATIONS_TREE" ]] &&
+            curl -fsS --max-time 8 "$BASE_URL/actuator/health/readiness" >/dev/null &&
+            [[ "$(curl -fsS --max-time 8 -o /dev/null -w '%{http_code}' "$BASE_URL/")" == 200 ]]; then
+            echo "skip=true"
           else
             echo "skip=false"
-            echo "reason=legacy-app-must-convert-to-bluegreen" >&2
-            exit 0
-          fi
-          if [[ -z "${CID}" ]]; then
-            echo "skip=false"
-            echo "reason=no-running-bluegreen-app" >&2
-            exit 0
-          fi
-          RUNNING="$(docker inspect -f '{{.Config.Image}}' "${CID}" 2>/dev/null || true)"
-          if [[ "${RUNNING}" != "${WANT_IMAGE}" ]]; then
-            echo "skip=false"
-            echo "reason=image-mismatch running=${RUNNING:-<none>} want=${WANT_IMAGE}" >&2
-            exit 0
-          fi
-          if curl -fsS --max-time 8 "http://127.0.0.1:${APP_PORT}/actuator/health/readiness" >/dev/null; then
-            if [[ "${ASSETS_UP_TO_DATE}" == "true" ]]; then
-              echo "skip=true"
-            else
-              echo "skip=false"
-              echo "reason=chemistry-out-of-date" >&2
-            fi
-          else
-            echo "skip=false"
-            echo "reason=smoke-failed" >&2
           fi
           EOF
           )"
           SKIP="$(echo "$DECISION" | grep -E '^skip=' | tail -n1 | cut -d= -f2)"
-          CHEMISTRY_SYNC="$(echo "$DECISION" | grep -E '^chemistry_sync=' | tail -n1 | cut -d= -f2)"
           echo "skip=${SKIP}" >> "$GITHUB_OUTPUT"
-          echo "chemistry_sync=${CHEMISTRY_SYNC}" >> "$GITHUB_OUTPUT"
           if [[ "$SKIP" == "true" ]]; then
             echo "::notice::Prod already healthy on ${WANT_IMAGE}; skipping rebuild/restart"
           else
@@ -209,7 +174,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=triplesweb-arm64,ignore-error=true
           provenance: false
 
-      - name: Sync chemistry assets and Blue-Green deploy
+      - name: Replace production app
         if: steps.skip.outputs.skip != 'true'
         env:
           PI_DEPLOY_PATH: ${{ secrets.PI_DEPLOY_PATH }}
@@ -217,29 +182,17 @@ jobs:
           GHCR_USER: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
           MIGRATIONS_TREE: ${{ steps.assets.outputs.migrations }}
-          BG_ALLOW_SCHEMA_CHANGE: ${{ vars.BG_ALLOW_SCHEMA_CHANGE || 'false' }}
-          BG_MIN_AVAILABLE_MB: ${{ vars.BG_MIN_AVAILABLE_MB || '1400' }}
-          BG_SLOT_MEMORY_LIMIT: ${{ vars.BG_SLOT_MEMORY_LIMIT || '1800m' }}
-          BG_READY_TIMEOUT_SECONDS: ${{ vars.BG_READY_TIMEOUT_SECONDS || '360' }}
-          BG_DRAIN_SECONDS: ${{ vars.BG_DRAIN_SECONDS || '5' }}
-          BG_DRAIN_MAX_SECONDS: ${{ vars.BG_DRAIN_MAX_SECONDS || '600' }}
-          BG_STOP_TIMEOUT_SECONDS: ${{ vars.BG_STOP_TIMEOUT_SECONDS || '600' }}
+          APP_MEMORY_LIMIT: ${{ vars.APP_MEMORY_LIMIT || '1800m' }}
+          APP_READY_TIMEOUT_SECONDS: ${{ vars.APP_READY_TIMEOUT_SECONDS || '360' }}
+          APP_STOP_TIMEOUT_SECONDS: ${{ vars.APP_STOP_TIMEOUT_SECONDS || '600' }}
         run: |
           set -euo pipefail
           : "${PI_DEPLOY_PATH:?PI_DEPLOY_PATH secret is required}"
           scp docker-compose.yml "pi:${PI_DEPLOY_PATH}/docker-compose.yml"
-          scp docker-compose.bluegreen.yml "pi:${PI_DEPLOY_PATH}/docker-compose.bluegreen.yml"
-          scp scripts/deploy-pi-bluegreen.sh scripts/deploy-pi-image-retention.sh "pi:${PI_DEPLOY_PATH}/"
-          # chemistry Git tree SHA가 동일하면 원격 스캔·전송을 건너뛴다.
-          if [[ "${{ steps.skip.outputs.chemistry_sync }}" == "true" ]]; then
-            ssh pi "mkdir -p '${PI_DEPLOY_PATH}/uploads/chemistry'"
-            rsync -a --no-owner --no-group --exclude '.DS_Store' \
-              uploads/chemistry/ "pi:${PI_DEPLOY_PATH}/uploads/chemistry/"
-            ssh pi "echo '${{ steps.assets.outputs.tree }}' > '${PI_DEPLOY_PATH}/.chemistry-tree'"
-            echo "Chemistry files synchronized for ${{ steps.assets.outputs.tree }}"
-          else
-            echo "Chemistry unchanged — skipping rsync"
-          fi
+          scp scripts/deploy-pi-app.sh scripts/deploy-pi-image-retention.sh scripts/migrate-chemistry-photos-on-pi.sh "pi:${PI_DEPLOY_PATH}/"
+          # 케미 UI는 WAR static(/images/chemistry). 페어 사진은 서버 uploads만.
+          # 옛 chem/ → images/chemistry/ 복사는 멱등 (원본 유지).
+          ssh pi "bash '${PI_DEPLOY_PATH}/migrate-chemistry-photos-on-pi.sh' '${PI_DEPLOY_PATH}'"
 
           ssh pi env \
             PI_DEPLOY_PATH="$PI_DEPLOY_PATH" \
@@ -247,21 +200,15 @@ jobs:
             GHCR_USER="$GHCR_USER" \
             GHCR_TOKEN="$GHCR_TOKEN" \
             MIGRATIONS_TREE="$MIGRATIONS_TREE" \
-            BG_ALLOW_SCHEMA_CHANGE="$BG_ALLOW_SCHEMA_CHANGE" \
-            BG_MIN_AVAILABLE_MB="$BG_MIN_AVAILABLE_MB" \
-            BG_SLOT_MEMORY_LIMIT="$BG_SLOT_MEMORY_LIMIT" \
-            BG_READY_TIMEOUT_SECONDS="$BG_READY_TIMEOUT_SECONDS" \
-            BG_DRAIN_SECONDS="$BG_DRAIN_SECONDS" \
-            BG_DRAIN_MAX_SECONDS="$BG_DRAIN_MAX_SECONDS" \
-            BG_STOP_TIMEOUT_SECONDS="$BG_STOP_TIMEOUT_SECONDS" \
+            APP_MEMORY_LIMIT="$APP_MEMORY_LIMIT" \
+            APP_READY_TIMEOUT_SECONDS="$APP_READY_TIMEOUT_SECONDS" \
+            APP_STOP_TIMEOUT_SECONDS="$APP_STOP_TIMEOUT_SECONDS" \
             bash -s <<'EOF'
           set -euo pipefail
           cd "$PI_DEPLOY_PATH"
-          # Do NOT rewrite .env IMAGE before promotion: first cutover can
-          # restore the original app only if the old SHA remains untouched.
           printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin >/dev/null
           trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
           export APP_PORT="$(sed -n 's/^APP_PORT=//p' .env | tail -n1)"
           APP_PORT="${APP_PORT:-8090}"
-          bash ./deploy-pi-bluegreen.sh
+          bash ./deploy-pi-app.sh
           EOF

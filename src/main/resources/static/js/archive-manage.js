@@ -129,15 +129,41 @@
         body.className = 'ar-body';
         const title = document.createElement('h3');
         title.dataset.previewTitle = '';
+        const badges = document.createElement('div');
+        badges.className = 'ar-card-badges';
+        badges.dataset.previewBadges = '';
         const source = document.createElement('div');
         source.className = 'ar-source-badge';
         source.dataset.previewSource = '';
         source.hidden = true;
+        const unit = document.createElement('div');
+        unit.className = 'ar-unit-badge';
+        unit.dataset.previewUnit = '';
+        unit.hidden = true;
+        badges.append(source, unit);
         const meta = document.createElement('div');
         meta.className = 'ar-meta';
         meta.dataset.previewArtists = '';
-        body.append(title, source, meta);
+        body.append(title, badges, meta);
         return body;
+    }
+
+    function matchUnitBadge(memberNames) {
+        const selected = new Set((memberNames || []).map(name => String(name || '').trim()).filter(Boolean));
+        if (selected.size < 2) return null;
+        const checks = document.querySelectorAll('[data-unit-checks] input[type="checkbox"][data-members]');
+        for (const cb of checks) {
+            const members = window.UnitCheckboxGroup
+                ? UnitCheckboxGroup.parseMembers(cb)
+                : String(cb.dataset.members || '').split(',').map(part => part.trim()).filter(Boolean);
+            if (!members.length || members.length !== selected.size) continue;
+            if (!members.every(name => selected.has(name))) continue;
+            const label = (cb.closest('label')?.querySelector('span')?.textContent || '').trim();
+            if (!label) continue;
+            const first = document.querySelector(`.mpp-item[data-value="${CSS.escape(members[0])}"]`);
+            return { label, color: memberColor(first) };
+        }
+        return null;
     }
 
     function archiveSymbolLogo(frame) {
@@ -670,11 +696,65 @@
         input._archiveLastFiles = files.slice();
     }
 
+    function slotRoot(form) {
+        return form?.closest('.ar-dialog') || form;
+    }
+
+    function captureSlot(form) {
+        if (kind !== 'image' || !form || form._archiveApplyingSlot) return;
+        const slot = slotsOf(form)[form._archiveSlotPreviewIndex];
+        if (!slot) return;
+        slot.artists = selectedArtists(slotRoot(form));
+    }
+
+    function applySlot(form, slot) {
+        if (kind !== 'image' || !form || !slot || !Array.isArray(slot.artists)) return;
+        form._archiveApplyingSlot = true;
+        try {
+            applyArtists(slotRoot(form), slot.artists.join(','));
+        } finally {
+            form._archiveApplyingSlot = false;
+        }
+    }
+
+    function artistRows(form) {
+        return slotsOf(form).map(slot => (Array.isArray(slot.artists) ? slot.artists : selectedArtists(slotRoot(form))).join(','));
+    }
+
+    function updatePhotoStep(form) {
+        const button = form?.querySelector('[type="submit"]');
+        if (!button) return;
+        if (!button.dataset.defaultLabel) button.dataset.defaultLabel = button.textContent.trim();
+        const slots = slotsOf(form);
+        const index = Number.isInteger(form._archiveSlotPreviewIndex) ? form._archiveSlotPreviewIndex : 0;
+        const pending = kind === 'image' && slots.length > 1 && slots.some((slot, i) => i !== index && !slot.configured);
+        button.textContent = pending ? '다음 사진' : button.dataset.defaultLabel;
+    }
+
+    function advancePhotoSetup(form, status) {
+        if (kind !== 'image') return false;
+        const slots = slotsOf(form);
+        if (slots.length < 2) return false;
+        const index = Number.isInteger(form._archiveSlotPreviewIndex) ? form._archiveSlotPreviewIndex : 0;
+        if (slots[index]) {
+            slots[index].artists = selectedArtists(slotRoot(form));
+            slots[index].configured = true;
+        }
+        const next = slots.findIndex(slot => !slot.configured);
+        if (next < 0) return false;
+        if (!Array.isArray(slots[next].artists)) slots[next].artists = [];
+        const input = form.querySelector('input[name="file"]');
+        previewSlot(form, input, next);
+        status?.((next + 1) + '번째 사진 설정입니다. 앞 사진은 미리보기로 남아 있습니다.');
+        return true;
+    }
+
     function previewSlot(form, input, index) {
         const slots = slotsOf(form);
         const slot = slots[index];
         const preview = form?.querySelector('.ar-preview');
         if (!slot || !preview) return;
+        if (form._archiveSlotPreviewIndex !== index) captureSlot(form);
         form._archiveSlotPreviewIndex = index;
         if (slot.kind === 'url') {
             if (input) input._archivePreviewIndex = -1;
@@ -684,7 +764,9 @@
             if (input) input._archivePreviewIndex = fileIndex;
             showPreview(preview, rememberUrl(slot.file), { sourceFile: slot.file, index: fileIndex });
         }
+        applySlot(form, slot);
         syncFileName(input);
+        updatePhotoStep(form);
     }
 
     function removeSlotAt(form, index) {
@@ -774,7 +856,7 @@
         if (slots.length) {
             slots.forEach((slot, index) => {
                 const tile = document.createElement('div');
-                tile.className = 'ar-file-tile' + (index === activeSlot ? ' is-active' : '');
+                tile.className = 'ar-file-tile' + (index === activeSlot ? ' is-active' : '') + (slot.configured ? ' is-set' : '');
                 tile.title = slot.kind === 'url' ? '저장된 사진 ' + (index + 1) : (slot.file.name || '새 사진');
                 const thumb = document.createElement('button');
                 thumb.type = 'button';
@@ -905,13 +987,19 @@
             sourceBadge.textContent = label;
         }
         const meta = preview.querySelector('[data-preview-artists]');
+        const unitBadge = preview.querySelector('[data-preview-unit]');
+        const badgeRow = preview.querySelector('[data-preview-badges]');
+        let memberNames = [];
         if (meta) {
             const items = selectedMemberItems(form.closest('.ar-dialog'));
             meta.style.setProperty('--member-count', String(items.length || 1));
             meta.replaceChildren();
             items.forEach(button => {
                 const name = (button.dataset.value || button.dataset.name || '').trim();
-                if (name) meta.appendChild(memberChip(button, name));
+                if (name) {
+                    memberNames.push(name);
+                    meta.appendChild(memberChip(button, name));
+                }
             });
             const registered = form.querySelector('[name="registeredOn"]')?.value || '';
             if (registered) {
@@ -921,6 +1009,23 @@
                 time.textContent = registered.replaceAll('-', '/');
                 meta.appendChild(time);
             }
+        }
+        if (unitBadge) {
+            const matched = matchUnitBadge(memberNames);
+            unitBadge.hidden = !matched;
+            if (matched) {
+                unitBadge.textContent = matched.label;
+                unitBadge.title = matched.label;
+                unitBadge.style.setProperty('--unit-color', matched.color || '#a78bfa');
+            } else {
+                unitBadge.textContent = '';
+                unitBadge.removeAttribute('title');
+            }
+        }
+        if (badgeRow) {
+            const showSource = sourceBadge && !sourceBadge.hidden;
+            const showUnit = unitBadge && !unitBadge.hidden;
+            badgeRow.hidden = !showSource && !showUnit;
         }
         const info = preview.querySelector('[data-preview-file]');
         const slots = slotsOf(form);
@@ -949,6 +1054,10 @@
         }
     }
 
+    function unitChecksRoot(root) {
+        return root?.querySelector?.('[data-unit-checks]') || null;
+    }
+
     function renderArtists(root) {
         if (!root) return;
         const values = selectedArtists(root);
@@ -973,6 +1082,7 @@
             });
             if (!values.length) chips.textContent = '멤버를 선택하면 여기에 표시됩니다.';
         }
+        window.UnitCheckboxGroup?.syncFromMembers(unitChecksRoot(root), values);
         syncPreview(root.querySelector('form'));
     }
 
@@ -995,7 +1105,12 @@
         });
         root.querySelector("[data-picker-clear]")?.addEventListener("click", () => {
             window.MemberPortraitPicker?.clear(root);
+            window.UnitCheckboxGroup?.setChecks(unitChecksRoot(root), []);
             renderArtists(root);
+        });
+        window.UnitCheckboxGroup?.bindMemberHelper(unitChecksRoot(root), {
+            getMembers: () => selectedArtists(root),
+            applyMembers: (names) => applyArtists(root, names.join(','))
         });
         root.querySelector('form')?.addEventListener('input', () => syncPreview(root.querySelector('form')));
         window.MemberPortraitPicker?.clear(root);
@@ -1181,6 +1296,9 @@
     });
     document.addEventListener("keydown", event => {
         if (event.key !== "Escape") return;
+        // 케미 모달이 위에 있으면 Escape는 케미만 닫고 아카이브 상세는 유지한다.
+        const chemistry = document.getElementById("chemistryModal");
+        if (chemistry && !chemistry.classList.contains("hidden")) return;
         const open = [...document.querySelectorAll(".ar-dialog:not([hidden])")].pop();
         if (open) closeDialog(open);
     });
@@ -1193,6 +1311,17 @@
     bindThumbnail(uploadForm);
     bindFileNames(uploadForm);
     bindImageEditTools(uploadForm);
+
+    function warmArchiveMemberPickers() {
+        window.MemberPortraitPicker?.preloadFrames?.();
+        document.querySelectorAll(".ar-dialog .member-portrait-picker").forEach((picker) => {
+            window.MemberPortraitPicker?.warmPicker?.(picker);
+        });
+    }
+    const scheduleIdle = window.requestIdleCallback
+        ? (cb) => window.requestIdleCallback(cb, { timeout: 1200 })
+        : (cb) => setTimeout(cb, 180);
+    scheduleIdle(warmArchiveMemberPickers);
 
     function defaultUploadArtists() {
         const fromPage = document.querySelector("[data-archive-kind]")?.dataset.defaultArtists;
@@ -1246,8 +1375,6 @@
         uploadForm.reset();
         resetThumbnail(uploadForm);
         setUploadStatus("");
-        // 멤버 폴더·필터에서 열면 해당 멤버를 기본 선택(변경 가능)
-        applyArtists(uploadDialog, defaultUploadArtists());
         if (uploadFile) {
             releaseUrl(uploadFile._archiveLastFile);
             (uploadFile._archiveLastFiles || []).forEach(releaseUrl);
@@ -1258,9 +1385,13 @@
         setSlots(uploadForm, [], { syncInput: false });
         uploadForm._archiveSlotPreviewIndex = -1;
         showPreview(uploadPreview, "");
-        window.bindArchiveDateFields?.(uploadForm);
-        uploadForm.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName);
+        // 모달을 먼저 연 뒤 멤버/날짜를 채워 첫 페인트가 막히지 않게 한다.
         openDialog(uploadDialog);
+        requestAnimationFrame(() => {
+            applyArtists(uploadDialog, defaultUploadArtists());
+            window.bindArchiveDateFields?.(uploadForm);
+            uploadForm.querySelectorAll('.ar-file input[type="file"]').forEach(syncFileName);
+        });
     };
 
     uploadFile?.addEventListener("change", () => {
@@ -1328,6 +1459,7 @@
             window.SiteFeedback.alert("미리보기를 확인한 뒤 추가해 주세요.");
             return;
         }
+        if (advancePhotoSetup(uploadForm, setUploadStatus)) return;
         const confirmMessage = kind === "image" && files.length > 1
             ? "사진 " + files.length + "장을 한 게시글로 추가하시겠습니까?"
             : "이 " + noun + "을 추가하시겠습니까?";
@@ -1339,7 +1471,17 @@
         }
         body.delete("artistNames");
         body.delete("extraArtists");
-        selectedArtists(uploadDialog).forEach(name => body.append("artistNames", name));
+        if (kind === 'image' && slotsOf(uploadForm).length > 1) {
+            const names = [];
+            artistRows(uploadForm).forEach(row => row.split(',').forEach(name => {
+                const trimmed = name.trim();
+                if (trimmed && !names.includes(trimmed)) names.push(trimmed);
+            }));
+            names.forEach(name => body.append("artistNames", name));
+            body.set("imageArtistsJson", JSON.stringify(artistRows(uploadForm)));
+        } else {
+            selectedArtists(uploadDialog).forEach(name => body.append("artistNames", name));
+        }
         const button = uploadForm.querySelector("[type='submit']");
         if (button) button.disabled = true;
         if (!uploadIdempotencyKey) uploadIdempotencyKey = newIdempotencyKey();
@@ -1429,12 +1571,25 @@
         const existingUrls = kind === 'image'
             ? parseImageUrls(button.dataset.images, button.dataset.url)
             : [];
+        let perImage = [];
+        try {
+            const parsed = JSON.parse(button.dataset.imageArtists || '[]');
+            if (Array.isArray(parsed)) perImage = parsed.map(row => String(row || ''));
+        } catch (_) { perImage = []; }
         const coverUrl = button.dataset.url || existingUrls[0] || '';
         editForm.dataset.originalUrl = coverUrl;
         editForm.dataset.originalImages = JSON.stringify(existingUrls);
-        setSlots(editForm, existingUrls.map(url => ({ kind: 'url', url })), { syncInput: false });
+        const shared = (button.dataset.artists || '').split(',').map(name => name.trim()).filter(Boolean);
+        setSlots(editForm, existingUrls.map((url, imageIndex) => ({
+            kind: 'url',
+            url,
+            configured: true,
+            artists: (perImage[imageIndex] || button.dataset.artists || '').split(',').map(name => name.trim()).filter(Boolean).length
+                ? (perImage[imageIndex] || button.dataset.artists || '').split(',').map(name => name.trim()).filter(Boolean)
+                : shared.slice()
+        })), { syncInput: false });
         editForm._archiveCoverSlot = slotsOf(editForm).find(slot => slot.url === coverUrl) || slotsOf(editForm)[0];
-        editForm._archiveSlotPreviewIndex = existingUrls.length ? 0 : -1;
+        editForm._archiveSlotPreviewIndex = -1;
         const titleInput = editForm.querySelector("[name='title']");
         if (titleInput) titleInput.value = button.dataset.title || "";
         const descriptionInput = editForm.querySelector("[name='description']");
@@ -1487,8 +1642,9 @@
     function showEdit(button) {
         if (!editForm || !editDialog) return;
         setEditStatus("");
-        populateEditForm(button);
+        // 멤버 초상·프레임 디코드보다 모달 표시를 우선한다.
         openDialog(editDialog);
+        requestAnimationFrame(() => populateEditForm(button));
     }
 
     editFile?.addEventListener("change", () => {
@@ -1622,6 +1778,7 @@
             window.SiteFeedback.alert('사진은 최소 1장이 필요합니다.');
             return;
         }
+        if (advancePhotoSetup(editForm, setEditStatus)) return;
         if (replacing && (editPreview?.dataset.invalid || editPreview?.dataset.pending)) {
             window.SiteFeedback.alert('사진을 읽지 못했습니다. 다른 이미지 파일을 선택해 주세요.');
             return;
@@ -1641,7 +1798,16 @@
         if (kind === "video") body.set("title", title);
         else body.set("description", description);
         body.set("registeredOn", registeredOn);
-        body.set("artistNames", selectedArtists(editDialog).join(","));
+        const editRows = kind === 'image' ? artistRows(editForm) : [];
+        const editNames = [];
+        (editRows.length ? editRows : [selectedArtists(editDialog).join(',')]).forEach(row => {
+            row.split(',').forEach(name => {
+                const trimmed = name.trim();
+                if (trimmed && !editNames.includes(trimmed)) editNames.push(trimmed);
+            });
+        });
+        body.set("artistNames", editNames.join(","));
+        if (kind === 'image' && slots.length > 1) body.set("imageArtistsJson", JSON.stringify(editRows));
         const source = editForm.querySelector("[name='source']")?.value || "";
         if (source) body.set("source", source);
         if (kind === 'image') {

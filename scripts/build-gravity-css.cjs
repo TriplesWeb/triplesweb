@@ -12,6 +12,7 @@ buildTailwindBundle({
     .replaceAll('oklch(0% 0 0/.4)', 'rgba(0,0,0,.4)')
     .replaceAll('border-radius:3.40282e38px', 'border-radius:340282000000000000000000000000000000000px'),
   extras: [
+    'src/main/resources/static/css/unit-checks.css',
     'src/main/resources/static/css/about-admin.css',
     'src/main/resources/static/css/gravity-admin.css'
   ]

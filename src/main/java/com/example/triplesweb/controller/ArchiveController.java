@@ -9,17 +9,19 @@ import com.example.triplesweb.dto.ChemistryDto;
 import com.example.triplesweb.dto.ChemistryGroupDto;
 import com.example.triplesweb.service.ArchiveService;
 import com.example.triplesweb.service.AboutAdminAuth;
+import com.example.triplesweb.service.ArtistSnapshotService;
 import com.example.triplesweb.service.ChemistryGroupService;
 import com.example.triplesweb.service.ChemistryService;
 import com.example.triplesweb.service.IdempotencyService;
 import com.example.triplesweb.service.UnitService;
-import com.example.triplesweb.repository.ArtistRepository;
 import com.example.triplesweb.entity.Artist;
 import com.example.triplesweb.util.ArchiveFolderArt;
 import com.example.triplesweb.util.ArchiveFolderClassifier;
+import com.example.triplesweb.util.ArchiveCardImages;
 import com.example.triplesweb.util.ArchiveImages;
 import com.example.triplesweb.util.ImageUrls;
 import com.example.triplesweb.util.MemberPortraitOptions;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -50,9 +52,12 @@ import java.time.format.DateTimeParseException;
 @RequestMapping("/archive")
 public class ArchiveController {
 
+    private static final int DEFAULT_ARCHIVE_SIZE = 10;
+    private static final List<Integer> ARCHIVE_SIZE_OPTIONS = List.of(10, 20, 30, 40, 50);
+
     private final ArchiveService archiveService;
     private final AboutAdminAuth aboutAdminAuth;
-    private final ArtistRepository artistRepository;
+    private final ArtistSnapshotService artistSnapshot;
     private final UnitService unitService;
     private final ArchiveFolderArt archiveFolderArt;
     private final ChemistryService chemistryService;
@@ -63,7 +68,7 @@ public class ArchiveController {
     @GetMapping
     public String showArchive(@RequestParam(defaultValue = "image") String type,
                               @RequestParam(defaultValue = "0") int page,
-                              @RequestParam(defaultValue = "9") int size,
+                              @RequestParam(defaultValue = "10") int size,
                               @RequestParam(required = false) String q,
                               @RequestParam(required = false) String from,
                               @RequestParam(required = false) String to,
@@ -94,7 +99,7 @@ public class ArchiveController {
 
     @GetMapping("/all")
     public String showAllImages(@RequestParam(defaultValue = "0") int page,
-                                @RequestParam(defaultValue = "24") int size,
+                                @RequestParam(defaultValue = "10") int size,
                                 @RequestParam(required = false) String q,
                                 @RequestParam(required = false) String from,
                                 @RequestParam(required = false) String to,
@@ -147,17 +152,12 @@ public class ArchiveController {
 
     private String renderFolderHome(HttpServletRequest request, HttpSession session, Model model) {
         boolean isAdmin = aboutAdminAuth.isAdmin(request, session);
-        List<Artist> artists = artistRepository.findAll();
-        List<Unit> units = unitService.listVisible();
-        List<ArchiveFolderClassifier.UnitMembers> unitMembers = unitSnapshots(units);
-        List<Archive> archives = archiveService.index();
-        List<Map<String, Object>> folders = folderCards(archives, units, unitMembers, artists);
-        long photoCount = 0;
-        long videoCount = 0;
-        for (Archive archive : archives) {
-            if (archive.getType() == MediaType.IMAGE) photoCount++;
-            else if (archive.getType() == MediaType.VIDEO) videoCount++;
-        }
+        List<Artist> artists = artistSnapshot.findAll();
+        // 홈 카드는 번들 아이콘·멤버 색만 필요. 유닛/아카이브 전체 스캔은 Tailscale RTT만 키운다.
+        List<Map<String, Object>> folders = folderCards(List.of(), List.of(), List.of(), artists);
+        ArchiveService.TypeTotals totals = archiveService.countTotals();
+        long photoCount = totals.images();
+        long videoCount = totals.videos();
         model.addAttribute("archiveFolderHome", true);
         model.addAttribute("archiveFolderView", false);
         model.addAttribute("archiveBrowse", false);
@@ -180,25 +180,21 @@ public class ArchiveController {
         model.addAttribute("hasArchiveBack", false);
         model.addAttribute("archiveBackHref", "/archive");
         model.addAttribute("archiveFolderIndex", false);
+        addUnitCheckboxOptions(model);
         addCommonDateFlags(model);
         return "archive/archive";
     }
 
     private String renderFolderIndex(HttpServletRequest request, HttpSession session, Model model) {
         boolean isAdmin = aboutAdminAuth.isAdmin(request, session);
-        List<Artist> artists = artistRepository.findAll();
-        List<Unit> units = unitService.listVisible();
-        List<ArchiveFolderClassifier.UnitMembers> unitMembers = unitSnapshots(units);
-        List<Archive> archives = archiveService.index();
-        FolderCounts counted = folderCounts(archives, unitMembers);
+        List<Artist> artists = artistSnapshot.findAll();
+        List<Unit> units = unitService.listVisibleForArchive();
+        // 유닛 카드도 번들 아트·등록 이미지를 쓰고 배지는 숨기므로 전체 아카이브 스캔을 생략한다.
+        FolderCounts counted = new FolderCounts(Map.of(), Map.of());
         List<Map<String, Object>> folders = unitFolderCards(units, artists, counted);
-        long photoCount = 0;
-        long videoCount = 0;
-        for (Archive archive : archives) {
-            if (!matchesAnyUnit(archive.getArtistNames(), unitMembers)) continue;
-            if (archive.getType() == MediaType.IMAGE) photoCount++;
-            else if (archive.getType() == MediaType.VIDEO) videoCount++;
-        }
+        ArchiveService.TypeTotals totals = archiveService.countTotals();
+        long photoCount = totals.images();
+        long videoCount = totals.videos();
         String title = "디멘션";
         String accent = "#a78bfa";
         model.addAttribute("archiveFolderHome", true);
@@ -225,6 +221,7 @@ public class ArchiveController {
         model.addAttribute("hasArchives", !folders.isEmpty());
         model.addAttribute("archiveSources", sourceOptions(null));
         model.addAttribute("defaultUploadArtists", "");
+        addUnitCheckboxOptions(model);
         addCommonDateFlags(model);
         return "archive/archive";
     }
@@ -248,25 +245,32 @@ public class ArchiveController {
             toDate = swap;
         }
         ArchiveSource source = parseSourceFilter(sourceSlug);
-        List<Unit> visibleUnits = unitService.listVisible();
-        List<ArchiveFolderClassifier.UnitMembers> units = unitSnapshots(visibleUnits);
+        String sourceKey = source == null ? sourceSlug : source.getSlug();
+        boolean externalView = source == ArchiveSource.EXTERNAL;
+        int safeSize = normalizeArchiveSize(size);
+        // 카드 배지·유닛 폴더 완전일치 판별용. 멤버 없는 s 전체 목록 스캔에는 비워 둔다.
+        List<Unit> allVisibleUnits = unitService.listVisibleForArchive();
+        boolean needsBrowseUnits = !browse && (!folderKey.equalsIgnoreCase("s") || !selectedMembers.isEmpty());
+        List<ArchiveFolderClassifier.UnitMembers> units = needsBrowseUnits
+                ? unitSnapshots(allVisibleUnits) : List.of();
         ArchiveService.FolderBrowse folderBrowse = null;
         Page<Archive> archives;
         if (browse) {
-            archives = archiveService.pageByType(type, page, size, q, selectedMembers, fromDate, toDate);
+            archives = archiveService.pageByType(type, page, safeSize, q, selectedMembers, fromDate, toDate);
         } else {
-            folderBrowse = archiveService.browseFolder(type, page, size, q,
+            folderBrowse = archiveService.browseFolder(type, page, safeSize, q,
                     memberSuperset ? List.of() : selectedMembers, fromDate, toDate,
                     source, false, folderKey, memberSuperset ? selectedMembers : List.of(), units);
             archives = folderBrowse.page();
         }
 
-        List<Artist> artists = artistRepository.findAll();
-        List<Map<String, Object>> cards = archiveCards(archives, artists);
+        List<Artist> artists = artistSnapshot.findAll();
+        List<Map<String, Object>> cards = archiveCards(archives, artists, allVisibleUnits, selectedMembers);
         model.addAttribute("archives", archives);
         model.addAttribute("archiveCards", cards);
         model.addAttribute("artistOptions", artists);
         model.addAttribute("memberPickerOptions", memberOptions(artists, selectedMembers));
+        addUnitCheckboxOptions(model);
         model.addAttribute("selectedMembers", selectedMembers);
         model.addAttribute("hasSelectedMembers", !selectedMembers.isEmpty());
         model.addAttribute("defaultUploadArtists", String.join(",", selectedMembers));
@@ -279,7 +283,7 @@ public class ArchiveController {
         model.addAttribute("archiveFolderIndex", false);
         model.addAttribute("archiveFolderView", !browse);
         model.addAttribute("hasArchiveBack", !browse);
-        model.addAttribute("archiveBackHref", folderBackHref(folderKey));
+        model.addAttribute("archiveBackHref", folderBackHref(folderKey, selectedMembers, allVisibleUnits));
         model.addAttribute("showMemberFilter", browse || !isSoloFolder(folderKey));
         model.addAttribute("showChemistryFilter", false);
         model.addAttribute("chemistryOptions", List.of());
@@ -290,11 +294,11 @@ public class ArchiveController {
         model.addAttribute("hasCombo", false);
         model.addAttribute("chemKey", "");
         model.addAttribute("hasChemFilter", false);
-        String baseTitle = folderTitle(folderKey, List.of(), units);
+        String baseTitle = folderTitle(folderKey, selectedMembers, units);
         model.addAttribute("folderBaseTitle", baseTitle);
         model.addAttribute("folderTitle", baseTitle);
         model.addAttribute("hasFolderTitle", baseTitle != null && !baseTitle.isBlank());
-        model.addAttribute("folderAccent", folderAccent(folderKey, visibleUnits, artists));
+        model.addAttribute("folderAccent", folderAccent(folderKey, selectedMembers, allVisibleUnits, artists));
         boolean soloFolder = isSoloFolder(folderKey);
         model.addAttribute("folderIsSolo", soloFolder);
         if (soloFolder) {
@@ -318,26 +322,28 @@ public class ArchiveController {
         model.addAttribute("dateExactEnabled", false);
         String dateQuery = dateQuery(fromText, toText, onText);
         model.addAttribute("dateQuery", dateQuery);
-        String sourceQuery = sourceQuery(sourceSlug);
+        String sourceQuery = sourceQuery(sourceKey);
         model.addAttribute("sourceQuery", sourceQuery);
-        model.addAttribute("sourceKey", sourceSlug == null ? "" : sourceSlug.trim());
+        model.addAttribute("sourceKey", sourceKey == null ? "" : sourceKey.trim());
         model.addAttribute("hasSourceFilter", sourceSlug != null && !sourceSlug.isBlank());
         model.addAttribute("chemQuery", "");
         model.addAttribute("archiveSources", sourceOptions(source));
         model.addAttribute("hasActiveArchiveFilters", (q != null && !q.isBlank())
                 || !selectedMembers.isEmpty() || fromDate != null || toDate != null
                 || (sourceSlug != null && !sourceSlug.isBlank()));
+        String sizeQuery = archiveSizeQuery(safeSize);
         addArchivePage(model, archives, type, q, memberQuery(selectedMembers), dateQuery, browse,
-                folderQuery(folderKey, ""), sourceQuery, sourceSlug, "");
+                folderQuery(folderKey, ""), sourceQuery, sourceKey, "", safeSize, sizeQuery);
         // 출처 탭: 폴더는 한 번 스캔한 결과, 전체 보기는 source 컬럼만 distinct 조회.
         Set<ArchiveSource> availableSources = browse
                 ? archiveService.availableSources(type, q, selectedMembers, fromDate, toDate)
                 : folderBrowse.availableSources();
+        String keptFilters = (type == MediaType.VIDEO ? "&type=video" : "") + folderQuery(folderKey, "")
+                + (q == null || q.isBlank() ? "" : "&q=" + URLEncoder.encode(q.trim(), StandardCharsets.UTF_8))
+                + memberQuery(selectedMembers) + dateQuery;
         model.addAttribute("sourceTabs", sourceTabs(browse ? "/archive/all" : "/archive",
-                (type == MediaType.VIDEO ? "&type=video" : "") + folderQuery(folderKey, "")
-                        + (q == null || q.isBlank() ? "" : "&q=" + URLEncoder.encode(q.trim(), StandardCharsets.UTF_8))
-                        + memberQuery(selectedMembers) + dateQuery,
-                sourceSlug, availableSources));
+                keptFilters + sizeQuery, sourceKey, availableSources));
+        model.addAttribute("externalSource", externalView);
         return "archive/archive";
     }
 
@@ -366,7 +372,7 @@ public class ArchiveController {
             return List.of(MemberPortraitOptions.koreanOrder().get(index));
         }
         if (folderKey.toLowerCase(Locale.ROOT).startsWith("unit-")) {
-            for (ArchiveFolderClassifier.UnitMembers unit : unitSnapshots(unitService.listVisible())) {
+            for (ArchiveFolderClassifier.UnitMembers unit : unitSnapshots(unitService.listVisibleForArchive())) {
                 if (("unit-" + unit.unitId()).equalsIgnoreCase(folderKey)) {
                     return ArchiveFolderClassifier.membersOf(String.join(",", unit.members()));
                 }
@@ -460,7 +466,7 @@ public class ArchiveController {
         return query.toString();
     }
 
-    private List<Map<String, Object>> archiveCards(Page<Archive> archives, List<Artist> artists) {
+    private List<Map<String, Object>> archiveCards(Page<Archive> archives, List<Artist> artists, List<Unit> units, List<String> selectedMembers) {
         Map<String, String> colors = new LinkedHashMap<>();
         for (Artist artist : artists) {
             String color = artist.getColor();
@@ -468,32 +474,43 @@ public class ArchiveController {
             if (artist.getName() != null) colors.put(artist.getName().trim().toLowerCase(Locale.ROOT), color);
             if (artist.getEngName() != null) colors.put(artist.getEngName().trim().toLowerCase(Locale.ROOT), color);
         }
+        List<ArchiveFolderClassifier.UnitMembers> unitMembers = unitSnapshots(units);
+        Map<Long, String> unitColors = new LinkedHashMap<>();
+        for (Unit unit : units == null ? List.<Unit>of() : units) {
+            if (unit.getUnitId() == null) continue;
+            unitColors.put(unit.getUnitId(), unitColor(unit, artists));
+        }
         long offset = archives.getPageable().isPaged() ? archives.getPageable().getOffset() : 0;
         List<Map<String, Object>> cards = new ArrayList<>();
         for (Archive archive : archives) {
-            List<Map<String, Object>> badges = new ArrayList<>();
-            for (String name : normalizeMembers(archive.getArtistNames() == null ? List.of() : List.of(archive.getArtistNames().split(",")))) {
-                Artist matched = null;
-                String keyName = name.toLowerCase(Locale.ROOT);
-                for (Artist artist : artists) {
-                    if (artist.getName() != null && artist.getName().trim().equalsIgnoreCase(name)) { matched = artist; break; }
-                    if (artist.getEngName() != null && artist.getEngName().trim().equalsIgnoreCase(name)) { matched = artist; break; }
-                }
-                String symbol = MemberPortraitOptions.archiveSymbolLogo(name);
-                String portrait = matched == null || matched.getDisplayProfileImage() == null ? "" : matched.getDisplayProfileImage();
-                String image = !symbol.isBlank() ? symbol : portrait;
-                Map<String, Object> badge = new LinkedHashMap<>();
-                badge.put("name", name);
-                badge.put("color", colors.getOrDefault(keyName, "#b9cac4"));
-                badge.put("image", image);
-                badge.put("hasImage", !image.isBlank());
-                badge.put("hasSymbol", !symbol.isBlank());
-                badge.put("portrait", portrait);
-                badge.put("hasPortrait", !portrait.isBlank());
-                badge.put("artistId", matched == null ? "" : matched.getArtistId());
-                badge.put("hasArtist", matched != null && matched.getArtistId() != null);
-                badges.add(badge);
+            List<String> imageUrls = archive.getType() == MediaType.IMAGE
+                    ? ArchiveImages.resolve(archive, objectMapper)
+                    : List.of();
+            if (imageUrls.isEmpty() && archive.getFile() != null && archive.getFile().getUrl() != null) {
+                imageUrls = List.of(archive.getFile().getUrl());
             }
+            List<String> artistRows = imageArtistRows(archive);
+            List<Integer> visible = new ArrayList<>();
+            for (int i = 0; i < imageUrls.size(); i++) {
+                String castNames = castNamesAt(archive, artistRows, i);
+                if (selectedMembers == null || selectedMembers.isEmpty() || membersOverlap(castNames, selectedMembers)) {
+                    visible.add(i);
+                }
+            }
+            if (visible.isEmpty()) {
+                for (int i = 0; i < imageUrls.size(); i++) visible.add(i);
+            }
+            List<String> viewUrls = new ArrayList<>();
+            List<Map<String, Object>> imageCasts = new ArrayList<>();
+            for (int i : visible) {
+                viewUrls.add(imageUrls.get(i));
+                Map<String, Object> frame = new LinkedHashMap<>();
+                frame.put("memberBadges", memberBadges(castNamesAt(archive, artistRows, i), artists, colors));
+                imageCasts.add(frame);
+            }
+            List<Map<String, Object>> badges = imageCasts.isEmpty()
+                    ? memberBadges(archive.getArtistNames(), artists, colors)
+                    : castBadges(imageCasts.get(0));
             Map<String, Object> card = new LinkedHashMap<>();
             String title = archive.getTitle() == null ? "" : archive.getTitle().trim();
             String description = archive.getDescription() == null ? "" : archive.getDescription().trim();
@@ -507,17 +524,20 @@ public class ArchiveController {
             card.put("artistNames", archive.getArtistNames());
             card.put("memberOrder", MemberPortraitOptions.earliestMemberIndex(archive.getArtistNames()));
             card.put("file", archive.getFile());
-            List<String> imageUrls = archive.getType() == MediaType.IMAGE
-                    ? ArchiveImages.resolve(archive, objectMapper)
-                    : List.of();
-            if (imageUrls.isEmpty() && archive.getFile() != null && archive.getFile().getUrl() != null) {
-                imageUrls = List.of(archive.getFile().getUrl());
-            }
             String imagesJson = ArchiveImages.write(imageUrls, objectMapper);
+            String viewJson = ArchiveImages.write(viewUrls, objectMapper);
+            String previewSource = viewUrls.isEmpty()
+                    ? (archive.getFile() == null || archive.getFile().getUrl() == null ? "" : archive.getFile().getUrl())
+                    : viewUrls.get(0);
             card.put("imageUrls", imageUrls);
             card.put("imageUrlsJson", imagesJson == null ? "[]" : imagesJson);
-            card.put("imageCount", imageUrls.size());
-            card.put("hasMultipleImages", imageUrls.size() > 1);
+            card.put("viewUrlsJson", viewJson == null ? "[]" : viewJson);
+            card.put("imageArtistsJson", archive.getImageArtistsJson() == null ? "[]" : archive.getImageArtistsJson());
+            card.put("imageCasts", imageCasts);
+            card.put("previewUrl", ArchiveCardImages.previewUrl(previewSource));
+            card.put("eagerPreview", cards.size() < 4);
+            card.put("imageCount", viewUrls.size());
+            card.put("hasMultipleImages", viewUrls.size() > 1);
             card.put("thumbnailUrl", archive.getThumbnailUrl());
             card.put("displayNumber", offset + cards.size() + 1);
             card.put("memberBadges", badges);
@@ -538,6 +558,19 @@ public class ArchiveController {
             card.put("sourceValue", source == null ? "" : source.name());
             card.put("sourceLabel", source == null ? "" : source.getLabel());
             card.put("hasSource", source != null);
+            ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(archive.getArtistNames(), unitMembers);
+            boolean unitBadge = match != null && match.kind() == ArchiveFolderClassifier.Kind.UNIT && match.unitId() != null;
+            card.put("hasUnitBadge", unitBadge);
+            if (unitBadge) {
+                card.put("unitBadgeLabel", match.label());
+                card.put("unitBadgeColor", unitColors.getOrDefault(match.unitId(), "#a78bfa"));
+                card.put("unitBadgeKey", match.key());
+            } else {
+                card.put("unitBadgeLabel", "");
+                card.put("unitBadgeColor", "");
+                card.put("unitBadgeKey", "");
+            }
+            card.put("hasBadgeRow", source != null || unitBadge);
             cards.add(card);
         }
         return cards;
@@ -565,10 +598,11 @@ public class ArchiveController {
 
     private void addArchivePage(Model model, Page<Archive> archives, MediaType type, String q, String memberQuery,
                                 String dateQuery, boolean browse, String folderQuery, String sourceQuery, String sourceSlug,
-                                String chemQuery) {
+                                String chemQuery, int size, String sizeQuery) {
         int totalPages = Math.max(1, archives.getTotalPages());
         int current = archives.getNumber();
         String query = q == null ? "" : q.trim();
+        String keptSizeQuery = sizeQuery == null ? "" : sizeQuery;
         model.addAttribute("archiveTotal", archives.getTotalElements());
         model.addAttribute("archivePageCount", archives.getNumberOfElements());
         model.addAttribute("archiveOffset", archives.getPageable().isPaged() ? archives.getPageable().getOffset() : 0);
@@ -582,6 +616,10 @@ public class ArchiveController {
         model.addAttribute("memberQuery", memberQuery == null ? "" : memberQuery);
         model.addAttribute("query", query);
         model.addAttribute("hasQuery", !query.isEmpty());
+        model.addAttribute("archiveSize", size);
+        model.addAttribute("sizeQuery", keptSizeQuery);
+        model.addAttribute("hasCustomArchiveSize", size != DEFAULT_ARCHIVE_SIZE);
+        model.addAttribute("archiveSizeOptions", archiveSizeOptions(size));
         boolean video = type == MediaType.VIDEO;
         String typeQuery = video ? "&type=video" : "";
         String pageQuery = current > 0 ? "&page=" + current : "";
@@ -590,7 +628,7 @@ public class ArchiveController {
         String keptSource = sourceQuery == null ? "" : sourceQuery;
         String keptChem = chemQuery == null ? "" : chemQuery;
         String filterQuery = qQuery + (memberQuery == null ? "" : memberQuery) + (dateQuery == null ? "" : dateQuery)
-                + keptFolder + keptSource + keptChem;
+                + keptFolder + keptSource + keptChem + keptSizeQuery;
         String folderBase = browse ? "/archive/all" : "/archive";
         model.addAttribute("archiveHomePath", browse ? folderBase : joinHref("/archive", keptFolder + typeQuery));
         model.addAttribute("archiveFoldersPath", "/archive");
@@ -618,6 +656,30 @@ public class ArchiveController {
             archivePages.add(Map.of("num", i, "label", i + 1, "active", i == current));
         }
         model.addAttribute("archivePages", archivePages);
+    }
+
+    private static int normalizeArchiveSize(int size) {
+        return ARCHIVE_SIZE_OPTIONS.contains(size) ? size : DEFAULT_ARCHIVE_SIZE;
+    }
+
+    private static String archiveSizeQuery(int size) {
+        return size == DEFAULT_ARCHIVE_SIZE ? "" : "&size=" + size;
+    }
+
+    private static List<Map<String, Object>> archiveSizeOptions(int selected) {
+        List<Map<String, Object>> options = new ArrayList<>(ARCHIVE_SIZE_OPTIONS.size());
+        for (int value : ARCHIVE_SIZE_OPTIONS) {
+            Map<String, Object> option = new LinkedHashMap<>();
+            option.put("value", value);
+            option.put("label", value + "개");
+            option.put("selected", value == selected);
+            options.add(option);
+        }
+        return options;
+    }
+
+    private void addUnitCheckboxOptions(Model model) {
+        model.addAttribute("unitCheckboxOptions", unitService.listUnitCheckboxOptions());
     }
 
     private static void addCommonDateFlags(Model model) {
@@ -672,9 +734,20 @@ public class ArchiveController {
         return isUnitIndex(folder) || isComboIndex(folder);
     }
 
-    private static String folderBackHref(String folder) {
-        if (folder != null && folder.toLowerCase(Locale.ROOT).startsWith("unit-")) return "/archive?folder=units";
+    private String folderBackHref(String folder, List<String> selectedMembers, List<Unit> units) {
+        if (folder != null && folder.toLowerCase(Locale.ROOT).startsWith("unit-")) {
+            return "/archive?folder=units";
+        }
         if (isComboFolder(folder)) return "/archive?folder=combos";
+        if (folder != null && folder.equalsIgnoreCase("s")
+                && selectedMembers != null && !selectedMembers.isEmpty()) {
+            ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(
+                    String.join(",", selectedMembers), unitSnapshots(units));
+            // 디멘션에서 연 유닛 그룹은 유닛 목록으로, 솔로는 홈 카드로, 그 외 멤버 선택은 전체 폴더로.
+            if (match.kind() == ArchiveFolderClassifier.Kind.UNIT) return "/archive?folder=units";
+            if (match.kind() == ArchiveFolderClassifier.Kind.SOLO) return "/archive";
+            return "/archive?folder=s";
+        }
         return "/archive";
     }
 
@@ -690,6 +763,86 @@ public class ArchiveController {
             query += "&combo=" + URLEncoder.encode(combo.trim(), StandardCharsets.UTF_8);
         }
         return query;
+    }
+
+
+    private List<String> imageArtistRows(Archive archive) {
+        String json = archive.getImageArtistsJson();
+        if (json == null || json.isBlank()) return List.of();
+        try {
+            List<String> rows = objectMapper.readValue(json, new TypeReference<List<String>>() {});
+            return rows == null ? List.of() : rows;
+        } catch (Exception error) {
+            return List.of();
+        }
+    }
+
+    private static String castNamesAt(Archive archive, List<String> rows, int index) {
+        if (rows != null && index >= 0 && index < rows.size() && rows.get(index) != null && !rows.get(index).isBlank()) {
+            return rows.get(index);
+        }
+        return archive.getArtistNames() == null ? "" : archive.getArtistNames();
+    }
+
+    private static boolean membersOverlap(String castNames, List<String> selected) {
+        if (selected == null || selected.isEmpty()) return true;
+        for (String name : normalizeMembers(castNames == null || castNames.isBlank() ? List.of() : List.of(castNames.split(",")))) {
+            for (String picked : selected) {
+                if (name.equalsIgnoreCase(picked)) return true;
+            }
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> castBadges(Map<String, Object> frame) {
+        Object badges = frame.get("memberBadges");
+        return badges instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
+    }
+
+    private static List<Map<String, Object>> memberBadges(String names, List<Artist> artists, Map<String, String> colors) {
+        List<Map<String, Object>> badges = new ArrayList<>();
+        for (String name : normalizeMembers(names == null || names.isBlank() ? List.of() : List.of(names.split(",")))) {
+            Artist matched = null;
+            String keyName = name.toLowerCase(Locale.ROOT);
+            for (Artist artist : artists) {
+                if (artist.getName() != null && artist.getName().trim().equalsIgnoreCase(name)) { matched = artist; break; }
+                if (artist.getEngName() != null && artist.getEngName().trim().equalsIgnoreCase(name)) { matched = artist; break; }
+            }
+            String symbol = MemberPortraitOptions.archiveSymbolLogo(name);
+            String portrait = matched == null || matched.getDisplayProfileImage() == null ? "" : matched.getDisplayProfileImage();
+            String image = !symbol.isBlank() ? symbol : portrait;
+            Map<String, Object> badge = new LinkedHashMap<>();
+            badge.put("name", name);
+            badge.put("color", colors.getOrDefault(keyName, "#b9cac4"));
+            badge.put("image", image);
+            badge.put("hasImage", !image.isBlank());
+            badge.put("hasSymbol", !symbol.isBlank());
+            badge.put("portrait", portrait);
+            badge.put("hasPortrait", !portrait.isBlank());
+            badge.put("artistId", matched == null ? "" : matched.getArtistId());
+            badge.put("hasArtist", matched != null && matched.getArtistId() != null);
+            badges.add(badge);
+        }
+        return badges;
+    }
+
+    private String unionArtistNames(String fallback, String imageArtistsJson) {
+        if (imageArtistsJson == null || imageArtistsJson.isBlank()) return fallback == null ? "" : fallback;
+        List<String> rows;
+        try {
+            rows = objectMapper.readValue(imageArtistsJson, new TypeReference<List<String>>() {});
+        } catch (Exception error) {
+            return fallback == null ? "" : fallback;
+        }
+        if (rows == null || rows.isEmpty()) return fallback == null ? "" : fallback;
+        LinkedHashSet<String> names = new LinkedHashSet<>();
+        for (String row : rows) {
+            if (row == null || row.isBlank()) continue;
+            for (String name : normalizeMembers(List.of(row.split(",")))) names.add(name);
+        }
+        if (names.isEmpty()) return fallback == null ? "" : fallback;
+        return String.join(",", names);
     }
 
     private static String sourceQuery(String sourceSlug) {
@@ -755,7 +908,16 @@ public class ArchiveController {
 
     private String folderTitle(String folder, List<String> comboMembers, List<ArchiveFolderClassifier.UnitMembers> units) {
         if (folder == null || folder.isBlank()) return "";
-        if (folder.equalsIgnoreCase("s")) return "";
+        if (folder.equalsIgnoreCase("s")) {
+            if (comboMembers == null || comboMembers.isEmpty()) return "";
+            ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(
+                    String.join(",", comboMembers), units);
+            if (match.kind() == ArchiveFolderClassifier.Kind.UNIT
+                    || match.kind() == ArchiveFolderClassifier.Kind.SOLO) {
+                return match.label();
+            }
+            return "";
+        }
         if (isUnitIndex(folder)) return "디멘션";
         if (isComboIndex(folder)) return "케미";
         Integer comboSize = ArchiveFolderClassifier.comboSize(folder);
@@ -776,9 +938,34 @@ public class ArchiveController {
         return folder;
     }
 
-    private String folderAccent(String folder, List<Unit> units, List<Artist> artists) {
+    private String folderAccent(String folder, List<String> selectedMembers, List<Unit> units, List<Artist> artists) {
         if (folder == null || folder.isBlank()) return "#00f5d4";
-        if (folder.equalsIgnoreCase("s")) return "#f5c518";
+        if (folder.equalsIgnoreCase("s")) {
+            if (selectedMembers != null && !selectedMembers.isEmpty()) {
+                ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(
+                        String.join(",", selectedMembers), unitSnapshots(units));
+                if (match.kind() == ArchiveFolderClassifier.Kind.UNIT && match.unitId() != null) {
+                    for (Unit unit : units == null ? List.<Unit>of() : units) {
+                        if (match.unitId().equals(unit.getUnitId())) {
+                            return unitColor(unit, artists);
+                        }
+                    }
+                    return "#a78bfa";
+                }
+                if (match.kind() == ArchiveFolderClassifier.Kind.SOLO && !match.members().isEmpty()) {
+                    int index = MemberPortraitOptions.memberIndex(match.members().get(0));
+                    if (index < 24) {
+                        for (Artist artist : artists) {
+                            if (MemberPortraitOptions.memberIndex(artist.getName()) == index
+                                    || MemberPortraitOptions.memberIndex(artist.getEngName()) == index) {
+                                return safeColor(artist.getColor());
+                            }
+                        }
+                    }
+                }
+            }
+            return "#f5c518";
+        }
         if (isUnitIndex(folder)) return "#a78bfa";
         if (isComboIndex(folder)) return "#7dd3fc";
         Integer comboSize = ArchiveFolderClassifier.comboSize(folder);
@@ -847,9 +1034,9 @@ public class ArchiveController {
             unitPhotos += counted.counts().getOrDefault("unit-" + unit.getUnitId(), 0);
         }
         List<Map<String, Object>> folders = new ArrayList<>();
-        folders.add(folderCard("s", "tripleS", "#f5c518", "/archive?folder=s", counted.counts().getOrDefault("s", 0),
+        folders.add(folderCard("s", "tripleS", "#2f8eb4", "/archive?folder=s", counted.counts().getOrDefault("s", 0),
                 "", ArchiveFolderClassifier.Kind.GROUP, true));
-        folders.add(parentCard("units", "디멘션", "#a78bfa", "/archive?folder=units", unitPhotos));
+        folders.add(parentCard("units", "디멘션", "#7c4dff", "/archive?folder=units", unitPhotos));
         for (int i = 0; i < MemberPortraitOptions.koreanOrder().size(); i++) {
             String name = MemberPortraitOptions.koreanOrder().get(i);
             String key = "s" + (i + 1);
@@ -896,6 +1083,7 @@ public class ArchiveController {
         card.put("folderArt", archiveFolderArt.dimensionUrl());
         card.put("hasFolderArt", true);
         card.put("hasBundledFolderArt", true);
+        card.put("illustratedFolder", ArchiveFolderArt.DIMENSION_ART.equals(card.get("folderArt")));
         card.put("groupFolder", false);
         card.put("soloFolder", false);
         card.put("comboFolder", false);
@@ -1128,6 +1316,7 @@ public class ArchiveController {
         card.put("folderArt", art);
         card.put("hasFolderArt", customArt);
         card.put("hasBundledFolderArt", archiveFolderArt.isBundled(art));
+        card.put("illustratedFolder", ArchiveFolderArt.GROUP_ART.equals(art) || ArchiveFolderArt.DIMENSION_ART.equals(art));
         card.put("groupFolder", group);
         card.put("soloFolder", kind == ArchiveFolderClassifier.Kind.SOLO);
         card.put("comboFolder", kind == ArchiveFolderClassifier.Kind.COMBO);
@@ -1138,7 +1327,7 @@ public class ArchiveController {
     }
 
     private String folderRedirect(MediaType type, String artistNames) {
-        ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(artistNames, unitSnapshots(unitService.listVisible()));
+        ArchiveFolderClassifier.Match match = ArchiveFolderClassifier.classify(artistNames, unitSnapshots(unitService.listVisibleForArchive()));
         String typeQuery = type == MediaType.VIDEO ? "type=video&" : "";
         if (match.kind() == ArchiveFolderClassifier.Kind.OTHER || match.members().isEmpty()) {
             return type == MediaType.VIDEO ? "/archive?type=video" : "/archive";
@@ -1170,16 +1359,6 @@ public class ArchiveController {
             query.append("&members=").append(URLEncoder.encode(member, StandardCharsets.UTF_8));
         }
         return query.toString();
-    }
-
-    private static boolean matchesAnyUnit(String artistNames, List<ArchiveFolderClassifier.UnitMembers> units) {
-        Set<String> present = new LinkedHashSet<>(ArchiveFolderClassifier.membersOf(artistNames));
-        if (units == null) return false;
-        for (ArchiveFolderClassifier.UnitMembers unit : units) {
-            if (unit.members() == null || unit.members().isEmpty()) continue;
-            if (present.containsAll(unit.members())) return true;
-        }
-        return false;
     }
 
     private static String joinHref(String path, String extraQuery) {
@@ -1219,6 +1398,7 @@ public class ArchiveController {
                               @RequestParam(value = "title", required = false) String title,
                               @RequestParam(value = "description", required = false) String description,
                               @RequestParam(value="artistNames", required=false) List<String> artistNames,
+                              @RequestParam(value = "imageArtistsJson", required = false) String imageArtistsJson,
                               @RequestParam("registeredOn") LocalDate registeredOn,
                               @RequestParam("source") String source,
                               @RequestParam(defaultValue = "0") int coverIndex,
@@ -1240,7 +1420,12 @@ public class ArchiveController {
             if (uploads.isEmpty()) {
                 throw new IllegalArgumentException("사진 파일을 선택해 주세요.");
             }
-            archiveService.uploadImages(uploads, safeTitle, names, date, archiveSource, description, coverIndex);
+            String castNames = unionArtistNames(names, imageArtistsJson);
+            if (imageArtistsJson == null || imageArtistsJson.isBlank()) {
+                archiveService.uploadImages(uploads, safeTitle, castNames, date, archiveSource, description, coverIndex);
+            } else {
+                archiveService.uploadImages(uploads, safeTitle, castNames, date, archiveSource, description, coverIndex, imageArtistsJson);
+            }
             String location = folderRedirect(MediaType.IMAGE, names);
             idempotencyService.complete(IdempotencyService.SCOPE_ARCHIVE_UPLOAD, idempotencyKey, location);
             return "redirect:" + location;
@@ -1284,6 +1469,7 @@ public class ArchiveController {
                                            @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnail,
                                            @RequestParam(defaultValue = "false") boolean clearThumbnail,
                                            @RequestParam(value = "artistNames", required = false) String artistNames,
+                                           @RequestParam(value = "imageArtistsJson", required = false) String imageArtistsJson,
                                            @RequestParam("registeredOn") LocalDate registeredOn,
                                            @RequestParam(value = "source", required = false) String source,
                                            @RequestParam(value = "keepImageUrlsJson", required = false) String keepImageUrlsJson,
@@ -1293,13 +1479,25 @@ public class ArchiveController {
                                            HttpSession session) throws IOException {
         aboutAdminAuth.requireAdmin(request, session);
         try {
-            archiveService.update(id, title == null ? "" : title, files, artistNames, thumbnail, clearThumbnail,
-                    requireDate(registeredOn),
-                    source == null || source.isBlank() ? null : ArchiveSource.parse(source),
-                    description,
-                    keepImageUrlsJson,
-                    imageOrderJson,
-                    coverIndex);
+            String castNames = unionArtistNames(artistNames, imageArtistsJson);
+            if (imageArtistsJson == null || imageArtistsJson.isBlank()) {
+                archiveService.update(id, title == null ? "" : title, files, castNames, thumbnail, clearThumbnail,
+                        requireDate(registeredOn),
+                        source == null || source.isBlank() ? null : ArchiveSource.parse(source),
+                        description,
+                        keepImageUrlsJson,
+                        imageOrderJson,
+                        coverIndex);
+            } else {
+                archiveService.update(id, title == null ? "" : title, files, castNames, thumbnail, clearThumbnail,
+                        requireDate(registeredOn),
+                        source == null || source.isBlank() ? null : ArchiveSource.parse(source),
+                        description,
+                        keepImageUrlsJson,
+                        imageOrderJson,
+                        coverIndex,
+                        imageArtistsJson);
+            }
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

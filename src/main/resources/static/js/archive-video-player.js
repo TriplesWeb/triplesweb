@@ -40,7 +40,7 @@
         video.src = link.href;
         if (link.dataset.poster) video.poster = link.dataset.poster;
         else video.removeAttribute('poster');
-        const { id, registered, sourceLabel, source: sourceValue } = card.dataset;
+        const { id, registered, sourceLabel, source: sourceValue, unitLabel, unitColor } = card.dataset;
         date.hidden = !registered;
         dateValue.textContent = registered || '';
         if (registered) dateValue.dateTime = registered;
@@ -48,7 +48,15 @@
         source.hidden = !sourceLabel;
         source.dataset.source = sourceValue || '';
         source.textContent = sourceLabel || '';
-        meta.hidden = date.hidden && source.hidden;
+        const unit = document.getElementById('archiveVideoUnit');
+        if (unit) {
+            const label = (unitLabel || '').trim();
+            unit.hidden = !label;
+            unit.textContent = label;
+            unit.title = label;
+            unit.style.setProperty('--unit-color', (unitColor || '').trim() || '#a78bfa');
+        }
+        meta.hidden = date.hidden && source.hidden && (!unit || unit.hidden);
 
         const chips = card.querySelector('.ar-card-members');
         members.replaceChildren(...Array.from(chips?.children || [], chip => chip.cloneNode(true)));

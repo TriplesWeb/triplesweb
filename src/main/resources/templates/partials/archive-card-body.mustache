@@ -1,9 +1,17 @@
 <div class="ar-body">
     {{#hasHeadline}}<h3>{{headline}}</h3>{{/hasHeadline}}
-    {{#hasSource}}<div class="ar-source-badge" data-source="{{sourceValue}}">{{sourceLabel}}</div>{{/hasSource}}
+    {{#hasBadgeRow}}
+    <div class="ar-card-badges">
+        {{#hasSource}}<div class="ar-source-badge" data-source="{{sourceValue}}">{{sourceLabel}}</div>{{/hasSource}}
+        {{#hasUnitBadge}}<div class="ar-unit-badge" style="--unit-color: {{unitBadgeColor}}" title="{{unitBadgeLabel}}">{{unitBadgeLabel}}</div>{{/hasUnitBadge}}
+    </div>
+    {{/hasBadgeRow}}
     <div class="ar-meta" style="--member-count: {{memberCount}}" title="{{memberNames}}">
         {{>partials/archive-member-badges}}
         {{#hasRegisteredOn}}<time class="ar-card-date" datetime="{{registeredOn}}">{{registeredOnDisplay}}</time>{{/hasRegisteredOn}}
     </div>
-    <div class="ar-card-members" hidden>{{>partials/archive-album-members}}</div>
+    <div class="ar-card-members" hidden>
+        {{#imageCasts}}<div data-image-cast>{{>partials/archive-album-members}}</div>{{/imageCasts}}
+        {{^imageCasts}}{{>partials/archive-album-members}}{{/imageCasts}}
+    </div>
 </div>

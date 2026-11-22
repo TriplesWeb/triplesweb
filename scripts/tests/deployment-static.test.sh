@@ -31,18 +31,30 @@ grep -Fq '    branches: [main]' .github/workflows/deploy-main.yml
 grep -Fq 'retire-pi-dev.sh' .github/workflows/deploy-main.yml
 grep -Fq '/actuator/health/readiness' scripts/deploy-pi-app.sh
 grep -Fq 'cache-from: type=gha' .github/workflows/deploy-main.yml
-grep -Fq 'docker compose up -d --no-deps app' scripts/deploy-pi-app.sh
+grep -Fq 'up -d --no-deps app' scripts/deploy-pi-app.sh
 reject_match -Eq '^[[:space:]]*docker compose up -d[[:space:]]*$' scripts/deploy-pi-app.sh
 grep -Fq 'docker image inspect "$IMAGE"' scripts/deploy-pi-app.sh
 grep -Fq -- '--force-recreate app' scripts/deploy-pi-app.sh
 grep -Fq 'docker buildx imagetools inspect' .github/workflows/deploy-main.yml
 grep -Fq "steps.published.outputs.found != 'true'" .github/workflows/deploy-main.yml
-grep -Fq 'HEAD:uploads/chemistry' .github/workflows/deploy-main.yml
-grep -Fq 'chemistry_sync' .github/workflows/deploy-main.yml
+reject_match -Fq 'HEAD:uploads/chemistry' .github/workflows/deploy-main.yml
+reject_match -Fq 'chemistry_sync' .github/workflows/deploy-main.yml
+reject_match -Fq 'uploads/chemistry/' .github/workflows/deploy-main.yml
+grep -Fq 'migrate-chemistry-photos-on-pi.sh' .github/workflows/deploy-main.yml
 reject_match -Fq 'rsync -az' .github/workflows/deploy-main.yml
 reject_match -Fq 'COPY scripts ./scripts' Dockerfile
 grep -Fq 'COPY scripts/setup-css.sh scripts/build-*css.cjs' Dockerfile
 grep -Fq -- "- '.github/**'" .github/workflows/deploy-main.yml
 python3 scripts/ci-path-filter.py --self-test
-bash scripts/tests/bluegreen-static.test.sh
+test ! -e docker-compose.bluegreen.yml
+test ! -e scripts/deploy-pi-bluegreen.sh
+grep -Fq 'bash ./deploy-pi-app.sh' .github/workflows/deploy-main.yml
+grep -Fq '${APP_PORT:-8090}:8080' docker-compose.yml
+grep -Fq 'SPRING_JPA_HIBERNATE_DDL_AUTO: none' docker-compose.yml
+reject_match -Fq 'profiles: [legacy]' docker-compose.yml
+grep -Fq 'flock -w 900' scripts/deploy-pi-app.sh
+reject_match -Fq -- '--remove-orphans' scripts/deploy-pi-app.sh
+grep -Fq 'server.shutdown=graceful' src/main/resources/application.properties
+grep -Fq 'spring.session.store-type=jdbc' src/main/resources/application.properties
+python3 scripts/tests/deployment-behavior.test.py
 echo 'Production-only deployment assertions passed'

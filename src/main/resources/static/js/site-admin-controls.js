@@ -1,4 +1,35 @@
 (() => {
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-picker-all]");
+    if (!button) return;
+    event.preventDefault();
+    const spec = button.getAttribute("data-picker-all") || "";
+    if (spec) {
+      const node = document.querySelector(spec);
+      if (!node) return;
+      if (node.matches("select")) {
+        [...node.options].forEach((option) => { option.selected = true; });
+        node.dispatchEvent(new Event("change", { bubbles: true }));
+        return;
+      }
+      node.querySelectorAll('input[type="checkbox"]').forEach((box) => {
+        box.checked = true;
+        box.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      return;
+    }
+    const scope = button.closest("form") || button.parentElement;
+    const picker = scope?.querySelector(".member-portrait-picker");
+    if (!picker || !window.MemberPortraitPicker) return;
+    const names = [...picker.querySelectorAll(".mpp-item")]
+      .map((item) => item.dataset.value || item.dataset.name || "")
+      .filter(Boolean);
+    MemberPortraitPicker.setValues(picker, names);
+    if (typeof picker.__memberOnChange === "function") {
+      picker.__memberOnChange(MemberPortraitPicker.selectedValues(picker));
+    }
+  });
+
   const auth = window.AboutAdminAuth;
   if (!auth) return;
 
@@ -17,7 +48,8 @@
     ${protectedSelector} { display: none !important; }
     body.site-admin-enabled [data-admin-only], body.site-admin-enabled .admin-only { display: revert !important; }
     body.site-admin-enabled .ar-actions[data-admin-only],
-    body.site-admin-enabled .ar-detail-actions[data-admin-only] { display: flex !important; }
+    body.site-admin-enabled .ar-detail-actions[data-admin-only],
+    body.site-admin-enabled .media-short__actions { display: flex !important; }
     body.site-admin-enabled a[data-admin-only], body.site-admin-enabled button[data-admin-only] { display: inline-flex !important; }
     body.site-admin-enabled form[data-admin-only] { display: block !important; }
     #siteAdminBtn {

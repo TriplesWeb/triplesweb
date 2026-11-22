@@ -16,6 +16,27 @@
         setStatsOpen(statsToggle.getAttribute('aria-expanded') !== 'true');
     });
 
+    const backLink = document.querySelector('a.ar-back-folders');
+    if (backLink?.href) {
+        const backUrl = backLink.href;
+        let warming = false;
+        const warmBack = () => {
+            if (warming) return;
+            warming = true;
+            // no-store 응답이어도 서버 쪽 짧은 캐시(건수·유닛 목록)를 데운다.
+            fetch(backUrl, {
+                credentials: 'same-origin',
+                headers: { Purpose: 'prefetch', 'X-Archive-Back-Warm': '1' }
+            }).catch(() => {});
+        };
+        backLink.addEventListener('pointerenter', warmBack, { once: true });
+        backLink.addEventListener('focus', warmBack, { once: true });
+        if ('requestIdleCallback' in window) window.requestIdleCallback(warmBack, { timeout: 900 });
+        else window.setTimeout(warmBack, 350);
+        // href(예: /archive?folder=units)로만 이동한다.
+        // history.back()은 referrer와 실제 히스토리가 다를 때 /archive 홈으로 떨어질 수 있다.
+    }
+
     const grid = document.getElementById('archiveGrid');
     if (!grid) return;
     let cards = [...grid.querySelectorAll('.ar-card')];
@@ -223,9 +244,26 @@
     const memberCount = document.getElementById('archiveMemberCount');
     const memberLabel = memberToggle?.querySelector('[data-member-toggle-label]');
     const defaultMemberLabel = memberLabel?.textContent.trim() || '멤버 선택';
-    const folderTitle = document.querySelector('.ar-folder-title');
-    const baseFolderTitle = folderTitle?.dataset.baseTitle || folderTitle?.textContent.trim() || '';
     const chemMatches = panel?.querySelector('[data-chem-matches]');
+
+    function folderTitleEl() {
+        return document.querySelector('.ar-folder-title');
+    }
+
+    function baseFolderTitleText() {
+        const title = folderTitleEl();
+        return title?.dataset.baseTitle || title?.textContent.trim() || '';
+    }
+
+    function syncFolderTitleFrom(doc) {
+        const current = folderTitleEl();
+        const next = doc.querySelector('.ar-folder-title');
+        if (!current || !next) return;
+        current.className = next.className;
+        if (next.dataset.baseTitle != null) current.dataset.baseTitle = next.dataset.baseTitle;
+        else delete current.dataset.baseTitle;
+        current.innerHTML = next.innerHTML;
+    }
 
     function memberKey(name) {
         return String(name || '').trim().toLowerCase().replace(/\s+/g, '');
@@ -312,7 +350,30 @@
         const label = document.createElement(href ? 'a' : 'span');
         label.className = 'ar-detail-chem';
         label.textContent = entry.name;
-        if (href) label.href = href;
+        if (href) {
+            label.href = href;
+            // 케미 상세는 모달로만 연다. href는 새 탭/공유용으로 유지한다.
+            label.addEventListener('click', (event) => {
+                if (event.defaultPrevented || event.button !== 0) return;
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                const match = href.match(/\/triples\/chemistry\?(pair|group)=([1-9]\d*)/);
+                if (!match) return;
+                const open = match[1] === 'group'
+                    ? window.openChemistryGroupById
+                    : window.openChemistryPairById;
+                if (typeof open !== 'function') return;
+                event.preventDefault();
+                event.stopPropagation();
+                // 멤버 필터 반영이 대기 중이면 이 클릭이 페이지 주소를 바꾸지 않게 한다.
+                window.clearTimeout(filterTimer);
+                filterSeq += 1;
+                submitWhenDateCloses = false;
+                // 영상 플레이어는 native dialog top layer라 케미 모달이 가려진다. 먼저 닫는다.
+                const videoDialog = document.getElementById('archiveVideoPlayer');
+                if (videoDialog?.open) videoDialog.close();
+                open(match[2]);
+            });
+        }
         membersEl.before(label);
     };
 
@@ -372,8 +433,9 @@
                 ? selected[0]
                 : (exact ? exact.name : (count ? count + '명' : defaultMemberLabel));
         }
+        const folderTitle = folderTitleEl();
         if (chem && folderTitle && !folderTitle.classList.contains('is-solo') && (exact || Array.isArray(values) || !chem.value)) {
-            folderTitle.textContent = exact ? exact.name : baseFolderTitle;
+            folderTitle.textContent = exact ? exact.name : baseFolderTitleText();
         }
         memberToggle?.classList.toggle('has-selection', count > 0);
         memberToggle?.classList.toggle('is-open', Boolean(panel && !panel.hidden));
@@ -468,12 +530,29 @@
         const params = new URLSearchParams();
         new FormData(form).forEach((value, key) => {
             if (String(value).trim() === '') return;
+            if (key === 'size' && String(value) === '10') return;
             params.append(key, value);
         });
         const action = form.getAttribute('action') || location.pathname;
         const query = params.toString();
         return query ? action + (action.includes('?') ? '&' : '?') + query : action;
     }
+    const sizeSelect = document.getElementById('archivePageSize');
+    const filterSize = form?.querySelector('[data-archive-filter-size]');
+    function syncArchiveSize(value) {
+        if (filterSize) filterSize.value = value;
+        if (sizeSelect && sizeSelect.value !== value) sizeSelect.value = value;
+    }
+    sizeSelect?.addEventListener('change', () => {
+        const value = sizeSelect.value || '10';
+        syncArchiveSize(value);
+        const url = new URL(location.href);
+        if (value === '10') url.searchParams.delete('size');
+        else url.searchParams.set('size', value);
+        url.searchParams.delete('page');
+        url.searchParams.delete('go');
+        loadArchiveFilter(url.pathname + url.search);
+    });
     let filterSeq = 0;
     async function loadArchiveFilter(url, push) {
         const seq = ++filterSeq;
@@ -491,6 +570,8 @@
             if (grid.innerHTML !== nextGrid.innerHTML || grid.dataset.numberOffset !== nextOffset) {
                 grid.innerHTML = nextGrid.innerHTML;
                 grid.dataset.numberOffset = nextOffset;
+                if (nextGrid.dataset.pageSize) grid.dataset.pageSize = nextGrid.dataset.pageSize;
+                else delete grid.dataset.pageSize;
                 numberOffset = Math.max(0, Number(nextOffset) || 0);
                 cards = [...grid.querySelectorAll('.ar-card')];
                 apply();
@@ -510,6 +591,16 @@
             const pager = document.querySelector('.ar-pager');
             if (nextPager && pager && pager.innerHTML !== nextPager.innerHTML) {
                 pager.replaceWith(document.importNode(nextPager, true));
+            }
+            const nextSize = doc.getElementById('archivePageSize');
+            if (nextSize) syncArchiveSize(nextSize.value || '10');
+            syncFolderTitleFrom(doc);
+            const nextHeadline = doc.querySelector('.ar-headline');
+            const headline = document.querySelector('.ar-headline');
+            if (nextHeadline && headline) {
+                const nextColor = nextHeadline.style.getPropertyValue('--folder-color');
+                if (nextColor) headline.style.setProperty('--folder-color', nextColor);
+                else headline.style.removeProperty('--folder-color');
             }
             for (const selector of ['.ar-type-tabs', '.ar-source-tabs']) {
                 const current = document.querySelector(selector);

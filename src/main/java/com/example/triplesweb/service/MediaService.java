@@ -41,10 +41,15 @@ public class MediaService {
     }
     @Transactional(readOnly = true)
     public List<MediaDto> allByTab(String tab) {
-        return mediaRepository.findByTabOrderBySortOrderAscIdAsc(tab).stream().map(this::toDto).toList();
+        return mediaRepository.findAllWithArtistsByTab(tab).stream().map(this::toDto).toList();
     }
     @Transactional(readOnly = true)
     public int totalByTab(String tab) { return (int) mediaRepository.countByTab(tab); }
+
+    @Transactional(readOnly = true)
+    public List<MediaDto> listAll() {
+        return mediaRepository.findAllWithArtists().stream().map(this::toDto).toList();
+    }
 
     public void addMedia(String tab, MediaDto dto, boolean addFirst) {
         addMedia(tab,dto,addFirst,dto == null ? "" : dto.getArtistNames());
@@ -58,7 +63,7 @@ public class MediaService {
                 .mediaTitle(dto.getTitle()!=null?dto.getTitle():"")
                 .mediaDur(dto.getDuration()!=null?dto.getDuration():"")
                 .viewCount(dto.getViews()!=null?dto.getViews():0L)
-                .description(truncateDescription(dto.getDescription()))
+                .description(storeAdminDescription(dto.getDescription()))
                 .publishedOn(parseDate(dto.getPublishedOn()))
                 .sortOrder(sortOrder).build();
         entity.setArtists(resolveArtists(artistNames));
@@ -75,7 +80,7 @@ public class MediaService {
         if(id.length()!=11) { Map<String,Object> fallback=new LinkedHashMap<>(); fallback.put("youtubeId",urlOrId!=null?urlOrId:""); fallback.put("title","올바르지 않은 유튜브 ID 또는 링크입니다."); fallback.put("thumbnail",""); fallback.put("duration","03:00"); fallback.put("views",0L); return fallback; }
         Map<String,Object> res=new LinkedHashMap<>(); res.put("youtubeId",id); res.put("title","유튜브 영상 ("+id+")"); res.put("thumbnail","https://img.youtube.com/vi/"+id+"/hqdefault.jpg"); res.put("duration","03:00"); res.put("views",0L);
         try { var oe=oembed.fetch("https://www.youtube.com/watch?v="+id); if(oe!=null) { if(oe.getTitle()!=null&&!oe.getTitle().isBlank())res.put("title",oe.getTitle()); if(oe.getThumbnail_url()!=null&&!oe.getThumbnail_url().isBlank())res.put("thumbnail",oe.getThumbnail_url()); } } catch(Exception ignored) {}
-        try { var vr=yt.fetchVideo(id); if(vr!=null&&vr.getItems()!=null&&vr.getItems().length>0) { var item=vr.getItems()[0]; if(item.getSnippet()!=null) { if(item.getSnippet().getTitle()!=null&&!item.getSnippet().getTitle().isBlank())res.put("title",item.getSnippet().getTitle()); if(item.getSnippet().getDescription()!=null)res.put("description",item.getSnippet().getDescription()); String pub=item.getSnippet().getPublishedAt(); if(pub!=null&&pub.length()>=10){ String day=pub.substring(0,10); res.put("publishedAt",day.replace("-",".")); res.put("publishedOn",day); } } if(item.getContentDetails()!=null&&item.getContentDetails().getDuration()!=null) { String d=ISODuration.toClock(item.getContentDetails().getDuration()); if(d!=null&&!d.isBlank())res.put("duration",d); } if(item.getStatistics()!=null&&item.getStatistics().getViewCount()!=null)res.put("views",item.getStatistics().getViewCount()); } } catch(Exception ignored) {}
+        try { var vr=yt.fetchVideo(id); if(vr!=null&&vr.getItems()!=null&&vr.getItems().length>0) { var item=vr.getItems()[0]; if(item.getSnippet()!=null) { if(item.getSnippet().getTitle()!=null&&!item.getSnippet().getTitle().isBlank())res.put("title",item.getSnippet().getTitle()); String pub=item.getSnippet().getPublishedAt(); if(pub!=null&&pub.length()>=10){ String day=pub.substring(0,10); res.put("publishedAt",day.replace("-",".")); res.put("publishedOn",day); } } if(item.getContentDetails()!=null&&item.getContentDetails().getDuration()!=null) { String d=ISODuration.toClock(item.getContentDetails().getDuration()); if(d!=null&&!d.isBlank())res.put("duration",d); } if(item.getStatistics()!=null&&item.getStatistics().getViewCount()!=null)res.put("views",item.getStatistics().getViewCount()); } } catch(Exception ignored) {}
         return res;
     }
     public void registerMedia(String tab,MediaDto form) { registerMedia(tab,form,form==null?"":form.getArtistNames()); }
@@ -89,7 +94,6 @@ public class MediaService {
             if(title.isBlank()&&info.get("title")!=null)title=(String)info.get("title");
             if((dur.isBlank()||dur.equals("03:00"))&&info.get("duration")!=null)dur=(String)info.get("duration");
             if(views==0&&info.get("views")!=null)views=Long.parseLong(info.get("views").toString());
-            if(description.isBlank()&&info.get("description")!=null)description=(String)info.get("description");
         } catch(Exception ignored) {}
         String publishedOn=form.getPublishedOn()==null?"":form.getPublishedOn().trim();
         if(publishedOn.isBlank()) try {
@@ -145,7 +149,7 @@ public class MediaService {
                     .views(views)
                     .viewCountFmt(numberFormat.format(views))
                     .duration(media.getMediaDur())
-                    .description(media.getDescription())
+                    .description(visibleDescription(media.getDescription()))
                     .artistNames(media.getArtistNames())
                     .build();
 
@@ -173,7 +177,29 @@ public class MediaService {
 
     private MediaDto toDto(Media m) {
         long views=m.getViewCount()!=null?m.getViewCount():0L;
-        return MediaDto.builder().tab(m.getTab()).youtubeId(m.getYoutubeId()).title(m.getMediaTitle()).duration(m.getMediaDur()).views(views).viewCountFmt(NumberFormat.getInstance().format(views)).description(m.getDescription()).artistNames(m.getArtistNames()).publishedOn(m.getPublishedOn()==null?"":m.getPublishedOn().toString()).build();
+        return MediaDto.builder().id(m.getId()).tab(m.getTab()).youtubeId(m.getYoutubeId()).title(m.getMediaTitle()).duration(m.getMediaDur()).views(views).viewCountFmt(NumberFormat.getInstance().format(views)).description(visibleDescription(m.getDescription())).artistNames(m.getArtistNames()).publishedOn(m.getPublishedOn()==null?"":m.getPublishedOn().toString()).build();
+    }
+
+    public boolean updateDetails(String youtubeId, String description, String publishedOn, String artistNames, String tab) {
+        if (youtubeId == null || youtubeId.isBlank()) return false;
+        Optional<Media> existing = mediaRepository.findByYoutubeIdIgnoreCase(youtubeId.trim());
+        if (existing.isEmpty()) return false;
+        Media media = existing.get();
+        media.setDescription(storeAdminDescription(description));
+        media.setPublishedOn(parseDate(publishedOn));
+        media.setArtists(resolveArtists(artistNames));
+        String nextTab = mediaTab(tab);
+        if (nextTab != null) media.setTab(nextTab);
+        return true;
+    }
+
+    private static String mediaTab(String tab) {
+        if (tab == null || tab.isBlank()) return null;
+        String key = tab.trim().toLowerCase(Locale.ROOT);
+        for (MediaTab candidate : MediaTab.values()) {
+            if (candidate.getKey().equals(key)) return candidate.getKey();
+        }
+        return null;
     }
 
     @Transactional(readOnly = true)
@@ -189,6 +215,20 @@ public class MediaService {
         if (value.length() >= 10 && value.charAt(4) == '.') value = value.substring(0, 10).replace('.', '-');
         try { return LocalDate.parse(value.length() >= 10 ? value.substring(0, 10) : value); }
         catch (DateTimeParseException ex) { return null; }
+    }
+
+    /** 관리자가 저장한 설명만 화면에 보인다. 유튜브에서 받아 둔 문장은 비워 둔다. */
+    private static final String ADMIN_DESCRIPTION = "\u200b";
+
+    private static String visibleDescription(String raw) {
+        if (raw == null || !raw.startsWith(ADMIN_DESCRIPTION)) return "";
+        return raw.substring(ADMIN_DESCRIPTION.length());
+    }
+
+    private static String storeAdminDescription(String description) {
+        String text = truncateDescription(description);
+        if (text.isBlank()) return "";
+        return text.startsWith(ADMIN_DESCRIPTION) ? text : ADMIN_DESCRIPTION + text;
     }
 
     /** TEXT 컬럼 한도 안에서 저장 (유튜브 설명이 매우 긴 경우 대비) */

@@ -34,6 +34,23 @@ class ArchiveFolderClassifierTest {
         assertThat(ArchiveFolderClassifier.matches(match, "combo", List.of("윤서연", "김유연", "김나경", "공유빈"))).isFalse();
     }
 
+    @Test void unitMemberFolderRequiresExactCastNotSuperset() {
+        var kre = new ArchiveFolderClassifier.UnitMembers(2L, "+(KR)ystal Eyes",
+                Set.of("윤서연", "이지우", "김채연", "김수민"));
+        var acidEyes = new ArchiveFolderClassifier.UnitMembers(3L, "Acid Eyes",
+                Set.of("윤서연", "정혜린", "이지우", "김채연", "김유연", "김수민", "김나경", "공유빈"));
+        var units = List.of(aaa(), kre, acidEyes);
+        var kreOnly = ArchiveFolderClassifier.classify("윤서연,이지우,김채연,김수민", units);
+        var acidEyesCast = ArchiveFolderClassifier.classify(
+                "윤서연,정혜린,이지우,김채연,김유연,김수민,김나경,공유빈", units);
+        List<String> kreMembers = List.of("윤서연", "이지우", "김채연", "김수민");
+        assertThat(kreOnly.kind()).isEqualTo(ArchiveFolderClassifier.Kind.UNIT);
+        assertThat(ArchiveFolderClassifier.matches(kreOnly, "s", kreMembers, units)).isTrue();
+        assertThat(ArchiveFolderClassifier.matches(acidEyesCast, "s", kreMembers, units)).isFalse();
+        // 유닛이 아닌 임의 멤버 선택은 기존처럼 포함(슈퍼셋) 매칭
+        assertThat(ArchiveFolderClassifier.matches(acidEyesCast, "s", List.of("윤서연", "정혜린"), units)).isTrue();
+    }
+
     @Test void twoMembersWithoutAMatchingUnitAreThePairChemistryFolder() {
         var seoyeonHyein = ArchiveFolderClassifier.classify("윤서연, 정혜린", List.of(aaa()));
         var chaeyeonYuyeon = ArchiveFolderClassifier.classify("김채연,김유연", List.of(aaa()));

@@ -91,7 +91,10 @@
             </div>
 
             <div class="site-col">
-                <label class="site-label">출연 멤버</label>
+                <div class="media-edit-members__head" style="display:flex;align-items:center;justify-content:space-between;gap:.5rem">
+                    <label class="site-label" style="margin:0">출연 멤버</label>
+                    <button type="button" class="ar-text-btn" data-picker-all>전체 선택</button>
+                </div>
                 <p class="mb-2 text-xs text-[#8b9b95]">사진을 눌러 출연 멤버를 고르세요. 목록에 없는 이름은 아래에 쉼표로 추가할 수 있습니다.</p>
                 <div class="member-portrait-picker is-compact" id="media-member-picker" role="group" aria-label="출연 멤버">
                     {{>partials/member-portrait-picker}}

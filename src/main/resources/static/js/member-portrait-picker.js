@@ -4,10 +4,7 @@
  * - 클릭으로 is-active 토글 (다중선택)
  */
 (function (global) {
-  const FRAME_BASES = [
-    "/uploads/images/" + encodeURIComponent("3인이상 프로필 테두리") + "/",
-    "/uploads/images/artist-tab-frames/"
-  ];
+  const FRAME_BASE = "/images/artist/tab-frames/";
 
   const PLACEHOLDER = "/images/image-upload-pending.png";
 
@@ -31,27 +28,20 @@
       return;
     }
     frame.dataset.boundFrame = String(n);
-    let attempt = 0;
-    const tryNext = () => {
-      if (attempt >= FRAME_BASES.length) {
-        frame.hidden = true;
-        if (avatar) {
-          avatar.style.removeProperty("--frame-mask");
-          avatar.classList.remove("has-frame-mask");
-        }
-        return;
+    frame.onerror = () => {
+      frame.hidden = true;
+      if (avatar) {
+        avatar.style.removeProperty("--frame-mask");
+        avatar.classList.remove("has-frame-mask");
       }
-      const src = FRAME_BASES[attempt++] + n + ".png";
-      frame.onerror = tryNext;
-      frame.onload = () => {
-        frame.onerror = null;
-        paintFrameMask(avatar, frame);
-      };
-      frame.hidden = false;
-      frame.src = src;
-      if (frame.complete && frame.naturalWidth) paintFrameMask(avatar, frame);
     };
-    tryNext();
+    frame.onload = () => {
+      frame.onerror = null;
+      paintFrameMask(avatar, frame);
+    };
+    frame.hidden = false;
+    frame.src = FRAME_BASE + n + ".png";
+    if (frame.complete && frame.naturalWidth) paintFrameMask(avatar, frame);
   }
 
   function ensureFrame(avatar, btn, index) {
@@ -129,6 +119,34 @@
     });
   }
 
+  /** 탭 프레임 PNG를 미리 받아 모달 첫 페인트가 막히지 않게 한다. */
+  function preloadFrames() {
+    for (let n = 1; n <= 24; n += 1) {
+      const img = new Image();
+      img.decoding = "async";
+      img.src = FRAME_BASE + n + ".png";
+    }
+  }
+
+  /**
+   * 숨겨진 모달 안 lazy 초상화를 미리 받아 둔다.
+   * (hidden 모달의 loading=lazy는 열릴 때 한꺼번에 요청되어 1초 넘게 비는 경우가 많다)
+   */
+  function warmPicker(root) {
+    const picker = resolvePicker(root);
+    if (!picker) return;
+    picker.querySelectorAll(".artist-tab-photo").forEach((img) => {
+      const src = (img.getAttribute("src") || "").trim();
+      if (!src) return;
+      img.loading = "eager";
+      img.decoding = "async";
+      const warm = new Image();
+      warm.decoding = "async";
+      warm.src = src;
+    });
+    bindFrames(picker);
+  }
+
   function selectedValues(root) {
     const picker = resolvePicker(root) || root;
     return Array.from((picker || document).querySelectorAll(".mpp-item.is-active"))
@@ -169,6 +187,7 @@
 
     bindFrames(picker);
 
+    picker.__memberOnChange = options.onChange;
     if (picker.__memberClickHandler) picker.removeEventListener("click", picker.__memberClickHandler);
     const handleClick = (e) => {
       const btn = e.target.closest(".mpp-item");
@@ -191,6 +210,8 @@
 
   global.MemberPortraitPicker = {
     bindFrames,
+    preloadFrames,
+    warmPicker,
     bindMultiSelect,
     selectedValues,
     setValues,

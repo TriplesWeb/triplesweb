@@ -12,8 +12,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 유닛 목록·상세 조회. 부모/자식 앨범 병합 포함.
@@ -55,6 +59,70 @@ public class UnitService {
             sortMembersByArtistId(unit);
         }
         return visible;
+    }
+
+    /** 아카이브 폴더 분류용. 멤버만 필요하고 앨범 병합은 생략한다. */
+    @Transactional(readOnly = true)
+    public List<Unit> listVisibleForArchive() {
+        List<Unit> visible = unitRepository.findAllForUnitPage().stream().filter(Unit::isVisible).toList();
+        for (Unit unit : visible) {
+            sortMembersByArtistId(unit);
+        }
+        return visible;
+    }
+
+    /**
+     * 멤버/아카이브 편집용 소속 유닛 체크 목록.
+     * 숨김 유닛·상위 컨테이너(예: msnz)는 제외. Mustache {@code unitCheckboxOptions}.
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> listUnitCheckboxOptions() {
+        return filterCheckboxEditable(unitRepository.findAllForUnitPage()).stream()
+                .sorted(Comparator.comparingLong(unit -> unit.getUnitId() != null ? unit.getUnitId() : 0L))
+                .map(unit -> {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("unitId", unit.getUnitId());
+                    row.put("unitName", unit.getUnitName());
+                    String membersCsv = checkboxMemberNames(unit);
+                    if (!membersCsv.isEmpty()) {
+                        row.put("membersCsv", membersCsv);
+                    }
+                    return row;
+                })
+                .collect(Collectors.toList());
+    }
+
+    /** 체크 UI에 노출되는 유닛 id. 아티스트 저장 시 UI 밖 소속은 건드리지 않는다. */
+    @Transactional(readOnly = true)
+    public Set<Long> checkboxEditableUnitIds() {
+        // 멤버 fetch 조인 없이 id만 본다. 편집 트랜잭션과 findAllForUnitPage가 섞이면 판정이 어긋날 수 있다.
+        return filterCheckboxEditable(unitRepository.findAll()).stream()
+                .map(Unit::getUnitId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static List<Unit> filterCheckboxEditable(List<Unit> all) {
+        Set<Long> parentIds = all.stream()
+                .map(Unit::getParentUnit)
+                .filter(Objects::nonNull)
+                .map(Unit::getUnitId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        return all.stream()
+                .filter(Unit::isVisible)
+                .filter(unit -> unit.getUnitId() == null || !parentIds.contains(unit.getUnitId()))
+                .collect(Collectors.toList());
+    }
+
+    private static String checkboxMemberNames(Unit unit) {
+        if (unit.getUnitMembers() == null || unit.getUnitMembers().isEmpty()) return "";
+        return unit.getUnitMembers().stream()
+                .map(UnitMember::getArtist)
+                .filter(Objects::nonNull)
+                .map(artist -> artist.getName() == null ? "" : artist.getName().trim())
+                .filter(name -> !name.isEmpty())
+                .collect(Collectors.joining(","));
     }
 
     @Transactional(readOnly = true)

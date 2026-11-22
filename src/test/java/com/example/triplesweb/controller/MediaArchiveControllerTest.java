@@ -1,0 +1,132 @@
+package com.example.triplesweb.controller;
+
+import com.example.triplesweb.config.MustacheConfig;
+import com.example.triplesweb.dto.MediaDto;
+import com.example.triplesweb.repository.ArtistRepository;
+import com.example.triplesweb.repository.ScheduleRepository;
+import com.example.triplesweb.service.AboutAdminAuth;
+import com.example.triplesweb.service.ArtistAdminService;
+import com.example.triplesweb.service.MediaService;
+import com.example.triplesweb.service.MediaViewCountService;
+import org.jsoup.Jsoup;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@WebMvcTest(MediaArchiveController.class)
+@AutoConfigureMockMvc(addFilters = false)
+@Import(MustacheConfig.class)
+class MediaArchiveControllerTest {
+    @Autowired MockMvc mvc;
+    @MockitoBean MediaService media;
+    @MockitoBean MediaViewCountService mediaViewCounts;
+    @MockitoBean ArtistRepository artistRepository;
+    @MockitoBean ScheduleRepository scheduleRepository;
+    @MockitoBean AboutAdminAuth aboutAdminAuth;
+    @MockitoBean ArtistAdminService artistAdmin;
+
+    @BeforeEach
+    void stubs() {
+        lenient().when(artistRepository.findAll()).thenReturn(List.of());
+        lenient().when(aboutAdminAuth.isAdmin(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(false);
+        List<MediaDto> videos = new ArrayList<>();
+        for (int i = 0; i < 30; i++) {
+            videos.add(video(i, i < 5 ? "0:40" : "3:11"));
+        }
+        when(media.listAll()).thenReturn(videos);
+    }
+
+    @Test
+    void pagesArchiveAndLimitsVisibleCards() throws Exception {
+        String first = mvc.perform(get("/media"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("@triplescosmos")))
+                .andExpect(content().string(containsString("페이지 1 / 2")))
+                .andExpect(content().string(containsString("더보기")))
+                .andExpect(content().string(containsString("Shorts &amp; 릴스")))
+                .andReturn().getResponse().getContentAsString();
+        org.jsoup.nodes.Document document = Jsoup.parse(first);
+        assertThat(document.select("article.media-card")).hasSize(24);
+        assertThat(document.select(".media-playlist__head .media-playlist-add")).hasSize(1);
+        assertThat(document.select("article.media-card .media-card__edit[data-admin-only]")).hasSize(24);
+        assertThat(document.select("#mediaEditTab option")).hasSize(5);
+        assertThat(document.select(".media-archive .media-card__title").eachText())
+                .noneMatch(title -> title.equals("영상 0") || title.equals("영상 1"));
+
+        String second = mvc.perform(get("/media").param("page", "2"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("페이지 2 / 2")))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(Jsoup.parse(second).select("article.media-card")).hasSize(1);
+    }
+
+    @Test
+    void shortsKindKeepsOnlyShortVideos() throws Exception {
+        String html = mvc.perform(get("/media").param("kind", "shorts"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("YouTube Shorts"))))
+                .andExpect(content().string(not(containsString("짧게 만나는"))))
+                .andExpect(content().string(not(containsString("페이지 1 / 2"))))
+                .andReturn().getResponse().getContentAsString();
+        org.jsoup.nodes.Document document = Jsoup.parse(html);
+        assertThat(document.select("section.media-archive")).isEmpty();
+        assertThat(document.select(".media-short")).hasSize(5);
+    }
+
+    @Test
+    void playlistStartsWithAndlessMusicVideosOnly() throws Exception {
+        when(media.listAll()).thenReturn(List.of(
+                video(1, "mv", "ANDLESS Official MV", "3:40", "2026-11-01"),
+                video(2, "mv", "Other Official MV", "3:20", "2026-11-02"),
+                video(3, "contents", "ANDLESS behind", "4:00", "2026-11-03"),
+                video(4, "mv", "ANDLESS teaser", "0:40", "2026-11-04"),
+                video(5, "mv", "andless live clip", "2:10", "2026-10-01")));
+
+        String html = mvc.perform(get("/media"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        org.jsoup.nodes.Document document = Jsoup.parse(html);
+        assertThat(document.select(".media-playlist__item strong").eachText())
+                .containsExactly("Other Official MV");
+        assertThat(document.select(".media-feature__hero").attr("data-ytid"))
+                .isEqualTo(document.select(".media-playlist__item").attr("data-ytid"));
+        assertThat(document.select(".media-archive .media-card__title").eachText())
+                .doesNotContain("ANDLESS teaser");
+        assertThat(document.select(".media-short")).hasSize(1);
+    }
+
+    private static MediaDto video(int index, String duration) {
+        return video(index, "contents", "영상 " + index, duration, "2024-05-06");
+    }
+
+    private static MediaDto video(int index, String tab, String title, String duration, String publishedOn) {
+        return MediaDto.builder()
+                .id((long) index + 1)
+                .tab(tab)
+                .youtubeId(String.format("%011d", index))
+                .title(title)
+                .duration(duration)
+                .views(10L)
+                .viewCountFmt("10")
+                .publishedOn(publishedOn)
+                .build();
+    }
+}

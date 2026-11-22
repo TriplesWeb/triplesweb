@@ -64,7 +64,7 @@ public class TriplesController {
         model.addAttribute("pageHeading", pageHeading);
         model.addAttribute("artistBase", artistBase);
         model.addAttribute("artist", artistList);
-        model.addAttribute("allUnits", artistAdminService.listUnitOptions());
+        model.addAttribute("unitCheckboxOptions", unitService.listUnitCheckboxOptions());
         model.addAttribute("groupTitle", group.getTitle());
         model.addAttribute("groupBody", group.getBody());
         model.addAttribute("groupImage", group.getImageUrl());

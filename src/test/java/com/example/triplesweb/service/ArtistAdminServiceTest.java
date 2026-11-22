@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest(properties = "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect")
 @ActiveProfiles("test")
-@Import(ArtistAdminService.class)
+@Import({ArtistAdminService.class, UnitService.class})
 class ArtistAdminServiceTest {
     @Autowired EntityManager em;
     @Autowired ArtistAdminService service;
@@ -75,6 +75,49 @@ class ArtistAdminServiceTest {
 
         assertThat(reload(artist.getArtistId()).getAffiliatedUnit()).isEmpty();
         assertThat(em.find(UnitMember.class, linkId)).isNull();
+    }
+
+    @Test
+    void preservesParentContainerMembershipWhenUiOmitsIt() {
+        Unit parent = unit("msnz");
+        Unit child = unit("msnz moon");
+        child.setParentUnit(parent);
+        Artist artist = linkedArtist("wav", parent, child);
+        Long parentLinkId = artist.getAffiliatedUnit().stream()
+                .filter(link -> link.getUnit().getUnitId().equals(parent.getUnitId()))
+                .findFirst()
+                .orElseThrow()
+                .getId();
+        em.clear();
+
+        // 체크 UI에는 자식만 보이므로 부모 id가 제출되지 않는다.
+        update(artist.getArtistId(), List.of(child.getUnitId()));
+
+        Artist saved = reload(artist.getArtistId());
+        assertThat(saved.getAffiliatedUnit()).extracting(link -> link.getUnit().getUnitId())
+                .containsExactlyInAnyOrder(parent.getUnitId(), child.getUnitId());
+        assertThat(saved.getAffiliatedUnit()).extracting(UnitMember::getId).contains(parentLinkId);
+    }
+
+    @Test
+    void preservesHiddenUnitMembershipWhenUiOmitsIt() {
+        Unit hidden = unit("hidden-container");
+        hidden.setVisible(false);
+        Unit visible = unit("visible-unit");
+        Artist artist = linkedArtist("member", hidden, visible);
+        Long hiddenLinkId = artist.getAffiliatedUnit().stream()
+                .filter(link -> link.getUnit().getUnitId().equals(hidden.getUnitId()))
+                .findFirst()
+                .orElseThrow()
+                .getId();
+        em.clear();
+
+        update(artist.getArtistId(), List.of(visible.getUnitId()));
+
+        Artist saved = reload(artist.getArtistId());
+        assertThat(saved.getAffiliatedUnit()).extracting(link -> link.getUnit().getUnitId())
+                .containsExactlyInAnyOrder(hidden.getUnitId(), visible.getUnitId());
+        assertThat(saved.getAffiliatedUnit()).extracting(UnitMember::getId).contains(hiddenLinkId);
     }
 
     private void update(Long artistId, List<Long> unitIds) {

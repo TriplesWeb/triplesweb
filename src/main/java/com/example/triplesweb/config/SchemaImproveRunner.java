@@ -11,8 +11,7 @@ import org.springframework.stereotype.Component;
 /**
  * Flyway 이후 남은 스키마 정리.
  * Chemistry memberA/B → Artist FK, unit_member UNIQUE.
- * {@link com.example.triplesweb.config.DataInitializer} 이후,
- * {@link com.example.triplesweb.service.ChemistrySeedService} 이전에 실행되어야 한다.
+ * {@link com.example.triplesweb.config.DataInitializer} 이후 실행되어야 한다.
  * 테이블/컬럼명은 CamelCaseToUnderscores snake_case만 사용한다.
  */
 @Slf4j

@@ -34,7 +34,7 @@ class ArtistPerformanceTest {
   List<Artist> list=new ArrayList<>();
   for(long i=1;i<=24;i++){Artist a=new Artist();a.setArtistId(i);a.setName("멤버 "+i);a.setEngName("member"+i);a.setColor("#8decd9");a.setProfileImage("https://image.test/portrait-"+i+".jpg");a.setSoloContent("[{\"title\":\"테스트 영상\",\"url\":\"https://youtu.be/abcdefghijk\"}]");list.add(a);}
   when(artists.findAllWithUnits()).thenReturn(list);when(artists.findById(1L)).thenReturn(Optional.of(list.get(0)));
-  GroupIntroDto group=mock(GroupIntroDto.class);when(group.getTitle()).thenReturn("트리플에스");when(group.getBody()).thenReturn("그룹 소개");when(group.getImageUrl()).thenReturn("https://image.test/group.jpg");when(group.getTabImageUrl()).thenReturn("https://image.test/group.jpg");when(admin.getGroupIntro()).thenReturn(group);when(admin.listUnitOptions()).thenReturn(List.of());return list;
+  GroupIntroDto group=mock(GroupIntroDto.class);when(group.getTitle()).thenReturn("트리플에스");when(group.getBody()).thenReturn("그룹 소개");when(group.getImageUrl()).thenReturn("https://image.test/group.jpg");when(group.getTabImageUrl()).thenReturn("https://image.test/group.jpg");when(admin.getGroupIntro()).thenReturn(group);when(units.listUnitCheckboxOptions()).thenReturn(List.of());return list;
  }
  @Test void initialGroupViewDoesNotReadAnyMemberFeeds() throws Exception{
   givenArtists();var result=mvc.perform(get("/triples/artist")).andExpect(status().isOk())

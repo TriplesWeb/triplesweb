@@ -78,6 +78,19 @@ class UnitServiceTest {
                 .containsExactly(id1, id2);
     }
 
+
+    @Test void checkboxEditableUnitIdsExcludesParentsAndHidden() {
+        Unit parent = unit("parent", null, true);
+        Unit child = unit("child", parent, true);
+        Unit hidden = unit("hidden", null, false);
+        Unit visible = unit("visible", null, true);
+        em.flush();
+        em.clear();
+        assertThat(service.checkboxEditableUnitIds())
+                .contains(child.getUnitId(), visible.getUnitId())
+                .doesNotContain(parent.getUnitId(), hidden.getUnitId());
+    }
+
     private Artist artist(String name, String engName) {
         Artist artist = new Artist();
         artist.setName(name);

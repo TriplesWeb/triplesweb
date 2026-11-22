@@ -21,6 +21,8 @@ import java.util.stream.Stream;
 public class ArchiveFolderArt {
     static final String DIR_NAME = "미디어 폴더";
     private static final String BUNDLED_ART_PATH = "/images/archive/";
+    public static final String GROUP_ART = BUNDLED_ART_PATH + "folder-triples.png";
+    public static final String DIMENSION_ART = BUNDLED_ART_PATH + "folder-dimension.png";
     private static final List<String> EXTENSIONS = List.of(".png", ".jpg", ".jpeg", ".webp", ".svg");
     private static final int BUNDLED_MEMBER_FOLDER_COUNT = 24;
     private static final Map<String, Integer> UNIT_IMAGES = Map.ofEntries(
@@ -69,7 +71,7 @@ public class ArchiveFolderArt {
             }
         }
         return switch (kind) {
-            case GROUP -> BUNDLED_ART_PATH + "member-folders/3.png";
+            case GROUP -> GROUP_ART;
             case SOLO -> memberIcon(key);
             case UNIT -> unitIcon(label);
             default -> "";
@@ -77,7 +79,7 @@ public class ArchiveFolderArt {
     }
 
     public String dimensionUrl() {
-        return BUNDLED_ART_PATH + "member-folders/2.png";
+        return DIMENSION_ART;
     }
 
     public boolean isBundled(String url) {

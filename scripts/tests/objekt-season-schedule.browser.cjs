@@ -14,7 +14,9 @@ const urls={
  try{
   const page=await browser.newPage({viewport:{width:1280,height:900}});
   await page.addInitScript(()=>{window.tailwind={};});
-  const posts=[], pageErrors=[];
+   const posts=[], pageErrors=[];
+   const decorations = [], decorationPosts = [];
+   const decorationDate = new Date().toISOString().slice(0, 8) + '10';
   page.on('pageerror',error=>pageErrors.push(error.message));
   await page.context().addCookies([{name:'XSRF-TOKEN',value:'fixture-csrf',domain:'filters.test',path:'/'}]);
   await page.route('**/*',async route=>{
@@ -22,6 +24,16 @@ const urls={
    if(libraries[request.url()])return route.fulfill({body:libraries[request.url()],contentType:request.url().endsWith('.css')?'text/css':'application/javascript'});
    if(url.origin!=='https://filters.test')return route.fulfill({body:'',contentType:url.pathname.endsWith('.css')?'text/css':'application/javascript'});
    if(url.pathname==='/api/artist/admin/status')return route.fulfill({json:{configured:true,admin:true}});
+    if(url.pathname==='/api/calendar-decorations/birthdays')return route.fulfill({status:503});
+    if(url.pathname==='/api/calendar-decorations'){
+     if(request.method()==='POST'){
+      decorationPosts.push(request.headers());
+      const saved={id:1,title:'테스트 유닛 스티커',kind:'UNIT',eventDate:decorationDate,color:'#00f5d4'};
+      decorations.push(saved);
+      return route.fulfill({json:saved});
+     }
+     return route.fulfill({json:decorations});
+    }
    if(request.method()==='POST'&&(url.pathname==='/schedule/add'||url.pathname==='/edit/42')){
     const params=new URLSearchParams(request.postData());posts.push({params,headers:request.headers()});
     const category=params.get('category'),title=params.get('title'),start=params.get('start')||params.get('startDate');
@@ -209,6 +221,20 @@ const urls={
   await page.setViewportSize({width:390,height:844});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'일정 모바일 넘침');
   await page.screenshot({path:'/tmp/objekt-ui/schedule-categories-mobile.png',fullPage:true,timeout:15000});
+   await page.setViewportSize({width:1280,height:1000});
+   await page.locator('#openDecorationManager').click();
+   await page.getByText('등록된 유닛·기념일이 없습니다.', {exact:true}).waitFor();
+   await page.locator('#decorationTitle').fill('테스트 유닛 스티커');
+   await page.locator('#decorationDate').fill(decorationDate);
+   await page.locator('#decorationForm button[type="submit"]').click();
+   await page.locator('#decorationList').getByText('테스트 유닛 스티커', {exact:true}).waitFor();
+   assert.equal(decorationPosts[0]['x-xsrf-token'],'fixture-csrf');
+   await page.locator('#decorationModal .site-modal-close').click();
+   await visibleScheduleEvent('테스트 유닛 스티커');
+   await visibleScheduleEvent(longTitle);
+   await page.goto('https://filters.test/fixture/schedule?focus=1');
+   await page.locator('#viewScheduleModal.is-open').waitFor();
+   assert.equal(await page.locator('#modalScheduleTitle').textContent(),'팬사인회');
   console.log('통과: 시즌 버튼 색상·다중/단일 선택·동기화·동적 옵션·초기화·키보드·모바일 / 실제 FullCalendar·SiteUi 일정 분류·멤버색·케이크·CSRF·저장 후 수정');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1);});
