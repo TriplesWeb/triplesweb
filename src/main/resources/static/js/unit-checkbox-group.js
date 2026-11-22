@@ -1,8 +1,9 @@
 /**
  * 소속 유닛 체크박스 그룹 헬퍼.
  * - setChecks / selectedIds: 아티스트 편집 등
- * - bindMemberHelper: 아카이브 — 유닛은 출연진 프리셋(1개, 교체). 완전 일치만 체크 표시.
- *   멤버 선택 → 유닛 자동 체크. 유닛 해제 → 유닛만 끄고 멤버는 유지(같은 구성 재자동체크 억제).
+ * - bindMemberHelper: 아카이브 — 유닛은 출연진 프리셋(1개, 교체).
+ *   유닛 체크 → 출연진을 그 구성으로 채움(멤버가 일부만 있어도 가능).
+ *   멤버 완전 일치 → 유닛 자동 체크. 유닛 해제 → 유닛만 끄고 멤버는 유지.
  */
 (function () {
   function rootEl(root) {
@@ -74,7 +75,11 @@
 
   /**
    * @param {Element|string} unitRoot
-   * @param {{ getMembers: () => string[], applyMembers: (names: string[]) => void }} hooks
+   * @param {{
+   *   getMembers: () => string[],
+   *   applyMembers: (names: string[]) => void,
+   *   onChange?: () => void
+   * }} hooks
    */
   function bindMemberHelper(unitRoot, hooks) {
     const el = rootEl(unitRoot);
@@ -90,6 +95,7 @@
       const members = parseMembers(cb);
       if (cb.checked) {
         // 한 유닛만: 다른 체크 해제 후 출연진을 그 유닛 구성으로 교체
+        // (이미 일부 멤버만 있어도 유닛 선택으로 전체 구성을 채운다)
         suppressedSet(el).clear();
         checkboxes(el).forEach((other) => {
           if (other !== cb) other.checked = false;
@@ -100,6 +106,7 @@
       // 해제: 유닛만 끄고 출연진은 유지. 같은 구성으로 다시 자동 체크되지 않게 억제.
       suppressedSet(el).add(String(cb.value));
       el._unitCheckMembersKey = membersKey(hooks.getMembers());
+      if (typeof hooks.onChange === "function") hooks.onChange();
     });
   }
 

@@ -148,20 +148,40 @@
         return body;
     }
 
-    function matchUnitBadge(memberNames) {
+    function unitBadgeFromCheckbox(cb, fallbackMembers) {
+        if (!cb) return null;
+        const label = (cb.closest('label')?.querySelector('span')?.textContent || '').trim();
+        if (!label) return null;
+        const members = window.UnitCheckboxGroup
+            ? UnitCheckboxGroup.parseMembers(cb)
+            : String(cb.dataset.members || '').split(',').map(part => part.trim()).filter(Boolean);
+        const colorName = (fallbackMembers && fallbackMembers[0]) || members[0] || '';
+        const first = colorName
+            ? document.querySelector(`.mpp-item[data-value="${CSS.escape(colorName)}"]`)
+            : null;
+        return { label, color: memberColor(first) };
+    }
+
+    /** 체크된 유닛 우선, 없으면 출연진 완전 일치 유닛. */
+    function matchUnitBadge(memberNames, root) {
+        const unitRoot = unitChecksRoot(root) || root?.querySelector?.('[data-unit-checks]') || null;
+        const scope = unitRoot || document;
+        const checked = scope.querySelector('input[type="checkbox"][data-members]:checked');
+        if (checked) {
+            const fromCheck = unitBadgeFromCheckbox(checked, memberNames);
+            if (fromCheck) return fromCheck;
+        }
         const selected = new Set((memberNames || []).map(name => String(name || '').trim()).filter(Boolean));
         if (selected.size < 2) return null;
-        const checks = document.querySelectorAll('[data-unit-checks] input[type="checkbox"][data-members]');
+        const checks = scope.querySelectorAll('input[type="checkbox"][data-members]');
         for (const cb of checks) {
             const members = window.UnitCheckboxGroup
                 ? UnitCheckboxGroup.parseMembers(cb)
                 : String(cb.dataset.members || '').split(',').map(part => part.trim()).filter(Boolean);
             if (!members.length || members.length !== selected.size) continue;
             if (!members.every(name => selected.has(name))) continue;
-            const label = (cb.closest('label')?.querySelector('span')?.textContent || '').trim();
-            if (!label) continue;
-            const first = document.querySelector(`.mpp-item[data-value="${CSS.escape(members[0])}"]`);
-            return { label, color: memberColor(first) };
+            const matched = unitBadgeFromCheckbox(cb, members);
+            if (matched) return matched;
         }
         return null;
     }
@@ -702,9 +722,23 @@
 
     function captureSlot(form) {
         if (kind !== 'image' || !form || form._archiveApplyingSlot) return;
-        const slot = slotsOf(form)[form._archiveSlotPreviewIndex];
+        const slots = slotsOf(form);
+        if (!slots.length) return;
+        const index = Number.isInteger(form._archiveSlotPreviewIndex) && form._archiveSlotPreviewIndex >= 0
+            ? form._archiveSlotPreviewIndex
+            : 0;
+        const slot = slots[index];
         if (!slot) return;
         slot.artists = selectedArtists(slotRoot(form));
+    }
+
+    /** 피커 출연진을 모든 사진 슬롯에 맞춰, 저장 시 옛 slot.artists가 남지 않게 한다. */
+    function syncAllSlotArtists(form, names) {
+        if (kind !== 'image' || !form) return;
+        const next = Array.isArray(names) ? names.map(String).filter(Boolean) : selectedArtists(slotRoot(form));
+        slotsOf(form).forEach(slot => {
+            slot.artists = next.slice();
+        });
     }
 
     function applySlot(form, slot) {
@@ -1013,6 +1047,47 @@
         });
     }
 
+    /** 사진 미리보기처럼 카드 본문이 없을 때도 출처·유닛 배지를 둘 자리를 만든다. */
+    function ensurePreviewBadgeRow(preview) {
+        let badgeRow = preview.querySelector('[data-preview-badges]');
+        let sourceBadge = preview.querySelector('[data-preview-source]');
+        let unitBadge = preview.querySelector('[data-preview-unit]');
+        if (badgeRow && sourceBadge && unitBadge) {
+            return { badgeRow, sourceBadge, unitBadge };
+        }
+        // 영상 미리보기(카드 슬롯)는 showPreview가 배지를 만든다. 여기서 루트에 중복 삽입하지 않는다.
+        const hasCardSlot = !!preview.querySelector('.ar-preview-card, .ar-preview-full');
+        if (hasCardSlot) {
+            return { badgeRow, sourceBadge, unitBadge };
+        }
+        if (!preview.querySelector('[data-preview-file]')) {
+            return { badgeRow, sourceBadge, unitBadge };
+        }
+        if (!badgeRow) {
+            badgeRow = document.createElement('div');
+            badgeRow.className = 'ar-card-badges';
+            badgeRow.dataset.previewBadges = '';
+            const info = preview.querySelector('[data-preview-file]');
+            if (info) info.after(badgeRow);
+            else preview.prepend(badgeRow);
+        }
+        if (!sourceBadge) {
+            sourceBadge = document.createElement('div');
+            sourceBadge.className = 'ar-source-badge';
+            sourceBadge.dataset.previewSource = '';
+            sourceBadge.hidden = true;
+            badgeRow.appendChild(sourceBadge);
+        }
+        if (!unitBadge) {
+            unitBadge = document.createElement('div');
+            unitBadge.className = 'ar-unit-badge';
+            unitBadge.dataset.previewUnit = '';
+            unitBadge.hidden = true;
+            badgeRow.appendChild(unitBadge);
+        }
+        return { badgeRow, sourceBadge, unitBadge };
+    }
+
     function syncPreview(form) {
         if (!form) return;
         const preview = form.querySelector('.ar-preview');
@@ -1023,7 +1098,7 @@
             const typedDescription = form.querySelector('[name="description"]')?.value.trim() || '';
             title.textContent = typedTitle || typedDescription || (kind === 'video' ? '영상 제목' : '사진');
         }
-        const sourceBadge = preview.querySelector('[data-preview-source]');
+        const { badgeRow, sourceBadge, unitBadge } = ensurePreviewBadgeRow(preview);
         if (sourceBadge) {
             const select = form.querySelector('[name="source"]');
             const value = (select?.value || '').trim();
@@ -1035,8 +1110,6 @@
             sourceBadge.textContent = label;
         }
         const meta = preview.querySelector('[data-preview-artists]');
-        const unitBadge = preview.querySelector('[data-preview-unit]');
-        const badgeRow = preview.querySelector('[data-preview-badges]');
         let memberNames = [];
         if (meta) {
             const items = selectedMemberItems(form.closest('.ar-dialog'));
@@ -1057,9 +1130,11 @@
                 time.textContent = registered.replaceAll('-', '/');
                 meta.appendChild(time);
             }
+        } else {
+            memberNames = selectedArtists(form.closest('.ar-dialog') || form);
         }
         if (unitBadge) {
-            const matched = matchUnitBadge(memberNames);
+            const matched = matchUnitBadge(memberNames, form.closest('.ar-dialog') || form);
             unitBadge.hidden = !matched;
             if (matched) {
                 unitBadge.textContent = matched.label;
@@ -1131,10 +1206,12 @@
             if (!values.length) chips.textContent = '멤버를 선택하면 여기에 표시됩니다.';
         }
         window.UnitCheckboxGroup?.syncFromMembers(unitChecksRoot(root), values);
-        syncPreview(root.querySelector('form'));
+        const form = root.querySelector?.('form') || root.closest?.('form');
+        captureSlot(form);
+        syncPreview(form);
     }
 
-    function applyArtists(root, raw) {
+    function applyArtists(root, raw, { allSlots = false } = {}) {
         if (window.MemberPortraitPicker) MemberPortraitPicker.clear(root);
         const names = (raw || "").split(",").map(part => part.trim()).filter(Boolean);
         root.querySelectorAll(".mpp-item").forEach(button => {
@@ -1144,6 +1221,9 @@
             }
         });
         renderArtists(root);
+        const form = root.querySelector?.('form') || root.closest?.('form');
+        // 유닛 프리셋은 게시글 전체 출연진을 바꾸므로 모든 사진 슬롯을 맞춘다.
+        if (allSlots) syncAllSlotArtists(form, names);
     }
 
     function bindPicker(root) {
@@ -1158,7 +1238,8 @@
         });
         window.UnitCheckboxGroup?.bindMemberHelper(unitChecksRoot(root), {
             getMembers: () => selectedArtists(root),
-            applyMembers: (names) => applyArtists(root, names.join(','))
+            applyMembers: (names) => applyArtists(root, names.join(','), { allSlots: true }),
+            onChange: () => syncPreview(root.querySelector('form'))
         });
         root.querySelector('form')?.addEventListener('input', () => syncPreview(root.querySelector('form')));
         window.MemberPortraitPicker?.clear(root);
@@ -1488,14 +1569,27 @@
         if (!input) return true;
         if (input.files?.[0]) return true;
         const clear = form.querySelector('[name="clearThumbnail"]');
-        if (clear?.value === 'true' && !form._archiveCover?.ready) return true;
-        if (form._archiveCoverSource === 'saved') return true;
+        // 커버를 지운 상태이거나, 저장된 커버를 그대로 두는 메타데이터 수정이면 자동 생성하지 않는다.
+        if (clear?.value === 'true') return true;
+        if (form.dataset.originalThumbnail
+            && form._archiveCoverSource !== 'scrub'
+            && form._archiveCoverSource !== 'gallery') {
+            return true;
+        }
+        if (form._archiveCoverSource === 'gallery' || form._archiveCoverSource === 'saved') return true;
         if (form._archiveCover?.ready) {
             const slider = form.querySelector('[data-cover-slider]');
             if (slider) slider.value = '0';
             return scrubCoverTo(form, 0, { commit: true, auto: true });
         }
         return true;
+    }
+
+    function coverChosenByUser(form) {
+        const input = form?.querySelector('[name="thumbnail"]');
+        return Boolean(input?.files?.[0])
+            || form?._archiveCoverSource === 'gallery'
+            || form?._archiveCoverSource === 'saved';
     }
 
     async function loadCoverFromVideo(form, source, { autoSelect = true } = {}) {
@@ -1545,12 +1639,20 @@
             slider.value = '0';
             updateCoverWindow(form, 0);
             if (token !== form._archiveCover.token) return;
-            if (form._archiveCoverSource === 'gallery') {
+            // 프레임 준비 중 갤러리/저장 커버를 고르면 첫 장면 자동 커밋·스크럽 미리보기로 덮지 않는다.
+            if (autoSelect && !coverChosenByUser(form)) {
+                await scrubCoverTo(form, 0, { commit: true, auto: true });
+            } else if (coverChosenByUser(form)) {
+                updateCoverWindow(form, 0);
+                const timeLabel = form.querySelector('[data-cover-time]');
+                if (timeLabel) {
+                    timeLabel.hidden = false;
+                    timeLabel.textContent = formatCoverSeconds(0);
+                }
+                const keptUrl = form.dataset.thumbnailUrl || '';
+                if (keptUrl) showThumbnail(form, keptUrl);
                 setCoverUiState(form, 'is-success');
-                return;
-            }
-            if (autoSelect) await scrubCoverTo(form, 0, { commit: true, auto: true });
-            else {
+            } else {
                 await scrubCoverTo(form, 0, { commit: false });
                 setCoverUiState(form, '');
             }
@@ -1976,6 +2078,12 @@
         }
         body.delete("artistNames");
         body.delete("extraArtists");
+        captureSlot(uploadForm);
+        const uploadLive = selectedArtists(uploadDialog);
+        if (kind === 'image' && slotsOf(uploadForm).length && uploadLive.length) {
+            const unitChecked = !!unitChecksRoot(uploadDialog)?.querySelector('input[type="checkbox"]:checked');
+            if (unitChecked) syncAllSlotArtists(uploadForm, uploadLive);
+        }
         if (kind === 'image' && slotsOf(uploadForm).length > 1) {
             const names = [];
             artistRows(uploadForm).forEach(row => row.split(',').forEach(name => {
@@ -1985,7 +2093,7 @@
             names.forEach(name => body.append("artistNames", name));
             body.set("imageArtistsJson", JSON.stringify(artistRows(uploadForm)));
         } else {
-            selectedArtists(uploadDialog).forEach(name => body.append("artistNames", name));
+            uploadLive.forEach(name => body.append("artistNames", name));
         }
         const button = uploadForm.querySelector("[type='submit']");
         if (button) button.disabled = true;
@@ -2303,9 +2411,21 @@
         if (kind === "video") body.set("title", title);
         else body.set("description", description);
         body.set("registeredOn", registeredOn);
+        // 피커에서 바꾼 출연진이 slot.artists에 반영되지 않으면 유닛 배지가 목록에 안 뜬다.
+        captureSlot(editForm);
+        const liveNames = selectedArtists(editDialog);
+        if (kind === 'image' && slots.length && liveNames.length) {
+            const activeIndex = Number.isInteger(editForm._archiveSlotPreviewIndex) && editForm._archiveSlotPreviewIndex >= 0
+                ? editForm._archiveSlotPreviewIndex
+                : 0;
+            if (slots[activeIndex]) slots[activeIndex].artists = liveNames.slice();
+            // 유닛으로 맞춘 경우(피커 = 유닛 구성) 전 장 출연진을 같게 맞춰 합집합이 깨지지 않게 한다.
+            const unitChecked = !!unitChecksRoot(editDialog)?.querySelector('input[type="checkbox"]:checked');
+            if (unitChecked) syncAllSlotArtists(editForm, liveNames);
+        }
         const editRows = kind === 'image' ? artistRows(editForm) : [];
         const editNames = [];
-        (editRows.length ? editRows : [selectedArtists(editDialog).join(',')]).forEach(row => {
+        (editRows.length ? editRows : [liveNames.join(',')]).forEach(row => {
             row.split(',').forEach(name => {
                 const trimmed = name.trim();
                 if (trimmed && !editNames.includes(trimmed)) editNames.push(trimmed);

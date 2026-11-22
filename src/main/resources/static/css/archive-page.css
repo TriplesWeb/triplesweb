@@ -896,34 +896,43 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.9rem;
-    align-items: start;
+    align-items: stretch;
     justify-content: stretch;
 }
 .archive-page .ar-card {
+    display: flex;
+    flex-direction: column;
     width: 100%;
+    height: 100%;
     max-width: none;
     margin: 0;
     /* 멤버 심볼 drop-shadow 발광이 카드 밖으로 보이도록 */
     overflow: visible;
 }
-.archive-page[data-archive-kind="image"] .ar-card .ar-photo-link > img,
-.archive-page[data-archive-kind="image"] .ar-highlight img { object-fit: contain; object-position: center; }
-.archive-page[data-archive-kind="image"] .ar-card .ar-photo-link {
+/* 사진·영상 카드 미디어 칸을 같은 정사각으로 맞춘다 */
+.archive-page .ar-card .ar-photo-link,
+.archive-page .ar-card .ar-video-thumb {
     position: relative;
     display: block;
+    flex: 0 0 auto;
     aspect-ratio: 1 / 1;
+    width: 100%;
     min-height: 0;
     overflow: hidden;
     border-radius: inherit;
     background: #07080b;
 }
-.archive-page[data-archive-kind="image"] .ar-card .ar-photo-link > img {
+.archive-page .ar-card .ar-photo-link > img,
+.archive-page .ar-card .ar-video-thumb > img,
+.archive-page .ar-highlight img,
+.archive-page .ar-highlight video {
     display: block;
     width: 100%;
     height: 100%;
     max-height: none;
     object-fit: contain;
     object-position: center;
+    background: #07080b;
 }
 .archive-page[data-archive-kind="image"] .ar-grid[data-page-size="20"] .ar-card .ar-photo-link { aspect-ratio: 1 / 0.94; }
 .archive-page[data-archive-kind="image"] .ar-grid[data-page-size="30"] .ar-card .ar-photo-link { aspect-ratio: 1 / 0.9; }
@@ -955,7 +964,15 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     pointer-events: none;
 }
 .ar-card .ar-body { padding: 0.7rem 0.8rem 0.85rem; display: flex; flex-direction: column; gap: 0.4rem; flex: 1; overflow: visible; }
-.ar-card h3 { margin: 0; font-size: 0.88rem; }
+.ar-card h3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin: 0;
+    min-height: 2.7em;
+    font-size: 0.88rem;
+}
 .ar-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
 .ar-highlight .ar-meta { flex-wrap: wrap; align-items: center; gap: 0.4rem; min-width: 0; }
 .ar-card .ar-meta {
@@ -1998,11 +2015,35 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
 .ar-thumbnail-preview[hidden] { display: none; }
 .ar-thumbnail-preview img { display: block; width: 100%; height: 8rem; object-fit: contain; border-radius: 0.5rem; background: #07080b; }
 .ar-thumbnail-preview p { color: #b9cac4; font-size: 0.78rem; overflow-wrap: anywhere; }
-.archive-page[data-archive-kind="video"] .ar-card video { height: auto; aspect-ratio: 16 / 9; max-height: 20rem; object-fit: contain; }
+.archive-page[data-archive-kind="video"] .ar-card video {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    aspect-ratio: auto;
+    object-fit: contain;
+    object-position: center;
+    background: #07080b;
+}
 .archive-page[data-archive-kind="video"] .ar-highlight video,
 .ar-dialog .ar-preview video { object-fit: contain; }
-.ar-video-thumb { position: relative; display: block; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: #07080b; color: #e3e2e8; text-decoration: none; }
-.archive-page .ar-video-thumb img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; }
+.ar-video-thumb {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    background: #07080b;
+    color: #e3e2e8;
+    text-decoration: none;
+}
+.archive-page .ar-video-thumb img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
 .archive-page .ar-video-thumb img[hidden] { display: none; }
 .ar-video-placeholder { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 0.5rem; background: radial-gradient(ellipse at center, #203e3b, #101319); color: #a3b7b0; font-size: 0.75rem; }
 .ar-video-play { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; width: 3rem; height: 3rem; margin: auto; padding-left: 0.15rem; border: 1px solid rgba(0,245,212,0.4); border-radius: 50%; background: rgba(0,0,0,0.72); color: #c0fff3; font-size: 1.15rem; transition: background 150ms ease; }
