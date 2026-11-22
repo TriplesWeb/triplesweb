@@ -724,9 +724,9 @@
         if (kind !== 'image' || !form || form._archiveApplyingSlot) return;
         const slots = slotsOf(form);
         if (!slots.length) return;
-        const index = Number.isInteger(form._archiveSlotPreviewIndex) && form._archiveSlotPreviewIndex >= 0
-            ? form._archiveSlotPreviewIndex
-            : 0;
+        // 초기화(-1)나 미선택 상태에선 슬롯을 덮지 않는다. 합집합 피커가 첫 장 출연진을 오염시키지 않게.
+        const index = form._archiveSlotPreviewIndex;
+        if (!Number.isInteger(index) || index < 0) return;
         const slot = slots[index];
         if (!slot) return;
         slot.artists = selectedArtists(slotRoot(form));
@@ -2090,10 +2090,7 @@
         body.delete("extraArtists");
         captureSlot(uploadForm);
         const uploadLive = selectedArtists(uploadDialog);
-        if (kind === 'image' && slotsOf(uploadForm).length && uploadLive.length) {
-            const unitChecked = !!unitChecksRoot(uploadDialog)?.querySelector('input[type="checkbox"]:checked');
-            if (unitChecked) syncAllSlotArtists(uploadForm, uploadLive);
-        }
+        // 유닛 체크만으로 전 장 출연진을 덮지 않는다. 유닛 멤버 적용(allSlots)일 때만 syncAllSlotArtists가 돈다.
         if (kind === 'image' && slotsOf(uploadForm).length > 1) {
             const names = [];
             artistRows(uploadForm).forEach(row => row.split(',').forEach(name => {
@@ -2427,18 +2424,9 @@
         if (kind === "video") body.set("title", title);
         else body.set("description", description);
         body.set("registeredOn", registeredOn);
-        // 피커에서 바꾼 출연진이 slot.artists에 반영되지 않으면 유닛 배지가 목록에 안 뜬다.
+        // 피커에서 바꾼 출연진이 활성 슬롯에만 반영되게 한다. unitId는 appendSelectedUnit으로 따로 간다.
         captureSlot(editForm);
         const liveNames = selectedArtists(editDialog);
-        if (kind === 'image' && slots.length && liveNames.length) {
-            const activeIndex = Number.isInteger(editForm._archiveSlotPreviewIndex) && editForm._archiveSlotPreviewIndex >= 0
-                ? editForm._archiveSlotPreviewIndex
-                : 0;
-            if (slots[activeIndex]) slots[activeIndex].artists = liveNames.slice();
-            // 유닛으로 맞춘 경우(피커 = 유닛 구성) 전 장 출연진을 같게 맞춰 합집합이 깨지지 않게 한다.
-            const unitChecked = !!unitChecksRoot(editDialog)?.querySelector('input[type="checkbox"]:checked');
-            if (unitChecked) syncAllSlotArtists(editForm, liveNames);
-        }
         const editRows = kind === 'image' ? artistRows(editForm) : [];
         const editNames = [];
         (editRows.length ? editRows : [liveNames.join(',')]).forEach(row => {

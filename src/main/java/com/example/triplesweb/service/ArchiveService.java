@@ -15,7 +15,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -203,11 +202,8 @@ public class ArchiveService {
         if (order.isMemberSort()) {
             return pageByMemberSort(spec, safePage, safeSize, order);
         }
-        Pageable pageable = PageRequest.of(safePage, safeSize, dbSort(order));
-        if (!requireAllMembers) {
-            return archiveRepository.findAll(spec, pageable);
-        }
-        // 전체 멤버 폴더: content 조회와 count를 분리해 count는 짧게 캐시한다 (원격 DB 왕복 절감).
+        // Spring Data Sort의 nullsFirst/Last는 JPA QueryUtils에서 미지원이므로 Criteria로 정렬한다.
+        Pageable pageable = PageRequest.of(safePage, safeSize);
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Archive> contentQuery = cb.createQuery(Archive.class);
         Root<Archive> contentRoot = contentQuery.from(Archive.class);
@@ -219,8 +215,10 @@ public class ArchiveService {
                 .setFirstResult((int) pageable.getOffset())
                 .setMaxResults(pageable.getPageSize())
                 .getResultList();
-        long total = cachedCount(filterCacheKey("count", type, keyword, members, from, to, source, unclassifiedOnly, true),
-                () -> countArchives(spec));
+        long total = requireAllMembers
+                ? cachedCount(filterCacheKey("count", type, keyword, members, from, to, source, unclassifiedOnly, true),
+                () -> countArchives(spec))
+                : countArchives(spec);
         return new PageImpl<>(content, pageable, total);
     }
 
@@ -244,16 +242,6 @@ public class ArchiveService {
                 .map(SortRow::id)
                 .toList();
         return new PageImpl<>(loadInOrder(pageIds), pageable, rows.size());
-    }
-
-    private static Sort dbSort(ArchiveSort sort) {
-        // registeredOn null은 클라이언트와 같이 epoch(아주 오래됨)로 취급 → newest에선 뒤, oldest에선 앞.
-        return switch (sort == null ? ArchiveSort.NEWEST : sort) {
-            case OLDEST -> Sort.by(Sort.Order.asc("registeredOn").nullsFirst(), Sort.Order.asc("id"));
-            case TITLE -> Sort.by(Sort.Order.asc("title").nullsLast(), Sort.Order.desc("id"));
-            case FIRST_MEMBER, LAST_MEMBER, NEWEST -> Sort.by(
-                    Sort.Order.desc("registeredOn").nullsLast(), Sort.Order.desc("id"));
-        };
     }
 
     private static List<Order> criteriaOrders(CriteriaBuilder cb, Root<Archive> root, ArchiveSort sort) {
