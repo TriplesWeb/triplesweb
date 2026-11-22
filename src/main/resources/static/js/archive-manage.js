@@ -587,7 +587,7 @@
             source = Array.from(input.files || [])[fileIndex] || null;
         }
         if ((!source || !isImageFile(source)) && !(useSlots && sourceSlot?.kind === 'url')) {
-            alert('편집할 사진을 먼저 선택해 주세요.');
+            window.SiteFeedback.alert('편집할 사진을 먼저 선택해 주세요.');
             return;
         }
         const editToken = input._archiveEditToken || 0;
@@ -596,6 +596,7 @@
         preview._archiveEditBusy = true;
         buttons.forEach(button => { button.disabled = true; });
         preview.dataset.pending = 'true';
+        const finish = window.SiteFeedback.beginProgress();
         try {
             if (!source && sourceSlot?.kind === 'url') {
                 source = await fileFromImageUrl(sourceSlot.url);
@@ -603,7 +604,7 @@
             }
             if (await ensureAnimationFlag(source)) {
                 syncImageEditTools(preview);
-                alert('애니메이션 이미지는 회전·뒤집기를 할 수 없습니다.');
+                window.SiteFeedback.alert('애니메이션 이미지는 회전·뒤집기를 할 수 없습니다.');
                 return;
             }
             const edited = await transformImageFile(source, operation);
@@ -627,9 +628,10 @@
         } catch (_) {
             if ((input._archiveEditToken || 0) === editToken) {
                 delete preview.dataset.pending;
-                alert('사진을 편집하지 못했습니다. 다른 이미지로 다시 시도해 주세요.');
+                window.SiteFeedback.alert('사진을 편집하지 못했습니다. 다른 이미지로 다시 시도해 주세요.');
             }
         } finally {
+            finish();
             preview._archiveEditBusy = false;
             syncImageEditTools(preview);
         }
@@ -1259,7 +1261,7 @@
             const file = input.files?.[0];
             if (!file) { showThumbnail(form, clear?.value === 'true' ? '' : form.dataset.originalThumbnail || ''); return; }
             if (!/\.(jpe?g|jfif|png|webp|gif|bmp)$/i.test(file.name)) {
-                alert('썸네일은 JPG, JFIF, PNG, WebP, GIF, BMP 이미지 파일로 선택해 주세요.');
+                window.SiteFeedback.alert('썸네일은 JPG, JFIF, PNG, WebP, GIF, BMP 이미지 파일로 선택해 주세요.');
                 input.value = '';
                 syncFileName(input);
                 showThumbnail(form, clear?.value === 'true' ? '' : form.dataset.originalThumbnail || '');
@@ -1281,7 +1283,7 @@
 
     function validThumbnail(form) {
         if (form.dataset.thumbnailInvalid || form.dataset.thumbnailPending) {
-            alert('썸네일 미리보기를 확인하거나 다른 이미지 파일을 선택해 주세요.');
+            window.SiteFeedback.alert('썸네일 미리보기를 확인하거나 다른 이미지 파일을 선택해 주세요.');
             return false;
         }
         return true;
@@ -1408,7 +1410,7 @@
         }
         const invalid = files.find(file => !acceptedFile(file));
         if (invalid) {
-            alert(kind === "video" ? "동영상 파일만 선택할 수 있습니다." : "이미지 파일만 선택할 수 있습니다.");
+            window.SiteFeedback.alert(kind === "video" ? "동영상 파일만 선택할 수 있습니다." : "이미지 파일만 선택할 수 있습니다.");
             (uploadFile._archiveLastFiles || []).forEach(releaseUrl);
             uploadFile.value = "";
             uploadFile._archiveLastFile = null;
@@ -1438,30 +1440,30 @@
         const title = uploadForm.querySelector("[name='title']")?.value.trim();
         const files = Array.from(uploadFile?.files || []);
         if (kind === "video" && !title) {
-            alert("제목을 입력해 주세요.");
+            window.SiteFeedback.alert("제목을 입력해 주세요.");
             return;
         }
         if (!files.length) {
-            alert(noun + " 파일을 선택해 주세요.");
+            window.SiteFeedback.alert(noun + " 파일을 선택해 주세요.");
             return;
         }
         if (!uploadForm.querySelector("[name='registeredOn']")?.value) {
-            alert(dateLabel + "를 선택해 주세요.");
+            window.SiteFeedback.alert(dateLabel + "를 선택해 주세요.");
             return;
         }
         if (!uploadForm.querySelector("[name='source']")?.value) {
-            alert("출처를 선택해 주세요.");
+            window.SiteFeedback.alert("출처를 선택해 주세요.");
             return;
         }
         if (!uploadPreview || uploadPreview.hidden || uploadPreview.dataset.invalid || uploadPreview.dataset.pending) {
-            alert("미리보기를 확인한 뒤 추가해 주세요.");
+            window.SiteFeedback.alert("미리보기를 확인한 뒤 추가해 주세요.");
             return;
         }
         if (advancePhotoSetup(uploadForm, setUploadStatus)) return;
         const confirmMessage = kind === "image" && files.length > 1
             ? "사진 " + files.length + "장을 한 게시글로 추가하시겠습니까?"
             : "이 " + noun + "을 추가하시겠습니까?";
-        if (!window.confirm(confirmMessage)) return;
+        if (!await window.SiteFeedback.confirm(confirmMessage)) return;
         if (!validThumbnail(uploadForm)) return;
         const body = new FormData(uploadForm);
         if (kind === 'image') {
@@ -1483,6 +1485,7 @@
         const button = uploadForm.querySelector("[type='submit']");
         if (button) button.disabled = true;
         if (!uploadIdempotencyKey) uploadIdempotencyKey = newIdempotencyKey();
+        const doneBusy = window.SiteFeedback.beginBusy();
         try {
             const headers = authHeaders();
             headers["Idempotency-Key"] = uploadIdempotencyKey;
@@ -1507,13 +1510,14 @@
             const failMsg = response.status === 409
                 ? (detail || "같은 업로드가 아직 처리 중입니다. 잠시 후 다시 시도해 주세요.")
                 : saveFailureMessage(response.status, detail);
-            alert(failMsg);
+            window.SiteFeedback.alert(failMsg);
             setUploadStatus(failMsg);
         } catch (_) {
             const networkMsg = "추가 요청에 실패했습니다. 네트워크를 확인한 뒤 같은 내용으로 다시 시도해 주세요. 입력값은 유지됩니다.";
-            alert(networkMsg);
+            window.SiteFeedback.alert(networkMsg);
             setUploadStatus(networkMsg);
         } finally {
+            doneBusy();
             if (button) button.disabled = false;
         }
     });
@@ -1662,7 +1666,7 @@
         }
         const invalid = files.find(file => !acceptedFile(file));
         if (invalid) {
-            alert(kind === "video" ? "동영상 파일만 선택할 수 있습니다." : "이미지 파일만 선택할 수 있습니다.");
+            window.SiteFeedback.alert(kind === "video" ? "동영상 파일만 선택할 수 있습니다." : "이미지 파일만 선택할 수 있습니다.");
             files.forEach(releaseUrl);
             setSlots(editForm, keptSlots, { syncInput: false });
             editFile.value = "";
@@ -1679,7 +1683,7 @@
         const room = Math.max(0, 30 - keptSlots.length);
         let nextFiles = files.filter(isImageFile);
         if (kind === 'image' && nextFiles.length > room) {
-            alert('사진은 최대 30장까지 등록할 수 있습니다.');
+            window.SiteFeedback.alert('사진은 최대 30장까지 등록할 수 있습니다.');
             nextFiles.slice(room).forEach(releaseUrl);
             nextFiles = nextFiles.slice(0, room);
             if (!nextFiles.length) {
@@ -1709,11 +1713,12 @@
 
     async function removeArchive(id, title) {
         if (!id) {
-            alert("삭제할 자료를 찾지 못했습니다.");
+            window.SiteFeedback.alert("삭제할 자료를 찾지 못했습니다.");
             return;
         }
         const label = title ? "‘" + title + "’ " : "이 ";
-        if (!window.confirm(label + noun + "을 삭제하시겠습니까? 삭제하면 되돌릴 수 없습니다.")) return;
+        if (!await window.SiteFeedback.confirm(label + noun + "을 삭제하시겠습니까? 삭제하면 되돌릴 수 없습니다.")) return;
+        const doneBusy = window.SiteFeedback.beginBusy();
         try {
             const response = await fetch("/archive/" + encodeURIComponent(id), {
                 method: "DELETE", headers: authHeaders(), credentials: "same-origin"
@@ -1724,11 +1729,13 @@
                 softRefreshArchive();
                 return;
             }
-            alert(response.status === 403
+            window.SiteFeedback.alert(response.status === 403
                 ? saveFailureMessage(403)
                 : (response.status === 404 ? "이미 삭제된 자료입니다." : "삭제에 실패했습니다."));
         } catch (_) {
-            alert("삭제 요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
+            window.SiteFeedback.alert("삭제 요청에 실패했습니다. 네트워크 연결을 확인해 주세요.");
+        } finally {
+            doneBusy();
         }
     }
 
@@ -1747,16 +1754,16 @@
         const title = editForm.querySelector("[name='title']")?.value.trim() || "";
         const description = editForm.querySelector("[name='description']")?.value.trim() || "";
         if (kind === "video" && !title) {
-            alert("제목을 입력해 주세요.");
+            window.SiteFeedback.alert("제목을 입력해 주세요.");
             return;
         }
         const registeredOn = editForm.querySelector("[name='registeredOn']")?.value || "";
         if (!registeredOn) {
-            alert(dateLabel + "를 선택해 주세요.");
+            window.SiteFeedback.alert(dateLabel + "를 선택해 주세요.");
             return;
         }
         if (!editForm.dataset.id) {
-            alert("수정할 자료를 찾지 못했습니다.");
+            window.SiteFeedback.alert("수정할 자료를 찾지 못했습니다.");
             return;
         }
         const slots = kind === 'image' ? slotsOf(editForm) : [];
@@ -1768,12 +1775,12 @@
             !== JSON.stringify(originalUrls);
         const mediaChanged = kind === 'image' && (replacing || orderChanged || JSON.stringify(keptUrls) !== JSON.stringify(originalUrls));
         if (kind === 'image' && !slots.length) {
-            alert('사진은 최소 1장이 필요합니다.');
+            window.SiteFeedback.alert('사진은 최소 1장이 필요합니다.');
             return;
         }
         if (advancePhotoSetup(editForm, setEditStatus)) return;
         if (replacing && (editPreview?.dataset.invalid || editPreview?.dataset.pending)) {
-            alert('사진을 읽지 못했습니다. 다른 이미지 파일을 선택해 주세요.');
+            window.SiteFeedback.alert('사진을 읽지 못했습니다. 다른 이미지 파일을 선택해 주세요.');
             return;
         }
         const message = kind === 'image' && mediaChanged
@@ -1785,7 +1792,7 @@
             : replacing
                 ? "이 " + noun + "을 수정하시겠습니까? 선택한 파일로 기존 미디어가 바뀝니다."
                 : "이 " + noun + "을 수정하시겠습니까?";
-        if (!window.confirm(message)) return;
+        if (!await window.SiteFeedback.confirm(message)) return;
         if (!validThumbnail(editForm)) return;
         const body = new FormData();
         if (kind === "video") body.set("title", title);
@@ -1815,6 +1822,7 @@
         if (clearThumbnail) body.set('clearThumbnail', clearThumbnail.value);
         const button = editForm.querySelector("[type='submit']");
         if (button) button.disabled = true;
+        const doneBusy = window.SiteFeedback.beginBusy();
         try {
             const response = await fetch("/archive/" + encodeURIComponent(editForm.dataset.id), {
                 method: "POST", body, headers: authHeaders(), credentials: "same-origin"
@@ -1830,13 +1838,14 @@
             const text = (await response.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
             const detail = text.slice(0, 180) || "수정에 실패했습니다.";
             const msg = saveFailureMessage(response.status, detail);
-            alert(msg);
+            window.SiteFeedback.alert(msg);
             setEditStatus(msg);
         } catch (_) {
             const networkMsg = "수정 요청에 실패했습니다. 네트워크를 확인한 뒤 다시 저장해 주세요. 입력값은 유지됩니다.";
-            alert(networkMsg);
+            window.SiteFeedback.alert(networkMsg);
             setEditStatus(networkMsg);
         } finally {
+            doneBusy();
             if (button) button.disabled = false;
         }
     });

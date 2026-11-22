@@ -19,7 +19,6 @@ const urls={
    const decorationDate = new Date().toISOString().slice(0, 8) + '10';
   page.on('pageerror',error=>pageErrors.push(error.message));
   await page.context().addCookies([{name:'XSRF-TOKEN',value:'fixture-csrf',domain:'filters.test',path:'/'}]);
-  page.on('dialog',dialog=>dialog.accept());
   await page.route('**/*',async route=>{
    const request=route.request(),url=new URL(request.url());
    if(libraries[request.url()])return route.fulfill({body:libraries[request.url()],contentType:request.url().endsWith('.css')?'text/css':'application/javascript'});
@@ -141,6 +140,7 @@ const urls={
   assert.equal(await page.locator('#addSchedulePreview').textContent(),'🎂 새 기념일');
   assert.equal(await page.locator('#addSchedulePreview').evaluate(el=>getComputedStyle(el).borderLeftColor),'rgb(34, 174, 255)');
   await page.locator('#addScheduleForm button[type=submit]').click();
+  await page.locator('.site-feedback-dialog button[value=accept]').click();
   await page.waitForFunction(()=>!document.getElementById('addScheduleModal').classList.contains('show'));
   assert.equal(posts[0].params.get('category'),'ANNIVERSARY');
   assert.equal(posts[0].headers['x-xsrf-token'],'fixture-csrf');
@@ -165,6 +165,7 @@ const urls={
   await page.locator('#editScheduleCategory').selectOption('RELEASE');
   await page.locator('#editTitleInput').fill('새 음원 발매');
   await page.locator('#editScheduleForm button[type=submit]').click();
+  await page.locator('.site-feedback-dialog button[value=accept]').click();
   await page.waitForFunction(()=>!document.getElementById('editScheduleModal').classList.contains('show'));
   assert.equal(posts[1].params.get('category'),'RELEASE');
   assert.equal(posts[1].headers['x-xsrf-token'],'fixture-csrf');
@@ -179,6 +180,7 @@ const urls={
   await page.locator('#startInput').fill(day.slice(0,8)+'01');
   await page.locator('#addScheduleCategory').selectOption('FANSIGN');
   await page.locator('#addScheduleForm button[type=submit]').click();
+  await page.locator('.site-feedback-dialog button[value=accept]').click();
   await page.waitForFunction(()=>!document.getElementById('addScheduleModal').classList.contains('show'));
   async function visibleScheduleEvent(title){
    let event=page.locator('#calendar .fc-event:visible, .fc-popover .fc-event:visible').filter({hasText:title}).first();

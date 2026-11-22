@@ -7,8 +7,8 @@
     const input = favorite.elements.namedItem('favorite');
     const status = favorite.querySelector('[data-favorite-status]');
     button.disabled = true;
-    status.textContent = '저장 중…';
     try {
+      status.textContent = '저장 중…';
       const response = await fetch(favorite.action, {
         method: 'PUT', body: new URLSearchParams(new FormData(favorite)),
         headers: window.AboutAdminAuth?.applyAuthHeaders({Accept:'application/json'}) || {Accept:'application/json'}, credentials: 'same-origin'

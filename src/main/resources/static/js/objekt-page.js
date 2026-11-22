@@ -1280,14 +1280,16 @@
             const message = memberCount > 1 || numberCount > 1
                 ? ('선택한 멤버 ' + memberCount + '명 · 번호 ' + numberCount + '개의 설명을 삭제할까요?')
                 : '이 오브젝트의 상세 설명을 삭제하시겠습니까?';
-            if (!window.confirm(message)) return;
+            if (!await window.SiteFeedback.confirm(message)) return;
         }
-        if (!clear && !descriptionForm.reportValidity()) return;
+        if (!clear && (!descriptionForm.reportValidity()
+            || !await window.SiteFeedback.confirm('이 오브젝트의 상세 설명을 저장하시겠습니까?'))) return;
         const key = activeObjektKey;
         descriptionSaving = true;
         const controls = descriptionForm.querySelectorAll('button, textarea');
         controls.forEach(control => control.disabled = true);
         descriptionStatus.textContent = clear ? '삭제 중…' : '저장 중…';
+        const doneBusy = window.SiteFeedback.beginBusy();
         try {
             const body = new URLSearchParams({description: clear ? '' : descriptionInput.value});
             members.forEach((member) => body.append('members', member));
@@ -1315,6 +1317,7 @@
         } catch {
             if (activeObjektKey === key) descriptionStatus.textContent = '저장하지 못했습니다. 관리자 로그인 상태를 확인한 뒤 다시 시도해 주세요.';
         } finally {
+            doneBusy();
             descriptionSaving = false; controls.forEach(control => control.disabled = false);
         }
     }
@@ -1388,7 +1391,7 @@
         try {
             let response = await save();
             if (response.status === 403) {
-                await fetch('/api/artist/admin/status', {credentials:'same-origin', cache:'no-store'});
+                await fetch('/api/artist/admin/status', {credentials:'same-origin', cache:'no-store', siteFeedbackSilent: true});
                 response = await save();
             }
             if (!response.ok) throw new Error(String(response.status));

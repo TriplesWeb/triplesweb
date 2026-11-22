@@ -33,7 +33,7 @@
         {{/errorMessage}}
             <p id="formInlineError" class="mb-4 text-sm text-error font-medium" hidden role="alert"></p>
 
-            <form id="editForm" action="{{boardBase}}/{{article.id}}" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit(this)" class="space-y-5" data-market-board="{{#isMarketBoard}}true{{/isMarketBoard}}{{^isMarketBoard}}false{{/isMarketBoard}}">
+            <form id="editForm" data-confirm="이 글을 수정하시겠습니까?" action="{{boardBase}}/{{article.id}}" method="post" enctype="multipart/form-data" onsubmit="return beforeSubmit(this)" class="space-y-5" data-market-board="{{#isMarketBoard}}true{{/isMarketBoard}}{{^isMarketBoard}}false{{/isMarketBoard}}">
                 <input type="hidden" name="id" value="{{article.id}}">
 
                 {{#isMarketBoard}}
@@ -114,7 +114,7 @@
     function showFormError(message) {
         const el = document.getElementById('formInlineError');
         if (!el) {
-            alert(message);
+            window.SiteFeedback.alert(message);
             return;
         }
         el.textContent = message || '';
@@ -340,7 +340,7 @@
                         editForm.appendChild(hi);
                     } catch (err) {
                         console.error(err);
-                        alert('업로드 실패: ' + (err.message || err));
+                        window.SiteFeedback.alert('업로드 실패: ' + (err.message || err));
                     }
                 }
             } finally {
@@ -401,7 +401,7 @@
                 showFormError('게시글을 수정해주세요.');
                 return false;
             }
-            return window.confirm('이 글을 수정하시겠습니까?');
+            return true;
         };
 
         function attachRemoveBtn(host, saved, fileId) {

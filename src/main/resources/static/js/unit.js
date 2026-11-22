@@ -138,7 +138,7 @@
     if (unitId) {
       const res = await apiFetch(API + "/" + unitId);
       if (!res.ok) {
-        alert(await readError(res, "유닛을 불러오지 못했습니다."));
+        window.SiteFeedback.alert(await readError(res, "유닛을 불러오지 못했습니다."));
         return;
       }
       const data = await res.json();
@@ -256,7 +256,8 @@
         if (err) { err.hidden = false; err.textContent = "유닛 이름을 입력해 주세요."; }
         return;
       }
-      if (!window.confirm(clearImage ? "이 유닛을 저장하시겠습니까? 체크한 사진은 삭제됩니다." : (id ? "이 유닛을 수정하시겠습니까?" : "이 유닛을 추가하시겠습니까?"))) return;
+      if (!await window.SiteFeedback.confirm(clearImage ? "이 유닛을 저장하시겠습니까? 체크한 사진은 삭제됩니다." : (id ? "이 유닛을 수정하시겠습니까?" : "이 유닛을 추가하시겠습니까?"))) return;
+      const doneBusy = window.SiteFeedback.beginBusy();
       try {
         const url = id ? API + "/" + id : API;
         const res = await apiFetch(url, { method: "POST", body: fd });
@@ -273,6 +274,8 @@
         window.location.assign(destination.toString());
       } catch (ex) {
         if (err) { err.hidden = false; err.textContent = ex.message || "저장 실패"; }
+      } finally {
+        doneBusy();
       }
     });
 
@@ -280,14 +283,17 @@
       const id = document.getElementById("unitEditId").value;
       const err = document.getElementById("unitEditError");
       if (!id) return;
-      if (!confirm("이 유닛을 삭제하시겠습니까?\n연결된 앨범·하위 유닛은 삭제되지 않고 연결만 해제됩니다.")) return;
+      if (!await window.SiteFeedback.confirm("이 유닛을 삭제하시겠습니까?\n연결된 앨범·하위 유닛은 삭제되지 않고 연결만 해제됩니다.")) return;
+      const doneBusy = window.SiteFeedback.beginBusy();
       try {
         const res = await apiFetch(API + "/" + id, { method: "DELETE" });
         if (!res.ok) throw new Error(await readError(res, "삭제 실패"));
         location.href = "/triples/unit";
       } catch (ex) {
         if (err) { err.hidden = false; err.textContent = ex.message || "삭제 실패"; }
-        else alert(ex.message || "삭제 실패");
+        else window.SiteFeedback.alert(ex.message || "삭제 실패");
+      } finally {
+        doneBusy();
       }
     });
   }

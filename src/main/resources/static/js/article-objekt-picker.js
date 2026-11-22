@@ -43,7 +43,7 @@
         pickerError.textContent = message || '';
         pickerError.hidden = !message;
       } else if (message) {
-        alert(message);
+        window.SiteFeedback.alert(message);
       }
       const formError = document.getElementById('formInlineError');
       if (formError && message) {

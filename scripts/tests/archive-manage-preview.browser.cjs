@@ -302,7 +302,7 @@ async function withPage(html, run) {
     await page.route('**/*', (route) => {
       const url = new URL(route.request().url());
       if (url.pathname === '/' || url.pathname.endsWith('.html')) {
-        return route.fulfill({ contentType: 'text/html', body: html });
+        return route.fulfill({ contentType: 'text/html', body: html.replace('</head>', '<script defer src="/js/site-feedback.js"></script></head>') });
       }
       if (url.pathname.startsWith('/uploads/')) {
         const file = path.resolve(root, '.' + decodeURIComponent(url.pathname));
@@ -482,7 +482,7 @@ async function withPage(html, run) {
       ['/poster.svg', '/portrait.svg'], '드래그로 사진 순서가 바뀌지 않았다');
 
     await page.evaluate(() => {
-      window.confirm = () => true;
+      window.SiteFeedback.confirm = async () => true;
       window.refreshArchiveGrid = async () => {
         const card = document.querySelector('#archiveGrid .ar-card[data-id="1"]');
         card.dataset.images = JSON.stringify(['/poster.svg', '/portrait.svg']);
@@ -595,12 +595,12 @@ async function withPage(html, run) {
     await page.keyboard.press('Escape');
     await card.locator('[data-archive-video]').click();
     await page.evaluate(() => {
-      window.confirm = () => false;
+      window.SiteFeedback.confirm = async () => false;
       window.refreshArchiveGrid = async () => {};
     });
     await dialog.getByRole('button', { name: '삭제하기' }).click();
     assert.equal(await dialog.isVisible(), true);
-    await page.evaluate(() => { window.confirm = () => true; });
+    await page.evaluate(() => { window.SiteFeedback.confirm = async () => true; });
     await page.route('**/archive/1', route => {
       assert.equal(route.request().method(), 'DELETE');
       return route.fulfill({ status: 200, body: 'ok' });
