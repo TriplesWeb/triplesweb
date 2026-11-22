@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -76,16 +77,7 @@ public class UnitService {
      */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> listUnitCheckboxOptions() {
-        List<Unit> all = unitRepository.findAllForUnitPage();
-        Set<Long> parentIds = all.stream()
-                .map(Unit::getParentUnit)
-                .filter(Objects::nonNull)
-                .map(Unit::getUnitId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        return all.stream()
-                .filter(Unit::isVisible)
-                .filter(unit -> unit.getUnitId() == null || !parentIds.contains(unit.getUnitId()))
+        return filterCheckboxEditable(unitRepository.findAllForUnitPage()).stream()
                 .sorted(Comparator.comparingLong(unit -> unit.getUnitId() != null ? unit.getUnitId() : 0L))
                 .map(unit -> {
                     Map<String, Object> row = new LinkedHashMap<>();
@@ -97,6 +89,29 @@ public class UnitService {
                     }
                     return row;
                 })
+                .collect(Collectors.toList());
+    }
+
+    /** 체크 UI에 노출되는 유닛 id. 아티스트 저장 시 UI 밖 소속은 건드리지 않는다. */
+    @Transactional(readOnly = true)
+    public Set<Long> checkboxEditableUnitIds() {
+        // 멤버 fetch 조인 없이 id만 본다. 편집 트랜잭션과 findAllForUnitPage가 섞이면 판정이 어긋날 수 있다.
+        return filterCheckboxEditable(unitRepository.findAll()).stream()
+                .map(Unit::getUnitId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static List<Unit> filterCheckboxEditable(List<Unit> all) {
+        Set<Long> parentIds = all.stream()
+                .map(Unit::getParentUnit)
+                .filter(Objects::nonNull)
+                .map(Unit::getUnitId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        return all.stream()
+                .filter(Unit::isVisible)
+                .filter(unit -> unit.getUnitId() == null || !parentIds.contains(unit.getUnitId()))
                 .collect(Collectors.toList());
     }
 
