@@ -722,9 +722,23 @@
 
     function captureSlot(form) {
         if (kind !== 'image' || !form || form._archiveApplyingSlot) return;
-        const slot = slotsOf(form)[form._archiveSlotPreviewIndex];
+        const slots = slotsOf(form);
+        if (!slots.length) return;
+        const index = Number.isInteger(form._archiveSlotPreviewIndex) && form._archiveSlotPreviewIndex >= 0
+            ? form._archiveSlotPreviewIndex
+            : 0;
+        const slot = slots[index];
         if (!slot) return;
         slot.artists = selectedArtists(slotRoot(form));
+    }
+
+    /** 피커 출연진을 모든 사진 슬롯에 맞춰, 저장 시 옛 slot.artists가 남지 않게 한다. */
+    function syncAllSlotArtists(form, names) {
+        if (kind !== 'image' || !form) return;
+        const next = Array.isArray(names) ? names.map(String).filter(Boolean) : selectedArtists(slotRoot(form));
+        slotsOf(form).forEach(slot => {
+            slot.artists = next.slice();
+        });
     }
 
     function applySlot(form, slot) {
@@ -1192,10 +1206,12 @@
             if (!values.length) chips.textContent = '멤버를 선택하면 여기에 표시됩니다.';
         }
         window.UnitCheckboxGroup?.syncFromMembers(unitChecksRoot(root), values);
-        syncPreview(root.querySelector('form'));
+        const form = root.querySelector?.('form') || root.closest?.('form');
+        captureSlot(form);
+        syncPreview(form);
     }
 
-    function applyArtists(root, raw) {
+    function applyArtists(root, raw, { allSlots = false } = {}) {
         if (window.MemberPortraitPicker) MemberPortraitPicker.clear(root);
         const names = (raw || "").split(",").map(part => part.trim()).filter(Boolean);
         root.querySelectorAll(".mpp-item").forEach(button => {
@@ -1205,6 +1221,9 @@
             }
         });
         renderArtists(root);
+        const form = root.querySelector?.('form') || root.closest?.('form');
+        // 유닛 프리셋은 게시글 전체 출연진을 바꾸므로 모든 사진 슬롯을 맞춘다.
+        if (allSlots) syncAllSlotArtists(form, names);
     }
 
     function bindPicker(root) {
@@ -1219,7 +1238,7 @@
         });
         window.UnitCheckboxGroup?.bindMemberHelper(unitChecksRoot(root), {
             getMembers: () => selectedArtists(root),
-            applyMembers: (names) => applyArtists(root, names.join(',')),
+            applyMembers: (names) => applyArtists(root, names.join(','), { allSlots: true }),
             onChange: () => syncPreview(root.querySelector('form'))
         });
         root.querySelector('form')?.addEventListener('input', () => syncPreview(root.querySelector('form')));
@@ -2050,6 +2069,12 @@
         }
         body.delete("artistNames");
         body.delete("extraArtists");
+        captureSlot(uploadForm);
+        const uploadLive = selectedArtists(uploadDialog);
+        if (kind === 'image' && slotsOf(uploadForm).length && uploadLive.length) {
+            const unitChecked = !!unitChecksRoot(uploadDialog)?.querySelector('input[type="checkbox"]:checked');
+            if (unitChecked) syncAllSlotArtists(uploadForm, uploadLive);
+        }
         if (kind === 'image' && slotsOf(uploadForm).length > 1) {
             const names = [];
             artistRows(uploadForm).forEach(row => row.split(',').forEach(name => {
@@ -2059,7 +2084,7 @@
             names.forEach(name => body.append("artistNames", name));
             body.set("imageArtistsJson", JSON.stringify(artistRows(uploadForm)));
         } else {
-            selectedArtists(uploadDialog).forEach(name => body.append("artistNames", name));
+            uploadLive.forEach(name => body.append("artistNames", name));
         }
         const button = uploadForm.querySelector("[type='submit']");
         if (button) button.disabled = true;
@@ -2377,9 +2402,21 @@
         if (kind === "video") body.set("title", title);
         else body.set("description", description);
         body.set("registeredOn", registeredOn);
+        // 피커에서 바꾼 출연진이 slot.artists에 반영되지 않으면 유닛 배지가 목록에 안 뜬다.
+        captureSlot(editForm);
+        const liveNames = selectedArtists(editDialog);
+        if (kind === 'image' && slots.length && liveNames.length) {
+            const activeIndex = Number.isInteger(editForm._archiveSlotPreviewIndex) && editForm._archiveSlotPreviewIndex >= 0
+                ? editForm._archiveSlotPreviewIndex
+                : 0;
+            if (slots[activeIndex]) slots[activeIndex].artists = liveNames.slice();
+            // 유닛으로 맞춘 경우(피커 = 유닛 구성) 전 장 출연진을 같게 맞춰 합집합이 깨지지 않게 한다.
+            const unitChecked = !!unitChecksRoot(editDialog)?.querySelector('input[type="checkbox"]:checked');
+            if (unitChecked) syncAllSlotArtists(editForm, liveNames);
+        }
         const editRows = kind === 'image' ? artistRows(editForm) : [];
         const editNames = [];
-        (editRows.length ? editRows : [selectedArtists(editDialog).join(',')]).forEach(row => {
+        (editRows.length ? editRows : [liveNames.join(',')]).forEach(row => {
             row.split(',').forEach(name => {
                 const trimmed = name.trim();
                 if (trimmed && !editNames.includes(trimmed)) editNames.push(trimmed);
