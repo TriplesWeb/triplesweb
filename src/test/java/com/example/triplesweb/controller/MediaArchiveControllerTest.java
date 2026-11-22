@@ -28,6 +28,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(MediaArchiveController.class)
@@ -59,7 +60,8 @@ class MediaArchiveControllerTest {
         String first = mvc.perform(get("/media"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("@triplescosmos")))
-                .andExpect(content().string(containsString("페이지 1 / 2")))
+                .andExpect(content().string(containsString("ar-page-jump")))
+                .andExpect(content().string(containsString("name=\"go\"")))
                 .andExpect(content().string(containsString("더보기")))
                 .andExpect(content().string(containsString("추천 동영상")))
                 .andExpect(content().string(not(containsString("쇼츠 추가"))))
@@ -78,9 +80,10 @@ class MediaArchiveControllerTest {
 
         String second = mvc.perform(get("/media").param("page", "2"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("페이지 2 / 2")))
                 .andReturn().getResponse().getContentAsString();
-        assertThat(Jsoup.parse(second).select("article.media-card")).hasSize(1);
+        org.jsoup.nodes.Document secondPage = Jsoup.parse(second);
+        assertThat(secondPage.select("article.media-card")).hasSize(1);
+        assertThat(secondPage.select(".ar-page-jump-meta").text()).isEqualTo("2/2");
     }
 
     @Test
@@ -97,7 +100,7 @@ class MediaArchiveControllerTest {
     }
 
     @Test
-    void playlistStartsWithAndlessMusicVideosOnly() throws Exception {
+    void initialStageStaysCollapsedWithoutSeededVideo() throws Exception {
         when(media.listAll()).thenReturn(List.of(
                 video(1, "mv", "ANDLESS Official MV", "3:40", "2026-11-01"),
                 video(2, "mv", "Other Official MV", "3:20", "2026-11-02"),
@@ -109,13 +112,22 @@ class MediaArchiveControllerTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         org.jsoup.nodes.Document document = Jsoup.parse(html);
-        assertThat(document.select(".media-playlist__item strong").eachText())
-                .containsExactly("Other Official MV");
-        assertThat(document.select(".media-feature__hero").attr("data-ytid"))
-                .isEqualTo(document.select(".media-playlist__item").attr("data-ytid"));
+        assertThat(document.select(".media-feature.is-collapsed")).isNotEmpty();
+        assertThat(document.select(".media-suggest.is-collapsed")).isNotEmpty();
+        assertThat(document.select(".media-playlist__item")).isEmpty();
+        assertThat(document.select(".media-feature__hero").attr("data-ytid")).isEmpty();
+        assertThat(document.select(".media-suggest__card")).isEmpty();
+        assertThat(document.select(".media-card__views")).isNotEmpty();
         assertThat(document.select(".media-archive .media-card__title").eachText())
                 .doesNotContain("ANDLESS teaser");
         assertThat(document.select(".media-short")).hasSize(1);
+    }
+
+    @Test
+    void pageJumpKeepsFiltersAndUsesOneBasedPage() throws Exception {
+        mvc.perform(get("/media").param("tab", "signal").param("go", "2").param("q", "코토네"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/media?tab=signal&q=%EC%BD%94%ED%86%A0%EB%84%A4&page=2"));
     }
 
     private static MediaDto video(int index, String duration) {

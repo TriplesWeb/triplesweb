@@ -26,6 +26,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -64,10 +65,12 @@ public class MediaArchiveController {
                             @RequestParam(required = false) String from,
                             @RequestParam(required = false) String to,
                             @RequestParam(required = false) String kind,
+                            @RequestParam(required = false) Integer go,
                             @RequestParam(name = "page", defaultValue = "1") int page,
                             HttpServletRequest request,
                             HttpSession session,
                             Model model) {
+        if (go != null) return mediaPageJump(go, request);
         mediaViewCounts.refreshIfDue();
         tab = normalizeTab(tab);
         boolean all = "all".equals(tab);
@@ -121,16 +124,12 @@ public class MediaArchiveController {
             if (MediaOrdering.isShort(video.getDuration())) shortForm.add(video);
             else longForm.add(video);
         }
-        List<MediaDto> latestLong = new ArrayList<>(longForm);
-        MediaOrdering.sort(latestLong, "latest");
         List<MediaDto> latestShorts = new ArrayList<>(shortForm);
         MediaOrdering.sort(latestShorts, "latest");
-        MediaDto latestMv = latestMusicVideo(longForm);
-        boolean seedPlaylist = !shortsOnly && latestMv != null && (all || "mv".equals(tab));
-        MediaDto featured = shortsOnly ? null : (seedPlaylist ? latestMv : (latestLong.isEmpty() ? null : latestLong.get(0)));
-        List<MediaDto> recommendations = seedPlaylist ? List.of(latestMv) : List.of();
+        MediaDto featured = null;
+        List<MediaDto> recommendations = List.of();
         List<MediaDto> archive = shortsOnly ? shortForm : longForm;
-        List<MediaDto> suggestions = shortsOnly ? List.of() : suggestions(longForm, featured, recommendations, 4);
+        List<MediaDto> suggestions = List.of();
         int total = archive.size();
         int totalPages = Math.max(1, (int) Math.ceil(total / (double) PAGE_SIZE));
         int current = Math.min(totalPages, Math.max(1, page));
@@ -379,75 +378,6 @@ public class MediaArchiveController {
         return selected.size() + "명";
     }
 
-    /** 초기 재생목록에 넣을 최신 MV 한 편. */
-    private static MediaDto latestMusicVideo(List<MediaDto> videos) {
-        List<MediaDto> found = new ArrayList<>();
-        for (MediaDto video : videos) {
-            if (video == null || MediaOrdering.isShort(video.getDuration())) continue;
-            if (!"mv".equalsIgnoreCase(video.getTab())) continue;
-            found.add(video);
-        }
-        MediaOrdering.sort(found, "latest");
-        return found.isEmpty() ? null : found.get(0);
-    }
-
-    /** 대표 영상과 멤버·분류가 겹치는 영상을 우선해 아카이브 위에 네 개까지 고른다. */
-    private List<MediaDto> suggestions(List<MediaDto> videos, MediaDto anchor, List<MediaDto> reserved, int limit) {
-        if (anchor == null || videos == null || videos.isEmpty() || limit < 1) return List.of();
-        Set<String> skip = new LinkedHashSet<>();
-        if (anchor.getYoutubeId() != null) skip.add(anchor.getYoutubeId().toLowerCase(Locale.ROOT));
-        if (reserved != null) {
-            for (MediaDto video : reserved) {
-                if (video.getYoutubeId() != null) skip.add(video.getYoutubeId().toLowerCase(Locale.ROOT));
-            }
-        }
-        Set<String> members = memberKeySet(anchor.getArtistNames());
-        String tab = anchor.getTab() == null ? "" : anchor.getTab();
-        List<MediaDto> pool = new ArrayList<>();
-        for (MediaDto video : videos) {
-            if (video.getYoutubeId() == null || skip.contains(video.getYoutubeId().toLowerCase(Locale.ROOT))) continue;
-            pool.add(video);
-        }
-        pool.sort((left, right) -> {
-            int byScore = Integer.compare(similarity(right, members, tab), similarity(left, members, tab));
-            if (byScore != 0) return byScore;
-            LocalDate rightDay = MediaOrdering.parseDate(right.getPublishedOn());
-            LocalDate leftDay = MediaOrdering.parseDate(left.getPublishedOn());
-            if (leftDay == null && rightDay == null) return 0;
-            if (leftDay == null) return 1;
-            if (rightDay == null) return -1;
-            return rightDay.compareTo(leftDay);
-        });
-        List<MediaDto> picked = new ArrayList<>();
-        for (MediaDto video : pool) {
-            if (picked.size() >= limit) break;
-            picked.add(video);
-        }
-        if (picked.size() < limit && reserved != null) {
-            for (MediaDto video : reserved) {
-                if (picked.size() >= limit) break;
-                if (video.getYoutubeId() == null || video.getYoutubeId().equalsIgnoreCase(anchor.getYoutubeId())) continue;
-                picked.add(video);
-            }
-        }
-        return List.copyOf(picked);
-    }
-
-    private static int similarity(MediaDto video, Set<String> members, String tab) {
-        int score = 0;
-        for (String name : memberKeySet(video.getArtistNames())) {
-            if (members.contains(name)) score += 3;
-        }
-        if (tab != null && !tab.isBlank() && tab.equals(video.getTab())) score += 1;
-        return score;
-    }
-
-    private static Set<String> memberKeySet(String names) {
-        Set<String> keys = new LinkedHashSet<>();
-        for (String name : splitNames(names)) keys.add(MediaOrdering.memberKey(name));
-        return keys;
-    }
-
     private static boolean matchesMembers(String artistNames, List<String> selected) {
         if (selected == null || selected.isEmpty()) return true;
         Set<String> names = new LinkedHashSet<>();
@@ -483,6 +413,7 @@ public class MediaArchiveController {
                     ? "#b9cac4" : matched.getColor();
             Map<String, Object> badge = new LinkedHashMap<>();
             badge.put("name", name);
+            if (matched != null && matched.getArtistId() != null) badge.put("artistId", matched.getArtistId());
             badge.put("color", color);
             badge.put("image", image);
             badge.put("hasImage", !image.isBlank());
@@ -590,6 +521,7 @@ public class MediaArchiveController {
             row.put("duration", video.getDuration() == null ? "" : video.getDuration());
             row.put("viewCountFmt", video.getViewCountFmt() == null ? "" : video.getViewCountFmt());
             row.put("artistNames", video.getArtistNames() == null ? "" : video.getArtistNames());
+            row.put("memberBadges", video.getMemberBadges() == null ? List.of() : video.getMemberBadges());
             rows.add(row);
         }
         try {
@@ -606,6 +538,19 @@ public class MediaArchiveController {
                 .filter(s -> !s.isBlank())
                 .distinct()
                 .toList();
+    }
+
+    private static String mediaPageJump(int go, HttpServletRequest request) {
+        int target = Math.max(1, go);
+        UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/media");
+        request.getParameterMap().forEach((name, values) -> {
+            if (name == null || values == null || "go".equals(name) || "page".equals(name)) return;
+            for (String value : values) {
+                if (value != null && !value.isBlank()) builder.queryParam(name, value);
+            }
+        });
+        if (target > 1) builder.queryParam("page", target);
+        return "redirect:" + builder.build().encode().toUriString();
     }
 
     private String normalizeTab(String tab) {
