@@ -4,15 +4,26 @@
         <span>{{#hasDateFilter}}{{#hasExactDate}}{{on}}{{/hasExactDate}}{{^hasExactDate}}{{from}} ~ {{to}}{{/hasExactDate}}{{/hasDateFilter}}{{^hasDateFilter}}{{#dateFilterLabel}}{{dateFilterLabel}}{{/dateFilterLabel}}{{^dateFilterLabel}}날짜{{/dateFilterLabel}}{{/hasDateFilter}}</span>
     </button>
     <div class="ar-date-popover" data-date-popover hidden role="dialog" aria-label="{{#dateFilterLabel}}{{dateFilterLabel}}{{/dateFilterLabel}}{{^dateFilterLabel}}날짜 선택{{/dateFilterLabel}}">
-        {{#dateExactEnabled}}
-        <label>{{#dateExactLabel}}{{dateExactLabel}}{{/dateExactLabel}}{{^dateExactLabel}}이 날짜{{/dateExactLabel}}<input type="date" name="on" value="{{on}}" data-date-exact data-ar-cal lang="ko"></label>
-        {{/dateExactEnabled}}
-        <label>{{#dateFromLabel}}{{dateFromLabel}}{{/dateFromLabel}}{{^dateFromLabel}}시작 날짜{{/dateFromLabel}}<input type="date" name="from" value="{{from}}" data-date-from data-ar-cal lang="ko"></label>
-        <label>{{#dateToLabel}}{{dateToLabel}}{{/dateToLabel}}{{^dateToLabel}}마지막 날짜{{/dateToLabel}}<input type="date" name="to" value="{{to}}" data-date-to data-ar-cal lang="ko"></label>
-        {{#dateFilterHint}}<p class="ar-field-hint">{{dateFilterHint}}</p>{{/dateFilterHint}}
+        <div class="ar-date-fields">
+            {{#dateExactEnabled}}
+            <label class="ar-date-row">
+                <span class="ar-date-kicker">{{#dateExactLabel}}{{dateExactLabel}}{{/dateExactLabel}}{{^dateExactLabel}}이날{{/dateExactLabel}}</span>
+                <span class="ar-date-control"><input type="date" name="on" value="{{on}}" data-date-exact data-ar-cal lang="ko"></span>
+            </label>
+            {{/dateExactEnabled}}
+            <label class="ar-date-row">
+                <span class="ar-date-kicker">{{#dateFromLabel}}{{dateFromLabel}}{{/dateFromLabel}}{{^dateFromLabel}}시작{{/dateFromLabel}}</span>
+                <span class="ar-date-control"><input type="date" name="from" value="{{from}}" data-date-from data-ar-cal lang="ko"></span>
+            </label>
+            <label class="ar-date-row">
+                <span class="ar-date-kicker">{{#dateToLabel}}{{dateToLabel}}{{/dateToLabel}}{{^dateToLabel}}끝{{/dateToLabel}}</span>
+                <span class="ar-date-control"><input type="date" name="to" value="{{to}}" data-date-to data-ar-cal lang="ko"></span>
+            </label>
+        </div>
+        {{#dateFilterHint}}<p class="ar-field-hint ar-date-hint">{{dateFilterHint}}</p>{{/dateFilterHint}}
         <div class="ar-date-actions">
             <button type="button" class="site-btn site-btn--reset site-btn--sm" data-date-clear>초기화</button>
-            <button type="submit" class="ar-submit">적용</button>
+            <button type="submit" class="ar-submit ar-date-apply">적용</button>
         </div>
     </div>
 </div>

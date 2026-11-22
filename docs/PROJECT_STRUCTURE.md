@@ -366,7 +366,7 @@ templates/
 | `file.upload-dir=./uploads`            | 업로드 루트              |
 | `media.catalog.path`                   | YouTube 미디어 JSON 경로 |
 | `youtube.api.key`                      | YouTube Data API 키  |
-| multipart max                          | 파일 1GB / 요청 10GB    |
+| multipart max                          | 파일 3GB / 요청 30GB    |
 
 
 > **보안 주의**: DB 비밀번호·YouTube API 키가 properties에 **평문**으로 들어 있습니다.  

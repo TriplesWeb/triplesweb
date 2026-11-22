@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Archive video cover scrubber eight-state preview">
+  <title>Archive cover scrubber · eight states</title>
+  <link rel="stylesheet" href="./site-theme.css">
+  <link rel="stylesheet" href="./archive-cover-picker.css">
+  <style>
+    body { margin: 0; padding: 1.5rem; background: var(--site-ui-page); color: var(--site-ui-text); font: 15px/1.45 system-ui, sans-serif; }
+    h1 { font-size: 1.1rem; font-weight: 650; margin: 0 0 1rem; text-wrap: balance; }
+    .row { display: grid; gap: 0.45rem; margin-bottom: 1.5rem; max-width: 28rem; }
+    .row h2 { margin: 0; font-size: 0.8rem; font-weight: 600; color: var(--site-ui-muted); text-wrap: balance; }
+  </style>
+</head>
+<body>
+  <h1>Cover scrubber states</h1>
+
+  <div class="row">
+    <h2>default</h2>
+    <div class="ar-cover-picker">
+      <div class="ar-cover-stage"><p class="ar-cover-empty">영상을 선택하면 슬라이드로 원하는 장면을 고를 수 있습니다.</p></div>
+      <div class="ar-cover-rail">
+        <div class="ar-cover-scrub" hidden></div>
+        <button type="button" class="ar-cover-gallery" aria-label="갤러리에서 커버 선택"><span>갤러리</span></button>
+      </div>
+      <div class="ar-cover-meta"><p class="ar-cover-status">대기</p></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <h2>success / scrub ready</h2>
+    <div class="ar-cover-picker is-success">
+      <div class="ar-cover-stage"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='180'%3E%3Crect fill='%201a3a36' width='320' height='180'/%3E%3C/svg%3E" alt=""></div>
+      <div class="ar-cover-rail">
+        <div class="ar-cover-scrub">
+          <div class="ar-cover-film" aria-hidden="true">
+            <img alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='56'%3E%3Crect fill='%23333' width='40' height='56'/%3E%3C/svg%3E">
+            <img alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='56'%3E%3Crect fill='%23444' width='40' height='56'/%3E%3C/svg%3E">
+            <img alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='56'%3E%3Crect fill='%23555' width='40' height='56'/%3E%3C/svg%3E">
+          </div>
+          <div class="ar-cover-window" aria-hidden="true"><span class="ar-cover-time">3.2초</span></div>
+          <input type="range" class="ar-cover-slider is-success" min="0" max="1000" value="320" aria-label="커버 장면 위치">
+        </div>
+        <button type="button" class="ar-cover-gallery is-success" aria-label="갤러리에서 커버 선택"><span>갤러리</span></button>
+      </div>
+      <div class="ar-cover-meta"><p class="ar-cover-status">3.2초 / 10초</p></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <h2>loading / error / disabled</h2>
+    <div class="ar-cover-picker is-loading">
+      <div class="ar-cover-stage"><p class="ar-cover-empty">장면을 준비하는 중</p></div>
+      <div class="ar-cover-rail">
+        <div class="ar-cover-scrub">
+          <input type="range" class="ar-cover-slider is-loading" disabled min="0" max="1000" value="0" aria-label="커버 장면 위치">
+        </div>
+        <button type="button" class="ar-cover-gallery is-disabled" disabled aria-label="갤러리에서 커버 선택"><span>갤러리</span></button>
+      </div>
+      <div class="ar-cover-meta"><p class="ar-cover-status">장면을 준비하는 중…</p></div>
+    </div>
+  </div>
+</body>
+</html>
