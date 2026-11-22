@@ -1,0 +1,33 @@
+{{#hasMediaPager}}
+<nav class="ar-panel ar-pager" aria-label="미디어 페이지">
+    <p class="ar-pager-summary">
+        <span class="ar-pager-count">총 {{mediaTotal}}개</span>
+        <span class="ar-pager-sep" aria-hidden="true">·</span>
+        <span>{{mediaPageCount}}개 표시</span>
+    </p>
+    <div class="ar-pager-nav" role="group" aria-label="페이지 번호">
+        {{#hasMediaPrev}}<a class="ar-pager-step" href="/media?page={{mediaPrevPage}}{{mediaQuery}}">이전</a>{{/hasMediaPrev}}
+        {{^hasMediaPrev}}<a class="ar-pager-step is-disabled" aria-disabled="true">이전</a>{{/hasMediaPrev}}
+        <div class="ar-pages">
+            {{#mediaPages}}<a class="ar-pager-num{{#active}} is-current{{/active}}" href="/media?page={{num}}{{mediaQuery}}"{{#active}} aria-current="page"{{/active}}>{{num}}</a>{{/mediaPages}}
+        </div>
+        {{#hasMediaNext}}<a class="ar-pager-step" href="/media?page={{mediaNextPage}}{{mediaQuery}}">다음</a>{{/hasMediaNext}}
+        {{^hasMediaNext}}<a class="ar-pager-step is-disabled" aria-disabled="true">다음</a>{{/hasMediaNext}}
+    </div>
+    <form class="ar-page-jump" method="get" action="/media" aria-label="페이지 이동">
+        <input type="hidden" name="tab" value="{{currentTab}}">
+        <input type="hidden" name="sort" value="{{sort}}">
+        {{#query}}<input type="hidden" name="q" value="{{query}}">{{/query}}
+        {{#from}}<input type="hidden" name="from" value="{{from}}">{{/from}}
+        {{#to}}<input type="hidden" name="to" value="{{to}}">{{/to}}
+        {{#selectedMembers}}<input type="hidden" name="members" value="{{.}}">{{/selectedMembers}}
+        {{#shortsOnly}}<input type="hidden" name="kind" value="shorts">{{/shortsOnly}}
+        <span class="ar-page-jump-meta">{{mediaPageDisplay}}<span aria-hidden="true">/</span>{{mediaTotalPages}}</span>
+        <label class="ar-page-jump-field">
+            <span class="visually-hidden">이동할 페이지</span>
+            <input type="number" name="go" min="1"{{#mediaTotalPages}} max="{{mediaTotalPages}}"{{/mediaTotalPages}} value="{{mediaPageDisplay}}" aria-label="이동할 페이지">
+        </label>
+        <button type="submit">이동</button>
+    </form>
+</nav>
+{{/hasMediaPager}}

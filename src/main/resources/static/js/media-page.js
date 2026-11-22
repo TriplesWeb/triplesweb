@@ -184,6 +184,21 @@
             event.preventDefault();
             applyResults(link.href, true);
         });
+        document.addEventListener('submit', (event) => {
+            const jump = event.target.closest('form.ar-page-jump');
+            if (!jump || !jump.closest('main.media-shell')) return;
+            event.preventDefault();
+            const formData = new FormData(jump);
+            const params = new URLSearchParams();
+            formData.forEach((value, key) => {
+                if (key === 'go' || key === 'page') return;
+                if (value != null && String(value) !== '') params.append(key, value);
+            });
+            const requested = Number(formData.get('go'));
+            const page = Number.isFinite(requested) ? Math.max(1, Math.trunc(requested)) : 1;
+            if (page > 1) params.set('page', String(page));
+            applyResults('/media?' + params.toString(), true);
+        });
 
         function scheduleResults() {
             window.clearTimeout(filterTimer);
@@ -340,24 +355,105 @@
         return row;
     }
 
+    function setCollapsed(node, collapsed) {
+        if (!node) return;
+        node.classList.toggle('is-collapsed', collapsed);
+        node.hidden = collapsed;
+    }
+
     function renderPlaylist() {
         const items = readPlaylist();
         paintAddButtons(items);
         const playlist = document.getElementById('mediaPlaylist');
+        const feature = document.querySelector('.media-feature');
         const managing = items.length > 0;
         playlist?.classList.toggle('is-managing', managing);
+        setCollapsed(feature, !managing);
         if (!playlistList) return;
         if (!items.length) {
-            playlistList.innerHTML = originalPlaylist;
+            playlistList.replaceChildren();
             if (playlistTitle) playlistTitle.textContent = originalTitle;
             if (playlistCount) playlistCount.textContent = originalCount;
-            focusPlaylist();
+            clearHero();
+            paintSuggestions(null);
             return;
         }
         if (playlistTitle) playlistTitle.textContent = '재생목록';
         if (playlistCount) playlistCount.textContent = String(items.length).padStart(2, '0');
         playlistList.replaceChildren(...items.map(playlistRow));
         focusPlaylist();
+        paintSuggestions(items[0]);
+    }
+
+    function clearHero() {
+        const hero = document.querySelector('.media-feature__hero');
+        if (!hero) return;
+        hero.removeAttribute('data-ytid');
+        hero.removeAttribute('data-site-toggle');
+        hero.removeAttribute('data-site-target');
+        hero.href = '/media';
+        const still = hero.querySelector('.media-feature__still');
+        if (still) {
+            still.dataset.ytStill = '';
+            still.removeAttribute('src');
+        }
+        const title = document.getElementById('mediaFeatureTitle');
+        if (title) title.textContent = '';
+        const meta = document.getElementById('mediaFeatureMeta');
+        if (meta) meta.textContent = '';
+        const duration = document.getElementById('mediaFeatureDuration');
+        if (duration) duration.textContent = '';
+    }
+
+    function suggestCard(item) {
+        const card = document.createElement('a');
+        card.className = 'media-suggest__card';
+        card.href = '/media/' + encodeURIComponent(item.tab || 'mv') + '/' + encodeURIComponent(item.youtubeId);
+        card.dataset.siteToggle = 'modal';
+        card.dataset.siteTarget = '#ytModal';
+        card.dataset.ytid = item.youtubeId;
+        card.dataset.tab = item.tab || '';
+        card.dataset.kind = item.tabLabel || '';
+        card.dataset.title = item.title || '';
+        card.dataset.duration = item.duration || '';
+        card.dataset.views = item.viewCountFmt || '';
+        card.dataset.published = item.publishedLabel || '';
+        const thumb = document.createElement('span');
+        thumb.className = 'media-suggest__thumb';
+        const image = document.createElement('img');
+        image.src = 'https://img.youtube.com/vi/' + encodeURIComponent(item.youtubeId) + '/hqdefault.jpg';
+        image.alt = '';
+        thumb.append(image);
+        if (item.duration) {
+            const time = document.createElement('em');
+            time.textContent = item.duration;
+            thumb.append(time);
+        }
+        const copy = document.createElement('span');
+        copy.className = 'media-suggest__copy';
+        const kind = document.createElement('small');
+        kind.textContent = item.tabLabel || '';
+        const title = document.createElement('strong');
+        title.textContent = item.title || '';
+        copy.append(kind, title);
+        card.append(thumb, copy);
+        return card;
+    }
+
+    function paintSuggestions(anchor) {
+        const box = document.getElementById('mediaSuggest');
+        const list = document.getElementById('mediaSuggestList');
+        if (!box || !list) return;
+        if (!anchor || !anchor.youtubeId) {
+            list.replaceChildren();
+            setCollapsed(box, true);
+            return;
+        }
+        const pool = archiveVideos().filter((row) => row.youtubeId !== anchor.youtubeId);
+        const same = pool.filter((row) => row.tab && row.tab === anchor.tab);
+        const chosen = (same.length ? same : pool).slice(0, 4);
+        list.replaceChildren(...chosen.map(suggestCard));
+        setCollapsed(box, chosen.length === 0);
     }
 
     function removePlaylist(id) {
@@ -413,12 +509,69 @@
         if (row.publishedLabel) bits.push(row.publishedLabel);
         if (row.duration) bits.push(row.duration);
         text('ytModalMeta', bits.join(' · '));
+        paintModalMembers(row);
         text('ytModalDesc', row.description && String(row.description).trim() ? row.description : '등록된 상세 설명이 없습니다.');
         const deleteTab = document.getElementById('ytDeleteTab');
         const deleteId = document.getElementById('ytDeleteId');
         if (deleteTab) deleteTab.value = row.tab || '';
         if (deleteId) deleteId.value = id;
         showModal(ytModal);
+    }
+
+    function paintModalMembers(video) {
+        const cast = document.getElementById('ytModalCast');
+        const members = document.getElementById('ytModalMembers');
+        if (!cast || !members) return;
+        members.replaceChildren();
+        members.classList.remove('is-many');
+        delete members.dataset.memberCount;
+        const badges = Array.isArray(video.memberBadges) ? video.memberBadges : [];
+        if (!badges.length) {
+            cast.hidden = true;
+            return;
+        }
+        if (badges.length === 1 && badges[0].fullLineup) {
+            const link = document.createElement('a');
+            link.className = 'ar-detail-lineup';
+            link.href = '/triples';
+            link.setAttribute('aria-label', 'tripleS 24명');
+            const photo = document.createElement('span');
+            photo.className = 'ar-detail-lineup-photo';
+            const img = document.createElement('img');
+            img.alt = '';
+            img.referrerPolicy = 'no-referrer';
+            if (badges[0].image) img.src = badges[0].image;
+            photo.append(img);
+            const label = document.createElement('span');
+            label.className = 'ar-detail-lineup-label';
+            label.textContent = 'tripleS';
+            link.append(photo, label);
+            members.append(link);
+            members.dataset.memberCount = '24';
+            cast.hidden = false;
+            return;
+        }
+        badges.forEach((badge) => {
+            const chip = document.createElement(badge.artistId ? 'a' : 'span');
+            chip.className = 'unit-member-chip';
+            chip.style.setProperty('--member-color', badge.color || '#b9cac4');
+            chip.title = badge.name || '';
+            if (badge.artistId) chip.href = '/triples/artist/' + encodeURIComponent(badge.artistId);
+            if (badge.image) {
+                const img = document.createElement('img');
+                img.src = badge.image;
+                img.alt = badge.name || '';
+                img.referrerPolicy = 'no-referrer';
+                chip.append(img);
+            }
+            const label = document.createElement('span');
+            label.textContent = badge.name || '';
+            chip.append(label);
+            members.append(chip);
+        });
+        members.dataset.memberCount = String(badges.length);
+        members.classList.toggle('is-many', badges.length >= 10);
+        cast.hidden = false;
     }
 
     function showModal(modal) {
@@ -444,24 +597,6 @@
     if (window.MemberPortraitPicker && editPicker) {
         MemberPortraitPicker.bindMultiSelect(editPicker, { multi: true, onChange: syncEditMembers });
     }
-
-    const addPicker = document.getElementById('media-add-picker');
-    function syncAddMembers() {
-        const box = document.getElementById('mediaAddMembers');
-        if (!box || !window.MemberPortraitPicker || !addPicker) return;
-        box.replaceChildren();
-        MemberPortraitPicker.selectedValues(addPicker).forEach((name) => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'artistNames';
-            input.value = name;
-            box.appendChild(input);
-        });
-    }
-    if (window.MemberPortraitPicker && addPicker) {
-        MemberPortraitPicker.bindMultiSelect(addPicker, { multi: true, onChange: syncAddMembers });
-    }
-    document.getElementById('mediaAddForm')?.addEventListener('submit', () => syncAddMembers());
 
     function videoFrom(trigger) {
         const id = trigger?.getAttribute('data-ytid') || '';
@@ -507,6 +642,8 @@
         const tab = item.tab || 'mv';
         hero.href = '/media/' + encodeURIComponent(tab) + '/' + encodeURIComponent(item.youtubeId);
         hero.dataset.ytid = item.youtubeId;
+        hero.dataset.siteToggle = 'modal';
+        hero.dataset.siteTarget = '#ytModal';
         const still = hero.querySelector('.media-feature__still');
         if (still) {
             still.dataset.ytStill = item.youtubeId;
@@ -535,34 +672,71 @@
         applyHero(videoFrom(current));
     }
 
-    let picking = false;
-    function pickTargets() {
-        return [...document.querySelectorAll('.media-card.is-picked, .media-short.is-picked, .media-suggest__card.is-picked, .media-feature__hero.is-picked')];
+    function shortDuration(raw) {
+        const parts = String(raw || '').trim().split(':');
+        if (parts.length < 2 || parts.length > 3) return false;
+        const nums = parts.map((part) => Number(part));
+        if (nums.some((num) => Number.isNaN(num))) return false;
+        const seconds = nums.length === 2 ? nums[0] * 60 + nums[1] : nums[0] * 3600 + nums[1] * 60 + nums[2];
+        return seconds > 0 && seconds <= 60;
     }
-    function paintPickBar() {
-        const bar = document.getElementById('mediaPickBar');
-        const count = document.getElementById('mediaPickCount');
-        const total = pickTargets().length;
-        if (count) count.textContent = String(total);
-        if (bar) bar.hidden = !picking || total === 0;
-        document.querySelector('.media-playlist-add--head')?.setAttribute('aria-pressed', picking ? 'true' : 'false');
+
+    function archiveVideos() {
+        return [...byId.values()].filter((row) => row && row.youtubeId && !shortDuration(row.duration));
     }
-    function setPicking(on) {
-        picking = on;
-        document.body.classList.toggle('is-media-picking', on);
-        if (!on) document.querySelectorAll('.is-picked').forEach((node) => node.classList.remove('is-picked'));
-        paintPickBar();
-    }
-    function confirmPicks() {
-        const items = readPlaylist();
-        pickTargets().forEach((node) => {
-            const source = node.matches('[data-ytid]') ? node : node.querySelector('[data-ytid]');
-            const item = videoFrom(source);
-            if (!item.youtubeId || items.some((row) => row.youtubeId === item.youtubeId)) return;
-            items.unshift(item);
+
+    function openPickModal() {
+        const grid = document.getElementById('mediaPickGrid');
+        const modal = document.getElementById('mediaPickModal');
+        if (!grid || !modal) return;
+        grid.replaceChildren();
+        const videos = archiveVideos();
+        if (!videos.length) {
+            const empty = document.createElement('p');
+            empty.className = 'media-pick-empty';
+            empty.textContent = '담을 수 있는 영상이 없습니다.';
+            grid.appendChild(empty);
+        }
+        videos.forEach((item) => {
+            const card = document.createElement('label');
+            card.className = 'media-pick-card';
+            const check = document.createElement('input');
+            check.type = 'checkbox';
+            check.className = 'media-pick-check';
+            check.value = item.youtubeId;
+            check.setAttribute('aria-label', (item.title || '영상') + ' 선택');
+            const thumb = document.createElement('span');
+            thumb.className = 'media-pick-thumb';
+            const image = document.createElement('img');
+            image.src = 'https://img.youtube.com/vi/' + encodeURIComponent(item.youtubeId) + '/hqdefault.jpg';
+            image.alt = '';
+            thumb.appendChild(image);
+            const copy = document.createElement('span');
+            copy.className = 'media-pick-copy';
+            const kind = document.createElement('small');
+            kind.textContent = item.tabLabel || '';
+            const title = document.createElement('strong');
+            title.textContent = item.title || '';
+            copy.append(kind, title);
+            card.append(check, thumb, copy);
+            grid.appendChild(card);
         });
-        writePlaylist(items);
-        setPicking(false);
+        showModal(modal);
+    }
+
+    function confirmPicks() {
+        const existing = readPlaylist();
+        const seen = new Set(existing.map((item) => item.youtubeId));
+        const incoming = [];
+        document.querySelectorAll('#mediaPickGrid .media-pick-check:checked').forEach((input) => {
+            const item = byId.get(input.value);
+            if (!item || seen.has(item.youtubeId)) return;
+            seen.add(item.youtubeId);
+            incoming.push(item);
+        });
+        writePlaylist([...incoming, ...existing]);
+        const modal = document.getElementById('mediaPickModal');
+        if (modal && window.SiteUi) window.SiteUi.modal(modal).hide();
         renderPlaylist();
     }
 
@@ -575,11 +749,6 @@
         if (event.target.closest('#mediaPickConfirm')) {
             event.preventDefault();
             confirmPicks();
-            return;
-        }
-        if (event.target.closest('[data-short-add]')) {
-            event.preventDefault();
-            showModal(document.getElementById('mediaAddModal'));
             return;
         }
         const remove = event.target.closest('[data-playlist-remove]');
@@ -600,22 +769,13 @@
         if (add) {
             event.preventDefault();
             event.stopPropagation();
-            setPicking(!picking);
+            openPickModal();
             return;
         }
         const playlistItem = event.target.closest('#mediaPlaylistList .media-playlist__item');
         if (playlistItem) {
             event.preventDefault();
-            if (!picking) focusPlaylistItem(playlistItem);
-            return;
-        }
-        if (picking) {
-            const target = event.target.closest('.media-card, .media-short, .media-suggest__card, .media-feature__hero');
-            if (!target) return;
-            event.preventDefault();
-            event.stopPropagation();
-            target.classList.toggle('is-picked');
-            paintPickBar();
+            focusPlaylistItem(playlistItem);
             return;
         }
         const card = event.target.closest('[data-site-target="#ytModal"][data-ytid]');
@@ -637,8 +797,11 @@
 
     function upgradeStills() {
     document.querySelectorAll('img[data-yt-still]').forEach((img) => {
-        const id = img.dataset.ytStill;
+        if (img.dataset.stillBound === '1') return;
+        img.dataset.stillBound = '1';
         const use = (name) => {
+            const id = img.dataset.ytStill;
+            if (!id) return;
             img.dataset.fallback = name;
             img.src = 'https://i.ytimg.com/vi/' + id + '/' + name + '.jpg';
         };
@@ -653,6 +816,7 @@
             else if (img.dataset.fallback !== 'hqdefault') use('sddefault');
         });
         img.addEventListener('load', soften);
+        if (!img.dataset.ytStill) return;
         if (img.complete && img.naturalWidth === 0) use('sddefault');
         else if (img.complete) soften();
     });
@@ -661,4 +825,36 @@
     capturePlaylist();
     upgradeStills();
     renderPlaylist();
+
+    const SYNC_KEY = 'triples-media-channel-synced';
+    const syncForm = document.querySelector('form.media-sync');
+    syncForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const message = syncForm.getAttribute('data-confirm');
+        if (message) {
+            const ok = window.SiteFeedback?.confirm
+                ? await window.SiteFeedback.confirm(message)
+                : window.confirm(message);
+            if (!ok) return;
+        }
+        const button = syncForm.querySelector('button');
+        if (button) button.disabled = true;
+        try {
+            const response = await fetch(syncForm.action, {
+                method: 'POST',
+                body: new FormData(syncForm),
+                credentials: 'same-origin'
+            });
+            if (!response.ok) throw new Error(String(response.status));
+            localStorage.setItem(SYNC_KEY, '1');
+            document.documentElement.classList.add('media-sync-done');
+            window.location.reload();
+        } catch (error) {
+            if (button) button.disabled = false;
+            const fail = '채널 동기화에 실패했습니다.';
+            if (window.SiteFeedback?.alert) window.SiteFeedback.alert(fail);
+            else window.alert(fail);
+        }
+    });
 })();
