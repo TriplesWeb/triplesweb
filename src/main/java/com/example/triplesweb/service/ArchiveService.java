@@ -490,9 +490,6 @@ public class ArchiveService {
         if (uploads.isEmpty()) {
             throw new IllegalArgumentException("업로드 할 파일이 없습니다.");
         }
-        if (uploads.size() > ArchiveImages.MAX_IMAGES) {
-            throw new IllegalArgumentException("사진은 최대 " + ArchiveImages.MAX_IMAGES + "장까지 등록할 수 있습니다.");
-        }
         validateCoverIndex(coverIndex, uploads.size());
         ensureUniqueImagePost(registeredOn, source, description, artistNames);
         String safeTitle = title == null ? "" : title.trim();

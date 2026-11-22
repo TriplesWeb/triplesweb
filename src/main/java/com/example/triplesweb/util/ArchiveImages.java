@@ -18,7 +18,8 @@ import java.util.List;
  */
 public final class ArchiveImages {
 
-    public static final int MAX_IMAGES = 30;
+    /** 아카이브 사진 장수 제한 없음. {@link ChemistryImages#merge}에 넘길 때 0 이하 = 무제한. */
+    public static final int MAX_IMAGES = 0;
 
     /** imageOrderJson에서 신규 업로드 칸을 나타내는 빈 문자열. */
     public static final String NEW_SLOT = "";
@@ -104,9 +105,6 @@ public final class ArchiveImages {
         }
         while (uploadIndex < savedUploads.size()) {
             next.add(savedUploads.get(uploadIndex++));
-        }
-        if (next.size() > MAX_IMAGES) {
-            throw new IllegalArgumentException("사진은 최대 " + MAX_IMAGES + "장까지 등록할 수 있습니다.");
         }
         LinkedHashSet<String> nextSet = new LinkedHashSet<>(next);
         List<String> removed = prev.stream().filter(url -> !nextSet.contains(url)).toList();
