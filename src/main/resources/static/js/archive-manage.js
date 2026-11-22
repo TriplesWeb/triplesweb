@@ -1488,14 +1488,27 @@
         if (!input) return true;
         if (input.files?.[0]) return true;
         const clear = form.querySelector('[name="clearThumbnail"]');
-        if (clear?.value === 'true' && !form._archiveCover?.ready) return true;
-        if (form._archiveCoverSource === 'saved') return true;
+        // 커버를 지운 상태이거나, 저장된 커버를 그대로 두는 메타데이터 수정이면 자동 생성하지 않는다.
+        if (clear?.value === 'true') return true;
+        if (form.dataset.originalThumbnail
+            && form._archiveCoverSource !== 'scrub'
+            && form._archiveCoverSource !== 'gallery') {
+            return true;
+        }
+        if (form._archiveCoverSource === 'gallery' || form._archiveCoverSource === 'saved') return true;
         if (form._archiveCover?.ready) {
             const slider = form.querySelector('[data-cover-slider]');
             if (slider) slider.value = '0';
             return scrubCoverTo(form, 0, { commit: true, auto: true });
         }
         return true;
+    }
+
+    function coverChosenByUser(form) {
+        const input = form?.querySelector('[name="thumbnail"]');
+        return Boolean(input?.files?.[0])
+            || form?._archiveCoverSource === 'gallery'
+            || form?._archiveCoverSource === 'saved';
     }
 
     async function loadCoverFromVideo(form, source, { autoSelect = true } = {}) {
@@ -1545,14 +1558,13 @@
             slider.value = '0';
             updateCoverWindow(form, 0);
             if (token !== form._archiveCover.token) return;
-            if (form._archiveCoverSource === 'gallery') {
-                setCoverUiState(form, 'is-success');
-                return;
-            }
-            if (autoSelect) await scrubCoverTo(form, 0, { commit: true, auto: true });
-            else {
+            // 프레임 준비 중 갤러리/저장 커버를 고르면 첫 장면 자동 커밋으로 덮지 않는다.
+            if (autoSelect && !coverChosenByUser(form)) {
+                await scrubCoverTo(form, 0, { commit: true, auto: true });
+            } else {
                 await scrubCoverTo(form, 0, { commit: false });
-                setCoverUiState(form, '');
+                if (coverChosenByUser(form)) setCoverUiState(form, 'is-success');
+                else setCoverUiState(form, '');
             }
         } catch (_) {
             if (token !== form._archiveCover.token) return;
