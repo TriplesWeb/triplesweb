@@ -1,8 +1,9 @@
 /**
  * 소속 유닛 체크박스 그룹 헬퍼.
  * - setChecks / selectedIds: 아티스트 편집 등
- * - bindMemberHelper: 아카이브 — 유닛은 출연진 프리셋(1개, 교체).
- *   유닛 체크 → 출연진을 그 구성으로 채움(멤버가 일부만 있어도 가능).
+ * - bindMemberHelper: 아카이브 — 유닛은 출연진 프리셋(1개).
+ *   유닛 먼저 → 출연진을 그 구성으로 채움.
+ *   멤버 먼저 → 유닛만 체크(출연진 유지, 수동 선택 유지).
  *   멤버 완전 일치 → 유닛 자동 체크. 유닛 해제 → 유닛만 끄고 멤버는 유지.
  */
 (function () {
@@ -41,11 +42,33 @@
     return el._unitCheckSuppressed;
   }
 
+  function clearManual(el) {
+    if (el) delete el._unitCheckManualId;
+  }
+
+  function setManual(el, id) {
+    if (!el) return;
+    el._unitCheckManualId = String(id);
+  }
+
   function setChecks(root, selectedIds) {
+    const el = rootEl(root);
+    clearManual(el);
     const selected = new Set((selectedIds || []).map(String));
     checkboxes(root).forEach((cb) => {
       cb.checked = selected.has(String(cb.value));
     });
+  }
+
+  /** 출연진과 달라도 유지되는 수동 유닛 선택. */
+  function selectManual(root, unitId) {
+    const el = rootEl(root);
+    const id = unitId == null || String(unitId).trim() === "" ? "" : String(unitId).trim();
+    clearManual(el);
+    checkboxes(root).forEach((cb) => {
+      cb.checked = Boolean(id) && String(cb.value) === id;
+    });
+    if (id) setManual(el, id);
   }
 
   function selectedIds(root) {
@@ -54,22 +77,32 @@
       .map((cb) => cb.value);
   }
 
-  /** 출연 멤버와 구성이 완전히 같은 유닛만 체크. (부분집합 매칭 금지) */
+  /**
+   * 출연 멤버와 구성이 완전히 같은 유닛을 체크.
+   * 수동으로 고른 유닛이 있으면 멤버 불일치여도 그 선택을 유지한다.
+   */
   function syncFromMembers(root, memberNames) {
     const el = rootEl(root);
     const selected = new Set((memberNames || []).map(String));
     const key = membersKey(selected);
     if (el) {
-      // 멤버 구성이 바뀌면 수동 해제 억제를 풀고 다시 자동 매칭한다.
+      // 멤버 구성이 바뀌면 수동 해제 억제를 풀고, 수동 유닛도 멤버 변경에 맞춰 재평가한다.
       if (el._unitCheckMembersKey !== key) {
         el._unitCheckSuppressed = new Set();
         el._unitCheckMembersKey = key;
+        clearManual(el);
       }
     }
     const suppressed = el ? suppressedSet(el) : new Set();
+    const manualId = el && el._unitCheckManualId ? String(el._unitCheckManualId) : "";
     checkboxes(root).forEach((cb) => {
+      const id = String(cb.value);
+      if (manualId && id === manualId && !suppressed.has(id)) {
+        cb.checked = true;
+        return;
+      }
       const match = sameMemberSet(parseMembers(cb), selected);
-      cb.checked = match && !suppressed.has(String(cb.value));
+      cb.checked = match && !suppressed.has(id);
     });
   }
 
@@ -94,16 +127,25 @@
       if (!(cb instanceof HTMLInputElement) || cb.type !== "checkbox") return;
       const members = parseMembers(cb);
       if (cb.checked) {
-        // 한 유닛만: 다른 체크 해제 후 출연진을 그 유닛 구성으로 교체
-        // (이미 일부 멤버만 있어도 유닛 선택으로 전체 구성을 채운다)
+        // 한 유닛만: 다른 체크 해제
         suppressedSet(el).clear();
         checkboxes(el).forEach((other) => {
           if (other !== cb) other.checked = false;
         });
-        hooks.applyMembers(members);
+        const current = (hooks.getMembers() || []).map(String).filter(Boolean);
+        if (!current.length) {
+          // 유닛 먼저: 출연진을 그 유닛 구성으로 채움
+          clearManual(el);
+          hooks.applyMembers(members);
+        } else {
+          // 멤버 먼저: 유닛만 체크하고 출연진은 유지
+          setManual(el, cb.value);
+          if (typeof hooks.onChange === "function") hooks.onChange();
+        }
         return;
       }
       // 해제: 유닛만 끄고 출연진은 유지. 같은 구성으로 다시 자동 체크되지 않게 억제.
+      clearManual(el);
       suppressedSet(el).add(String(cb.value));
       el._unitCheckMembersKey = membersKey(hooks.getMembers());
       if (typeof hooks.onChange === "function") hooks.onChange();
@@ -112,6 +154,7 @@
 
   window.UnitCheckboxGroup = {
     setChecks,
+    selectManual,
     selectedIds,
     syncFromMembers,
     bindMemberHelper,

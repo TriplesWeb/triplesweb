@@ -43,103 +43,20 @@
     const sort = document.getElementById('archiveSort');
     let numberOffset = Math.max(0, Number(grid.dataset.numberOffset) || 0);
 
-    const MEMBER_INDEX = (() => {
-        const names = [
-            ['윤서연', '서연', 'seoyeon', 's1'],
-            ['정혜린', '혜린', 'hyerin', 's2'],
-            ['이지우', '지우', 'jiwoo', 's3'],
-            ['김채연', '채연', 'chaeyeon', 's4'],
-            ['김유연', '유연', 'yooyeon', 's5'],
-            ['김수민', '수민', 'soomin', 's6'],
-            ['김나경', '나경', 'nakyoung', 's7'],
-            ['공유빈', '유빈', 'yubin', 's8'],
-            ['카에데', 'kaede', 's9'],
-            ['서다현', '다현', 'dahyun', 's10'],
-            ['코토네', 'kotone', 's11'],
-            ['곽연지', '연지', 'yeonji', 's12'],
-            ['니엔', 'nien', 's13'],
-            ['박소현', '소현', 'sohyun', 's14'],
-            ['신위', 'xinyu', 's15'],
-            ['마유', 'mayu', 's16'],
-            ['린', 'lynn', 's17'],
-            ['주빈', 'joobin', 's18'],
-            ['정하연', '하연', 'hayeon', 's19'],
-            ['박시온', '시온', 'shion', 's20'],
-            ['김채원', '채원', 'chaewon', 's21'],
-            ['설린', 'sullin', 's22'],
-            ['서아', 'seoah', 's23'],
-            ['지연', 'jiyeon', 's24']
-        ];
-        const index = Object.create(null);
-        names.forEach((aliases, order) => {
-            aliases.forEach(alias => { index[alias] = order; });
-        });
-        return index;
-    })();
-
-    function earliestMemberOrder(raw) {
-        let earliest = 24;
-        String(raw || '').split(/[,/|]+/).forEach(part => {
-            const key = part.trim().toLowerCase().replace(/\s+/g, '');
-            if (key && key in MEMBER_INDEX) earliest = Math.min(earliest, MEMBER_INDEX[key]);
-        });
-        return earliest;
-    }
-
-    function memberOrder(card) {
-        const raw = card.dataset.memberOrder;
-        if (raw !== undefined && raw !== '') {
-            const parsed = Number(raw);
-            if (Number.isFinite(parsed)) return parsed;
-        }
-        return earliestMemberOrder(card.dataset.artists);
-    }
-
-    function memberRank(card, lastFirst) {
-        const order = memberOrder(card);
-        if (!lastFirst) return order;
-        return order === 24 ? 24 : 23 - order;
-    }
-
-    function registeredTime(card) {
-        const raw = card.dataset.registered || '';
-        const parsed = Date.parse(raw);
-        return Number.isFinite(parsed) ? parsed : 0;
-    }
-
-    function idDelta(a, b) {
-        return Number(b.dataset.id || 0) - Number(a.dataset.id || 0);
-    }
-
-    function dateDelta(a, b, oldestFirst) {
-        const left = registeredTime(a);
-        const right = registeredTime(b);
-        const delta = oldestFirst ? left - right : right - left;
-        return delta !== 0 ? delta : idDelta(a, b);
-    }
-
+    /** 서버가 이미 전체 결과 기준으로 정렬해 주므로, 여기선 번호만 맞춘다. */
     function apply() {
-        const shown = [...cards].sort((a, b) => {
-            if (!sort || sort.value === 'newest') return dateDelta(a, b, false);
-            if (sort.value === 'oldest') return dateDelta(a, b, true);
-            if (sort.value === 'first-member' || sort.value === 'last-member') {
-                const lastFirst = sort.value === 'last-member';
-                const delta = memberRank(a, lastFirst) - memberRank(b, lastFirst);
-                return delta !== 0 ? delta : idDelta(a, b);
-            }
-            return (a.dataset.title || '').localeCompare(b.dataset.title || '', 'ko') || idDelta(a, b);
-        });
-        cards.forEach(card => card.classList.add('ar-off'));
-        shown.forEach((card, index) => {
+        cards.forEach((card, index) => {
             card.classList.remove('ar-off');
             const badge = card.querySelector('[data-archive-number]');
             if (badge) badge.textContent = String(numberOffset + index + 1);
-            grid.appendChild(card);
         });
         grid.dispatchEvent(new CustomEvent('archive:updated'));
     }
 
-    sort?.addEventListener('change', apply);
+    sort?.addEventListener('change', () => {
+        rebuildSortMenu?.();
+        form?.requestSubmit();
+    });
     let rebuildSortMenu = null;
     function enhanceSort(select) {
         const control = select && select.closest('.ar-sort-control');
@@ -230,12 +147,14 @@
                 changed = true;
             }
         });
+        let reload = false;
         if (!allow && (sort.value === 'first-member' || sort.value === 'last-member')) {
             sort.value = 'newest';
             changed = true;
-            apply();
+            reload = true;
         }
         if (changed || rebuildSortMenu) rebuildSortMenu?.();
+        if (reload) form?.requestSubmit();
     }
     const chem = document.getElementById('archiveChem');
     const form = document.getElementById('archiveFilterForm');
@@ -534,6 +453,7 @@
         new FormData(form).forEach((value, key) => {
             if (String(value).trim() === '') return;
             if (key === 'size' && String(value) === '10') return;
+            if (key === 'sort' && String(value) === 'newest') return;
             params.append(key, value);
         });
         const action = form.getAttribute('action') || location.pathname;
@@ -597,6 +517,11 @@
             }
             const nextSize = doc.getElementById('archivePageSize');
             if (nextSize) syncArchiveSize(nextSize.value || '10');
+            const nextSort = doc.getElementById('archiveSort');
+            if (nextSort && sort && sort.value !== nextSort.value) {
+                sort.value = nextSort.value;
+                rebuildSortMenu?.();
+            }
             syncFolderTitleFrom(doc);
             const nextHeadline = doc.querySelector('.ar-headline');
             const headline = document.querySelector('.ar-headline');

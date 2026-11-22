@@ -2115,6 +2115,12 @@ html[data-theme="light"] a.site-back-link.ar-back-folders:focus-visible {
     font-size: 0.8rem;
     font-weight: 500;
 }
+.ar-picker-meta-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-left: auto;
+}
 .ar-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; align-items: start; }
 .ar-preview:not(:has(.ar-preview-full)):not(:has(.ar-preview-card)) {
     grid-template-columns: 1fr;

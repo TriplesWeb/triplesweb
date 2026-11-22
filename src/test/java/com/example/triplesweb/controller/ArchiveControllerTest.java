@@ -92,7 +92,7 @@ class ArchiveControllerTest {
                 .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
         when(archiveService.browseFolder(eq(type), anyInt(), anyInt(), nullable(String.class), any(),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
-                nullable(ArchiveSource.class), anyBoolean(), any(), any(), any()))
+                nullable(ArchiveSource.class), anyBoolean(), any(), any(), any(), any()))
                 .thenReturn(new ArchiveService.FolderBrowse(new PageImpl<>(List.of(items)), sources));
     }
 
@@ -294,7 +294,7 @@ class ArchiveControllerTest {
                 eq(List.of()),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
                 nullable(ArchiveSource.class), anyBoolean(), eq("s"),
-                eq(List.of("윤서연", "정혜린")), any());
+                eq(List.of("윤서연", "정혜린")), any(), any());
     }
 
     @Test void imageUploadOfTwoMembersOpensTheCountFolder() throws Exception {
@@ -449,7 +449,7 @@ class ArchiveControllerTest {
                 .isNotEmpty().containsOnly("티저/비하인드");
         verify(archiveService).browseFolder(eq(MediaType.IMAGE), anyInt(), anyInt(), nullable(String.class), any(),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
-                eq(ArchiveSource.TEASER_BEHIND), anyBoolean(), any(), any(), any());
+                eq(ArchiveSource.TEASER_BEHIND), anyBoolean(), any(), any(), any(), any());
     }
 
     @Test void externalSourceOffersPhotoDensityDropdown() throws Exception {
@@ -470,7 +470,7 @@ class ArchiveControllerTest {
         org.assertj.core.api.Assertions.assertThat(html).doesNotContain("size=9");
         verify(archiveService).browseFolder(eq(MediaType.IMAGE), eq(0), eq(20), nullable(String.class), any(),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
-                eq(ArchiveSource.EXTERNAL), anyBoolean(), any(), any(), any());
+                eq(ArchiveSource.EXTERNAL), anyBoolean(), any(), any(), any(), any());
     }
 
     @Test void archiveMemberPickerUsesPortraitsNotSymbolLogos() throws Exception {
@@ -709,7 +709,7 @@ class ArchiveControllerTest {
         when(artistSnapshot.findAll()).thenReturn(List.of());
         when(archiveService.browseFolder(eq(MediaType.IMAGE), anyInt(), anyInt(), nullable(String.class), any(),
                 nullable(java.time.LocalDate.class), nullable(java.time.LocalDate.class),
-                nullable(ArchiveSource.class), anyBoolean(), any(), any(), any()))
+                nullable(ArchiveSource.class), anyBoolean(), any(), any(), any(), any()))
                 .thenReturn(new ArchiveService.FolderBrowse(
                         new PageImpl<>(List.of(photo()), PageRequest.of(1, 9), 20), java.util.Set.of()));
         mvc.perform(get("/archive").param("page", "1").param("folder", "s"))
@@ -727,7 +727,8 @@ class ArchiveControllerTest {
         solo.setId(8L);
         solo.setTitle("지서연");
         solo.setArtistNames("서연 \"A\"");
-        when(archiveService.pageByType(eq(MediaType.IMAGE), anyInt(), anyInt(), isNull(), any(), isNull(), isNull()))
+        when(archiveService.pageByType(eq(MediaType.IMAGE), anyInt(), anyInt(), isNull(), any(), isNull(), isNull(),
+                isNull(), anyBoolean(), anyBoolean(), any()))
                 .thenReturn(new PageImpl<>(List.of(group, solo)));
         String html = mvc.perform(get("/archive/all"))
                 .andExpect(status().isOk())
@@ -765,14 +766,15 @@ class ArchiveControllerTest {
                 .andExpect(content().string(containsString("value=\"2026-03-15\"")));
         verify(archiveService).browseFolder(eq(MediaType.IMAGE), anyInt(), org.mockito.AdditionalMatchers.lt(Integer.MAX_VALUE), any(), any(),
                 eq(java.time.LocalDate.of(2026, 3, 15)), eq(java.time.LocalDate.of(2026, 3, 15)),
-                isNull(), eq(false), eq("s"), any(), any());
+                isNull(), eq(false), eq("s"), any(), any(), any());
     }
 
     @Test void photoBrowsePageListsAllPhotosWithoutCarousel() throws Exception {
         when(artistSnapshot.findAll()).thenReturn(List.of());
         Archive group = photo();
         group.setArtistNames("윤서연, 정혜린");
-        when(archiveService.pageByType(eq(MediaType.IMAGE), anyInt(), anyInt(), isNull(), any(), isNull(), isNull()))
+        when(archiveService.pageByType(eq(MediaType.IMAGE), anyInt(), anyInt(), isNull(), any(), isNull(), isNull(),
+                isNull(), anyBoolean(), anyBoolean(), any()))
                 .thenReturn(new PageImpl<>(List.of(group), PageRequest.of(0, 24), 1));
         String html = mvc.perform(get("/archive/all"))
                 .andExpect(status().isOk())

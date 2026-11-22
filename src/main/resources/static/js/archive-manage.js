@@ -1181,6 +1181,16 @@
         return root?.querySelector?.('[data-unit-checks]') || null;
     }
 
+    function selectedUnitId(root) {
+        const checked = unitChecksRoot(root)?.querySelector('input[type="checkbox"][data-members]:checked');
+        const value = checked?.value?.trim();
+        return value || '';
+    }
+
+    function appendSelectedUnit(body, root) {
+        body.set('unitId', selectedUnitId(root));
+    }
+
     function renderArtists(root) {
         if (!root) return;
         const values = selectedArtists(root);
@@ -2095,6 +2105,7 @@
         } else {
             uploadLive.forEach(name => body.append("artistNames", name));
         }
+        appendSelectedUnit(body, uploadDialog);
         const button = uploadForm.querySelector("[type='submit']");
         if (button) button.disabled = true;
         if (!uploadIdempotencyKey) uploadIdempotencyKey = newIdempotencyKey();
@@ -2217,6 +2228,11 @@
             registered.dispatchEvent(new Event("input", { bubbles: true }));
         }
         applyArtists(editDialog, button.dataset.artists || "");
+        const storedUnitId = (button.dataset.unitId || '').trim();
+        if (storedUnitId) {
+            window.UnitCheckboxGroup?.selectManual(unitChecksRoot(editDialog), storedUnitId);
+            syncPreview(editForm);
+        }
         const sourceSelect = editForm.querySelector("[name='source']");
         if (sourceSelect) sourceSelect.value = button.dataset.source || "";
         if (editFile) {
@@ -2433,6 +2449,7 @@
         });
         body.set("artistNames", editNames.join(","));
         if (kind === 'image' && slots.length > 1) body.set("imageArtistsJson", JSON.stringify(editRows));
+        appendSelectedUnit(body, editDialog);
         const source = editForm.querySelector("[name='source']")?.value || "";
         if (source) body.set("source", source);
         if (kind === 'image') {

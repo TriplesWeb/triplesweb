@@ -5,12 +5,12 @@
         <span>{{archivePageCount}}{{#imageArchive}}장{{/imageArchive}}{{^imageArchive}}개{{/imageArchive}} 표시</span>
     </p>
     <div class="ar-pager-nav" role="group" aria-label="페이지 번호">
-        {{#hasArchivePrev}}<a class="ar-pager-step" href="{{archivePath}}?page={{archivePrevPage}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{sizeQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">이전</a>{{/hasArchivePrev}}
+        {{#hasArchivePrev}}<a class="ar-pager-step" href="{{archivePath}}?page={{archivePrevPage}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{sizeQuery}}{{sortQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">이전</a>{{/hasArchivePrev}}
         {{^hasArchivePrev}}<a class="ar-pager-step is-disabled" aria-disabled="true">이전</a>{{/hasArchivePrev}}
         <div class="ar-pages">
-            {{#archivePages}}<a class="ar-pager-num{{#active}} is-current{{/active}}" href="{{archivePath}}?page={{num}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{sizeQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}"{{#active}} aria-current="page"{{/active}}>{{label}}</a>{{/archivePages}}
+            {{#archivePages}}<a class="ar-pager-num{{#active}} is-current{{/active}}" href="{{archivePath}}?page={{num}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{sizeQuery}}{{sortQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}"{{#active}} aria-current="page"{{/active}}>{{label}}</a>{{/archivePages}}
         </div>
-        {{#hasArchiveNext}}<a class="ar-pager-step" href="{{archivePath}}?page={{archiveNextPage}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{sizeQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">다음</a>{{/hasArchiveNext}}
+        {{#hasArchiveNext}}<a class="ar-pager-step" href="{{archivePath}}?page={{archiveNextPage}}{{typeQuery}}{{folderQuery}}{{sourceQuery}}{{chemQuery}}{{sizeQuery}}{{sortQuery}}{{#hasQuery}}&amp;q={{query}}{{/hasQuery}}{{memberQuery}}{{dateQuery}}">다음</a>{{/hasArchiveNext}}
         {{^hasArchiveNext}}<a class="ar-pager-step is-disabled" aria-disabled="true">다음</a>{{/hasArchiveNext}}
     </div>
     <form class="ar-page-jump" method="get" action="{{archivePath}}" aria-label="페이지 이동">
@@ -20,6 +20,7 @@
         {{#hasSourceFilter}}<input type="hidden" name="source" value="{{sourceKey}}">{{/hasSourceFilter}}
         {{#hasChemFilter}}<input type="hidden" name="chem" value="{{chemKey}}">{{/hasChemFilter}}
         {{#hasCustomArchiveSize}}<input type="hidden" name="size" value="{{archiveSize}}">{{/hasCustomArchiveSize}}
+        {{^sortNewest}}{{#sortKey}}<input type="hidden" name="sort" value="{{sortKey}}">{{/sortKey}}{{/sortNewest}}
         {{#hasQuery}}<input type="hidden" name="q" value="{{query}}">{{/hasQuery}}
         {{#on}}<input type="hidden" name="on" value="{{on}}">{{/on}}
         {{#from}}<input type="hidden" name="from" value="{{from}}">{{/from}}
