@@ -130,6 +130,8 @@ body.site-modal-open { overflow: hidden; }
 .site-btn-primary:hover,
 .site-btn--primary:hover {
     filter: brightness(1.05);
+    background: #00f5d4;
+    border-color: #00f5d4;
     color: #0d0e12;
 }
 /* 공통 초기화 — primary 옆 ghost/outline */
