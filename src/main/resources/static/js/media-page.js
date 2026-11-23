@@ -474,10 +474,34 @@
     }
     reloadCatalog();
     const ytModal = document.getElementById('ytModal');
-    const ytPlayer = document.getElementById('ytPlayer');
+    let ytPlayer = document.getElementById('ytPlayer');
     const editModal = document.getElementById('mediaEditModal');
     const editPicker = document.getElementById('media-edit-picker');
     let currentVideo = null;
+    let youtubePlayer = null;
+    let youtubePlayerReady = null;
+    let requestedVideoId = null;
+
+    function playMediaVideo(id) {
+        requestedVideoId = id;
+        if (youtubePlayer) {
+            youtubePlayer.loadVideoById(id);
+            return;
+        }
+        if (youtubePlayerReady) return;
+        // Start only after the YouTube API has initialized the safe volume.
+        ytPlayer.src = 'https://www.youtube.com/embed/' + encodeURIComponent(id) + '?rel=0&enablejsapi=1';
+        const pendingPlayer = window.SiteVideoVolume.attachYouTube(ytPlayer);
+        youtubePlayerReady = pendingPlayer;
+        pendingPlayer.then((player) => {
+            if (youtubePlayerReady !== pendingPlayer) return;
+            youtubePlayer = player;
+            if (requestedVideoId === id) player.playVideo();
+            else player.loadVideoById(requestedVideoId);
+        }, () => {
+            if (youtubePlayerReady === pendingPlayer) youtubePlayerReady = null;
+        });
+    }
 
     function text(id, value) {
         const node = document.getElementById(id);
@@ -500,7 +524,7 @@
             artistNames: ''
         };
         currentVideo = row;
-        ytPlayer.src = 'https://www.youtube.com/embed/' + encodeURIComponent(id) + '?autoplay=1&rel=0';
+        playMediaVideo(id);
         text('ytModalTitle', row.title || '영상 재생');
         text('ytModalKind', row.tabLabel || '');
         text('ytModalHeading', row.title || '');
@@ -792,7 +816,17 @@
     }
 
     ytModal?.addEventListener('site-modal:hidden', () => {
-        if (ytPlayer) ytPlayer.src = '';
+        requestedVideoId = null;
+        if (youtubePlayer) {
+            youtubePlayer.stopVideo();
+        } else if (ytPlayer?.hasAttribute('src')) {
+            youtubePlayerReady = null;
+            // Detach the old iframe so late API callbacks cannot affect the next video.
+            const replacement = ytPlayer.cloneNode(false);
+            replacement.removeAttribute('src');
+            ytPlayer.replaceWith(replacement);
+            ytPlayer = replacement;
+        }
     });
 
     function upgradeStills() {
