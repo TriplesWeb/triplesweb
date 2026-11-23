@@ -23,6 +23,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /** Public collection index supplies serial -> token mapping; Abstract verifies current ownership. */
 @Service
 public class ObjektMarketDataService {
+    @Value("${objekt.mints.chain-enabled:false}")
+    private boolean chainMints;
     private final RestClient index;
     private final ObjektIndexClient historyIndex;
     private final RestClient cosmo;
@@ -76,22 +78,35 @@ public class ObjektMarketDataService {
     }
 
     public void refreshMintCounts() {
+        if (chainMints) return;
         try {
-            JsonNode rows = index.get().uri("/collections/rarity").retrieve().body(JsonNode.class);
-            if (rows == null || !rows.isArray() || rows.isEmpty()) return;
-            Map<String, Long> next = new LinkedHashMap<>();
-            for (JsonNode row : rows) {
-                String slug = row.path("slug").asText();
-                if (slug.isBlank() || !row.path("count").isIntegralNumber()
-                        || !row.path("count").canConvertToLong() || row.path("count").asLong() < 0) return;
-                if (next.putIfAbsent(slug, row.path("count").asLong()) != null) return;
-            }
-            mintCounts = Map.copyOf(next);
-            mintsSignature = signature(next);
-            mintsRefreshedAt = System.currentTimeMillis();
+            installMintCounts(fetchExternalMintCounts());
         } catch (RuntimeException ignored) {
             // Preserve the last complete snapshot; unknown values must not become zero.
         }
+    }
+
+    Map<String, Long> fetchExternalMintCounts() {
+        JsonNode rows = index.get().uri("/collections/rarity").retrieve().body(JsonNode.class);
+        if (rows == null || !rows.isArray() || rows.isEmpty()) {
+            throw new IllegalStateException("발행량 응답이 비어 있습니다.");
+        }
+        Map<String, Long> counts = new LinkedHashMap<>();
+        for (JsonNode row : rows) {
+            String slug = row.path("slug").asText();
+            JsonNode count = row.path("count");
+            if (slug.isBlank() || !count.isIntegralNumber() || !count.canConvertToLong()
+                    || count.asLong() < 0 || counts.putIfAbsent(slug, count.asLong()) != null) {
+                throw new IllegalStateException("발행량 응답에 잘못된 컬렉션이 있습니다.");
+            }
+        }
+        return counts;
+    }
+
+    void installMintCounts(Map<String, Long> counts) {
+        mintCounts = Map.copyOf(counts);
+        mintsSignature = signature(counts);
+        mintsRefreshedAt = System.currentTimeMillis();
     }
 
     static String signature(Map<String, Long> counts) {
@@ -147,7 +162,19 @@ public class ObjektMarketDataService {
 
     public List<Map<String,Object>> withIssuedSupply(List<Map<String,Object>> items) { return serialSupply.decorate(items); }
     public Map<String,Object> issuedSupply(Map<String,Object> item,int offset,int limit) {
+        if (chainMints) {
+            Long count = mintCount(item);
+            return count == null ? Map.of("status", "unavailable")
+                    : Map.of("status", "available", "count", count);
+        }
         return serialSupply.view(String.valueOf(item.getOrDefault("slug","")),offset,limit);
+    }
+
+    JsonNode fetchTokenMetadata(String token) {
+        JsonNode metadata = cosmo.get().uri("/bff/v3/objekts/nft-metadata/{id}", token)
+                .retrieve().body(JsonNode.class);
+        if (metadata == null) throw new IllegalStateException("메타데이터가 없습니다.");
+        return metadata;
     }
 
     public Map<String, Object> owner(Map<String, Object> collection, long serial) {
@@ -161,9 +188,7 @@ public class ObjektMarketDataService {
         if (!token.matches("[0-9]{1,78}")) throw new IllegalStateException("잘못된 토큰 응답입니다.");
 
         // COSMO metadata names now contain token ID, not collection serial. Never infer one from the other.
-        JsonNode metadata = cosmo.get().uri("/bff/v3/objekts/nft-metadata/{id}", token)
-                .retrieve().body(JsonNode.class);
-        if (metadata == null) throw new IllegalStateException("메타데이터가 없습니다.");
+        JsonNode metadata = fetchTokenMetadata(token);
         Map<String, String> traits = new LinkedHashMap<>();
         for (JsonNode trait : metadata.path("attributes")) {
             traits.put(trait.path("trait_type").asText(), trait.path("value").asText());

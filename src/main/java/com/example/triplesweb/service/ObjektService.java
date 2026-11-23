@@ -44,6 +44,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Service
 public class ObjektService {
 
+    @Value("${objekt.mints.chain-enabled:false}")
+    private boolean chainMints;
     private final RestClient restClient;
     private final ObjektCatalogStore catalogStore;
     private final ObjektLiveSettings live;
@@ -161,42 +163,9 @@ public class ObjektService {
     }
 
     public void refreshCache() {
-        if (!refreshing.compareAndSet(false, true)) return;
+        if (chainMints || !refreshing.compareAndSet(false, true)) return;
         try {
-            JsonNode response = restClient.get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/collections")
-                            .queryParam("artist", "triples")
-                            .build())
-                    .header("Accept", "application/json")
-                    .retrieve()
-                    .body(JsonNode.class);
-
-            if (response == null || !response.path("collections").isArray()) {
-                log.warn("Objekt API 응답 형식이 올바르지 않아 기존 캐시를 유지합니다.");
-                return;
-            }
-
-            JsonNode collections = response.path("collections");
-
-            // 이미 정상 데이터가 존재하는데 빈 응답이 오면 기존 데이터를 보호한다.
-            if (collections.isEmpty()
-                    && cachedCollections != null
-                    && !cachedCollections.isEmpty()) {
-                log.warn("Objekt API가 빈 컬렉션을 반환했습니다. 기존 캐시를 유지합니다.");
-                return;
-            }
-
-            Map<String, ObjektCatalog> unique = new LinkedHashMap<>();
-            for (JsonNode node : collections) {
-                ObjektCatalogDto dto = ObjektCatalogDto.from(node);
-                if (dto.collectionId() == null || dto.collectionId().isBlank()
-                        || unique.putIfAbsent(dto.collectionId(), dto.toEntity()) != null) {
-                    log.warn("Objekt 카탈로그에 누락 또는 중복 식별자가 있어 기존 스냅샷을 유지합니다.");
-                    return;
-                }
-            }
-            List<ObjektCatalog> rows = new ArrayList<>(unique.values());
+            List<ObjektCatalog> rows = fetchExternalCatalog();
             List<Map<String, Object>> views = rows.stream().map(ObjektCatalogDto::toView).toList();
             synchronized (this) {
                 if (views.equals(cachedCollections) && !cachedCollections.isEmpty()) {
@@ -221,6 +190,32 @@ public class ObjektService {
         } finally {
             refreshing.set(false);
         }
+    }
+
+    List<ObjektCatalog> fetchExternalCatalog() {
+        JsonNode response = restClient.get()
+                .uri(builder -> builder.path("/collections").queryParam("artist", "triples").build())
+                .header("Accept", "application/json")
+                .retrieve().body(JsonNode.class);
+        if (response == null || !response.path("collections").isArray()) {
+            throw new IllegalStateException("Objekt 카탈로그 응답 형식이 올바르지 않습니다.");
+        }
+        Map<String, ObjektCatalog> rows = new LinkedHashMap<>();
+        for (JsonNode node : response.path("collections")) {
+            ObjektCatalogDto dto = ObjektCatalogDto.from(node);
+            if (dto.collectionId().isBlank() || rows.putIfAbsent(dto.collectionId(), dto.toEntity()) != null) {
+                throw new IllegalStateException("Objekt 카탈로그에 누락 또는 중복 식별자가 있습니다.");
+            }
+        }
+        if (rows.isEmpty() && !cachedCollections.isEmpty()) {
+            throw new IllegalStateException("Objekt 카탈로그 응답이 비어 있습니다.");
+        }
+        return List.copyOf(rows.values());
+    }
+
+    synchronized void reloadStoredCatalog() {
+        install(loadFromDatabase("triples"));
+        lastSuccessfulRefreshMillis = System.currentTimeMillis();
     }
 
     public long getLastSuccessfulRefreshMillis() {
