@@ -38,15 +38,17 @@ public class FileStorageServiceImpl implements FileStorageService {
     private final String uploadRoot;
     private final UploadSyncService uploadSyncService;
     private final UploadContentStore uploadContentStore;
+    private final UploadImageResizeService imageResizeService;
     private final Executor dbCopyExecutor;
 
     @Autowired
     public FileStorageServiceImpl(
             @Value("${file.upload-dir}") String uploadRoot,
             UploadSyncService uploadSyncService,
-            UploadContentStore uploadContentStore
+            UploadContentStore uploadContentStore,
+            UploadImageResizeService imageResizeService
     ) {
-        this(uploadRoot, uploadSyncService, uploadContentStore, defaultDbCopyExecutor());
+        this(uploadRoot, uploadSyncService, uploadContentStore, imageResizeService, defaultDbCopyExecutor());
     }
 
     /** 테스트에서 DB 복사를 동기화할 때 쓰는 생성자. */
@@ -56,9 +58,20 @@ public class FileStorageServiceImpl implements FileStorageService {
             UploadContentStore uploadContentStore,
             Executor dbCopyExecutor
     ) {
+        this(uploadRoot, uploadSyncService, uploadContentStore, null, dbCopyExecutor);
+    }
+
+    FileStorageServiceImpl(
+            String uploadRoot,
+            UploadSyncService uploadSyncService,
+            UploadContentStore uploadContentStore,
+            UploadImageResizeService imageResizeService,
+            Executor dbCopyExecutor
+    ) {
         this.uploadRoot = uploadRoot;
         this.uploadSyncService = uploadSyncService;
         this.uploadContentStore = uploadContentStore;
+        this.imageResizeService = imageResizeService;
         this.dbCopyExecutor = dbCopyExecutor;
     }
 
@@ -152,6 +165,8 @@ public class FileStorageServiceImpl implements FileStorageService {
         String relative = normalizeSavedName(url);
         uploadSyncService.pushRelative(relative);
         copyToDatabase(newPath, relative, guessContentType(ext, type));
+        // 카드용 JPEG는 요청 스레드 밖에서 미리 만들어, 목록 첫 로딩이 ImageIO에 막히지 않게 한다.
+        warmCardVariant(newPath, isImage);
 
         return SavedMeta.builder()
                 .originalName(originalName)
@@ -182,6 +197,18 @@ public class FileStorageServiceImpl implements FileStorageService {
         } catch (IOException e) {
             throw new FileStorageException("파일 삭제 실패: " + relative, e);
         }
+    }
+
+    private void warmCardVariant(Path localFile, boolean isImage) {
+        if (!isImage || imageResizeService == null || localFile == null) return;
+        dbCopyExecutor.execute(() -> {
+            try {
+                imageResizeService.ensureJpegVariant(localFile, UploadImageResizeService.CARD_WIDTH);
+            } catch (Exception e) {
+                org.slf4j.LoggerFactory.getLogger(FileStorageServiceImpl.class)
+                        .warn("카드 JPEG 미리 생성 실패 {}: {}", localFile.getFileName(), e.toString());
+            }
+        });
     }
 
     /** HTTP 응답을 막지 않도록 DB 복사는 백그라운드에서 한다. */

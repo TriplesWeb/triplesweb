@@ -129,7 +129,9 @@ public class ArchiveService {
                 root.get("artistNames"),
                 root.get("thumbnailUrl"),
                 root.get("file").get("url"),
-                root.get("file").get("mediaType"));
+                root.get("file").get("mediaType"),
+                root.get("unitId"),
+                root.get("registeredOn"));
         query.orderBy(cb.desc(root.get("id")));
         List<Archive> rows = new ArrayList<>();
         for (Object[] row : entityManager.createQuery(query).getResultList()) {
@@ -141,6 +143,8 @@ public class ArchiveService {
             file.setUrl((String) row[3]);
             file.setMediaType((MediaType) row[4]);
             archive.setFile(file);
+            archive.setUnitId((Long) row[5]);
+            archive.setRegisteredOn((LocalDate) row[6]);
             rows.add(archive);
         }
         return rows;
@@ -391,17 +395,15 @@ public class ArchiveService {
                 return cachedPagedBrowse(type, page, size, keyword, canonicalWanted, from, to, source, unclassifiedOnly, true, order);
             }
             Long unitId = unitIdForMembers(wantedSet, units);
-            // 유닛 멤버 폴더는 저장된 unitId만. 출연진만 같으면 케미로 두고 여기 넣지 않는다.
-            Specification<Archive> narrowed = archivesAssignedToUnit(type, keyword, from, to, unitId);
-            return browseMatchedRows(narrowed, page, size, source, unclassifiedOnly, folderKey, comboMembers, units, order);
+            // 유닛 멤버 폴더는 저장된 unitId만. DB에서 바로 페이지한다(전체 스캔·classify 없음).
+            return pagedUnitBrowse(type, page, size, keyword, from, to, source, unclassifiedOnly, unitId, order);
         }
 
         String lowerFolder = folderKey.toLowerCase(Locale.ROOT);
         if (lowerFolder.startsWith("unit-")) {
             Long unitId = parseUnitFolderId(folderKey);
             if (unitId != null) {
-                Specification<Archive> narrowed = archivesAssignedToUnit(type, keyword, from, to, unitId);
-                return browseMatchedRows(narrowed, page, size, source, unclassifiedOnly, folderKey, comboMembers, units, order);
+                return pagedUnitBrowse(type, page, size, keyword, from, to, source, unclassifiedOnly, unitId, order);
             }
         }
 
@@ -426,6 +428,50 @@ public class ArchiveService {
         FolderBrowse browse = new FolderBrowse(pageResult, sources);
         browsePageCache.put(pageKey, new CachedBrowse(browse, now));
         return browse;
+    }
+
+    /** unitId로 좁힌 뒤 DB 페이징. 유닛 폴더·유닛 구성 멤버 폴더용. */
+    private FolderBrowse pagedUnitBrowse(MediaType type, int page, int size, String keyword,
+                                         LocalDate from, LocalDate to, String source, boolean unclassifiedOnly,
+                                         Long unitId, ArchiveSort order) {
+        ArchiveSort sort = order == null ? ArchiveSort.NEWEST : order;
+        String pageKey = filterCacheKey("unitBrowse", type, keyword, List.of(), from, to, source, unclassifiedOnly, true, sort)
+                + "|u=" + unitId + "|p=" + page + "|z=" + size;
+        long now = System.currentTimeMillis();
+        evictExpiredCaches(now);
+        CachedBrowse cachedBrowse = browsePageCache.get(pageKey);
+        if (cachedBrowse != null && now - cachedBrowse.at() < FILTER_TTL_MS) {
+            return cachedBrowse.value();
+        }
+        Specification<Archive> spec = archivesAssignedToUnit(type, keyword, from, to, source, unclassifiedOnly, unitId);
+        Page<Archive> pageResult = pageBySpec(spec, page, size, sort);
+        Set<String> sources = availableSourcesForUnit(type, keyword, from, to, unitId);
+        FolderBrowse browse = new FolderBrowse(pageResult, sources);
+        browsePageCache.put(pageKey, new CachedBrowse(browse, now));
+        return browse;
+    }
+
+    private Page<Archive> pageBySpec(Specification<Archive> spec, int page, int size, ArchiveSort order) {
+        ArchiveSort sort = order == null ? ArchiveSort.NEWEST : order;
+        int safeSize = Math.max(1, size);
+        int safePage = Math.max(0, page);
+        if (sort.isMemberSort()) {
+            return pageByMemberSort(spec, safePage, safeSize, sort);
+        }
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Archive> contentQuery = cb.createQuery(Archive.class);
+        Root<Archive> contentRoot = contentQuery.from(Archive.class);
+        Predicate contentPred = spec.toPredicate(contentRoot, contentQuery, cb);
+        contentQuery.select(contentRoot);
+        if (contentPred != null) contentQuery.where(contentPred);
+        contentQuery.orderBy(criteriaOrders(cb, contentRoot, sort));
+        List<Archive> content = entityManager.createQuery(contentQuery)
+                .setFirstResult((int) pageable.getOffset())
+                .setMaxResults(pageable.getPageSize())
+                .getResultList();
+        long total = countArchives(spec);
+        return new PageImpl<>(content, pageable, total);
     }
 
     private FolderBrowse browseMatchedRows(Specification<Archive> scanSpec, int page, int size,
@@ -624,13 +670,41 @@ public class ArchiveService {
 
     /** 공통 필터 AND 지정 unitId. 유닛 폴더 전용. */
     private static Specification<Archive> archivesAssignedToUnit(
-            MediaType type, String keyword, LocalDate from, LocalDate to, Long unitId) {
-        Specification<Archive> common = commonArchiveFilters(type, keyword, from, to, null, false);
+            MediaType type, String keyword, LocalDate from, LocalDate to,
+            String source, boolean unclassifiedOnly, Long unitId) {
+        Specification<Archive> common = commonArchiveFilters(type, keyword, from, to, source, unclassifiedOnly);
         if (unitId == null) {
             return common.and((root, query, cb) -> cb.disjunction());
         }
         Long lockedUnitId = unitId;
         return common.and((root, query, cb) -> cb.equal(root.get("unitId"), lockedUnitId));
+    }
+
+    /** 유닛 폴더 출처 탭: 해당 unitId 글의 source만. */
+    @Transactional(readOnly = true)
+    public Set<String> availableSourcesForUnit(MediaType type, String keyword, LocalDate from, LocalDate to, Long unitId) {
+        if (unitId == null) return Set.of();
+        String key = filterCacheKey("unitSources", type, keyword, List.of(), from, to, null, false, true, ArchiveSort.NEWEST)
+                + "|u=" + unitId;
+        long now = System.currentTimeMillis();
+        evictExpiredCaches(now);
+        CachedSources cached = sourcesCache.get(key);
+        if (cached != null && now - cached.at() < FILTER_TTL_MS) {
+            return cached.value();
+        }
+        Specification<Archive> spec = archivesAssignedToUnit(type, keyword, from, to, null, false, unitId);
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<String> query = cb.createQuery(String.class);
+        Root<Archive> root = query.from(Archive.class);
+        Predicate base = spec.toPredicate(root, query, cb);
+        Predicate notNull = cb.isNotNull(root.get("source"));
+        query.select(root.get("source")).distinct(true)
+                .where(base == null ? notNull : cb.and(base, notNull));
+        Set<String> sources = Set.copyOf(entityManager.createQuery(query).getResultList().stream()
+                .filter(Objects::nonNull)
+                .toList());
+        sourcesCache.put(key, new CachedSources(sources, now));
+        return sources;
     }
 
     /** folder=s + 유닛 구성 멤버, 또는 folder=unit-N 이면 그 유닛 id. */
